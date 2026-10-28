@@ -6,7 +6,8 @@
 - Method: clean-worktree baseline, source and contract review, focused synthetic repros where needed. No game launch, game-install write or network use.
 - Baseline: `tools\test.ps1` passed: repository conventions; Python 28 + 19 + 44 = 91 tests (8 skipped); Debug CTest 16/16; `All checks passed.`
 - Baseline: `tools\build.ps1 -Config Release` passed: Release CTest 16/16; `Build win64-release OK`.
-- Findings: P0 12; P1 7; P2 6; P3 2. Interim report: all scoped production source was reviewed; 42 test and auxiliary source files remain partly reviewed. Semantic comparison of every script document remains open.
+- Post-build verification: a second `tools\test.ps1` ran the native-dependent Python branches and failed one `test_field_snapshot` case because legacy PowerShell could not resolve `Get-FileHash` (R1-029). Its CTest still passed 16/16. This does not change the clean-worktree baseline result.
+- Findings: P0 12; P1 8; P2 7; P3 2. All 159 listed source files and their applicable design and script documentation were reviewed within the brief's scope.
 
 ## Findings
 
@@ -31,12 +32,14 @@
 | R1-016 | P1 | D | `tools/poc_parity.py:205-213,237-258` | Native parity paths can escape the PoC root |
 | R1-017 | P1 | D | `tools/package_runtime.py:76-93,187-228`; `tools/package_fixes.py:103-135,354-364` | Packagers include private configs and logs from input trees |
 | R1-019 | P1 | D | `tools/poc_session.py:509-524` | Session cleanup can terminate a game it did not start |
+| R1-029 | P1 | D/F | `tools/poc_session.py:69-71`; `tools/field_snapshot.py:292-298` | Python drivers can fail to install or roll back under inherited PowerShell module paths |
 | R1-018 | P2 | D | `tools/build.ps1:20-21`; `tools/lib/VsDevEnv.psm1:34-45` | Build imports MSVC environment into the caller |
 | R1-020 | P2 | D | `tools/steam/verify_install.py:30-45` | Depot verification calls a junction-backed install vanilla |
 | R1-021 | P2 | F | `tools/test.ps1:45-58` | Clean test runner skips native-dependent Python checks |
 | R1-022 | P2 | B/G | `loader/core/src/manifest.cpp:393-414` | Folder-only root areas accept direct files |
 | R1-023 | P2 | G | `docs/ARCHITECTURE.md:37,124` | Architecture misstates activation commit and DLL search |
 | R1-025 | P2 | H | `tools/gmapack/gmapack.py.md:4` | Vendored packer lacks pinned provenance and its own licence record |
+| R1-028 | P2 | F | `tools/tests/test_check_repo.py:32`; `tools/steam/tests/test_install_tools.py:24` | Documented direct tests write scratch to system temp |
 | R1-024 | P3 | E/G | `companion/nativeloader/lua/autorun/client/nativeloader.lua:141,159` | Companion reads session fields the writer never emits |
 | R1-027 | P3 | G | `docs/COMPONENTS.md:16-17`; `loader/core/README.md:64-73` | Component and path inventories remain at earlier milestones |
 
@@ -196,11 +199,11 @@
 
 ### R1-020 — Depot verification calls a junction-backed install vanilla (P2, Area D)
 
-- **What is wrong:** `verify_install.verify` checks `Path.is_file`, size and SHA-1 (`tools/steam/verify_install.py:30-45`), all of which follow reparse points. It never verifies that the depot file and each parent are ordinary paths. A junction to an identical external file passes and is counted as an intact depot file.
+- **What is wrong:** `verify_install.verify` checks `Path.is_file`, size and SHA-1 (`tools/steam/verify_install.py:30-45`), all of which follow reparse points. It never verifies that the depot file and each parent are ordinary paths. A junction to an identical external file passes and is counted as an intact depot file. It also treats a regular depot entry with no SHA-1 as verified after a size check alone (`:42-45`); the currently cached GMod manifests had no such entries, but the parser supports them.
 - **Failure scenario:** `garrysmod/cfg` is replaced with a junction to another directory containing byte-identical `config_default.cfg`. Verification reports that depot file OK even though the install contains a link and Steam's file is absent at its original location.
 - **Evidence:** `out/r1-review/repro/R1-020/repro.ps1` built that synthetic layout and supplied a synthetic depot manifest. `output.txt` shows one file marked OK, no missing/hash mismatch and a junction at the parent.
 - **Confidence:** confirmed (synthetic verification reproduction).
-- **Suggested fix:** Refuse or separately report reparse points in any depot path component before counting a file as vanilla.
+- **Suggested fix:** Refuse or separately report reparse points in any depot path component, and require a hash for ordinary depot files before counting them as vanilla.
 
 ### R1-026 — Session install overwrites an existing allowlist without a backup (P0, Area D)
 
@@ -236,7 +239,7 @@
 
 ### R1-024 — Companion reads session fields the writer never emits (P3, Areas E/G)
 
-- **What is wrong:** The companion calls `freshness(session)` for `session.json` (`companion/nativeloader/lua/autorun/client/nativeloader.lua:141`), but `modules::results_json` emits no `utc` (`loader/proxy/modules.cpp:481-500`), so it always prints an unknown timestamp. It also reads `override.module` (`nativeloader.lua:159`), while the writer emits `requested`, `loaded`, `result` and `windows_error` (`modules.cpp:135-140`), making the module label `?`.
+- **What is wrong:** The companion calls `freshness(session)` for `session.json` (`companion/nativeloader/lua/autorun/client/nativeloader.lua:141`), but `modules::results_json` emits no `utc` (`loader/proxy/modules.cpp:481-500`), so it always prints an unknown timestamp. The companion's own `.md` incorrectly lists `utc` as a session field and shows a fresh age in its example. It also reads `override.module` (`nativeloader.lua:159`), while the writer emits `requested`, `loaded`, `result` and `windows_error` (`modules.cpp:135-140`), making the module label `?`.
 - **Failure scenario:** `nativeloader_status` prints an apparently undated session and an unnamed override even after a normal active run, reducing its usefulness for distinguishing stale results.
 - **Evidence:** Exact serializer/reader field comparison. The two LuaJIT companion tests were skipped in the clean baseline because LuaJIT was not installed, and they cover only update notices.
 - **Confidence:** likely (direct schema trace, no LuaJIT reproduction).
@@ -252,11 +255,29 @@
 
 ### R1-027 — Component and path inventories remain at earlier milestones (P3, Area G)
 
-- **What is wrong:** The top component table still calls the Lua companion and runtime package planned at M5/M6 and M4 (`docs/COMPONENTS.md:16-17`) despite later sections marking them done. `loader/core/README.md:64-73` still lists only three root areas and omits the implemented `garrysmod/data` and `garrysmod/addons` areas. `companion/README.md:12` says M6 will add the restart notice, although its Lua already contains it.
+- **What is wrong:** The top component table still calls the Lua companion and runtime package planned at M5/M6 and M4 (`docs/COMPONENTS.md:16-17`) despite later sections marking them done. `loader/core/README.md:64-73` still lists only three root areas and omits the implemented `garrysmod/data` and `garrysmod/addons` areas. `companion/README.md:12` says M6 will add the restart notice, although its Lua already contains it. The companion script document says there is no network or timer while the Lua registers a 600-second timer and calls `steamworks.FileInfo` (`nativeloader.lua:185-220`). `tools/test.ps1.md` omits the integration evidence folders its CTests write.
 - **Failure scenario:** A reader using these inventories rather than the later appendices gets outdated component status and an incomplete path policy.
 - **Evidence:** Direct comparison with `paths.cpp:79-87`, `nativeloader.lua:181-220` and the later M5/M6 sections of `COMPONENTS.md`.
 - **Confidence:** likely (direct document-to-code trace).
 - **Suggested fix:** Reconcile the headline rows and READMEs with the implemented M5/M6 behavior.
+
+
+### R1-028 — Documented direct tests write scratch to system temp (P2, Area F)
+
+- **What is wrong:** `tools/tests/test_check_repo.py:32`, `tools/steam/tests/test_install_tools.py:24` and `tools/steam/tests/test_steam_manifest.py:12` call `tempfile.TemporaryDirectory()` without a `dir`. Their `.md` files document direct `python -m unittest` invocation. Outside `tools/test.ps1` (which temporarily redirects `TEMP`/`TMP`), those commands use the system temp directory, contrary to AGENTS.md rule 9.
+- **Failure scenario:** A developer follows the documented direct test command in a normal shell. Synthetic repositories and Steam manifests are created under the system temporary folder, where this project's earlier fixture builds were blocked by Windows Defender.
+- **Evidence:** Exact source/doc trace. This review did not run the direct command, because it would deliberately write outside the allowed `out/` tree.
+- **Confidence:** likely (traced, not executed due the R1 boundary).
+- **Suggested fix:** Pass a repo-local `out/tmp` directory explicitly in each test fixture, or make their documented direct invocation use a wrapper that sets and restores `TEMP` and `TMP`.
+
+
+### R1-029 — Python drivers can fail to install or roll back under inherited PowerShell module paths (P1, Areas D/F)
+
+- **What is wrong:** `poc_session.py` hardcodes `powershell` for installer/uninstaller calls (`tools/poc_session.py:69-71`); `field_snapshot.py` does the same for rollback uninstall (`tools/field_snapshot.py:292-298`), and its integration test uses it when a build is present (`tools/tests/test_field_snapshot.py:95-99`). A Python process launched from `pwsh` can pass PowerShell Core's module paths first in `PSModulePath`. Windows PowerShell 5.1 then fails to autoload `Get-FileHash`, which `install-loader.ps1` requires (`:59`), even though the WindowsPowerShell module directory is also present.
+- **Failure scenario:** A field rollback is launched from a `pwsh` environment after the bootstrap is installed. The uninstaller's legacy PowerShell child cannot resolve `Get-FileHash`, exits nonzero, and `field_snapshot.rollback` aborts before restoring the install. The same environment makes `poc_session install` fail. The initial clean-worktree test pass concealed this because its `BUILD` branch was absent until after compilation.
+- **Evidence:** The second `tools/test.ps1` in this review failed `test_field_snapshot.test_rollback_puts_everything_back` at the installer with `Get-FileHash` not recognized; Python tests 44 with one failure and five skips, while CTest still passed 16/16. `out/r1-review/evidence/check_powershell_module.txt` shows a legacy child with inherited module paths cannot find the cmdlet, but the same child with only WindowsPowerShell paths resolves `Microsoft.PowerShell.Utility`. The earlier R1-014 synthetic wrapper repro needed `pwsh` for the same reason.
+- **Confidence:** confirmed (post-build full test and isolated module-path check).
+- **Suggested fix:** Select `pwsh` when available, as CMake's tests do, or launch Windows PowerShell with a compatible module path. Make the full test runner exercise this branch after building and require it to pass.
 
 ## Checked and fine
 
@@ -317,10 +338,10 @@ The `nl_tests` harness counts failed `CHECK`/`REQUIRE` assertions and fails if n
 |---|---|
 | `companion/nativeloader/lua/autorun/client/nativeloader.lua` | Reviewed |
 | `loader/cli/nlctl.cpp` | Reviewed |
-| `loader/cli/tests/crosscheck_gmapack.py` | Partly reviewed |
-| `loader/cli/tests/e2e_deploy.py` | Partly reviewed |
-| `loader/cli/tests/e2e_plan.py` | Partly reviewed |
-| `loader/cli/tests/uninstall_tests.ps1` | Partly reviewed |
+| `loader/cli/tests/crosscheck_gmapack.py` | Reviewed |
+| `loader/cli/tests/e2e_deploy.py` | Reviewed |
+| `loader/cli/tests/e2e_plan.py` | Reviewed |
+| `loader/cli/tests/uninstall_tests.ps1` | Reviewed |
 | `loader/core/include/nl/activate.h` | Reviewed |
 | `loader/core/include/nl/cmdline.h` | Reviewed |
 | `loader/core/include/nl/config.h` | Reviewed |
@@ -382,7 +403,7 @@ The `nl_tests` harness counts failed `CHECK`/`REQUIRE` assertions and fails if n
 | `loader/proxy/runtime.cpp` | Reviewed |
 | `loader/proxy/runtime.h` | Reviewed |
 | `loader/proxy/startup.cpp` | Reviewed |
-| `loader/proxy/tests/activation_integration.py` | Partly reviewed |
+| `loader/proxy/tests/activation_integration.py` | Reviewed |
 | `loader/proxy/tests/activation_probe.cpp` | Reviewed |
 | `loader/proxy/tests/activation_probe.h` | Reviewed |
 | `loader/proxy/tests/check_imports.py` | Reviewed |
@@ -393,40 +414,40 @@ The `nl_tests` harness counts failed `CHECK`/`REQUIRE` assertions and fails if n
 | `loader/proxy/tests/fixture_shader.cpp` | Reviewed |
 | `loader/proxy/tests/fixture_static.cpp` | Reviewed |
 | `loader/proxy/tests/host.cpp` | Reviewed |
-| `loader/proxy/tests/install_tests.ps1` | Partly reviewed |
-| `loader/proxy/tests/session_integration.py` | Partly reviewed |
+| `loader/proxy/tests/install_tests.ps1` | Reviewed |
+| `loader/proxy/tests/session_integration.py` | Reviewed |
 | `loader/proxy/tests/session_probe.cpp` | Reviewed |
 | `loader/proxy/tests/session_probe.h` | Reviewed |
 | `loader/proxy/tests/test_activation.cpp` | Reviewed |
 | `loader/proxy/tests/test_proxy.cpp` | Reviewed |
-| `loader/proxy/version.rc.in` | Partly reviewed |
-| `loader/tests/cmdline_host.cpp` | Partly reviewed |
+| `loader/proxy/version.rc.in` | Reviewed |
+| `loader/tests/cmdline_host.cpp` | Reviewed |
 | `loader/tests/deploy_faults.py` | Reviewed |
 | `loader/tests/fault_host.cpp` | Reviewed |
-| `loader/tests/gma_fixture.h` | Partly reviewed |
+| `loader/tests/gma_fixture.h` | Reviewed |
 | `loader/tests/nl_test.h` | Reviewed |
-| `loader/tests/test_activate.cpp` | Partly reviewed |
-| `loader/tests/test_cmdline.cpp` | Partly reviewed |
-| `loader/tests/test_config.cpp` | Partly reviewed |
-| `loader/tests/test_crc32.cpp` | Partly reviewed |
-| `loader/tests/test_deploy.cpp` | Partly reviewed |
-| `loader/tests/test_discovery.cpp` | Partly reviewed |
-| `loader/tests/test_fs.cpp` | Partly reviewed |
-| `loader/tests/test_gma.cpp` | Partly reviewed |
-| `loader/tests/test_journal.cpp` | Partly reviewed |
-| `loader/tests/test_json.cpp` | Partly reviewed |
-| `loader/tests/test_lzma.cpp` | Partly reviewed |
-| `loader/tests/test_m5.cpp` | Partly reviewed |
+| `loader/tests/test_activate.cpp` | Reviewed |
+| `loader/tests/test_cmdline.cpp` | Reviewed |
+| `loader/tests/test_config.cpp` | Reviewed |
+| `loader/tests/test_crc32.cpp` | Reviewed |
+| `loader/tests/test_deploy.cpp` | Reviewed |
+| `loader/tests/test_discovery.cpp` | Reviewed |
+| `loader/tests/test_fs.cpp` | Reviewed |
+| `loader/tests/test_gma.cpp` | Reviewed |
+| `loader/tests/test_journal.cpp` | Reviewed |
+| `loader/tests/test_json.cpp` | Reviewed |
+| `loader/tests/test_lzma.cpp` | Reviewed |
+| `loader/tests/test_m5.cpp` | Reviewed |
 | `loader/tests/test_main.cpp` | Reviewed |
-| `loader/tests/test_manifest.cpp` | Partly reviewed |
-| `loader/tests/test_package.cpp` | Partly reviewed |
-| `loader/tests/test_paths.cpp` | Partly reviewed |
-| `loader/tests/test_planner.cpp` | Partly reviewed |
-| `loader/tests/test_sha256.cpp` | Partly reviewed |
-| `loader/tests/test_startup.cpp` | Partly reviewed |
-| `loader/tests/test_status.cpp` | Partly reviewed |
-| `loader/tests/test_vdf.cpp` | Partly reviewed |
-| `loader/tests/test_version.cpp` | Partly reviewed |
+| `loader/tests/test_manifest.cpp` | Reviewed |
+| `loader/tests/test_package.cpp` | Reviewed |
+| `loader/tests/test_paths.cpp` | Reviewed |
+| `loader/tests/test_planner.cpp` | Reviewed |
+| `loader/tests/test_sha256.cpp` | Reviewed |
+| `loader/tests/test_startup.cpp` | Reviewed |
+| `loader/tests/test_status.cpp` | Reviewed |
+| `loader/tests/test_vdf.cpp` | Reviewed |
+| `loader/tests/test_version.cpp` | Reviewed |
 | `third_party/lzma/7zTypes.h` | Reviewed |
 | `third_party/lzma/Compiler.h` | Reviewed |
 | `third_party/lzma/LzmaDec.c` | Reviewed |
@@ -438,7 +459,7 @@ The `nl_tests` harness counts failed `CHECK`/`REQUIRE` assertions and fails if n
 | `tools/diag/pe_imports.py` | Reviewed |
 | `tools/field_snapshot.py` | Reviewed |
 | `tools/gmapack/gmapack.py` | Reviewed |
-| `tools/gmapack/tests/test_gmapack.py` | Partly reviewed |
+| `tools/gmapack/tests/test_gmapack.py` | Reviewed |
 | `tools/install-loader.ps1` | Reviewed |
 | `tools/lib/VsDevEnv.psm1` | Reviewed |
 | `tools/package_fixes.py` | Reviewed |
@@ -450,19 +471,19 @@ The `nl_tests` harness counts failed `CHECK`/`REQUIRE` assertions and fails if n
 | `tools/smoke_test.ps1` | Reviewed |
 | `tools/steam/make_vanilla_copy.py` | Reviewed |
 | `tools/steam/steam_manifest.py` | Reviewed |
-| `tools/steam/tests/_fixtures.py` | Partly reviewed |
-| `tools/steam/tests/test_install_tools.py` | Partly reviewed |
-| `tools/steam/tests/test_steam_manifest.py` | Partly reviewed |
-| `tools/steam/tests/test_vdf.py` | Partly reviewed |
+| `tools/steam/tests/_fixtures.py` | Reviewed |
+| `tools/steam/tests/test_install_tools.py` | Reviewed |
+| `tools/steam/tests/test_steam_manifest.py` | Reviewed |
+| `tools/steam/tests/test_vdf.py` | Reviewed |
 | `tools/steam/vdf.py` | Reviewed |
 | `tools/steam/verify_install.py` | Reviewed |
 | `tools/test.ps1` | Reviewed |
-| `tools/tests/test_check_repo.py` | Partly reviewed |
-| `tools/tests/test_companion.py` | Partly reviewed |
-| `tools/tests/test_compare_frames.py` | Partly reviewed |
-| `tools/tests/test_field_snapshot.py` | Partly reviewed |
-| `tools/tests/test_package_fixes.py` | Partly reviewed |
-| `tools/tests/test_package_runtime.py` | Partly reviewed |
+| `tools/tests/test_check_repo.py` | Reviewed |
+| `tools/tests/test_companion.py` | Reviewed |
+| `tools/tests/test_compare_frames.py` | Reviewed |
+| `tools/tests/test_field_snapshot.py` | Reviewed |
+| `tools/tests/test_package_fixes.py` | Reviewed |
+| `tools/tests/test_package_runtime.py` | Reviewed |
 | `tools/uninstall-loader.ps1` | Reviewed |
 | `CMakeLists.txt` | Reviewed |
 | `CMakePresets.json` | Reviewed |
@@ -480,8 +501,8 @@ The `nl_tests` harness counts failed `CHECK`/`REQUIRE` assertions and fails if n
 - No real GMod, PoC or field launch, game-install write, user `console.log` read, or read of the main checkout's `out/m7/snapshot`: prohibited by the R1 brief. Real renderer behavior, Steam root-launcher command-line behavior and actual engine-DLL hook timing remain for Claude's PoC checks after fixes.
 - No registry mutation beyond the baseline `tools/test.ps1` throwaway-key tests. R1-011 used mocked `reg` commands, so the actual failure path needs an isolated registry test before any field rollback.
 - No network, Workshop upload or publication. The private upload test remains the user's decision. NVIDIA redistribution and GPL release obligations were not verified against current external terms.
-- LuaJIT was unavailable for the companion Python tests in the baseline; optional MSVC `/analyze`, ASan and parser fuzzing were not run. The Python package tests were rerun after the build: 24 passed, no skips.
-- **Review continuation:** the coverage table has 42 partly reviewed test and auxiliary files (chiefly integration scripts and unit test bodies); examine their assertions and fixtures line by line. Compare every script's `.md` usage, side effects and exit codes with its implementation. Recheck findings and counts after that pass. Vendored LZMA and gmapack were checked for provenance and licence, not audited internally.
+- LuaJIT was unavailable for the companion Python tests in the baseline; optional MSVC `/analyze`, ASan and parser fuzzing were not run. The Python package tests were rerun after the build: 24 passed, no skips. A later full test run exposed R1-029 and failed its Python tool group; its CTest passed.
+- **Coverage limit:** every listed source file and script document was reviewed within the brief's scope; vendored LZMA and gmapack were checked for provenance and licence, not audited internally. Findings based on mocked registry/process faults still need the isolated follow-up checks stated above.
 
 ## Questions
 
