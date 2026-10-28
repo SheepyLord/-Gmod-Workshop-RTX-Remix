@@ -61,11 +61,13 @@ The manifest is strict JSON (RFC 8259, UTF-8, no comments, trailing commas or du
 | `id` | yes | 1-64 characters of `a-z 0-9 -`, starting with a letter or digit; one active version per id |
 | `name` | no | 1-128 bytes of UTF-8; defaults to `id` |
 | `version` | yes | [Semantic Versioning 2.0.0](https://semver.org); compared by SemVer precedence, build metadata ignored |
-| `kinds` | yes | non-empty, no repeats; `remix-runtime`, `lua-binary-module`, `root-files` |
+| `kinds` | yes | non-empty, no repeats; `remix-runtime`, `lua-binary-module`, `root-files`, and from loader 0.2.0 (M5) `lua-addon`, `patch-set`, `module-override` |
 | `requires_loader` | no | `">=MAJOR.MINOR.PATCH"`: the minimum loader version |
+| `requires_remix` | no (loader 0.2.0) | `true`: the package only makes sense with a Remix runtime; in a start without an active runtime its add-on folders (`garrysmod/addons/<name>/`) are left out of GMod's searches, in memory ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)). Default `false` |
 | `files` | yes | every file under `native/` except the manifest, each `{ "size": N, "sha256": "<64 lowercase hex>" }` |
 | `remix` | with `remix-runtime` only | see below |
-| `root_files` | for `root-files` / `lua-binary-module` | see below |
+| `root_files` | for `root-files` / `lua-binary-module` / `lua-addon` | see below |
+| `patch_sets`, `module_overrides`, `session_cvars` | M5, optional | RTX-session extras, see below |
 
 `files` keys must pass the path rules (below), lie under `native/payload/` or `native/root/`, and be
 unique without case. When a package is loaded, `check_contents` requires every listed file to be in
@@ -103,6 +105,8 @@ a folder or a single file.
 | `rtx-remix/mods/<mod>/...` | `root-files` | either |
 | `garrysmod/lua/bin/...` (binary Lua modules) | `lua-binary-module` | either |
 | `garrysmod/cfg/...` | `root-files` | `create-only` (never replaces the user's configs) |
+| `garrysmod/data/<folder>/...` (seed data; not `native-loader`) | `root-files` | `create-only` (what the game writes there later stays the user's) |
+| `garrysmod/addons/<addon>/...` (Lua add-on folders) | `lua-addon` | `replace-owned` ([ADR 0011](decisions/0011-lua-addon-folders.md)) |
 
 Anything else is refused, including `bin/`, the game root itself (`rtx.conf`, `dxvk.conf`,
 `user.conf`) and `garrysmod/lua/autorun`. Root files may not overlap each other; each must have
@@ -118,10 +122,30 @@ files under `native/root/<path>`; every file under `native/root/` must belong to
 - At a `create-only` target, someone else's file is simply kept.
 - A file the loader placed that has changed since stays as it is and is reported.
 
-### Planned kinds
+### RTX-session extras (loader 0.2.0, M5)
 
-`patch-set` (in-memory byte patches applied as engine DLLs load) and `module-override` (e.g.
-`stdshader_dx6.dll`) are planned for M5. A schema-1 loader refuses manifests that use them.
+Applied only in sessions where a runtime activates, so RTX off stays vanilla
+([ADR 0010](decisions/0010-rtx-session-extras.md)). An older loader refuses manifests that use them.
+
+```json
+"patch_sets": [{ "module": "engine.dll", "patches": [
+  { "name": "mod_loadlighting_hdr", "find": "ff90????????85c0742b", "offset": 0, "replace": "b80200000090" } ] }],
+"module_overrides": [{ "module": "stdshader_dx6.dll", "file": "native/payload/shaders/stdshader_dx6.dll" }],
+"session_cvars": { "r_3dsky": "0", "mat_softwareskin": "1" }
+```
+
+| Field | Rule |
+|---|---|
+| `patch_sets` | kind `patch-set`; `module` a lowercase DLL base name (`[a-z0-9_]+.dll`), each once; per patch: `name` `[a-z0-9_]{1,64}` unique in the package, `find` 1-256 bytes as lowercase hex pairs or `??` (not all `??`), `offset` (default 0) and `replace` (lowercase hex) entirely inside the matched bytes; at most 256 patches. The bootstrap writes a patch when the DLL is mapped, only if its pattern occurs exactly once across the module's sections, and only in `-insecure` sessions unless `config.json` sets `patch_sets.require_insecure: false` |
+| `module_overrides` | kind `module-override`; `module` a lowercase DLL base name the game loads from `bin/win64` by full path; `file` a payload path listed in `files`, with the same file name. A load of exactly `<root>\bin\win64\<module>` by a game module loads `file` instead |
+| `session_cvars` | console variable assignments run through a generated `cfg/nativeloader_session.cfg`: names `[A-Za-z0-9_]{1,64}` starting with `r_`, `mat_`, `cl_`, `gmod_`, `rtx_` or `studio_` (or `sv_cheats`), values `[A-Za-z0-9_.+-]{0,32}`, at most 256. The user's archived values are recorded first and put back at the next start without RTX |
+
+`remix.launch_args` also accepts `-insecure` from loader 0.2.0.
+
+A package's own files are on disk in every session, RTX or not. Lua add-ons that only make sense with
+Remix (the RTX fixes') belong in a package marked `"requires_remix": true`: without an active runtime
+the bootstrap hides its add-on folders from GMod, so their Lua does not run
+([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)).
 
 ## Path rules
 

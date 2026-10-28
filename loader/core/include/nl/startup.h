@@ -4,6 +4,7 @@
 #include "nl/deploy.h"
 #include "nl/journal.h"
 #include "nl/planner.h"
+#include "nl/status.h"
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -31,6 +32,7 @@ struct Prepared {
   bool may_activate = false;
   std::string reason;
   double elapsed_ms = 0;
+  std::vector<status::PackageSource> sources;  // the committed generation's packages and their sources
 };
 
 // Missing/disabled/invalid config or invalid journal never reaches the deployer. Successful

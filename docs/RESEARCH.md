@@ -478,3 +478,122 @@ install's launch line (`_debug_tools\launch_gmod_keeplogs.bat:12`) is `-console 
 +mat_disable_d3d9ex 1 -nod3d9ex -windowed -noborder -w 3840 -h 2160 -tickrate 128 -multirun -insecure
 +r_forcehwlight 1`; RTXLauncher adds `-noworkshop` only when its `LoadWorkshopAddons` is false (the
 user's is true; corrects section 4).
+
+## 13. M5 on the PoC (2026-10-28, Claude)
+
+**Add-on mounting.** GMod x64 mounts an add-on **folder** in `garrysmod/addons` ("Adding Filesystem
+Addon 'addons/nl_probe_folder'", its client autorun ran) but not a loose `.gma` placed there, plain
+Lua or not (no message, the Lua did not run): `out/poc-sessions/m5-mount-probe`. Local packages
+therefore deploy their Lua as add-on folders ([ADR 0011](decisions/0011-lua-addon-folders.md)).
+
+**`SetDllDirectoryW` broke the RTX fixes.** garrysmod_common's `ModuleLoader.cpp` finds GMod's
+modules with `GetModuleHandleExA(0, "bin/win64/lua_shared.dll", ...)`, a path relative to the working
+directory. With M4's `SetDllDirectoryW(<runtime folder>)`, which also drops the working directory from
+the DLL search, that lookup failed: the fixes' module printed "Failed to get ILuaConVars interface" and
+"Failed to create or find convar" for its 15 variables, and the game ended with `0xC0000409` right
+after the map loaded. With the runtime folder first on `PATH` instead, the module reports "Got
+ILuaConVars interface" and every variable ready, and the session quits normally
+([ADR 0010](decisions/0010-rtx-session-extras.md) point 4).
+
+**The loader's RTX session on the PoC** (runtime B with the reference install's `rtx.conf` and
+`dxvk.conf` as layers, the fixes package built from the fixes repo with `GarrysMod_RTX_c`'s modules,
+the reference install's user content copied by [`poc_parity.py`](../tools/poc_parity.py.md)):
+
+- First start deployed both packages (445 changes, 1.43 GB) in 7.3 s, activation 31 ms; a later start
+  changed nothing, deployment 54 ms, start-up 80 ms in all.
+- All 7 patch sets applied (engine 2, materialsystem 1, datacache 1, shaderapidx9 3), 15 game modules
+  hooked, `filesystem_stdio`'s load of `bin\win64\stdshader_dx6.dll` redirected to the package's copy,
+  33 session variables run through `nativeloader_session.cfg`.
+- gm_construct at the spawn camera (eye 815.2, 288.0, -79.1, yaw 180, pinned in both installs, HUD
+  hidden): `GarrysMod_RTX_c` and the PoC differ by **block_diff 0.90** (the user's measure: about 1
+  between repeated captures of one install); mean RGB 119.5/113.2/101.0 in both. Evidence
+  `out/m5/acceptance/ref-construct-pinned-2` and `poc-construct-pinned`.
+
+**Session variables do not leak in practice.** After RTX sessions that quit normally, none of the
+33 session variables appears in the PoC's `config.cfg` (they are not archived in this GMod build), so
+the restore record stays empty (`recorded: 0`); the restore is a safety net for variables a package
+adds that are.
+
+**Things in the reference install to know about.** Launched with `-noworkshop`, one of its local
+add-ons opens a "Zippy's Library missing" dialog that dims the frame (closed by `poc_session.py
+--hide-hud`). Its `rtx-remix\mods` holds two **symbolic links**, `codex_new` and `codex_test`, whose
+targets lead back up the tree: a copy that follows links never ends (robocopy wrote about 390 GB before
+it was stopped). `poc_parity.py` skips linked mods and passes `/XJ`. Five of its 29 add-on folders
+are symbolic links or junctions to the user's working copies under `H:\BACKUP_20260815\Modding\ipg\`
+(`!advanced_material_editor`, `!gmod_bullet_break_simulator`, `advanced_bodygroup_tool`,
+`eeer_body_impact_sounds`, `enhanced_entity_expression_response`; 8.4 GB with their `.git`).
+
+**Loading the user's test save without anyone at the keyboard.**
+
+- The save's map, `gm_csgosafehouse`, exists only as Workshop item 944959992 (a legacy LZMA `.bin`).
+  With `-noworkshop`, `gm_load "saves/<name>.gms"` does nothing and prints nothing. With bad
+  arguments it prints `usage: gm_load <path>`, so the command itself exists.
+- With the Workshop on, the reference install printed nothing for 15 minutes after the material
+  system started. It was still busy (about 2 cores, 9 GB working set) when the session driver gave
+  up. The user has 753 Workshop archives installed.
+- `host_workshop_map` is unknown on a single-player client.
+- What works: client Lua `steamworks.DownloadUGC("944959992", cb)` hands back
+  `cache/workshop/944959992.gma` (the legacy item decompressed) at once, and `game.MountGMA` on it
+  returns true with one file. `gm_load` then changes level to the save's map.
+  `poc_session.py --mount-workshop` does this.
+- On that level change both installs log "Couldn't write cache/map_pack.bsp to mount embedded
+  content!" (GMod's handling of a map inside a mounted `.gma`). The PoC's extracted copy of the map
+  was removed so both load it the same way.
+- Text sent through `WM_COPYDATA` while the RTX fixes reload models after a map change can be
+  accepted by the window and then lost. The camera Lua sent 3 s after `Clientside Lua startup!` never
+  ran, while a `quit` sent later did.
+
+**The safehouse comparison, and what the remaining difference is not.** Reference
+`ref-safehouse-mounted` against PoC captures with growing parity, all at the user's camera and
+loading the save through the mounted Workshop map:
+
+| PoC capture | block_diff |
+|---|---|
+| + the reference's 16 plain add-ons and the MMD Hot Loader's and RTX bridges' native files | 3.23 |
+| + the Advanced Material Editor's data (`garrysmod/data/advmat`: 29 rules, 32 RTX profiles) | 3.23 |
+| + the 5 add-ons linked to working copies, and the 2 linked Remix mods (`codex_new`, `codex_test`) | 3.18 |
+| + the reference's own `~gmod_topbr` mod instead of the package's | 3.24 |
+
+Two reference frames 4 s apart differ by 0.83. These are byte-identical in both installs: `d3d9.dll`
+(a8e39d93), `gmcl_RTXFixesBinary_win64.dll` (485667b7), `stdshader_dx6.dll` (4bf218db),
+`rtx.conf`, `dxvk.conf`, `user.conf`, `config.cfg`, `base_mod`, `gm_poolrooms_rtx` and `rtx_water`.
+Geometry, lighting and shadows match. The difference sits in 41-46 of 880 blocks above 8, on the
+woven chair backs, which are darker in the PoC. What could not be made equal is the game build: the
+reference runs GMod 2026.09.15 (10174) with older `engine.dll` and VPKs, the PoC the current
+2026.10.26 (10215). Depot files are never written, so that difference stays.
+
+**Without RTX, a deployed package's Lua add-ons still run** (PoC, `remix.enabled: false`, before
+ADR 0013).
+
+- GMod mounted the fixes' nine add-on folders ("Adding Filesystem Addon 'addons/remixbinary'").
+- Their server Lua initialised ("[RTX Flashlight] Default flashlight override: ENABLED").
+- `cl_rtx.lua` `require`s the binary module whenever it is installed. The module noticed Remix was
+  missing ("remix::loadRemixDllAndInitialize() failed"), applied none of its own runtime patches
+  ("[MemoryPatcher] Disabled 0 patches") and shut down; RTX Water stayed off.
+- The module's own PatchManager is a second patcher besides the loader's patch sets. In RTX sessions
+  it resolves the same seven culling patches by its own locators and applies them, then restores them
+  at map exit.
+- `filesystem_stdio.dll` imports `FindFirstFileA`, `FindNextFileA`, `FindFirstFileExW` and
+  `FindNextFileW` from KERNEL32, which is where ADR 0013 hides the add-ons. `engine.dll` and
+  `tier0.dll` import only the `ExW`/`W` pair.
+
+**The fixes write into their own deployed files.** The ToPBR converter rewrote
+`rtx-remix/mods/~gmod_topbr/topbr_generation.txt` in the first PoC session. The deployer then reports
+it ("changed after the loader placed it; left as it is"), and an uninstall leaves it behind. A
+reinstall then refused the whole fixes package: "topbr_generation.txt already exists and was not
+placed by the loader". `package_fixes.py` now deploys that mod create-only.
+
+## 14. Workshop packing and updates (M6, 2026-10-28, Claude)
+
+- `gmad.exe create` (the PoC's `bin\win64\gmad.exe`) on a folder holding `lua/autorun/a.lua`,
+  `native/manifest.json` and `native/payload/test.dll`: "native/manifest.json [Not allowed by
+  whitelist]", "native/payload/test.dll [Not allowed by whitelist]", "File list verification failed",
+  no `.gma` written. The same folder with only the Lua file packs (181 bytes). Evidence
+  `out/m6/gmad-probe`.
+- Not tried: `gmpublish` (it uploads, with no dry run; outward-facing).
+- The deployer handles LZMA-wrapped legacy Workshop items end to end, an update included
+  (`loader/cli/tests/e2e_deploy.py`, M3).
+- `steamworks.FileInfo(id, callback)` gives the item's Workshop `updated` time; the companion compares
+  it with the `time_updated` that `appworkshop_4000.acf` had at start-up (now in `status.json`
+  `packages`) and asks for a restart when it is newer (`tools/tests/test_companion.py`).
+

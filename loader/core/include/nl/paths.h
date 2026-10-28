@@ -31,6 +31,8 @@ enum class RootArea {
   rtx_remix_mods,  // rtx-remix/mods/<mod>/...
   lua_bin,         // garrysmod/lua/bin/... (binary Lua modules)
   cfg,             // garrysmod/cfg/... (new files only)
+  lua_addons,      // garrysmod/addons/<addon>/... (Lua add-on folders, M5)
+  data,            // garrysmod/data/<folder>/... (seed data, new files only; not native-loader, M5)
 };
 RootArea root_area(std::string_view safe_path);
 const char* area_name(RootArea area);

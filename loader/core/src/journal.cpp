@@ -60,8 +60,8 @@ bool file_area(std::string_view path) {
 // Folders it may create: those, and the folders above the root areas.
 bool folder_area(std::string_view path) {
   static constexpr std::string_view kParents[] = {"garrysmod",     "garrysmod/lua",          "garrysmod/lua/bin",
-                                                  "garrysmod/cfg", "rtx-remix",              "rtx-remix/mods",
-                                                  "native-loader/packages", "native-loader/backup"};
+                                                  "garrysmod/cfg", "garrysmod/addons",       "garrysmod/data",         "rtx-remix",
+                                                  "rtx-remix/mods", "native-loader/packages", "native-loader/backup"};
   const std::string folded = paths::fold(path);
   return std::find(std::begin(kParents), std::end(kParents), folded) != std::end(kParents) || file_area(path);
 }
@@ -126,8 +126,50 @@ manifest::Remix remix_of(const Value& value) {
   return r;
 }
 
+manifest::Session session_of(const Value& value) {
+  only_keys(value, "session", {"patch_sets", "module_overrides", "cvars"});
+  manifest::Session s;
+  for (const Value& item : required(value, "patch_sets", "session").as_array("session patch_sets")) {
+    only_keys(item, "patch set", {"module", "patches"});
+    manifest::PatchSet set;
+    set.module = required(item, "module", "patch set").as_string("patch set module");
+    if (!manifest::valid_module_name(set.module)) fail("patch set module \"" + set.module + "\" is invalid");
+    for (const Value& entry : required(item, "patches", "patch set").as_array("patch set patches")) {
+      only_keys(entry, "patch", {"name", "find", "offset", "replace"});
+      manifest::Patch patch;
+      patch.name = required(entry, "name", "patch").as_string("patch name");
+      patch.find = required(entry, "find", "patch").as_string("patch find");
+      patch.replace = required(entry, "replace", "patch").as_string("patch replace");
+      const std::int64_t offset = required(entry, "offset", "patch").as_int("patch offset");
+      const auto pattern = manifest::parse_pattern(patch.find);
+      const auto bytes = manifest::parse_hex(patch.replace);
+      if (pattern.empty() || bytes.empty() || offset < 0 || static_cast<std::size_t>(offset) > pattern.size() ||
+          bytes.size() > pattern.size() - static_cast<std::size_t>(offset)) {
+        fail("patch \"" + patch.name + "\" is invalid");
+      }
+      patch.offset = static_cast<std::size_t>(offset);
+      set.patches.push_back(std::move(patch));
+    }
+    s.patch_sets.push_back(std::move(set));
+  }
+  for (const Value& item : required(value, "module_overrides", "session").as_array("session module_overrides")) {
+    only_keys(item, "module override", {"module", "file"});
+    manifest::ModuleOverride o;
+    o.module = required(item, "module", "module override").as_string("module override module");
+    o.file = required(item, "file", "module override").as_string("module override file");
+    if (!manifest::valid_module_name(o.module) || !paths::is_safe(o.file)) fail("module override \"" + o.module + "\" is invalid");
+    s.module_overrides.push_back(std::move(o));
+  }
+  for (const auto& member : required(value, "cvars", "session").as_object("session cvars")) {
+    const std::string& text = member.second.as_string("session cvar value");
+    if (!manifest::valid_cvar_name(member.first) || !manifest::valid_cvar_value(text)) fail("session cvar \"" + member.first + "\" is invalid");
+    s.cvars.emplace_back(member.first, text);
+  }
+  return s;
+}
+
 Package package_of(const Value& value) {
-  only_keys(value, "package", {"id", "version", "manifest_sha256", "source", "location", "payload", "remix"});
+  only_keys(value, "package", {"id", "version", "manifest_sha256", "source", "location", "payload", "remix", "session", "requires_remix"});
   Package p;
   p.id = required(value, "id", "package").as_string("package id");
   if (p.id.empty() || p.id.find('/') != std::string::npos || !paths::is_safe(p.id)) fail("package id \"" + p.id + "\" is invalid");
@@ -145,6 +187,10 @@ Package package_of(const Value& value) {
     });
   }
   if (const Value& remix = required(value, "remix", "package"); !remix.is_null()) p.remix = remix_of(remix);
+  // Absent in journals written before M5.
+  if (const Value* session = value.find("session"); session && !session->is_null()) p.session = session_of(*session);
+  // Written only when true (ADR 0013).
+  if (const Value* flag = value.find("requires_remix")) p.requires_remix = flag->as_bool("package requires_remix");
   return p;
 }
 
@@ -220,10 +266,34 @@ std::string remix_json(const manifest::Remix& r) {
          ", \"prefer_system_vulkan_loader\": " + (r.prefer_system_vulkan_loader ? "true" : "false") + "}";
 }
 
+std::string session_json(const manifest::Session& s) {
+  std::string out = "{\"patch_sets\": [";
+  for (std::size_t i = 0; i < s.patch_sets.size(); ++i) {
+    const auto& set = s.patch_sets[i];
+    out += (i ? ", " : "") + std::string("{\"module\": ") + q(set.module) + ", \"patches\": [";
+    for (std::size_t k = 0; k < set.patches.size(); ++k) {
+      const auto& p = set.patches[k];
+      out += (k ? ", " : "") + std::string("{\"name\": ") + q(p.name) + ", \"find\": " + q(p.find) +
+             ", \"offset\": " + std::to_string(p.offset) + ", \"replace\": " + q(p.replace) + "}";
+    }
+    out += "]}";
+  }
+  out += "], \"module_overrides\": [";
+  for (std::size_t i = 0; i < s.module_overrides.size(); ++i) {
+    out += (i ? ", " : "") + std::string("{\"module\": ") + q(s.module_overrides[i].module) + ", \"file\": " +
+           q(s.module_overrides[i].file) + "}";
+  }
+  out += "], \"cvars\": {";
+  for (std::size_t i = 0; i < s.cvars.size(); ++i) out += (i ? ", " : "") + q(s.cvars[i].first) + ": " + q(s.cvars[i].second);
+  return out + "}}";
+}
+
 std::string package_json(const Package& p) {
   return "{\"id\": " + q(p.id) + ", \"version\": " + q(p.version) + ", \"manifest_sha256\": " + q(p.manifest_sha256) +
          ", \"source\": " + q(p.source) + ", \"location\": " + q(p.location) + ", \"payload\": " + q(p.payload) +
-         ", \"remix\": " + (p.remix ? remix_json(*p.remix) : std::string("null")) + "}";
+         ", \"remix\": " + (p.remix ? remix_json(*p.remix) : std::string("null")) +
+         ", \"session\": " + (p.session.empty() ? std::string("null") : session_json(p.session)) +
+         (p.requires_remix ? ", \"requires_remix\": true" : "") + "}";
 }
 
 std::string generation_json(const std::optional<Generation>& g) {

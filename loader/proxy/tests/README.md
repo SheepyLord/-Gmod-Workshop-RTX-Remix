@@ -16,6 +16,10 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `fixture_runtime.cpp`, `fixture_static.cpp`, `fixture_delay.cpp` | Packaged fake d3d9 with one static and one delay dependency; controlled DllMain failures for rollback tests |
 | `activation_integration.py` | M4 synthetic acceptance and unchanged-startup timing; [usage](activation_integration.py.md) |
 | `install_tests.ps1` | Synthetic installer/hash/foreign-file/Steam protection cases; [usage](install_tests.ps1.md) |
+| `fixture_engine.cpp`, `fixture_shader.cpp` | M5: a fake `engine.dll` whose marker a patch set rewrites (DllMain copies it, so the probe sees whether the patch came first) and a `stdshader_dx6.dll` to override |
+| `fixture_filesystem.cpp` | M5 (ADR 0013): a fake `filesystem_stdio.dll` that lists a folder with `FindFirstFileA`/`FindNextFileA` and `FindFirstFileExW`/`FindNextFileW` through its own imports, as GMod's does when it mounts add-ons |
+| `session_probe.h`, `session_probe.cpp` | M5 host probe (`--m5-probe`): loads `bin\win64\engine.dll` and `stdshader_dx6.dll` as the engine does, lists `garrysmod\addons` (relative and absolute) and `garrysmod\cfg` through the fake `filesystem_stdio.dll`, and records it all with the command line |
+| `session_integration.py` | M5 synthetic acceptance: patch before DllMain, override, session cfg, restore; [usage](session_integration.py.md) |
 | `check_imports.py` | Standard-library PE import/delay-import check: the bootstrap must import only KERNEL32; [usage](check_imports.py.md) |
 
 Run all tests through `tools/build.ps1`, or select `nl_proxy_tests`, `nl_proxy_generated_exports`,
@@ -34,3 +38,10 @@ source failure/removal/Workshop disable, locks/pending recovery, another same-ro
 configuration/journal, DLL initialization failures, swap fallback, path/cwd/size preconditions and
 status cleanup. It records ten unchanged-startup timing samples and keeps text evidence under
 `out/m4-synthetic`. No real game is launched by CTest.
+
+M5 adds `nl_session_integration`: a runtime package and a fixes development folder (patch set,
+override, session variables) in a synthetic game whose `bin\win64` holds the two M5 fixtures. Five
+scenarios: RTX with `-insecure` (patched before DllMain, override, session cfg, user values recorded),
+without `-insecure` (no patches, override still), RTX off (vanilla engine and shader, restore cfg run
+once), the next start (record forgotten), and a later RTX session (recorded again). Evidence under
+`out/m5-synthetic`.

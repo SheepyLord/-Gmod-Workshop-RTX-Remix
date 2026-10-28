@@ -7,6 +7,7 @@
 // which is the runtime's working directory, so the install path never enters a comma-separated list.
 
 #include "nl/config.h"
+#include "nl/manifest.h"
 #include "nl/journal.h"
 
 #include <functional>
@@ -48,6 +49,23 @@ struct Plan {
   // passed. ASCII, in the manifest's order.
   std::vector<std::string> launch_args;
   std::vector<std::string> present_args;
+
+  // RTX-session extras from every deployed package (M5, ADR 0010), in generation order. Only
+  // filled when the plan activates; the bootstrap applies them for this session only.
+  struct PatchSet {
+    std::string package;
+    manifest::PatchSet set;
+  };
+  struct Override {
+    std::string package;
+    std::string module;  // DLL base name the game loads from bin/win64
+    std::string file;    // the replacement, relative to the game root
+  };
+  std::vector<PatchSet> patch_sets;
+  std::vector<Override> module_overrides;
+  std::vector<std::pair<std::string, std::string>> session_cvars;  // a later package wins a name
+  std::vector<std::string> notes;  // e.g. a module two packages override (the first wins)
+  bool patch_sets_need_insecure = true;  // config patch_sets.require_insecure
 };
 
 // The runtime package is the deployed package that has a remix section and a payload. With none, or

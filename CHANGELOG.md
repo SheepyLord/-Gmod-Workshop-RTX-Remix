@@ -6,6 +6,77 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (M7: field install)
+
+- `tools/field_snapshot.py`: a snapshot of what the loader and a test session can change in a real
+  install (every non-depot file in the folders packages and sessions write to, by copy: the user's
+  DXVK `d3d9.dll`, `vulkan-1.dll`, MMD Hot Loader and Jolt files, configs, logs, databases; folder
+  listings; size and time of everything below `garrysmod/data` and `garrysmod/settings`; GMod's
+  shared registry key), and a one-command rollback: uninstall, move whatever is new into the
+  snapshot's debris folder (links moved, never followed), write changed files back in place (hard
+  links hold), make the registry key equal to the export again, then check listings, hashes, registry
+  and depot files. Tests in `tools/tests/test_field_snapshot.py` on a synthetic install.
+
+### Added (M6: Workshop route)
+
+- Distribution route ([ADR 0012](docs/decisions/0012-distribution-route.md)): native packages are
+  released as downloads and allowlisted as local sources; the Workshop stays a supported source. GMod's
+  `gmad.exe` refuses the package format ("Not allowed by whitelist" for `native/manifest.json` and a
+  DLL); nothing was published.
+- `status.json` lists each deployed package with its source and, for a Workshop item, the update time
+  installed at start-up; the Lua companion compares it with `steamworks.FileInfo` (at start and every
+  ten minutes) and asks for a restart once when Steam has a newer version. Tested under LuaJIT
+  (`tools/tests/test_companion.py`).
+
+### Added (M5: RTX fixes)
+
+- RTX-session extras ([ADR 0010](docs/decisions/0010-rtx-session-extras.md)), applied only when a
+  runtime activates: **patch sets** (byte patches written when an engine DLL is mapped, before its code
+  runs, only where the pattern occurs exactly once; `-insecure` sessions by default), **module
+  overrides** (a game load of `bin\win64\stdshader_dx6.dll` loads the package's copy, through import
+  hooks installed at map time) and **session console variables** (a generated
+  `cfg/nativeloader_session.cfg` run with `+exec`; the user's archived values recorded first and put
+  back once at the next start without RTX). `nl::patch`, `nl::session`, the bootstrap's DLL-load
+  watcher (`loader/proxy/modules.cpp`), `session.json`, and the manifest and journal fields.
+- Add-ons of RTX-only packages are hidden from sessions without RTX
+  ([ADR 0013](docs/decisions/0013-rtx-only-addons-hidden-without-rtx.md)): manifest flag
+  `requires_remix` (kept in the journal); when no runtime is active, import hooks on
+  `filesystem_stdio.dll`'s `FindFirstFile*`/`FindNextFile*` leave those packages' folders out of
+  GMod's searches of `garrysmod\addons`, in memory, reported as `session.hidden_addons`. Found by
+  the PoC: with RTX off the fixes' Lua still ran. Tested in `nl_session_integration` with a fake
+  `filesystem_stdio.dll`.
+- Package areas `garrysmod/addons/<addon>/` (kind `lua-addon`, [ADR 0011](docs/decisions/0011-lua-addon-folders.md):
+  GMod x64 mounts add-on folders but not a loose `.gma`) and `garrysmod/data/<folder>/` (create-only
+  seed data). `remix.launch_args` accepts `-insecure`; `package_runtime.py --insecure` adds it.
+- Loader version 0.2.0. Tests: `test_m5.cpp` (129 core cases) and the synthetic
+  `nl_session_integration` (a fake engine DLL patched before its DllMain, the override, the session
+  cfg and its restore).
+- `tools/poc_session.py` talks to the game through `WM_COPYDATA` console text to Source's `Valve001`
+  window: a normal `quit` in single-player, a pinned camera and a hidden HUD through client Lua hooks,
+  save loading (`--mount-workshop` mounts the save's Workshop map from Lua in a `-noworkshop`
+  session); console text waits out a busy window, and Lua sent after a map change is checked and sent
+  again; `--reference` (and `--allow-steam-managed`) leaves the install's `console.log` in place.
+- `tools/poc_parity.py`: copies the reference install's user content (user.conf, saved Lua settings,
+  mounts, Remix mods, a save and its Workshop map; on request its add-on folders, including the ones
+  linked to working copies, and named native files such as the MMD Hot Loader's) into the PoC for a
+  like-for-like comparison, in layers, and restores the PoC exactly afterwards.
+
+- `tools/package_fixes.py`: builds the RTX fixes package (folder and/or `.gma`) from the fixes repo,
+  read only: every add-on folder as kind `lua-addon` (submodule `.git` files, `*.bak` and other junk
+  left out; `--exclude-addon`), the Remix mods, the built `gmcl_` modules, `stdshader_dx6.dll` as a
+  `module-override`, the seven `patches64` patch sets and the RTX section of `autoexec.cfg` as
+  `session_cvars` (every skipped line reported); marks the package `requires_remix`, and deploys the
+  ToPBR converter's mod `~gmod_topbr`, which the fixes rewrite at run time, create-only (a reinstall
+  was refused otherwise). The Steam files the fixes overwrite and the root
+  `rtx.conf`/`dxvk.conf` (runtime-package layers) stay out. Reproducible; tests in
+  `tools/tests/test_package_fixes.py`.
+- `tools/compare_frames.py`: the user's block-difference measure for two screenshots (mean absolute
+  difference of 32x32 block means) with masks and a threshold exit code, plus mean RGB and Rec. 709
+  luminance percentiles per image; needs Pillow. Tests in `tools/tests/test_compare_frames.py`.
+- Lua companion `companion/nativeloader`, shipped in the fixes package as the add-on
+  `garrysmod/addons/nativeloader`: prints the loader's `status.json` and `session.json` to the console
+  at client start and on `nativeloader_status`, and marks a report older than the session as stale.
+
 ### Added (M4: activation)
 
 - `tools/poc_session.py`: drives PoC sessions without anyone at the keyboard (install, config, launch,

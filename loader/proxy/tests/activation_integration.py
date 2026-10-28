@@ -47,8 +47,8 @@ def main():
     scratch = base / str(os.getpid())
     check(not scratch.exists(), 'scratch PID directory already exists')
     scratch.mkdir(parents=True)
-    evidence = repo / 'out' / 'm4-synthetic' / (args.config.lower() + '-' + str(os.getpid()))
-    evidence.mkdir(parents=True)
+    evidence = repo / 'out' / 'm4-synthetic' / (args.config.lower() + '-' + str(os.getpid()) + time.strftime('-%Y%m%dT%H%M%S'))
+    evidence.mkdir(parents=True, exist_ok=True)  # a reused PID must not fail the run
     results = []
     package_a, package_b, broken = (scratch / name for name in ('a.gma', 'b.gma', 'missing-dependency.gma'))
     layer = scratch / 'defaults.conf'
@@ -137,7 +137,7 @@ def main():
         check(probe['preloaded'] and probe['fake_probe'] == 42 and probe['delay_error'] == 0, f'{game.name}: static/delay dependency failed')
         check(Path(probe['static_dependency']) == folder / 'nl_m4_static.dll', f'{game.name}: static dependency outside package')
         check(Path(probe['delay_dependency']) == folder / 'nl_m4_delay.dll', f'{game.name}: delay dependency outside package')
-        check(Path(probe['dll_directory']) == folder, f'{game.name}: runtime DLL directory missing')
+        check(probe['dll_directory'] == '', f'{game.name}: the DLL directory must stay the default (the runtime folder goes on PATH)')
         added = activation['launch_arguments']['added']
         check(probe['command_line_w'] == original + (' ' + ' '.join(added) if added else ''), f'{game.name}: appended arguments differ')
         for variable in activation['environment']['set']:
@@ -234,7 +234,11 @@ def main():
         passed('missing allowlisted source is kept; explicit allowlist removal removes it')
 
         workshop = Game('workshop-disabled', workshop=True)
-        active(workshop, workshop.run())
+        workshop_status = active(workshop, workshop.run())
+        # M6: the report names the deployed package's source for the companion's restart notice.
+        sources = workshop_status['packages']
+        check(len(sources) == 1 and sources[0]['source'] == 'workshop' and sources[0]['label'] == '123' and
+              sources[0]['id'] == package_id, f'status.json packages: {sources}')
         addon_list = workshop.root / 'garrysmod/cfg/addonnomount.txt'
         addon_list.parent.mkdir(parents=True, exist_ok=True)
         addon_list.write_text('"addonnomount" { "1" "123" }', encoding='ascii')

@@ -6,6 +6,8 @@
   2026-10-28 (Claude's review): the activation is committed before the report is written, so a report
   that cannot be written no longer unloads an initialised runtime; packages built by
   `package_runtime.py` no longer ask for `+mat_disable_d3d9ex 1`; the `-dxlevel` question is answered.
+  **Point 4 (`SetDllDirectoryW`) superseded by [ADR 0010](0010-rtx-session-extras.md)**: the runtime
+  folder goes on `PATH` instead, because `SetDllDirectoryW` broke the RTX fixes' module lookups.
 - Decided by: Claude, implementing M4 within the plan the user approved on 2026-10-27
 - Builds on: [ADR 0001](0001-bootstrap-winmm-proxy.md) (the entry-point hook),
   [ADR 0004](0004-runtime-in-versioned-folder.md) (the runtime in a versioned folder),

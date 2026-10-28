@@ -82,7 +82,7 @@ std::string payload_path(std::string_view relative) {
 void check_launch_args(const std::vector<std::string>& args) {
   for (std::size_t i = 0; i < args.size(); ++i) {
     const std::string& a = args[i];
-    if (a == "-nod3d9ex") continue;
+    if (a == "-nod3d9ex" || a == "-insecure") continue;
     if (a == "-dxlevel" || a == "+mat_disable_d3d9ex") {
       if (i + 1 >= args.size() || args[i + 1].empty() || args[i + 1].size() > 3 ||
           !std::all_of(args[i + 1].begin(), args[i + 1].end(), [](char c) { return c >= '0' && c <= '9'; })) {
@@ -91,7 +91,7 @@ void check_launch_args(const std::vector<std::string>& args) {
       ++i;
       continue;
     }
-    fail("launch argument \"" + a + "\" is not allowed (schema 1 allows -dxlevel N, -nod3d9ex, +mat_disable_d3d9ex N)");
+    fail("launch argument \"" + a + "\" is not allowed (schema 1 allows -dxlevel N, -nod3d9ex, -insecure, +mat_disable_d3d9ex N)");
   }
 }
 
@@ -124,7 +124,66 @@ std::string safe_path(const std::string& path, std::string_view what) {
   return path;
 }
 
+bool lower_hex(char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }
+
+int hex_value(char c) { return c <= '9' ? c - '0' : c - 'a' + 10; }
+
+bool snake_name(std::string_view name) {
+  return !name.empty() && name.size() <= 64 &&
+         std::all_of(name.begin(), name.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'; });
+}
+
+std::size_t as_size(const Value& value, std::string_view what) {
+  const std::int64_t n = value.as_int(what);
+  if (n < 0) fail(std::string(what) + " is negative");
+  return static_cast<std::size_t>(n);
+}
+
 }  // namespace
+
+bool valid_module_name(std::string_view name) {
+  if (name.size() < 5 || name.size() > 64 || name.substr(name.size() - 4) != ".dll") return false;
+  const std::string_view stem = name.substr(0, name.size() - 4);
+  return std::all_of(stem.begin(), stem.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'; });
+}
+
+bool valid_cvar_name(std::string_view name) {
+  return !name.empty() && name.size() <= 64 && std::all_of(name.begin(), name.end(), [](char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+  });
+}
+
+bool valid_cvar_value(std::string_view value) {
+  return value.size() <= 32 && std::all_of(value.begin(), value.end(), [](char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '.' || c == '+' || c == '-';
+  });
+}
+
+std::vector<int> parse_pattern(std::string_view text) {
+  if (text.empty() || text.size() % 2 || text.size() > 512) return {};
+  std::vector<int> bytes;
+  bool concrete = false;
+  for (std::size_t i = 0; i < text.size(); i += 2) {
+    if (text[i] == '?' && text[i + 1] == '?') {
+      bytes.push_back(-1);
+      continue;
+    }
+    if (!lower_hex(text[i]) || !lower_hex(text[i + 1])) return {};
+    bytes.push_back(hex_value(text[i]) * 16 + hex_value(text[i + 1]));
+    concrete = true;
+  }
+  return concrete ? bytes : std::vector<int>{};
+}
+
+std::vector<std::uint8_t> parse_hex(std::string_view text) {
+  if (text.empty() || text.size() % 2 || text.size() > 512) return {};
+  std::vector<std::uint8_t> bytes;
+  for (std::size_t i = 0; i < text.size(); i += 2) {
+    if (!lower_hex(text[i]) || !lower_hex(text[i + 1])) return {};
+    bytes.push_back(static_cast<std::uint8_t>(hex_value(text[i]) * 16 + hex_value(text[i + 1])));
+  }
+  return bytes;
+}
 
 std::optional<Version> parse_version(std::string_view text) {
   if (text.empty() || text.size() > 128) return std::nullopt;
@@ -186,6 +245,9 @@ const char* kind_name(Kind kind) {
     case Kind::remix_runtime: return "remix-runtime";
     case Kind::lua_binary_module: return "lua-binary-module";
     case Kind::root_files: return "root-files";
+    case Kind::lua_addon: return "lua-addon";
+    case Kind::patch_set: return "patch-set";
+    case Kind::module_override: return "module-override";
   }
   return "?";
 }
@@ -207,7 +269,8 @@ Manifest parse(std::string_view json_text) {
   }
   try {
     if (!root.is_object()) fail("the document must be a JSON object");
-    only_keys(root, "the manifest", {"schema", "id", "name", "version", "kinds", "requires_loader", "files", "remix", "root_files"});
+    only_keys(root, "the manifest", {"schema", "id", "name", "version", "kinds", "requires_loader", "requires_remix", "files", "remix",
+                                     "root_files", "patch_sets", "module_overrides", "session_cvars"});
 
     const std::int64_t schema = required(root, "schema").as_int("schema");
     if (schema != kSchema) fail("schema " + std::to_string(schema) + " is not supported (this loader reads schema 1)");
@@ -233,7 +296,9 @@ Manifest parse(std::string_view json_text) {
       if (name == "remix-runtime") k = Kind::remix_runtime;
       else if (name == "lua-binary-module") k = Kind::lua_binary_module;
       else if (name == "root-files") k = Kind::root_files;
-      else if (name == "patch-set" || name == "module-override") fail("kind \"" + name + "\" is planned for a later loader (M5)");
+      else if (name == "lua-addon") k = Kind::lua_addon;
+      else if (name == "patch-set") k = Kind::patch_set;
+      else if (name == "module-override") k = Kind::module_override;
       else fail("unknown kind \"" + name + "\"");
       if (m.has(k)) fail("kind \"" + name + "\" is listed twice");
       m.kinds.push_back(k);
@@ -246,6 +311,7 @@ Manifest parse(std::string_view json_text) {
       if (!min) fail("requires_loader \"" + text + "\" must be \">=MAJOR.MINOR.PATCH\"");
       m.requires_loader = min;
     }
+    if (const Value* flag = root.find("requires_remix")) m.requires_remix = flag->as_bool("requires_remix");
 
     std::set<std::string> listed;
     for (const auto& [path, info] : required(root, "files").as_object("files")) {
@@ -327,12 +393,21 @@ Manifest parse(std::string_view json_text) {
         rf.area = paths::root_area(rf.path);
         switch (rf.area) {
           case paths::RootArea::none:
-            fail("root file \"" + rf.path + "\" is outside rtx-remix/mods/, garrysmod/lua/bin/ and garrysmod/cfg/");
+            fail("root file \"" + rf.path + "\" is outside rtx-remix/mods/, garrysmod/lua/bin/, garrysmod/cfg/, garrysmod/data/ and garrysmod/addons/");
+          case paths::RootArea::lua_addons:
+            if (!m.has(Kind::lua_addon)) fail("root file \"" + rf.path + "\" in garrysmod/addons needs kind lua-addon");
+            if (rf.policy != Policy::replace_owned) fail("root file \"" + rf.path + "\" in garrysmod/addons must use policy replace-owned");
+            if (split(rf.path, '/').size() < 3) fail("root file \"" + rf.path + "\" must name an add-on folder: garrysmod/addons/<addon>");
+            break;
           case paths::RootArea::lua_bin:
             if (!m.has(Kind::lua_binary_module)) fail("root file \"" + rf.path + "\" in garrysmod/lua/bin needs kind lua-binary-module");
             break;
           case paths::RootArea::cfg:
             if (rf.policy != Policy::create_only) fail("root file \"" + rf.path + "\" in garrysmod/cfg must use policy create-only");
+            [[fallthrough]];
+          case paths::RootArea::data:
+            if (rf.policy != Policy::create_only) fail("root file \"" + rf.path + "\" in garrysmod/data must use policy create-only");
+            if (split(rf.path, '/').size() < 3) fail("root file \"" + rf.path + "\" must be below a folder of garrysmod/data");
             [[fallthrough]];
           case paths::RootArea::rtx_remix_mods:
             if (!m.has(Kind::root_files)) fail("root file \"" + rf.path + "\" needs kind root-files");
@@ -351,12 +426,93 @@ Manifest parse(std::string_view json_text) {
         m.root_files.push_back(std::move(rf));
       }
     }
-    for (const Kind k : {Kind::lua_binary_module, Kind::root_files}) {
+    for (const Kind k : {Kind::lua_binary_module, Kind::root_files, Kind::lua_addon}) {
       if (!m.has(k)) continue;
       const bool used = std::any_of(m.root_files.begin(), m.root_files.end(), [k](const RootFile& rf) {
-        return k == Kind::lua_binary_module ? rf.area == paths::RootArea::lua_bin : rf.area != paths::RootArea::lua_bin;
+        if (k == Kind::lua_binary_module) return rf.area == paths::RootArea::lua_bin;
+        if (k == Kind::lua_addon) return rf.area == paths::RootArea::lua_addons;
+        return rf.area == paths::RootArea::rtx_remix_mods || rf.area == paths::RootArea::cfg || rf.area == paths::RootArea::data;
       });
       if (!used) fail(std::string("kind ") + kind_name(k) + " is declared but no root file uses it");
+    }
+
+    // RTX-session extras (ADR 0010).
+    if (const Value* sets = root.find("patch_sets")) {
+      if (!m.has(Kind::patch_set)) fail("\"patch_sets\" needs kind patch-set");
+      std::set<std::string> names;
+      std::size_t total = 0;
+      for (const Value& item : sets->as_array("patch_sets")) {
+        only_keys(item, "patch_sets entry", {"module", "patches"});
+        PatchSet set;
+        set.module = required(item, "module").as_string("patch_sets module");
+        if (!valid_module_name(set.module)) fail("patch_sets module \"" + set.module + "\" must be a lowercase DLL name: [a-z0-9_]+.dll");
+        for (const PatchSet& other : m.session.patch_sets) {
+          if (other.module == set.module) fail("patch_sets module \"" + set.module + "\" is listed twice");
+        }
+        for (const Value& entry : required(item, "patches").as_array("patch_sets patches")) {
+          only_keys(entry, "patch", {"name", "find", "offset", "replace"});
+          Patch patch;
+          patch.name = required(entry, "name").as_string("patch name");
+          if (!snake_name(patch.name)) fail("patch name \"" + patch.name + "\" must be 1-64 characters of a-z, 0-9 and _");
+          if (!names.insert(patch.name).second) fail("patch name \"" + patch.name + "\" is used twice");
+          patch.find = required(entry, "find").as_string("patch find");
+          const auto pattern = parse_pattern(patch.find);
+          if (pattern.empty()) fail("patch \"" + patch.name + "\": find must be 1-256 lowercase hex bytes or ??, not all ??");
+          patch.replace = required(entry, "replace").as_string("patch replace");
+          const auto bytes = parse_hex(patch.replace);
+          if (bytes.empty()) fail("patch \"" + patch.name + "\": replace must be 1-256 lowercase hex bytes");
+          if (const Value* offset = entry.find("offset")) patch.offset = as_size(*offset, "patch offset");
+          if (patch.offset > pattern.size() || bytes.size() > pattern.size() - patch.offset) {
+            fail("patch \"" + patch.name + "\": replace must lie inside the matched bytes (offset + length <= find length)");
+          }
+          set.patches.push_back(std::move(patch));
+          if (++total > 256) fail("patch_sets: at most 256 patches");
+        }
+        if (set.patches.empty()) fail("patch_sets module \"" + set.module + "\" has no patches");
+        m.session.patch_sets.push_back(std::move(set));
+      }
+      if (m.session.patch_sets.empty()) fail("patch_sets must not be empty");
+    }
+    if (m.has(Kind::patch_set) && m.session.patch_sets.empty()) fail("kind patch-set needs \"patch_sets\"");
+
+    if (const Value* overrides = root.find("module_overrides")) {
+      if (!m.has(Kind::module_override)) fail("\"module_overrides\" needs kind module-override");
+      for (const Value& item : overrides->as_array("module_overrides")) {
+        only_keys(item, "module_overrides entry", {"module", "file"});
+        ModuleOverride o;
+        o.module = required(item, "module").as_string("module_overrides module");
+        if (!valid_module_name(o.module)) fail("module_overrides module \"" + o.module + "\" must be a lowercase DLL name: [a-z0-9_]+.dll");
+        for (const ModuleOverride& other : m.session.module_overrides) {
+          if (other.module == o.module) fail("module_overrides module \"" + o.module + "\" is listed twice");
+        }
+        const std::string file = safe_path(required(item, "file").as_string("module_overrides file"), "module_overrides file");
+        const std::string folded = paths::fold(file);
+        if (!paths::within(folded, "native/payload") || folded == "native/payload") {
+          fail("module_overrides file \"" + file + "\" must be under native/payload/");
+        }
+        if (!listed.count(folded)) fail("module_overrides file \"" + file + "\" is not listed in files");
+        if (folded.substr(folded.rfind('/') + 1) != o.module) fail("module_overrides file \"" + file + "\" must be named " + o.module);
+        o.file = file.substr(std::string_view("native/payload/").size());
+        m.session.module_overrides.push_back(std::move(o));
+      }
+      if (m.session.module_overrides.empty()) fail("module_overrides must not be empty");
+    }
+    if (m.has(Kind::module_override) && m.session.module_overrides.empty()) fail("kind module-override needs \"module_overrides\"");
+
+    if (const Value* cvars = root.find("session_cvars")) {
+      for (const auto& [name, value] : cvars->as_object("session_cvars")) {
+        if (!valid_cvar_name(name)) fail("session_cvars name \"" + name + "\" must be 1-64 characters of A-Z, a-z, 0-9 and _");
+        // Only rendering variables: a name such as exec or bind would run a command from the cfg.
+        const std::string folded = paths::fold(name);
+        const bool allowed = folded == "sv_cheats" || folded.rfind("r_", 0) == 0 || folded.rfind("mat_", 0) == 0 ||
+                             folded.rfind("cl_", 0) == 0 || folded.rfind("gmod_", 0) == 0 || folded.rfind("rtx_", 0) == 0 ||
+                             folded.rfind("studio_", 0) == 0;
+        if (!allowed) fail("session_cvars name \"" + name + "\" must start with r_, mat_, cl_, gmod_, rtx_ or studio_ (or be sv_cheats)");
+        const std::string& text = value.as_string("session_cvars." + name);
+        if (!valid_cvar_value(text)) fail("session_cvars." + name + " must be at most 32 characters of A-Z, a-z, 0-9 and _ . + -");
+        m.session.cvars.emplace_back(name, text);
+      }
+      if (m.session.cvars.size() > 256) fail("session_cvars: at most 256 entries");
     }
     // Every file under native/root/ must belong to a declared root file.
     for (const std::string& f : listed) {

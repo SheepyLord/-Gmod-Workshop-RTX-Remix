@@ -73,6 +73,8 @@ Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
       if (result.config.workshop.empty()) environment.game_root = root;
       else environment = discovery::environment_for(root);
       auto considered = planner::consider(discovery::discover(result.config, environment));
+      std::vector<discovery::Candidate> candidates;
+      for (const auto& item : considered) candidates.push_back(item.candidate);
       deploy::Options options;
       options.exclude_process_id = process_id;
       options.keep_last_good = true;
@@ -81,6 +83,18 @@ Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
       result.deployment = deploy::apply(root, std::move(considered), result.config,
                                        *loader, options);
       result.journal = journal::load(root);
+      if (result.journal && result.journal->current) {
+        for (const auto& package : result.journal->current->packages) {
+          status::PackageSource entry{package.id, package.version, package.source, package.location, std::nullopt};
+          for (const auto& candidate : candidates) {
+            if (!same_source(package, candidate)) continue;
+            entry.label = candidate.label;
+            entry.time_updated = candidate.time_updated;
+            break;
+          }
+          result.sources.push_back(std::move(entry));
+        }
+      }
       const auto next = after_deployment(result.deployment, result.journal && result.journal->pending);
       result.may_activate = next.may_activate;
       result.reason = next.reason;

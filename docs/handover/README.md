@@ -10,7 +10,8 @@ so the next agent has the full story without the chat transcripts.
 | M2 core + CLI | (none: Claude, who wrote the plan) | | (none: evidence in the [roadmap](../ROADMAP.md) M2 row) | Claude | `m2-core` in the main checkout; merged into `main` 2026-10-27 |
 | M3 deployer | (none: Claude; design in [ADR 0007](../decisions/0007-transactional-deployment.md)) | | (none: evidence in the [roadmap](../ROADMAP.md) M3 row) | Claude | `m3-deployer` in the main checkout; merged into `main` 2026-10-27 |
 | M4 activation | [M4-handover.md](M4-handover.md) | [M4-codex-prompt.md](M4-codex-prompt.md) | [M4-report.md](M4-report.md), [review](M4-review.md) | Codex; parts 1-2 and review fixes by Claude | `m4-activation` in the main checkout; merged into `main` 2026-10-28 |
-
+| M5 RTX fixes | [M5-plan.md](M5-plan.md) (no handover: Claude planned and built it) | | [M5-report.md](M5-report.md) | Claude | `m5-rtx-fixes` in the main checkout; merged into `main` 2026-10-28 with M6 |
+| M6 Workshop route | (in the roadmap row; Claude) | | [M6-report.md](M6-report.md) | Claude | committed with M5 on `m5-rtx-fixes` (shared files); merged into `main` 2026-10-28 |
 ## Rules for briefs
 
 - Self-contained for someone who has read [AGENTS.md](../../AGENTS.md) and nothing else.
