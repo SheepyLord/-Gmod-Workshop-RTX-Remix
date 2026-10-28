@@ -1,19 +1,22 @@
 """Drive Garry's Mod sessions on the PoC install for acceptance tests, without anyone at the keyboard.
 
 Installs the bootstrap and a config, launches the game, waits for the map, takes screenshots of the
-game window, records the loaded modules, ends the game with a normal "quit" (a test-only server
-autorun file that watches a flag in garrysmod/data), collects the logs and uninstalls again. Every
-step writes evidence under the folder given with --evidence. See poc_session.py.md.
+game window, records the loaded modules, ends the game with a normal "quit" (console text sent to
+the game's window), collects the logs and uninstalls again. Nothing is written into the game folder
+for that: client Lua goes through the console too. Every step writes evidence under the folder given
+with --evidence. See poc_session.py.md.
 """
 from __future__ import annotations
 
 import argparse
 import ctypes
 import datetime as _dt
+import hashlib
 import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -26,6 +29,8 @@ FIELD_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
 MAP_MARKER = re.compile(r"(?m)^Clientside Lua startup!\s*$")
 MOUNT_MARKER = re.compile(r"(?m)^NL_SESSION_MOUNT true")
 EYE_MARKER = re.compile(r"(?m)^NL_SESSION_EYE ")
+LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
+FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 
 
 class Failure(Exception):
@@ -66,9 +71,19 @@ def copy_if_present(source: Path, destination: Path) -> bool:
         return False
 
 
+def powershell_environment() -> dict[str, str]:
+    """This process's environment without PSModulePath, for a Windows PowerShell child. Windows
+    PowerShell 5.1 then builds its own module path. Inherited from PowerShell 7 (a Python started from
+    pwsh), the path lists PowerShell 7's modules first, and 5.1 cannot load Get-FileHash from them,
+    which install-loader.ps1 needs (R1-029)."""
+    return {name: value for name, value in os.environ.items() if name.upper() != "PSMODULEPATH"}
+
+
 def powershell(script: Path, *arguments: str) -> subprocess.CompletedProcess:
+    """Runs a script in Windows PowerShell; every PowerShell child of this script starts here."""
     command = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), *arguments]
-    return subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                          env=powershell_environment())
 
 
 # ---------------------------------------------------------------- Win32 (processes, windows, screenshots)
@@ -91,6 +106,10 @@ kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
 kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
 kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
 kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
+kernel32.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+kernel32.GetSystemTimeAsFileTime.restype = None
+kernel32.GetSystemTimeAsFileTime.argtypes = [ctypes.POINTER(wintypes.FILETIME)]
+INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
 psapi.EnumProcessModulesEx.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.HMODULE), wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), wintypes.DWORD]
 psapi.GetModuleFileNameExW.argtypes = [wintypes.HANDLE, wintypes.HMODULE, wintypes.LPWSTR, wintypes.DWORD]
 
@@ -120,32 +139,128 @@ def process_path(pid: int) -> str | None:
         kernel32.CloseHandle(handle)
 
 
-def game_processes(root: Path) -> list[int]:
-    """PIDs of every gmod.exe running from this game folder (the game and its Chromium helpers)."""
-    target = os.path.normcase(str(root / "bin" / "win64" / "gmod.exe"))
+def process_entries() -> list[tuple[int, int, str]]:
+    """(PID, parent PID, image name) of every running process, from one Toolhelp32 snapshot."""
     snapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
-    pids = []
+    if not snapshot or snapshot == INVALID_HANDLE_VALUE:
+        return []
+    entries = []
     entry = PROCESSENTRY32W()
     entry.dwSize = ctypes.sizeof(entry)
     try:
         ok = kernel32.Process32FirstW(snapshot, ctypes.byref(entry))
         while ok:
-            if entry.szExeFile.lower() == "gmod.exe":
-                path = process_path(entry.th32ProcessID)
-                if path and os.path.normcase(path) == target:
-                    pids.append(entry.th32ProcessID)
+            entries.append((entry.th32ProcessID, entry.th32ParentProcessID, entry.szExeFile))
             ok = kernel32.Process32NextW(snapshot, ctypes.byref(entry))
     finally:
         kernel32.CloseHandle(snapshot)
-    return pids
+    return entries
 
 
-def terminate(pids: list[int]) -> None:
-    for pid in pids:
-        handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
-        if handle:
-            kernel32.TerminateProcess(handle, 1)
+def game_processes(root: Path) -> list[int]:
+    """PIDs of every gmod.exe running from this game folder (the game and its Chromium helpers)."""
+    target = os.path.normcase(str(root / "bin" / "win64" / "gmod.exe"))
+    return [pid for pid, _, name in process_entries()
+            if name.lower() == "gmod.exe" and os.path.normcase(process_path(pid) or "") == target]
+
+
+def process_parents() -> dict[int, int]:
+    """{PID: parent PID} of every running process."""
+    return {pid: parent for pid, parent, _ in process_entries()}
+
+
+def filetime(value: wintypes.FILETIME) -> int:
+    return (value.dwHighDateTime << 32) | value.dwLowDateTime
+
+
+def filetime_now() -> int:
+    """The system time in 100 ns units since 1601: the clock Windows stamps process creation with."""
+    value = wintypes.FILETIME()
+    kernel32.GetSystemTimeAsFileTime(ctypes.byref(value))
+    return filetime(value)
+
+
+def handle_created(handle) -> int | None:
+    times = [wintypes.FILETIME() for _ in range(4)]
+    if not kernel32.GetProcessTimes(handle, *(ctypes.byref(value) for value in times)):
+        return None
+    return filetime(times[0])
+
+
+def process_created(pid: int) -> int | None:
+    """When the process with this PID was created (filetime_now's units), or None if it cannot be opened."""
+    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    if not handle:
+        return None
+    try:
+        return handle_created(handle)
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def descends(pid: int, created: int, launched_pid: int, launched_at: int, parents: dict[int, int], created_of) -> bool:
+    """Whether `pid` (created at `created`) is the launched process or one of its descendants: its
+    parent chain reaches `launched_pid`, and every process on the chain was created at or after the
+    launch and no later than its child. A PID Windows recycled for another process breaks the chain."""
+    seen = set()
+    while pid != launched_pid:
+        if pid in seen:
+            return False
+        seen.add(pid)
+        parent = parents.get(pid)
+        parent_created = created_of(parent) if parent else None
+        if parent_created is None or parent_created < launched_at or parent_created > created:
+            return False
+        pid, created = parent, parent_created
+    return True
+
+
+def classify(candidates, launched_pid: int, launched_at: int, parents: dict[int, int], created_of):
+    """Splits same-root game PIDs into ours ({PID: creation time}: the launched game and its
+    descendants, see descends) and others (a sorted list: games this invocation did not start).
+    created_of(pid) gives a creation time, or None when it is unknown (then the PID is not ours)."""
+    ours, others = {}, []
+    for pid in sorted(set(candidates)):
+        created = created_of(pid)
+        if created is not None and created >= launched_at and \
+                descends(pid, created, launched_pid, launched_at, parents, created_of):
+            ours[pid] = created
+        else:
+            others.append(pid)
+    return ours, others
+
+
+def terminate(expected: dict[int, int]) -> list[int]:
+    """Terminates each PID while it is still the process that was classified, checked on the handle
+    that terminates it: the same creation time (a recycled PID is left alone). Returns those terminated."""
+    done = []
+    for pid, created in expected.items():
+        handle = kernel32.OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            continue
+        try:
+            if handle_created(handle) == created and kernel32.TerminateProcess(handle, 1):
+                done.append(pid)
+        finally:
             kernel32.CloseHandle(handle)
+    return done
+
+
+def stop_ours(process, root: Path, launched_at: int) -> tuple[list[int], list[int]]:
+    """Ends the game this invocation launched (through its own process handle) and every same-root
+    gmod.exe descended from it: the game starts its Chromium helpers as its children. Returns
+    (terminated, others); others are same-root games this invocation did not start, left running."""
+    def created_of(pid):
+        # The launched game is pinned by its Popen handle, so its PID cannot be recycled meanwhile.
+        return launched_at if pid == process.pid else process_created(pid)
+
+    ours, others = classify(game_processes(root), process.pid, launched_at, process_parents(), created_of)
+    ours.pop(process.pid, None)
+    stopped = []
+    if process.poll() is None:
+        process.kill()
+        stopped.append(process.pid)
+    return stopped + terminate(ours), others
 
 
 def modules_of(pid: int) -> list[str]:
@@ -305,13 +420,25 @@ def console(hwnd: int, command: str, attempts: int = 6) -> bool:
     return False
 
 
-def client_lua(hwnd: int, root: Path, name: str, code: str) -> bool:
-    """Runs `code` on the client: written to garrysmod/data/nl_session/<name>.txt (Source splits console
-    text at ; and line breaks, so only a short loader goes through the console)."""
-    folder = root / "garrysmod" / "data" / "nl_session"
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / f"{name}.txt").write_text(code, encoding="utf-8")
-    return console(hwnd, f'lua_run_cl RunString(file.Read("nl_session/{name}.txt","DATA"),"nl_session_{name}")')
+def client_lua_lines(name: str, code: str) -> list[str]:
+    """The console lines that run `code` as the client Lua chunk "nl_session_<name>". Source's console
+    splits text at ';' and line breaks and drops what follows '//', so the code travels hex-encoded
+    (digits and a-f only) in the global NL_S, at most LUA_HEX_CHUNK digits a line, and the last line
+    decodes and runs it. Nothing is written into the game folder."""
+    if not re.fullmatch(r"[a-z0-9_]{1,32}", name):
+        raise ValueError(f"chunk name {name!r}: 1-32 characters of a-z 0-9 _")
+    data = code.encode("utf-8").hex()
+    lines = ['lua_run_cl NL_S=""']
+    lines += [f'lua_run_cl NL_S=NL_S.."{data[start:start + LUA_HEX_CHUNK]}"' for start in range(0, len(data), LUA_HEX_CHUNK)]
+    lines.append('lua_run_cl RunString((NL_S:gsub("..",function(h) return string.char(tonumber(h,16)) end)),'
+                 f'"nl_session_{name}")')
+    return lines
+
+
+def client_lua(hwnd: int, name: str, code: str) -> bool:
+    """Runs `code` on the client through the console (client_lua_lines). False as soon as one line is
+    not delivered; the lines after it, the one that runs the chunk included, are then not sent."""
+    return all(console(hwnd, line) for line in client_lua_lines(name, code))
 
 
 def mount_lua(item: str) -> str:
@@ -347,32 +474,92 @@ def nlctl_path(config: str) -> Path:
     return REPO / "out" / "build" / f"win64-{config.lower()}" / "loader" / "cli" / "nlctl.exe"
 
 
-def write_config(root: Path, local: list[str], dev: list[str], workshop: list[str], remix: bool, require_insecure: bool) -> dict:
+def config_path(root: Path) -> Path:
+    return root / "native-loader" / "config.json"
+
+
+def config_content(args) -> tuple[dict, bytes]:
+    """The config.json that the install and config steps write, as a value and as the exact bytes
+    on disk (line breaks as the text-mode write has always made them)."""
     value = {"schema": 1, "enabled": True,
-             "allow": {"workshop": workshop, "local": local, "dev_folders": dev},
-             "remix": {"enabled": remix}, "patch_sets": {"require_insecure": require_insecure}}
-    target = root / "native-loader" / "config.json"
+             "allow": {"workshop": args.allow_workshop, "local": args.allow_local, "dev_folders": args.allow_dev},
+             "remix": {"enabled": args.remix == "on"}, "patch_sets": {"require_insecure": args.require_insecure == "yes"}}
+    return value, json.dumps(value, indent=2).replace("\n", os.linesep).encode("utf-8")
+
+
+def write_config(root: Path, data: bytes) -> None:
+    target = config_path(root)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(".json.tmp")
-    temporary.write_text(json.dumps(value, indent=2), encoding="utf-8")
+    temporary.write_bytes(data)
     os.replace(temporary, target)
-    return value
+
+
+def existing_config(target: Path) -> bytes | None:
+    """The bytes of an existing config.json, None when there is none; refuses anything but a plain file."""
+    try:
+        info = os.lstat(target)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+    except OSError as error:
+        raise Failure(f"cannot read {target}: {error}") from error
+    if not stat.S_ISREG(info.st_mode) or getattr(info, "st_file_attributes", 0) & FILE_ATTRIBUTE_REPARSE_POINT:
+        raise Failure(f"{target} is not a plain file; nothing was changed")
+    return target.read_bytes()
+
+
+def backup_config(data: bytes, evidence: Path) -> dict:
+    """Saves a config about to be replaced as <evidence>\\config.json.before-<UTC time>, beside the
+    session record (not beside the config: uninstall -RemoveConfig deletes native-loader\\ with
+    everything in it), and checks the copy. Returns its path and SHA-256."""
+    digest = hashlib.sha256(data).hexdigest()
+    stamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    evidence.mkdir(parents=True, exist_ok=True)
+    for attempt in range(100):
+        copy = evidence / (f"config.json.before-{stamp}" + (f"-{attempt}" if attempt else ""))
+        try:
+            with open(copy, "xb") as handle:
+                handle.write(data)
+            break
+        except FileExistsError:
+            continue
+    else:
+        raise Failure(f"no free name for config.json.before-{stamp} in {evidence}; nothing was replaced")
+    if hashlib.sha256(copy.read_bytes()).hexdigest() != digest:
+        raise Failure(f"the backup {copy} does not match the config; nothing was replaced")
+    return {"path": str(copy), "sha256": digest}
 
 
 def step_install(args) -> dict:
     root = Path(args.root)
     if game_processes(root):
         raise Failure("a game from this install is running")
+    config, data = config_content(args)
+    target = config_path(root)
+    before = existing_config(target)
+    if before is not None and before != data and not args.replace_config:
+        raise Failure(f"{target} exists (SHA-256 {hashlib.sha256(before).hexdigest()}) and differs from the config "
+                      "this install would write; nothing was changed. --replace-config backs it up into the evidence "
+                      "folder and replaces it.")
     result = powershell(REPO / "tools" / "install-loader.ps1", "-GameRoot", str(root), "-Config", args.config,
                         *(["-AllowSteamManaged"] if args.allow_steam_managed else []))
     if result.returncode != 0:
         raise Failure("install-loader.ps1 failed: " + (result.stderr or result.stdout)[-2000:])
-    config = write_config(root, args.allow_local, args.allow_dev, args.allow_workshop, args.remix == "on", args.require_insecure == "yes")
-    return {"step": "install", "config": config, "installer": result.stdout.strip()[-500:]}
+    record = {"step": "install", "config": config, "installer": result.stdout.strip()[-500:]}
+    if existing_config(target) != before:
+        raise Failure(f"{target} changed while the installer ran; it was not replaced")
+    if before is not None and before != data:
+        try:
+            record["config_backup"] = backup_config(before, Path(args.evidence))
+        except OSError as error:
+            raise Failure(f"could not back up {target} ({error}); nothing was replaced") from error
+    write_config(root, data)
+    return record
 
 
 def step_config(args) -> dict:
-    config = write_config(Path(args.root), args.allow_local, args.allow_dev, args.allow_workshop, args.remix == "on", args.require_insecure == "yes")
+    config, data = config_content(args)
+    write_config(Path(args.root), data)
     return {"step": "config", "config": config}
 
 
@@ -434,7 +621,16 @@ def step_run(args) -> dict:
             time.sleep(0.5)
         return False
 
+    not_ours: set[int] = set()
+
+    def stop() -> list[int]:
+        """Ends the launched game and its descendants; other same-root games keep running (recorded)."""
+        stopped, others = stop_ours(process, root, launched_at)
+        not_ours.update(others)
+        return stopped
+
     began = time.monotonic()
+    launched_at = filetime_now()
     process = subprocess.Popen([str(root / "bin" / "win64" / "gmod.exe"), *arguments], cwd=str(root), env=environment,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     record["pid"] = process.pid
@@ -453,7 +649,7 @@ def step_run(args) -> dict:
                 # mount that one item, as GMod's own loading of a Workshop save does.
                 record["workshop_mounted"] = False
                 for _ in range(3):
-                    if client_lua(hwnd, root, "mount", mount_lua(args.mount_workshop)) and \
+                    if client_lua(hwnd, "mount", mount_lua(args.mount_workshop)) and \
                             wait_for(MOUNT_MARKER, 1, time.monotonic() + 60):
                         record["workshop_mounted"] = True
                         break
@@ -474,7 +670,7 @@ def step_run(args) -> dict:
                 record["camera"] = False
                 for _ in range(3):
                     printed = len(EYE_MARKER.findall(log_text()))
-                    if client_lua(hwnd, root, "camera", camera_lua(args.camera, args.hide_hud)) and \
+                    if client_lua(hwnd, "camera", camera_lua(args.camera, args.hide_hud)) and \
                             wait_for(EYE_MARKER, printed + 1, time.monotonic() + 20):
                         record["camera"] = True
                         break
@@ -506,7 +702,7 @@ def step_run(args) -> dict:
                 record["exit"] = process.returncode
                 record["normal_quit"] = record["quit"] == "console"
             except subprocess.TimeoutExpired:
-                terminate(game_processes(root))
+                stop()
                 process.wait(timeout=30)
                 record["exit"] = "terminated"
                 record["normal_quit"] = False
@@ -514,14 +710,14 @@ def step_run(args) -> dict:
             record["exit"] = process.returncode
             record["normal_quit"] = False
         time.sleep(2)
-        leftovers = game_processes(root)
+        leftovers = stop()
         if leftovers:
-            terminate(leftovers)
             record["terminated_helpers"] = leftovers
     finally:
         if process.poll() is None:
-            terminate(game_processes(root))
-        shutil.rmtree(root / "garrysmod" / "data" / "nl_session", ignore_errors=True)
+            stop()
+    if not_ours:
+        record["not_ours"] = sorted(not_ours)  # same-root games this run did not start: left running
     text = log_text()
     (evidence / "console.log").write_text(text, encoding="utf-8")
     dxlevel = re.search(r'"mat_dxlevel" = "(\d+)"', text)
@@ -579,6 +775,9 @@ def main(argv=None) -> int:
         command.add_argument("--allow-workshop", action="append", default=[], help="allowlist a Workshop item id (repeatable)")
         command.add_argument("--remix", choices=["on", "off"], default="on")
         command.add_argument("--require-insecure", choices=["yes", "no"], default="yes")
+        if name == "install":
+            command.add_argument("--replace-config", action="store_true",
+                                 help="replace an existing config.json that differs, after saving it in the evidence folder")
     run = sub.add_parser("run")
     run.add_argument("--name", required=True, help="step name: the evidence subfolder")
     run.add_argument("--map", default="gm_construct")
