@@ -6,6 +6,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (the Workshop distribution item, ADR 0016)
+
+- **Workshop item 3829070317 now carries the RTX package subscribers use.** It is one combined
+  package, `gmod-rtx-remix`: the RTX Remix runtime (runtime B, as tested in M5, M7 and R1) and the
+  RTX fixes with the Lua companion. A subscriber needs only the loader's `winmm.dll`, a
+  `config.json` that allowlists the item, and the subscription.
+- `tools/package_workshop.py` merges native packages into one, from folders or `.gma` archives.
+- `tools/publish_workshop.py` builds the package from `tools/workshop.json` and uploads it with
+  `gmpublish` only when its content changed. Its git hooks run it in the background after commits
+  and merges on `main` and before pushes of `main`.
+
 ### Added (M6 follow-up: the Workshop route, tested)
 
 - A private Workshop upload test, run with the user's approval.

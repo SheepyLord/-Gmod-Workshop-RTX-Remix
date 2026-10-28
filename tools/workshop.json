@@ -1,0 +1,26 @@
+{
+  "item": "3829070317",
+  "package": {
+    "id": "gmod-rtx-remix",
+    "name": "RTX Remix for Garry's Mod",
+    "title": "RTX Remix for Garry's Mod (native loader package)",
+    "type": "effects",
+    "tags": ["realism"],
+    "description": "Native package for the GMod native loader: the RTX Remix runtime and the RTX fixes. It needs the loader (bin\\win64\\winmm.dll) and a native-loader\\config.json that allowlists this item. GMod does not mount this item itself; the loader deploys it."
+  },
+  "parts": [
+    {
+      "name": "runtime",
+      "package": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\m5\\runtime-b.gma"
+    },
+    {
+      "name": "fixes",
+      "build": "package_fixes",
+      "args": [
+        "--repo", "H:\\BACKUP_20260815\\Modding\\garrys-mod-rtx-remixed",
+        "--modules-from", "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin"
+      ]
+    }
+  ],
+  "gmpublish": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_PoC\\bin\\win64\\gmpublish.exe"
+}
