@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M4: activation)
 
+- Startup deployment policy ([ADR 0009](docs/decisions/0009-startup-deployment-last-good.md)) keeps
+  the last good generation when an allowlisted source fails, including during staging, distinguishes
+  explicit addon disable, and excludes only the current process from the running-game check.
+  Explicit CLI apply retains its M3 behavior. Steam registry lookup loads its system library on demand.
 - Corrections before integration: command-line swaps validate and update the complete cached
   string descriptors, roll back partial failures and expose explicit/scoped restoration. A separate
   process tests the real kernelbase/PEB round trip. Package config layers now precede existing user

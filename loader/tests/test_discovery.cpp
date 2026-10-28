@@ -100,11 +100,13 @@ TEST_CASE("discovery: one candidate per allowlisted entry, in precedence order")
   CHECK(candidates[6].time_updated.value_or(0) == 1793000000u);
   CHECK(candidates[6].workshop_manifest == "987");
   CHECK(candidates[7].problem.find("disabled") != std::string::npos);   // 222 in addonnomount
+  CHECK(candidates[7].disabled_by_user);
   CHECK(candidates[8].problem.find("no .gma") != std::string::npos);    // 333 empty
   CHECK(candidates[9].problem.find("archives") != std::string::npos);   // 444 ambiguous
   CHECK(candidates[10].problem.empty());                                // 555 legacy .bin
   CHECK(candidates[10].location.filename() == "387671470694828055_legacy.bin");
   CHECK(candidates[11].problem.find("not installed") != std::string::npos);  // 999
+  CHECK(!candidates[11].disabled_by_user);
   fs::remove_all(dir);
 }
 

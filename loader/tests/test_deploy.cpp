@@ -8,6 +8,7 @@
 #include "nl/manifest.h"
 #include "nl/planner.h"
 #include "nl/sha256.h"
+#include "nl/startup.h"
 #include "nl_test.h"
 
 #include <windows.h>
@@ -803,4 +804,40 @@ TEST_CASE("deploy faults: a failure at any change leaves the old state (or, afte
   copy_tree(g.root, upgraded);
   CHECK(fail_everywhere(g.dir / "rollback", upgraded, kRollback) > 5);
   CHECK(fail_everywhere(g.dir / "uninstall", upgraded, kUninstall) > 5);
+}
+
+TEST_CASE("startup deployment: a late bad archive keeps all current packages without changing CLI behavior") {
+  Game g("startup_bad_archive");
+  g.add("runtime.gma", runtime("1.0.0", "one"));
+  g.allow({"garrysmod/addons/runtime.gma"});
+  const auto first = nl::startup::prepare(g.root, GetCurrentProcessId());
+  REQUIRE(first.deployment.outcome == "deployed");
+  REQUIRE(first.journal && first.journal->current);
+  const auto generation = first.journal->current->number;
+  const auto payload = first.journal->current->packages[0].payload;
+  const auto journal_before = g.read("native-loader/state.json");
+
+  const auto update = runtime("2.0.0", "two");
+  nl::test::FixtureArchive archive;
+  archive.files.push_back({"native/manifest.json", manifest_of(update)});
+  for (const auto& [name, bytes] : update.files) {
+    archive.files.push_back({name, name.ends_with("d3d9.dll") ? "BAD" : bytes});
+  }
+  write_file(g.root / "garrysmod/addons/runtime.gma", nl::test::build_gma(archive));
+  g.add("mods.gma", mods("1.0.0", {{kMod + "new.txt", "new mod"}}));
+  g.allow({"garrysmod/addons/runtime.gma", "garrysmod/addons/mods.gma"});
+  const auto kept = nl::startup::prepare(g.root, GetCurrentProcessId());
+  REQUIRE(kept.deployment.outcome == "kept");
+  CHECK(kept.may_activate);
+  CHECK(kept.deployment.generation == generation);
+  CHECK(kept.deployment.changes.empty());
+  CHECK(g.read(payload + "/runtime/d3d9.dll") == "one");
+  CHECK(g.read("native-loader/state.json") == journal_before);
+  CHECK(!g.has("rtx-remix/mods/test_mod/new.txt"));
+
+  const auto cli_style = apply_at(g.root);
+  REQUIRE(cli_style.outcome == "deployed");
+  REQUIRE(g.journal().current && g.journal().current->packages.size() == 1);
+  CHECK(g.journal().current->packages[0].id == "test-mods");
+  CHECK(g.has("rtx-remix/mods/test_mod/new.txt"));
 }

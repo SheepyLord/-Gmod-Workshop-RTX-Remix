@@ -6,6 +6,7 @@
 #include "nl/package.h"
 #include "nl/paths.h"
 #include "nl/sha256.h"
+#include "nl/startup.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
@@ -120,7 +121,7 @@ class Lock {
 };
 
 // True if this folder's gmod.exe is running, or a gmod.exe whose folder cannot be read is.
-bool game_running(const Path& root) {
+bool game_running(const Path& root, std::uint32_t excluded_process) {
   const std::wstring targets[] = {std::filesystem::absolute(root / L"bin" / L"win64" / L"gmod.exe").lexically_normal().native(),
                                   std::filesystem::absolute(root / L"gmod.exe").lexically_normal().native()};
   const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -129,6 +130,7 @@ bool game_running(const Path& root) {
   entry.dwSize = sizeof(entry);
   bool running = false;
   for (BOOL more = Process32FirstW(snapshot, &entry); more && !running; more = Process32NextW(snapshot, &entry)) {
+    if (entry.th32ProcessID == excluded_process) continue;
     if (CompareStringOrdinal(entry.szExeFile, -1, L"gmod.exe", -1, TRUE) != CSTR_EQUAL) continue;
     const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ProcessID);
     if (!process) {
@@ -160,7 +162,8 @@ struct Run {
       : root(std::move(game_root)),
         disk(options.filesystem ? *options.filesystem : fs::win32()),
         dry_run(options.dry_run),
-        allow_running_game(options.allow_running_game) {
+        allow_running_game(options.allow_running_game),
+        exclude_process_id(options.exclude_process_id) {
     report.action = action;
   }
 
@@ -171,6 +174,7 @@ struct Run {
   fs::Counting disk;  // every change goes through it, so the report can count them
   bool dry_run;
   bool allow_running_game;
+  std::uint32_t exclude_process_id;
   Report report;
   Journal journal;
 };
@@ -363,8 +367,12 @@ bool begin(Run& run, Lock& lock) {
     }
   }
   if (!run.dry_run) {
-    if (!run.allow_running_game && game_running(run.root)) return refuse(run, "Garry's Mod is running from this folder; close it first");
+    if (!run.allow_running_game && game_running(run.root, run.exclude_process_id)) {
+      run.report.blocked_by = Report::BlockedBy::running_game;
+      return refuse(run, "Garry's Mod is running from this folder; close it first");
+    }
     if (!lock.acquire(run.at(kLock))) {
+      if (lock.error() == ERROR_SHARING_VIOLATION) run.report.blocked_by = Report::BlockedBy::deployer_lock;
       return refuse(run, lock.error() == ERROR_SHARING_VIOLATION
                              ? std::string("another deployment is running in this folder")
                              : "cannot open native-loader/lock (Windows error " + std::to_string(lock.error()) + ")");
@@ -1272,6 +1280,17 @@ Report apply(const std::filesystem::path& root, std::vector<planner::Considered>
     StagedByPackage staged;  // kept across planning passes
     for (;;) {
       const planner::Plan plan = planner::make_plan(considered, config, loader);
+      if (options.keep_last_good && run.journal.current) {
+        if (const auto reason = startup::keep_last_good_reason(*run.journal.current, plan)) {
+          run.report.outcome = "kept";
+          run.report.generation = run.journal.current->number;
+          list_packages(run.report, run.journal.current->packages);
+          run.note(*reason);
+          report_skipped(run.report, plan);
+          if (!staged.empty()) finish(run);  // discard only this run's staged material; current stays intact
+          return;
+        }
+      }
       try {
         deploy_plan(run, plan, tx, staged, release_hold);
         report_skipped(run.report, plan);

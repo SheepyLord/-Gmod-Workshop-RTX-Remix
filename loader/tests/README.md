@@ -30,6 +30,7 @@ backward compatible.
 | `test_cmdline.cpp` | Token/getter decoding, synthetic descriptor validation, lengths/capacity bounds, failed/partial-write rollback and scoped restoration |
 | `cmdline_host.cpp` | Separate CTest process `nl_cmdline_roundtrip`: real kernelbase W/A and PEB swap, updated lengths, then exact explicit and scoped restoration; includes original quoted/Unicode arguments |
 | `test_version.cpp` | `nl::version()` matches the CMake project version |
+| `test_startup.cpp` | Keep-last-good source decisions, explicit removals/Workshop disable, absent/disabled/invalid config, invalid journal and contention with/without pending transaction; late staging failure versus CLI behavior is also covered in `test_deploy.cpp` |
 | `fault_host.cpp` | `nl_fault_host`, test-only: one deployer command (`apply`, `rollback`, `uninstall`, `recover`) that ends itself before change N (`--kill-at N`, exit 99) or fails it (`--fail-at N`) |
 | `deploy_faults.py` | CTest `nl_deploy_faults`: kills `nl_fault_host` before every change of the same four scenarios on the real file system ([doc](deploy_faults.py.md)) |
 
