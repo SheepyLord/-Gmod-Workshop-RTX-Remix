@@ -4,14 +4,18 @@ configure_file(include/nl/version.h.in
 add_library(nl_core STATIC
   src/config.cpp
   src/crc32.cpp
+  src/deploy.cpp
   src/discovery.cpp
+  src/fs.cpp
   src/gma.cpp
+  src/journal.cpp
   src/json.cpp
   src/lzma.cpp
   src/manifest.cpp
   src/package.cpp
   src/paths.cpp
   src/planner.cpp
+  src/sha256.cpp
   src/utf8.cpp
   src/vdf.cpp
   src/version.cpp)

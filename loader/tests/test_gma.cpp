@@ -214,3 +214,52 @@ TEST_CASE("gma: open_archive reads plain files and LZMA wrappers") {
   CHECK_THROWS_AS(nl::gma::FileSource(dir / "missing.gma"), std::filesystem::filesystem_error);
   std::filesystem::remove_all(dir);
 }
+
+namespace {
+
+// Records what extract() delivers.
+class Collect final : public nl::gma::EntrySink {
+ public:
+  void begin(const nl::gma::Entry& entry) override {
+    order.push_back(entry.path);
+    bytes.emplace_back();
+  }
+  void data(const unsigned char* chunk, std::size_t size) override { bytes.back().append(reinterpret_cast<const char*>(chunk), size); }
+  void end(const nl::gma::Entry&) override { ++ended; }
+
+  std::vector<std::string> order;
+  std::vector<std::string> bytes;
+  int ended = 0;
+};
+
+}  // namespace
+
+TEST_CASE("gma: extract delivers the wanted files in one pass, skips the rest and checks CRCs") {
+  const auto dir = nl::test::scratch_dir("gma_extract");
+  FixtureArchive archive;
+  archive.files = {{"a.txt", "alpha"}, {"big.bin", std::string(300000, 'b')}, {"c.txt", "gamma"}, {"d.txt", "delta"}};
+  const auto file = dir / "pack.gma";
+  const auto bytes = build_gma(archive);
+  std::ofstream(file, std::ios::binary).write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+
+  Collect some;
+  const auto index = nl::gma::extract(file, [](const nl::gma::Entry& e) { return e.path == "a.txt" || e.path == "c.txt"; }, some);
+  CHECK(index.entries.size() == 4);
+  CHECK((some.order == std::vector<std::string>{"a.txt", "c.txt"}));
+  CHECK((some.bytes == std::vector<std::string>{"alpha", "gamma"}));
+  CHECK(some.ended == 2);
+
+  archive.files[2].crc = 12345;  // c.txt now fails its CRC
+  const auto damaged = dir / "damaged.gma";
+  const auto bad = build_gma(archive);
+  std::ofstream(damaged, std::ios::binary).write(bad.data(), static_cast<std::streamsize>(bad.size()));
+  Collect all;
+  CHECK_THROWS_AS(nl::gma::extract(damaged, [](const nl::gma::Entry&) { return true; }, all), FormatError);
+  CHECK(all.order.size() == 3);
+  CHECK(all.ended == 2);  // end() is never called for the file that failed
+
+  Collect none;
+  nl::gma::extract(file, [](const nl::gma::Entry&) { return false; }, none);
+  CHECK(none.order.empty());
+  std::filesystem::remove_all(dir);
+}

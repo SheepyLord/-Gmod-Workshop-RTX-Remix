@@ -74,7 +74,34 @@ Each candidate's package is loaded (`nl::package::load`: manifest read, parsed a
 checked against the files) and `nl::planner::make_plan` decides what is active, with a reason for
 everything that is not: precedence dev folder > local > Workshop, one runtime, no overlapping root
 files ([ADR 0006](decisions/0006-package-precedence-and-planning.md)). `nlctl plan <game root>` shows
-the result without changing anything. Deployment of the plan is M3; activation of the runtime M4.
+the result without changing anything. Deployment of the plan is M3 (below); activation of the
+runtime M4.
+
+## Deployment (M3)
+
+`nl::deploy` turns the plan into files on disk as one transaction per run
+([ADR 0007](decisions/0007-transactional-deployment.md)). `nlctl apply` runs it outside the game;
+from M4 the start-up step does. Each run goes through these steps:
+
+```
+lock      exclusive native-loader\lock; refuse while this folder's gmod.exe runs (outside the game)
+recover   undo a transaction an earlier run left unfinished (journal "pending"), finish clean-up
+plan      M2's plan; then for every root file: keep, replace, add, remove, adopt, or block its package
+stage     extract into native-loader\staging\<transaction>\ in one pass per archive, checking size,
+          GMA CRC-32 and the manifest's SHA-256 (CNG); a failure re-plans that package as broken
+intent    write the steps to the journal (pending)
+move      renames on one volume: old root files aside into backup\<gen>\, new payload folders and
+          files into place
+commit    write the new journal: the new generation, the previous one kept for rollback
+clean up  delete staging, retired generations' files (only if unchanged) and empty folders
+```
+
+It replaces or removes only files it placed itself, and only after a full SHA-256 shows they are
+unchanged. A file the user changed stays as it is and is reported. A target that holds someone
+else's file blocks that package, unless the file already has the right content: then it is adopted
+and never touched. `rollback` is a transaction back to the previous generation, and `uninstall`
+retires everything. A run with nothing to do writes nothing; [RESEARCH.md](RESEARCH.md) section 9
+has the timings.
 
 ## Open questions (tracked in the roadmap)
 

@@ -112,9 +112,15 @@ std::vector<std::string> string_list(const Value& value, std::string_view what) 
   return out;
 }
 
+// Paths of files the loader deploys or loads. They must also be ASCII: NTFS compares names without
+// case for every letter, the loader only for ASCII ones (paths::fold), and two spellings of one name
+// would make the loader's own file look like someone else's.
 std::string safe_path(const std::string& path, std::string_view what) {
   const std::string reason = paths::problem(path);
   if (!reason.empty()) fail(std::string(what) + " \"" + path + "\": " + reason);
+  if (std::any_of(path.begin(), path.end(), [](char c) { return static_cast<unsigned char>(c) >= 0x80; })) {
+    fail(std::string(what) + " \"" + path + "\" must be ASCII");
+  }
   return path;
 }
 

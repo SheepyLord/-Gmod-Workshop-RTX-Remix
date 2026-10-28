@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -103,6 +105,52 @@ TEST_CASE("package: archives without a manifest or with a wrong one are refused"
   unlisted.push_back({"native/payload/runtime/sneaky.dll", "x"});
   CHECK_THROWS_AS(nl::package::load(nl::package::open_archive(write_gma(dir, "unlisted.gma", with_manifest(unlisted, manifest)))),
                   nl::manifest::Error);
+  fs::remove_all(dir);
+}
+
+namespace {
+
+class Collect final : public nl::package::Sink {
+ public:
+  void begin(const nl::package::Entry& entry) override {
+    current_ = entry.path;
+    got[current_];
+  }
+  void data(const unsigned char* bytes, std::size_t size) override { got[current_].append(reinterpret_cast<const char*>(bytes), size); }
+  void end() override { ++ended; }
+
+  std::map<std::string, std::string> got;
+  int ended = 0;
+
+ private:
+  std::string current_;
+};
+
+}  // namespace
+
+TEST_CASE("package: extract streams the wanted files from an archive and from a folder") {
+  const auto dir = nl::test::scratch_dir("package_extract");
+  const auto files = with_manifest(kPayload, manifest_for(kPayload));
+  const std::set<std::string> wanted = {"native/payload/runtime/d3d9.dll", "native/root/rtx-remix/mods/base_mod/mod.usda"};
+  {
+    const auto archive = nl::package::open_archive(write_gma(dir, "runtime.gma", files));
+    Collect c;
+    archive->extract(wanted, c);
+    CHECK(c.ended == 2);
+    CHECK(c.got["native/payload/runtime/d3d9.dll"] == "MZ-not-a-dll");
+    CHECK(c.got["native/root/rtx-remix/mods/base_mod/mod.usda"] == "#usda 1.0\n");
+    Collect missing;
+    CHECK_THROWS_AS(archive->extract({"native/payload/nothing.dll"}, missing), nl::package::Error);
+  }
+  {
+    const auto folder = nl::package::open_folder(write_folder(dir / "runtime", files));
+    Collect c;
+    folder->extract(wanted, c);
+    CHECK(c.ended == 2);
+    CHECK(c.got["native/payload/runtime/d3d9.dll"] == "MZ-not-a-dll");
+  }
+  const auto package = nl::package::load(nl::package::open_archive(dir / "runtime.gma"));
+  CHECK(package.manifest_sha256.size() == 64);
   fs::remove_all(dir);
 }
 

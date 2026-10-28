@@ -7,13 +7,72 @@
 | Conventions | Script docs, module READMEs, links, changelog, component map | `python tools\check_repo.py` | M0 |
 | Python unit tests | `tools/**/tests` | `tools\test.ps1 -SkipNative` | M0 |
 | C++ unit tests | `nl_tests` (CTest) | `tools\build.ps1` | M0 |
-| CLI integration | `nlctl` against synthetic packages and a scratch game folder | CTest (`nlctl_crosscheck_gmapack`, `nlctl_e2e_plan`) | M2 |
+| CLI integration | `nlctl` and `uninstall-loader.ps1` against synthetic packages and scratch game folders | CTest (`nlctl_crosscheck_gmapack`, `nlctl_e2e_plan`, `nlctl_e2e_deploy`, `nlctl_uninstall_loader`) | M2 |
+| Fault injection | Every file-system change of a deployment interrupted or failed, in process and by killing a real process | CTest (`nl_tests_faults_*`, `nl_deploy_faults`) | M3 |
 | Real-data parse | Read-only parse of every installed Workshop archive (header and index only) | `nlctl scan`, by hand | M2 |
+| PoC deployment | The deployer's whole life cycle on the PoC, without starting the game | `tools\poc_deploy_check.ps1`, by hand | M3 |
 | PoC in-game | Launch `GarrysMod_PoC` with the bootstrap, check logs and behaviour | `tools\smoke_test.ps1` | M1 |
 | Field test | The user's real install, with backups and a tested rollback | manual, with the user | M7 |
 
-`tools\test.ps1` runs the first four (the CLI integration tests are CTests) and must pass before any
-change is finished.
+`tools\test.ps1` runs the first five (the CLI and fault-injection tests are CTests) and must pass
+before any change is finished. CTest runs six tests at a time (`CMakePresets.json`); the longest,
+the real-process kill test, takes about 20-35 s.
+
+### M3 deployer checks
+
+**Unit tests.** `nl_tests` covers:
+
+- SHA-256 (FIPS 180-4 values), `nl::fs` (long paths, atomic writes, links refused) and the journal
+  (round trip; 17 invalid or out-of-bounds journals refused).
+- The deployer: first deployment and the no-op re-run, upgrade, rollback with hold and the second
+  rollback back, retirement of the oldest generation, foreign and adopted files, changed files,
+  create-only, the fallback past a package that fails its SHA-256, junctions, dry run, the lock,
+  an invalid journal, uninstall back to the original folder.
+
+**Fault injection.** Each fault test builds the state before a command, runs the command
+uninterrupted to get the state after it, then interrupts or fails it before each of its changes,
+every time on a fresh copy. After the next run's recovery the folder must be exactly the before or
+the after state, with nothing pending and no staging left. The tests:
+
+| CTest | What | Where |
+|---|---|---|
+| `nl_tests_faults_upgrade` | an upgrade interrupted before every change; twice, recovery itself is interrupted before every one of its changes | in process; the "crash" is an exception nothing catches |
+| `nl_tests_faults_other` | the same for a first deployment, a rollback (once with interrupted recovery) and an uninstall | in process |
+| `nl_tests_faults_errors` | every change of those four made to fail with an error instead: the run must undo itself, or, after the commit, leave the new state | in process |
+| `nl_deploy_faults` | [`loader/tests/deploy_faults.py`](../loader/tests/deploy_faults.py.md): `nl_fault_host` killed with `TerminateProcess` before every change of the same four, on the real file system (2026-10-27: 54, 59, 26 and 35 changes) | real processes |
+
+The in-process tests use a file system without flushes, for speed; they test the deployer's logic.
+The kill test goes through the real, durable `fs::win32()`.
+
+**End to end.** `nlctl_e2e_deploy` ([`e2e_deploy.py`](../loader/cli/tests/e2e_deploy.py.md)) runs
+`apply`, `status`, `rollback` and `uninstall` through `nlctl`:
+
+- sources: a development folder, an LZMA-wrapped Workshop item and local archives;
+- deploy, re-run, dry run, upgrade, drift found by `status`, rollback twice;
+- refusals: while the lock is held, while the folder's `gmod.exe` runs (a copy of `ping.exe`
+  stands in for the game), with a broken journal;
+- uninstall back to the original folder.
+
+`nlctl_uninstall_loader` ([`uninstall_tests.ps1`](../loader/cli/tests/uninstall_tests.ps1.md)) runs
+`tools\uninstall-loader.ps1` in synthetic game folders, with a deployment and the bootstrap
+installed:
+
+- `-WhatIf` removes nothing;
+- an edited bootstrap stops it before any deployed file is removed;
+- `config.json` stays by default and goes with `-RemoveConfig`, leaving the folder exactly as before;
+- a folder Steam manages needs `-AllowSteamManaged`.
+
+**On the PoC, by hand** (writes to the PoC, never starts the game):
+
+```powershell
+tools\build.ps1 -Config Release
+tools\poc_deploy_check.ps1
+```
+
+[`poc_deploy_check.ps1`](../tools/poc_deploy_check.ps1.md) runs the bootstrap install, a deployment
+and a re-run, then uninstalls with `-RemoveConfig`. Every file must then be back as it was (sizes
+and times) and `verify_install.py` must pass. On 2026-10-27 it passed: 58 changes deployed, 0 on
+the re-run, 3,113 entries identical afterwards, 2,877 depot files OK.
 
 ### M2 core and CLI checks
 

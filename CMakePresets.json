@@ -32,7 +32,7 @@
     { "name": "win64-release", "configurePreset": "win64-release" }
   ],
   "testPresets": [
-    { "name": "win64-debug", "configurePreset": "win64-debug", "output": { "outputOnFailure": true } },
-    { "name": "win64-release", "configurePreset": "win64-release", "output": { "outputOnFailure": true } }
+    { "name": "win64-debug", "configurePreset": "win64-debug", "output": { "outputOnFailure": true }, "execution": { "jobs": 6 } },
+    { "name": "win64-release", "configurePreset": "win64-release", "output": { "outputOnFailure": true }, "execution": { "jobs": 6 } }
   ]
 }

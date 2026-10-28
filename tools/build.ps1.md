@@ -26,5 +26,7 @@ tools\build.ps1 -NoTests                   # skip CTest
 
 - Static CRT (`/MT`), warnings as errors (`/W4 /WX`), debug info in objects (`/Z7`) and one PDB per
   binary; see the root `CMakeLists.txt`.
+- CTest runs six tests at a time (the test presets' `execution.jobs`); the fault-injection tests
+  take most of the time ([docs/TESTING.md](../docs/TESTING.md)).
 - Never touches a game install. Deploying a build into an install is a separate script (M1).
 - [`test.ps1`](test.ps1.md) calls this script as its last step.

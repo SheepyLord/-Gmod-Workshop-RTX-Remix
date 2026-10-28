@@ -127,6 +127,7 @@ TEST_CASE("manifest: every schema-1 rule is enforced") {
       with(sha_line, R"("native/payload/config/rtx.conf": {"size": 5, "sha256": ")" + kSha + R"(", "mode": 1})"),
       with(sha_line, sha_line + R"(, "NATIVE/PAYLOAD/CONFIG/RTX.CONF": {"size": 5, "sha256": ")" + kSha + R"("})"),
       with(sha_line, R"("native/payload/con:fig/rtx.conf": {"size": 5, "sha256": ")" + kSha + R"("})"),
+      with(sha_line, sha_line + ", \"native/payload/config/r\xC3\xA9sum\xC3\xA9.dat\": {\"size\": 5, \"sha256\": \"" + kSha + "\"}"),
       with(R"("entry": "runtime/d3d9.dll")", R"("entry": "runtime/dxvk.dll")"),
       with(R"("entry": "runtime/d3d9.dll")", R"("entry": "other/d3d9.dll")"),
       with(R"("rtx_conf_layers": ["config/rtx.conf"])", R"("rtx_conf_layers": ["config/rtx.ini"])"),

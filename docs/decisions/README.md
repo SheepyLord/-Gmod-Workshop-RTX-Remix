@@ -9,9 +9,10 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0001](0001-bootstrap-winmm-proxy.md) | The bootstrap is a `winmm.dll` proxy that works at the EXE entry point | Accepted 2026-10-27 |
 | [0002](0002-source-agnostic-payloads.md) | Payloads are source-agnostic; Workshop route decided after a private upload test | Accepted 2026-10-27 |
 | [0003](0003-native-trust-allowlist.md) | Only allowlisted packages may deploy native code until signatures exist | Accepted 2026-10-27 |
-| [0004](0004-runtime-in-versioned-folder.md) | The Remix runtime is preloaded from a versioned folder, not copied into `bin\win64` | Accepted 2026-10-27 |
+| [0004](0004-runtime-in-versioned-folder.md) | The Remix runtime is preloaded from a versioned folder, not copied into `bin\win64` | Accepted 2026-10-27; folder name refined by 0007 |
 | [0005](0005-repo-conventions.md) | Agent-facing repo conventions and MIT licence | Accepted 2026-10-27 |
 | [0006](0006-package-precedence-and-planning.md) | Package precedence (dev folder > local > Workshop) and planning rules | Accepted 2026-10-27 |
+| [0007](0007-transactional-deployment.md) | Deployment is one journaled transaction per run, rolled back on failure | Accepted 2026-10-27 |
 
 ## Template
 
