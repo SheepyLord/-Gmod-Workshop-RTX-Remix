@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (M4: activation)
+
+- `tools/package_runtime.py`: builds an RTX Remix runtime package (a package folder and/or a `.gma`)
+  from the fork's runtime build folder (`_output`), hashing every file as it is copied. Excludes
+  `.exp/.lib/.ilk/.bak` and (unless `--with-pdbs`) `.pdb`; `--d3d9-from` overrides `d3d9.dll` from
+  another build folder; `--rtx-conf` / `--dxvk-conf` add config layers; `--env`, `--id`, `--version`
+  and more set the manifest. The default version derives from `d3d9.dll`, so the output is
+  reproducible. Tests in `tools/tests/test_package_runtime.py`.
+
 ### Added (M3: deployer)
 
 - `nl_core`: the transactional deployer `nl::deploy` (`apply`, `rollback`, `uninstall`, `recover`,
