@@ -20,7 +20,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 
 | Risk | Plan |
 |---|---|
-| Workshop refuses or removes items with `.dll`/`.exe` | `gmad.exe` refuses them, but a `gmapack` archive uploaded with `gmpublish` is accepted and served intact, tested privately ([ADR 0015](decisions/0015-workshop-route-for-native-packages.md)). GMod's Workshop rules restrict `.dll` files, so a public item may be removed if reported; downloads stay a fallback ([ADR 0012](decisions/0012-distribution-route.md)) |
+| Workshop items with native files | `gmad.exe` will not pack them, but a `gmapack` archive uploaded with `gmpublish` is accepted and served intact, tested privately ([ADR 0015](decisions/0015-workshop-route-for-native-packages.md)). GMod's [Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule about file types. GMod itself cannot mount such an item, so its description must say it needs the loader, or it may be flagged as broken. Downloads stay a fallback ([ADR 0012](decisions/0012-distribution-route.md)) |
 | VAC and in-memory patches | Patch sets require `-insecure` by default |
 | Launch arguments cannot be added from inside the process | Fall back to documented Steam launch options |
 | `stdshader_dx6.dll` loaded by full path | Redirect hook, else journaled on-disk override with hash checks |

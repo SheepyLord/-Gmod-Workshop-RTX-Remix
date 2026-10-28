@@ -149,8 +149,10 @@ The Workshop upload test then used the same build and the fixed session driver; 
    GMod does not mount an item holding native files.
 3. **Before any public package:** the GPL-2.0 Lua and binaries in the fixes package, and the NVIDIA
    binaries in the runtime package, need their licence texts, source offers and NVIDIA's
-   redistribution terms checked. GMod's Workshop rules also restrict `.dll` files. Still open; nothing
-   is public.
+   redistribution terms checked. Still open; nothing is public. (A first version of this note also
+   said GMod's Workshop rules restrict `.dll` files. They do not: the rules have no rule about file
+   types, and the wiki's `.dll`/`.exe` list is what `gmad.exe` packs. Corrected 2026-10-28 at the
+   user's direction; see ADR 0015.)
 
 ## Still open after R1
 

@@ -18,6 +18,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   the loader's add-on folders ([ADR 0015](docs/decisions/0015-workshop-route-for-native-packages.md),
   superseding part of ADR 0012; ADR 0011 confirmed by the user).
 - `tools/gmapack` is recorded as the user's own code under this repo's MIT licence (R1-025).
+- **Corrected:** GMod's Steam Workshop rules do not forbid DLLs or other runtime files; they have no
+  rule about file types. The wiki's `.dll`/`.exe` list describes what `gmad.exe` packs. ADR 0012
+  (in a correction note), ADR 0015, the M6 report, the R1 triage and the roadmap had said otherwise.
 
 ### Changed (R1: whole-repo review)
 

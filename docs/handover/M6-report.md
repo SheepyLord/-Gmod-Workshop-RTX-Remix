@@ -31,9 +31,15 @@ that does not publish anything was done; the upload test is left to the user, wi
 
 ## The private upload test, for the user
 
-Only if you want to know whether the Workshop accepts and keeps an item with native files (it is
-against the Workshop rules for GMod as the wiki states them, so expect a removal or a ban risk on the
-item). Use a throwaway package, never the real runtime, and remove the item afterwards.
+Only if you want to know whether the Workshop accepts and keeps an item with native files. Use a
+throwaway package, never the real runtime, and remove the item afterwards.
+
+**Correction, 2026-10-28.** This section first said such an item is against GMod's Workshop rules. It
+is not:
+- GMod's [Steam Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule
+  about file types.
+- The `.dll`/`.exe` list on the wiki's addon-creation page is what `gmad.exe` will pack.
+- The rules do ban test items once published, which is one more reason to remove the item afterwards.
 
 1. Build a tiny package with a harmless DLL, for example from the M4 test fixtures:
    `python tools\package_runtime.py --runtime out\build\win64-release\loader\proxy\tests\runtime --gma out\m6\upload-test.gma --id upload-test --version 0.0.1`
@@ -67,8 +73,11 @@ and the session records.
 Result: [ADR 0015](../decisions/0015-workshop-route-for-native-packages.md).
 - Native packages can go through the Workshop. Their Lua must come through the loader's add-on folders
   (ADR 0011), because GMod does not mount the item itself.
-- A public release is still the user's call: GMod's Workshop rules restrict `.dll` files, and the
-  licences need checking.
+- A public release is still the user's call.
+  - The Workshop's rules have no rule about file types (corrected 2026-10-28; see ADR 0015).
+  - The licences need checking first.
+  - The item's description should say that it needs the loader, because GMod cannot mount it by
+    itself.
 
 ## Open
 

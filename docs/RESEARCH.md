@@ -590,6 +590,15 @@ placed by the loader". `package_fixes.py` now deploys that mod create-only.
   whitelist]", "native/payload/test.dll [Not allowed by whitelist]", "File list verification failed",
   no `.gma` written. The same folder with only the Lua file packs (181 bytes). Evidence
   `out/m6/gmad-probe`.
+- **That whitelist is a packing limit, not a Workshop rule** (the user's correction, checked
+  2026-10-28).
+  - The `.dll`/`.exe`/`.htm`/`.html`/`.css`/`.js` list on the wiki's
+    [Workshop Addon Creation](https://wiki.facepunch.com/gmod/Workshop_Addon_Creation) page says what
+    `gmad.exe` will pack.
+  - The [Steam Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule
+    about file types. They ban exploits and backdoors, paid-game content, reuploads, wrong tags, and
+    empty, test or placeholder items. Their "good ideas" list (not bans, but it can get an item flagged
+    as incompatible) includes "do not upload broken addons", with a size limit of about 4 GB.
 - Not tried at first: `gmpublish` (it uploads, with no dry run; outward-facing). Tried on 2026-10-28
   with the user's approval ([ADR 0015](decisions/0015-workshop-route-for-native-packages.md),
   [M6 report](handover/M6-report.md)):

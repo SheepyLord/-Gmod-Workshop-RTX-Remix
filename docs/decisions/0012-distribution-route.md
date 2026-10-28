@@ -4,6 +4,14 @@
   (2026-10-28).** The private upload test was run with the user's approval: the Workshop accepted a
   native package packed with `gmapack` and served it back intact, so native packages may go through
   the Workshop. The rest of this record stands.
+- Correction (2026-10-28, at the user's direction): three places here (Context, and the first two
+  alternatives) say the Workshop's rules forbid DLL and EXE files. They do not.
+  - GMod's [Steam Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule
+    about file types.
+  - The wiki's `.dll`/`.exe` list (Workshop Addon Creation) is what `gmad.exe` will pack.
+  - Disguising DLLs under other extensions stays rejected: it would look like malware to anyone who
+    inspects the item.
+  - See [0015](0015-workshop-route-for-native-packages.md).
 - Decided by: Claude, implementing M6 under the user's 2026-10-28 instruction to finish M5-M7 without
   further approvals. Publishing to the Workshop stays outward-facing (AGENTS.md rule 5) and was not done.
 - Answers the open question of [ADR 0002](0002-source-agnostic-payloads.md) (that record stands:

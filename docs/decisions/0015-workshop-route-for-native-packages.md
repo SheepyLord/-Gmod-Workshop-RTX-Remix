@@ -1,6 +1,8 @@
 # 0015: Native packages can be distributed through the Workshop, packed with gmapack
 
-- Status: Accepted 2026-10-28
+- Status: Accepted 2026-10-28. Corrected the same day at the user's direction: the first version
+  said GMod's Workshop rules restrict `.dll` files. They do not (point 3). The `.dll`/`.exe` list on
+  the wiki's addon-creation page describes what `gmad.exe` packs; it is not a rule.
 - Decided by: the user, with Claude's private upload test the same day. The user's words: "the
   workshop accepts anything that is packed within a gma ... tools\gmapack could pack any folder into a
   gma", and approval to run the test.
@@ -53,9 +55,17 @@ R1 worktree's `out/m6-ws/`):
      without RTX.
 3. **Public releases.** Whether a public release uses the Workshop, downloads or both is the user's
    decision, made per release.
-   - GMod's Workshop rules restrict `.dll` files, so a public item may be removed, or the account
-     warned, if it is reported.
-   - The GPL-2.0 and NVIDIA licence obligations apply to any public package.
+   - **File types are not a rule.** GMod's [Steam Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules)
+     have no rule about file types, so they do not forbid DLLs or other runtime files.
+     - The `.dll`/`.exe` list on [Workshop Addon Creation](https://wiki.facepunch.com/gmod/Workshop_Addon_Creation)
+       says what `gmad.exe` will pack (its whitelist), not what the Workshop allows.
+     - ADR 0012 and the first version of this record misread that list.
+   - **What the rules do ban** that matters here: exploits and backdoors, content from paid games,
+     reuploads, wrong tags, and empty, test or placeholder items.
+   - **Broken add-ons.** Among the rules' "good ideas" (not bans, but they may get an item flagged as
+     incompatible) is "do not upload broken addons". GMod cannot mount such an item by itself, so its
+     description should say that it needs the loader.
+   - **Licences.** The GPL-2.0 and NVIDIA licence obligations apply to any public package.
 
 ## Consequences
 
@@ -64,7 +74,7 @@ R1 worktree's `out/m6-ws/`):
 - **Subscribers see a console line.** GMod tries to mount the item at every start, refuses, and
   prints "Couldn't mount file". It is harmless, but the item's description should say so.
 - **The test item (3829070317) stays hidden until the user deletes it.** Deleting needs its Workshop
-  page.
+  page. The rules ban test items once published, so it should be deleted rather than made public.
 
 ## Alternatives considered
 
