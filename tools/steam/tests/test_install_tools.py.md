@@ -6,6 +6,13 @@ kind: vanilla, edited in place, resized, missing, a customised user-config file,
 
 - `verify` puts each file in the right category; `extras` finds the non-depot DLL; the CLI exits 1
   for the modified install and 0 for a clean one.
+- A depot file reached through a junction (`garrysmod\cfg` linked to a folder elsewhere that holds
+  byte-identical files) is reported as `reparse_point`, not OK, and the CLI exits 1 (R1-020). The
+  same holds for a depot file that is itself a symbolic link; that case is skipped where symbolic
+  links need a privilege the account lacks (Developer Mode off, not elevated). The junction is
+  removed by the test, never what it points to.
+- A depot entry with no hash but a size is `unverified`, and the CLI exits 1. An empty entry without
+  a hash and a user-config entry without one count as OK.
 - `clone` copies only verified files (keeping mtimes, creating listed empty folders, leaving no
   `.partial` files), takes rejected files from a fallback folder when one verifies, and refuses a
   non-empty destination or one inside the source.

@@ -11,6 +11,11 @@ import verify_install
 from _fixtures import REPO, SCRATCH, build_manifest, entry, scratch_folder, write_tree
 from steam_manifest import FLAG_USERCONFIG
 
+try:
+    from _winapi import CreateJunction  # CPython on Windows; a junction needs no privilege
+except ImportError:
+    CreateJunction = None
+
 VANILLA = {
     'bin/win64/engine.dll': b'engine-vanilla',
     'bin/win64/client.dll': b'client-vanilla',
@@ -50,6 +55,63 @@ class InstallToolTests(unittest.TestCase):
             self.tearDown()
             self.setUp()
         self.assertEqual(self.root.resolve().parent, SCRATCH.resolve())
+
+    def verify_quietly(self, install, manifest):
+        with contextlib.redirect_stdout(io.StringIO()):
+            return verify_install.main([str(install), '--manifest', str(manifest), '--quiet'])
+
+    @unittest.skipUnless(CreateJunction, 'directory junctions need Windows')
+    def test_a_depot_path_through_a_junction_is_not_vanilla(self):
+        # garrysmod/cfg is a junction to a folder elsewhere that holds byte-identical depot files.
+        files = {'garrysmod/cfg/config_default.cfg': b'DEPOT BYTES', 'bin/win64/engine.dll': b'engine'}
+        manifest = self.root / 'linked.manifest'
+        manifest.write_bytes(build_manifest([entry(p.replace('/', '\\'), d) for p, d in files.items()]))
+        install, victim = self.root / 'linked', self.root / 'victim'
+        write_tree(install, {'bin/win64/engine.dll': b'engine'})
+        write_tree(victim, {'config_default.cfg': b'DEPOT BYTES'})
+        (install / 'garrysmod').mkdir()
+        junction = install / 'garrysmod' / 'cfg'
+        CreateJunction(str(victim), str(junction))
+        try:
+            report = verify_install.verify(install, [manifest])
+            self.assertEqual(report['reparse_point'], ['garrysmod/cfg/config_default.cfg'])
+            self.assertEqual((report['ok'], report['missing'], report['hash_mismatch']), (1, [], []))
+            self.assertEqual(self.verify_quietly(install, manifest), 1)
+        finally:
+            os.rmdir(junction)  # the junction only, never what it points to
+
+    def test_a_depot_file_that_is_a_symbolic_link_is_not_vanilla(self):
+        manifest = self.root / 'symlink.manifest'
+        manifest.write_bytes(build_manifest([entry('gmod.exe', b'launcher')]))
+        install = self.root / 'symlinked'
+        write_tree(self.root / 'elsewhere', {'gmod.exe': b'launcher'})
+        install.mkdir()
+        try:
+            os.symlink(self.root / 'elsewhere' / 'gmod.exe', install / 'gmod.exe')
+        except OSError:
+            self.skipTest('creating a symbolic link needs Developer Mode or the symlink privilege')
+        report = verify_install.verify(install, [manifest])
+        self.assertEqual((report['reparse_point'], report['ok']), (['gmod.exe'], 0))
+        self.assertEqual(self.verify_quietly(install, manifest), 1)
+
+    def test_a_depot_file_without_a_hash_is_unverified_unless_empty(self):
+        zero = bytes(20)  # Steam's "no hash"
+        manifest = self.root / 'nohash.manifest'
+        manifest.write_bytes(build_manifest([
+            entry('bin\\win64\\nohash.dll', b'0123456789', sha=zero),
+            entry('garrysmod\\empty.txt', b'', sha=zero),
+            entry('garrysmod\\cfg\\autoexec.cfg', b'bind x', FLAG_USERCONFIG, sha=zero),
+        ]))
+        install = self.root / 'nohash'
+        write_tree(install, {'bin/win64/nohash.dll': b'abcdefghij', 'garrysmod/empty.txt': b'',
+                             'garrysmod/cfg/autoexec.cfg': b'bind y'})
+        report = verify_install.verify(install, [manifest])
+        self.assertEqual(report['unverified'], ['bin/win64/nohash.dll'])  # same size, content unknown
+        self.assertEqual(report['ok'], 2)  # the empty file, and the user's config (it may differ anyway)
+        self.assertEqual(self.verify_quietly(install, manifest), 1)
+        (install / 'bin/win64/nohash.dll').unlink()
+        manifest.write_bytes(build_manifest([entry('garrysmod\\empty.txt', b'', sha=zero)]))
+        self.assertEqual(self.verify_quietly(install, manifest), 0)
 
     def test_verify_classifies_every_difference(self):
         report = verify_install.verify(self.src, [self.manifest])

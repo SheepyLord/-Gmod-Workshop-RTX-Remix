@@ -1,25 +1,55 @@
 """Check a Steam install against its depot manifests: missing, resized or changed files.
 
 Read-only. Exit code 0 = every depot file matches (user-config files may differ),
-1 = at least one depot file is missing or different, 2 = setup error.
+1 = at least one depot file is missing, different, reached through a link or not verifiable,
+2 = setup error.
 """
 
 import argparse
 import json
 import os
+import stat
 import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from steam_manifest import locate_install, parse_manifest, safe_relpath, sha1_file  # noqa: E402
 
+FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+FAILING = ('missing', 'size_mismatch', 'hash_mismatch', 'reparse_point', 'unverified')
+
+
+def is_reparse_point(path):
+    """A junction, symbolic link or other reparse point, looked at without following it."""
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return False
+    return stat.S_ISLNK(info.st_mode) or bool(getattr(info, 'st_file_attributes', 0) & FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def through_reparse_point(install, rel, seen):
+    """Whether any component of install/rel below the install root (the file itself included) is a
+    reparse point; `seen` caches the answer per path."""
+    current = install
+    for part in rel.parts:
+        current = current / part
+        key = os.path.normcase(str(current))
+        if key not in seen:
+            seen[key] = is_reparse_point(current)
+        if seen[key]:
+            return True
+    return False
+
 
 def verify(install, manifest_paths, progress=None):
     """Return a report dict; lists hold manifest-relative paths."""
     install = Path(install)
     report = {'install': str(install), 'depots': [], 'ok': 0, 'bytes_ok': 0, 'missing': [],
-              'size_mismatch': [], 'hash_mismatch': [], 'userconfig_differs': [], 'skipped_symlinks': []}
+              'size_mismatch': [], 'hash_mismatch': [], 'reparse_point': [], 'unverified': [],
+              'userconfig_differs': [], 'skipped_symlinks': []}
     checked = 0
+    seen = {}
     for mpath in manifest_paths:
         m = parse_manifest(mpath)
         if m.filenames_encrypted:
@@ -31,14 +61,20 @@ def verify(install, manifest_paths, progress=None):
             if f.is_symlink:
                 report['skipped_symlinks'].append(f.path)
                 continue
-            full = install / safe_relpath(f.path)
+            rel = safe_relpath(f.path)
+            full = install / rel
             checked += 1
             if progress and checked % 500 == 0:
                 progress(checked)
-            if not full.is_file():
+            if through_reparse_point(install, rel, seen):
+                # Steam's file is not at its own path: a junction or link stands in its way (R1-020).
+                report['reparse_point'].append(f.path)
+            elif not full.is_file():
                 report['userconfig_differs' if f.is_userconfig else 'missing'].append(f.path)
             elif full.stat().st_size != f.size:
                 report['userconfig_differs' if f.is_userconfig else 'size_mismatch'].append(f.path)
+            elif f.sha1 is None and f.size and not f.is_userconfig:
+                report['unverified'].append(f.path)  # a size proves nothing about the content
             elif f.sha1 and sha1_file(full) != f.sha1:
                 report['userconfig_differs' if f.is_userconfig else 'hash_mismatch'].append(f.path)
             else:
@@ -94,11 +130,10 @@ def main(argv=None):
 
     summary = {k: (len(v) if isinstance(v, list) else v) for k, v in report.items() if k not in ('install', 'depots')}
     print(json.dumps(summary, indent=1))
-    for key in ('missing', 'size_mismatch', 'hash_mismatch', 'userconfig_differs', 'extras'):
+    for key in (*FAILING, 'userconfig_differs', 'extras'):
         for rel in report.get(key, [])[:50]:
             print(f'{key}: {rel}')
-    failed = report['missing'] or report['size_mismatch'] or report['hash_mismatch']
-    return 1 if failed else 0
+    return 1 if any(report[key] for key in FAILING) else 0
 
 
 if __name__ == '__main__':
