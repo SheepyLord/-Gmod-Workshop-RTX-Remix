@@ -67,6 +67,19 @@ TEST_CASE("startup: removed sources and disabled Workshop items are deliberate r
   CHECK(!nl::startup::keep_last_good_reason(deployed, proposed));
 }
 
+TEST_CASE("startup: an incompatible replacement cannot discard the last good runtime") {
+  auto decision = unavailable();
+  decision.item.problem.clear();
+  auto replacement = std::make_shared<nl::package::Package>();
+  replacement->manifest.id = "runtime";
+  replacement->manifest.requires_loader = nl::manifest::parse_version("99.0.0");
+  replacement->manifest_sha256 = std::string(64, 'b');
+  decision.item.package = replacement;
+  nl::planner::Plan plan;
+  plan.decisions.push_back(decision);
+  CHECK(nl::startup::keep_last_good_reason(current(), plan).has_value());
+}
+
 TEST_CASE("startup: absent disabled or invalid configuration never deploys or removes") {
   const auto root = nl::test::scratch_dir("startup_config");
   auto result = nl::startup::prepare(root, GetCurrentProcessId());

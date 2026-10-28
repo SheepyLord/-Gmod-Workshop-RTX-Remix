@@ -1,5 +1,11 @@
 #include "bootstrap.h"
+#include "runtime.h"
+#include "nl/activate.h"
+#include "nl/fs.h"
+#include "nl/startup.h"
+#include "nl/status.h"
 #include "nl/version.h"
+#include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <sstream>
@@ -19,7 +25,16 @@ std::string utf8(std::wstring_view value) {
   return result;
 }
 
-void write_log() {
+std::string utc_now() {
+  SYSTEMTIME utc{};
+  GetSystemTime(&utc);
+  char timestamp[40]{};
+  std::snprintf(timestamp, sizeof(timestamp), "%04u-%02u-%02uT%02u:%02u:%02u.%03uZ",
+                utc.wYear, utc.wMonth, utc.wDay, utc.wHour, utc.wMinute, utc.wSecond, utc.wMilliseconds);
+  return timestamp;
+}
+
+void write_log(const status::Report& report) {
   LARGE_INTEGER begin{}, frequency{};
   QueryPerformanceCounter(&begin);
   QueryPerformanceFrequency(&frequency);
@@ -30,6 +45,7 @@ void write_log() {
   const bool engine = GetModuleHandleW(L"engine.dll") != nullptr;
   const bool shaderapi = GetModuleHandleW(L"shaderapidx9.dll") != nullptr;
   const bool d3d9 = GetModuleHandleW(L"d3d9.dll") != nullptr;
+  fs::refuse_links(std::filesystem::path(g_bootstrap.root), "native-loader/logs/loader.log");
   const std::filesystem::path log_path(g_bootstrap.log_path);
   std::filesystem::create_directories(log_path.parent_path());
   for (int index = 5; index >= 1; --index) {
@@ -38,15 +54,10 @@ void write_log() {
     if (index == 5) std::filesystem::remove(destination);
     if (std::filesystem::exists(source)) std::filesystem::rename(source, destination);
   }
-  SYSTEMTIME utc{};
-  GetSystemTime(&utc);
-  char timestamp[40]{};
-  std::snprintf(timestamp, sizeof(timestamp), "%04u-%02u-%02uT%02u:%02u:%02u.%03uZ",
-                utc.wYear, utc.wMonth, utc.wDay, utc.wHour, utc.wMinute, utc.wSecond, utc.wMilliseconds);
   wchar_t working_directory[kPathCapacity]{};
   const DWORD cwd_length = GetCurrentDirectoryW(kPathCapacity, working_directory);
   std::ostringstream log;
-  log << "native_loader_version=" NL_VERSION_STRING "\nutc=" << timestamp
+  log << "native_loader_version=" NL_VERSION_STRING "\nutc=" << report.utc
       << "\nprocess_id=" << GetCurrentProcessId()
       << "\nphase=exe_entry_point\nentry_point_restored=1\nstartup_filetime=" << startup_time
       << "\nexe_path=" << utf8(g_bootstrap.exe) << "\ngame_root=" << utf8(g_bootstrap.root)
@@ -66,7 +77,7 @@ void write_log() {
   }
   LARGE_INTEGER end{};
   QueryPerformanceCounter(&end);
-  log << "startup.complete=1\nelapsed_ms=" << (frequency.QuadPart ? (end.QuadPart - begin.QuadPart) * 1000.0 / frequency.QuadPart : 0.0) << '\n';
+  log << "bootstrap.log_ready=1\nelapsed_ms=" << (frequency.QuadPart ? (end.QuadPart - begin.QuadPart) * 1000.0 / frequency.QuadPart : 0.0) << '\n';
   const auto text = log.str();
   const HANDLE file = CreateFileW(log_path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (file == INVALID_HANDLE_VALUE) throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "open loader.log");
@@ -77,15 +88,92 @@ void write_log() {
   if (!success) throw std::system_error(static_cast<int>(error), std::system_category(), "write loader.log");
 }
 
-// Separate C++ and SEH frames: MSVC forbids destructors in an __try function.
-void startup_cxx() noexcept {
-  try {
-    write_log();
-  } catch (const std::exception&) {
-    emergency_log("startup C++ exception; continuing into game", 0);
-  } catch (...) {
-    emergency_log("startup unknown C++ exception; continuing into game", 0);
+struct StartupContext {
+  std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
+  std::filesystem::path root{g_bootstrap.root};
+  status::Report report;
+  startup::Prepared prepared;
+  RuntimeActivation runtime;
+  StartupContext() {
+    report.loader_version = NL_VERSION_STRING;
+    report.utc = utc_now();
+    report.process_id = GetCurrentProcessId();
+    report.deployment.action = "apply";
+    report.deployment.outcome = "skipped";
   }
+};
+
+void finish_report(StartupContext& context) {
+  context.report.startup_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - context.began).count();
+  status::write(context.root, context.report);
+  const auto text = status::log_fields(context.report);
+  const HANDLE file = CreateFileW(g_bootstrap.log_path, FILE_APPEND_DATA, FILE_SHARE_READ, nullptr,
+                                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (file == INVALID_HANDLE_VALUE) throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "append loader.log");
+  DWORD written{};
+  const bool ok = WriteFile(file, text.data(), static_cast<DWORD>(text.size()), &written, nullptr) && written == text.size();
+  const DWORD error = ok ? ERROR_SUCCESS : GetLastError();
+  CloseHandle(file);
+  if (!ok) throw std::system_error(static_cast<int>(error), std::system_category(), "append loader.log");
+}
+
+void failed_startup(StartupContext& context, const char* message, DWORD error) noexcept {
+  const bool restored = rollback_guarded(context.runtime);
+  emergency_log(message, error);
+  try {
+    auto& activation = context.report.activation;
+    activation.outcome = "failed";
+    activation.reason = message;
+    activation.windows_error = error;
+    activation.rolled_back = context.runtime.touched();
+    activation.environment_set.clear();
+    activation.arguments_added.clear();
+    activation.vulkan_path.clear();
+    activation.elapsed_ms = context.runtime.elapsed_ms();
+    context.report.errors.emplace_back(message);
+    if (!restored) context.report.errors.emplace_back("activation rollback failed");
+    finish_report(context);
+  } catch (...) {
+    emergency_log("startup failure report could not be written; continuing vanilla", error);
+  }
+}
+
+void startup_cxx(StartupContext& context) noexcept {
+  try {
+    write_log(context.report);
+    context.prepared = startup::prepare(context.root, context.report.process_id);
+    context.report.deployment = context.prepared.deployment;
+    context.report.deployment_ms = context.prepared.elapsed_ms;
+    if (context.prepared.journal && context.prepared.journal->current)
+      context.report.deployment.generation = context.prepared.journal->current->number;
+    if (context.prepared.may_activate) {
+      const journal::Generation none;
+      const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
+      context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW());
+      context.runtime.apply(context.root, generation, context.report.activation);
+    } else {
+      context.report.activation.reason = context.prepared.reason;
+    }
+    if (context.report.deployment.outcome == "failed" && !context.report.deployment.error.empty())
+      context.report.errors.push_back(context.report.deployment.error);
+    if (context.report.activation.outcome == "failed") context.report.errors.push_back(context.report.activation.reason);
+    finish_report(context);
+    if (context.report.activation.outcome == "active") context.runtime.commit();
+  } catch (const std::exception& error) {
+    failed_startup(context, error.what(), 0);
+  } catch (...) {
+    failed_startup(context, "startup C++ exception; continuing vanilla", 0);
+  }
+}
+
+// No destructible locals in the SEH frame. The rollback state is owned by its caller.
+DWORD startup_seh(StartupContext* context) noexcept {
+  __try { startup_cxx(*context); return 0; }
+  __except (EXCEPTION_EXECUTE_HANDLER) { return GetExceptionCode(); }
+}
+DWORD report_seh(StartupContext* context, DWORD error) noexcept {
+  __try { failed_startup(*context, "startup SEH fault; continuing vanilla", error); return 0; }
+  __except (EXCEPTION_EXECUTE_HANDLER) { return GetExceptionCode(); }
 }
 }  // namespace
 
@@ -102,10 +190,15 @@ void emergency_log(const char* message, DWORD error) noexcept {
 }
 
 void startup_guarded() noexcept {
-  __try {
-    startup_cxx();
-  } __except (EXCEPTION_EXECUTE_HANDLER) {
-    emergency_log("startup SEH fault; continuing into game", GetExceptionCode());
+  try {
+    StartupContext context;
+    const DWORD fault = startup_seh(&context);
+    if (fault) {
+      rollback_guarded(context.runtime);
+      if (report_seh(&context, fault)) emergency_log("startup SEH failure report unavailable", fault);
+    }
+  } catch (...) {
+    emergency_log("startup context failed; continuing vanilla", 0);
   }
 }
 }  // namespace nl::proxy

@@ -30,8 +30,9 @@ $evidence = Join-Path $repo "out\smoke\$stamp"
 $before = Join-Path $evidence 'before'
 New-Item -ItemType Directory -Path $before -Force | Out-Null
 $hadState = Test-Path -LiteralPath (Join-Path $resolvedRoot 'native-loader')
+$hadData = Test-Path -LiteralPath (Join-Path $resolvedRoot 'garrysmod\data')
 $paths = @('bin\win64\winmm.dll', 'bin\win64\winmm.pdb', 'native-loader\bootstrap-install.json',
-    'native-loader\logs', 'native-loader\disable', 'garrysmod\console.log')
+    'native-loader\logs', 'native-loader\disable', 'garrysmod\data\native-loader', 'garrysmod\console.log')
 $saved = @{}
 $process = $null
 $results = [Collections.Generic.List[object]]::new()
@@ -216,6 +217,11 @@ try {
         $statePath = Join-Path $resolvedRoot 'native-loader'
         if (-not $hadState -and (Test-Path -LiteralPath $statePath) -and -not (Get-ChildItem -LiteralPath $statePath -Force)) {
             Remove-Item -LiteralPath $statePath
+        }
+        $dataPath = Join-Path $resolvedRoot 'garrysmod\data'
+        Assert-LocalPath $dataPath
+        if (-not $hadData -and (Test-Path -LiteralPath $dataPath) -and -not (Get-ChildItem -LiteralPath $dataPath -Force)) {
+            Remove-Item -LiteralPath $dataPath
         }
         $summary.restored = $true
     } finally {

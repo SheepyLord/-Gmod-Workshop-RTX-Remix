@@ -1,7 +1,8 @@
 # On-disk layout (game side)
 
 What the loader adds to a Garry's Mod install. Everything except `bin\win64\winmm.dll` is created
-by the loader itself and listed in its journal, so it can all be removed again.
+by the loader. Package files are journaled; the receipt, config, logs and status are explicit control
+and reporting files with their own cleanup rules.
 
 ```
 GarrysMod\
@@ -23,13 +24,17 @@ GarrysMod\
 └─ garrysmod\
    ├─ lua\bin\gmcl_*_win64.dll             binary modules from packages (journaled)
    ├─ cfg\...                              create-only files from packages (journaled)
-   └─ data\native-loader\status.json       written each start for the Lua companion (M4)
+   └─ data\native-loader\status.json       atomic report of each active bootstrap start (M4)
 ```
 
 `nlctl uninstall` (or [`uninstall-loader.ps1`](../tools/uninstall-loader.ps1.md)) removes everything
 the journal lists, then the journal and the lock; `config.json`, the receipt and the logs stay
 unless `uninstall-loader.ps1 -RemoveConfig` removes the whole `native-loader` folder. How the
 deployer changes these files is [ADR 0007](decisions/0007-transactional-deployment.md).
+
+M4 also removes `garrysmod/data/native-loader/status.json`, its generated per-PID temporary files,
+and that data folder if empty. Other files in the data folder are preserved. Bootstrap off switches
+remain pure pass-through and do not update the status file; compare its PID/time to the current game.
 
 ## config.json (schema 1)
 
@@ -53,7 +58,7 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
 | Key | Default | Rule |
 |---|---|---|
 | `schema` | required | the integer `1` |
-| `enabled` | `true` | `false`: nothing is activated |
+| `enabled` | `true` | `false`: startup skips deployment and activation, leaving deployed files in place |
 | `allow.workshop` | `[]` | Workshop item ids **as strings** (large numbers lose digits in some editors), no repeats |
 | `allow.local` | `[]` | `.gma` / `.bin` archives, relative to the game root or absolute |
 | `allow.dev_folders` | `[]` | unpacked package folders (with `native/manifest.json`), relative or absolute |
@@ -105,3 +110,42 @@ before the loader with the right content; the loader never moves or deletes it).
 | Environment variable `NATIVE_LOADER_DISABLE=1` | Same |
 | File `native-loader\disable` | Same, until the file is deleted |
 | Delete `bin\win64\winmm.dll` | Loader gone; deployed files stay inert until `uninstall-loader.ps1` removes them |
+
+## status.json (schema 1, M4)
+
+Written by `nl::status` after the active main-game startup step, including vanilla outcomes caused
+by missing/disabled/invalid config, no deployed runtime, RTX off, pending state or an activation
+failure. It is not produced by Chromium helpers or an M1 off switch. An old status after an off
+switch is deliberately stale. A new report uses `status.json.tmp-<PID>`, flushes it, then atomically
+renames it over status.json; simultaneous instances cannot share a temporary filename.
+
+| Field | Meaning |
+|---|---|
+| `schema` | Integer 1; readers must recognize the schema before interpreting fields |
+| `loader_version`, `utc`, `process_id` | Loader version, UTC startup timestamp and main game PID; identify stale reports |
+| `startup_elapsed_ms` | Startup through activation, before final report I/O; a diagnostic timing, not a frame benchmark |
+| `deployment.outcome` | `skipped`, `deployed`, `unchanged`, `held`, `kept`, `failed` or `refused` |
+| `deployment.reason`, `blocked_by` | Error/refusal text; `none`, `running_game` or `deployer_lock` for structured contention |
+| `deployment.generation`, `recovered` | Current committed generation (0 if absent/unknown), and whether pending work was recovered |
+| `deployment.change_count`, `operations`, `elapsed_ms` | Planned/applied change list count, all deployer filesystem operations, preparation/deployment duration; log/status writes are separate |
+| `deployment.packages`, `notes`, `skipped` | Deployed package descriptions, retained-file/defer notes and `{package,reason}` records |
+| `activation.outcome`, `reason` | `active`, `inactive` or `failed`, with a reason. `active` confirms the startup transaction, not successful later rendering |
+| `activation.runtime` | `{id,version,folder,dll}`; absolute deployed paths when known, even with `remix.enabled=false`; empty strings if unknown |
+| `activation.environment.requested` | Planned `{name,value}` assignments |
+| `activation.environment.set` | Assignments retained in the final process; empty after rollback |
+| `activation.environment.user_values_kept` | Original user values preserved; config lists remain as the final suffix after package layers |
+| `activation.layers.rtx`, `dxvk` | Effective low-to-high layer lists; missing/empty user config variables use the default root conf |
+| `activation.launch_arguments.requested`, `added`, `already_present` | Missing planned tokens, retained additions, and existing user tokens/values such as `-dxlevel 95` |
+| `activation.launch_arguments.fallback_launch_options` | Exact missing options to supply manually after a refused swap; the loader never writes Steam settings |
+| `activation.system_vulkan_path` | Retained System32 preload path, or empty when absent/undone |
+| `activation.windows_error`, `missing_system_dependencies` | Win32/SEH code and missing System32 redistributable/Vulkan DLL names when preload fails |
+| `activation.rolled_back`, `elapsed_ms` | Whether applied settings were undone, and activation duration |
+| `errors` | Startup errors, JSON-escaped strings; empty on ordinary success/inactivity |
+
+The M1 log header still proves entry timing. M4 appends `deployment.outcome`, `.generation`,
+`.change_count`, `.operations`, `.elapsed_ms`, `.recovered`, `.blocked_by`, `.error`, repeated
+`.skipped`/`.note`, plus `activation.outcome`, `.reason`, `.runtime.id/version/folder/dll`,
+`.system_vulkan_path`, `.environment.set/user_values_kept`, `.layers.rtx/dxvk`,
+`.arguments.added/already_present`, `.fallback_launch_options`, `.windows_error`,
+`.missing_system_dependencies`, `.rolled_back`, `.elapsed_ms`, repeated `error`, and
+`startup.elapsed_ms` / `startup.complete`. Structured values use JSON on one key=value line.

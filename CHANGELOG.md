@@ -8,6 +8,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M4: activation)
 
+- Bootstrap startup now deploys and activates the committed generation, validates runtime/layer
+  files, applies reversible environment/arguments/Vulkan/DLL-search changes, and preloads the runtime
+  by absolute path. Atomic status schema 1 and matching log fields report active and vanilla outcomes;
+  uninstall removes generated status. CTest checks KERNEL32-only imports and a packaged fake runtime
+  with static/delay dependencies, rollback and startup policy scenarios.
+- `tools/poc_activation_check.ps1`: individual approved PoC launches, package A/B preparation,
+  module/log/status evidence, vanilla/dxlevel comparisons, visual confirmations and cleanup. The
+  user-approved `-Multirun` mode permits the other install to remain running, never another PoC.
+- Loader version `0.1.0` identifies M4 activation support and satisfies the runtime packager's
+  `requires_loader >=0.1.0` contract (root project version bump approved by the user).
 - Startup deployment policy ([ADR 0009](docs/decisions/0009-startup-deployment-last-good.md)) keeps
   the last good generation when an allowlisted source fails, including during staging, distinguishes
   explicit addon disable, and excludes only the current process from the running-game check.

@@ -85,6 +85,13 @@ identifies the package version in the journal.
 | `launch_args` | only `-dxlevel N`, `-nod3d9ex`, `+mat_disable_d3d9ex N` (N: 1-3 digits) in schema 1, so a package cannot add commands such as `+exec` |
 | `prefer_system_vulkan_loader` | boolean: preload System32's `vulkan-1.dll` first |
 
+M4 applies `remix.entry` from the journaled versioned payload, validates its and the package layer
+files' recorded sizes, and requires cwd=game root and an absolute DLL path below MAX_PATH. The
+`rtx_conf_layers` / `dxvk_conf_layers` precede the user's environment lists (or root conf defaults);
+other `env` entries fill only absent variables. `launch_args` fill only missing arguments, preserving
+user values. `prefer_system_vulkan_loader` loads System32 Vulkan before the runtime. Process changes
+are reversible and preload is last; see [ADR 0008](decisions/0008-activation-at-startup.md).
+
 ### `root_files`
 
 Each entry is `{ "path": "<relative to the game root>", "policy": "replace-owned" | "create-only" }`

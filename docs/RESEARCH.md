@@ -313,3 +313,57 @@ Gathered while planning M4; scripts were one-offs under `out\tmp` (`pefile`, `ct
   `debug.log`. A runtime package therefore takes an explicit file set (`_output`), not that folder.
 - `GarrysMod_RTX_c` has the user's `rtx.conf` (161,131 bytes) and `dxvk.conf` (2,610 bytes) in its
   root, the layers the classic install runs with.
+
+## 11. M4 implementation and acceptance findings (2026-10-28, Codex)
+
+- Section 10's cached-string layout is now checked before any write, including the PEB descriptor.
+  Synthetic descriptor tests cover mismatched Length/MaximumLength/pointer, USHORT overflow and a
+  failure after a partial write. A separate process swaps the real kernelbase W/A and PEB records,
+  checks updated lengths and restores their exact bytes (`loader/core/src/cmdline.cpp:96`,
+  `loader/tests/cmdline_host.cpp`). The user approved loader version 0.1.0 to match the packager's
+  existing `requires_loader >=0.1.0` contract.
+- Debug and Release pass **15/15 CTest entries**. Core cases total **120** (117 normal plus three
+  exhaustive fault groups); proxy cases remain **16**, installer assertions **23**. Python: **66**
+  tests, one pre-existing skip. The PE CTest confirms the final bootstrap imports only KERNEL32.
+  Steam registry lookup now dynamically resolves RegGetValueW from System32 advapi32
+  (`loader/core/src/discovery.cpp:40`).
+- The packaged fake runtime proves bare-name d3d9 reuse, static and delay dependency paths, user
+  layers/arguments, full failure rollback, explicit fallback options, all off switches, contention,
+  source disappearance/removal and version/hold behavior. **17 scenario groups** pass. Isolated
+  Release evidence: `out/m4-synthetic/release-62268/summary.json`; ten unchanged-deployment samples
+  have **25.8064 ms median**, **19.8476–27.9013 ms** range, zero deployment operations. Timing ends
+  before final report I/O. Raising a native exception in the fake DLL initializer produced Windows
+  error **1114** and verified vanilla continuation with restored settings.
+- The named B folder was absent. Section 10's alternate `_CompRelease_x64/src/d3d9/d3d9.dll` was
+  present with the documented size/time and the **A8E39D93** prefix. Full hashes used:
+  - A: `E5C65136EA8BC7A7485776C18F975FE8068F74B5743DC8EA536AAFF8D6065BCA`;
+  - B: `A8E39D938D96193DF27D245A7F6E72F1C44B75FB2D066A67BDC2CD974EDEA267`.
+  The acceptance script pins the full B hash before accepting this alternate copy. No fork file
+  was changed. Config snapshots were hash-checked and reused for both packages.
+- Real evidence is under `out/poc-activation/20261028T075336206Z/`. Original A contains **191 files,
+  977,303,948 bytes** without PDBs; B has **191 files, 977,403,788 bytes**. These measured sizes
+  supersede the earlier rough full-runtime estimate for this recipe.
+- The user approved each actual launch and explicitly requested **-multirun**, keeping the RTX_c
+  install open. Vanilla PoC PID **6876** reached gm_construct with System32 d3d9 and **mat_dxlevel 95**.
+  The initial A PID **70300** deployed generation 1 in **4808.77 ms**, activated in **36.5178 ms**,
+  and completed startup in **4846.04 ms**. The engine printed **mat_dxlevel 90**, proving it saw
+  the injected arguments. Remix logged an RTX 5090 device, successful Reflex initialization,
+  ray-tracing feature support and swapchain creation, then the engine exited before map completion.
+- The copied classic DXVK config has **d3d9.shaderModel = 0** (snapshot line 10). The fork rejects
+  shader bytecode above that option (`src/d3d9/d3d9_shader.cpp:115`), explaining the logged
+  “GetShaderModule: Out of range of supported shader model” errors. Its default is **3**
+  (`src/d3d9/d3d9_options.cpp:69`). Windows event 1000 recorded a PoC engine.dll fault with
+  exception **0xc0000409**; the exact engine termination cause was not independently debugged.
+- After §9 consultation, the user approved a **PoC-only shaderModel=3 layer** and one A retry.
+  It kept both reference configs unchanged and added one 132-byte layer. PID **31480** reached
+  gm_construct at **mat_dxlevel 90**. Deployment: **4920.9048 ms**; activation: **39.4931 ms**.
+  All **34** loaded runtime DLLs in `03-RunA/runtime-modules.json` came from the versioned package,
+  including d3d9, amd_fidelityfx_vk, NvLowLatencyVk and the DLSS family.
+- The user reported **not path-traced/rendering incorrectly**, then stopped further PoC testing.
+  Real RTX-off output, **dxlevel persistence**, B activation and rollback therefore remain open.
+  Startup activation success is not evidence of successful later rendering.
+- Cleanup removed 383 package files and the bootstrap/control/status state. `verify.json` reports
+  **2,877 OK**, **0 missing**, **0 size mismatches**, **0 hash mismatches**, with the existing
+  autoexec.cfg user-config difference. `created-or-changed.txt` records preserved Remix/Sentry logs,
+  capture directories, engine crash artifacts, metrics and game-written config/cache/console changes.
+  No game/Remix data was deleted for cleanup. The other RTX_c instance remained running.

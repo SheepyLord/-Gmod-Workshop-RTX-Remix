@@ -23,11 +23,16 @@ namespace nl::activate {
 // a value the user already set (including an empty one).
 using EnvGet = std::function<std::optional<std::string>(const std::string& name)>;
 
+// Win32 environment adapter shared by the CLI and bootstrap; absent and empty stay distinct.
+std::optional<std::string> environment_value(const std::string& name);
+
 struct Plan {
   bool activate = false;  // false: the runtime is not loaded and nothing below is applied
   std::string reason;     // why not, or (when active) a short note
+  std::string runtime_id;
+  std::string runtime_version;
 
-  std::string runtime_dll;  // d3d9.dll to preload, relative to the game root; empty unless active
+  std::string runtime_dll;  // deployed d3d9.dll, relative to root; metadata may be present while RTX is off
   std::string runtime_dir;  // folder added to the DLL search for late bare-name loads (relative)
   bool prefer_system_vulkan = false;
 
@@ -35,10 +40,14 @@ struct Plan {
   // package adds layers, retaining the user's list last), then the package's own variables
   // (only those the user has not set). Manifest values are ASCII; user values may be UTF-8.
   std::vector<std::pair<std::string, std::string>> env;
+  std::vector<std::pair<std::string, std::string>> user_env;
+  std::vector<std::string> rtx_layers;
+  std::vector<std::string> dxvk_layers;
 
   // Arguments to append to the command line, the package's launch_args minus any the user already
   // passed. ASCII, in the manifest's order.
   std::vector<std::string> launch_args;
+  std::vector<std::string> present_args;
 };
 
 // The runtime package is the deployed package that has a remix section and a payload. With none, or

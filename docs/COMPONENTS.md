@@ -47,6 +47,20 @@ See the [M1 report](handover/M1-report.md) for evidence and the user-selected bu
 | Bootstrap install/uninstall | [`tools/install-loader.ps1`](../tools/install-loader.ps1.md) | Copies DLL/PDB, records SHA-256, refuses foreign/edited files and Steam-managed roots by default; `-Uninstall` retains state. Journal-based package removal came with M3 (`uninstall-loader.ps1`). |
 | PoC smoke comparison | [`tools/smoke_test.ps1`](../tools/smoke_test.ps1.md) | Five map loads, two tool comparisons, evidence and loader-state restoration. |
 
+## M4 activation additions (implemented, in review)
+
+The M1/M3 component descriptions above are the foundation. M4 now connects deployment and
+activation inside the bootstrap; real-game visual acceptance remains open as recorded in the
+[M4 report](handover/M4-report.md).
+
+| Component | Path | M4 behavior |
+|---|---|---|
+| Startup policy and reporting | `loader/core` (`startup`, `status`) | Keep-last-good, current-PID exclusion, contention/pending handling, atomic status and cleanup |
+| Process activation | `loader/proxy/runtime.cpp`, `loader/proxy/startup.cpp` | Validated file/cwd/path preconditions; reversible environment, full command-line descriptors, System32 Vulkan, DLL search and absolute d3d9 preload |
+| Activation preview | `loader/cli/nlctl.cpp` | Same config-layer/user-value plan; missing config and pending state inactive; uninstall removes generated status |
+| M4 tests | `loader/tests`, `loader/proxy/tests` | 120 core cases total, real command-line round trip, KERNEL32-only import check and 17 synthetic activation scenario groups |
+| PoC acceptance | [`tools/poc_activation_check.ps1`](../tools/poc_activation_check.ps1.md) | A/B packaging, individually approved launches, module/log evidence, dxlevel/off checks, user visual confirmation and cleanup |
+
 ## Outside this repo (used, not owned here)
 
 | Thing | Where | Role |

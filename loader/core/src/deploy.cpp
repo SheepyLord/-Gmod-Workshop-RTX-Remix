@@ -7,6 +7,7 @@
 #include "nl/paths.h"
 #include "nl/sha256.h"
 #include "nl/startup.h"
+#include "nl/status.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
@@ -1309,7 +1310,13 @@ Report rollback(const std::filesystem::path& root, const Options& options) {
 
 Report uninstall(const std::filesystem::path& root, const Options& options) {
   Run run(root, options, "uninstall");
-  return guarded(run, [&] { remove_all(run); });
+  return guarded(run, [&] {
+    remove_all(run);
+    if (!run.dry_run && run.report.ok()) {
+      try { nl::status::remove(run.disk, root); }
+      catch (const fs::Error& error) { run.note(std::string("status cleanup: ") + error.what()); }
+    }
+  });
 }
 
 Report recover(const std::filesystem::path& root, const Options& options) {

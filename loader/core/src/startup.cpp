@@ -29,9 +29,13 @@ std::optional<std::string> keep_last_good_reason(const journal::Generation& curr
     for (const auto& decision : proposed.decisions) {
       const auto& item = decision.item;
       if (!same_source(deployed, item.candidate) || item.candidate.disabled_by_user) continue;
-      if (!item.problem.empty() || !item.package) {
+      const auto loader = manifest::parse_version(nl::version());
+      const bool incompatible = item.package && item.package->manifest.requires_loader && loader &&
+          manifest::compare(*loader, *item.package->manifest.requires_loader) < 0;
+      if (!item.problem.empty() || !item.package || incompatible) {
+        const auto problem = !item.problem.empty() ? item.problem : incompatible ? "requires a newer loader" : "not loaded";
         return "kept " + deployed.id + " " + deployed.version + ": allowlisted source " + item.candidate.label +
-               " is unavailable or invalid (" + (item.problem.empty() ? "not loaded" : item.problem) + ")";
+               " is unavailable or invalid (" + problem + ")";
       }
     }
   }
@@ -82,6 +86,7 @@ Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
     result.deployment.outcome = "failed";
     result.deployment.error = error.what();
   }
+  if (result.deployment.outcome == "skipped" && !result.reason.empty()) result.deployment.notes.push_back(result.reason);
   result.elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
   return result;
 }

@@ -127,6 +127,7 @@ TEST_CASE("activate: launch arguments the user already passed are not repeated")
   const config::Config config;
   const auto a = activate::plan(gen, config, none(), L"gmod.exe -dxlevel 95");
   CHECK(a.launch_args == std::vector<std::string>({"-nod3d9ex", "+mat_disable_d3d9ex", "1"}));
+  CHECK(a.present_args == std::vector<std::string>({"-dxlevel", "95"}));
   const auto b = activate::plan(gen, config, none(), L"gmod.exe -nod3d9ex +mat_disable_d3d9ex 2");
   CHECK(b.launch_args == std::vector<std::string>({"-dxlevel", "90"}));
   const auto c = activate::plan(gen, config, none(), L"gmod.exe \"-DXLEVEL\" 70 -NoD3D9Ex +MAT_DISABLE_D3D9EX 1");
@@ -153,6 +154,7 @@ TEST_CASE("activate: remix.enabled false deploys but does not load") {
   config.remix_enabled = false;
   const auto plan = activate::plan(with_runtime("p", base_remix()), config, none(), L"gmod.exe");
   CHECK(!plan.activate);
-  CHECK(plan.runtime_dll.empty());
+  CHECK(plan.runtime_dll == "p/runtime/d3d9.dll");
+  CHECK(plan.env.empty() && plan.launch_args.empty());
   CHECK(plan.reason == "remix.enabled is false in native-loader/config.json");
 }

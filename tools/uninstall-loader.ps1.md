@@ -1,5 +1,8 @@
 # uninstall-loader.ps1
 
+M4's `nlctl uninstall` additionally removes generated `garrysmod/data/native-loader/status.json`
+and its temporary reports, then that data folder if empty. Unrelated data files remain untouched.
+
 Removes the native loader from an x64 GMod install, defaulting to the PoC, in two steps:
 
 1. `nlctl uninstall <game root>`: every file and folder the loader deployed, as its journal

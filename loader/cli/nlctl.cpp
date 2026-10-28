@@ -393,25 +393,10 @@ int cmd_activation(const fs::path& game_root, bool json) {
     else print("nothing deployed (no current generation)\n");
     return kOk;
   }
-  const auto env = [](const std::string& name) -> std::optional<std::string> {
-    const std::wstring wide(name.begin(), name.end());
-    SetLastError(ERROR_SUCCESS);
-    const DWORD size = GetEnvironmentVariableW(wide.c_str(), nullptr, 0);
-    if (!size) {
-      if (GetLastError() == ERROR_ENVVAR_NOT_FOUND) return std::nullopt;
-      if (GetLastError() == ERROR_SUCCESS) return std::string{};
-      throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "read activation environment");
-    }
-    std::wstring value(size, L'\0');
-    SetLastError(ERROR_SUCCESS);
-    const DWORD copied = GetEnvironmentVariableW(wide.c_str(), value.data(), size);
-    if (copied >= size) throw std::runtime_error("activation environment changed while reading");
-    if (!copied && GetLastError() != ERROR_SUCCESS)
-      throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "read activation environment");
-    value.resize(copied);
-    return utf8(fs::path(value));
-  };
-  const nl::activate::Plan plan = nl::activate::plan(*journal->current, config, env, L"");
+  nl::activate::Plan plan;
+  if (!config.from_file) plan.reason = "native-loader/config.json is absent";
+  else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
+  else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"");
   if (json) {
     std::string out = "{\n  \"activate\": " + std::string(plan.activate ? "true" : "false");
     out += ",\n  \"reason\": " + nl::json::quote(plan.reason);

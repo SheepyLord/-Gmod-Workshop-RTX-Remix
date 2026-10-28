@@ -29,6 +29,7 @@ manifests, discovery and planning; M3 added deployment; M4 added activation.
 | `include/nl/cmdline.h`, `src/cmdline.cpp` | Command line: `tokenize` / `has_arg`, validated transactional `swap_records` (Buffer/Length/MaximumLength and USHORT limits), and `append_arguments` for kernelbase W/A plus the PEB. A move-only `SwapResult` supports explicit/automatic restore or committing buffers for process lifetime; write failure restores every attempted slot. |
 | `src/version.cpp` | `nl::version()` |
 | `include/nl/startup.h`, `src/startup.cpp` | Startup preparation and pure keep-last-good policy: config/journal preflight, current-PID-only exclusion, explicit disabled sources versus unavailable ones, safe contention/pending decisions ([ADR 0009](../../docs/decisions/0009-startup-deployment-last-good.md)) |
+| `include/nl/status.h`, `src/status.cpp` | Startup status schema 1 and matching log fields; atomic per-PID temporary-file replacement; uninstall removes generated status and the empty data folder, preserving unrelated files |
 
 ## GMA reader rules
 

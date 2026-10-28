@@ -42,7 +42,9 @@ packages it did not deploy and why, notes about files it left alone (changed by 
 placed by the loader), and `operations`, the number of file-system changes it made. `rollback`
 returns to the previous generation (the generation before that is not kept); the next `apply`
 leaves it in place until the planned packages differ from the ones it rolled back from. `uninstall`
-removes what the journal lists, then the journal and `native-loader\lock`. It leaves `config.json`
+removes what the journal lists, then the journal and `native-loader\lock`. M4 also removes generated
+status files and the empty `garrysmod/data/native-loader` folder, preserving unrelated files there.
+It leaves `config.json`
 and the bootstrap; [`uninstall-loader.ps1`](../../tools/uninstall-loader.ps1.md) does both steps.
 
 These four commands, and `status`, exit with:
@@ -63,7 +65,9 @@ library. Exit `0` when a plan was made (even if everything was skipped), `2` for
 would do with the runtime ([ADR 0008](../../docs/decisions/0008-activation-at-startup.md)) — the
 `d3d9.dll` it would preload, the folder added to the DLL search, whether System32's `vulkan-1.dll`
 is preloaded first, the environment variables it would set (config-file layer lists and the
-package's own, skipping any this shell already has set) and the launch arguments it would add. It
+package's own, skipping any this shell already has set) and the launch arguments it would add.
+Package config layers precede the existing user list; absent/empty config lists use the default
+root conf last. Missing/disabled config and pending journal transactions are inactive. It
 reads the journal and config only. Launch arguments are shown as the package's whole set, since
 nlctl does not have the game's command line. Exit `0` always (or `2` for an invalid journal/config).
 

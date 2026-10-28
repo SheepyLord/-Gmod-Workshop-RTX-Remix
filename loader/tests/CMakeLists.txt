@@ -17,6 +17,7 @@ add_executable(nl_tests
   test_planner.cpp
   test_sha256.cpp
   test_startup.cpp
+  test_status.cpp
   test_vdf.cpp
   test_version.cpp)
 target_link_libraries(nl_tests PRIVATE nl_core nl_build_options)

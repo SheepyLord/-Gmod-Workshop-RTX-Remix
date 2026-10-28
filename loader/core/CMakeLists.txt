@@ -19,6 +19,7 @@ add_library(nl_core STATIC
   src/planner.cpp
   src/sha256.cpp
   src/startup.cpp
+  src/status.cpp
   src/utf8.cpp
   src/vdf.cpp
   src/version.cpp)

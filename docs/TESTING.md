@@ -122,6 +122,28 @@ checkout builds the proxy into its own `out\build\<preset>`, which is where `ins
 through it `smoke_test.ps1`) takes it from (AGENTS.md rule 9). Chromium helper roles stay inert, and
 the real-game smoke check verifies the enabled log's PID against the game process it launched.
 
+## M4 checks and PoC acceptance
+
+`tools/test.ps1` runs 66 Python tests (one existing skip) and 15 CTest entries. Native checks include
+120 core cases across the normal/fault groups, 16 proxy cases, 23 installer assertions, a separate
+kernelbase W/A/PEB swap-and-restore process, and an automated KERNEL32-only PE import check.
+`nl_activation_integration` packages a fake runtime with one static and one delay dependency and
+checks 17 scenario groups in synthetic game roots below `out/tmp`; no real game is started by CTest.
+It writes status/probe/log evidence and ten unchanged-startup timing samples under `out/m4-synthetic`.
+
+The real PoC uses [poc_activation_check.ps1](../tools/poc_activation_check.ps1.md). Prepare builds
+two runtime archives and snapshots the reference root configs without starting a game. Every run
+needs its own user approval and explicit `-Launch`. Preview is read-only. The user-approved
+`-Multirun` override permits another install to remain open, while a second PoC instance still blocks.
+The baseline records System32 d3d9 and mat_dxlevel; subsequent stages cover A, RTX off, B and rollback.
+Rendering confirmation is a user observation, separate from a successful preload/status report.
+
+Current real evidence and remaining acceptance work are in [M4-report.md](handover/M4-report.md).
+The copied classic shaderModel=0 layer failed with vanilla shaders; a user-approved test-only
+shaderModel=3 layer reached the map, but the user reported no path tracing and stopped further PoC
+tests. RTX-off persistence and real B/rollback therefore remain open. The loader was uninstalled and
+all depot files verified; game/Remix-created data was retained.
+
 ## Installs
 
 | Install | Path | Use |

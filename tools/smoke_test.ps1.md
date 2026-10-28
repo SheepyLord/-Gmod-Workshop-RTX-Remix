@@ -12,6 +12,10 @@ tools\smoke_test.ps1 -Config Debug -TimeoutSeconds 240
 ```
 
 Inputs: `-GameRoot` (PoC default), `-Config Release|Debug`, `-TimeoutSeconds` (180, range 15–600).
+
+M4 also snapshots/restores `garrysmod/data/native-loader` so an inert smoke run does not leave a
+new status report behind. Use a config with activation disabled for a vanilla comparison. This
+multi-launch M1 script is not used for M4's individually approved runs; use poc_activation_check.ps1.
 Uses [install-loader.ps1](install-loader.ps1.md), with its ownership/hash checks and Steam-managed
 protection; there is no Steam-managed bypass in the smoke test. Does not change Steam settings or
 launch options. Child-only environment removes inherited `NATIVE_LOADER_DISABLE` except in the

@@ -12,7 +12,11 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `test_activation.cpp` | Path/root, quoted/backslash command-line parsing and off-switch unit cases |
 | `test_proxy.cpp` | Export/forwarding checks and temporary-host integration/rotation tests |
 | `host.cpp` | Statically imports `timeGetTime`; writes the timestamped main marker |
+| `activation_probe.h`, `activation_probe.cpp` | M4 host probe: module/static/delay paths, environment, DLL directory, W/A/PEB command line; test-only TLS descriptor fault and hold mode |
+| `fixture_runtime.cpp`, `fixture_static.cpp`, `fixture_delay.cpp` | Packaged fake d3d9 with one static and one delay dependency; controlled DllMain failures for rollback tests |
+| `activation_integration.py` | M4 synthetic acceptance and unchanged-startup timing; [usage](activation_integration.py.md) |
 | `install_tests.ps1` | Synthetic installer/hash/foreign-file/Steam protection cases; [usage](install_tests.ps1.md) |
+| `check_imports.py` | Standard-library PE import/delay-import check: the bootstrap must import only KERNEL32; [usage](check_imports.py.md) |
 
 Run all tests through `tools/build.ps1`, or select `nl_proxy_tests`, `nl_proxy_generated_exports`,
 `nl_proxy_installer` with CTest. `nl_proxy_host` is copied to a temporary `bin/win64/gmod.exe` beside
@@ -21,3 +25,12 @@ the CMake binary directory (`loader/proxy/tests/scratch`); installer roots live 
 Neither test writes generated executables to the system temporary directory.
 If antivirus blocks the newly built DLL, tests must fail with the OS error; no exclusions, security
 settings or alternate loading paths are added by the tests.
+
+M4 adds `nl_proxy_kernel32_imports` and `nl_activation_integration`. The latter builds actual
+packages with the runtime packager from three test DLLs, then exercises startup/activation in
+synthetic gmod.exe processes below `out/tmp`. Its 17 scenario groups cover unchanged deployment,
+System32 Vulkan (when installed), static and delay dependencies, off switches, user layers/arguments,
+source failure/removal/Workshop disable, locks/pending recovery, another same-root process, invalid
+configuration/journal, DLL initialization failures, swap fallback, path/cwd/size preconditions and
+status cleanup. It records ten unchanged-startup timing samples and keeps text evidence under
+`out/m4-synthetic`. No real game is launched by CTest.
