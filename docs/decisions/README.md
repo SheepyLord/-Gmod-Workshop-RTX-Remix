@@ -21,6 +21,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0013](0013-rtx-only-addons-hidden-without-rtx.md) | Add-ons of RTX-only packages are hidden from sessions without RTX, in memory | Accepted 2026-10-28 |
 | [0014](0014-r1-hardening.md) | R1 hardening: no `garrysmod/cfg` area, files only inside named folders, deployed files checked by size and time at activation, a restore that keeps the user's own changes | Accepted 2026-10-28; supersedes the `garrysmod/cfg` area of the M2 path rules |
 | [0015](0015-workshop-route-for-native-packages.md) | Native packages can be distributed through the Workshop, packed with `gmapack`; their Lua comes through the loader's add-on folders, since GMod does not mount such an item | Accepted 2026-10-28 (the user, with the private upload test); supersedes part of 0012 |
+| [0016](0016-one-workshop-item-kept-current.md) | Item 3829070317 carries one combined RTX package (runtime and fixes); commits and merges on `main` and pushes of `main` keep it current through git hooks | Accepted 2026-10-28 (the user) |
 
 ## Template
 
