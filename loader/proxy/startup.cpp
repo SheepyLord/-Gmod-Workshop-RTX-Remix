@@ -241,7 +241,8 @@ void startup_cxx(StartupContext& context) noexcept {
     if (context.prepared.may_activate) {
       const journal::Generation none;
       const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
-      context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW());
+      context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW(),
+                                                      activate::primary_display);
       context.runtime.apply(context.root, generation, context.report.activation, context.report.session);
     } else {
       context.report.activation.reason = context.prepared.reason;

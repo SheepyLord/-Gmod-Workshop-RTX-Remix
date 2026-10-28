@@ -147,7 +147,7 @@ renames it over status.json; simultaneous instances cannot share a temporary fil
 | `activation.environment.set` | Assignments retained in the final process; empty after rollback |
 | `activation.environment.user_values_kept` | Original user values preserved; config lists remain as the final suffix after package layers |
 | `activation.layers.rtx`, `dxvk` | Effective low-to-high layer lists; missing/empty user config variables use the default root conf |
-| `activation.launch_arguments.requested`, `added`, `already_present` | Missing planned tokens, retained additions, and existing user tokens/values such as `-dxlevel 95` |
+| `activation.launch_arguments.requested`, `added`, `already_present` | Missing planned tokens (the package's, then the loader's borderless window, [ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)), retained additions, and existing user tokens/values such as `-dxlevel 95` or `-fullscreen` |
 | `activation.launch_arguments.fallback_launch_options` | Exact missing options to supply manually after a refused swap; the loader never writes Steam settings |
 | `activation.system_vulkan_path` | Retained System32 preload path, or empty when absent/undone |
 | `activation.windows_error`, `missing_system_dependencies` | Win32/SEH code and missing System32 redistributable/Vulkan DLL names when preload fails |

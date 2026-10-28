@@ -57,19 +57,29 @@ const std::string* env_value(const activate::Plan& p, const std::string& name) {
   return nullptr;
 }
 
+activate::Display uhd() { return {3840, 2160}; }
+
+// What an RTX session without a window choice of its own gets on a 3840 x 2160 display (ADR 0018).
+const std::vector<std::string> kWindow = {"-windowed", "-noborder", "-w", "3840", "-h", "2160"};
+
+std::vector<std::string> plus(std::vector<std::string> first, const std::vector<std::string>& second) {
+  first.insert(first.end(), second.begin(), second.end());
+  return first;
+}
+
 }  // namespace
 
 TEST_CASE("activate: a deployed runtime with no layers loads d3d9 and leaves config discovery alone") {
   const auto gen = with_runtime("native-loader/packages/rtx-remix-runtime/1.2.3_7", base_remix(), true);
   config::Config config;  // remix_enabled defaults to true
-  const activate::Plan p = activate::plan(gen, config, none(), L"gmod.exe -game garrysmod");
+  const activate::Plan p = activate::plan(gen, config, none(), L"gmod.exe -game garrysmod", uhd);
   REQUIRE(p.activate);
   CHECK(p.runtime_dll == "native-loader/packages/rtx-remix-runtime/1.2.3_7/runtime/d3d9.dll");
   CHECK(p.runtime_dir == "native-loader/packages/rtx-remix-runtime/1.2.3_7/runtime");
   CHECK(p.prefer_system_vulkan);
   CHECK(env_value(p, "DXVK_RTX_CONFIG_FILE") == nullptr);  // no layers: the runtime keeps its default
   CHECK(env_value(p, "DXVK_CONFIG_FILE") == nullptr);
-  CHECK(p.launch_args == std::vector<std::string>({"-dxlevel", "90", "-nod3d9ex", "+mat_disable_d3d9ex", "1"}));
+  CHECK(p.launch_args == plus({"-dxlevel", "90", "-nod3d9ex", "+mat_disable_d3d9ex", "1"}, kWindow));
 }
 
 TEST_CASE("activate: config layers go below the user's root conf, in order") {
@@ -77,7 +87,7 @@ TEST_CASE("activate: config layers go below the user's root conf, in order") {
   remix.rtx_conf_layers = {"config/rtx/01_base.conf", "config/rtx/02_look.conf"};
   remix.dxvk_conf_layers = {"config/dxvk/01_dxvk.conf"};
   const std::string payload = "native-loader/packages/rtx-remix-runtime/1.2.3_7";
-  const auto plan = activate::plan(with_runtime(payload, remix), config::Config{}, none(), L"gmod.exe");
+  const auto plan = activate::plan(with_runtime(payload, remix), config::Config{}, none(), L"gmod.exe", uhd);
   const std::string* rtx = env_value(plan, "DXVK_RTX_CONFIG_FILE");
   const std::string* dxvk = env_value(plan, "DXVK_CONFIG_FILE");
   REQUIRE(rtx && dxvk);
@@ -91,7 +101,7 @@ TEST_CASE("activate: the user's own environment wins over the package") {
   remix.env = {{"DXVK_LOG_LEVEL", "info"}, {"RTX_TEST", "on"}};
   const auto gen = with_runtime("p", remix);
   const auto plan = activate::plan(gen, config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", "base.conf,My overrides.conf"},
-                                  {"DXVK_LOG_LEVEL", "debug"}}), L"gmod.exe");
+                                  {"DXVK_LOG_LEVEL", "debug"}}), L"gmod.exe", uhd);
   REQUIRE(env_value(plan, "DXVK_RTX_CONFIG_FILE"));
   CHECK(*env_value(plan, "DXVK_RTX_CONFIG_FILE") == "p/config/rtx/01_base.conf,base.conf,My overrides.conf");
   CHECK(env_value(plan, "DXVK_LOG_LEVEL") == nullptr);        // user set it: left alone
@@ -107,7 +117,7 @@ TEST_CASE("activate: both user config lists remain last and ordinary empty value
   remix.env = {{"RTX_TEST", "on"}};
   const auto env = values({{"DXVK_RTX_CONFIG_FILE", "用户.conf,final.conf"},
                            {"DXVK_CONFIG_FILE", "dxvk-user.conf,top.conf"}, {"RTX_TEST", ""}});
-  const auto p = activate::plan(with_runtime("p", remix), config::Config{}, env, L"gmod.exe");
+  const auto p = activate::plan(with_runtime("p", remix), config::Config{}, env, L"gmod.exe", uhd);
   REQUIRE(env_value(p, "DXVK_RTX_CONFIG_FILE") && env_value(p, "DXVK_CONFIG_FILE"));
   CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "p/config/rtx/base.conf,用户.conf,final.conf");
   CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "p/config/dxvk/base.conf,dxvk-user.conf,top.conf");
@@ -117,7 +127,7 @@ TEST_CASE("activate: both user config lists remain last and ordinary empty value
 TEST_CASE("activate: empty config variables retain the runtime's default user root layer") {
   auto remix = base_remix();
   remix.rtx_conf_layers = {"config/base.conf"};
-  const auto p = activate::plan(with_runtime("p", remix), config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", ""}}), L"gmod.exe");
+  const auto p = activate::plan(with_runtime("p", remix), config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", ""}}), L"gmod.exe", uhd);
   REQUIRE(env_value(p, "DXVK_RTX_CONFIG_FILE"));
   CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "p/config/base.conf,rtx.conf");
 }
@@ -125,13 +135,47 @@ TEST_CASE("activate: empty config variables retain the runtime's default user ro
 TEST_CASE("activate: launch arguments the user already passed are not repeated") {
   const auto gen = with_runtime("p", base_remix());
   const config::Config config;
-  const auto a = activate::plan(gen, config, none(), L"gmod.exe -dxlevel 95");
-  CHECK(a.launch_args == std::vector<std::string>({"-nod3d9ex", "+mat_disable_d3d9ex", "1"}));
+  const auto a = activate::plan(gen, config, none(), L"gmod.exe -dxlevel 95", uhd);
+  CHECK(a.launch_args == plus({"-nod3d9ex", "+mat_disable_d3d9ex", "1"}, kWindow));
   CHECK(a.present_args == std::vector<std::string>({"-dxlevel", "95"}));
-  const auto b = activate::plan(gen, config, none(), L"gmod.exe -nod3d9ex +mat_disable_d3d9ex 2");
-  CHECK(b.launch_args == std::vector<std::string>({"-dxlevel", "90"}));
-  const auto c = activate::plan(gen, config, none(), L"gmod.exe \"-DXLEVEL\" 70 -NoD3D9Ex +MAT_DISABLE_D3D9EX 1");
-  CHECK(c.launch_args.empty());  // case-insensitive, quoted argument recognised
+  const auto b = activate::plan(gen, config, none(), L"gmod.exe -nod3d9ex +mat_disable_d3d9ex 2", uhd);
+  CHECK(b.launch_args == plus({"-dxlevel", "90"}, kWindow));
+  const auto c = activate::plan(gen, config, none(), L"gmod.exe \"-DXLEVEL\" 70 -NoD3D9Ex +MAT_DISABLE_D3D9EX 1", uhd);
+  CHECK(c.launch_args == kWindow);  // case-insensitive, quoted argument recognised
+}
+
+TEST_CASE("activate: an RTX session gets a borderless window the size of the display unless the user chose one") {
+  const auto gen = with_runtime("p", base_remix());
+  config::Config config;
+  int reads = 0;
+  const activate::DisplayGet counted = [&reads] {
+    ++reads;
+    return activate::Display{2560, 1440};
+  };
+  // The window arguments follow the package's five (none of these command lines carries those).
+  const auto window = [](const activate::Plan& p) { return std::vector<std::string>(p.launch_args.begin() + 5, p.launch_args.end()); };
+  CHECK(window(activate::plan(gen, config, none(), L"gmod.exe", counted)) ==
+        std::vector<std::string>({"-windowed", "-noborder", "-w", "2560", "-h", "1440"}));
+  CHECK(reads == 1);
+  for (const wchar_t* chosen : {L"gmod.exe -windowed", L"gmod.exe -Window", L"gmod.exe -sw", L"gmod.exe -startwindowed",
+                                L"gmod.exe -full", L"gmod.exe -FULLSCREEN -w 640 -h 480"}) {
+    const auto p = activate::plan(gen, config, none(), chosen, counted);
+    CHECK(window(p).empty());
+    CHECK(p.present_args.size() == 1);
+  }
+  CHECK(reads == 1);  // a mode the user chose needs no display
+  const auto border = activate::plan(gen, config, none(), L"gmod.exe -noborder", counted);
+  CHECK(window(border) == std::vector<std::string>({"-windowed", "-w", "2560", "-h", "1440"}));
+  CHECK(border.present_args == std::vector<std::string>({"-noborder"}));
+  const auto sized = activate::plan(gen, config, none(), L"gmod.exe -width 1920 -h 1080", counted);
+  CHECK(window(sized) == std::vector<std::string>({"-windowed", "-noborder"}));
+  CHECK(sized.present_args == std::vector<std::string>({"-width", "-h"}));
+  CHECK(reads == 2);  // the -noborder plan read it; a size the user gave needs none
+  const auto unknown = activate::plan(gen, config, none(), L"gmod.exe", [] { return activate::Display{}; });
+  CHECK(window(unknown) == std::vector<std::string>({"-windowed", "-noborder"}));
+  config.remix_enabled = false;
+  CHECK(!activate::plan(gen, config, none(), L"gmod.exe", counted).activate);
+  CHECK(reads == 2);  // RTX off reads nothing
 }
 
 TEST_CASE("activate: no runtime deployed is inactive") {
@@ -141,7 +185,7 @@ TEST_CASE("activate: no runtime deployed is inactive") {
   pkg.id = "fixes";
   pkg.version = "1.0.0";
   gen.packages.push_back(pkg);
-  const auto plan = activate::plan(gen, config::Config{}, none(), L"gmod.exe");
+  const auto plan = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd);
   CHECK(!plan.activate);
   CHECK(plan.runtime_dll.empty());
   CHECK(plan.env.empty());
@@ -152,7 +196,7 @@ TEST_CASE("activate: no runtime deployed is inactive") {
 TEST_CASE("activate: remix.enabled false deploys but does not load") {
   config::Config config;
   config.remix_enabled = false;
-  const auto plan = activate::plan(with_runtime("p", base_remix()), config, none(), L"gmod.exe");
+  const auto plan = activate::plan(with_runtime("p", base_remix()), config, none(), L"gmod.exe", uhd);
   CHECK(!plan.activate);
   CHECK(plan.runtime_dll == "p/runtime/d3d9.dll");
   CHECK(plan.env.empty() && plan.launch_args.empty());

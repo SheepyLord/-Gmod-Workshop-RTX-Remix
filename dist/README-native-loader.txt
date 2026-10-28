@@ -19,6 +19,9 @@ Install
    - The first start after a download deploys the package, about 1.4 GB, which takes a few seconds.
    - The console line "Couldn't mount file" for the item is expected: the loader deploys it instead
      of GMod.
+   - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
+     crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
+     options in Steam; a -windowed or -fullscreen of yours there is used as it is.
 
 Settings (native-loader\config.json)
 ------------------------------------

@@ -170,6 +170,15 @@ def main():
         check(game.journal.read_bytes() == journal_bytes and game.journal.stat().st_mtime_ns == journal_time, 'repeat rewrote journal')
         passed('first startup deploys and preloads; repeat makes zero deployment writes')
 
+        # ADR 0018: after the package's arguments, a borderless window the size of the primary display
+        # (no size when the display cannot be read); nlctl reads the same display.
+        added = first['activation']['launch_arguments']['added']
+        check(added[:5] == ['-dxlevel', '90', '-nod3d9ex', '-windowed', '-noborder'], f'RTX session is not a borderless window: {added}')
+        check(added[5:] == [] or (len(added) == 9 and added[5] == '-w' and added[7] == '-h' and added[6].isdigit() and added[8].isdigit()),
+              f'window size malformed: {added}')
+        check(game.cli('activation')['launch_args'] == added, 'CLI and startup window differ')
+        passed('an RTX session is a borderless window the size of the display; CLI agrees')
+
         if has_system_vulkan:
             vk_package = scratch / 'vulkan.gma'
             build_package(vk_package, '1.0.0', args.runtime, system_vulkan=True)
@@ -221,6 +230,12 @@ def main():
         preview = user.cli('activation', env={**os.environ, **user_values})
         check(preview['env'] == status['activation']['environment']['requested'], 'CLI and startup layer plans differ')
         passed('user lists remain on top, empty values and dxlevel 95 stay intact; CLI agrees')
+
+        chosen = Game('user-window')
+        arguments = active(chosen, chosen.run(extra=['-fullscreen', '-w', '1280', '-h', '720']))['activation']['launch_arguments']
+        check(arguments['added'] == ['-dxlevel', '90', '-nod3d9ex'], f'user window mode overridden: {arguments}')
+        check(arguments['already_present'] == ['-fullscreen'], f'user window mode not reported: {arguments}')
+        passed('a window mode the user chose stays as it is')
 
         missing = Game('missing-source')
         active(missing, missing.run())
@@ -329,7 +344,8 @@ def main():
         result = refused.run(env_extra={'NL_M4_BAD_CMDLINE': '1'})
         vanilla(result)
         fallback = result[1]['activation']['launch_arguments']['fallback_launch_options']
-        check(fallback == '-dxlevel 90 -nod3d9ex', 'fallback options incorrect')
+        check(fallback.startswith('-dxlevel 90 -nod3d9ex -windowed -noborder') and
+              fallback == ' '.join(refused.cli('activation')['launch_args']), f'fallback options incorrect: {fallback}')
         active(refused, refused.run(extra=fallback.split(), env_extra={'NL_M4_BAD_CMDLINE': '1'}))
         passed('refused swap rolls back; supplying the reported arguments permits activation')
 

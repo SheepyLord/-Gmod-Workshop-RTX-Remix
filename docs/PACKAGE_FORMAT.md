@@ -91,7 +91,9 @@ M4 applies `remix.entry` from the journaled versioned payload, validates its and
 files' recorded sizes, and requires cwd=game root and an absolute DLL path below MAX_PATH. The
 `rtx_conf_layers` / `dxvk_conf_layers` precede the user's environment lists (or root conf defaults);
 other `env` entries fill only absent variables. `launch_args` fill only missing arguments, preserving
-user values. `prefer_system_vulkan_loader` loads System32 Vulkan before the runtime. Process changes
+user values. After them the loader itself adds a borderless window the size of the primary display
+(`-windowed -noborder -w W -h H`) unless the user chose a window mode; a package cannot ask for window
+options ([ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)). `prefer_system_vulkan_loader` loads System32 Vulkan before the runtime. Process changes
 are reversible and preload is last; see [ADR 0008](decisions/0008-activation-at-startup.md).
 
 ### `root_files`

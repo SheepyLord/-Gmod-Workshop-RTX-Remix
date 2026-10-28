@@ -203,3 +203,13 @@ depend on GMod mounting anything.
 2. Install the bootstrap; launch with RTX off first: the existing DXVK `d3d9.dll` must still load.
 3. Enable the runtime package; compare against `GarrysMod_RTX_c` on the user's test save.
 4. Roll back with `uninstall-loader.ps1`; `verify_install.py` must report the depot files unchanged.
+
+Automated sessions pass `-windowed -w W -h H` and `-noworkshop`. A start from Steam carries only the
+player's own launch options, so it differs in two ways. It runs the game's window mode, which crashed
+the Remix runtime in exclusive fullscreen until [ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md).
+It also mounts the player's subscriptions: a PoC start without `-noworkshop` first extracts every
+legacy Workshop item into the PoC's own `garrysmod\cache\workshop` (several GB, over several starts,
+[RESEARCH.md](RESEARCH.md) section 18).
+
+For a quick round, `tools\workflow.ps1 -SkipTests -Install <game root>` builds the Release loader,
+makes the bundle CI would make, and installs the build into the game ([workflow.ps1](../tools/workflow.ps1.md)).

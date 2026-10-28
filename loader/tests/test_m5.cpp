@@ -228,17 +228,18 @@ TEST_CASE("m5: activation collects the extras of every deployed package, a runti
   fixes.session = nl::manifest::parse(fixes_manifest()).session;
   nl::config::Config config;
   const auto none = [](const std::string&) -> std::optional<std::string> { return std::nullopt; };
+  const auto screen = [] { return nl::activate::Display{1920, 1080}; };
   generation.packages = {fixes};
-  CHECK(!nl::activate::plan(generation, config, none, L"gmod.exe").activate);  // no runtime: nothing at all
+  CHECK(!nl::activate::plan(generation, config, none, L"gmod.exe", screen).activate);  // no runtime: nothing at all
   generation.packages = {runtime, fixes};
-  const auto plan = nl::activate::plan(generation, config, none, L"gmod.exe");
+  const auto plan = nl::activate::plan(generation, config, none, L"gmod.exe", screen);
   REQUIRE(plan.activate);
   CHECK(plan.patch_sets.size() == 1 && plan.patch_sets[0].package == "rtx-fixes");
   REQUIRE(plan.module_overrides.size() == 1);
   CHECK(plan.module_overrides[0].file == "native-loader/packages/rtx-fixes/1.0.0_1/shaders/stdshader_dx6.dll");
   CHECK(plan.session_cvars.size() == 2);
   config.remix_enabled = false;
-  const auto off = nl::activate::plan(generation, config, none, L"gmod.exe");
+  const auto off = nl::activate::plan(generation, config, none, L"gmod.exe", screen);
   CHECK(!off.activate);
   CHECK(off.patch_sets.empty() && off.module_overrides.empty() && off.session_cvars.empty());
 }

@@ -5,7 +5,8 @@ CTest M4 synthetic acceptance. Requires `--repo`, `--host`, `--proxy`, `--runtim
 child. Packages test-built DLLs with `tools/package_runtime.py`. Never launches the real game,
 reads a real runtime or changes Steam settings. Windows/Python standard library only.
 
-Exercises startup deploy/no-op, static and delay dependencies, all off switches, RTX off, preserved
+Exercises startup deploy/no-op, static and delay dependencies, the borderless window at the display's
+size and a window mode the user chose (ADR 0018), all off switches, RTX off, preserved
 user config lists and arguments, source removal versus outage, Workshop disable, lock/pending/
 recovery, second-instance gating, invalid journal, failed dependency/DllMain/SEH rollback,
 command-line refusal and explicit fallback arguments, cwd/layer checks and status uninstall.

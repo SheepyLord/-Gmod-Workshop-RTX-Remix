@@ -730,3 +730,44 @@ camera pinned. Evidence in `out/m7` ([M7 report](handover/M7-report.md)).
     download-artifact v8, which makes a digest mismatch an error.
 - **Timings of the first run.** `tools\test.ps1 -Config Release` took 4 min 14 s: CTest 21 s for 16
   tests, the Python suites about 40 s.
+
+## 18. The first field test of the release bundle (2026-10-28, Claude)
+
+The setup: the field install with the CI-built loader 0.2.0 and the subscribed item 3829070317. The
+player's Steam launch options were `-multirun -insecure -tickrate 120`. Evidence: the loader's own
+logs and `status.json`, and Remix's log. The user's console log was not read.
+
+- **Every start crashed to the desktop.** There were three starts, 22:53-22:55 UTC. The last one
+  crashed 9 s in.
+  - The loader did its part. It deployed the item (442 changes, 7.5 s on the first start), activated
+    it, applied 7 of 7 patch sets and the shader override, and hooked 15 modules.
+  - Remix's log (`rtx-remix/logs/remix-dxvk.log`) ends with these lines:
+    - a 640x480 device with `Windowed: false`;
+    - `Setting display mode: 640x480@0`;
+    - `FSR FG: onDestroy called`;
+    - `[D3D9WindowProc] Swapchain handle is invalid, some of its values may not be correct.`
+  - Remix's crash handler (Sentry) wrote `rtx-remix/logs/.sentry-native/last_crash` 1 ms later.
+    Windows logged no Application Error.
+- **Why 640x480 fullscreen.** On the PoC, `DXLevel_V1` 95 was stored (what non-RTX sessions write),
+  and the video key (section 11) held 960x540, windowed, borderless. A start with `-dxlevel 90` ignored
+  that size and window mode, and made a 640x480 exclusive-fullscreen device.
+- **Reproduced on the PoC** with the field's launch options and `DXLevel_V1` 95 (a throwaway script in
+  the worktree's `out/fullscreen`):
+  - Without window options: the same log lines, then exit `0xC0000005` after 13.6 s.
+  - With `-windowed -noborder -w 3840 -h 2160` added by hand: a windowed 3840x2160 device, still running
+    after 45 s, no crash record.
+  - With loader 0.2.1 and no window options: the loader added those options itself, with the same
+    result ([ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)).
+  - Windowed sessions log one "Swapchain handle is invalid" warning too, and do not crash.
+- **The window options GMod x64 reads**, from strings in the PoC's `engine.dll` and `launcher.dll`:
+  `-windowed -window -sw -startwindowed -full -fullscreen -noborder -w -width -h -height`.
+- **`gmod.exe` is per-monitor DPI aware.** Its manifest has `<dpiAware>true/PM</dpiAware>`.
+- **This machine's display:** the RTX 5090 drives the primary display at 3840x2160 and 240 Hz. The
+  CPU's AMD graphics are present too.
+- **GMod extracts Workshop items separately for each install.**
+  - Legacy items are extracted to `garrysmod/cache/workshop/<id>.gma`, beside `<n>.cache` files.
+  - The PoC had never mounted the user's subscriptions, because automated sessions pass `-noworkshop`.
+    Three starts with the field's options extracted 163 files (4.4 GB). Each start continued with new
+    items. The one item a stopped session had been writing was extracted again.
+  - Item 3829070317 is never extracted: it is a plain `.gma`.
+  - The field install's cache was last written on 2026-10-24.

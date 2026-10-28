@@ -13,6 +13,7 @@ tools\install-loader.ps1 -Config Debug -GameRoot H:\Games\MyPoC
 tools\install-loader.ps1 -Uninstall
 tools\install-loader.ps1 -Uninstall -RemoveState
 tools\install-loader.ps1 -GameRoot <install> -AllowSteamManaged -DefaultConfig   # also the default settings
+tools\install-loader.ps1 -GameRoot <install> -AllowSteamManaged -ReplaceUntracked # over a bundle extracted by hand
 ```
 
 Inputs: `-GameRoot`, `-Config Debug|Release`, built DLL/PDB in `out/build/win64-<config>/loader/proxy`.
@@ -21,9 +22,16 @@ Inputs: `-GameRoot`, `-Config Debug|Release`, built DLL/PDB in `out/build/win64-
 [`dist/native-loader/config.json`](../dist/native-loader/config.json), which allow the project's
 Workshop item 3829070317 ([ADR 0017](../docs/decisions/0017-release-bundle-and-ci.md)). It writes
 them only when the install has no `native-loader\config.json`; an existing one is kept as it is.
+
+`-ReplaceUntracked` (install only) replaces a `winmm.dll` and `winmm.pdb` that no receipt records,
+such as a release bundle extracted by hand, when the DLL identifies as the loader. Their bytes are
+copied to `native-loader\replaced\` first. Files a receipt records are still refused when they changed,
+and a foreign DLL is always refused. [`workflow.ps1`](workflow.ps1.md) `-Install` passes it on.
+
 `-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` (requires
 `-Uninstall`) deletes the loader's own control and log files in `native-loader` (`config.json`,
-`bootstrap-install.json`, `disable`, `session_cvars.json`, `logs\loader.log` and its rotations),
+`bootstrap-install.json`, `disable`, `session_cvars.json`, `replaced\winmm.dll` and `.pdb`,
+`logs\loader.log` and its rotations),
 then every folder left empty, then `native-loader` itself if empty. Any other file stays and is
 listed in a warning: a payload file the user changed (`nlctl uninstall` leaves those in place), or a
 journal `nlctl uninstall` had to keep. Reparse points in affected paths or the removal tree are
