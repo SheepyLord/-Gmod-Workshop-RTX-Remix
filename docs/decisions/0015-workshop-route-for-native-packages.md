@@ -60,8 +60,9 @@ R1 worktree's `out/m6-ws/`):
      - The `.dll`/`.exe` list on [Workshop Addon Creation](https://wiki.facepunch.com/gmod/Workshop_Addon_Creation)
        says what `gmad.exe` will pack (its whitelist), not what the Workshop allows.
      - ADR 0012 and the first version of this record misread that list.
-   - **What the rules do ban** that matters here: exploits and backdoors, content from paid games,
-     reuploads, wrong tags, and empty, test or placeholder items.
+   - **What the rules ban** that a public release must respect: exploits and backdoors, content from
+     paid games, reuploads and wrong tags. Hidden test items for this project are fine: the user allows
+     them (AGENTS.md rule 5).
    - **Broken add-ons.** Among the rules' "good ideas" (not bans, but they may get an item flagged as
      incompatible) is "do not upload broken addons". GMod cannot mount such an item by itself, so its
      description should say that it needs the loader.
@@ -73,8 +74,9 @@ R1 worktree's `out/m6-ws/`):
   and the companion's notice (M6) asks the user to restart.
 - **Subscribers see a console line.** GMod tries to mount the item at every start, refuses, and
   prints "Couldn't mount file". It is harmless, but the item's description should say so.
-- **The test item (3829070317) stays hidden until the user deletes it.** Deleting needs its Workshop
-  page. The rules ban test items once published, so it should be deleted rather than made public.
+- **The test item (3829070317) stays on the Workshop, hidden,** for later tests. The user's
+  instruction (2026-10-28): agents may upload test items for this project, and nothing on the
+  Workshop is removed or deleted until the user says the project is done (AGENTS.md rule 5).
 
 ## Alternatives considered
 

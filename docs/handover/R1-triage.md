@@ -162,5 +162,5 @@ The Workshop upload test then used the same build and the fixed session driver; 
   The ones touched by these fixes were updated with them.
 - `tools/gmapack/tests/test_gmapack.py` still uses the system temp folder when run directly.
   `tools\test.ps1` points it at `out\tmp`.
-- The Workshop test item 3829070317 is still on the Workshop, hidden. Deleting it needs its page,
-  which only the user can open.
+- The Workshop test item 3829070317 stays on the Workshop, hidden, for later tests. That is the
+  user's instruction: nothing on the Workshop is deleted until the project is done.

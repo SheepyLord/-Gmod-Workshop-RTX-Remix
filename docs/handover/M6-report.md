@@ -32,14 +32,16 @@ that does not publish anything was done; the upload test is left to the user, wi
 ## The private upload test, for the user
 
 Only if you want to know whether the Workshop accepts and keeps an item with native files. Use a
-throwaway package, never the real runtime, and remove the item afterwards.
+throwaway package, never the real runtime.
 
-**Correction, 2026-10-28.** This section first said such an item is against GMod's Workshop rules. It
-is not:
-- GMod's [Steam Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule
-  about file types.
-- The `.dll`/`.exe` list on the wiki's addon-creation page is what `gmad.exe` will pack.
-- The rules do ban test items once published, which is one more reason to remove the item afterwards.
+**Corrections, 2026-10-28, at the user's direction:**
+- This section first said such an item is against GMod's Workshop rules. It is not:
+  - GMod's [Steam Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule
+    about file types.
+  - The `.dll`/`.exe` list on the wiki's addon-creation page is what `gmad.exe` will pack.
+- It also said to delete the item afterwards (step 5). Instead, agents may upload test items for this
+  project, and nothing on the Workshop is removed or deleted until the user says the project is done
+  (AGENTS.md rule 5).
 
 1. Build a tiny package with a harmless DLL, for example from the M4 test fixtures:
    `python tools\package_runtime.py --runtime out\build\win64-release\loader\proxy\tests\runtime --gma out\m6\upload-test.gma --id upload-test --version 0.0.1`
@@ -48,7 +50,8 @@ is not:
 3. On the item's Workshop page, set the visibility to **Private** at once.
 4. Subscribe from the same account, let Steam download it, and check the item folder under
    `steamapps\workshop\content\4000\<id>\`: is the `.dll` there, byte for byte (`nlctl verify`)?
-5. Delete the item from the Workshop.
+5. ~~Delete the item from the Workshop.~~ Keep it: nothing on the Workshop is deleted until the
+   project is done (corrected above).
 
 If the item survives and downloads intact, a later record can make the Workshop the preferred route
 for users who want updates through Steam; the loader needs no change for that.
@@ -68,7 +71,7 @@ and the session records.
 | Deploy | With the loader allowlisting only that Workshop ID, start-up deployed it (generation 1). The payload DLL was byte-identical, and the mod and add-on folders were placed. GMod mounted the add-on folder and ran its Lua. `status.json` listed `source: workshop`, the item ID and the update time |
 | Update | `gmpublish update` uploaded 0.0.2. `DownloadUGC` fetched it during a session whose start had kept 0.0.1 (`unchanged`). The next start deployed 0.0.2 (generation 2, the earlier payload kept for rollback) |
 | GMod's own mount | Refused: "Couldn't mount file". A probe found why: a Lua-only `gmapack` archive mounts, and the same archive with a `.dll` does not. GMod does not mount an archive holding a file outside its whitelist |
-| Clean-up | Loader uninstalled from the PoC; 2,877 depot files OK. The test item stays hidden on the Workshop: deleting it needs its Workshop page, which the user declined to let Claude use |
+| Clean-up | Loader uninstalled from the PoC; 2,877 depot files OK. The test item stays on the Workshop, hidden, for later tests: nothing on the Workshop is deleted until the project is done (the user's instruction) |
 
 Result: [ADR 0015](../decisions/0015-workshop-route-for-native-packages.md).
 - Native packages can go through the Workshop. Their Lua must come through the loader's add-on folders

@@ -21,6 +21,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **Corrected:** GMod's Steam Workshop rules do not forbid DLLs or other runtime files; they have no
   rule about file types. The wiki's `.dll`/`.exe` list describes what `gmad.exe` packs. ADR 0012
   (in a correction note), ADR 0015, the M6 report, the R1 triage and the roadmap had said otherwise.
+- **New rule (AGENTS.md rule 5, the user's instruction):** agents may upload and update hidden test
+  items for this project on the Workshop without asking. Nothing on the Workshop is removed or deleted
+  until the user says the project is done, so test item 3829070317 stays. The earlier advice to delete
+  it is withdrawn.
 
 ### Changed (R1: whole-repo review)
 
