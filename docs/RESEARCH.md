@@ -695,3 +695,38 @@ camera pinned. Evidence in `out/m7` ([M7 report](handover/M7-report.md)).
 - **`reg import` and line breaks.** `reg export` writes a `REG_SZ` value holding a line break as
   `\r\r\n`, and `reg import` cannot restore it. `field_snapshot.py` reads exports strictly and refuses
   to prune after a failed import (R1-011).
+
+## 17. GitHub's Windows runner (CI, 2026-10-28, Claude)
+
+- **The runner decodes text as cp1252; this machine decodes UTF-8.**
+  - The runner: GitHub's `windows-2022` image (20261022.344.1, runner 2.338.0, CPython 3.12.10 from
+    `setup-python`). Its ANSI code page is 1252, so Python decodes a text-mode pipe without an
+    `encoding` as cp1252.
+  - This machine's ANSI code page is 65001 (Windows' UTF-8 option). `locale.getpreferredencoding(False)`
+    gives `cp65001` even with `PYTHONUTF8=0`, so no local run sees the difference.
+- **`nlctl` and the C++ test hosts write UTF-8 whatever the code page.** They `fwrite` UTF-8 JSON and
+  read the environment with `GetEnvironmentVariableW` (`loader/core/src/activate.cpp`).
+- **The first CI run (40779899329) failed `nl_activation_integration`** with "CLI and startup layer
+  plans differ".
+  - The layer list holds `用户.conf`, which cp1252 turns into `ç”¨æˆ·.conf`.
+  - Start-up's `status.json` had the name right.
+  - Tests now pass `encoding='utf-8'` when they read `nlctl` or a host, and open files with an explicit
+    encoding.
+  - A Python child (`package_runtime.py`) writes in the same locale encoding its parent reads, so
+    those calls stay as they are.
+- **Reproduced here** with a throwaway wrapper (not committed). It makes text-mode `subprocess` pipes,
+  and files opened without an encoding, use cp1252: it patches `subprocess.Popen.__init__`, `io.open`
+  and `io.text_encoding`, then runs the test with `runpy.run_path`.
+  - The old test failed at the same line; the fixed one passed all 17 cases.
+  - CTest starts the test with `python -I`, so a `sitecustomize` on `PYTHONPATH` would not load.
+- **The runner has no Vulkan loader** (`System32\vulkan-1.dll`). The activation test skips its
+  "optional Vulkan preload uses System32" case there.
+- **Node 24 actions.**
+  - GitHub runs Node 20 actions on Node 24 and warns about each one.
+  - The first majors that target Node 24: `checkout` v5, `setup-python` v6, `upload-artifact` v6 and
+    `download-artifact` v7. Their release notes change nothing else this workflow uses, and they
+    need runner 2.327.1 or later.
+  - Later majors existed on 2026-10-28: checkout v7, setup-python v7, upload-artifact v7, and
+    download-artifact v8, which makes a digest mismatch an error.
+- **Timings of the first run.** `tools\test.ps1 -Config Release` took 4 min 14 s: CTest 21 s for 16
+  tests, the Python suites about 40 s.

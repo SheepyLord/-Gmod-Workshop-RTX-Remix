@@ -123,7 +123,9 @@ def main():
             return probe, status, original_command
 
         def cli(self, command, env=None):
-            run = subprocess.run([str(args.nlctl), command, str(self.root), '--json'], env=env, capture_output=True, text=True)
+            # nlctl writes UTF-8 whatever the code page; the locale default (cp1252 on CI) garbles non-ASCII.
+            run = subprocess.run([str(args.nlctl), command, str(self.root), '--json'], env=env, capture_output=True,
+                                 text=True, encoding='utf-8')
             check(run.returncode == 0, f'{command}: {run.stdout}\n{run.stderr}')
             return json.loads(run.stdout)
 
@@ -230,7 +232,7 @@ def main():
         missing.save()
         removed = missing.run()
         vanilla(removed)
-        check(not json.loads(missing.journal.read_text())['current']['packages'], 'explicit removal kept package')
+        check(not json.loads(missing.journal.read_text(encoding='utf-8'))['current']['packages'], 'explicit removal kept package')
         passed('missing allowlisted source is kept; explicit allowlist removal removes it')
 
         workshop = Game('workshop-disabled', workshop=True)
@@ -243,7 +245,7 @@ def main():
         addon_list.parent.mkdir(parents=True, exist_ok=True)
         addon_list.write_text('"addonnomount" { "1" "123" }', encoding='ascii')
         vanilla(workshop.run())
-        check(not json.loads(workshop.journal.read_text())['current']['packages'], 'disabled Workshop source retained')
+        check(not json.loads(workshop.journal.read_text(encoding='utf-8'))['current']['packages'], 'disabled Workshop source retained')
         passed('explicit Workshop disable removes the package')
 
         locked = Game('locked')
@@ -296,7 +298,7 @@ def main():
         invalid.journal.write_text('not a journal', encoding='ascii')
         result = invalid.run()
         vanilla(result)
-        check(result[1]['deployment']['outcome'] == 'failed' and invalid.journal.read_text() == 'not a journal', 'invalid journal changed')
+        check(result[1]['deployment']['outcome'] == 'failed' and invalid.journal.read_text(encoding='utf-8') == 'not a journal', 'invalid journal changed')
         passed('invalid journal stays untouched and prevents activation')
 
         configuration = Game('configuration-off')
@@ -360,7 +362,7 @@ def main():
         too_long = Game('long-runtime-path')
         active(too_long, too_long.run())
         too_long.source.unlink()
-        long_state = json.loads(too_long.journal.read_text())
+        long_state = json.loads(too_long.journal.read_text(encoding='utf-8'))
         previous_folder = long_state['current']['packages'][0]['payload']
         long_folder = 'native-loader/packages/m4-runtime/' + 'v' * 220
         long_state['current']['packages'][0]['payload'] = long_folder

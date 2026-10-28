@@ -73,7 +73,7 @@ class BundleTests(unittest.TestCase):
         shutil.copy2(REPO / 'dist/native-loader/config.json', game / 'native-loader/config.json')
         (self.root / 'no-steam').mkdir()
         done = subprocess.run([str(NLCTL), 'plan', str(game), '--steam-dir', str(self.root / 'no-steam'), '--json'],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, encoding='utf-8')
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
         self.assertIn('3829070317', done.stdout)
 

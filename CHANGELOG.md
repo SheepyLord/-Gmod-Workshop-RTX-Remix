@@ -6,6 +6,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (CI's first run)
+
+- **`nl_activation_integration` failed on GitHub's runner** (run 40779899329).
+  - The test read `nlctl`'s UTF-8 output in the runner's code page, cp1252. A non-ASCII config-file
+    name came back garbled, so the CLI's plan seemed to differ from start-up's. The loader was right.
+  - Tests now read `nlctl` and the C++ test hosts as UTF-8, and open journals as UTF-8.
+  - With text decoded as cp1252, the test passes all 17 cases.
+- **The workflow uses the Node 24 versions of its actions** (checkout v5, setup-python v6,
+  upload-artifact v6, download-artifact v7). This ends GitHub's Node 20 deprecation warning.
+
 ### Added (CI and the release bundle, ADR 0017)
 
 - **GitHub Actions** (`.github/workflows/build.yml`) builds `winmm.dll` on every push of `main`, every
