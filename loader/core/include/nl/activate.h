@@ -10,6 +10,7 @@
 #include "nl/journal.h"
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -17,9 +18,10 @@
 
 namespace nl::activate {
 
-// Is an environment variable set in this process? The bootstrap wraps GetEnvironmentVariableW; tests
-// pass a set of names. A variable the user already set is left as it is: the user wins.
-using EnvHas = std::function<bool(const std::string& name)>;
+// Existing environment values, in UTF-8. nullopt means absent; an empty string is a present value.
+// Package config layers precede the user's nonempty list; ordinary package variables never replace
+// a value the user already set (including an empty one).
+using EnvGet = std::function<std::optional<std::string>(const std::string& name)>;
 
 struct Plan {
   bool activate = false;  // false: the runtime is not loaded and nothing below is applied
@@ -30,8 +32,8 @@ struct Plan {
   bool prefer_system_vulkan = false;
 
   // SetEnvironmentVariable calls, in order: the two config-file layer lists first (only when the
-  // package adds layers and the user has not set the variable), then the package's own variables
-  // (only those the user has not set). Names and values are ASCII.
+  // package adds layers, retaining the user's list last), then the package's own variables
+  // (only those the user has not set). Manifest values are ASCII; user values may be UTF-8.
   std::vector<std::pair<std::string, std::string>> env;
 
   // Arguments to append to the command line, the package's launch_args minus any the user already
@@ -42,7 +44,7 @@ struct Plan {
 // The runtime package is the deployed package that has a remix section and a payload. With none, or
 // with remix.enabled false, the plan is inactive. `command_line` is the process command line, read
 // only to skip launch arguments the user set.
-Plan plan(const journal::Generation& generation, const config::Config& config, const EnvHas& env,
+Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
           std::wstring_view command_line);
 
 }  // namespace nl::activate

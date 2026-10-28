@@ -4,6 +4,9 @@
 #include <winternl.h>
 
 #include <cstring>
+#include <cwchar>
+#include <array>
+#include <limits>
 #include <intrin.h>
 
 namespace nl::cmdline {
@@ -20,28 +23,116 @@ bool iequal(std::wstring_view a, std::wstring_view b) {
   return true;
 }
 
-// Writes a pointer into kernelbase's writable data, making the page writable first and restoring it.
-bool write_pointer(void** slot, void* value) {
-  DWORD old = 0;
-  if (!VirtualProtect(slot, sizeof(void*), PAGE_READWRITE, &old)) return false;
-  *slot = value;
-  DWORD ignored = 0;
-  VirtualProtect(slot, sizeof(void*), old, &ignored);
-  return true;
+static_assert(sizeof(StringRecord) == sizeof(UNICODE_STRING));
+static_assert(offsetof(StringRecord, buffer) == offsetof(UNICODE_STRING, Buffer));
+
+bool read_record(const StringRecord* address, StringRecord& record) noexcept {
+  __try {
+    std::memcpy(&record, address, sizeof(record));
+    return true;
+  } __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
-void update_peb(wchar_t* command_line, std::size_t length) {
-  const std::size_t bytes = length * sizeof(wchar_t);
-  if (bytes > 0xFFFE) return;  // a UNICODE_STRING length is a USHORT in bytes
-  auto* peb = reinterpret_cast<PEB*>(__readgsqword(0x60));
-  if (!peb || !peb->ProcessParameters) return;
-  UNICODE_STRING& cl = peb->ProcessParameters->CommandLine;
-  cl.Buffer = command_line;
-  cl.Length = static_cast<USHORT>(bytes);
-  cl.MaximumLength = static_cast<USHORT>(bytes + sizeof(wchar_t));
+bool write_record(StringRecord* address, const StringRecord& value, void*) noexcept {
+  DWORD previous = 0;
+  if (!VirtualProtect(address, sizeof(value), PAGE_READWRITE, &previous)) return false;
+  bool written = false;
+  __try {
+    std::memcpy(address, &value, sizeof(value));
+    written = true;
+  } __except (EXCEPTION_EXECUTE_HANDLER) { written = false; }
+  DWORD ignored = 0;
+  const bool protected_again = VirtualProtect(address, sizeof(value), previous, &ignored) != FALSE;
+  return written && protected_again;
 }
 
 }  // namespace
+
+struct SwapState {
+  struct Saved {
+    StringRecord* address;
+    StringRecord before;
+    StringRecord after;
+    bool needs_restore = false;
+  };
+  std::vector<Saved> saved;
+  RecordWriter writer = &write_record;
+  void* context = nullptr;
+  std::unique_ptr<wchar_t[]> wide;
+  std::unique_ptr<char[]> ansi;
+
+  bool restore() noexcept {
+    bool restored = true;
+    for (auto it = saved.rbegin(); it != saved.rend(); ++it) {
+      if (!it->needs_restore) continue;
+      if (writer(it->address, it->before, context)) it->needs_restore = false;
+      else restored = false;
+    }
+    return restored;
+  }
+  ~SwapState() {
+    if (!restore()) {
+      // Do not leave a dangling process-wide pointer if Windows refuses a restoration write.
+      wide.release();
+      ansi.release();
+      OutputDebugStringW(L"Native Loader: command-line descriptor restoration failed.\n");
+    }
+  }
+};
+
+SwapResult::SwapResult(bool success, std::string message) : ok(success), detail(std::move(message)) {}
+SwapResult::~SwapResult() = default;
+SwapResult::SwapResult(SwapResult&&) noexcept = default;
+SwapResult& SwapResult::operator=(SwapResult&&) noexcept = default;
+bool SwapResult::restore() noexcept { return !state_ || state_->restore(); }
+void SwapResult::commit() noexcept {
+  if (!ok || !state_) return;
+  for (auto& change : state_->saved) change.needs_restore = false;
+  state_->wide.release();
+  state_->ansi.release();
+  state_.reset();
+}
+
+SwapResult swap_records(std::span<const RecordChange> changes, RecordWriter writer, void* context) {
+  SwapResult result;
+  result.detail.reserve(192);  // no allocation after the first write
+  result.state_ = std::make_unique<SwapState>();
+  auto& state = *result.state_;
+  state.writer = writer ? writer : &write_record;
+  state.context = context;
+  state.saved.reserve(changes.size());
+  for (const auto& change : changes) {
+    const auto width = change.terminator_bytes;
+    constexpr auto maximum = std::numeric_limits<std::uint16_t>::max();
+    if ((width != 1 && width != 2) || change.current_bytes > maximum - width ||
+        change.replacement_bytes > maximum - width || change.current_bytes % width || change.replacement_bytes % width ||
+        !change.record || !change.expected_buffer || !change.replacement) {
+      result.detail = "command-line descriptor size or pointer is invalid (USHORT capacity includes the terminator)";
+      return result;
+    }
+    StringRecord before;
+    if (!read_record(change.record, before) || before.buffer != change.expected_buffer ||
+        before.length != change.current_bytes || before.maximum_length != change.current_bytes + width) {
+      result.detail = "command-line Buffer, Length or MaximumLength does not match the current string";
+      return result;
+    }
+    auto after = before;
+    after.buffer = change.replacement;
+    after.length = static_cast<std::uint16_t>(change.replacement_bytes);
+    after.maximum_length = static_cast<std::uint16_t>(change.replacement_bytes + width);
+    state.saved.push_back({change.record, before, after, false});
+  }
+  for (auto& change : state.saved) {
+    change.needs_restore = true;
+    if (!state.writer(change.address, change.after, state.context)) {
+      result.detail = state.restore() ? "command-line write failed; all descriptors restored" :
+                                       "command-line write failed; descriptor restoration also failed";
+      return result;
+    }
+  }
+  result.ok = true;
+  return result;
+}
 
 std::vector<std::wstring> tokenize(std::wstring_view line) {
   std::vector<std::wstring> args;
@@ -108,6 +199,9 @@ SwapResult append_arguments(const std::vector<std::string>& extra_args) {
   if (extra_args.empty()) return {true, {}};
   std::string suffix;
   for (const std::string& arg : extra_args) {
+    for (const unsigned char c : arg) {
+      if (!c || c > 0x7f) return {false, "launch arguments must be ASCII without NUL"};
+    }
     suffix.push_back(' ');
     suffix += arg;
   }
@@ -121,20 +215,29 @@ SwapResult append_arguments(const std::vector<std::string>& extra_args) {
   if (!slot_w || !slot_a) return {false, "GetCommandLine is not the cached-pointer shape on this Windows build"};
   wchar_t* current_w = GetCommandLineW();
   char* current_a = GetCommandLineA();  // builds the ANSI cache if it was not built yet
-  if (*slot_w != current_w) return {false, "the GetCommandLineW cache is not where expected"};
-  if (*slot_a != current_a) return {false, "the GetCommandLineA cache is not where expected"};
+  auto* peb = reinterpret_cast<PEB*>(__readgsqword(0x60));
+  if (!peb || !peb->ProcessParameters) return {false, "the PEB command line is unavailable"};
 
   const std::wstring new_w = std::wstring(current_w) + std::wstring(suffix.begin(), suffix.end());
   const std::string new_a = std::string(current_a) + suffix;
-  auto* heap_w = new wchar_t[new_w.size() + 1];  // read for the life of the process; never freed
-  std::memcpy(heap_w, new_w.c_str(), (new_w.size() + 1) * sizeof(wchar_t));
-  auto* heap_a = new char[new_a.size() + 1];
-  std::memcpy(heap_a, new_a.c_str(), new_a.size() + 1);
-
-  if (!write_pointer(slot_w, heap_w)) return {false, "could not write the GetCommandLineW cache"};
-  if (!write_pointer(slot_a, heap_a)) return {false, "could not write the GetCommandLineA cache"};
-  update_peb(heap_w, new_w.size());
-  return {true, {}};
+  auto heap_w = std::make_unique<wchar_t[]>(new_w.size() + 1);
+  std::memcpy(heap_w.get(), new_w.c_str(), (new_w.size() + 1) * sizeof(wchar_t));
+  auto heap_a = std::make_unique<char[]>(new_a.size() + 1);
+  std::memcpy(heap_a.get(), new_a.c_str(), new_a.size() + 1);
+  const auto descriptor = [](void** slot) {
+    return reinterpret_cast<StringRecord*>(reinterpret_cast<unsigned char*>(slot) - offsetof(StringRecord, buffer));
+  };
+  const std::array<RecordChange, 3> edits{{
+    {descriptor(slot_w), current_w, std::wcslen(current_w) * sizeof(wchar_t), heap_w.get(), new_w.size() * sizeof(wchar_t), sizeof(wchar_t)},
+    {descriptor(slot_a), current_a, std::strlen(current_a), heap_a.get(), new_a.size(), sizeof(char)},
+    {reinterpret_cast<StringRecord*>(&peb->ProcessParameters->CommandLine), current_w,
+     std::wcslen(current_w) * sizeof(wchar_t), heap_w.get(), new_w.size() * sizeof(wchar_t), sizeof(wchar_t)}
+  }};
+  auto result = swap_records(edits);
+  // Keep buffers alive even if a failed write also encountered a rollback error.
+  result.state_->wide = std::move(heap_w);
+  result.state_->ansi = std::move(heap_a);
+  return result;
 }
 
 }  // namespace nl::cmdline

@@ -26,7 +26,7 @@ manifests, discovery and planning; M3 added deployment; M4 added activation.
 | `include/nl/journal.h`, `src/journal.cpp` | `native-loader\state.json` schema 1: `parse` (strict; paths checked against the folders the loader manages), `serialize`, `load`, atomic `save` ([docs/ON_DISK_LAYOUT.md](../../docs/ON_DISK_LAYOUT.md)) |
 | `include/nl/deploy.h`, `src/deploy.cpp` | The deployer: `apply`, `rollback`, `uninstall`, `recover` (each one transaction, with lock, recovery and clean-up) and read-only `status` ([ADR 0007](../../docs/decisions/0007-transactional-deployment.md)) |
 | `include/nl/activate.h`, `src/activate.cpp` | `activate::plan`: a pure function turning the deployed generation + config + environment + command line into what start-up loads (d3d9.dll, DLL-search folder, vulkan preload), sets (config-file layer lists and package env, the user winning) and adds (launch arguments the user did not pass); [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) |
-| `include/nl/cmdline.h`, `src/cmdline.cpp` | Command line: `tokenize` / `has_arg` (argv rules), and `append_arguments`, which adds the runtime's launch arguments in memory by pointing kernelbase's `GetCommandLineW/A` caches and the PEB at longer strings (`cached_pointer_slot` finds the cached pointer behind a `mov rax,[rip+disp]; ret` getter) |
+| `include/nl/cmdline.h`, `src/cmdline.cpp` | Command line: `tokenize` / `has_arg`, validated transactional `swap_records` (Buffer/Length/MaximumLength and USHORT limits), and `append_arguments` for kernelbase W/A plus the PEB. A move-only `SwapResult` supports explicit/automatic restore or committing buffers for process lifetime; write failure restores every attempted slot. |
 | `src/version.cpp` | `nl::version()` |
 
 ## GMA reader rules

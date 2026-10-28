@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M4: activation)
 
+- Corrections before integration: command-line swaps validate and update the complete cached
+  string descriptors, roll back partial failures and expose explicit/scoped restoration. A separate
+  process tests the real kernelbase/PEB round trip. Package config layers now precede existing user
+  lists, retaining the user's final editable layer; ordinary environment values remain untouched.
 - `nl_core`: `nl::activate::plan` ([ADR 0008](docs/decisions/0008-activation-at-startup.md)), a pure
   function turning the deployed generation, config, environment and command line into the start-up
   steps: the `d3d9.dll` to preload and the folder to add to the DLL search, the config-file layer

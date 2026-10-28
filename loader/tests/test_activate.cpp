@@ -2,7 +2,7 @@
 #include "nl_test.h"
 
 #include <algorithm>
-#include <set>
+#include <map>
 #include <string>
 
 using namespace nl;
@@ -39,12 +39,15 @@ manifest::Remix base_remix() {
   return r;
 }
 
-activate::EnvHas none() {
-  return [](const std::string&) { return false; };
+activate::EnvGet none() {
+  return [](const std::string&) -> std::optional<std::string> { return std::nullopt; };
 }
 
-activate::EnvHas set_of(std::set<std::string> names) {
-  return [names = std::move(names)](const std::string& n) { return names.count(n) > 0; };
+activate::EnvGet values(std::map<std::string, std::string> entries) {
+  return [entries = std::move(entries)](const std::string& n) -> std::optional<std::string> {
+    const auto it = entries.find(n);
+    return it == entries.end() ? std::nullopt : std::optional(it->second);
+  };
 }
 
 const std::string* env_value(const activate::Plan& p, const std::string& name) {
@@ -87,12 +90,36 @@ TEST_CASE("activate: the user's own environment wins over the package") {
   remix.rtx_conf_layers = {"config/rtx/01_base.conf"};
   remix.env = {{"DXVK_LOG_LEVEL", "info"}, {"RTX_TEST", "on"}};
   const auto gen = with_runtime("p", remix);
-  const auto plan = activate::plan(gen, config::Config{}, set_of({"DXVK_RTX_CONFIG_FILE", "DXVK_LOG_LEVEL"}), L"gmod.exe");
-  CHECK(env_value(plan, "DXVK_RTX_CONFIG_FILE") == nullptr);  // user set it: left alone
+  const auto plan = activate::plan(gen, config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", "base.conf,My overrides.conf"},
+                                  {"DXVK_LOG_LEVEL", "debug"}}), L"gmod.exe");
+  REQUIRE(env_value(plan, "DXVK_RTX_CONFIG_FILE"));
+  CHECK(*env_value(plan, "DXVK_RTX_CONFIG_FILE") == "p/config/rtx/01_base.conf,base.conf,My overrides.conf");
   CHECK(env_value(plan, "DXVK_LOG_LEVEL") == nullptr);        // user set it: left alone
   const std::string* rtx_test = env_value(plan, "RTX_TEST");
   REQUIRE(rtx_test);
   CHECK(*rtx_test == "on");
+}
+
+TEST_CASE("activate: both user config lists remain last and ordinary empty values are preserved") {
+  auto remix = base_remix();
+  remix.rtx_conf_layers = {"config/rtx/base.conf"};
+  remix.dxvk_conf_layers = {"config/dxvk/base.conf"};
+  remix.env = {{"RTX_TEST", "on"}};
+  const auto env = values({{"DXVK_RTX_CONFIG_FILE", "用户.conf,final.conf"},
+                           {"DXVK_CONFIG_FILE", "dxvk-user.conf,top.conf"}, {"RTX_TEST", ""}});
+  const auto p = activate::plan(with_runtime("p", remix), config::Config{}, env, L"gmod.exe");
+  REQUIRE(env_value(p, "DXVK_RTX_CONFIG_FILE") && env_value(p, "DXVK_CONFIG_FILE"));
+  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "p/config/rtx/base.conf,用户.conf,final.conf");
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "p/config/dxvk/base.conf,dxvk-user.conf,top.conf");
+  CHECK(env_value(p, "RTX_TEST") == nullptr);
+}
+
+TEST_CASE("activate: empty config variables retain the runtime's default user root layer") {
+  auto remix = base_remix();
+  remix.rtx_conf_layers = {"config/base.conf"};
+  const auto p = activate::plan(with_runtime("p", remix), config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", ""}}), L"gmod.exe");
+  REQUIRE(env_value(p, "DXVK_RTX_CONFIG_FILE"));
+  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "p/config/base.conf,rtx.conf");
 }
 
 TEST_CASE("activate: launch arguments the user already passed are not repeated") {

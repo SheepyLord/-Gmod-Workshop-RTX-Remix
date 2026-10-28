@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,30 @@ using namespace nl;
 
 namespace {
 std::vector<std::wstring> toks(std::wstring_view line) { return cmdline::tokenize(line); }
+
+struct Records {
+  wchar_t wide[4] = L"old";
+  char ansi[4] = "old";
+  wchar_t next_wide[10] = L"old extra";
+  char next_ansi[10] = "old extra";
+  std::array<cmdline::StringRecord, 3> slots{{{6, 8, 0x12345678, wide}, {3, 4, 0x87654321, ansi}, {6, 8, 0xabcdef12, wide}}};
+  auto edits() {
+    return std::array<cmdline::RecordChange, 3>{{
+      {&slots[0], wide, 6, next_wide, 18, 2}, {&slots[1], ansi, 3, next_ansi, 9, 1},
+      {&slots[2], wide, 6, next_wide, 18, 2}}};
+  }
+};
+
+struct FailedWrite { unsigned calls = 0; unsigned at = 0; };
+bool write_with_failure(cmdline::StringRecord* address, const cmdline::StringRecord& value, void* context) noexcept {
+  auto& fault = *static_cast<FailedWrite*>(context);
+  if (++fault.calls == fault.at) {
+    address->buffer = value.buffer;  // fail after a partial write, which must also be undone
+    return false;
+  }
+  std::memcpy(address, &value, sizeof(value));
+  return true;
+}
 }  // namespace
 
 TEST_CASE("cmdline: tokenize follows the Windows quoting and backslash rules") {
@@ -76,18 +101,60 @@ TEST_CASE("cmdline: appending no arguments changes nothing and succeeds") {
   CHECK(result.ok);
 }
 
-TEST_CASE("cmdline: appending arguments extends this process's own command line") {
-  // Exercises the real kernelbase getters and the PEB in this test process.
-  const std::wstring before = GetCommandLineW();
-  const auto result = cmdline::append_arguments({"-nl-test-flag", "7"});
-  if (!result.ok) {
-    std::printf("append_arguments declined: %s\n", result.detail.c_str());
-    return;  // a future Windows shape: the bootstrap would fall back; nothing to verify here
+TEST_CASE("cmdline: a swap updates all lengths and restores every original descriptor") {
+  Records records;
+  const auto before = records.slots;
+  auto result = cmdline::swap_records(records.edits());
+  REQUIRE(result.ok);
+  CHECK(records.slots[0].buffer == records.next_wide);
+  CHECK(records.slots[0].length == 18 && records.slots[0].maximum_length == 20);
+  CHECK(records.slots[1].buffer == records.next_ansi);
+  CHECK(records.slots[1].length == 9 && records.slots[1].maximum_length == 10);
+  CHECK(records.slots[2].buffer == records.next_wide);
+  CHECK(records.slots[2].length == 18 && records.slots[2].maximum_length == 20);
+  CHECK(records.slots[0].reserved == before[0].reserved);
+  CHECK(result.restore());
+  CHECK(std::memcmp(records.slots.data(), before.data(), sizeof(before)) == 0);
+  CHECK(result.restore());
+}
+
+TEST_CASE("cmdline: every descriptor is validated before any slot changes") {
+  for (int invalid = 0; invalid < 3; ++invalid) {
+    Records records;
+    if (invalid == 0) records.slots[2].length = 4;
+    if (invalid == 1) records.slots[2].maximum_length = 10;
+    if (invalid == 2) records.slots[2].buffer = records.next_wide;
+    const auto before = records.slots;
+    FailedWrite writes;
+    auto result = cmdline::swap_records(records.edits(), &write_with_failure, &writes);
+    CHECK(!result.ok);
+    CHECK(writes.calls == 0);
+    CHECK(std::memcmp(records.slots.data(), before.data(), sizeof(before)) == 0);
   }
-  const std::wstring after_w = GetCommandLineW();
-  const std::string after_a = GetCommandLineA();
-  CHECK(after_w == before + L" -nl-test-flag 7");
-  CHECK(after_a.size() >= std::strlen("-nl-test-flag 7"));
-  CHECK(after_a.find("-nl-test-flag 7") != std::string::npos);
-  CHECK(cmdline::has_arg(GetCommandLineW(), L"-nl-test-flag"));
+}
+
+TEST_CASE("cmdline: failed writes roll back earlier and partially written slots") {
+  for (unsigned at = 1; at <= 3; ++at) {
+    Records records;
+    const auto before = records.slots;
+    FailedWrite fault{0, at};
+    auto result = cmdline::swap_records(records.edits(), &write_with_failure, &fault);
+    CHECK(!result.ok);
+    CHECK(result.detail.find("all descriptors restored") != std::string::npos);
+    CHECK(std::memcmp(records.slots.data(), before.data(), sizeof(before)) == 0);
+  }
+}
+
+TEST_CASE("cmdline: USHORT checks include the terminator and unwinding restores the swap") {
+  Records records;
+  const auto before = records.slots;
+  auto edits = records.edits();
+  edits[0].replacement_bytes = 65534;  // the Unicode terminator would overflow MaximumLength
+  CHECK(!cmdline::swap_records(edits).ok);
+  CHECK(std::memcmp(records.slots.data(), before.data(), sizeof(before)) == 0);
+  {
+    auto result = cmdline::swap_records(records.edits());
+    REQUIRE(result.ok);
+  }
+  CHECK(std::memcmp(records.slots.data(), before.data(), sizeof(before)) == 0);
 }

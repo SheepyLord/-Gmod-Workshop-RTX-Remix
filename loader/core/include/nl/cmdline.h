@@ -8,6 +8,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -30,14 +32,58 @@ std::optional<std::int32_t> cached_pointer_displacement(const unsigned char* cod
 // `max_scan` bounds how far it reads. Exposed for tests; append_arguments() uses it.
 void** cached_pointer_slot(const void* getter, std::size_t max_scan = 16);
 
-struct SwapResult {
+// x64 UNICODE_STRING/ANSI_STRING layout; reserved is their four bytes of padding, preserved exactly.
+struct StringRecord {
+  std::uint16_t length = 0;
+  std::uint16_t maximum_length = 0;
+  std::uint32_t reserved = 0;
+  void* buffer = nullptr;
+};
+
+struct RecordChange {
+  StringRecord* record = nullptr;
+  const void* expected_buffer = nullptr;
+  std::size_t current_bytes = 0;
+  void* replacement = nullptr;
+  std::size_t replacement_bytes = 0;
+  std::size_t terminator_bytes = 0;  // 1 (ANSI) or 2 (Unicode)
+};
+
+// A false return may have changed the record: restore it and every earlier attempted write.
+using RecordWriter = bool (*)(StringRecord*, const StringRecord&, void*) noexcept;
+struct SwapState;
+
+class SwapResult {
+ public:
+  SwapResult(bool success = false, std::string message = {});
+  ~SwapResult();
+  SwapResult(SwapResult&&) noexcept;
+  SwapResult& operator=(SwapResult&&) noexcept;
+  SwapResult(const SwapResult&) = delete;
+  SwapResult& operator=(const SwapResult&) = delete;
+
   bool ok = false;
   std::string detail;  // when !ok, why nothing was changed, for the log
+
+  // Safe to call repeatedly; restores every original descriptor, including lengths.
+  bool restore() noexcept;
+  // Retain successful buffers for process lifetime. Otherwise destruction restores automatically.
+  void commit() noexcept;
+
+ private:
+  std::unique_ptr<SwapState> state_;
+  friend SwapResult swap_records(std::span<const RecordChange>, RecordWriter, void*);
+  friend SwapResult append_arguments(const std::vector<std::string>&);
 };
+
+// Validates every pointer/Length/MaximumLength and both old/new USHORT bounds before any write.
+// Used by append_arguments and synthetic tests; the caller owns replacement storage here.
+SwapResult swap_records(std::span<const RecordChange> changes, RecordWriter writer = nullptr, void* context = nullptr);
 
 // Appends `extra_args` (ASCII) to the command line the process already has, so modules reading it
 // later see them. Patches kernelbase's GetCommandLineW and GetCommandLineA caches and the PEB's
-// command line. The new strings are allocated for the life of the process. Changes nothing and
+// command line. The result owns the new strings until restored or committed for process lifetime.
+// Changes nothing and
 // returns !ok if a getter is not the expected shape or does not point at this command line (then
 // the caller falls back to documented launch options). An empty list is a successful no-op.
 SwapResult append_arguments(const std::vector<std::string>& extra_args);

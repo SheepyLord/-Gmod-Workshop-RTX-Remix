@@ -393,9 +393,23 @@ int cmd_activation(const fs::path& game_root, bool json) {
     else print("nothing deployed (no current generation)\n");
     return kOk;
   }
-  const auto env = [](const std::string& name) {
+  const auto env = [](const std::string& name) -> std::optional<std::string> {
     const std::wstring wide(name.begin(), name.end());
-    return GetEnvironmentVariableW(wide.c_str(), nullptr, 0) != 0;
+    SetLastError(ERROR_SUCCESS);
+    const DWORD size = GetEnvironmentVariableW(wide.c_str(), nullptr, 0);
+    if (!size) {
+      if (GetLastError() == ERROR_ENVVAR_NOT_FOUND) return std::nullopt;
+      if (GetLastError() == ERROR_SUCCESS) return std::string{};
+      throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "read activation environment");
+    }
+    std::wstring value(size, L'\0');
+    SetLastError(ERROR_SUCCESS);
+    const DWORD copied = GetEnvironmentVariableW(wide.c_str(), value.data(), size);
+    if (copied >= size) throw std::runtime_error("activation environment changed while reading");
+    if (!copied && GetLastError() != ERROR_SUCCESS)
+      throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "read activation environment");
+    value.resize(copied);
+    return utf8(fs::path(value));
   };
   const nl::activate::Plan plan = nl::activate::plan(*journal->current, config, env, L"");
   if (json) {
