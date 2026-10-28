@@ -12,6 +12,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   package, `gmod-rtx-remix`: the RTX Remix runtime (runtime B, as tested in M5, M7 and R1) and the
   RTX fixes with the Lua companion. A subscriber needs only the loader's `winmm.dll`, a
   `config.json` that allowlists the item, and the subscription.
+  - **First upload,** 2026-10-28: version `0.0.0-dev.20261028213205+1e486ed0`, 1,426,861,733 bytes.
+  - **Checked as a subscriber** would get it, on the PoC: Steam's download was byte-identical. The
+    loader deployed it from the Workshop folder. RTX on path-traced (7 of 7 patch sets, the shader
+    override, 33 session variables). RTX off was vanilla, with the 9 add-on folders hidden. All
+    depot files were OK afterwards.
 - `tools/package_workshop.py` merges native packages into one, from folders or `.gma` archives.
 - `tools/publish_workshop.py` builds the package from `tools/workshop.json` and uploads it with
   `gmpublish` only when its content changed. Its git hooks run it in the background after commits

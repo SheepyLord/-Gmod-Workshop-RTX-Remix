@@ -599,6 +599,13 @@ placed by the loader". `package_fixes.py` now deploys that mod create-only.
     about file types. They ban exploits and backdoors, paid-game content, reuploads, wrong tags, and
     empty, test or placeholder items. Their "good ideas" list (not bans, but it can get an item flagged
     as incompatible) includes "do not upload broken addons", with a size limit of about 4 GB.
+- **The real package through the Workshop** (ADR 0016, 2026-10-28).
+  - `gmpublish update` uploaded the combined `gmod-rtx-remix` archive, 1,426,861,733 bytes (shown as
+    "1.3 GB"), to item 3829070317. The archive was stored plain, not compressed.
+  - Building it with `publish_workshop.py` takes seconds when the inputs are in the file cache.
+  - GMod's `DownloadUGC` fetched it back byte-identical, under the uploaded file name.
+  - `appworkshop_4000.acf` then listed it with the new `timeupdated` (1793223164), and the loader
+    reported that time in `status.json`.
 - Not tried at first: `gmpublish` (it uploads, with no dry run; outward-facing). Tried on 2026-10-28
   with the user's approval ([ADR 0015](decisions/0015-workshop-route-for-native-packages.md),
   [M6 report](handover/M6-report.md)):
