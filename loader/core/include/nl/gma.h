@@ -27,6 +27,8 @@ class Source {
   virtual ~Source() = default;
   // Reads up to `size` bytes into `buffer`; returns how many were read, 0 only at the end.
   virtual std::size_t read(void* buffer, std::size_t size) = 0;
+  // Skips `count` bytes; false if the stream ends first. The default reads and discards them.
+  virtual bool skip(std::uint64_t count);
 };
 
 // Reads bytes the caller keeps alive (tests, small in-memory archives).
@@ -48,6 +50,7 @@ class FileSource final : public Source {
   FileSource(const FileSource&) = delete;
   FileSource& operator=(const FileSource&) = delete;
   std::size_t read(void* buffer, std::size_t size) override;
+  bool skip(std::uint64_t count) override;  // seeks
   std::uint64_t size() const noexcept { return size_; }
 
  private:
@@ -113,6 +116,11 @@ VerifyReport verify(Source& source, const Limits& limits = {});
 // Opens an archive file positioned at the start of its GMAD stream. LZMA-wrapped files (Workshop
 // *_legacy.bin) are decoded on the fly with bounded memory (see nl/lzma.h).
 std::unique_ptr<Source> open_archive(const std::filesystem::path& path, Container* container = nullptr);
+
+// Reads one file of an archive (at most `max_bytes`; otherwise FormatError), checking its CRC when
+// it has one. `entry` must come from this archive's index. Plain archives seek; LZMA ones decode up
+// to the entry.
+std::string read_entry(const std::filesystem::path& archive, const Entry& entry, std::size_t max_bytes);
 
 // Key for duplicate-path detection: ASCII-lowercased with '\\' turned into '/'. Matches gmapack.py
 // for ASCII names (gmapack casefolds full Unicode).

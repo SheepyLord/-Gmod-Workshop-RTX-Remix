@@ -7,6 +7,8 @@
 #include "nl/gma.h"
 #include "nl/json.h"
 #include "nl/lzma.h"
+#include "nl/manifest.h"
+#include "nl/package.h"
 
 #include <windows.h>
 
@@ -249,12 +251,80 @@ int cmd_scan(const fs::path& folder, bool json) {
   return failures.empty() ? kOk : kCheckFailed;
 }
 
+std::string string_array_json(const std::vector<std::string>& items) {
+  std::string out = "[";
+  for (std::size_t i = 0; i < items.size(); ++i) out += (i ? ", " : "") + nl::json::quote(items[i]);
+  return out + "]";
+}
+
+std::string manifest_json(const nl::package::Package& package) {
+  const auto& m = package.manifest;
+  std::uint64_t bytes = 0;
+  for (const auto& [path, info] : m.files) bytes += info.size;
+  std::vector<std::string> kinds;
+  for (const auto kind : m.kinds) kinds.emplace_back(nl::manifest::kind_name(kind));
+  std::string out = "{\n  \"location\": " + nl::json::quote(utf8(package.contents->location()));
+  out += ",\n  \"id\": " + nl::json::quote(m.id) + ",\n  \"name\": " + nl::json::quote(m.name);
+  out += ",\n  \"version\": " + nl::json::quote(m.version.text);
+  out += ",\n  \"kinds\": " + string_array_json(kinds);
+  out += ",\n  \"requires_loader\": " + (m.requires_loader ? nl::json::quote(">=" + m.requires_loader->text) : "null");
+  out += ",\n  \"files\": " + std::to_string(m.files.size()) + ",\n  \"file_bytes\": " + std::to_string(bytes);
+  if (m.remix) {
+    const auto& r = *m.remix;
+    out += ",\n  \"remix\": {\"entry\": " + nl::json::quote(r.entry) + ", \"rtx_conf_layers\": " +
+           string_array_json(r.rtx_conf_layers) + ", \"dxvk_conf_layers\": " + string_array_json(r.dxvk_conf_layers) +
+           ", \"env\": {";
+    for (std::size_t i = 0; i < r.env.size(); ++i) {
+      out += (i ? ", " : "") + nl::json::quote(r.env[i].first) + ": " + nl::json::quote(r.env[i].second);
+    }
+    out += "}, \"launch_args\": " + string_array_json(r.launch_args) + ", \"prefer_system_vulkan_loader\": " +
+           (r.prefer_system_vulkan_loader ? "true" : "false") + "}";
+  } else {
+    out += ",\n  \"remix\": null";
+  }
+  out += ",\n  \"root_files\": [";
+  for (std::size_t i = 0; i < m.root_files.size(); ++i) {
+    const auto& rf = m.root_files[i];
+    out += (i ? ", " : "") + std::string("{\"path\": ") + nl::json::quote(rf.path) + ", \"policy\": \"" +
+           nl::manifest::policy_name(rf.policy) + "\", \"area\": \"" + nl::paths::area_name(rf.area) + "\"}";
+  }
+  return out + "]\n}\n";
+}
+
+// Loads a package (.gma or development folder) and validates its manifest against its files.
+int cmd_manifest(const fs::path& location, bool json) {
+  try {
+    auto contents = fs::is_directory(location) ? nl::package::open_folder(location) : nl::package::open_archive(location);
+    const auto package = nl::package::load(std::move(contents));
+    if (json) {
+      print(manifest_json(package));
+    } else {
+      const auto& m = package.manifest;
+      std::string kinds;
+      for (const auto kind : m.kinds) kinds += (kinds.empty() ? "" : ", ") + std::string(nl::manifest::kind_name(kind));
+      print("package      " + m.id + " " + m.version.text + " (" + m.name + ")\nkinds        " + kinds + "\nfiles        " +
+            std::to_string(m.files.size()) + "\n");
+      if (m.remix) print("remix entry  native/payload/" + m.remix->entry + "\n");
+      for (const auto& rf : m.root_files) print("root file    " + rf.path + " (" + nl::manifest::policy_name(rf.policy) + ")\n");
+      print("OK: valid native package\n");
+    }
+    return kOk;
+  } catch (const nl::package::Error& e) {
+    std::fprintf(stderr, "%s\n", e.what());
+    return kCheckFailed;
+  } catch (const nl::manifest::Error& e) {
+    std::fprintf(stderr, "%s\n", e.what());
+    return kCheckFailed;
+  }
+}
+
 int usage() {
   std::fputs(
       "usage: nlctl <command> [--json]\n"
       "  inspect <file.gma>   header and file index (LZMA-wrapped: decoded only that far)\n"
       "  verify  <file.gma>   check every file CRC, the archive CRC and trailing data\n"
       "  scan    <folder>     read-only parse of every .gma / .bin archive below the folder\n"
+      "  manifest <file.gma|folder>  validate a native package and summarise its manifest\n"
       "  version              loader version\n",
       stderr);
   return kBadInput;
@@ -276,6 +346,7 @@ int wmain(int argc, wchar_t** argv) {
     if (args.size() == 2 && args[0] == L"inspect") return cmd_inspect(args[1], json);
     if (args.size() == 2 && args[0] == L"verify") return cmd_verify(args[1], json);
     if (args.size() == 2 && args[0] == L"scan") return cmd_scan(args[1], json);
+    if (args.size() == 2 && args[0] == L"manifest") return cmd_manifest(args[1], json);
     return usage();
   } catch (const nl::gma::FormatError& e) {
     std::fprintf(stderr, "error: %s\n", e.what());

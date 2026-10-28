@@ -18,6 +18,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
   git-ignored `out\` (builds, worktrees, test scratch, evidence). `tools/test.ps1` and
   `tools/build.ps1` point `TEMP`/`TMP` at `out\tmp` while they run.
 
+### Added (M2 part 2: manifests and packages)
+
+- `nl_core`: manifest schema 1 (`nl::manifest::parse`, strict, unknown keys rejected; SemVer; launch
+  argument and environment allowlists; root areas and policies) and `check_contents`, which refuses
+  unlisted native files. `docs/PACKAGE_FORMAT.md` now specifies what the code enforces.
+- `nl_core`: packages from a `.gma` or a development folder (links and reparse points refused);
+  `gma::read_entry` reads one file, seeking in plain archives and CRC-checking it.
+- `nlctl manifest <file.gma|folder>`.
+
 ### Added (M2 part 2: LZMA, JSON, path rules)
 
 - `third_party/lzma`: the LZMA SDK decoder (public domain, 7-Zip tag 26.05, unchanged, hashes in

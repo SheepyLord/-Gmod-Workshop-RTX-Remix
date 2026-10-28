@@ -6,6 +6,8 @@ add_library(nl_core STATIC
   src/gma.cpp
   src/json.cpp
   src/lzma.cpp
+  src/manifest.cpp
+  src/package.cpp
   src/paths.cpp
   src/utf8.cpp
   src/version.cpp)

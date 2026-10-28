@@ -10,11 +10,13 @@ manifests, discovery, planning); M3 adds deployment.
 | `include/nl/core.h` | `nl::version()` |
 | `include/nl/version.h.in` | Template for the generated `nl/version.h` (`NL_VERSION_*` macros from the CMake project version) |
 | `include/nl/crc32.h`, `src/crc32.cpp` | CRC-32 (zlib / PKZIP / GMA polynomial), one-shot and incremental |
-| `include/nl/gma.h`, `src/gma.cpp` | GMA reader: `Source` streams (`MemorySource`, `FileSource` opened with full sharing so Steam can still update the file), `detect_container`, `read_index`, `verify` (one pass over all contents: file CRCs, optional archive CRC, trailing data), `open_archive` (plain or LZMA-wrapped), `path_key` |
+| `include/nl/gma.h`, `src/gma.cpp` | GMA reader: `Source` streams (`MemorySource`, `FileSource` opened with full sharing so Steam can still update the file; `skip` seeks), `detect_container`, `read_index`, `verify` (one pass over all contents: file CRCs, optional archive CRC, trailing data), `open_archive` (plain or LZMA-wrapped), `read_entry` (one file, CRC-checked), `path_key` |
 | `include/nl/lzma.h`, `src/lzma.cpp` | `lzma::Source`: streaming LZMA-alone decoder over the LZMA SDK, with GMod's optional 8-byte footer |
 | `include/nl/json.h`, `src/json.cpp` | Strict JSON parser (`json::parse`, `json::Value`) and `json::quote` |
 | `include/nl/utf8.h`, `src/utf8.cpp` | UTF-8 validation shared by the JSON parser and the path rules |
 | `include/nl/paths.h`, `src/paths.cpp` | Path rules for anything a package names, and the game-root areas packages may write to |
+| `include/nl/manifest.h`, `src/manifest.cpp` | Manifest schema 1: strict `parse`, `check_contents`, SemVer `parse_version` / `compare` ([docs/PACKAGE_FORMAT.md](../../docs/PACKAGE_FORMAT.md)) |
+| `include/nl/package.h`, `src/package.cpp` | Package contents from a `.gma` or a development folder (links and reparse points refused), and `load` (manifest read, parsed and checked) |
 | `src/version.cpp` | `nl::version()` |
 
 ## GMA reader rules

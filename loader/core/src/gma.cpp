@@ -207,6 +207,16 @@ Index parse(Reader& r, const Limits& limits) {
 
 }  // namespace
 
+bool Source::skip(std::uint64_t count) {
+  char scratch[64 * 1024];
+  while (count) {
+    const std::size_t n = read(scratch, static_cast<std::size_t>(std::min<std::uint64_t>(count, sizeof(scratch))));
+    if (!n) return false;
+    count -= n;
+  }
+  return true;
+}
+
 std::size_t MemorySource::read(void* buffer, std::size_t size) {
   const std::size_t n = std::min(size, bytes_.size() - position_);
   std::memcpy(buffer, bytes_.data() + position_, n);
@@ -236,6 +246,20 @@ std::size_t FileSource::read(void* buffer, std::size_t size) {
   const std::size_t n = std::fread(buffer, 1, size, file_);
   if (n == 0 && std::ferror(file_)) throw std::system_error(errno, std::generic_category(), "reading archive");
   return n;
+}
+
+bool FileSource::skip(std::uint64_t count) {
+  const auto position = _ftelli64(file_);
+  if (position < 0) throw std::system_error(errno, std::generic_category(), "reading archive position");
+  const auto here = static_cast<std::uint64_t>(position);
+  if (count > size_ - std::min(here, size_)) {
+    _fseeki64(file_, 0, SEEK_END);
+    return false;
+  }
+  if (_fseeki64(file_, static_cast<long long>(count), SEEK_CUR) != 0) {
+    throw std::system_error(errno, std::generic_category(), "seeking in archive");
+  }
+  return true;
 }
 
 Container detect_container(std::string_view prefix) noexcept {
@@ -295,6 +319,26 @@ std::unique_ptr<Source> open_archive(const std::filesystem::path& path, Containe
       break;
   }
   throw FormatError("not a GMAD archive and not LZMA-wrapped");
+}
+
+std::string read_entry(const std::filesystem::path& archive, const Entry& entry, std::size_t max_bytes) {
+  if (entry.size > max_bytes) {
+    throw FormatError(printable(entry.path) + " is " + std::to_string(entry.size) + " bytes; the limit is " +
+                      std::to_string(max_bytes));
+  }
+  const auto source = open_archive(archive);
+  if (!source->skip(entry.offset)) throw FormatError("truncated archive before " + printable(entry.path));
+  std::string bytes(static_cast<std::size_t>(entry.size), '\0');
+  std::size_t have = 0;
+  while (have < bytes.size()) {
+    const std::size_t n = source->read(bytes.data() + have, bytes.size() - have);
+    if (!n) throw FormatError("truncated archive while reading " + printable(entry.path));
+    have += n;
+  }
+  if (entry.crc32 != 0 && crc32(bytes.data(), bytes.size()) != entry.crc32) {
+    throw FormatError("CRC mismatch in " + printable(entry.path));
+  }
+  return bytes;
 }
 
 std::string path_key(std::string_view path) {

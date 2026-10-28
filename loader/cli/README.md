@@ -16,8 +16,12 @@ Read-only in M2.
 nlctl inspect <file.gma> [--json]   # header and file index (LZMA-wrapped: decoded only that far)
 nlctl verify  <file.gma> [--json]   # one pass: every nonzero file CRC, the archive CRC, trailing data
 nlctl scan    <folder>   [--json]   # read-only parse of every .gma / .bin archive below the folder
+nlctl manifest <file.gma|folder> [--json]  # validate a native package; summarise its manifest
 nlctl version
 ```
+
+`manifest` exits `0` for a valid package, `1` when the input has no `native/manifest.json` or the
+manifest breaks a schema-1 rule (the message names the field), `2` for a damaged archive.
 
 Plain (`.gma`) and LZMA-wrapped (Workshop `*_legacy.bin`) archives are both read.
 

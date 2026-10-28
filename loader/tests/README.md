@@ -16,6 +16,8 @@ backward compatible.
 | `test_json.cpp` | JSON: quoting (escapes, UTF-8 kept or replaced); the strict parser (values, document order, escapes and surrogate pairs, int64 boundaries, 33 inputs strict JSON forbids, every limit, round trip with `quote`) |
 | `test_lzma.cpp` | LZMA: header parsing and rejection, decoding in chunks of 1 to 64 bytes, known and unknown sizes, wrong declared sizes, every truncation, trailing bytes, corruption, GMod's footer (accepted only when exact), decoded bytes delivered before later damage, `open_archive` on wrapped files. The small test stream is embedded as hex, made with Python's `lzma.compress(..., format=lzma.FORMAT_ALONE)` |
 | `test_paths.cpp` | Path rules: safe paths, 40-odd escaping or aliasing paths refused, length limits, case-insensitive `within`, root areas |
+| `test_manifest.cpp` | Manifest schema 1: a complete manifest, defaults, 46 single-rule violations that must be refused, cfg policy, SemVer precedence (the semver.org example) and invalid versions, `check_contents` (missing, resized, unlisted files; case) |
+| `test_package.cpp` | Packages: load and read from a `.gma` and a development folder, refuse a missing or wrong manifest, refuse a folder with a junction inside (created with `mklink /J`) |
 | `test_version.cpp` | `nl::version()` matches the CMake project version |
 
 Scratch files: call `nl::test::scratch_dir("name")`, which returns a fresh folder beside the test
