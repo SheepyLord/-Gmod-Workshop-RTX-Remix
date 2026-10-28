@@ -3,40 +3,51 @@
 `snapshot` records what the loader and a test session can change in a game install: every file
 directly inside the folders packages and sessions write to (the root, garrysmod, garrysmod/cfg,
 bin/win64, garrysmod/lua/bin) that no Steam depot lists, by copy (the user's DXVK d3d9.dll and
-vulkan-1.dll, the MMD Hot Loader and Jolt files, configs, logs, databases); the entry names of those
-folders and of garrysmod/addons, garrysmod/data and crashes; size and time of every file below
-garrysmod/data and garrysmod/settings; and GMod's shared registry settings. `rollback` uninstalls the
-loader, moves every entry that was not there before into the snapshot's debris folder (links are
-moved, never followed), puts back every kept file that changed, makes the registry key equal to the
-export again, and checks the listings, the kept files, the registry and Steam's depot files. See
-field_snapshot.py.md.
+vulkan-1.dll, the MMD Hot Loader and Jolt files, configs, logs, databases), and the user's loader
+allowlist native-loader/config.json; the entries of those folders and of garrysmod/addons,
+garrysmod/data and crashes, each with its kind (file, folder or link); size and time of every file
+below garrysmod/data and garrysmod/settings; and GMod's shared registry settings with the export's
+SHA-256. It refuses a snapshot folder on another volume. `rollback` first checks every saved copy and
+stops, changing nothing, if one is damaged. Then it uninstalls the loader, moves every entry that
+was not there before, or is now of another kind (a folder replaced by a link), into the snapshot's
+debris folder (a rename: links move as links and are never followed; nothing is ever deleted, and an
+entry that cannot be moved stays where it is and is reported), writes back every kept file that
+changed (never through a link), makes the registry key equal to the export again (pruning only after
+a verified import), and checks the listings, the kept files, the registry and Steam's depot files.
+See field_snapshot.py.md.
 """
 from __future__ import annotations
 
 import argparse
+import ctypes
 import datetime as _dt
 import hashlib
 import json
+import msvcrt
 import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from ctypes import wintypes
+from pathlib import Path, PurePosixPath
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools" / "steam"))
 from steam_manifest import locate_install, parse_manifest  # noqa: E402
 
-SCHEMA = 2
+SCHEMA = 3
 DEFAULT_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
 REGISTRY_KEY = r"HKCU\Software\Valve\Source\garrysmod"
 # Folders whose files (directly inside) are kept by copy, unless a Steam depot lists them.
 KEPT = (".", "garrysmod", "garrysmod/cfg", "bin/win64", "garrysmod/lua/bin")
 # Kept by copy even when a depot lists them (Steam's user-config files) or when absent (then a new
-# one is moved out by rollback).
+# one is moved out by rollback). native-loader/config.json is the user's allowlist: the uninstaller
+# that rollback runs removes native-loader with it, and a session may rewrite it.
 VOLATILE = ("garrysmod/cfg/config.cfg", "garrysmod/cfg/client.vdf", "garrysmod/cfg/server.vdf", "garrysmod/cfg/autoexec.cfg",
-            "garrysmod/cfg/mountdepots.txt", "garrysmod/cfg/addonnomount.txt", "user.conf", "rtx.conf", "dxvk.conf", "imgui.ini")
-# Folders whose entry names must match again after rollback; a new entry is moved to the debris folder.
+            "garrysmod/cfg/mountdepots.txt", "garrysmod/cfg/addonnomount.txt", "user.conf", "rtx.conf", "dxvk.conf", "imgui.ini",
+            "native-loader/config.json")
+# Folders whose entries (names and kinds) must match again after rollback; a new entry is moved to
+# the debris folder.
 LISTED = KEPT + ("garrysmod/addons", "garrysmod/data", "crashes")
 # Below these, every file's size and time is recorded (too many to copy): new files are moved out,
 # changed and missing ones are reported.
@@ -51,6 +62,10 @@ GAME_CHECK = ("$ErrorActionPreference = 'Stop'; try { Get-Process -Name gmod -Er
 
 class Failure(Exception):
     pass
+
+
+class LinkedPath(OSError):
+    """A write that would have gone through a link."""
 
 
 def stamp() -> str:
@@ -72,27 +87,120 @@ def is_link(path: Path) -> bool:
         return False
 
 
-def remove(path: Path) -> None:
-    """Deletes a file or a folder tree without following links (rmdir /s does not traverse them)."""
-    if is_link(path) or path.is_file():
-        if path.is_dir():
-            os.rmdir(path)  # the link itself
-        else:
-            path.unlink()
-    elif path.is_dir():
-        subprocess.run(["cmd", "/c", "rmdir", "/s", "/q", str(path)], check=True)
+def kind(path: Path) -> str | None:
+    """"link", "folder" or "file" for what is at path (a link is never followed), or None."""
+    if is_link(path):
+        return "link"
+    if path.is_dir():
+        return "folder"
+    return "file" if os.path.lexists(path) else None
 
 
-def move_out(path: Path, target: Path) -> str:
-    """Moves a new entry into the debris folder (a rename: a link moves as a link); deletes it when the
-    debris folder is on another volume."""
+def listing(base: Path) -> dict[str, str | None] | None:
+    """{entry name: kind} of a folder, or None when there is no folder."""
+    if not base.is_dir():
+        return None
+    return {entry.name: kind(entry) for entry in sorted(base.iterdir())}
+
+
+def linked_component(root: Path, rel: str) -> str | None:
+    """The first link among the install root and the components of rel below it ("." for the root),
+    or None when each one that exists is an ordinary folder or file."""
+    if is_link(root):
+        return "."
+    path, parts = root, PurePosixPath(rel).parts
+    for index, part in enumerate(parts):
+        path = path / part
+        if is_link(path):
+            return "/".join(parts[:index + 1])
+    return None
+
+
+def volume(path: Path) -> int:
+    """The volume a path is on, or would be created on: os.stat's st_dev of the path or of its nearest
+    existing parent (links followed, so a folder linked to another drive counts as that drive)."""
+    path = Path(os.path.abspath(path))
+    while not os.path.exists(path) and path.parent != path:
+        path = path.parent
+    return os.stat(path).st_dev
+
+
+def free_name(target: Path) -> Path:
+    """target, or the first of target.1, target.2, ... that nothing has taken."""
+    candidate, number = target, 0
+    while os.path.lexists(candidate):
+        number += 1
+        candidate = target.with_name(f"{target.name}.{number}")
+    return candidate
+
+
+def move_out(path: Path, target: Path) -> Path:
+    """Moves a new entry to target in the debris folder, or to target.1, target.2, ... when that name
+    is taken. A rename, so a link moves as a link. Returns where the entry went. Never deletes: when
+    the rename fails (another volume, a file in use), OSError is raised and the entry stays put."""
     target.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(100):
+        destination = free_name(target)
+        try:
+            os.rename(path, destination)
+            return destination
+        except FileExistsError:
+            continue  # taken since free_name looked
+    raise OSError(f"no free name for {target.name} in {target.parent}")
+
+
+_kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+_kernel32.GetFinalPathNameByHandleW.argtypes = [wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD]
+_kernel32.GetFinalPathNameByHandleW.restype = wintypes.DWORD
+
+
+def final_path(descriptor: int) -> str:
+    """The path Windows resolved an open file to, through every link on the way."""
+    size = 1024
+    while True:
+        buffer = ctypes.create_unicode_buffer(size)
+        length = _kernel32.GetFinalPathNameByHandleW(msvcrt.get_osfhandle(descriptor), buffer, size, 0)
+        if not length:
+            raise ctypes.WinError(ctypes.get_last_error())
+        if length < size:
+            break
+        size = length + 1
+    path = buffer.value
+    if path.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + path[8:]
+    return path[4:] if path.startswith("\\\\?\\") else path
+
+
+def write_in_place(copy: Path, root: Path, rel: str) -> None:
+    """Writes a saved copy over root/rel in place (a hard-linked file stays linked), creating missing
+    folders as ordinary ones. Never through a link: each folder on the way must be an ordinary one,
+    and the opened file must resolve to root/rel itself before anything is written."""
+    parts = PurePosixPath(rel).parts
+    folder = root
+    for part in parts[:-1]:
+        folder = folder / part
+        try:
+            os.mkdir(folder)
+        except FileExistsError:
+            pass
+        if is_link(folder) or not folder.is_dir():
+            raise LinkedPath(f"{folder.relative_to(root).as_posix()} is a link or not a folder")
+    path = root / rel
+    flags = os.O_RDWR | os.O_BINARY | os.O_NOINHERIT
+    created = False
     try:
-        os.rename(path, target)
-        return "moved"
-    except OSError:
-        remove(path)
-        return "deleted"
+        descriptor = os.open(path, flags)  # no truncation before the check below
+    except FileNotFoundError:
+        descriptor, created = os.open(path, flags | os.O_CREAT | os.O_EXCL), True
+    with open(descriptor, "r+b") as target:
+        where = final_path(descriptor)
+        if os.path.normcase(where) != os.path.normcase(os.path.join(os.path.abspath(root), *parts)):
+            raise LinkedPath(f"it opened as {where}, through a link; nothing was written"
+                             + (" (an empty file was created there)" if created else ""))
+        target.truncate(0)
+        with open(copy, "rb") as source:
+            shutil.copyfileobj(source, target, 1 << 20)
+    shutil.copystat(copy, path)
 
 
 def powershell_env() -> dict[str, str]:
@@ -215,7 +323,7 @@ def read_reg(path: Path) -> dict[str, dict[str, str]]:
         text = path.read_bytes().decode("utf-16")
     except UnicodeDecodeError as error:
         raise RegParseError(f"not UTF-16 text ({error})") from None
-    lines = text.lstrip("﻿").split("\r\n")
+    lines = text.lstrip("\ufeff").split("\r\n")
     if lines[0] != REG_HEADER:
         raise RegParseError(f"the first line is not {REG_HEADER!r}")
     if lines[-1] != "":
@@ -352,6 +460,9 @@ def snapshot(args) -> dict:
         raise Failure(f"{root} is not a folder")
     if os.path.normcase(str(folder.resolve())).startswith(os.path.join(os.path.normcase(str(root)), "")):
         raise Failure("the snapshot folder must be outside the install")
+    if volume(folder) != volume(root):
+        raise Failure("the snapshot folder must be on the install's volume: rollback renames what a session added into it, "
+                      "and a rename cannot cross volumes")
     if game_running(root):
         raise Failure("a game from this install is running")
     key_exists = subprocess.run(["reg", "query", args.registry_key], capture_output=True).returncode == 0
@@ -381,19 +492,23 @@ def snapshot(args) -> dict:
                 if depot is None or name.lower() not in depot:
                     names.add(name)
     for rel in sorted(names):
-        path = root / rel
-        if not path.is_file():
+        path, found = root / rel, kind(root / rel)
+        if found is None:
             state["kept"][rel] = None
             continue
+        if found != "file":
+            continue  # a link or folder in a kept file's place: its listing records its kind
         size = path.stat().st_size
-        copied = size <= MAX_COPY
-        if copied:
-            (folder / "files" / rel).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, folder / "files" / rel)
-        state["kept"][rel] = {"sha256": sha256(path), "size": size, "copied": copied}
+        entry = {"sha256": sha256(path), "size": size, "copied": size <= MAX_COPY}
+        if entry["copied"]:
+            copy = folder / "files" / rel
+            copy.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, copy)
+            if sha256(copy) != entry["sha256"]:
+                raise Failure(f"{rel} changed while it was copied; close what writes it and snapshot into a new folder")
+        state["kept"][rel] = entry
     for rel in LISTED:
-        base = root / rel
-        state["listed"][rel] = sorted(p.name for p in base.iterdir()) if base.is_dir() else None
+        state["listed"][rel] = listing(root / rel)
     for rel in WATCHED:
         state["watched"][rel] = tree_stats(root / rel)
     for rel in LOADER_PATHS:
@@ -409,75 +524,136 @@ def snapshot(args) -> dict:
 
 def rollback(args) -> dict:
     folder = Path(args.snapshot)
+    if not (folder / "snapshot.json").is_file():
+        raise Failure(f"{folder} holds no snapshot.json")
     state = json.loads((folder / "snapshot.json").read_text(encoding="utf-8"))
-    if state.get("schema") != SCHEMA:
-        raise Failure("the snapshot was written by an older field_snapshot.py")
+    schema = state.get("schema")
+    if schema != SCHEMA:
+        age = "a newer" if isinstance(schema, int) and schema > SCHEMA else "an older"
+        raise Failure(f"the snapshot was written by {age} field_snapshot.py (schema {schema}); this one rolls back schema "
+                      f"{SCHEMA} only, which records the entry kinds and hashes a safe rollback needs. Nothing was changed: "
+                      "roll it back with the field_snapshot.py that took it, or take a new snapshot")
     root = Path(state["root"])
+    if not root.is_dir():
+        raise Failure(f"{root} is not a folder")
     if game_running(root):
         raise Failure("a game from this install is running")
-    report: dict = {"uninstall": None, "moved": [], "deleted": [], "restored": [], "errors": [], "registry": None,
-                    "listing_differences": {}, "kept_differences": [], "watched": {}}
+    if volume(folder) != volume(root):
+        raise Failure("the snapshot folder is no longer on the install's volume, so what a session added cannot be renamed "
+                      "into it; move it back first. Nothing was changed")
+    # Every saved copy that may be written back is checked before anything changes (R1-013).
+    damaged = []
+    for rel, info in state["kept"].items():
+        if not info or not info["copied"]:
+            continue
+        copy = folder / "files" / rel
+        if not copy.is_file():
+            damaged.append(f"{rel}: the copy is missing")
+        elif copy.stat().st_size != info["size"]:
+            damaged.append(f"{rel}: the copy has {copy.stat().st_size} bytes, not {info['size']}")
+        elif sha256(copy) != info["sha256"]:
+            damaged.append(f"{rel}: the copy's SHA-256 is not the recorded one")
+    if damaged:
+        raise Failure(f"{len(damaged)} saved copies are damaged, so nothing was changed: " + "; ".join(damaged[:REPORT_LIMIT]))
+
+    report: dict = {"uninstall": None, "debris": None, "moved": [], "moved_as": {}, "left_in_place": {}, "restored": [],
+                    "errors": [], "registry": None, "listing_differences": {}, "kept_differences": [], "watched": {}}
     if (root / "bin/win64/winmm.dll").exists() and not state["loader_paths"]["bin/win64/winmm.dll"]:
         result = powershell("-ExecutionPolicy", "Bypass", "-File", str(REPO / "tools" / "uninstall-loader.ps1"),
                             "-GameRoot", str(root), "-Config", args.config, "-RemoveConfig", "-AllowSteamManaged")
         report["uninstall"] = result.returncode
         if result.returncode != 0:
             raise Failure("uninstall-loader.ps1 failed: " + (result.stdout + result.stderr)[-1500:])
-    debris = folder / "debris" / stamp()
+    debris = free_name(folder.resolve() / "debris" / stamp())
+    report["debris"] = str(debris)
 
-    def take_out(path: Path) -> None:
+    def take_out(path: Path) -> bool:
+        """Moves a new entry into the debris folder; one inside a link, or one the rename fails for,
+        stays where it is and is reported."""
         rel = path.relative_to(root).as_posix()
+        linked = linked_component(root, PurePosixPath(rel).parent.as_posix())
+        if linked is not None:
+            report["left_in_place"][rel] = f"inside the link {linked}, which is never followed"
+            return False
         try:
-            report["moved" if move_out(path, debris / rel) == "moved" else "deleted"].append(rel)
-        except (OSError, subprocess.CalledProcessError) as error:
-            report["errors"].append(f"{rel}: {error}")
+            where = move_out(path, debris / rel)
+        except OSError as error:
+            report["left_in_place"][rel] = f"could not be moved: {error}"
+            return False
+        report["moved"].append(rel)
+        if where != debris / rel:
+            report["moved_as"][rel] = where.relative_to(debris).as_posix()
+        return True
 
-    # 1. Entries that are new in the listed folders, deepest folders first.
-    for rel in sorted(state["listed"], key=lambda r: len(Path(r).parts), reverse=True):
+    # 1. Entries that are new in the listed folders, or of another kind than before (a folder
+    # replaced by a link moves out as a link), shallowest folders first; a listed folder (or link) that
+    # was not there goes as a whole. Then kept files that were not there (native-loader/config.json).
+    for rel in sorted(state["listed"], key=lambda r: len(PurePosixPath(r).parts)):
         before, base = state["listed"][rel], root / rel
-        for entry in sorted(base.iterdir()) if base.is_dir() and not is_link(base) else ():
-            if before is None or entry.name not in before:
+        if before is None:
+            if rel != "." and kind(base) in ("folder", "link"):
+                take_out(base)
+            continue
+        for entry in sorted(base.iterdir()) if base.is_dir() else ():
+            if before.get(entry.name) != kind(entry):
                 take_out(entry)
+    for rel, info in state["kept"].items():
+        if info is None and os.path.lexists(root / rel):
+            take_out(root / rel)
     # 2. Files and folders that are new below the watched folders (inside entries that were there
     # before); a new folder goes as a whole.
     for rel, before in state["watched"].items():
         now = tree_stats(root / rel)
         taken: list[str] = []
         for name in sorted(set(now) - set(before)):
-            if not any(name.startswith(folder) for folder in taken):
+            if not any(name.startswith(prefix) for prefix in taken):
                 take_out(root / rel / name.rstrip("/"))
                 if name.endswith("/"):
                     taken.append(name)
-    # 3. Kept files that changed: written back in place, so a hard-linked file stays linked.
+    # 3. Kept files that changed: written back in place, so a hard-linked file stays linked; never
+    # through a link.
     for rel, info in state["kept"].items():
+        if not info:
+            continue
         path = root / rel
-        if info is None or (path.is_file() and sha256(path) == info["sha256"]):
+        now = kind(path)
+        if now == "file" and sha256(path) == info["sha256"]:
             continue
         if not info["copied"]:
             report["errors"].append(f"{rel}: changed, and too large to have been copied")
             continue
+        if now not in (None, "file") and not take_out(path):
+            continue  # a folder or link in its place that could not be moved (see left_in_place)
+        linked = linked_component(root, PurePosixPath(rel).parent.as_posix())
+        if linked is not None:
+            report["errors"].append(f"{rel}: not restored, because {linked} is a link (never written through)")
+            continue
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(folder / "files" / rel, path)
+            write_in_place(folder / "files" / rel, root, rel)
             report["restored"].append(rel)
         except OSError as error:
-            report["errors"].append(f"{rel}: {error}")
+            report["errors"].append(f"{rel}: not restored: {error}")
     # 4. The registry key, exactly as exported.
     report["registry"] = restore_registry(folder, state["registry"])
     # 5. Checks.
     for rel, names in state["listed"].items():
-        base = root / rel
-        now = sorted(p.name for p in base.iterdir()) if base.is_dir() else None
+        now = listing(root / rel)
         if now != names:
-            report["listing_differences"][rel] = {"added": sorted(set(now or []) - set(names or [])),
-                                                   "missing": sorted(set(names or []) - set(now or []))}
+            old, new = names or {}, now or {}
+            difference = {"added": sorted(set(new) - set(old)), "missing": sorted(set(old) - set(new)),
+                          "changed": sorted(name for name in set(old) & set(new) if old[name] != new[name])}
+            if (now is None) != (names is None):
+                difference["folder"] = "missing" if now is None else "present, absent at the snapshot"
+            report["listing_differences"][rel] = difference
     for rel, info in state["kept"].items():
         path = root / rel
         if info is None:
-            if path.exists():
+            if os.path.lexists(path):
                 report["kept_differences"].append(f"{rel}: present, absent at the snapshot")
-        elif not path.is_file():
+        elif kind(path) is None:
             report["kept_differences"].append(f"{rel}: missing")
+        elif kind(path) != "file":
+            report["kept_differences"].append(f"{rel}: a {kind(path)}, not a file")
         elif sha256(path) != info["sha256"]:
             report["kept_differences"].append(f"{rel}: content differs")
     for rel, before in state["watched"].items():
@@ -498,8 +674,8 @@ def rollback(args) -> dict:
     else:
         report["verify_exit"] = None
     report["clean"] = (not report["listing_differences"] and not report["kept_differences"] and not report["errors"]
-                       and report["registry"]["error"] is None and report["registry"]["differences"] == []
-                       and report["verify_exit"] in (0, None)
+                       and not report["left_in_place"] and report["registry"]["error"] is None
+                       and report["registry"]["differences"] == [] and report["verify_exit"] in (0, None)
                        and not any(v["added"] for v in report["watched"].values()))
     (folder / "rollback.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     return report
@@ -518,7 +694,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         result = snapshot(args) if args.action == "snapshot" else rollback(args)
-    except (Failure, subprocess.CalledProcessError, OSError) as error:
+    except (Failure, OSError, ValueError) as error:
         print(f"field_snapshot: {error}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=1))

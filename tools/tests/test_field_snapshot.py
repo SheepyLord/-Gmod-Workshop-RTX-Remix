@@ -3,10 +3,12 @@ bootstrap installed when a build exists; files changed, created, deleted and wri
 link; registry values changed and added), rollback, and checks that everything is back. Plus one
 regression test or more for each R1 finding the tool had. Uses a throwaway registry key under
 HKCU\\Software, deleted afterwards."""
+import _winapi
 import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,6 +16,7 @@ import unittest
 import uuid
 import winreg
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[2]
@@ -67,6 +70,29 @@ def reg_value(key, name):
         if len(parts) == 3 and parts[0] == name:
             return parts[2].strip()
     return None
+
+
+def junction(link, target):
+    _winapi.CreateJunction(str(target), str(link))
+
+
+class OtherVolume:
+    """Stands in for the os module inside field_snapshot: os.stat of anything at or below `far`
+    reports another volume."""
+
+    def __init__(self, far):
+        self.far = os.path.normcase(str(far))
+
+    def __getattr__(self, name):
+        return getattr(os, name)
+
+    def stat(self, path, *args, **kwargs):
+        info = os.stat(path, *args, **kwargs)
+        if not os.path.normcase(os.path.abspath(path)).startswith(self.far):
+            return info
+        fields = {name: getattr(info, name) for name in dir(info) if name.startswith('st_')}
+        fields['st_dev'] = info.st_dev + 1
+        return SimpleNamespace(**fields)
 
 
 class FieldSnapshotTests(unittest.TestCase):
@@ -212,10 +238,12 @@ class FieldSnapshotTests(unittest.TestCase):
             self.assertTrue((self.root / rel).is_file(), rel)
         # Moved, not deleted: the debris folder holds what the session left.
         debris = next((self.snap / 'debris').iterdir())
+        self.assertEqual(Path(report['debris']), debris)
         self.assertEqual((debris / 'crashes' / 'new.mdmp').read_bytes(), b'new dump')
         self.assertTrue((debris / 'garrysmod' / 'data' / 'existing' / 'newdir' / 'x.txt').is_file())
         self.assertIn('garrysmod/data/existing/newdir', report['moved'])
-        self.assertEqual(report['deleted'], [])
+        self.assertNotIn('deleted', report)
+        self.assertEqual((report['left_in_place'], report['moved_as'], report['errors']), ({}, {}, []))
         # A changed file below a watched folder cannot be put back; it is reported.
         self.assertEqual(report['watched']['garrysmod/data']['changed_files'], ['existing/a.txt'])
         self.assertEqual(report['watched']['garrysmod/settings']['changed'], 0)
@@ -258,6 +286,11 @@ class FieldSnapshotTests(unittest.TestCase):
         older = run('--snapshot', str(old), 'rollback')
         self.assertEqual(older.returncode, 1)
         self.assertIn('older field_snapshot.py', older.stderr)
+        # R1-010: schema 2 lacks the entry kinds a rollback needs to tell a link from the folder it replaced.
+        (old / 'snapshot.json').write_text(json.dumps({'schema': 2, 'root': str(self.root)}), encoding='utf-8')
+        older = run('--snapshot', str(old), 'rollback')
+        self.assertEqual(older.returncode, 1)
+        self.assertIn('older field_snapshot.py (schema 2)', older.stderr)
 
     def test_listing_differences_fail_the_rollback(self):
         self.snapshot()
@@ -266,7 +299,121 @@ class FieldSnapshotTests(unittest.TestCase):
         code, report = self.rollback()
         self.assertEqual(code, 1)
         self.assertFalse(report['clean'])
-        self.assertEqual(report['listing_differences']['garrysmod/addons'], {'added': [], 'missing': ['useraddon']})
+        self.assertEqual(report['listing_differences']['garrysmod/addons'], {'added': [], 'missing': ['useraddon'], 'changed': []})
+
+    # ------------------------------------------------------------ R1-009: never delete
+
+    def test_a_failed_move_leaves_the_entry_where_it_is(self):
+        """R1-009: a new entry rollback cannot rename into the debris folder stays, and is reported."""
+        self.snapshot_here()
+        self.write('crashes/new.mdmp', b'new dump')
+        self.write('garrysmod/data/existing/newdir/x.txt', b'x')
+        with patch.object(fs.os, 'rename', side_effect=OSError(18, 'The system cannot move the file to a different disk drive')):
+            report = self.rollback_here()
+        self.assertTrue((self.root / 'crashes' / 'new.mdmp').is_file())
+        self.assertTrue((self.root / 'garrysmod' / 'data' / 'existing' / 'newdir' / 'x.txt').is_file())
+        self.assertEqual(sorted(report['left_in_place']), ['crashes/new.mdmp', 'garrysmod/data/existing/newdir'])
+        self.assertIn('different disk drive', report['left_in_place']['crashes/new.mdmp'])
+        self.assertNotIn('deleted', report)
+        self.assertFalse(report['clean'])
+
+    def test_a_taken_debris_name_gets_a_number(self):
+        """R1-009: an entry whose name the debris folder already holds goes in under name.1."""
+        source = self.scratch / 'new.txt'
+        source.write_bytes(b'from this session')
+        target = self.scratch / 'debris' / 'new.txt'
+        target.parent.mkdir()
+        target.write_bytes(b'from an earlier rollback')
+        fs.move_out(source, target)
+        self.assertFalse(source.exists())
+        self.assertEqual(target.read_bytes(), b'from an earlier rollback')
+        self.assertEqual((self.scratch / 'debris' / 'new.txt.1').read_bytes(), b'from this session')
+        # Through rollback: an earlier rollback in the same second left its own new.mdmp.
+        self.snapshot_here()
+        self.write('crashes/new.mdmp', b'new dump')
+        earlier = self.snap / 'debris' / '20260101-000000' / 'crashes' / 'new.mdmp'
+        earlier.parent.mkdir(parents=True)
+        earlier.write_bytes(b'earlier dump')
+        with patch.object(fs, 'stamp', return_value='20260101-000000'):
+            report = self.rollback_here()
+        self.assertFalse((self.root / 'crashes' / 'new.mdmp').exists())
+        self.assertEqual(earlier.read_bytes(), b'earlier dump')
+        moved = [path.read_bytes() for path in (self.snap / 'debris').rglob('new.mdmp*') if path != earlier]
+        self.assertEqual(moved, [b'new dump'])
+        self.assertTrue(report['clean'], report)
+
+    def test_the_snapshot_folder_must_be_on_the_install_volume(self):
+        """R1-009: snapshot and rollback refuse a snapshot folder on another volume, where a rename
+        cannot reach."""
+        far = self.scratch / 'far'
+        far.mkdir()
+        with patch.object(fs, 'os', OtherVolume(far)), self.assertRaises(fs.Failure) as refused:
+            self.snapshot_here(snapshot=str(far / 'snapshot'))
+        self.assertIn('volume', str(refused.exception))
+        self.assertFalse((far / 'snapshot').exists())
+        self.snapshot_here()
+        self.write('crashes/new.mdmp', b'new dump')
+        with patch.object(fs, 'os', OtherVolume(self.snap)), self.assertRaises(fs.Failure) as refused:
+            self.rollback_here()
+        self.assertIn('volume', str(refused.exception))
+        self.assertTrue((self.root / 'crashes' / 'new.mdmp').is_file())
+        self.assertFalse((self.snap / 'debris').exists())
+
+    # ------------------------------------------------------------ R1-010: never through a link
+
+    def test_a_folder_replaced_by_a_link_moves_out_as_a_link(self):
+        """R1-010: a listed folder that is now a link moves to the debris folder as a link (its target
+        untouched), and the kept files go back into a new ordinary folder."""
+        self.snapshot()
+        victim = self.scratch / 'victim'
+        victim.mkdir()
+        (victim / 'config.cfg').write_bytes(b'USER DATA')
+        cfg = self.root / 'garrysmod' / 'cfg'
+        shutil.rmtree(cfg)
+        junction(cfg, victim)
+        code, report = self.rollback()
+        self.assertEqual([path.name for path in victim.iterdir()], ['config.cfg'])
+        self.assertEqual((victim / 'config.cfg').read_bytes(), b'USER DATA')
+        self.assertEqual(code, 0, report)
+        self.assertFalse(fs.is_link(cfg))
+        self.assertEqual((cfg / 'config.cfg').read_bytes(), b'r_x 1\n')
+        self.assertIn('garrysmod/cfg', report['moved'])
+        self.assertTrue(os.path.isjunction(Path(report['debris']) / 'garrysmod' / 'cfg'))
+
+    def test_a_link_above_a_kept_file_is_never_written_through(self):
+        """R1-010: bin/win64 sits in bin, which no listing covers; replaced by a link, it stops the
+        restore of every file below it, and the rollback is not clean."""
+        self.snapshot()
+        victim = self.scratch / 'victim'
+        victim.mkdir()
+        (victim / 'd3d9.dll').write_bytes(b'VICTIM')
+        win64 = self.root / 'bin' / 'win64'
+        shutil.rmtree(win64)
+        junction(win64, victim)
+        code, report = self.rollback()
+        self.assertEqual([path.name for path in victim.iterdir()], ['d3d9.dll'])
+        self.assertEqual((victim / 'd3d9.dll').read_bytes(), b'VICTIM')
+        self.assertEqual(code, 1)
+        self.assertFalse(report['clean'])
+        self.assertIn('bin/win64/d3d9.dll: not restored, because bin/win64 is a link (never written through)', report['errors'])
+
+    def test_a_link_the_checks_miss_is_caught_at_the_write(self):
+        """R1-010: should a link escape every check before the write (here they are made blind to it),
+        the write itself refuses a file that opens outside the install."""
+        self.snapshot_here()
+        victim = self.scratch / 'victim'
+        victim.mkdir()
+        (victim / 'config.cfg').write_bytes(b'USER DATA')
+        cfg = self.root / 'garrysmod' / 'cfg'
+        shutil.rmtree(cfg)
+        junction(cfg, victim)
+        with patch.object(fs, 'is_link', return_value=False):
+            report = self.rollback_here()
+        self.assertEqual((victim / 'config.cfg').read_bytes(), b'USER DATA')
+        self.assertFalse(report['clean'])
+        refused = [error for error in report['errors'] if error.startswith('garrysmod/cfg/config.cfg: not restored')]
+        self.assertEqual(len(refused), 1, report['errors'])
+        self.assertIn('through a link; nothing was written', refused[0])
 
     # ------------------------------------------------------------ R1-011: prune only after a verified import
 
@@ -318,6 +465,61 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertEqual(reg_value(self.key + '\\Settings', 'Name'), 'keep me')
         self.assertEqual(code, 1)
         self.assertIn('does not hold the key', report['registry']['error'])
+
+    # ------------------------------------------------------------ R1-013: copies checked first
+
+    def test_a_damaged_copy_stops_the_rollback_before_any_change(self):
+        """R1-013: every saved copy is checked first; a damaged or missing one stops the rollback before
+        it uninstalls, moves, writes or prunes anything."""
+        self.snapshot()
+        if BUILD:
+            self.install_bootstrap()
+        self.write('garrysmod/cfg/config.cfg', b'session')
+        self.write('crashes/new.mdmp', b'new dump')
+        reg('add', self.key, '/v', 'NewValue', '/t', 'REG_SZ', '/d', 'x', '/f')
+        (self.snap / 'files' / 'garrysmod' / 'cfg' / 'config.cfg').write_bytes(b'DAMAGED COPY')
+        (self.snap / 'files' / 'bin' / 'win64' / 'd3d9.dll').unlink()
+        code, message = self.rollback()
+        self.assertEqual((self.root / 'garrysmod' / 'cfg' / 'config.cfg').read_bytes(), b'session')
+        self.assertTrue((self.root / 'crashes' / 'new.mdmp').is_file())
+        self.assertEqual(reg_value(self.key, 'NewValue'), 'x')
+        self.assertEqual((self.root / 'bin' / 'win64' / 'winmm.dll').is_file(), bool(BUILD))
+        self.assertFalse((self.snap / 'debris').exists())
+        self.assertFalse((self.snap / 'rollback.json').exists())
+        self.assertEqual(code, 1)
+        self.assertIn('nothing was changed', message)
+        self.assertIn("garrysmod/cfg/config.cfg: the copy has 12 bytes, not 6", message)
+        self.assertIn('bin/win64/d3d9.dll: the copy is missing', message)
+
+    # ------------------------------------------------------------ R1-026: the user's allowlist
+
+    def test_the_users_loader_config_comes_back(self):
+        """R1-026: native-loader/config.json, the user's allowlist, is kept; rollback puts it back after
+        the uninstaller removed native-loader with it."""
+        allowlist = b'{"schema": 1, "allow": {"local": ["my-reviewed-package.gma"]}}\n'
+        self.write('native-loader/config.json', allowlist)
+        self.snapshot()
+        if BUILD:
+            self.install_bootstrap()
+        self.write('native-loader/config.json', b'{"schema": 1, "allow": {}}\n')  # a session's install rewrites it
+        code, report = self.rollback()
+        self.assertEqual((self.root / 'native-loader' / 'config.json').read_bytes(), allowlist)
+        self.assertEqual(code, 0, report)
+        self.assertIn('native-loader/config.json', report['restored'])
+        self.assertEqual(report['uninstall'], 0 if BUILD else None)
+        self.assertFalse((self.root / 'bin' / 'win64' / 'winmm.dll').exists())
+
+    def test_a_new_loader_config_goes_to_the_debris(self):
+        """R1-026: a config.json that was not there is new: it goes to the debris folder, and the rest of
+        the native-loader folder that was there stays."""
+        self.write('native-loader/logs/old.log', b'an earlier install')
+        self.snapshot()
+        self.write('native-loader/config.json', b'{"schema": 1}')
+        code, report = self.rollback()
+        self.assertFalse((self.root / 'native-loader' / 'config.json').exists())
+        self.assertEqual((self.root / 'native-loader' / 'logs' / 'old.log').read_bytes(), b'an earlier install')
+        self.assertEqual((Path(report['debris']) / 'native-loader' / 'config.json').read_bytes(), b'{"schema": 1}')
+        self.assertEqual(code, 0, report)
 
     # ------------------------------------------------------------ R1-029: PowerShell's module path
 
