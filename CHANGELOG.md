@@ -6,6 +6,48 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (M3: deployer)
+
+- `nl_core`: the transactional deployer `nl::deploy` (`apply`, `rollback`, `uninstall`, `recover`,
+  `status`; [ADR 0007](docs/decisions/0007-transactional-deployment.md)):
+  - each run is one journaled transaction;
+  - staging checks every file's size, CRC-32 and SHA-256 before anything in place changes;
+  - the intent is written first, renames stay on one volume, and recovery rolls an unfinished
+    transaction back;
+  - two generations are kept, and rollback holds the previous one;
+  - one deployer at a time, refused while the game runs;
+  - runs with nothing to do write nothing.
+- `nl_core`: SHA-256 through Windows CNG (`bcrypt.dll` loaded from System32 on first use; the
+  bootstrap still imports only KERNEL32). Also:
+  - `nl::fs`: every change goes through one countable layer, with write-through renames, retries
+    while a scanner holds a file, long paths and refused links;
+  - the journal `native-loader\state.json` schema 1;
+  - one-pass, bounded-memory extraction (`gma::extract`, `Contents::extract`).
+- `nlctl apply | status | rollback | uninstall`, with `--dry-run` and `status --verify`.
+- `tools/uninstall-loader.ps1`: `nlctl uninstall`, then `install-loader.ps1 -Uninstall`; keeps
+  `config.json` unless `-RemoveConfig`.
+- `tools/poc_deploy_check.ps1`: the M3 acceptance run on the PoC without starting the game. It
+  passed on 2026-10-27: 3,113 entries identical afterwards, 2,877 depot files OK.
+- Tests:
+  - 25 new `nl_tests` cases (87 in all);
+  - fault injection at every file-system change of a first deployment, an upgrade, a rollback and
+    an uninstall: interrupted and failed in process, and killed for real (`nl_fault_host`,
+    `deploy_faults.py`; 160 kill points);
+  - `nlctl_e2e_deploy`;
+  - `nlctl_uninstall_loader`: `uninstall-loader.ps1` in synthetic game folders.
+- Docs: ADR 0007; the `state.json` schema in `ON_DISK_LAYOUT.md`; the deployment section of
+  `ARCHITECTURE.md`; M3 checks in `TESTING.md`; measurements in `RESEARCH.md` section 9.
+
+### Changed (M3)
+
+- `nl::package::Package` gains `manifest_sha256` (the package version's identity), and `Contents`
+  gains `extract()`.
+- Payload folders are `native-loader\packages\<id>\<version>_<generation>\`, refining ADR 0004's
+  `<id>\<version>\`. The plan had a manifest-hash suffix; the generation number lets a damaged
+  folder be replaced without a name clash.
+- CTest runs six tests at a time (`CMakePresets.json`). `nl_tests` accepts `--skip=<text>`, and the
+  three exhaustive fault cases are CTests of their own.
+
 ### Changed (M1 and M2 merged into `main`)
 
 - `main` now holds the inert bootstrap (M1, Codex, reviewed) and the core library and CLI (M2),

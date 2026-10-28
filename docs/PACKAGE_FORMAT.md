@@ -16,7 +16,7 @@ Archives are built with [`tools/gmapack`](../tools/gmapack/gmapack.py.md); conta
 
 ```
 native/manifest.json        what the package is and how to activate it (below), at most 1 MiB
-native/payload/**           extracted to native-loader\packages\<id>\<version>\  (runtime DLLs, configs)
+native/payload/**           extracted to native-loader\packages\<id>\<version>_<generation>\  (runtime DLLs, configs)
 native/root/<path>/**       deployed to <game root>\<path>, only in the allowed areas (below)
 lua/**, materials/**, ...   normal GMod content, mounted by GMod; the loader ignores it
 ```
@@ -70,7 +70,10 @@ The manifest is strict JSON (RFC 8259, UTF-8, no comments, trailing commas or du
 `files` keys must pass the path rules (below), lie under `native/payload/` or `native/root/`, and be
 unique without case. When a package is loaded, `check_contents` requires every listed file to be in
 it with the listed size, and every file under `native/` to be listed: nothing native can ride along
-unlisted. The SHA-256 values are checked when files are deployed (M3).
+unlisted. When a package is deployed, every file it places is checked while it is extracted: its
+size, its CRC-32 in the archive and its SHA-256 here. A package that fails is not deployed
+([ADR 0007](decisions/0007-transactional-deployment.md)). The SHA-256 of `manifest.json` itself
+identifies the package version in the journal.
 
 ### `remix` (kind `remix-runtime`)
 
@@ -100,7 +103,13 @@ files under `native/root/<path>`; every file under `native/root/` must belong to
 `root-files` or `lua-binary-module` kind must be used.
 
 `replace-owned` lets the loader replace files it deployed earlier that the user has not edited;
-`create-only` never replaces an existing file. Ownership is tracked in the journal (M3).
+`create-only` never replaces an existing file. Ownership is tracked in the journal
+(`native-loader\state.json`, [ON_DISK_LAYOUT.md](ON_DISK_LAYOUT.md)):
+
+- A file someone else placed at a `replace-owned` target blocks the package, unless it already has
+  the right content (then it is adopted and never moved or deleted).
+- At a `create-only` target, someone else's file is simply kept.
+- A file the loader placed that has changed since stays as it is and is reported.
 
 ### Planned kinds
 

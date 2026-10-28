@@ -1,10 +1,14 @@
-// nlctl: the loader core on the command line, so packages and installs can be examined (and,
-// from M3, deployed) without starting Garry's Mod. Read-only in M2.
+// nlctl: the loader core on the command line, so packages and installs can be examined and
+// deployed without starting Garry's Mod.
 //
-// Exit codes: 0 ok, 1 a check found problems, 2 bad usage or unreadable/malformed input, 3 bug.
+// Exit codes: 0 ok, 1 a check found problems (or a deployment was refused or failed, leaving the
+// install as it was), 2 bad usage or unreadable/malformed input, 3 bug.
 
 #include "nl/core.h"
+#include "nl/deploy.h"
+#include "nl/fs.h"
 #include "nl/gma.h"
+#include "nl/journal.h"
 #include "nl/json.h"
 #include "nl/lzma.h"
 #include "nl/config.h"
@@ -378,6 +382,119 @@ int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir
   return kOk;
 }
 
+std::string report_json(const nl::deploy::Report& r) {
+  std::string out = "{\n  \"action\": " + nl::json::quote(r.action) + ",\n  \"outcome\": " + nl::json::quote(r.outcome);
+  out += ",\n  \"generation\": " + std::to_string(r.generation) + ",\n  \"recovered\": " + (r.recovered ? "true" : "false");
+  out += ",\n  \"operations\": " + std::to_string(r.operations) + ",\n  \"packages\": " + string_array_json(r.packages);
+  out += ",\n  \"skipped\": [";
+  for (std::size_t i = 0; i < r.skipped.size(); ++i) {
+    out += (i ? ",\n    " : "\n    ") + std::string("{\"package\": ") + nl::json::quote(r.skipped[i].package) +
+           ", \"reason\": " + nl::json::quote(r.skipped[i].reason) + "}";
+  }
+  out += r.skipped.empty() ? "]" : "\n  ]";
+  out += ",\n  \"changes\": [";
+  for (std::size_t i = 0; i < r.changes.size(); ++i) {
+    out += (i ? ",\n    " : "\n    ") + std::string("{\"action\": ") + nl::json::quote(r.changes[i].action) +
+           ", \"path\": " + nl::json::quote(r.changes[i].path) + "}";
+  }
+  out += r.changes.empty() ? "]" : "\n  ]";
+  out += ",\n  \"notes\": " + string_array_json(r.notes);
+  out += ",\n  \"error\": " + (r.error.empty() ? std::string("null") : nl::json::quote(r.error)) + "\n}\n";
+  return out;
+}
+
+int print_report(const nl::deploy::Report& r, bool json) {
+  if (json) {
+    print(report_json(r));
+  } else {
+    std::string head = r.action + ": " + r.outcome;
+    if (r.generation) head += ", generation " + std::to_string(r.generation);
+    head += " (" + std::to_string(r.operations) + " file-system change" + (r.operations == 1 ? "" : "s") + ")";
+    if (r.recovered) head += "; an interrupted deployment was undone first";
+    print(head + "\n");
+    for (const auto& p : r.packages) print("  package  " + p + "\n");
+    for (const auto& s : r.skipped) print("  skipped  " + s.package + ": " + s.reason + "\n");
+    std::size_t deleted = 0;
+    for (const auto& c : r.changes) {
+      if (c.action == "delete") {
+        ++deleted;
+        continue;
+      }
+      std::string label = c.action;
+      label.resize(std::max<std::size_t>(label.size(), 8), ' ');
+      print("  " + label + " " + c.path + "\n");
+    }
+    if (deleted) print("  delete   " + std::to_string(deleted) + " file(s) no longer needed\n");
+    for (const auto& n : r.notes) print("  note     " + n + "\n");
+    if (!r.error.empty()) std::fprintf(stderr, "error: %s\n", r.error.c_str());
+  }
+  return r.ok() ? kOk : kCheckFailed;
+}
+
+// Deploys what `plan` shows: the same config, discovery and package loading, then nl::deploy.
+int cmd_apply(const fs::path& game_root, const std::optional<fs::path>& steam_dir, bool json, bool dry_run) {
+  const nl::config::Config config = nl::config::load(game_root);
+  const auto env = nl::discovery::environment_for(game_root, steam_dir);
+  nl::deploy::Options options;
+  options.dry_run = dry_run;
+  return print_report(nl::deploy::apply(game_root, nl::planner::consider(nl::discovery::discover(config, env)), config,
+                                        *nl::manifest::parse_version(nl::version()), options),
+                      json);
+}
+
+int cmd_rollback(const fs::path& game_root, bool json, bool dry_run) {
+  nl::deploy::Options options;
+  options.dry_run = dry_run;
+  return print_report(nl::deploy::rollback(game_root, options), json);
+}
+
+int cmd_uninstall(const fs::path& game_root, bool json, bool dry_run) {
+  nl::deploy::Options options;
+  options.dry_run = dry_run;
+  return print_report(nl::deploy::uninstall(game_root, options), json);
+}
+
+// Read-only: the journal, and whether the current generation's files are still as placed.
+int cmd_status(const fs::path& game_root, bool json, bool verify) {
+  const auto s = nl::deploy::status(game_root, verify);
+  const bool pending = s.journal && s.journal->pending;
+  const bool ok = s.drift.empty() && !pending;
+  if (json) {
+    std::string out = "{\n  \"game_root\": " + nl::json::quote(utf8(game_root)) + ",\n  \"ok\": " + (ok ? "true" : "false");
+    out += ",\n  \"drift\": [";
+    for (std::size_t i = 0; i < s.drift.size(); ++i) {
+      out += (i ? ", " : "") + std::string("{\"path\": ") + nl::json::quote(s.drift[i].path) + ", \"problem\": \"" +
+             s.drift[i].problem + "\"}";
+    }
+    std::string journal = s.journal ? nl::journal::serialize(*s.journal) : std::string("null");
+    if (!journal.empty() && journal.back() == '\n') journal.pop_back();
+    out += "],\n  \"journal\": " + journal + "\n}\n";
+    print(out);
+    return ok ? kOk : kCheckFailed;
+  }
+  if (!s.journal) {
+    print("nothing deployed (no native-loader/state.json)\n");
+    return kOk;
+  }
+  const auto& j = *s.journal;
+  if (j.current) {
+    print("generation " + std::to_string(j.current->number) + ": " + std::to_string(j.current->packages.size()) +
+          " package(s), " + std::to_string(j.current->files.size()) + " file(s)\n");
+    for (const auto& p : j.current->packages) {
+      print("  package  " + p.id + " " + p.version + (p.remix ? " (runtime)" : "") +
+            (p.payload.empty() ? std::string() : "  payload " + p.payload) + "\n");
+    }
+  } else {
+    print("no current generation\n");
+  }
+  if (j.previous) print("previous generation " + std::to_string(j.previous->number) + " is kept for rollback\n");
+  if (j.hold) print("held after a rollback: apply leaves it until the planned packages differ from the ones it rolled back from\n");
+  if (pending) print("PENDING: an interrupted deployment; the next apply, rollback or uninstall undoes it\n");
+  for (const auto& d : s.drift) print("  " + d.problem + "  " + d.path + "\n");
+  print(ok ? std::string("OK\n") : std::to_string(s.drift.size()) + " file(s) not as placed\n");
+  return ok ? kOk : kCheckFailed;
+}
+
 int usage() {
   std::fputs(
       "usage: nlctl <command> [--json]\n"
@@ -386,6 +503,10 @@ int usage() {
       "  scan    <folder>     read-only parse of every .gma / .bin archive below the folder\n"
       "  manifest <file.gma|folder>  validate a native package and summarise its manifest\n"
       "  plan    <game root> [--steam-dir <dir>]  what the loader would activate (read-only)\n"
+      "  apply   <game root> [--steam-dir <dir>] [--dry-run]  deploy the plan\n"
+      "  status  <game root> [--verify]  the journal; are the deployed files as placed (read-only)\n"
+      "  rollback <game root> [--dry-run]  return to the previous generation\n"
+      "  uninstall <game root> [--dry-run]  remove everything the loader placed\n"
       "  version              loader version\n",
       stderr);
   return kBadInput;
@@ -397,9 +518,15 @@ int wmain(int argc, wchar_t** argv) {
   SetConsoleOutputCP(CP_UTF8);
   try {
     std::vector<std::wstring> args(argv + 1, argv + argc);
-    const auto json_flag = std::find(args.begin(), args.end(), L"--json");
-    const bool json = json_flag != args.end();
-    if (json) args.erase(json_flag);
+    const auto flag = [&args](const wchar_t* name) {
+      const auto it = std::find(args.begin(), args.end(), name);
+      if (it == args.end()) return false;
+      args.erase(it);
+      return true;
+    };
+    const bool json = flag(L"--json");
+    const bool dry_run = flag(L"--dry-run");
+    const bool verify_hashes = flag(L"--verify");
     std::optional<fs::path> steam_dir;
     if (const auto it = std::find(args.begin(), args.end(), L"--steam-dir"); it != args.end()) {
       if (it + 1 == args.end()) return usage();
@@ -415,7 +542,17 @@ int wmain(int argc, wchar_t** argv) {
     if (args.size() == 2 && args[0] == L"scan") return cmd_scan(args[1], json);
     if (args.size() == 2 && args[0] == L"manifest") return cmd_manifest(args[1], json);
     if (args.size() == 2 && args[0] == L"plan") return cmd_plan(args[1], steam_dir, json);
+    if (args.size() == 2 && args[0] == L"apply") return cmd_apply(args[1], steam_dir, json, dry_run);
+    if (args.size() == 2 && args[0] == L"status") return cmd_status(args[1], json, verify_hashes);
+    if (args.size() == 2 && args[0] == L"rollback") return cmd_rollback(args[1], json, dry_run);
+    if (args.size() == 2 && args[0] == L"uninstall") return cmd_uninstall(args[1], json, dry_run);
     return usage();
+  } catch (const nl::journal::Error& e) {
+    std::fprintf(stderr, "error: %s\n", e.what());
+    return kBadInput;
+  } catch (const nl::fs::Error& e) {
+    std::fprintf(stderr, "error: %s\n", e.what());
+    return kBadInput;
   } catch (const nl::gma::FormatError& e) {
     std::fprintf(stderr, "error: %s\n", e.what());
     return kBadInput;

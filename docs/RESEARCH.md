@@ -205,3 +205,49 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
   Evidence: `out/m1-poc-installed-verify.json`, `out/m1-poc-uninstalled-verify.json`. The PoC is left
   with no bootstrap DLL/PDB or loader state. Installed Release DLL SHA-256:
   `E9B1327A89853344DD967D4B6C5C8E48E52F49849C208EA7605B61EF278A3351`.
+
+## 9. M3 deployment measurements (2026-10-27, Claude)
+
+**Release `nlctl`, this machine, a package with a 323 MiB payload file** (the size of the runtime's
+`d3d9.dll`, section 2) in a plain `.gma` in a scratch game folder:
+
+| Command | Time | What it does |
+|---|---|---|
+| `apply`, first | 1.75 s | extract, check size, CRC-32 and SHA-256, flush, place |
+| `apply`, again (no-op) | 44 ms | 0 file-system changes, journal untouched |
+| `status` | 13 ms | size and time of every recorded file |
+| `status --verify` | 231 ms | SHA-256 of every file: about 1.4 GB/s with CNG on cached data |
+| `uninstall` | 0.32 s | a full SHA-256 of each file before it is deleted |
+
+The full 930 MB runtime should therefore deploy in about 5 s from a plain archive. From an
+LZMA-wrapped one it takes longer, decoding at about 67 MB/s (section 5).
+
+**Process costs.** In a Debug build a deployer command costs about 30 ms before it does any work:
+the process start, plus one Toolhelp scan of all processes for the running-game check. Most of the
+rest of a tiny deployment is durability: about 15 flushes and write-through renames per apply.
+`test_deploy.cpp` therefore runs its thousands of in-process deployments on a file system without
+flushes (`FastDisk`), and the test host skips the process scan.
+
+**Change counts.** The fault test's scenarios, killed by `TerminateProcess` before each change; every
+one ended in the old or the new state after recovery:
+
+| Scenario | File-system changes |
+|---|---|
+| first deployment (runtime + root-files package) | 47 |
+| upgrade (new runtime folder; root files replaced, added, removed) | 52 |
+| rollback | 26 |
+| uninstall | 35 |
+
+**PoC acceptance.** The test package held a payload file, a mod file, a binary Lua module and a
+create-only cfg file. The bootstrap install, `apply` and uninstall made 54 changes, the second apply
+none. All 3,113 files and folders of `GarrysMod_PoC` were identical afterwards, sizes and times
+included, and 2,877 depot files verified OK. Evidence: `out/poc-deploy/20261028-035222/`.
+
+**Windows behaviour the deployer relies on:**
+
+- `MoveFileExW` without `MOVEFILE_COPY_ALLOWED` renames only within a volume, which is why staging
+  lives under the game folder and links are refused there.
+- `GetFileAttributesExW` reports a junction itself, not its target.
+- A file opened with `FILE_FLAG_OPEN_REPARSE_POINT` is the link itself, so hashing refuses links.
+- An exclusive handle (share mode 0) on `native-loader\lock` makes a second deployer fail with
+  `ERROR_SHARING_VIOLATION` until the first one's process ends.
