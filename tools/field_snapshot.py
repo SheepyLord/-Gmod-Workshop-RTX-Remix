@@ -7,14 +7,15 @@ vulkan-1.dll, the MMD Hot Loader and Jolt files, configs, logs, databases), and 
 allowlist native-loader/config.json; the entries of those folders and of garrysmod/addons,
 garrysmod/data and crashes, each with its kind (file, folder or link); size and time of every file
 below garrysmod/data and garrysmod/settings; and GMod's shared registry settings with the export's
-SHA-256. It refuses a snapshot folder on another volume. `rollback` first checks every saved copy and
-stops, changing nothing, if one is damaged. Then it uninstalls the loader, moves every entry that
+SHA-256. It refuses a Steam-managed install whose depot manifests it cannot read (--no-depot-check
+overrides that) and a snapshot folder on another volume. `rollback` first checks every saved copy
+and stops, changing nothing, if one is damaged. Then it uninstalls the loader, moves every entry that
 was not there before, or is now of another kind (a folder replaced by a link), into the snapshot's
 debris folder (a rename: links move as links and are never followed; nothing is ever deleted, and an
 entry that cannot be moved stays where it is and is reported), writes back every kept file that
-changed (never through a link), makes the registry key equal to the export again (pruning only after
-a verified import), and checks the listings, the kept files, the registry and Steam's depot files.
-See field_snapshot.py.md.
+changed (never through a link, never over a file a Steam depot lists), makes the registry key equal
+to the export again (pruning only after a verified import), and checks the listings, the kept files,
+the registry and Steam's depot files. See field_snapshot.py.md.
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ import hashlib
 import json
 import msvcrt
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -34,6 +36,7 @@ from pathlib import Path, PurePosixPath
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools" / "steam"))
 from steam_manifest import locate_install, parse_manifest  # noqa: E402
+from verify_install import verify as verify_depots  # noqa: E402
 
 SCHEMA = 3
 DEFAULT_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
@@ -224,17 +227,34 @@ def game_running(root: Path) -> bool:
     return any(os.path.normcase(line.strip()).startswith(prefix) for line in done.stdout.splitlines() if line.strip())
 
 
-def depot_files(root: Path, manifests_from: str | None) -> set[str] | None:
-    """Lower-case paths of every file Steam's depots list for the install, or None when it is not a
-    Steam install (then nothing is excluded from copying and the depot check is skipped)."""
-    try:
-        manifests = locate_install(manifests_from or root).manifests
-    except FileNotFoundError:
+def steam_manager(root: Path) -> str | None:
+    """The app manifest (appmanifest_*.acf in the library's steamapps folder) whose installdir is this
+    install's folder, or None when Steam does not manage the install."""
+    if root.parent.name.lower() != "common" or root.parent.parent.name.lower() != "steamapps":
         return None
-    listed: set[str] = set()
-    for path in manifests:
-        listed.update(f.path.replace("\\", "/").lower() for f in parse_manifest(path).files)
-    return listed
+    for acf in sorted(root.parent.parent.glob("appmanifest_*.acf")):
+        found = re.search(r'"installdir"\s+"([^"\r\n]*)"', acf.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE)
+        if found and found.group(1).lower() == root.name.lower():
+            return acf.name
+    return None
+
+
+def depot_inventory(root: Path, manifests_from: str | None) -> tuple[dict[str, bool] | None, list[Path], str]:
+    """({lower-case path: user-config flag} of every file Steam's depots list for the install, the
+    manifests, ""), or (None, [], why not) when they cannot be read."""
+    try:
+        manifests = list(locate_install(manifests_from or root).manifests)
+        if not manifests:
+            raise ValueError("the app manifest lists no installed depot")
+        files: dict[str, bool] = {}
+        for path in manifests:
+            manifest = parse_manifest(path)
+            if manifest.filenames_encrypted:
+                raise ValueError(f"{path} has encrypted file names")
+            files.update((f.path.replace("\\", "/").lower(), f.is_userconfig) for f in manifest.files if not f.is_dir)
+        return files, manifests, ""
+    except Exception as error:  # whatever stops them being read leaves the depot check undone
+        return None, [], str(error) or type(error).__name__
 
 
 def tree_stats(base: Path) -> dict[str, list[int]]:
@@ -465,11 +485,21 @@ def snapshot(args) -> dict:
                       "and a rename cannot cross volumes")
     if game_running(root):
         raise Failure("a game from this install is running")
+    manager = steam_manager(root)
+    inventory, why = None, "--no-depot-check"
+    if not args.no_depot_check:
+        inventory, _, why = depot_inventory(root, args.manifests_from)
+        if inventory is None and (manager or args.manifests_from):
+            source = f"Steam manages {root} ({manager})" if manager else f"--manifests-from {args.manifests_from} was given"
+            raise Failure(f"{source}, but its depot manifests cannot be read: {why}. Without them the snapshot cannot tell "
+                          "Steam's files from yours. Let Steam finish updating or verifying the game so it caches them, or "
+                          "pass --no-depot-check (recorded in the snapshot; its rollback never reports clean unless the "
+                          "manifests can be read by then).")
     key_exists = subprocess.run(["reg", "query", args.registry_key], capture_output=True).returncode == 0
-    depot = depot_files(root, args.manifests_from)
     folder.mkdir(parents=True, exist_ok=True)
     state: dict = {"schema": SCHEMA, "root": str(root), "taken": stamp(), "manifests_from": args.manifests_from,
-                   "verify": depot is not None, "kept": {}, "listed": {}, "watched": {}, "loader_paths": {},
+                   "steam_managed": manager, "depot_check": inventory is not None, "no_depot_check": bool(args.no_depot_check),
+                   "kept": {}, "listed": {}, "watched": {}, "loader_paths": {},
                    "registry": {"key": args.registry_key, "existed": key_exists}}
     # A key that exists but cannot be exported must not later count as absent (rollback deletes those);
     # one rollback could not read back would leave it unrestorable.
@@ -489,7 +519,7 @@ def snapshot(args) -> dict:
         for entry in base.iterdir() if base.is_dir() else ():
             if entry.is_file() and not is_link(entry):
                 name = entry.relative_to(root).as_posix()
-                if depot is None or name.lower() not in depot:
+                if inventory is None or name.lower() not in inventory:
                     names.add(name)
     for rel in sorted(names):
         path, found = root / rel, kind(root / rel)
@@ -506,6 +536,8 @@ def snapshot(args) -> dict:
             shutil.copy2(path, copy)
             if sha256(copy) != entry["sha256"]:
                 raise Failure(f"{rel} changed while it was copied; close what writes it and snapshot into a new folder")
+        if inventory is not None and inventory.get(rel.lower()) is False:
+            entry["steam"] = True  # a depot file, not a user-config one: rollback never writes it back
         state["kept"][rel] = entry
     for rel in LISTED:
         state["listed"][rel] = listing(root / rel)
@@ -519,7 +551,8 @@ def snapshot(args) -> dict:
             "not_copied": [k for k, v in state["kept"].items() if v and not v["copied"]],
             "watched_files": {k: len(v) for k, v in state["watched"].items()},
             "loader_paths_present": [k for k, v in state["loader_paths"].items() if v],
-            "registry_exported": state["registry"]["existed"], "depot_check": state["verify"]}
+            "registry_exported": state["registry"]["existed"], "steam_managed": manager,
+            "depot_check": state["depot_check"], "no_depot_check": state["no_depot_check"]}
 
 
 def rollback(args) -> dict:
@@ -541,10 +574,23 @@ def rollback(args) -> dict:
     if volume(folder) != volume(root):
         raise Failure("the snapshot folder is no longer on the install's volume, so what a session added cannot be renamed "
                       "into it; move it back first. Nothing was changed")
+    manager = steam_manager(root) or state["steam_managed"]
+    depots_expected = bool(manager or state["manifests_from"])
+    inventory, manifests, why = depot_inventory(root, state["manifests_from"])
+
+    def unwritable(rel: str, info: dict) -> str | None:
+        """Why a kept file must not be written back, or None."""
+        if info.get("steam") or (inventory is not None and inventory.get(rel.lower()) is False):
+            return "steam"  # Steam's: the depot check below verifies it instead
+        if inventory is None and depots_expected and not state["depot_check"] and rel not in VOLATILE:
+            return ("not restored: neither the snapshot nor this rollback could read the depot manifests, so it may be "
+                    "Steam's file; run rollback again once Steam has cached them")
+        return None
+
     # Every saved copy that may be written back is checked before anything changes (R1-013).
     damaged = []
     for rel, info in state["kept"].items():
-        if not info or not info["copied"]:
+        if not info or not info["copied"] or unwritable(rel, info):
             continue
         copy = folder / "files" / rel
         if not copy.is_file():
@@ -557,7 +603,10 @@ def rollback(args) -> dict:
         raise Failure(f"{len(damaged)} saved copies are damaged, so nothing was changed: " + "; ".join(damaged[:REPORT_LIMIT]))
 
     report: dict = {"uninstall": None, "debris": None, "moved": [], "moved_as": {}, "left_in_place": {}, "restored": [],
-                    "errors": [], "registry": None, "listing_differences": {}, "kept_differences": [], "watched": {}}
+                    "steam_files_not_restored": [], "errors": [], "registry": None, "listing_differences": {},
+                    "kept_differences": [], "watched": {}, "steam_managed": manager, "depot_check": inventory is not None,
+                    "depot_check_skipped": None if inventory is not None else why, "no_depot_check": state["no_depot_check"],
+                    "verify": None}
     if (root / "bin/win64/winmm.dll").exists() and not state["loader_paths"]["bin/win64/winmm.dll"]:
         result = powershell("-ExecutionPolicy", "Bypass", "-File", str(REPO / "tools" / "uninstall-loader.ps1"),
                             "-GameRoot", str(root), "-Config", args.config, "-RemoveConfig", "-AllowSteamManaged")
@@ -611,13 +660,20 @@ def rollback(args) -> dict:
                 if name.endswith("/"):
                     taken.append(name)
     # 3. Kept files that changed: written back in place, so a hard-linked file stays linked; never
-    # through a link.
+    # through a link, and never over Steam's own files.
     for rel, info in state["kept"].items():
         if not info:
             continue
         path = root / rel
         now = kind(path)
         if now == "file" and sha256(path) == info["sha256"]:
+            continue
+        reason = unwritable(rel, info)
+        if reason == "steam":
+            report["steam_files_not_restored"].append(rel)
+            continue
+        if reason:
+            report["errors"].append(f"{rel}: {reason}")
             continue
         if not info["copied"]:
             report["errors"].append(f"{rel}: changed, and too large to have been copied")
@@ -650,6 +706,8 @@ def rollback(args) -> dict:
         if info is None:
             if os.path.lexists(path):
                 report["kept_differences"].append(f"{rel}: present, absent at the snapshot")
+        elif rel in report["steam_files_not_restored"]:
+            continue  # Steam's file: the depot check verifies it
         elif kind(path) is None:
             report["kept_differences"].append(f"{rel}: missing")
         elif kind(path) != "file":
@@ -664,18 +722,16 @@ def rollback(args) -> dict:
         report["watched"][rel] = {"changed": len(changed), "missing": len(missing), "added": len(added),
                                   "changed_files": changed[:REPORT_LIMIT], "missing_files": missing[:REPORT_LIMIT],
                                   "added_files": added[:REPORT_LIMIT]}
-    if state["verify"]:
-        command = [sys.executable, str(REPO / "tools" / "steam" / "verify_install.py"), str(root), "--quiet"]
-        if state.get("manifests_from"):
-            command += ["--manifests-from", state["manifests_from"]]
-        verify = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace")
-        report["verify_exit"] = verify.returncode
-        report["verify"] = verify.stdout[-800:]
-    else:
-        report["verify_exit"] = None
+    verified = True
+    if inventory is not None:
+        found = verify_depots(root, manifests)
+        failures = {key: found[key] for key in ("missing", "size_mismatch", "hash_mismatch")}
+        report["verify"] = {"ok": found["ok"], **{key: value[:REPORT_LIMIT] for key, value in failures.items()}}
+        verified = not any(failures.values())
     report["clean"] = (not report["listing_differences"] and not report["kept_differences"] and not report["errors"]
                        and not report["left_in_place"] and report["registry"]["error"] is None
-                       and report["registry"]["differences"] == [] and report["verify_exit"] in (0, None)
+                       and report["registry"]["differences"] == [] and verified
+                       and (report["depot_check"] or not depots_expected)
                        and not any(v["added"] for v in report["watched"].values()))
     (folder / "rollback.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     return report
@@ -689,6 +745,9 @@ def main(argv=None) -> int:
     s.add_argument("--root", default=str(DEFAULT_ROOT), help="the install (default: the field install)")
     s.add_argument("--registry-key", default=REGISTRY_KEY, help="registry key exported and restored (default: GMod's settings)")
     s.add_argument("--manifests-from", help="the Steam install whose depot manifests describe this one (for a copy such as the PoC)")
+    s.add_argument("--no-depot-check", action="store_true",
+                   help="snapshot without reading Steam's depot manifests, even when Steam manages the install (recorded; "
+                        "its rollback is never clean unless it can read them)")
     r = sub.add_parser("rollback")
     r.add_argument("--config", default="Release", choices=["Debug", "Release"], help="build whose uninstaller identity to use")
     args = parser.parse_args(argv)

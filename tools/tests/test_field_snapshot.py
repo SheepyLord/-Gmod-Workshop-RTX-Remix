@@ -1,8 +1,8 @@
 """field_snapshot.py on a synthetic install under out/tmp: snapshot, a simulated session (the real
 bootstrap installed when a build exists; files changed, created, deleted and written through a hard
 link; registry values changed and added), rollback, and checks that everything is back. Plus one
-regression test or more for each R1 finding the tool had. Uses a throwaway registry key under
-HKCU\\Software, deleted afterwards."""
+regression test or more for each R1 finding the tool had (R1-009 to R1-013, R1-026, R1-029). Uses a
+throwaway registry key under HKCU\\Software, deleted afterwards."""
 import _winapi
 import argparse
 import hashlib
@@ -22,11 +22,18 @@ from unittest.mock import patch
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / 'tools' / 'field_snapshot.py'
 sys.path.insert(0, str(REPO / 'tools'))
-import field_snapshot as fs  # noqa: E402
+sys.path.insert(0, str(REPO / 'tools' / 'steam' / 'tests'))
+import field_snapshot as fs  # noqa: E402  (puts tools/steam on the path too)
+import steam_manifest  # noqa: E402
+from _fixtures import build_manifest, entry  # noqa: E402
+from steam_manifest import FLAG_USERCONFIG  # noqa: E402
 
 BUILD = next((config for config in ('Debug', 'Release')
               if (REPO / 'out' / 'build' / f'win64-{config.lower()}' / 'loader' / 'proxy' / 'winmm.dll').is_file()
               and (REPO / 'out' / 'build' / f'win64-{config.lower()}' / 'loader' / 'cli' / 'nlctl.exe').is_file()), None)
+MANIFEST_ID = 1234567890
+APP_MANIFEST = ('"AppState"\n{\n\t"appid"\t\t"4000"\n\t"installdir"\t\t"GarrysMod"\n\t"InstalledDepots"\n\t{\n'
+                f'\t\t"4002"\n\t\t{{\n\t\t\t"manifest"\t\t"{MANIFEST_ID}"\n\t\t}}\n\t}}\n}}\n')
 # What PowerShell 7's Microsoft.PowerShell.Utility manifest declares, which Windows PowerShell 5.1 finds
 # first on an inherited module path and cannot load: a Core-only module exporting the Utility cmdlets.
 UTILITY_CMDLETS = (
@@ -99,8 +106,10 @@ class FieldSnapshotTests(unittest.TestCase):
     def setUp(self):
         (REPO / 'out' / 'tmp').mkdir(parents=True, exist_ok=True)
         self.scratch = Path(tempfile.mkdtemp(prefix='field_snapshot_', dir=REPO / 'out' / 'tmp'))
-        self.root = self.scratch / 'game'
+        # A Steam library's layout; Steam manages the install only once a test adds its app manifest.
+        self.root = self.scratch / 'library' / 'steamapps' / 'common' / 'GarrysMod'
         self.snap = self.scratch / 'snapshot'
+        self.steam = self.scratch / 'steam'
         self.key = 'HKCU\\Software\\NativeLoaderTest_' + uuid.uuid4().hex[:12]
         self.full_key = self.key.replace('HKCU', 'HKEY_CURRENT_USER', 1)
         self.addCleanup(self.cleanup)
@@ -179,11 +188,24 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
         self.assertTrue((self.root / 'bin' / 'win64' / 'winmm.dll').is_file())
 
+    def make_steam_managed(self, depot):
+        """Adds the app manifest that makes Steam manage the install. depot, {path: (bytes, flags)},
+        becomes its depot manifest cached in a synthetic Steam folder; None leaves it uncached."""
+        (self.root.parent.parent / 'appmanifest_4000.acf').write_text(APP_MANIFEST, encoding='utf-8')
+        (self.steam / 'depotcache').mkdir(parents=True, exist_ok=True)
+        if depot is not None:
+            (self.steam / 'depotcache' / f'4002_{MANIFEST_ID}.manifest').write_bytes(
+                build_manifest([entry(path, data, flags) for path, (data, flags) in depot.items()], manifest_id=MANIFEST_ID))
+
+    def steam_folder(self):
+        return patch.object(steam_manifest, 'steam_root', return_value=self.steam)
+
     # ------------------------------------------------------------ the whole round
 
     def test_rollback_puts_everything_back(self):
         summary = self.snapshot()
         self.assertFalse(summary['depot_check'])  # not a Steam install: every file is kept
+        self.assertIsNone(summary['steam_managed'])
         self.assertTrue(summary['registry_exported'])
         self.assertEqual(summary['loader_paths_present'], [])
         if BUILD:
@@ -244,6 +266,7 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertIn('garrysmod/data/existing/newdir', report['moved'])
         self.assertNotIn('deleted', report)
         self.assertEqual((report['left_in_place'], report['moved_as'], report['errors']), ({}, {}, []))
+        self.assertFalse(report['depot_check'])
         # A changed file below a watched folder cannot be put back; it is reported.
         self.assertEqual(report['watched']['garrysmod/data']['changed_files'], ['existing/a.txt'])
         self.assertEqual(report['watched']['garrysmod/settings']['changed'], 0)
@@ -465,6 +488,74 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertEqual(reg_value(self.key + '\\Settings', 'Name'), 'keep me')
         self.assertEqual(code, 1)
         self.assertIn('does not hold the key', report['registry']['error'])
+
+    # ------------------------------------------------------------ R1-012: never over Steam's files
+
+    def test_a_steam_install_needs_its_depot_manifests(self):
+        """R1-012: snapshot refuses a Steam-managed install whose depot manifests it cannot read, unless
+        --no-depot-check, which the snapshot records."""
+        self.make_steam_managed(None)
+        with self.steam_folder(), self.assertRaises(fs.Failure) as refused:
+            self.snapshot_here()
+        self.assertIn('appmanifest_4000.acf', str(refused.exception))
+        self.assertIn('--no-depot-check', str(refused.exception))
+        self.assertFalse(self.snap.exists())
+        with self.steam_folder():
+            summary = self.snapshot_here(no_depot_check=True)
+        self.assertEqual((summary['steam_managed'], summary['depot_check'], summary['no_depot_check']),
+                         ('appmanifest_4000.acf', False, True))
+        self.assertTrue(json.loads((self.snap / 'snapshot.json').read_text(encoding='utf-8'))['no_depot_check'])
+        cli = run('--snapshot', str(self.scratch / 'snapshot2'), 'snapshot', '--root', str(self.root), '--registry-key',
+                  self.key, '--no-depot-check')
+        self.assertEqual(cli.returncode, 0, cli.stderr)
+        self.assertTrue(json.loads(cli.stdout)['no_depot_check'])
+
+    def test_rollback_never_writes_a_steam_file_back(self):
+        """R1-012: a file a depot lists is never written back, even when the snapshot holds a copy (taken
+        with --no-depot-check). Without manifests only the user-config names go back and the rollback is
+        not clean; once Steam has cached them, a second rollback puts back the rest and is clean."""
+        self.write('garrysmod/cfg/autoexec.cfg', b'bind f5 jpeg')  # a depot user-config file the user edited
+        self.make_steam_managed(None)
+        with self.steam_folder():
+            self.snapshot_here(no_depot_check=True)
+        self.assertTrue((self.snap / 'files' / 'bin' / 'win64' / 'gmod.exe').is_file())
+        self.write('bin/win64/gmod.exe', b'steam update')  # Steam updates its file
+        self.write('garrysmod/cfg/autoexec.cfg', b'session')  # a session changes the user's
+        self.write('bin/win64/d3d9.dll', b'overwritten')
+        with self.steam_folder():
+            report = self.rollback_here()
+        self.assertEqual((self.root / 'bin' / 'win64' / 'gmod.exe').read_bytes(), b'steam update')
+        self.assertEqual((self.root / 'garrysmod' / 'cfg' / 'autoexec.cfg').read_bytes(), b'bind f5 jpeg')
+        self.assertEqual((self.root / 'bin' / 'win64' / 'd3d9.dll').read_bytes(), b'overwritten')  # could be Steam's
+        self.assertFalse(report['depot_check'])
+        self.assertFalse(report['clean'])
+        self.make_steam_managed({'bin/win64/gmod.exe': (b'steam update', 0), 'garrysmod/cfg/autoexec.cfg': (b'', FLAG_USERCONFIG)})
+        with self.steam_folder():
+            report = self.rollback_here()
+        self.assertEqual((self.root / 'bin' / 'win64' / 'gmod.exe').read_bytes(), b'steam update')
+        self.assertEqual((self.root / 'bin' / 'win64' / 'd3d9.dll').read_bytes(), b'the user DXVK')
+        self.assertEqual((report['depot_check'], report['steam_files_not_restored']), (True, ['bin/win64/gmod.exe']))
+        self.assertEqual((report['verify']['ok'], report['verify']['hash_mismatch']), (1, []))
+        self.assertTrue(report['clean'], report)
+
+    def test_a_steam_file_the_snapshot_kept_is_never_written_back(self):
+        """R1-012: when the snapshot read the manifests, a kept file they list as Steam's (config.cfg
+        here, hypothetically) is never written back, even when the rollback cannot read them."""
+        self.make_steam_managed({'bin/win64/gmod.exe': (b'not a real game', 0), 'garrysmod/cfg/config.cfg': (b'r_x 1\n', 0)})
+        with self.steam_folder():
+            summary = self.snapshot_here()
+        self.assertTrue(summary['depot_check'])
+        self.assertFalse((self.snap / 'files' / 'bin' / 'win64' / 'gmod.exe').exists())  # Steam's: not even copied
+        self.write('garrysmod/cfg/config.cfg', b'changed')
+        self.write('bin/win64/d3d9.dll', b'overwritten')
+        (self.steam / 'depotcache' / f'4002_{MANIFEST_ID}.manifest').unlink()
+        with self.steam_folder():
+            report = self.rollback_here()
+        self.assertEqual((self.root / 'garrysmod' / 'cfg' / 'config.cfg').read_bytes(), b'changed')
+        self.assertEqual((self.root / 'bin' / 'win64' / 'd3d9.dll').read_bytes(), b'the user DXVK')
+        self.assertEqual(report['steam_files_not_restored'], ['garrysmod/cfg/config.cfg'])
+        self.assertFalse(report['depot_check'])
+        self.assertFalse(report['clean'])
 
     # ------------------------------------------------------------ R1-013: copies checked first
 
