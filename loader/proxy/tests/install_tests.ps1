@@ -77,6 +77,16 @@ try {
     & $installer -GameRoot $managed -Config $Config -AllowSteamManaged -Uninstall -RemoveState
     Check (-not (Test-Path -LiteralPath (Join-Path $managed 'native-loader'))) 'Managed cleanup failed.'
     Refuses { & $installer -GameRoot $game -RemoveState } 'requires -Uninstall'
+    # -DefaultConfig writes the release bundle's config.json, never over an existing one (ADR 0017).
+    $configured = Make-Game (Join-Path $scratch 'configured')
+    & $installer -GameRoot $configured -Config $Config -DefaultConfig
+    $shipped = [IO.File]::ReadAllText((Join-Path $Repo 'dist\native-loader\config.json'))
+    $configFile = Join-Path $configured 'native-loader\config.json'
+    Check ([IO.File]::ReadAllText($configFile) -ceq $shipped) 'DefaultConfig did not write the shipped config.json.'
+    [IO.File]::WriteAllText($configFile, '{"schema": 1, "allow": {"local": ["mine.gma"]}}')
+    & $installer -GameRoot $configured -Config $Config -DefaultConfig
+    Check ([IO.File]::ReadAllText($configFile) -ceq '{"schema": 1, "allow": {"local": ["mine.gma"]}}') 'DefaultConfig replaced the user''s config.json.'
+    Refuses { & $installer -GameRoot $configured -Config $Config -Uninstall -DefaultConfig } 'does not go with -Uninstall'
     Write-Host "Installer OK: $script:checks checks (synthetic roots only)."
 } finally {
     $deleteTarget = [IO.Path]::GetFullPath($scratch)

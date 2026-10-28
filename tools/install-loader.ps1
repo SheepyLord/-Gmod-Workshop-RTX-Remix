@@ -8,10 +8,12 @@ param(
     [ValidateSet('Debug', 'Release')] [string] $Config = 'Release',
     [switch] $Uninstall,
     [switch] $RemoveState,
-    [switch] $AllowSteamManaged
+    [switch] $AllowSteamManaged,
+    [switch] $DefaultConfig
 )
 $ErrorActionPreference = 'Stop'
 if ($RemoveState -and -not $Uninstall) { throw '-RemoveState requires -Uninstall.' }
+if ($DefaultConfig -and $Uninstall) { throw '-DefaultConfig installs; it does not go with -Uninstall.' }
 $repo = Split-Path -Parent $PSScriptRoot
 $resolvedRoot = (Resolve-Path -LiteralPath $GameRoot).ProviderPath.TrimEnd('\', '/')
 if (-not (Test-Path -LiteralPath (Join-Path $resolvedRoot 'bin\win64\gmod.exe') -PathType Leaf)) {
@@ -142,3 +144,16 @@ try {
     throw
 }
 Write-Host "Bootstrap installed ($Config): $dllPath"
+
+# The release bundle's settings (ADR 0017): allow the project's Workshop item. Only when the install
+# has no config.json yet; an existing one is the user's and is never replaced.
+if ($DefaultConfig) {
+    $configPath = Join-Path $stateDir 'config.json'
+    Assert-OrdinaryPath $configPath
+    if (Test-Path -LiteralPath $configPath) {
+        Write-Host "Kept the existing $configPath"
+    } else {
+        Copy-Item -LiteralPath (Join-Path $repo 'dist\native-loader\config.json') -Destination $configPath
+        Write-Host "Default settings written: $configPath (allows Workshop item 3829070317)"
+    }
+}

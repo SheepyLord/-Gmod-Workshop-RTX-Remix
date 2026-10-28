@@ -6,6 +6,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (CI and the release bundle, ADR 0017)
+
+- **GitHub Actions** (`.github/workflows/build.yml`) builds `winmm.dll` on every push of `main`, every
+  pull request, and on demand.
+  - It runs `tools\test.ps1 -Config Release` on `windows-2022` and keeps the end-user bundle as an
+    artifact.
+  - A `v*` tag makes a GitHub release with it.
+- **The end-user bundle** (`tools/package_loader.py`): a zip to extract into the Garry's Mod folder,
+  holding `bin\win64\winmm.dll`, a default `native-loader\config.json` that allows Workshop item
+  3829070317, and a README. The PDB ships in a symbols zip. Tested as a player would use it on the
+  PoC: the loader found the item by itself, deployed it and activated RTX.
+- **`install-loader.ps1 -DefaultConfig`** writes the same default config for a developer install,
+  never over an existing one.
+
 ### Added (the Workshop distribution item, ADR 0016)
 
 - **Workshop item 3829070317 now carries the RTX package subscribers use.** It is one combined
