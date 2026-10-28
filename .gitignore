@@ -1,0 +1,24 @@
+# Build output
+/out/
+/build/
+CMakeUserPresets.json
+.vs/
+*.user
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Game and runtime artefacts never belong in git (AGENTS.md rule 6)
+*.gma
+*.partial
+/local/
+
+# Editors and operating systems
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+.DS_Store

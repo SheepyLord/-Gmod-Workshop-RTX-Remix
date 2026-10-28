@@ -1,2 +1,16 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Windows command scripts need CRLF; PowerShell is safest with CRLF too.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.sh    text eol=lf
+
+# Binary formats this project handles (none should be committed; see AGENTS.md rule 6).
+*.gma       binary
+*.dll       binary
+*.exe       binary
+*.pdb       binary
+*.manifest  binary

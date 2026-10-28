@@ -1,0 +1,38 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "win64-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "win64-debug",
+      "inherits": "win64-base",
+      "displayName": "x64 Debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "win64-release",
+      "inherits": "win64-base",
+      "displayName": "x64 Release (optimised, with PDB)",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "win64-debug", "configurePreset": "win64-debug" },
+    { "name": "win64-release", "configurePreset": "win64-release" }
+  ],
+  "testPresets": [
+    { "name": "win64-debug", "configurePreset": "win64-debug", "output": { "outputOnFailure": true } },
+    { "name": "win64-release", "configurePreset": "win64-release", "output": { "outputOnFailure": true } }
+  ]
+}
