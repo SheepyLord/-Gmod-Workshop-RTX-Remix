@@ -47,6 +47,29 @@ item). Use a throwaway package, never the real runtime, and remove the item afte
 If the item survives and downloads intact, a later record can make the Workshop the preferred route
 for users who want updates through Steam; the loader needs no change for that.
 
+## The private upload test, as run (2026-10-28)
+
+The user approved the test ("You have approval to perform workshop distribution test") and pointed
+out that `tools/gmapack` packs any folder. Claude ran it on the PoC, from the R1 worktree. Evidence is
+in `out\worktrees\r1-review\out\m6-ws\`: the builder and session scripts, both `gmpublish` outputs,
+and the session records.
+
+| Step | Result |
+|---|---|
+| Package | `gmapack` packed a throwaway package, entirely our own code (105,447 bytes): the M4 fixture DLL as payload, a Remix mod folder, a Lua add-on folder, and a Lua file at the archive root |
+| Upload | `bin\win64\gmpublish.exe create` (run from the PoC) accepted it: item **3829070317**, "currently marked as hidden" |
+| Download | In a PoC session, GMod's `steamworks.DownloadUGC` fetched it with no subscription. Steam stored `steamapps\workshop\content\4000\3829070317\nl-ws-test-0.0.1.gma`, byte-identical to the upload (same SHA-256), and listed it in `appworkshop_4000.acf` |
+| Deploy | With the loader allowlisting only that Workshop ID, start-up deployed it (generation 1). The payload DLL was byte-identical, and the mod and add-on folders were placed. GMod mounted the add-on folder and ran its Lua. `status.json` listed `source: workshop`, the item ID and the update time |
+| Update | `gmpublish update` uploaded 0.0.2. `DownloadUGC` fetched it during a session whose start had kept 0.0.1 (`unchanged`). The next start deployed 0.0.2 (generation 2, the earlier payload kept for rollback) |
+| GMod's own mount | Refused: "Couldn't mount file". A probe found why: a Lua-only `gmapack` archive mounts, and the same archive with a `.dll` does not. GMod does not mount an archive holding a file outside its whitelist |
+| Clean-up | Loader uninstalled from the PoC; 2,877 depot files OK. The test item stays hidden on the Workshop: deleting it needs its Workshop page, which the user declined to let Claude use |
+
+Result: [ADR 0015](../decisions/0015-workshop-route-for-native-packages.md).
+- Native packages can go through the Workshop. Their Lua must come through the loader's add-on folders
+  (ADR 0011), because GMod does not mount the item itself.
+- A public release is still the user's call: GMod's Workshop rules restrict `.dll` files, and the
+  licences need checking.
+
 ## Open
 
 - Publishing the two packages as release assets (and checking the NVIDIA redistributables' licences

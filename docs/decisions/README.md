@@ -16,10 +16,11 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0008](0008-activation-at-startup.md) | Activation at start-up: preload the runtime, config layers, environment, launch arguments | Accepted 2026-10-27; revised before merge for transactional activation and user layers |
 | [0009](0009-startup-deployment-last-good.md) | Startup deployment keeps the last good generation when an allowlisted source fails | Accepted 2026-10-27 |
 | [0010](0010-rtx-session-extras.md) | RTX-session extras: in-memory patch sets, module overrides and session console variables | Accepted 2026-10-28 |
-| [0011](0011-lua-addon-folders.md) | Packages may deploy GMod add-on folders (`garrysmod/addons/<addon>/`) | Accepted 2026-10-28, user to confirm |
-| [0012](0012-distribution-route.md) | Native packages are released outside the Workshop; the Workshop stays a supported source | Accepted 2026-10-28; private upload test left to the user |
+| [0011](0011-lua-addon-folders.md) | Packages may deploy GMod add-on folders (`garrysmod/addons/<addon>/`) | Accepted 2026-10-28; confirmed by the user 2026-10-28 |
+| [0012](0012-distribution-route.md) | Native packages are released outside the Workshop; the Workshop stays a supported source | Accepted 2026-10-28; superseded in part by 0015 |
 | [0013](0013-rtx-only-addons-hidden-without-rtx.md) | Add-ons of RTX-only packages are hidden from sessions without RTX, in memory | Accepted 2026-10-28 |
 | [0014](0014-r1-hardening.md) | R1 hardening: no `garrysmod/cfg` area, files only inside named folders, deployed files checked by size and time at activation, a restore that keeps the user's own changes | Accepted 2026-10-28; supersedes the `garrysmod/cfg` area of the M2 path rules |
+| [0015](0015-workshop-route-for-native-packages.md) | Native packages can be distributed through the Workshop, packed with `gmapack`; their Lua comes through the loader's add-on folders, since GMod does not mount such an item | Accepted 2026-10-28 (the user, with the private upload test); supersedes part of 0012 |
 
 ## Template
 

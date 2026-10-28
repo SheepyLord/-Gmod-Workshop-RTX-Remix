@@ -105,6 +105,12 @@ def is_junk(name):
     return lower in JUNK or lower.endswith('.bak') or (lower.startswith('.gmapack-') and lower.endswith('.part'))
 
 
+def is_map_log(folder, name):
+    """A map compiler's log beside its map (<add-on>/maps/<map>.log, as vbsp, vvis and vrad write it):
+    the game never reads it and it holds the mapper's own paths, so it is left out as junk."""
+    return name.lower().endswith('.log') and os.path.basename(folder).lower() == 'maps'
+
+
 def regular_file(path):
     if is_link(path) or not stat.S_ISREG(os.stat(path, follow_symlinks=False).st_mode):
         raise PackageError('refusing a link or special file: %s' % path)
@@ -125,7 +131,7 @@ def collect(top, prefix, junk, docs=True):
         dirs.sort()
         for name in sorted(names):
             source = os.path.join(folder, name)
-            if is_junk(name):
+            if is_junk(name) or is_map_log(folder, name):
                 junk.append(source)
                 continue
             if not docs and name.lower().endswith('.md'):

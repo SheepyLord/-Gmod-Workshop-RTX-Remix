@@ -6,6 +6,19 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (M6 follow-up: the Workshop route, tested)
+
+- A private Workshop upload test, run with the user's approval.
+  - **Upload:** GMod's `gmpublish` accepted a native package packed with `tools/gmapack`.
+  - **Download:** Steam served it back byte for byte.
+  - **Deploy:** the loader deployed it from Steam's Workshop folder.
+  - **Update:** an update deployed at the next start.
+
+  GMod itself does not mount an archive holding native files, so such a package's Lua comes through
+  the loader's add-on folders ([ADR 0015](docs/decisions/0015-workshop-route-for-native-packages.md),
+  superseding part of ADR 0012; ADR 0011 confirmed by the user).
+- `tools/gmapack` is recorded as the user's own code under this repo's MIT licence (R1-025).
+
 ### Changed (R1: whole-repo review)
 
 Codex reviewed the whole repository and reported 29 findings. All of them are triaged and fixed, or
@@ -26,6 +39,25 @@ answered ([R1 report](docs/handover/R1-report.md), [triage](docs/handover/R1-tri
   only. A payload file the user changed stays, and a warning lists it.
 - **`tools\test.ps1` builds first**, so the Python tests' native cross-checks run.
   **`tools\build.ps1`** puts the caller's environment back when it ends.
+- **`field_snapshot.py`** (snapshot schema 3):
+  - rollback never deletes; an entry it cannot move stays and is listed;
+  - nothing is written through a link;
+  - every saved copy is checked before anything changes;
+  - the registry is pruned only after a verified import;
+  - a Steam-managed install needs its depot manifests (or `--no-depot-check`), and Steam's files are
+    never written back;
+  - `native-loader/config.json` is kept;
+  - older snapshots are refused.
+- **`poc_session.py`:**
+  - it sends client Lua through the console, hex-encoded, and writes nothing into an install;
+  - it ends only the game it started, and that game's children;
+  - `install` refuses to replace a different `config.json` without `--replace-config`, which backs
+    it up first.
+- **The packagers** refuse files that look private (`user.conf`, logs, `.env`, dumps) unless
+  `--allow-private` names them, and write an inventory beside each output. Map compile logs are left
+  out of the fixes package as junk.
+- **`verify_install.py`** fails a depot path that passes through a link, and a depot file it can
+  check only by size. **`poc_parity.py`** keeps every path inside the PoC.
 
 ### Fixed (R1: whole-repo review)
 
@@ -37,6 +69,9 @@ answered ([R1 report](docs/handover/R1-report.md), [triage](docs/handover/R1-tri
   - every PE offset is bounds-checked.
 - `session.json` now has `utc` and `notes`, and each override entry has `module`, which the companion
   was already reading.
+- PowerShell started by the Python tools no longer inherits PowerShell 7's `PSModulePath`, which made
+  `install-loader.ps1` fail under Windows PowerShell 5.1.
+- Three Python test files keep their scratch under `out\tmp` when run directly.
 
 ### Added (M7: field install)
 

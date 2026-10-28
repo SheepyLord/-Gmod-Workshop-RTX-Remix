@@ -409,9 +409,7 @@ class PackageFixesTests(unittest.TestCase):
     def test_private_looking_files_are_refused_unless_named(self):
         tree = self.repo / 'garrysmod'
         private = {  # source: package path
-            # The real fixes ship map compile logs like this one beside their maps.
-            tree / 'garrysmod/addons/remixbinary/maps/gm_construct_rtx.log':
-                'native/root/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log',
+            tree / 'garrysmod/addons/remixbinary/lua/debug.log': 'native/root/garrysmod/addons/remixbinary/lua/debug.log',
             tree / 'rtx-remix/mods/base_mod/logs/capture.txt': 'native/root/rtx-remix/mods/base_mod/logs/capture.txt',
             tree / 'garrysmod/data/remix_map_configs/user.conf': 'native/root/garrysmod/data/remix_map_configs/user.conf',
         }
@@ -431,6 +429,14 @@ class PackageFixesTests(unittest.TestCase):
         notes = {row[2]: row[4] for row in rows}
         for rel in private.values():
             self.assertTrue(notes[rel].startswith('allowed with --allow-private: '), rel)
+
+    def test_map_compile_logs_stay_out_as_junk(self):
+        # The real fixes keep vbsp/vvis/vrad logs beside their maps; they are not a reason to refuse.
+        self.write(self.repo / 'garrysmod/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log', b'compile log')
+        summary = self.build('--out', self.root / 'pkg')
+        self.assertIn('garrysmod/addons/remixbinary/maps/gm_construct_rtx.log', summary['junk'])
+        self.assertNotIn('native/root/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log',
+                         self.manifest(self.root / 'pkg')['files'])
 
     def test_an_inventory_beside_each_output_lists_every_file(self):
         out, gma = self.root / 'pkg', self.root / 'pkg.gma'

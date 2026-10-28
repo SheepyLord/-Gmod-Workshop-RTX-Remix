@@ -72,6 +72,9 @@ From the fixes as of 2026-10-28 that gives 34 variables (`sv_cheats 1`, `mat_dis
 - Junk anywhere: `.git` (a submodule's file, or a folder), `.gitattributes`, `.gitignore`,
   `.gitkeep`, `.gitmodules`, `Thumbs.db`, `desktop.ini`, `.DS_Store`, `*.bak` (listed as `junk`).
   `gmapack` drops the same names, so the folder and the archive hold the same files.
+- Map compile logs, a `*.log` file in a `maps` folder, are also junk. The fixes keep vbsp/vvis/vrad
+  logs beside their maps; the game never reads them, and they hold the mapper's own paths. Any other
+  log is a private-looking file, which refuses the build unless `--allow-private` names it.
 - A mod folder without files (`empty_mods`). An add-on folder without files is refused instead: it is
   usually a git submodule that was never initialised.
 
