@@ -85,6 +85,7 @@ struct Stat {
   bool exists = false;
   bool directory = false;
   bool link = false;        // a reparse point: junction, symbolic link, ...
+  bool readonly = false;    // the read-only attribute (Windows refuses to delete such a file)
   std::uint64_t size = 0;
   std::uint64_t mtime = 0;  // last write time in 100 ns units since 1601 (FILETIME)
 };

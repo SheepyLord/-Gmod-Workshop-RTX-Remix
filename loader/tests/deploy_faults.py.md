@@ -24,7 +24,7 @@ a payload folder, and a root-files package):
 - a rollback of that upgrade;
 - an uninstall.
 
-On 2026-10-27 these made 47, 52, 26 and 35 changes. The test fails if a scenario makes fewer than 5,
+On 2026-10-27 these made 54, 59, 26 and 35 changes. The test fails if a scenario makes fewer than 5,
 since it would then no longer test what it should.
 
 ```powershell

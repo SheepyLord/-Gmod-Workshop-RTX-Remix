@@ -13,6 +13,9 @@ namespace {
 using json::Value;
 
 constexpr std::size_t kMaxBytes = std::size_t{64} << 20;
+// The loader's own paths put a folder of the loader's (native-loader/backup/<gen>/, a payload
+// folder, a staging folder: under 200 bytes) in front of a package path of up to 1,024 bytes.
+constexpr std::size_t kMaxPathBytes = 4096;
 
 [[noreturn]] void fail(const std::string& message) {
   throw Error("native-loader/state.json: " + message);
@@ -70,7 +73,7 @@ bool step_area(std::string_view path) {
 
 std::string checked_path(const Value& value, std::string_view what, bool (*allowed)(std::string_view)) {
   const std::string& p = value.as_string(what);
-  if (const std::string why = paths::problem(p); !why.empty()) fail(std::string(what) + " \"" + p + "\": " + why);
+  if (const std::string why = paths::problem(p, kMaxPathBytes); !why.empty()) fail(std::string(what) + " \"" + p + "\": " + why);
   if (!allowed(p)) fail(std::string(what) + " \"" + p + "\" is outside the folders the loader manages");
   return p;
 }

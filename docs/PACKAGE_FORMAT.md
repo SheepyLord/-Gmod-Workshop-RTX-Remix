@@ -125,3 +125,8 @@ with a space or ends with `.` or a space; no Windows device names in any folder 
 (`con`, `nul.txt`, `com0`-`com9`, `lpt0`-`lpt9`, superscript ports, `conin$`, `conout$`); no `~`
 followed by a digit (8.3 short names). These close escapes from the target folder and aliases of
 other files on Windows.
+
+The paths the loader deploys or loads must also be **ASCII**: the `files` keys, `root_files`
+paths, `remix.entry` and the conf layers. NTFS compares names without case for every letter, but
+the loader only for ASCII letters, so a non-ASCII name spelled two ways would make the loader's own
+file look like someone else's. Added on 2026-10-27, before any package used schema 1.

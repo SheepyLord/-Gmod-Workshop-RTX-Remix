@@ -72,7 +72,9 @@ The deployer's journal, implemented by `nl::journal` (`loader/core/src/journal.c
 <game root> --json` prints it. Written only by the deployer, atomically (temporary file, flush,
 rename). It is parsed as strictly as a manifest (unknown keys, unsafe paths and paths outside the
 folders the loader manages are errors), and a journal that does not parse stops every deployer
-command, which then changes nothing.
+command, which then changes nothing. Its paths follow the path rules of
+[PACKAGE_FORMAT.md](PACKAGE_FORMAT.md), with one difference: they may be up to 4,096 bytes long,
+because the loader puts its own folders in front of package paths.
 
 | Key | Meaning |
 |---|---|
@@ -82,9 +84,9 @@ command, which then changes nothing.
 | `current` | the deployed generation, or `null`: `generation` (its number), `packages`, `files` |
 | `previous` | the generation `rollback` returns to, or `null`; same shape |
 | `previous_backup` | `native-loader/backup/<gen>`: where the previous generation's root files are that `current` replaced or removed; empty if none |
-| `retired` | files waiting to be deleted (each only while it still matches its record) |
+| `retired` | files waiting to be deleted, each only while it still matches its record; one that cannot be deleted yet (read-only, open elsewhere) stays for the next run |
 | `dirs` | folders the loader created; each is removed once empty |
-| `hold` | after a rollback, the packages it rolled back from (`id@manifest_sha256`); apply leaves the install as it is while the plan names exactly these. `null`: no hold |
+| `hold` | after a rollback, the packages it rolled back from (`id@manifest_sha256`). While the plan (before any package is re-planned as broken) names exactly these, apply deploys nothing; the hold ends when it names anything else. `null`: no hold |
 | `pending` | a transaction that has not committed, or `null`: `transaction`, `action` (`apply`, `rollback`), `steps` (`make_dir` / `move`, each with its hash); the next run undoes it |
 
 A package record: `id`, `version`, `manifest_sha256` (the identity of that package version),

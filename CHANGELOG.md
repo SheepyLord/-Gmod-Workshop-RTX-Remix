@@ -29,14 +29,42 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - `tools/poc_deploy_check.ps1`: the M3 acceptance run on the PoC without starting the game. It
   passed on 2026-10-27: 3,113 entries identical afterwards, 2,877 depot files OK.
 - Tests:
-  - 25 new `nl_tests` cases (87 in all);
+  - 32 new `nl_tests` cases (94 in all);
   - fault injection at every file-system change of a first deployment, an upgrade, a rollback and
     an uninstall: interrupted and failed in process, and killed for real (`nl_fault_host`,
-    `deploy_faults.py`; 160 kill points);
+    `deploy_faults.py`; 174 kill points);
   - `nlctl_e2e_deploy`;
   - `nlctl_uninstall_loader`: `uninstall-loader.ps1` in synthetic game folders.
 - Docs: ADR 0007; the `state.json` schema in `ON_DISK_LAYOUT.md`; the deployment section of
   `ARCHITECTURE.md`; M3 checks in `TESTING.md`; measurements in `RESEARCH.md` section 9.
+
+### Fixed (M3, after an independent review, before the merge)
+
+Each fix comes with a test; ADR 0007 records the resulting rules.
+
+- Recovery could move a whole new payload folder back into staging, which is then deleted, taking a
+  file someone had put into that folder with it. Payload files are now moved one by one, each with
+  its hash.
+- A file the loader had adopted, then put back itself after the user deleted it, stayed "adopted"
+  across a rollback. A later clean-up could then delete a file the journal still listed. It now
+  belongs to the loader.
+- Paths the deployer builds can be longer than the 1,024 bytes a package path may have, which made
+  `state.json` unreadable. The journal now accepts up to 4,096 bytes.
+- A retired file that could not be deleted (read-only, open elsewhere) made every command fail. It
+  now stays listed with a note, and uninstall keeps its journal until it is gone.
+- The loader folds case only for ASCII, but NTFS ignores case for every letter, so a renamed
+  non-ASCII path broke ownership. Deployed package paths must now be ASCII.
+- An undo skipped because a file had changed left its backup copy behind, untracked for good. Such
+  copies are now retired, and folders that cannot be removed stay listed.
+- A run that changed nothing did not end a rollback's hold, and a package that was broken at check
+  time could lift it. The hold is now compared with the plan before re-planning, and ends, recorded
+  in the journal, once the plan differs.
+- Putting back a deployed file that had gone missing left the previous generation claiming a copy
+  that did not exist, so rollback always refused.
+- Links were refused only for new targets. Removals, rollback moves, clean-up and undo now refuse
+  them too.
+- Test-found: the running-game check took a `gmod.exe` that exited during the scan for a running
+  one. It now ignores processes that are gone.
 
 ### Changed (M3)
 

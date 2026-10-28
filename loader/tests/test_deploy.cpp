@@ -582,6 +582,186 @@ TEST_CASE("deploy: uninstall returns the folder to how it was before the first d
   CHECK(nl::deploy::uninstall(g.root).outcome == "unchanged");
 }
 
+namespace {
+
+const nl::journal::File* record_of(const nl::journal::Generation& g, const std::string& path) {
+  for (const nl::journal::File& f : g.files) {
+    if (f.path == path) return &f;
+  }
+  return nullptr;
+}
+
+const Pkg kLua = {"test-lua", "1.0.0", "[\"lua-binary-module\"]",
+                  ", \"root_files\": [{\"path\": \"garrysmod/lua/bin/gmcl_test_win64.dll\"}]",
+                  {{"native/root/garrysmod/lua/bin/gmcl_test_win64.dll", "MZ-module"}}};
+
+}  // namespace
+
+TEST_CASE("deploy: a file the loader adopted and later put back itself is the loader's after a rollback") {
+  Game g("deploy_adopt_rollback");
+  const std::string module = "garrysmod/lua/bin/gmcl_test_win64.dll";
+  write_file(g.root / "garrysmod" / "lua" / "bin" / "gmcl_test_win64.dll", "MZ-module");  // the user's own copy
+  g.add("lua.gma", kLua);
+  g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  g.allow({"garrysmod/addons/lua.gma"});
+  REQUIRE(apply_at(g.root).ok());  // adopts the module
+  REQUIRE(record_of(*g.journal().current, module)->adopted);
+  sfs::remove(g.root / "garrysmod" / "lua" / "bin" / "gmcl_test_win64.dll");  // the user deletes it
+  g.allow({"garrysmod/addons/lua.gma", "garrysmod/addons/mods.gma"});
+  REQUIRE(apply_at(g.root).ok());  // the loader places the module itself
+  REQUIRE(nl::deploy::rollback(g.root).ok());
+  const auto rolled_back = g.journal();
+  const nl::journal::File* back = record_of(*rolled_back.current, module);
+  REQUIRE(back != nullptr);
+  CHECK(!back->adopted);  // the file in place is the one the loader put there
+  // A later deployment drops the generation that placed it; the file must stay, as listed.
+  g.add("mods.gma", mods("1.1.0", {{kMod + "mod.usda", "#usda v2\n"}}));
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  CHECK(g.read(module) == "MZ-module");
+  CHECK(nl::deploy::status(g.root, true).drift.empty());
+}
+
+TEST_CASE("deploy: a retired file that cannot be deleted does not stop later commands") {
+  Game g("deploy_readonly");
+  version_1(g);
+  REQUIRE(apply_at(g.root).ok());
+  version_2(g);
+  REQUIRE(apply_at(g.root).ok());
+  // A third version retires the first one; one of its files is read-only.
+  const std::string locked = "native-loader/packages/test-runtime/1.0.0_1/runtime/d3d9.dll";
+  REQUIRE(SetFileAttributesW(nl::fs::join(g.root, locked).c_str(), FILE_ATTRIBUTE_READONLY));
+  g.add("mods.gma", mods("1.2.0", {{kMod + "mod.usda", "#usda v3\n"}}));
+  const auto r = apply_at(g.root);
+  CHECK(r.outcome == "deployed");
+  CHECK(mentions(r.notes, "read-only"));
+  CHECK(g.has(locked));
+  CHECK(!g.has("native-loader/packages/test-runtime/1.0.0_1/config"));
+  CHECK(g.journal().retired.size() == 1);
+  nl::fs::Counting counting(nl::fs::win32());
+  const auto again = apply_at(g.root, &counting);
+  CHECK(again.outcome == "unchanged");
+  CHECK(counting.operations() == 0);
+  CHECK(mentions(again.notes, "read-only"));
+  REQUIRE(SetFileAttributesW(nl::fs::join(g.root, locked).c_str(), FILE_ATTRIBUTE_NORMAL));
+  CHECK(apply_at(g.root).outcome == "unchanged");
+  CHECK(!g.has("native-loader/packages/test-runtime/1.0.0_1"));
+  CHECK(g.journal().retired.empty());
+}
+
+TEST_CASE("deploy: a rollback's hold ends when the plan moves on, and a broken package does not lift it") {
+  Game g("deploy_hold");
+  version_1(g);
+  REQUIRE(apply_at(g.root).ok());
+  version_2(g);
+  REQUIRE(apply_at(g.root).ok());
+  REQUIRE(nl::deploy::rollback(g.root).ok());
+  // Version 2's mods package cannot be deployed now (someone else's file is at one of its targets);
+  // the plan still names version 2, so the rollback stays held instead of deploying the rest of it.
+  write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "textures" / "b.dds", "someone else's");
+  CHECK(apply_at(g.root).outcome == "held");
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");
+  sfs::remove_all(g.root / "rtx-remix" / "mods" / "test_mod" / "textures");
+  // The plan names what is deployed: nothing to do, but the hold ends.
+  version_1(g);
+  const auto same = apply_at(g.root);
+  CHECK(same.outcome == "unchanged");
+  CHECK(mentions(same.notes, "hold"));
+  CHECK(!g.journal().hold.has_value());
+  // So version 2 is deployed when the plan names it again.
+  version_2(g);
+  CHECK(apply_at(g.root).outcome == "deployed");
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v2\n");
+}
+
+TEST_CASE("deploy: an upgrade that puts back a deleted file still leaves a rollback that works") {
+  Game g("deploy_missing_upgrade");
+  version_1(g);
+  REQUIRE(apply_at(g.root).ok());
+  sfs::remove(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda");
+  version_2(g);
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v2\n");
+  const auto back = nl::deploy::rollback(g.root);
+  CHECK(back.outcome == "rolled-back");
+  CHECK(g.read(kModDir + "a.dds") == "A");
+  CHECK(!g.has(kModDir + "mod.usda"));  // it was gone before the upgrade, so the rollback does without it
+}
+
+TEST_CASE("deploy: recovery retires what it cannot put back and never takes someone else's file") {
+  Game g("deploy_recovery_leftovers");
+  using nl::journal::Step;
+  const std::string sha_old = nl::sha256::of("old");
+  const std::string sha_new = nl::sha256::of("MZ-new");
+  const std::string sha_mod = nl::sha256::of("new mod");
+  // An interrupted transaction 7: x.usda was moved aside and the new one placed, a payload file was
+  // placed; then, before the next run, the user edited x.usda and put a note into the new folder.
+  write_file(g.root / "rtx-remix" / "mods" / "m" / "x.usda", "edited by the user");
+  write_file(g.root / "native-loader" / "backup" / "7" / "rtx-remix" / "mods" / "m" / "x.usda", "old");
+  write_file(g.root / "native-loader" / "packages" / "p" / "1.0.0_7" / "runtime" / "d3d9.dll", "MZ-new");
+  write_file(g.root / "native-loader" / "packages" / "p" / "1.0.0_7" / "notes.txt", "mine");
+  sfs::create_directories(g.root / "native-loader" / "staging" / "7" / "0" / "payload" / "runtime");
+  sfs::create_directories(g.root / "native-loader" / "staging" / "7" / "0" / "root" / "rtx-remix" / "mods" / "m");
+  nl::journal::Journal j;
+  j.loader = "0.1.0";
+  j.next = 8;
+  nl::journal::Generation cur;
+  cur.number = 6;
+  cur.packages.push_back({"m", "1.0.0", std::string(64, 'a'), "local", "m.gma", "", std::nullopt});
+  cur.files.push_back({"rtx-remix/mods/m/x.usda", "m", sha_old, 3, 1, false});
+  j.current = cur;
+  j.dirs = {"rtx-remix", "rtx-remix/mods", "rtx-remix/mods/m"};
+  nl::journal::Pending pending{7, "apply", {}};
+  for (const char* dir : {"native-loader/backup", "native-loader/backup/7", "native-loader/backup/7/rtx-remix",
+                          "native-loader/backup/7/rtx-remix/mods", "native-loader/backup/7/rtx-remix/mods/m",
+                          "native-loader/packages", "native-loader/packages/p", "native-loader/packages/p/1.0.0_7",
+                          "native-loader/packages/p/1.0.0_7/runtime"}) {
+    pending.steps.push_back({Step::Op::make_dir, "", dir, ""});
+  }
+  pending.steps.push_back({Step::Op::move, "rtx-remix/mods/m/x.usda", "native-loader/backup/7/rtx-remix/mods/m/x.usda", sha_old});
+  pending.steps.push_back({Step::Op::move, "native-loader/staging/7/0/payload/runtime/d3d9.dll",
+                           "native-loader/packages/p/1.0.0_7/runtime/d3d9.dll", sha_new});
+  pending.steps.push_back({Step::Op::move, "native-loader/staging/7/0/root/rtx-remix/mods/m/x.usda", "rtx-remix/mods/m/x.usda", sha_mod});
+  j.pending = pending;
+  nl::journal::save(nl::fs::win32(), g.root, j);
+
+  const auto r = nl::deploy::recover(g.root);
+  CHECK(r.outcome == "recovered");
+  CHECK(g.read("rtx-remix/mods/m/x.usda") == "edited by the user");             // the user's edit stays
+  CHECK(!g.has("native-loader/backup"));                                       // the stranded copy is gone
+  CHECK(g.read("native-loader/packages/p/1.0.0_7/notes.txt") == "mine");       // the stranger's file stays
+  CHECK(!g.has("native-loader/packages/p/1.0.0_7/runtime"));                   // the loader's file and folder do not
+  CHECK(!g.has("native-loader/staging"));
+  const auto after = g.journal();
+  CHECK(!after.pending && after.retired.empty());
+  CHECK(std::find(after.dirs.begin(), after.dirs.end(), "native-loader/packages/p/1.0.0_7") != after.dirs.end());
+  CHECK(mentions(r.notes, "changed while a deployment was interrupted"));
+  sfs::remove(g.root / "native-loader" / "packages" / "p" / "1.0.0_7" / "notes.txt");
+  CHECK(nl::deploy::recover(g.root).ok());  // once empty, the folders it made go too
+  CHECK(!g.has("native-loader/packages/p"));
+}
+
+TEST_CASE("deploy: nothing is deleted through a junction that replaced a loader folder") {
+  Game g("deploy_junction_later");
+  version_1(g);
+  REQUIRE(apply_at(g.root).ok());
+  const sfs::path elsewhere = g.dir / "elsewhere";
+  sfs::create_directories(elsewhere);
+  sfs::copy(g.root / "rtx-remix" / "mods" / "test_mod", elsewhere, sfs::copy_options::recursive);
+  sfs::remove_all(g.root / "rtx-remix" / "mods" / "test_mod");
+  const std::string command = "cmd /c mklink /J \"" + (g.root / "rtx-remix" / "mods" / "test_mod").string() + "\" \"" +
+                              elsewhere.string() + "\" >nul";
+  if (std::system(command.c_str()) != 0) {
+    std::printf("  (skipped: could not create a junction)\n");
+    return;
+  }
+  const auto r = nl::deploy::uninstall(g.root);
+  CHECK(r.outcome == "removed");
+  CHECK(mentions(r.notes, "link"));
+  CHECK(sfs::exists(elsewhere / "mod.usda"));
+  CHECK(sfs::exists(elsewhere / "a.dds"));
+  sfs::remove(g.root / "rtx-remix" / "mods" / "test_mod");  // the junction, not its target
+}
+
 TEST_CASE("deploy faults: an upgrade interrupted before any change ends in exactly the old or the new state") {
   Game g("deploy_kill_upgrade");
   version_1(g);

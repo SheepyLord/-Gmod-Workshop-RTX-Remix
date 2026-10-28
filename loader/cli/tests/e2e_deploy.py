@@ -241,7 +241,13 @@ def main():
         finally:
             game_process.kill()
             game_process.wait()
-    gmod.write_bytes(b'')
+    for attempt in range(50):  # Windows may hold the image file for a moment after the process ends
+        try:
+            gmod.write_bytes(b'')
+            break
+        except PermissionError:
+            time.sleep(0.1)
+    check(gmod.read_bytes() == b'', 'could not put the placeholder gmod.exe back')
 
     # A journal that does not parse stops every command with exit code 2 and changes nothing.
     saved = state.read_bytes()

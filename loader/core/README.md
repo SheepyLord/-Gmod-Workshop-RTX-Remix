@@ -15,7 +15,7 @@ manifests, discovery and planning; M3 added deployment.
 | `include/nl/json.h`, `src/json.cpp` | Strict JSON parser (`json::parse`, `json::Value`) and `json::quote` |
 | `include/nl/utf8.h`, `src/utf8.cpp` | UTF-8 validation shared by the JSON parser and the path rules |
 | `include/nl/paths.h`, `src/paths.cpp` | Path rules for anything a package names, and the game-root areas packages may write to |
-| `include/nl/manifest.h`, `src/manifest.cpp` | Manifest schema 1: strict `parse`, `check_contents`, SemVer `parse_version` / `compare` ([docs/PACKAGE_FORMAT.md](../../docs/PACKAGE_FORMAT.md)) |
+| `include/nl/manifest.h`, `src/manifest.cpp` | Manifest schema 1: strict `parse` (paths the loader deploys must also be ASCII), `check_contents`, SemVer `parse_version` / `compare` ([docs/PACKAGE_FORMAT.md](../../docs/PACKAGE_FORMAT.md)) |
 | `include/nl/package.h`, `src/package.cpp` | Package contents from a `.gma` or a development folder (links and reparse points refused), `Contents::extract` (wanted files streamed to a `Sink` with bounded memory), and `load` (manifest read, parsed and checked; `manifest_sha256` of its bytes) |
 | `include/nl/vdf.h`, `src/vdf.cpp` | Valve KeyValues reader (Steam `.vdf`/`.acf`, GMod's `addonnomount.txt`) |
 | `include/nl/config.h`, `src/config.cpp` | `native-loader\config.json` schema 1: the allowlist and switches; strict, unknown keys rejected |
@@ -76,6 +76,9 @@ The full design is [ADR 0007](../../docs/decisions/0007-transactional-deployment
 - Only files the journal records are replaced or removed, and only after a full SHA-256 shows they
   are unchanged. Someone else's file blocks its package (or is adopted if identical). Changed files
   are left and reported. Folders go only when empty.
+- Nothing is placed, moved or deleted through a link anywhere below the game folder.
+- Clean-up never stops a command: what it cannot delete now stays listed, with a note, for the next
+  run; uninstall keeps the journal until everything is gone.
 - A run with nothing to do makes no change at all.
 
 ## Rules for code here

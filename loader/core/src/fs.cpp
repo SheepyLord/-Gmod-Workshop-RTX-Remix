@@ -205,6 +205,7 @@ Stat stat(const Path& path) {
   s.exists = true;
   s.directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
   s.link = (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+  s.readonly = (data.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0;
   s.size = std::uint64_t{data.nFileSizeHigh} << 32 | data.nFileSizeLow;
   s.mtime = std::uint64_t{data.ftLastWriteTime.dwHighDateTime} << 32 | data.ftLastWriteTime.dwLowDateTime;
   return s;

@@ -39,9 +39,9 @@ std::string component_problem(std::string_view c) {
 
 }  // namespace
 
-std::string problem(std::string_view path) {
+std::string problem(std::string_view path, std::size_t max_bytes) {
   if (path.empty()) return "empty path";
-  if (path.size() > kMaxPathBytes) return "longer than " + std::to_string(kMaxPathBytes) + " bytes";
+  if (path.size() > max_bytes) return "longer than " + std::to_string(max_bytes) + " bytes";
   if (!utf8::valid(path)) return "not valid UTF-8";
   for (const char ch : path) {
     const auto c = static_cast<unsigned char>(ch);

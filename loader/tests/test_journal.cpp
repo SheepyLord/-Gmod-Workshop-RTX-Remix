@@ -109,6 +109,18 @@ TEST_CASE("journal: invalid, unsafe or out-of-bounds journals are refused") {
   for (const std::string& text : bad) CHECK_THROWS_AS(nl::journal::parse(text), nl::journal::Error);
 }
 
+TEST_CASE("journal: the loader's own paths may be longer than a package path, but not without limit") {
+  std::string deep = "native-loader/backup/9/rtx-remix/mods/m";
+  for (int i = 0; i < 6; ++i) deep += "/" + std::string(250, static_cast<char>('a' + i));
+  REQUIRE(deep.size() > 1024);
+  nl::journal::Journal j = sample();
+  j.retired.push_back({deep, "mods", kSha, 1, 2, false});
+  CHECK(nl::journal::parse(nl::journal::serialize(j)).retired.back().path == deep);
+  for (int i = 0; i < 12; ++i) deep += "/" + std::string(250, 'z');
+  j.retired.back().path = deep;
+  CHECK_THROWS_AS(nl::journal::parse(nl::journal::serialize(j)), nl::journal::Error);
+}
+
 TEST_CASE("journal: save and load through the game folder") {
   const auto dir = nl::test::scratch_dir("journal_files");
   std::filesystem::create_directories(dir / "native-loader");

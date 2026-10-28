@@ -13,8 +13,10 @@ namespace nl::paths {
 inline constexpr std::size_t kMaxPathBytes = 1024;
 inline constexpr std::size_t kMaxComponentBytes = 255;
 
-// Empty if `path` is a safe relative path, otherwise the reason it is not.
-std::string problem(std::string_view path);
+// Empty if `path` is a safe relative path, otherwise the reason it is not. `max_bytes` limits the
+// length: kMaxPathBytes for anything a package names; the journal also holds the loader's own
+// paths, which put a folder of the loader's in front of a package path.
+std::string problem(std::string_view path, std::size_t max_bytes = kMaxPathBytes);
 inline bool is_safe(std::string_view path) { return problem(path).empty(); }
 
 // ASCII-lowercased copy. Windows compares paths case-insensitively; non-ASCII bytes are kept.

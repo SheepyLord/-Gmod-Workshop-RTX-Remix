@@ -132,7 +132,9 @@ bool game_running(const Path& root) {
     if (CompareStringOrdinal(entry.szExeFile, -1, L"gmod.exe", -1, TRUE) != CSTR_EQUAL) continue;
     const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ProcessID);
     if (!process) {
-      running = true;
+      // Access denied: it cannot be told where it runs from, so assume here. Anything else: it has
+      // exited since the snapshot.
+      if (GetLastError() == ERROR_ACCESS_DENIED) running = true;
       continue;
     }
     std::wstring image(32768, L'\0');
@@ -143,7 +145,8 @@ bool game_running(const Path& root) {
         if (CompareStringOrdinal(image.c_str(), -1, target.c_str(), -1, TRUE) == CSTR_EQUAL) running = true;
       }
     } else {
-      running = true;
+      DWORD code = 0;
+      if (GetExitCodeProcess(process, &code) && code == STILL_ACTIVE) running = true;  // alive, place unknown
     }
     CloseHandle(process);
   }
@@ -193,15 +196,44 @@ void list_packages(Report& report, const std::vector<journal::Package>& packages
 }
 
 // Undoes one step if it happened. Idempotent, so recovery can itself be interrupted and run again.
+// It never follows a link and never moves a file other than the one the step moved (its hash).
+// What it cannot put back stays known to the journal, so clean-up removes it later.
 void undo(Run& run, const Step& step) {
   if (step.op == Step::Op::make_dir) {
-    if (fs::empty_directory(run.at(step.to))) run.disk.remove_directory(run.at(step.to));
+    const Path dir = run.at(step.to);
+    const fs::Stat s = fs::stat(dir);
+    if (!s.exists || !s.directory || s.link) return;
+    if (fs::list(dir).empty()) {
+      run.disk.remove_directory(dir);
+    } else {
+      add_dir(run.journal.dirs, step.to);  // something else is in it now: removed once empty
+      sort_dirs(run.journal.dirs);
+    }
     return;
+  }
+  for (const std::string* path : {&step.from, &step.to}) {
+    try {
+      fs::refuse_links(run.root, *path);
+    } catch (const fs::Error& e) {
+      run.note(std::string("an interrupted change was not undone: ") + e.what());
+      return;
+    }
   }
   const Path from = run.at(step.from);
   const Path to = run.at(step.to);
-  if (fs::stat(from).exists || !fs::stat(to).exists) return;  // never moved, or nothing to move back
-  if (!step.sha256.empty() && fs::hash_file(to).sha256 != step.sha256) {
+  const fs::Stat at_to = fs::stat(to);
+  if (!at_to.exists) return;  // never moved
+  if (fs::stat(from).exists) {
+    // Moved, and something else has taken its old place since. A copy the step put into the
+    // loader's own folders (a file moved aside) is retired: deleted once clean-up finds it unchanged.
+    if (!step.sha256.empty() && !at_to.directory && paths::within(step.to, kLoaderDir) &&
+        fs::hash_file(to).sha256 == step.sha256) {
+      run.journal.retired.push_back({step.to, "", step.sha256, at_to.size, at_to.mtime, false});
+      run.note(step.from + " changed while a deployment was interrupted; the loader's earlier copy of it is deleted");
+    }
+    return;
+  }
+  if (!step.sha256.empty() && (at_to.directory || fs::hash_file(to).sha256 != step.sha256)) {
     run.note(step.to + ": left in place while undoing an interrupted change; it is not the file the loader moved there");
     return;
   }
@@ -218,44 +250,88 @@ void recover_pending(Run& run) {
   run.report.recovered = true;
 }
 
+bool through_link(const Run& run, std::string_view relative) {
+  try {
+    fs::refuse_links(run.root, relative);
+    return false;
+  } catch (const fs::Error&) {
+    return true;
+  }
+}
+
 // Clean-up: the staging folder, retired files that are still unchanged, and the empty folders the
-// loader made. Each part can be interrupted and redone.
-void collect(Run& run) {
-  if (fs::stat(run.at(kStaging)).exists) fs::remove_tree(run.disk, run.at(kStaging));
-  bool changed = false;
-  for (const File& f : run.journal.retired) {
-    const Path file = run.at(f.path);
-    if (!fs::stat(file).exists) continue;
-    if (unchanged(file, f, true)) {
-      run.disk.remove_file(file);
-      run.report.changes.push_back({"delete", f.path});
-    } else {
-      run.note(f.path + ": not deleted, because it changed after the loader placed it");
+// loader made. Each part can be interrupted and redone. Something that cannot be removed now (open
+// in another program, read-only) stays listed and is tried again by the next run, so clean-up never
+// stops a command; only a journal that cannot be written does. Returns false if something stayed.
+bool collect(Run& run) {
+  bool complete = true;
+  if (fs::stat(run.at(kStaging)).exists) {
+    try {
+      fs::remove_tree(run.disk, run.at(kStaging));
+    } catch (const fs::Error& e) {
+      run.note(std::string("the staging folder could not be removed yet (") + e.what() + "); the next run tries again");
+      complete = false;
     }
   }
-  if (!run.journal.retired.empty()) {
-    run.journal.retired.clear();
-    changed = true;
+  std::vector<File> retired;  // what stays to be deleted
+  for (const File& f : run.journal.retired) {
+    const Path file = run.at(f.path);
+    if (through_link(run, f.path)) {
+      run.note(f.path + ": not deleted, because its path now passes through a link");
+      continue;
+    }
+    try {
+      const fs::Stat s = fs::stat(file);
+      if (!s.exists) continue;
+      if (!unchanged(file, f, true)) {
+        run.note(f.path + ": not deleted, because it changed after the loader placed it");
+      } else if (s.readonly) {
+        run.note(f.path + ": not deleted, because it is read-only; clear the flag and the next run deletes it");
+        retired.push_back(f);
+        complete = false;
+      } else {
+        run.disk.remove_file(file);
+        run.report.changes.push_back({"delete", f.path});
+      }
+    } catch (const fs::Error& e) {
+      run.note(f.path + ": could not be deleted yet (" + e.what() + "); the next run tries again");
+      retired.push_back(f);
+      complete = false;
+    }
   }
+  bool changed = retired.size() != run.journal.retired.size();
+  run.journal.retired = std::move(retired);
   std::vector<std::string> dirs = run.journal.dirs;
   std::sort(dirs.begin(), dirs.end(), [](const std::string& a, const std::string& b) { return fold(a) > fold(b); });  // children first
   std::vector<std::string> kept;
   for (const std::string& dir : dirs) {
     const Path path = run.at(dir);
-    const fs::Stat s = fs::stat(path);
-    if (!s.exists || !s.directory || s.link) {
-      changed = true;  // gone, or no longer the loader's folder
-    } else if (fs::list(path).empty()) {
-      run.disk.remove_directory(path);
-      changed = true;
-    } else {
+    if (through_link(run, dir)) {
+      changed = true;  // a link now: no longer the loader's folder
+      continue;
+    }
+    try {
+      const fs::Stat s = fs::stat(path);
+      if (!s.exists || !s.directory) {
+        changed = true;  // gone, or replaced by a file
+      } else if (fs::list(path).empty()) {
+        run.disk.remove_directory(path);
+        changed = true;
+      } else {
+        kept.push_back(dir);
+      }
+    } catch (const fs::Error& e) {
+      run.note(dir + ": folder could not be removed yet (" + e.what() + "); the next run tries again");
       kept.push_back(dir);
+      complete = false;
     }
   }
-  if (!changed) return;
-  sort_dirs(kept);
-  run.journal.dirs = std::move(kept);
-  journal::save(run.disk, run.root, run.journal);
+  if (changed) {
+    sort_dirs(kept);
+    run.journal.dirs = std::move(kept);
+    journal::save(run.disk, run.root, run.journal);
+  }
+  return complete;
 }
 
 // Clean-up after a commit: a failure there does not undo the deployment, the next run finishes it.
@@ -585,6 +661,7 @@ struct RootPlan {
   Act act = Act::install;
   std::uint64_t mtime = 0;  // adopt: the file's time
   bool missing = false;     // drop: the file is gone
+  bool linked = false;      // drop: its path passes through a link now
 };
 
 // What happens to one root file of the plan. Throws PackageProblem if its package cannot place it.
@@ -661,8 +738,9 @@ std::vector<RootPlan> check_roots(const Run& run, const std::vector<Planned>& pl
       rp.path = f.path;
       rp.current = &f;
       rp.info = {f.size, f.sha256};
-      rp.missing = !fs::stat(run.at(f.path)).exists;
-      rp.act = !f.adopted && unchanged(run.at(f.path), f, true) ? Act::remove : Act::drop;
+      rp.linked = through_link(run, f.path);
+      rp.missing = !rp.linked && !fs::stat(run.at(f.path)).exists;
+      rp.act = !rp.linked && !f.adopted && unchanged(run.at(f.path), f, true) ? Act::remove : Act::drop;
       out.push_back(std::move(rp));
     }
   }
@@ -678,6 +756,8 @@ std::vector<std::string> notes_for(const std::vector<RootPlan>& roots) {
                                     : ": changed after the loader placed it; left as it is"));
     } else if (r.act == Act::skip) {
       notes.push_back(r.path + ": already there; the existing file is kept (create-only)");
+    } else if (r.act == Act::drop && r.linked) {
+      notes.push_back(r.path + ": not removed, because its path now passes through a link; the loader no longer tracks it");
     } else if (r.act == Act::drop && !r.current->adopted) {
       notes.push_back(r.path + (r.missing ? ": already gone" : ": left in place; it changed after the loader placed it"));
     }
@@ -719,6 +799,16 @@ void ensure_space(const Run& run, std::uint64_t needed) {
   }
 }
 
+// The active packages of a plan as a comparable set, like package_set() for a generation.
+std::vector<std::string> plan_set(const planner::Plan& plan) {
+  std::vector<std::string> out;
+  for (const planner::Decision& d : plan.decisions) {
+    if (d.active && d.item.package) out.push_back(d.item.package->manifest.id + "@" + d.item.package->manifest_sha256);
+  }
+  std::sort(out.begin(), out.end());
+  return out;
+}
+
 void report_skipped(Report& report, const planner::Plan& plan) {
   for (const planner::Decision& d : plan.decisions) {
     if (d.active) continue;
@@ -727,8 +817,10 @@ void report_skipped(Report& report, const planner::Plan& plan) {
   }
 }
 
-// One planning pass of apply. Throws Broken to have a package re-planned as broken.
-void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedByPackage& staged) {
+// One planning pass of apply. Throws Broken to have a package re-planned as broken. `release_hold`:
+// a rollback's hold is in place and the plan no longer names the packages it came from, so the hold
+// ends with this run, which therefore writes the journal even when it changes nothing else.
+void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedByPackage& staged, bool release_hold) {
   std::vector<Planned> planned;
   for (std::size_t i = 0; i < plan.decisions.size(); ++i) {
     if (!plan.decisions[i].active) continue;
@@ -746,13 +838,6 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   std::vector<std::string> notes = notes_for(roots);
 
   const std::vector<std::string> wanted = package_set(records);
-  if (run.journal.hold && wanted == *run.journal.hold) {
-    run.report.outcome = "held";
-    run.report.generation = cur.number;
-    list_packages(run.report, cur.packages);
-    run.note("held after a rollback: the packages it rolled back from are not deployed again until one of them changes");
-    return;
-  }
   bool work = std::any_of(roots.begin(), roots.end(), [](const RootPlan& r) {
     return r.act == Act::install || r.act == Act::replace || r.act == Act::remove || r.act == Act::adopt || r.act == Act::drop;
   });
@@ -765,6 +850,11 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
     run.report.generation = cur.number;
     list_packages(run.report, cur.packages);
     append(run.report.notes, notes);
+    if (release_hold && !run.dry_run) {
+      run.journal.hold.reset();
+      journal::save(run.disk, run.root, run.journal);
+      run.note("the hold after the rollback has ended: the planned packages are no longer the ones it rolled back from");
+    }
     return;
   }
 
@@ -818,7 +908,8 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
     }
   }
 
-  // The steps: folders, files moved aside (kept for rollback), new payload folders, new files.
+  // The steps: folders, files moved aside (kept for rollback), then the new files, payload files
+  // included, each moved on its own with its hash so that undoing never moves anything else.
   const std::string backup = std::string(kBackup) + "/" + std::to_string(tx);
   std::map<std::string, std::string> make;  // folded -> path; parents sort before their children
   const auto parents_of = [&](std::string_view file) {
@@ -843,8 +934,14 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   }
   for (const Planned& p : planned) {
     if (!p.stage_payload) continue;
-    parents_of(p.record.payload);
-    payload_moves.push_back({Step::Op::move, staging_base(tx, p.index) + "/payload", p.record.payload, ""});
+    const StagedFiles& done = staged.at(p.index);
+    for (const auto& file : p.package->manifest.files) {
+      if (!paths::within(file.first, "native/payload")) continue;
+      const Staged& s = done.at(fold(file.first));
+      const std::string to = p.record.payload + "/" + file.first.substr(kPayloadPrefix.size());
+      parents_of(to);  // the payload folder and its subfolders, which the journal then owns
+      payload_moves.push_back({Step::Op::move, s.from, to, s.sha256});
+    }
   }
   std::vector<Step> steps;
   for (const auto& dir : make) steps.push_back({Step::Op::make_dir, "", dir.second, ""});
@@ -889,6 +986,9 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       case Act::replace: {
         const Staged& s = staged.at(planned[r.planned].index).at(fold(r.package_path));
         next_gen.files.push_back({r.path, planned[r.planned].record.id, s.sha256, s.size, s.mtime, false});
+        // The loader's earlier copy was gone, so nothing was kept: the previous generation must not
+        // claim it, or a rollback could never be done.
+        if (r.act == Act::install && r.current && !r.current->adopted) left.insert(fold(r.path));
         break;
       }
       case Act::drop:
@@ -919,16 +1019,6 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   next.hold.reset();
   next.pending.reset();
   for (const auto& dir : make) add_dir(next.dirs, dir.second);
-  for (const Planned& p : planned) {
-    if (!p.stage_payload) continue;
-    add_dir(next.dirs, p.record.payload);
-    for (const File& f : next.current->files) {
-      if (!paths::within(f.path, p.record.payload)) continue;
-      for (const std::string& dir : ancestors(f.path)) {
-        if (dir.size() > p.record.payload.size() && paths::within(dir, p.record.payload)) add_dir(next.dirs, dir);
-      }
-    }
-  }
   sort_dirs(next.dirs);
   append(next.retired, retired_after(run.journal, steps, next, left));
 
@@ -991,6 +1081,10 @@ void roll_back(Run& run) {
     const auto theirs = prev_roots.find(key);
     if (theirs != prev_roots.end() && theirs->second->sha256 == mine->sha256) continue;  // the same in both
     if (mine->adopted) continue;  // not the loader's: stays where it is
+    if (through_link(run, mine->path)) {
+      refuse(run, mine->path + ": its path now passes through a link, so the rollback does not move it");
+      return;
+    }
     if (!unchanged(run.at(mine->path), *mine, true)) {
       if (fs::stat(run.at(mine->path)).exists) run.note(mine->path + ": left in place; it changed after the loader placed it");
       left.insert(key);
@@ -1008,6 +1102,10 @@ void roll_back(Run& run) {
     if (mine != cur_roots.end() && mine->second->sha256 == theirs->sha256) continue;  // in place
     if (theirs->adopted) continue;  // not the loader's; checked below
     const std::string from = j.previous_backup.empty() ? std::string() : j.previous_backup + "/" + theirs->path;
+    if (!from.empty() && (through_link(run, from) || through_link(run, theirs->path))) {
+      refuse(run, theirs->path + ": its path, or its kept copy's, now passes through a link, so the rollback does not restore it");
+      return;
+    }
     if (from.empty() || !unchanged(run.at(from), *theirs, true)) {
       refuse(run, "the kept copy of " + theirs->path + " is missing or changed, so the previous generation cannot be restored");
       return;
@@ -1023,6 +1121,17 @@ void roll_back(Run& run) {
 
   Generation target = prev;
   target.number = tx;
+  // A file the previous generation adopted that the current one placed itself (it had gone, and
+  // the loader put it back) belongs to the loader now: restored as the loader's, not as adopted.
+  for (File& f : target.files) {
+    if (!f.adopted) continue;
+    const auto placed = cur_roots.find(fold(f.path));
+    if (placed != cur_roots.end() && !placed->second->adopted && placed->second->sha256 == f.sha256) {
+      const std::string package = f.package;
+      f = *placed->second;
+      f.package = package;
+    }
+  }
   std::erase_if(target.files, [&](const File& f) {
     if (!f.adopted || unchanged(run.at(f.path), f, false)) return false;
     run.note(f.path + ": no longer there as it was; the restored generation does without it");
@@ -1091,13 +1200,18 @@ void remove_all(Run& run) {
     run.journal = std::move(next);
   }
   try {
-    if (had_journal) {
-      collect(run);
-      for (const std::string& dir : run.journal.dirs) run.note(dir + ": folder kept; it holds files the loader did not place");
-      run.disk.remove_file(run.at(journal::kPath));
+    // The journal goes last, and only once nothing it lists is left to delete: until then it is
+    // what lets the next run finish the job.
+    if (had_journal && !collect(run)) {
+      run.note("not everything could be deleted yet; run uninstall again to finish");
+    } else {
+      if (had_journal) {
+        for (const std::string& dir : run.journal.dirs) run.note(dir + ": folder kept; it holds files the loader did not place");
+        run.disk.remove_file(run.at(journal::kPath));
+      }
+      lock.release();
+      if (fs::stat(run.at(kLock)).exists) run.disk.remove_file(run.at(kLock));
     }
-    lock.release();
-    if (fs::stat(run.at(kLock)).exists) run.disk.remove_file(run.at(kLock));
   } catch (const std::exception& e) {
     run.note(std::string("clean-up stopped (") + e.what() + "); run uninstall again to finish it");
   }
@@ -1137,12 +1251,29 @@ Report apply(const std::filesystem::path& root, std::vector<planner::Considered>
   return guarded(run, [&] {
     Lock lock;
     if (!begin(run, lock)) return;
+    // A rollback's hold is compared with the plan as it stands, before any package is re-planned as
+    // broken: a package that cannot be deployed must not turn a held set into one that is deployed.
+    const planner::Plan first = planner::make_plan(considered, config, loader);
+    bool release_hold = false;
+    if (run.journal.hold) {
+      if (plan_set(first) == *run.journal.hold) {
+        run.report.outcome = "held";
+        if (run.journal.current) {
+          run.report.generation = run.journal.current->number;
+          list_packages(run.report, run.journal.current->packages);
+        }
+        run.note("held after a rollback: the packages it rolled back from are not deployed again while the plan names them");
+        report_skipped(run.report, first);
+        return;
+      }
+      release_hold = true;
+    }
     const std::uint64_t tx = run.journal.next;
     StagedByPackage staged;  // kept across planning passes
     for (;;) {
       const planner::Plan plan = planner::make_plan(considered, config, loader);
       try {
-        deploy_plan(run, plan, tx, staged);
+        deploy_plan(run, plan, tx, staged, release_hold);
         report_skipped(run.report, plan);
         return;
       } catch (const Broken& broken) {
