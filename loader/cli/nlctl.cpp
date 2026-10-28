@@ -7,8 +7,11 @@
 #include "nl/gma.h"
 #include "nl/json.h"
 #include "nl/lzma.h"
+#include "nl/config.h"
+#include "nl/discovery.h"
 #include "nl/manifest.h"
 #include "nl/package.h"
+#include "nl/planner.h"
 
 #include <windows.h>
 
@@ -318,6 +321,63 @@ int cmd_manifest(const fs::path& location, bool json) {
   }
 }
 
+// What the bootstrap would do at start-up, read-only: config, discovery, package loading, plan.
+int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir, bool json) {
+  const nl::config::Config config = nl::config::load(game_root);
+  const auto env = nl::discovery::environment_for(game_root, steam_dir);
+  const auto plan = nl::planner::make_plan(nl::planner::consider(nl::discovery::discover(config, env)), config,
+                                           *nl::manifest::parse_version(nl::version()));
+  const auto* runtime = plan.runtime();
+  if (json) {
+    std::string out = "{\n  \"game_root\": " + nl::json::quote(utf8(game_root));
+    out += ",\n  \"config\": {\"from_file\": " + std::string(config.from_file ? "true" : "false") +
+           ", \"enabled\": " + (config.enabled ? "true" : "false") + ", \"remix_enabled\": " +
+           (config.remix_enabled ? "true" : "false") + ", \"allowlisted\": " +
+           std::to_string(config.workshop.size() + config.local.size() + config.dev_folders.size()) + "}";
+    out += ",\n  \"workshop_content\": " + (env.workshop_content ? nl::json::quote(utf8(*env.workshop_content)) : "null");
+    out += ",\n  \"disabled_workshop\": " + std::to_string(env.disabled_workshop.size());
+    out += ",\n  \"runtime\": " + (runtime ? nl::json::quote(runtime->item.package->manifest.id) : "null");
+    out += ",\n  \"decisions\": [";
+    for (std::size_t i = 0; i < plan.decisions.size(); ++i) {
+      const auto& d = plan.decisions[i];
+      const auto& c = d.item.candidate;
+      out += (i ? ",\n    " : "\n    ");
+      out += "{\"source\": \"" + std::string(nl::discovery::source_name(c.source)) + "\", \"label\": " +
+             nl::json::quote(c.label) + ", \"location\": " + (c.location.empty() ? "null" : nl::json::quote(utf8(c.location))) +
+             ", \"active\": " + (d.active ? "true" : "false") + ", \"activate_runtime\": " +
+             (d.activate_runtime ? "true" : "false") + ", \"reason\": " + nl::json::quote(d.reason) +
+             ", \"time_updated\": " + (c.time_updated ? std::to_string(*c.time_updated) : "null") + ", \"package\": ";
+      if (d.item.package) {
+        const auto& m = d.item.package->manifest;
+        std::vector<std::string> kinds;
+        for (const auto kind : m.kinds) kinds.emplace_back(nl::manifest::kind_name(kind));
+        out += "{\"id\": " + nl::json::quote(m.id) + ", \"version\": " + nl::json::quote(m.version.text) +
+               ", \"kinds\": " + string_array_json(kinds) + "}}";
+      } else {
+        out += "null}";
+      }
+    }
+    out += plan.decisions.empty() ? "]\n}\n" : "\n  ]\n}\n";
+    print(out);
+    return kOk;
+  }
+  print("game root    " + utf8(game_root) + "\nconfig       " +
+        (config.from_file ? std::string("native-loader/config.json") : std::string("none (defaults: nothing allowlisted)")) +
+        (config.enabled ? "" : ", loader DISABLED") + "\nworkshop     " +
+        (env.workshop_content ? utf8(*env.workshop_content) : std::string("not found")) + "\n");
+  for (const auto& d : plan.decisions) {
+    const auto& c = d.item.candidate;
+    std::string line = (d.active ? "ACTIVE  " : "skipped ") + std::string(nl::discovery::source_name(c.source)) + " " + c.label;
+    if (d.item.package) line += " -> " + d.item.package->manifest.id + " " + d.item.package->manifest.version.text;
+    if (d.activate_runtime) line += " [runtime will be loaded]";
+    if (!d.reason.empty()) line += ": " + d.reason;
+    print(line + "\n");
+  }
+  print(std::to_string(plan.decisions.size()) + " allowlisted source(s); runtime: " +
+        (runtime ? runtime->item.package->manifest.id : std::string("none")) + "\n");
+  return kOk;
+}
+
 int usage() {
   std::fputs(
       "usage: nlctl <command> [--json]\n"
@@ -325,6 +385,7 @@ int usage() {
       "  verify  <file.gma>   check every file CRC, the archive CRC and trailing data\n"
       "  scan    <folder>     read-only parse of every .gma / .bin archive below the folder\n"
       "  manifest <file.gma|folder>  validate a native package and summarise its manifest\n"
+      "  plan    <game root> [--steam-dir <dir>]  what the loader would activate (read-only)\n"
       "  version              loader version\n",
       stderr);
   return kBadInput;
@@ -339,6 +400,12 @@ int wmain(int argc, wchar_t** argv) {
     const auto json_flag = std::find(args.begin(), args.end(), L"--json");
     const bool json = json_flag != args.end();
     if (json) args.erase(json_flag);
+    std::optional<fs::path> steam_dir;
+    if (const auto it = std::find(args.begin(), args.end(), L"--steam-dir"); it != args.end()) {
+      if (it + 1 == args.end()) return usage();
+      steam_dir = fs::path(*(it + 1));
+      args.erase(it, it + 2);
+    }
     if (args.size() == 1 && args[0] == L"version") {
       print(std::string(nl::version()) + "\n");
       return kOk;
@@ -347,8 +414,12 @@ int wmain(int argc, wchar_t** argv) {
     if (args.size() == 2 && args[0] == L"verify") return cmd_verify(args[1], json);
     if (args.size() == 2 && args[0] == L"scan") return cmd_scan(args[1], json);
     if (args.size() == 2 && args[0] == L"manifest") return cmd_manifest(args[1], json);
+    if (args.size() == 2 && args[0] == L"plan") return cmd_plan(args[1], steam_dir, json);
     return usage();
   } catch (const nl::gma::FormatError& e) {
+    std::fprintf(stderr, "error: %s\n", e.what());
+    return kBadInput;
+  } catch (const nl::config::Error& e) {
     std::fprintf(stderr, "error: %s\n", e.what());
     return kBadInput;
   } catch (const fs::filesystem_error& e) {

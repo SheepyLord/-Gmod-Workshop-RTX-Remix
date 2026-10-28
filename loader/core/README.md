@@ -17,6 +17,10 @@ manifests, discovery, planning); M3 adds deployment.
 | `include/nl/paths.h`, `src/paths.cpp` | Path rules for anything a package names, and the game-root areas packages may write to |
 | `include/nl/manifest.h`, `src/manifest.cpp` | Manifest schema 1: strict `parse`, `check_contents`, SemVer `parse_version` / `compare` ([docs/PACKAGE_FORMAT.md](../../docs/PACKAGE_FORMAT.md)) |
 | `include/nl/package.h`, `src/package.cpp` | Package contents from a `.gma` or a development folder (links and reparse points refused), and `load` (manifest read, parsed and checked) |
+| `include/nl/vdf.h`, `src/vdf.cpp` | Valve KeyValues reader (Steam `.vdf`/`.acf`, GMod's `addonnomount.txt`) |
+| `include/nl/config.h`, `src/config.cpp` | `native-loader\config.json` schema 1: the allowlist and switches; strict, unknown keys rejected |
+| `include/nl/discovery.h`, `src/discovery.cpp` | Finds allowlisted sources without the Steam API: the game's library (or `libraryfolders.vdf`), item archives, `appworkshop_4000.acf`, `addonnomount.txt` |
+| `include/nl/planner.h`, `src/planner.cpp` | `consider` (load each candidate's package) and `make_plan` (precedence, one runtime, root overlaps; [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)) |
 | `src/version.cpp` | `nl::version()` |
 
 ## GMA reader rules

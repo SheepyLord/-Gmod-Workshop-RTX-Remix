@@ -21,7 +21,10 @@ GarrysMod\
    └─ data\native-loader\status.json       written each start for the Lua companion
 ```
 
-## config.json (draft)
+## config.json (schema 1)
+
+Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loader would do with
+`nlctl plan <game root>`.
 
 ```json
 {
@@ -30,16 +33,28 @@ GarrysMod\
   "allow": {
     "workshop": ["3600000000"],
     "local": ["garrysmod/addons/rtx-remix-runtime.gma"],
-    "dev_folders": []
+    "dev_folders": ["D:/dev/rtx-remix-runtime"]
   },
   "remix": { "enabled": true },
   "patch_sets": { "require_insecure": true }
 }
 ```
 
+| Key | Default | Rule |
+|---|---|---|
+| `schema` | required | the integer `1` |
+| `enabled` | `true` | `false`: nothing is activated |
+| `allow.workshop` | `[]` | Workshop item ids **as strings** (large numbers lose digits in some editors), no repeats |
+| `allow.local` | `[]` | `.gma` / `.bin` archives, relative to the game root or absolute |
+| `allow.dev_folders` | `[]` | unpacked package folders (with `native/manifest.json`), relative or absolute |
+| `remix.enabled` | `true` | `false`: runtime packages stay planned but no runtime is loaded (vanilla rendering) |
+| `patch_sets.require_insecure` | `true` | in-memory patch sets (M5) only with `-insecure` |
+
 - `allow` is the native-code allowlist ([ADR 0003](decisions/0003-native-trust-allowlist.md)).
-  Workshop items not listed are never opened as packages.
-- `remix.enabled = false` keeps packages deployed but loads no runtime (vanilla rendering).
+  Nothing else is opened as a package; without a config file nothing is allowlisted.
+- Strict JSON; **unknown keys are errors** (a typo such as `"alow"` stops the loader instead of
+  silently allowing nothing or something else). An invalid file leaves the loader inactive.
+- Which allowlisted package wins when several qualify: [ADR 0006](decisions/0006-package-precedence-and-planning.md).
 
 ## Off switches (any one)
 

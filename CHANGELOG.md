@@ -18,6 +18,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
   git-ignored `out\` (builds, worktrees, test scratch, evidence). `tools/test.ps1` and
   `tools/build.ps1` point `TEMP`/`TMP` at `out\tmp` while they run.
 
+### Added (M2 part 2: config, discovery, planner)
+
+- `nl_core`: `config.json` schema 1 (the allowlist; strict, unknown keys and numeric Workshop ids
+  rejected), a KeyValues reader, discovery of allowlisted sources without the Steam API
+  (`libraryfolders.vdf`, `appworkshop_4000.acf`, `addonnomount.txt`, `*_legacy.bin`), and the
+  planner (ADR 0006: dev folder > local > Workshop, one runtime, no overlapping root files).
+- `nlctl plan <game root>`: what the loader would activate and why, read-only.
+- CTest `nlctl_e2e_plan`: the whole chain on gmapack-built packages in a fake Steam library.
+- `docs/ON_DISK_LAYOUT.md` specifies the implemented `config.json`.
+
 ### Added (M2 part 2: manifests and packages)
 
 - `nl_core`: manifest schema 1 (`nl::manifest::parse`, strict, unknown keys rejected; SemVer; launch

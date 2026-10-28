@@ -9,3 +9,10 @@ add_test(NAME nlctl_crosscheck_gmapack
           --nlctl "$<TARGET_FILE:nlctl>"
           --gmapack "${PROJECT_SOURCE_DIR}/tools/gmapack/gmapack.py"
           --scratch "${CMAKE_CURRENT_BINARY_DIR}/scratch/crosscheck")
+
+# The whole M2 chain on gmapack-built packages: config, discovery, package loading, plan.
+add_test(NAME nlctl_e2e_plan
+  COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/tests/e2e_plan.py"
+          --nlctl "$<TARGET_FILE:nlctl>"
+          --gmapack "${PROJECT_SOURCE_DIR}/tools/gmapack/gmapack.py"
+          --scratch "${CMAKE_CURRENT_BINARY_DIR}/scratch/e2e_plan")

@@ -58,15 +58,23 @@ continues vanilla. A broken deployment is rolled back from the journal on the ne
 | Two-phase updates | GMod downloads Workshop updates after start-up, when `d3d9.dll` is already loaded; replacing a loaded runtime is impossible, so the next launch deploys it |
 | Status file instead of a binary module | The Lua companion only needs to read state; `file.Read` on `data/` needs no native code |
 
-## Package sources
+## Package sources and planning (M2)
 
-Packages are found without the Steam API (it is not initialised yet at step 2):
+Packages are found without the Steam API (it is not initialised yet at step 2), and only the sources
+`native-loader\config.json` allowlists are looked at (`nl::discovery`):
 
-- Workshop: `<library>\steamapps\workshop\content\4000\<id>\*.gma`, the library being the one that
-  holds the game, with `appworkshop_4000.acf` for item versions and `cfg\addonnomount.txt` for
-  disabled items. Only allowlisted ids are opened.
-- Local `.gma` files and unpacked development folders listed in `native-loader\config.json`.
+- Workshop: `<library>\steamapps\workshop\content\4000\<id>\`, holding exactly one `<name>.gma`
+  (plain) or `<hash>_legacy.bin` (LZMA-wrapped, older uploads). The library is the one the game root
+  sits in, else the one Steam's `libraryfolders.vdf` lists for app 4000. `appworkshop_4000.acf`
+  gives each item's installed version; GMod's `garrysmod\cfg\addonnomount.txt` disables items.
+- Local `.gma` / `.bin` archives and unpacked development folders.
 - Later, if chosen: a manifest-declared URL with a pinned SHA-256 ([ADR 0002](decisions/0002-source-agnostic-payloads.md)).
+
+Each candidate's package is loaded (`nl::package::load`: manifest read, parsed against schema 1 and
+checked against the files) and `nl::planner::make_plan` decides what is active, with a reason for
+everything that is not: precedence dev folder > local > Workshop, one runtime, no overlapping root
+files ([ADR 0006](decisions/0006-package-precedence-and-planning.md)). `nlctl plan <game root>` shows
+the result without changing anything. Deployment of the plan is M3; activation of the runtime M4.
 
 ## Open questions (tracked in the roadmap)
 

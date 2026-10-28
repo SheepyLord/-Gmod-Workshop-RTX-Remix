@@ -9,6 +9,7 @@ Read-only in M2.
 | `CMakeLists.txt` | Builds `nlctl`; registers the `nlctl_crosscheck_gmapack` CTest |
 | `nlctl.cpp` | Command parsing (`wmain`, Unicode paths) and the commands below |
 | `tests/crosscheck_gmapack.py` | CTest: `nlctl` must agree with the Python reference reader ([doc](tests/crosscheck_gmapack.py.md)) |
+| `tests/e2e_plan.py` | CTest: the whole M2 chain on gmapack-built packages in a fake Steam library ([doc](tests/e2e_plan.py.md)) |
 
 ## Commands
 
@@ -17,8 +18,15 @@ nlctl inspect <file.gma> [--json]   # header and file index (LZMA-wrapped: decod
 nlctl verify  <file.gma> [--json]   # one pass: every nonzero file CRC, the archive CRC, trailing data
 nlctl scan    <folder>   [--json]   # read-only parse of every .gma / .bin archive below the folder
 nlctl manifest <file.gma|folder> [--json]  # validate a native package; summarise its manifest
+nlctl plan <game root> [--steam-dir <dir>] [--json]  # what the loader would activate, read-only
 nlctl version
 ```
+
+`plan` runs what the bootstrap will run at start-up, without changing anything: it reads
+`native-loader\config.json`, finds every allowlisted source, loads each package and prints one
+decision per source (active, or why not; [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)).
+`--steam-dir` replaces the registry lookup of Steam's folder when the game root is outside a Steam
+library. Exit `0` when a plan was made (even if everything was skipped), `2` for an invalid config.
 
 `manifest` exits `0` for a valid package, `1` when the input has no `native/manifest.json` or the
 manifest breaks a schema-1 rule (the message names the field), `2` for a damaged archive.

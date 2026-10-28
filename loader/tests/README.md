@@ -18,6 +18,10 @@ backward compatible.
 | `test_paths.cpp` | Path rules: safe paths, 40-odd escaping or aliasing paths refused, length limits, case-insensitive `within`, root areas |
 | `test_manifest.cpp` | Manifest schema 1: a complete manifest, defaults, 46 single-rule violations that must be refused, cfg policy, SemVer precedence (the semver.org example) and invalid versions, `check_contents` (missing, resized, unlisted files; case) |
 | `test_package.cpp` | Packages: load and read from a `.gma` and a development folder, refuse a missing or wrong manifest, refuse a folder with a junction inside (created with `mklink /J`) |
+| `test_vdf.cpp` | KeyValues: blocks, comments, escapes, unquoted tokens, case-insensitive keys, later duplicates win, conditionals skipped, real `addonnomount.txt` / `appworkshop_4000.acf` shapes, unbalanced and over-deep input |
+| `test_config.cpp` | config.json: full and minimal files, defaults allow nothing, 13 typos and unsafe values refused, loading from a game root |
+| `test_discovery.cpp` | Discovery on a fake Steam library: Workshop folder from the game's library and from `libraryfolders.vdf`, one candidate per allowlisted entry in precedence order, disabled / empty / ambiguous / legacy / missing items, `appworkshop_4000.acf` details |
+| `test_planner.cpp` | Planner rules: problems, `requires_loader`, the disabled switch, shadowing by precedence, fallback past a broken copy, one runtime, root overlaps, `remix.enabled` |
 | `test_version.cpp` | `nl::version()` matches the CMake project version |
 
 Scratch files: call `nl::test::scratch_dir("name")`, which returns a fresh folder beside the test
