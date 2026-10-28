@@ -53,6 +53,11 @@ patched copy of GMod managed by RTXLauncher.
 8. **Parallel milestones stay apart.** Each runs on its own branch in its own git worktree, and only
    touches the paths its brief in [docs/handover/](docs/handover/README.md) assigns. Shared docs
    (CHANGELOG, ROADMAP, COMPONENTS, RESEARCH, TESTING) get additive edits only, so merges stay trivial.
+9. **Temporary and build files stay inside this repo, under the git-ignored `out\`** (the user's
+   instruction): builds in `out\build\<preset>`, extra git worktrees in `out\worktrees\<name>`, test
+   scratch in `out\tmp` (`tools\test.ps1` and `tools\build.ps1` point `TEMP`/`TMP` there), evidence in
+   `out\<purpose>\`. Never the system temp folder or a sibling folder: in M1, Windows Defender blocked
+   proxy builds and test hosts that were outside this folder.
 
 ## Build and test
 

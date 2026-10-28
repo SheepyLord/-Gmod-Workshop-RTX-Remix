@@ -17,7 +17,9 @@ tools\build.ps1 -NoTests                   # skip CTest
 ## Inputs and outputs
 
 - Reads: the CMake tree (`CMakeLists.txt`, `loader/**`).
-- Writes: `out\build\<preset>\` only (git-ignored). `-Clean` deletes that one folder.
+- Writes: `out\build\<preset>\` (git-ignored). `-Clean` deletes that one folder.
+- Points `TEMP`/`TMP` at `out\tmp` while it runs, so compiler and test scratch stays inside the
+  repo (AGENTS.md rule 9), and restores them afterwards.
 - Exit: non-zero when configure, build or tests fail (the error names the step).
 
 ## Notes

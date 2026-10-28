@@ -22,6 +22,8 @@ tools\test.ps1 -Config Release
 ## Outputs
 
 - Writes only what `build.ps1` writes (`out\build\<preset>\`) plus Python `__pycache__` folders.
+- Each step runs with `TEMP`/`TMP` pointing at `out\tmp`, so test scratch (Python `tempfile`, child
+  processes) stays inside the repo (AGENTS.md rule 9); the previous values are restored after each step.
 - Exit code 1 if any step failed; every step still runs so one failure does not hide another.
 
 ## Adding tests

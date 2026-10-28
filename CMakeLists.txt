@@ -33,4 +33,5 @@ target_link_options(nl_build_options INTERFACE
   $<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>)
 
 enable_testing()
+add_subdirectory(third_party/lzma)
 add_subdirectory(loader)

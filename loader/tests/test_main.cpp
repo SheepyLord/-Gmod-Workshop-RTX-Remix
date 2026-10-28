@@ -3,9 +3,13 @@
 
 #include "nl_test.h"
 
+#include <windows.h>
+
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <stdexcept>
+#include <string>
 
 namespace nl::test {
 
@@ -16,6 +20,16 @@ int g_case_failures = 0;
 std::vector<Case>& registry() {
   static std::vector<Case> cases;
   return cases;
+}
+
+std::filesystem::path scratch_dir(std::string_view name) {
+  wchar_t exe[32768]{};
+  const DWORD length = GetModuleFileNameW(nullptr, exe, static_cast<DWORD>(std::size(exe)));
+  if (length == 0 || length >= std::size(exe)) throw std::runtime_error("cannot locate the test executable");
+  const auto dir = std::filesystem::path(exe).parent_path() / "scratch" / std::string(name);
+  std::filesystem::remove_all(dir);
+  std::filesystem::create_directories(dir);
+  return dir;
 }
 
 void fail(const char* what, const char* file, int line) {

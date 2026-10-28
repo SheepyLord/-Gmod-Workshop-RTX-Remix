@@ -11,6 +11,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0003](0003-native-trust-allowlist.md) | Only allowlisted packages may deploy native code until signatures exist | Accepted 2026-10-27 |
 | [0004](0004-runtime-in-versioned-folder.md) | The Remix runtime is preloaded from a versioned folder, not copied into `bin\win64` | Accepted 2026-10-27 |
 | [0005](0005-repo-conventions.md) | Agent-facing repo conventions and MIT licence | Accepted 2026-10-27 |
+| [0006](0006-package-precedence-and-planning.md) | Package precedence (dev folder > local > Workshop) and planning rules | Accepted 2026-10-27 |
 
 ## Template
 

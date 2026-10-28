@@ -29,6 +29,7 @@ Facts about the machine this project is developed on, as of 2026-10-27. Update t
 | CMake / Ninja | Bundled with Build Tools: CMake 3.31.6, Ninja 1.12.1 (not on `PATH` outside the dev environment) |
 | Python | 3.12 with `pefile`; tests need only the standard library |
 | Other | git 2.56, GitHub CLI, .NET SDK, meson. Not installed: 7-Zip, Node, SteamCMD, DepotDownloader |
+| Windows Defender | During M1 it blocked proxy builds and test hosts placed outside this repo folder (a sibling worktree, the system temp folder). Inside the repo's `out\` they run, so every build, worktree and test scratch file lives there (AGENTS.md rule 9) |
 
 ## Related local checkouts (`H:\BACKUP_20260815\Modding\`)
 

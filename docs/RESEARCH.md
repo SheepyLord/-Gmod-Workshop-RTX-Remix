@@ -88,8 +88,24 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
 
 ## 5. Workshop and GMA facts (verified)
 
-- Installed items: `steamapps\workshop\content\4000\<id>\*.gma`. In a sample of 400 files, 358 start
-  with `GMAD` and 42 are LZMA-wrapped (`gmpublish.exe` uploads); the largest item is 3.2 GB.
+- Installed items, census of all 759 item folders under `steamapps\workshop\content\4000\<id>\`:
+  672 hold one plain GMAD `<name>.gma`; 81 hold an LZMA-wrapped `<hash>_legacy.bin` (older
+  uploads; all 81 start with the LZMA properties byte `0x5D`); 6 hold loose files only. The largest
+  item is 3.2 GB. `nlctl scan` (M2) parsed all 672 `.gma` indexes, 98,656 entries, in 2.8 s with no
+  errors. (An earlier sample of 400 `*.gma`/`*.bin` files, "358 GMAD, 42 LZMA", mixed the two kinds.)
+- The 81 `*_legacy.bin` files: LZMA-alone header with properties `0x5D` (lc 3, lp 0, pb 2), 16 MiB
+  (19 files) or 32 MiB (62) dictionaries, size always declared (largest 376 MB; 4.4 GB decoded from
+  1.5 GB in total). Every file ends with an **8-byte GMod footer** after the LZMA stream: the
+  decompressed size as a 32-bit little-endian value, then the magic `0xBEEFCACE` (Bootil's writer).
+  `tools/gmapack/gmapack.py` treats those 8 bytes as trailing data, so it cannot read any installed
+  legacy item; `nl_core` accepts the footer only when it matches exactly.
+- **The archive CRC trailer is optional in practice:** 19 of the 81 legacy items (GMAD v3,
+  uploaded 2012-2019) end right after their last file, without the 4-byte CRC, and GMod mounts them.
+  One legacy item (1136617425) has a matching CRC trailer followed by four zero bytes of padding.
+- `nlctl scan` over all 753 installed archives (2026-10-27): every one parses (672 plain, 81 LZMA,
+  104,847 file entries); 19 without trailer, 1 with trailing bytes. `nlctl verify` (Release) over
+  all 81 legacy items decoded 4.4 GB in 66 s: 6,191 file CRCs and every footer match; the only
+  finding is the padded item above.
 - `steamapps\workshop\appworkshop_4000.acf` records per item `size`, `timeupdated` and `manifest`.
 - `garrysmod\cfg\addonnomount.txt` lists the Workshop ids the user disabled.
 - `gmad.exe` only packs whitelisted file types (`.dll`/`.exe` are not); the GMod wiki lists

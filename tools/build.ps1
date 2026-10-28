@@ -32,6 +32,13 @@ if ($Clean) {
     if (Test-Path $buildDir) { Remove-Item -Recurse -Force $buildDir }
 }
 
+# Compiler and test scratch stays inside the repo (AGENTS.md rule 9).
+$scratch = Join-Path $repo 'out\tmp'
+New-Item -ItemType Directory -Force -Path $scratch | Out-Null
+$savedTemp, $savedTmp = $env:TEMP, $env:TMP
+$env:TEMP = $scratch
+$env:TMP = $scratch
+
 Push-Location $repo
 try {
     Invoke-Tool 'CMake configure' cmake @('--preset', $preset)
@@ -41,5 +48,7 @@ try {
     }
 } finally {
     Pop-Location
+    $env:TEMP = $savedTemp
+    $env:TMP = $savedTmp
 }
 Write-Host "Build $preset OK: $(Join-Path $repo "out\build\$preset")"
