@@ -57,6 +57,19 @@ lower severity.
 | R1-028 | P2 | accepted, **P3** | The three test files create their temporary folders under `out\tmp` | — |
 | R1-029 | P1 | accepted, **P1** | Every `powershell` child of the Python tools starts without `PSModulePath` | `test_field_snapshot.py`, `test_poc_session.py`; the full run after the build |
 
+## A regression the fixes introduced, caught before merge
+
+The first version of the R1-003 fix kept the hooks' state published for good, and so refused a
+second `install()`.
+
+- **The failure.** A start whose runtime fails to load after the RTX hooks went in (for example a
+  failing `DllMain`) continues as a start without a runtime. Its add-on hiding (ADR 0013) needs a
+  second installation, so the RTX-only add-ons would have stayed visible.
+- **The fix.** `install()` is now refused only while an earlier installation is active; the old
+  state stays allocated.
+- **The test.** `nl_session_integration` covers this case ("runtime DllMain fails"). It was checked to
+  fail without the fix.
+
 ## A rule I broke in M5
 
 R1-015 also shows that `poc_session.py --reference` wrote into the reference install, against

@@ -24,8 +24,9 @@ struct Setup {
 };
 
 // Registers the watcher and hooks the modules already loaded. False (with `error`) if it cannot;
-// nothing stays changed then. Once per process: the hooks' state is never freed, so a hook running
-// on another thread, or one an import slot still points at, always reaches the original function.
+// nothing stays changed then. Refused while an earlier install() is active; after uninstall() it
+// installs afresh. No hooks' state is ever freed, so a hook running on another thread, or one an
+// import slot still points at, always reaches the original function.
 bool install(Setup setup, std::string& error);
 // Undoes install() (unregisters the watcher, makes every hook a pass-through, restores hooked
 // imports). Only before commit. Safe to call when install() failed or never ran.

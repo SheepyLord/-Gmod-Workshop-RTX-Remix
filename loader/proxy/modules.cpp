@@ -92,8 +92,10 @@ struct State {
   std::vector<std::string> hidden_seen;      // folders a search actually left out
   std::vector<std::string> search_hooked;    // modules whose searches are filtered
 };
-// Published before the first import slot points at a hook, then never cleared or freed: a hook reads
-// it once and keeps using that state, even while uninstall() runs on another thread (R1-003).
+// Published before the first import slot points at a hook, and never cleared or freed: a hook reads
+// it once and keeps using that state, even while uninstall() runs on another thread (R1-003). An
+// install() after uninstall() publishes a new state (a failed RTX activation followed by the add-on
+// hiding of a start without a runtime); the old one stays allocated.
 std::atomic<State*> g_state{nullptr};
 
 State* state() noexcept { return g_state.load(std::memory_order_acquire); }
@@ -511,7 +513,7 @@ int hook_imports(void* module, const char* function, void* replacement) {
 }
 
 bool install(Setup setup, std::string& error) {
-  if (state()) {
+  if (const State* current = state(); current && current->active.load(std::memory_order_acquire)) {
     error = "module hooks are already installed";
     return false;
   }

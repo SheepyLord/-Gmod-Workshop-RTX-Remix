@@ -16,7 +16,7 @@ fixes package as a development folder, marked `requires_remix` (a patch set for 
 rewrites the fixture's marker, an override of `stdshader_dx6.dll`, two session variables, and an
 add-on folder `garrysmod/addons/nl_rtx_addon`). It places the host as `bin\win64\gmod.exe` beside the
 built `winmm.dll` and the three fixtures, creates the user's own add-on folder `user_addon`, writes a
-`config.cfg` with the user's values, then runs the host's `--m5-probe` nine times. Each probe also
+`config.cfg` with the user's values, then runs the host's `--m5-probe` ten times. Each probe also
 lists `garrysmod\addons` through the fake `filesystem_stdio.dll`, relative with the A functions and
 absolute with the W ones, and `garrysmod\cfg`:
 
@@ -31,6 +31,7 @@ absolute with the W ones, and `garrysmod\cfg`:
 | `native-loader\logs` a junction (R1-001) | the junction's target `loader.log` unchanged |
 | `garrysmod\data\native-loader` a junction (R1-005) | the target's `session.json` unchanged and no `status.json` written there |
 | RTX on again | the user's values recorded afresh, patched again; the add-on listed again |
+| RTX on, runtime DllMain fails (`NL_M4_FAIL_ATTACH`) | activation `failed` after the module hooks went in: no patch, the vanilla shader, and the RTX-only add-on hidden by a second hook installation |
 
 Inputs and outputs: scratch below `out\tmp` (deleted afterwards); probes, status and session
 reports under `out\m5-synthetic\<config>-<pid>`. Exit 0 when every check passes; an `AssertionError`

@@ -116,10 +116,11 @@ def main():
     evidence.mkdir(parents=True, exist_ok=True)  # a reused PID must not fail the run
     runs = []
 
-    def run(name, extra=()):
+    def run(name, extra=(), env_extra=None):
         probe_file = root / 'probe.json'
         probe_file.unlink(missing_ok=True)
         env = {k: v for k, v in os.environ.items() if k not in ('NATIVE_LOADER_DISABLE', 'DXVK_RTX_CONFIG_FILE', 'DXVK_CONFIG_FILE')}
+        env.update(env_extra or {})
         argv = [str(bin_folder / 'gmod.exe'), '--m5-probe', str(probe_file), str(bin_folder), *extra]
         done = subprocess.run(argv, cwd=root, env=env, timeout=60, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
         check(done.returncode == 0, f'{name}: host exit {done.returncode:#x}')
@@ -258,6 +259,18 @@ def main():
         check(probe['engine_at_attach'] == 'NLM5PATCH:AFTER!', 'patch missing on second RTX session')
         check(probe['addons_a'] == 'nl_rtx_addon|user_addon', 'add-on still hidden after RTX came back')
         passed('a later RTX session records the user values again and sees the add-on')
+
+        # The runtime fails to load after the module hooks went in (its DllMain fails): activation is
+        # undone, and the start continues as one without a runtime, so the RTX-only add-on is hidden
+        # by a second hook installation (the first one's state stays allocated, inactive).
+        probe, status, session = run('rtx-attach-fails', ['-insecure'], {'NL_M4_FAIL_ATTACH': '1'})
+        check(status['activation']['outcome'] == 'failed', f'activation: {status["activation"]}')
+        check(Path(probe['shader_path']) == shader_vanilla, f'override left after a failed activation: {probe["shader_path"]}')
+        check(probe['engine_at_attach'] == 'NLM5PATCH:BEFORE', 'patched after a failed activation')
+        check(probe['addons_a'] == 'user_addon' and probe['addons_w'] == 'user_addon',
+              f'RTX-only add-on visible after a failed activation: {probe["addons_a"]!r} {probe["addons_w"]!r}')
+        check(status['session']['hidden_addons'] == ['nl_rtx_addon'], f'hidden not reported: {status["session"]}')
+        passed('a runtime that fails to load: hooks undone, no patch or override, the RTX-only add-on hidden')
     finally:
         for _ in range(30):
             try:
