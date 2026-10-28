@@ -41,4 +41,6 @@ std::string log_fields(const Report& report);
 void write(const std::filesystem::path& root, const Report& report);
 // Remove only the generated status/temp files and the now-empty native-loader data folder.
 void remove(fs::FileSystem& disk, const std::filesystem::path& root);
+// Remove status temp files left by launches whose process has gone (write() calls it). Never throws.
+void remove_stale_temporaries(const std::filesystem::path& root, std::uint32_t own_process) noexcept;
 }  // namespace nl::status

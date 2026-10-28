@@ -42,6 +42,17 @@ std::optional<std::string> keep_last_good_reason(const journal::Generation& curr
   return std::nullopt;
 }
 
+AfterDeployment after_deployment(const deploy::Report& deployment, bool pending) {
+  if (pending) return {false, "journal has a pending transaction; activation is unsafe until recovery"};
+  if (deployment.ok()) return {true, "deployment state is ready"};
+  if (deployment.blocked_by != deploy::Report::BlockedBy::none)
+    return {true, "deployment deferred; using the current committed generation"};
+  // M3 undoes a failed transaction in process; with no pending transaction left, the committed
+  // generation is intact and runs as the last good one (ADR 0009).
+  return {true, "deployment failed (" + (deployment.error.empty() ? std::string("did not complete") : deployment.error) +
+                    "); using the current committed generation"};
+}
+
 Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
   Prepared result;
   result.deployment.action = "apply";
@@ -70,15 +81,9 @@ Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
       result.deployment = deploy::apply(root, std::move(considered), result.config,
                                        *loader, options);
       result.journal = journal::load(root);
-      if (result.journal && result.journal->pending) {
-        result.reason = "journal has a pending transaction; activation is unsafe until recovery";
-      } else if (result.deployment.ok() || result.deployment.blocked_by != deploy::Report::BlockedBy::none) {
-        result.may_activate = true;
-        result.reason = result.deployment.blocked_by == deploy::Report::BlockedBy::none ?
-            "deployment state is ready" : "deployment deferred; using the current committed generation";
-      } else {
-        result.reason = result.deployment.error.empty() ? "deployment did not complete" : result.deployment.error;
-      }
+      const auto next = after_deployment(result.deployment, result.journal && result.journal->pending);
+      result.may_activate = next.may_activate;
+      result.reason = next.reason;
     }
   } catch (const std::exception& error) {
     result.may_activate = false;

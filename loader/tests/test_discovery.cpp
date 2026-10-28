@@ -110,6 +110,28 @@ TEST_CASE("discovery: one candidate per allowlisted entry, in precedence order")
   fs::remove_all(dir);
 }
 
+TEST_CASE("discovery: local and dev locations are absolute even for a relative game root") {
+  // The journal records these locations and start-up compares them with what it finds; a root
+  // given relative to nlctl's working directory must not give another spelling of the same file.
+  const auto dir = nl::test::scratch_dir("discovery_relative_root");
+  const FakeLibrary lib(dir);
+  nl::config::Config config;
+  config.local = {"garrysmod/addons/local.gma"};
+  config.dev_folders = {"dev/../dev/pkg"};
+  const auto relative = fs::relative(lib.game, fs::current_path());
+  REQUIRE(!relative.empty());
+  nl::discovery::Environment environment;
+  environment.game_root = relative;
+  const auto candidates = nl::discovery::discover(config, environment);
+  REQUIRE(candidates.size() == 2);
+  for (const auto& candidate : candidates) {
+    CHECK(candidate.location.is_absolute());
+    CHECK(candidate.location == candidate.location.lexically_normal());
+  }
+  CHECK(fs::equivalent(candidates[1].location, lib.game / "garrysmod" / "addons" / "local.gma"));
+  fs::remove_all(dir);
+}
+
 TEST_CASE("discovery: nothing allowlisted means nothing discovered") {
   const auto dir = nl::test::scratch_dir("discovery_empty");
   const FakeLibrary lib(dir);

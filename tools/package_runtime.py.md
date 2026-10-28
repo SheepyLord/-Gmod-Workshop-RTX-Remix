@@ -27,8 +27,9 @@ python tools\package_runtime.py --runtime ...\_output --d3d9-from ...\built-A8E3
 | `native/manifest.json` | written last: schema 1, kind `remix-runtime`, `requires_loader` `>=0.1.0` |
 
 The manifest's `remix` section names `runtime/d3d9.dll` as the entry, lists the config layers, the
-`--env` variables, the launch arguments RTXLauncher uses (`-dxlevel 90 -nod3d9ex
-+mat_disable_d3d9ex 1`, unless `--no-launch-args`) and `prefer_system_vulkan_loader: true` (unless
+`--env` variables, the launch arguments `-dxlevel 90 -nod3d9ex` (unless `--no-launch-args`; RTXLauncher's
+`+mat_disable_d3d9ex 1` is left out because the game archives it into `config.cfg`, where it would
+reach later RTX-off sessions: [RESEARCH.md](../docs/RESEARCH.md) section 11) and `prefer_system_vulkan_loader: true` (unless
 `--no-system-vulkan`). How the loader applies them: [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
 
 The VC++ 2015-2022 runtime that `d3d9.dll` imports is not packaged; it comes from System32.

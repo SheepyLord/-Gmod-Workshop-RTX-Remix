@@ -323,7 +323,7 @@ def main():
         result = refused.run(env_extra={'NL_M4_BAD_CMDLINE': '1'})
         vanilla(result)
         fallback = result[1]['activation']['launch_arguments']['fallback_launch_options']
-        check(fallback == '-dxlevel 90 -nod3d9ex +mat_disable_d3d9ex 1', 'fallback options incorrect')
+        check(fallback == '-dxlevel 90 -nod3d9ex', 'fallback options incorrect')
         active(refused, refused.run(extra=fallback.split(), env_extra={'NL_M4_BAD_CMDLINE': '1'}))
         passed('refused swap rolls back; supplying the reported arguments permits activation')
 

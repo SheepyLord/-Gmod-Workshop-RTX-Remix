@@ -118,29 +118,42 @@ void finish_report(StartupContext& context) {
 }
 
 void failed_startup(StartupContext& context, const char* message, DWORD error) noexcept {
-  const bool restored = rollback_guarded(context.runtime);
+  // A committed runtime is loaded and initialised: unloading it now would be riskier than keeping
+  // it, so a failure after the commit (only reporting is left by then) is logged, nothing undone.
+  const bool committed = context.runtime.committed();
+  const bool restored = committed || rollback_guarded(context.runtime);
   emergency_log(message, error);
   try {
-    auto& activation = context.report.activation;
-    activation.outcome = "failed";
-    activation.reason = message;
-    activation.windows_error = error;
-    activation.rolled_back = context.runtime.touched();
-    activation.environment_set.clear();
-    activation.arguments_added.clear();
-    activation.vulkan_path.clear();
-    activation.elapsed_ms = context.runtime.elapsed_ms();
+    if (!committed) {
+      auto& activation = context.report.activation;
+      activation.outcome = "failed";
+      activation.reason = message;
+      activation.windows_error = error;
+      activation.rolled_back = context.runtime.touched();
+      activation.environment_set.clear();
+      activation.arguments_added.clear();
+      activation.vulkan_path.clear();
+      activation.elapsed_ms = context.runtime.elapsed_ms();
+    }
     context.report.errors.emplace_back(message);
     if (!restored) context.report.errors.emplace_back("activation rollback failed");
     finish_report(context);
   } catch (...) {
-    emergency_log("startup failure report could not be written; continuing vanilla", error);
+    emergency_log(committed ? "startup report could not be written; the runtime stays active"
+                            : "startup failure report could not be written; continuing vanilla", error);
   }
 }
 
 void startup_cxx(StartupContext& context) noexcept {
   try {
-    write_log(context.report);
+    // The log is for diagnosis only: a log that cannot be written (open in a viewer, read-only
+    // folder) must not keep the runtime from starting.
+    try {
+      write_log(context.report);
+    } catch (const std::exception& error) {
+      emergency_log("loader.log could not be written; continuing", 0);
+      context.report.errors.emplace_back(std::string("loader.log: ") + error.what());
+    }
     context.prepared = startup::prepare(context.root, context.report.process_id);
     context.report.deployment = context.prepared.deployment;
     context.report.deployment_ms = context.prepared.elapsed_ms;
@@ -154,15 +167,26 @@ void startup_cxx(StartupContext& context) noexcept {
     } else {
       context.report.activation.reason = context.prepared.reason;
     }
+    // Commit before reporting: the runtime's own start-up code has run, and a report that cannot be
+    // written is no reason to unload it (see failed_startup).
+    if (context.report.activation.outcome == "active") context.runtime.commit();
     if (context.report.deployment.outcome == "failed" && !context.report.deployment.error.empty())
       context.report.errors.push_back(context.report.deployment.error);
     if (context.report.activation.outcome == "failed") context.report.errors.push_back(context.report.activation.reason);
-    finish_report(context);
-    if (context.report.activation.outcome == "active") context.runtime.commit();
   } catch (const std::exception& error) {
     failed_startup(context, error.what(), 0);
+    return;
   } catch (...) {
     failed_startup(context, "startup C++ exception; continuing vanilla", 0);
+    return;
+  }
+  // Reporting last, outside the activation's failure path: a report that cannot be written is
+  // logged, never retried here (each attempt may wait out a reader) and never undoes anything.
+  try {
+    finish_report(context);
+  } catch (...) {
+    emergency_log(context.runtime.committed() ? "startup report could not be written; the runtime stays active"
+                                              : "startup report could not be written", 0);
   }
 }
 

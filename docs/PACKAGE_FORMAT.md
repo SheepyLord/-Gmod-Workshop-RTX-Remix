@@ -43,7 +43,7 @@ Paths compare without case, as Windows does; `gmad` lowercases them anyway.
     "rtx_conf_layers": ["config/rtx.conf"],
     "dxvk_conf_layers": [],
     "env": { "DXVK_LOG_LEVEL": "info" },
-    "launch_args": ["-dxlevel", "90", "-nod3d9ex", "+mat_disable_d3d9ex", "1"],
+    "launch_args": ["-dxlevel", "90", "-nod3d9ex"],
     "prefer_system_vulkan_loader": true
   },
   "root_files": [
@@ -82,7 +82,7 @@ identifies the package version in the journal.
 | `entry` | path under `native/payload/`, listed in `files`, file name `d3d9.dll` (it is preloaded under that name) |
 | `rtx_conf_layers`, `dxvk_conf_layers` | paths under `native/payload/` ending in `.conf`, listed in `files`; become lower layers below the user's own configs |
 | `env` | names `DXVK_*` or `RTX_*` (`A-Z 0-9 _`, at most 64 after the prefix); values at most 1,024 printable ASCII characters |
-| `launch_args` | only `-dxlevel N`, `-nod3d9ex`, `+mat_disable_d3d9ex N` (N: 1-3 digits) in schema 1, so a package cannot add commands such as `+exec` |
+| `launch_args` | only `-dxlevel N`, `-nod3d9ex`, `+mat_disable_d3d9ex N` (N: 1-3 digits) in schema 1, so a package cannot add commands such as `+exec`. A `+` variable the game archives (such as `mat_disable_d3d9ex`) is saved into `config.cfg` and reaches later sessions, RTX off included ([RESEARCH.md](RESEARCH.md) section 11) |
 | `prefer_system_vulkan_loader` | boolean: preload System32's `vulkan-1.dll` first |
 
 M4 applies `remix.entry` from the journaled versioned payload, validates its and the package layer

@@ -2,7 +2,10 @@
 
 - Status: Accepted 2026-10-27. Revised before merge on 2026-10-27: validate and restore complete
   command-line descriptors, prepend package layers to user lists, and apply activation in a
-  reversible order with preload last (M4 handover section 4.1).
+  reversible order with preload last (M4 handover section 4.1). Revised again before merge on
+  2026-10-28 (Claude's review): the activation is committed before the report is written, so a report
+  that cannot be written no longer unloads an initialised runtime; packages built by
+  `package_runtime.py` no longer ask for `+mat_disable_d3d9ex 1`; the `-dxlevel` question is answered.
 - Decided by: Claude, implementing M4 within the plan the user approved on 2026-10-27
 - Builds on: [ADR 0001](0001-bootstrap-winmm-proxy.md) (the entry-point hook),
   [ADR 0004](0004-runtime-in-versioned-folder.md) (the runtime in a versioned folder),
@@ -74,7 +77,9 @@ Apply these steps in order:
    LOAD_WITH_ALTERED_SEARCH_PATH)` runs last. The path must be absolute. On success, retain the
    runtime and Vulkan references, environment and committed command line for process lifetime.
 6. **Report.** Atomically write `garrysmod\data\native-loader\status.json` and append matching
-   `key=value` log fields, including inactive reasons and fallback arguments.
+   `key=value` log fields, including inactive reasons and fallback arguments. A successful activation
+   is committed first: by then the runtime's own start-up code has run, and unloading it because a
+   report could not be written would be riskier than keeping it. Such a failure is logged only.
 
 Any failed step undoes the earlier ones and continues vanilla. In particular, a failed runtime
 load records the Windows error and which of `msvcp140.dll`, `vcruntime140.dll`,
@@ -95,8 +100,16 @@ install does) and reports it in the log if the preload fails for a missing depen
 - Launch arguments depend on kernelbase's getter shape. It is validated at run time, not assumed; a
   future Windows build that changes it makes the loader fall back to documented launch options rather
   than patch the wrong memory.
-- `-dxlevel 90` may persist in GMod's saved video settings; the PoC acceptance run checks that an
-  RTX-off launch afterwards is still vanilla, and this record is revised if a mitigation is needed.
+- `-dxlevel 90` does not persist: PoC sessions vanilla, `-dxlevel 90`, vanilla ran at 95, 90, 95
+  ([RESEARCH.md](../RESEARCH.md) section 11), and a real RTX-off launch after RTX sessions ran at 95.
+  `+mat_disable_d3d9ex 1` does persist: the game archives it into the install's `config.cfg`, where it
+  reaches later RTX-off sessions, and it only acts from the next session anyway. `-nod3d9ex` covers
+  the current one, so `package_runtime.py` leaves the variable out. Console variables the RTX fixes
+  need are M5's problem, with the same rule: an RTX session must not change RTX-off sessions.
+- Activation alone does not path-trace the stock shaders: with `d3d9.shaderModel = 3` the PoC reached
+  gm_construct with the runtime loaded and the frame still raster-looking; with the classic
+  `d3d9.shaderModel = 0` the stock shaders are rejected. The fixed-function shader DLL and the RTX
+  fixes (M5) close that gap, and M5's acceptance includes the path-traced frame.
 - The runtime folder goes on the process DLL search path while RTX is on (`SetDllDirectoryW`), which
   also removes the current directory from that search; acceptable because it happens only with RTX on.
 

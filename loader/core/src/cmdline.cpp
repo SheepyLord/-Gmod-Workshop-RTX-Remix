@@ -60,22 +60,32 @@ struct SwapState {
   void* context = nullptr;
   std::unique_ptr<wchar_t[]> wide;
   std::unique_ptr<char[]> ansi;
+  bool published = false;  // a descriptor pointed at our strings at some point
 
-  bool restore() noexcept {
+  // `verify`: restore a slot only while it still holds our descriptor; something else may have
+  // replaced it since, and writing the old one back would undo that change. The failure path inside
+  // swap_records restores without checking: nothing else ran in between.
+  bool restore(bool verify = true) noexcept {
     bool restored = true;
     for (auto it = saved.rbegin(); it != saved.rend(); ++it) {
       if (!it->needs_restore) continue;
+      StringRecord current;
+      if (verify && (!read_record(it->address, current) || current.buffer != it->after.buffer)) {
+        restored = false;
+        continue;
+      }
       if (writer(it->address, it->before, context)) it->needs_restore = false;
       else restored = false;
     }
     return restored;
   }
   ~SwapState() {
-    if (!restore()) {
-      // Do not leave a dangling process-wide pointer if Windows refuses a restoration write.
+    if (!restore()) OutputDebugStringW(L"Native Loader: command-line descriptor restoration failed.\n");
+    if (published) {
+      // Once published, other code may have kept a pointer from GetCommandLine* (DLL start-up code ran
+      // in between). Never free these few bytes: a dangling command line would be far worse.
       wide.release();
       ansi.release();
-      OutputDebugStringW(L"Native Loader: command-line descriptor restoration failed.\n");
     }
   }
 };
@@ -124,9 +134,10 @@ SwapResult swap_records(std::span<const RecordChange> changes, RecordWriter writ
   }
   for (auto& change : state.saved) {
     change.needs_restore = true;
+    state.published = true;
     if (!state.writer(change.address, change.after, state.context)) {
-      result.detail = state.restore() ? "command-line write failed; all descriptors restored" :
-                                       "command-line write failed; descriptor restoration also failed";
+      result.detail = state.restore(false) ? "command-line write failed; all descriptors restored" :
+                                            "command-line write failed; descriptor restoration also failed";
       return result;
     }
   }

@@ -367,3 +367,114 @@ Gathered while planning M4; scripts were one-offs under `out\tmp` (`pefile`, `ct
   autoexec.cfg user-config difference. `created-or-changed.txt` records preserved Remix/Sentry logs,
   capture directories, engine crash artifacts, metrics and game-written config/cache/console changes.
   No game/Remix data was deleted for cleanup. The other RTX_c instance remained running.
+
+## 11. Session side effects and automation (2026-10-28, Claude)
+
+**Settings GMod keeps between sessions.**
+
+- GMod's video settings are in `HKCU\Software\Valve\Source\garrysmod\Settings` (`ScreenWidth`,
+  `ScreenWindowed`, `mat_*`, `DXLevel_V1`, ...). The key has the mod folder's name, so the field
+  install, the PoC and `GarrysMod_RTX_c` all share it.
+- `DXLevel_V1` does not decide the level a session runs at. With 90 stored (since 2026-10-27 02:02),
+  vanilla PoC sessions ran at `mat_dxlevel 95` (Codex's baseline, and run 1 below) and wrote 95 back
+  at start-up; a session started with `-dxlevel 90` ran at 90.
+- `-dxlevel 90` does not carry over: three PoC sessions, vanilla, `-dxlevel 90 -nod3d9ex
+  +mat_disable_d3d9ex 1`, vanilla again, ran at 95, 90 and 95, and neither the registry key nor
+  `config.cfg` changed (evidence `out\m4-review\persistence-20261028T040607`; the key was restored
+  from the backup taken first).
+- Archived console variables persist in the install's own `garrysmod\cfg\config.cfg`, which the game
+  writes when it quits normally. The PoC's already held `mat_disable_d3d9ex "1"` before M4; a vanilla
+  session then reports `"mat_disable_d3d9ex" = "1" ( def. "0" )` and "mat_disable_d3d9ex changes will
+  not take effect until application restart": the variable is read when the device is created,
+  before `config.cfg` or `+` commands run. So `+mat_disable_d3d9ex 1` on the command line only changes
+  the next session (through `config.cfg`), while `-nod3d9ex`, which `shaderapidx9.dll` reads (both
+  strings are in it), acts on the current one.
+
+**Ending a session without a person.**
+
+- `game.ConsoleCommand("quit\n")` from server Lua is refused: `game.ConsoleCommand blocked! (quit)`.
+- The menu state loads a fixed list of files (`lua/menu/menu.lua`); `RunGameUICommand("QuitNoConfirm")`
+  exists only there, so it cannot be reached without changing depot files.
+- `WM_CLOSE` to the main window (`CloseMainWindow`) does not end the game (15 s; Codex saw the same).
+- Source's TCP remote console does: with `-usercon -ip 127.0.0.1 -port <p> +rcon_password <x>` and a
+  listen server (`+maxplayers 2`), an RCON `quit` ends the session normally (exit code 0). In a
+  single-player session the remote console does not listen (connection refused).
+  [`tools/poc_session.py`](../tools/poc_session.py.md) uses this.
+
+**Shader DLLs.** A vanilla session at `mat_dxlevel 95` loads `stdshader_dx6.dll` too, by full path:
+the module list shows `h:\steamlibrary\steamapps\common\garrysmod_poc\bin\win64\stdshader_dx6.dll`,
+lower-cased by the engine's file system.
+
+**Windows loader.** At an `LdrRegisterDllNotification` "loaded" callback, the new module's imports
+are already bound (`wininet.dll`: 355 of 355 import address table entries resolved, Windows
+10.0.26300). An import hook installed then is in place before the module's own code runs.
+
+## 12. What the classic RTX install adds (M5 research, 2026-10-28, Claude with a research agent)
+
+Compared with the PoC (vanilla build 26229091). "Verified" as in the header; offsets are PoC file
+offsets or RVAs as stated.
+
+**`GarrysMod_RTX_c` runs an older GMod build.** Of its engine binaries only `tier0.dll` matches a
+cached depot manifest; its VPKs (`garrysmod_000-002`, `fallbacks_*`, `sourceengine\content_hl2_dir`)
+differ from the PoC's too. Its runtime is B (`d3d9.dll` SHA-256 `a8e39d938d96193d...`).
+
+**On-disk engine patches.** RTXLauncher applies `patches64` from `sambow23/SourceRTXTweaks`
+(`applypatch.py`, fetched at install time; no local copy). Each pattern must match exactly once;
+RTX_c holds each in patched form. All seven match exactly once in the PoC's build:
+
+| DLL | Pattern (offset) | Replacement | Purpose |
+|---|---|---|---|
+| engine | `ff90????????85c0742b` (0) | `b80200000090` | `Mod_LoadLighting`: HDR type 2 |
+| engine | `ff90????????85c00f84fa000000` (0) | `b80200000090` | `Mod_LoadWorldlights`: HDR |
+| shaderapidx9 | `4833cce8????03004881c448` (0) | `85c0750466b80400` | zero-sized buffer returns 4 |
+| shaderapidx9 | `4883ec084c` (0) | `31c0c3` | shader constants function returns 0 |
+| shaderapidx9 | `4885db75??498b4500` (3) | `eb` | skip the invalid-vertex-format `Error()` |
+| materialsystem | `f77c24683bc10f4fc1488b8c24300100004833cce8????04004881c448010000` (0) | `448b4424684585c0740341f7f839c80f4fc14881c448010000c3` | zero-sized buffer guard |
+| datacache | `647838302e767478` (0) | `647839302e767478` | `dx80.vtx` to `dx90.vtx` |
+
+`MaterialSystemFallbackPatch` does not apply to either build (a 2-byte `66 90` where it needs a
+15-byte site) and was never applied to RTX_c. The fixes' module applies 8 other, in-memory
+engine/client culling patches itself (`source/culling_patches.cpp:81-347`, from `module.cpp:427`);
+`source/culling_fixes.cpp` (with "these don't apply properly") is dead code: `CullingHooks` is never
+initialised (corrects section 3).
+
+**How `stdshader_dx6.dll` is loaded.** `materialsystem.dll`'s `LoadAllShaderDLLs` (rva `0x4b010`)
+asks for `stdshader_dbg.dll`, then `stdshader_dx6.dll` up to the dx level, through
+`IFileSystem::LoadModule` (vtable +0xe8). `filesystem_stdio.dll` resolves the name against the
+`EXECUTABLE_PATH` search path (`bin\win64`, added first by `launcher.dll`) and calls
+`LoadLibraryExA(<full path>, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)` from its `Sys_LoadModule` (rva
+`0x5ebe0`; the call at `0x5eb02`). Preloading a copy elsewhere therefore does not help; an import hook
+on `filesystem_stdio.dll`'s `LoadLibraryExA` does. `LoadLibraryExA` is also imported by materialsystem,
+engine and launcher, `LoadLibraryA` by tier0, engine and shaderapidx9, none delay-loaded.
+
+**The fixes' shader DLL.** A binary committed in the fixes at `garrysmod/bin/win64/stdshader_dx6.dll`
+(byte-identical to RTX_c's, 437,248 bytes; sources removed in 4b9da1e, readme points to
+`sambow23/obsolete-source-engine`): fixed-function ports of spritecard, eyes/eye_refract, wireframe
+and water. It finds `gmcl_RTXFixesBinary_win64.dll!RTX_SetEyeTexGenState` by that module name at run
+time. With RTX_c's `dxvk.conf` (`d3d9.shaderModel = 0`, line 10) RTX_c's own Remix log also shows
+"Out of range of supported shader model" (28 times), so that message is normal there.
+
+**The fixes' other pieces.** `gmcl_RTXFixesBinary_win64.dll` (1,441,792 bytes in RTX_c, built
+2026-10-27), `gmcl_rtxwater_win64.dll`, `gmcl_rtxdebug_win64.dll` (all import only tier0, ole32,
+KERNEL32). Lua: `addons/remixbinary/lua/autorun/cl_rtx.lua` (`require("RTXFixesBinary")` at :10,
+multiplayer guard at :4), rtx_water (`cl_native.lua:37-42`), niknaks and others. Remix mods from the
+fixes: `base_mod` (37 MB), `rtx_water` (11 MB), `gm_poolrooms_rtx` (150 MB), `~gmod_topbr` (87 files
+in the repo; ToPBR writes generated DDS files there at run time). `autoexec.cfg` is the fixes' file:
+`sv_cheats 1`, `mat_disable_d3d9ex 1`, `r_3dsky 0`, water reflection/refraction 0, `r_shadows 0`,
+`mat_softwareskin 1`, specular/bump/normal/parallax 0, `r_frustumcullworld 0`, `r_occlusion 0`,
+`r_novis 1`, plus the user's own settings. The fixes also overwrite five Steam files (menu
+`problems.lua`, sandbox `gmod_camera.lua`, three images), which this project's rule 2 forbids.
+Built with premake 5 and garrysmod_common, VS 2022; no release zip locally.
+
+**The user's test save and measure.** Reference save
+`GarrysMod_RTX_c\garrysmod\saves\gm_csgosafehouse 2026-10-25 04-08-30.gms`. Harness
+`C:\Users\matt-peng\.rpai\work\_probe\session_run.py` (fixed camera `REF_CAMERA`, captures with the
+`jpeg` command, HUD and view model hidden). Measure `look\compare.py`: crop both images to a multiple
+of 32, take the mean RGB of every 32x32 block, report the mean absolute difference over all blocks and
+channels (0-255); about 1 between repeated captures, 1.5-3.6 "close", 16-26 "broken". The save needs
+the Workshop map 944959992 (a legacy `.bin`, 162 MB, in the shared Workshop folder), the CS:GO mount,
+the user's `SafeHouse` Remix mod, and the MMD Hot Loader character with its `ai_pbr` mod. The classic
+install's launch line (`_debug_tools\launch_gmod_keeplogs.bat:12`) is `-console -condebug -dxlevel 90
++mat_disable_d3d9ex 1 -nod3d9ex -windowed -noborder -w 3840 -h 2160 -tickrate 128 -multirun -insecure
++r_forcehwlight 1`; RTXLauncher adds `-noworkshop` only when its `LoadWorkshopAddons` is false (the
+user's is true; corrects section 4).

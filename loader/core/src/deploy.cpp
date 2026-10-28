@@ -127,13 +127,26 @@ bool game_running(const Path& root, std::uint32_t excluded_process) {
                                   std::filesystem::absolute(root / L"gmod.exe").lexically_normal().native()};
   const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (snapshot == INVALID_HANDLE_VALUE) return false;
+  std::vector<PROCESSENTRY32W> entries;
   PROCESSENTRY32W entry{};
   entry.dwSize = sizeof(entry);
+  for (BOOL more = Process32FirstW(snapshot, &entry); more; more = Process32NextW(snapshot, &entry)) entries.push_back(entry);
+  CloseHandle(snapshot);
+  // The game started through the root gmod.exe (the 32-bit launcher) may find its parent still
+  // alive for a moment; that launcher is part of this start, not another game.
+  std::uint32_t launcher = 0;
+  if (excluded_process) {
+    for (const auto& item : entries) {
+      if (item.th32ProcessID == excluded_process) launcher = item.th32ParentProcessID;
+    }
+  }
   bool running = false;
-  for (BOOL more = Process32FirstW(snapshot, &entry); more && !running; more = Process32NextW(snapshot, &entry)) {
-    if (entry.th32ProcessID == excluded_process) continue;
-    if (CompareStringOrdinal(entry.szExeFile, -1, L"gmod.exe", -1, TRUE) != CSTR_EQUAL) continue;
-    const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ProcessID);
+  for (const auto& item : entries) {
+    if (running) break;
+    if (item.th32ProcessID == excluded_process) continue;
+    if (CompareStringOrdinal(item.szExeFile, -1, L"gmod.exe", -1, TRUE) != CSTR_EQUAL) continue;
+    const bool parent = launcher && item.th32ProcessID == launcher;
+    const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, item.th32ProcessID);
     if (!process) {
       // Access denied: it cannot be told where it runs from, so assume here. Anything else: it has
       // exited since the snapshot.
@@ -144,16 +157,16 @@ bool game_running(const Path& root, std::uint32_t excluded_process) {
     DWORD size = static_cast<DWORD>(image.size());
     if (QueryFullProcessImageNameW(process, 0, image.data(), &size)) {
       image.resize(size);
-      for (const std::wstring& target : targets) {
-        if (CompareStringOrdinal(image.c_str(), -1, target.c_str(), -1, TRUE) == CSTR_EQUAL) running = true;
+      for (std::size_t i = 0; i < std::size(targets); ++i) {
+        if (parent && i == 1) continue;  // our own launcher, root\gmod.exe
+        if (CompareStringOrdinal(image.c_str(), -1, targets[i].c_str(), -1, TRUE) == CSTR_EQUAL) running = true;
       }
     } else {
       DWORD code = 0;
-      if (GetExitCodeProcess(process, &code) && code == STILL_ACTIVE) running = true;  // alive, place unknown
+      if (!parent && GetExitCodeProcess(process, &code) && code == STILL_ACTIVE) running = true;  // alive, place unknown
     }
     CloseHandle(process);
   }
-  CloseHandle(snapshot);
   return running;
 }
 

@@ -118,6 +118,20 @@ TEST_CASE("cmdline: a swap updates all lengths and restores every original descr
   CHECK(result.restore());
 }
 
+TEST_CASE("cmdline: a later restore leaves a slot alone that something else has replaced since") {
+  Records records;
+  const auto before = records.slots;
+  auto result = cmdline::swap_records(records.edits());
+  REQUIRE(result.ok);
+  wchar_t theirs[] = L"theirs";
+  records.slots[0].buffer = theirs;  // e.g. another module repointed the PEB's command line
+  CHECK(!result.restore());
+  CHECK(records.slots[0].buffer == theirs);
+  CHECK(std::memcmp(&records.slots[1], &before[1], sizeof(before[1])) == 0);
+  CHECK(std::memcmp(&records.slots[2], &before[2], sizeof(before[2])) == 0);
+  records.slots[0] = before[0];  // so the result's destructor has nothing left to do
+}
+
 TEST_CASE("cmdline: every descriptor is validated before any slot changes") {
   for (int invalid = 0; invalid < 3; ++invalid) {
     Records records;

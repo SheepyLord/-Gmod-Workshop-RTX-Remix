@@ -112,6 +112,38 @@ void write(const std::filesystem::path& root, const Report& report) {
   file->write(text.data(), text.size());
   file->close();
   disk.move(temp_path, fs::join(root, kPath), true);
+  remove_stale_temporaries(root, report.process_id);
+}
+
+void remove_stale_temporaries(const std::filesystem::path& root, std::uint32_t own_process) noexcept {
+  // A launch that crashed between creating and renaming its temp file leaves it behind; drop those
+  // whose process is gone. Best effort: a file another instance holds simply stays.
+  try {
+    const auto folder = fs::join(root, kDirectory);
+    for (const auto& item : fs::list(folder)) {
+      const std::wstring_view name = item.name;
+      constexpr std::wstring_view prefix = L"status.json.tmp-";
+      if (item.directory || item.link || !name.starts_with(prefix) || name.size() == prefix.size() || name.size() > prefix.size() + 10)
+        continue;
+      std::uint64_t pid = 0;
+      bool numeric = true;
+      for (wchar_t c : name.substr(prefix.size())) {
+        if (c < L'0' || c > L'9') numeric = false;
+        else pid = pid * 10 + static_cast<std::uint64_t>(c - L'0');
+      }
+      if (!numeric || pid == own_process || pid > 0xffffffffull) continue;
+      const HANDLE process = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
+      if (process) {
+        const bool alive = WaitForSingleObject(process, 0) == WAIT_TIMEOUT;
+        CloseHandle(process);
+        if (alive) continue;
+      } else if (GetLastError() == ERROR_ACCESS_DENIED) {
+        continue;  // cannot tell; leave it
+      }
+      try { fs::win32().remove_file(folder / item.name); } catch (...) {}
+    }
+  } catch (...) {
+  }
 }
 
 void remove(fs::FileSystem& disk, const std::filesystem::path& root) {

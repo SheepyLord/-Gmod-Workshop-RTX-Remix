@@ -153,6 +153,10 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   const DWORD loaded_length = GetModuleFileNameW(runtime_, loaded, 32768);
   if (!loaded_length || loaded_length >= 32768 || !same_path(dll, std::filesystem::path(loaded)))
     return fail("loaded d3d9.dll does not match the selected runtime path");
+  // shaderapidx9.dll imports "d3d9.dll" by base name; that must now resolve to this module. A
+  // d3d9.dll loaded before the entry point (from elsewhere) would win the binding instead.
+  if (GetModuleHandleW(L"d3d9.dll") != runtime_)
+    return fail("another d3d9.dll was already loaded; the engine would bind to it, not the runtime");
   report.outcome = "active";
   report.reason = plan.reason;
   report.environment_set = plan.env;

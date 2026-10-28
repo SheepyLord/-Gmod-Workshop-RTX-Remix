@@ -73,9 +73,12 @@ std::optional<fs::path> library_from_steam(const fs::path& steam_root) {
   return fallback;
 }
 
+// Always absolute: the journal records this location, and start-up (keep-last-good) compares it with
+// the location it finds itself, so a root given relative to some other working directory (nlctl)
+// must not produce a different spelling of the same folder.
 fs::path resolve(const fs::path& game_root, const std::string& configured) {
   const fs::path p = from_utf8(configured);
-  return p.is_absolute() ? p : game_root / p;
+  return (p.is_absolute() ? p : fs::absolute(game_root) / p).lexically_normal();
 }
 
 bool ends_with_folded(const std::string& text, std::string_view suffix) {

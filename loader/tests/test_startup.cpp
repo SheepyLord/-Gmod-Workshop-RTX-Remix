@@ -80,6 +80,24 @@ TEST_CASE("startup: an incompatible replacement cannot discard the last good run
   CHECK(nl::startup::keep_last_good_reason(current(), plan).has_value());
 }
 
+TEST_CASE("startup: after a deployment, only a pending transaction prevents activation") {
+  nl::deploy::Report report;
+  report.outcome = "deployed";
+  CHECK(nl::startup::after_deployment(report, false).may_activate);
+  CHECK(!nl::startup::after_deployment(report, true).may_activate);
+  report.outcome = "refused";
+  report.blocked_by = nl::deploy::Report::BlockedBy::deployer_lock;
+  CHECK(nl::startup::after_deployment(report, false).may_activate);
+  // A failed transaction is undone in process: the committed generation is still the last good one.
+  report.outcome = "failed";
+  report.blocked_by = nl::deploy::Report::BlockedBy::none;
+  report.error = "move failed";
+  const auto failed = nl::startup::after_deployment(report, false);
+  CHECK(failed.may_activate);
+  CHECK(failed.reason.find("move failed") != std::string::npos);
+  CHECK(!nl::startup::after_deployment(report, true).may_activate);
+}
+
 TEST_CASE("startup: absent disabled or invalid configuration never deploys or removes") {
   const auto root = nl::test::scratch_dir("startup_config");
   auto result = nl::startup::prepare(root, GetCurrentProcessId());

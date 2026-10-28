@@ -21,7 +21,10 @@ GMAPACK = os.path.join(HERE, 'gmapack', 'gmapack.py')
 
 DEFAULT_ID = 'rtx-remix-runtime'
 REQUIRES_LOADER = '>=0.1.0'  # the first loader version that activates a runtime (M4)
-LAUNCH_ARGS = ['-dxlevel', '90', '-nod3d9ex', '+mat_disable_d3d9ex', '1']  # what RTXLauncher passes
+# RTXLauncher also passes +mat_disable_d3d9ex 1. Left out: the game archives that variable into
+# config.cfg, so it would reach later RTX-off sessions, and -nod3d9ex already covers this one
+# (docs/RESEARCH.md section 11).
+LAUNCH_ARGS = ['-dxlevel', '90', '-nod3d9ex']
 # Build by-products that the runtime never loads. PDBs only on request: d3d9.pdb alone is ~140 MB.
 EXCLUDED = ('.exp', '.lib', '.ilk', '.bak')
 PDB = '.pdb'
@@ -304,7 +307,7 @@ def main(argv=None):
     ap.add_argument('--id', default=DEFAULT_ID, help='package id (default %s)' % DEFAULT_ID)
     ap.add_argument('--version', help='package version (default 0.0.0-dev.<d3d9 build time>+<d3d9 hash>)')
     ap.add_argument('--name', help='display name')
-    ap.add_argument('--no-launch-args', action='store_true', help='leave out -dxlevel 90 -nod3d9ex +mat_disable_d3d9ex 1')
+    ap.add_argument('--no-launch-args', action='store_true', help='leave out -dxlevel 90 -nod3d9ex')
     ap.add_argument('--no-system-vulkan', action='store_true', help="do not ask for System32's vulkan-1.dll first")
     ap.add_argument('--force', action='store_true', help='replace an earlier package folder or archive')
     ap.add_argument('--json', action='store_true', help='print the summary as JSON')

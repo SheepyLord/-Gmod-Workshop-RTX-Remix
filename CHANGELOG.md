@@ -8,6 +8,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M4: activation)
 
+- `tools/poc_session.py`: drives PoC sessions without anyone at the keyboard (install, config, launch,
+  wait for the map, `PrintWindow` screenshots, module list, a normal quit through a local remote
+  console, logs, uninstall and depot verification). Used for M4's remaining real checks and M5.
+- Review fixes (Claude): a successful activation is committed before the report is written, so a
+  status or log write failure no longer unloads an initialised runtime; a deployment that fails and is
+  undone in process activates the committed generation (`startup::after_deployment`, ADR 0009);
+  `package_runtime.py` no longer adds `+mat_disable_d3d9ex 1`, which the game archives into
+  `config.cfg` and so would carry into RTX-off sessions (`-nod3d9ex` remains).
+
 - Bootstrap startup now deploys and activates the committed generation, validates runtime/layer
   files, applies reversible environment/arguments/Vulkan/DLL-search changes, and preloads the runtime
   by absolute path. Atomic status schema 1 and matching log fields report active and vanilla outcomes;

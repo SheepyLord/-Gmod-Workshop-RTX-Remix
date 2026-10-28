@@ -138,11 +138,17 @@ needs its own user approval and explicit `-Launch`. Preview is read-only. The us
 The baseline records System32 d3d9 and mat_dxlevel; subsequent stages cover A, RTX off, B and rollback.
 Rendering confirmation is a user observation, separate from a successful preload/status report.
 
-Current real evidence and remaining acceptance work are in [M4-report.md](handover/M4-report.md).
-The copied classic shaderModel=0 layer failed with vanilla shaders; a user-approved test-only
-shaderModel=3 layer reached the map, but the user reported no path tracing and stopped further PoC
-tests. RTX-off persistence and real B/rollback therefore remain open. The loader was uninstalled and
-all depot files verified; game/Remix-created data was retained.
+Codex's real evidence is in [M4-report.md](handover/M4-report.md): the copied classic shaderModel=0
+layer failed with vanilla shaders; a test-only shaderModel=3 layer reached the map without path
+tracing. The checks still open after that were run in Claude's review ([M4-review.md](handover/M4-review.md))
+with [poc_session.py](../tools/poc_session.py.md), which needs nobody at the keyboard: it launches the
+PoC, waits for the map, takes screenshots through `PrintWindow`, lists the loaded modules, and quits
+through a local remote console (`quit` is refused from Lua). With the shaderModel=3 packages A and B:
+A deployed and active, a config switch deployed and activated B, `nlctl rollback` brought A back and
+the hold kept it at the next start, and RTX off (`remix.enabled: false`) used System32's `d3d9.dll` at
+`mat_dxlevel 95`; every run quit normally; uninstall left 2,877 depot files OK. Evidence:
+`out/poc-sessions/m4-real-20261028T041725`. Whether `-dxlevel` persists was settled separately
+([RESEARCH.md](RESEARCH.md) section 11: it does not).
 
 ## Installs
 

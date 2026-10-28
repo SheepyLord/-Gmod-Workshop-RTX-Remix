@@ -1,6 +1,7 @@
 # 0009: Startup deployment preserves the last good generation when a source fails
 
-- Status: Accepted 2026-10-27
+- Status: Accepted 2026-10-27. Revised before merge on 2026-10-28 (Claude's review): a failed
+  deployment that M3 has undone activates the committed generation (point 7)
 - Decided by: Codex, implementing the startup rules the user assigned in the M4 handover
 - Builds on: [0003](0003-native-trust-allowlist.md), [0007](0007-transactional-deployment.md),
   [0008](0008-activation-at-startup.md)
@@ -36,7 +37,9 @@ decision. The game also needs to exclude itself, but no other instance, from M3'
 6. M3's rollback hold is checked against the original plan before staging failures are re-planned.
    Startup respects it; it does not immediately redeploy the version the user rolled back from.
 7. A caught exception or SEH fault leaves activation undone and the game vanilla. A pending journal
-   transaction is recovered by M3 on the next eligible run. Report the outcome, generation, change
+   transaction is recovered by M3 on the next eligible run. A deployment that *reports* failure has
+   been undone in process by M3; with no pending transaction left, the committed generation is intact
+   and activates as the last good one (`startup::after_deployment`). Report the outcome, generation, change
    count, elapsed time, skipped sources and reasons in the startup log and status file.
 
 ## Consequences

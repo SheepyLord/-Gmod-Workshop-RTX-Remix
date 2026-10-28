@@ -89,7 +89,7 @@ class PackageRuntimeTests(unittest.TestCase):
             self.assertEqual((out / 'native' / 'payload' / 'runtime' / rel).read_bytes(), data)
         self.assertEqual(m['remix'], {
             'entry': 'runtime/d3d9.dll', 'rtx_conf_layers': [], 'dxvk_conf_layers': [], 'env': {},
-            'launch_args': ['-dxlevel', '90', '-nod3d9ex', '+mat_disable_d3d9ex', '1'],
+            'launch_args': ['-dxlevel', '90', '-nod3d9ex'],
             'prefer_system_vulkan_loader': True})
         self.assertFalse((out / 'native' / 'payload' / 'runtime' / 'd3d9.pdb').exists())
         self.assertEqual(self.leftovers(), [])

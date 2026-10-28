@@ -21,6 +21,7 @@ class RuntimeActivation {
   bool rollback() noexcept;
   void commit() noexcept;
   bool touched() const noexcept { return touched_; }
+  bool committed() const noexcept { return committed_; }
   double elapsed_ms() const noexcept;
  private:
   struct Environment {
