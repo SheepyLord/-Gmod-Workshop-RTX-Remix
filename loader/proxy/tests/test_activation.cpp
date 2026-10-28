@@ -29,6 +29,16 @@ TEST_CASE("game root derives from the host path rather than the working director
   CHECK(game_root(L"\\\\server\\bin\\win64\\gmod.exe").empty());
 }
 
+TEST_CASE("Chromium helpers using the GMod executable remain inert") {
+  CHECK(!should_activate(exe, dll, L"gmod.exe --type=renderer", L"", false).active());
+  CHECK(!should_activate(exe, dll, L"gmod.exe --type=gpu-process", L"", false).active());
+  CHECK(!should_activate(exe, dll, L"gmod.exe --type=utility --utility-sub-type=network.mojom.NetworkService", L"", false).active());
+  CHECK(!should_activate(exe, dll, L"gmod.exe --type renderer", L"", false).active());
+  CHECK(!should_activate(exe, dll, L"gmod.exe \"--type=renderer\"", L"", false).active());
+  CHECK(should_activate(exe, dll, L"gmod.exe --typewriter=renderer", L"", false).active());
+  CHECK(should_activate(exe, dll, L"gmod.exe +say \"text --type=renderer\"", L"", false).active());
+}
+
 TEST_CASE("command line switches are complete case insensitive tokens") {
   CHECK(command_line_has_token(L"\"H:\\Games with spaces\\gmod.exe\"\t-NoNativeLoader +map gm_construct", L"-nonativeloader"));
   CHECK(command_line_has_token(L"gmod.exe \"-nonativeloader\"", L"-nonativeloader"));

@@ -19,7 +19,8 @@ environment-off case. Launch arguments are those in the M1 handover; cwd is the 
 
 Also compares no-argument `vpk.exe` and `bspzip.exe` output and exit code with/without the bootstrap;
 each must exit within 15 seconds and create no loader log. Enabled logging must prove all exports
-resolved and engine/shader API/D3D9 modules were absent at the entry point. Disabled runs must
+resolved, match the launched game's PID, and prove engine/shader API/D3D9 modules were absent at
+the entry point. Chromium helper processes must not replace that log. Disabled runs must
 create no log. Console comparison preserves order and all nonempty content, except CRLF/trailing
 whitespace/blank lines and the numeric `Thumbs: N => N` thumbnail allocation counters. Any other
 difference fails and writes a diff for investigation; no generic warning/error suppression.

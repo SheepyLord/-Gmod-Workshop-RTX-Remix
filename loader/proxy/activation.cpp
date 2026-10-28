@@ -33,16 +33,23 @@ std::wstring_view game_root(std::wstring_view exe) noexcept {
   return {};
 }
 
-bool command_line_has_token(std::wstring_view line, std::wstring_view token) noexcept {
+bool command_line_has_token(std::wstring_view line, std::wstring_view token, bool allow_assignment) noexcept {
   std::size_t pos = 0;
   while (pos < line.size()) {
     while (pos < line.size() && whitespace(line[pos])) ++pos;
     if (pos == line.size()) break;
     bool quoted = false;
     bool matches = true;
+    bool assignment = false;
     std::size_t length = 0;
     const auto emit = [&](wchar_t c) noexcept {
-      if (length >= token.size() || folded(c) != folded(token[length])) matches = false;
+      if (length < token.size()) {
+        if (folded(c) != folded(token[length])) matches = false;
+      } else if (allow_assignment && length == token.size() && c == L'=') {
+        assignment = true;
+      } else if (!assignment) {
+        matches = false;
+      }
       ++length;
     };
     while (pos < line.size() && (quoted || !whitespace(line[pos]))) {
@@ -65,7 +72,7 @@ bool command_line_has_token(std::wstring_view line, std::wstring_view token) noe
         if (pos < line.size() && (quoted || !whitespace(line[pos]))) emit(line[pos++]);
       }
     }
-    if (matches && length == token.size()) return true;
+    if (matches && (length == token.size() || assignment)) return true;
   }
   return false;
 }
@@ -79,6 +86,7 @@ Activation should_activate(std::wstring_view exe, std::wstring_view module,
   const bool host = !root.empty() && dll_separator != std::wstring_view::npos &&
       path_equal(exe.substr(0, exe_separator), module.substr(0, dll_separator)) &&
       path_equal(module.substr(dll_separator + 1), L"winmm.dll");
-  return {host, command_line_has_token(line, L"-nonativeloader"), environment == L"1", disable_file_exists};
+  return {host, command_line_has_token(line, L"-nonativeloader"), environment == L"1", disable_file_exists,
+          command_line_has_token(line, L"--type", true)};
 }
 }  // namespace nl::proxy

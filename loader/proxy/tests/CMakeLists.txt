@@ -4,7 +4,8 @@ target_include_directories(nl_proxy_tests PRIVATE ../../tests)
 target_link_libraries(nl_proxy_tests PRIVATE nl_proxy_logic nl_build_options)
 target_compile_definitions(nl_proxy_tests PRIVATE
   NL_PROXY_DLL_PATH="$<TARGET_FILE:nl_winmm>"
-  NL_PROXY_HOST_PATH="$<TARGET_FILE:nl_proxy_host>")
+  NL_PROXY_HOST_PATH="$<TARGET_FILE:nl_proxy_host>"
+  NL_PROXY_SCRATCH_ROOT="${CMAKE_CURRENT_BINARY_DIR}/scratch")
 
 # The SDK import library gives this fixture a real static WINMM.dll import.
 add_executable(nl_proxy_host host.cpp)

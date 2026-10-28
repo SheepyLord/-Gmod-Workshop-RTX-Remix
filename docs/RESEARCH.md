@@ -152,3 +152,40 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
   `shared/ntstatus.h:11558`). The new detections name the sibling `!NVIDIA-RTX-Remix-M1` and
   `%TEMP%/nl-proxy-测试-*`, outside the main checkout path the user named. Full logs:
   `out/m1-full-debug-tests.txt`, `out/m1-full-release-tests.txt`.
+
+## 8. M1 final validation and Chromium roles (2026-10-27, Codex)
+
+- Per the user's requested output root, the active `m1-bootstrap` worktree is now
+  `H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap`. All builds, installer
+  fixtures, host fixtures and evidence stay below it. The earlier sibling worktree/build was
+  removed. Seven hash-verified legacy host executables were moved from `%TEMP%` to
+  `out/prior-validation/legacy-fixtures` (SHA-256
+  `5AA6BAD58029EF96C6DC4936B769C5522BD51094F8EC23658880AA860AB78FF4`), preserving them after
+  automatic approval review rejected deletion. No generated executable remains in those temp roots.
+- GMod's Chromium processes reuse **the same `bin\win64\gmod.exe`**, with roles such as
+  `--type=utility --utility-sub-type=network.mojom.NetworkService`. They do not inherit the parent's
+  `-nonativeloader` switch. The first real smoke run showed a helper PID replacing the main log
+  (`out/smoke/20261028T012617409Z/off-command.loader.log`). A path-only host gate therefore lets a
+  helper run the bootstrap even when the main launch is disabled.
+- Fixed by treating `--type=value` / `--type value` roles as pure pass-through, using the same
+  allocation-free token parser (`loader/proxy/activation.cpp:89`). Prefix near-misses and quoted
+  text are covered, plus four child-role integration runs. The smoke check now requires the log PID
+  to equal the launched game PID (`tools/smoke_test.ps1:117`). No hook/forwarding technique changed.
+- Debug and Release: **4/4 CTest entries pass**, including **16 proxy cases** and **23 installer
+  assertions**. The full Debug runner also runs **56 Python tests** (one pre-existing skip).
+  Test discovery needed a repository-relative exclusion filter because the selected worktree has
+  an ancestor named `out` (`tools/test.ps1:38`); filtering full absolute paths had hidden Python suites.
+- Final Release PoC smoke evidence: `out/smoke/20261028T012849979Z/summary.json`:
+  `success=true`, `restored=true`; all five launches reach `gm_construct`; console output matches
+  after the documented normalization; all off switches produce no log; both tools match baseline.
+  Map-load-plus-settle durations: baseline **6.59s**, enabled **6.56s**, command-off **6.53s**,
+  environment-off **6.72s**, file-off **6.57s**. These are smoke durations, not benchmark results.
+- The enabled log is from main PID **64992**, resolves **181/181** exports, and samples
+  `engine.dll=0`, `shaderapidx9.dll=0`, `d3d9.dll=0` at the EXE entry point. Logged startup work:
+  **0.2898ms**. Its command line contains the actual `-game garrysmod ... +map gm_construct`
+  launch, not a Chromium helper role. Both final configurations still import **KERNEL32.dll only**.
+- Final installed and uninstalled verifier reports each have **2,877 OK**, **0 missing**, **0 size
+  mismatches**, **0 hash mismatches**, with the existing `autoexec.cfg` user-config difference.
+  Evidence: `out/m1-poc-installed-verify.json`, `out/m1-poc-uninstalled-verify.json`. The PoC is left
+  with no bootstrap DLL/PDB or loader state. Installed Release DLL SHA-256:
+  `E9B1327A89853344DD967D4B6C5C8E48E52F49849C208EA7605B61EF278A3351`.

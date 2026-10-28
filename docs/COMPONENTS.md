@@ -35,8 +35,9 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 
 ### M1 implementation additions
 
-The planned bootstrap/install/smoke rows above now have M1 implementations (validation status and
-evidence are in the M1 report when complete):
+The planned bootstrap/install/smoke rows above are superseded by these completed M1 implementations:
+Debug/Release tests, all five real PoC runs, tool comparisons and depot integrity checks pass.
+See the [M1 report](handover/M1-report.md) for evidence and the user-selected build/worktree location.
 
 | Component | Path | Implementation |
 |---|---|---|

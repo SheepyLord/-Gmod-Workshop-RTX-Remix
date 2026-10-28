@@ -40,7 +40,8 @@ struct TempGame {
   fs::path marker;
   TempGame(const wchar_t* name = L"gmod.exe", const wchar_t* directory = L"bin\\win64") {
     static unsigned counter = 0;
-    root = fs::temp_directory_path() / (L"nl-proxy-测试-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(++counter));
+    // Keep generated executables beside the build, inside the user's output root.
+    root = fs::path(NL_PROXY_SCRATCH_ROOT) / (L"nl-proxy-测试-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(++counter));
     REQUIRE(!fs::exists(root));
     host = root / directory / name;
     log = root / L"native-loader/logs/loader.log";
@@ -202,6 +203,15 @@ TEST_CASE("logging failures cannot prevent the host from reaching main") {
   CHECK(game.run() == 0);
   CHECK(!fs::exists(game.log));
   CHECK(number(read(game.marker), "log_present_at_main") == 0);
+}
+
+TEST_CASE("Chromium child roles never hook or write logs") {
+  for (const auto* arguments : {L"--type=renderer", L"--type=gpu-process", L"--type=utility", L"--type renderer"}) {
+    TempGame game;
+    CHECK(game.run(arguments) == 0);
+    CHECK(!fs::exists(game.root / L"native-loader"));
+    CHECK(number(read(game.marker), "log_present_at_main") == 0);
+  }
 }
 
 TEST_CASE("log rotation keeps the current log and five previous logs") {

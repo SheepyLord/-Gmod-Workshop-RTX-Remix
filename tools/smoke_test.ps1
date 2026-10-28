@@ -89,6 +89,7 @@ function Invoke-GameRun([string] $Name, [string] $Extra = '', [bool] $Environmen
     if ($EnvironmentOff) { $start.EnvironmentVariables['NATIVE_LOADER_DISABLE'] = '1' }
     Write-Host "Smoke: $Name (waiting for gm_construct client Lua startup)"
     $script:process = [Diagnostics.Process]::Start($start)
+    $launchedProcessId = $script:process.Id
     $timer = [Diagnostics.Stopwatch]::StartNew()
     $loaded = $false
     try {
@@ -113,6 +114,9 @@ function Invoke-GameRun([string] $Name, [string] $Extra = '', [bool] $Environmen
     if ($hasLog -ne $ExpectLog) { throw "Unexpected loader log presence for $Name (expected $ExpectLog; found $hasLog)." }
     if ($ExpectLog) {
         $log = Read-SharedText $loaderLog
+        if ($log -notmatch '(?m)^process_id=(\d+)\r?$' -or [int]$Matches[1] -ne $launchedProcessId) {
+            throw "The enabled loader log does not belong to the launched game process ($launchedProcessId)."
+        }
         foreach ($proof in @('phase=exe_entry_point', 'entry_point_restored=1', 'module.engine.dll=0', 'module.shaderapidx9.dll=0', 'module.d3d9.dll=0', 'startup.complete=1')) {
             if (($log -split '\r?\n') -cnotcontains $proof) { throw "Missing loader proof: $proof" }
         }
@@ -122,7 +126,7 @@ function Invoke-GameRun([string] $Name, [string] $Extra = '', [bool] $Environmen
     }
     $normal = Normalise-Console (Read-SharedText $consolePath)
     [IO.File]::WriteAllText((Join-Path $evidence "$Name.normalised.log"), $normal, [Text.UTF8Encoding]::new($false))
-    $results.Add([ordered]@{name=$Name; map_loaded=$loaded; loader_log=$hasLog; seconds=[Math]::Round($timer.Elapsed.TotalSeconds, 2)})
+    $results.Add([ordered]@{name=$Name; process_id=$launchedProcessId; map_loaded=$loaded; loader_log=$hasLog; seconds=[Math]::Round($timer.Elapsed.TotalSeconds, 2)})
     return $normal
 }
 function Compare-Console([string] $Baseline, [string] $Actual, [string] $Name) {

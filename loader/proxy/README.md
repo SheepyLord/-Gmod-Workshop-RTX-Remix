@@ -7,7 +7,9 @@ startup log. The system module is retained for the process lifetime.
 
 `DllMain` uses fixed buffers and allocation-free activation logic. Only a `bin/win64/gmod.exe`
 beside this `winmm.dll`, with none of the three off switches, receives a 14-byte absolute jump at
-its PE entry point. The hook restores those bytes first, logs outside the loader lock behind
+its PE entry point. Chromium helper roles (`--type=...` or `--type ...`) using the same executable
+stay pure pass-through, so they cannot overwrite the game log or bypass a parent launch switch.
+The hook restores those bytes first, logs outside the loader lock behind
 separate C++/SEH guards, and calls the original entry point with its argument, returning its result.
 No packages or runtime are loaded. Static CRT notifications remain enabled.
 

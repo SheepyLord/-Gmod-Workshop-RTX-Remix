@@ -8,6 +8,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M1: inert bootstrap)
 
+- Synthetic executable fixtures stay inside the build directory, respecting the user's chosen
+  build location instead of copying binaries to the system temporary directory.
+- Test discovery checks paths relative to the repository, so a worktree under an ancestor `out`
+  directory still runs all Python suites.
+- Chromium helpers using `gmod.exe --type=...` remain pure pass-through; only the main game writes
+  the startup log. Smoke tests verify that log's PID, preventing helper logs from masking timing
+  evidence or bypassing the command-line off switch.
 - `loader/proxy`: x64 `winmm.dll` with generated MASM forwarding for all 181 system ordinals
   (180 names and one ordinal-only export), version identity, host gating, all three off switches,
   PE entry-point hook, guarded UTF-8 startup logging and five-log rotation.
