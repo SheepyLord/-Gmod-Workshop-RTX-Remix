@@ -12,6 +12,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
   the Codex set-up notes and paste-ready prompt, and the conventions for briefs and reports.
 - AGENTS.md rule 8: parallel milestones run on their own branch and worktree and keep to their paths.
 
+### Changed (repo rules)
+
+- AGENTS.md rule 9 (user instruction): temporary and build files stay inside the repo under the
+  git-ignored `out\` (builds, worktrees, test scratch, evidence). `tools/test.ps1` and
+  `tools/build.ps1` point `TEMP`/`TMP` at `out\tmp` while they run.
+
 ### Added (M0: repo scaffold)
 
 - Repo initialised on top of `origin/main` (SheepyLord/-Gmod-Workshop-RTX-Remix).

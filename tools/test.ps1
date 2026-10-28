@@ -19,17 +19,26 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 $failed = [System.Collections.Generic.List[string]]::new()
+# Test scratch stays inside the repo (AGENTS.md rule 9); tempfile and child processes use TEMP/TMP.
+$scratch = Join-Path $repo 'out\tmp'
+New-Item -ItemType Directory -Force -Path $scratch | Out-Null
 
 function Invoke-Step([string] $Name, [scriptblock] $Body) {
     Write-Host "==> $Name" -ForegroundColor Cyan
     $ErrorActionPreference = 'Continue'   # native tools signal failure through exit codes
     $global:LASTEXITCODE = 0
+    $savedTemp, $savedTmp = $env:TEMP, $env:TMP
+    $env:TEMP = $scratch
+    $env:TMP = $scratch
     try {
         & $Body
         if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
     } catch {
         Write-Host "FAILED: $Name ($_)" -ForegroundColor Red
         $failed.Add($Name)
+    } finally {
+        $env:TEMP = $savedTemp
+        $env:TMP = $savedTmp
     }
 }
 
