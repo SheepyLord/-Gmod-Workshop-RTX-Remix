@@ -11,7 +11,7 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 
 | Component | Path | Status | What it does |
 |---|---|---|---|
-| Bootstrap | `loader/proxy` → `bin\win64\winmm.dll` | planned (M1) | Loaded by `gmod.exe` at process start. Forwards every `winmm` export to the system DLL, checks it is inside `bin\win64\gmod.exe` and that no off switch is set, then runs the start-up step at the EXE entry point: discover packages, deploy, activate the runtime, write the status file. Any error is logged and the game continues vanilla. |
+| Bootstrap | [`loader/proxy`](../loader/proxy/README.md) → `bin\win64\winmm.dll` | M1 done (inert) | Loaded by `gmod.exe` at process start. Forwards every `winmm` export to the system DLL, checks it is inside `bin\win64\gmod.exe` and that no off switch is set, then runs the start-up step at the EXE entry point: discover packages, deploy, activate the runtime, write the status file. Any error is logged and the game continues vanilla. M1 built the inert part (forwarding, host gate, off switches, entry hook, log); the start-up step comes with M3 (deploy) and M4 (activate). |
 | Core library | [`loader/core`](../loader/core/README.md) (`nl_core`) | M2 done | Logic shared by the bootstrap, the CLI and the tests. Done: GMA reader (GMAD v1-v3, plain and LZMA-wrapped with GMod's footer, verify, single-file reads), strict JSON, path rules, manifest schema 1, packages from archives or dev folders, `config.json`, KeyValues, discovery without the Steam API, planner. Next (M3): transactional deployment and journal. |
 | Lua companion | `addon/` | planned (M5/M6) | Normal GMod Lua addon. Reads `garrysmod/data/native-loader/status.json`, shows runtime state and errors, and tells the user to restart when a package update has been downloaded. |
 | Remix runtime package | `packages/remix-runtime/` | planned (M4) | Recipe for the package that carries the user's Remix fork build: manifest template, `rtx.conf`/`dxvk.conf` layers, launch arguments, later patch sets. |
@@ -30,12 +30,12 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 | PE diagnostics | [`tools/diag`](../tools/diag/pe_imports.py.md) (`pe_imports.py`) | done | Lists imports and exports of EXEs and DLLs (hook points, runtime dependencies). |
 | GMA packer | [`tools/gmapack`](../tools/gmapack/gmapack.py.md) | vendored | Python `.gma` reader and writer; reference for the C++ reader and the packer for test and runtime packages. |
 | Runtime packager | `tools/package_runtime.py` | planned (M4) | Turns a Remix build folder into a runtime package `.gma` with a manifest and SHA-256 per file. |
-| Install / uninstall | `tools/install-loader.ps1`, `tools/uninstall-loader.ps1` | planned (M1/M3) | Copy the bootstrap into an install (PoC by default), and remove everything the journal lists. |
-| In-game smoke test | `tools/smoke_test.ps1` | planned (M1) | Launches the PoC with the bootstrap and checks the logs. |
+| Install / uninstall | [`tools/install-loader.ps1`](../tools/install-loader.ps1.md), `tools/uninstall-loader.ps1` | install done (M1); uninstall planned (M3) | Copy the bootstrap into an install (PoC by default), and remove everything the journal lists. |
+| In-game smoke test | [`tools/smoke_test.ps1`](../tools/smoke_test.ps1.md) | done (M1) | Launches the PoC with the bootstrap and checks the logs. |
 
 ### M1 implementation additions
 
-The planned bootstrap/install/smoke rows above are superseded by these completed M1 implementations:
+The bootstrap, install and smoke rows above in detail, as M1 built them (merged into `main` on 2026-10-27):
 Debug/Release tests, all five real PoC runs, tool comparisons and depot integrity checks pass.
 See the [M1 report](handover/M1-report.md) for evidence and the user-selected build/worktree location.
 

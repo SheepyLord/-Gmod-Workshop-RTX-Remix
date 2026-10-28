@@ -14,7 +14,7 @@ patched copy of GMod managed by RTXLauncher.
 
 - How it works: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - What each component does: [docs/COMPONENTS.md](docs/COMPONENTS.md)
-- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0 done; M1 (Codex) and M2 (Claude) in progress**)
+- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0, M1 and M2 done and merged into `main`; M3 (deployer) next**)
 - Picking up a milestone from another agent: [docs/handover/](docs/handover/README.md) (your brief is there)
 - Why it is built this way: [docs/decisions/](docs/decisions/README.md)
 - Facts gathered about GMod, Remix and the existing RTX tooling: [docs/RESEARCH.md](docs/RESEARCH.md)
@@ -24,10 +24,11 @@ patched copy of GMod managed by RTXLauncher.
 
 | Path | What |
 |---|---|
-| `loader/` | C++20 loader: `core/` library, `tests/`; later `proxy/` (the `winmm.dll`) and `cli/` (`nlctl.exe`) |
+| `loader/` | C++20 loader: `core/` library (`nl_core`), `tests/`, `proxy/` (the `winmm.dll`), `cli/` (`nlctl.exe`) |
 | `tools/` | Build, test and maintenance scripts; each has a `.md` beside it |
 | `tools/steam/` | Steam depot manifest tools: verify an install, build the vanilla PoC copy |
 | `tools/gmapack/` | Vendored `.gma` reader and writer (Python) |
+| `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder) |
 | `docs/` | Architecture, package format, on-disk layout, testing, roadmap, research, decisions |
 | `CHANGELOG.md` | Notable changes, newest first |
 

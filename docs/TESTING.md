@@ -7,12 +7,31 @@
 | Conventions | Script docs, module READMEs, links, changelog, component map | `python tools\check_repo.py` | M0 |
 | Python unit tests | `tools/**/tests` | `tools\test.ps1 -SkipNative` | M0 |
 | C++ unit tests | `nl_tests` (CTest) | `tools\build.ps1` | M0 |
-| CLI integration | `nlctl` against synthetic packages and a scratch game folder | CTest + scripts | M2 |
-| Real-data parse | Read-only parse of every installed Workshop `.gma` (header and index only) | `nlctl inspect` | M2 |
+| CLI integration | `nlctl` against synthetic packages and a scratch game folder | CTest (`nlctl_crosscheck_gmapack`, `nlctl_e2e_plan`) | M2 |
+| Real-data parse | Read-only parse of every installed Workshop archive (header and index only) | `nlctl scan`, by hand | M2 |
 | PoC in-game | Launch `GarrysMod_PoC` with the bootstrap, check logs and behaviour | `tools\smoke_test.ps1` | M1 |
 | Field test | The user's real install, with backups and a tested rollback | manual, with the user | M7 |
 
-`tools\test.ps1` runs the first three and must pass before any change is finished.
+`tools\test.ps1` runs the first four (the CLI integration tests are CTests) and must pass before any
+change is finished.
+
+### M2 core and CLI checks
+
+CTest runs `nl_tests` (62 cases: CRC-32, GMA, LZMA, JSON, paths, manifests, packages, KeyValues,
+config, discovery, planner), `nlctl_crosscheck_gmapack` (`nlctl` against `tools/gmapack/gmapack.py`
+on generated archives, damaged and LZMA-wrapped ones included) and `nlctl_e2e_plan` (the whole chain
+on gmapack-built packages in a fake Steam library). Fixtures are generated; no test reads a game
+install.
+
+After changing the GMA or LZMA reader, repeat the read-only real-data parse:
+
+```powershell
+out\build\win64-release\loader\cli\nlctl.exe scan "H:\SteamLibrary\steamapps\workshop\content\4000"
+```
+
+On 2026-10-27 all 753 archives parsed (672 plain, 81 LZMA-wrapped; 104,847 entries; 19 without the
+optional CRC trailer, 1 with trailing bytes). `nlctl verify <archive>` decodes one archive completely
+and checks every CRC and, for LZMA, GMod's footer; see [RESEARCH.md](RESEARCH.md) section 5.
 
 ### M1 bootstrap checks
 
@@ -38,11 +57,11 @@ The script checks actual module absence and complete export resolution in the en
 Antivirus blocking a local build is a test failure requiring review; scripts do not change security
 settings or suppress it.
 
-For this machine's user-selected build location, use the M1 branch worktree at
-`H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap`. Builds and executable
-fixtures stay under that worktree's `out/`, inside the selected parent. The main checkout's tracked
-files remain untouched. Chromium helper roles stay inert, and the real-game smoke check verifies
-the enabled log's PID against the game process it launched.
+Until the merge into `main` (2026-10-27), M1 was built and tested in its branch worktree
+`H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap`. Since then the main
+checkout builds the proxy into its own `out\build\<preset>`, which is where `install-loader.ps1` (and
+through it `smoke_test.ps1`) takes it from (AGENTS.md rule 9). Chromium helper roles stay inert, and
+the real-game smoke check verifies the enabled log's PID against the game process it launched.
 
 ## Installs
 

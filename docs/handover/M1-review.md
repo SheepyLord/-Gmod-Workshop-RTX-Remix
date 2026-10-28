@@ -1,9 +1,10 @@
 # M1 review (Claude)
 
 - Reviewer: Claude, 2026-10-27
-- Branch reviewed: `m1-bootstrap` at `9aed9b3`, against the [brief](M1-handover.md) and the report
-  (`docs/handover/M1-report.md` on the `m1-bootstrap` branch; it arrives here when M1 merges)
-- Verdict: **accept.** Meets the definition of done. Not yet merged into `main` (waiting on the user).
+- Branch reviewed: `m1-bootstrap` at `9aed9b3`, against the [brief](M1-handover.md) and the
+  [report](M1-report.md)
+- Verdict: **accept.** Meets the definition of done. Merged into `main` with M2 on 2026-10-27, at the
+  user's request.
 
 ## How I checked
 
@@ -55,3 +56,6 @@ the log PID matches the launched game, which is a good guard to keep).
 `m2-core` and `m1-bootstrap` merge cleanly (`git merge-tree` reports no conflicts) once
 `loader/CMakeLists.txt` lists the subdirectories in a non-colliding order, which `m2-core` now does.
 Shared-doc edits on both branches are additive.
+
+Merged 2026-10-27: `94bd2c0` (M1), then `9b19d93` (M2), with no conflicts. On the merged `main`,
+`tools\test.ps1` (Debug) and `tools\build.ps1 -Config Release` both pass, CTest 6/6.

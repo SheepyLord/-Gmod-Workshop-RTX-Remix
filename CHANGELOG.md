@@ -6,6 +6,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Changed (M1 and M2 merged into `main`)
+
+- `main` now holds the inert bootstrap (M1, Codex, reviewed) and the core library and CLI (M2),
+  merged without conflicts; Debug and Release CTest pass 6/6 on the result. AGENTS.md, the roadmap,
+  the component map, TESTING.md and the handover index describe the merged state; M3 (deployer) is next.
+
 ### Added (M1: inert bootstrap)
 
 - Synthetic executable fixtures stay inside the build directory, respecting the user's chosen
