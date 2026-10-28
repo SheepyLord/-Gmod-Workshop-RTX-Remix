@@ -23,7 +23,8 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 # Compile and link settings every target in this repo links against.
 add_library(nl_build_options INTERFACE)
 target_compile_options(nl_build_options INTERFACE
-  /W4 /WX /permissive- /utf-8 /Zc:__cplusplus /Zc:preprocessor)
+  # M1 adds MASM/RC: C and C++ diagnostics are not assembler/resource switches.
+  "$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/WX;/permissive-;/utf-8;/Zc:__cplusplus;/Zc:preprocessor>")
 target_compile_definitions(nl_build_options INTERFACE
   WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE _WIN32_WINNT=0x0A00)
 target_link_options(nl_build_options INTERFACE

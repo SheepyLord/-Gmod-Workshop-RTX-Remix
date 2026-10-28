@@ -14,6 +14,36 @@
 
 `tools\test.ps1` runs the first three and must pass before any change is finished.
 
+### M1 bootstrap checks
+
+`tools/build.ps1` also runs `nl_proxy_tests` (16 pure/export/forwarding/child-host cases),
+`nl_proxy_generated_exports` and `nl_proxy_installer` (synthetic roots only). Both configurations
+use static CRT. Generate/update committed exports with `python loader/proxy/generate_exports.py`.
+Before installation check runtime dependencies with `py -3.12 tools/diag/pe_imports.py
+out/build/win64-release/loader/proxy/winmm.dll` on this machine (the Python with `pefile`).
+
+With Steam running and GMod closed:
+
+```powershell
+tools\build.ps1 -Config Release
+tools\smoke_test.ps1 -Config Release
+```
+
+The smoke script performs baseline/enabled/three off-switch map loads and compares two console
+tools. Only thumbnail allocation counters and formatting are normalised. Evidence, a machine-readable
+summary and original loader/log backups go to `out/smoke/<UTC timestamp>/`; original DLL/PDB, receipt,
+disable flag, loader logs and console log are restored even on failure. See
+[smoke_test.ps1.md](../tools/smoke_test.ps1.md) for exact side effects and failure behavior.
+The script checks actual module absence and complete export resolution in the enabled log.
+Antivirus blocking a local build is a test failure requiring review; scripts do not change security
+settings or suppress it.
+
+For this machine's user-selected build location, use the M1 branch worktree at
+`H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap`. Builds and executable
+fixtures stay under that worktree's `out/`, inside the selected parent. The main checkout's tracked
+files remain untouched. Chromium helper roles stay inert, and the real-game smoke check verifies
+the enabled log's PID against the game process it launched.
+
 ## Installs
 
 | Install | Path | Use |

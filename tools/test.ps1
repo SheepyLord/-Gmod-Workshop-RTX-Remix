@@ -36,7 +36,7 @@ function Invoke-Step([string] $Name, [scriptblock] $Body) {
 Invoke-Step 'repo conventions (tools\check_repo.py)' { python (Join-Path $repo 'tools\check_repo.py') }
 
 $testDirs = Get-ChildItem (Join-Path $repo 'tools') -Recurse -Directory -Filter tests |
-    Where-Object { $_.FullName -notmatch '\\(__pycache__|out|build)\\' } | Sort-Object FullName
+    Where-Object { $_.FullName.Substring($repo.Length + 1) -notmatch '(^|\\)(__pycache__|out|build)(\\|$)' } | Sort-Object FullName
 foreach ($dir in $testDirs) {
     $group = $dir.Parent.FullName
     Invoke-Step "python tests ($($group.Substring($repo.Length + 1)))" {

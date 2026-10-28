@@ -6,6 +6,25 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (M1: inert bootstrap)
+
+- Synthetic executable fixtures stay inside the build directory, respecting the user's chosen
+  build location instead of copying binaries to the system temporary directory.
+- Test discovery checks paths relative to the repository, so a worktree under an ancestor `out`
+  directory still runs all Python suites.
+- Chromium helpers using `gmod.exe --type=...` remain pure pass-through; only the main game writes
+  the startup log. Smoke tests verify that log's PID, preventing helper logs from masking timing
+  evidence or bypassing the command-line off switch.
+- `loader/proxy`: x64 `winmm.dll` with generated MASM forwarding for all 181 system ordinals
+  (180 names and one ordinal-only export), version identity, host gating, all three off switches,
+  PE entry-point hook, guarded UTF-8 startup logging and five-log rotation.
+- CTest export/forwarding tests, synthetic-host startup/off-switch/failure/rotation tests, and
+  installer ownership/hash/Steam-managed protection tests.
+- `tools/install-loader.ps1`: PoC-default DLL/PDB installation, SHA-256 receipt, foreign/user-edit
+  refusal, opt-in Steam-managed protection and state-preserving uninstall.
+- `tools/smoke_test.ps1`: five PoC map loads, strict console comparison, two inert console tools,
+  evidence capture and restoration of prior loader state.
+
 ### Added (handover)
 
 - `docs/handover/`: the M1 brief for Codex (scope, boundaries, definition of done, report format),

@@ -1,0 +1,27 @@
+#include <windows.h>
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+ PRODUCTVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+ FILEFLAGS 0
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_DLL
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "CompanyName", "Native Loader Project\0"
+      VALUE "FileDescription", "GMod native loader bootstrap\0"
+      VALUE "FileVersion", "@PROJECT_VERSION@\0"
+      VALUE "InternalName", "nl_winmm.dll\0"
+      VALUE "OriginalFilename", "nl_winmm.dll\0"
+      VALUE "ProductName", "GMod Native Loader\0"
+      VALUE "ProductVersion", "@PROJECT_VERSION@\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

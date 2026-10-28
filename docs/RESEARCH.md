@@ -109,3 +109,83 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
 - Flags used: 0x1 user config, 0x40 directory, 0x200 symlink.
 - Result on 2026-10-27: 2,877 of 2,878 depot files in the field install matched; the exception was
   the user-config `autoexec.cfg`.
+
+## 7. M1 bootstrap measurements (2026-10-27, Codex)
+
+- Export source: `C:\Windows\System32\winmm.dll`, file version
+  `10.0.26100.8875 (WinBuild.160101.0800)`, on Windows build **26300.9711**, display version 26H2
+  (registry `CurrentBuild`, `UBR`, `DisplayVersion`; the legacy `ProductName` says Windows 10 Pro).
+  The standard-library generator measured **181 populated ordinals**, **180 names**, and **one
+  ordinal-only export** (ordinal 2). Inventory: `loader/proxy/generated/exports.json`; generation
+  and build-time coverage check: `loader/proxy/generate_exports.py`.
+- Independent initial C++ test: `covered 181 system ordinals and 180 names`; forwarding calls
+  `timeGetTime`, `timeBeginPeriod(1)`, `timeEndPeriod(1)`, `waveOutGetNumDevs` and
+  `mmsystemGetVersion` passed with distinct system/proxy module handles. The initial synthetic
+  `gmod.exe` test also passed its log-before-main and absent-engine/shader-API/D3D9 assertions.
+  This is synthetic-host evidence, not an enabled PoC result. Test source:
+  `loader/proxy/tests/test_proxy.cpp`.
+- Debug and Release proxy imports measured by `py -3.12 tools/diag/pe_imports.py`: **KERNEL32.dll
+  only**, no static/delay VC++ runtime DLL imports. CMake's static CRT and MASM leaf jumps suffice.
+  Python on PATH is now Miniconda 3.14.6 (without `pefile`); the existing `py -3.12` installation
+  has `pefile`. No packages were downloaded or installed.
+- Baseline PoC map launch (PID 20836, Steam running) reached this ordered sequence:
+  `Map: gm_construct`, `Clientside Lua startup!`, joystick initialization,
+  `Redownloading all lightmaps`, `Thumbs: 58711 => 58770`. The smoke test requires the map and
+  client-Lua markers, then gives post-map output three seconds to flush
+  (`tools/smoke_test.ps1`, `Invoke-GameRun`). It normalises only formatting and the numeric
+  thumbnail allocation counters (`Normalise-Console`). This strict comparison still needs an
+  enabled PoC run; do not assume additional varying lines are harmless.
+- PoC `vpk.exe` and `bspzip.exe` statically import `tier0.dll`; PoC `tier0.dll` imports `WINMM.dll`
+  (`py -3.12 tools/diag/pe_imports.py` on those three files). No-argument baseline runs exit by
+  themselves with codes **1** and **-1**, respectively. Raw stdout/stderr are retained under
+  `out/baseline/`; enabled comparisons remain pending.
+- Windows Defender blocked the initial Debug proxy at 18:09 local time as
+  **Trojan:Win32/Bearfoos.A!ml**, threat id **2147731250**. Subsequent load/copy tests failed with
+  Windows' virus/potentially-unwanted-software error. Evidence: `Get-MpThreatDetection` resources
+  named the Debug build and the `nl-proxy-测试-*` fixture copies; `Get-MpThreat` reported it active.
+  The detection needs human review before further native runtime validation; no antivirus
+  configuration was changed. See [M1-report.md](handover/M1-report.md).
+- Resumed after the user reported excluding the main checkout: Release passed **11/14** proxy
+  cases (including entry timing and all off switches) before fresh detections blocked its remaining
+  fixtures and removed the Release DLL in the sibling M1 worktree. Debug passed 7/14; both full
+  suites still failed. `0xc0000906` is `STATUS_VIRUS_INFECTED` (installed Windows SDK
+  `shared/ntstatus.h:11558`). The new detections name the sibling `!NVIDIA-RTX-Remix-M1` and
+  `%TEMP%/nl-proxy-测试-*`, outside the main checkout path the user named. Full logs:
+  `out/m1-full-debug-tests.txt`, `out/m1-full-release-tests.txt`.
+
+## 8. M1 final validation and Chromium roles (2026-10-27, Codex)
+
+- Per the user's requested output root, the active `m1-bootstrap` worktree is now
+  `H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap`. All builds, installer
+  fixtures, host fixtures and evidence stay below it. The earlier sibling worktree/build was
+  removed. Seven hash-verified legacy host executables were moved from `%TEMP%` to
+  `out/prior-validation/legacy-fixtures` (SHA-256
+  `5AA6BAD58029EF96C6DC4936B769C5522BD51094F8EC23658880AA860AB78FF4`), preserving them after
+  automatic approval review rejected deletion. No generated executable remains in those temp roots.
+- GMod's Chromium processes reuse **the same `bin\win64\gmod.exe`**, with roles such as
+  `--type=utility --utility-sub-type=network.mojom.NetworkService`. They do not inherit the parent's
+  `-nonativeloader` switch. The first real smoke run showed a helper PID replacing the main log
+  (`out/smoke/20261028T012617409Z/off-command.loader.log`). A path-only host gate therefore lets a
+  helper run the bootstrap even when the main launch is disabled.
+- Fixed by treating `--type=value` / `--type value` roles as pure pass-through, using the same
+  allocation-free token parser (`loader/proxy/activation.cpp:89`). Prefix near-misses and quoted
+  text are covered, plus four child-role integration runs. The smoke check now requires the log PID
+  to equal the launched game PID (`tools/smoke_test.ps1:117`). No hook/forwarding technique changed.
+- Debug and Release: **4/4 CTest entries pass**, including **16 proxy cases** and **23 installer
+  assertions**. The full Debug runner also runs **56 Python tests** (one pre-existing skip).
+  Test discovery needed a repository-relative exclusion filter because the selected worktree has
+  an ancestor named `out` (`tools/test.ps1:38`); filtering full absolute paths had hidden Python suites.
+- Final Release PoC smoke evidence: `out/smoke/20261028T012849979Z/summary.json`:
+  `success=true`, `restored=true`; all five launches reach `gm_construct`; console output matches
+  after the documented normalization; all off switches produce no log; both tools match baseline.
+  Map-load-plus-settle durations: baseline **6.59s**, enabled **6.56s**, command-off **6.53s**,
+  environment-off **6.72s**, file-off **6.57s**. These are smoke durations, not benchmark results.
+- The enabled log is from main PID **64992**, resolves **181/181** exports, and samples
+  `engine.dll=0`, `shaderapidx9.dll=0`, `d3d9.dll=0` at the EXE entry point. Logged startup work:
+  **0.2898ms**. Its command line contains the actual `-game garrysmod ... +map gm_construct`
+  launch, not a Chromium helper role. Both final configurations still import **KERNEL32.dll only**.
+- Final installed and uninstalled verifier reports each have **2,877 OK**, **0 missing**, **0 size
+  mismatches**, **0 hash mismatches**, with the existing `autoexec.cfg` user-config difference.
+  Evidence: `out/m1-poc-installed-verify.json`, `out/m1-poc-uninstalled-verify.json`. The PoC is left
+  with no bootstrap DLL/PDB or loader state. Installed Release DLL SHA-256:
+  `E9B1327A89853344DD967D4B6C5C8E48E52F49849C208EA7605B61EF278A3351`.

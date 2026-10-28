@@ -5,6 +5,8 @@ Runs every check in the repo, in this order, and reports which steps failed:
 1. [`check_repo.py`](check_repo.py.md): documentation conventions.
 2. Python tests: every `tools/**/tests` folder, run from its parent folder with
    `python -m unittest discover -s tests`, so test files import the scripts beside them.
+   Excludes generated `out`, `build` and `__pycache__` directories relative to the repository;
+   an ancestor folder with one of those names does not hide the repository's tests.
 3. [`build.ps1`](build.ps1.md): C++ configure, build and CTest (skip with `-SkipNative`).
 
 Run it before finishing any change (see [AGENTS.md](../AGENTS.md)).

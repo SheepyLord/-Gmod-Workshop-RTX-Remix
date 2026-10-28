@@ -9,7 +9,7 @@ with [`tools/build.ps1`](../tools/build.ps1.md) through the root `CMakeLists.txt
 |---|---|---|---|
 | [`core/`](core/README.md) | `nl_core` (static library) | M0 skeleton | Everything that does not need to run inside the game: GMA reading, manifests, discovery, planning, deployment (M2/M3) |
 | [`tests/`](tests/README.md) | `nl_tests` (CTest) | M0 | Unit tests for `nl_core` with a small in-repo harness |
-| `proxy/` | `winmm.dll` | planned (M1) | Export forwarding to the system `winmm.dll`, host checks, entry-point hook, activation |
+| [`proxy/`](proxy/README.md) | `winmm.dll`, `nl_proxy_logic`, `nl_proxy_tests` | M1 implementation | Complete System32 export forwarding, host/off-switch checks, entry-point hook and guarded logging; synthetic-host and installer tests |
 | `cli/` | `nlctl.exe` | planned (M2) | `list`, `inspect`, `plan`, `apply`, `rollback`, `verify` on an install, without starting the game |
 
 `CMakeLists.txt` here only adds the sub-folders. Every module folder keeps a `README.md` that names each
