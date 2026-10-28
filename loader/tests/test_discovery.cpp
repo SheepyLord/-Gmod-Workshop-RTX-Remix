@@ -100,11 +100,35 @@ TEST_CASE("discovery: one candidate per allowlisted entry, in precedence order")
   CHECK(candidates[6].time_updated.value_or(0) == 1793000000u);
   CHECK(candidates[6].workshop_manifest == "987");
   CHECK(candidates[7].problem.find("disabled") != std::string::npos);   // 222 in addonnomount
+  CHECK(candidates[7].disabled_by_user);
   CHECK(candidates[8].problem.find("no .gma") != std::string::npos);    // 333 empty
   CHECK(candidates[9].problem.find("archives") != std::string::npos);   // 444 ambiguous
   CHECK(candidates[10].problem.empty());                                // 555 legacy .bin
   CHECK(candidates[10].location.filename() == "387671470694828055_legacy.bin");
   CHECK(candidates[11].problem.find("not installed") != std::string::npos);  // 999
+  CHECK(!candidates[11].disabled_by_user);
+  fs::remove_all(dir);
+}
+
+TEST_CASE("discovery: local and dev locations are absolute even for a relative game root") {
+  // The journal records these locations and start-up compares them with what it finds; a root
+  // given relative to nlctl's working directory must not give another spelling of the same file.
+  const auto dir = nl::test::scratch_dir("discovery_relative_root");
+  const FakeLibrary lib(dir);
+  nl::config::Config config;
+  config.local = {"garrysmod/addons/local.gma"};
+  config.dev_folders = {"dev/../dev/pkg"};
+  const auto relative = fs::relative(lib.game, fs::current_path());
+  REQUIRE(!relative.empty());
+  nl::discovery::Environment environment;
+  environment.game_root = relative;
+  const auto candidates = nl::discovery::discover(config, environment);
+  REQUIRE(candidates.size() == 2);
+  for (const auto& candidate : candidates) {
+    CHECK(candidate.location.is_absolute());
+    CHECK(candidate.location == candidate.location.lexically_normal());
+  }
+  CHECK(fs::equivalent(candidates[1].location, lib.game / "garrysmod" / "addons" / "local.gma"));
   fs::remove_all(dir);
 }
 

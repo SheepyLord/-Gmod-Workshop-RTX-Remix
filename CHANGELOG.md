@@ -6,6 +6,55 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (M4: activation)
+
+- `tools/poc_session.py`: drives PoC sessions without anyone at the keyboard (install, config, launch,
+  wait for the map, `PrintWindow` screenshots, module list, a normal quit through a local remote
+  console, logs, uninstall and depot verification). Used for M4's remaining real checks and M5.
+- Review fixes (Claude): a successful activation is committed before the report is written, so a
+  status or log write failure no longer unloads an initialised runtime; a deployment that fails and is
+  undone in process activates the committed generation (`startup::after_deployment`, ADR 0009);
+  `package_runtime.py` no longer adds `+mat_disable_d3d9ex 1`, which the game archives into
+  `config.cfg` and so would carry into RTX-off sessions (`-nod3d9ex` remains).
+
+- Bootstrap startup now deploys and activates the committed generation, validates runtime/layer
+  files, applies reversible environment/arguments/Vulkan/DLL-search changes, and preloads the runtime
+  by absolute path. Atomic status schema 1 and matching log fields report active and vanilla outcomes;
+  uninstall removes generated status. CTest checks KERNEL32-only imports and a packaged fake runtime
+  with static/delay dependencies, rollback and startup policy scenarios.
+- `tools/poc_activation_check.ps1`: individual approved PoC launches, package A/B preparation,
+  module/log/status evidence, vanilla/dxlevel comparisons, visual confirmations and cleanup. The
+  user-approved `-Multirun` mode permits the other install to remain running, never another PoC.
+- Loader version `0.1.0` identifies M4 activation support and satisfies the runtime packager's
+  `requires_loader >=0.1.0` contract (root project version bump approved by the user).
+- Startup deployment policy ([ADR 0009](docs/decisions/0009-startup-deployment-last-good.md)) keeps
+  the last good generation when an allowlisted source fails, including during staging, distinguishes
+  explicit addon disable, and excludes only the current process from the running-game check.
+  Explicit CLI apply retains its M3 behavior. Steam registry lookup loads its system library on demand.
+- Corrections before integration: command-line swaps validate and update the complete cached
+  string descriptors, roll back partial failures and expose explicit/scoped restoration. A separate
+  process tests the real kernelbase/PEB round trip. Package config layers now precede existing user
+  lists, retaining the user's final editable layer; ordinary environment values remain untouched.
+- `nl_core`: `nl::activate::plan` ([ADR 0008](docs/decisions/0008-activation-at-startup.md)), a pure
+  function turning the deployed generation, config, environment and command line into the start-up
+  steps: the `d3d9.dll` to preload and the folder to add to the DLL search, the config-file layer
+  lists (package layers below the user's root `rtx.conf`, relative to the game root), the package
+  environment (the user's own values winning) and the launch arguments to add (those the user did
+  not pass).
+- `nl_core`: `nl::cmdline` — command-line tokenising, and `append_arguments`, which adds the
+  runtime's launch arguments in memory by pointing kernelbase's `GetCommandLineW`/`GetCommandLineA`
+  caches and the PEB at longer strings, after checking each getter is the expected
+  `mov rax,[rip+disp]; ret` shape and points at this process's command line.
+- `nlctl activation <game root>`: read-only, prints what start-up would load, set and add.
+- Tests: 12 new `nl_tests` cases (106 in all) for `activate::plan` and `nl::cmdline`, the latter
+  including the command-line swap against this process's real kernelbase.
+- `tools/package_runtime.py`: builds an RTX Remix runtime package (a package folder and/or a `.gma`)
+  from the fork's runtime build folder (`_output`), hashing every file as it is copied. Excludes
+  `.exp/.lib/.ilk/.bak` and (unless `--with-pdbs`) `.pdb`; `--d3d9-from` overrides `d3d9.dll` from
+  another build folder; `--rtx-conf` / `--dxvk-conf` add config layers; `--env`, `--id`, `--version`
+  and more set the manifest. The default version derives from `d3d9.dll`, so the output is
+  reproducible. Tests in `tools/tests/test_package_runtime.py`.
+
 ### Added (M3: deployer)
 
 - `nl_core`: the transactional deployer `nl::deploy` (`apply`, `rollback`, `uninstall`, `recover`,

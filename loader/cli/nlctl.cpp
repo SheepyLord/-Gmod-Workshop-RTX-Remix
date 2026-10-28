@@ -4,6 +4,7 @@
 // Exit codes: 0 ok, 1 a check found problems (or a deployment was refused or failed, leaving the
 // install as it was), 2 bad usage or unreadable/malformed input, 3 bug.
 
+#include "nl/activate.h"
 #include "nl/core.h"
 #include "nl/deploy.h"
 #include "nl/fs.h"
@@ -382,6 +383,50 @@ int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir
   return kOk;
 }
 
+// Read-only: what the bootstrap's start-up step would activate from the deployed generation. The
+// command line is taken as empty, so the launch arguments shown are the whole set the package adds.
+int cmd_activation(const fs::path& game_root, bool json) {
+  const nl::config::Config config = nl::config::load(game_root);
+  const auto journal = nl::journal::load(game_root);
+  if (!journal || !journal->current) {
+    if (json) print("{\n  \"activate\": false,\n  \"reason\": \"nothing deployed\"\n}\n");
+    else print("nothing deployed (no current generation)\n");
+    return kOk;
+  }
+  nl::activate::Plan plan;
+  if (!config.from_file) plan.reason = "native-loader/config.json is absent";
+  else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
+  else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"");
+  if (json) {
+    std::string out = "{\n  \"activate\": " + std::string(plan.activate ? "true" : "false");
+    out += ",\n  \"reason\": " + nl::json::quote(plan.reason);
+    out += ",\n  \"runtime_dll\": " + (plan.runtime_dll.empty() ? std::string("null") : nl::json::quote(plan.runtime_dll));
+    out += ",\n  \"runtime_dir\": " + (plan.runtime_dir.empty() ? std::string("null") : nl::json::quote(plan.runtime_dir));
+    out += ",\n  \"prefer_system_vulkan\": " + std::string(plan.prefer_system_vulkan ? "true" : "false");
+    out += ",\n  \"env\": [";
+    for (std::size_t i = 0; i < plan.env.size(); ++i) {
+      out += (i ? ",\n    " : "\n    ") + std::string("{\"name\": ") + nl::json::quote(plan.env[i].first) +
+             ", \"value\": " + nl::json::quote(plan.env[i].second) + "}";
+    }
+    out += plan.env.empty() ? "]" : "\n  ]";
+    out += ",\n  \"launch_args\": " + string_array_json(plan.launch_args) + "\n}\n";
+    print(out);
+    return kOk;
+  }
+  if (!plan.activate) {
+    print("would not load the runtime: " + plan.reason + "\n");
+    return kOk;
+  }
+  print("would load  " + plan.runtime_dll + "\n");
+  print("dll search  + " + plan.runtime_dir + "\n");
+  print(std::string("vulkan      ") + (plan.prefer_system_vulkan ? "preload System32 vulkan-1.dll first" : "runtime's own") + "\n");
+  for (const auto& [name, value] : plan.env) print("env         " + name + "=" + value + "\n");
+  std::string args;
+  for (const auto& a : plan.launch_args) args += (args.empty() ? "" : " ") + a;
+  print("launch args " + (args.empty() ? std::string("(none to add)") : args) + "\n");
+  return kOk;
+}
+
 std::string report_json(const nl::deploy::Report& r) {
   std::string out = "{\n  \"action\": " + nl::json::quote(r.action) + ",\n  \"outcome\": " + nl::json::quote(r.outcome);
   out += ",\n  \"generation\": " + std::to_string(r.generation) + ",\n  \"recovered\": " + (r.recovered ? "true" : "false");
@@ -502,8 +547,9 @@ int usage() {
       "  verify  <file.gma>   check every file CRC, the archive CRC and trailing data\n"
       "  scan    <folder>     read-only parse of every .gma / .bin archive below the folder\n"
       "  manifest <file.gma|folder>  validate a native package and summarise its manifest\n"
-      "  plan    <game root> [--steam-dir <dir>]  what the loader would activate (read-only)\n"
+      "  plan    <game root> [--steam-dir <dir>]  what the loader would deploy (read-only)\n"
       "  apply   <game root> [--steam-dir <dir>] [--dry-run]  deploy the plan\n"
+      "  activation <game root>  what start-up would load, set and add from the deployed runtime (read-only)\n"
       "  status  <game root> [--verify]  the journal; are the deployed files as placed (read-only)\n"
       "  rollback <game root> [--dry-run]  return to the previous generation\n"
       "  uninstall <game root> [--dry-run]  remove everything the loader placed\n"
@@ -542,6 +588,7 @@ int wmain(int argc, wchar_t** argv) {
     if (args.size() == 2 && args[0] == L"scan") return cmd_scan(args[1], json);
     if (args.size() == 2 && args[0] == L"manifest") return cmd_manifest(args[1], json);
     if (args.size() == 2 && args[0] == L"plan") return cmd_plan(args[1], steam_dir, json);
+    if (args.size() == 2 && args[0] == L"activation") return cmd_activation(args[1], json);
     if (args.size() == 2 && args[0] == L"apply") return cmd_apply(args[1], steam_dir, json, dry_run);
     if (args.size() == 2 && args[0] == L"status") return cmd_status(args[1], json, verify_hashes);
     if (args.size() == 2 && args[0] == L"rollback") return cmd_rollback(args[1], json, dry_run);

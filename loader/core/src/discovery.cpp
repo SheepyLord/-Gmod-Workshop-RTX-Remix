@@ -30,9 +30,20 @@ fs::path from_utf8(const std::string& text) {
 }
 
 std::optional<fs::path> steam_from_registry() {
+  // The bootstrap links this code in M4 and must retain a KERNEL32-only import table.
+  wchar_t system[32768]{};
+  const UINT length = GetSystemDirectoryW(system, 32768);
+  if (!length || length >= 32768) return std::nullopt;
+  const auto path = fs::path(system) / L"advapi32.dll";
+  const HMODULE library = LoadLibraryW(path.c_str());
+  if (!library) return std::nullopt;
+  const auto get_value = reinterpret_cast<decltype(&RegGetValueW)>(GetProcAddress(library, "RegGetValueW"));
   wchar_t buffer[1024];
   DWORD size = sizeof(buffer);
-  if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Valve\\Steam", L"SteamPath", RRF_RT_REG_SZ, nullptr, buffer, &size) != ERROR_SUCCESS) {
+  const auto result = get_value ? get_value(HKEY_CURRENT_USER, L"Software\\Valve\\Steam", L"SteamPath", RRF_RT_REG_SZ,
+                                           nullptr, buffer, &size) : ERROR_PROC_NOT_FOUND;
+  FreeLibrary(library);
+  if (result != ERROR_SUCCESS) {
     return std::nullopt;
   }
   return fs::path(buffer);
@@ -62,9 +73,12 @@ std::optional<fs::path> library_from_steam(const fs::path& steam_root) {
   return fallback;
 }
 
+// Always absolute: the journal records this location, and start-up (keep-last-good) compares it with
+// the location it finds itself, so a root given relative to some other working directory (nlctl)
+// must not produce a different spelling of the same folder.
 fs::path resolve(const fs::path& game_root, const std::string& configured) {
   const fs::path p = from_utf8(configured);
-  return p.is_absolute() ? p : game_root / p;
+  return (p.is_absolute() ? p : fs::absolute(game_root) / p).lexically_normal();
 }
 
 bool ends_with_folded(const std::string& text, std::string_view suffix) {
@@ -175,6 +189,7 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
       }
     }
     if (env.disabled_workshop.count(id)) {
+      c.disabled_by_user = true;
       c.problem = "disabled in GMod's addon list (garrysmod/cfg/addonnomount.txt)";
     } else if (!env.workshop_content) {
       c.problem = "the Steam library holding GMod's Workshop folder was not found";

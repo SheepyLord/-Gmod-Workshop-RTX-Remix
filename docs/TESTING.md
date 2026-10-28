@@ -122,6 +122,34 @@ checkout builds the proxy into its own `out\build\<preset>`, which is where `ins
 through it `smoke_test.ps1`) takes it from (AGENTS.md rule 9). Chromium helper roles stay inert, and
 the real-game smoke check verifies the enabled log's PID against the game process it launched.
 
+## M4 checks and PoC acceptance
+
+`tools/test.ps1` runs 66 Python tests (one existing skip) and 15 CTest entries. Native checks include
+120 core cases across the normal/fault groups, 16 proxy cases, 23 installer assertions, a separate
+kernelbase W/A/PEB swap-and-restore process, and an automated KERNEL32-only PE import check.
+`nl_activation_integration` packages a fake runtime with one static and one delay dependency and
+checks 17 scenario groups in synthetic game roots below `out/tmp`; no real game is started by CTest.
+It writes status/probe/log evidence and ten unchanged-startup timing samples under `out/m4-synthetic`.
+
+The real PoC uses [poc_activation_check.ps1](../tools/poc_activation_check.ps1.md). Prepare builds
+two runtime archives and snapshots the reference root configs without starting a game. Every run
+needs its own user approval and explicit `-Launch`. Preview is read-only. The user-approved
+`-Multirun` override permits another install to remain open, while a second PoC instance still blocks.
+The baseline records System32 d3d9 and mat_dxlevel; subsequent stages cover A, RTX off, B and rollback.
+Rendering confirmation is a user observation, separate from a successful preload/status report.
+
+Codex's real evidence is in [M4-report.md](handover/M4-report.md): the copied classic shaderModel=0
+layer failed with vanilla shaders; a test-only shaderModel=3 layer reached the map without path
+tracing. The checks still open after that were run in Claude's review ([M4-review.md](handover/M4-review.md))
+with [poc_session.py](../tools/poc_session.py.md), which needs nobody at the keyboard: it launches the
+PoC, waits for the map, takes screenshots through `PrintWindow`, lists the loaded modules, and quits
+through a local remote console (`quit` is refused from Lua). With the shaderModel=3 packages A and B:
+A deployed and active, a config switch deployed and activated B, `nlctl rollback` brought A back and
+the hold kept it at the next start, and RTX off (`remix.enabled: false`) used System32's `d3d9.dll` at
+`mat_dxlevel 95`; every run quit normally; uninstall left 2,877 depot files OK. Evidence:
+`out/poc-sessions/m4-real-20261028T041725`. Whether `-dxlevel` persists was settled separately
+([RESEARCH.md](RESEARCH.md) section 11: it does not).
+
 ## Installs
 
 | Install | Path | Use |

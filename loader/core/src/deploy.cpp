@@ -6,6 +6,8 @@
 #include "nl/package.h"
 #include "nl/paths.h"
 #include "nl/sha256.h"
+#include "nl/startup.h"
+#include "nl/status.h"
 
 #include <windows.h>
 #include <tlhelp32.h>
@@ -120,17 +122,31 @@ class Lock {
 };
 
 // True if this folder's gmod.exe is running, or a gmod.exe whose folder cannot be read is.
-bool game_running(const Path& root) {
+bool game_running(const Path& root, std::uint32_t excluded_process) {
   const std::wstring targets[] = {std::filesystem::absolute(root / L"bin" / L"win64" / L"gmod.exe").lexically_normal().native(),
                                   std::filesystem::absolute(root / L"gmod.exe").lexically_normal().native()};
   const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (snapshot == INVALID_HANDLE_VALUE) return false;
+  std::vector<PROCESSENTRY32W> entries;
   PROCESSENTRY32W entry{};
   entry.dwSize = sizeof(entry);
+  for (BOOL more = Process32FirstW(snapshot, &entry); more; more = Process32NextW(snapshot, &entry)) entries.push_back(entry);
+  CloseHandle(snapshot);
+  // The game started through the root gmod.exe (the 32-bit launcher) may find its parent still
+  // alive for a moment; that launcher is part of this start, not another game.
+  std::uint32_t launcher = 0;
+  if (excluded_process) {
+    for (const auto& item : entries) {
+      if (item.th32ProcessID == excluded_process) launcher = item.th32ParentProcessID;
+    }
+  }
   bool running = false;
-  for (BOOL more = Process32FirstW(snapshot, &entry); more && !running; more = Process32NextW(snapshot, &entry)) {
-    if (CompareStringOrdinal(entry.szExeFile, -1, L"gmod.exe", -1, TRUE) != CSTR_EQUAL) continue;
-    const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ProcessID);
+  for (const auto& item : entries) {
+    if (running) break;
+    if (item.th32ProcessID == excluded_process) continue;
+    if (CompareStringOrdinal(item.szExeFile, -1, L"gmod.exe", -1, TRUE) != CSTR_EQUAL) continue;
+    const bool parent = launcher && item.th32ProcessID == launcher;
+    const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, item.th32ProcessID);
     if (!process) {
       // Access denied: it cannot be told where it runs from, so assume here. Anything else: it has
       // exited since the snapshot.
@@ -141,16 +157,16 @@ bool game_running(const Path& root) {
     DWORD size = static_cast<DWORD>(image.size());
     if (QueryFullProcessImageNameW(process, 0, image.data(), &size)) {
       image.resize(size);
-      for (const std::wstring& target : targets) {
-        if (CompareStringOrdinal(image.c_str(), -1, target.c_str(), -1, TRUE) == CSTR_EQUAL) running = true;
+      for (std::size_t i = 0; i < std::size(targets); ++i) {
+        if (parent && i == 1) continue;  // our own launcher, root\gmod.exe
+        if (CompareStringOrdinal(image.c_str(), -1, targets[i].c_str(), -1, TRUE) == CSTR_EQUAL) running = true;
       }
     } else {
       DWORD code = 0;
-      if (GetExitCodeProcess(process, &code) && code == STILL_ACTIVE) running = true;  // alive, place unknown
+      if (!parent && GetExitCodeProcess(process, &code) && code == STILL_ACTIVE) running = true;  // alive, place unknown
     }
     CloseHandle(process);
   }
-  CloseHandle(snapshot);
   return running;
 }
 
@@ -160,7 +176,8 @@ struct Run {
       : root(std::move(game_root)),
         disk(options.filesystem ? *options.filesystem : fs::win32()),
         dry_run(options.dry_run),
-        allow_running_game(options.allow_running_game) {
+        allow_running_game(options.allow_running_game),
+        exclude_process_id(options.exclude_process_id) {
     report.action = action;
   }
 
@@ -171,6 +188,7 @@ struct Run {
   fs::Counting disk;  // every change goes through it, so the report can count them
   bool dry_run;
   bool allow_running_game;
+  std::uint32_t exclude_process_id;
   Report report;
   Journal journal;
 };
@@ -363,8 +381,12 @@ bool begin(Run& run, Lock& lock) {
     }
   }
   if (!run.dry_run) {
-    if (!run.allow_running_game && game_running(run.root)) return refuse(run, "Garry's Mod is running from this folder; close it first");
+    if (!run.allow_running_game && game_running(run.root, run.exclude_process_id)) {
+      run.report.blocked_by = Report::BlockedBy::running_game;
+      return refuse(run, "Garry's Mod is running from this folder; close it first");
+    }
     if (!lock.acquire(run.at(kLock))) {
+      if (lock.error() == ERROR_SHARING_VIOLATION) run.report.blocked_by = Report::BlockedBy::deployer_lock;
       return refuse(run, lock.error() == ERROR_SHARING_VIOLATION
                              ? std::string("another deployment is running in this folder")
                              : "cannot open native-loader/lock (Windows error " + std::to_string(lock.error()) + ")");
@@ -1272,6 +1294,17 @@ Report apply(const std::filesystem::path& root, std::vector<planner::Considered>
     StagedByPackage staged;  // kept across planning passes
     for (;;) {
       const planner::Plan plan = planner::make_plan(considered, config, loader);
+      if (options.keep_last_good && run.journal.current) {
+        if (const auto reason = startup::keep_last_good_reason(*run.journal.current, plan)) {
+          run.report.outcome = "kept";
+          run.report.generation = run.journal.current->number;
+          list_packages(run.report, run.journal.current->packages);
+          run.note(*reason);
+          report_skipped(run.report, plan);
+          if (!staged.empty()) finish(run);  // discard only this run's staged material; current stays intact
+          return;
+        }
+      }
       try {
         deploy_plan(run, plan, tx, staged, release_hold);
         report_skipped(run.report, plan);
@@ -1290,7 +1323,13 @@ Report rollback(const std::filesystem::path& root, const Options& options) {
 
 Report uninstall(const std::filesystem::path& root, const Options& options) {
   Run run(root, options, "uninstall");
-  return guarded(run, [&] { remove_all(run); });
+  return guarded(run, [&] {
+    remove_all(run);
+    if (!run.dry_run && run.report.ok()) {
+      try { nl::status::remove(run.disk, root); }
+      catch (const fs::Error& error) { run.note(std::string("status cleanup: ") + error.what()); }
+    }
+  });
 }
 
 Report recover(const std::filesystem::path& root, const Options& options) {

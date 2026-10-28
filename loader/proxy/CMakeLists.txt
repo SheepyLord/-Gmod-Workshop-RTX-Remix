@@ -8,7 +8,7 @@ target_include_directories(nl_proxy_logic PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(nl_proxy_logic PRIVATE nl_build_options)
 
 configure_file(version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
-add_library(nl_winmm SHARED bootstrap.cpp startup.cpp generated/thunks.asm
+add_library(nl_winmm SHARED bootstrap.cpp startup.cpp runtime.cpp generated/thunks.asm
   generated/winmm.def "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 set_target_properties(nl_winmm PROPERTIES OUTPUT_NAME winmm)
 target_link_libraries(nl_winmm PRIVATE nl_proxy_logic nl_core nl_build_options)

@@ -25,15 +25,18 @@ Steam ─► GarrysMod\gmod.exe (launcher) ─► bin\win64\gmod.exe   (working 
        native-loader\disable  → stay a pure pass-through
      • patch the EXE entry point to jump to our start-up step
 2. Start-up step (EXE entry point, loader lock free, before WinMain and before any engine DLL)
-     discover  allowlisted Workshop items + local .gma + dev folders; skip addonnomount.txt entries
-     plan      choose package versions, resolve conflicts (one active runtime)
+     preflight valid enabled config and valid journal; missing/disabled/invalid means stay vanilla
+     discover  allowlisted Workshop items + local .gma + dev folders; distinguish explicit addon disable
+     plan      choose package versions, resolve conflicts (one active runtime); keep the last good
+               generation if an unavailable/invalid still-allowlisted source would remove/replace it
      deploy    stage → verify CRC32 + SHA-256 → atomic rename; journal every write; back up
                anything replaced; never touch user-edited files or user.conf
-     activate  DXVK_CONFIG_FILE / DXVK_RTX_CONFIG_FILE layers, other env vars,
+     activate  verify cwd, journaled entry/layer sizes and MAX_PATH; apply environment and layers,
+               reversible kernelbase W/A + PEB command-line descriptor swap,
                optional preload of System32\vulkan-1.dll,
-               LoadLibraryEx(<package>\runtime\d3d9.dll, LOAD_WITH_ALTERED_SEARCH_PATH),
-               register patch sets for modules not loaded yet, add launch arguments
-     report    native-loader\logs\loader.log, garrysmod\data\native-loader\status.json
+               SetDllDirectoryW(<absolute runtime folder>) for delay loads, then
+               LoadLibraryExW(<absolute package runtime d3d9.dll>, LOAD_WITH_ALTERED_SEARCH_PATH)
+     report    native-loader\logs\loader.log, atomic garrysmod\data\native-loader\status.json
    then jump to the original entry point
 3. Engine start-up. When shaderapidx9.dll loads, its import of "d3d9.dll" binds to the
    module already loaded under that name: the Remix runtime. No preload → normal search
@@ -103,10 +106,34 @@ and never touched. `rollback` is a transaction back to the previous generation, 
 retires everything. A run with nothing to do writes nothing; [RESEARCH.md](RESEARCH.md) section 9
 has the timings.
 
+## Startup activation (M4)
+
+The bootstrap calls `nl::startup::prepare` after the initial M1 log. Missing/disabled/invalid config
+or an invalid journal causes no deployment or activation. Only the current process is excluded from
+the running-game check. A second same-root game or a busy deployer defers deployment; a current
+generation may activate only when its journal has no pending transaction. Startup retains the last
+good generation when a still-allowlisted source fails, including during staging. Explicit allowlist
+removal and addon disable remain intentional removals; M3 rollback holds are preserved
+([ADR 0009](decisions/0009-startup-deployment-last-good.md)).
+
+Activation follows [ADR 0008](decisions/0008-activation-at-startup.md): package config layers precede
+the user's existing list (or the default root conf), ordinary user environment values are retained,
+missing launch arguments are appended, System32 Vulkan is optionally loaded, the runtime folder is
+set for bare-name delay loads, and the absolute d3d9 path is preloaded last. A failed step undoes
+earlier process changes. Rollback state is owned outside the SEH frame, so native faults cannot skip
+it. Status/log failure before the final commit also keeps the game vanilla.
+
+Launch arguments are now resolved: kernelbase's validated cached-string descriptors and the PEB
+are swapped together, including byte lengths and terminator capacity, before the game CRT/engine
+reads them. A refused swap prevents activation and reports exact fallback launch options; the user
+decides whether to supply them. No Steam settings are written. Chromium helper roles remain inert.
+
+The status file describes startup activation, not later renderer health. Runtime initialization and
+actual path tracing are verified separately using Remix logs and the user's on-screen confirmation.
+Uninstall removes the generated status file and its data folder when empty.
+
 ## Open questions (tracked in the roadmap)
 
-- Adding launch arguments (`-dxlevel 90 -nod3d9ex +mat_disable_d3d9ex 1`) from inside the process:
-  IAT hooks on `GetCommandLineA/W` in `gmod.exe` and `launcher.dll`, or documented Steam launch options.
 - Whether `stdshader_dx6.dll` loads by bare name (preload works) or full path (needs a redirect or a
   journaled on-disk override).
 - VAC: in-memory patches stay off on secure servers unless `-insecure` is set.

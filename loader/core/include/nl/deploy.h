@@ -23,7 +23,9 @@ namespace nl::deploy {
 struct Options {
   fs::FileSystem* filesystem = nullptr;  // where changes go; default fs::win32()
   bool dry_run = false;                  // work out and report the changes, make none
-  bool allow_running_game = false;       // the caller is the game itself (the bootstrap, M4)
+  bool allow_running_game = false;       // test/explicit caller override; skips every process check
+  std::uint32_t exclude_process_id = 0;  // M4 ignores only itself, preserving the second-instance check
+  bool keep_last_good = false;           // M4 only: an unusable still-allowlisted source cannot remove/replace current
 };
 
 struct Change {
@@ -37,6 +39,7 @@ struct Skipped {
 };
 
 struct Report {
+  enum class BlockedBy { none, running_game, deployer_lock };
   std::string action;   // apply, rollback, uninstall or recover
   // deployed, unchanged, held, planned (dry run), rolled-back, removed, recovered; failed or refused
   // when nothing was changed (a failed transaction is undone before the report is returned).
@@ -49,6 +52,7 @@ struct Report {
   std::vector<std::string> notes;     // files left alone, and why
   std::string error;                  // why it failed or was refused
   std::uint64_t operations = 0;       // file-system changes made; 0 means nothing was written
+  BlockedBy blocked_by = BlockedBy::none;
   bool ok() const { return outcome != "failed" && outcome != "refused"; }
 };
 

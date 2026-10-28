@@ -2,7 +2,7 @@
 
 Static library holding the loader logic that does not depend on running inside `gmod.exe`, so the
 bootstrap DLL, the `nlctl` CLI and the unit tests all use the same code. M2 built archives,
-manifests, discovery and planning; M3 added deployment.
+manifests, discovery and planning; M3 added deployment; M4 added activation.
 
 | File | Purpose |
 |---|---|
@@ -25,7 +25,11 @@ manifests, discovery and planning; M3 added deployment.
 | `include/nl/fs.h`, `src/fs.cpp` | The deployer's file-system layer: `FileSystem` (every change; `win32()` with flushes, write-through renames and retries while a scanner has a file open; `Counting` for fault injection), `write_atomic`, `remove_tree`, and reads that never follow links (`stat`, `hash_file`, `list`, `read_file`, `refuse_links`); extended-length paths throughout |
 | `include/nl/journal.h`, `src/journal.cpp` | `native-loader\state.json` schema 1: `parse` (strict; paths checked against the folders the loader manages), `serialize`, `load`, atomic `save` ([docs/ON_DISK_LAYOUT.md](../../docs/ON_DISK_LAYOUT.md)) |
 | `include/nl/deploy.h`, `src/deploy.cpp` | The deployer: `apply`, `rollback`, `uninstall`, `recover` (each one transaction, with lock, recovery and clean-up) and read-only `status` ([ADR 0007](../../docs/decisions/0007-transactional-deployment.md)) |
+| `include/nl/activate.h`, `src/activate.cpp` | `activate::plan`: a pure function turning the deployed generation + config + environment + command line into what start-up loads (d3d9.dll, DLL-search folder, vulkan preload), sets (config-file layer lists and package env, the user winning) and adds (launch arguments the user did not pass); [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) |
+| `include/nl/cmdline.h`, `src/cmdline.cpp` | Command line: `tokenize` / `has_arg`, validated transactional `swap_records` (Buffer/Length/MaximumLength and USHORT limits), and `append_arguments` for kernelbase W/A plus the PEB. A move-only `SwapResult` supports explicit/automatic restore or committing buffers for process lifetime; write failure restores every attempted slot. |
 | `src/version.cpp` | `nl::version()` |
+| `include/nl/startup.h`, `src/startup.cpp` | Startup preparation and pure keep-last-good policy: config/journal preflight, current-PID-only exclusion, explicit disabled sources versus unavailable ones, safe contention/pending decisions ([ADR 0009](../../docs/decisions/0009-startup-deployment-last-good.md)) |
+| `include/nl/status.h`, `src/status.cpp` | Startup status schema 1 and matching log fields; atomic per-PID temporary-file replacement; uninstall removes generated status and the empty data folder, preserving unrelated files |
 
 ## GMA reader rules
 

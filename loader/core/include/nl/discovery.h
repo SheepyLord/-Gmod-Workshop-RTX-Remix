@@ -26,6 +26,7 @@ struct Candidate {
   // Workshop only, from appworkshop_4000.acf (Steam's record of the installed version):
   std::optional<std::uint64_t> time_updated;
   std::string workshop_manifest;
+  bool disabled_by_user = false;  // addon-list opt-out, distinct from a temporarily unusable source
 };
 
 struct Environment {

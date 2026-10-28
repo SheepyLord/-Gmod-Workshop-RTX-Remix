@@ -260,3 +260,221 @@ moved one by one).
   open as "running" made `nlctl_e2e_deploy` refuse now and then.
 - Windows may keep an executable's image file locked for a moment after its process ends;
   `e2e_deploy.py` retries putting its placeholder `gmod.exe` back.
+
+## 10. M4 activation research (2026-10-27, Claude)
+
+Gathered while planning M4; scripts were one-offs under `out\tmp` (`pefile`, `ctypes`), read-only.
+
+**Who reads the command line, and when** (PoC, build 26229091):
+
+- `gmod.exe`, `launcher.dll`, `tier0.dll`, `vstdlib.dll`, `engine.dll`, `filesystem_stdio.dll`,
+  `materialsystem.dll`, `shaderapidx9.dll` and `client.dll` each import both `GetCommandLineA` and
+  `GetCommandLineW` from KERNEL32. `tier0.dll` exports `CommandLine`, `Plat_GetCommandLine` and
+  `Plat_GetCommandLineA`; all the others except `gmod.exe` import `CommandLine` from it.
+- None of `gmod.exe`, `launcher`, `tier0`, `vstdlib`, `engine`, `shaderapidx9`, `client` imports a
+  C runtime DLL (`ucrtbase`, `api-ms-win-crt-*`, `vcruntime*`, `msvcp*`): they link it statically.
+  `gmod.exe`'s static imports are only system DLLs and `WINMM` (ours); `launcher.dll` and the
+  engine load later. So no engine module has read or cached the command line when our entry-point
+  hook runs.
+- kernelbase on this machine (Windows 10.0.26300.9711): `GetCommandLineW` is `48 8b 05 41 9f 2b 00 c3`
+  and `GetCommandLineA` is `48 8b 05 41 08 2b 00 c3` (`mov rax,[rip+disp32]; ret`); KERNEL32's exports
+  of the same names are `jmp [rip+x]` thunks to them. The pointer each returns sits at rva `0x3ae058`
+  (W) and `0x3ae048` (A), as the `Buffer` of a `UNICODE_STRING` / `ANSI_STRING`: the 8 bytes before
+  each slot hold `Length` = the string's length in bytes (202 and 101 for a 101-character command
+  line) and `MaximumLength` = `Length` + one terminator.
+- RTXLauncher passes `-dxlevel 90 +mat_disable_d3d9ex 1 -nod3d9ex` (section 4).
+
+**How the runtime takes its config layers** (fork `dxvk-remix-gmod`):
+
+- `resolveConfigPaths` (`src/dxvk/rtx_render/rtx_option_layer.cpp:617-627`): when
+  `DXVK_RTX_CONFIG_FILE` (or `DXVK_CONFIG_FILE`) is set and not empty, the runtime reads only the
+  paths it lists, split at commas; `.\rtx.conf` is read only when the variable is unset. So a loader
+  that sets the variable must list the user's root `rtx.conf` itself.
+- `createLayersFromEnvVar` (`:629-647`) makes one layer per listed path, lowest priority first; the
+  last `rtx.conf` layer becomes `s_rtxConfLayer` (`:704-712`), the one the Remix menu saves to. A
+  layer whose file is missing or empty is registered but not merged (`isValid()` is "has options",
+  `rtx_option_layer.h:141`).
+
+**The runtime's files** (`H:\BACKUP_20260815\Modding\dxvk-remix-gmod`):
+
+- `_output` is the complete runtime: 192 files, 1,117,358,408 bytes, built 2026-10-26 23:36, with
+  `usd\` and the build by-products `d3d9.pdb`, `.exp`, `.lib`. Nothing the classic install keeps in
+  `GarrysMod_RTX_c\bin\win64` for the runtime is missing from it.
+- `_CompRelease_x64\src\d3d9\d3d9.dll` (338,675,200 bytes, 2026-10-27 11:32) is the newest build and
+  the same file as `built-A8E39D93-lockfree-options\d3d9.dll`. The `built-*` and `deployed-*` folders
+  hold only `d3d9.dll` and `d3d9.pdb` (140,800,000 bytes for A8E39D93).
+- `d3d9.dll`'s only delay-load import is `amd_fidelityfx_vk.dll`, loaded by bare name; its static
+  imports include the UCRT API sets (`api-ms-win-crt-*`) besides the VC++ runtime of section 2.
+- `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll` and `vulkan-1.dll` are only in System32 on
+  this machine, not in the PoC's or `GarrysMod_RTX_c`'s `bin\win64`; the classic install keeps
+  `amd_fidelityfx_vk.dll` in `bin\win64`.
+- `GarrysMod_RTX_c\bin\win64` holds 77 files (3.63 GB) beyond vanilla: the runtime mixed with
+  backups, PDBs, Jolt, the MMD hotloader, VR files, `NvRemixBridge`, `dxsupport.cfg` and a
+  `debug.log`. A runtime package therefore takes an explicit file set (`_output`), not that folder.
+- `GarrysMod_RTX_c` has the user's `rtx.conf` (161,131 bytes) and `dxvk.conf` (2,610 bytes) in its
+  root, the layers the classic install runs with.
+
+## 11. M4 implementation and acceptance findings (2026-10-28, Codex)
+
+- Section 10's cached-string layout is now checked before any write, including the PEB descriptor.
+  Synthetic descriptor tests cover mismatched Length/MaximumLength/pointer, USHORT overflow and a
+  failure after a partial write. A separate process swaps the real kernelbase W/A and PEB records,
+  checks updated lengths and restores their exact bytes (`loader/core/src/cmdline.cpp:96`,
+  `loader/tests/cmdline_host.cpp`). The user approved loader version 0.1.0 to match the packager's
+  existing `requires_loader >=0.1.0` contract.
+- Debug and Release pass **15/15 CTest entries**. Core cases total **120** (117 normal plus three
+  exhaustive fault groups); proxy cases remain **16**, installer assertions **23**. Python: **66**
+  tests, one pre-existing skip. The PE CTest confirms the final bootstrap imports only KERNEL32.
+  Steam registry lookup now dynamically resolves RegGetValueW from System32 advapi32
+  (`loader/core/src/discovery.cpp:40`).
+- The packaged fake runtime proves bare-name d3d9 reuse, static and delay dependency paths, user
+  layers/arguments, full failure rollback, explicit fallback options, all off switches, contention,
+  source disappearance/removal and version/hold behavior. **17 scenario groups** pass. Isolated
+  Release evidence: `out/m4-synthetic/release-62268/summary.json`; ten unchanged-deployment samples
+  have **25.8064 ms median**, **19.8476–27.9013 ms** range, zero deployment operations. Timing ends
+  before final report I/O. Raising a native exception in the fake DLL initializer produced Windows
+  error **1114** and verified vanilla continuation with restored settings.
+- The named B folder was absent. Section 10's alternate `_CompRelease_x64/src/d3d9/d3d9.dll` was
+  present with the documented size/time and the **A8E39D93** prefix. Full hashes used:
+  - A: `E5C65136EA8BC7A7485776C18F975FE8068F74B5743DC8EA536AAFF8D6065BCA`;
+  - B: `A8E39D938D96193DF27D245A7F6E72F1C44B75FB2D066A67BDC2CD974EDEA267`.
+  The acceptance script pins the full B hash before accepting this alternate copy. No fork file
+  was changed. Config snapshots were hash-checked and reused for both packages.
+- Real evidence is under `out/poc-activation/20261028T075336206Z/`. Original A contains **191 files,
+  977,303,948 bytes** without PDBs; B has **191 files, 977,403,788 bytes**. These measured sizes
+  supersede the earlier rough full-runtime estimate for this recipe.
+- The user approved each actual launch and explicitly requested **-multirun**, keeping the RTX_c
+  install open. Vanilla PoC PID **6876** reached gm_construct with System32 d3d9 and **mat_dxlevel 95**.
+  The initial A PID **70300** deployed generation 1 in **4808.77 ms**, activated in **36.5178 ms**,
+  and completed startup in **4846.04 ms**. The engine printed **mat_dxlevel 90**, proving it saw
+  the injected arguments. Remix logged an RTX 5090 device, successful Reflex initialization,
+  ray-tracing feature support and swapchain creation, then the engine exited before map completion.
+- The copied classic DXVK config has **d3d9.shaderModel = 0** (snapshot line 10). The fork rejects
+  shader bytecode above that option (`src/d3d9/d3d9_shader.cpp:115`), explaining the logged
+  “GetShaderModule: Out of range of supported shader model” errors. Its default is **3**
+  (`src/d3d9/d3d9_options.cpp:69`). Windows event 1000 recorded a PoC engine.dll fault with
+  exception **0xc0000409**; the exact engine termination cause was not independently debugged.
+- After §9 consultation, the user approved a **PoC-only shaderModel=3 layer** and one A retry.
+  It kept both reference configs unchanged and added one 132-byte layer. PID **31480** reached
+  gm_construct at **mat_dxlevel 90**. Deployment: **4920.9048 ms**; activation: **39.4931 ms**.
+  All **34** loaded runtime DLLs in `03-RunA/runtime-modules.json` came from the versioned package,
+  including d3d9, amd_fidelityfx_vk, NvLowLatencyVk and the DLSS family.
+- The user reported **not path-traced/rendering incorrectly**, then stopped further PoC testing.
+  Real RTX-off output, **dxlevel persistence**, B activation and rollback therefore remain open.
+  Startup activation success is not evidence of successful later rendering.
+- Cleanup removed 383 package files and the bootstrap/control/status state. `verify.json` reports
+  **2,877 OK**, **0 missing**, **0 size mismatches**, **0 hash mismatches**, with the existing
+  autoexec.cfg user-config difference. `created-or-changed.txt` records preserved Remix/Sentry logs,
+  capture directories, engine crash artifacts, metrics and game-written config/cache/console changes.
+  No game/Remix data was deleted for cleanup. The other RTX_c instance remained running.
+
+## 11. Session side effects and automation (2026-10-28, Claude)
+
+**Settings GMod keeps between sessions.**
+
+- GMod's video settings are in `HKCU\Software\Valve\Source\garrysmod\Settings` (`ScreenWidth`,
+  `ScreenWindowed`, `mat_*`, `DXLevel_V1`, ...). The key has the mod folder's name, so the field
+  install, the PoC and `GarrysMod_RTX_c` all share it.
+- `DXLevel_V1` does not decide the level a session runs at. With 90 stored (since 2026-10-27 02:02),
+  vanilla PoC sessions ran at `mat_dxlevel 95` (Codex's baseline, and run 1 below) and wrote 95 back
+  at start-up; a session started with `-dxlevel 90` ran at 90.
+- `-dxlevel 90` does not carry over: three PoC sessions, vanilla, `-dxlevel 90 -nod3d9ex
+  +mat_disable_d3d9ex 1`, vanilla again, ran at 95, 90 and 95, and neither the registry key nor
+  `config.cfg` changed (evidence `out\m4-review\persistence-20261028T040607`; the key was restored
+  from the backup taken first).
+- Archived console variables persist in the install's own `garrysmod\cfg\config.cfg`, which the game
+  writes when it quits normally. The PoC's already held `mat_disable_d3d9ex "1"` before M4; a vanilla
+  session then reports `"mat_disable_d3d9ex" = "1" ( def. "0" )` and "mat_disable_d3d9ex changes will
+  not take effect until application restart": the variable is read when the device is created,
+  before `config.cfg` or `+` commands run. So `+mat_disable_d3d9ex 1` on the command line only changes
+  the next session (through `config.cfg`), while `-nod3d9ex`, which `shaderapidx9.dll` reads (both
+  strings are in it), acts on the current one.
+
+**Ending a session without a person.**
+
+- `game.ConsoleCommand("quit\n")` from server Lua is refused: `game.ConsoleCommand blocked! (quit)`.
+- The menu state loads a fixed list of files (`lua/menu/menu.lua`); `RunGameUICommand("QuitNoConfirm")`
+  exists only there, so it cannot be reached without changing depot files.
+- `WM_CLOSE` to the main window (`CloseMainWindow`) does not end the game (15 s; Codex saw the same).
+- Source's TCP remote console does: with `-usercon -ip 127.0.0.1 -port <p> +rcon_password <x>` and a
+  listen server (`+maxplayers 2`), an RCON `quit` ends the session normally (exit code 0). In a
+  single-player session the remote console does not listen (connection refused).
+  [`tools/poc_session.py`](../tools/poc_session.py.md) uses this.
+
+**Shader DLLs.** A vanilla session at `mat_dxlevel 95` loads `stdshader_dx6.dll` too, by full path:
+the module list shows `h:\steamlibrary\steamapps\common\garrysmod_poc\bin\win64\stdshader_dx6.dll`,
+lower-cased by the engine's file system.
+
+**Windows loader.** At an `LdrRegisterDllNotification` "loaded" callback, the new module's imports
+are already bound (`wininet.dll`: 355 of 355 import address table entries resolved, Windows
+10.0.26300). An import hook installed then is in place before the module's own code runs.
+
+## 12. What the classic RTX install adds (M5 research, 2026-10-28, Claude with a research agent)
+
+Compared with the PoC (vanilla build 26229091). "Verified" as in the header; offsets are PoC file
+offsets or RVAs as stated.
+
+**`GarrysMod_RTX_c` runs an older GMod build.** Of its engine binaries only `tier0.dll` matches a
+cached depot manifest; its VPKs (`garrysmod_000-002`, `fallbacks_*`, `sourceengine\content_hl2_dir`)
+differ from the PoC's too. Its runtime is B (`d3d9.dll` SHA-256 `a8e39d938d96193d...`).
+
+**On-disk engine patches.** RTXLauncher applies `patches64` from `sambow23/SourceRTXTweaks`
+(`applypatch.py`, fetched at install time; no local copy). Each pattern must match exactly once;
+RTX_c holds each in patched form. All seven match exactly once in the PoC's build:
+
+| DLL | Pattern (offset) | Replacement | Purpose |
+|---|---|---|---|
+| engine | `ff90????????85c0742b` (0) | `b80200000090` | `Mod_LoadLighting`: HDR type 2 |
+| engine | `ff90????????85c00f84fa000000` (0) | `b80200000090` | `Mod_LoadWorldlights`: HDR |
+| shaderapidx9 | `4833cce8????03004881c448` (0) | `85c0750466b80400` | zero-sized buffer returns 4 |
+| shaderapidx9 | `4883ec084c` (0) | `31c0c3` | shader constants function returns 0 |
+| shaderapidx9 | `4885db75??498b4500` (3) | `eb` | skip the invalid-vertex-format `Error()` |
+| materialsystem | `f77c24683bc10f4fc1488b8c24300100004833cce8????04004881c448010000` (0) | `448b4424684585c0740341f7f839c80f4fc14881c448010000c3` | zero-sized buffer guard |
+| datacache | `647838302e767478` (0) | `647839302e767478` | `dx80.vtx` to `dx90.vtx` |
+
+`MaterialSystemFallbackPatch` does not apply to either build (a 2-byte `66 90` where it needs a
+15-byte site) and was never applied to RTX_c. The fixes' module applies 8 other, in-memory
+engine/client culling patches itself (`source/culling_patches.cpp:81-347`, from `module.cpp:427`);
+`source/culling_fixes.cpp` (with "these don't apply properly") is dead code: `CullingHooks` is never
+initialised (corrects section 3).
+
+**How `stdshader_dx6.dll` is loaded.** `materialsystem.dll`'s `LoadAllShaderDLLs` (rva `0x4b010`)
+asks for `stdshader_dbg.dll`, then `stdshader_dx6.dll` up to the dx level, through
+`IFileSystem::LoadModule` (vtable +0xe8). `filesystem_stdio.dll` resolves the name against the
+`EXECUTABLE_PATH` search path (`bin\win64`, added first by `launcher.dll`) and calls
+`LoadLibraryExA(<full path>, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)` from its `Sys_LoadModule` (rva
+`0x5ebe0`; the call at `0x5eb02`). Preloading a copy elsewhere therefore does not help; an import hook
+on `filesystem_stdio.dll`'s `LoadLibraryExA` does. `LoadLibraryExA` is also imported by materialsystem,
+engine and launcher, `LoadLibraryA` by tier0, engine and shaderapidx9, none delay-loaded.
+
+**The fixes' shader DLL.** A binary committed in the fixes at `garrysmod/bin/win64/stdshader_dx6.dll`
+(byte-identical to RTX_c's, 437,248 bytes; sources removed in 4b9da1e, readme points to
+`sambow23/obsolete-source-engine`): fixed-function ports of spritecard, eyes/eye_refract, wireframe
+and water. It finds `gmcl_RTXFixesBinary_win64.dll!RTX_SetEyeTexGenState` by that module name at run
+time. With RTX_c's `dxvk.conf` (`d3d9.shaderModel = 0`, line 10) RTX_c's own Remix log also shows
+"Out of range of supported shader model" (28 times), so that message is normal there.
+
+**The fixes' other pieces.** `gmcl_RTXFixesBinary_win64.dll` (1,441,792 bytes in RTX_c, built
+2026-10-27), `gmcl_rtxwater_win64.dll`, `gmcl_rtxdebug_win64.dll` (all import only tier0, ole32,
+KERNEL32). Lua: `addons/remixbinary/lua/autorun/cl_rtx.lua` (`require("RTXFixesBinary")` at :10,
+multiplayer guard at :4), rtx_water (`cl_native.lua:37-42`), niknaks and others. Remix mods from the
+fixes: `base_mod` (37 MB), `rtx_water` (11 MB), `gm_poolrooms_rtx` (150 MB), `~gmod_topbr` (87 files
+in the repo; ToPBR writes generated DDS files there at run time). `autoexec.cfg` is the fixes' file:
+`sv_cheats 1`, `mat_disable_d3d9ex 1`, `r_3dsky 0`, water reflection/refraction 0, `r_shadows 0`,
+`mat_softwareskin 1`, specular/bump/normal/parallax 0, `r_frustumcullworld 0`, `r_occlusion 0`,
+`r_novis 1`, plus the user's own settings. The fixes also overwrite five Steam files (menu
+`problems.lua`, sandbox `gmod_camera.lua`, three images), which this project's rule 2 forbids.
+Built with premake 5 and garrysmod_common, VS 2022; no release zip locally.
+
+**The user's test save and measure.** Reference save
+`GarrysMod_RTX_c\garrysmod\saves\gm_csgosafehouse 2026-10-25 04-08-30.gms`. Harness
+`C:\Users\matt-peng\.rpai\work\_probe\session_run.py` (fixed camera `REF_CAMERA`, captures with the
+`jpeg` command, HUD and view model hidden). Measure `look\compare.py`: crop both images to a multiple
+of 32, take the mean RGB of every 32x32 block, report the mean absolute difference over all blocks and
+channels (0-255); about 1 between repeated captures, 1.5-3.6 "close", 16-26 "broken". The save needs
+the Workshop map 944959992 (a legacy `.bin`, 162 MB, in the shared Workshop folder), the CS:GO mount,
+the user's `SafeHouse` Remix mod, and the MMD Hot Loader character with its `ai_pbr` mod. The classic
+install's launch line (`_debug_tools\launch_gmod_keeplogs.bat:12`) is `-console -condebug -dxlevel 90
++mat_disable_d3d9ex 1 -nod3d9ex -windowed -noborder -w 3840 -h 2160 -tickrate 128 -multirun -insecure
++r_forcehwlight 1`; RTXLauncher adds `-noworkshop` only when its `LoadWorkshopAddons` is false (the
+user's is true; corrects section 4).

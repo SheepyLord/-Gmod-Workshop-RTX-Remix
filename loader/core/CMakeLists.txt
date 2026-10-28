@@ -2,6 +2,8 @@ configure_file(include/nl/version.h.in
   "${CMAKE_CURRENT_BINARY_DIR}/generated/include/nl/version.h" @ONLY)
 
 add_library(nl_core STATIC
+  src/activate.cpp
+  src/cmdline.cpp
   src/config.cpp
   src/crc32.cpp
   src/deploy.cpp
@@ -16,6 +18,8 @@ add_library(nl_core STATIC
   src/paths.cpp
   src/planner.cpp
   src/sha256.cpp
+  src/startup.cpp
+  src/status.cpp
   src/utf8.cpp
   src/vdf.cpp
   src/version.cpp)

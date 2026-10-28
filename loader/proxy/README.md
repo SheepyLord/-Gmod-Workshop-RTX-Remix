@@ -1,6 +1,7 @@
 # loader/proxy
 
-M1 inert x64 bootstrap, output `winmm.dll`. All 181 System32 export ordinals are forwarded by leaf
+X64 bootstrap, output `winmm.dll`: M1 forwarding/entry hook plus M4 startup deployment and activation.
+All 181 System32 export ordinals are forwarded by leaf
 MASM jumps through a table populated from the full System32 path. Named exports resolve by name;
 ordinal-only exports by ordinal. Missing functions use a zero-return stub and appear in the active
 startup log. The system module is retained for the process lifetime.
@@ -9,9 +10,13 @@ startup log. The system module is retained for the process lifetime.
 beside this `winmm.dll`, with none of the three off switches, receives a 14-byte absolute jump at
 its PE entry point. Chromium helper roles (`--type=...` or `--type ...`) using the same executable
 stay pure pass-through, so they cannot overwrite the game log or bypass a parent launch switch.
-The hook restores those bytes first, logs outside the loader lock behind
-separate C++/SEH guards, and calls the original entry point with its argument, returning its result.
-No packages or runtime are loaded. Static CRT notifications remain enabled.
+The hook restores those bytes first, then runs the log, startup deployment policy, activation and
+atomic status report behind separate C++/SEH guards before calling the original entry point.
+Missing/disabled/invalid configuration leaves the process vanilla. A valid current generation can
+activate through reversible environment/arguments/Vulkan/DLL-search changes, with absolute runtime
+preload last. Rollback state lives outside the SEH frame. Static CRT notifications remain enabled.
+See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
+[ADR 0009](../../docs/decisions/0009-startup-deployment-last-good.md).
 
 | File | Purpose |
 |---|---|
@@ -19,14 +24,15 @@ No packages or runtime are loaded. Static CRT notifications remain enabled.
 | `activation.h`, `activation.cpp` | Pure path/root, quoted argument and off-switch decisions |
 | `bootstrap.h` | Fixed process state shared by the hook and logger |
 | `bootstrap.cpp` | System forwarding table, `DllMain`, PE entry patch/restore and hook |
-| `startup.cpp` | UTF-8 log, UTC/process/module proof, five-file rotation, C++/SEH containment |
+| `startup.cpp` | Entry log/proof/rotation, config→discovery→deployment→activation orchestration, atomic status and final logging, C++/SEH containment |
+| `runtime.h`, `runtime.cpp` | M4 activation preconditions, reversible environment/command-line/Vulkan/DLL-search steps, absolute runtime preload; state remains outside the SEH frame until reporting succeeds |
 | `version.rc.in` | CMake version and installer identity resource |
 | `generate_exports.py` | Standard-library PE export parser and generator; [usage](generate_exports.py.md) |
 | `generated/exports.json` | Checked-in ordinal/name inventory |
 | `generated/exports.h` | Generated ordinal/name lookup metadata and count |
 | `generated/winmm.def` | Generated public names/ordinals, including `NONAME` |
 | `generated/thunks.asm` | One register-preserving indirect jump per exported ordinal |
-| [`tests/`](tests/README.md) | Pure logic, forwarding, hook integration, installer tests |
+| [`tests/`](tests/README.md) | Pure logic, forwarding, hook integration, installer, import-table and packaged fake-runtime integration tests |
 
 Regenerate on a Windows export-set change with `python loader/proxy/generate_exports.py`; the
 build checks that the committed set covers the current machine and the generated files agree.

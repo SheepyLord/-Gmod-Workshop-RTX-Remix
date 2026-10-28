@@ -1,5 +1,7 @@
 add_executable(nl_tests
   test_main.cpp
+  test_activate.cpp
+  test_cmdline.cpp
   test_config.cpp
   test_crc32.cpp
   test_deploy.cpp
@@ -14,9 +16,15 @@ add_executable(nl_tests
   test_paths.cpp
   test_planner.cpp
   test_sha256.cpp
+  test_startup.cpp
+  test_status.cpp
   test_vdf.cpp
   test_version.cpp)
 target_link_libraries(nl_tests PRIVATE nl_core nl_build_options)
+
+add_executable(nl_cmdline_host cmdline_host.cpp)
+target_link_libraries(nl_cmdline_host PRIVATE nl_core nl_build_options)
+add_test(NAME nl_cmdline_roundtrip COMMAND nl_cmdline_host "original argument with spaces" "用户")
 
 # Tests write scratch files below their working directory, which stays in the build tree. The
 # exhaustive fault-injection cases take most of the time, so each is its own CTest and they run in
