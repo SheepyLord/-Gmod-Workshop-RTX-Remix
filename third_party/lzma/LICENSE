@@ -1,0 +1,6 @@
+The files in this folder (LzmaDec.c, LzmaDec.h, 7zTypes.h, Precomp.h, Compiler.h) are part of the
+LZMA SDK / 7-Zip source code by Igor Pavlov and are in the public domain. Each file states this in
+its header comment: "Igor Pavlov : Public domain".
+
+Source: https://github.com/ip7z/7zip, tag 26.05, folder C/. The rest of 7-Zip carries other
+licences (GNU LGPL and others); only the public-domain files listed above are vendored here.

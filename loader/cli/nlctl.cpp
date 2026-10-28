@@ -6,6 +6,7 @@
 #include "nl/core.h"
 #include "nl/gma.h"
 #include "nl/json.h"
+#include "nl/lzma.h"
 
 #include <windows.h>
 
@@ -13,6 +14,7 @@
 #include <cstdio>
 #include <cwctype>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -41,9 +43,66 @@ const char* container_name(nl::gma::Container kind) {
   return "unknown";
 }
 
-std::string index_json(const fs::path& file, std::uint64_t file_size, const nl::gma::Index& index) {
-  std::string out = "{\n  \"file\": " + nl::json::quote(utf8(file)) + ",\n  \"container\": \"gmad\"";
-  out += ",\n  \"file_size\": " + std::to_string(file_size);
+// Size of the GMAD stream: the file size for plain archives, the declared decompressed size for
+// LZMA-wrapped ones (nullopt when the stream does not declare it).
+std::optional<std::uint64_t> stream_size(const fs::path& file, const nl::gma::Source& source) {
+  if (const auto* lzma = dynamic_cast<const nl::lzma::Source*>(&source)) {
+    if (!lzma->header().size_known()) return std::nullopt;
+    return lzma->header().uncompressed_size;
+  }
+  return fs::file_size(file);
+}
+
+// How the stream's size relates to the index: the 4-byte CRC trailer is optional (legacy items).
+enum class Fit { unknown, truncated, partial_trailer, no_trailer, complete, trailing };
+
+Fit classify(const std::optional<std::uint64_t>& size, const nl::gma::Index& index) {
+  if (!size) return Fit::unknown;
+  if (*size < index.data_end) return Fit::truncated;
+  if (*size == index.data_end) return Fit::no_trailer;
+  if (*size < index.data_end + 4) return Fit::partial_trailer;
+  return *size == index.data_end + 4 ? Fit::complete : Fit::trailing;
+}
+
+const char* complete_json(Fit fit) {
+  switch (fit) {
+    case Fit::unknown: return "null";
+    case Fit::truncated:
+    case Fit::partial_trailer: return "false";
+    default: return "true";
+  }
+}
+
+const char* trailer_json(Fit fit) {
+  switch (fit) {
+    case Fit::unknown: return "null";
+    case Fit::complete:
+    case Fit::trailing: return "true";
+    default: return "false";
+  }
+}
+
+struct Opened {
+  std::unique_ptr<nl::gma::Source> source;
+  nl::gma::Container kind = nl::gma::Container::unknown;
+  nl::gma::Index index;
+  std::optional<std::uint64_t> stream_size;
+};
+
+Opened open_and_index(const fs::path& file) {
+  Opened o;
+  o.source = nl::gma::open_archive(file, &o.kind);
+  o.index = nl::gma::read_index(*o.source);
+  o.stream_size = stream_size(file, *o.source);
+  return o;
+}
+
+std::string index_json(const fs::path& file, const Opened& o) {
+  const auto& index = o.index;
+  std::string out = "{\n  \"file\": " + nl::json::quote(utf8(file));
+  out += ",\n  \"container\": \"" + std::string(container_name(o.kind)) + "\"";
+  out += ",\n  \"file_size\": " + std::to_string(fs::file_size(file));
+  out += ",\n  \"stream_size\": " + (o.stream_size ? std::to_string(*o.stream_size) : std::string("null"));
   out += ",\n  \"version\": " + std::to_string(index.version);
   out += ",\n  \"steamid\": " + std::to_string(index.steamid);
   out += ",\n  \"timestamp\": " + std::to_string(index.timestamp);
@@ -57,8 +116,9 @@ std::string index_json(const fs::path& file, std::uint64_t file_size, const nl::
   out += ",\n  \"addon_version\": " + std::to_string(index.addon_version);
   out += ",\n  \"data_offset\": " + std::to_string(index.data_offset);
   out += ",\n  \"data_end\": " + std::to_string(index.data_end);
-  out += ",\n  \"complete\": ";
-  out += file_size >= index.data_end + 4 ? "true" : "false";
+  const Fit fit = classify(o.stream_size, index);
+  out += ",\n  \"complete\": " + std::string(complete_json(fit));
+  out += ",\n  \"crc_trailer\": " + std::string(trailer_json(fit));
   out += ",\n  \"entries\": [";
   for (std::size_t i = 0; i < index.entries.size(); ++i) {
     const auto& e = index.entries[i];
@@ -72,20 +132,18 @@ std::string index_json(const fs::path& file, std::uint64_t file_size, const nl::
 }
 
 int cmd_inspect(const fs::path& file, bool json) {
-  nl::gma::Container kind{};
-  const auto source = nl::gma::open_archive(file, &kind);
-  const auto index = nl::gma::read_index(*source);
-  const auto file_size = fs::file_size(file);
+  const Opened o = open_and_index(file);
   if (json) {
-    print(index_json(file, file_size, index));
+    print(index_json(file, o));
     return kOk;
   }
-  print("file         " + utf8(file) + "\ncontainer    " + container_name(kind) + "\nversion      " +
-        std::to_string(index.version) + "\ntitle        " + index.title + "\nauthor       " + index.author +
-        "\nfiles        " + std::to_string(index.entries.size()) + " (content " + std::to_string(index.data_offset) +
-        ".." + std::to_string(index.data_end) + ", complete: " +
-        (file_size >= index.data_end + 4 ? "yes" : "NO") + ")\n");
-  for (const auto& e : index.entries) {
+  const std::string complete = complete_json(classify(o.stream_size, o.index));
+  print("file         " + utf8(file) + "\ncontainer    " + container_name(o.kind) + "\nversion      " +
+        std::to_string(o.index.version) + "\ntitle        " + o.index.title + "\nauthor       " + o.index.author +
+        "\nfiles        " + std::to_string(o.index.entries.size()) + " (content " +
+        std::to_string(o.index.data_offset) + ".." + std::to_string(o.index.data_end) + ", complete: " +
+        (complete == "true" ? "yes" : complete == "false" ? "NO" : "unknown") + ")\n");
+  for (const auto& e : o.index.entries) {
     char line[64];
     std::snprintf(line, sizeof(line), "  %6u  %12llu  %08x  ", e.number, static_cast<unsigned long long>(e.size), e.crc32);
     print(line + e.path + "\n");
@@ -94,16 +152,26 @@ int cmd_inspect(const fs::path& file, bool json) {
 }
 
 int cmd_verify(const fs::path& file, bool json) {
-  const auto source = nl::gma::open_archive(file);
+  nl::gma::Container kind{};
+  const auto source = nl::gma::open_archive(file, &kind);
   const auto report = nl::gma::verify(*source);
   if (json) {
-    std::string out = "{\n  \"file\": " + nl::json::quote(utf8(file)) + ",\n  \"ok\": " + (report.ok() ? "true" : "false");
+    std::string out = "{\n  \"file\": " + nl::json::quote(utf8(file));
+    out += ",\n  \"container\": \"" + std::string(container_name(kind)) + "\"";
+    out += ",\n  \"ok\": " + std::string(report.ok() ? "true" : "false");
     out += ",\n  \"entries\": " + std::to_string(report.index.entries.size());
     out += ",\n  \"bad_entries\": [";
     for (std::size_t i = 0; i < report.bad_entries.size(); ++i) {
       out += (i ? ", " : "") + nl::json::quote(report.index.entries[report.bad_entries[i]].path);
     }
-    out += "],\n  \"addon_crc_stored\": " + std::to_string(report.addon_crc_stored);
+    if (const auto* lzma = dynamic_cast<const nl::lzma::Source*>(source.get())) {
+      out += "],\n  \"lzma_gmod_footer\": " + std::string(lzma->gmod_footer() ? "true" : "false");
+      out += ",\n  \"crc_trailer\": ";
+    } else {
+      out += "],\n  \"crc_trailer\": ";
+    }
+    out += report.crc_trailer ? "true" : "false";
+    out += ",\n  \"addon_crc_stored\": " + std::to_string(report.addon_crc_stored);
     out += ",\n  \"addon_crc_actual\": " + std::to_string(report.addon_crc_actual);
     out += ",\n  \"trailing_bytes\": " + std::to_string(report.trailing_bytes) + "\n}\n";
     print(out);
@@ -111,18 +179,20 @@ int cmd_verify(const fs::path& file, bool json) {
     for (const std::size_t i : report.bad_entries) print("CRC mismatch: " + report.index.entries[i].path + "\n");
     if (report.addon_crc_stored && report.addon_crc_stored != report.addon_crc_actual) print("archive CRC mismatch\n");
     if (report.trailing_bytes) print("trailing data: " + std::to_string(report.trailing_bytes) + " bytes\n");
-    print(std::string(report.ok() ? "OK" : "FAILED") + ": " + std::to_string(report.index.entries.size()) + " files\n");
+    print(std::string(report.ok() ? "OK" : "FAILED") + ": " + container_name(kind) + ", " +
+          std::to_string(report.index.entries.size()) + " files\n");
   }
   return report.ok() ? kOk : kCheckFailed;
 }
 
-// Read-only parse of every .gma / .bin below `folder`: header and file index only, no contents.
+// Read-only parse of every .gma / .bin below `folder`: header and file index only. LZMA-wrapped
+// archives are decoded just far enough to read the index.
 int cmd_scan(const fs::path& folder, bool json) {
   struct Failure {
     std::string file;
     std::string error;
   };
-  std::size_t total = 0, gmad_ok = 0, lzma_not_decoded = 0, with_trailing_data = 0, entries = 0;
+  std::size_t total = 0, parsed = 0, lzma = 0, without_crc_trailer = 0, with_trailing_data = 0, entries = 0;
   std::vector<Failure> failures;
   std::error_code ec;
   fs::recursive_directory_iterator it(folder, fs::directory_options::skip_permission_denied, ec), end;
@@ -133,36 +203,34 @@ int cmd_scan(const fs::path& folder, bool json) {
       break;
     }
     std::wstring extension = it->path().extension().wstring();
-    std::transform(extension.begin(), extension.end(), extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(towlower(c)); });
+    std::transform(extension.begin(), extension.end(), extension.begin(),
+                   [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
     // Workshop items are <name>.gma (plain) or, for older uploads, <hash>_legacy.bin (LZMA-wrapped).
     if ((extension != L".gma" && extension != L".bin") || !it->is_regular_file(ec)) continue;
     ++total;
-    nl::gma::Container kind = nl::gma::Container::unknown;
     try {
-      const auto source = nl::gma::open_archive(it->path(), &kind);
-      const auto index = nl::gma::read_index(*source);
-      const auto size = fs::file_size(it->path());
-      if (size < index.data_end + 4) {
-        failures.push_back({utf8(it->path()), "truncated: file ends before the declared contents and CRC"});
+      const Opened o = open_and_index(it->path());
+      const Fit fit = classify(o.stream_size, o.index);
+      if (fit == Fit::truncated || fit == Fit::partial_trailer) {
+        failures.push_back({utf8(it->path()), fit == Fit::truncated
+                                                  ? "truncated: the stream ends inside the declared contents"
+                                                  : "truncated: the stream ends inside the CRC trailer"});
         continue;
       }
-      if (size > index.data_end + 4) ++with_trailing_data;
-      ++gmad_ok;
-      entries += index.entries.size();
-    } catch (const nl::gma::FormatError& e) {
-      if (kind == nl::gma::Container::lzma) {
-        ++lzma_not_decoded;  // counted, not failed, until the LZMA decoder lands
-      } else {
-        failures.push_back({utf8(it->path()), e.what()});
-      }
+      if (fit == Fit::no_trailer) ++without_crc_trailer;
+      if (fit == Fit::trailing) ++with_trailing_data;
+      ++parsed;
+      if (o.kind == nl::gma::Container::lzma) ++lzma;
+      entries += o.index.entries.size();
     } catch (const std::exception& e) {
       failures.push_back({utf8(it->path()), e.what()});
     }
   }
   if (json) {
     std::string out = "{\n  \"folder\": " + nl::json::quote(utf8(folder));
-    out += ",\n  \"total\": " + std::to_string(total) + ",\n  \"gmad_ok\": " + std::to_string(gmad_ok);
-    out += ",\n  \"lzma_not_decoded\": " + std::to_string(lzma_not_decoded);
+    out += ",\n  \"total\": " + std::to_string(total) + ",\n  \"parsed\": " + std::to_string(parsed);
+    out += ",\n  \"lzma\": " + std::to_string(lzma);
+    out += ",\n  \"without_crc_trailer\": " + std::to_string(without_crc_trailer);
     out += ",\n  \"with_trailing_data\": " + std::to_string(with_trailing_data);
     out += ",\n  \"entries\": " + std::to_string(entries) + ",\n  \"failures\": [";
     for (std::size_t i = 0; i < failures.size(); ++i) {
@@ -173,9 +241,10 @@ int cmd_scan(const fs::path& folder, bool json) {
     print(out);
   } else {
     for (const auto& f : failures) print("FAILED " + f.file + ": " + f.error + "\n");
-    print(std::to_string(total) + " archives: " + std::to_string(gmad_ok) + " parsed (" + std::to_string(entries) +
-          " files), " + std::to_string(lzma_not_decoded) + " LZMA-wrapped (decoder pending), " +
-          std::to_string(with_trailing_data) + " with trailing data, " + std::to_string(failures.size()) + " failed\n");
+    print(std::to_string(total) + " archives: " + std::to_string(parsed) + " parsed (" + std::to_string(lzma) +
+          " LZMA-wrapped, " + std::to_string(entries) + " files), " + std::to_string(without_crc_trailer) +
+          " without CRC trailer, " + std::to_string(with_trailing_data) + " with trailing data, " +
+          std::to_string(failures.size()) + " failed\n");
   }
   return failures.empty() ? kOk : kCheckFailed;
 }
@@ -183,7 +252,7 @@ int cmd_scan(const fs::path& folder, bool json) {
 int usage() {
   std::fputs(
       "usage: nlctl <command> [--json]\n"
-      "  inspect <file.gma>   header and file index (no contents read)\n"
+      "  inspect <file.gma>   header and file index (LZMA-wrapped: decoded only that far)\n"
       "  verify  <file.gma>   check every file CRC, the archive CRC and trailing data\n"
       "  scan    <folder>     read-only parse of every .gma / .bin archive below the folder\n"
       "  version              loader version\n",

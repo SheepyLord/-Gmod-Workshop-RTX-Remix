@@ -3,6 +3,8 @@ add_executable(nl_tests
   test_crc32.cpp
   test_gma.cpp
   test_json.cpp
+  test_lzma.cpp
+  test_paths.cpp
   test_version.cpp)
 target_link_libraries(nl_tests PRIVATE nl_core nl_build_options)
 

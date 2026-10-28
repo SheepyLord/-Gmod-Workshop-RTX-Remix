@@ -7,7 +7,9 @@ to count them. Run by CTest (loader/cli/CMakeLists.txt); all files go to --scrat
 
 import argparse
 import json
+import lzma
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -41,8 +43,17 @@ def check(condition, message):
         sys.exit('crosscheck failed: ' + message)
 
 
-def compare(nlctl, gmapack, archive):
+def lzma_wrap(gma_bytes, declare_size):
+    """LZMA-alone stream as gmpublish uploads use: 13-byte header, then data with an end marker."""
+    stream = bytearray(lzma.compress(gma_bytes, format=lzma.FORMAT_ALONE))
+    if declare_size:
+        stream[5:13] = struct.pack('<Q', len(gma_bytes))
+    return bytes(stream)
+
+
+def compare(nlctl, gmapack, archive, container):
     report = json.loads(run([nlctl, 'inspect', '--json', str(archive)], expect=0).stdout)
+    check(report['container'] == container, f'{archive.name}: container {report["container"]!r}')
     g = gmapack.read_gma(str(archive))
     try:
         for ours, theirs in (('version', g.version), ('steamid', g.steamid), ('timestamp', g.timestamp),
@@ -51,7 +62,8 @@ def compare(nlctl, gmapack, archive):
                              ('addon_version', g.addon_version), ('data_offset', g.data_offset),
                              ('data_end', g.data_end)):
             check(report[ours] == theirs, f'{archive.name}: {ours} {report[ours]!r} != {theirs!r}')
-        check(report['complete'] is True, f'{archive.name}: not complete')
+        expected_complete = None if container == 'lzma' and report['stream_size'] is None else True
+        check(report['complete'] is expected_complete, f'{archive.name}: complete {report["complete"]!r}')
         expected = [{'number': e['num'], 'path': e['name'], 'size': e['size'], 'crc32': e['crc'],
                      'offset': e['offset']} for e in g.files]
         check(report['entries'] == expected, f'{archive.name}: entries differ\n{report["entries"]}\n{expected}')
@@ -89,10 +101,28 @@ def main():
                  '--timestamp', '1700000000', '--require', 'base', '--quiet', *extra], expect=0)
             archives[out.name] = out
 
+    # LZMA-wrapped copies (Workshop *_legacy.bin), with and without a declared size.
+    plain = dict(archives)
+    for name, path in plain.items():
+        stem = name[:-len('.gma')]
+        for variant, declare in (('sized', True), ('unsized', False)):
+            out = good_dir / f'{stem}_{variant}_legacy.bin'
+            out.write_bytes(lzma_wrap(path.read_bytes(), declare))
+            archives[out.name] = out
+
+    # A copy without the 4-byte CRC trailer, like 19 legacy Workshop items: valid, nothing to check.
+    notrailer = good_dir / 'basic_notrailer.gma'
+    notrailer.write_bytes(archives['basic_crc.gma'].read_bytes()[:-4])
+    archives[notrailer.name] = notrailer
+
     for archive in archives.values():
-        compare(a.nlctl, gmapack, archive)
+        container = 'lzma' if archive.suffix == '.bin' else 'gmad'
+        compare(a.nlctl, gmapack, archive, container)
         verdict = json.loads(run([a.nlctl, 'verify', '--json', str(archive)], expect=0).stdout)
-        check(verdict['ok'] is True, f'{archive.name}: verify not ok')
+        check(verdict['ok'] is True and verdict['container'] == container, f'{archive.name}: verify {verdict}')
+        check(verdict['crc_trailer'] is (archive != notrailer), f'{archive.name}: crc_trailer {verdict}')
+    report = json.loads(run([a.nlctl, 'inspect', '--json', str(notrailer)], expect=0).stdout)
+    check(report['complete'] is True and report['crc_trailer'] is False, f'notrailer inspect: {report}')
 
     # Damage: flip the last content byte (the native readme), cut the file short, add junk.
     data = archives['native_crc.gma'].read_bytes()
@@ -114,15 +144,26 @@ def main():
     (bad_dir / 'not_an_archive.gma').write_bytes(b'\xff' * 32)
     run([a.nlctl, 'inspect', str(bad_dir / 'not_an_archive.gma')], expect=2)
 
+    # LZMA damage: a cut stream and bytes after the stream are format errors (exit 2).
+    wrapped = archives['native_crc_sized_legacy.bin'].read_bytes()
+    (bad_dir / 'cut_legacy.bin').write_bytes(wrapped[:-10])  # end marker and last data gone
+    run([a.nlctl, 'verify', str(bad_dir / 'cut_legacy.bin')], expect=2)
+    (bad_dir / 'tail_legacy.bin').write_bytes(wrapped + b'junk')
+    run([a.nlctl, 'verify', str(bad_dir / 'tail_legacy.bin')], expect=2)
+
+    lzma_count = sum(1 for p in archives.values() if p.suffix == '.bin')
     summary = json.loads(run([a.nlctl, 'scan', '--json', str(good_dir)], expect=0).stdout)
-    check(summary['total'] == len(archives) and summary['gmad_ok'] == len(archives), f'scan good: {summary}')
+    check(summary['total'] == len(archives) and summary['parsed'] == len(archives), f'scan good: {summary}')
+    check(summary['lzma'] == lzma_count, f'scan good lzma: {summary}')
+    check(summary['without_crc_trailer'] == 1, f'scan good trailer: {summary}')
     summary = json.loads(run([a.nlctl, 'scan', '--json', str(bad_dir)], expect=1).stdout)
     failed = sorted(Path(f['file']).name for f in summary['failures'])
+    # cut/tail LZMA files still have intact indexes, so only a full verify catches them.
     check(failed == ['not_an_archive.gma', 'truncated.gma'], f'scan bad: {failed}')
     check(summary['with_trailing_data'] == 1, f'scan bad trailing: {summary}')
 
     shutil.rmtree(scratch, ignore_errors=True)
-    print(f'crosscheck OK: {len(archives)} archives match gmapack; damage detected')
+    print(f'crosscheck OK: {len(archives)} archives ({lzma_count} LZMA-wrapped) match gmapack; damage detected')
 
 
 if __name__ == '__main__':

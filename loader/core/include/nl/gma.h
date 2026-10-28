@@ -83,8 +83,12 @@ struct Index {
   std::int32_t addon_version{};
   std::vector<Entry> entries;
   std::uint64_t data_offset{};  // first content byte
-  std::uint64_t data_end{};     // one past the last content byte; the 4-byte addon CRC follows
+  std::uint64_t data_end{};     // one past the last content byte; a 4-byte addon CRC may follow
 };
+
+// The 4-byte addon CRC trailer is optional: 19 of the 81 legacy Workshop items (GMAD v3, uploaded
+// 2012-2019) end right after their last file, and GMod mounts them. A stream that ends inside the
+// contents, or 1-3 bytes into a trailer, is truncated.
 
 // Parses the header and file index at the start of a GMAD stream.
 Index read_index(Source& source, const Limits& limits = {});
@@ -92,7 +96,8 @@ Index read_index(Source& source, const Limits& limits = {});
 struct VerifyReport {
   Index index;
   std::vector<std::size_t> bad_entries;  // positions in index.entries whose nonzero CRC mismatches
-  std::uint32_t addon_crc_stored = 0;    // 0 = archive written without a CRC
+  bool crc_trailer = false;              // false: the stream ends right after the contents
+  std::uint32_t addon_crc_stored = 0;    // 0 = written without a CRC (or no trailer at all)
   std::uint32_t addon_crc_actual = 0;
   std::uint64_t trailing_bytes = 0;      // bytes after the CRC trailer
   bool ok() const noexcept {
@@ -101,12 +106,12 @@ struct VerifyReport {
   }
 };
 
-// Reads a whole GMAD stream once: index, every file (checking nonzero CRCs), the addon CRC and any
-// trailing data. Throws FormatError when the stream ends before the CRC trailer.
+// Reads a whole GMAD stream once: index, every file (checking nonzero CRCs), the optional addon CRC
+// and any trailing data. Throws FormatError when the stream ends inside the contents or the trailer.
 VerifyReport verify(Source& source, const Limits& limits = {});
 
-// Opens an archive file positioned at the start of its GMAD stream. LZMA-wrapped files are
-// recognised but not decoded yet (M2 part 2) and raise FormatError.
+// Opens an archive file positioned at the start of its GMAD stream. LZMA-wrapped files (Workshop
+// *_legacy.bin) are decoded on the fly with bounded memory (see nl/lzma.h).
 std::unique_ptr<Source> open_archive(const std::filesystem::path& path, Container* container = nullptr);
 
 // Key for duplicate-path detection: ASCII-lowercased with '\\' turned into '/'. Matches gmapack.py

@@ -13,14 +13,21 @@ Read-only in M2.
 ## Commands
 
 ```powershell
-nlctl inspect <file.gma> [--json]   # header and file index; no contents read; "complete" = file holds all declared bytes
+nlctl inspect <file.gma> [--json]   # header and file index (LZMA-wrapped: decoded only that far)
 nlctl verify  <file.gma> [--json]   # one pass: every nonzero file CRC, the archive CRC, trailing data
 nlctl scan    <folder>   [--json]   # read-only parse of every .gma / .bin archive below the folder
 nlctl version
 ```
 
-`scan` reads headers and indexes only. Plain `.gma` files are parsed; LZMA-wrapped ones (Workshop
-`*_legacy.bin`) are counted as `lzma_not_decoded` until the LZMA decoder lands (M2 part 2).
+Plain (`.gma`) and LZMA-wrapped (Workshop `*_legacy.bin`) archives are both read.
+
+- `inspect` reports `container` (`gmad` / `lzma`), `stream_size` (file size, or the declared
+  decompressed size; `null` if undeclared), `complete` (all contents present) and `crc_trailer`
+  (the optional 4-byte archive CRC is there).
+- `verify` decodes everything and also reports `crc_trailer` and, for LZMA, `lzma_gmod_footer`.
+  A damaged LZMA container (cut stream, wrong footer, bytes after it) is a format error: exit 2.
+- `scan` reads headers and indexes only. It counts `parsed`, `lzma`, `without_crc_trailer` and
+  `with_trailing_data`, and fails only archives whose contents or trailer are cut short.
 
 Exit codes: `0` ok, `1` a check found problems (bad CRC, trailing data, failed archives in a scan),
 `2` bad usage or unreadable / malformed input, `3` internal error.

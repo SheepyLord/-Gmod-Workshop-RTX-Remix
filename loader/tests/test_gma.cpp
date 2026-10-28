@@ -135,8 +135,29 @@ TEST_CASE("gma: verify accepts intact archives and reports damage") {
   CHECK(!with_tail.ok());
   CHECK(with_tail.trailing_bytes == 4);
 
+  // Cut anywhere inside the contents or the trailer: truncated. Cut exactly at the end of the
+  // contents: a valid archive without a trailer.
   for (std::size_t n = static_cast<std::size_t>(data_offset); n < good.size(); ++n) {
+    if (n == good.size() - 4) continue;
     CHECK_THROWS_AS(verify_bytes(good.substr(0, n)), FormatError);
+  }
+}
+
+TEST_CASE("gma: the addon CRC trailer is optional") {
+  FixtureArchive archive = sample();
+  archive.crc_trailer = false;
+  const auto bytes = build_gma(archive);
+  const auto report = verify_bytes(bytes);
+  CHECK(report.ok());
+  CHECK(!report.crc_trailer);
+  CHECK(report.addon_crc_stored == 0);
+  CHECK(report.trailing_bytes == 0);
+  CHECK(index_of(bytes).data_end == bytes.size());
+
+  const auto with_trailer = verify_bytes(build_gma(sample()));
+  CHECK(with_trailer.crc_trailer);
+  for (int partial = 1; partial <= 3; ++partial) {
+    CHECK_THROWS_AS(verify_bytes(bytes + std::string(static_cast<std::size_t>(partial), '\0')), FormatError);
   }
 }
 
@@ -165,7 +186,7 @@ TEST_CASE("gma: path keys fold ASCII case and backslashes only") {
   CHECK(nl::gma::path_key("materials/\xC3\x84.vmt") == "materials/\xC3\x84.vmt");
 }
 
-TEST_CASE("gma: open_archive reads files and recognises LZMA wrappers") {
+TEST_CASE("gma: open_archive reads plain files and LZMA wrappers") {
   const auto dir = nl::test::scratch_dir("gma_open_archive");
   const auto plain = dir / "sample.gma";
   const auto bytes = build_gma(sample());
@@ -183,8 +204,12 @@ TEST_CASE("gma: open_archive reads files and recognises LZMA wrappers") {
   const auto wrapped = dir / "wrapped.gma";
   const std::string header = std::string("\x5d\0\0\0\x01", 5) + std::string(8, '\xff') + "xyz";
   std::ofstream(wrapped, std::ios::binary).write(header.data(), static_cast<std::streamsize>(header.size()));
-  CHECK_THROWS_AS(nl::gma::open_archive(wrapped, &kind), FormatError);
-  CHECK(kind == nl::gma::Container::lzma);
+  {
+    // The header is valid, so opening succeeds; the 3-byte "payload" is not an LZMA stream.
+    const auto source = nl::gma::open_archive(wrapped, &kind);
+    CHECK(kind == nl::gma::Container::lzma);
+    CHECK_THROWS_AS(nl::gma::read_index(*source), FormatError);
+  }
 
   CHECK_THROWS_AS(nl::gma::FileSource(dir / "missing.gma"), std::filesystem::filesystem_error);
   std::filesystem::remove_all(dir);

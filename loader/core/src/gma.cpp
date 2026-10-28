@@ -1,6 +1,7 @@
 #include "nl/gma.h"
 
 #include "nl/crc32.h"
+#include "nl/lzma.h"
 
 #include <share.h>
 
@@ -47,6 +48,20 @@ class Reader {
       dest += n;
       size -= n;
     }
+  }
+
+  // Reads up to `size` bytes; fewer only at the end of the stream.
+  std::size_t read_some(void* out, std::size_t size) {
+    auto* dest = static_cast<unsigned char*>(out);
+    std::size_t done = 0;
+    while (done < size) {
+      if (begin_ == end_ && !fill()) break;
+      const std::size_t n = std::min(size - done, end_ - begin_);
+      std::memcpy(dest + done, buffer_.data() + begin_, n);
+      consume(n);
+      done += n;
+    }
+    return done;
   }
 
   std::uint8_t u8(std::string_view field) {
@@ -247,7 +262,13 @@ VerifyReport verify(Source& source, const Limits& limits) {
     if (entry.crc32 != 0 && crc != entry.crc32) report.bad_entries.push_back(i);
   }
   report.addon_crc_actual = reader.crc();
-  report.addon_crc_stored = reader.u32("addon CRC");
+  unsigned char trailer[4];
+  const std::size_t have = reader.read_some(trailer, sizeof(trailer));
+  if (have == 0) return report;  // no trailer: allowed, nothing to check
+  if (have < sizeof(trailer)) throw FormatError("truncated archive while reading addon CRC");
+  report.crc_trailer = true;
+  report.addon_crc_stored = static_cast<std::uint32_t>(trailer[0]) | static_cast<std::uint32_t>(trailer[1]) << 8 |
+                            static_cast<std::uint32_t>(trailer[2]) << 16 | static_cast<std::uint32_t>(trailer[3]) << 24;
   report.trailing_bytes = reader.drain();
   return report;
 }
@@ -269,7 +290,7 @@ std::unique_ptr<Source> open_archive(const std::filesystem::path& path, Containe
     case Container::gmad:
       return std::make_unique<FileSource>(path);
     case Container::lzma:
-      throw FormatError("LZMA-wrapped archive: the LZMA decoder is not built yet (M2 part 2)");
+      return std::make_unique<lzma::Source>(std::make_unique<FileSource>(path));
     case Container::unknown:
       break;
   }

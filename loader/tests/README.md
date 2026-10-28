@@ -12,8 +12,10 @@ backward compatible.
 | `test_main.cpp` | Runner: runs every case, or those whose name contains the first argument; prints `ok`/`FAIL` per case; exit code 0 only if at least one case ran and none failed. Also defines `scratch_dir` |
 | `gma_fixture.h` | Builds synthetic GMAD archives independently of the reader (versions, CRC on or off, custom sizes and CRCs, trailing bytes) |
 | `test_crc32.cpp` | CRC-32 check values and incremental updates |
-| `test_gma.cpp` | GMA reader: fields and offsets, versions 1-3, every truncation of header and index, bad identifiers, versions, names and sizes, limits, verify (damage, zero CRCs, trailing data, every truncation of the contents), container detection, files on disk |
-| `test_json.cpp` | JSON quoting: escapes, valid UTF-8 kept, invalid sequences replaced |
+| `test_gma.cpp` | GMA reader: fields and offsets, versions 1-3, every truncation of header and index, bad identifiers, versions, names and sizes, limits, verify (damage, zero CRCs, optional CRC trailer, partial trailers, trailing data, every truncation of the contents), container detection, files on disk |
+| `test_json.cpp` | JSON: quoting (escapes, UTF-8 kept or replaced); the strict parser (values, document order, escapes and surrogate pairs, int64 boundaries, 33 inputs strict JSON forbids, every limit, round trip with `quote`) |
+| `test_lzma.cpp` | LZMA: header parsing and rejection, decoding in chunks of 1 to 64 bytes, known and unknown sizes, wrong declared sizes, every truncation, trailing bytes, corruption, GMod's footer (accepted only when exact), decoded bytes delivered before later damage, `open_archive` on wrapped files. The small test stream is embedded as hex, made with Python's `lzma.compress(..., format=lzma.FORMAT_ALONE)` |
+| `test_paths.cpp` | Path rules: safe paths, 40-odd escaping or aliasing paths refused, length limits, case-insensitive `within`, root areas |
 | `test_version.cpp` | `nl::version()` matches the CMake project version |
 
 Scratch files: call `nl::test::scratch_dir("name")`, which returns a fresh folder beside the test

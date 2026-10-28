@@ -18,6 +18,23 @@ Versions follow the loader's CMake project version once it ships; until then eve
   git-ignored `out\` (builds, worktrees, test scratch, evidence). `tools/test.ps1` and
   `tools/build.ps1` point `TEMP`/`TMP` at `out\tmp` while they run.
 
+### Added (M2 part 2: LZMA, JSON, path rules)
+
+- `third_party/lzma`: the LZMA SDK decoder (public domain, 7-Zip tag 26.05, unchanged, hashes in
+  its README), built as `nl_lzma`.
+- `nl_core`: streaming `lzma::Source` for LZMA-wrapped archives (Workshop `*_legacy.bin`),
+  including GMod's 8-byte footer (size, then `0xBEEFCACE`); `open_archive` now reads them.
+- `nl_core`: strict JSON parser for manifests and `config.json`; shared UTF-8 validation; path rules
+  for anything a package names and the root areas packages may write to.
+- `nlctl` reports container, stream size, completeness, CRC trailer and LZMA footer.
+
+### Changed (M2 part 2)
+
+- The 4-byte archive CRC trailer is optional: 19 legacy Workshop items have none and GMod mounts
+  them. Only streams cut inside the contents or the trailer are truncated.
+- Real data: all 753 installed Workshop archives parse; all 81 legacy items verify (4.4 GB, every
+  CRC and footer). `tools/gmapack/gmapack.py` rejects GMod's LZMA footer, so it cannot read them.
+
 ### Added (M2 part 1: GMA reader and nlctl)
 
 - `nl_core`: GMA reader for GMAD v1-v3 (header and index with gmapack-compatible limits and

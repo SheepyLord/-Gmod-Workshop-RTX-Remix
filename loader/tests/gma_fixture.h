@@ -27,8 +27,9 @@ struct FixtureArchive {
   std::string author = "Author Name";
   std::int32_t addon_version = 1;
   std::vector<FixtureFile> files;
-  bool addon_crc = true;  // false writes 0, like gmad -nocrc
-  std::string trailing;   // bytes appended after the CRC trailer
+  bool addon_crc = true;    // false writes 0, like gmad -nocrc
+  bool crc_trailer = true;  // false omits the 4-byte trailer (seen in legacy Workshop items)
+  std::string trailing;     // bytes appended after the CRC trailer
 };
 
 inline void put_u32(std::string& out, std::uint32_t value) {
@@ -68,7 +69,7 @@ inline std::string build_gma(const FixtureArchive& archive, std::uint64_t* data_
   put_u32(out, 0);
   if (data_offset) *data_offset = out.size();
   for (const FixtureFile& file : archive.files) out += file.data;
-  put_u32(out, archive.addon_crc ? nl::crc32(out.data(), out.size()) : 0);
+  if (archive.crc_trailer) put_u32(out, archive.addon_crc ? nl::crc32(out.data(), out.size()) : 0);
   out += archive.trailing;
   return out;
 }
