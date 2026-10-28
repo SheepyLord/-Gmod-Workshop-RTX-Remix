@@ -119,7 +119,9 @@ removal and addon disable remain intentional removals; M3 rollback holds are pre
 
 Activation follows [ADR 0008](decisions/0008-activation-at-startup.md): package config layers precede
 the user's existing list (or the default root conf), ordinary user environment values are retained,
-missing launch arguments are appended, System32 Vulkan is optionally loaded, the runtime folder is
+missing launch arguments are appended (then a borderless window the size of the primary display,
+unless the user chose a window mode: [ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)),
+System32 Vulkan is optionally loaded, the runtime folder is
 put first on `PATH` for bare-name delay loads ([ADR 0010](decisions/0010-rtx-session-extras.md)),
 and the absolute d3d9 path is preloaded last. A failed step undoes earlier process changes. Rollback
 state is owned outside the SEH frame, so native faults cannot skip it. Once the runtime is loaded,

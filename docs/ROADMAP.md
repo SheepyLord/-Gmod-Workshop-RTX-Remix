@@ -25,4 +25,5 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | Launch arguments cannot be added from inside the process | Fall back to documented Steam launch options |
 | `stdshader_dx6.dll` loaded by full path | Redirect hook, else journaled on-disk override with hash checks |
 | Remix bound to a non-system `vulkan-1.dll` in the field install | `prefer_system_vulkan_loader` preloads System32's; confirmed in the field install (M7) |
+| The Remix runtime crashes on exclusive-fullscreen mode switches | RTX sessions run in a borderless window ([ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)); the runtime fix belongs in the `dxvk-remix-gmod` fork |
 | Redistributing NVIDIA binaries (DLSS, NRC, ...) publicly | Check licences before any public package |

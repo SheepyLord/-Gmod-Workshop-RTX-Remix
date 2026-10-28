@@ -87,6 +87,20 @@ try {
     & $installer -GameRoot $configured -Config $Config -DefaultConfig
     Check ([IO.File]::ReadAllText($configFile) -ceq '{"schema": 1, "allow": {"local": ["mine.gma"]}}') 'DefaultConfig replaced the user''s config.json.'
     Refuses { & $installer -GameRoot $configured -Config $Config -Uninstall -DefaultConfig } 'does not go with -Uninstall'
+    # -ReplaceUntracked replaces a loader no receipt records (a bundle extracted by hand), keeping a copy.
+    $byHand = Make-Game (Join-Path $scratch 'by-hand')
+    $handDll = Join-Path $byHand 'bin\win64\winmm.dll'
+    [IO.File]::WriteAllBytes($handDll, $changed)  # the loader's identity, not this build's bytes
+    Refuses { & $installer -GameRoot $byHand -Config $Config } 'changed or untracked'
+    & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked
+    Check ((Get-FileHash -LiteralPath $handDll).Hash -ceq (Get-FileHash -LiteralPath $sourceDll).Hash) 'ReplaceUntracked did not install the build.'
+    Check ((Get-Item -LiteralPath (Join-Path $byHand 'native-loader\replaced\winmm.dll')).Length -eq $changed.Length) 'ReplaceUntracked kept no copy.'
+    [IO.File]::WriteAllBytes($handDll, $changed)  # now a receipt records the build: a changed DLL stays refused
+    Refuses { & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked } 'changed or untracked'
+    Check ((Get-Item -LiteralPath $handDll).Length -eq $changed.Length) 'ReplaceUntracked overwrote a changed tracked DLL.'
+    Refuses { & $installer -GameRoot $byHand -Config $Config -Uninstall -ReplaceUntracked } 'does not go with -Uninstall'
+    [IO.File]::WriteAllText($handDll, 'foreign DLL')
+    Refuses { & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked } 'foreign winmm.dll'
     Write-Host "Installer OK: $script:checks checks (synthetic roots only)."
 } finally {
     $deleteTarget = [IO.Path]::GetFullPath($scratch)

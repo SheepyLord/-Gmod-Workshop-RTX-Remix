@@ -49,8 +49,13 @@ patched copy of GMod managed by RTXLauncher.
    rules or the off switches without a new decision record that the user agreed to.
 5. **Ask before anything outward-facing:** pushing to `origin`, publishing or updating a Workshop
    item, changing Steam settings or launch options, deleting user data.
-   - **One standing exception** (the user, 2026-10-28): agents may upload **test items** for this
-     project to the Workshop, and update them, without asking. Keep them hidden.
+   - **Standing permission** (the user, 2026-10-28;
+     [ADR 0019](docs/decisions/0019-agents-push-main-and-update-workshop.md)): agents push `main` to
+     `origin` and update the project's Workshop items (3829070317 and test items) without asking, once
+     `tools\test.ps1` passes. Other branches, tags (a `v*` tag makes a public release) and force pushes
+     still need asking.
+   - **Test items** (the user, 2026-10-28): agents may upload test items for this project to the
+     Workshop, and update them, without asking. Keep them hidden.
    - **Never remove or delete anything on the Workshop until the user says the project is done.** That
      covers the test items too (the first is 3829070317,
      [ADR 0015](docs/decisions/0015-workshop-route-for-native-packages.md)).
@@ -81,6 +86,8 @@ patched copy of GMod managed by RTXLauncher.
 tools\test.ps1                  # everything: conventions, Python tests, C++ build + CTest
 tools\test.ps1 -SkipNative      # no compiler needed
 tools\build.ps1 -Config Release # optimised C++ build (PDBs included)
+tools\workflow.ps1              # what CI runs: Release checks, then the end-user bundle in out\dist
+tools\workflow.ps1 -SkipTests -Install <game root>   # quick loop: build, bundle, put it in a game
 ```
 
 Toolchain: VS 2022 Build Tools (MSVC x64), CMake and Ninja bundled with it, Python 3.10+. `vswhere`

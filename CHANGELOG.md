@@ -6,6 +6,30 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (the first field test of the release bundle; loader 0.2.1)
+
+- **RTX sessions crashed to the desktop about 9 s after start** when the game ran in exclusive
+  fullscreen. The Remix runtime crashes in its window procedure when the engine switches the
+  fullscreen device; reproduced on the PoC with the field's launch options.
+  - The loader now starts RTX sessions in a borderless window the size of the primary display:
+    `-windowed -noborder -w <width> -h <height>`, as RTXLauncher does.
+  - A window mode in the player's launch options is used as it is
+    ([ADR 0018](docs/decisions/0018-rtx-sessions-in-a-borderless-window.md)).
+  - The loader version is 0.2.1.
+
+### Added (local build workflow)
+
+- **`tools\workflow.ps1`** runs CI's build job on this machine: the Release checks (or `-SkipTests`),
+  then the end-user bundle in `out\dist`. `-Install <game root>` puts the build into a game.
+- **`install-loader.ps1 -ReplaceUntracked`** replaces a loader no receipt records, such as a bundle
+  extracted by hand. It keeps a copy in `native-loader\replaced` first.
+
+### Changed (rules)
+
+- **Agents push `main` and update the project's Workshop items without asking** (the user,
+  2026-10-28; [ADR 0019](docs/decisions/0019-agents-push-main-and-update-workshop.md)). Other branches,
+  tags, force pushes and item visibility still need the user.
+
 ### Fixed (CI's first run)
 
 - **`nl_activation_integration` failed on GitHub's runner** (run 40779899329).

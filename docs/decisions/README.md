@@ -23,6 +23,8 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0015](0015-workshop-route-for-native-packages.md) | Native packages can be distributed through the Workshop, packed with `gmapack`; their Lua comes through the loader's add-on folders, since GMod does not mount such an item | Accepted 2026-10-28 (the user, with the private upload test); supersedes part of 0012 |
 | [0016](0016-one-workshop-item-kept-current.md) | Item 3829070317 carries one combined RTX package (runtime and fixes); commits and merges on `main` and pushes of `main` keep it current through git hooks | Accepted 2026-10-28 (the user) |
 | [0017](0017-release-bundle-and-ci.md) | GitHub builds the loader on every push; the release bundle (winmm.dll, a README and a default `config.json` that allows item 3829070317) is extracted into the game folder | Accepted 2026-10-28 (the user) |
+| [0018](0018-rtx-sessions-in-a-borderless-window.md) | RTX sessions run in a borderless window the size of the primary display, unless the player chose a window mode: the Remix runtime crashes on exclusive-fullscreen mode switches | Accepted 2026-10-28 |
+| [0019](0019-agents-push-main-and-update-workshop.md) | Agents push `main` and update the project's Workshop items without asking; other branches, tags, force pushes and visibility still need the user | Accepted 2026-10-28 (the user) |
 
 ## Template
 

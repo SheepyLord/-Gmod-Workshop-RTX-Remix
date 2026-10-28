@@ -9,11 +9,13 @@ param(
     [switch] $Uninstall,
     [switch] $RemoveState,
     [switch] $AllowSteamManaged,
-    [switch] $DefaultConfig
+    [switch] $DefaultConfig,
+    [switch] $ReplaceUntracked
 )
 $ErrorActionPreference = 'Stop'
 if ($RemoveState -and -not $Uninstall) { throw '-RemoveState requires -Uninstall.' }
 if ($DefaultConfig -and $Uninstall) { throw '-DefaultConfig installs; it does not go with -Uninstall.' }
+if ($ReplaceUntracked -and $Uninstall) { throw '-ReplaceUntracked installs; it does not go with -Uninstall.' }
 $repo = Split-Path -Parent $PSScriptRoot
 $resolvedRoot = (Resolve-Path -LiteralPath $GameRoot).ProviderPath.TrimEnd('\', '/')
 if (-not (Test-Path -LiteralPath (Join-Path $resolvedRoot 'bin\win64\gmod.exe') -PathType Leaf)) {
@@ -22,6 +24,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $resolvedRoot 'bin\win64\gmod.exe') 
 $targetDir = Join-Path $resolvedRoot 'bin\win64'
 $stateDir = Join-Path $resolvedRoot 'native-loader'
 $receiptPath = Join-Path $stateDir 'bootstrap-install.json'
+$replacedDir = Join-Path $stateDir 'replaced'
 $dllPath = Join-Path $targetDir 'winmm.dll'
 $pdbPath = Join-Path $targetDir 'winmm.pdb'
 $sourceDir = Join-Path $repo "out\build\win64-$($Config.ToLowerInvariant())\loader\proxy"
@@ -33,7 +36,8 @@ function Assert-OrdinaryPath([string] $Path) {
         throw "Refusing a reparse point: $Path"
     }
 }
-foreach ($path in @($resolvedRoot, (Join-Path $resolvedRoot 'bin'), $targetDir, $stateDir, $receiptPath, $dllPath, $pdbPath)) {
+foreach ($path in @($resolvedRoot, (Join-Path $resolvedRoot 'bin'), $targetDir, $stateDir, $receiptPath, $dllPath, $pdbPath, $replacedDir,
+                    (Join-Path $replacedDir 'winmm.dll'), (Join-Path $replacedDir 'winmm.pdb'))) {
     Assert-OrdinaryPath $path
 }
 if ((Test-Path -LiteralPath $stateDir) -and -not (Test-Path -LiteralPath $stateDir -PathType Container)) {
@@ -79,8 +83,13 @@ function Assert-Unedited([string] $Path, [string] $RecordedHash, [string] $Build
 }
 $knownDllHash = if ($receipt) { $receipt.dll_sha256 } else { $null }
 $knownPdbHash = if ($receipt) { $receipt.pdb_sha256 } else { $null }
-Assert-Unedited $dllPath $knownDllHash $sourceDll
-Assert-Unedited $pdbPath $knownPdbHash $sourcePdb
+# -ReplaceUntracked: a loader no receipt records, such as a release bundle extracted by hand. Its DLL
+# passed the identity check above; both files are copied to native-loader\replaced before the install.
+$replaceUntracked = $ReplaceUntracked -and -not $receipt -and ((Test-Path -LiteralPath $dllPath) -or (Test-Path -LiteralPath $pdbPath))
+if (-not $replaceUntracked) {
+    Assert-Unedited $dllPath $knownDllHash $sourceDll
+    Assert-Unedited $pdbPath $knownPdbHash $sourcePdb
+}
 
 if ($Uninstall) {
     # Check the complete deletion target before removing even the first file.
@@ -97,8 +106,8 @@ if ($Uninstall) {
         # Only the loader's own control and log files, then the folders left empty (R1-014). Anything
         # else stays: a payload file the user changed (nlctl uninstall leaves those in place), or a
         # journal nlctl uninstall had to keep because it could not remove everything yet.
-        $own = @('config.json', 'bootstrap-install.json', 'disable', 'session_cvars.json', 'logs\loader.log') +
-               @(1..5 | ForEach-Object { "logs\loader.log.$_" })
+        $own = @('config.json', 'bootstrap-install.json', 'disable', 'session_cvars.json', 'logs\loader.log',
+                 'replaced\winmm.dll', 'replaced\winmm.pdb') + @(1..5 | ForEach-Object { "logs\loader.log.$_" })
         foreach ($name in $own) {
             $path = Join-Path $deleteTarget $name
             if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path -Force }
@@ -127,6 +136,13 @@ $oldReceipt = if (Test-Path -LiteralPath $receiptPath) { [IO.File]::ReadAllBytes
 $hadState = Test-Path -LiteralPath $stateDir
 try {
     New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    if ($replaceUntracked) {
+        New-Item -ItemType Directory -Path $replacedDir -Force | Out-Null
+        foreach ($saved in @(@($dllPath, $oldDll), @($pdbPath, $oldPdb))) {
+            if ($null -ne $saved[1]) { [IO.File]::WriteAllBytes((Join-Path $replacedDir (Split-Path -Leaf $saved[0])), [byte[]] $saved[1]) }
+        }
+        Write-Host "Kept the untracked loader files in $replacedDir"
+    }
     Copy-Item -LiteralPath $sourceDll -Destination $dllPath -Force
     Copy-Item -LiteralPath $sourcePdb -Destination $pdbPath -Force
     $newReceipt = [ordered]@{schema=1; version=([Diagnostics.FileVersionInfo]::GetVersionInfo($sourceDll)).FileVersion;

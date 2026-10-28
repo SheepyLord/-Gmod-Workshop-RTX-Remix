@@ -18,8 +18,13 @@ std::string parent(std::string_view path) {
   return slash == std::string_view::npos ? std::string() : std::string(path.substr(0, slash));
 }
 
-std::wstring widen_ascii(std::string_view text) {
-  return std::wstring(text.begin(), text.end());  // launch_args are ASCII (manifest schema 1)
+// Whether a command-line token is the option `name` (ASCII, as launch_args are in manifest schema 1),
+// ignoring case the way the engine does: "-DXLEVEL" is -dxlevel.
+bool same_option(std::wstring_view token, std::string_view name) {
+  const auto lower = [](wchar_t c) { return c >= L'A' && c <= L'Z' ? c + (L'a' - L'A') : c; };
+  return token.size() == name.size() && std::equal(token.begin(), token.end(), name.begin(), [&](wchar_t a, char b) {
+    return lower(a) == lower(static_cast<unsigned char>(b));
+  });
 }
 
 // The package's layers (low priority first) under its payload folder, then the user's root conf on
@@ -52,14 +57,7 @@ std::vector<std::string> missing_args(const std::vector<std::string>& args, std:
     const std::string& arg = args[i];
     const bool has_value = i + 1 < args.size() &&
         !args[i + 1].empty() && std::all_of(args[i + 1].begin(), args[i + 1].end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); });
-    const auto wide = widen_ascii(arg);
-    const auto found = std::find_if(tokens.begin(), tokens.end(), [&](const auto& token) {
-      if (token.size() != wide.size()) return false;
-      return std::equal(token.begin(), token.end(), wide.begin(), [](wchar_t a, wchar_t b) {
-        const auto lower = [](wchar_t c) { return c >= L'A' && c <= L'Z' ? c + (L'a' - L'A') : c; };
-        return lower(a) == lower(b);
-      });
-    });
+    const auto found = std::find_if(tokens.begin(), tokens.end(), [&](const auto& token) { return same_option(token, arg); });
     if (found == tokens.end()) {
       out.push_back(arg);
       if (has_value) out.push_back(args[i + 1]);
@@ -77,6 +75,38 @@ std::vector<std::string> missing_args(const std::vector<std::string>& args, std:
     if (has_value) ++i;  // the value was consumed either way
   }
   return out;
+}
+
+// The Remix runtime crashes when the game switches its device out of exclusive fullscreen (RESEARCH.md
+// section 18), so an RTX session runs in a borderless window the size of the primary display, as
+// RTXLauncher starts the game. A window mode the user chose (-windowed, -fullscreen and the engine's
+// other spellings) is left as it is, and so are their own -noborder and size.
+void add_window_args(std::wstring_view command_line, const DisplayGet& display, std::vector<std::string>& out,
+                     std::vector<std::string>& present) {
+  const auto tokens = cmdline::tokenize(command_line);
+  const auto given = [&](std::string_view name) {
+    return std::any_of(tokens.begin(), tokens.end(), [&](const std::wstring& token) { return same_option(token, name); });
+  };
+  for (const char* mode : {"-windowed", "-window", "-sw", "-startwindowed", "-full", "-fullscreen"}) {
+    if (given(mode)) {
+      present.emplace_back(mode);
+      return;
+    }
+  }
+  out.emplace_back("-windowed");
+  if (given("-noborder")) present.emplace_back("-noborder");
+  else out.emplace_back("-noborder");
+  bool sized = false;
+  for (const char* size : {"-w", "-width", "-h", "-height"}) {
+    if (given(size)) {
+      present.emplace_back(size);
+      sized = true;
+    }
+  }
+  if (sized) return;
+  const Display screen = display();
+  if (screen.width && screen.height)
+    out.insert(out.end(), {"-w", std::to_string(screen.width), "-h", std::to_string(screen.height)});
 }
 
 }  // namespace
@@ -100,8 +130,27 @@ std::optional<std::string> environment_value(const std::string& name) {
   return fs::utf8(std::filesystem::path(value));
 }
 
+Display primary_display() {
+  // The bootstrap links this code and must keep a KERNEL32-only import table (check_imports.py), so
+  // user32 is loaded here. gmod.exe is per-monitor DPI aware, and the mode is in physical pixels anyway.
+  wchar_t system[MAX_PATH]{};
+  const UINT length = GetSystemDirectoryW(system, MAX_PATH);
+  if (!length || length >= MAX_PATH) return {};
+  const HMODULE user32 = LoadLibraryW((std::filesystem::path(system) / L"user32.dll").c_str());
+  if (!user32) return {};
+  const auto get_mode = reinterpret_cast<decltype(&EnumDisplaySettingsW)>(GetProcAddress(user32, "EnumDisplaySettingsW"));
+  DEVMODEW mode{};
+  mode.dmSize = static_cast<WORD>(sizeof(mode));
+  Display display;
+  if (get_mode && get_mode(nullptr, ENUM_CURRENT_SETTINGS, &mode)) {
+    display.width = mode.dmPelsWidth;
+    display.height = mode.dmPelsHeight;
+  }
+  return display;  // user32 stays loaded: the game loads it anyway
+}
+
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
-          std::wstring_view command_line) {
+          std::wstring_view command_line, const DisplayGet& display) {
   Plan p;
   if (!config.enabled) {
     p.reason = "enabled is false in native-loader/config.json";
@@ -145,6 +194,7 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
     else p.user_env.emplace_back(name, *user);
   }
   p.launch_args = missing_args(remix.launch_args, command_line, p.present_args);
+  add_window_args(command_line, display, p.launch_args, p.present_args);
   p.patch_sets_need_insecure = config.patch_sets_require_insecure;
   p.activate = true;
   p.reason = "runtime " + runtime->id + " " + runtime->version;

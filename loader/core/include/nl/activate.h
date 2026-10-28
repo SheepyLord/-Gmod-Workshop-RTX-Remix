@@ -27,6 +27,17 @@ using EnvGet = std::function<std::optional<std::string>(const std::string& name)
 // Win32 environment adapter shared by the CLI and bootstrap; absent and empty stay distinct.
 std::optional<std::string> environment_value(const std::string& name);
 
+// The primary display's current mode in pixels; 0 x 0 when it cannot be read. The plan reads it only
+// when it sizes the RTX session's window (ADR 0018).
+struct Display {
+  unsigned width = 0;
+  unsigned height = 0;
+};
+using DisplayGet = std::function<Display()>;
+
+// Win32 display adapter shared by the CLI and bootstrap (EnumDisplaySettingsW, physical pixels).
+Display primary_display();
+
 struct Plan {
   bool activate = false;  // false: the runtime is not loaded and nothing below is applied
   std::string reason;     // why not, or (when active) a short note
@@ -45,8 +56,9 @@ struct Plan {
   std::vector<std::string> rtx_layers;
   std::vector<std::string> dxvk_layers;
 
-  // Arguments to append to the command line, the package's launch_args minus any the user already
-  // passed. ASCII, in the manifest's order.
+  // Arguments to append to the command line: the package's launch_args minus any the user already
+  // passed, in the manifest's order, then a borderless window the size of the primary display unless
+  // the user chose a window mode (ADR 0018). ASCII.
   std::vector<std::string> launch_args;
   std::vector<std::string> present_args;
 
@@ -70,8 +82,9 @@ struct Plan {
 
 // The runtime package is the deployed package that has a remix section and a payload. With none, or
 // with remix.enabled false, the plan is inactive. `command_line` is the process command line, read
-// only to skip launch arguments the user set.
+// only to skip launch arguments the user set. `display` is called at most once, and only when the
+// plan sizes the window.
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
-          std::wstring_view command_line);
+          std::wstring_view command_line, const DisplayGet& display);
 
 }  // namespace nl::activate

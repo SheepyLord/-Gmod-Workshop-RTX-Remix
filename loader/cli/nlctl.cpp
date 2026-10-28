@@ -384,7 +384,8 @@ int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir
 }
 
 // Read-only: what the bootstrap's start-up step would activate from the deployed generation. The
-// command line is taken as empty, so the launch arguments shown are the whole set the package adds.
+// command line is taken as empty, so the launch arguments shown are the whole set the package adds,
+// with the window this display gets (ADR 0018).
 int cmd_activation(const fs::path& game_root, bool json) {
   const nl::config::Config config = nl::config::load(game_root);
   const auto journal = nl::journal::load(game_root);
@@ -396,7 +397,7 @@ int cmd_activation(const fs::path& game_root, bool json) {
   nl::activate::Plan plan;
   if (!config.from_file) plan.reason = "native-loader/config.json is absent";
   else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
-  else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"");
+  else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"", nl::activate::primary_display);
   if (json) {
     std::string out = "{\n  \"activate\": " + std::string(plan.activate ? "true" : "false");
     out += ",\n  \"reason\": " + nl::json::quote(plan.reason);
