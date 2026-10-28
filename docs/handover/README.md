@@ -12,6 +12,7 @@ so the next agent has the full story without the chat transcripts.
 | M4 activation | [M4-handover.md](M4-handover.md) | [M4-codex-prompt.md](M4-codex-prompt.md) | [M4-report.md](M4-report.md), [review](M4-review.md) | Codex; parts 1-2 and review fixes by Claude | `m4-activation` in the main checkout; merged into `main` 2026-10-28 |
 | M5 RTX fixes | [M5-plan.md](M5-plan.md) (no handover: Claude planned and built it) | | [M5-report.md](M5-report.md) | Claude | `m5-rtx-fixes` in the main checkout; merged into `main` 2026-10-28 with M6 |
 | M6 Workshop route | (in the roadmap row; Claude) | | [M6-report.md](M6-report.md) | Claude | committed with M5 on `m5-rtx-fixes` (shared files); merged into `main` 2026-10-28 |
+| M7 field install | [M7-plan.md](M7-plan.md) | | [M7-report.md](M7-report.md) | Claude | `m7-field` in the main checkout; merged into `main` 2026-10-28 |
 ## Rules for briefs
 
 - Self-contained for someone who has read [AGENTS.md](../../AGENTS.md) and nothing else.

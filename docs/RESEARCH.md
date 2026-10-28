@@ -597,3 +597,38 @@ placed by the loader". `package_fixes.py` now deploys that mod create-only.
   it with the `time_updated` that `appworkshop_4000.acf` had at start-up (now in `status.json`
   `packages`) and asks for a restart when it is newer (`tools/tests/test_companion.py`).
 
+
+## 15. The field install with the loader (M7, 2026-10-28, Claude)
+
+Measured in the user's Steam-managed install: gm_construct, the user's 44 local add-ons, no Workshop,
+camera pinned. Evidence in `out/m7` ([M7 report](handover/M7-report.md)).
+
+- **What the field install holds besides Steam's files.**
+  - In `bin/win64`: a DXVK `d3d9.dll` (4 MB) for non-RTX play, a `vulkan-1.dll` (903 KB, five hard
+    links), the MMD Hot Loader runtime, Jolt's three `vphysics_jolt_*.dll` with PDBs and its zip, and
+    VR and Hammer++ files.
+  - In `garrysmod/lua/bin`: the MMD Hot Loader's modules and VRMod's.
+  - In the root: logs, `steam_appid.txt`, and GModPatchTool's folder and zip.
+  - In `garrysmod/data`: 61 GB in 39,613 files.
+  - No `rtx-remix`, `user.conf` or `rtx.conf`.
+  - 76 non-depot files sit directly in the folders sessions write to, 255 MB; `field_snapshot.py`
+    copies them in 3.4 s.
+- **Without the loader** the game loads the DXVK `d3d9.dll` and `bin/win64/vulkan-1.dll`, the
+  MMD Hot Loader's three modules, and the stock `vphysics.dll`. Jolt is not loaded. `mat_dxlevel` is 95.
+- **With the loader and RTX on** it loads the runtime package's `d3d9.dll`, System32's
+  `vulkan-1.dll` (the preload wins over `bin/win64`), the package's `stdshader_dx6.dll` and the
+  fixes' module, the MMD Hot Loader as before, and `mat_dxlevel` 90. First deployment: 445 changes;
+  map after 19 s.
+  - Remix shows its first-run welcome panel, because the install has no `user.conf`.
+  - The default Remix settings give a bluer frame than the PoC with the reference's `user.conf`
+    (mean RGB 73/94/105 against 120/113/101).
+- **With the loader and RTX off** the module set equals the baseline's plus the bootstrap, the 44 add-ons
+  mount (the fixes' 9 hidden), and the frame matches the baseline's at block_diff 0.015.
+- **What a session rewrites in the user's data**, all with unchanged sizes:
+  - the MMD Hot Loader's `approved.json` and `workshop/state.json`;
+  - `bbs/filters.json`;
+  - `settings/mapkeys.res`;
+  - in RTX sessions, the fixes' `pseudoweapontexture*.png`.
+
+  New in RTX sessions: the fixes' `rtx_agent`, `rtx_water` and `pseudoplayertexture*.png` in
+  `garrysmod/data`, and `rtx-remix/` (Remix's logs).
