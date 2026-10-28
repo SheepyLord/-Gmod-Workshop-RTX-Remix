@@ -176,6 +176,55 @@ class PackageRuntimeTests(unittest.TestCase):
         self.assertIn('no d3d9.dll', err)
         self.assertEqual(self.leftovers(), [])
 
+    def test_private_looking_files_are_refused_unless_named(self):
+        private = ['user.conf', 'remix-dxvk.log', '.env', 'local.ENV', 'crash.dmp', 'mini.mdmp', 'logs/readme.txt',
+                   'usd/Logs/plugInfo.json']
+        for rel in private:
+            self.write(self.runtime / rel, b'private')
+        layer = self.write(self.root / 'mine' / 'user.conf', b'rtx.mine = 1\n')  # a layer named like Remix's own
+        listed = ['native/payload/runtime/' + rel for rel in private] + ['native/payload/config/rtx/01_user.conf']
+        code, _, err = self.run_tool('--out', self.root / 'x', '--rtx-conf', layer)
+        self.assertEqual(code, 1)
+        for rel in listed:
+            self.assertIn(rel, err)
+        self.assertNotIn('d3d9.dll', err)
+        self.assertFalse((self.root / 'x').exists())
+        allow = [arg for rel in listed for arg in ('--allow-private', rel)]
+        code, _, err = self.run_tool('--out', self.root / 'x', '--rtx-conf', layer, *allow[:-2])
+        self.assertEqual(code, 1)  # one not named: still refused, and only that one listed
+        self.assertEqual([line.strip() for line in err.splitlines()[1:]],
+                         ['native/payload/config/rtx/01_user.conf (Remix\'s user.conf, a user\'s own settings)'])
+        code, _, err = self.run_tool('--out', self.root / 'x', '--rtx-conf', layer, *allow,
+                                     '--allow-private', 'native/payload/runtime/d3d9.dll')
+        self.assertEqual(code, 1)  # an exception for a file that is not private is a mistake
+        self.assertIn('--allow-private native/payload/runtime/d3d9.dll', err)
+        self.assertEqual(self.leftovers(), [])
+        out = self.root / 'pkg'
+        summary = json.loads(self.build('--out', out, '--rtx-conf', layer, '--json', *allow))
+        self.assertEqual(summary['allowed_private'], sorted(listed, key=str.lower))
+        self.assertLessEqual(set(listed), set(self.manifest(out)['files']))
+
+    def test_an_inventory_beside_each_output_lists_every_file(self):
+        self.write(self.runtime / 'logs' / 'kept.txt', b'reviewed')
+        out, gma = self.root / 'pkg', self.root / 'pkg.gma'
+        text = self.build('--out', out, '--gma', gma, '--allow-private', 'native/payload/runtime/logs/kept.txt')
+        m = self.manifest(out)
+        manifest = (out / 'native' / 'manifest.json').read_bytes()
+        for inventory in (self.root / 'pkg.inventory.txt', self.root / 'pkg.gma.inventory.txt'):
+            self.assertIn('inventory  %s' % inventory, text)
+            lines = inventory.read_text(encoding='utf-8').splitlines()
+            self.assertRegex(lines[0], r'^# rtx-remix-runtime \S+: %d files and native/manifest.json' % len(m['files']))
+            self.assertEqual(lines[1], 'size\tsha256\tpath\tsource\tnote')
+            rows = [line.split('\t') for line in lines[2:]]
+            self.assertEqual([row[2] for row in rows], sorted(m['files'], key=str.lower) + ['native/manifest.json'])
+            for size, sha256, path, source, note in rows[:-1]:
+                self.assertEqual({'size': int(size), 'sha256': sha256}, m['files'][path])
+                self.assertEqual(Path(source).read_bytes(), (out / path).read_bytes())
+                self.assertEqual(note, 'allowed with --allow-private: inside a logs folder' if path.endswith('kept.txt') else '')
+            self.assertEqual(rows[-1][:3], [str(len(manifest)), hashlib.sha256(manifest).hexdigest(), 'native/manifest.json'])
+        with gmapack.read_gma(str(gma)) as g:
+            self.assertEqual(sorted(e['name'] for e in g.files), sorted(row[2] for row in rows))
+
     def test_path_rules_match_the_loader(self):
         ok = ['native/payload/runtime/d3d9.dll', 'native/payload/runtime/usd/hd/resources/plugInfo.json']
         bad = ['', 'a//b', 'a/./b', 'a/../b', 'a\\b', 'a:b', 'a/b*', 'con', 'CON.txt', 'lpt9.dll', 'com¹',
