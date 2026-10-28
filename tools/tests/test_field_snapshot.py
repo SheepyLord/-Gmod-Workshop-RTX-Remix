@@ -1,7 +1,9 @@
 """field_snapshot.py on a synthetic install under out/tmp: snapshot, a simulated session (the real
 bootstrap installed when a build exists; files changed, created, deleted and written through a hard
-link; registry values changed and added), rollback, and checks that everything is back. Uses a
-throwaway registry key under HKCU\\Software, deleted afterwards."""
+link; registry values changed and added), rollback, and checks that everything is back. Plus one
+regression test or more for each R1 finding the tool had. Uses a throwaway registry key under
+HKCU\\Software, deleted afterwards."""
+import argparse
 import json
 import os
 import subprocess
@@ -10,17 +12,44 @@ import tempfile
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / 'tools' / 'field_snapshot.py'
+sys.path.insert(0, str(REPO / 'tools'))
+import field_snapshot as fs  # noqa: E402
+
 BUILD = next((config for config in ('Debug', 'Release')
               if (REPO / 'out' / 'build' / f'win64-{config.lower()}' / 'loader' / 'proxy' / 'winmm.dll').is_file()
               and (REPO / 'out' / 'build' / f'win64-{config.lower()}' / 'loader' / 'cli' / 'nlctl.exe').is_file()), None)
+# What PowerShell 7's Microsoft.PowerShell.Utility manifest declares, which Windows PowerShell 5.1 finds
+# first on an inherited module path and cannot load: a Core-only module exporting the Utility cmdlets.
+UTILITY_CMDLETS = (
+    'Export-Alias Get-Alias Import-Alias New-Alias Set-Alias Export-Clixml Import-Clixml Measure-Command Trace-Command '
+    'ConvertFrom-Csv ConvertTo-Csv Export-Csv Import-Csv Get-Culture Format-Custom Get-Date Set-Date Write-Debug '
+    'Wait-Debugger Register-EngineEvent Write-Error Get-Event New-Event Remove-Event Unregister-Event Wait-Event '
+    'Get-EventSubscriber Invoke-Expression Out-File Unblock-File Get-FileHash Export-FormatData Get-FormatData '
+    'Update-FormatData New-Guid Format-Hex Get-Host Read-Host Write-Host ConvertTo-Html Write-Information '
+    'ConvertFrom-Json ConvertTo-Json Format-List Import-LocalizedData Send-MailMessage Add-Member Get-Member '
+    'Compare-Object Group-Object Measure-Object New-Object Select-Object Sort-Object Tee-Object Register-ObjectEvent '
+    'Write-Output Import-PowerShellDataFile Write-Progress Get-Random Invoke-RestMethod Get-Runspace Start-Sleep '
+    'Out-String Select-String ConvertFrom-StringData Format-Table New-TemporaryFile New-TimeSpan Add-Type Get-TypeData '
+    'Get-UICulture Get-Unique Clear-Variable Get-Variable New-Variable Remove-Variable Set-Variable Get-Verb '
+    'Write-Verbose Write-Warning Invoke-WebRequest Format-Wide ConvertTo-Xml Select-Xml Out-GridView Show-Command').split()
+CORE_ONLY_UTILITY = ('@{\nGUID = "1DA87E53-152B-403E-98DC-74D7B4D63D59"\nModuleVersion = "7.0.0.0"\n'
+                     'CompatiblePSEditions = @("Core")\nPowerShellVersion = "3.0"\n'
+                     f'CmdletsToExport = @({", ".join(repr(name) for name in UTILITY_CMDLETS)})\n'
+                     'FunctionsToExport = @()\n}\n')
 
 
-def run(*args):
+def powershell_env():
+    """This environment without PSModulePath, for a Windows PowerShell child (R1-029)."""
+    return {name: value for name, value in os.environ.items() if name.upper() != 'PSMODULEPATH'}
+
+
+def run(*args, env=None):
     return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True, encoding='utf-8',
-                          errors='replace', timeout=600)
+                          errors='replace', timeout=600, env=env)
 
 
 def reg(*args):
@@ -78,14 +107,34 @@ class FieldSnapshotTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
 
+    # The command line.
     def snapshot(self, *extra):
         done = run('--snapshot', str(self.snap), 'snapshot', '--root', str(self.root), '--registry-key', self.key, *extra)
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
         return json.loads(done.stdout)
 
-    def rollback(self):
-        done = run('--snapshot', str(self.snap), 'rollback', '--config', BUILD or 'Release')
+    def rollback(self, env=None):
+        done = run('--snapshot', str(self.snap), 'rollback', '--config', BUILD or 'Release', env=env)
         return done.returncode, json.loads(done.stdout) if done.stdout.strip().startswith('{') else done.stderr
+
+    # In this process, where a test can stand in for parts of the system.
+    def snapshot_args(self, **options):
+        values = dict(root=str(self.root), snapshot=str(self.snap), registry_key=self.key, manifests_from=None,
+                      no_depot_check=False)
+        values.update(options)
+        return argparse.Namespace(**values)
+
+    def rollback_args(self):
+        return argparse.Namespace(snapshot=str(self.snap), config=BUILD or 'Release')
+
+    def install_bootstrap(self):
+        installed = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                                    str(REPO / 'tools' / 'install-loader.ps1'), '-GameRoot', str(self.root), '-Config', BUILD],
+                                   capture_output=True, text=True, env=powershell_env())
+        self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
+        self.assertTrue((self.root / 'bin' / 'win64' / 'winmm.dll').is_file())
+
+    # ------------------------------------------------------------ the whole round
 
     def test_rollback_puts_everything_back(self):
         summary = self.snapshot()
@@ -93,11 +142,7 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertTrue(summary['registry_exported'])
         self.assertEqual(summary['loader_paths_present'], [])
         if BUILD:
-            installed = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
-                                        str(REPO / 'tools' / 'install-loader.ps1'), '-GameRoot', str(self.root), '-Config', BUILD],
-                                       capture_output=True, text=True)
-            self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
-            self.assertTrue((self.root / 'bin' / 'win64' / 'winmm.dll').is_file())
+            self.install_bootstrap()
         # The session.
         self.write('garrysmod/cfg/config.cfg', b'r_x 2\nrtx 1\n')
         with open(self.root / 'garrysmod' / 'console.log', 'ab') as log:
@@ -199,6 +244,54 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertFalse(report['clean'])
         self.assertEqual(report['listing_differences']['garrysmod/addons'], {'added': [], 'missing': ['useraddon']})
+
+    # ------------------------------------------------------------ R1-029: PowerShell's module path
+
+    def test_powershell_children_get_no_module_path(self):
+        """R1-029: every powershell child starts without PSModulePath, and a game check that cannot run
+        refuses instead of reporting no game."""
+        calls = []
+        real_run = subprocess.run
+
+        def recording_run(command, *args, **kwargs):
+            if command[0] == 'powershell':
+                calls.append((command, kwargs.get('env')))
+                return subprocess.CompletedProcess(command, 0, '', '')
+            return real_run(command, *args, **kwargs)
+        with patch.dict(os.environ, {'PSModulePath': str(self.scratch / 'Modules')}), \
+                patch.object(fs.subprocess, 'run', side_effect=recording_run):
+            fs.snapshot(self.snapshot_args())
+            self.write('bin/win64/winmm.dll', b'a bootstrap')  # makes rollback run the uninstaller
+            fs.rollback(self.rollback_args())
+        self.assertEqual(len(calls), 3, calls)  # the game check twice, the uninstaller once
+        self.assertIn('uninstall-loader.ps1', ' '.join(calls[2][0]))
+        for command, env in calls:
+            self.assertIsNotNone(env, command)
+            self.assertNotIn('PSMODULEPATH', {name.upper() for name in env}, command)
+        failed = subprocess.CompletedProcess(['powershell'], 1, '', "The term 'Get-Process' is not recognized")
+        with patch.object(fs.subprocess, 'run', return_value=failed), self.assertRaises(fs.Failure):
+            fs.game_running(self.root)
+
+    @unittest.skipUnless(BUILD, 'needs a built bootstrap (tools\\build.ps1)')
+    def test_rollback_under_powershell_7s_module_path(self):
+        """R1-029: started from PowerShell 7, rollback inherits a PSModulePath whose modules Windows
+        PowerShell 5.1 cannot load; its uninstaller must still find Get-FileHash."""
+        utility = self.scratch / 'pwsh7-modules' / 'Microsoft.PowerShell.Utility'
+        utility.mkdir(parents=True)
+        (utility / 'Microsoft.PowerShell.Utility.psd1').write_text(CORE_ONLY_UTILITY, encoding='utf-8')
+        inherited = powershell_env()
+        inherited['PSModulePath'] = f"{utility.parent};{os.environ.get('PSModulePath', '')}"
+        probe = subprocess.run(['powershell', '-NoProfile', '-Command', 'Get-FileHash -LiteralPath $env:ComSpec | Out-Null'],
+                               capture_output=True, text=True, env=inherited)
+        if probe.returncode == 0:
+            self.skipTest('this Windows PowerShell finds Get-FileHash despite the inherited module path')
+        self.snapshot()
+        self.install_bootstrap()
+        self.write('crashes/new.mdmp', b'new dump')
+        code, report = self.rollback(env=inherited)
+        self.assertEqual(code, 0, report)
+        self.assertEqual(report['uninstall'], 0)
+        self.assertFalse((self.root / 'bin' / 'win64' / 'winmm.dll').exists())
 
 
 if __name__ == '__main__':

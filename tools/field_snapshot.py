@@ -45,6 +45,8 @@ WATCHED = ("garrysmod/data", "garrysmod/settings")
 LOADER_PATHS = ("bin/win64/winmm.dll", "native-loader", "rtx-remix", "garrysmod/data/native-loader")
 MAX_COPY = 2 << 30  # bigger non-depot files are hashed, not copied
 REPORT_LIMIT = 200
+GAME_CHECK = ("$ErrorActionPreference = 'Stop'; try { Get-Process -Name gmod -ErrorAction SilentlyContinue | "
+              "ForEach-Object { $_.Path }; exit 0 } catch { [Console]::Error.WriteLine($_.Exception.Message); exit 3 }")
 
 
 class Failure(Exception):
@@ -93,11 +95,25 @@ def move_out(path: Path, target: Path) -> str:
         return "deleted"
 
 
+def powershell_env() -> dict[str, str]:
+    """This environment without PSModulePath, for a child Windows PowerShell, which then builds its own
+    module path. Inherited from PowerShell 7, the variable makes 5.1 find 7's modules first and fail to
+    load cmdlets such as Get-FileHash (R1-029)."""
+    return {name: value for name, value in os.environ.items() if name.upper() != "PSMODULEPATH"}
+
+
+def powershell(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["powershell", "-NoProfile", *args], capture_output=True, text=True, errors="replace",
+                          env=powershell_env())
+
+
 def game_running(root: Path) -> bool:
-    out = subprocess.run(["powershell", "-NoProfile", "-Command",
-                          "Get-Process gmod -ErrorAction SilentlyContinue | ForEach-Object { $_.Path }"], capture_output=True, text=True).stdout
+    """Whether a gmod.exe from this install runs. A check that cannot run raises Failure."""
+    done = powershell("-Command", GAME_CHECK)
+    if done.returncode != 0:
+        raise Failure("could not check whether the game is running: " + (done.stdout + done.stderr).strip()[-500:])
     prefix = os.path.join(os.path.normcase(str(root)), "")  # GarrysMod must not match GarrysMod_PoC
-    return any(os.path.normcase(line.strip()).startswith(prefix) for line in out.splitlines() if line.strip())
+    return any(os.path.normcase(line.strip()).startswith(prefix) for line in done.stdout.splitlines() if line.strip())
 
 
 def depot_files(root: Path, manifests_from: str | None) -> set[str] | None:
@@ -290,9 +306,8 @@ def rollback(args) -> dict:
     report: dict = {"uninstall": None, "moved": [], "deleted": [], "restored": [], "errors": [], "registry": None,
                     "listing_differences": {}, "kept_differences": [], "watched": {}}
     if (root / "bin/win64/winmm.dll").exists() and not state["loader_paths"]["bin/win64/winmm.dll"]:
-        result = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                                 str(REPO / "tools" / "uninstall-loader.ps1"), "-GameRoot", str(root), "-Config", args.config,
-                                 "-RemoveConfig", "-AllowSteamManaged"], capture_output=True, text=True)
+        result = powershell("-ExecutionPolicy", "Bypass", "-File", str(REPO / "tools" / "uninstall-loader.ps1"),
+                            "-GameRoot", str(root), "-Config", args.config, "-RemoveConfig", "-AllowSteamManaged")
         report["uninstall"] = result.returncode
         if result.returncode != 0:
             raise Failure("uninstall-loader.ps1 failed: " + (result.stdout + result.stderr)[-1500:])
