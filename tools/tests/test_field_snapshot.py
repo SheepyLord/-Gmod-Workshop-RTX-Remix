@@ -4,6 +4,7 @@ link; registry values changed and added), rollback, and checks that everything i
 regression test or more for each R1 finding the tool had. Uses a throwaway registry key under
 HKCU\\Software, deleted afterwards."""
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -11,6 +12,7 @@ import sys
 import tempfile
 import unittest
 import uuid
+import winreg
 from pathlib import Path
 from unittest.mock import patch
 
@@ -74,6 +76,7 @@ class FieldSnapshotTests(unittest.TestCase):
         self.root = self.scratch / 'game'
         self.snap = self.scratch / 'snapshot'
         self.key = 'HKCU\\Software\\NativeLoaderTest_' + uuid.uuid4().hex[:12]
+        self.full_key = self.key.replace('HKCU', 'HKEY_CURRENT_USER', 1)
         self.addCleanup(self.cleanup)
         for rel, data in {
             'bin/win64/gmod.exe': b'not a real game',
@@ -97,6 +100,14 @@ class FieldSnapshotTests(unittest.TestCase):
         os.link(self.outside, self.root / 'bin' / 'win64' / 'shared.dll')
         self.assertEqual(reg('add', self.key, '/v', 'DXLevel_V1', '/t', 'REG_DWORD', '/d', '90', '/f').returncode, 0)
         self.assertEqual(reg('add', self.key + '\\Settings', '/v', 'Name', '/t', 'REG_SZ', '/d', 'keep me', '/f').returncode, 0)
+        # Every other form `reg export` writes: hex over several lines, escaped quotes, the default value.
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.key[5:], 0, winreg.KEY_SET_VALUE) as key:
+            winreg.SetValueEx(key, '', 0, winreg.REG_SZ, 'default')
+            winreg.SetValueEx(key, 'Quote"And\\Slash', 0, winreg.REG_SZ, 'say "hi" \\ there')
+            winreg.SetValueEx(key, 'Binary', 0, winreg.REG_BINARY, bytes(range(60)))
+            winreg.SetValueEx(key, 'Multi', 0, winreg.REG_MULTI_SZ, ['a', 'b c'])
+            winreg.SetValueEx(key, 'Expand', 0, winreg.REG_EXPAND_SZ, '%TEMP%\\x')
+            winreg.SetValueEx(key, 'Empty', 0, winreg.REG_SZ, '')
 
     def cleanup(self):
         reg('delete', self.key, '/f')
@@ -117,7 +128,7 @@ class FieldSnapshotTests(unittest.TestCase):
         done = run('--snapshot', str(self.snap), 'rollback', '--config', BUILD or 'Release', env=env)
         return done.returncode, json.loads(done.stdout) if done.stdout.strip().startswith('{') else done.stderr
 
-    # In this process, where a test can stand in for parts of the system.
+    # In this process, where a test can stand in for parts of the system; the game check is skipped.
     def snapshot_args(self, **options):
         values = dict(root=str(self.root), snapshot=str(self.snap), registry_key=self.key, manifests_from=None,
                       no_depot_check=False)
@@ -126,6 +137,14 @@ class FieldSnapshotTests(unittest.TestCase):
 
     def rollback_args(self):
         return argparse.Namespace(snapshot=str(self.snap), config=BUILD or 'Release')
+
+    def snapshot_here(self, **options):
+        with patch.object(fs, 'game_running', return_value=False):
+            return fs.snapshot(self.snapshot_args(**options))
+
+    def rollback_here(self):
+        with patch.object(fs, 'game_running', return_value=False):
+            return fs.rollback(self.rollback_args())
 
     def install_bootstrap(self):
         installed = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
@@ -167,6 +186,8 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertEqual(self.outside.read_bytes(), b'SHARED original')
         reg('add', self.key, '/v', 'DXLevel_V1', '/t', 'REG_DWORD', '/d', '95', '/f')
         reg('add', self.key, '/v', 'NewValue', '/t', 'REG_SZ', '/d', 'x', '/f')
+        reg('add', self.key, '/v', 'Binary', '/t', 'REG_BINARY', '/d', 'ff', '/f')
+        reg('add', self.key, '/v', 'Multi', '/t', 'REG_MULTI_SZ', '/d', 'z', '/f')
         reg('add', self.key + '\\Sub\\Deep', '/v', 'V', '/t', 'REG_SZ', '/d', 'y', '/f')
 
         code, report = self.rollback()
@@ -198,13 +219,15 @@ class FieldSnapshotTests(unittest.TestCase):
         # A changed file below a watched folder cannot be put back; it is reported.
         self.assertEqual(report['watched']['garrysmod/data']['changed_files'], ['existing/a.txt'])
         self.assertEqual(report['watched']['garrysmod/settings']['changed'], 0)
-        # The registry key as it was: the changed value back, the added value and keys gone.
+        # The registry key as it was: the changed values back, the added value and keys gone.
         self.assertEqual(reg_value(self.key, 'DXLevel_V1'), '0x5a')
+        self.assertEqual(reg_value(self.key, 'Binary'), bytes(range(60)).hex().upper())
+        self.assertEqual(reg_value(self.key, 'Multi'), 'a\\0b c')
         self.assertIsNone(reg_value(self.key, 'NewValue'))
         self.assertNotEqual(reg('query', self.key + '\\Sub').returncode, 0)
         self.assertEqual(reg_value(self.key + '\\Settings', 'Name'), 'keep me')
-        self.assertEqual(report['registry']['differences'], [])
-        self.assertIn(self.key.replace('HKCU', 'HKEY_CURRENT_USER', 1) + '\\Sub', report['registry']['pruned'])
+        self.assertEqual((report['registry']['error'], report['registry']['differences']), (None, []))
+        self.assertIn(self.full_key + '\\Sub', report['registry']['pruned'])
         # A second rollback finds nothing left to do.
         code, again = self.rollback()
         self.assertEqual(code, 0, again)
@@ -244,6 +267,57 @@ class FieldSnapshotTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertFalse(report['clean'])
         self.assertEqual(report['listing_differences']['garrysmod/addons'], {'added': [], 'missing': ['useraddon']})
+
+    # ------------------------------------------------------------ R1-011: prune only after a verified import
+
+    def test_a_damaged_registry_export_prunes_nothing(self):
+        """R1-011: a registry.reg without its recorded SHA-256 (here cut short by a whole subkey, which
+        still parses) is neither imported nor pruned against."""
+        self.snapshot()
+        reg('add', self.key, '/v', 'NewValue', '/t', 'REG_SZ', '/d', 'x', '/f')
+        export = self.snap / 'registry.reg'
+        text = export.read_bytes().decode('utf-16')
+        export.write_bytes(text[:text.index('[' + self.full_key + '\\Settings]')].encode('utf-16'))
+        code, report = self.rollback()
+        self.assertEqual(reg_value(self.key + '\\Settings', 'Name'), 'keep me')
+        self.assertEqual(reg_value(self.key, 'NewValue'), 'x')
+        self.assertEqual(code, 1)
+        self.assertIn('SHA-256', report['registry']['error'])
+        self.assertEqual(report['registry']['pruned'], [])
+        self.assertFalse(report['clean'])
+
+    def test_a_failed_import_prunes_nothing(self):
+        """R1-011: when reg import fails, nothing is pruned."""
+        self.snapshot_here()
+        reg('add', self.key, '/v', 'NewValue', '/t', 'REG_SZ', '/d', 'x', '/f')
+        real_run = subprocess.run
+
+        def failing_import(command, *args, **kwargs):
+            if list(command[:2]) == ['reg', 'import']:
+                return subprocess.CompletedProcess(command, 1, '', 'ERROR: simulated')
+            return real_run(command, *args, **kwargs)
+        with patch.object(fs.subprocess, 'run', side_effect=failing_import):
+            report = self.rollback_here()
+        self.assertEqual(reg_value(self.key, 'NewValue'), 'x')
+        self.assertEqual(report['registry']['import_exit'], 1)
+        self.assertEqual(report['registry']['pruned'], [])
+        self.assertIn('nothing was pruned', report['registry']['error'])
+        self.assertFalse(report['clean'])
+
+    def test_an_export_without_the_key_prunes_nothing(self):
+        """R1-011: an export that parses but does not hold the key (its SHA-256 recorded as if the
+        snapshot had written it) counts as unreadable: the key is left alone instead of emptied."""
+        self.snapshot()
+        export = self.snap / 'registry.reg'
+        export.write_bytes('Windows Registry Editor Version 5.00\r\n\r\n'.encode('utf-16'))
+        state = json.loads((self.snap / 'snapshot.json').read_text(encoding='utf-8'))
+        state['registry'].update(sha256=hashlib.sha256(export.read_bytes()).hexdigest(), size=export.stat().st_size)
+        (self.snap / 'snapshot.json').write_text(json.dumps(state), encoding='utf-8')
+        code, report = self.rollback()
+        self.assertEqual(reg_value(self.key, 'DXLevel_V1'), '0x5a')
+        self.assertEqual(reg_value(self.key + '\\Settings', 'Name'), 'keep me')
+        self.assertEqual(code, 1)
+        self.assertIn('does not hold the key', report['registry']['error'])
 
     # ------------------------------------------------------------ R1-029: PowerShell's module path
 
