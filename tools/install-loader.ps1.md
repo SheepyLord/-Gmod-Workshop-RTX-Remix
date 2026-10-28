@@ -15,10 +15,13 @@ tools\install-loader.ps1 -Uninstall -RemoveState
 ```
 
 Inputs: `-GameRoot`, `-Config Debug|Release`, built DLL/PDB in `out/build/win64-<config>/loader/proxy`.
-`-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` explicitly deletes
-the whole `native-loader` directory and requires `-Uninstall`. Reparse points in affected paths or
-the removal tree are refused. Before recursive deletion the absolute target must equal the game's
-own `native-loader` directory.
+`-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` (requires
+`-Uninstall`) deletes the loader's own control and log files in `native-loader` (`config.json`,
+`bootstrap-install.json`, `disable`, `session_cvars.json`, `logs\loader.log` and its rotations),
+then every folder left empty, then `native-loader` itself if empty. Any other file stays and is
+listed in a warning: a payload file the user changed (`nlctl uninstall` leaves those in place), or a
+journal `nlctl uninstall` had to keep. Reparse points in affected paths or the removal tree are
+refused, and the absolute target must equal the game's own `native-loader` directory.
 
 A game whose folder matches `installdir` in an `appmanifest_*.acf` in its library's `steamapps`
 requires `-AllowSteamManaged` for either install or uninstall. That flag is explicit authorization

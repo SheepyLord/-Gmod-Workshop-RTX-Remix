@@ -632,3 +632,25 @@ camera pinned. Evidence in `out/m7` ([M7 report](handover/M7-report.md)).
 
   New in RTX sessions: the fixes' `rtx_agent`, `rtx_water` and `pseudoplayertexture*.png` in
   `garrysmod/data`, and `rtx-remix/` (Remix's logs).
+
+## 16. R1 review facts (2026-10-28, Claude, triaging Codex's review)
+
+- **Steam's depot files inside the package areas.** Measured read-only from the field install's
+  depot manifests (`out/r1-triage/depot_areas.py` in the R1 worktree, 3,063 depot file entries):
+  - `garrysmod/cfg/` holds 18: `360controller-linux.cfg`, `360controller.cfg`, `autoexec.cfg`,
+    `config_default.cfg`, `game.cfg`, `listenserver.cfg`, `mapcycle.txt`, `mount.cfg`, `network.cfg`,
+    `server.cfg`, `settings_default.scr`, `skill.cfg`, `skill1.cfg`, `skill2.cfg`, `skill3.cfg`,
+    `skill_manifest.cfg`, `undo360controller.cfg`, `valve.rc`. So `garrysmod/cfg` stopped being a
+    package area ([ADR 0014](decisions/0014-r1-hardening.md)).
+  - `garrysmod/lua/bin/`, `garrysmod/addons/`, `garrysmod/data/` and `rtx-remix/` hold none.
+- **Import tables without names.** A PE import descriptor may have `OriginalFirstThunk` 0. Windows
+  then resolves the imports from `FirstThunk` and overwrites it with addresses, so the names are
+  gone once the module is mapped. Codex's repro (R1-006) zeroed it in a copy of the synthetic
+  `filesystem_stdio.dll`: the DLL loads, and name-based hooks find nothing.
+  - The hooks now match such slots by the bound address.
+  - `GetProcAddress` on kernel32 follows its forwarders, so `GetProcAddress(kernel32, ...)` and
+    `GetProcAddress(kernelbase, ...)` give the addresses the loader binds.
+- **Windows PowerShell 5.1 started from PowerShell 7.** It inherits `PSModulePath` with PowerShell 7's
+  module folders first. It then fails to autoload `Get-FileHash` (`Microsoft.PowerShell.Utility`), and
+  `install-loader.ps1` stops (R1-029, seen in Codex's second `tools\test.ps1` run). A child started
+  without `PSModulePath` builds its own default path and works.

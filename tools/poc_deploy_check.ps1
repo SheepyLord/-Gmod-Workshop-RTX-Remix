@@ -51,13 +51,13 @@ if (Get-Process -Name gmod -ErrorAction SilentlyContinue | Where-Object { $_.Pat
 $before = Get-Tree $root
 $before | Set-Content -LiteralPath (Join-Path $evidence 'tree-before.txt') -Encoding UTF8
 
-# The test package: a payload file and root files in all three areas (one of them create-only).
+# The test package: a payload file and root files in three areas (the data seed create-only).
 $package = Join-Path $evidence 'package'
 $files = [ordered]@{
     'native/payload/config/nl_poc_test.conf'                 = "rtx.nl_poc_test = True`n"
     'native/root/rtx-remix/mods/nl_poc_test/mod.usda'        = "#usda 1.0`n"
     'native/root/garrysmod/lua/bin/gmcl_nl_poc_test_win64.dll' = 'MZ-not-a-real-module'
-    'native/root/garrysmod/cfg/nl_poc_test.cfg'              = "// nl_poc_test`n"
+    'native/root/garrysmod/data/nl_poc_test/seed.txt'        = "nl_poc_test seed`n"
 }
 $listed = [ordered]@{}
 foreach ($rel in $files.Keys) {
@@ -68,7 +68,7 @@ foreach ($rel in $files.Keys) {
 }
 $manifest = [ordered]@{ schema = 1; id = 'nl-poc-test'; version = '1.0.0'; kinds = @('root-files', 'lua-binary-module'); files = $listed
     root_files = @(@{ path = 'rtx-remix/mods/nl_poc_test' }, @{ path = 'garrysmod/lua/bin/gmcl_nl_poc_test_win64.dll' },
-                   [ordered]@{ path = 'garrysmod/cfg/nl_poc_test.cfg'; policy = 'create-only' }) }
+                   [ordered]@{ path = 'garrysmod/data/nl_poc_test'; policy = 'create-only' }) }
 [IO.File]::WriteAllText((Join-Path $package 'native\manifest.json'), ($manifest | ConvertTo-Json -Depth 6), [Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllText((Join-Path $package 'addon.json'), '{"title": "nl_poc_test", "type": "servercontent", "tags": []}', [Text.UTF8Encoding]::new($false))
 $gma = Join-Path $evidence 'nl_poc_test.gma'
@@ -88,7 +88,7 @@ try {
     $placed = @{
         'rtx-remix\mods\nl_poc_test\mod.usda'          = $files['native/root/rtx-remix/mods/nl_poc_test/mod.usda']
         'garrysmod\lua\bin\gmcl_nl_poc_test_win64.dll' = $files['native/root/garrysmod/lua/bin/gmcl_nl_poc_test_win64.dll']
-        'garrysmod\cfg\nl_poc_test.cfg'                = $files['native/root/garrysmod/cfg/nl_poc_test.cfg']
+        'garrysmod\data\nl_poc_test\seed.txt'          = $files['native/root/garrysmod/data/nl_poc_test/seed.txt']
     }
     foreach ($rel in $placed.Keys) {
         $path = Join-Path $root $rel

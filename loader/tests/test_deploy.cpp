@@ -475,27 +475,39 @@ TEST_CASE("deploy: files the user changed are never replaced or removed") {
 
 TEST_CASE("deploy: create-only files are created once and never replaced") {
   Game g("deploy_create_only");
-  write_file(g.root / "garrysmod" / "cfg" / "user.cfg", "mine");
-  const auto cfg = [](const std::string& version, const std::string& text) {
-    return Pkg{"test-cfg", version, "[\"root-files\"]",
-               ", \"root_files\": [{\"path\": \"garrysmod/cfg/test.cfg\", \"policy\": \"create-only\"}, "
-               "{\"path\": \"garrysmod/cfg/user.cfg\", \"policy\": \"create-only\"}]",
-               {{"native/root/garrysmod/cfg/test.cfg", text}, {"native/root/garrysmod/cfg/user.cfg", "default"}}};
+  write_file(g.root / "garrysmod" / "data" / "nl_seed" / "user.txt", "mine");
+  const auto seed = [](const std::string& version, const std::string& text) {
+    return Pkg{"test-seed", version, "[\"root-files\"]",
+               ", \"root_files\": [{\"path\": \"garrysmod/data/nl_seed/test.txt\", \"policy\": \"create-only\"}, "
+               "{\"path\": \"garrysmod/data/nl_seed/user.txt\", \"policy\": \"create-only\"}]",
+               {{"native/root/garrysmod/data/nl_seed/test.txt", text}, {"native/root/garrysmod/data/nl_seed/user.txt", "default"}}};
   };
-  g.add("cfg.gma", cfg("1.0.0", "v1"));
-  g.allow({"garrysmod/addons/cfg.gma"});
+  g.add("seed.gma", seed("1.0.0", "v1"));
+  g.allow({"garrysmod/addons/seed.gma"});
   const auto r = apply_at(g.root);
   CHECK(r.outcome == "deployed");
-  CHECK(g.read("garrysmod/cfg/test.cfg") == "v1");
-  CHECK(g.read("garrysmod/cfg/user.cfg") == "mine");
+  CHECK(g.read("garrysmod/data/nl_seed/test.txt") == "v1");
+  CHECK(g.read("garrysmod/data/nl_seed/user.txt") == "mine");
   CHECK(mentions(r.notes, "create-only"));
 
-  g.add("cfg.gma", cfg("1.1.0", "v2"));
+  g.add("seed.gma", seed("1.1.0", "v2"));
   CHECK(apply_at(g.root).outcome == "deployed");
-  CHECK(g.read("garrysmod/cfg/test.cfg") == "v1");  // never replaced, not even by a new version
-  sfs::remove(g.root / "garrysmod" / "cfg" / "test.cfg");
+  CHECK(g.read("garrysmod/data/nl_seed/test.txt") == "v1");  // never replaced, not even by a new version
+  sfs::remove(g.root / "garrysmod" / "data" / "nl_seed" / "test.txt");
   CHECK(apply_at(g.root).outcome == "deployed");
-  CHECK(g.read("garrysmod/cfg/test.cfg") == "v2");  // created again once it is gone
+  CHECK(g.read("garrysmod/data/nl_seed/test.txt") == "v2");  // created again once it is gone
+}
+
+TEST_CASE("deploy: a package cannot create a missing Steam file in garrysmod/cfg (R1-007)") {
+  Game g("deploy_no_cfg_area");
+  // config_default.cfg is a depot file; here it is missing, as after an interrupted Steam update.
+  g.add("cfg.gma", Pkg{"test-cfg", "1.0.0", "[\"root-files\"]",
+                       ", \"root_files\": [{\"path\": \"garrysmod/cfg/config_default.cfg\", \"policy\": \"create-only\"}]",
+                       {{"native/root/garrysmod/cfg/config_default.cfg", "package bytes"}}});
+  g.allow({"garrysmod/addons/cfg.gma"});
+  const auto r = apply_at(g.root);
+  CHECK(!sfs::exists(g.root / "garrysmod" / "cfg" / "config_default.cfg"));
+  CHECK(r.changes.empty());
 }
 
 TEST_CASE("deploy: a package that fails its checks is not deployed; a lower-precedence copy takes over") {

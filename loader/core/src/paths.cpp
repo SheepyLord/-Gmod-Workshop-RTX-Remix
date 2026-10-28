@@ -2,6 +2,7 @@
 
 #include "nl/utf8.h"
 
+#include <algorithm>
 #include <array>
 
 namespace nl::paths {
@@ -80,7 +81,6 @@ RootArea root_area(std::string_view safe_path) {
   const auto below = [&](std::string_view prefix) { return within(safe_path, prefix) && safe_path.size() > prefix.size(); };
   if (below("rtx-remix/mods")) return RootArea::rtx_remix_mods;
   if (below("garrysmod/lua/bin")) return RootArea::lua_bin;
-  if (below("garrysmod/cfg")) return RootArea::cfg;
   if (below("garrysmod/addons")) return RootArea::lua_addons;
   // The loader's own reports live in garrysmod/data/native-loader: never a package's.
   if (below("garrysmod/data") && !within(safe_path, "garrysmod/data/native-loader")) return RootArea::data;
@@ -91,12 +91,19 @@ const char* area_name(RootArea area) {
   switch (area) {
     case RootArea::rtx_remix_mods: return "rtx-remix/mods";
     case RootArea::lua_bin: return "garrysmod/lua/bin";
-    case RootArea::cfg: return "garrysmod/cfg";
     case RootArea::lua_addons: return "garrysmod/addons";
     case RootArea::data: return "garrysmod/data";
     case RootArea::none: break;
   }
   return "none";
+}
+
+bool file_depth_ok(std::string_view safe_path) {
+  const RootArea area = root_area(safe_path);
+  if (area == RootArea::none) return false;
+  if (area == RootArea::lua_bin) return true;
+  // <two-component area>/<folder>/<file>: three separators at least.
+  return std::count(safe_path.begin(), safe_path.end(), '/') >= 3;
 }
 
 }  // namespace nl::paths

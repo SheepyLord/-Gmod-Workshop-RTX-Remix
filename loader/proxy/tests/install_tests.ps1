@@ -49,8 +49,13 @@ try {
     & $installer -GameRoot $game -Config $Config -Uninstall
     Check (-not (Test-Path -LiteralPath $dll) -and -not (Test-Path -LiteralPath $pdb)) 'Uninstall left bootstrap files.'
     Check (Test-Path -LiteralPath (Join-Path $state 'keep.txt')) 'Default uninstall deleted state.'
+    # -RemoveState deletes the loader's own files only; a file it did not create stays (R1-014).
+    & $installer -GameRoot $game -Config $Config -Uninstall -RemoveState 3>$null
+    Check (-not (Test-Path -LiteralPath (Join-Path $state 'bootstrap-install.json'))) 'RemoveState left the receipt.'
+    Check ([IO.File]::ReadAllText((Join-Path $state 'keep.txt')) -ceq 'user state') 'RemoveState deleted a file the loader did not create.'
+    Remove-Item -LiteralPath (Join-Path $state 'keep.txt')
     & $installer -GameRoot $game -Config $Config -Uninstall -RemoveState
-    Check (-not (Test-Path -LiteralPath $state)) 'RemoveState left state.'
+    Check (-not (Test-Path -LiteralPath $state)) 'RemoveState left an empty state folder.'
     [IO.File]::WriteAllText($dll, 'foreign DLL')
     Refuses { & $installer -GameRoot $game -Config $Config -AllowSteamManaged } 'foreign winmm.dll'
     Refuses { & $installer -GameRoot $game -Config $Config -Uninstall } 'foreign winmm.dll'

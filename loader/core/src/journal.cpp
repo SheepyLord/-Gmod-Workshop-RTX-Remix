@@ -51,19 +51,24 @@ std::string sha(const Value& value, std::string_view what) {
   return s;
 }
 
-// Where the loader can own files: its payload and backup folders, and the root areas.
-bool file_area(std::string_view path) {
-  return paths::within(path, "native-loader/packages") || paths::within(path, "native-loader/backup") ||
-         paths::root_area(path) != paths::RootArea::none;
+bool loader_folders(std::string_view path) {
+  return paths::within(path, "native-loader/packages") || paths::within(path, "native-loader/backup");
 }
 
-// Folders it may create: those, and the folders above the root areas.
+// Where the loader can own files: its payload and backup folders, and the root areas (inside a
+// named folder where the area holds folders).
+bool file_area(std::string_view path) {
+  return loader_folders(path) || paths::file_depth_ok(path);
+}
+
+// Folders it may create: those, and the folders above and inside the root areas.
 bool folder_area(std::string_view path) {
-  static constexpr std::string_view kParents[] = {"garrysmod",     "garrysmod/lua",          "garrysmod/lua/bin",
-                                                  "garrysmod/cfg", "garrysmod/addons",       "garrysmod/data",         "rtx-remix",
-                                                  "rtx-remix/mods", "native-loader/packages", "native-loader/backup"};
+  static constexpr std::string_view kParents[] = {"garrysmod",      "garrysmod/lua",          "garrysmod/lua/bin",   "garrysmod/addons",
+                                                  "garrysmod/data", "rtx-remix",              "rtx-remix/mods",      "native-loader/packages",
+                                                  "native-loader/backup"};
   const std::string folded = paths::fold(path);
-  return std::find(std::begin(kParents), std::end(kParents), folded) != std::end(kParents) || file_area(path);
+  return std::find(std::begin(kParents), std::end(kParents), folded) != std::end(kParents) || loader_folders(path) ||
+         paths::root_area(path) != paths::RootArea::none;
 }
 
 // What a transaction may touch: those, and its staging folder.

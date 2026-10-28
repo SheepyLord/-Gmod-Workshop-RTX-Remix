@@ -342,8 +342,20 @@ def main():
         layer_path.write_bytes(b'')
         result = bad_size.run()
         vanilla(result)
-        check('recorded size' in result[1]['activation']['reason'], 'layer-size precondition missing')
-        passed('working-directory and journaled layer-size preconditions prevent activation')
+        check('changed since it was deployed' in result[1]['activation']['reason'], 'layer-size precondition missing')
+        # The runtime DLL changed in place (same size, new time) while deployment is held back (its
+        # source is gone, so the last good version stays): not loaded (R1-008).
+        changed = Game('changed-runtime')
+        status = active(changed, changed.run())
+        changed.source.unlink()
+        runtime_dll = Path(status['activation']['runtime']['folder']) / 'd3d9.dll'
+        image = bytearray(runtime_dll.read_bytes())
+        image[-1] ^= 0xFF
+        runtime_dll.write_bytes(bytes(image))
+        result = changed.run()
+        vanilla(result)
+        check('changed since it was deployed' in result[1]['activation']['reason'], 'changed runtime DLL was activated')
+        passed('working-directory, layer and runtime size-and-time preconditions prevent activation')
 
         too_long = Game('long-runtime-path')
         active(too_long, too_long.run())

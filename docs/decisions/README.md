@@ -19,6 +19,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0011](0011-lua-addon-folders.md) | Packages may deploy GMod add-on folders (`garrysmod/addons/<addon>/`) | Accepted 2026-10-28, user to confirm |
 | [0012](0012-distribution-route.md) | Native packages are released outside the Workshop; the Workshop stays a supported source | Accepted 2026-10-28; private upload test left to the user |
 | [0013](0013-rtx-only-addons-hidden-without-rtx.md) | Add-ons of RTX-only packages are hidden from sessions without RTX, in memory | Accepted 2026-10-28 |
+| [0014](0014-r1-hardening.md) | R1 hardening: no `garrysmod/cfg` area, files only inside named folders, deployed files checked by size and time at activation, a restore that keeps the user's own changes | Accepted 2026-10-28; supersedes the `garrysmod/cfg` area of the M2 path rules |
 
 ## Template
 

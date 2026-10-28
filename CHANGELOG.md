@@ -6,6 +6,38 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Changed (R1: whole-repo review)
+
+Codex reviewed the whole repository and reported 29 findings. All of them are triaged and fixed, or
+answered ([R1 report](docs/handover/R1-report.md), [triage](docs/handover/R1-triage.md),
+[ADR 0014](docs/decisions/0014-r1-hardening.md)).
+
+- **Package areas are narrower.**
+  - `garrysmod/cfg` is no longer a package area: it holds 18 of Steam's files, and a package could
+    recreate one that was missing.
+  - In `rtx-remix/mods`, `garrysmod/addons` and `garrysmod/data`, every file must be inside a named
+    folder.
+- **Activation checks deployed files.** It checks the journaled size and time of every runtime,
+  config-layer and override file. A file changed since deployment is not loaded.
+- **The session-variable restore keeps the user's changes.** It runs only with a readable journal, and
+  puts a value back only while `config.cfg` still holds what the RTX session set.
+  `session_cvars.json` is schema 2; schema 1 is still read.
+- **`uninstall-loader.ps1 -RemoveConfig` keeps changed files.** It deletes the loader's own files
+  only. A payload file the user changed stays, and a warning lists it.
+- **`tools\test.ps1` builds first**, so the Python tests' native cross-checks run.
+  **`tools\build.ps1`** puts the caller's environment back when it ends.
+
+### Fixed (R1: whole-repo review)
+
+- `loader.log` appends and `session.json` are never written through a junction or link.
+- Module hooks:
+  - they stay safe while they are being removed, and after a failed install;
+  - slots are recorded before they change;
+  - import tables without a name table are hooked by address;
+  - every PE offset is bounds-checked.
+- `session.json` now has `utc` and `notes`, and each override entry has `module`, which the companion
+  was already reading.
+
 ### Added (M7: field install)
 
 - Field test on the user's install ([M7 report](docs/handover/M7-report.md)): RTX on next to the

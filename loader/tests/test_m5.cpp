@@ -135,6 +135,7 @@ TEST_CASE("m5: session variables are recorded once, restored once, then forgotte
   CHECK(first.write_session);
   CHECK(first.exec_args == std::vector<std::string>({"+exec", "nativeloader_session.cfg"}));
   CHECK(first.record == nl::session::Values({{"r_3dsky", "1"}}));
+  CHECK(first.record_session == nl::session::Values({{"r_3dsky", "0"}}));  // what the session sets
   // Later RTX session: config.cfg now holds the RTX value; the record keeps the user's.
   auto later = nl::session::plan(true, cvars, nl::session::Record{first.record, false}, {{"r_3dsky", "0"}});
   CHECK(later.record == first.record);
@@ -153,13 +154,35 @@ TEST_CASE("m5: session variables are recorded once, restored once, then forgotte
   CHECK(again.drop_record && again.record == first.record && again.write_session);
 }
 
+TEST_CASE("m5: a restore keeps what the user changed after the RTX session (R1-004)") {
+  const nl::session::Values cvars = {{"r_3dsky", "0"}, {"r_shadows", "0"}};
+  const auto rtx = nl::session::plan(true, cvars, std::nullopt, {{"r_3dsky", "1"}, {"r_shadows", "1"}});
+  CHECK(rtx.record_session == cvars);
+  const nl::session::Record record{rtx.record, false, rtx.record_session};
+  // The game archived the session's r_3dsky; the user has set r_shadows to 2 since: only r_3dsky goes back.
+  const auto off = nl::session::plan(false, {}, record, {{"r_3dsky", "0"}, {"r_shadows", "2"}});
+  CHECK(off.restore == nl::session::Values({{"r_3dsky", "1"}}));
+  CHECK(off.record == record.values);
+  CHECK(off.exec_args == std::vector<std::string>({"+exec", "nativeloader_restore.cfg"}));
+  // Both are the user's own again: nothing to run, and the record is done with.
+  const auto done = nl::session::plan(false, {}, record, {{"r_3dsky", "1"}, {"r_shadows", "2"}});
+  CHECK(done.restore.empty() && done.exec_args.empty() && done.record.empty());
+  // A schema 1 record holds no session values: the deployed packages' values stand in.
+  const auto older = nl::session::plan(false, cvars, nl::session::Record{record.values, false}, {{"r_3dsky", "0"}, {"r_shadows", "2"}});
+  CHECK(older.restore == nl::session::Values({{"r_3dsky", "1"}}));
+}
+
 TEST_CASE("m5: the session record round-trips and refuses what would break the generated cfg") {
-  const nl::session::Record record{{{"r_3dsky", "1"}, {"name_with_space", "a b"}}, true};
+  const nl::session::Record record{{{"r_3dsky", "1"}, {"name_with_space", "a b"}}, true, {{"r_3dsky", "0"}}};
   const auto back = nl::session::parse_record(nl::session::serialize(record));
   CHECK(back.values == record.values);
   CHECK(back.restore_issued);
+  CHECK(back.session_values == record.session_values);
+  CHECK(nl::session::parse_record(R"({"schema":1,"values":{"r_3dsky":"1"}})").session_values.empty());  // schema 1 still read
   CHECK_THROWS_AS(nl::session::parse_record(R"({"schema":1,"values":{"x":"a\"b"}})"), nl::session::Error);
-  CHECK_THROWS_AS(nl::session::parse_record(R"({"schema":2})"), nl::session::Error);
+  CHECK_THROWS_AS(nl::session::parse_record(R"({"schema":2,"session_values":{"x":"a\"b"}})"), nl::session::Error);
+  CHECK_THROWS_AS(nl::session::parse_record(R"({"schema":3})"), nl::session::Error);
+  CHECK_THROWS_AS(nl::session::parse_record(R"({"schema":1,"session_values":{}})"), nl::session::Error);
   CHECK_THROWS_AS(nl::session::parse_record(R"({"schema":1,"extra":1})"), nl::session::Error);
   const auto text = nl::session::cfg_text({{"r_3dsky", "0"}}, "RTX session");
   CHECK(text.rfind(std::string(nl::session::kHeader), 0) == 0);

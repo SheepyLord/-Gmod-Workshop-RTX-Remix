@@ -16,6 +16,34 @@ bool has(const Values& values, std::string_view name) {
   return std::any_of(values.begin(), values.end(), [&](const auto& item) { return lower(item.first) == lower(name); });
 }
 
+const std::string* value_of(const Values& values, std::string_view name) {
+  const auto found = std::find_if(values.begin(), values.end(), [&](const auto& item) { return lower(item.first) == lower(name); });
+  return found == values.end() ? nullptr : &found->second;
+}
+
+std::string object(const Values& values) {
+  std::string out = "{";
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    out += (i ? ",\n    " : "\n    ") + json::quote(values[i].first) + ": " + json::quote(values[i].second);
+  }
+  return out + (values.empty() ? "}" : "\n  }");
+}
+
+// Recorded from config.cfg or a manifest: names are checked; values are restored inside quotes, so
+// only quotes and line breaks would be a problem.
+Values read_values(const json::Value& from, const char* what) {
+  Values out;
+  for (const auto& [name, value] : from.as_object(what)) {
+    const std::string& text = value.as_string("session record value");
+    if (!manifest::valid_cvar_name(name) || text.size() > 256 ||
+        std::any_of(text.begin(), text.end(), [](char c) { return c == '"' || c == '\n' || c == '\r' || c == '\0'; })) {
+      throw Error("session record: invalid entry \"" + name + "\"");
+    }
+    out.emplace_back(name, text);
+  }
+  return out;
+}
+
 }  // namespace
 
 std::map<std::string, std::string> parse_config(std::string_view text) {
@@ -49,39 +77,29 @@ std::map<std::string, std::string> parse_config(std::string_view text) {
 }
 
 std::string serialize(const Record& record) {
-  std::string out = "{\n  \"schema\": 1,\n  \"restore_issued\": ";
+  std::string out = "{\n  \"schema\": 2,\n  \"restore_issued\": ";
   out += record.restore_issued ? "true" : "false";
-  out += ",\n  \"values\": {";
-  for (std::size_t i = 0; i < record.values.size(); ++i) {
-    out += (i ? ",\n    " : "\n    ") + json::quote(record.values[i].first) + ": " + json::quote(record.values[i].second);
-  }
-  out += record.values.empty() ? "}\n}\n" : "\n  }\n}\n";
+  out += ",\n  \"values\": " + object(record.values);
+  out += ",\n  \"session_values\": " + object(record.session_values) + "\n}\n";
   return out;
 }
 
 Record parse_record(std::string_view json_text) {
   try {
     const json::Value root = json::parse(json_text);
+    const json::Value* schema = root.find("schema");
+    const std::int64_t version = schema ? schema->as_int("schema") : 0;
+    if (version != 1 && version != 2) throw Error("session record: schema must be 1 or 2");
     for (const auto& [key, value] : root.as_object("session record")) {
       (void)value;
-      if (key != "schema" && key != "restore_issued" && key != "values") throw Error("session record: unknown key \"" + key + "\"");
-    }
-    const json::Value* schema = root.find("schema");
-    if (!schema || schema->as_int("schema") != 1) throw Error("session record: schema must be 1");
-    Record record;
-    if (const json::Value* issued = root.find("restore_issued")) record.restore_issued = issued->as_bool("restore_issued");
-    if (const json::Value* values = root.find("values")) {
-      for (const auto& [name, value] : values->as_object("values")) {
-        const std::string& text = value.as_string("session record value");
-        // Recorded from config.cfg: names are checked; values are restored inside quotes, so only
-        // quotes and line breaks would be a problem.
-        if (!manifest::valid_cvar_name(name) || text.size() > 256 ||
-            std::any_of(text.begin(), text.end(), [](char c) { return c == '"' || c == '\n' || c == '\r' || c == '\0'; })) {
-          throw Error("session record: invalid entry \"" + name + "\"");
-        }
-        record.values.emplace_back(name, text);
+      if (key != "schema" && key != "restore_issued" && key != "values" && (version == 1 || key != "session_values")) {
+        throw Error("session record: unknown key \"" + key + "\"");
       }
     }
+    Record record;
+    if (const json::Value* issued = root.find("restore_issued")) record.restore_issued = issued->as_bool("restore_issued");
+    if (const json::Value* values = root.find("values")) record.values = read_values(*values, "values");
+    if (const json::Value* values = root.find("session_values")) record.session_values = read_values(*values, "session_values");
     return record;
   } catch (const json::Error& error) {
     throw Error(std::string("session record: ") + error.what());
@@ -100,24 +118,47 @@ Plan plan(bool rtx_session, const Values& cvars, const std::optional<Record>& re
   }
   if (rtx_session && !cvars.empty()) {
     p.record = current ? current->values : Values{};
+    p.record_session = current ? current->session_values : Values{};
     for (const auto& [name, value] : cvars) {
-      if (has(p.record, name)) continue;  // recorded before an earlier RTX session changed it
-      if (const auto found = config.find(lower(name)); found != config.end() && !std::any_of(found->second.begin(), found->second.end(), [](char c) {
-            return c == '"' || c == '\n' || c == '\r';
-          })) {
-        p.record.emplace_back(name, found->second);
+      if (!has(p.record, name)) {  // else recorded before an earlier RTX session changed it
+        if (const auto found = config.find(lower(name)); found != config.end() && !std::any_of(found->second.begin(), found->second.end(), [](char c) {
+              return c == '"' || c == '\n' || c == '\r';
+            })) {
+          p.record.emplace_back(name, found->second);
+        }
+      }
+      // What this session sets, so the restore can tell the user's later changes from ours.
+      if (has(p.record, name)) {
+        p.record_session.erase(std::remove_if(p.record_session.begin(), p.record_session.end(),
+                                              [&](const auto& item) { return lower(item.first) == lower(name); }),
+                               p.record_session.end());
+        p.record_session.emplace_back(name, value);
       }
     }
     p.write_session = true;
     p.session = cvars;
     p.exec_args = {"+exec", "nativeloader_session.cfg"};
   } else if (!rtx_session && current && !current->values.empty()) {
-    p.record = current->values;
-    p.write_restore = true;
-    p.restore = current->values;
-    p.exec_args = {"+exec", "nativeloader_restore.cfg"};
+    for (const auto& [name, recorded] : current->values) {
+      const auto found = config.find(lower(name));
+      if (found != config.end()) {
+        if (found->second == recorded) continue;  // already the user's value
+        const std::string* set = value_of(current->session_values, name);
+        if (!set) set = value_of(cvars, name);
+        if (set && found->second != *set) continue;  // changed since the RTX session: the user's own
+      }
+      p.restore.emplace_back(name, recorded);
+    }
+    if (!p.restore.empty()) {
+      p.record = current->values;
+      p.record_session = current->session_values;
+      p.write_restore = true;
+      p.exec_args = {"+exec", "nativeloader_restore.cfg"};
+    }
+    // Nothing left to put back: the record is done with (p.record stays empty).
   } else if (current) {
     p.record = current->values;
+    p.record_session = current->session_values;
   }
   return p;
 }

@@ -9,6 +9,9 @@
 #include <tlhelp32.h>
 
 #include <algorithm>
+#include <atomic>
+#include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -57,6 +60,9 @@ struct Hooked {
 
 struct State {
   Setup setup;
+  // False once uninstall() has run: every hook then only calls the original function. A hook that a
+  // slot still points at (its restore failed) or that another thread is running stays valid.
+  std::atomic<bool> active{true};
   std::wstring root_prefix;    // "<root>\" lower-case, for "is this a game module"
   std::wstring loader_prefix;  // "<root>\native-loader\" lower-case: never touched
   std::wstring bin_folder;     // "<root>\bin\win64" lower-case: where overridden modules are expected
@@ -72,6 +78,7 @@ struct State {
   std::vector<patch::Result> patches;
   std::vector<std::string> overrides_done;  // JSON objects
   std::vector<std::string> modules_seen;    // game modules the watcher handled
+  std::vector<std::string> notes;           // what did not work as planned
   // Sessions without a runtime (ADR 0013).
   std::vector<std::wstring> hidden;          // lower-case add-on folder names left out of searches
   std::wstring addons_folder;                // "<root>\garrysmod\addons" lower-case
@@ -85,7 +92,11 @@ struct State {
   std::vector<std::string> hidden_seen;      // folders a search actually left out
   std::vector<std::string> search_hooked;    // modules whose searches are filtered
 };
-State* g_state = nullptr;  // process lifetime once installed
+// Published before the first import slot points at a hook, then never cleared or freed: a hook reads
+// it once and keeps using that state, even while uninstall() runs on another thread (R1-003).
+std::atomic<State*> g_state{nullptr};
+
+State* state() noexcept { return g_state.load(std::memory_order_acquire); }
 
 std::wstring lower(std::wstring text) {
   for (auto& c : text) {
@@ -109,16 +120,31 @@ std::wstring full_path(std::wstring_view path) {
   return size && size < MAX_PATH * 4 ? std::wstring(buffer, size) : std::wstring(path);
 }
 
-// The replacement for a load of `requested`, if it names an overridden module in bin\win64.
-const std::wstring* replacement_for(std::wstring_view requested) {
-  if (!g_state || g_state->overrides.empty() || requested.empty()) return nullptr;
+std::string utc_now() {
+  SYSTEMTIME utc{};
+  GetSystemTime(&utc);
+  char timestamp[40]{};
+  std::snprintf(timestamp, sizeof(timestamp), "%04u-%02u-%02uT%02u:%02u:%02u.%03uZ", utc.wYear, utc.wMonth, utc.wDay, utc.wHour,
+                utc.wMinute, utc.wSecond, utc.wMilliseconds);
+  return timestamp;
+}
+
+void note(State& s, std::string text) {
+  AcquireSRWLockExclusive(&s.lock);
+  s.notes.push_back(std::move(text));
+  ReleaseSRWLockExclusive(&s.lock);
+}
+
+// The override for a load of `requested`, if it names an overridden module in bin\win64.
+const std::pair<std::wstring, std::wstring>* override_for(const State& s, std::wstring_view requested) {
+  if (s.overrides.empty() || requested.empty()) return nullptr;
   const std::wstring path = lower(full_path(requested));
   const std::size_t slash = path.rfind(L'\\');
   if (slash == std::wstring::npos) return nullptr;
-  if (path.substr(0, slash) != g_state->bin_folder) return nullptr;
+  if (path.substr(0, slash) != s.bin_folder) return nullptr;
   const std::wstring name = path.substr(slash + 1);
-  for (const auto& [module, file] : g_state->overrides) {
-    if (module == name) return &file;
+  for (const auto& item : s.overrides) {
+    if (item.first == name) return &item;
   }
   return nullptr;
 }
@@ -132,141 +158,167 @@ std::wstring widen_ansi(LPCSTR text) {
   return out;
 }
 
-HMODULE load_replacement(std::wstring_view requested, const std::wstring& file, HANDLE handle, DWORD flags) {
-  HMODULE module = g_state->load_ex_w(file.c_str(), handle, flags | LOAD_WITH_ALTERED_SEARCH_PATH);
+HMODULE load_replacement(State& s, std::wstring_view requested, const std::pair<std::wstring, std::wstring>& item, HANDLE handle,
+                         DWORD flags) {
+  HMODULE module = s.load_ex_w(item.second.c_str(), handle, flags | LOAD_WITH_ALTERED_SEARCH_PATH);
   const DWORD error = module ? 0 : GetLastError();
-  std::string entry = "{\"requested\": " + json::quote(narrow(requested)) + ", \"loaded\": " + json::quote(narrow(file)) +
-                      ", \"result\": " + json::quote(module ? "redirected" : "failed") + ", \"windows_error\": " +
-                      std::to_string(error) + "}";
-  AcquireSRWLockExclusive(&g_state->lock);
-  g_state->overrides_done.push_back(std::move(entry));
-  ReleaseSRWLockExclusive(&g_state->lock);
+  std::string entry = "{\"module\": " + json::quote(narrow(item.first)) + ", \"requested\": " + json::quote(narrow(requested)) +
+                      ", \"loaded\": " + json::quote(narrow(item.second)) + ", \"result\": " +
+                      json::quote(module ? "redirected" : "failed") + ", \"windows_error\": " + std::to_string(error) + "}";
+  AcquireSRWLockExclusive(&s.lock);
+  s.overrides_done.push_back(std::move(entry));
+  ReleaseSRWLockExclusive(&s.lock);
   write_session_json();
   if (!module) SetLastError(error);
   return module;
 }
 
+constexpr DWORD kNotAnImage = LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE;
+
 HMODULE WINAPI hook_load_a(LPCSTR name) {
-  const std::wstring wide = widen_ansi(name);
-  if (const auto* file = replacement_for(wide)) return load_replacement(wide, *file, nullptr, 0);
-  return g_state->load_a(name);
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire)) {
+    const std::wstring wide = widen_ansi(name);
+    if (const auto* item = override_for(s, wide)) return load_replacement(s, wide, *item, nullptr, 0);
+  }
+  return s.load_a(name);
 }
 HMODULE WINAPI hook_load_w(LPCWSTR name) {
-  if (const auto* file = replacement_for(name ? name : L"")) return load_replacement(name, *file, nullptr, 0);
-  return g_state->load_w(name);
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire)) {
+    if (const auto* item = override_for(s, name ? name : L"")) return load_replacement(s, name, *item, nullptr, 0);
+  }
+  return s.load_w(name);
 }
 HMODULE WINAPI hook_load_ex_a(LPCSTR name, HANDLE file, DWORD flags) {
-  const std::wstring wide = widen_ansi(name);
-  if ((flags & (LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE)) == 0) {
-    if (const auto* replacement = replacement_for(wide)) return load_replacement(wide, *replacement, file, flags);
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire) && (flags & kNotAnImage) == 0) {
+    const std::wstring wide = widen_ansi(name);
+    if (const auto* item = override_for(s, wide)) return load_replacement(s, wide, *item, file, flags);
   }
-  return g_state->load_ex_a(name, file, flags);
+  return s.load_ex_a(name, file, flags);
 }
 HMODULE WINAPI hook_load_ex_w(LPCWSTR name, HANDLE file, DWORD flags) {
-  if ((flags & (LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE)) == 0) {
-    if (const auto* replacement = replacement_for(name ? name : L"")) return load_replacement(name, *replacement, file, flags);
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire) && (flags & kNotAnImage) == 0) {
+    if (const auto* item = override_for(s, name ? name : L"")) return load_replacement(s, name, *item, file, flags);
   }
-  return g_state->load_ex_w(name, file, flags);
+  return s.load_ex_w(name, file, flags);
 }
 
 // ---- Sessions without a runtime: add-on folders left out of searches of garrysmod\addons.
 
-bool addons_search(const std::wstring& pattern) {
-  if (!g_state || g_state->hidden.empty() || pattern.empty()) return false;
+bool addons_search(const State& s, const std::wstring& pattern) {
+  if (s.hidden.empty() || pattern.empty()) return false;
   const std::wstring path = lower(full_path(pattern));
   const std::size_t slash = path.rfind(L'\\');
-  return slash != std::wstring::npos && path.compare(0, slash, g_state->addons_folder) == 0 &&
-         slash == g_state->addons_folder.size();
+  return slash != std::wstring::npos && path.compare(0, slash, s.addons_folder) == 0 && slash == s.addons_folder.size();
 }
 
-bool hidden_name(std::wstring_view name) {
+bool hidden_name(State& s, std::wstring_view name) {
   const std::wstring folded = lower(std::wstring(name));
-  for (const auto& hidden : g_state->hidden) {
+  for (const auto& hidden : s.hidden) {
     if (hidden != folded) continue;
     const std::string text = narrow(folded);
-    AcquireSRWLockExclusive(&g_state->lock);
-    const bool first = std::find(g_state->hidden_seen.begin(), g_state->hidden_seen.end(), text) == g_state->hidden_seen.end();
-    if (first) g_state->hidden_seen.push_back(text);
-    ReleaseSRWLockExclusive(&g_state->lock);
+    AcquireSRWLockExclusive(&s.lock);
+    const bool first = std::find(s.hidden_seen.begin(), s.hidden_seen.end(), text) == s.hidden_seen.end();
+    if (first) s.hidden_seen.push_back(text);
+    ReleaseSRWLockExclusive(&s.lock);
     if (first) write_session_json();
     return true;
   }
   return false;
 }
 
-void track(HANDLE search) {
-  AcquireSRWLockExclusive(&g_state->lock);
-  g_state->searches.push_back(search);
-  ReleaseSRWLockExclusive(&g_state->lock);
+void track(State& s, HANDLE search) {
+  AcquireSRWLockExclusive(&s.lock);
+  s.searches.push_back(search);
+  ReleaseSRWLockExclusive(&s.lock);
 }
 
-bool tracked(HANDLE search) {
-  AcquireSRWLockShared(&g_state->lock);
-  const bool found = std::find(g_state->searches.begin(), g_state->searches.end(), search) != g_state->searches.end();
-  ReleaseSRWLockShared(&g_state->lock);
+// A handle value Windows hands out again (its search was closed through a path we do not see) is
+// no longer an add-ons search.
+void untrack(State& s, HANDLE search) {
+  AcquireSRWLockExclusive(&s.lock);
+  s.searches.erase(std::remove(s.searches.begin(), s.searches.end(), search), s.searches.end());
+  ReleaseSRWLockExclusive(&s.lock);
+}
+
+bool tracked(State& s, HANDLE search) {
+  AcquireSRWLockShared(&s.lock);
+  const bool found = std::find(s.searches.begin(), s.searches.end(), search) != s.searches.end();
+  ReleaseSRWLockShared(&s.lock);
   return found;
 }
 
 // A first result that is hidden is replaced by the next one; when none is left, the search is
 // closed and reports what an empty folder would (ERROR_FILE_NOT_FOUND).
-template <typename Data, typename Next>
-HANDLE first_visible(HANDLE search, Data* data, Next next, std::wstring_view (*name)(const Data*)) {
-  while (hidden_name(name(data))) {
+template <typename Data, typename Next, typename Name>
+HANDLE first_visible(State& s, HANDLE search, Data* data, Next next, Name name) {
+  while (hidden_name(s, name(data))) {
     if (!next(search, data)) {
       const DWORD error = GetLastError();
-      g_state->find_close(search);
+      s.find_close(search);
       SetLastError(error == ERROR_NO_MORE_FILES ? ERROR_FILE_NOT_FOUND : error);
       return INVALID_HANDLE_VALUE;
     }
   }
-  track(search);
+  track(s, search);
   return search;
 }
 
-std::wstring_view name_w(const WIN32_FIND_DATAW* data) { return data->cFileName; }
+std::wstring name_w(const WIN32_FIND_DATAW* data) { return data->cFileName; }
+std::wstring name_a(const WIN32_FIND_DATAA* data) { return widen_ansi(data->cFileName); }
 
 HANDLE WINAPI hook_find_first_a(LPCSTR pattern, LPWIN32_FIND_DATAA data) {
-  const HANDLE search = g_state->find_first_a(pattern, data);
-  if (search == INVALID_HANDLE_VALUE || !data || !addons_search(widen_ansi(pattern))) return search;
-  while (hidden_name(widen_ansi(data->cFileName))) {
-    if (!g_state->find_next_a(search, data)) {
-      const DWORD error = GetLastError();
-      g_state->find_close(search);
-      SetLastError(error == ERROR_NO_MORE_FILES ? ERROR_FILE_NOT_FOUND : error);
-      return INVALID_HANDLE_VALUE;
-    }
+  State& s = *state();
+  const HANDLE search = s.find_first_a(pattern, data);
+  if (search == INVALID_HANDLE_VALUE || !s.active.load(std::memory_order_acquire)) return search;
+  if (!data || !addons_search(s, widen_ansi(pattern))) {
+    untrack(s, search);
+    return search;
   }
-  track(search);
-  return search;
+  return first_visible(s, search, data, s.find_next_a, &name_a);
 }
 HANDLE WINAPI hook_find_first_w(LPCWSTR pattern, LPWIN32_FIND_DATAW data) {
-  const HANDLE search = g_state->find_first_w(pattern, data);
-  if (search == INVALID_HANDLE_VALUE || !data || !addons_search(pattern ? pattern : L"")) return search;
-  return first_visible(search, data, g_state->find_next_w, &name_w);
+  State& s = *state();
+  const HANDLE search = s.find_first_w(pattern, data);
+  if (search == INVALID_HANDLE_VALUE || !s.active.load(std::memory_order_acquire)) return search;
+  if (!data || !addons_search(s, pattern ? pattern : L"")) {
+    untrack(s, search);
+    return search;
+  }
+  return first_visible(s, search, data, s.find_next_w, &name_w);
 }
 HANDLE WINAPI hook_find_first_ex_w(LPCWSTR pattern, FINDEX_INFO_LEVELS level, LPVOID data, FINDEX_SEARCH_OPS op, LPVOID filter,
                                    DWORD flags) {
-  const HANDLE search = g_state->find_first_ex_w(pattern, level, data, op, filter, flags);
-  if (search == INVALID_HANDLE_VALUE || !data || (level != FindExInfoStandard && level != FindExInfoBasic) ||
-      !addons_search(pattern ? pattern : L""))
+  State& s = *state();
+  const HANDLE search = s.find_first_ex_w(pattern, level, data, op, filter, flags);
+  if (search == INVALID_HANDLE_VALUE || !s.active.load(std::memory_order_acquire)) return search;
+  if (!data || (level != FindExInfoStandard && level != FindExInfoBasic) || !addons_search(s, pattern ? pattern : L"")) {
+    untrack(s, search);
     return search;
-  return first_visible(search, static_cast<WIN32_FIND_DATAW*>(data), g_state->find_next_w, &name_w);
+  }
+  return first_visible(s, search, static_cast<WIN32_FIND_DATAW*>(data), s.find_next_w, &name_w);
 }
 BOOL WINAPI hook_find_next_a(HANDLE search, LPWIN32_FIND_DATAA data) {
-  BOOL found = g_state->find_next_a(search, data);
-  while (found && data && tracked(search) && hidden_name(widen_ansi(data->cFileName))) found = g_state->find_next_a(search, data);
+  State& s = *state();
+  BOOL found = s.find_next_a(search, data);
+  if (!s.active.load(std::memory_order_acquire)) return found;
+  while (found && data && tracked(s, search) && hidden_name(s, widen_ansi(data->cFileName))) found = s.find_next_a(search, data);
   return found;
 }
 BOOL WINAPI hook_find_next_w(HANDLE search, LPWIN32_FIND_DATAW data) {
-  BOOL found = g_state->find_next_w(search, data);
-  while (found && data && tracked(search) && hidden_name(data->cFileName)) found = g_state->find_next_w(search, data);
+  State& s = *state();
+  BOOL found = s.find_next_w(search, data);
+  if (!s.active.load(std::memory_order_acquire)) return found;
+  while (found && data && tracked(s, search) && hidden_name(s, data->cFileName)) found = s.find_next_w(search, data);
   return found;
 }
 BOOL WINAPI hook_find_close(HANDLE search) {
-  AcquireSRWLockExclusive(&g_state->lock);
-  g_state->searches.erase(std::remove(g_state->searches.begin(), g_state->searches.end(), search), g_state->searches.end());
-  ReleaseSRWLockExclusive(&g_state->lock);
-  return g_state->find_close(search);
+  State& s = *state();
+  untrack(s, search);
+  return s.find_close(search);
 }
 
 bool import_from_loader_dll(const char* dll) {
@@ -274,89 +326,135 @@ bool import_from_loader_dll(const char* dll) {
   return starts("kernel32") || starts("kernelbase") || starts("api-ms-win-core-libraryloader") || starts("api-ms-win-core-file");
 }
 
+// The addresses an import of `function` from KERNEL32 or KERNELBASE (directly or through an api-ms-win
+// set) is bound to once the module is loaded.
+std::vector<void*> bound_addresses(const char* function) {
+  std::vector<void*> out;
+  for (const wchar_t* dll : {L"kernel32.dll", L"kernelbase.dll"}) {
+    if (const HMODULE module = GetModuleHandleW(dll)) {
+      if (void* address = reinterpret_cast<void*>(GetProcAddress(module, function))) out.push_back(address);
+    }
+  }
+  return out;
+}
+
+// Points `module`'s imports of `function` at `replacement`. Every RVA is checked against the mapped
+// image. A descriptor without an import name table (OriginalFirstThunk 0: its FirstThunk now holds
+// addresses, not names) is matched by the bound address instead (R1-006). The slot is recorded
+// before it is changed, so a record that cannot be stored leaves the slot alone (R1-002).
 int hook_imports_recorded(void* module, const char* function, void* replacement, std::vector<Hooked>* record) {
   auto* image = static_cast<std::uint8_t*>(module);
+  if (!image) return 0;
   const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(image);
-  if (!image || dos->e_magic != IMAGE_DOS_SIGNATURE) return 0;
+  if (dos->e_magic != IMAGE_DOS_SIGNATURE || dos->e_lfanew <= 0 || dos->e_lfanew > 4096) return 0;
   const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS64*>(image + dos->e_lfanew);
   if (nt->Signature != IMAGE_NT_SIGNATURE || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) return 0;
+  const std::uint64_t image_size = nt->OptionalHeader.SizeOfImage;
+  const auto inside = [&](std::uint64_t rva, std::uint64_t size) { return rva < image_size && size <= image_size - rva; };
   const auto& directory = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-  if (!directory.VirtualAddress || !directory.Size) return 0;
+  if (!directory.VirtualAddress || !directory.Size || !inside(directory.VirtualAddress, directory.Size)) return 0;
+  const std::vector<void*> bound = bound_addresses(function);
   int changed = 0;
-  for (auto* descriptor = reinterpret_cast<const IMAGE_IMPORT_DESCRIPTOR*>(image + directory.VirtualAddress);
-       descriptor->Name; ++descriptor) {
-    if (!import_from_loader_dll(reinterpret_cast<const char*>(image + descriptor->Name))) continue;
-    const auto* names = reinterpret_cast<const IMAGE_THUNK_DATA64*>(
-        image + (descriptor->OriginalFirstThunk ? descriptor->OriginalFirstThunk : descriptor->FirstThunk));
-    auto* slots = reinterpret_cast<IMAGE_THUNK_DATA64*>(image + descriptor->FirstThunk);
-    for (; names->u1.AddressOfData; ++names, ++slots) {
-      if (IMAGE_SNAP_BY_ORDINAL64(names->u1.Ordinal)) continue;
-      const auto* by_name = reinterpret_cast<const IMAGE_IMPORT_BY_NAME*>(image + names->u1.AddressOfData);
-      if (std::strcmp(reinterpret_cast<const char*>(by_name->Name), function) != 0) continue;
-      void** slot = reinterpret_cast<void**>(&slots->u1.Function);
-      if (*slot == replacement) continue;
-      DWORD previous = 0;
-      if (!VirtualProtect(slot, sizeof(void*), PAGE_READWRITE, &previous)) continue;
-      void* original = *slot;
-      *slot = replacement;
-      DWORD ignored = 0;
-      VirtualProtect(slot, sizeof(void*), previous, &ignored);
-      if (record) record->push_back({slot, original});
-      ++changed;
+  const auto change = [&](void** slot) {
+    if (record) record->push_back({slot, *slot});
+    DWORD previous = 0;
+    if (!VirtualProtect(slot, sizeof(void*), PAGE_READWRITE, &previous)) {
+      if (record) record->pop_back();
+      return;
+    }
+    *slot = replacement;
+    DWORD ignored = 0;
+    VirtualProtect(slot, sizeof(void*), previous, &ignored);
+    ++changed;
+  };
+  // Walked like the Windows loader does, to the empty descriptor (some linkers understate Size), but
+  // never past the image.
+  const auto* descriptor = reinterpret_cast<const IMAGE_IMPORT_DESCRIPTOR*>(image + directory.VirtualAddress);
+  for (std::uint64_t d = 0;
+       inside(directory.VirtualAddress + d * sizeof(IMAGE_IMPORT_DESCRIPTOR), sizeof(IMAGE_IMPORT_DESCRIPTOR)) && descriptor[d].Name;
+       ++d) {
+    const IMAGE_IMPORT_DESCRIPTOR& entry = descriptor[d];
+    if (!inside(entry.Name, 1) || !inside(entry.FirstThunk, sizeof(IMAGE_THUNK_DATA64))) continue;
+    if (!import_from_loader_dll(reinterpret_cast<const char*>(image + entry.Name))) continue;
+    auto* slots = reinterpret_cast<IMAGE_THUNK_DATA64*>(image + entry.FirstThunk);
+    if (!entry.OriginalFirstThunk) {
+      for (std::uint64_t i = 0; inside(entry.FirstThunk + i * sizeof(IMAGE_THUNK_DATA64), sizeof(IMAGE_THUNK_DATA64)) &&
+                                slots[i].u1.Function;
+           ++i) {
+        void** slot = reinterpret_cast<void**>(&slots[i].u1.Function);
+        if (*slot != replacement && std::find(bound.begin(), bound.end(), *slot) != bound.end()) change(slot);
+      }
+      continue;
+    }
+    if (!inside(entry.OriginalFirstThunk, sizeof(IMAGE_THUNK_DATA64))) continue;
+    const auto* names = reinterpret_cast<const IMAGE_THUNK_DATA64*>(image + entry.OriginalFirstThunk);
+    for (std::uint64_t i = 0; inside(entry.OriginalFirstThunk + i * sizeof(IMAGE_THUNK_DATA64), sizeof(IMAGE_THUNK_DATA64)) &&
+                              inside(entry.FirstThunk + i * sizeof(IMAGE_THUNK_DATA64), sizeof(IMAGE_THUNK_DATA64)) &&
+                              names[i].u1.AddressOfData;
+         ++i) {
+      if (IMAGE_SNAP_BY_ORDINAL64(names[i].u1.Ordinal)) continue;
+      const std::uint64_t name_rva = names[i].u1.AddressOfData;
+      if (!inside(name_rva, sizeof(IMAGE_IMPORT_BY_NAME))) continue;
+      const auto* by_name = reinterpret_cast<const IMAGE_IMPORT_BY_NAME*>(image + name_rva);
+      const std::size_t room = static_cast<std::size_t>(image_size - name_rva - offsetof(IMAGE_IMPORT_BY_NAME, Name));
+      const char* text = reinterpret_cast<const char*>(by_name->Name);
+      if (strnlen(text, room) == room || std::strcmp(text, function) != 0) continue;
+      void** slot = reinterpret_cast<void**>(&slots[i].u1.Function);
+      if (*slot != replacement) change(slot);
     }
   }
   return changed;
 }
 
-void hook_loads(void* module) {
-  if (g_state->overrides.empty()) return;
-  hook_imports_recorded(module, "LoadLibraryA", reinterpret_cast<void*>(&hook_load_a), &g_state->hooked);
-  hook_imports_recorded(module, "LoadLibraryW", reinterpret_cast<void*>(&hook_load_w), &g_state->hooked);
-  hook_imports_recorded(module, "LoadLibraryExA", reinterpret_cast<void*>(&hook_load_ex_a), &g_state->hooked);
-  hook_imports_recorded(module, "LoadLibraryExW", reinterpret_cast<void*>(&hook_load_ex_w), &g_state->hooked);
+void hook_loads(State& s, void* module) {
+  if (s.overrides.empty()) return;
+  hook_imports_recorded(module, "LoadLibraryA", reinterpret_cast<void*>(&hook_load_a), &s.hooked);
+  hook_imports_recorded(module, "LoadLibraryW", reinterpret_cast<void*>(&hook_load_w), &s.hooked);
+  hook_imports_recorded(module, "LoadLibraryExA", reinterpret_cast<void*>(&hook_load_ex_a), &s.hooked);
+  hook_imports_recorded(module, "LoadLibraryExW", reinterpret_cast<void*>(&hook_load_ex_w), &s.hooked);
 }
 
-void hook_searches(void* module, const std::wstring& base_name) {
-  if (g_state->hidden.empty() || lower(base_name) != kSearchModule) return;
-  int changed = hook_imports_recorded(module, "FindFirstFileA", reinterpret_cast<void*>(&hook_find_first_a), &g_state->hooked);
-  changed += hook_imports_recorded(module, "FindFirstFileW", reinterpret_cast<void*>(&hook_find_first_w), &g_state->hooked);
-  changed += hook_imports_recorded(module, "FindFirstFileExW", reinterpret_cast<void*>(&hook_find_first_ex_w), &g_state->hooked);
-  changed += hook_imports_recorded(module, "FindNextFileA", reinterpret_cast<void*>(&hook_find_next_a), &g_state->hooked);
-  changed += hook_imports_recorded(module, "FindNextFileW", reinterpret_cast<void*>(&hook_find_next_w), &g_state->hooked);
-  changed += hook_imports_recorded(module, "FindClose", reinterpret_cast<void*>(&hook_find_close), &g_state->hooked);
-  AcquireSRWLockExclusive(&g_state->lock);
-  g_state->search_hooked.push_back(narrow(lower(base_name)) + " (" + std::to_string(changed) + " imports)");
-  ReleaseSRWLockExclusive(&g_state->lock);
+void hook_searches(State& s, void* module, const std::wstring& base_name) {
+  if (s.hidden.empty() || lower(base_name) != kSearchModule) return;
+  int changed = hook_imports_recorded(module, "FindFirstFileA", reinterpret_cast<void*>(&hook_find_first_a), &s.hooked);
+  changed += hook_imports_recorded(module, "FindFirstFileW", reinterpret_cast<void*>(&hook_find_first_w), &s.hooked);
+  changed += hook_imports_recorded(module, "FindFirstFileExW", reinterpret_cast<void*>(&hook_find_first_ex_w), &s.hooked);
+  changed += hook_imports_recorded(module, "FindNextFileA", reinterpret_cast<void*>(&hook_find_next_a), &s.hooked);
+  changed += hook_imports_recorded(module, "FindNextFileW", reinterpret_cast<void*>(&hook_find_next_w), &s.hooked);
+  changed += hook_imports_recorded(module, "FindClose", reinterpret_cast<void*>(&hook_find_close), &s.hooked);
+  AcquireSRWLockExclusive(&s.lock);
+  s.search_hooked.push_back(narrow(lower(base_name)) + " (" + std::to_string(changed) + " imports)");
+  ReleaseSRWLockExclusive(&s.lock);
+  if (!changed) note(s, narrow(lower(base_name)) + ": no file-search imports found to hook; the RTX-only add-ons are not hidden");
 }
 
-bool game_module(const std::wstring& path) {
-  return path.compare(0, g_state->root_prefix.size(), g_state->root_prefix) == 0 &&
-         path.compare(0, g_state->loader_prefix.size(), g_state->loader_prefix) != 0;
+bool game_module(const State& s, const std::wstring& path) {
+  return path.compare(0, s.root_prefix.size(), s.root_prefix) == 0 && path.compare(0, s.loader_prefix.size(), s.loader_prefix) != 0;
 }
 
-void handle(void* base, const std::wstring& full_name, const std::wstring& base_name) {
+void handle(State& s, void* base, const std::wstring& full_name, const std::wstring& base_name) {
   const std::wstring path = lower(full_name);
-  if (!game_module(path)) return;
+  if (!game_module(s, path)) return;
   bool changed = false;
   const std::string name = narrow(lower(base_name));
-  for (const auto& set : g_state->setup.patch_sets) {
+  for (const auto& set : s.setup.patch_sets) {
     if (set.module != name) continue;
     for (const auto& patch : set.patches) {
       auto result = patch::apply(base, name, patch);
-      AcquireSRWLockExclusive(&g_state->lock);
-      g_state->patches.push_back(std::move(result));
-      ReleaseSRWLockExclusive(&g_state->lock);
+      AcquireSRWLockExclusive(&s.lock);
+      s.patches.push_back(std::move(result));
+      ReleaseSRWLockExclusive(&s.lock);
       changed = true;
     }
   }
-  if (!g_state->overrides.empty()) {
-    hook_loads(base);
-    AcquireSRWLockExclusive(&g_state->lock);
-    g_state->modules_seen.push_back(name);
-    ReleaseSRWLockExclusive(&g_state->lock);
+  if (!s.overrides.empty()) {
+    hook_loads(s, base);
+    AcquireSRWLockExclusive(&s.lock);
+    s.modules_seen.push_back(name);
+    ReleaseSRWLockExclusive(&s.lock);
   }
-  if (!g_state->hidden.empty() && lower(base_name) == kSearchModule) {
-    hook_searches(base, base_name);
+  if (!s.hidden.empty() && lower(base_name) == kSearchModule) {
+    hook_searches(s, base, base_name);
     changed = true;
   }
   if (changed) write_session_json();
@@ -364,16 +462,18 @@ void handle(void* base, const std::wstring& full_name, const std::wstring& base_
 
 void handle_raw(const LdrData* data) noexcept {
   try {
+    State* s = state();
+    if (!s || !s->active.load(std::memory_order_acquire)) return;
     const std::wstring full(data->full_name->buffer, data->full_name->length / sizeof(wchar_t));
     const std::wstring base(data->base_name->buffer, data->base_name->length / sizeof(wchar_t));
-    handle(data->base, full, base);
+    handle(*s, data->base, full, base);
   } catch (...) {
   }
 }
 
 // No C++ objects in this frame: MSVC forbids unwinding in a function with __try.
 VOID CALLBACK on_dll(ULONG reason, const LdrData* data, PVOID) {
-  if (reason != kLoaded || !data || !data->full_name || !data->base_name || !g_state) return;
+  if (reason != kLoaded || !data || !data->full_name || !data->base_name) return;
   __try {
     handle_raw(data);
   } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -386,6 +486,24 @@ std::string patch_json(const patch::Result& r) {
          ", \"reason\": " + json::quote(r.reason) + "}";
 }
 
+// Undoes what install() changed: no more notifications, every hook a pass-through, every recorded
+// import slot back. The state stays published and allocated (see g_state).
+void deactivate(State& s) noexcept {
+  s.active.store(false, std::memory_order_release);
+  if (s.cookie && s.unregister) {
+    s.unregister(s.cookie);
+    s.cookie = nullptr;
+  }
+  for (auto it = s.hooked.rbegin(); it != s.hooked.rend(); ++it) {
+    DWORD previous = 0;
+    if (VirtualProtect(it->slot, sizeof(void*), PAGE_READWRITE, &previous)) {
+      *it->slot = it->original;
+      DWORD ignored = 0;
+      VirtualProtect(it->slot, sizeof(void*), previous, &ignored);
+    }
+  }
+}
+
 }  // namespace
 
 int hook_imports(void* module, const char* function, void* replacement) {
@@ -393,7 +511,7 @@ int hook_imports(void* module, const char* function, void* replacement) {
 }
 
 bool install(Setup setup, std::string& error) {
-  if (g_state) {
+  if (state()) {
     error = "module hooks are already installed";
     return false;
   }
@@ -405,109 +523,108 @@ bool install(Setup setup, std::string& error) {
     error = "LdrRegisterDllNotification is not available";
     return false;
   }
-  auto state = std::make_unique<State>();
-  state->load_a = reinterpret_cast<LoadA>(GetProcAddress(kernel32, "LoadLibraryA"));
-  state->load_w = reinterpret_cast<LoadW>(GetProcAddress(kernel32, "LoadLibraryW"));
-  state->load_ex_a = reinterpret_cast<LoadExA>(GetProcAddress(kernel32, "LoadLibraryExA"));
-  state->load_ex_w = reinterpret_cast<LoadExW>(GetProcAddress(kernel32, "LoadLibraryExW"));
-  if (!state->load_a || !state->load_w || !state->load_ex_a || !state->load_ex_w) {
-    error = "LoadLibrary functions not found";
+  auto fresh = std::make_unique<State>();
+  fresh->load_a = reinterpret_cast<LoadA>(GetProcAddress(kernel32, "LoadLibraryA"));
+  fresh->load_w = reinterpret_cast<LoadW>(GetProcAddress(kernel32, "LoadLibraryW"));
+  fresh->load_ex_a = reinterpret_cast<LoadExA>(GetProcAddress(kernel32, "LoadLibraryExA"));
+  fresh->load_ex_w = reinterpret_cast<LoadExW>(GetProcAddress(kernel32, "LoadLibraryExW"));
+  fresh->find_first_a = reinterpret_cast<FindFirstA>(GetProcAddress(kernel32, "FindFirstFileA"));
+  fresh->find_first_w = reinterpret_cast<FindFirstW>(GetProcAddress(kernel32, "FindFirstFileW"));
+  fresh->find_first_ex_w = reinterpret_cast<FindFirstExW>(GetProcAddress(kernel32, "FindFirstFileExW"));
+  fresh->find_next_a = reinterpret_cast<FindNextA>(GetProcAddress(kernel32, "FindNextFileA"));
+  fresh->find_next_w = reinterpret_cast<FindNextW>(GetProcAddress(kernel32, "FindNextFileW"));
+  fresh->find_close = reinterpret_cast<FindCloseFn>(GetProcAddress(kernel32, "FindClose"));
+  if (!fresh->load_a || !fresh->load_w || !fresh->load_ex_a || !fresh->load_ex_w || !fresh->find_first_a || !fresh->find_first_w ||
+      !fresh->find_first_ex_w || !fresh->find_next_a || !fresh->find_next_w || !fresh->find_close) {
+    error = "LoadLibrary or FindFirstFile functions not found";
     return false;
   }
+  fresh->unregister = unreg;
   const std::wstring root = lower(full_path(setup.root.native()));
-  state->root_prefix = root.back() == L'\\' ? root : root + L'\\';
-  state->loader_prefix = state->root_prefix + L"native-loader\\";
-  state->bin_folder = state->root_prefix + L"bin\\win64";
+  fresh->root_prefix = root.back() == L'\\' ? root : root + L'\\';
+  fresh->loader_prefix = fresh->root_prefix + L"native-loader\\";
+  fresh->bin_folder = fresh->root_prefix + L"bin\\win64";
   for (const auto& [module, file] : setup.overrides) {
     std::wstring wide(module.begin(), module.end());  // validated: [a-z0-9_]+.dll
-    state->overrides.emplace_back(lower(wide), full_path(file.native()));
+    fresh->overrides.emplace_back(lower(wide), full_path(file.native()));
   }
-  if (!setup.hidden_addons.empty()) {
-    state->find_first_a = reinterpret_cast<FindFirstA>(GetProcAddress(kernel32, "FindFirstFileA"));
-    state->find_first_w = reinterpret_cast<FindFirstW>(GetProcAddress(kernel32, "FindFirstFileW"));
-    state->find_first_ex_w = reinterpret_cast<FindFirstExW>(GetProcAddress(kernel32, "FindFirstFileExW"));
-    state->find_next_a = reinterpret_cast<FindNextA>(GetProcAddress(kernel32, "FindNextFileA"));
-    state->find_next_w = reinterpret_cast<FindNextW>(GetProcAddress(kernel32, "FindNextFileW"));
-    state->find_close = reinterpret_cast<FindCloseFn>(GetProcAddress(kernel32, "FindClose"));
-    if (!state->find_first_a || !state->find_first_w || !state->find_first_ex_w || !state->find_next_a || !state->find_next_w ||
-        !state->find_close) {
-      error = "FindFirstFile functions not found";
+  for (const auto& name : setup.hidden_addons) fresh->hidden.push_back(lower(std::wstring(name.begin(), name.end())));  // ASCII
+  fresh->addons_folder = fresh->root_prefix + L"garrysmod\\addons";
+  fresh->hooked.reserve(64);
+  fresh->setup = std::move(setup);
+  State& s = *fresh;
+  g_state.store(fresh.release(), std::memory_order_release);
+
+  // From here on hooks can be reached: any failure undoes everything recorded so far (R1-002).
+  try {
+    // Modules mapped already (gmod.exe and whatever it imports) get their hooks now.
+    const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
+    if (snapshot != INVALID_HANDLE_VALUE) {
+      MODULEENTRY32W entry{};
+      entry.dwSize = sizeof(entry);
+      for (BOOL more = Module32FirstW(snapshot, &entry); more; more = Module32NextW(snapshot, &entry)) {
+        if (!game_module(s, lower(entry.szExePath))) continue;
+        hook_loads(s, entry.modBaseAddr);
+        hook_searches(s, entry.modBaseAddr, entry.szModule);
+      }
+      CloseHandle(snapshot);
+    }
+    const LONG status = reg(0, &on_dll, nullptr, &s.cookie);
+    if (status < 0) {
+      error = "LdrRegisterDllNotification failed (NTSTATUS " + std::to_string(static_cast<unsigned long>(status)) + ")";
+      deactivate(s);
       return false;
     }
-    for (const auto& name : setup.hidden_addons) state->hidden.push_back(lower(std::wstring(name.begin(), name.end())));  // ASCII
-    state->addons_folder = state->root_prefix + L"garrysmod\\addons";
-  }
-  state->setup = std::move(setup);
-  g_state = state.release();
-
-  // Modules mapped already (gmod.exe and whatever it imports) get their hooks now.
-  const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
-  if (snapshot != INVALID_HANDLE_VALUE) {
-    MODULEENTRY32W entry{};
-    entry.dwSize = sizeof(entry);
-    for (BOOL more = Module32FirstW(snapshot, &entry); more; more = Module32NextW(snapshot, &entry)) {
-      if (!game_module(lower(entry.szExePath))) continue;
-      hook_loads(entry.modBaseAddr);
-      hook_searches(entry.modBaseAddr, entry.szModule);
-    }
-    CloseHandle(snapshot);
-  }
-  const LONG status = reg(0, &on_dll, nullptr, &g_state->cookie);
-  if (status < 0) {
-    error = "LdrRegisterDllNotification failed (NTSTATUS " + std::to_string(static_cast<unsigned long>(status)) + ")";
-    uninstall();
+  } catch (const std::exception& e) {
+    error = std::string("module hooks could not be installed: ") + e.what();
+    deactivate(s);
     return false;
   }
-  g_state->unregister = unreg;
   write_session_json();
   return true;
 }
 
 void uninstall() noexcept {
-  if (!g_state) return;
-  if (g_state->cookie && g_state->unregister) g_state->unregister(g_state->cookie);
-  for (auto it = g_state->hooked.rbegin(); it != g_state->hooked.rend(); ++it) {
-    DWORD previous = 0;
-    if (VirtualProtect(it->slot, sizeof(void*), PAGE_READWRITE, &previous)) {
-      *it->slot = it->original;
-      DWORD ignored = 0;
-      VirtualProtect(it->slot, sizeof(void*), previous, &ignored);
-    }
-  }
-  // Not freed: a hook may still be running on another thread; a few kilobytes stay allocated.
-  g_state = nullptr;
+  if (State* s = state()) deactivate(*s);
 }
 
 std::string results_json() {
-  if (!g_state) return "{}";
-  AcquireSRWLockShared(&g_state->lock);
-  std::string out = "{\n  \"schema\": 1,\n" + g_state->setup.session_json_base + "  \"patches\": [";
-  for (std::size_t i = 0; i < g_state->patches.size(); ++i) out += (i ? ",\n    " : "\n    ") + patch_json(g_state->patches[i]);
-  out += g_state->patches.empty() ? "],\n" : "\n  ],\n";
+  State* s = state();
+  if (!s) return "{}";
+  const std::string written = utc_now();
+  AcquireSRWLockShared(&s->lock);
+  std::string out = "{\n  \"schema\": 1,\n  \"utc\": " + json::quote(written) + ",\n" + s->setup.session_json_base + "  \"patches\": [";
+  for (std::size_t i = 0; i < s->patches.size(); ++i) out += (i ? ",\n    " : "\n    ") + patch_json(s->patches[i]);
+  out += s->patches.empty() ? "],\n" : "\n  ],\n";
   out += "  \"overrides\": [";
-  for (std::size_t i = 0; i < g_state->overrides_done.size(); ++i) out += (i ? ",\n    " : "\n    ") + g_state->overrides_done[i];
-  out += g_state->overrides_done.empty() ? "],\n" : "\n  ],\n";
+  for (std::size_t i = 0; i < s->overrides_done.size(); ++i) out += (i ? ",\n    " : "\n    ") + s->overrides_done[i];
+  out += s->overrides_done.empty() ? "],\n" : "\n  ],\n";
   const auto strings = [](const auto& items) {
     std::string list = "[";
     for (std::size_t i = 0; i < items.size(); ++i) list += (i ? ", " : "") + json::quote(items[i]);
     return list + "]";
   };
   std::vector<std::string> configured;
-  for (const auto& name : g_state->hidden) configured.push_back(narrow(name));
-  out += "  \"hidden_addons\": {\"folders\": " + strings(configured) + ", \"left_out\": " + strings(g_state->hidden_seen) +
-         ", \"search_hooks\": " + strings(g_state->search_hooked) + "},\n";
-  out += "  \"hooked_modules\": " + std::to_string(g_state->modules_seen.size()) + "\n}\n";
-  ReleaseSRWLockShared(&g_state->lock);
+  for (const auto& name : s->hidden) configured.push_back(narrow(name));
+  out += "  \"hidden_addons\": {\"folders\": " + strings(configured) + ", \"left_out\": " + strings(s->hidden_seen) +
+         ", \"search_hooks\": " + strings(s->search_hooked) + "},\n";
+  out += "  \"notes\": " + strings(s->notes) + ",\n";
+  out += "  \"hooked_modules\": " + std::to_string(s->modules_seen.size()) + "\n}\n";
+  ReleaseSRWLockShared(&s->lock);
   return out;
 }
 
 void write_session_json() noexcept {
   try {
-    if (!g_state) return;
-    const auto folder = fs::join(g_state->setup.root, status::kDirectory);
+    State* s = state();
+    if (!s) return;
+    const auto folder = fs::join(s->setup.root, status::kDirectory);
     if (!fs::stat(folder).directory) return;  // the start-up report creates it
+    // Never through a link anywhere below the game root (R1-005); fs::Error ends up below.
+    constexpr std::string_view kFile = "garrysmod/data/native-loader/session.json";
+    fs::refuse_links(s->setup.root, kFile);
     const auto text = results_json();
-    fs::write_atomic(fs::win32(), fs::join(g_state->setup.root, "garrysmod/data/native-loader/session.json"), text);
+    fs::write_atomic(fs::win32(), fs::join(s->setup.root, kFile), text);
   } catch (...) {
   }
 }

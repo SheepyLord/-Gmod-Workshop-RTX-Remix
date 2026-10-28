@@ -159,14 +159,36 @@ TEST_CASE("manifest: every schema-1 rule is enforced") {
   }
 }
 
-TEST_CASE("manifest: cfg root files must be create-only") {
+TEST_CASE("manifest: garrysmod/cfg is not a package area") {
+  // It holds Steam depot files; a missing one would otherwise be created by a package (R1-007).
   const std::string text = R"({"schema": 1, "id": "cfg", "version": "1.0.0", "kinds": ["root-files"],
-    "files": {"native/root/garrysmod/cfg/rtx_remix.cfg": {"size": 1, "sha256": ")" + kSha + R"("}},
-    "root_files": [{"path": "garrysmod/cfg/rtx_remix.cfg", "policy": "create-only"}]})";
-  CHECK(nl::manifest::parse(text).root_files[0].area == nl::paths::RootArea::cfg);
-  std::string replace = text;
-  replace.replace(replace.find("create-only"), 11, "replace-owned");
-  CHECK_THROWS_AS(nl::manifest::parse(replace), Error);
+    "files": {"native/root/garrysmod/cfg/config_default.cfg": {"size": 1, "sha256": ")" + kSha + R"("}},
+    "root_files": [{"path": "garrysmod/cfg/config_default.cfg", "policy": "create-only"}]})";
+  CHECK_THROWS_AS(nl::manifest::parse(text), Error);
+}
+
+TEST_CASE("manifest: data root files are create-only and inside a named folder") {
+  const auto data = [](const std::string& declared, const std::string& file, const std::string& policy) {
+    return R"({"schema": 1, "id": "seed", "version": "1.0.0", "kinds": ["root-files"],
+      "files": {"native/root/)" + file + R"(": {"size": 1, "sha256": ")" + kSha + R"("}},
+      "root_files": [{"path": ")" + declared + R"(", "policy": ")" + policy + R"("}]})";
+  };
+  CHECK(nl::manifest::parse(data("garrysmod/data/rtx_agent", "garrysmod/data/rtx_agent/seed.txt", "create-only")).root_files[0].area ==
+        nl::paths::RootArea::data);
+  CHECK_THROWS_AS(nl::manifest::parse(data("garrysmod/data/rtx_agent", "garrysmod/data/rtx_agent/seed.txt", "replace-owned")), Error);
+  // A file directly in garrysmod/data (R1-022), declared as its own root or not.
+  CHECK_THROWS_AS(nl::manifest::parse(data("garrysmod/data/direct.txt", "garrysmod/data/direct.txt", "create-only")), Error);
+}
+
+TEST_CASE("manifest: no file directly in garrysmod/addons or rtx-remix/mods") {
+  const std::string addon = R"({"schema": 1, "id": "addon", "version": "1.0.0", "kinds": ["lua-addon"],
+    "files": {"native/root/garrysmod/addons/direct.gma": {"size": 1, "sha256": ")" + kSha + R"("}},
+    "root_files": [{"path": "garrysmod/addons/direct.gma", "policy": "replace-owned"}]})";
+  CHECK_THROWS_AS(nl::manifest::parse(addon), Error);
+  const std::string mod = R"({"schema": 1, "id": "mod", "version": "1.0.0", "kinds": ["root-files"],
+    "files": {"native/root/rtx-remix/mods/mod.usda": {"size": 1, "sha256": ")" + kSha + R"("}},
+    "root_files": [{"path": "rtx-remix/mods/mod.usda", "policy": "replace-owned"}]})";
+  CHECK_THROWS_AS(nl::manifest::parse(mod), Error);
 }
 
 TEST_CASE("manifest: semantic version parsing and precedence") {

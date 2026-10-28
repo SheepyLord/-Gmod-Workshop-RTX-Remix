@@ -18,7 +18,18 @@ $repo = Split-Path -Parent $PSScriptRoot
 $preset = "win64-$($Config.ToLowerInvariant())"
 
 Import-Module (Join-Path $PSScriptRoot 'lib\VsDevEnv.psm1') -Force
-Enter-VsDevEnv
+
+# The MSVC environment and the scratch TEMP are for this build only: every process variable is put
+# back as it was when the script ends, however it ends (R1-018). PowerShell hashtables compare names
+# case-insensitively, as Windows does.
+$savedEnvironment = @{}
+foreach ($entry in [Environment]::GetEnvironmentVariables('Process').GetEnumerator()) { $savedEnvironment[$entry.Key] = $entry.Value }
+function Restore-Environment {
+    foreach ($entry in @([Environment]::GetEnvironmentVariables('Process').GetEnumerator())) {
+        if (-not $savedEnvironment.ContainsKey($entry.Key)) { [Environment]::SetEnvironmentVariable($entry.Key, $null, 'Process') }
+    }
+    foreach ($entry in $savedEnvironment.GetEnumerator()) { [Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process') }
+}
 
 function Invoke-Tool([string] $Description, [string] $Exe, [string[]] $Arguments) {
     # Native tools report failure through the exit code; their stderr is not an error by itself.
@@ -35,12 +46,12 @@ if ($Clean) {
 # Compiler and test scratch stays inside the repo (AGENTS.md rule 9).
 $scratch = Join-Path $repo 'out\tmp'
 New-Item -ItemType Directory -Force -Path $scratch | Out-Null
-$savedTemp, $savedTmp = $env:TEMP, $env:TMP
-$env:TEMP = $scratch
-$env:TMP = $scratch
 
 Push-Location $repo
 try {
+    Enter-VsDevEnv
+    $env:TEMP = $scratch
+    $env:TMP = $scratch
     Invoke-Tool 'CMake configure' cmake @('--preset', $preset)
     Invoke-Tool 'Build' cmake @('--build', '--preset', $preset)
     if (-not $NoTests) {
@@ -48,7 +59,6 @@ try {
     }
 } finally {
     Pop-Location
-    $env:TEMP = $savedTemp
-    $env:TMP = $savedTmp
+    Restore-Environment
 }
 Write-Host "Build $preset OK: $(Join-Path $repo "out\build\$preset")"

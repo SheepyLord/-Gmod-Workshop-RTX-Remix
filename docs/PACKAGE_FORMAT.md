@@ -104,14 +104,20 @@ a folder or a single file.
 |---|---|---|
 | `rtx-remix/mods/<mod>/...` | `root-files` | either |
 | `garrysmod/lua/bin/...` (binary Lua modules) | `lua-binary-module` | either |
-| `garrysmod/cfg/...` | `root-files` | `create-only` (never replaces the user's configs) |
 | `garrysmod/data/<folder>/...` (seed data; not `native-loader`) | `root-files` | `create-only` (what the game writes there later stays the user's) |
 | `garrysmod/addons/<addon>/...` (Lua add-on folders) | `lua-addon` | `replace-owned` ([ADR 0011](decisions/0011-lua-addon-folders.md)) |
 
 Anything else is refused, including `bin/`, the game root itself (`rtx.conf`, `dxvk.conf`,
-`user.conf`) and `garrysmod/lua/autorun`. Root files may not overlap each other; each must have
-files under `native/root/<path>`; every file under `native/root/` must belong to one; and a declared
-`root-files` or `lua-binary-module` kind must be used.
+`user.conf`), `garrysmod/lua/autorun` and `garrysmod/cfg`. `garrysmod/cfg` holds Steam's own files,
+and a package could recreate one that happened to be missing
+([ADR 0014](decisions/0014-r1-hardening.md)).
+
+In `rtx-remix/mods`, `garrysmod/data` and `garrysmod/addons`, every file must be inside a named
+folder: `garrysmod/data/<folder>/<file>`, never `garrysmod/data/<file>`.
+
+Root files may not overlap each other. Each must have files under `native/root/<path>`, every file
+under `native/root/` must belong to one, and a declared `root-files` or `lua-binary-module` kind must
+be used.
 
 `replace-owned` lets the loader replace files it deployed earlier that the user has not edited;
 `create-only` never replaces an existing file. Ownership is tracked in the journal

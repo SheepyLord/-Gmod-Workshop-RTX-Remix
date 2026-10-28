@@ -14,7 +14,7 @@ Removes the native loader from an x64 GMod install, defaulting to the PoC, in tw
 
 ```powershell
 tools\uninstall-loader.ps1                                # the PoC; keeps native-loader\config.json
-tools\uninstall-loader.ps1 -RemoveConfig                  # also deletes the whole native-loader folder
+tools\uninstall-loader.ps1 -RemoveConfig                  # also deletes config.json, logs and receipt
 tools\uninstall-loader.ps1 -GameRoot <install> -WhatIf    # checks and nlctl's dry run, changes nothing
 ```
 
@@ -23,9 +23,11 @@ tools\uninstall-loader.ps1 -GameRoot <install> -WhatIf    # checks and nlctl's d
 - `-GameRoot`: the install (default `H:\SteamLibrary\steamapps\common\GarrysMod_PoC`).
 - `-Config Debug|Release` (default Release): which build of `nlctl.exe` to use, from
   `out\build\win64-<config>\loader\cli`. Build it first with `tools\build.ps1 -Config Release`.
-- `-RemoveConfig`: after the deployed files are gone, delete the whole `native-loader` folder
-  (`config.json`, the bootstrap's logs and install receipt) through `install-loader.ps1 -RemoveState`.
-  Without it, `config.json` (the user's allowlist) is kept.
+- `-RemoveConfig`: after the deployed files are gone, delete the loader's own files in
+  `native-loader` (`config.json`, the bootstrap's logs and install receipt) and the folders left
+  empty, through `install-loader.ps1 -RemoveState`. A payload file the user changed, which step 1
+  leaves in place, stays, and a warning lists it. Without `-RemoveConfig`, `config.json` (the user's
+  allowlist) is kept.
 - `-AllowSteamManaged`: needed for an install Steam manages, exactly as for `install-loader.ps1`.
   Repository agents still follow AGENTS.md rule 1 for the field install.
 

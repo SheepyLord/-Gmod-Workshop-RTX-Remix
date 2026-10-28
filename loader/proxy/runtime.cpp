@@ -95,7 +95,7 @@ std::vector<std::string> session_cvars(const std::filesystem::path& root, bool r
   if (plan.record.empty()) {
     if (fs::stat(record_path).exists) fs::win32().remove_file(record_path);
   } else {
-    write_if_changed(root, session::kRecordPath, session::serialize(session::Record{plan.record, false}));
+    write_if_changed(root, session::kRecordPath, session::serialize(session::Record{plan.record, false, plan.record_session}));
   }
   report.cvars = plan.write_session ? plan.session.size() : 0;
   report.cvars_exec = plan.write_session ? "nativeloader_session.cfg" : "";
@@ -141,22 +141,32 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     return fail("working directory is not the game root");
   const auto dll = std::filesystem::absolute(fs::join(root, plan.runtime_dll)).lexically_normal();
   if (dll.native().size() >= MAX_PATH) return fail("runtime d3d9.dll path does not fit MAX_PATH");
+  // Every file this start loads or hands to the runtime must be as deployed: the size and time the
+  // journal recorded. A file changed since (in place, or while a second instance kept this start from
+  // deploying) is not loaded (R1-008). Deployment checked the SHA-256 of everything it placed;
+  // hashing the whole runtime (about 1 GiB) again at every start would cost seconds.
+  const auto check_record = [&](const journal::File& record) {
+    fs::refuse_links(root, record.path);
+    const auto file = fs::stat(fs::join(root, record.path));
+    if (!file.exists || file.directory || file.link || file.size != record.size || file.mtime != record.mtime)
+      throw std::runtime_error("activation file is absent or changed since it was deployed: " + record.path);
+  };
   const auto check_file = [&](const std::string& relative) {
     const auto key = paths::fold(relative);
     const auto record = std::find_if(generation.files.begin(), generation.files.end(), [&](const auto& item) {
       return paths::fold(item.path) == key;
     });
     if (record == generation.files.end()) throw std::runtime_error("activation file is not recorded in the journal: " + relative);
-    fs::refuse_links(root, relative);
-    const auto file = fs::stat(fs::join(root, relative));
-    if (!file.exists || file.directory || file.link || file.size != record->size)
-      throw std::runtime_error("activation file is absent or has the wrong recorded size: " + relative);
+    check_record(*record);
   };
   check_file(plan.runtime_dll);
   const auto runtime = std::find_if(generation.packages.begin(), generation.packages.end(), [&](const auto& package) {
     return package.id == plan.runtime_id && package.remix.has_value();
   });
   if (runtime == generation.packages.end()) return fail("runtime package is absent from the committed generation");
+  for (const auto& record : generation.files) {
+    if (!runtime->payload.empty() && paths::within(record.path, runtime->payload)) check_record(record);
+  }
   for (const auto& layer : runtime->remix->rtx_conf_layers) check_file(runtime->payload + '/' + layer);
   for (const auto& layer : runtime->remix->dxvk_conf_layers) check_file(runtime->payload + '/' + layer);
   for (const auto& item : plan.module_overrides) check_file(item.file);
@@ -231,8 +241,11 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     setup.session_json_base = "  \"process_id\": " + std::to_string(GetCurrentProcessId()) + ",\n";
     std::string error;
     if (!setup.patch_sets.empty() || !setup.overrides.empty()) {
-      if (!modules::install(std::move(setup), error)) return fail("module hooks: " + error);
+      // Owned before the call: install() can fail after publishing hooks, and rollback must undo them
+      // then too (R1-002); uninstall() is safe whatever install() got to.
       hooks_installed_ = true;
+      touched_ = true;
+      if (!modules::install(std::move(setup), error)) return fail("module hooks: " + error);
       session.hooks = "installed";
     } else {
       session.hooks = "not needed";

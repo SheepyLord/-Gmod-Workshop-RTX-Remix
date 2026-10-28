@@ -393,7 +393,7 @@ Manifest parse(std::string_view json_text) {
         rf.area = paths::root_area(rf.path);
         switch (rf.area) {
           case paths::RootArea::none:
-            fail("root file \"" + rf.path + "\" is outside rtx-remix/mods/, garrysmod/lua/bin/, garrysmod/cfg/, garrysmod/data/ and garrysmod/addons/");
+            fail("root file \"" + rf.path + "\" is outside rtx-remix/mods/, garrysmod/lua/bin/, garrysmod/data/ and garrysmod/addons/");
           case paths::RootArea::lua_addons:
             if (!m.has(Kind::lua_addon)) fail("root file \"" + rf.path + "\" in garrysmod/addons needs kind lua-addon");
             if (rf.policy != Policy::replace_owned) fail("root file \"" + rf.path + "\" in garrysmod/addons must use policy replace-owned");
@@ -402,9 +402,6 @@ Manifest parse(std::string_view json_text) {
           case paths::RootArea::lua_bin:
             if (!m.has(Kind::lua_binary_module)) fail("root file \"" + rf.path + "\" in garrysmod/lua/bin needs kind lua-binary-module");
             break;
-          case paths::RootArea::cfg:
-            if (rf.policy != Policy::create_only) fail("root file \"" + rf.path + "\" in garrysmod/cfg must use policy create-only");
-            [[fallthrough]];
           case paths::RootArea::data:
             if (rf.policy != Policy::create_only) fail("root file \"" + rf.path + "\" in garrysmod/data must use policy create-only");
             if (split(rf.path, '/').size() < 3) fail("root file \"" + rf.path + "\" must be below a folder of garrysmod/data");
@@ -431,7 +428,7 @@ Manifest parse(std::string_view json_text) {
       const bool used = std::any_of(m.root_files.begin(), m.root_files.end(), [k](const RootFile& rf) {
         if (k == Kind::lua_binary_module) return rf.area == paths::RootArea::lua_bin;
         if (k == Kind::lua_addon) return rf.area == paths::RootArea::lua_addons;
-        return rf.area == paths::RootArea::rtx_remix_mods || rf.area == paths::RootArea::cfg || rf.area == paths::RootArea::data;
+        return rf.area == paths::RootArea::rtx_remix_mods || rf.area == paths::RootArea::data;
       });
       if (!used) fail(std::string("kind ") + kind_name(k) + " is declared but no root file uses it");
     }
@@ -520,6 +517,10 @@ Manifest parse(std::string_view json_text) {
       const std::string target = f.substr(std::string_view("native/root/").size());
       if (std::none_of(m.root_files.begin(), m.root_files.end(), [&](const RootFile& rf) { return paths::within(target, rf.path); })) {
         fail("file \"" + f + "\" is under native/root/ but no root_files entry covers it");
+      }
+      // A mod, an add-on and seed data are folders: no file directly in their area (ADR 0014).
+      if (!paths::file_depth_ok(target)) {
+        fail("file \"" + f + "\" must be inside a folder of " + paths::area_name(paths::root_area(target)));
       }
     }
     return m;

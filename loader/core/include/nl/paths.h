@@ -25,16 +25,20 @@ std::string fold(std::string_view path);
 // True if `path` equals `prefix` or lies below it (case-insensitive, '/'-separated).
 bool within(std::string_view path, std::string_view prefix);
 
-// Where under the game root a package may deploy files (manifest schema 1).
+// Where under the game root a package may deploy files (manifest schema 1). None of these folders
+// holds a Steam depot file; garrysmod/cfg does, so it is not an area (ADR 0014).
 enum class RootArea {
   none,            // anywhere else: never written by packages
   rtx_remix_mods,  // rtx-remix/mods/<mod>/...
   lua_bin,         // garrysmod/lua/bin/... (binary Lua modules)
-  cfg,             // garrysmod/cfg/... (new files only)
   lua_addons,      // garrysmod/addons/<addon>/... (Lua add-on folders, M5)
   data,            // garrysmod/data/<folder>/... (seed data, new files only; not native-loader, M5)
 };
 RootArea root_area(std::string_view safe_path);
 const char* area_name(RootArea area);
+
+// True if a file may be at `safe_path`: inside an area and, in the areas that hold named folders
+// (rtx-remix/mods, garrysmod/addons, garrysmod/data), inside one of those folders.
+bool file_depth_ok(std::string_view safe_path);
 
 }  // namespace nl::paths
