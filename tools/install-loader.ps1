@@ -91,7 +91,26 @@ if ($Uninstall) {
     if (-not $PSCmdlet.ShouldProcess($resolvedRoot, 'Uninstall verified native loader bootstrap')) { return }
     if (Test-Path -LiteralPath $dllPath) { Remove-Item -LiteralPath $dllPath -Force }
     if (Test-Path -LiteralPath $pdbPath) { Remove-Item -LiteralPath $pdbPath -Force }
-    if ($RemoveState -and (Test-Path -LiteralPath $stateDir)) { Remove-Item -LiteralPath $deleteTarget -Recurse -Force }
+    if ($RemoveState -and (Test-Path -LiteralPath $stateDir)) {
+        # Only the loader's own control and log files, then the folders left empty (R1-014). Anything
+        # else stays: a payload file the user changed (nlctl uninstall leaves those in place), or a
+        # journal nlctl uninstall had to keep because it could not remove everything yet.
+        $own = @('config.json', 'bootstrap-install.json', 'disable', 'session_cvars.json', 'logs\loader.log') +
+               @(1..5 | ForEach-Object { "logs\loader.log.$_" })
+        foreach ($name in $own) {
+            $path = Join-Path $deleteTarget $name
+            if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path -Force }
+        }
+        Get-ChildItem -LiteralPath $deleteTarget -Recurse -Force -Directory | Sort-Object { $_.FullName.Length } -Descending |
+            Where-Object { -not (Get-ChildItem -LiteralPath $_.FullName -Force) } | ForEach-Object { Remove-Item -LiteralPath $_.FullName }
+        $kept = @(Get-ChildItem -LiteralPath $deleteTarget -Recurse -Force -File)
+        if ($kept.Count) {
+            Write-Warning ("Kept in ${deleteTarget}: files the loader did not create, or that changed after it placed them:`n  " +
+                           (($kept | ForEach-Object { $_.FullName.Substring($deleteTarget.Length + 1) }) -join "`n  "))
+        } elseif (-not (Get-ChildItem -LiteralPath $deleteTarget -Force)) {
+            Remove-Item -LiteralPath $deleteTarget
+        }
+    }
     Write-Host "Bootstrap uninstalled: $resolvedRoot (state retained: $(-not $RemoveState))"
     return
 }

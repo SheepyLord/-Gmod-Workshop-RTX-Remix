@@ -9,6 +9,7 @@
 #include "nl/version.h"
 #include <chrono>
 #include <cstdio>
+#include <cwchar>
 #include <filesystem>
 #include <sstream>
 #include <stdexcept>
@@ -34,6 +35,26 @@ std::string utc_now() {
   std::snprintf(timestamp, sizeof(timestamp), "%04u-%02u-%02uT%02u:%02u:%02u.%03uZ",
                 utc.wYear, utc.wMonth, utc.wDay, utc.wHour, utc.wMinute, utc.wSecond, utc.wMilliseconds);
   return timestamp;
+}
+
+// True if no folder between the game root and loader.log, nor the file, is a link or junction
+// (R1-001): every append checks this, as write_log does through fs::refuse_links. No allocation, so
+// the emergency log can use it; the buffer is static because only the start-up thread logs.
+bool log_path_ordinary() noexcept {
+  static wchar_t prefix[kPathCapacity];
+  const wchar_t* path = g_bootstrap.log_path;
+  const std::size_t length = wcsnlen(path, kPathCapacity);
+  const std::size_t root = wcsnlen(g_bootstrap.root, kPathCapacity);
+  if (!length || length >= kPathCapacity || root >= length) return false;
+  for (std::size_t end = root + 1; end <= length; ++end) {
+    if (end < length && path[end] != L'\\' && path[end] != L'/') continue;
+    wmemcpy(prefix, path, end);
+    prefix[end] = L'\0';
+    const DWORD attributes = GetFileAttributesW(prefix);
+    if (attributes == INVALID_FILE_ATTRIBUTES) return end == length;  // only the log itself may be missing
+    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT) return false;
+  }
+  return true;
 }
 
 void write_log(const status::Report& report) {
@@ -109,6 +130,7 @@ void finish_report(StartupContext& context) {
   context.report.startup_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - context.began).count();
   status::write(context.root, context.report);
   const auto text = status::log_fields(context.report);
+  if (!log_path_ordinary()) throw std::runtime_error("loader.log is reached through a link; not appended");
   const HANDLE file = CreateFileW(g_bootstrap.log_path, FILE_APPEND_DATA, FILE_SHARE_READ, nullptr,
                                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (file == INVALID_HANDLE_VALUE) throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "append loader.log");
@@ -122,7 +144,18 @@ void finish_report(StartupContext& context) {
 void restore_session_cvars(StartupContext& context) noexcept {
   auto& report = context.report.session;
   try {
-    const auto exec = session_cvars(context.root, false, {}, report);
+    // Only with a journal that could be read: an invalid one leaves the process a pure pass-through,
+    // and the record waits for a start that can read it (R1-004).
+    if (!context.prepared.journal) return;
+    // The deployed session variables tell a value the user changed since the RTX session from one
+    // the session set, for records written before they held the session values themselves.
+    session::Values deployed;
+    if (context.prepared.journal->current) {
+      for (const auto& package : context.prepared.journal->current->packages) {
+        deployed.insert(deployed.end(), package.session.cvars.begin(), package.session.cvars.end());
+      }
+    }
+    const auto exec = session_cvars(context.root, false, deployed, report);
     if (exec.empty()) return;
     auto swap = cmdline::append_arguments(exec);
     if (!swap.ok) {
@@ -258,6 +291,7 @@ void emergency_log(const char* message, DWORD error) noexcept {
   const int length = std::snprintf(buffer, sizeof(buffer), "failure=%s error=0x%08lx\n", message, error);
   OutputDebugStringA(buffer);
   if (!g_bootstrap.log_path[0] || length <= 0 || static_cast<std::size_t>(length) >= sizeof(buffer)) return;
+  if (!log_path_ordinary()) return;  // the debugger line above is all a linked log gets
   const HANDLE file = CreateFileW(g_bootstrap.log_path, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (file == INVALID_HANDLE_VALUE) return;
   DWORD written{};

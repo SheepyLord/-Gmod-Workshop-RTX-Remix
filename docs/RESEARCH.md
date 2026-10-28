@@ -590,7 +590,25 @@ placed by the loader". `package_fixes.py` now deploys that mod create-only.
   whitelist]", "native/payload/test.dll [Not allowed by whitelist]", "File list verification failed",
   no `.gma` written. The same folder with only the Lua file packs (181 bytes). Evidence
   `out/m6/gmad-probe`.
-- Not tried: `gmpublish` (it uploads, with no dry run; outward-facing).
+- Not tried at first: `gmpublish` (it uploads, with no dry run; outward-facing). Tried on 2026-10-28
+  with the user's approval ([ADR 0015](decisions/0015-workshop-route-for-native-packages.md),
+  [M6 report](handover/M6-report.md)):
+  - **Upload.** `bin\win64\gmpublish.exe create -addon <gma> -icon <512x512 baseline JPEG>`, run
+    from a game root that holds `steam_appid.txt`, uploaded a `gmapack` archive with
+    `native/manifest.json` and a DLL. It did not check the contents. It printed "Success! Your new
+    item ID is 3829070317" and "currently marked as hidden". `update -id <id> -addon <gma> -changes
+    <text>` replaced the file.
+  - **Download.** GMod's `steamworks.DownloadUGC(id, cb)` fetched the hidden item for its owner,
+    without a subscription.
+    - It went to `steamapps\workshop\content\4000\<id>\<uploaded file name>`, as a plain `.gma` (not
+      LZMA-wrapped), byte-identical. An update replaced the file under the new upload's name.
+    - `cb` got the path `content/4000/<id>/<name>.gma`.
+    - `appworkshop_4000.acf` listed the item under `WorkshopItemsInstalled` (size, `timeupdated`,
+      manifest) and under `WorkshopItemDetails`.
+  - **GMod's own mount.** `game.MountGMA` refuses an archive that holds a file outside GMod's
+    whitelist, printing "Couldn't mount file [<path>]" and returning false. A Lua-only `gmapack`
+    archive mounts. A Workshop item that carries native files is therefore never mounted by GMod,
+    and its Lua must come from elsewhere.
 - The deployer handles LZMA-wrapped legacy Workshop items end to end, an update included
   (`loader/cli/tests/e2e_deploy.py`, M3).
 - `steamworks.FileInfo(id, callback)` gives the item's Workshop `updated` time; the companion compares
@@ -632,3 +650,32 @@ camera pinned. Evidence in `out/m7` ([M7 report](handover/M7-report.md)).
 
   New in RTX sessions: the fixes' `rtx_agent`, `rtx_water` and `pseudoplayertexture*.png` in
   `garrysmod/data`, and `rtx-remix/` (Remix's logs).
+
+## 16. R1 review facts (2026-10-28, Claude, triaging Codex's review)
+
+- **Steam's depot files inside the package areas.** Measured read-only from the field install's
+  depot manifests (`out/r1-triage/depot_areas.py` in the R1 worktree, 3,063 depot file entries):
+  - `garrysmod/cfg/` holds 18: `360controller-linux.cfg`, `360controller.cfg`, `autoexec.cfg`,
+    `config_default.cfg`, `game.cfg`, `listenserver.cfg`, `mapcycle.txt`, `mount.cfg`, `network.cfg`,
+    `server.cfg`, `settings_default.scr`, `skill.cfg`, `skill1.cfg`, `skill2.cfg`, `skill3.cfg`,
+    `skill_manifest.cfg`, `undo360controller.cfg`, `valve.rc`. So `garrysmod/cfg` stopped being a
+    package area ([ADR 0014](decisions/0014-r1-hardening.md)).
+  - `garrysmod/lua/bin/`, `garrysmod/addons/`, `garrysmod/data/` and `rtx-remix/` hold none.
+- **Import tables without names.** A PE import descriptor may have `OriginalFirstThunk` 0. Windows
+  then resolves the imports from `FirstThunk` and overwrites it with addresses, so the names are
+  gone once the module is mapped. Codex's repro (R1-006) zeroed it in a copy of the synthetic
+  `filesystem_stdio.dll`: the DLL loads, and name-based hooks find nothing.
+  - The hooks now match such slots by the bound address.
+  - `GetProcAddress` on kernel32 follows its forwarders, so `GetProcAddress(kernel32, ...)` and
+    `GetProcAddress(kernelbase, ...)` give the addresses the loader binds.
+- **Windows PowerShell 5.1 started from PowerShell 7.** It inherits `PSModulePath` with PowerShell 7's
+  module folders first. It then fails to autoload `Get-FileHash` (`Microsoft.PowerShell.Utility`), and
+  `install-loader.ps1` stops (R1-029, seen in Codex's second `tools\test.ps1` run). A child started
+  without `PSModulePath` builds its own default path and works.
+  - The failure reproduces without PowerShell 7 installed: put a Core-only
+    `Microsoft.PowerShell.Utility` module first in `PSModulePath`. Its manifest must declare every
+    Utility cmdlet, as PowerShell 7's does; one declaring only `Get-FileHash` does not reproduce it.
+    The field-snapshot and session-driver tests do this.
+- **`reg import` and line breaks.** `reg export` writes a `REG_SZ` value holding a line break as
+  `\r\r\n`, and `reg import` cannot restore it. `field_snapshot.py` reads exports strictly and refuses
+  to prune after a failed import (R1-011).

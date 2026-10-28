@@ -3,8 +3,9 @@
 The Lua companion's client autorun file. When the client Lua state starts (a map is loaded) it prints
 the native loader's start-up and session status to the console, and again whenever the console
 command `nativeloader_status` is run. [`tools/package_fixes.py`](../../../../../tools/package_fixes.py.md)
-ships it in the RTX fixes package as the add-on folder `garrysmod/addons/nativeloader`. M6 adds the
-restart notice ([M5 plan](../../../../../docs/handover/M5-plan.md)).
+ships it in the RTX fixes package as the add-on folder `garrysmod/addons/nativeloader`. Since M6 it
+also says when Steam has a newer version of a deployed Workshop package, which the next start
+deploys ([M6 report](../../../../../docs/handover/M6-report.md)).
 
 ```
 ] nativeloader_status
@@ -34,17 +35,19 @@ Both files are read from the `DATA` path (`garrysmod/data/`) with `file.Read` an
 | `loader_version`, `process_id`, `utc` | first line; `utc` (`YYYY-MM-DDThh:mm:ss.fffZ`) gives the age |
 | `deployment.outcome`, `.generation`, `.reason`, `.blocked_by`, `.skipped[]` (`package`, `reason`) | deployment line, skipped packages |
 | `activation.outcome`, `.reason`, `.runtime.id`, `.runtime.version` | activation and runtime lines |
+| `session.cvars`, `.cvars_exec`, `.recorded`, `.restore_values`, `.restore_exec`, `.notes[]` | the session-variable and restore lines, and every note |
+| `packages[]`: `id`, `label`, `source`, `time_updated` | the update notice for Workshop packages (below) |
 | `errors[]` | the first five |
 
-`native-loader/session.json` (written by the bootstrap in RTX sessions with patch sets, module
-overrides or session variables), schema 1 only; its absence is reported as "no session.json":
+`native-loader/session.json` (written by the bootstrap in sessions with module hooks: patch sets and
+overrides with RTX, the hidden add-ons without), schema 1 only; its absence is reported as "no
+session.json":
 
 | Field | Printed |
 |---|---|
 | `schema`, `process_id`, `utc` | age; a `process_id` other than status.json's is pointed out |
 | `patches[]`: `module`, `name`, `result` (`applied`/`skipped`), `reason` | applied count; every patch not applied with its reason |
 | `overrides[]`: `module`, `requested`, `loaded`, `result` (`redirected`/`failed`) | one line each, with the file loaded |
-| `session_cvars`: `exec`, `count`; `restore`: `exec`, `count` | one line each when present |
 
 **Stale reports.** The loader writes status.json once per start, and an off switch or a start without
 the loader leaves the previous one. A report whose `utc` is more than 15 minutes before the client
@@ -55,9 +58,15 @@ game itself (a long stay in the main menu) shows its own report as stale.
 
 ## Side effects
 
-None beyond the console output and the console command `nativeloader_status`: no file writes, no
-network, no hooks or timers. It runs on the client only (`lua/autorun/client`, plus a `CLIENT`
-guard). There is no exit code.
+- The console output and the console command `nativeloader_status`.
+- The update notice: for each deployed Workshop package, `steamworks.FileInfo` asks Steam for the
+  item's update time. That is a Steam request, not one of its own.
+  - When Steam has a newer version than the one deployed, it prints the notice once per item per
+    session, and shows a `notification.AddLegacy` hint.
+  - A timer (`nativeloader_updates`, every 600 seconds) checks again, because Steam may download an
+    update while the game runs.
+- No file writes and no hooks. It runs on the client only (`lua/autorun/client`, plus a `CLIENT`
+  guard). There is no exit code.
 
 Checked outside the game under LuaJIT 2.1 with the GMod functions it uses mocked (missing, fresh,
 stale and invalid files, odd field types, `utc` dates around leap days and month ends).

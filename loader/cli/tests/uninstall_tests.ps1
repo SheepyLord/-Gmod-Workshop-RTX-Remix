@@ -93,6 +93,16 @@ try {
     $diff = @(Compare-Object -ReferenceObject $original -DifferenceObject (Get-Tree $game))
     Check ($diff.Count -eq 0) "-RemoveConfig left differences: $(($diff | ForEach-Object { $_.SideIndicator + ' ' + $_.InputObject }) -join '; ')"
 
+    # -RemoveConfig keeps a payload file the user changed: nlctl uninstall leaves it, and so does the
+    # state removal (R1-014). The loader's own files still go.
+    Install-All $game $gma
+    $edited = @(Get-ChildItem -LiteralPath (Join-Path $state 'packages') -Recurse -File -Filter 'u.conf')[0].FullName
+    Write-Utf8 $edited "u = 2 (the user's edit)`n"
+    & $uninstaller -GameRoot $game -Config $Config -RemoveConfig 3>$null
+    Check ((Test-Path -LiteralPath $edited) -and [IO.File]::ReadAllText($edited) -ceq "u = 2 (the user's edit)`n") '-RemoveConfig deleted an edited payload file'
+    Check (-not (Test-Path -LiteralPath (Join-Path $state 'config.json')) -and -not (Test-Path -LiteralPath $dll)) '-RemoveConfig left config.json or the bootstrap'
+    Remove-Item -LiteralPath $state -Recurse -Force
+
     # A folder Steam manages needs -AllowSteamManaged, and nothing is removed without it.
     $managed = New-Game (Join-Path $Scratch 'steamapps\common\Managed')
     Write-Utf8 (Join-Path $Scratch 'steamapps\appmanifest_4000.acf') '"AppState" { "installdir" "Managed" }'

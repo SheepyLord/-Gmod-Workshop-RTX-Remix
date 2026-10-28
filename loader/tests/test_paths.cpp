@@ -44,9 +44,23 @@ TEST_CASE("paths: root areas") {
   CHECK(nl::paths::root_area("RTX-Remix/Mods/base_mod/mod.usda") == RootArea::rtx_remix_mods);
   CHECK(nl::paths::root_area("rtx-remix/mods") == RootArea::none);  // the folder itself is not a target
   CHECK(nl::paths::root_area("garrysmod/lua/bin/gmcl_x_win64.dll") == RootArea::lua_bin);
-  CHECK(nl::paths::root_area("garrysmod/cfg/rtx_remix.cfg") == RootArea::cfg);
+  // garrysmod/cfg holds Steam depot files (config_default.cfg, valve.rc, ...): not an area (ADR 0014).
+  CHECK(nl::paths::root_area("garrysmod/cfg/rtx_remix.cfg") == RootArea::none);
+  CHECK(nl::paths::root_area("garrysmod/cfg/config_default.cfg") == RootArea::none);
   CHECK(nl::paths::root_area("bin/win64/d3d9.dll") == RootArea::none);
   CHECK(nl::paths::root_area("user.conf") == RootArea::none);
   CHECK(nl::paths::root_area("garrysmod/lua/autorun/x.lua") == RootArea::none);
   CHECK(std::string(nl::paths::area_name(RootArea::lua_bin)) == "garrysmod/lua/bin");
+}
+
+TEST_CASE("paths: files in the folder areas must be inside a named folder") {
+  CHECK(nl::paths::file_depth_ok("garrysmod/lua/bin/gmcl_x_win64.dll"));
+  CHECK(nl::paths::file_depth_ok("garrysmod/addons/rtx/lua/autorun/x.lua"));
+  CHECK(nl::paths::file_depth_ok("garrysmod/data/rtx_agent/seed.txt"));
+  CHECK(nl::paths::file_depth_ok("rtx-remix/mods/base_mod/mod.usda"));
+  CHECK(!nl::paths::file_depth_ok("garrysmod/addons/direct.gma"));
+  CHECK(!nl::paths::file_depth_ok("garrysmod/data/direct.txt"));
+  CHECK(!nl::paths::file_depth_ok("rtx-remix/mods/mod.usda"));
+  CHECK(!nl::paths::file_depth_ok("garrysmod/cfg/sub/x.cfg"));
+  CHECK(!nl::paths::file_depth_ok("bin/win64/sub/d3d9.dll"));
 }

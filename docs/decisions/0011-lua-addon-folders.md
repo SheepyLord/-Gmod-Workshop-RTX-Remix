@@ -1,9 +1,13 @@
 # 0011: Packages may deploy GMod add-on folders (`garrysmod/addons/<addon>/`)
 
-- Status: Accepted 2026-10-28
+- Status: Accepted 2026-10-28. **Confirmed by the user on 2026-10-28** ("This should address 0011",
+  with the approval of the Workshop distribution test). The test showed that a native package on the
+  Workshop also needs these folders, because GMod does not mount such an item itself
+  ([ADR 0015](0015-workshop-route-for-native-packages.md)). [ADR 0014](0014-r1-hardening.md) narrows
+  the area: every file must be inside the add-on's folder.
 - Decided by: Claude, implementing M5 under the user's 2026-10-28 instruction to finish M5-M7 without
   further approvals. This widens the package path rules, which AGENTS.md rule 4 reserves for a record
-  the user agreed to: **the user should confirm or supersede it.**
+  the user agreed to; the user has since confirmed it (above).
 - Builds on: [0003](0003-native-trust-allowlist.md); the areas of [PACKAGE_FORMAT.md](../PACKAGE_FORMAT.md)
 
 ## Context

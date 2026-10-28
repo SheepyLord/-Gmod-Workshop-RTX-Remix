@@ -31,10 +31,11 @@ Steam ─► GarrysMod\gmod.exe (launcher) ─► bin\win64\gmod.exe   (working 
                generation if an unavailable/invalid still-allowlisted source would remove/replace it
      deploy    stage → verify CRC32 + SHA-256 → atomic rename; journal every write; back up
                anything replaced; never touch user-edited files or user.conf
-     activate  verify cwd, journaled entry/layer sizes and MAX_PATH; apply environment and layers,
+     activate  verify cwd, MAX_PATH, and the journaled size and time of every runtime, layer and
+               override file (ADR 0014); apply environment and layers,
                reversible kernelbase W/A + PEB command-line descriptor swap,
                optional preload of System32\vulkan-1.dll,
-               SetDllDirectoryW(<absolute runtime folder>) for delay loads, then
+               the runtime folder first on PATH for delay loads (ADR 0010), then
                LoadLibraryExW(<absolute package runtime d3d9.dll>, LOAD_WITH_ALTERED_SEARCH_PATH)
      report    native-loader\logs\loader.log, atomic garrysmod\data\native-loader\status.json
    then jump to the original entry point
@@ -119,9 +120,13 @@ removal and addon disable remain intentional removals; M3 rollback holds are pre
 Activation follows [ADR 0008](decisions/0008-activation-at-startup.md): package config layers precede
 the user's existing list (or the default root conf), ordinary user environment values are retained,
 missing launch arguments are appended, System32 Vulkan is optionally loaded, the runtime folder is
-set for bare-name delay loads, and the absolute d3d9 path is preloaded last. A failed step undoes
-earlier process changes. Rollback state is owned outside the SEH frame, so native faults cannot skip
-it. Status/log failure before the final commit also keeps the game vanilla.
+put first on `PATH` for bare-name delay loads ([ADR 0010](decisions/0010-rtx-session-extras.md)),
+and the absolute d3d9 path is preloaded last. A failed step undoes earlier process changes. Rollback
+state is owned outside the SEH frame, so native faults cannot skip it. Once the runtime is loaded,
+activation is committed before anything is reported: a status file or log line that cannot be
+written is only logged and never unloads the runtime. So a missing or stale `status.json` does not
+mean the game stayed vanilla; compare its process id and time with the running game, and check the
+loaded modules (or `session.json`) to tell.
 
 Launch arguments are now resolved: kernelbase's validated cached-string descriptors and the PEB
 are swapped together, including byte lengths and terminator capacity, before the game CRT/engine

@@ -44,6 +44,12 @@ function Invoke-Step([string] $Name, [scriptblock] $Body) {
 
 Invoke-Step 'repo conventions (tools\check_repo.py)' { python (Join-Path $repo 'tools\check_repo.py') }
 
+# The native build first: some Python tests cross-check against nlctl and the bootstrap, and skip
+# those checks when nothing is built (R1-021).
+if (-not $SkipNative) {
+    Invoke-Step "C++ build and tests ($Config)" { & (Join-Path $PSScriptRoot 'build.ps1') -Config $Config }
+}
+
 $testDirs = Get-ChildItem (Join-Path $repo 'tools') -Recurse -Directory -Filter tests |
     Where-Object { $_.FullName.Substring($repo.Length + 1) -notmatch '(^|\\)(__pycache__|out|build)(\\|$)' } | Sort-Object FullName
 foreach ($dir in $testDirs) {
@@ -52,10 +58,6 @@ foreach ($dir in $testDirs) {
         Push-Location $group
         try { python -m unittest discover -s tests -q } finally { Pop-Location }
     }
-}
-
-if (-not $SkipNative) {
-    Invoke-Step "C++ build and tests ($Config)" { & (Join-Path $PSScriptRoot 'build.ps1') -Config $Config }
 }
 
 if ($failed.Count) {

@@ -14,12 +14,13 @@ import argparse
 import json
 import lzma
 import os
+import re
 import shutil
 import struct
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_REFERENCE = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod_RTX_c")
@@ -42,6 +43,54 @@ def game_running(root: Path) -> bool:
                          "Get-Process gmod -ErrorAction SilentlyContinue | ForEach-Object { $_.Path }"], capture_output=True, text=True).stdout
     prefix = os.path.join(os.path.normcase(str(root)), "")  # GarrysMod must not match GarrysMod_PoC
     return any(os.path.normcase(line.strip()).startswith(prefix) for line in ps.splitlines() if line.strip())
+
+
+def path_problem(rel) -> str:
+    """Why `rel` is not a plain install-relative path, or '' when it is one: relative (no drive, no
+    root), and every component between / or \\ a normal name: not empty, "." or "..", without ":" (a
+    drive or a stream), and not ending in "." or a space (Windows would drop those)."""
+    if not isinstance(rel, str) or not rel:
+        return "is empty or not text"
+    windows = PureWindowsPath(rel)
+    if windows.drive or windows.root:
+        return "is not relative (it has a drive or a root)"
+    for part in re.split(r"[\\/]", rel):
+        if part in ("", ".", ".."):
+            return 'has an empty, "." or ".." component'
+        if ":" in part:
+            return 'has a ":" (a drive or a stream)'
+        if part.endswith((".", " ")):
+            return 'has a component that ends in "." or a space'
+    return ""
+
+
+def below(root: Path, rel, what: str) -> Path:
+    """root/rel, once rel has passed path_problem and root/rel resolves (links followed) strictly below
+    root; raises Failure otherwise. Called right before each write and each removal."""
+    problem = path_problem(rel)
+    if problem:
+        raise Failure(f"{what} {rel!r} {problem}")
+    target = root / rel
+    base, resolved = root.resolve(), target.resolve()
+    if base not in resolved.parents:
+        raise Failure(f"{what} {rel!r} resolves to {resolved}, which is not below {base}")
+    return target
+
+
+def check_arguments(root: Path, args) -> None:
+    """Every path a user names, checked before prepare writes anything (R1-016)."""
+    for rel in args.native:
+        below(root, rel, "--native")
+    for name in args.data:
+        below(root, f"garrysmod/data/{name}", "--data")
+    if args.save:
+        for suffix in (".gms", ".jpg"):
+            below(root, f"garrysmod/saves/{args.save}{suffix}", "--save")
+    if args.map:
+        item, _, name = args.map.partition(":")
+        if not re.fullmatch(r"[0-9]{1,20}", item) or not name:
+            raise Failure(f"--map {args.map!r}: expected <workshop id>:<map name>")
+        below(root, f"garrysmod/maps/{name}.bsp", "--map")
 
 
 def is_link(path: Path) -> bool:
@@ -125,11 +174,12 @@ def prepare(args) -> dict:
         raise Failure(f"{state_file} exists: restore that session first")
     if game_running(root):
         raise Failure("a game from the PoC is running")
+    check_arguments(root, args)
     state = {"reference": str(reference), "root": str(root), "created": [], "replaced": []}
     backup = evidence / "parity-backup"
     try:
         for rel in REPLACED_FILES if args.files else ():
-            source, target = reference / rel, root / rel
+            source, target = reference / rel, below(root, rel, "file")
             if not source.exists():
                 continue
             entry = {"path": rel, "backup": None}
@@ -176,7 +226,7 @@ def prepare(args) -> dict:
         if needed + (20 << 30) > free:
             raise Failure(f"the copies need {needed >> 30} GiB and {free >> 30} GiB is free (20 GiB kept spare)")
         for folder in chosen:
-            target = root / "rtx-remix" / "mods" / folder.name
+            target = below(root, f"rtx-remix/mods/{folder.name}", "mod folder")
             state["created"].append(str(target.relative_to(root)))
             if is_link(folder):
                 # What the link points to, file by file; links inside (one of the user's mods links
@@ -187,7 +237,7 @@ def prepare(args) -> dict:
             else:
                 copy_tree(folder, target)
         for folder, source in sources.items():
-            target = root / "garrysmod" / "addons" / folder.name
+            target = below(root, f"garrysmod/addons/{folder.name}", "add-on folder")
             state["created"].append(str(target.relative_to(root)))
             if source != folder:
                 state["followed_links"].append({"addon": folder.name, "target": str(source)})
@@ -195,15 +245,16 @@ def prepare(args) -> dict:
             else:
                 copy_tree(folder, target)
         for name in args.data:
-            source, target = reference / "garrysmod" / "data" / name, root / "garrysmod" / "data" / name
+            rel = f"garrysmod/data/{name}"
+            source, target = reference / rel, below(root, rel, "--data")
             if not source.is_dir() or is_link(source):
                 raise Failure(f"{source} is not a folder")
             if target.exists():
                 raise Failure(f"{target} exists: the PoC has its own")
-            state["created"].append(f"garrysmod/data/{name}")
+            state["created"].append(Path(rel).as_posix())
             copy_tree(source, target)
         for rel in args.native:
-            source, target = reference / rel, root / rel
+            source, target = reference / rel, below(root, rel, "--native")
             if not source.is_file():
                 raise Failure(f"{source} is not a file")
             if target.exists():
@@ -213,21 +264,24 @@ def prepare(args) -> dict:
             shutil.copy2(source, target)
         configs = reference / "garrysmod" / "data" / "remix_map_configs"
         if configs.is_dir() and not (root / "garrysmod" / "data" / "remix_map_configs").exists():
+            target = below(root, "garrysmod/data/remix_map_configs", "map configs")
             state["created"].append("garrysmod/data/remix_map_configs")
-            copy_tree(configs, root / "garrysmod" / "data" / "remix_map_configs")
+            copy_tree(configs, target)
         if args.save:
             for suffix in (".gms", ".jpg"):
-                rel = Path("garrysmod/saves") / (args.save + suffix)
-                if (reference / rel).exists() and not (root / rel).exists():
-                    (root / rel).parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(reference / rel, root / rel)
-                    state["created"].append(rel.as_posix())
+                rel = f"garrysmod/saves/{args.save}{suffix}"
+                source, target = reference / rel, below(root, rel, "--save")
+                if source.exists() and not target.exists():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, target)
+                    state["created"].append(Path(rel).as_posix())
         if args.map:
             item, name = args.map.split(":", 1)
-            rel = Path("garrysmod/maps") / (name + ".bsp")
-            if not (root / rel).exists():
-                state["created"].append(rel.as_posix())
-                extract_map(WORKSHOP / item, name, root / rel)
+            rel = f"garrysmod/maps/{name}.bsp"
+            target = below(root, rel, "--map")
+            if not target.exists():
+                state["created"].append(rel)
+                extract_map(WORKSHOP / item, name, target)
     finally:
         evidence.mkdir(parents=True, exist_ok=True)
         state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
@@ -243,16 +297,27 @@ def restore(args) -> dict:
     root = Path(state["root"])
     if game_running(root):
         raise Failure("a game from the PoC is running")
-    for rel in reversed(state["created"]):
-        target = root / rel
+    # Every recorded path is checked again, all of them before anything is touched: a plain relative
+    # path that resolves below the PoC root, and each backup a file in this session's parity-backup.
+    created = [below(root, rel, "recorded path") for rel in state["created"]]
+    backups = (evidence / "parity-backup").resolve()
+    replaced = []
+    for entry in state["replaced"]:
+        target, recorded = below(root, entry.get("path"), "recorded path"), entry.get("backup")
+        backup = None  # None: the PoC had no such file, so restore removes it
+        if recorded is not None:
+            backup = Path(recorded) if isinstance(recorded, str) and recorded else None
+            if backup is None or backups not in backup.resolve().parents or not backup.is_file():
+                raise Failure(f"recorded backup {recorded!r} is not a file in {backups}")
+        replaced.append((target, backup))
+    for target in reversed(created):
         if target.is_dir():
             shutil.rmtree(target)
         elif target.exists():
             target.unlink()
-    for entry in state["replaced"]:
-        target = root / entry["path"]
-        if entry["backup"]:
-            shutil.copy2(entry["backup"], target)
+    for target, backup in replaced:
+        if backup:
+            shutil.copy2(backup, target)
         elif target.exists():
             target.unlink()
     state_file.rename(evidence / "parity-restored.json")

@@ -406,6 +406,55 @@ class PackageFixesTests(unittest.TestCase):
         self.assertFalse((self.root / 'y').exists())
         self.assertEqual(self.leftovers(), [])
 
+    def test_private_looking_files_are_refused_unless_named(self):
+        tree = self.repo / 'garrysmod'
+        private = {  # source: package path
+            tree / 'garrysmod/addons/remixbinary/lua/debug.log': 'native/root/garrysmod/addons/remixbinary/lua/debug.log',
+            tree / 'rtx-remix/mods/base_mod/logs/capture.txt': 'native/root/rtx-remix/mods/base_mod/logs/capture.txt',
+            tree / 'garrysmod/data/remix_map_configs/user.conf': 'native/root/garrysmod/data/remix_map_configs/user.conf',
+        }
+        for source in private:
+            self.write(source, b'private')
+        code, _, err = self.run_tool('--out', self.root / 'x')
+        self.assertEqual(code, 1)
+        for rel in private.values():
+            self.assertIn(rel, err)
+        self.assertFalse((self.root / 'x').exists())
+        self.assertEqual(self.leftovers(), [])
+        allow = [arg for rel in private.values() for arg in ('--allow-private', rel)]
+        summary = self.build('--out', self.root / 'pkg', *allow)
+        self.assertEqual(summary['allowed_private'], sorted(private.values(), key=str.lower))
+        self.assertLessEqual(set(private.values()), set(self.manifest(self.root / 'pkg')['files']))
+        rows = [line.split('\t') for line in (self.root / 'pkg.inventory.txt').read_text(encoding='utf-8').splitlines()[2:]]
+        notes = {row[2]: row[4] for row in rows}
+        for rel in private.values():
+            self.assertTrue(notes[rel].startswith('allowed with --allow-private: '), rel)
+
+    def test_map_compile_logs_stay_out_as_junk(self):
+        # The real fixes keep vbsp/vvis/vrad logs beside their maps; they are not a reason to refuse.
+        self.write(self.repo / 'garrysmod/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log', b'compile log')
+        summary = self.build('--out', self.root / 'pkg')
+        self.assertIn('garrysmod/addons/remixbinary/maps/gm_construct_rtx.log', summary['junk'])
+        self.assertNotIn('native/root/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log',
+                         self.manifest(self.root / 'pkg')['files'])
+
+    def test_an_inventory_beside_each_output_lists_every_file(self):
+        out, gma = self.root / 'pkg', self.root / 'pkg.gma'
+        summary = self.build('--out', out, '--gma', gma)
+        inventories = [str(self.root / 'pkg.inventory.txt'), str(self.root / 'pkg.gma.inventory.txt')]
+        self.assertEqual(summary['inventory'], inventories)
+        m, expected = self.manifest(out), self.expected_files()
+        manifest = (out / 'native' / 'manifest.json').read_bytes()
+        for inventory in inventories:
+            lines = Path(inventory).read_text(encoding='utf-8').splitlines()
+            self.assertTrue(lines[0].startswith('# rtx-fixes %s: %d files' % (m['version'], len(m['files']))), lines[0])
+            rows = [line.split('\t') for line in lines[2:]]
+            self.assertEqual([row[2] for row in rows], sorted(m['files'], key=str.lower) + ['native/manifest.json'])
+            for size, sha256, path, source, note in rows[:-1]:
+                self.assertEqual({'size': int(size), 'sha256': sha256}, m['files'][path])
+                self.assertEqual((Path(source), note), (expected[path], ''))
+            self.assertEqual(rows[-1][:3], [str(len(manifest)), hashlib.sha256(manifest).hexdigest(), 'native/manifest.json'])
+
     def test_text_summary(self):
         code, out, err = self.run_tool('--out', self.root / 'pkg')
         self.assertEqual(code, 0, err)

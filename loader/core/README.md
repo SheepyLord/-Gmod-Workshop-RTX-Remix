@@ -67,8 +67,18 @@ duplicate keys or NUL characters; nothing after the value. Limits: 1 MiB per doc
 (drive letters and alternate data streams) and `< > " | ? *`; absolute paths; empty, `.` or `..`
 components; components over 255 bytes, starting with a space or ending with `.` or a space; Windows
 device names with any extension (`con`, `nul.txt`, `com0`-`com9`, `lpt0`-`lpt9`, superscript ports,
-`conin$`, `conout$`); `~` followed by a digit (8.3 short names). Package root files may only target
-`rtx-remix/mods/<mod>/...`, `garrysmod/lua/bin/...` and `garrysmod/cfg/...` (`paths::root_area`).
+`conin$`, `conout$`); `~` followed by a digit (8.3 short names).
+
+Package root files may only target these areas (`paths::root_area`):
+
+- `rtx-remix/mods/<mod>/...`;
+- `garrysmod/lua/bin/...`;
+- `garrysmod/addons/<addon>/...` (M5);
+- `garrysmod/data/<folder>/...` (M5; not `native-loader`).
+
+In the three folder areas a file must be inside a named folder (`paths::file_depth_ok`).
+`garrysmod/cfg` is not an area: it holds Steam depot files
+([ADR 0014](../../docs/decisions/0014-r1-hardening.md)).
 
 ## Deployment rules
 

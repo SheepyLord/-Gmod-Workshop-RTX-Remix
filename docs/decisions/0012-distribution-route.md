@@ -1,6 +1,9 @@
 # 0012: Distribution route: native packages are released outside the Workshop; the Workshop stays a supported source
 
-- Status: Accepted 2026-10-28; the private upload test is still the user's to run (see Consequences)
+- Status: Accepted 2026-10-28. **Superseded in part by [0015](0015-workshop-route-for-native-packages.md)
+  (2026-10-28).** The private upload test was run with the user's approval: the Workshop accepted a
+  native package packed with `gmapack` and served it back intact, so native packages may go through
+  the Workshop. The rest of this record stands.
 - Decided by: Claude, implementing M6 under the user's 2026-10-28 instruction to finish M5-M7 without
   further approvals. Publishing to the Workshop stays outward-facing (AGENTS.md rule 5) and was not done.
 - Answers the open question of [ADR 0002](0002-source-agnostic-payloads.md) (that record stands:

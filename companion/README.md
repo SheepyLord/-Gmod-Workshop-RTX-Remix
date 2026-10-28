@@ -9,4 +9,5 @@ the `.md` files.
 |---|---|
 | [`nativeloader/lua/autorun/client/nativeloader.lua`](nativeloader/lua/autorun/client/nativeloader.lua.md) | Prints the loader's start-up status (`status.json`) and RTX session results (`session.json`) to the console at client start and on `nativeloader_status` |
 
-M5 (this version): the status print. M6 adds the restart notice for downloaded package updates.
+M5: the status print. M6: the restart notice for Workshop package updates that Steam downloaded
+(`steamworks.FileInfo`, checked at client start and every 600 seconds).

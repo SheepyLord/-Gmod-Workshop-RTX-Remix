@@ -43,5 +43,7 @@ M5 adds `nl_session_integration`: a runtime package and a fixes development fold
 override, session variables) in a synthetic game whose `bin\win64` holds the two M5 fixtures. Five
 scenarios: RTX with `-insecure` (patched before DllMain, override, session cfg, user values recorded),
 without `-insecure` (no patches, override still), RTX off (vanilla engine and shader, restore cfg run
-once), the next start (record forgotten), and a later RTX session (recorded again). Evidence under
-`out/m5-synthetic`.
+once), the next start (record forgotten), and a later RTX session (recorded again). R1 added an
+invalid journal (no restore), a restore that keeps a value the user changed, a `filesystem_stdio.dll`
+without an import name table, and junctions where `loader.log` and `session.json` live (never written
+through). Evidence under `out/m5-synthetic`.

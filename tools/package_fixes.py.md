@@ -25,6 +25,7 @@ Sources are relative to the fixes repo's `garrysmod\` folder (its distributable 
 | `native/root/garrysmod/addons/<name>/**` | every folder in `garrysmod\addons\` except `--exclude-addon` ones | one `root_files` entry `garrysmod/addons/<name>` per add-on, kind `lua-addon`, `replace-owned` |
 | `native/root/garrysmod/addons/nativeloader/**` | this repo's [Lua companion](../companion/README.md) `companion\nativeloader\`, its `.md` files left out | the same, `garrysmod/addons/nativeloader` |
 | `native/root/rtx-remix/mods/<mod>/**` | every folder in `rtx-remix\mods\` that holds files | one entry `rtx-remix/mods/<mod>` per mod, kind `root-files`, `replace-owned`; `~gmod_topbr` `create-only`, because the fixes' ToPBR converter rewrites it at run time (a reinstall would otherwise find its files "not placed by the loader" and refuse the package) |
+| `native/root/garrysmod/data/<folder>/**` | every folder in `garrysmod\data\` that holds files, except `native-loader` (the loader's own reports): the fixes' seed data, today `remix_map_configs\default.txt` | one entry `garrysmod/data/<folder>` per folder, kind `root-files`, `create-only`, so what the fixes write there later at run time stays the user's ([M5 report](../docs/handover/M5-report.md), deviations) |
 | `native/root/garrysmod/lua/bin/<module>` | `gmcl_RTXFixesBinary_win64.dll`, `gmcl_rtxwater_win64.dll`, and with `--with-debug-module` `gmcl_rtxdebug_win64.dll`, from `--modules-from` | one entry per file, kind `lua-binary-module`, `replace-owned` |
 | `native/payload/shaders/stdshader_dx6.dll` | `bin\win64\stdshader_dx6.dll` | `module_overrides: [{"module": "stdshader_dx6.dll", "file": "native/payload/shaders/stdshader_dx6.dll"}]`, kind `module-override` |
 | none (manifest data) | the seven `patches64` patches, as data in the script | `patch_sets`, kind `patch-set` |
@@ -65,13 +66,27 @@ From the fixes as of 2026-10-28 that gives 34 variables (`sv_cheats 1`, `mat_dis
 - The root `rtx.conf` and `dxvk.conf`: they are runtime configuration, layers of the runtime package:
   `package_runtime.py --rtx-conf <fixes>\garrysmod\rtx.conf --dxvk-conf <fixes>\garrysmod\dxvk.conf`.
 - Everything else in the tree: the rest of `garrysmod\cfg\` (its `autoexec.cfg` becomes
-  `session_cvars`), `garrysmod\data\`, `stdshader_dx6.pdb` and its readme, loose files in the add-ons
-  or mods folder. The summary lists them (`left_out`, relative to the fixes' `garrysmod\`).
+  `session_cvars`), loose files directly in `garrysmod\data\` and its `native-loader\` folder,
+  `stdshader_dx6.pdb` and its readme, loose files in the add-ons or mods folder. The summary lists
+  them (`left_out`, relative to the fixes' `garrysmod\`).
 - Junk anywhere: `.git` (a submodule's file, or a folder), `.gitattributes`, `.gitignore`,
   `.gitkeep`, `.gitmodules`, `Thumbs.db`, `desktop.ini`, `.DS_Store`, `*.bak` (listed as `junk`).
   `gmapack` drops the same names, so the folder and the archive hold the same files.
+- Map compile logs, a `*.log` file in a `maps` folder, are also junk. The fixes keep vbsp/vvis/vrad
+  logs beside their maps; the game never reads them, and they hold the mapper's own paths. Any other
+  log is a private-looking file, which refuses the build unless `--allow-private` names it.
 - A mod folder without files (`empty_mods`). An add-on folder without files is refused instead: it is
   usually a git submodule that was never initialised.
+
+**Private or machine-specific files are refused**, by the rules of
+[package_runtime.py](package_runtime.py.md): Remix's `user.conf`, `*.log`, `.env` and `*.env`,
+`*.dmp` and `*.mdmp`, and anything inside a `logs` folder, wherever they are in what would be
+packaged (add-ons, mods, seed data, the companion). The build stops and lists them all by package
+path. `--allow-private <package path>` lets a reviewed one through. The fixes as of 2026-10-28 carry
+two such files, tracked in the fixes repo beside their maps: `remixbinary\maps\gm_construct_rtx.log`
+and `gm_construct_in_flatgrass_rtx.log`, by their names map compile logs. The build stops on them
+until they are reviewed and passed with `--allow-private` (the refusal shows the two paths), or
+left out of the fixes repo.
 
 ## Options
 
@@ -90,12 +105,17 @@ From the fixes as of 2026-10-28 that gives 34 variables (`sv_cheats 1`, `mat_dis
   yyyymmddhhmm>+<first 8 digits of the SHA-256 of gmcl_RTXFixesBinary_win64.dll>`, where the inputs
   are every packaged file and the session variables' `.cfg`: an edit anywhere gives a new version,
   and the same inputs always the same one.
+- `--allow-private <package path>` (repeatable): package this file although it looks private or
+  machine-specific, for example
+  `native/root/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log`; case does not matter. A path
+  that names no such file of the package is refused.
 - `--force`: replace an earlier package folder (only one that holds `native/manifest.json`) or archive.
 - `--json`: print the summary as JSON: `id`, `version`, `files`, `bytes`, `manifest_sha256`, `kinds`,
   `addons`, `excluded_addons`, `mods`, `empty_mods`, `modules_from`, `modules` (name: SHA-256),
   `module_override` (source), `patches` (count), `session_cvars` (`source`, `section`, `count`,
   `skipped` with `line`, `text`, `reason`; `null` with `--no-session-cvars`), `junk`, `left_out`,
-  `repo`, `folder`, `gma`.
+  `allowed_private` (package paths let through by `--allow-private`), `repo`, `folder`, `gma`,
+  `inventory` (the inventory files written).
 
 ## Outputs and side effects
 
@@ -104,14 +124,19 @@ From the fixes as of 2026-10-28 that gives 34 variables (`sv_cheats 1`, `mat_dis
   the partial folder is removed. The `.gma` is written by [`gmapack`](gmapack/gmapack.py.md) through
   a temporary file, with paths in their original case and the newest input's time as the archive
   timestamp: the same inputs give the same bytes.
+- **Inventory.** Beside each output, `<output>.inventory.txt` lists everything that went into the
+  package, in [package_runtime.py](package_runtime.py.md)'s format: one tab-separated line per file
+  (`size`, `sha256`, package `path`, `source`, `note`), `native/manifest.json` last. Review it before
+  publishing. It is written after the package is in place and replaced on every build.
 - Refuses (exit 1): a package path the loader's path rules reject (non-ASCII, reserved names, `~` and
   a digit, ...; the rules are [package_runtime.py](package_runtime.py.md)'s); an add-on folder name
   that is not `[A-Za-z0-9_.-]{1,64}`; an add-on without files; a fixes add-on named `nativeloader`;
-  links or special files; two paths that differ only in case; a missing module, `stdshader_dx6.dll`
-  or `.cfg`; an output inside the fixes repo, the modules folder or the companion (or the reverse);
-  `--gma` inside `--out`; a non-empty output folder without `--force`.
-- Reads the fixes repo, the modules and the companion; writes only the outputs. Never touches a game
-  install or the fixes repo.
+  links or special files; two paths that differ only in case; private or machine-specific files not
+  named with `--allow-private`; a missing module, `stdshader_dx6.dll` or `.cfg`; an output inside the
+  fixes repo, the modules folder or the companion (or the reverse); `--gma` inside `--out`; a
+  non-empty output folder without `--force`; an inventory path held by a folder or a link.
+- Reads the fixes repo, the modules and the companion; writes only the outputs and their
+  inventories. Never touches a game install or the fixes repo.
 - Check the result with `nlctl manifest <folder or .gma>` (a loader of version 0.2.0 or later).
 
 ## Exit codes

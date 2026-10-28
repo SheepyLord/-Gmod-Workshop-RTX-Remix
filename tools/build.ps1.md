@@ -19,7 +19,10 @@ tools\build.ps1 -NoTests                   # skip CTest
 - Reads: the CMake tree (`CMakeLists.txt`, `loader/**`).
 - Writes: `out\build\<preset>\` (git-ignored). `-Clean` deletes that one folder.
 - Points `TEMP`/`TMP` at `out\tmp` while it runs, so compiler and test scratch stays inside the
-  repo (AGENTS.md rule 9), and restores them afterwards.
+  repo (AGENTS.md rule 9).
+- The MSVC environment (`PATH`, `INCLUDE`, `LIB`, `VSCMD_*` and the rest) and `TEMP`/`TMP` hold only
+  while the script runs. Every process environment variable is put back as it was when the script
+  ends, also after a failure, so the calling shell is unchanged (R1-018).
 - Exit: non-zero when configure, build or tests fail (the error names the step).
 
 ## Notes
@@ -29,4 +32,4 @@ tools\build.ps1 -NoTests                   # skip CTest
 - CTest runs six tests at a time (the test presets' `execution.jobs`); the fault-injection tests
   take most of the time ([docs/TESTING.md](../docs/TESTING.md)).
 - Never touches a game install. Deploying a build into an install is a separate script (M1).
-- [`test.ps1`](test.ps1.md) calls this script as its last step.
+- [`test.ps1`](test.ps1.md) calls this script right after the convention check.

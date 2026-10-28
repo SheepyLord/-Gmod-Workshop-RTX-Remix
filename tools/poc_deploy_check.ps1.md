@@ -6,8 +6,9 @@ life cycle on a real install and proves the install is exactly as it was afterwa
 1. Refuses unless the PoC is clean: no `native-loader` folder, no `bin\win64\winmm.dll`, the game not
    running. Records every file (path, size, last write time) and folder.
 2. Builds a test package with [`gmapack`](gmapack/gmapack.py.md) under the evidence folder: a payload
-   file and root files in all three areas (`rtx-remix/mods`, `garrysmod/lua/bin`, and a create-only
-   file in `garrysmod/cfg`), and validates it with `nlctl manifest`.
+   file and root files in three areas (`rtx-remix/mods`, `garrysmod/lua/bin`, and a create-only
+   seed file in `garrysmod/data/nl_poc_test`), and validates it with `nlctl manifest`.
+   `garrysmod/cfg` is no longer a package area ([ADR 0014](../docs/decisions/0014-r1-hardening.md)).
 3. Installs the bootstrap ([`install-loader.ps1`](install-loader.ps1.md)) and writes a
    `native-loader\config.json` that allowlists only that package (by absolute path).
 4. `nlctl apply`: must deploy, with every byte where it belongs. A second `apply` must change

@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -21,6 +22,39 @@ def check(value, message):
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2), encoding='utf-8')
+
+
+def junction(link, target):
+    subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(target)], check=True, capture_output=True)
+
+
+def without_import_names(dll, target):
+    """Copies `dll` with its KERNEL32 import descriptor's OriginalFirstThunk set to 0: a valid layout
+    (Windows then resolves the imports from FirstThunk and overwrites it with addresses) that left
+    the import hooks without names to match (R1-006). Returns how many descriptors changed."""
+    data = bytearray(dll.read_bytes())
+    file_header = struct.unpack_from('<I', data, 0x3C)[0] + 4
+    sections, optional_size = struct.unpack_from('<H', data, file_header + 2)[0], struct.unpack_from('<H', data, file_header + 16)[0]
+    optional = file_header + 20
+    table = optional + optional_size
+
+    def offset(rva):
+        for i in range(sections):
+            virtual_size, address, raw_size, raw = struct.unpack_from('<IIII', data, table + i * 40 + 8)
+            if address <= rva < address + max(virtual_size, raw_size):
+                return rva - address + raw
+        raise ValueError(f'RVA {rva:#x} is in no section')
+
+    at = offset(struct.unpack_from('<I', data, optional + 112 + 8)[0])  # PE32+ import directory
+    changed = 0
+    while struct.unpack_from('<I', data, at + 12)[0]:
+        name = bytes(data[offset(struct.unpack_from('<I', data, at + 12)[0]):]).split(b'\0', 1)[0]
+        if name.lower() == b'kernel32.dll':
+            struct.pack_into('<I', data, at, 0)
+            changed += 1
+        at += 20
+    target.write_bytes(bytes(data))
+    return changed
 
 
 def main():
@@ -82,10 +116,11 @@ def main():
     evidence.mkdir(parents=True, exist_ok=True)  # a reused PID must not fail the run
     runs = []
 
-    def run(name, extra=()):
+    def run(name, extra=(), env_extra=None):
         probe_file = root / 'probe.json'
         probe_file.unlink(missing_ok=True)
         env = {k: v for k, v in os.environ.items() if k not in ('NATIVE_LOADER_DISABLE', 'DXVK_RTX_CONFIG_FILE', 'DXVK_CONFIG_FILE')}
+        env.update(env_extra or {})
         argv = [str(bin_folder / 'gmod.exe'), '--m5-probe', str(probe_file), str(bin_folder), *extra]
         done = subprocess.run(argv, cwd=root, env=env, timeout=60, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
         check(done.returncode == 0, f'{name}: host exit {done.returncode:#x}')
@@ -119,6 +154,7 @@ def main():
         check('r_nl_test "1"' in session_cfg.read_text(encoding='ascii'), 'session cfg content')
         recorded = json.loads(record.read_text(encoding='utf-8'))
         check(recorded['values'] == {'r_nl_test': '0', 'r_3dsky': '1'} and not recorded['restore_issued'], f'record: {recorded}')
+        check(recorded['session_values'] == {'r_nl_test': '1', 'r_3dsky': '0'}, f'session values not recorded: {recorded}')
         both = 'nl_rtx_addon|user_addon'
         check(probe['addons_a'] == both and probe['addons_w'] == both, f'RTX session must see every add-on: {probe}')
         check(status['session']['hidden_addons'] == [], 'add-ons hidden with RTX on')
@@ -134,24 +170,42 @@ def main():
         check(record.read_bytes() == record_bytes and session_cfg.stat().st_mtime_ns == cfg_time, 'repeat rewrote record or cfg')
         passed('without -insecure: no patches, override still applies, nothing rewritten')
 
+        # What the game does when an RTX session quits: it archives the session's values. During the
+        # session the user also set r_3dsky to 2 themselves.
+        config_cfg.write_text('bind "p" "say hi"\nr_nl_test "1"\nr_3dsky "2"\n', encoding='ascii')
         config['remix'] = {'enabled': False}
         write_json(root / 'native-loader/config.json', config)
+
+        # A journal that cannot be read: a pure pass-through, the record waits (R1-004).
+        journal_file = root / 'native-loader/state.json'
+        journal_bytes = journal_file.read_bytes()
+        record_bytes = record.read_bytes()
+        journal_file.write_text('{"schema": 1, "broken', encoding='utf-8')
+        probe, status, session = run('off-invalid-journal')
+        check(status['activation']['outcome'] != 'active', 'activated with an invalid journal')
+        check('+exec' not in probe['command_line_w'], f'command line changed with an invalid journal: {probe["command_line_w"]}')
+        check(record.read_bytes() == record_bytes and not restore_cfg.exists(), 'restore prepared with an invalid journal')
+        journal_file.write_bytes(journal_bytes)
+        passed('an invalid journal: no restore, no command-line change; the record waits')
+
         probe, status, session = run('off-restore')
         check(status['activation']['outcome'] == 'inactive', 'RTX off not inactive')
         check(probe['engine_at_attach'] == 'NLM5PATCH:BEFORE', 'patched with RTX off')
         check(Path(probe['shader_path']) == shader_vanilla, f'override with RTX off: {probe["shader_path"]}')
         check(probe['command_line_w'].endswith('+exec nativeloader_restore.cfg'), 'restore not executed')
         restore = restore_cfg.read_text(encoding='ascii')
-        check('r_nl_test "0"' in restore and 'r_3dsky "1"' in restore, f'restore cfg: {restore}')
+        check('r_nl_test "0"' in restore and 'r_3dsky' not in restore, f'restore cfg (the user\'s r_3dsky must stay): {restore}')
         check(json.loads(record.read_text(encoding='utf-8'))['restore_issued'], 'restore not marked issued')
-        check(status['session']['restore_values'] == 2, 'restore not reported')
+        check(status['session']['restore_values'] == 1, 'restore not reported')
         check(probe['addons_a'] == 'user_addon' and probe['addons_w'] == 'user_addon',
               f'RTX off must leave out the requires_remix add-on: {probe["addons_a"]!r} {probe["addons_w"]!r}')
         check('config.cfg' in probe['other_a'].split('|'), f'other folders must not be filtered: {probe["other_a"]!r}')
         check(status['session']['hidden_addons'] == ['nl_rtx_addon'], f'hidden not reported: {status["session"]}')
         check(session and session['hidden_addons']['left_out'] == ['nl_rtx_addon'], f'session.json hidden: {session}')
         check((root / 'garrysmod/addons/nl_rtx_addon/lua/autorun/nl.lua').read_bytes() == addon_lua, 'add-on changed on disk')
-        passed('RTX off: vanilla engine and shader, the restore cfg runs once, the RTX-only add-on hidden (still on disk)')
+        check(session and session.get('utc'), f'session.json has no time: {session}')
+        passed('RTX off: vanilla engine and shader, the restore cfg runs once and keeps the user\'s own change, '
+               'the RTX-only add-on hidden (still on disk)')
 
         probe, status, session = run('off-again')
         check(not record.exists(), 'record kept after its restore ran')
@@ -159,13 +213,64 @@ def main():
         check(probe['addons_a'] == 'user_addon', 'not hidden again on the next start without RTX')
         passed('the next start without RTX forgets the record and adds nothing; the add-on stays hidden')
 
+        # A start without RTX whose filesystem_stdio.dll has no import name table (R1-006): still hidden.
+        filesystem = bin_folder / 'filesystem_stdio.dll'
+        filesystem_bytes = filesystem.read_bytes()
+        check(without_import_names(args.fixtures / 'filesystem_stdio.dll', filesystem) == 1, 'fixture has no KERNEL32 imports')
+        probe, status, session = run('off-no-import-names')
+        check(probe['addons_a'] == 'user_addon' and probe['addons_w'] == 'user_addon',
+              f'add-on visible when the module has no import name table: {probe["addons_a"]!r} {probe["addons_w"]!r}')
+        filesystem.write_bytes(filesystem_bytes)
+        passed('a module without an import name table is hooked by address: the add-on stays hidden')
+
+        # Links where the loader writes (R1-001, R1-005): a junction is never written through.
+        logs = root / 'native-loader/logs'
+        logs.rename(root / 'native-loader/logs.real')
+        victim_logs = scratch / 'victim-logs'
+        victim_logs.mkdir()
+        (victim_logs / 'loader.log').write_bytes(b'USER DATA')
+        junction(logs, victim_logs)
+        run('linked-log')
+        check((victim_logs / 'loader.log').read_bytes() == b'USER DATA', 'loader.log written through a junction')
+        os.rmdir(logs)
+        (root / 'native-loader/logs.real').rename(logs)
+        data_folder = root / 'garrysmod/data/native-loader'
+        data_folder.rename(root / 'garrysmod/data/native-loader.real')
+        victim_data = scratch / 'victim-data'
+        victim_data.mkdir()
+        (victim_data / 'session.json').write_bytes(b'USER DATA')
+        junction(data_folder, victim_data)
+        done = subprocess.run([str(bin_folder / 'gmod.exe'), '--m5-probe', str(root / 'probe.json'), str(bin_folder)], cwd=root,
+                              env={k: v for k, v in os.environ.items() if k != 'NATIVE_LOADER_DISABLE'}, timeout=60,
+                              capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        check(done.returncode == 0, f'linked data folder: host exit {done.returncode:#x}')
+        check((victim_data / 'session.json').read_bytes() == b'USER DATA', 'session.json written through a junction')
+        check(not (victim_data / 'status.json').exists(), 'status.json written through a junction')
+        os.rmdir(data_folder)
+        (root / 'garrysmod/data/native-loader.real').rename(data_folder)
+        passed('loader.log and session.json are never written through a junction')
+
+        # What the game does with the restore cfg: it sets and archives r_nl_test 0 again.
+        config_cfg.write_text('bind "p" "say hi"\nr_nl_test "0"\nr_3dsky "2"\n', encoding='ascii')
         config['remix'] = {'enabled': True}
         write_json(root / 'native-loader/config.json', config)
         probe, status, session = run('rtx-again', ['-insecure'])
-        check(json.loads(record.read_text(encoding='utf-8'))['values'] == {'r_nl_test': '0', 'r_3dsky': '1'}, 'record not made again')
+        check(json.loads(record.read_text(encoding='utf-8'))['values'] == {'r_nl_test': '0', 'r_3dsky': '2'}, 'record not made again')
         check(probe['engine_at_attach'] == 'NLM5PATCH:AFTER!', 'patch missing on second RTX session')
         check(probe['addons_a'] == 'nl_rtx_addon|user_addon', 'add-on still hidden after RTX came back')
         passed('a later RTX session records the user values again and sees the add-on')
+
+        # The runtime fails to load after the module hooks went in (its DllMain fails): activation is
+        # undone, and the start continues as one without a runtime, so the RTX-only add-on is hidden
+        # by a second hook installation (the first one's state stays allocated, inactive).
+        probe, status, session = run('rtx-attach-fails', ['-insecure'], {'NL_M4_FAIL_ATTACH': '1'})
+        check(status['activation']['outcome'] == 'failed', f'activation: {status["activation"]}')
+        check(Path(probe['shader_path']) == shader_vanilla, f'override left after a failed activation: {probe["shader_path"]}')
+        check(probe['engine_at_attach'] == 'NLM5PATCH:BEFORE', 'patched after a failed activation')
+        check(probe['addons_a'] == 'user_addon' and probe['addons_w'] == 'user_addon',
+              f'RTX-only add-on visible after a failed activation: {probe["addons_a"]!r} {probe["addons_w"]!r}')
+        check(status['session']['hidden_addons'] == ['nl_rtx_addon'], f'hidden not reported: {status["session"]}')
+        passed('a runtime that fails to load: hooks undone, no patch or override, the RTX-only add-on hidden')
     finally:
         for _ in range(30):
             try:

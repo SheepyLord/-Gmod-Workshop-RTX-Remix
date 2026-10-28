@@ -26,7 +26,6 @@ GarrysMod\
 └─ garrysmod\
    ├─ lua\bin\gmcl_*_win64.dll             binary modules from packages (journaled)
    ├─ addons\<addon>\...                   M5: Lua add-on folders from packages (journaled)
-   ├─ cfg\...                              create-only files from packages (journaled)
    ├─ cfg\nativeloader_session.cfg         M5: generated each RTX start that has session variables
    ├─ cfg\nativeloader_restore.cfg         M5: generated at the start without RTX that puts them back
    ├─ data\<folder>\...                    M5: create-only seed data from packages (journaled)
@@ -35,9 +34,15 @@ GarrysMod\
 ```
 
 `nlctl uninstall` (or [`uninstall-loader.ps1`](../tools/uninstall-loader.ps1.md)) removes everything
-the journal lists, then the journal and the lock; `config.json`, the receipt and the logs stay
-unless `uninstall-loader.ps1 -RemoveConfig` removes the whole `native-loader` folder. How the
-deployer changes these files is [ADR 0007](decisions/0007-transactional-deployment.md).
+the journal lists, then the journal and the lock. `config.json`, the receipt and the logs stay
+unless `uninstall-loader.ps1 -RemoveConfig` removes them too.
+
+`-RemoveConfig` also removes the folders left empty, and `native-loader` itself if it is empty. A
+payload file the user changed (which uninstall leaves in place) stays, and is listed. How the deployer
+changes these files is [ADR 0007](decisions/0007-transactional-deployment.md).
+
+Packages never write `garrysmod\cfg` ([ADR 0014](decisions/0014-r1-hardening.md)). The two generated
+cfgs below are the bootstrap's own.
 
 M4 also removes `garrysmod/data/native-loader/status.json`, its generated per-PID temporary files,
 and that data folder if empty. Other files in the data folder are preserved. Bootstrap off switches
@@ -160,21 +165,37 @@ The M1 log header still proves entry timing. M4 appends `deployment.outcome`, `.
 ## M5 session files
 
 - `garrysmod/data/native-loader/session.json` is rewritten while a session with module hooks runs,
-  each time the DLL-load watcher changes something: `{"schema": 1, "process_id": ..., "patches":
-  [{"module", "name", "result": "applied"|"skipped", "reason"}], "overrides": [{"requested",
-  "loaded", "result": "redirected"|"failed", "windows_error"}], "hidden_addons": {"folders",
-  "left_out", "search_hooks"}, "hooked_modules": N}`. `hidden_addons` is filled in sessions without a
-  runtime ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)): the folders to hide, the
-  ones a search actually left out, and `filesystem_stdio.dll` with its hooked import count. A
-  `process_id` other than the running game's means it is from an earlier launch.
+  each time the DLL-load watcher changes something. Its shape:
+
+  ```text
+  {"schema": 1, "utc": "<time written>", "process_id": ...,
+   "patches": [{"module", "name", "result": "applied"|"skipped", "reason"}],
+   "overrides": [{"module", "requested", "loaded", "result": "redirected"|"failed", "windows_error"}],
+   "hidden_addons": {"folders", "left_out", "search_hooks"},
+   "notes": [...], "hooked_modules": N}
+  ```
+
+  - `hidden_addons` is filled in sessions without a runtime
+    ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)). It holds the folders to hide,
+    the ones a search actually left out, and `filesystem_stdio.dll` with its hooked import count.
+  - `notes` says what did not work as planned, for example a module whose file-search imports could
+    not be found.
+  - A `process_id` other than the running game's means the file is from an earlier launch.
+  - The file is never written when any folder below the game root on its path is a link (R1-005).
 - `status.json` gains `"session": {"cvars", "cvars_exec", "recorded", "restore_values",
   "restore_exec", "patches", "patches_allowed", "overrides", "hooks", "hidden_addons", "notes"}`:
   what start-up set up.
 - The journal's package records carry `"requires_remix": true` for packages that set it.
-- `native-loader/session_cvars.json`: `{"schema": 1, "restore_issued": bool, "values": {name:
-  value}}`. Written before the first RTX session that changes a variable `config.cfg` archives; a start
-  without RTX writes `nativeloader_restore.cfg` from it, adds `+exec nativeloader_restore.cfg` and sets
-  `restore_issued`; the start after that deletes the record ([ADR 0010](decisions/0010-rtx-session-extras.md)).
+- `native-loader/session_cvars.json`: `{"schema": 2, "restore_issued": bool, "values": {name:
+  the user's value}, "session_values": {name: the RTX session's value}}`. Schema 1 (without
+  `session_values`) is still read. The record's life
+  ([ADR 0010](decisions/0010-rtx-session-extras.md), [ADR 0014](decisions/0014-r1-hardening.md)):
+  1. It is written before the first RTX session that changes a variable `config.cfg` archives.
+  2. A start without RTX, whose journal could be read, writes `nativeloader_restore.cfg`, adds
+     `+exec nativeloader_restore.cfg` and sets `restore_issued`. The cfg holds only the values that
+     `config.cfg` still has at the session's value: one the user changed since is left alone. If none
+     is left, the record is deleted instead.
+  3. The start after that deletes the record.
 - The two generated cfgs begin with `// Generated by the GMod native loader`; the loader replaces or
   removes only files that do. Uninstall removes them and `session.json`; it keeps a pending record.
 
