@@ -126,7 +126,30 @@ and four CTest entries now; a clean complete native result is outstanding. No en
 `loader.log` excerpt is available. The initial synthetic log was asserted in-process then removed
 by the test's normal scratch cleanup; do not substitute it for the required in-game evidence.
 
-### PoC baseline and tools
+### Resumed validation after user review
+
+The user reviewed the detection and reported excluding
+`H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix`. Resumed full Debug and Release validation.
+The M1 worktree is a sibling of that directory; its test copies also run under `%TEMP%`.
+Fresh `Get-MpThreatDetection` records at 18:21–18:22 name those paths and the Release build,
+which Defender removed during the tests. Viewing configured exclusions required administrator
+rights, so no exclusion contents were assumed or changed by the agent.
+
+- `tools\test.ps1`: conventions and all 56 Python tests pass; Debug has 7 of 14 proxy cases pass,
+  with the 7 child-host cases blocked. The installer CTest fails hashing a Defender-blocked copy.
+- `tools\build.ps1 -Config Release`: **11 of 14 proxy cases pass**, including complete exports,
+  real forwarding, entry hook timing and **all three off switches**. The remaining host/path,
+  logging-failure and rotation cases exit with `0xc0000906`. The installer CTest then reports a
+  missing build because Defender already removed `out/build/win64-release/loader/proxy/winmm.dll`.
+- Both configurations finish with 2 of 4 CTest entries passing; this is still a failed full suite.
+  Raw evidence: `out/m1-full-debug-tests.txt`, `out/m1-full-release-tests.txt`.
+- `0xc0000906` is `STATUS_VIRUS_INFECTED`, confirmed in the installed SDK's
+  `shared/ntstatus.h:11558`. The existing error output and fresh Defender resource paths account
+  for these failures; no native code workaround was introduced.
+- Asked the user to review the actual M1 build and generated test-copy detections. PoC remains
+  uninstalled and no further in-game run was attempted while this block persists.
+
+### PoC baseline and tools (initial run)
 
 Launched `bin\win64\gmod.exe`, cwd = PoC root, with exactly:
 

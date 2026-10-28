@@ -145,3 +145,10 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
   named the Debug build and the `nl-proxy-测试-*` fixture copies; `Get-MpThreat` reported it active.
   The detection needs human review before further native runtime validation; no antivirus
   configuration was changed. See [M1-report.md](handover/M1-report.md).
+- Resumed after the user reported excluding the main checkout: Release passed **11/14** proxy
+  cases (including entry timing and all off switches) before fresh detections blocked its remaining
+  fixtures and removed the Release DLL in the sibling M1 worktree. Debug passed 7/14; both full
+  suites still failed. `0xc0000906` is `STATUS_VIRUS_INFECTED` (installed Windows SDK
+  `shared/ntstatus.h:11558`). The new detections name the sibling `!NVIDIA-RTX-Remix-M1` and
+  `%TEMP%/nl-proxy-测试-*`, outside the main checkout path the user named. Full logs:
+  `out/m1-full-debug-tests.txt`, `out/m1-full-release-tests.txt`.
