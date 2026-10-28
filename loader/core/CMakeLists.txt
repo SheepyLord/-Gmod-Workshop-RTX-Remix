@@ -2,6 +2,9 @@ configure_file(include/nl/version.h.in
   "${CMAKE_CURRENT_BINARY_DIR}/generated/include/nl/version.h" @ONLY)
 
 add_library(nl_core STATIC
+  src/crc32.cpp
+  src/gma.cpp
+  src/json.cpp
   src/version.cpp)
 target_include_directories(nl_core PUBLIC
   include

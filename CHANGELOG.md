@@ -18,6 +18,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
   git-ignored `out\` (builds, worktrees, test scratch, evidence). `tools/test.ps1` and
   `tools/build.ps1` point `TEMP`/`TMP` at `out\tmp` while they run.
 
+### Added (M2 part 1: GMA reader and nlctl)
+
+- `nl_core`: GMA reader for GMAD v1-v3 (header and index with gmapack-compatible limits and
+  rejections, single-pass `verify` of every CRC and trailing data, container detection,
+  share-all file reading), CRC-32, and JSON string quoting that replaces invalid UTF-8.
+- `loader/cli`: `nlctl inspect | verify | scan` (read-only), with a CTest that checks it against
+  `tools/gmapack/gmapack.py` on synthetic archives, including damaged ones.
+- Test harness: `CHECK_THROWS_AS` and `scratch_dir()` (scratch beside the test executable).
+- First real-data run: all 672 installed Workshop `.gma` indexes (98,656 entries) parse without
+  errors; the 81 older `*_legacy.bin` items are LZMA-wrapped and wait for the decoder.
+
 ### Added (M0: repo scaffold)
 
 - Repo initialised on top of `origin/main` (SheepyLord/-Gmod-Workshop-RTX-Remix).

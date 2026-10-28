@@ -12,7 +12,7 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 | Component | Path | Status | What it does |
 |---|---|---|---|
 | Bootstrap | `loader/proxy` → `bin\win64\winmm.dll` | planned (M1) | Loaded by `gmod.exe` at process start. Forwards every `winmm` export to the system DLL, checks it is inside `bin\win64\gmod.exe` and that no off switch is set, then runs the start-up step at the EXE entry point: discover packages, deploy, activate the runtime, write the status file. Any error is logged and the game continues vanilla. |
-| Core library | `loader/core` (`nl_core`) | skeleton (M0) | Logic shared by the bootstrap, the CLI and the tests: GMA reading (incl. LZMA-wrapped), manifest parsing, path rules, discovery, planning, transactional deployment, journal (M2/M3). Today: version only. |
+| Core library | [`loader/core`](../loader/core/README.md) (`nl_core`) | in progress (M2) | Logic shared by the bootstrap, the CLI and the tests: GMA reading (incl. LZMA-wrapped), manifest parsing, path rules, discovery, planning, transactional deployment, journal (M2/M3). Done: GMA reader (GMAD v1-v3 index, single-pass verify, container detection), CRC-32, JSON string quoting. Next: LZMA decoder, manifest, path rules, discovery, planner. |
 | Lua companion | `addon/` | planned (M5/M6) | Normal GMod Lua addon. Reads `garrysmod/data/native-loader/status.json`, shows runtime state and errors, and tells the user to restart when a package update has been downloaded. |
 | Remix runtime package | `packages/remix-runtime/` | planned (M4) | Recipe for the package that carries the user's Remix fork build: manifest template, `rtx.conf`/`dxvk.conf` layers, launch arguments, later patch sets. |
 
@@ -20,8 +20,8 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 
 | Component | Path | Status | What it does |
 |---|---|---|---|
-| CLI | `loader/cli` → `nlctl.exe` | planned (M2) | Same core as the bootstrap: `list`, `inspect`, `plan`, `apply`, `rollback`, `verify` against an install, so deployment can be tested without starting GMod. |
-| Unit tests (C++) | [`loader/tests`](../loader/tests/README.md) | done (M0 harness) | `nl_tests`, run by CTest. |
+| CLI | [`loader/cli`](../loader/cli/README.md) → `nlctl.exe` | in progress (M2) | Same core as the bootstrap, so packages and installs can be examined (later deployed) without starting GMod. Done: `inspect`, `verify`, `scan` (read-only), cross-checked against `gmapack.py` by CTest. Later: `plan`, `apply`, `rollback`. |
+| Unit tests (C++) | [`loader/tests`](../loader/tests/README.md) | done (harness), grows with M2 | `nl_tests`, run by CTest: CRC-32, GMA reader (including every truncation), JSON quoting, version. |
 | Build | [`tools/build.ps1`](../tools/build.ps1.md) | done | Configure, build and test with MSVC x64, CMake presets and Ninja. |
 | MSVC environment | [`tools/lib`](../tools/lib/VsDevEnv.psm1.md) (`VsDevEnv.psm1`) | done | Finds VS / Build Tools (even when `vswhere` cannot) and imports `vcvars64`. |
 | Test runner | [`tools/test.ps1`](../tools/test.ps1.md) | done | Runs the convention check, all Python tests and the C++ build + tests. |
