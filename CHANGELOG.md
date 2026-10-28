@@ -8,6 +8,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M7: field install)
 
+- Field test on the user's install ([M7 report](docs/handover/M7-report.md)): RTX on next to the
+  user's DXVK `d3d9.dll` and `bin\win64\vulkan-1.dll` (the package's and System32's were loaded), RTX
+  off identical to the no-loader baseline, MMD Hot Loader unaffected, and a clean one-command rollback.
 - `tools/field_snapshot.py`: a snapshot of what the loader and a test session can change in a real
   install (every non-depot file in the folders packages and sessions write to, by copy: the user's
   DXVK `d3d9.dll`, `vulkan-1.dll`, MMD Hot Loader and Jolt files, configs, logs, databases; folder

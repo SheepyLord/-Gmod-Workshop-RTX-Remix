@@ -164,7 +164,8 @@ file being moved ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.m
 
 ## Open questions (tracked in the roadmap)
 
-- Whether `stdshader_dx6.dll` loads by bare name (preload works) or full path (needs a redirect or a
-  journaled on-disk override).
 - VAC: in-memory patches stay off on secure servers unless `-insecure` is set.
-- Runtime with GModPatchTool's `bin\win64\vulkan-1.dll` in the field install.
+
+Answered: `stdshader_dx6.dll` is loaded by full path (`filesystem_stdio`'s `LoadLibraryExA`), so M5
+redirects it through import hooks; and in the field install, next to a `vulkan-1.dll` in
+`bin\win64`, the runtime binds System32's (M7, [report](handover/M7-report.md)).
