@@ -19,8 +19,9 @@ nlctl inspect <file.gma> [--json]   # header and file index (LZMA-wrapped: decod
 nlctl verify  <file.gma> [--json]   # one pass: every nonzero file CRC, the archive CRC, trailing data
 nlctl scan    <folder>   [--json]   # read-only parse of every .gma / .bin archive below the folder
 nlctl manifest <file.gma|folder> [--json]  # validate a native package; summarise its manifest
-nlctl plan <game root> [--steam-dir <dir>] [--json]  # what the loader would activate, read-only
+nlctl plan <game root> [--steam-dir <dir>] [--json]  # what the loader would deploy, read-only
 nlctl apply <game root> [--steam-dir <dir>] [--dry-run] [--json]  # deploy the plan
+nlctl activation <game root> [--json]  # what start-up would load, set and add from the runtime (read-only)
 nlctl status <game root> [--verify] [--json]   # the journal; are the deployed files as placed (read-only)
 nlctl rollback <game root> [--dry-run] [--json]   # return to the previous generation, and hold it
 nlctl uninstall <game root> [--dry-run] [--json]  # remove everything the loader placed, and its journal
@@ -52,11 +53,19 @@ These four commands, and `status`, exit with:
   to, or (`status`) a file is not as placed or a transaction is pending;
 - `2`: an invalid `config.json` or `state.json`.
 
-`plan` runs what the bootstrap will run at start-up, without changing anything: it reads
-`native-loader\config.json`, finds every allowlisted source, loads each package and prints one
-decision per source (active, or why not; [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)).
+`plan` runs the deployment half of what the bootstrap runs at start-up, without changing anything:
+it reads `native-loader\config.json`, finds every allowlisted source, loads each package and prints
+one decision per source (active, or why not; [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)).
 `--steam-dir` replaces the registry lookup of Steam's folder when the game root is outside a Steam
 library. Exit `0` when a plan was made (even if everything was skipped), `2` for an invalid config.
+
+`activation` shows the other half: from the deployed current generation it prints what start-up
+would do with the runtime ([ADR 0008](../../docs/decisions/0008-activation-at-startup.md)) — the
+`d3d9.dll` it would preload, the folder added to the DLL search, whether System32's `vulkan-1.dll`
+is preloaded first, the environment variables it would set (config-file layer lists and the
+package's own, skipping any this shell already has set) and the launch arguments it would add. It
+reads the journal and config only. Launch arguments are shown as the package's whole set, since
+nlctl does not have the game's command line. Exit `0` always (or `2` for an invalid journal/config).
 
 `manifest` exits `0` for a valid package, `1` when the input has no `native/manifest.json` or the
 manifest breaks a schema-1 rule (the message names the field), `2` for a damaged archive.

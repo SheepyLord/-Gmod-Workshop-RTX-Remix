@@ -13,6 +13,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0005](0005-repo-conventions.md) | Agent-facing repo conventions and MIT licence | Accepted 2026-10-27 |
 | [0006](0006-package-precedence-and-planning.md) | Package precedence (dev folder > local > Workshop) and planning rules | Accepted 2026-10-27 |
 | [0007](0007-transactional-deployment.md) | Deployment is one journaled transaction per run, rolled back on failure | Accepted 2026-10-27 |
+| [0008](0008-activation-at-startup.md) | Activation at start-up: preload the runtime, config layers, environment, launch arguments | Accepted 2026-10-27 |
 
 ## Template
 

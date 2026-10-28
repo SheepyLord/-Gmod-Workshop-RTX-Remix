@@ -8,6 +8,19 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Added (M4: activation)
 
+- `nl_core`: `nl::activate::plan` ([ADR 0008](docs/decisions/0008-activation-at-startup.md)), a pure
+  function turning the deployed generation, config, environment and command line into the start-up
+  steps: the `d3d9.dll` to preload and the folder to add to the DLL search, the config-file layer
+  lists (package layers below the user's root `rtx.conf`, relative to the game root), the package
+  environment (the user's own values winning) and the launch arguments to add (those the user did
+  not pass).
+- `nl_core`: `nl::cmdline` — command-line tokenising, and `append_arguments`, which adds the
+  runtime's launch arguments in memory by pointing kernelbase's `GetCommandLineW`/`GetCommandLineA`
+  caches and the PEB at longer strings, after checking each getter is the expected
+  `mov rax,[rip+disp]; ret` shape and points at this process's command line.
+- `nlctl activation <game root>`: read-only, prints what start-up would load, set and add.
+- Tests: 12 new `nl_tests` cases (106 in all) for `activate::plan` and `nl::cmdline`, the latter
+  including the command-line swap against this process's real kernelbase.
 - `tools/package_runtime.py`: builds an RTX Remix runtime package (a package folder and/or a `.gma`)
   from the fork's runtime build folder (`_output`), hashing every file as it is copied. Excludes
   `.exp/.lib/.ilk/.bak` and (unless `--with-pdbs`) `.pdb`; `--d3d9-from` overrides `d3d9.dll` from

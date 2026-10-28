@@ -1,5 +1,7 @@
 add_executable(nl_tests
   test_main.cpp
+  test_activate.cpp
+  test_cmdline.cpp
   test_config.cpp
   test_crc32.cpp
   test_deploy.cpp
