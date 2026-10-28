@@ -267,7 +267,8 @@ class PackageRuntimeTests(unittest.TestCase):
         out, gma = self.root / 'pkg', self.root / 'pkg.gma'
         self.build('--out', out, '--gma', gma, '--rtx-conf', conf, '--env', 'DXVK_LOG_LEVEL=info')
         for location in (out, gma):
-            done = subprocess.run([str(built_nlctl()), 'manifest', str(location), '--json'], capture_output=True, text=True)
+            done = subprocess.run([str(built_nlctl()), 'manifest', str(location), '--json'], capture_output=True, text=True,
+                                  encoding='utf-8')
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(json.loads(done.stdout)['id'], 'rtx-remix-runtime')
 

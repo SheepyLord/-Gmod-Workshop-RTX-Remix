@@ -90,7 +90,7 @@ class Host:
             cmd += ['--kill-at', str(kill)]
         if fail:
             cmd += ['--fail-at', str(fail)]
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')  # the host writes UTF-8
         report = json.loads(proc.stdout) if proc.returncode in (0, 1) and proc.stdout.strip() else None
         return proc.returncode, report, proc.stderr
 

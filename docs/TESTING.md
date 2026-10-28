@@ -13,10 +13,15 @@
 | PoC deployment | The deployer's whole life cycle on the PoC, without starting the game | `tools\poc_deploy_check.ps1`, by hand | M3 |
 | PoC in-game | Launch `GarrysMod_PoC` with the bootstrap, check logs and behaviour | `tools\smoke_test.ps1` | M1 |
 | Field test | The user's real install, with backups and a tested rollback | manual, with the user | M7 |
+| CI | What `tools\test.ps1 -Config Release` runs, on a clean GitHub `windows-2022` runner | `.github/workflows/build.yml`, every push and pull request | ADR 0017 |
 
 `tools\test.ps1` runs the first five (the CLI and fault-injection tests are CTests) and must pass
 before any change is finished. CTest runs six tests at a time (`CMakePresets.json`); the longest,
 the real-process kill test, takes about 20-35 s.
+
+CI's code page is 1252, not this machine's UTF-8 (65001). A test that reads `nlctl` or a C++ test
+host must decode with `encoding='utf-8'`, and files must be opened with an explicit encoding.
+Otherwise, non-ASCII text passes here and fails there (see section 17 of [RESEARCH.md](RESEARCH.md)).
 
 ### M3 deployer checks
 

@@ -133,7 +133,7 @@ def built_nlctl():
     for preset in ('win64-debug', 'win64-release'):
         exe = REPO / 'out' / 'build' / preset / 'loader' / 'cli' / 'nlctl.exe'
         if exe.is_file():
-            done = subprocess.run([str(exe), 'version'], capture_output=True, text=True)
+            done = subprocess.run([str(exe), 'version'], capture_output=True, text=True, encoding='utf-8')
             version = tuple(int(n) for n in re.findall(r'\d+', done.stdout)[:3])
             if done.returncode == 0 and version >= (0, 2, 0):
                 return exe
@@ -467,7 +467,8 @@ class PackageFixesTests(unittest.TestCase):
         out, gma = self.root / 'pkg', self.root / 'pkg.gma'
         self.build('--out', out, '--gma', gma)
         for location in (out, gma):
-            done = subprocess.run([str(built_nlctl()), 'manifest', str(location), '--json'], capture_output=True, text=True)
+            done = subprocess.run([str(built_nlctl()), 'manifest', str(location), '--json'], capture_output=True, text=True,
+                                  encoding='utf-8')
             self.assertEqual(done.returncode, 0, done.stderr)
             self.assertEqual(json.loads(done.stdout)['id'], 'rtx-fixes')
 
