@@ -260,3 +260,56 @@ moved one by one).
   open as "running" made `nlctl_e2e_deploy` refuse now and then.
 - Windows may keep an executable's image file locked for a moment after its process ends;
   `e2e_deploy.py` retries putting its placeholder `gmod.exe` back.
+
+## 10. M4 activation research (2026-10-27, Claude)
+
+Gathered while planning M4; scripts were one-offs under `out\tmp` (`pefile`, `ctypes`), read-only.
+
+**Who reads the command line, and when** (PoC, build 26229091):
+
+- `gmod.exe`, `launcher.dll`, `tier0.dll`, `vstdlib.dll`, `engine.dll`, `filesystem_stdio.dll`,
+  `materialsystem.dll`, `shaderapidx9.dll` and `client.dll` each import both `GetCommandLineA` and
+  `GetCommandLineW` from KERNEL32. `tier0.dll` exports `CommandLine`, `Plat_GetCommandLine` and
+  `Plat_GetCommandLineA`; all the others except `gmod.exe` import `CommandLine` from it.
+- None of `gmod.exe`, `launcher`, `tier0`, `vstdlib`, `engine`, `shaderapidx9`, `client` imports a
+  C runtime DLL (`ucrtbase`, `api-ms-win-crt-*`, `vcruntime*`, `msvcp*`): they link it statically.
+  `gmod.exe`'s static imports are only system DLLs and `WINMM` (ours); `launcher.dll` and the
+  engine load later. So no engine module has read or cached the command line when our entry-point
+  hook runs.
+- kernelbase on this machine (Windows 10.0.26300.9711): `GetCommandLineW` is `48 8b 05 41 9f 2b 00 c3`
+  and `GetCommandLineA` is `48 8b 05 41 08 2b 00 c3` (`mov rax,[rip+disp32]; ret`); KERNEL32's exports
+  of the same names are `jmp [rip+x]` thunks to them. The pointer each returns sits at rva `0x3ae058`
+  (W) and `0x3ae048` (A), as the `Buffer` of a `UNICODE_STRING` / `ANSI_STRING`: the 8 bytes before
+  each slot hold `Length` = the string's length in bytes (202 and 101 for a 101-character command
+  line) and `MaximumLength` = `Length` + one terminator.
+- RTXLauncher passes `-dxlevel 90 +mat_disable_d3d9ex 1 -nod3d9ex` (section 4).
+
+**How the runtime takes its config layers** (fork `dxvk-remix-gmod`):
+
+- `resolveConfigPaths` (`src/dxvk/rtx_render/rtx_option_layer.cpp:617-627`): when
+  `DXVK_RTX_CONFIG_FILE` (or `DXVK_CONFIG_FILE`) is set and not empty, the runtime reads only the
+  paths it lists, split at commas; `.\rtx.conf` is read only when the variable is unset. So a loader
+  that sets the variable must list the user's root `rtx.conf` itself.
+- `createLayersFromEnvVar` (`:629-647`) makes one layer per listed path, lowest priority first; the
+  last `rtx.conf` layer becomes `s_rtxConfLayer` (`:704-712`), the one the Remix menu saves to. A
+  layer whose file is missing or empty is registered but not merged (`isValid()` is "has options",
+  `rtx_option_layer.h:141`).
+
+**The runtime's files** (`H:\BACKUP_20260815\Modding\dxvk-remix-gmod`):
+
+- `_output` is the complete runtime: 192 files, 1,117,358,408 bytes, built 2026-10-26 23:36, with
+  `usd\` and the build by-products `d3d9.pdb`, `.exp`, `.lib`. Nothing the classic install keeps in
+  `GarrysMod_RTX_c\bin\win64` for the runtime is missing from it.
+- `_CompRelease_x64\src\d3d9\d3d9.dll` (338,675,200 bytes, 2026-10-27 11:32) is the newest build and
+  the same file as `built-A8E39D93-lockfree-options\d3d9.dll`. The `built-*` and `deployed-*` folders
+  hold only `d3d9.dll` and `d3d9.pdb` (140,800,000 bytes for A8E39D93).
+- `d3d9.dll`'s only delay-load import is `amd_fidelityfx_vk.dll`, loaded by bare name; its static
+  imports include the UCRT API sets (`api-ms-win-crt-*`) besides the VC++ runtime of section 2.
+- `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll` and `vulkan-1.dll` are only in System32 on
+  this machine, not in the PoC's or `GarrysMod_RTX_c`'s `bin\win64`; the classic install keeps
+  `amd_fidelityfx_vk.dll` in `bin\win64`.
+- `GarrysMod_RTX_c\bin\win64` holds 77 files (3.63 GB) beyond vanilla: the runtime mixed with
+  backups, PDBs, Jolt, the MMD hotloader, VR files, `NvRemixBridge`, `dxsupport.cfg` and a
+  `debug.log`. A runtime package therefore takes an explicit file set (`_output`), not that folder.
+- `GarrysMod_RTX_c` has the user's `rtx.conf` (161,131 bytes) and `dxvk.conf` (2,610 bytes) in its
+  root, the layers the classic install runs with.
