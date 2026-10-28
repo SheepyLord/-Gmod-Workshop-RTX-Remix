@@ -109,3 +109,39 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
 - Flags used: 0x1 user config, 0x40 directory, 0x200 symlink.
 - Result on 2026-10-27: 2,877 of 2,878 depot files in the field install matched; the exception was
   the user-config `autoexec.cfg`.
+
+## 7. M1 bootstrap measurements (2026-10-27, Codex)
+
+- Export source: `C:\Windows\System32\winmm.dll`, file version
+  `10.0.26100.8875 (WinBuild.160101.0800)`, on Windows build **26300.9711**, display version 26H2
+  (registry `CurrentBuild`, `UBR`, `DisplayVersion`; the legacy `ProductName` says Windows 10 Pro).
+  The standard-library generator measured **181 populated ordinals**, **180 names**, and **one
+  ordinal-only export** (ordinal 2). Inventory: `loader/proxy/generated/exports.json`; generation
+  and build-time coverage check: `loader/proxy/generate_exports.py`.
+- Independent initial C++ test: `covered 181 system ordinals and 180 names`; forwarding calls
+  `timeGetTime`, `timeBeginPeriod(1)`, `timeEndPeriod(1)`, `waveOutGetNumDevs` and
+  `mmsystemGetVersion` passed with distinct system/proxy module handles. The initial synthetic
+  `gmod.exe` test also passed its log-before-main and absent-engine/shader-API/D3D9 assertions.
+  This is synthetic-host evidence, not an enabled PoC result. Test source:
+  `loader/proxy/tests/test_proxy.cpp`.
+- Debug and Release proxy imports measured by `py -3.12 tools/diag/pe_imports.py`: **KERNEL32.dll
+  only**, no static/delay VC++ runtime DLL imports. CMake's static CRT and MASM leaf jumps suffice.
+  Python on PATH is now Miniconda 3.14.6 (without `pefile`); the existing `py -3.12` installation
+  has `pefile`. No packages were downloaded or installed.
+- Baseline PoC map launch (PID 20836, Steam running) reached this ordered sequence:
+  `Map: gm_construct`, `Clientside Lua startup!`, joystick initialization,
+  `Redownloading all lightmaps`, `Thumbs: 58711 => 58770`. The smoke test requires the map and
+  client-Lua markers, then gives post-map output three seconds to flush
+  (`tools/smoke_test.ps1`, `Invoke-GameRun`). It normalises only formatting and the numeric
+  thumbnail allocation counters (`Normalise-Console`). This strict comparison still needs an
+  enabled PoC run; do not assume additional varying lines are harmless.
+- PoC `vpk.exe` and `bspzip.exe` statically import `tier0.dll`; PoC `tier0.dll` imports `WINMM.dll`
+  (`py -3.12 tools/diag/pe_imports.py` on those three files). No-argument baseline runs exit by
+  themselves with codes **1** and **-1**, respectively. Raw stdout/stderr are retained under
+  `out/baseline/`; enabled comparisons remain pending.
+- Windows Defender blocked the initial Debug proxy at 18:09 local time as
+  **Trojan:Win32/Bearfoos.A!ml**, threat id **2147731250**. Subsequent load/copy tests failed with
+  Windows' virus/potentially-unwanted-software error. Evidence: `Get-MpThreatDetection` resources
+  named the Debug build and the `nl-proxy-测试-*` fixture copies; `Get-MpThreat` reported it active.
+  The detection needs human review before further native runtime validation; no antivirus
+  configuration was changed. See [M1-report.md](handover/M1-report.md).

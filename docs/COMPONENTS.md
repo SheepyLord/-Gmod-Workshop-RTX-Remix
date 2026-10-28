@@ -33,6 +33,18 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 | Install / uninstall | `tools/install-loader.ps1`, `tools/uninstall-loader.ps1` | planned (M1/M3) | Copy the bootstrap into an install (PoC by default), and remove everything the journal lists. |
 | In-game smoke test | `tools/smoke_test.ps1` | planned (M1) | Launches the PoC with the bootstrap and checks the logs. |
 
+### M1 implementation additions
+
+The planned bootstrap/install/smoke rows above now have M1 implementations (validation status and
+evidence are in the M1 report when complete):
+
+| Component | Path | Implementation |
+|---|---|---|
+| Inert bootstrap | [`loader/proxy`](../loader/proxy/README.md) | `winmm.dll`; full System32 export forwarding, host/off-switch gate, entry-point hook and guarded log only. Package activation remains M2–M4. |
+| Bootstrap tests | [`loader/proxy/tests`](../loader/proxy/tests/README.md) | `nl_proxy_tests`, static-import host, export-generation and installer CTests. |
+| Bootstrap install/uninstall | [`tools/install-loader.ps1`](../tools/install-loader.ps1.md) | Copies DLL/PDB, records SHA-256, refuses foreign/edited files and Steam-managed roots by default; `-Uninstall` retains state. Journal-based package removal remains M3. |
+| PoC smoke comparison | [`tools/smoke_test.ps1`](../tools/smoke_test.ps1.md) | Five map loads, two tool comparisons, evidence and loader-state restoration. |
+
 ## Outside this repo (used, not owned here)
 
 | Thing | Where | Role |
