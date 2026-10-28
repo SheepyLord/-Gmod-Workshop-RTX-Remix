@@ -51,7 +51,18 @@ python tools\poc_parity.py --evidence out\m5\acceptance\addons restore
   refuses a second `prepare` into the same evidence folder before `restore`.
   Linked mod and add-on folders are left out and listed in `skipped_links`; add-on folders the PoC
   already has in `skipped_addons`.
+- Never writes or removes outside the PoC. Every path a user names (`--native`, the
+  `garrysmod\data\<name>` of `--data`, the `garrysmod\saves\<name>.gms`/`.jpg` of `--save`, the
+  `garrysmod\maps\<map>.bsp` of `--map`) must be a plain relative path. That means no drive, no root,
+  no empty, `.` or `..` component, no `:`, and no component ending in `.` or a space. `prepare`
+  checks them all before it writes anything; a refused value leaves no `parity.json`. A `--map` id
+  must be a number. Right before each write, the target must also resolve, links followed, strictly
+  below the PoC root, so a junction inside the PoC cannot lead a copy out of it. `restore` checks
+  every recorded path the same way, and each recorded backup must be a file in this session's
+  `parity-backup\`. All of them are checked before it touches anything.
 - The map comes out of a plain `.gma` or an LZMA-wrapped `*_legacy.bin` ([RESEARCH.md](../docs/RESEARCH.md)
   section 5) through [`gmapack`](gmapack/gmapack.py.md); scratch under `out\tmp`.
 
 Exit 0 on success, 1 when refused (the reason on stderr).
+
+Tests: [tests/test_poc_parity.py](tests/test_poc_parity.py.md).

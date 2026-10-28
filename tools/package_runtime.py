@@ -163,6 +163,77 @@ def inside(parent, child):
     return child == parent or child.startswith(parent.rstrip('\\/') + os.sep)
 
 
+def private_reason(path):
+    """Why a file looks private or machine-specific, or '' (R1-017). `path` is /-separated: the last
+    component is the file name, every other one a folder."""
+    parts = path.lower().split('/')
+    name = parts[-1]
+    if name == 'user.conf':
+        return "Remix's user.conf, a user's own settings"
+    if name.endswith('.log'):
+        return 'a log'
+    if name.endswith('.env'):
+        return 'an environment file'
+    if name.endswith(('.dmp', '.mdmp')):
+        return 'a crash dump'
+    if 'logs' in parts[:-1]:
+        return 'inside a logs folder'
+    return ''
+
+
+def check_private(files, allowed):
+    """Refuses every file that looks private or machine-specific (private_reason of its package path,
+    or of its source's file name) unless --allow-private names its package path, and refuses an
+    --allow-private that names no such file. `files` maps package paths to sources. Returns
+    {package path: reason} of the files let through."""
+    flagged = {}
+    for rel, source in files.items():
+        reason = private_reason(rel) or private_reason(os.path.basename(source))
+        if reason:
+            flagged[rel] = reason
+    wanted = {name.replace('\\', '/').lower(): name for name in allowed}
+    refused = sorted((rel for rel in flagged if rel.lower() not in wanted), key=str.lower)
+    if refused:
+        raise PackageError('refusing %d file(s) that look private or machine-specific; package one anyway with '
+                           '--allow-private <package path>:\n%s' % (
+                               len(refused), '\n'.join('  %s (%s)' % (rel, flagged[rel]) for rel in refused)))
+    known = {rel.lower() for rel in flagged}
+    unknown = [name for key, name in wanted.items() if key not in known]
+    if unknown:
+        raise PackageError('--allow-private %s: no file of the package that looks private has this package path'
+                           % ', '.join(unknown))
+    return flagged
+
+
+def inventory_paths(outputs):
+    """<output>.inventory.txt beside each output; refuses one that is in the way."""
+    paths = [output + '.inventory.txt' for output in outputs]
+    for path in paths:
+        if os.path.lexists(path) and (is_link(path) or not os.path.isfile(path)):
+            raise PackageError('%s is in the way of the inventory: not a file' % path)
+        if os.path.normcase(path) in {os.path.normcase(o) for o in outputs}:
+            raise PackageError('%s is both an output and an inventory' % path)
+    return paths
+
+
+def write_inventories(paths, title, listed, sources, manifest, notes):
+    """Writes the package inventory to each path: a title line, a header, then one tab-separated line
+    per packaged file (size, SHA-256, package path, source, note), native/manifest.json last."""
+    lines = ['# ' + title, 'size\tsha256\tpath\tsource\tnote']
+    for rel in sorted(listed, key=str.lower):
+        lines.append('%d\t%s\t%s\t%s\t%s' % (listed[rel]['size'], listed[rel]['sha256'], rel, sources[rel],
+                                             notes.get(rel, '')))
+    lines.append('%d\t%s\tnative/manifest.json\t(written by the packager)\t' % (
+        len(manifest), hashlib.sha256(manifest).hexdigest()))
+    text = '\n'.join(lines) + '\n'
+    for path in paths:
+        temporary = path + '.tmp-%d' % os.getpid()
+        with open(temporary, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(text)
+        os.replace(temporary, path)
+    return paths
+
+
 def build(args):
     runtime = os.path.abspath(args.runtime)
     if not os.path.isdir(runtime):
@@ -183,6 +254,7 @@ def build(args):
             raise PackageError('--out %s is not empty (--force replaces an earlier package folder)' % out)
     if gma and os.path.lexists(gma) and not args.force:
         raise PackageError('--gma %s exists (use --force)' % gma)
+    inventories = inventory_paths([o for o in (out, gma) if o])
 
     files = {'runtime/' + rel: source for rel, source in runtime_files(runtime, args.with_pdbs).items()}
     if args.d3d9_from:
@@ -208,6 +280,7 @@ def build(args):
         if rel.lower() in folded:
             raise PackageError('%s and %s differ only in case' % (folded[rel.lower()], rel))
         folded[rel.lower()] = rel
+    allowed = check_private({'native/payload/' + rel: source for rel, source in files.items()}, args.allow_private)
     env = parse_env(args.env)
     version = args.version or default_version(files[entry])
     if not SEMVER.match(version):
@@ -257,6 +330,7 @@ def build(args):
             'd3d9': files[entry],
             'd3d9_sha256': listed['native/payload/' + entry]['sha256'],
             'pdbs': bool(args.with_pdbs),
+            'allowed_private': sorted(allowed, key=str.lower),
             'folder': out,
             'gma': gma,
         }
@@ -265,6 +339,11 @@ def build(args):
         if out:
             replace_folder(work, out)
             work = None
+        summary['inventory'] = write_inventories(
+            inventories, '%s %s: %d files and native/manifest.json, %s bytes; written by package_runtime.py' % (
+                args.id, version, len(listed), format(summary['bytes'], ',')),
+            listed, {'native/payload/' + rel: source for rel, source in files.items()}, text,
+            {rel: 'allowed with --allow-private: ' + reason for rel, reason in allowed.items()})
         return summary
     finally:
         if work and os.path.isdir(work):
@@ -311,6 +390,9 @@ def main(argv=None):
     ap.add_argument('--insecure', action='store_true',
                     help='add -insecure: patch sets (M5) apply only in insecure sessions, as the classic RTX launch line')
     ap.add_argument('--no-system-vulkan', action='store_true', help="do not ask for System32's vulkan-1.dll first")
+    ap.add_argument('--allow-private', action='append', default=[], metavar='PATH',
+                    help='package this file although it looks private or machine-specific: its package path, '
+                         'as the refusal lists it (repeatable)')
     ap.add_argument('--force', action='store_true', help='replace an earlier package folder or archive')
     ap.add_argument('--json', action='store_true', help='print the summary as JSON')
     args = ap.parse_args(argv)
@@ -326,9 +408,13 @@ def main(argv=None):
                                                       format(summary['bytes'], ','), '' if summary['pdbs'] else ' (no PDBs)'))
         print('  d3d9.dll   %s' % summary['d3d9'])
         print('  manifest   sha256 %s' % summary['manifest_sha256'])
+        for rel in summary['allowed_private']:
+            print('  private    %s (allowed with --allow-private)' % rel)
         for key in ('folder', 'gma'):
             if summary[key]:
                 print('  %-10s %s' % (key, summary[key]))
+        for path in summary['inventory']:
+            print('  inventory  %s' % path)
     return 0
 
 

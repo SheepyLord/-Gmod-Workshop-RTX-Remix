@@ -19,8 +19,8 @@ import stat
 import subprocess
 import sys
 
-from package_runtime import (GMAPACK, ID, SEMVER, PackageError, copy_hashed, inside, is_link, path_problem,
-                             replace_folder)
+from package_runtime import (GMAPACK, ID, SEMVER, PackageError, check_private, copy_hashed, inside, inventory_paths,
+                             is_link, path_problem, replace_folder, write_inventories)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -310,6 +310,7 @@ def build(args):
             raise PackageError('--out %s is not empty (--force replaces an earlier package folder)' % out)
     if gma and os.path.lexists(gma) and not args.force:
         raise PackageError('--gma %s exists (use --force)' % gma)
+    inventories = inventory_paths([o for o in (out, gma) if o])
 
     files = {}  # package path -> source file
     roots = []  # (root_files path, kind)
@@ -385,6 +386,7 @@ def build(args):
         if rel.lower() in folded:
             raise PackageError('%s and %s differ only in case' % (folded[rel.lower()], rel))
         folded[rel.lower()] = rel
+    allowed = check_private(files, args.allow_private)
     sets = [] if args.no_patch_sets else patch_sets()
     cvars, cvar_report = session_cvars(cvars_source) if cvars_source else ({}, None)
     used = {kind for _, kind in roots} | {'module-override'} | ({'patch-set'} if sets else set())
@@ -448,6 +450,7 @@ def build(args):
             'session_cvars': cvar_report,
             'junk': sorted((shown(path, tree) for path in junk), key=str.lower),
             'left_out': left_out,
+            'allowed_private': sorted(allowed, key=str.lower),
             'repo': repo,
             'folder': out,
             'gma': gma,
@@ -457,6 +460,10 @@ def build(args):
         if out:
             replace_folder(work, out)
             work = None
+        summary['inventory'] = write_inventories(
+            inventories, '%s %s: %d files and native/manifest.json, %s bytes; written by package_fixes.py' % (
+                args.id, version, len(listed), format(summary['bytes'], ',')),
+            listed, files, text, {rel: 'allowed with --allow-private: ' + reason for rel, reason in allowed.items()})
         return summary
     finally:
         if work and os.path.isdir(work):
@@ -516,10 +523,14 @@ def print_summary(s):
         print('  cvars      none (--no-session-cvars)')
     print('  left out   %d files of the fixes\' garrysmod folder, %d junk files (--json lists them)'
           % (len(s['left_out']), len(s['junk'])))
+    for rel in s['allowed_private']:
+        print('  private    %s (allowed with --allow-private)' % rel)
     print('  manifest   sha256 %s' % s['manifest_sha256'])
     for key in ('folder', 'gma'):
         if s[key]:
             print('  %-10s %s' % (key, s[key]))
+    for path in s['inventory']:
+        print('  inventory  %s' % path)
 
 
 def main(argv=None):
@@ -540,6 +551,9 @@ def main(argv=None):
     ap.add_argument('--id', default=DEFAULT_ID, help='package id (default %s)' % DEFAULT_ID)
     ap.add_argument('--version', help='package version (default 0.0.0-dev.<newest input time>+<module hash>)')
     ap.add_argument('--name', help='display name')
+    ap.add_argument('--allow-private', action='append', default=[], metavar='PATH',
+                    help='package this file although it looks private or machine-specific: its package path, '
+                         'as the refusal lists it (repeatable)')
     ap.add_argument('--force', action='store_true', help='replace an earlier package folder or archive')
     ap.add_argument('--json', action='store_true', help='print the summary as JSON')
     args = ap.parse_args(argv)
