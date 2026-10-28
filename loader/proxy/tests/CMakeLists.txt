@@ -8,7 +8,7 @@ target_compile_definitions(nl_proxy_tests PRIVATE
   NL_PROXY_SCRATCH_ROOT="${CMAKE_CURRENT_BINARY_DIR}/scratch")
 
 # The SDK import library gives this fixture a real static WINMM.dll import.
-add_executable(nl_proxy_host host.cpp activation_probe.cpp)
+add_executable(nl_proxy_host host.cpp activation_probe.cpp session_probe.cpp)
 target_link_libraries(nl_proxy_host PRIVATE nl_build_options nl_core winmm)
 add_dependencies(nl_proxy_tests nl_winmm nl_proxy_host)
 add_test(NAME nl_proxy_tests COMMAND nl_proxy_tests)
@@ -39,3 +39,22 @@ add_test(NAME nl_activation_integration
     --runtime "$<TARGET_FILE_DIR:nl_m4_runtime>" --nlctl "$<TARGET_FILE:nlctl>"
     --scratch "${PROJECT_SOURCE_DIR}/out/tmp/m4-activation-$<CONFIG>" --config "$<CONFIG>")
 set_tests_properties(nl_activation_integration PROPERTIES TIMEOUT 240)
+
+# M5: a fake engine.dll whose marker a patch set rewrites, a stdshader_dx6.dll to override, and a
+# filesystem_stdio.dll that lists folders the way GMod mounts add-ons (ADR 0013).
+add_library(nl_m5_engine SHARED fixture_engine.cpp)
+add_library(nl_m5_shader SHARED fixture_shader.cpp)
+add_library(nl_m5_filesystem SHARED fixture_filesystem.cpp)
+foreach(target IN ITEMS nl_m5_engine nl_m5_shader nl_m5_filesystem)
+  target_link_libraries(${target} PRIVATE nl_build_options)
+  set_target_properties(${target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/m5")
+endforeach()
+set_target_properties(nl_m5_engine PROPERTIES OUTPUT_NAME engine)
+set_target_properties(nl_m5_shader PROPERTIES OUTPUT_NAME stdshader_dx6)
+set_target_properties(nl_m5_filesystem PROPERTIES OUTPUT_NAME filesystem_stdio)
+add_test(NAME nl_session_integration
+  COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/session_integration.py"
+    --repo "${PROJECT_SOURCE_DIR}" --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>"
+    --runtime "$<TARGET_FILE_DIR:nl_m4_runtime>" --fixtures "$<TARGET_FILE_DIR:nl_m5_engine>"
+    --scratch "${PROJECT_SOURCE_DIR}/out/tmp/m5-session-$<CONFIG>" --config "$<CONFIG>")
+set_tests_properties(nl_session_integration PROPERTIES TIMEOUT 240)

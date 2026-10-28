@@ -81,6 +81,9 @@ RootArea root_area(std::string_view safe_path) {
   if (below("rtx-remix/mods")) return RootArea::rtx_remix_mods;
   if (below("garrysmod/lua/bin")) return RootArea::lua_bin;
   if (below("garrysmod/cfg")) return RootArea::cfg;
+  if (below("garrysmod/addons")) return RootArea::lua_addons;
+  // The loader's own reports live in garrysmod/data/native-loader: never a package's.
+  if (below("garrysmod/data") && !within(safe_path, "garrysmod/data/native-loader")) return RootArea::data;
   return RootArea::none;
 }
 
@@ -89,6 +92,8 @@ const char* area_name(RootArea area) {
     case RootArea::rtx_remix_mods: return "rtx-remix/mods";
     case RootArea::lua_bin: return "garrysmod/lua/bin";
     case RootArea::cfg: return "garrysmod/cfg";
+    case RootArea::lua_addons: return "garrysmod/addons";
+    case RootArea::data: return "garrysmod/data";
     case RootArea::none: break;
   }
   return "none";

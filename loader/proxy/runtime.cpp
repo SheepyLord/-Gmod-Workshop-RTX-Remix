@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "modules.h"
 #include "nl/fs.h"
 #include "nl/paths.h"
 #include <algorithm>
@@ -26,6 +27,14 @@ bool same_path(const std::filesystem::path& a, const std::filesystem::path& b) {
   const auto right = b.lexically_normal().make_preferred();
   return CompareStringOrdinal(left.c_str(), -1, right.c_str(), -1, TRUE) == CSTR_EQUAL;
 }
+// Writes `text` to `relative` unless the file already holds exactly that (no-op starts write nothing).
+void write_if_changed(const std::filesystem::path& root, std::string_view relative, const std::string& text) {
+  fs::refuse_links(root, relative);
+  const auto path = fs::join(root, relative);
+  const auto info = fs::stat(path);
+  if (info.exists && !info.directory && info.size == text.size() && fs::read_file(path, text.size() + 1) == text) return;
+  fs::write_atomic(fs::win32(), path, text);
+}
 std::string options(const std::vector<std::string>& args) {
   std::string result;
   for (const auto& arg : args) { if (!result.empty()) result += ' '; result += arg; }
@@ -40,6 +49,10 @@ double RuntimeActivation::elapsed_ms() const noexcept {
 bool RuntimeActivation::rollback() noexcept {
   if (committed_) return true;
   bool ok = true;
+  if (hooks_installed_) {
+    modules::uninstall();
+    hooks_installed_ = false;
+  }
   if (runtime_) { if (FreeLibrary(runtime_)) runtime_ = nullptr; else ok = false; }
   if (directory_changed_) { if (SetDllDirectoryW(nullptr)) directory_changed_ = false; else ok = false; }
   if (vulkan_) { if (FreeLibrary(vulkan_)) vulkan_ = nullptr; else ok = false; }
@@ -60,8 +73,46 @@ void RuntimeActivation::commit() noexcept {
   committed_ = true;  // retain our module references and process settings for the game's lifetime
 }
 
+std::vector<std::string> session_cvars(const std::filesystem::path& root, bool rtx, const session::Values& cvars,
+                                       status::Session& report) {
+  fs::refuse_links(root, session::kRecordPath);
+  const auto record_path = fs::join(root, session::kRecordPath);
+  std::optional<session::Record> record;
+  if (fs::stat(record_path).exists) record = session::parse_record(fs::read_file(record_path, 1 << 20));
+  fs::refuse_links(root, session::kConfigCfg);
+  const auto config_path = fs::join(root, session::kConfigCfg);
+  std::map<std::string, std::string> config;
+  if (fs::stat(config_path).exists) config = session::parse_config(fs::read_file(config_path, 8 << 20));
+  const auto plan = session::plan(rtx, cvars, record, config);
+  const auto write_cfg = [&](std::string_view relative, const session::Values& values, std::string_view purpose) {
+    if (!session::ours_or_absent(fs::join(root, relative))) {
+      throw std::runtime_error(std::string(relative) + " exists and was not written by the loader");
+    }
+    write_if_changed(root, relative, session::cfg_text(values, purpose));
+  };
+  if (plan.write_session) write_cfg(session::kSessionCfg, plan.session, "RTX session");
+  if (plan.write_restore) write_cfg(session::kRestoreCfg, plan.restore, "restore after RTX");
+  if (plan.record.empty()) {
+    if (fs::stat(record_path).exists) fs::win32().remove_file(record_path);
+  } else {
+    write_if_changed(root, session::kRecordPath, session::serialize(session::Record{plan.record, false}));
+  }
+  report.cvars = plan.write_session ? plan.session.size() : 0;
+  report.cvars_exec = plan.write_session ? "nativeloader_session.cfg" : "";
+  report.recorded = plan.record.size();
+  report.restore_values = plan.write_restore ? plan.restore.size() : 0;
+  report.restore_exec = plan.write_restore ? "nativeloader_restore.cfg" : "";
+  return plan.exec_args;
+}
+
+void mark_restore_issued(const std::filesystem::path& root) {
+  auto record = session::parse_record(fs::read_file(fs::join(root, session::kRecordPath), 1 << 20));
+  record.restore_issued = true;
+  write_if_changed(root, session::kRecordPath, session::serialize(record));
+}
+
 bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::Generation& generation,
-                              status::Activation& report) {
+                              status::Activation& report, status::Session& session) {
   began_ = std::chrono::steady_clock::now();
   started_ = true;
   const auto& plan = report.plan;
@@ -108,6 +159,7 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   if (runtime == generation.packages.end()) return fail("runtime package is absent from the committed generation");
   for (const auto& layer : runtime->remix->rtx_conf_layers) check_file(runtime->payload + '/' + layer);
   for (const auto& layer : runtime->remix->dxvk_conf_layers) check_file(runtime->payload + '/' + layer);
+  for (const auto& item : plan.module_overrides) check_file(item.file);
 
   // Capture every previous value and allocate every new value before applying the first setting.
   environment_.reserve(plan.env.size());
@@ -123,12 +175,23 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
       return fail("SetEnvironmentVariableW failed", error);
     }
   }
-  command_line_ = cmdline::append_arguments(plan.launch_args);
+  // Session console variables (M5): record the user's values, write the session cfg, +exec it. A
+  // failure here costs the variables, not the session.
+  std::vector<std::string> arguments = plan.launch_args;
+  if (!plan.session_cvars.empty()) {
+    try {
+      const auto exec = session_cvars(root, true, plan.session_cvars, session);
+      arguments.insert(arguments.end(), exec.begin(), exec.end());
+    } catch (const std::exception& error) {
+      session.notes.push_back(std::string("session console variables not applied: ") + error.what());
+    }
+  }
+  command_line_ = cmdline::append_arguments(arguments);
   if (!command_line_.ok) {
     report.fallback_launch_options = options(plan.launch_args);
     return fail("command-line swap refused: " + command_line_.detail);
   }
-  if (!plan.launch_args.empty()) touched_ = true;
+  if (!arguments.empty()) touched_ = true;
   if (plan.prefer_system_vulkan) {
     const auto path = system_directory() / L"vulkan-1.dll";
     vulkan_ = LoadLibraryW(path.c_str());
@@ -136,9 +199,48 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     report.vulkan_path = fs::utf8(path);
     touched_ = true;
   }
-  directory_changed_ = true;
-  touched_ = true;
-  if (!SetDllDirectoryW(dll.parent_path().c_str())) { const auto error = GetLastError(); return fail("SetDllDirectoryW failed", error); }
+  // Late bare-name loads of the runtime (its delay-loaded FSR DLL, CUDA's nvrtc) find its folder
+  // through PATH: first among the PATH entries, after the standard search. SetDllDirectoryW would
+  // also take the working directory out of the search, and the RTX fixes look up their engine
+  // modules as "bin/win64/<name>.dll" relative to it (RESEARCH.md section 13).
+  {
+    const auto previous = activate::environment_value("PATH");
+    std::wstring value = dll.parent_path().native();
+    if (previous && !previous->empty()) value += L";" + wide(*previous);
+    environment_.push_back({L"PATH", value, previous ? std::optional(wide(*previous)) : std::nullopt, true});
+    touched_ = true;
+    if (!SetEnvironmentVariableW(L"PATH", value.c_str())) { const auto error = GetLastError(); return fail("PATH update failed", error); }
+  }
+
+  // Patch sets and module overrides (M5) for the engine DLLs that load after this point.
+  for (const auto& set : plan.patch_sets) session.patches += set.set.patches.size();
+  if (!plan.patch_sets.empty() || !plan.module_overrides.empty()) {
+    modules::Setup setup;
+    setup.root = std::filesystem::absolute(root);
+    session.patches_allowed = !plan.patch_sets.empty() &&
+        (!plan.patch_sets_need_insecure || cmdline::has_arg(GetCommandLineW(), L"-insecure"));
+    if (session.patches_allowed) {
+      for (const auto& set : plan.patch_sets) setup.patch_sets.push_back(set.set);
+    } else if (!plan.patch_sets.empty()) {
+      session.notes.push_back("patch sets not applied: they need -insecure (config patch_sets.require_insecure)");
+    }
+    for (const auto& item : plan.module_overrides) {
+      setup.overrides.emplace_back(item.module, std::filesystem::absolute(fs::join(root, item.file)).lexically_normal());
+      session.overrides.push_back(item.module);
+    }
+    setup.session_json_base = "  \"process_id\": " + std::to_string(GetCurrentProcessId()) + ",\n";
+    std::string error;
+    if (!setup.patch_sets.empty() || !setup.overrides.empty()) {
+      if (!modules::install(std::move(setup), error)) return fail("module hooks: " + error);
+      hooks_installed_ = true;
+      session.hooks = "installed";
+    } else {
+      session.hooks = "not needed";
+    }
+  } else {
+    session.hooks = "not needed";
+  }
+  for (const auto& note : plan.notes) session.notes.push_back(note);
   runtime_ = LoadLibraryExW(dll.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
   if (!runtime_) {
     const DWORD error = GetLastError();
@@ -160,7 +262,7 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   report.outcome = "active";
   report.reason = plan.reason;
   report.environment_set = plan.env;
-  report.arguments_added = plan.launch_args;
+  report.arguments_added = arguments;
   report.elapsed_ms = elapsed_ms();
   return true;
 }

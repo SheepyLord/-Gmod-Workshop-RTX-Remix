@@ -49,6 +49,9 @@ The VC++ 2015-2022 runtime that `d3d9.dll` imports is not packaged; it comes fro
   version is `0.0.0-dev.<UTC build time of d3d9.dll, yyyymmddhhmm>+<first 8 digits of its SHA-256>`,
   so two builds never share a version, and the same build always gets the same one.
 - `--no-launch-args`, `--no-system-vulkan`: leave those out of the manifest.
+- `--insecure`: add `-insecure` to the launch arguments. In-memory patch sets (M5, the fixes package)
+  apply only in insecure sessions unless `config.json` says otherwise, as the classic RTX launch line
+  does; secure (VAC) servers then cannot be joined in RTX sessions.
 - `--force`: replace an earlier package folder (only one that holds `native/manifest.json`) or archive.
 - `--json`: print the summary as JSON (`id`, `version`, `files`, `bytes`, `manifest_sha256`, `d3d9`,
   `d3d9_sha256`, `pdbs`, `folder`, `gma`).

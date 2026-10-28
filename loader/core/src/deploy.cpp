@@ -637,6 +637,8 @@ Planned work_out(const Run& run, const planner::Decision& decision, std::size_t 
   p.record.source = discovery::source_name(decision.item.candidate.source);
   p.record.location = fs::utf8(decision.item.candidate.location);
   p.record.remix = m.remix;
+  p.record.session = m.session;
+  p.record.requires_remix = m.requires_remix;
   bool has_payload = false;
   for (const auto& file : m.files) {
     if (paths::within(file.first, "native/payload")) {

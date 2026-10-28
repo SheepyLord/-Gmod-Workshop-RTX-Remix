@@ -34,7 +34,7 @@ struct Version {
 std::optional<Version> parse_version(std::string_view text);
 int compare(const Version& a, const Version& b);  // SemVer precedence: negative, 0 or positive
 
-enum class Kind { remix_runtime, lua_binary_module, root_files };
+enum class Kind { remix_runtime, lua_binary_module, root_files, lua_addon, patch_set, module_override };
 const char* kind_name(Kind kind);
 
 enum class Policy { replace_owned, create_only };
@@ -60,6 +60,37 @@ struct Remix {
   bool prefer_system_vulkan_loader = false;
 };
 
+// What a package changes in RTX sessions only (M5, ADR 0010): applied when a runtime activates.
+struct Patch {
+  std::string name;     // [a-z0-9_]{1,64}, unique in the package
+  std::string find;     // lowercase hex byte pairs or "??", 1-256 bytes; must match exactly once
+  std::size_t offset = 0;
+  std::string replace;  // lowercase hex, written at `offset` inside the matched bytes
+};
+struct PatchSet {
+  std::string module;  // DLL base name, lowercase: engine.dll
+  std::vector<Patch> patches;
+};
+struct ModuleOverride {
+  std::string module;  // DLL base name the game loads from bin/win64: stdshader_dx6.dll
+  std::string file;    // relative to native/payload/; same file name as `module`
+};
+struct Session {
+  std::vector<PatchSet> patch_sets;
+  std::vector<ModuleOverride> module_overrides;
+  std::vector<std::pair<std::string, std::string>> cvars;  // console variable assignments
+  bool empty() const noexcept { return patch_sets.empty() && module_overrides.empty() && cvars.empty(); }
+};
+
+// Checks used by the manifest and the journal.
+bool valid_module_name(std::string_view name);
+bool valid_cvar_name(std::string_view name);
+bool valid_cvar_value(std::string_view value);
+// Parses a `find` pattern: one entry per byte, -1 for a wildcard. Empty if invalid.
+std::vector<int> parse_pattern(std::string_view text);
+// Parses `replace` bytes. Empty if invalid.
+std::vector<std::uint8_t> parse_hex(std::string_view text);
+
 struct Manifest {
   std::string id;
   std::string name;
@@ -69,6 +100,8 @@ struct Manifest {
   std::vector<std::pair<std::string, FileInfo>> files;  // package path -> info, document order
   std::optional<Remix> remix;
   std::vector<RootFile> root_files;
+  Session session;  // patch_sets, module_overrides, session_cvars
+  bool requires_remix = false;  // its add-on folders are hidden from sessions without a runtime (ADR 0013)
   bool has(Kind kind) const noexcept;
 };
 

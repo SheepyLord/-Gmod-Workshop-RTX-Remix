@@ -132,6 +132,36 @@ The status file describes startup activation, not later renderer health. Runtime
 actual path tracing are verified separately using Remix logs and the user's on-screen confirmation.
 Uninstall removes the generated status file and its data folder when empty.
 
+## RTX-session extras (M5)
+
+The runtime alone does not render like the classic RTX install: that install also patches four
+engine DLLs on disk, replaces `stdshader_dx6.dll` with fixed-function ports, runs the RTX console
+variables from its `autoexec.cfg`, and carries the fixes' Lua add-ons and binary modules. The loader
+does each without touching Steam's files and only in sessions where a runtime activates
+([ADR 0010](decisions/0010-rtx-session-extras.md), [ADR 0011](decisions/0011-lua-addon-folders.md)):
+
+```
+start-up (RTX on)   record the user's archived values of the session variables (config.cfg)
+                    write cfg/nativeloader_session.cfg; add +exec nativeloader_session.cfg
+                    register the DLL-load watcher (LdrRegisterDllNotification), hook the game's
+                    LoadLibrary* imports
+engine DLL mapped   apply its patch sets (pattern exactly once; -insecure sessions); hook its imports
+stdshader_dx6 load  filesystem_stdio's LoadLibraryExA(<root>\bin\win64\stdshader_dx6.dll) loads the
+                    package's copy instead
+start-up (RTX off)  if values were recorded: write cfg/nativeloader_restore.cfg, +exec it, once;
+                    if a package is marked requires_remix: register the watcher for its add-ons
+filesystem_stdio    (RTX off) its FindFirstFile*/FindNextFile* imports are hooked; searches of
+  mapped            <root>\garrysmod\addons skip that package's add-on folders, so GMod does not
+                    mount them (ADR 0013)
+```
+
+The fixes' Lua add-ons, binary modules, Remix mods and seed data are ordinary root files of the
+fixes package (`garrysmod/addons/<addon>`, `garrysmod/lua/bin`, `rtx-remix/mods`,
+`garrysmod/data/<folder>`); [`package_fixes.py`](../tools/package_fixes.py.md) builds it from the
+fixes repo and marks it `requires_remix`, so its add-ons stay out of RTX-off sessions without any
+file being moved ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)). Results land in
+`garrysmod/data/native-loader/session.json`, which the Lua companion prints.
+
 ## Open questions (tracked in the roadmap)
 
 - Whether `stdshader_dx6.dll` loads by bare name (preload works) or full path (needs a redirect or a

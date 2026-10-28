@@ -24,6 +24,8 @@ REPO = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod_PoC")
 FIELD_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
 MAP_MARKER = re.compile(r"(?m)^Clientside Lua startup!\s*$")
+MOUNT_MARKER = re.compile(r"(?m)^NL_SESSION_MOUNT true")
+EYE_MARKER = re.compile(r"(?m)^NL_SESSION_EYE ")
 
 
 class Failure(Exception):
@@ -43,10 +45,12 @@ def write_json(path: Path, value) -> None:
     os.replace(temporary, path)
 
 
-def read_shared(path: Path) -> str:
-    """Reads a file the game may hold open for writing (Python opens with read/write sharing)."""
+def read_shared(path: Path, offset: int = 0) -> str:
+    """Reads a file the game may hold open for writing (Python opens with read/write sharing), from a
+    byte offset."""
     try:
         with open(path, "rb") as handle:
+            handle.seek(offset)
             return handle.read().decode("utf-8", "replace")
     except FileNotFoundError:
         return ""
@@ -251,48 +255,90 @@ def screenshot(hwnd: int, destination: Path) -> dict:
             "mean_rgb": [round(value, 1) for value in mean]}
 
 
-# ---------------------------------------------------------------- a normal quit through RCON
+# ---------------------------------------------------------------- console text through WM_COPYDATA
 
-def rcon(port: int, password: str, command: str, timeout: float = 5.0) -> str:
-    """Runs one console command through Source's TCP remote console on this machine. GMod blocks
-    "quit" from Lua, so this is how the driver ends a session normally (config written, logs closed)."""
-    import socket
-    import struct
+# Source runs the payload of a WM_COPYDATA message sent to its "Valve001" window as console text (the
+# mechanism behind -hijack). It works in single-player, unlike the TCP remote console, and "quit" this
+# way ends the session normally. GMod refuses "quit" from Lua.
+WM_COPYDATA = 0x004A
+SMTO_NORMAL = 0x0000
 
-    def packet(request: int, kind: int, body: str) -> bytes:
-        data = struct.pack("<ii", request, kind) + body.encode("ascii") + b"\x00\x00"
-        return struct.pack("<i", len(data)) + data
 
-    def receive(sock) -> tuple[int, int, str]:
-        header = b""
-        while len(header) < 4:
-            chunk = sock.recv(4 - len(header))
-            if not chunk:
-                raise ConnectionError("remote console closed the connection")
-            header += chunk
-        (size,) = struct.unpack("<i", header)
-        data = b""
-        while len(data) < size:
-            chunk = sock.recv(size - len(data))
-            if not chunk:
-                raise ConnectionError("remote console closed the connection")
-            data += chunk
-        request, kind = struct.unpack("<ii", data[:8])
-        return request, kind, data[8:-2].decode("utf-8", "replace")
+class COPYDATASTRUCT(ctypes.Structure):
+    _fields_ = [("dwData", ctypes.c_size_t), ("cbData", wintypes.DWORD), ("lpData", ctypes.c_void_p)]
 
-    with socket.create_connection(("127.0.0.1", port), timeout=timeout) as sock:
-        sock.sendall(packet(1, 3, password))  # SERVERDATA_AUTH
-        while True:
-            request, kind, _ = receive(sock)
-            if kind == 2:  # SERVERDATA_AUTH_RESPONSE
-                if request == -1:
-                    raise PermissionError("remote console refused the password")
-                break
-        sock.sendall(packet(2, 2, command))  # SERVERDATA_EXECCOMMAND
-        try:
-            return receive(sock)[2]
-        except (OSError, ConnectionError):
-            return ""  # "quit" closes the connection before answering
+
+user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, ctypes.c_void_p, wintypes.UINT,
+                                       wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
+
+
+def console_window(pid: int) -> int | None:
+    found = []
+
+    def visit(hwnd, _):
+        owner = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+        if owner.value == pid:
+            name = ctypes.create_unicode_buffer(64)
+            user32.GetClassNameW(hwnd, name, 64)
+            if name.value == "Valve001":
+                found.append(hwnd)
+        return True
+
+    user32.EnumWindows(WNDENUMPROC(visit), 0)
+    return found[0] if found else None
+
+
+def console(hwnd: int, command: str, attempts: int = 6) -> bool:
+    payload = command.encode("utf-8") + b"\0"
+    buffer = ctypes.create_string_buffer(payload, len(payload))
+    data = COPYDATASTRUCT(0, len(payload), ctypes.cast(buffer, ctypes.c_void_p))
+    result = ctypes.c_size_t(0)
+    for attempt in range(attempts):
+        # Loading a map, or the RTX fixes reloading models after it, can stall the message loop for
+        # many seconds; that is not a hang, so wait for it (not SMTO_ABORTIFHUNG, which gives up at once).
+        if user32.SendMessageTimeoutW(hwnd, WM_COPYDATA, 0, ctypes.byref(data), SMTO_NORMAL, 10000, ctypes.byref(result)):
+            return True
+        if attempt + 1 < attempts:
+            time.sleep(3)
+    return False
+
+
+def client_lua(hwnd: int, root: Path, name: str, code: str) -> bool:
+    """Runs `code` on the client: written to garrysmod/data/nl_session/<name>.txt (Source splits console
+    text at ; and line breaks, so only a short loader goes through the console)."""
+    folder = root / "garrysmod" / "data" / "nl_session"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / f"{name}.txt").write_text(code, encoding="utf-8")
+    return console(hwnd, f'lua_run_cl RunString(file.Read("nl_session/{name}.txt","DATA"),"nl_session_{name}")')
+
+
+def mount_lua(item: str) -> str:
+    """Client Lua that mounts one installed Workshop item (a legacy item comes back decompressed)."""
+    return (f'steamworks.DownloadUGC("{item}", function(path) print("NL_SESSION_UGC " .. tostring(path)) '
+            'if path then print("NL_SESSION_MOUNT " .. tostring(game.MountGMA(path))) end end)\n')
+
+
+def camera_lua(camera: list[float] | None, hide_hud: bool) -> str:
+    code = ""
+    if camera:
+        x, y, z, pitch, yaw, roll = camera[:6]
+        fov = camera[6] if len(camera) > 6 else 75
+        code += (f'hook.Add("CalcView","nl_session",function() return {{origin=Vector({x},{y},{z}),'
+                 f'angles=Angle({pitch},{yaw},{roll}),fov={fov},drawviewer=false}} end)\n')
+    if hide_hud:
+        # Also close Derma frames (add-ons' notices), now and for a while, so nothing covers the frame.
+        code += ('hook.Add("HUDShouldDraw","nl_session",function() return false end)\n'
+                 'hook.Add("PreDrawViewModel","nl_session",function() return true end)\n'
+                 'local function nl_close() for _, p in ipairs(vgui.GetWorldPanel():GetChildren()) do '
+                 'if IsValid(p) and p:IsVisible() and (p.GetTitle or (p.IsModal and p:IsModal())) then p:Remove() end end '
+                 'gui.EnableScreenClicker(false) end\n'
+                 'nl_close() timer.Create("nl_session_close", 0.5, 0, nl_close)\n')
+    # Where the player's own view is, for pinning another install to the same camera.
+    code += ('local nl_ply = LocalPlayer() if IsValid(nl_ply) then local e, a = nl_ply:EyePos(), nl_ply:EyeAngles() '
+             'print(string.format("NL_SESSION_EYE %.3f,%.3f,%.3f,%.3f,%.3f,%.3f", e.x, e.y, e.z, a.p, a.y, a.r)) end\n')
+    return code
 
 
 # ---------------------------------------------------------------- steps
@@ -317,7 +363,8 @@ def step_install(args) -> dict:
     root = Path(args.root)
     if game_processes(root):
         raise Failure("a game from this install is running")
-    result = powershell(REPO / "tools" / "install-loader.ps1", "-GameRoot", str(root), "-Config", args.config)
+    result = powershell(REPO / "tools" / "install-loader.ps1", "-GameRoot", str(root), "-Config", args.config,
+                        *(["-AllowSteamManaged"] if args.allow_steam_managed else []))
     if result.returncode != 0:
         raise Failure("install-loader.ps1 failed: " + (result.stderr or result.stdout)[-2000:])
     config = write_config(root, args.allow_local, args.allow_dev, args.allow_workshop, args.remix == "on", args.require_insecure == "yes")
@@ -342,44 +389,106 @@ def step_run(args) -> dict:
     evidence.mkdir(parents=True, exist_ok=True)
     if game_processes(root):
         raise Failure("a game from this install is already running")
-    console = root / "garrysmod" / "console.log"
-    if console.exists():
-        shutil.move(str(console), str(evidence / "console-before-run.log"))
+    console_log = root / "garrysmod" / "console.log"
+    # A reference install or one Steam manages is the user's: its console.log is read from where it
+    # ends now, never moved. The PoC's is moved into the evidence first.
+    keep_log = args.reference or args.allow_steam_managed
+    offset = console_log.stat().st_size if (keep_log and console_log.exists()) else 0
+    if not keep_log and console_log.exists():
+        shutil.move(str(console_log), str(evidence / "console-before-run.log"))
     remix_log = root / "rtx-remix" / "logs" / "remix-dxvk.log"
     remix_before = remix_log.stat().st_mtime if remix_log.exists() else None
-    password = os.urandom(8).hex()
     arguments = ["-game", "garrysmod", "-console", "-windowed", "-w", str(args.width), "-h", str(args.height),
-                 "-condebug", "-noworkshop", "-noaddons", "-usercon", "-ip", "127.0.0.1", "-port", str(args.port),
-                 *args.extra, "+rcon_password", password, "+maxplayers", str(args.players), "+mat_dxlevel"]
+                 "-condebug", *([] if args.workshop else ["-noworkshop"]), *([] if args.addons else ["-noaddons"]),
+                 *args.extra, "+maxplayers", str(args.players), "+mat_dxlevel"]
     arguments += ["+map", args.map] if args.map else []
     arguments += args.post
     environment = dict(os.environ)
     environment.pop("NATIVE_LOADER_DISABLE", None)
-    record = {"step": "run", "name": args.name, "started": now(), "arguments": arguments}
+    record = {"step": "run", "name": args.name, "root": str(root), "started": now(), "arguments": arguments}
+
+    def log_text() -> str:
+        return read_shared(console_log, offset)
+
+    def wait_for(marker: re.Pattern, count: int, deadline: float) -> bool:
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                return False
+            if len(marker.findall(log_text())) >= count:
+                return True
+            time.sleep(0.5)
+        return False
+
+    def wait_for_map(count: int, deadline: float) -> bool:
+        return wait_for(MAP_MARKER, count, deadline)
+
+    def wait_quiet(seconds: float, limit: float) -> bool:
+        """Waits until the console log has not grown for `seconds` (at most `limit` seconds)."""
+        deadline, size, since = time.monotonic() + limit, -1, time.monotonic()
+        while time.monotonic() < deadline and process.poll() is None:
+            now_size = console_log.stat().st_size if console_log.exists() else 0
+            if now_size != size:
+                size, since = now_size, time.monotonic()
+            elif time.monotonic() - since >= seconds:
+                return True
+            time.sleep(0.5)
+        return False
+
     began = time.monotonic()
     process = subprocess.Popen([str(root / "bin" / "win64" / "gmod.exe"), *arguments], cwd=str(root), env=environment,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     record["pid"] = process.pid
     try:
-        loaded = False
-        while time.monotonic() - began < args.timeout:
-            if process.poll() is not None:
-                break
-            if MAP_MARKER.search(read_shared(console)):
-                loaded = True
-                break
-            time.sleep(0.5)
+        loaded = wait_for_map(1, began + args.timeout)
         record["map_loaded"] = loaded
         record["seconds_to_map"] = round(time.monotonic() - began, 1)
         modules = modules_of(process.pid) if process.poll() is None else []
         record["early_exit"] = process.poll() is not None
+        hwnd = console_window(process.pid) if loaded else None
+        record["console_window"] = bool(hwnd)
+        if loaded and args.load_save and hwnd:
+            record["quiet_before_save"] = wait_quiet(5, 90)
+            if args.mount_workshop:
+                # The save's map is a Workshop item, and Workshop add-ons are not mounted (-noworkshop):
+                # mount that one item, as GMod's own loading of a Workshop save does.
+                record["workshop_mounted"] = False
+                for _ in range(3):
+                    if client_lua(hwnd, root, "mount", mount_lua(args.mount_workshop)) and \
+                            wait_for(MOUNT_MARKER, 1, time.monotonic() + 60):
+                        record["workshop_mounted"] = True
+                        break
+            # gm_load prints nothing when it cannot find the save's map; the record says whether the
+            # command went through and whether the map came up.
+            record["save_command"] = console(hwnd, f'gm_load "{args.load_save}"')
+            record["save_loaded"] = record["save_command"] and wait_for_map(2, time.monotonic() + args.timeout)
+            hwnd = console_window(process.pid) or hwnd
+        for command in args.console:
+            if hwnd:
+                console(hwnd, command)
         if loaded and process.poll() is None:
+            if (args.camera or args.hide_hud) and hwnd:
+                # Commands sent while the RTX fixes still reload models after a map change can be lost
+                # without a word: wait for the console to go quiet, then check the Lua ran (it prints
+                # the eye position) and send it again if not.
+                record["quiet_after_map"] = wait_quiet(5, 90)
+                record["camera"] = False
+                for _ in range(3):
+                    printed = len(EYE_MARKER.findall(log_text()))
+                    if client_lua(hwnd, root, "camera", camera_lua(args.camera, args.hide_hud)) and \
+                            wait_for(EYE_MARKER, printed + 1, time.monotonic() + 20):
+                        record["camera"] = True
+                        break
+                if args.hide_hud:
+                    # Add-ons may answer HUDShouldDraw first; these two are not archived (config.cfg
+                    # holds neither) and are set back before quitting.
+                    console(hwnd, "cl_drawhud 0")
+                    console(hwnd, "r_drawviewmodel 0")
             time.sleep(args.settle)
-            hwnd = game_window(process.pid)
+            window = game_window(process.pid)
             shots = []
             for index in range(args.screenshots):
-                if hwnd and process.poll() is None:
-                    shots.append(screenshot(hwnd, evidence / f"screenshot-{index + 1}.png"))
+                if window and process.poll() is None:
+                    shots.append(screenshot(window, evidence / f"screenshot-{index + 1}.png"))
                     time.sleep(args.shot_interval)
             record["screenshots"] = shots
             modules = modules_of(process.pid) or modules
@@ -387,15 +496,15 @@ def step_run(args) -> dict:
         record["d3d9"] = next((m for m in modules if os.path.basename(m).lower() == "d3d9.dll"), None)
         record["stdshader_dx6"] = next((m for m in modules if os.path.basename(m).lower() == "stdshader_dx6.dll"), None)
         if process.poll() is None:
-            try:
-                rcon(args.port, password, "quit")
-                record["quit"] = "rcon"
-            except (OSError, ConnectionError, PermissionError) as error:
-                record["quit"] = f"rcon failed: {error}"
+            hwnd = console_window(process.pid)
+            if hwnd and args.hide_hud:
+                console(hwnd, "cl_drawhud 1")
+                console(hwnd, "r_drawviewmodel 1")
+            record["quit"] = "console" if hwnd and console(hwnd, "quit") else "console unavailable"
             try:
                 process.wait(timeout=args.quit_timeout)
                 record["exit"] = process.returncode
-                record["normal_quit"] = record["quit"] == "rcon"
+                record["normal_quit"] = record["quit"] == "console"
             except subprocess.TimeoutExpired:
                 terminate(game_processes(root))
                 process.wait(timeout=30)
@@ -412,21 +521,28 @@ def step_run(args) -> dict:
     finally:
         if process.poll() is None:
             terminate(game_processes(root))
-    text = read_shared(console)
-    copy_if_present(console, evidence / "console.log")
+        shutil.rmtree(root / "garrysmod" / "data" / "nl_session", ignore_errors=True)
+    text = log_text()
+    (evidence / "console.log").write_text(text, encoding="utf-8")
     dxlevel = re.search(r'"mat_dxlevel" = "(\d+)"', text)
     record["mat_dxlevel"] = dxlevel.group(1) if dxlevel else None
-    copy_if_present(root / "native-loader" / "logs" / "loader.log", evidence / "loader.log")
-    if copy_if_present(root / "garrysmod" / "data" / "native-loader" / "status.json", evidence / "status.json"):
-        status = json.loads((evidence / "status.json").read_text(encoding="utf-8"))
-        record["status_pid_matches"] = status.get("process_id") == process.pid
-        activation = status.get("activation", {})
-        runtime = activation.get("runtime") if isinstance(activation.get("runtime"), dict) else {}
-        record["activation"] = {"outcome": activation.get("outcome"), "reason": activation.get("reason"),
-                                "runtime_version": runtime.get("version")}
-        record["deployment"] = {key: status.get("deployment", {}).get(key)
-                                for key in ("outcome", "reason", "blocked_by", "generation", "change_count", "skipped")}
-        record["status_errors"] = status.get("errors", [])
+    record["lua_errors"] = len(re.findall(r"(?m)^\[ERROR\]|lua_run_cl.*error", text))
+    eye = re.search(r"NL_SESSION_EYE ([-\d.,]+)", text)
+    record["eye"] = eye.group(1) if eye else None
+    if not args.reference:
+        copy_if_present(root / "native-loader" / "logs" / "loader.log", evidence / "loader.log")
+        copy_if_present(root / "garrysmod" / "data" / "native-loader" / "session.json", evidence / "session.json")
+        if copy_if_present(root / "garrysmod" / "data" / "native-loader" / "status.json", evidence / "status.json"):
+            status = json.loads((evidence / "status.json").read_text(encoding="utf-8"))
+            record["status_pid_matches"] = status.get("process_id") == process.pid
+            activation = status.get("activation", {})
+            runtime = activation.get("runtime") if isinstance(activation.get("runtime"), dict) else {}
+            record["activation"] = {"outcome": activation.get("outcome"), "reason": activation.get("reason"),
+                                    "runtime_version": runtime.get("version")}
+            record["deployment"] = {key: status.get("deployment", {}).get(key)
+                                    for key in ("outcome", "reason", "blocked_by", "generation", "change_count", "skipped")}
+            record["session"] = status.get("session")
+            record["status_errors"] = status.get("errors", [])
     if remix_log.exists() and remix_log.stat().st_mtime != remix_before:
         copy_if_present(remix_log, evidence / "remix-dxvk.log")
         record["remix_log"] = True
@@ -438,7 +554,8 @@ def step_uninstall(args) -> dict:
     root = Path(args.root)
     if game_processes(root):
         raise Failure("a game from this install is running")
-    result = powershell(REPO / "tools" / "uninstall-loader.ps1", "-GameRoot", str(root), "-Config", args.config, "-RemoveConfig")
+    result = powershell(REPO / "tools" / "uninstall-loader.ps1", "-GameRoot", str(root), "-Config", args.config, "-RemoveConfig",
+                        *(["-AllowSteamManaged"] if args.allow_steam_managed else []))
     record = {"step": "uninstall", "exit": result.returncode, "output": (result.stdout + result.stderr)[-3000:]}
     verify = subprocess.run([sys.executable, str(REPO / "tools" / "steam" / "verify_install.py"), str(root),
                              "--manifests-from", str(FIELD_ROOT)], capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -452,6 +569,8 @@ def main(argv=None) -> int:
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="game install (default: the PoC)")
     parser.add_argument("--config", default="Release", choices=["Debug", "Release"], help="which loader build to use")
     parser.add_argument("--evidence", required=True, help="session evidence folder (created if missing)")
+    parser.add_argument("--allow-steam-managed", action="store_true",
+                        help="install into or uninstall from an install Steam manages (the field install: M7, after a snapshot)")
     sub = parser.add_subparsers(dest="action", required=True)
     for name in ("install", "config"):
         command = sub.add_parser(name)
@@ -472,9 +591,18 @@ def main(argv=None) -> int:
     run.add_argument("--screenshots", type=int, default=1)
     run.add_argument("--shot-interval", type=float, default=2.0)
     run.add_argument("--quit-timeout", type=int, default=90)
-    run.add_argument("--port", type=int, default=27199, help="local port for the game and its remote console")
-    run.add_argument("--players", type=int, default=2,
-                     help="maxplayers; the remote console (and so a normal quit) needs a listen server, 2 or more")
+    run.add_argument("--players", type=int, default=1, help="maxplayers (1: single-player)")
+    run.add_argument("--addons", action="store_true", help="mount local add-ons (leave out -noaddons)")
+    run.add_argument("--workshop", action="store_true", help="mount Workshop add-ons (leave out -noworkshop)")
+    run.add_argument("--load-save", help="after the first map, gm_load this save (path relative to garrysmod/)")
+    run.add_argument("--mount-workshop", type=lambda text: str(int(text)), metavar="ID",
+                     help="with --load-save: first mount this installed Workshop item (the save's map) from client Lua")
+    run.add_argument("--camera", type=lambda text: [float(v) for v in text.split(",")],
+                     help="x,y,z,pitch,yaw,roll[,fov]: pin the view with a client CalcView hook before screenshots")
+    run.add_argument("--hide-hud", action="store_true", help="hide the HUD and view model (client hooks, no cvars)")
+    run.add_argument("--console", action="append", default=[], help="console command after the map (repeatable)")
+    run.add_argument("--reference", action="store_true",
+                     help="a reference install: never move its console.log or read the loader's files")
     nl = sub.add_parser("nlctl", help="run nlctl; '{root}' in the arguments becomes the game root")
     nl.add_argument("rest", nargs=argparse.REMAINDER)
     sub.add_parser("uninstall")

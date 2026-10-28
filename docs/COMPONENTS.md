@@ -61,6 +61,18 @@ activation inside the bootstrap; real-game visual acceptance remains open as rec
 | M4 tests | `loader/tests`, `loader/proxy/tests` | 120 core cases total, real command-line round trip, KERNEL32-only import check and 17 synthetic activation scenario groups |
 | PoC acceptance | [`tools/poc_activation_check.ps1`](../tools/poc_activation_check.ps1.md) | A/B packaging, individually approved launches, module/log evidence, dxlevel/off checks, user visual confirmation and cleanup |
 
+## M5 RTX fixes additions
+
+| Component | Path | Status | What it does |
+|---|---|---|---|
+| Fixes packager | [`tools/package_fixes.py`](../tools/package_fixes.py.md) | done (M5) | Turns the fixes repo (read only) into the RTX fixes package folder and/or `.gma`: every add-on folder (kind `lua-addon`), the Remix mods, the built `gmcl_` modules, `stdshader_dx6.dll` as a module override, the seven `patches64` patch sets, the RTX section of `autoexec.cfg` as session console variables, and the Lua companion; leaves out the Steam files the fixes overwrite. Tests in [`tools/tests`](../tools/tests/test_package_fixes.py.md). |
+| Frame comparison | [`tools/compare_frames.py`](../tools/compare_frames.py.md) | done (M5) | The user's block-difference measure for two screenshots (mean absolute difference of 32x32 block means, 0-255) with masks and a threshold exit code, plus mean RGB and luminance percentiles per image; needs Pillow. Tests in [`tools/tests`](../tools/tests/test_compare_frames.py.md). |
+| Lua companion | [`companion/`](../companion/README.md) (`companion/nativeloader`) | done (M5, M6) | The Lua companion planned above, at `companion/nativeloader` instead of `addon/`: prints `status.json` and `session.json` to the console at client start and on `nativeloader_status`, marking reports older than the session as stale; M6: says when a Workshop package has a newer version that the next start deploys. Shipped in the fixes package as `garrysmod/addons/nativeloader`. Tested under LuaJIT ([`tools/tests`](../tools/tests/test_companion.py.md)). |
+| RTX-session hooks | [`loader/proxy/modules.cpp`](../loader/proxy/README.md), [`nl::patch`, `nl::session`](../loader/core/README.md) | done (M5) | The DLL-load watcher that applies patch sets and redirects overridden module loads, and the session console variables with their restore ([ADR 0010](decisions/0010-rtx-session-extras.md)); without RTX, the search hooks on `filesystem_stdio.dll` that keep `requires_remix` packages' add-ons out of the session ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)) |
+| PoC session driver | [`tools/poc_session.py`](../tools/poc_session.py.md) | done (M4 review, M5) | Installs, launches, screenshots, quits and uninstalls without anyone at the keyboard; console text through `WM_COPYDATA`; `--reference` for an install that is only read |
+| Parity content | [`tools/poc_parity.py`](../tools/poc_parity.py.md) | done (M5) | Copies the reference install's user content (user.conf, saved Lua settings, mounts, Remix mods, a save and its map) into the PoC and restores it exactly |
+| Field snapshot and rollback | [`tools/field_snapshot.py`](../tools/field_snapshot.py.md) | done (M7) | Snapshot before the loader goes into a real install; one-command rollback (uninstall, remove what is new, restore files and registry, compare, verify depot files) |
+
 ## Outside this repo (used, not owned here)
 
 | Thing | Where | Role |

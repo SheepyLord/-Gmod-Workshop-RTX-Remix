@@ -44,6 +44,8 @@ struct Package {
   std::string location;  // the archive or folder it came from
   std::string payload;   // its payload folder, relative to the root; empty if it has no payload
   std::optional<manifest::Remix> remix;  // remix-runtime packages: what M4 activates
+  manifest::Session session;             // RTX-session extras (M5): patch sets, overrides, cvars
+  bool requires_remix = false;           // add-on folders hidden from sessions without a runtime (ADR 0013)
 };
 
 // One deployed state of the install.

@@ -1,7 +1,9 @@
 #include "bootstrap.h"
+#include "modules.h"
 #include "runtime.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
+#include "nl/session.h"
 #include "nl/startup.h"
 #include "nl/status.h"
 #include "nl/version.h"
@@ -117,6 +119,49 @@ void finish_report(StartupContext& context) {
   if (!ok) throw std::system_error(static_cast<int>(error), std::system_category(), "append loader.log");
 }
 
+void restore_session_cvars(StartupContext& context) noexcept {
+  auto& report = context.report.session;
+  try {
+    const auto exec = session_cvars(context.root, false, {}, report);
+    if (exec.empty()) return;
+    auto swap = cmdline::append_arguments(exec);
+    if (!swap.ok) {
+      report.notes.push_back("restore not run: the command-line swap was refused: " + swap.detail);
+      report.restore_exec.clear();
+      return;
+    }
+    swap.commit();
+    mark_restore_issued(context.root);
+  } catch (const std::exception& error) {
+    report.notes.push_back(std::string("restore not run: ") + error.what());
+    report.restore_exec.clear();
+  }
+}
+
+// Without a runtime, the add-on folders of packages marked requires_remix are left out of GMod's
+// searches of garrysmod\addons, so their Lua does not run (ADR 0013). Nothing on disk changes.
+void hide_rtx_addons(StartupContext& context) noexcept {
+  auto& report = context.report.session;
+  try {
+    if (!context.prepared.journal || !context.prepared.journal->current) return;
+    auto names = session::hidden_addons(*context.prepared.journal->current);
+    if (names.empty()) return;
+    modules::Setup setup;
+    setup.root = std::filesystem::absolute(context.root);
+    setup.hidden_addons = names;
+    setup.session_json_base = "  \"process_id\": " + std::to_string(GetCurrentProcessId()) + ",\n";
+    std::string error;
+    if (!modules::install(std::move(setup), error)) {
+      report.notes.push_back("add-on folders not hidden: " + error);
+      return;
+    }
+    report.hidden_addons = std::move(names);
+    report.hooks = "installed";
+  } catch (const std::exception& error) {
+    report.notes.push_back(std::string("add-on folders not hidden: ") + error.what());
+  }
+}
+
 void failed_startup(StartupContext& context, const char* message, DWORD error) noexcept {
   // A committed runtime is loaded and initialised: unloading it now would be riskier than keeping
   // it, so a failure after the commit (only reporting is left by then) is logged, nothing undone.
@@ -156,6 +201,7 @@ void startup_cxx(StartupContext& context) noexcept {
     }
     context.prepared = startup::prepare(context.root, context.report.process_id);
     context.report.deployment = context.prepared.deployment;
+    context.report.packages = context.prepared.sources;
     context.report.deployment_ms = context.prepared.elapsed_ms;
     if (context.prepared.journal && context.prepared.journal->current)
       context.report.deployment.generation = context.prepared.journal->current->number;
@@ -163,13 +209,19 @@ void startup_cxx(StartupContext& context) noexcept {
       const journal::Generation none;
       const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
       context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW());
-      context.runtime.apply(context.root, generation, context.report.activation);
+      context.runtime.apply(context.root, generation, context.report.activation, context.report.session);
     } else {
       context.report.activation.reason = context.prepared.reason;
     }
     // Commit before reporting: the runtime's own start-up code has run, and a report that cannot be
     // written is no reason to unload it (see failed_startup).
     if (context.report.activation.outcome == "active") context.runtime.commit();
+    // Without RTX, put back console variables an earlier RTX session changed (M5, ADR 0010), and keep
+    // RTX-only add-ons out of the session (ADR 0013).
+    if (context.report.activation.outcome != "active" && context.prepared.config.from_file && context.prepared.config.enabled) {
+      restore_session_cvars(context);
+      hide_rtx_addons(context);
+    }
     if (context.report.deployment.outcome == "failed" && !context.report.deployment.error.empty())
       context.report.errors.push_back(context.report.deployment.error);
     if (context.report.activation.outcome == "failed") context.report.errors.push_back(context.report.activation.reason);

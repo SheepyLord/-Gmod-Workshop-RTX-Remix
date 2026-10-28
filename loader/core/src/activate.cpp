@@ -2,6 +2,7 @@
 
 #include "nl/cmdline.h"
 #include "nl/fs.h"
+#include "nl/paths.h"
 #include <windows.h>
 
 #include <algorithm>
@@ -144,8 +145,30 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
     else p.user_env.emplace_back(name, *user);
   }
   p.launch_args = missing_args(remix.launch_args, command_line, p.present_args);
+  p.patch_sets_need_insecure = config.patch_sets_require_insecure;
   p.activate = true;
   p.reason = "runtime " + runtime->id + " " + runtime->version;
+
+  for (const journal::Package& pkg : generation.packages) {
+    for (const auto& set : pkg.session.patch_sets) p.patch_sets.push_back({pkg.id, set});
+    for (const auto& item : pkg.session.module_overrides) {
+      const auto same = std::find_if(p.module_overrides.begin(), p.module_overrides.end(),
+                                     [&](const Plan::Override& o) { return o.module == item.module; });
+      if (same != p.module_overrides.end()) {
+        p.notes.push_back(item.module + " is overridden by " + same->package + "; " + pkg.id + "'s override is not used");
+        continue;
+      }
+      if (pkg.payload.empty()) continue;
+      p.module_overrides.push_back({pkg.id, item.module, pkg.payload + "/" + item.file});
+    }
+    for (const auto& [name, value] : pkg.session.cvars) {
+      const auto same = std::find_if(p.session_cvars.begin(), p.session_cvars.end(), [&](const auto& cvar) {
+        return paths::fold(cvar.first) == paths::fold(name);
+      });
+      if (same != p.session_cvars.end()) same->second = value;
+      else p.session_cvars.emplace_back(name, value);
+    }
+  }
   return p;
 }
 

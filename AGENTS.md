@@ -14,7 +14,7 @@ patched copy of GMod managed by RTXLauncher.
 
 - How it works: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - What each component does: [docs/COMPONENTS.md](docs/COMPONENTS.md)
-- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0-M4 done; M5 (RTX fixes on vanilla) next**)
+- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0-M6 done; M7 (field install) next**)
 - Picking up a milestone from another agent: [docs/handover/](docs/handover/README.md) (your brief is there)
 - Why it is built this way: [docs/decisions/](docs/decisions/README.md)
 - Facts gathered about GMod, Remix and the existing RTX tooling: [docs/RESEARCH.md](docs/RESEARCH.md)

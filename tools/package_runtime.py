@@ -231,7 +231,7 @@ def build(args):
             'rtx_conf_layers': [rel for rel, _ in rtx_layers],
             'dxvk_conf_layers': [rel for rel, _ in dxvk_layers],
             'env': env,
-            'launch_args': [] if args.no_launch_args else list(LAUNCH_ARGS),
+            'launch_args': ([] if args.no_launch_args else list(LAUNCH_ARGS)) + (['-insecure'] if args.insecure else []),
             'prefer_system_vulkan_loader': not args.no_system_vulkan,
         }
         manifest = {
@@ -308,6 +308,8 @@ def main(argv=None):
     ap.add_argument('--version', help='package version (default 0.0.0-dev.<d3d9 build time>+<d3d9 hash>)')
     ap.add_argument('--name', help='display name')
     ap.add_argument('--no-launch-args', action='store_true', help='leave out -dxlevel 90 -nod3d9ex')
+    ap.add_argument('--insecure', action='store_true',
+                    help='add -insecure: patch sets (M5) apply only in insecure sessions, as the classic RTX launch line')
     ap.add_argument('--no-system-vulkan', action='store_true', help="do not ask for System32's vulkan-1.dll first")
     ap.add_argument('--force', action='store_true', help='replace an earlier package folder or archive')
     ap.add_argument('--json', action='store_true', help='print the summary as JSON')

@@ -4,12 +4,14 @@
 #include <cstdio>
 #include <cwchar>
 #include "activation_probe.h"
+#include "session_probe.h"
 
 int wmain(int argc, wchar_t** argv) {
   if (argc < 3) return 2;
   FILETIME time{};
   GetSystemTimeAsFileTime(&time);
   if (std::wcscmp(argv[1], L"--m4-probe") == 0) return activation_probe(argv[2], time);
+  if (std::wcscmp(argv[1], L"--m5-probe") == 0) return argc < 4 ? 2 : session_probe(argv[2], argv[3]);
   if (std::wcscmp(argv[1], L"--m4-hold") == 0) {
     const HANDLE ready = CreateFileW(argv[2], GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (ready == INVALID_HANDLE_VALUE) return 13;

@@ -25,6 +25,7 @@ See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
 | `bootstrap.h` | Fixed process state shared by the hook and logger |
 | `bootstrap.cpp` | System forwarding table, `DllMain`, PE entry patch/restore and hook |
 | `startup.cpp` | Entry log/proof/rotation, config→discovery→deployment→activation orchestration, atomic status and final logging, C++/SEH containment |
+| `modules.h`, `modules.cpp` | M5 module hooks: the `LdrRegisterDllNotification` watcher that applies patch sets as engine DLLs are mapped, and the `LoadLibrary*` import hooks that load an overridden module's replacement ([ADR 0010](../../docs/decisions/0010-rtx-session-extras.md)); in sessions without a runtime, the `FindFirstFile*`/`FindNextFile*` import hooks on `filesystem_stdio.dll` that leave `requires_remix` packages' add-on folders out of searches of `garrysmod\addons` ([ADR 0013](../../docs/decisions/0013-rtx-only-addons-hidden-without-rtx.md)); results in `session.json` |
 | `runtime.h`, `runtime.cpp` | M4 activation preconditions, reversible environment/command-line/Vulkan/DLL-search steps, absolute runtime preload; state remains outside the SEH frame until reporting succeeds |
 | `version.rc.in` | CMake version and installer identity resource |
 | `generate_exports.py` | Standard-library PE export parser and generator; [usage](generate_exports.py.md) |

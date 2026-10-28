@@ -15,8 +15,10 @@ add_library(nl_core STATIC
   src/lzma.cpp
   src/manifest.cpp
   src/package.cpp
+  src/patch.cpp
   src/paths.cpp
   src/planner.cpp
+  src/session.cpp
   src/sha256.cpp
   src/startup.cpp
   src/status.cpp

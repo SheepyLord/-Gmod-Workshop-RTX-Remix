@@ -15,6 +15,10 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0007](0007-transactional-deployment.md) | Deployment is one journaled transaction per run, rolled back on failure | Accepted 2026-10-27 |
 | [0008](0008-activation-at-startup.md) | Activation at start-up: preload the runtime, config layers, environment, launch arguments | Accepted 2026-10-27; revised before merge for transactional activation and user layers |
 | [0009](0009-startup-deployment-last-good.md) | Startup deployment keeps the last good generation when an allowlisted source fails | Accepted 2026-10-27 |
+| [0010](0010-rtx-session-extras.md) | RTX-session extras: in-memory patch sets, module overrides and session console variables | Accepted 2026-10-28 |
+| [0011](0011-lua-addon-folders.md) | Packages may deploy GMod add-on folders (`garrysmod/addons/<addon>/`) | Accepted 2026-10-28, user to confirm |
+| [0012](0012-distribution-route.md) | Native packages are released outside the Workshop; the Workshop stays a supported source | Accepted 2026-10-28; private upload test left to the user |
+| [0013](0013-rtx-only-addons-hidden-without-rtx.md) | Add-ons of RTX-only packages are hidden from sessions without RTX, in memory | Accepted 2026-10-28 |
 
 ## Template
 
