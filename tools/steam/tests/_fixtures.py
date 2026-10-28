@@ -2,10 +2,20 @@
 
 import hashlib
 import struct
+import tempfile
+from pathlib import Path
 
 from steam_manifest import FLAG_DIRECTORY, METADATA_MAGIC, PAYLOAD_MAGIC
 
 END_MAGIC = 0x32C415AB
+REPO = Path(__file__).resolve().parents[3]
+SCRATCH = REPO / 'out' / 'tmp'  # AGENTS.md rule 9, whoever runs the tests and whatever TEMP says
+
+
+def scratch_folder(prefix):
+    """A TemporaryDirectory under the repo's out/tmp (created if missing)."""
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=SCRATCH, prefix=prefix)
 
 
 def _varint(n):

@@ -2,18 +2,27 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import steam_manifest as sm
-from _fixtures import build_manifest, entry
+from _fixtures import REPO, SCRATCH, build_manifest, entry, scratch_folder
+
+NO_TEMP = str(REPO / 'out' / 'no-such-temp-folder')  # a fixture that used the temp folder would fail
 
 
 class ParseTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = scratch_folder('steam-manifest-')
         self.dir = Path(self.tmp.name)
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_scratch_is_in_the_repo_whatever_the_temp_folder(self):
+        with mock.patch.object(tempfile, 'tempdir', NO_TEMP):
+            self.tearDown()
+            self.setUp()
+        self.assertEqual(self.dir.resolve().parent, SCRATCH.resolve())
 
     def write(self, name, data):
         path = self.dir / name
@@ -60,7 +69,7 @@ class SafeRelpathTests(unittest.TestCase):
 
 class LocateInstallTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = scratch_folder('steam-locate-')
         root = Path(self.tmp.name)
         self.library = root / 'lib' / 'steamapps'
         self.install = self.library / 'common' / 'GarrysMod'
@@ -75,6 +84,12 @@ class LocateInstallTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_scratch_is_in_the_repo_whatever_the_temp_folder(self):
+        with mock.patch.object(tempfile, 'tempdir', NO_TEMP):
+            self.tearDown()
+            self.setUp()
+        self.assertEqual(Path(self.tmp.name).resolve().parent, SCRATCH.resolve())
 
     def test_finds_cached_manifests(self):
         for name in ('4001_11.manifest', '4002_22.manifest'):

@@ -1,8 +1,17 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import check_repo
+
+REPO = Path(__file__).resolve().parents[2]
+SCRATCH = REPO / 'out' / 'tmp'  # AGENTS.md rule 9, whoever runs the tests and whatever TEMP says
+
+
+def scratch_folder():
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=SCRATCH, prefix='check-repo-')
 
 
 def make_repo(root, extra=None):
@@ -29,11 +38,18 @@ def make_repo(root, extra=None):
 
 class CheckRepoTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = scratch_folder()
         self.root = Path(self.tmp.name)
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_scratch_is_in_the_repo_whatever_the_temp_folder(self):
+        # A temp folder that does not exist: a fixture that used it would fail to start.
+        with mock.patch.object(tempfile, 'tempdir', str(REPO / 'out' / 'no-such-temp-folder')):
+            self.tearDown()
+            self.setUp()
+        self.assertEqual(self.root.resolve().parent, SCRATCH.resolve())
 
     def problems(self, extra=None):
         make_repo(self.root, extra)

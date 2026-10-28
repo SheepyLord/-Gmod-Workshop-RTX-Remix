@@ -4,10 +4,11 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import make_vanilla_copy
 import verify_install
-from _fixtures import build_manifest, entry, write_tree
+from _fixtures import REPO, SCRATCH, build_manifest, entry, scratch_folder, write_tree
 from steam_manifest import FLAG_USERCONFIG
 
 VANILLA = {
@@ -21,7 +22,7 @@ VANILLA = {
 
 class InstallToolTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = scratch_folder('install-tools-')
         self.root = Path(self.tmp.name)
         self.manifest = self.root / 'depot.manifest'
         self.manifest.write_bytes(build_manifest([
@@ -42,6 +43,13 @@ class InstallToolTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_scratch_is_in_the_repo_whatever_the_temp_folder(self):
+        # A temp folder that does not exist: a fixture that used it would fail to start.
+        with mock.patch.object(tempfile, 'tempdir', str(REPO / 'out' / 'no-such-temp-folder')):
+            self.tearDown()
+            self.setUp()
+        self.assertEqual(self.root.resolve().parent, SCRATCH.resolve())
 
     def test_verify_classifies_every_difference(self):
         report = verify_install.verify(self.src, [self.manifest])
