@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -121,6 +122,23 @@ std::unique_ptr<Source> open_archive(const std::filesystem::path& path, Containe
 // it has one. `entry` must come from this archive's index. Plain archives seek; LZMA ones decode up
 // to the entry.
 std::string read_entry(const std::filesystem::path& archive, const Entry& entry, std::size_t max_bytes);
+
+// Receives the files extract() delivers, in archive order: begin(), the bytes, then end() once the
+// file's CRC (when it has one) matched.
+class EntrySink {
+ public:
+  virtual ~EntrySink() = default;
+  virtual void begin(const Entry& entry) = 0;
+  virtual void data(const unsigned char* bytes, std::size_t size) = 0;
+  virtual void end(const Entry& entry) = 0;
+};
+
+// One pass over an archive file (plain or LZMA-wrapped): reads its index, delivers every entry
+// `want` accepts to `sink` and skips the others (plain archives seek past them), and stops after
+// the last wanted entry. Throws FormatError if the stream ends early or a delivered file's nonzero
+// CRC does not match; end() is not called for that file. Returns the index it read.
+Index extract(const std::filesystem::path& archive, const std::function<bool(const Entry&)>& want, EntrySink& sink,
+              const Limits& limits = {});
 
 // Key for duplicate-path detection: ASCII-lowercased with '\\' turned into '/'. Matches gmapack.py
 // for ASCII names (gmapack casefolds full Unicode).

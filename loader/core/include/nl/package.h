@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -25,12 +26,25 @@ using Entry = manifest::ContentEntry;
 inline constexpr std::size_t kMaxManifestBytes = std::size_t{1} << 20;
 inline constexpr std::size_t kMaxFolderEntries = 100000;
 
+// Receives the files Contents::extract delivers.
+class Sink {
+ public:
+  virtual ~Sink() = default;
+  virtual void begin(const Entry& entry) = 0;  // the path as the package stores it, and its size
+  virtual void data(const unsigned char* bytes, std::size_t size) = 0;
+  virtual void end() = 0;  // every byte delivered; the archive's CRC for it (if any) matched
+};
+
 class Contents {
  public:
   virtual ~Contents() = default;
   virtual const std::vector<Entry>& entries() const = 0;
   // Bytes of one file (paths compare without case); throws Error if missing or over `max_bytes`.
   virtual std::string read(std::string_view path, std::size_t max_bytes) const = 0;
+  // Streams the files whose folded path (paths::fold) is in `wanted` to `sink` in one pass, in the
+  // order cheapest for the container (archive order), with bounded memory however large they are.
+  // Throws Error if one is missing; gma::FormatError for a damaged archive or a CRC mismatch.
+  virtual void extract(const std::set<std::string>& wanted, Sink& sink) const = 0;
   virtual std::filesystem::path location() const = 0;
   const Entry* find(std::string_view path) const;
 };
@@ -45,6 +59,7 @@ std::unique_ptr<Contents> open_folder(const std::filesystem::path& folder);
 struct Package {
   std::unique_ptr<Contents> contents;
   manifest::Manifest manifest;
+  std::string manifest_sha256;  // of the manifest bytes that were parsed: the package version's identity
 };
 
 // Reads native/manifest.json, parses it and checks it against the contents. Throws Error (not a

@@ -1,4 +1,5 @@
-// Runner for nl_tests: runs every TEST_CASE, or only those whose name contains argv[1].
+// Runner for nl_tests: runs every TEST_CASE, or only those whose name contains argv[1]; with
+// --skip=<text>, every TEST_CASE except those whose name contains <text>.
 // Exit code 0 when at least one test ran and none failed.
 
 #include "nl_test.h"
@@ -40,8 +41,10 @@ void fail(const char* what, const char* file, int line) {
 int run_all(const char* name_filter) {
   int run = 0;
   int failed = 0;
+  constexpr const char* kSkip = "--skip=";
+  const char* skip = name_filter && std::strncmp(name_filter, kSkip, std::strlen(kSkip)) == 0 ? name_filter + std::strlen(kSkip) : nullptr;
   for (const Case& c : registry()) {
-    if (name_filter && !std::strstr(c.name, name_filter)) {
+    if (skip ? std::strstr(c.name, skip) != nullptr : name_filter && !std::strstr(c.name, name_filter)) {
       continue;
     }
     ++run;

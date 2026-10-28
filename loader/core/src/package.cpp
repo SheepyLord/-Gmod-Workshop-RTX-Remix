@@ -1,7 +1,9 @@
 #include "nl/package.h"
 
+#include "nl/fs.h"
 #include "nl/gma.h"
 #include "nl/paths.h"
+#include "nl/sha256.h"
 
 #include <windows.h>
 
@@ -39,6 +41,25 @@ class ArchiveContents final : public Contents {
       if (paths::fold(e.path) == key) return gma::read_entry(file_, e, max_bytes);
     }
     throw Error(utf8_path(file_) + " has no " + std::string(path));
+  }
+
+  void extract(const std::set<std::string>& wanted, Sink& sink) const override {
+    class Adapter final : public gma::EntrySink {
+     public:
+      explicit Adapter(Sink& out) : out_(&out) {}
+      void begin(const gma::Entry& e) override { out_->begin({e.path, e.size}); }
+      void data(const unsigned char* bytes, std::size_t size) override { out_->data(bytes, size); }
+      void end(const gma::Entry&) override {
+        out_->end();
+        ++delivered;
+      }
+      std::size_t delivered = 0;
+
+     private:
+      Sink* out_;
+    } adapter(sink);
+    gma::extract(file_, [&](const gma::Entry& e) { return wanted.count(paths::fold(e.path)) > 0; }, adapter);
+    if (adapter.delivered != wanted.size()) throw Error(utf8_path(file_) + " no longer holds every file its manifest lists");
   }
 
   fs::path location() const override { return file_; }
@@ -80,6 +101,39 @@ class FolderContents final : public Contents {
     return bytes;
   }
 
+  void extract(const std::set<std::string>& wanted, Sink& sink) const override {
+    std::size_t delivered = 0;
+    std::vector<unsigned char> buffer(std::size_t{1} << 20);
+    for (const Entry& entry : entries_) {
+      if (!wanted.count(paths::fold(entry.path))) continue;
+      const fs::path file = folder_ / from_utf8(entry.path);
+      struct Handle {
+        HANDLE value;
+        ~Handle() {
+          if (value != INVALID_HANDLE_VALUE) CloseHandle(value);
+        }
+      } handle{CreateFileW(nl::fs::long_path(file).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+                           FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_OPEN_REPARSE_POINT, nullptr)};
+      if (handle.value == INVALID_HANDLE_VALUE) throw Error("cannot open " + utf8_path(file));
+      BY_HANDLE_FILE_INFORMATION info{};
+      if (!GetFileInformationByHandle(handle.value, &info) || (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+        throw Error(utf8_path(file) + " is a link or cannot be read");
+      }
+      sink.begin(entry);
+      for (;;) {
+        DWORD got = 0;
+        if (!ReadFile(handle.value, buffer.data(), static_cast<DWORD>(buffer.size()), &got, nullptr)) {
+          throw Error("cannot read " + utf8_path(file));
+        }
+        if (got == 0) break;
+        sink.data(buffer.data(), got);
+      }
+      sink.end();
+      ++delivered;
+    }
+    if (delivered != wanted.size()) throw Error(utf8_path(folder_) + " no longer holds every file its manifest lists");
+  }
+
   fs::path location() const override { return folder_; }
 
  private:
@@ -110,7 +164,9 @@ Package load(std::unique_ptr<Contents> contents) {
     throw Error("not a native package: no " + std::string(manifest::kManifestPath));
   }
   Package package;
-  package.manifest = manifest::parse(contents->read(manifest::kManifestPath, kMaxManifestBytes));
+  const std::string text = contents->read(manifest::kManifestPath, kMaxManifestBytes);
+  package.manifest = manifest::parse(text);
+  package.manifest_sha256 = sha256::of(text);
   manifest::check_contents(package.manifest, contents->entries());
   package.contents = std::move(contents);
   return package;

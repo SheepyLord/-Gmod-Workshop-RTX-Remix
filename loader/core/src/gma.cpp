@@ -112,6 +112,18 @@ class Reader {
     }
   }
 
+  // Skips `size` bytes: what is buffered, then the rest through the source (plain files seek).
+  // crc() no longer covers the whole stream afterwards.
+  void skip(std::uint64_t size, std::string_view field) {
+    const std::size_t buffered = static_cast<std::size_t>(std::min<std::uint64_t>(size, end_ - begin_));
+    consume(buffered);
+    size -= buffered;
+    if (size) {
+      if (!source_.skip(size)) truncated(field);
+      position_ += size;
+    }
+  }
+
   // Consumes everything that is left; returns the byte count.
   std::uint64_t drain() {
     std::uint64_t total = 0;
@@ -339,6 +351,39 @@ std::string read_entry(const std::filesystem::path& archive, const Entry& entry,
     throw FormatError("CRC mismatch in " + printable(entry.path));
   }
   return bytes;
+}
+
+Index extract(const std::filesystem::path& archive, const std::function<bool(const Entry&)>& want, EntrySink& sink,
+              const Limits& limits) {
+  const auto source = open_archive(archive);
+  Reader reader(*source);
+  Index index = parse(reader, limits);
+  std::vector<bool> wanted(index.entries.size());
+  std::size_t count = 0;
+  std::size_t last = 0;
+  for (std::size_t i = 0; i < index.entries.size(); ++i) {
+    if (!want(index.entries[i])) continue;
+    wanted[i] = true;
+    last = i;
+    ++count;
+  }
+  for (std::size_t i = 0; count && i <= last; ++i) {
+    const Entry& entry = index.entries[i];
+    const std::string field = "contents of " + printable(entry.path);
+    if (!wanted[i]) {
+      reader.skip(entry.size, field);
+      continue;
+    }
+    sink.begin(entry);
+    std::uint32_t crc = 0;
+    reader.stream(entry.size, field, [&](const unsigned char* data, std::size_t n) {
+      crc = crc32_update(crc, data, n);
+      sink.data(data, n);
+    });
+    if (entry.crc32 != 0 && crc != entry.crc32) throw FormatError("CRC mismatch in " + printable(entry.path));
+    sink.end(entry);
+  }
+  return index;
 }
 
 std::string path_key(std::string_view path) {
