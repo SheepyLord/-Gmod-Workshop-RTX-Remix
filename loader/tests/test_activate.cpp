@@ -253,3 +253,33 @@ TEST_CASE("activate: without an NVIDIA GPU Remix chooses its own preset, from a 
   activate::plan(gen, off, none(), L"gmod.exe", uhd, [&asked] { asked = true; return std::vector<unsigned>{}; });
   CHECK(!asked);
 }
+
+TEST_CASE("activate: the runtime's late bare-name DLLs load with it (ADR 0030)") {
+  for (const char* name : {"amd_fidelityfx_vk.dll", "AMD_FidelityFX_VK.DLL", "cudart64_13.dll", "nvrtc64_130_0.dll",
+                           "nvrtc-builtins64_133.dll"})
+    CHECK(activate::late_runtime_dll(name));
+  for (const char* name : {"d3d9.dll", "NRD.dll", "cudart64_.dll", "cudart64_13.dll.bak", "amd_fidelityfx_dx12.dll", "nvrtc64_130_0.lib"})
+    CHECK(!activate::late_runtime_dll(name));
+
+  // The runtime package's own files at the top of its folder: not a subfolder, not another package's.
+  auto gen = with_runtime("p", base_remix());
+  const auto file = [&gen](const std::string& path, const std::string& package) {
+    journal::File record;
+    record.path = path;
+    record.package = package;
+    gen.files.push_back(record);
+  };
+  for (const char* name : {"d3d9.dll", "nvrtc64_130_0.dll", "NRD.dll", "cudart64_13.dll", "amd_fidelityfx_vk.dll",
+                           "nvrtc-builtins64_133.dll", "usd/plugins/cudart64_13.dll"})
+    file(std::string("p/runtime/") + name, "rtx-remix-runtime");
+  file("p/runtime/cudart64_12.dll", "root-only");
+  const auto p = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd);
+  CHECK(p.activate);
+  CHECK((p.preload == std::vector<std::string>{"p/runtime/amd_fidelityfx_vk.dll", "p/runtime/cudart64_13.dll",
+                                               "p/runtime/nvrtc-builtins64_133.dll", "p/runtime/nvrtc64_130_0.dll"}));
+
+  // No RTX session, nothing to load.
+  config::Config off;
+  off.remix_enabled = false;
+  CHECK(activate::plan(gen, off, none(), L"gmod.exe", uhd).preload.empty());
+}

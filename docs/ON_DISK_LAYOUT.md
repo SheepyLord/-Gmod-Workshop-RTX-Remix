@@ -167,6 +167,7 @@ renames it over status.json; simultaneous instances cannot share a temporary fil
 | `activation.system_vulkan_path` | Retained System32 preload path, or empty when absent/undone |
 | `activation.windows_error`, `missing_system_dependencies` | Win32/SEH code and missing System32 redistributable/Vulkan DLL names when preload fails |
 | `activation.gpu_vendors`, `non_nvidia` | Loader 0.5.0, ADR 0030: the hardware graphics adapters' PCI vendor ids (DXGI; empty when not read or RTX is off), and whether none is NVIDIA, so `native-loader/remix/non-nvidia.conf` is in `layers.dxvk` |
+| `activation.preloaded` | Loader 0.5.0, ADR 0030: absolute paths of the runtime's late bare-name DLLs (`amd_fidelityfx_vk.dll`, `cudart64_*`, `nvrtc64_*`, `nvrtc-builtins64_*`) loaded right after it; one that failed is a `session.notes` entry instead |
 | `activation.reshade` | Loader 0.5.0, ADR 0028: `outcome` (`active`, `off`, `failed`: the session runs without ReShade), `reason`, `package`, `layer`, `layer_manifest`, `folder`, `settings` (`kept`, `migrated`, `fresh`), `presets` copied this start, `environment` set for the layer, `notes` |
 | `activation.rolled_back`, `elapsed_ms` | Whether applied settings were undone, and activation duration |
 | `errors` | Startup errors, JSON-escaped strings; empty on ordinary success/inactivity |
@@ -176,7 +177,7 @@ The M1 log header still proves entry timing. M4 appends `deployment.outcome`, `.
 `.skipped`/`.note`, plus `activation.outcome`, `.reason`, `.runtime.id/version/folder/dll`,
 `.system_vulkan_path`, `.environment.set/user_values_kept`, `.layers.rtx/dxvk`,
 `.arguments.added/already_present`, `.fallback_launch_options`, `.windows_error`,
-`.missing_system_dependencies`, `.rolled_back`, `.elapsed_ms`, repeated `error`, and
+`.missing_system_dependencies`, `.preloaded` (0.5.0), `.rolled_back`, `.elapsed_ms`, repeated `error`, and
 `startup.elapsed_ms` / `startup.complete`. Structured values use JSON on one key=value line.
 
 ## M5 session files

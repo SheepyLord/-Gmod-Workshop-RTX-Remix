@@ -53,6 +53,10 @@ bool RuntimeActivation::rollback() noexcept {
     modules::uninstall();
     hooks_installed_ = false;
   }
+  while (!preloaded_.empty()) {
+    if (!FreeLibrary(preloaded_.back())) ok = false;
+    preloaded_.pop_back();
+  }
   if (runtime_) { if (FreeLibrary(runtime_)) runtime_ = nullptr; else ok = false; }
   if (directory_changed_) { if (SetDllDirectoryW(nullptr)) directory_changed_ = false; else ok = false; }
   if (dll_directory_) { if (RemoveDllDirectory(dll_directory_)) dll_directory_ = nullptr; else ok = false; }
@@ -229,10 +233,11 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     report.vulkan_path = fs::utf8(path);
     touched_ = true;
   }
-  // Late bare-name loads of the runtime (its delay-loaded FSR DLL, CUDA's nvrtc) find its folder
-  // through PATH: first among the PATH entries, after the standard search. SetDllDirectoryW would
-  // also take the working directory out of the search, and the RTX fixes look up their engine
-  // modules as "bin/win64/<name>.dll" relative to it (RESEARCH.md section 13).
+  // The runtime folder first among the PATH entries (ADR 0010), for bare-name loads early in the start.
+  // It does not last: the process's PATH is rewritten without it before the runtime's late loads, which
+  // are preloaded below instead (ADR 0030, RESEARCH.md section 27). SetDllDirectoryW would also take the
+  // working directory out of the search, and the RTX fixes look up their engine modules as
+  // "bin/win64/<name>.dll" relative to it (RESEARCH.md section 13).
   {
     const auto previous = activate::environment_value("PATH");
     std::wstring value = dll.parent_path().native();
@@ -241,14 +246,13 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     touched_ = true;
     if (!SetEnvironmentVariableW(L"PATH", value.c_str())) { const auto error = GetLastError(); return fail("PATH update failed", error); }
   }
-  // PATH is not read by loads that search the "safe" set of folders (LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
-  // or every load once some module calls SetDefaultDllDirectories). The runtime's FSR DLL and NRC's
-  // CUDA DLLs (cudart, nvrtc) load that way and were never found (RESEARCH.md section 27); naming the
-  // runtime folder as a user folder lets those searches find it too.
+  // The runtime folder as a user folder too: loads that search the "safe" set (LOAD_LIBRARY_SEARCH_USER_DIRS,
+  // or every load once some module calls SetDefaultDllDirectories, as Chromium's code in GMod can) read
+  // it; the standard search does not (RESEARCH.md section 27).
   dll_directory_ = AddDllDirectory(dll.parent_path().c_str());
   if (dll_directory_) touched_ = true;
   else session.notes.push_back("AddDllDirectory for the runtime folder failed (Windows error " + std::to_string(GetLastError()) +
-                               "); late loads that skip PATH will not find the runtime's DLLs");
+                               "); loads that search user folders will not find the runtime's DLLs");
 
   // ReShade (ADR 0028): the package's Vulkan layer, with its own settings folder, for this session.
   // The Vulkan loader reads the layer variables when the runtime creates its instance, ReShade its
@@ -357,6 +361,22 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   // d3d9.dll loaded before the entry point (from elsewhere) would win the binding instead.
   if (GetModuleHandleW(L"d3d9.dll") != runtime_)
     return fail("another d3d9.dll was already loaded; the engine would bind to it, not the runtime");
+  // The runtime's late bare-name loads (ADR 0030): the fork probes its FSR DLL by name when it creates
+  // the device, and NRC loads CUDA's runtime and compiler by name seconds later. By then no search finds
+  // the runtime folder: the game's loads use the standard search, which never reads an AddDllDirectory
+  // folder, and the process's PATH has been rewritten without it (RESEARCH.md section 27). Loaded now,
+  // by absolute path (checked as deployed above), the late loads bind to these modules. One that does not
+  // load costs its feature, as before, not the session.
+  for (const auto& relative : plan.preload) {
+    const auto file = std::filesystem::absolute(fs::join(root, relative)).lexically_normal();
+    if (HMODULE module = LoadLibraryExW(file.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH)) {
+      preloaded_.push_back(module);
+      report.preloaded.push_back(fs::utf8(file));
+    } else {
+      session.notes.push_back("could not load " + fs::utf8(file.filename()) + " with the runtime (Windows error " +
+                              std::to_string(GetLastError()) + "); the runtime will not find it later either");
+    }
+  }
   report.outcome = "active";
   report.reason = plan.reason;
   report.environment_set = plan.env;

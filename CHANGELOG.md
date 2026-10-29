@@ -33,16 +33,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **Computers without an NVIDIA GPU start from Remix's own preset** ([ADR 0030](docs/decisions/0030-non-nvidia-gpus-and-late-runtime-dlls.md)).
   The package's classic settings pin the Custom preset, tuned for an RTX 5090. With no NVIDIA adapter
   (DXGI), the bootstrap adds `native-loader\remix\non-nvidia.conf` (`rtx.graphicsPreset = 5`) above the
-  package's layers and below the user's own files. NVIDIA systems see no change.
+  package's layers and below the user's own files. NVIDIA systems see no change. The player README
+  says what was tried on AMD: a Ryzen's integrated Radeon loses its GPU about a minute into an RTX
+  session (RESEARCH.md section 27); no Radeon card was available.
 
 ### Fixed (round 8)
 
 - **FSR and the Neural Radiance Cache never loaded under the loader** (since M5, ADR 0030). The
-  runtime loads `amd_fidelityfx_vk.dll` and CUDA's `cudart64_13.dll` and `nvrtc64_*.dll` late, by bare
-  name, through searches that skip `PATH`, where the loader had put the runtime folder. The Remix log
-  said "FSR ... could not be loaded" and "Failed to initialize NRC" in every loader session. The runtime
-  folder is now also an `AddDllDirectory` folder. AMD players get FSR; NVIDIA players get NRC back, as in
-  the classic install.
+  runtime loads `amd_fidelityfx_vk.dll` and CUDA's `cudart64_13.dll`, `nvrtc64_*.dll` and
+  `nvrtc-builtins64_*.dll` late, by bare name. By then no search finds the runtime folder: the process's
+  `PATH`, where the loader had put it, has been rewritten without it (the Steam folder in front), and
+  the game's standard search never reads `AddDllDirectory` folders. The Remix log said "FSR ... could
+  not be loaded" and "Failed to initialize NRC" in every loader session. The bootstrap now loads these
+  four right after the runtime, by absolute path, and the late loads bind to them (`status.json`
+  `activation.preloaded`). AMD players get FSR; NVIDIA players get NRC back, as in the classic install.
 - **Labels of the RTX Remix tab no longer cut off**: "Post effects", the fog sliders, the guard and the
   language choice have short labels, with the rest on a help line.
 

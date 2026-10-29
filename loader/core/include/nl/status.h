@@ -34,6 +34,7 @@ struct Activation {
   std::vector<std::string> arguments_added;
   std::string fallback_launch_options;
   std::vector<std::string> missing_system_dependencies;
+  std::vector<std::string> preloaded;  // absolute paths of the plan's late runtime DLLs that loaded (ADR 0030)
   std::uint32_t windows_error = 0;
   bool rolled_back = false;
   double elapsed_ms = 0;

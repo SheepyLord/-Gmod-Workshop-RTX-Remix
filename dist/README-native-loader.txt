@@ -38,9 +38,12 @@ Graphics cards
   newer, Intel Arc. An older card cannot start an RTX session; turn RTX off ("remix": { "enabled":
   false } below) or start with -nonativeloader.
 - On AMD and Intel: DLSS, DLSS frame generation and Reflex are NVIDIA-only. FSR (upscaling and frame
-  generation) and XeSS work. Without an NVIDIA GPU, Remix picks its graphics preset for your GPU at
-  the start (native-loader\remix\non-nvidia.conf); a preset you choose in Remix's menu (Alt+X) and
-  save there still wins. The first time each effect is used you may see a short stutter.
+  generation) and XeSS are there instead; they have not been tried on a Radeon or Arc card yet.
+  Without an NVIDIA GPU, Remix picks its graphics preset for your GPU at the start
+  (native-loader\remix\non-nvidia.conf); a preset you choose in Remix's menu (Alt+X) and save there
+  still wins. The first time each effect is used you may see a short stutter.
+- The integrated Radeon graphics of a Ryzen processor could not run an RTX session in a test: the GPU
+  was lost about a minute in. With a separate graphics card, Remix uses that card.
 
 Settings (native-loader\config.json)
 ------------------------------------

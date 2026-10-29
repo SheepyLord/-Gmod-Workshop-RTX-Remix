@@ -91,7 +91,7 @@ std::string serialize(const Report& r) {
       ",\"added\":" + strings(a.arguments_added) + ",\"already_present\":" + strings(p.present_args) +
       ",\"fallback_launch_options\":" + json::quote(a.fallback_launch_options) +
       "},\"missing_system_dependencies\":" + strings(a.missing_system_dependencies) +
-      ",\"reshade\":" + reshade_json(a.reshade) + "},\n\"session\":" + session_json(r.session) + ",\n\"packages\":" + packages_json(r.packages) +
+      ",\"preloaded\":" + strings(a.preloaded) + ",\"reshade\":" + reshade_json(a.reshade) + "},\n\"session\":" + session_json(r.session) + ",\n\"packages\":" + packages_json(r.packages) +
       ",\n\"errors\":" + strings(r.errors) + "\n}\n";
   return result;
 }
@@ -117,7 +117,7 @@ std::string log_fields(const Report& r) {
       << "\nactivation.arguments.added=" << strings(a.arguments_added) << "\nactivation.arguments.already_present=" << strings(a.plan.present_args)
       << "\nactivation.fallback_launch_options=" << json::quote(a.fallback_launch_options)
       << "\nactivation.windows_error=" << a.windows_error << "\nactivation.missing_system_dependencies=" << strings(a.missing_system_dependencies)
-      << "\nactivation.rolled_back=" << a.rolled_back << "\nactivation.elapsed_ms=" << a.elapsed_ms
+      << "\nactivation.preloaded=" << strings(a.preloaded) << "\nactivation.rolled_back=" << a.rolled_back << "\nactivation.elapsed_ms=" << a.elapsed_ms
       << "\nactivation.reshade=" << reshade_json(a.reshade) << '\n';
   out << "session=" << session_json(r.session) << '\n';
   for (const auto& error : r.errors) out << "error=" << json::quote(error) << '\n';

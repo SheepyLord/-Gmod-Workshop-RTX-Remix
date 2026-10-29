@@ -174,6 +174,15 @@ is, while runs without the layer lost 3 %. So check, before and during each run,
 another install runs and that the processor is idle, and alternate the cases (with, without).
 Another session's runs on the PoC share the one GPU too.
 
+### An AMD GPU on this machine
+
+The Ryzen 9 9950X3D has an integrated Radeon. Setting `VK_DRIVER_FILES` to AMD's Vulkan driver
+manifest (`C:\WINDOWS\System32\DriverStore\FileRepository\u0200157.inf_amd64_*\B025930\amd-vulkan64.json`)
+for the one `poc_session.py run` makes Vulkan, and so Remix, see only that GPU; nothing on the system
+changes. DXGI still lists the RTX 5090, so the loader's non-NVIDIA layer stays off. The integrated GPU
+loses its device about a minute into the session and the game then hangs (RESEARCH.md section 27):
+stop it with a watchdog, the session timeout does not.
+
 ### The PoC install
 
 Built on 2026-10-27 from the field install: the 2,877 files that GMod's depots 4001 and 4002 list

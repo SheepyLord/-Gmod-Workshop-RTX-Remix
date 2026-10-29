@@ -189,6 +189,16 @@ std::string non_nvidia_layer_text() {
          "rtx.graphicsPreset = 5\r\n";
 }
 
+bool late_runtime_dll(std::string_view file_name) {
+  std::string name(file_name);
+  for (char& c : name) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  const auto stem_of = [&](std::string_view prefix) {
+    return name.size() > prefix.size() + 4 && name.compare(0, prefix.size(), prefix) == 0 &&
+           name.compare(name.size() - 4, 4, ".dll") == 0;
+  };
+  return name == "amd_fidelityfx_vk.dll" || stem_of("cudart64_") || stem_of("nvrtc64_") || stem_of("nvrtc-builtins64_");
+}
+
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
           std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus) {
   Plan p;
@@ -222,6 +232,14 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
   if (gpus) p.gpu_vendors = gpus();
   p.non_nvidia = !p.gpu_vendors.empty() &&
                  std::none_of(p.gpu_vendors.begin(), p.gpu_vendors.end(), [](unsigned vendor) { return vendor == kNvidia; });
+
+  // The runtime's late bare-name loads (ADR 0030): its own deployed files, at the top of its folder.
+  for (const journal::File& file : generation.files) {
+    const std::string folder = parent(file.path);
+    if (file.package != runtime->id || paths::fold(folder) != paths::fold(p.runtime_dir)) continue;
+    if (late_runtime_dll(std::string_view(file.path).substr(folder.size() + 1))) p.preload.push_back(file.path);
+  }
+  std::sort(p.preload.begin(), p.preload.end());
 
   const auto add_layers = [&](const char* name, const std::vector<std::string>& package_layers, std::string_view loader_layer,
                               const char* default_user, std::vector<std::string>& effective) {

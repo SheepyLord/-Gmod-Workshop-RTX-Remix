@@ -38,13 +38,14 @@ Steam ─► GarrysMod\gmod.exe (launcher) ─► bin\win64\gmod.exe   (working 
                override file (ADR 0014); apply environment and layers,
                reversible kernelbase W/A + PEB command-line descriptor swap,
                optional preload of System32\vulkan-1.dll,
-               the runtime folder first on PATH for delay loads (ADR 0010) and an
-               AddDllDirectory folder for loads that skip PATH (FSR, NRC's CUDA; ADR 0030),
+               the runtime folder first on PATH (ADR 0010) and an AddDllDirectory folder,
                without an NVIDIA GPU a layer with Remix's own preset (ADR 0030),
                ReShade's Vulkan layer when remix.reshade allows it: native-loader\reshade
                made once from bin\win64\ReShade.ini, VK_ADD_LAYER_PATH, VK_INSTANCE_LAYERS,
                RESHADE_BASE_PATH_OVERRIDE (ADR 0028), then
-               LoadLibraryExW(<absolute package runtime d3d9.dll>, LOAD_WITH_ALTERED_SEARCH_PATH)
+               LoadLibraryExW(<absolute package runtime d3d9.dll>, LOAD_WITH_ALTERED_SEARCH_PATH),
+               then the runtime's late bare-name DLLs (FSR, NRC's CUDA) by absolute path: by the
+               time the runtime asks for them, PATH has been rewritten (ADR 0030)
      report    native-loader\logs\loader.log, atomic garrysmod\data\native-loader\status.json
    then jump to the original entry point
 3. Engine start-up. When shaderapidx9.dll loads, its import of "d3d9.dll" binds to the

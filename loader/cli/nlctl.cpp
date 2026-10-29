@@ -437,6 +437,7 @@ int cmd_activation(const fs::path& game_root, bool json) {
     out += ",\n  \"reason\": " + nl::json::quote(plan.reason);
     out += ",\n  \"runtime_dll\": " + (plan.runtime_dll.empty() ? std::string("null") : nl::json::quote(plan.runtime_dll));
     out += ",\n  \"runtime_dir\": " + (plan.runtime_dir.empty() ? std::string("null") : nl::json::quote(plan.runtime_dir));
+    out += ",\n  \"preload\": " + string_array_json(plan.preload);
     out += ",\n  \"prefer_system_vulkan\": " + std::string(plan.prefer_system_vulkan ? "true" : "false");
     out += ",\n  \"gpu_vendors\": [";
     for (std::size_t i = 0; i < plan.gpu_vendors.size(); ++i) out += (i ? ", " : "") + std::to_string(plan.gpu_vendors[i]);
@@ -461,6 +462,9 @@ int cmd_activation(const fs::path& game_root, bool json) {
   }
   print("would load  " + plan.runtime_dll + "\n");
   print("dll search  + " + plan.runtime_dir + "\n");
+  std::string preload;
+  for (const auto& file : plan.preload) preload += (preload.empty() ? "" : " ") + file.substr(file.find_last_of('/') + 1);
+  print("preload     " + (preload.empty() ? std::string("(none)") : preload) + "\n");
   print(std::string("vulkan      ") + (plan.prefer_system_vulkan ? "preload System32 vulkan-1.dll first" : "runtime's own") + "\n");
   std::string vendors;
   for (const unsigned vendor : plan.gpu_vendors) {

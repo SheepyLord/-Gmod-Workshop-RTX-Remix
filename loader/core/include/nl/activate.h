@@ -54,6 +54,13 @@ inline constexpr unsigned kNvidia = 0x10DE;
 inline constexpr std::string_view kNonNvidiaLayer = "native-loader/remix/non-nvidia.conf";
 std::string non_nvidia_layer_text();
 
+// The runtime's DLLs that load late by bare name (ADR 0030): the fork's FSR probe (amd_fidelityfx_vk.dll)
+// and NRC's CUDA runtime and compiler (cudart64_*, nvrtc64_*, nvrtc-builtins64_*). In GMod no search
+// finds them in the runtime folder by then (RESEARCH.md section 27), so the bootstrap loads them by
+// absolute path right after the runtime and the late loads bind to those modules. A file name, ASCII,
+// any case.
+bool late_runtime_dll(std::string_view file_name);
+
 struct Plan {
   bool activate = false;  // false: the runtime is not loaded and nothing below is applied
   std::string reason;     // why not, or (when active) a short note
@@ -62,6 +69,9 @@ struct Plan {
 
   std::string runtime_dll;  // deployed d3d9.dll, relative to root; metadata may be present while RTX is off
   std::string runtime_dir;  // folder added to the DLL search for late bare-name loads (relative)
+  // The runtime package's deployed late_runtime_dll files at the top of runtime_dir, relative to root,
+  // sorted; loaded after the runtime. Only filled when the plan activates.
+  std::vector<std::string> preload;
   bool prefer_system_vulkan = false;
   std::vector<unsigned> gpu_vendors;  // the hardware adapters' vendor ids, when the plan activates
   bool non_nvidia = false;            // none of them is NVIDIA: kNonNvidiaLayer goes into DXVK_CONFIG_FILE

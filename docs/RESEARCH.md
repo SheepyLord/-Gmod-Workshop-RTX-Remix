@@ -1465,11 +1465,46 @@ RTX 5090, frames counted by the engine; DLSS frame generation shows about three 
   condition occured during processing", and switches to importance-sampled indirect light; none of
   those six DLLs is in its process.
 - The four of them that ship are in the package's `runtime` folder beside `d3d9.dll`. The fork probes
-  FSR by bare name (`src\dxvk\rtx_render\rtx_fork_fsr.cpp:537`, `LoadLibraryA`, delay-loaded,
-  `src\dxvk\meson.build:523`); NRC loads CUDA itself. M4 put the runtime folder into the search with
-  `SetDllDirectoryW`; M5 moved it to `PATH` (ADR 0010), which those loads do not read. No game module
-  imports `SetDefaultDllDirectories`, `AddDllDirectory` or `SetDllDirectory` (only our `winmm.dll`
-  imports `SetDllDirectoryW`). Loader 0.5.0 adds the folder with `AddDllDirectory` (ADR 0030).
+  FSR by bare name when it creates the device (`src\dxvk\rtx_render\rtx_fork_fsr.cpp:537`, a plain
+  `LoadLibraryA`; the DLL is delay-loaded, `src\dxvk\meson.build:523`). `NRC_Vulkan.dll` delay-imports
+  `nvrtc64_130_0.dll` and names `nvrtc-builtins64`; nothing in the runtime folder names `cudart64_13`
+  (ASCII or UTF-16). In the classic process (`ref-construct-3`) the CUDA DLLs are the last modules to
+  load, `cudart64_13.dll` just before `nvrtc64_130_0.dll`.
+- M4 put the runtime folder into the search with `SetDllDirectoryW`, and FSR and NRC loaded. M5 moved
+  it to `PATH` (ADR 0010). Loader 0.5.0's first fix added it with `AddDllDirectory` as well: the
+  end-to-end run (`out\round8\e2e\sessions-run1`, four RTX sessions with and without ReShade) still
+  logged both failures, with `AddDllDirectory` succeeding (no note).
+
+**Why no search finds the runtime folder** (2026-10-29, measured on the ReShade client):
+- **`PATH` is rewritten.** Read from the running game's process environment block, `PATH` was
+  `C:\Program Files (x86)\Steam;` followed by the 25 entries the process started with: neither the
+  runtime folder the loader put first nor `gmod.exe`'s own `bin\win64` entry is left, so something
+  rewrites it after both from the starting value, apparently the Steam client.
+- **`gmod.exe` rewrites it too, harmlessly:** it formats `PATH=%s;%s` (its folder, then the `PATH` it
+  read; code at `0x14005736E`, with warnings for a game path of 260 characters or more and for the two
+  together passing 8,192) and then checks the command line for `--type=` (Chromium's helper processes).
+- **The standard search is in effect.** `gmod.exe` holds Chromium's sandbox mitigations; their
+  DLL-search flag (`0x200`) calls `SetDefaultDllDirectories(0xC00)` (System32 and user folders;
+  `0x1400018FA`, the function name resolved at run time, so no import table shows it). Under that set
+  an `AddDllDirectory` folder would be searched; since the game's loads did not find the folder, they
+  use the standard search, which reads `SetDllDirectory`'s folder (M4) but never `AddDllDirectory`'s.
+  Modules of the game process that name these functions: `gmod.exe`, `libcef.dll` (both
+  `SetDefaultDllDirectories`), `apphelp.dll`, `client.dll`, `server.dll`, `GameAnalytics.dll`
+  (`AddDllDirectory`), and `gmcl_rtxfixesbinary_win64.dll`, `dxgi.dll`, `NvMemMapStoragex.dll`
+  (`SetDllDirectory`).
+- **The files are fine.** In a fresh process (`out\round8\tools\probe_search*.py`), all of
+  `amd_fidelityfx_vk.dll`, `cudart64_13.dll` and `nvrtc64_130_0.dll` load from the deployed runtime
+  folder: by bare name with it first on `PATH`; by bare name after `AddDllDirectory` and
+  `SetDefaultDllDirectories(0xC00)`, also after a DXGI adapter list and a Vulkan instance on the NVIDIA
+  driver, and after any `SetDllDirectoryA` call; and by absolute path. Their dependencies are System32's
+  (`MSVCP140`, `VCRUNTIME140`, `vulkan-1`), the same files the game loads.
+- So loader 0.5.0 loads the four right after the runtime, by absolute path (ADR 0030): a later
+  bare-name load binds to the loaded module. They are 113 MB (`nvrtc64_130_0.dll` 96.7 MB,
+  `amd_fidelityfx_vk.dll` 8.9 MB, `nvrtc-builtins64_133.dll` 6.4 MB, `cudart64_13.dll` 0.5 MB).
+- **Result** (`out\round8\e2e\sessions`, the same package, RTX 5090): every RTX session logs "FSR:
+  amd_fidelityfx_vk.dll loaded.", "NRC SDK: Loading the default network config data" and "NRC v0.15
+  (25 March 2026) Context successfully initialized", and stays on the Neural Radiance Cache. Activation
+  took 38.8 ms with the four against 35.8-51.1 ms without them.
 
 **The preset.** The package's classic layer pins `rtx.graphicsPreset = 4` (Custom). The fork's
 `GraphicsPreset` (`rtx_graphics_preset.h:26`) is Ultra 0, High 1, Medium 2, Low 3, Custom 4, Auto 5. It
@@ -1491,3 +1526,17 @@ each and are read only under Auto.
   workaround): expect a stutter the first time each effect is used.
 - Integrated GPUs are skipped only when a discrete GPU is there (`dxvk_instance.cpp:919`); on an APU-only
   machine Remix uses the integrated GPU.
+
+**AMD smoke test** (2026-10-29, `out\round8\amd_smoke.ps1`, twice: before and after the preload). One
+RTX session in the ReShade client with `VK_DRIVER_FILES` set to AMD's driver manifest, so Vulkan sees
+only the Ryzen 9 9950X3D's integrated "AMD Radeon(TM) Graphics" (vendor `0x1002`, RDNA 2). DXGI still
+lists the RTX 5090, so the non-NVIDIA layer stayed off and the preset Custom (4).
+- Remix took the Radeon, found NRC unsupported (`VK_NVX_binary_import` and `VK_NVX_image_view_handle`
+  missing) and switched to ReSTIR GI; NGX was not available (DLSS off) and Reflex failed; "AMD driver
+  detected" set the ray-tracing modes (trace ray for indirect light, ray query for the G-buffer and
+  direct light). The map loaded.
+- With the preload, "FSR: amd_fidelityfx_vk.dll loaded." (before it, "could not be loaded").
+- In both runs: many "GetShaderModule: Out of range of supported shader model", then the fork's FSR
+  sharpening pass (`fork_rcas`) failed to compile and, a second later, `VK_ERROR_DEVICE_LOST` (60-75 s
+  after start). The game then hung until stopped; `poc_session.py`'s timeout did not end it. So this
+  integrated GPU cannot run an RTX session; a discrete Radeon (RX 6000 or newer) was not available to try.
