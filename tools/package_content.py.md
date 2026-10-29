@@ -6,6 +6,8 @@ Workshop by itself, because Remix mods (`.usda`, `.dds`) are outside GMod's file
 refuses an archive that holds them ([ADR 0015](../docs/decisions/0015-workshop-route-for-native-packages.md)).
 The loader deploys the package instead, so its Lua arrives as an add-on folder and its mods in
 `rtx-remix\mods`. The first such package is the Modern House remaster (`modern-house-rtx`).
+[`publish_workshop.py`](publish_workshop.py.md) also runs it as a builder (`"build": "package_content"`
+in [`workshop.json`](workshop.json)) for the RTX package's `Remove_halo` part.
 
 ```powershell
 # Modern House RTX: the add-on and its Remix mod, hidden without RTX, as one archive for the Workshop:

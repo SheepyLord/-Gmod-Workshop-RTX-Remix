@@ -38,8 +38,9 @@ STATE = shared_state()
 HOOK_MARKER = '# nl-workshop-hook'
 # What goes into the item from this repository: a change here can change the package.
 REPO_INPUTS = ('companion', 'tools/package_fixes.py', 'tools/package_runtime.py', 'tools/package_workshop.py',
-               'tools/gmapack/gmapack.py', 'tools/workshop.json')
-BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py'}
+               'tools/package_content.py', 'tools/gmapack/gmapack.py', 'tools/workshop.json')
+BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
+            'package_content': 'tools/package_content.py'}
 LOCK_WAIT = 2 * 60 * 60
 
 

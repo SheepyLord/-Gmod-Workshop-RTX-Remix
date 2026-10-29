@@ -29,6 +29,17 @@
     {
       "name": "emissives",
       "package": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\round3\\emissives.gma"
+    },
+    {
+      "name": "remove-halo",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "remove-halo",
+        "--requires-remix",
+        "--addon",
+        "H:\\BACKUP_20260815\\Modding\\ipg\\Remove_halo"
+      ]
     }
   ],
   "gmpublish": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_PoC\\bin\\win64\\gmpublish.exe"
