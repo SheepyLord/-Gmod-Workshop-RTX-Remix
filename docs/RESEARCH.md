@@ -1185,4 +1185,57 @@ package until a launch from Steam has removed it.
 loaded runtime DLL is not the file that was checked", on the server and the client
 (`mmdhl.install.error.*`). Its runtime and both modules are loaded: the bootstrap loads the runtime
 from `garrysmod\lua\bin` (ADR 0024), and the add-on says it "uses it anyway". The round-4 sessions,
-PoC and field, show the same lines.
+PoC and field, show the same lines. Fixed in section 23.
+
+## 23. Model Hotloader's install check and the runtime in lua/bin (2026-10-29, Claude)
+
+**Where the warnings come from.** Model Hotloader's repository is
+`H:\BACKUP_20260815\Modding\ipg\!GMHLVK\Gmod-Model-Hotloader-with-Vulkan` (`main` at `ecd7c42`
+"Version 2.3.1"). Its `addon/lua/mmdhl/installation.lua`:
+- **Before loading,** `EvaluateInstallation` reads the runtime where Windows looks for it: `bin/win64`
+  through `BASE_PATH` on a client or listen server, beside `srcds_win64.exe` then `bin/win64` on a
+  dedicated server, `lua/bin` on Linux. A missing file is a warning, printed before `require`.
+- **After loading,** `identitiesMatch` compares the runtime path the native module reports
+  (`GetInstallationInfo`) with that file. A difference is the "loaded runtime DLL is not the file that
+  was checked" warning.
+
+With the loader, the runtime the module reports is `<game>\garrysmod\lua\bin\mmdhl_runtime_win64.dll`
+(LoadLibraryExW of that absolute path, `loader/proxy/modules.cpp` `load_first`). So both warnings
+fire, although everything works.
+
+**What the RTX package ships.** The classic install's `garrysmod\addons\mmd_hotloader` equals the
+repository's `main` working tree, byte for byte, except `lua/mmdhl/native_policy.lua`:
+- The working tree holds work staged since 2026-10-26: 41 files, secondary gravity and buoyancy,
+  server settings. It is uncommitted; the session that wrote it is offline.
+- The shipped `native_policy.lua` is the one the native build writes. It records release 2.3.1 (build
+  `ecd7c426c0b5-20261026T225907Z`, runtime SHA-256 `351a7068...`), which is what the classic install's
+  `lua\bin` holds. The committed one stops at 2.3.0.
+
+**The fix** (Model Hotloader branch `claude/runtime-in-lua-bin`; [ADR 0026](decisions/0026-addon-file-from-its-repository.md)):
+- **Before loading:** on a Windows client or listen server with no runtime in `bin/win64` and a copy
+  in `lua/bin`, that copy is the runtime checked. The missing file waits in `files.runtime.missingAt`.
+- **After loading:** `reportMissingRuntime` drops it when the loaded runtime is that copy. Otherwise
+  (nothing loaded, loaded from elsewhere, a module too old to say) the missing file is reported as
+  before, so a player without the loader still reads why the module did not load.
+- **Tests:** its offline suite (51 scripts, lupa 2.8) and the i18n check pass on the branch. On `main`'s
+  working tree with the staged work, 55 scripts pass.
+
+**Measured** with the branch-built RTX package on the PoC (loader 0.3.1, RTX active), evidence in
+`out\round6\poc`:
+- No runtime warning on either realm.
+- `mmdhl.native` is set on the server and the client.
+- The server's install status lists no issue. The client's lists only `game_unverified`: "This Garry's
+  Mod build has not been tested with this native release (engine.dll, client.dll, materialsystem.dll,
+  shaderapidx9.dll changed)". That is Model Hotloader's compatibility profile for 2.3.1 against a
+  newer GMod build, unrelated to the runtime.
+
+**Git hooks and the publish script.** Git runs a hook with the hooked repository in `GIT_DIR`,
+`GIT_INDEX_FILE` and `GIT_WORK_TREE` (githooks(5); for a worktree, `GIT_DIR` is
+`.git/worktrees/<name>`). `git -C <path>` and a `cwd` do not override `GIT_DIR`.
+- So the round-4 source hooks ran `publish_workshop.py` against the source repository.
+- Seen when the fix above was committed in Model Hotloader's worktree: the run refused with this
+  repository's `companion/` and `tools/...` listed as untracked. Its log was in
+  `Gmod-Model-Hotloader-with-Vulkan\out\workshop\logs`, which was then removed.
+- No earlier source-repository commit had run one (no other such log existed).
+- The 15 names `git rev-parse --local-env-vars` lists on git 2.56.0 are the ones the script now
+  removes.

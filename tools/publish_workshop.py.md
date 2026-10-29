@@ -102,6 +102,13 @@ an update there rebuilds the parts and uploads if the item's content changed.
     install from feature-branch worktrees.
 - `--uninstall-source-hooks REPO` removes them. They carry the same marker, and an unmarked hook is
   never replaced without `--force-hooks`.
+- **Git's hook environment is ignored.** Git runs a hook with the hooked repository in `GIT_DIR`,
+  `GIT_INDEX_FILE` and the like. The script removes those variables (`GIT_LOCAL_ENV`, the names `git
+  rev-parse --local-env-vars` lists) before any git call, so its git calls read this repository.
+  - Before round 6 they read the source repository instead. Each such run saw this repository's
+    packaging inputs as untracked, refused ("uncommitted changes in the packaging inputs"), and left
+    its log in the source repository's `out\workshop\logs`.
+  - So until then no source-repository commit had updated the item.
 
 Each hook runs `publish_workshop.py --background --reason "<what> <commit>"`.
 - The background run is detached, so the commit, merge or push returns at once.

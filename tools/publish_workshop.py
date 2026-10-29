@@ -22,6 +22,16 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / 'tools' / 'workshop.json'
+# Git runs a hook with the repository it hooks in GIT_DIR, GIT_INDEX_FILE and the like (githooks(5)).
+# A part's source repository runs this script from its hooks, and every git call here would then read
+# that repository instead of this one, down to where the log goes. Without them, git finds this
+# repository from each call's working directory. The names are `git rev-parse --local-env-vars`.
+GIT_LOCAL_ENV = ('GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_CONFIG', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT',
+                 'GIT_OBJECT_DIRECTORY', 'GIT_DIR', 'GIT_WORK_TREE', 'GIT_IMPLICIT_WORK_TREE', 'GIT_GRAFT_FILE',
+                 'GIT_INDEX_FILE', 'GIT_NO_REPLACE_OBJECTS', 'GIT_REPLACE_REF_BASE', 'GIT_PREFIX', 'GIT_SHALLOW_FILE',
+                 'GIT_COMMON_DIR')
+for _name in GIT_LOCAL_ENV:
+    os.environ.pop(_name, None)
 
 
 def shared_state() -> Path:
