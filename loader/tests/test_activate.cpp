@@ -124,6 +124,18 @@ TEST_CASE("activate: both user config lists remain last and ordinary empty value
   CHECK(env_value(p, "RTX_TEST") == nullptr);
 }
 
+TEST_CASE("activate: a layer list the runtime would ignore (260 characters or more) is noted") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/dxvk/01_defaults.conf"};
+  const auto short_plan = activate::plan(with_runtime("native-loader/packages/x/1_1", remix), config::Config{}, none(), L"gmod.exe", uhd);
+  CHECK(short_plan.notes.empty());
+  const std::string payload = "native-loader/packages/" + std::string(220, 'p') + "/1_1";
+  const auto long_plan = activate::plan(with_runtime(payload, remix), config::Config{}, none(), L"gmod.exe", uhd);
+  REQUIRE(long_plan.notes.size() == 1);
+  CHECK(long_plan.notes[0].find("DXVK_CONFIG_FILE is ") == 0);
+  CHECK(env_value(long_plan, "DXVK_CONFIG_FILE") != nullptr);  // still set: the note explains the fallback
+}
+
 TEST_CASE("activate: empty config variables retain the runtime's default user root layer") {
   auto remix = base_remix();
   remix.rtx_conf_layers = {"config/base.conf"};

@@ -5,6 +5,7 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -101,7 +102,9 @@ FAKE = {
     'x86_64/Release/gmcl_RTXFixesBinary_win64.lib': b'lib',
     'x86_64/Release/gmcl_rtxwater_win64.dll': b'MZ water',
     'x86_64/Release/gmcl_rtxdebug_win64.dll': b'MZ debug',
+    'source/debug/addon/lua/autorun/client/rtx_debug.lua': b'require("rtxdebug")\n',
 }
+DEBUG_ADDON_FILE = 'source/debug/addon/lua/autorun/client/rtx_debug.lua'
 FAKE_MOD = 'garrysmod/rtx-remix/mods/base_mod/textures/a.dds'
 EXPECTED_ROOTS = [
     'garrysmod/addons/Glass-Rewrite-Remix', 'garrysmod/addons/nativeloader', 'garrysmod/addons/niknaks',
@@ -184,6 +187,7 @@ class PackageFixesTests(unittest.TestCase):
         }
         if debug:
             files['native/root/garrysmod/lua/bin/gmcl_rtxdebug_win64.dll'] = 'x86_64/Release/gmcl_rtxdebug_win64.dll'
+            files['native/root/garrysmod/addons/rtx_debug/lua/autorun/client/rtx_debug.lua'] = DEBUG_ADDON_FILE
         for rel in FAKE:
             for area, target in (('garrysmod/garrysmod/addons/', 'native/root/garrysmod/addons/'),
                                  ('garrysmod/garrysmod/data/', 'native/root/garrysmod/data/'),
@@ -235,6 +239,15 @@ class PackageFixesTests(unittest.TestCase):
             self.assertEqual(info, {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}, rel)
             self.assertEqual(data, expected[rel].read_bytes(), rel)
         self.assertIn('garrysmod/lua/bin/gmcl_rtxdebug_win64.dll', [r['path'] for r in m['root_files']])
+        self.assertIn('garrysmod/addons/rtx_debug', [r['path'] for r in m['root_files']])
+
+    def test_the_debug_module_comes_with_its_add_on_or_not_at_all(self):
+        shutil.rmtree(self.repo / 'source' / 'debug')
+        code, _, err = self.run_tool('--out', self.root / 'pkg', '--with-debug-module')
+        self.assertEqual(code, 1)
+        self.assertIn('source', err)
+        self.assertIn('debug', err)
+        self.assertFalse((self.root / 'pkg').exists())
 
     def test_steam_files_configs_and_junk_stay_out(self):
         out = self.root / 'pkg'

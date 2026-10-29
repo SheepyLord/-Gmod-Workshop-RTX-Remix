@@ -9,6 +9,10 @@ harness written to a scratch folder under `out\tmp`.
   the "newer Workshop version" line and raises exactly one notification (M6's restart notice); the
   session-variable line from `status.json` is printed.
 - The deployed version, and a local package, print and raise nothing about updates.
+- The status says "Remix API: ready (RemixLight, RemixConfig)" when the RTX fixes' tables exist,
+  and "not available" when they do not (`hook`, `istable`, `isfunction` mocked too).
+- Every Lua file of the companion compiles under LuaJIT (`loadfile`, nothing runs): the guard, the
+  defaults, the menu, the guide and the generated table.
 
 Run with the other tool tests: `python -m unittest discover -s tests` from `tools\` (as
 `tools\test.ps1` does). Skipped when LuaJIT is not installed (on `PATH` or in

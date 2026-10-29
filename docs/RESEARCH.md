@@ -37,7 +37,8 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
   `DXVK_CONFIG_FILE` and `DXVK_RTX_CONFIG_FILE` take comma-separated lists (the last `rtx.conf`
   layer is the one the UI saves to); `user.conf` has no environment override and is opened relative
   to the working directory (`rtx_option_constants.h:115-124`). Reported: a per-user layer
-  `%LOCALAPPDATA%\NVIDIA\RTXRemix\user_settings\<hash>.conf` is also read.
+  `%LOCALAPPDATA%\NVIDIA\RTXRemix\user_settings\<hash>.conf` is also read. (Corrected in section 19:
+  that file holds only first-use and crash-report flags, and is not an option layer.)
 - `rtx-remix\{mods,captures,logs}` default to `./rtx-remix/...` made absolute when `d3d9.dll`
   loads, i.e. relative to the working directory, overridable with `DEFAULT_MODS_DIR`,
   `DXVK_CAPTURE_PATH`, `DXVK_LOG_PATH` (`src/util/util_filesys.h:63-65`, `util_filesys.cpp:106-147`).
@@ -290,7 +291,8 @@ Gathered while planning M4; scripts were one-offs under `out\tmp` (`pefile`, `ct
   `DXVK_RTX_CONFIG_FILE` (or `DXVK_CONFIG_FILE`) is set and not empty, the runtime reads only the
   paths it lists, split at commas; `.\rtx.conf` is read only when the variable is unset. So a loader
   that sets the variable must list the user's root `rtx.conf` itself.
-- `createLayersFromEnvVar` (`:629-647`) makes one layer per listed path, lowest priority first; the
+- (Corrected in section 19: for `rtx.*` options the **first** listed path is the strongest, not the
+  weakest.) `createLayersFromEnvVar` (`:629-647`) makes one layer per listed path, lowest priority first; the
   last `rtx.conf` layer becomes `s_rtxConfLayer` (`:704-712`), the one the Remix menu saves to. A
   layer whose file is missing or empty is registered but not merged (`isValid()` is "has options",
   `rtx_option_layer.h:141`).
@@ -771,3 +773,162 @@ logs and `status.json`, and Remix's log. The user's console log was not read.
     items. The one item a stopped session had been writing was extracted again.
   - Item 3829070317 is never extracted: it is a plain `.gma`.
   - The field install's cache was last written on 2026-10-24.
+
+## 19. Field parity with the classic install (R2, 2026-10-29, Claude with four research agents)
+
+The measure: the pool rooms (`gm_poolrooms`, Workshop 2849511871, mounted from client Lua by
+`poc_session.py --mount-workshop ... --change-map gm_poolrooms`) at a pinned camera. The camera is at
+the map's spawn point `1336 -456 -82` (eye z -18), pitch 5, yaw 342.5, with the HUD hidden. The block
+measure is that of section 12. Evidence is in the worktree's `out/round2`.
+
+**The runtime fork's config layers** (`dxvk-remix-gmod`, branch `gmod-1.6.1`; corrects sections 2 and 10):
+
+- **For `rtx.*` options, the first entry of a `DXVK_RTX_CONFIG_FILE` or `DXVK_CONFIG_FILE` list is the
+  strongest.**
+  - Earlier entries are named "00_...", "01_..." and the last gets the plain name. Layers of one
+    priority sort alphabetically, and the first wins (`rtx_option_layer.cpp:49-61`,
+    `rtx_option_constants.h:159-164`).
+  - `d3d9.*` and `dxvk.*` keys come from one merged config in which the last file wins.
+- **Priorities:**
+  - `dxvk.conf` layers 1, per-game built-ins 2 (only `hl2.exe` has an entry), `rtx.conf` layers 3,
+    per-option environment variables 5;
+  - `user.conf` 0xFFFFFFFE, presets 0xFFFFFFFF.
+  - `user.conf` is always `./user.conf`; there is no override.
+  - `%LOCALAPPDATA%\NVIDIA\RTXRemix\user_settings\<hash>.conf` holds only first-use and crash-report
+    flags.
+- **Save targets:**
+  - "Remix Config (rtx.conf): Save" writes the last `DXVK_RTX_CONFIG_FILE` entry, every value of that
+    layer, and only `rtx.` keys.
+  - "User Settings (user.conf): Save" writes `./user.conf`.
+  - "Migrate N Developer Settings" moves API-set values from the user layer into the `rtx.conf` layer,
+    in memory only.
+  - The RTX fixes write developer options through the API into the user layer: per-map configs,
+    `ignoreGame*Lights`, texture categories. So `user.conf` shows unsaved changes by itself.
+- **Presets:**
+  - A graphics preset other than Custom (4) re-applies its values above `user.conf` at every device
+    creation. Auto (5) picks Ultra on Blackwell.
+  - DLSS preset On forces the upscaler, DLSS quality Auto and Reflex. `rtx.dlssPreset 2` keeps your
+    choices.
+  - `rtx.raytraceModePreset` Auto rewrites the three ray-trace modes.
+- **Limits and switches:**
+  - These variables are read into a 260-character buffer; a longer value counts as empty, and the
+    runtime falls back to the bare root conf.
+  - `DXVK_FORCE_WINDOWED=1` makes every device creation and Reset windowed (`d3d9_swapchain.cpp:1195`).
+- **Texture-hash lists** (`rtx.*Textures`) combine across layers as sets: a layer adds its hashes and
+  removes its `-0x...` ones. The classic install's effective lists hold 4,087 decal, 1,576 particle,
+  549 player-model and 208 ignore hashes, removals included.
+- **The fullscreen crash of section 18:**
+  - `D3D9WindowProc` (`d3d9_swapchain.cpp:239-309`) keeps using a swap chain while the device
+    destructor runs. The "Swapchain handle is invalid" liveness test is itself a use after free.
+  - The hook is removed only at the end of the swap chain's destructor.
+
+**What the field ran differently** (before this round):
+
+- **Remix settings.** The package shipped the classic `rtx.conf` and `dxvk.conf`, but not the classic
+  `user.conf`: 91 settings. That file holds the 4-hash `playerModelTextures`, the fog
+  (`transmittanceMeasurementDistanceMeters` 420), atmosphere, NRC (`integrateIndirectMode` 2) and
+  preset 4.
+- **The user's test saves** in the field's root `rtx.conf` (16:58) set fog to 10 m, atmosphere off and
+  `playerModel.enableInPrimarySpace` False.
+- **The RTX add-ons' settings.**
+  - GMod x64 keeps Lua convars in `garrysmod/cfg/client.vdf` and `server.vdf`, not `config.cfg`. The
+    fixes also keep `r_forcehwskin` as a cookie in `cl.db`, restored at every map load. It is forced
+    to 1 when HL2 RTX content is mounted.
+  - The classic `client.vdf` (the fixes' own `.vdf`, which RTXLauncher copied, plus the user's tuning)
+    against the field:
+
+    | Setting | Classic | Field |
+    |---|---|---|
+    | `rtx_pseudoplayer`, `rtx_pseudoweapon` | 0 | 1 |
+    | `rtx_api_map_lights_autospawn` | 0 | 1 |
+    | `rtx_lightupdater` | 1 | 0 |
+    | `rtx_flashlight_brightness` | 5 | 1000 |
+    | `rtx_water_custom` | 1 | 0 |
+    | `rtx_pseudoplayer_unique_hashes` (server) | 0 | 1 |
+
+  - The field also had the cookie `r_forcehwskin=1`.
+- **The pseudo player and Model Hotloader.**
+  - With `rtx_pseudoplayer 1` the fixes draw a client-side copy of the local player. Model Hotloader
+    adopts it as a player copy (`player_copies.lua:52-74`) and draws it with the character's own
+    textures, so nothing is tagged and the MMD body appears in first person.
+  - Model Hotloader also cuts the head out of the first-person view with a user clip plane, which the
+    path tracer ignores. The field's Model Hotloader 2.3.0 has no RTX handling (no `mhrtx_*`
+    variables); the classic install's 2.3.1 has.
+- **AMAP's RTX flashlight** (`mmd_vmd_npc`, the Character Motion Importer) calls `RemixLight.CreateSphere`
+  directly; ProjectedTexture and `rtx_lightupdater` do not matter to it. A sphere light's output grows
+  with radius squared, and the field's `mmd_vmd_npc_flashlight_rtx_radius` was 1 (classic 30, AMAP
+  default 20).
+  - With the classic values the light is strong: the pinned frame went from mean RGB 80/82/76 to
+    117/122/119.
+- **The classic install's fixes Lua** has three local fixes the fork lacked, committed to the fork as
+  `fc478c0`:
+  - `cl_material_pipeline.lua` reads model materials from the `.mdl` header; the old walk froze maps
+    with thousands of props;
+  - the skybox boundary renderer builds its meshes only when switched on; before, it took 3 ms of each
+    frame for a minute after every map load;
+  - `func_reflective_glass` is removed again after clean-ups and saves.
+- **Remix mods:** the classic install loads 29, the field 5. Among them are `Poolday` (337 MB, a
+  "Release Ready" replacement mod for the pool rooms), `Water`, `Emissives`, `gmodrtx_poolday_fix`,
+  `ai_pbr` and the user's character and map mods.
+
+**Measurements** (block measure; repeat captures of the classic install: 0.60):
+
+| Field state | block_diff | Mean RGB (classic 72.7/93.6/96.6) |
+|---|---|---|
+| Package with classic `rtx.conf` only, first-run add-on defaults applied (test 1) | 14.47 | 79.0/82.2/76.1 |
+| One merged defaults layer, effective Remix values equal to the classic install's (test 2) | 14.79 | 80.0/81.8/76.1 |
+| Texture lists merged as sets, every effective list equal (test 4) | 14.78 | 79.9/81.8/76.1 |
+| Plus the classic `Poolday`, `Water`, `Emissives`, `gmodrtx_poolday_fix` and `SubUSDs` mods | 14.90 | 79.8/81.6/75.8 |
+
+- The remaining difference is a uniform warm cast against the classic install's blue-grey. The
+  effective Remix settings, the pool rooms mod and add-on, the water and the per-map configs are now
+  identical; so are the hash lists.
+- Not yet compared: the classic install's other local add-ons and their data, among them Advanced
+  Material Editor (29 persistent rules, 32 RTX profiles, its standalone bridge DLL), the other 23
+  Remix mods, and the older game build.
+- The first-person view is correct: no pseudo-player body. Remix's menu opens through
+  `RemixConfig.SetUIState(2)`, and "Remix API: ready" is reported under the loader.
+
+**GMod's shared video settings across modes** (PoC, `-nonativeloader` for vanilla, `--no-window`):
+
+- A normal start with `DXLevel_V1` 90 stored, as RTX leaves it, used the stored 2560x1440 windowed,
+  kept it, and wrote 95.
+- An RTX start with 95 stored opened at the loader's 3840x2160, left the stored size and window flags
+  as they were, and wrote 90.
+- So neither mode overwrites the other's video settings; command-line `-w`/`-h`/`-windowed` are not
+  saved.
+
+**The user's add-ons and the machine** (static audit of the field's local add-ons, about 700
+Workshop GMAs and the binaries):
+
+- **Add-ons:**
+  - FPS Boost (2982286549) sets `r_threaded_particles 1` and the queued-rendering variables at every
+    client start, after the session cfg.
+  - Draconic Base (1847505933) turns motion blur on every second.
+  - Draconic Base and ECAfEDAP draw stock post-processing; Zippy's Library draws outlines from screen
+    copies.
+- **Vulkan layers registered here** load into Remix's instance: OBS's `VK_LAYER_OBS_HOOK` and the AMD
+  iGPU's `VK_LAYER_AMD_switchable_graphics` are always on. The Steam overlay and Fossilize layers turn
+  on only when their `ENABLE_*` variables are set.
+- **Other files:**
+  - No `d3d11.dll` or `dxgi.dll` is in `bin\win64`; the Chromium leftovers there (`vk_swiftshader`,
+    `dxcompiler.dll`, `dxil.dll`) are inert.
+  - `gmcl_vrmod_win64.dll` in `lua\bin` links D3D11 and OpenVR, but no VRMod Lua is installed.
+- **Zippy's Library** (Workshop 3146473253) is required by the user's local `enhanced_blood`. GMod's
+  Workshop rules forbid reuploading another author's item "whatever the reupload reason is", so it is
+  mounted from the user's own subscription in test sessions and never packaged.
+
+**Bundling the requested add-ons** (inventory):
+
+- **Model Hotloader:** its modules statically import `mmdhl_runtime_win64.dll`, which Windows finds
+  in `bin\win64` next to the exe. The package format cannot place files there.
+- **Advanced Material Editor, the bodygroup tool, procedural bodygroup destruction and the Character
+  Motion Importer** are Lua add-ons, with an optional bridge DLL for the editor. They fit the package
+  areas.
+  - In the field, `mmd_hotloader`, `mmd_vmd_npc` and `advanced_bodygroup_tool` are hand-placed folders
+    of the same names; the last is a link to the dev folder. The loader refuses to replace a folder it
+    does not own, and that refusal fails the package.
+- **The debug module** (`gmcl_rtxdebug_win64.dll`) and its one-file add-on `rtx_debug` now ship with
+  the fixes.
+- **modern_house_rtx:** 8 Lua files plus 490 DDS textures, 3.32 GB. The textures are AI-upscaled from
+  the textures of someone else's map (Workshop 3495468649).

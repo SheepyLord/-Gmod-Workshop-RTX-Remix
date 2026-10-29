@@ -49,7 +49,8 @@ def tree(root):
 def run_args(root, evidence, **changes):
     values = dict(root=str(root), evidence=str(evidence), name='run', reference=False, allow_steam_managed=False,
                   width=1280, height=720, workshop=False, addons=False, extra=[], players=1, map='gm_construct',
-                  post=[], timeout=30, load_save=None, mount_workshop=None, console=[], camera=None, hide_hud=False,
+                  post=[], timeout=30, load_save=None, change_map=None, mount_workshop=None, console=[], camera=None,
+                  hide_hud=False, no_window=False,
                   settle=0, screenshots=0, shot_interval=0, quit_timeout=5)
     values.update(changes)
     return SimpleNamespace(**values)

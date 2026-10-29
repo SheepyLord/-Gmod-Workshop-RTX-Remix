@@ -585,7 +585,8 @@ def step_run(args) -> dict:
         shutil.move(str(console_log), str(evidence / "console-before-run.log"))
     remix_log = root / "rtx-remix" / "logs" / "remix-dxvk.log"
     remix_before = remix_log.stat().st_mtime if remix_log.exists() else None
-    arguments = ["-game", "garrysmod", "-console", "-windowed", "-w", str(args.width), "-h", str(args.height),
+    window = [] if args.no_window else ["-windowed", "-w", str(args.width), "-h", str(args.height)]
+    arguments = ["-game", "garrysmod", "-console", *window,
                  "-condebug", *([] if args.workshop else ["-noworkshop"]), *([] if args.addons else ["-noaddons"]),
                  *args.extra, "+maxplayers", str(args.players), "+mat_dxlevel"]
     arguments += ["+map", args.map] if args.map else []
@@ -642,22 +643,33 @@ def step_run(args) -> dict:
         record["early_exit"] = process.poll() is not None
         hwnd = console_window(process.pid) if loaded else None
         record["console_window"] = bool(hwnd)
-        if loaded and args.load_save and hwnd:
+        if loaded and (args.load_save or args.change_map) and hwnd:
             record["quiet_before_save"] = wait_quiet(5, 90)
             if args.mount_workshop:
-                # The save's map is a Workshop item, and Workshop add-ons are not mounted (-noworkshop):
-                # mount that one item, as GMod's own loading of a Workshop save does.
-                record["workshop_mounted"] = False
-                for _ in range(3):
-                    if client_lua(hwnd, "mount", mount_lua(args.mount_workshop)) and \
-                            wait_for(MOUNT_MARKER, 1, time.monotonic() + 60):
-                        record["workshop_mounted"] = True
-                        break
+                # The save's (or the next) map is a Workshop item, and Workshop add-ons are not mounted
+                # (-noworkshop): mount the items named (the map, a library an add-on needs), as GMod's
+                # own loading of a Workshop save does.
+                mounted = []
+                for item in args.mount_workshop:
+                    for _ in range(3):
+                        if client_lua(hwnd, "mount", mount_lua(item)) and \
+                                wait_for(MOUNT_MARKER, len(mounted) + 1, time.monotonic() + 60):
+                            mounted.append(item)
+                            break
+                record["workshop_mounted_items"] = mounted
+                record["workshop_mounted"] = len(mounted) == len(args.mount_workshop)
             # gm_load prints nothing when it cannot find the save's map; the record says whether the
             # command went through and whether the map came up.
-            record["save_command"] = console(hwnd, f'gm_load "{args.load_save}"')
-            record["save_loaded"] = record["save_command"] and wait_for_map(2, time.monotonic() + args.timeout)
+            if args.load_save:
+                record["save_command"] = console(hwnd, f'gm_load "{args.load_save}"')
+                record["save_loaded"] = record["save_command"] and wait_for_map(2, time.monotonic() + args.timeout)
+            else:
+                record["map_command"] = console(hwnd, f"map {args.change_map}")
+                record["map_changed"] = record["map_command"] and wait_for_map(2, time.monotonic() + args.timeout)
             hwnd = console_window(process.pid) or hwnd
+        if args.console and hwnd:
+            # As for the camera below: text sent while the RTX fixes reload models is lost.
+            record["quiet_before_console"] = wait_quiet(5, 90)
         for command in args.console:
             if hwnd:
                 console(hwnd, command)
@@ -785,6 +797,8 @@ def main(argv=None) -> int:
     run.add_argument("--post", action="append", default=[], help="argument after +map, e.g. a console command (repeatable)")
     run.add_argument("--width", type=int, default=1280)
     run.add_argument("--height", type=int, default=720)
+    run.add_argument("--no-window", action="store_true",
+                     help="leave out -windowed -w -h: the game's saved video settings (and the loader) decide")
     run.add_argument("--timeout", type=int, default=300, help="seconds to wait for the map")
     run.add_argument("--settle", type=int, default=20, help="seconds after the map before screenshots")
     run.add_argument("--screenshots", type=int, default=1)
@@ -793,9 +807,12 @@ def main(argv=None) -> int:
     run.add_argument("--players", type=int, default=1, help="maxplayers (1: single-player)")
     run.add_argument("--addons", action="store_true", help="mount local add-ons (leave out -noaddons)")
     run.add_argument("--workshop", action="store_true", help="mount Workshop add-ons (leave out -noworkshop)")
-    run.add_argument("--load-save", help="after the first map, gm_load this save (path relative to garrysmod/)")
-    run.add_argument("--mount-workshop", type=lambda text: str(int(text)), metavar="ID",
-                     help="with --load-save: first mount this installed Workshop item (the save's map) from client Lua")
+    later = run.add_mutually_exclusive_group()
+    later.add_argument("--load-save", help="after the first map, gm_load this save (path relative to garrysmod/)")
+    later.add_argument("--change-map", help="after the first map, change to this map (with --mount-workshop for a Workshop map)")
+    run.add_argument("--mount-workshop", type=lambda text: str(int(text)), metavar="ID", action="append",
+                     help="with --load-save or --change-map: first mount this installed Workshop item from client Lua "
+                          "(repeatable: the map, then libraries add-ons need)")
     run.add_argument("--camera", type=lambda text: [float(v) for v in text.split(",")],
                      help="x,y,z,pitch,yaw,roll[,fov]: pin the view with a client CalcView hook before screenshots")
     run.add_argument("--hide-hud", action="store_true", help="hide the HUD and view model (client hooks, no cvars)")

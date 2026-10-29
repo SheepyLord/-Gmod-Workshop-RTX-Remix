@@ -12,6 +12,8 @@
 namespace nl::activate {
 namespace {
 
+constexpr std::size_t kMaxLayerList = 260;  // the runtime's buffer for DXVK_CONFIG_FILE / DXVK_RTX_CONFIG_FILE
+
 // The folder part of a '/'-separated relative path ("a/b/c.dll" -> "a/b"); empty if there is none.
 std::string parent(std::string_view path) {
   const auto slash = path.find_last_of('/');
@@ -184,7 +186,15 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
     if (user) p.user_env.emplace_back(name, *user);
     const auto value = layer_list(runtime->payload, package_layers, user && !user->empty() ? std::string_view(*user) : default_user);
     effective = split_layers(value);
-    if (!package_layers.empty()) p.env.emplace_back(name, value);
+    if (!package_layers.empty()) {
+      // The runtime reads these variables into a 260-character buffer and takes a longer value as
+      // empty: it would then use the bare root conf and none of the package's layers (RESEARCH.md
+      // section 19).
+      if (value.size() >= kMaxLayerList)
+        p.notes.push_back(std::string(name) + " is " + std::to_string(value.size()) + " characters; the runtime reads at most " +
+                          std::to_string(kMaxLayerList - 1) + " and ignores a longer list");
+      p.env.emplace_back(name, value);
+    }
   };
   add_layers("DXVK_RTX_CONFIG_FILE", remix.rtx_conf_layers, "rtx.conf", p.rtx_layers);
   add_layers("DXVK_CONFIG_FILE", remix.dxvk_conf_layers, "dxvk.conf", p.dxvk_layers);
