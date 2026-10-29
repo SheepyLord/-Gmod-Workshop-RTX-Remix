@@ -1211,7 +1211,8 @@ repository's `main` working tree, byte for byte, except `lua/mmdhl/native_policy
   `ecd7c426c0b5-20261026T225907Z`, runtime SHA-256 `351a7068...`), which is what the classic install's
   `lua\bin` holds. The committed one stops at 2.3.0.
 
-**The fix** (Model Hotloader branch `claude/runtime-in-lua-bin`; [ADR 0026](decisions/0026-addon-file-from-its-repository.md)):
+**The fix** (Model Hotloader commit `bed4582`, made on the branch `claude/runtime-in-lua-bin`;
+[ADR 0026](decisions/0026-addon-file-from-its-repository.md)):
 - **Before loading:** on a Windows client or listen server with no runtime in `bin/win64` and a copy
   in `lua/bin`, that copy is the runtime checked. The missing file waits in `files.runtime.missingAt`.
 - **After loading:** `reportMissingRuntime` drops it when the loaded runtime is that copy. Otherwise
@@ -1219,6 +1220,12 @@ repository's `main` working tree, byte for byte, except `lua/mmdhl/native_policy
   before, so a player without the loader still reads why the module did not load.
 - **Tests:** its offline suite (51 scripts, lupa 2.8) and the i18n check pass on the branch. On `main`'s
   working tree with the staged work, 55 scripts pass.
+- **Landed** (the user: "Push to main"):
+  - Model Hotloader's `main` was fast-forwarded from `ecd7c42` to `bed4582` and pushed to GitHub, and
+    the branch was deleted.
+  - The checkout's staged work is kept, now on top of the fix: the same 41 files and changed lines,
+    compared before and after. A backup of the earlier state is in `out\round6\mmdhl-main-backup`.
+  - 55 scripts pass there.
 
 **Measured** with the branch-built RTX package on the PoC (loader 0.3.1, RTX active), evidence in
 `out\round6\poc`:

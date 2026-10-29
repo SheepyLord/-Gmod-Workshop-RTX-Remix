@@ -1,6 +1,7 @@
 # 0026: A bundled add-on may take single files from its own repository
 
-- Status: Accepted 2026-10-29
+- Status: Accepted 2026-10-29. The same day the fix landed on Model Hotloader's `main` as `bed4582`,
+  and its branch was deleted
 - Decided by: the user ("Yes, fix it", to fixing Model Hotloader's install check in its repository
   and getting the fix into the RTX package), Claude choosing how
 - Builds on: [0024](0024-bundled-addons-and-module-dependencies.md) (bundled add-ons, module

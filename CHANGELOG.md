@@ -13,8 +13,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
   bin/win64/mmdhl_runtime_win64.dll" and "The loaded runtime DLL is not the file that was checked" on
   both realms in every session, because its check looked only in `bin\win64` while the loader loads the
   runtime from `garrysmod\lua\bin`.
-  - The check now accepts the copy in `lua\bin` when the game loaded that copy. That fix lives in
-    Model Hotloader's repository (branch `claude/runtime-in-lua-bin`, also in its `main` working tree).
+  - The check now accepts the copy in `lua\bin` when the game loaded that copy. That fix is commit
+    `bed4582` on Model Hotloader's `main`, pushed at the user's request.
   - The RTX package takes that one file from there until the classic install has it.
   - Measured on the PoC: no runtime warning, the native module live on both realms
     ([RESEARCH.md](docs/RESEARCH.md) section 23).
