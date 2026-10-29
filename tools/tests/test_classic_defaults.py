@@ -13,7 +13,8 @@ import classic_defaults as cd  # noqa: E402
 CLIENT = '"cfg"\n{\n\t"rtx_pseudoplayer"\t\t"0"\n\t"rtx_debug_hud"\t\t"1"\n\t"cl_drawhud"\t\t"1"\n' \
          '\t"mmd_vmd_npc_flashlight_rtx_radius"\t\t"30"\n\t"mmd_vmd_npc_flashlight_key"\t\t"0"\n' \
          '\t"r_forcehwskin"\t\t"0"\n\t"rtx_water_color"\t\t"0.62 0.89 0.97"\n}\n'
-SERVER = '"cfg"\n{\n\t"rtx_pseudoplayer_unique_hashes"\t\t"0"\n\t"sv_gravity"\t\t"600"\n}\n'
+SERVER = '"cfg"\n{\n\t"rtx_pseudoplayer_unique_hashes"\t\t"0"\n\t"sv_gravity"\t\t"600"\n' \
+         '\t"rtx_pseudoplayer"\t\t"1"\n}\n'
 
 
 class ClassicDefaultsTest(unittest.TestCase):
@@ -29,13 +30,22 @@ class ClassicDefaultsTest(unittest.TestCase):
 
     def test_only_rtx_settings_without_debug_switches_or_keys(self):
         text, counts = cd.generate(self.root / 'ref', version=7)
-        self.assertEqual(counts, {'client': 4, 'server': 1})
+        self.assertEqual(counts, {'client': 4, 'server': 1, 'shadowed': 1})
         self.assertIn('version = 7,', text)
         for kept in ('rtx_pseudoplayer = "0"', 'mmd_vmd_npc_flashlight_rtx_radius = "30"', 'r_forcehwskin = "0"',
                      'rtx_water_color = "0.62 0.89 0.97"', 'rtx_pseudoplayer_unique_hashes = "0"'):
             self.assertIn(kept, text)
         for dropped in ('rtx_debug_hud', 'cl_drawhud', 'mmd_vmd_npc_flashlight_key', 'sv_gravity'):
             self.assertNotIn(dropped, text)
+
+    def test_a_name_saved_for_both_realms_keeps_the_client_value(self):
+        # The classic install's server.vdf has a stale rtx_pseudoplayer "1"; in single-player both realms
+        # share the variable and the client's "0" is what the game uses.
+        text, _ = cd.generate(self.root / 'ref', version=7)
+        server = text.split('server = {', 1)[1]
+        self.assertIn('rtx_pseudoplayer = "0"', text.split('server = {', 1)[0])
+        self.assertNotIn('rtx_pseudoplayer = ', server)
+        self.assertIn('rtx_pseudoplayer_unique_hashes = "0"', server)
 
     def test_check_mode_and_missing_reference(self):
         out = self.root / 'classic_defaults.lua'

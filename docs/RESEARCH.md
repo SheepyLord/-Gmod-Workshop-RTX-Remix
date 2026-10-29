@@ -932,3 +932,113 @@ Workshop GMAs and the binaries):
   the fixes.
 - **modern_house_rtx:** 8 Lua files plus 490 DDS textures, 3.32 GB. The textures are AI-upscaled from
   the textures of someone else's map (Workshop 3495468649).
+
+## 20. Third field round: the pseudo player, the classic Remix mods, Modern House (2026-10-29, Claude)
+
+Measured in the field install with `poc_session.py --allow-steam-managed`. The evidence is in the
+worktree's `out\round3\`.
+
+**The player's own model in first person came back after round 2.**
+
+- The classic install's `cfg\server.vdf` holds stale copies of three settings, and its `client.vdf`
+  has the values the game uses:
+
+  | Setting | `server.vdf` | `client.vdf` |
+  |---|---|---|
+  | `rtx_pseudoplayer` | `1` | `0` |
+  | `rtx_pseudoweapon` | `1` | `0` |
+  | `rtx_disablevertexlighting` | `1` | `0` |
+
+- The fixes create these on the client only (`cl_rtx_misc.lua`, `CreateClientConVar`), and the
+  field's `server.vdf` has no such entries. In single-player one variable of each name serves both
+  realms.
+- `classic_defaults.lua` version 2 had them in its server table. `nativeloader_rtx_defaults_server`,
+  run after the client command, set them to `1`, and the game saved that in `client.vdf`. The pseudo
+  player then drew the player's head in front of the camera.
+- After the fix (version 3, the server table without names the client table has) the console prints
+  `"rtx_pseudoplayer" = "0" ( def. "1" )`. A first-person start in the pool rooms shows no body.
+  Version 3's first run changed 0 of 187 client and 0 of 17 server settings: they were classic already.
+
+**Emissives** (`rtx-remix\mods\Emissives`, from the classic install; 10 files, 3.8 MB):
+
+- It replaces one material, `mat_B19B22D6FDE30598`: albedo, an emissive mask, intensity 18, and
+  metal and roughness maps.
+- That is `models/props_interiors/florescentlight01a_on`, HL2's fluorescent tube light:
+  - the fixes' category manager logs it with that hash in gm_construct;
+  - `RemixMaterial.GetTextureHash` returns the same number in game;
+  - the classic `rtx.conf` also lists it in `rtx.legacyEmissiveTextures`.
+- gm_construct has 16 of these lights as static props, `models/props_interiors/lights_florescent01a.mdl`
+  skin 1 (NikNaks `GetStaticProps`). 15 form a grid in the basement at z -179, x -1424 to -2704,
+  y -1344 to -1824; one is at (-5460, -3164, 381).
+- With the camera pinned at (-1584, -1584, -235), pitch -20, yaw 180:
+
+  | | Mean RGB |
+  |---|---|
+  | With the mod | 49.5 / 45.8 / 38.6 |
+  | Without it | 21.5 / 20.6 / 18.5 |
+
+  The block measure between the two is 24.4, against 0.8 between two runs with it. Without the mod
+  the tubes still glow (legacy emissive) but light little.
+- Remix warns that its textures have no mip-maps. Four files are not referenced: three `.bmp` sources
+  and `mirror_diffuse.dds`.
+
+**Water** (`rtx-remix\mods\Water`, 38 files, 33 MB):
+
+- It replaces 29 materials. All 29 textures are in the classic `rtx.ignoreTextures`, as well as in
+  `animatedWaterTextures` and `decalTextures`. Ignored draws never reach the renderer, so the
+  replacements never apply.
+- Its `replacements.usda` references `./SubUSDs/AperturePBR_Translucent.usda`, which the folder lacks.
+- `33FAB345028AFF4A`, one of its textures, belongs to the super gravity gun's sheet; no material uses it.
+- **A/B in the pool rooms** at the round-2 pinned camera:
+
+  | Compared with each baseline run | Block measure |
+  |---|---|
+  | Without Water | 0.88, 0.41 |
+  | Without Emissives | 0.64, 0.89 |
+  | The two baseline runs with each other | 0.90 |
+
+  The largest 16-pixel block differences are 6-9 in every pair.
+- **`SubUSDs`** at the mods root has no `mod.usda`; Remix does not load it.
+
+**A test with props is misleading.** Fluorescent lights spawned as `ClientsideModel` with the `_on`
+material rendered as solid red slabs, with the mod and without it. Test with the map's own props.
+
+**gm_construct starts the player at different spawn points.** Three starts put the eye at (763, -801),
+(643, -657) and (900, 578). Compare with a pinned camera.
+
+**Modern House RTX through the Workshop** ([ADR 0023](decisions/0023-content-packages-and-modern-house-item.md)):
+
+- **The build.** `package_content.py` built the package from the fork worktree in 9 s, with hard links
+  in the work folder:
+  - 500 files, 3,322,961,921 bytes; the archive is 3,323,148,599 bytes;
+  - version `0.0.0-dev.202610280457+caaa4535`.
+- **`nlctl` and hard links.** `nlctl manifest` refuses a package folder whose files are hard links ("is a
+  link or reparse point; packages may not contain them"). The linked build is checked as the archive.
+- **The upload.** `gmpublish create -addon <gma> -icon <512x512 baseline JPEG>` uploaded it in 50 s (shown
+  as "3.0 GB"): item **3829275998**, "currently marked as hidden".
+- **The subscription.** GMod's `steam_api64.dll` has the flat Steamworks API (`SteamAPI_InitSafe`,
+  `SteamAPI_SteamUGC_v021`, `SteamAPI_ISteamUGC_SubscribeItem`, `..._DownloadItem`,
+  `..._GetItemDownloadInfo`, `..._GetItemInstallInfo`). Run as app 4000 from a game root holding
+  `steam_appid.txt`, it subscribed the owner to the hidden item.
+  - Steam downloaded 2,414 MB, the transfer compressed, in 12 s.
+  - It installed `content\4000\3829275998\modern-house-rtx.gma` byte-identical (the same SHA-256)
+    and listed it in `appworkshop_4000.acf`.
+- **The next start.** With the item allowlisted, the loader deployed it from the Workshop: 492 mod
+  files and the add-on, `source: workshop`.
+- **The map.** On `modern_house` (the map mounted with `--mount-workshop 3495468649`, then `--change-map`):
+  - the add-on printed `[MHRTX] applied 9 Remix settings; sky: physical atmosphere` and `created: 341
+    lights in the house, 341 on, the atmosphere's sun, 8 mirrors`, with no Lua errors;
+  - from the launch to the screenshots took 2.1 minutes.
+- **Against the gallery.** At the remaster's terrace camera (732, 154, 536; 6, 90, 0), the field matches
+  its gallery shot from the classic install, mean RGB 139.4 / 122.3 / 102.6 against 139.8 / 122.2 / 103.0.
+  The gallery shot has a wider field of view.
+- **A harmless warning.** GMod printed `Couldn't write cache/map_pack.bsp to mount embedded content!`,
+  and the map's textures were right anyway.
+
+**Field changes this round:**
+
+- The user's `enhanced_blood` moved to `garrysmod\addons_d` (their folder of disabled add-ons). With it
+  went the need for Zippy's Library.
+- The test copies of Water, SubUSDs and Emissives moved out of `rtx-remix\mods` into
+  `out\round3\field-removed-mods`; the package now deploys Emissives.
+- The round-2 copies of Poolday, `gmodrtx_poolday_fix` and `Poolday_mirror_fix` stay.

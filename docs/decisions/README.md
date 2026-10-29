@@ -28,6 +28,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0020](0020-classic-rtx-settings-as-defaults.md) | The classic RTX install's settings are the package's defaults: Remix's in its defaults layer, the RTX add-ons' as first-run defaults in the companion | Accepted 2026-10-29 (the user) |
 | [0021](0021-remix-defaults-in-one-low-layer.md) | Remix defaults ship as one low `DXVK_CONFIG_FILE` layer; `DXVK_RTX_CONFIG_FILE` stays unset, so the player's saved `rtx.conf` and `user.conf` win; forced windowed mode | Accepted 2026-10-29; supersedes 0008's layer-order assumption |
 | [0022](0022-companion-rtx-session-guard.md) | The companion guards RTX sessions against add-ons that undo them, gathers the RTX menus into one tab with more Remix settings, and carries an illustrated guide | Accepted 2026-10-29 (the user) |
+| [0023](0023-content-packages-and-modern-house-item.md) | Content packages carry Remix mods and their Lua; Modern House RTX is its own hidden Workshop item (3829275998); the Emissives mod ships in the RTX package, Water and Poolday do not | Accepted 2026-10-29 (the user) |
 
 ## Template
 

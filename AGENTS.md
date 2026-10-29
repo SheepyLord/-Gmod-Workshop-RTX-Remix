@@ -55,7 +55,8 @@ patched copy of GMod managed by RTXLauncher.
      `tools\test.ps1` passes. Other branches, tags (a `v*` tag makes a public release) and force pushes
      still need asking.
    - **Test items** (the user, 2026-10-28): agents may upload test items for this project to the
-     Workshop, and update them, without asking. Keep them hidden.
+     Workshop, and update them, without asking. Keep them hidden. Modern House RTX is one: 3829275998
+     ([ADR 0023](docs/decisions/0023-content-packages-and-modern-house-item.md)).
    - **Never remove or delete anything on the Workshop until the user says the project is done.** That
      covers the test items too (the first is 3829070317,
      [ADR 0015](docs/decisions/0015-workshop-route-for-native-packages.md)).

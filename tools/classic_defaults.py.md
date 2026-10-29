@@ -9,7 +9,7 @@ console variables. The companion applies them once as first-run defaults
 ```powershell
 python tools\classic_defaults.py            # regenerate from GarrysMod_RTX_c
 python tools\classic_defaults.py --check    # exit 1 when the table is out of date
-python tools\classic_defaults.py --version 2  # a new table version: players get the values once more
+python tools\classic_defaults.py --version 4  # a new table version: players get the values once more
 ```
 
 ## Inputs
@@ -26,6 +26,14 @@ python tools\classic_defaults.py --version 2  # a new table version: players get
 The Lua table (`return { version = N, client = {...}, server = {...} }`), sorted by name, with a
 header naming the source and date. It is rewritten only when its content changes (the date line is
 not compared). Prints the path and the counts.
+
+A name saved in both files goes in the client table only. In single-player the client and the server
+share one variable of each name, and the client's saved value is applied last, so the client's value
+is the one the classic install plays with. Its `server.vdf` keeps stale copies of three: `rtx_pseudoplayer`,
+`rtx_pseudoweapon` and `rtx_disablevertexlighting` are `1` there and `0` in `client.vdf`. Applying
+them from the server table (version 2, through `nativeloader_rtx_defaults_server`) brought the pseudo
+player back: the player's own model drawn in first person. Version 3 leaves them out of the server
+table and applies the corrected values once more.
 
 ## Exit codes
 
