@@ -15,6 +15,10 @@ on the server and on the client.
 - **Commands:** `nativeloader_rtx_defaults` (client) sets every classic value, also the changed ones,
   and runs `nativeloader_rtx_defaults_server`, which does the same for the server settings (in
   single-player, or for a superadmin).
+- **One realm per name.** In single-player the client and the server share one variable of each name.
+  The table therefore has a name in the client table or the server table, never both, so the order in
+  which the realms apply cannot change the result (table version 3; version 2 had the classic install's
+  stale server copies of `rtx_pseudoplayer`, `rtx_pseudoweapon` and `rtx_disablevertexlighting`).
 
 Console output: one line per realm on the first run, `[nativeloader] client: 7 of 176 RTX settings
 set to the classic RTX install's values (first run)`.

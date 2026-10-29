@@ -6,6 +6,30 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (the third field round)
+
+- **The player's own model was drawn in first person again** (the pseudo player). The classic
+  install's `server.vdf` keeps stale `1`s for `rtx_pseudoplayer`, `rtx_pseudoweapon` and
+  `rtx_disablevertexlighting`, against `0` in its `client.vdf`. In single-player both realms share
+  these variables, so applying the server table switched the pseudo player back on.
+  - The generated table now keeps a name saved for both realms in its client table only.
+  - Version 3 applies the corrected values once more, where they are still at their defaults.
+  - [RESEARCH.md](docs/RESEARCH.md) section 20.
+
+### Added (the third field round)
+
+- **The Emissives Remix mod ships in the RTX package**
+  ([ADR 0023](docs/decisions/0023-content-packages-and-modern-house-item.md)). HL2's fluorescent tube
+  lights (gm_construct's basement and elsewhere) now light their rooms: measured twice as bright as
+  without it. The classic install's Water mod does not ship: its textures are on the ignore list, so it
+  never draws.
+- **`tools/package_content.py`:** content packages, Lua add-on folders and Remix mod folders with no
+  native code. For an archive alone it hard-links its work folder, so gigabytes of textures are not
+  copied twice.
+- **Modern House RTX as its own package**, `modern-house-rtx` (the remaster's Remix mod and Lua,
+  3.3 GB). It is uploaded as the hidden Workshop test item 3829275998, subscribed, and played in the
+  field install from there.
+
 ### Fixed (the second field round: rendering parity with the classic install)
 
 - **Remix settings saved in the menu came back at the next start.** In the runtime fork the first

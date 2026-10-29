@@ -25,6 +25,10 @@
         "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin",
         "--with-debug-module"
       ]
+    },
+    {
+      "name": "emissives",
+      "package": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\round3\\emissives.gma"
     }
   ],
   "gmpublish": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_PoC\\bin\\win64\\gmpublish.exe"

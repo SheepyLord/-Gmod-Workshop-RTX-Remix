@@ -27,9 +27,15 @@ python tools\publish_workshop.py --uninstall-hooks   # remove this script's hook
 | `gmpublish` | The `gmpublish.exe` that uploads. It runs from its game root, which must hold `steam_appid.txt` |
 
 Today's parts are:
-- **runtime B**, the runtime tested in M5, M7 and R1, pinned as `out\packages\m5\runtime-b.gma`
-  because its build folder no longer exists;
-- **the RTX fixes**, rebuilt from the fixes repository with the modules that M5 used.
+- **the runtime**, pinned as `out\packages\round2\runtime-b4.gma`: runtime B with the classic install's
+  settings as one low defaults layer ([ADR 0021](../docs/decisions/0021-remix-defaults-in-one-low-layer.md));
+- **the RTX fixes**, rebuilt from the fixes repository with the classic install's modules and the debug
+  module;
+- **Emissives**, the classic install's Remix mod for HL2's fluorescent lights, pinned as
+  `out\packages\round3\emissives.gma` ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md)).
+
+The Modern House RTX package is a separate test item (3829275998), uploaded by hand with
+`gmpublish update`, not by this script.
 
 ## What a run does
 
