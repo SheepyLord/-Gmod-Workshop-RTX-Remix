@@ -16,6 +16,10 @@ written to a scratch folder under `out\tmp`. No game files are read.
 - Add-ons keep only what gmad would publish: the whitelist (`lua`, `materials`, `shaders/fxc`,
   `data_static`, ...), minus the `addon.json` ignore list and `--ignore`; `--no-addon-filter` keeps all.
 - `--addon-as` deploys under another name, a leading `!` allowed; a bad name is refused.
+- `--addon-file` replaces one file of an add-on (never adds one), folding case and accepting `\`,
+  leaves the source folder as it was and shows in both summaries. Refused: no path in the add-on, an
+  add-on not in the package, a file the add-on does not have (or junk left out), a missing FILE, the
+  same path twice.
 - `--lua-bin` files go to `garrysmod/lua/bin` (kind `lua-binary-module`); `--load-first` writes
   `module_dependencies` and raises `requires_loader` to `>=0.3.0`; malformed, unknown, non-`.dll`,
   self and repeated rules, a repeated file name and a missing file are refused.

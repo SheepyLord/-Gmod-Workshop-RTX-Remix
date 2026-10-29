@@ -179,6 +179,23 @@ class HookTests(unittest.TestCase):
         self.assertNotIn('"main"', text)
         self.assertIn('any branch', text)
 
+    def test_a_source_repositorys_hook_environment_does_not_redirect_git(self):
+        # Git runs hooks with the hooked repository in GIT_DIR and GIT_INDEX_FILE. The script must
+        # still read this repository: its shared state (where the log goes) and its own HEAD.
+        source = self.repo / 'add-on'
+        subprocess.run(['git', 'init', '-q', str(source)], check=True)
+        env = dict(os.environ, GIT_DIR=str(source / '.git'), GIT_INDEX_FILE=str(source / '.git' / 'index'),
+                   GIT_WORK_TREE=str(source), PYTHONPATH=str(TOOLS))
+        probe = ('import json, os, publish_workshop as p; '
+                 'print(json.dumps([str(p.STATE), p.git("rev-parse", "--show-toplevel"), '
+                 '[n for n in p.GIT_LOCAL_ENV if n in os.environ]]))')
+        done = subprocess.run([sys.executable, '-c', probe], cwd=source, env=env, capture_output=True, text=True,
+                              encoding='utf-8', check=True)
+        state, top, left = json.loads(done.stdout)
+        self.assertEqual(Path(state), pub.STATE)
+        self.assertEqual(Path(top).resolve(), REPO.resolve())
+        self.assertEqual(left, [])
+
 
 if __name__ == '__main__':
     unittest.main()

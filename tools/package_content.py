@@ -2,9 +2,10 @@
 mod folders and binary Lua modules. Each --addon folder is deployed to garrysmod/addons/<name> (kind
 lua-addon; only the files gmad would publish), each --mod folder to rtx-remix/mods/<name> (kind
 root-files), each --lua-bin file to garrysmod/lua/bin/<name> (kind lua-binary-module), all
-replace-owned; --load-first declares a module's runtime DLL (ADR 0024). Writes a package folder and/or
-a .gma packed with tools/gmapack, with addon.json giving the Workshop title, type and tags; every file
-is hashed as it is copied.
+replace-owned; --load-first declares a module's runtime DLL (ADR 0024); --addon-file takes one file
+of an add-on from elsewhere (ADR 0026). Writes a package folder and/or a .gma packed with
+tools/gmapack, with addon.json giving the Workshop title, type and tags; every file is hashed as it is
+copied.
 
 Usage: python tools/package_content.py --id <id> [--addon <folder>]... [--mod <folder>]... --gma <file.gma>
 See package_content.py.md for the options, outputs and exit codes."""
@@ -73,8 +74,9 @@ def link_hashed(source, target):
 
 def sources(args):
     """{package path: source file}, the root_files entries [(path, kind)], the junk and the add-on
-    files left out by the gmad filter, and the module dependencies, from every input option."""
-    files, roots, junk, filtered, names = {}, [], [], [], {}
+    files left out by the gmad filter, the module dependencies and the add-on files --addon-file
+    replaced ({package path: given file}), from every input option."""
+    files, roots, junk, filtered, names, addons = {}, [], [], [], {}, {}
     folders = [('addon', 'garrysmod/addons', 'lua-addon', given, None) for given in args.addon]
     folders += [('addon-as', 'garrysmod/addons', 'lua-addon', given, name) for name, given in args.addon_as]
     folders += [('mod', 'rtx-remix/mods', 'root-files', given, None) for given in args.mod]
@@ -102,6 +104,31 @@ def sources(args):
                                                                else ' that gmad would publish'))
         files.update(found)
         roots.append(('%s/%s' % (area, name), kind))
+        if kind == 'lua-addon':
+            addons[name.lower()] = name
+    # One file of an add-on from elsewhere, such as a fix its own repository has and the add-on
+    # folder does not yet (ADR 0026). Only a file the add-on has can be replaced, so a misspelled
+    # path never adds one.
+    replaced = {}
+    for target, given in args.addon_file:
+        name, slash, inner = target.replace('\\', '/').strip('/').partition('/')
+        if not slash or not inner:
+            raise PackageError('--addon-file %s: expected an add-on folder name and a path in it, such as '
+                               'name/lua/file.lua' % target)
+        if name.lower() not in addons:
+            raise PackageError('--addon-file %s: %s is not an add-on given with --addon or --addon-as' % (target, name))
+        wanted = ('native/root/garrysmod/addons/%s/%s' % (addons[name.lower()], inner)).lower()
+        rel = next((r for r in files if r.lower() == wanted), None)
+        if rel is None:
+            raise PackageError('--addon-file %s: the add-on has no such file to replace' % target)
+        if wanted in (r.lower() for r in replaced):
+            raise PackageError('--addon-file %s is given twice' % target)
+        source = os.path.abspath(given)
+        if not os.path.isfile(source):
+            raise PackageError('--addon-file %s %s: no such file' % (target, given))
+        regular_file(source)
+        files[rel] = source
+        replaced[rel] = given
     lua_bin = {}
     for given in args.lua_bin:
         source = os.path.abspath(given)
@@ -137,7 +164,7 @@ def sources(args):
         entry['load_first'].append(path)
     if not roots:
         raise PackageError('give at least one --addon, --addon-as, --mod or --lua-bin')
-    return files, roots, junk, filtered, dependencies
+    return files, roots, junk, filtered, dependencies, replaced
 
 
 def build(args):
@@ -151,7 +178,7 @@ def build(args):
         raise PackageError('--name must be 1-128 bytes of UTF-8')
     if len(args.tag) > 2:
         raise PackageError('at most two --tag')
-    files, roots, junk, filtered, dependencies = sources(args)
+    files, roots, junk, filtered, dependencies, replaced = sources(args)
     out = os.path.abspath(args.out) if args.out else None
     gma = os.path.abspath(args.gma) if args.gma else None
     for target in filter(None, (out, gma)):
@@ -240,6 +267,7 @@ def build(args):
             'mods': [path.split('/')[-1] for path, kind in roots if kind == 'root-files'],
             'lua_bin': [path.split('/')[-1] for path, kind in roots if kind == 'lua-binary-module'],
             'module_dependencies': dependencies,
+            'replaced': {rel: replaced[rel] for rel in sorted(replaced, key=str.lower)},
             'workshop': addon,
             'junk': sorted(junk, key=str.lower),
             'filtered': sorted(filtered, key=str.lower),
@@ -302,6 +330,8 @@ def print_summary(s):
         print('  lua/bin    %s' % ', '.join(s['lua_bin']))
     for item in s['module_dependencies']:
         print('  load first %s before %s' % (', '.join(p.split('/')[-1] for p in item['load_first']), item['module'].split('/')[-1]))
+    for rel, given in s['replaced'].items():
+        print('  replaced   %s from %s' % (rel[len('native/root/garrysmod/addons/'):], given))
     print('  workshop   "%s", type %s, tags %s' % (s['workshop']['title'], s['workshop']['type'],
                                                    ', '.join(s['workshop']['tags']) or 'none'))
     if s['junk']:
@@ -333,6 +363,9 @@ def main(argv=None):
                     help='package every file of the add-on folders, not only those gmad would publish')
     ap.add_argument('--ignore', action='append', default=[], metavar='PATTERN',
                     help='leave out add-on files matching this gmad pattern, as addon.json "ignore" does (repeatable)')
+    ap.add_argument('--addon-file', action='append', default=[], nargs=2, metavar=('PATH', 'FILE'),
+                    help='take PATH, an add-on folder name and a file the add-on has (name/lua/file.lua), from FILE '
+                         'instead (repeatable; ADR 0026)')
     ap.add_argument('--mod', action='append', default=[], metavar='FOLDER',
                     help='a Remix mod folder, deployed to rtx-remix/mods/<its name> (repeatable)')
     ap.add_argument('--lua-bin', action='append', default=[], metavar='FILE',

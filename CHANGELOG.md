@@ -6,6 +6,27 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (the sixth field round)
+
+- **Model Hotloader no longer warns about its runtime in RTX sessions**
+  ([ADR 0026](docs/decisions/0026-addon-file-from-its-repository.md)). It printed "Missing
+  bin/win64/mmdhl_runtime_win64.dll" and "The loaded runtime DLL is not the file that was checked" on
+  both realms in every session, because its check looked only in `bin\win64` while the loader loads the
+  runtime from `garrysmod\lua\bin`.
+  - The check now accepts the copy in `lua\bin` when the game loaded that copy. That fix lives in
+    Model Hotloader's repository (branch `claude/runtime-in-lua-bin`, also in its `main` working tree).
+  - The RTX package takes that one file from there until the classic install has it.
+  - Measured on the PoC: no runtime warning, the native module live on both realms
+    ([RESEARCH.md](docs/RESEARCH.md) section 23).
+- **`package_content.py --addon-file PATH FILE`:** one file of a bundled add-on from elsewhere. Only a
+  file the add-on has can be replaced, and FILE counts as a publish input.
+- **Commits in the add-ons' and the fork's repositories now update the Workshop item.** The source
+  hooks of round 4 ran `publish_workshop.py` with git's hook environment (`GIT_DIR`, `GIT_INDEX_FILE`),
+  which pointed its git calls at the source repository.
+  - Every such run therefore refused ("uncommitted changes in the packaging inputs") and left its log
+    in that repository's `out\workshop\logs`. Found when the Model Hotloader fix was committed.
+  - The script now drops git's repository-local variables first.
+
 ### Changed (the fifth field round; loader 0.3.1)
 
 - **Unsubscribing from a Workshop item uninstalls its package**

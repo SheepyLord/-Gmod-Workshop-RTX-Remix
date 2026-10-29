@@ -242,6 +242,35 @@ class PackageContentTests(unittest.TestCase):
         code, _, err = self.run_tool('--id', 'x', '--addon-as', 'bad name', self.addon, '--out', self.root / 'x')
         self.assertEqual((code, 'bad name' in err), (1, True))
 
+    def test_one_addon_file_taken_from_elsewhere(self):
+        fixed = self.write(self.root / 'fix' / 'house_rtx.lua', b'-- house, fixed\n')
+        rel = 'native/root/garrysmod/addons/house_rtx/lua/autorun/house_rtx.lua'
+        summary = self.build('--addon-file', 'house_rtx/lua/autorun/house_rtx.lua', fixed, '--out', self.root / 'pkg')
+        m = self.manifest(self.root / 'pkg')
+        self.assertEqual((self.root / 'pkg' / rel).read_bytes(), b'-- house, fixed\n')
+        self.assertEqual(m['files'][rel], {'size': 16, 'sha256': hashlib.sha256(b'-- house, fixed\n').hexdigest()})
+        self.assertEqual(len(m['files']), 7)  # replaced, not added
+        self.assertEqual(summary['replaced'], {rel: str(fixed)})
+        self.assertEqual((self.addon / 'lua' / 'autorun' / 'house_rtx.lua').read_bytes(), b'-- house\n')
+        # The add-on's paths fold case, and Windows separators are accepted.
+        again = self.build('--addon-file', 'HOUSE_RTX\\lua\\autorun\\House_RTX.lua', fixed, '--out', self.root / 'again')
+        self.assertEqual(again['replaced'], {rel: str(fixed)})
+        code, out, err = self.run_tool('--id', 'x', '--addon', self.addon, '--addon-file', 'house_rtx/lua/autorun/house_rtx.lua', fixed,
+                                       '--out', self.root / 'text')
+        self.assertEqual(code, 0, err)
+        self.assertIn('replaced   house_rtx/lua/autorun/house_rtx.lua from ' + str(fixed), out)
+        for bad in (['--addon-file', 'house_rtx', fixed],                                  # no path in the add-on
+                    ['--addon-file', 'other/lua/autorun/house_rtx.lua', fixed],            # no such add-on in the package
+                    ['--addon-file', 'house_rtx/lua/autorun/new.lua', fixed],              # a file the add-on does not have
+                    ['--addon-file', 'house_rtx/lua/Thumbs.db', fixed],                    # left out as junk
+                    ['--addon-file', 'house_rtx/lua/autorun/house_rtx.lua', self.root / 'fix' / 'missing.lua'],
+                    ['--addon-file', 'house_rtx/lua/autorun/house_rtx.lua', fixed] * 2):   # twice
+            code, _, err = self.run_tool('--id', 'x', '--addon', self.addon, *bad, '--out', self.root / 'x')
+            self.assertEqual(code, 1, bad)
+            self.assertTrue(err.startswith('error: '), err)
+        self.assertFalse((self.root / 'x').exists())
+        self.assertEqual(self.leftovers(), [])
+
     def test_binary_modules_and_the_runtime_they_load_first(self):
         natives = {name: self.write(self.src / 'bin' / name, name.encode())
                    for name in ('gmcl_mmdhl_win64.dll', 'gmsv_mmdhl_win64.dll', 'mmdhl_runtime_win64.dll', 'mmdhl_worker.exe')}
