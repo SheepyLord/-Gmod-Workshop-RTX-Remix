@@ -23,7 +23,7 @@ python tools\publish_workshop.py --uninstall-hooks   # remove this script's hook
 |---|---|
 | `item` | The Workshop item id that is updated |
 | `package` | The combined package's `id` and `name`, and the Workshop `title`, `type`, `tags` and `description` written into the archive |
-| `parts` | The packages that go in, in order. Either `{"package": "<.gma or package folder>"}`, used as it is, or `{"build": "package_fixes"\|"package_runtime", "args": [...]}`, built afresh by that packager with those arguments |
+| `parts` | The packages that go in, in order. Either `{"package": "<.gma or package folder>"}`, used as it is, or `{"build": "package_fixes"\|"package_runtime"\|"package_content", "args": [...]}`, built afresh by that packager with those arguments |
 | `gmpublish` | The `gmpublish.exe` that uploads. It runs from its game root, which must hold `steam_appid.txt` |
 
 Today's parts are:
@@ -32,7 +32,10 @@ Today's parts are:
 - **the RTX fixes**, rebuilt from the fixes repository with the classic install's modules and the debug
   module;
 - **Emissives**, the classic install's Remix mod for HL2's fluorescent lights, pinned as
-  `out\packages\round3\emissives.gma` ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md)).
+  `out\packages\round3\emissives.gma` ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md));
+- **Remove_halo**, the user's one-line add-on (`halo.Add` does nothing), rebuilt from its folder
+  `H:\BACKUP_20260815\Modding\ipg\Remove_halo` by [`package_content.py`](package_content.py.md) at
+  every publish, so an edit there reaches the item at the next commit or push of `main`.
 
 The Modern House RTX package is a separate test item (3829275998), uploaded by hand with
 `gmpublish update`, not by this script.
@@ -40,7 +43,7 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
 ## What a run does
 
 1. **Uncommitted changes.** It refuses when the packaging inputs in this repository have uncommitted
-   changes, which would otherwise go into the item: `companion/`, the three packagers, `gmapack.py`
+   changes, which would otherwise go into the item: `companion/`, the four packagers, `gmapack.py`
    and `workshop.json`. `--dry-run` and `--allow-dirty` skip this check.
 2. **Lock.** Its state lives in the **main checkout's** `out\workshop`, whichever worktree runs it, so
    every worktree shares one record of what the item holds. It takes `out\workshop\publish.lock`

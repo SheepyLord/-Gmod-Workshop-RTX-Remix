@@ -23,6 +23,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   lights (gm_construct's basement and elsewhere) now light their rooms: measured twice as bright as
   without it. The classic install's Water mod does not ship: its textures are on the ignore list, so it
   never draws.
+- **The user's `Remove_halo` add-on ships in the RTX package**: in RTX sessions `halo.Add` does
+  nothing, so no add-on creates halos. It is rebuilt from the user's folder at every publish
+  (`publish_workshop.py` gains the `package_content` builder).
 - **`tools/package_content.py`:** content packages, Lua add-on folders and Remix mod folders with no
   native code. For an archive alone it hard-links its work folder, so gigabytes of textures are not
   copied twice.
