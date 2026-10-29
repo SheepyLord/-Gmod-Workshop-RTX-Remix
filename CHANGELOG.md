@@ -49,6 +49,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   `activation.preloaded`). AMD players get FSR; NVIDIA players get NRC back, as in the classic install.
 - **Labels of the RTX Remix tab no longer cut off**: "Post effects", the fog sliders, the guard and the
   language choice have short labels, with the rest on a help line.
+- **The Workshop publish checks packages with the main checkout's built `nlctl.exe`**, so the merge of
+  round 8 failed to publish until that build knew the `reshade` manifest key. AGENTS.md rule 5 and
+  `publish_workshop.py.md` now say to build Release in the main checkout after a manifest change.
 
 ### Added (the RTX Remix menus in six more languages)
 

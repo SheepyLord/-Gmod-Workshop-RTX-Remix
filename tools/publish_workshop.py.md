@@ -78,7 +78,12 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
 4. **Build.** It builds the parts and combines them with
    [`package_workshop.py`](package_workshop.py.md) into
    `out\workshop\<id>-<version>.gma`, keeping only the newest archive (about 1.4 GB). The version is
-   `0.0.0-dev.<UTC time>+<fingerprint prefix>`.
+   `0.0.0-dev.<UTC time>+<fingerprint prefix>`. The packagers check each part, and
+   `package_workshop.py` the combined manifest, with `nlctl.exe` from this checkout's `out\build`
+   (`win64-release`, else `win64-debug`), so that build must know the manifest. After a change that
+   adds a manifest key or kind, build the loader in the main checkout (`tools\build.ps1 -Config
+   Release`) before the merge into `main`: in round 8 (2026-10-29) the hooks' runs failed with "nlctl
+   refuses the package: manifest: unknown key "reshade"" until it was rebuilt.
 5. **Digest.** If the build's content digest matches the last upload's, it uploads nothing:
    **unchanged content**. It records the new fingerprint, so the next run stops at step 3.
 6. **Upload.** It runs `gmpublish update -id <item> -addon <archive> -changes "<version> from <commit>
