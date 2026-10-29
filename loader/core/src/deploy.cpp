@@ -861,6 +861,13 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   const Generation none;
   const Generation& cur = run.journal.current ? *run.journal.current : none;
   std::vector<std::string> notes = notes_for(roots);
+  // A package removed because its Workshop item was unsubscribed keeps no rollback copy (ADR 0025).
+  const std::set<std::string> unsubscribed = startup::unsubscribed_packages(cur, plan);
+  for (const journal::Package& p : cur.packages) {
+    if (unsubscribed.count(p.id)) {
+      notes.push_back(p.id + " " + p.version + ": its Workshop item was unsubscribed, so its files are deleted (no copy is kept for a rollback)");
+    }
+  }
 
   const std::vector<std::string> wanted = package_set(records);
   bool work = std::any_of(roots.begin(), roots.end(), [](const RootPlan& r) {
@@ -933,8 +940,9 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
     }
   }
 
-  // The steps: folders, files moved aside (kept for rollback), then the new files, payload files
-  // included, each moved on its own with its hash so that undoing never moves anything else.
+  // The steps: folders, files moved aside (kept for rollback, unless their package was unsubscribed),
+  // then the new files, payload files included, each moved on its own with its hash so that undoing
+  // never moves anything else.
   const std::string backup = std::string(kBackup) + "/" + std::to_string(tx);
   std::map<std::string, std::string> make;  // folded -> path; parents sort before their children
   const auto parents_of = [&](std::string_view file) {
@@ -1033,13 +1041,21 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   const bool repair = wanted == package_set(cur.packages) && aside.empty();
   if (!repair) {
     if (run.journal.current) {
+      // Without the unsubscribed packages, whose files (moved aside or in payload folders) are then
+      // retired like the rest of what no generation refers to.
       Generation prev = *run.journal.current;
-      std::erase_if(prev.files, [&](const File& f) { return left.count(fold(f.path)) > 0; });
-      next.previous = std::move(prev);
+      std::erase_if(prev.files, [&](const File& f) { return left.count(fold(f.path)) > 0 || unsubscribed.count(f.package) > 0; });
+      const std::size_t had = prev.packages.size();
+      std::erase_if(prev.packages, [&](const journal::Package& p) { return unsubscribed.count(p.id) > 0; });
+      if (prev.packages.empty() && had > 0) {
+        next.previous.reset();  // they were all it had: nothing is left to roll back to
+      } else {
+        next.previous = std::move(prev);
+      }
     } else {
       next.previous.reset();
     }
-    next.previous_backup = aside.empty() ? std::string() : backup;
+    next.previous_backup = aside.empty() || !next.previous ? std::string() : backup;
   }
   next.hold.reset();
   next.pending.reset();

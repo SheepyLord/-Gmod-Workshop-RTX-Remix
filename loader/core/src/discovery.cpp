@@ -171,10 +171,11 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
       // Without Steam's record the items still work; only the update details are missing.
     }
   }
-  const vdf::Node* installed = nullptr;
-  if (have_acf) {
-    if (const vdf::Node* app = acf.find("AppWorkshop")) installed = app->find("WorkshopItemsInstalled");
-  }
+  // Steam's record: installed items (with the version), and the items it keeps details for, which
+  // include every subscribed one, even while its first download runs (RESEARCH.md section 22).
+  const vdf::Node* app = have_acf ? acf.find("AppWorkshop") : nullptr;
+  const vdf::Node* installed = app ? app->find("WorkshopItemsInstalled") : nullptr;
+  const vdf::Node* details = app ? app->find("WorkshopItemDetails") : nullptr;
 
   for (const std::string& id : config.workshop) {
     Candidate c{Source::workshop, id, {}, {}, {}, {}};
@@ -205,7 +206,11 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
           }
         }
       }
-      if (!is_dir(folder)) {
+      if (!is_dir(folder) && app && !(installed && installed->find(id)) && !(details && details->find(id))) {
+        // Steam lists it nowhere and its files are gone: the user unsubscribed (ADR 0025).
+        c.unsubscribed = true;
+        c.problem = "not subscribed: Steam no longer has the item (appworkshop_4000.acf), so a package it deployed is removed";
+      } else if (!is_dir(folder)) {
         c.problem = "not installed (subscribe in Steam and let it download)";
       } else if (archives.empty()) {
         c.problem = "no .gma or _legacy.bin archive in the item folder";

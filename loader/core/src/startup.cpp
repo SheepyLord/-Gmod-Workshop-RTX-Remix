@@ -28,7 +28,8 @@ std::optional<std::string> keep_last_good_reason(const journal::Generation& curr
     if (remains) continue;
     for (const auto& decision : proposed.decisions) {
       const auto& item = decision.item;
-      if (!same_source(deployed, item.candidate) || item.candidate.disabled_by_user) continue;
+      // A disabled or unsubscribed Workshop item is the user's decision, not a source failure (ADR 0025).
+      if (!same_source(deployed, item.candidate) || item.candidate.disabled_by_user || item.candidate.unsubscribed) continue;
       const auto loader = manifest::parse_version(nl::version());
       const bool incompatible = item.package && item.package->manifest.requires_loader && loader &&
           manifest::compare(*loader, *item.package->manifest.requires_loader) < 0;
@@ -40,6 +41,20 @@ std::optional<std::string> keep_last_good_reason(const journal::Generation& curr
     }
   }
   return std::nullopt;
+}
+
+std::set<std::string> unsubscribed_packages(const journal::Generation& current, const planner::Plan& proposed) {
+  std::set<std::string> out;
+  for (const auto& deployed : current.packages) {
+    const bool remains = std::any_of(proposed.decisions.begin(), proposed.decisions.end(), [&](const auto& decision) {
+      return decision.active && decision.item.package && decision.item.package->manifest.id == deployed.id;
+    });
+    const bool unsubscribed = std::any_of(proposed.decisions.begin(), proposed.decisions.end(), [&](const auto& decision) {
+      return decision.item.candidate.unsubscribed && same_source(deployed, decision.item.candidate);
+    });
+    if (unsubscribed && !remains) out.insert(deployed.id);
+  }
+  return out;
 }
 
 AfterDeployment after_deployment(const deploy::Report& deployment, bool pending) {

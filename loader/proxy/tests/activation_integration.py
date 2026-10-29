@@ -263,6 +263,32 @@ def main():
         check(not json.loads(workshop.journal.read_text(encoding='utf-8'))['current']['packages'], 'disabled Workshop source retained')
         passed('explicit Workshop disable removes the package')
 
+        # ADR 0025: Steam's record of the item through a subscription's life. While an update downloads,
+        # Steam keeps the item in appworkshop_4000.acf; after the user unsubscribed it drops it and its
+        # files (at the next launch from Steam), which removes the package.
+        steam = Game('workshop-unsubscribed', workshop=True)
+        acf = steam.case / 'steamapps/workshop/appworkshop_4000.acf'
+        listed = ('"AppWorkshop" { "appid" "4000" "WorkshopItemsInstalled" { "123" { "size" "1" } } '
+                  '"WorkshopItemDetails" { "123" { "subscribedby" "1" } } }')
+        acf.write_text(listed, encoding='ascii')
+        active(steam, steam.run())
+        payload = steam.root / json.loads(steam.journal.read_text(encoding='utf-8'))['current']['packages'][0]['payload']
+        check(payload.is_dir(), f'payload not deployed: {payload}')
+        shutil.move(str(steam.source.parent), str(steam.case / 'item-aside'))  # an update replacing the folder
+        updating = active(steam, steam.run())
+        check(updating['deployment']['outcome'] == 'kept', f'an update in progress must keep the package: {updating["deployment"]}')
+        acf.write_text('"AppWorkshop" { "appid" "4000" "WorkshopItemsInstalled" { } "WorkshopItemDetails" { } }', encoding='ascii')
+        gone = steam.run()
+        vanilla(gone)
+        check(not json.loads(steam.journal.read_text(encoding='utf-8'))['current']['packages'], 'unsubscribed Workshop item retained')
+        check(not payload.exists(), f'the payload of an unsubscribed item stayed: {payload}')
+        gone_status = gone[1]
+        check(any('not subscribed' in skip['reason'] for skip in gone_status['deployment']['skipped']), f'reason: {gone_status["deployment"]}')
+        shutil.move(str(steam.case / 'item-aside'), str(steam.source.parent))  # subscribed again
+        acf.write_text(listed, encoding='ascii')
+        active(steam, steam.run())
+        passed('an update in progress keeps the package; an unsubscribed Workshop item is removed, and comes back when subscribed again')
+
         locked = Game('locked')
         active(locked, locked.run())
         original_journal = locked.journal.read_bytes()

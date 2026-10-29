@@ -48,6 +48,9 @@ Updating
 Removing
 --------
 
+- Unsubscribe from the RTX Remix item: Steam deletes it when you next start the game from Steam, and
+  the loader (0.3.1 or later) then removes the package and every file it deployed. Files you changed
+  yourself stay. Subscribing again brings it back.
 - Delete bin\win64\winmm.dll: the next start is plain Garry's Mod again.
 - The files the loader deployed stay where they are but are no longer used. To remove them too, see
   the project's uninstall steps: "nlctl uninstall" in the loader's repository.

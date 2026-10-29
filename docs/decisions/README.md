@@ -30,6 +30,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0022](0022-companion-rtx-session-guard.md) | The companion guards RTX sessions against add-ons that undo them, gathers the RTX menus into one tab with more Remix settings, and carries an illustrated guide | Accepted 2026-10-29 (the user) |
 | [0023](0023-content-packages-and-modern-house-item.md) | Content packages carry Remix mods and their Lua; Modern House RTX is its own hidden Workshop item (3829275998); the Emissives mod ships in the RTX package, Water and Poolday do not | Accepted 2026-10-29 (the user) |
 | [0024](0024-bundled-addons-and-module-dependencies.md) | The RTX package bundles the user's five add-ons and Model Hotloader's natives, rebuilt from their sources at every publish; loader 0.3.0 loads a module's runtime DLL first, in every session (`module_dependencies`) | Accepted 2026-10-29 (the user) |
+| [0025](0025-unsubscribe-removes-the-package.md) | Unsubscribing from a Workshop item removes its package completely: Steam lists the item nowhere and its folder is gone, so start-up removes the package and keeps no rollback copy (loader 0.3.1); amends 0007 and 0009 | Accepted 2026-10-29 (the user) |
 
 ## Template
 

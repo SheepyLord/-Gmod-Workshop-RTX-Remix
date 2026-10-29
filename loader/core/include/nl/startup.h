@@ -8,13 +8,19 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <set>
 #include <string>
 
 namespace nl::startup {
 
 // Pure: if a proposed change would lose a current package because its still-allowlisted source
-// failed, return the reason to defer the entire deployment. Explicit removals/disabled items win.
+// failed, return the reason to defer the entire deployment. Explicit removals, disabled items and
+// unsubscribed Workshop items win (ADR 0025).
 std::optional<std::string> keep_last_good_reason(const journal::Generation& current, const planner::Plan& proposed);
+
+// Pure: the current packages the proposed plan removes because the user unsubscribed from their
+// Workshop item. The deployer keeps no rollback copy of them, so all their files go (ADR 0025).
+std::set<std::string> unsubscribed_packages(const journal::Generation& current, const planner::Plan& proposed);
 
 // Pure: may start-up activate the committed generation after this deployment result? Not while the
 // journal has a pending transaction. Otherwise yes: after a deployment, a deferral (contention or

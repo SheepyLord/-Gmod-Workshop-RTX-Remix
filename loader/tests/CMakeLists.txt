@@ -35,6 +35,7 @@ add_test(NAME nl_tests COMMAND nl_tests "--skip=deploy faults:" WORKING_DIRECTOR
 add_test(NAME nl_tests_faults_upgrade COMMAND nl_tests "deploy faults: an upgrade" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 add_test(NAME nl_tests_faults_other COMMAND nl_tests "deploy faults: first deployments" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 add_test(NAME nl_tests_faults_errors COMMAND nl_tests "deploy faults: a failure" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+add_test(NAME nl_tests_faults_unsubscribe COMMAND nl_tests "deploy faults: an unsubscribe" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Test-only host for the kill tests: one deployer command that can end itself before any change.
 add_executable(nl_fault_host fault_host.cpp)
