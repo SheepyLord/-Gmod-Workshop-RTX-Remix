@@ -27,6 +27,11 @@ struct Candidate {
   std::optional<std::uint64_t> time_updated;
   std::string workshop_manifest;
   bool disabled_by_user = false;  // addon-list opt-out, distinct from a temporarily unusable source
+  // Workshop only: Steam no longer has the item. Its record (appworkshop_4000.acf) lists it neither as
+  // installed nor as subscribed, and its folder is gone: what Steam leaves after the user unsubscribed
+  // (it cleans up when the game is next launched from Steam). An intentional removal like
+  // disabled_by_user, unlike a download in progress, which keeps the item in the record (ADR 0025).
+  bool unsubscribed = false;
 };
 
 struct Environment {

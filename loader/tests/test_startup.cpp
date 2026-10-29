@@ -65,6 +65,35 @@ TEST_CASE("startup: removed sources and disabled Workshop items are deliberate r
   CHECK(nl::startup::keep_last_good_reason(deployed, proposed).has_value());
   proposed.decisions[0].item.candidate.disabled_by_user = true;
   CHECK(!nl::startup::keep_last_good_reason(deployed, proposed));
+  // Unsubscribed (Steam lists the item nowhere and its files are gone) is the user's removal too (ADR 0025).
+  proposed.decisions[0].item.candidate.disabled_by_user = false;
+  proposed.decisions[0].item.candidate.unsubscribed = true;
+  CHECK(!nl::startup::keep_last_good_reason(deployed, proposed));
+}
+
+TEST_CASE("startup: only a package removed because its Workshop item was unsubscribed loses its rollback copy") {
+  const auto deployed = current("workshop", "H:/steamapps/workshop/content/4000/123/old_legacy.bin");
+  auto gone = unavailable();
+  gone.item.candidate.source = nl::discovery::Source::workshop;
+  gone.item.candidate.label = "123";
+  gone.item.candidate.location.clear();
+  nl::planner::Plan plan;
+  plan.decisions.push_back(gone);
+  CHECK(nl::startup::unsubscribed_packages(deployed, plan).empty());  // only missing: it may come back
+  plan.decisions[0].item.candidate.unsubscribed = true;
+  CHECK(nl::startup::unsubscribed_packages(deployed, plan) == std::set<std::string>{"runtime"});
+  plan.decisions[0].item.candidate.label = "124";  // another item
+  CHECK(nl::startup::unsubscribed_packages(deployed, plan).empty());
+  plan.decisions[0].item.candidate.label = "123";
+  CHECK(nl::startup::unsubscribed_packages(current(), plan).empty());  // deployed from a local archive
+  // Still deployed, from another source: not removed, so nothing to delete either.
+  auto copy = std::make_shared<nl::package::Package>();
+  copy->manifest.id = "runtime";
+  nl::planner::Decision local;
+  local.active = true;
+  local.item.package = copy;
+  plan.decisions.push_back(local);
+  CHECK(nl::startup::unsubscribed_packages(deployed, plan).empty());
 }
 
 TEST_CASE("startup: an incompatible replacement cannot discard the last good runtime") {

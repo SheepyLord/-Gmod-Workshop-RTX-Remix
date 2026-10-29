@@ -314,6 +314,51 @@ void version_2(const Game& g) {
 
 const std::string kModDir = "rtx-remix/mods/test_mod/";
 
+// Workshop items of a fake game: their folders, and Steam's record of them (appworkshop_4000.acf).
+struct Workshop {
+  explicit Workshop(const Game& g) : content(g.dir / "content"), acf(g.dir / "appworkshop_4000.acf") {}
+
+  // Steam lists these items as subscribed and installed, and has forgotten every other one.
+  void record(const std::vector<std::string>& ids) const {
+    std::string items;
+    for (const std::string& id : ids) items += "\"" + id + "\" { \"size\" \"1\" } ";
+    write_file(acf, "\"AppWorkshop\" { \"WorkshopItemsInstalled\" { " + items + "} \"WorkshopItemDetails\" { " + items + "} }");
+  }
+  nl::deploy::Report apply(const sfs::path& root, nl::fs::FileSystem* disk = nullptr) const {
+    const nl::config::Config config = nl::config::load(root);
+    nl::discovery::Environment env;
+    env.game_root = root;
+    env.workshop_content = content;
+    env.appworkshop_acf = acf;
+    return nl::deploy::apply(root, nl::planner::consider(nl::discovery::discover(config, env)), config,
+                             *nl::manifest::parse_version(nl::version()), with(disk));
+  }
+
+  sfs::path content;
+  sfs::path acf;
+};
+
+// Two versions deployed from two Workshop items: a runtime (123, payload files) and a root-files
+// package (124), so the journal keeps a rollback target with backups and an older payload folder.
+void workshop_versions(const Game& g, const Workshop& w) {
+  write_file(g.root / "native-loader" / "config.json", R"({"schema": 1, "allow": {"workshop": ["123", "124"]}})");
+  w.record({"123", "124"});
+  write_gma(w.content / "123" / "runtime.gma", runtime("1.0.0", "MZ-one"));
+  write_gma(w.content / "124" / "mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}, {kMod + "a.dds", "A"}}));
+  REQUIRE(w.apply(g.root).outcome == "deployed");
+  write_gma(w.content / "123" / "runtime.gma", runtime("1.1.0", "MZ-two"));
+  write_gma(w.content / "124" / "mods.gma", mods("1.1.0", {{kMod + "mod.usda", "#usda v2\n"}, {kMod + "textures/b.dds", "B"}}));
+  REQUIRE(w.apply(g.root).outcome == "deployed");
+  REQUIRE(nl::fs::stat(nl::fs::join(g.root, "native-loader/packages/test-runtime/1.0.0_1/runtime/d3d9.dll")).exists);
+  REQUIRE(nl::fs::stat(nl::fs::join(g.root, "native-loader/backup/2/" + kModDir + "mod.usda")).exists);
+}
+
+// Steam's state after the user unsubscribed: the item's folder deleted, the item gone from its record.
+void unsubscribe(const Workshop& w, const std::string& id, const std::vector<std::string>& still) {
+  sfs::remove_all(w.content / id);
+  w.record(still);
+}
+
 }  // namespace
 
 TEST_CASE("deploy: the first apply places payload and root files; the next one writes nothing") {
@@ -419,6 +464,52 @@ TEST_CASE("deploy: removing every package keeps a rollback target, and that roll
   CHECK(j.hold && j.hold->empty());  // held: the empty set it rolled back from
   CHECK(apply_at(g.root).outcome == "held");
   CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");
+}
+
+TEST_CASE("deploy: a package whose Workshop item was unsubscribed is deleted, with no rollback copy (ADR 0025)") {
+  Game g("deploy_unsubscribed");
+  const Workshop w(g);
+  workshop_versions(g, w);
+
+  // The runtime's item is unsubscribed: Steam deleted its folder and forgot it.
+  unsubscribe(w, "123", {"124"});
+  const auto partial = w.apply(g.root);
+  CHECK(partial.outcome == "deployed");
+  CHECK(mentions(partial.notes, "test-runtime 1.1.0: its Workshop item was unsubscribed"));
+  CHECK(skipped_because(partial, "not subscribed"));
+  CHECK(!g.has("native-loader/packages/test-runtime"));  // both versions
+  CHECK(!g.has("native-loader/backup/2"));               // the older generation's copies went too
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v2\n");   // the other item's package is untouched
+  auto j = g.journal();
+  REQUIRE(j.previous.has_value());
+  REQUIRE(j.previous->packages.size() == 1);
+  CHECK(j.previous->packages[0].id == "test-mods");
+  CHECK(std::none_of(j.previous->files.begin(), j.previous->files.end(),
+                     [](const nl::journal::File& f) { return f.package == "test-runtime"; }));
+  CHECK(j.retired.empty());
+
+  // Then the other one: nothing is left, not even for a rollback.
+  unsubscribe(w, "124", {});
+  const auto all = w.apply(g.root);
+  CHECK(all.outcome == "deployed");
+  CHECK(all.packages.empty());
+  CHECK(has_change(all, "remove", kModDir + "mod.usda"));
+  CHECK(!g.has("rtx-remix"));
+  CHECK(!g.has("native-loader/packages"));
+  CHECK(!g.has("native-loader/backup"));
+  j = g.journal();
+  CHECK(!j.previous);
+  CHECK(j.previous_backup.empty());
+  CHECK(j.retired.empty());
+  CHECK(j.dirs.empty());
+  CHECK(nl::deploy::rollback(g.root, with(nullptr)).outcome == "refused");
+
+  // Subscribed again: deployed afresh.
+  w.record({"123"});
+  write_gma(w.content / "123" / "runtime.gma", runtime("1.1.0", "MZ-two"));
+  const auto again = w.apply(g.root);
+  CHECK(again.outcome == "deployed");
+  CHECK(g.read("native-loader/packages/test-runtime/1.1.0_5/runtime/d3d9.dll") == "MZ-two");
 }
 
 TEST_CASE("deploy: a foreign file at a target blocks its package; an identical one is adopted and kept") {
@@ -816,6 +907,20 @@ TEST_CASE("deploy faults: a failure at any change leaves the old state (or, afte
   copy_tree(g.root, upgraded);
   CHECK(fail_everywhere(g.dir / "rollback", upgraded, kRollback) > 5);
   CHECK(fail_everywhere(g.dir / "uninstall", upgraded, kUninstall) > 5);
+}
+
+TEST_CASE("deploy faults: an unsubscribe interrupted or failing at any change ends in the old or the new state") {
+  Game g("deploy_faults_unsubscribe");
+  const Workshop w(g);
+  workshop_versions(g, w);
+  unsubscribe(w, "123", {"124"});
+  unsubscribe(w, "124", {});
+  const sfs::path before = g.dir / "before";
+  copy_tree(g.root, before);
+  // Every copy of the game sees the same Workshop folder and record, with both items gone.
+  const Command removal = [&w](const sfs::path& root, nl::fs::FileSystem* disk) { return w.apply(root, disk); };
+  CHECK(interrupt_everywhere(g.dir / "kill", before, removal, 2) > 10);
+  CHECK(fail_everywhere(g.dir / "fail", before, removal) > 10);
 }
 
 TEST_CASE("startup deployment: a late bad archive keeps all current packages without changing CLI behavior") {

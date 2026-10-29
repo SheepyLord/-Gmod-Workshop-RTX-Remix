@@ -16,7 +16,8 @@ GarrysMod\
 │  │                                         ...\rtx-remix-runtime\1.6.1+gmod.20261025_3\runtime\d3d9.dll
 │  ├─ staging\<transaction>\...            extraction in progress (deleted at the end of every run)
 │  ├─ backup\<gen>\<path>                  root files generation <gen> replaced or removed: the
-│  │                                         previous generation's copies, kept for rollback
+│  │                                         previous generation's copies, kept for rollback (none for a
+│  │                                         package whose Workshop item was unsubscribed, ADR 0025)
 │  ├─ bootstrap-install.json               the bootstrap's install receipt (install-loader.ps1)
 │  ├─ session_cvars.json                   M5: the user's archived values of the RTX session variables,
 │  │                                         kept until a start without RTX has put them back

@@ -105,8 +105,42 @@ TEST_CASE("discovery: one candidate per allowlisted entry, in precedence order")
   CHECK(candidates[9].problem.find("archives") != std::string::npos);   // 444 ambiguous
   CHECK(candidates[10].problem.empty());                                // 555 legacy .bin
   CHECK(candidates[10].location.filename() == "387671470694828055_legacy.bin");
-  CHECK(candidates[11].problem.find("not installed") != std::string::npos);  // 999
+  CHECK(candidates[11].problem.find("not subscribed") != std::string::npos);  // 999: Steam lists it nowhere
+  CHECK(candidates[11].unsubscribed);
   CHECK(!candidates[11].disabled_by_user);
+  for (std::size_t i = 6; i < 11; ++i) CHECK(!candidates[i].unsubscribed);
+  fs::remove_all(dir);
+}
+
+TEST_CASE("discovery: only an item Steam lists nowhere, with its folder gone, counts as unsubscribed (ADR 0025)") {
+  const auto dir = nl::test::scratch_dir("discovery_unsubscribed");
+  const FakeLibrary lib(dir);
+  const auto acf = lib.steamapps / "workshop" / "appworkshop_4000.acf";
+  // 777: subscribed, first download running (details only, no folder). 888: updating (installed, folder
+  // being replaced). 666: Steam dropped the subscription record but not yet the files. 999: gone.
+  touch(acf, R"("AppWorkshop" { "appid" "4000"
+      "WorkshopItemsInstalled" { "111" { "size" "1" } "888" { "size" "1" } "666" { "size" "1" } }
+      "WorkshopItemDetails" { "111" { "subscribedby" "1" } "777" { "subscribedby" "1" } "888" { "subscribedby" "1" } } })");
+  touch(lib.content / "666" / "still.gma");
+  nl::config::Config config;
+  config.workshop = {"777", "888", "666", "999"};
+  const auto env = nl::discovery::environment_for(lib.game, dir / "no-steam");
+  auto c = nl::discovery::discover(config, env);
+  REQUIRE(c.size() == 4);
+  CHECK(!c[0].unsubscribed && c[0].problem.find("not installed") != std::string::npos);  // downloading: kept
+  CHECK(!c[1].unsubscribed && c[1].problem.find("not installed") != std::string::npos);  // updating: kept
+  CHECK(!c[2].unsubscribed && c[2].problem.empty());                                     // its files still work
+  CHECK(c[3].unsubscribed);
+  // Without a readable record nothing can be told apart: never unsubscribed.
+  touch(acf, "\"AppWorkshop\" { broken");
+  c = nl::discovery::discover(config, env);
+  CHECK(!c[3].unsubscribed && c[3].problem.find("not installed") != std::string::npos);
+  fs::remove(acf);
+  c = nl::discovery::discover(config, env);
+  CHECK(!c[3].unsubscribed);
+  touch(acf, R"("SomethingElse" { })");  // no AppWorkshop section: not Steam's Workshop record
+  c = nl::discovery::discover(config, env);
+  CHECK(!c[3].unsubscribed);
   fs::remove_all(dir);
 }
 

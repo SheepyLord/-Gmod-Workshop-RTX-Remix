@@ -70,7 +70,9 @@ Packages are found without the Steam API (it is not initialised yet at step 2), 
 - Workshop: `<library>\steamapps\workshop\content\4000\<id>\`, holding exactly one `<name>.gma`
   (plain) or `<hash>_legacy.bin` (LZMA-wrapped, older uploads). The library is the one the game root
   sits in, else the one Steam's `libraryfolders.vdf` lists for app 4000. `appworkshop_4000.acf`
-  gives each item's installed version; GMod's `garrysmod\cfg\addonnomount.txt` disables items.
+  gives each item's installed version; GMod's `garrysmod\cfg\addonnomount.txt` disables items. An
+  item the acf lists nowhere, with its folder gone, was unsubscribed: its package is removed with no
+  rollback copy ([ADR 0025](decisions/0025-unsubscribe-removes-the-package.md)).
 - Local `.gma` / `.bin` archives and unpacked development folders.
 - Later, if chosen: a manifest-declared URL with a pinned SHA-256 ([ADR 0002](decisions/0002-source-agnostic-payloads.md)).
 

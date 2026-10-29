@@ -7,7 +7,8 @@ reads a real runtime or changes Steam settings. Windows/Python standard library 
 
 Exercises startup deploy/no-op, static and delay dependencies, the borderless window at the display's
 size and a window mode the user chose (ADR 0018), all off switches, RTX off, preserved
-user config lists and arguments, source removal versus outage, Workshop disable, lock/pending/
+user config lists and arguments, source removal versus outage, Workshop disable, a Workshop update in
+progress (kept) versus an unsubscribe (removed, payload folder deleted; ADR 0025), lock/pending/
 recovery, second-instance gating, invalid journal, failed dependency/DllMain/SEH rollback,
 command-line refusal and explicit fallback arguments, cwd/layer checks and status uninstall.
 The fixture host has a test-only TLS switch to invalidate a command-line descriptor before the hook.

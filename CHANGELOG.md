@@ -6,6 +6,23 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Changed (the fifth field round; loader 0.3.1)
+
+- **Unsubscribing from a Workshop item uninstalls its package**
+  ([ADR 0025](docs/decisions/0025-unsubscribe-removes-the-package.md)). Before, RTX Remix kept running
+  after an unsubscribe, without updates: keep-last-good took the missing item for a download in
+  progress.
+  - Discovery now marks an item unsubscribed when `appworkshop_4000.acf` lists it in neither
+    `WorkshopItemsInstalled` nor `WorkshopItemDetails` and its folder is gone. That is what Steam leaves
+    once it cleans up, at the next launch from Steam, before the game starts
+    ([RESEARCH.md](docs/RESEARCH.md) section 22).
+  - Start-up treats that as the user's removal, like an item disabled in GMod's addon list.
+  - The deployer keeps no rollback copy of such a package. Its payload folders and the root files it
+    moves aside are deleted in the same run, so nothing of the package is left.
+  - Files the user changed after the loader placed them stay, as on every removal.
+  - Tested with unit cases, the synthetic activation test, and a kill or a failure at every change
+    (`nl_tests_faults_unsubscribe`).
+
 ### Added (the fourth field round; loader 0.3.0)
 
 - **The RTX package bundles the user's five add-ons**

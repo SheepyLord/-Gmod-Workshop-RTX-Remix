@@ -44,6 +44,7 @@ the after state, with nothing pending and no staging left. The tests:
 | `nl_tests_faults_upgrade` | an upgrade interrupted before every change; twice, recovery itself is interrupted before every one of its changes | in process; the "crash" is an exception nothing catches |
 | `nl_tests_faults_other` | the same for a first deployment, a rollback (once with interrupted recovery) and an uninstall | in process |
 | `nl_tests_faults_errors` | every change of those four made to fail with an error instead: the run must undo itself, or, after the commit, leave the new state | in process |
+| `nl_tests_faults_unsubscribe` | the removal of two packages whose Workshop items were unsubscribed, which deletes their payload folders and rollback copies (ADR 0025): interrupted before every change (twice with interrupted recovery), then failed at every change | in process |
 | `nl_deploy_faults` | [`loader/tests/deploy_faults.py`](../loader/tests/deploy_faults.py.md): `nl_fault_host` killed with `TerminateProcess` before every change of the same four, on the real file system (2026-10-27: 54, 59, 26 and 35 changes) | real processes |
 
 The in-process tests use a file system without flushes, for speed; they test the deployer's logic.

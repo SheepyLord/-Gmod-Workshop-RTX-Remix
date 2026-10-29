@@ -108,6 +108,7 @@ External paths are local checkouts under `H:\BACKUP_20260815\Modding\` (see [ENV
   all 81 legacy items decoded 4.4 GB in 66 s: 6,191 file CRCs and every footer match; the only
   finding is the padded item above.
 - `steamapps\workshop\appworkshop_4000.acf` records per item `size`, `timeupdated` and `manifest`.
+  What happens to it when the user subscribes and unsubscribes: section 22.
 - `garrysmod\cfg\addonnomount.txt` lists the Workshop ids the user disabled.
 - `gmad.exe` only packs whitelisted file types (`.dll`/`.exe` are not); the GMod wiki lists
   DLL and EXE files as restricted for Workshop items. Whether `gmpublish` or the Workshop rejects a
@@ -1120,3 +1121,68 @@ The combined RTX package with the nine parts is 1,541,278,091 bytes.
 
 **Hooks.** The add-on repositories (the bodygroup tool has none), the fixes fork and Model Hotloader's repository had no git
 hooks. Their default branch is `main`, except the fork's checked-out `sheepylord/rtx-water-poolrooms`.
+
+## 22. What Steam does when the user subscribes and unsubscribes (2026-10-29, Claude)
+
+The user found that unsubscribing from the RTX item left RTX Remix running. To tell an unsubscribe
+from a download or an update without the Steam API, a hidden test item (3829311605, a 100-byte
+add-on package) was subscribed and unsubscribed. The scripts called GMod's own `steam_api64.dll` as
+app 4000 (`ISteamUGC::SubscribeItem`, `UnsubscribeItem`, `GetItemState`, `DownloadItem`), polling
+`steamapps\workshop\appworkshop_4000.acf` and the item folder every half second.
+
+**Steam's record** has two sections under `AppWorkshop`:
+- `WorkshopItemsInstalled`: the items on disk (`size`, `timeupdated`, `manifest`);
+- `WorkshopItemDetails`: the items Steam tracks for this account (`manifest`, `timeupdated`,
+  `timetouched`, `subscribedby` (an account id) and `latest_*`).
+
+**Subscribe:**
+- At 0.6 s the item state was `subscribed,needs-update`, with nothing on disk yet.
+- At about 1.1 s the item was in `WorkshopItemDetails`, with `subscribedby`.
+- At 8.5 s it was in `WorkshopItemsInstalled`, and its folder held the `.gma`.
+
+So while a first download runs, the item is in `WorkshopItemDetails` with no folder.
+
+**Unsubscribe:**
+- The item state lost `subscribed` at once (`installed` only).
+- The acf and the folder stayed as they were for the 90 s watched, both while the API session ran and
+  after it ended.
+- Some minutes later the item was gone from `WorkshopItemDetails`. It was still in
+  `WorkshopItemsInstalled`, and the folder was still there.
+
+**The next launch from Steam** (`steam://rungameid/4000`), timed from the launch request:
+- At 1.2 s Steam had removed the item from `WorkshopItemsInstalled` and deleted its folder.
+- At 2.8 s `gmod.exe` was running. The bootstrap therefore sees the item gone in its first start.
+- A second run launched about 20 s after the unsubscribe, with the item still in both sections. At
+  1.2 s Steam had removed it from both and deleted the folder, and `gmod.exe` ran at 2.0 s. The
+  launch's clean-up does not wait for the later update of `WorkshopItemDetails`.
+
+**Telling the cases apart:**
+- A first download: the item is in `WorkshopItemDetails`, with no folder yet.
+- An update: the item stays in `WorkshopItemsInstalled`, even while its folder is replaced.
+- An unsubscribe, once Steam has cleaned up: the item is in neither section, and its folder is gone.
+
+This is the rule [ADR 0025](decisions/0025-unsubscribe-removes-the-package.md) uses. A game started
+without Steam's launch (for example `gmod.exe` run directly) finds the folder still there and keeps the
+package until a launch from Steam has removed it.
+
+**End to end with loader 0.3.1 on the PoC** (evidence in `out\round5\e2e`):
+1. **Subscribed.** The item was installed in 1.7 s and allowlisted alone. The PoC start deployed it
+   (generation 3), and the add-on's autorun printed on the server and the client.
+2. **Unsubscribed, then launched from Steam at once.** Steam cleaned up as above. The next PoC start
+   removed the package:
+   - generation 4, with the note "its Workshop item was unsubscribed, so its files are deleted";
+   - the skipped reason "not subscribed";
+   - the add-on folder was gone, and the add-on did not run;
+   - `native-loader` held only `config.json`, the journal, the lock, the install receipt and the logs,
+     with no `packages` or `backup` folder;
+   - the journal had no previous generation.
+3. **The config put back.** The next PoC start deployed the 1.5 GB RTX package again in 10.0 s (669
+   changes), RTX active, with no Lua errors.
+
+`verify_install.py` afterwards: all 2,877 depot files unchanged.
+
+**Seen on the way:** Model Hotloader prints "Missing bin/win64/mmdhl_runtime_win64.dll" and "The
+loaded runtime DLL is not the file that was checked", on the server and the client
+(`mmdhl.install.error.*`). Its runtime and both modules are loaded: the bootstrap loads the runtime
+from `garrysmod\lua\bin` (ADR 0024), and the add-on says it "uses it anyway". The round-4 sessions,
+PoC and field, show the same lines.
