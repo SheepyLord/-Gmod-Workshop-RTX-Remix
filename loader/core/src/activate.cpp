@@ -5,6 +5,7 @@
 #include "nl/paths.h"
 #include "nl/session.h"
 #include <windows.h>
+#include <dxgi.h>
 
 #include <algorithm>
 #include <cctype>
@@ -30,11 +31,14 @@ bool same_option(std::wstring_view token, std::string_view name) {
   });
 }
 
-// The package's layers (low priority first) under its payload folder, then the user's root conf on
-// top (the editable layer the Remix menu saves to), as a comma-separated list relative to the root.
-std::string layer_list(const std::string& payload, const std::vector<std::string>& layers, std::string_view user_conf) {
+// The package's layers (low priority first) under its payload folder, then a layer of the loader's own
+// if any (ADR 0030), then the user's root conf on top (the editable layer the Remix menu saves to), as
+// a comma-separated list relative to the root.
+std::string layer_list(const std::string& payload, const std::vector<std::string>& layers, std::string_view loader_layer,
+                       std::string_view user_conf) {
   std::string value;
   for (const std::string& layer : layers) value += payload + "/" + layer + ",";
+  if (!loader_layer.empty()) value += std::string(loader_layer) + ",";
   value += user_conf;
   return value;
 }
@@ -152,8 +156,51 @@ Display primary_display() {
   return display;  // user32 stays loaded: the game loads it anyway
 }
 
+std::vector<unsigned> graphics_adapters() {
+  // As user32 above: the bootstrap's import table stays KERNEL32-only, so DXGI is loaded here.
+  std::vector<unsigned> vendors;
+  wchar_t system[MAX_PATH]{};
+  const UINT length = GetSystemDirectoryW(system, MAX_PATH);
+  if (!length || length >= MAX_PATH) return vendors;
+  const HMODULE dxgi = LoadLibraryW((std::filesystem::path(system) / L"dxgi.dll").c_str());
+  if (!dxgi) return vendors;
+  using Create = HRESULT(WINAPI*)(REFIID, void**);
+  const auto create = reinterpret_cast<Create>(GetProcAddress(dxgi, "CreateDXGIFactory1"));
+  IDXGIFactory1* factory = nullptr;
+  if (create && SUCCEEDED(create(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory))) && factory) {
+    IDXGIAdapter1* adapter = nullptr;
+    for (UINT i = 0; factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND; ++i) {
+      DXGI_ADAPTER_DESC1 description{};
+      if (adapter && SUCCEEDED(adapter->GetDesc1(&description)) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
+        vendors.push_back(description.VendorId);
+      }
+      if (adapter) adapter->Release();
+      adapter = nullptr;
+    }
+    factory->Release();
+  }
+  return vendors;  // dxgi.dll stays loaded, as user32 does
+}
+
+std::string non_nvidia_layer_text() {
+  return "# Written by the GMod native loader at each RTX start on a computer without an NVIDIA GPU (ADR 0030).\r\n"
+         "# The RTX package's settings pin Remix's graphics preset to Custom, tuned for NVIDIA GPUs; this layer\r\n"
+         "# gives Remix its automatic choice for this GPU back. Your own dxvk.conf, rtx.conf and user.conf win.\r\n"
+         "rtx.graphicsPreset = 5\r\n";
+}
+
+bool late_runtime_dll(std::string_view file_name) {
+  std::string name(file_name);
+  for (char& c : name) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  const auto stem_of = [&](std::string_view prefix) {
+    return name.size() > prefix.size() + 4 && name.compare(0, prefix.size(), prefix) == 0 &&
+           name.compare(name.size() - 4, 4, ".dll") == 0;
+  };
+  return name == "amd_fidelityfx_vk.dll" || stem_of("cudart64_") || stem_of("nvrtc64_") || stem_of("nvrtc-builtins64_");
+}
+
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
-          std::wstring_view command_line, const DisplayGet& display) {
+          std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus) {
   Plan p;
   if (!config.enabled) {
     p.reason = "enabled is false in native-loader/config.json";
@@ -181,13 +228,27 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
     return p;
   }
 
-  const auto add_layers = [&](const char* name, const std::vector<std::string>& package_layers,
+  // Without an NVIDIA GPU, Remix chooses its own preset (ADR 0030). Unknown adapters change nothing.
+  if (gpus) p.gpu_vendors = gpus();
+  p.non_nvidia = !p.gpu_vendors.empty() &&
+                 std::none_of(p.gpu_vendors.begin(), p.gpu_vendors.end(), [](unsigned vendor) { return vendor == kNvidia; });
+
+  // The runtime's late bare-name loads (ADR 0030): its own deployed files, at the top of its folder.
+  for (const journal::File& file : generation.files) {
+    const std::string folder = parent(file.path);
+    if (file.package != runtime->id || paths::fold(folder) != paths::fold(p.runtime_dir)) continue;
+    if (late_runtime_dll(std::string_view(file.path).substr(folder.size() + 1))) p.preload.push_back(file.path);
+  }
+  std::sort(p.preload.begin(), p.preload.end());
+
+  const auto add_layers = [&](const char* name, const std::vector<std::string>& package_layers, std::string_view loader_layer,
                               const char* default_user, std::vector<std::string>& effective) {
     const auto user = env(name);
     if (user) p.user_env.emplace_back(name, *user);
-    const auto value = layer_list(runtime->payload, package_layers, user && !user->empty() ? std::string_view(*user) : default_user);
+    const auto value = layer_list(runtime->payload, package_layers, loader_layer,
+                                  user && !user->empty() ? std::string_view(*user) : default_user);
     effective = split_layers(value);
-    if (!package_layers.empty()) {
+    if (!package_layers.empty() || !loader_layer.empty()) {
       // The runtime reads these variables into a 260-character buffer and takes a longer value as
       // empty: it would then use the bare root conf and none of the package's layers (RESEARCH.md
       // section 19).
@@ -197,8 +258,9 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
       p.env.emplace_back(name, value);
     }
   };
-  add_layers("DXVK_RTX_CONFIG_FILE", remix.rtx_conf_layers, "rtx.conf", p.rtx_layers);
-  add_layers("DXVK_CONFIG_FILE", remix.dxvk_conf_layers, "dxvk.conf", p.dxvk_layers);
+  add_layers("DXVK_RTX_CONFIG_FILE", remix.rtx_conf_layers, {}, "rtx.conf", p.rtx_layers);
+  add_layers("DXVK_CONFIG_FILE", remix.dxvk_conf_layers, p.non_nvidia ? kNonNvidiaLayer : std::string_view{}, "dxvk.conf",
+             p.dxvk_layers);
   for (const auto& [name, value] : remix.env) {
     const auto user = env(name);
     if (!user) p.env.emplace_back(name, value);

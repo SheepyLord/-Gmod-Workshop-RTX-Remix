@@ -61,7 +61,7 @@ The manifest is strict JSON (RFC 8259, UTF-8, no comments, trailing commas or du
 | `id` | yes | 1-64 characters of `a-z 0-9 -`, starting with a letter or digit; one active version per id |
 | `name` | no | 1-128 bytes of UTF-8; defaults to `id` |
 | `version` | yes | [Semantic Versioning 2.0.0](https://semver.org); compared by SemVer precedence, build metadata ignored |
-| `kinds` | yes | non-empty, no repeats; `remix-runtime`, `lua-binary-module`, `root-files`, and from loader 0.2.0 (M5) `lua-addon`, `patch-set`, `module-override` |
+| `kinds` | yes | non-empty, no repeats; `remix-runtime`, `lua-binary-module`, `root-files`, from loader 0.2.0 (M5) `lua-addon`, `patch-set`, `module-override`, and from loader 0.5.0 `reshade` |
 | `requires_loader` | no | `">=MAJOR.MINOR.PATCH"`: the minimum loader version |
 | `requires_remix` | no (loader 0.2.0) | `true`: the package only makes sense with a Remix runtime; in a start without an active runtime its add-on folders (`garrysmod/addons/<name>/`) are left out of GMod's searches, in memory ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)). Default `false` |
 | `files` | yes | every file under `native/` except the manifest, each `{ "size": N, "sha256": "<64 lowercase hex>" }` |
@@ -69,6 +69,7 @@ The manifest is strict JSON (RFC 8259, UTF-8, no comments, trailing commas or du
 | `root_files` | for `root-files` / `lua-binary-module` / `lua-addon` | see below |
 | `patch_sets`, `module_overrides`, `session_cvars` | M5, optional | RTX-session extras, see below |
 | `module_dependencies` | loader 0.3.0, optional | files a binary module needs loaded before it, in every session; see below |
+| `reshade` | loader 0.5.0, with `reshade` only | ReShade as a Vulkan layer for RTX sessions; see below |
 
 `files` keys must pass the path rules (below), lie under `native/payload/` or `native/root/`, and be
 unique without case. When a package is loaded, `check_contents` requires every listed file to be in
@@ -174,6 +175,27 @@ path, once per process. The module's import of the same base name then binds to 
 An older loader refuses a manifest with this key (unknown keys are errors); packages that use it
 declare `requires_loader` `>=0.3.0`.
 
+### `reshade` (loader 0.5.0, ADR 0028)
+
+```json
+"kinds": ["reshade"],
+"reshade": { "layer": "reshade/VkLayer_nativeloader_reshade.json" }
+```
+
+ReShade as a Vulkan layer, which the bootstrap enables in RTX sessions only, when `remix.reshade`
+in `config.json` allows it ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md)). The RTX package
+carries it from [`package_reshade.py`](../tools/package_reshade.py.md).
+
+| Rule | |
+|---|---|
+| `layer` | a `.json` Vulkan layer manifest under `native/payload/`, listed in `files`; kind `reshade` needs the section and the section the kind |
+| The layer manifest | read when the session starts: `layer.name` is `VK_LAYER_` and 1-64 of `A-Z a-z 0-9 _`, and `layer.library_path` names a `.dll` beside the manifest (`.\ReShade64.dll`); both files must be as deployed |
+| One | the first deployed package with the section is used |
+| Sessions | RTX only: the bootstrap adds the manifest's folder to `VK_ADD_LAYER_PATH` and the layer to `VK_INSTANCE_LAYERS`, and points ReShade at `native-loader\reshade` (`RESHADE_BASE_PATH_OVERRIDE`) |
+| Reports | `status.json` `activation.reshade` |
+
+An older loader refuses a manifest with this key; the ReShade part declares `requires_loader` `>=0.5.0`.
+
 A package's own files are on disk in every session, RTX or not. Lua add-ons that only make sense with
 Remix (the RTX fixes') belong in a package marked `"requires_remix": true`: without an active runtime
 the bootstrap hides its add-on folders from GMod, so their Lua does not run
@@ -185,7 +207,7 @@ A package needs no allowlisting when it holds content only. Then any player who 
 Workshop item gets it at the next start ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)).
 Such a package may hold:
 
-- kinds `root-files` and `lua-addon` only: no `remix`, `patch_sets`, `module_overrides`,
+- kinds `root-files` and `lua-addon` only: no `remix`, `reshade`, `patch_sets`, `module_overrides`,
   `session_cvars` or `module_dependencies`, and no files under `native/payload/`;
 - root files under `rtx-remix/mods/<mod>/` that are Remix data: `.usd .usda .usdc .usdz .dds .png .jpg
   .jpeg .tga .bmp .exr .hdr .mdl .json .txt`;

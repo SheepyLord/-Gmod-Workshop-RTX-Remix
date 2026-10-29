@@ -47,6 +47,7 @@ struct Package {
   manifest::Session session;             // RTX-session extras (M5): patch sets, overrides, cvars
   bool requires_remix = false;           // add-on folders hidden from sessions without a runtime (ADR 0013)
   std::vector<manifest::ModuleDependency> module_dependencies;  // every session (ADR 0024)
+  std::optional<manifest::Reshade> reshade;                     // RTX sessions (ADR 0028)
 };
 
 // One deployed state of the install.

@@ -107,6 +107,23 @@ class CombineTests(unittest.TestCase):
         with self.assertRaisesRegex(pw.CombineError, 'runtime'):
             self.combine([self.runtime, second])
 
+    def test_one_reshade_part_merges_and_two_are_refused(self):
+        # ADR 0028: ReShade rides with the runtime, from a part of its own; the newest loader need wins.
+        shade = ({'schema': 1, 'id': 'reshade', 'version': '6.8.0', 'kinds': ['reshade'], 'requires_loader': '>=0.5.0',
+                  'reshade': {'layer': 'reshade/VkLayer_nativeloader_reshade.json'}},
+                 {'native/payload/reshade/ReShade64.dll': b'MZ reshade', 'native/payload/reshade/VkLayer_nativeloader_reshade.json': b'{}'})
+        part = write_package(self.root / 'reshade', *shade)
+        self.combine([self.runtime, part, self.fixes])
+        m = self.manifest(self.root / 'out')
+        self.assertEqual(m['reshade'], {'layer': 'reshade/VkLayer_nativeloader_reshade.json'})
+        self.assertEqual(m['kinds'], ['remix-runtime', 'reshade', 'root-files', 'patch-set'])
+        self.assertEqual(m['requires_loader'], '>=0.5.0')
+        self.assertIn('native/payload/reshade/ReShade64.dll', m['files'])
+        second = write_package(self.root / 'reshade2', {**shade[0], 'id': 'reshade2'},
+                               {'native/payload/reshade2/VkLayer_nativeloader_reshade.json': b'{}'})
+        with self.assertRaisesRegex(pw.CombineError, 'ReShade'):
+            self.combine([self.runtime, part, second])
+
     def test_a_file_that_does_not_match_its_manifest_is_refused(self):
         (self.fixes / 'native/root/rtx-remix/mods/fx/mod.usda').write_bytes(b'tampered!!')
         with self.assertRaisesRegex(pw.CombineError, 'does not match'):

@@ -29,6 +29,7 @@ FIELD_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
 MAP_MARKER = re.compile(r"(?m)^Clientside Lua startup!\s*$")
 MOUNT_MARKER = re.compile(r"(?m)^NL_SESSION_MOUNT true")
 EYE_MARKER = re.compile(r"(?m)^NL_SESSION_EYE ")
+FPS_MARKER = re.compile(r"(?m)^NL_SESSION_FPS (\{.*\})\s*$")
 WORKSHOP_MOUNTED = re.compile(r"(?m)^Mounted (\d+) of (\d+) workshop addons!")
 LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
@@ -469,6 +470,25 @@ def camera_lua(camera: list[float] | None, hide_hud: bool) -> str:
     return code
 
 
+def fps_lua(seconds: float) -> str:
+    """Client Lua that times every frame (a PostRender hook) for `seconds`, then prints one
+    NL_SESSION_FPS line with a JSON object: frames, seconds, fps, median_ms, p99_ms, max_ms."""
+    return ('local nl_times, nl_last, nl_began = {}, SysTime(), SysTime()\n'
+            'hook.Add("PostRender", "nl_session_fps", function()\n'
+            '  local now = SysTime()\n'
+            '  nl_times[#nl_times + 1] = now - nl_last\n'
+            '  nl_last = now\n'
+            f'  if now - nl_began < {seconds:.3f} then return end\n'
+            '  hook.Remove("PostRender", "nl_session_fps")\n'
+            '  local total, n = 0, #nl_times\n'
+            '  for _, t in ipairs(nl_times) do total = total + t end\n'
+            '  table.sort(nl_times)\n'
+            '  local function at(q) return nl_times[math.max(1, math.ceil(n * q))] * 1000 end\n'
+            '  print(string.format(\'NL_SESSION_FPS {"frames":%d,"seconds":%.3f,"fps":%.2f,"median_ms":%.3f,'
+            '"p99_ms":%.3f,"max_ms":%.3f}\', n, total, n / total, at(0.5), at(0.99), nl_times[n] * 1000))\n'
+            'end)\n')
+
+
 # ---------------------------------------------------------------- steps
 
 def nlctl_path(config: str) -> Path:
@@ -485,6 +505,8 @@ def config_content(args) -> tuple[dict, bytes]:
     value = {"schema": 1, "enabled": True,
              "allow": {"workshop": args.allow_workshop, "local": args.allow_local, "dev_folders": args.allow_dev},
              "remix": {"enabled": args.remix == "on"}, "patch_sets": {"require_insecure": args.require_insecure == "yes"}}
+    if getattr(args, "reshade", None):
+        value["remix"]["reshade"] = args.reshade  # loader 0.5.0 (ADR 0028); left out, the loader's default (auto)
     return value, json.dumps(value, indent=2).replace("\n", os.linesep).encode("utf-8")
 
 
@@ -721,6 +743,16 @@ def step_run(args) -> dict:
                     console(hwnd, "cl_drawhud 0")
                     console(hwnd, "r_drawviewmodel 0")
             time.sleep(args.settle)
+            if args.fps and hwnd and process.poll() is None:
+                # Timed in the game, frame by frame, before the screenshots (a capture can stall a frame).
+                # Lua lost while the game is busy is sent once more; its hook replaces the first one.
+                record["fps"] = None
+                for _ in range(2):
+                    printed = len(FPS_MARKER.findall(log_text()))
+                    if client_lua(hwnd, "fps", fps_lua(args.fps)) and \
+                            wait_for(FPS_MARKER, printed + 1, time.monotonic() + args.fps + 30):
+                        record["fps"] = json.loads(FPS_MARKER.findall(log_text())[-1])
+                        break
             window = game_window(process.pid)
             shots = []
             for index in range(args.screenshots):
@@ -815,6 +847,8 @@ def main(argv=None) -> int:
         command.add_argument("--allow-dev", action="append", default=[], help="allowlist a package folder (repeatable)")
         command.add_argument("--allow-workshop", action="append", default=[], help="allowlist a Workshop item id (repeatable)")
         command.add_argument("--remix", choices=["on", "off"], default="on")
+        command.add_argument("--reshade", choices=["auto", "on", "off"],
+                             help="write remix.reshade (loader 0.5.0); left out by default")
         command.add_argument("--require-insecure", choices=["yes", "no"], default="yes")
         if name == "install":
             command.add_argument("--replace-config", action="store_true",
@@ -845,6 +879,8 @@ def main(argv=None) -> int:
     run.add_argument("--camera", type=lambda text: [float(v) for v in text.split(",")],
                      help="x,y,z,pitch,yaw,roll[,fov]: pin the view with a client CalcView hook before screenshots")
     run.add_argument("--hide-hud", action="store_true", help="hide the HUD and view model (client hooks, no cvars)")
+    run.add_argument("--fps", type=float, metavar="SECONDS",
+                     help="after --settle, time every frame for SECONDS in client Lua (record: fps)")
     run.add_argument("--console", action="append", default=[], help="console command after the map (repeatable)")
     run.add_argument("--reference", action="store_true",
                      help="a reference install: never move its console.log or read the loader's files")

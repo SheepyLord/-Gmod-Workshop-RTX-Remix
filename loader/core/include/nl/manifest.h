@@ -34,7 +34,7 @@ struct Version {
 std::optional<Version> parse_version(std::string_view text);
 int compare(const Version& a, const Version& b);  // SemVer precedence: negative, 0 or positive
 
-enum class Kind { remix_runtime, lua_binary_module, root_files, lua_addon, patch_set, module_override };
+enum class Kind { remix_runtime, lua_binary_module, root_files, lua_addon, patch_set, module_override, reshade };
 const char* kind_name(Kind kind);
 
 enum class Policy { replace_owned, create_only };
@@ -90,6 +90,12 @@ struct ModuleDependency {
   std::vector<std::string> load_first;  // root files under garrysmod/lua/bin/, .dll, loaded in order
 };
 
+// ReShade as a Vulkan layer for RTX sessions (loader 0.5.0, ADR 0028). The layer manifest names its
+// library, which sits beside it; the bootstrap reads both when it enables the layer.
+struct Reshade {
+  std::string layer;  // the layer manifest, a .json relative to native/payload/
+};
+
 // Checks used by the manifest and the journal.
 bool valid_module_name(std::string_view name);
 bool valid_cvar_name(std::string_view name);
@@ -111,6 +117,7 @@ struct Manifest {
   Session session;  // patch_sets, module_overrides, session_cvars
   bool requires_remix = false;  // its add-on folders are hidden from sessions without a runtime (ADR 0013)
   std::vector<ModuleDependency> module_dependencies;  // every session, RTX or not (ADR 0024)
+  std::optional<Reshade> reshade;                      // RTX sessions only (ADR 0028)
   bool has(Kind kind) const noexcept;
 };
 

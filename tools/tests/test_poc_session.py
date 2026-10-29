@@ -50,7 +50,7 @@ def run_args(root, evidence, **changes):
     values = dict(root=str(root), evidence=str(evidence), name='run', reference=False, allow_steam_managed=False,
                   width=1280, height=720, workshop=False, addons=False, extra=[], players=1, map='gm_construct',
                   post=[], timeout=30, load_save=None, change_map=None, mount_workshop=None, console=[], camera=None,
-                  hide_hud=False, no_window=False,
+                  hide_hud=False, no_window=False, fps=None,
                   settle=0, screenshots=0, shot_interval=0, quit_timeout=5)
     values.update(changes)
     return SimpleNamespace(**values)
@@ -240,6 +240,39 @@ class StepRunTests(unittest.TestCase):
         self.assertEqual(sent, ps.client_lua_lines('camera', ps.camera_lua(args.camera, False)) + ['quit'])
         self.assertFalse(data.exists())
 
+    def test_the_frame_rate_is_timed_in_client_lua_sent_through_the_console(self):
+        clock, game, sent = Clock(), FakeGame(), []
+        log = self.root / 'garrysmod' / 'console.log'
+        result = {'frames': 1200, 'seconds': 10.004, 'fps': 119.95, 'median_ms': 8.3, 'p99_ms': 12.5, 'max_ms': 20.1}
+
+        def launch(*_, **__):
+            log.write_text('Clientside Lua startup!\n', encoding='utf-8')
+            return game
+
+        def console(hwnd, command, attempts=6):
+            sent.append(command)
+            if command.endswith('"nl_session_fps")'):
+                with open(log, 'a', encoding='utf-8') as handle:
+                    handle.write('NL_SESSION_FPS ' + json.dumps(result) + '\n')
+            elif command == 'quit':
+                game.quit()
+            return True
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'console', side_effect=console), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'game_window', return_value=None), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(run_args(self.root, self.evidence, fps=10.0))
+        self.assertEqual(record['fps'], result)
+        self.assertEqual(sent, ps.client_lua_lines('fps', ps.fps_lua(10.0)) + ['quit'])
+        self.assertIn('hook.Add("PostRender", "nl_session_fps"', ps.fps_lua(10.0))
+        self.assertIn('< 10.000 then return end', ps.fps_lua(10.0))
+        self.assertFalse((self.root / 'garrysmod' / 'data').exists())
+
     def test_with_workshop_add_ons_the_map_waits_for_the_workshop_mount(self):
         # A map on the command line, or sent while Steam still lists the subscriptions, waits on that
         # fetch and the game stops answering: the run starts at the menu and asks for the map once the
@@ -422,6 +455,10 @@ class InstallConfigTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(Path(record['config_backup']['path']).parent, self.evidence)
         self.assertEqual(json.loads(self.config.read_text(encoding='utf-8'))['allow']['local'], ['b.gma'])
+        self.assertNotIn('reshade', json.loads(self.config.read_text(encoding='utf-8'))['remix'])  # the loader's default
+        code, record = main('--allow-local', 'b.gma', '--reshade', 'off', '--replace-config')
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(self.config.read_text(encoding='utf-8'))['remix'], {'enabled': True, 'reshade': 'off'})
 
 
 class PowerShellTests(unittest.TestCase):

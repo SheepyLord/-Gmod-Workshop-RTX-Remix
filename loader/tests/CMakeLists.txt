@@ -18,6 +18,7 @@ add_executable(nl_tests
   test_package.cpp
   test_paths.cpp
   test_planner.cpp
+  test_reshade.cpp
   test_sha256.cpp
   test_startup.cpp
   test_status.cpp

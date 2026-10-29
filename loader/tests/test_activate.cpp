@@ -214,3 +214,72 @@ TEST_CASE("activate: remix.enabled false deploys but does not load") {
   CHECK(plan.env.empty() && plan.launch_args.empty());
   CHECK(plan.reason == "remix.enabled is false in native-loader/config.json");
 }
+
+TEST_CASE("activate: without an NVIDIA GPU Remix chooses its own preset, from a layer of the loader's (ADR 0030)") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/dxvk/01_classic_remix_defaults.conf"};
+  const auto gen = with_runtime("p", remix);
+  const auto gpus = [](std::vector<unsigned> vendors) { return [vendors] { return vendors; }; };
+  const std::string classic = "p/config/dxvk/01_classic_remix_defaults.conf";
+
+  // An AMD (or Intel) GPU alone: the loader's layer goes above the package's, below the user's dxvk.conf.
+  auto p = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd, gpus({0x1002}));
+  CHECK(p.non_nvidia);
+  REQUIRE(env_value(p, "DXVK_CONFIG_FILE") != nullptr);
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == classic + ",native-loader/remix/non-nvidia.conf,dxvk.conf");
+  CHECK((p.dxvk_layers == std::vector<std::string>{classic, "native-loader/remix/non-nvidia.conf", "dxvk.conf"}));
+  CHECK(env_value(p, "DXVK_RTX_CONFIG_FILE") == nullptr);  // the rtx.conf chain is not touched
+
+  // An NVIDIA GPU anywhere, no adapter read, or no reader: nothing changes.
+  for (const auto& plan : {activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd, gpus({0x1002, 0x10DE})),
+                           activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd, gpus({})),
+                           activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd)}) {
+    CHECK(!plan.non_nvidia);
+    REQUIRE(env_value(plan, "DXVK_CONFIG_FILE") != nullptr);
+    CHECK(*env_value(plan, "DXVK_CONFIG_FILE") == classic + ",dxvk.conf");
+  }
+
+  // The layer itself: Auto (5), and the user's own files on top. A package without dxvk layers still gets it.
+  CHECK(activate::non_nvidia_layer_text().find("rtx.graphicsPreset = 5") != std::string::npos);
+  const auto bare = activate::plan(with_runtime("p", base_remix()), config::Config{}, values({{"DXVK_CONFIG_FILE", "mine.conf"}}),
+                                   L"gmod.exe", uhd, gpus({0x8086}));
+  REQUIRE(env_value(bare, "DXVK_CONFIG_FILE") != nullptr);
+  CHECK(*env_value(bare, "DXVK_CONFIG_FILE") == "native-loader/remix/non-nvidia.conf,mine.conf");
+
+  // No RTX session, no adapter query.
+  config::Config off;
+  off.remix_enabled = false;
+  bool asked = false;
+  activate::plan(gen, off, none(), L"gmod.exe", uhd, [&asked] { asked = true; return std::vector<unsigned>{}; });
+  CHECK(!asked);
+}
+
+TEST_CASE("activate: the runtime's late bare-name DLLs load with it (ADR 0030)") {
+  for (const char* name : {"amd_fidelityfx_vk.dll", "AMD_FidelityFX_VK.DLL", "cudart64_13.dll", "nvrtc64_130_0.dll",
+                           "nvrtc-builtins64_133.dll"})
+    CHECK(activate::late_runtime_dll(name));
+  for (const char* name : {"d3d9.dll", "NRD.dll", "cudart64_.dll", "cudart64_13.dll.bak", "amd_fidelityfx_dx12.dll", "nvrtc64_130_0.lib"})
+    CHECK(!activate::late_runtime_dll(name));
+
+  // The runtime package's own files at the top of its folder: not a subfolder, not another package's.
+  auto gen = with_runtime("p", base_remix());
+  const auto file = [&gen](const std::string& path, const std::string& package) {
+    journal::File record;
+    record.path = path;
+    record.package = package;
+    gen.files.push_back(record);
+  };
+  for (const char* name : {"d3d9.dll", "nvrtc64_130_0.dll", "NRD.dll", "cudart64_13.dll", "amd_fidelityfx_vk.dll",
+                           "nvrtc-builtins64_133.dll", "usd/plugins/cudart64_13.dll"})
+    file(std::string("p/runtime/") + name, "rtx-remix-runtime");
+  file("p/runtime/cudart64_12.dll", "root-only");
+  const auto p = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd);
+  CHECK(p.activate);
+  CHECK((p.preload == std::vector<std::string>{"p/runtime/amd_fidelityfx_vk.dll", "p/runtime/cudart64_13.dll",
+                                               "p/runtime/nvrtc-builtins64_133.dll", "p/runtime/nvrtc64_130_0.dll"}));
+
+  // No RTX session, nothing to load.
+  config::Config off;
+  off.remix_enabled = false;
+  CHECK(activate::plan(gen, off, none(), L"gmod.exe", uhd).preload.empty());
+}

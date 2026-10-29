@@ -640,6 +640,7 @@ Planned work_out(const Run& run, const planner::Decision& decision, std::size_t 
   p.record.session = m.session;
   p.record.requires_remix = m.requires_remix;
   p.record.module_dependencies = m.module_dependencies;
+  p.record.reshade = m.reshade;
   bool has_payload = false;
   for (const auto& file : m.files) {
     if (paths::within(file.first, "native/payload")) {

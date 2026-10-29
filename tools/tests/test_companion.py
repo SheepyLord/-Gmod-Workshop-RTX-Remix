@@ -93,6 +93,18 @@ class CompanionTests(unittest.TestCase):
         missing = self.run_companion(status, {}, api=False)
         self.assertTrue(any(line.startswith('OUT [nativeloader] Remix API: not available') for line in missing), missing)
 
+    def test_the_status_says_what_reshade_did(self):
+        # ADR 0028: loader 0.5.0 reports ReShade under activation; an older loader's status has no such field.
+        status = self.status([])
+        self.assertFalse([line for line in self.run_companion(status, {}) if 'reshade' in line], status)
+        status['activation']['reshade'] = {'outcome': 'active', 'reason': 'ReShade from gmod-rtx-remix 1.0.0',
+                                           'package': 'gmod-rtx-remix', 'settings': 'migrated'}
+        self.assertIn('OUT [nativeloader] reshade: active (ReShade from gmod-rtx-remix 1.0.0), settings migrated in '
+                      'native-loader\\reshade', self.run_companion(status, {}))
+        status['activation']['reshade'] = {'outcome': 'off', 'reason': 'remix.reshade is "off"', 'package': 'gmod-rtx-remix',
+                                           'settings': ''}
+        self.assertIn('OUT [nativeloader] reshade: off (remix.reshade is "off")', self.run_companion(status, {}))
+
     def test_every_companion_lua_file_compiles(self):
         files = sorted((REPO / 'companion' / 'nativeloader' / 'lua').rglob('*.lua'))
         self.assertGreaterEqual(len(files), 6)

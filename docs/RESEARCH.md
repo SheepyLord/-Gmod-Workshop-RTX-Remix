@@ -1367,3 +1367,176 @@ subscriptions):
 - Mouse messages posted to the game window reach the menus: the fork forwards them to ImGui from
   the game's window procedure whenever no raw input arrived in the last ~100 ms
   (`fork_hooks::overlayInputForward`).
+
+## 26. ReShade with the Remix runtime (2026-10-29, Claude)
+
+**The test client.** `H:\SteamLibrary\steamapps\common\GarrysMod_ReShade`, made with
+`make_vanilla_copy.py` from the field install: 2,877 depot files, 7,279,873,012 bytes, all verified, in
+about two minutes. Loader 0.4.0 and 0.5.0, the RTX package from Workshop item 3829070317.
+
+**ReShade 6.8.0**, from reshade.me: `ReShade_Setup_6.8.0.exe` (4,075,064 bytes, SHA-256 `207AEA16...`,
+signed "ReShade"). The setup carries a ZIP at its end with `ReShade32.dll`, `ReShade64.dll` (5,255,448
+bytes, version 6.8.0.2158), `ReShade32.json`, `ReShade64.json` and the `_XR.json` OpenXR manifests.
+`ReShade64.json` is the layer `VK_LAYER_reshade` (library `.\ReShade64.dll`, API 1.3.268,
+`disable_environment` `DISABLE_VK_LAYER_reshade_1`). For Direct3D 9 the setup puts the DLL next to the
+executable as `d3d9.dll`, with `ReShade.ini`, `ReShadePreset.ini` and `reshade-shaders` beside it; for
+Vulkan it copies the files to `C:\ProgramData\ReShade` and registers the manifests under
+`HKLM\SOFTWARE\Khronos\Vulkan\ImplicitLayers` (administrator rights). This machine has no such
+registration (OBS, the Steam overlay and Fossilize only); its Vulkan loader is 1.4.341.
+
+**What ReShade's source says** (tag `v6.8.0`):
+- Base folder (`source/dll_main.cpp:55-73`): `[INSTALL] BasePath` from a `ReShade.ini` beside the
+  executable (resolved against the DLL's folder, must exist), else `RESHADE_BASE_PATH_OVERRIDE` (same
+  rules), else the executable's folder for a DLL with a non-proxy name and the DLL's folder for
+  `d3d*`, `dxgi`, `opengl32`, `dinput*` and `.asi`. `ReShade.ini` and the log (`ReShade.log`, then
+  `.log1`... when it is taken) live there.
+- A DLL with a non-proxy name loads only where that folder has a `ReShade.ini`, unless
+  `RESHADE_DISABLE_LOADING_CHECK` is set (`:129-140`): this keeps the global layer out of other games.
+- A second ReShade in a process fails its own load (`DllMain` returns FALSE) when another module
+  exports `ReShadeVersion` (`:201-212`).
+- Vulkan is reached only through the layer mechanism; every name loads the Direct3D and DXGI hooks
+  (for system DLLs). The layer's own name appears only in `vkGetPhysicalDeviceToolPropertiesEXT`
+  (`source/vulkan/vulkan_hooks_instance.cpp:286`), so a manifest may name the layer differently.
+- Settings paths are resolved against the base folder (`resolve_path`, `source/runtime.cpp`):
+  `EffectSearchPaths`, `TextureSearchPaths` (default `.\`), `IntermediateCachePath` (default the
+  temporary folder), `PresetPath` (default `.\ReShadePreset.ini`), `StartupPresetPath`,
+  `PresetShortcutPaths`, `[SCREENSHOT] SavePath` and `PostSaveCommandWorkingDirectory` (default `.\`),
+  `SoundPath`, the `[STYLE]` fonts and `[ADDON] AddonPath` (default: the base folder; the log says
+  "Searching for add-ons (*.addon, *.addon64) in" it). ReShade writes the whole file back when it exits.
+- The built-in add-ons "Generic Depth" and "Effect Runtime Sync" are left out with
+  `[ADDON] DisabledAddons=<name>` (`source/addon_manager.cpp:155-190`).
+- ReShade's licence texts of its libraries are compiled in and shown on the overlay's About page
+  (`source/runtime_gui.cpp:3147-3236`).
+
+**Compatibility, measured** (gm_construct, the RTX package's add-ons mounted, a marker effect of ours
+that paints the bottom-right 48 x 48 pixels magenta):
+- RTX on, ReShade for Direct3D 9 in `bin\win64`: the game process lists the runtime's `d3d9.dll` and no
+  ReShade; no marker. ReShade's log shows it loaded into GMod's Chromium helper (it loads `d3d9.dll` by
+  name), as it does without the loader. Its three files kept their SHA-256 through every RTX session.
+- RTX off (`remix.enabled` false): the game binds `bin\win64\d3d9.dll`, the marker shows, 1,137 frames a
+  second at 1280 x 720. The helper loads it too (`ReShade.log1`).
+- RTX on, ReShade 6.8.0 as a layer (`VK_ADD_LAYER_PATH`, `VK_INSTANCE_LAYERS`,
+  `RESHADE_BASE_PATH_OVERRIDE`): ReShade takes the runtime's `vkCreateInstance` and its
+  `vkCreateSwapchainKHR` calls (the runtime asks for the immediate and FIFO present modes), compiles the
+  effects, and the marker shows in the path-traced frame with DLSS frame generation on (the default:
+  `rtx.dlfg.enable = True`, two generated frames) and off.
+- The Chromium helper inherits the variables: the Direct3D 9 ReShade in it then logs to the layer's
+  folder. `mmdhl_worker.exe` (Model Hotloader) imports no Vulkan, so the layer cannot reach it.
+
+**Frame rate** (`poc_session.py --fps 30`, the camera pinned, `fps_max 0`, `engine_no_focus_sleep 0`,
+RTX 5090, frames counted by the engine; DLSS frame generation shows about three times as many):
+
+| When | Case | 1280 x 720 | 3840 x 2160 |
+|---|---|---|---|
+| 02:25-02:52, another session building the runtime and packing `.gma` files | without ReShade | 138-146 | 86-90 |
+| same | ReShade layer, no effect / marker / heavy blur | 75-95 | 31 (overlay open) / 71 (blur) |
+| 02:59-03:07, quiet machine | without ReShade | 145.0 | |
+| same | ReShade layer, marker | 143.2-145.0 (four runs) | |
+| 03:09-03:45, quiet machine, final batch | without ReShade | 136.4, 148.2 | 90.0, 90.3 |
+| same | ReShade layer, no effect | 145.2 | |
+| same | ReShade layer, marker | 145.0, 147.6 | 84.2, 83.2 |
+| same | ReShade layer, heavy blur | 147.0 | 71.6 |
+
+- The early drop is not the layer's own cost: on a quiet machine the 1280 x 720 runs with and without
+  the layer are alike (143-148 frames a second; one run without it gave 136), whatever the effect.
+  The layer's work runs on the runtime's command threads, so it suffers most from a processor other
+  work keeps busy; runs without the layer lost about 3 % in the same window.
+- At 3840 x 2160 the layer costs frame time: the median frame took 11.04-11.09 ms without ReShade,
+  11.87-12.00 ms with the marker (0.9 ms more, 7 % fewer frames) and 13.82 ms with the heavy blur
+  (2.8 ms more, 20 % fewer).
+- The final batch (`out\round8\perf_final.ps1`, not in git) waited before each run until no game of
+  another install ran and the processor had been under 15 % busy for 10 s, and recorded that no other
+  game started during a run (processor 9-16 % busy on average while timing).
+- Starting ReShade from a `ReShade.ini` with or without its overlay layout made no difference (143-145
+  both), and ReShade rewrote it only at start and exit (three writes a run).
+- One 4K run with the layer stayed at 31 frames a second for its whole 30 s; its `ReShade.ini`
+  afterwards held the overlay's windows at 4K size, so the overlay was open (the window covered the
+  screen). The final runs give the overlay a key nobody presses.
+
+## 27. The runtime's late DLLs, and GPUs that are not NVIDIA's (2026-10-29, Claude and a side session)
+
+**FSR and NRC never loaded under the loader.** From the Remix logs and module lists kept under `out\`:
+- The classic install (`m5\acceptance\ref-*`) and the M4 loader runs log "FSR: amd_fidelityfx_vk.dll
+  loaded" and "NRC SDK: Loading the default network config data"; its game process has
+  `amd_fidelityfx_vk.dll`, `cudart64_13.dll`, `nvrtc64_130_0.dll`, `nvrtc-builtins64_133.dll`,
+  `nvcuda.dll` and `nvcudart_hybrid64.dll` loaded.
+- Every loader session from M5 (`m5\acceptance\poc-construct-2`) on logs "FSR: amd_fidelityfx_vk.dll
+  could not be loaded" and "[RTX Neural Radiance Cache] Failed to initialize NRC. Reason: Unexpected
+  condition occured during processing", and switches to importance-sampled indirect light; none of
+  those six DLLs is in its process.
+- The four of them that ship are in the package's `runtime` folder beside `d3d9.dll`. The fork probes
+  FSR by bare name when it creates the device (`src\dxvk\rtx_render\rtx_fork_fsr.cpp:537`, a plain
+  `LoadLibraryA`; the DLL is delay-loaded, `src\dxvk\meson.build:523`). `NRC_Vulkan.dll` delay-imports
+  `nvrtc64_130_0.dll` and names `nvrtc-builtins64`; nothing in the runtime folder names `cudart64_13`
+  (ASCII or UTF-16). In the classic process (`ref-construct-3`) the CUDA DLLs are the last modules to
+  load, `cudart64_13.dll` just before `nvrtc64_130_0.dll`.
+- M4 put the runtime folder into the search with `SetDllDirectoryW`, and FSR and NRC loaded. M5 moved
+  it to `PATH` (ADR 0010). Loader 0.5.0's first fix added it with `AddDllDirectory` as well: the
+  end-to-end run (`out\round8\e2e\sessions-run1`, four RTX sessions with and without ReShade) still
+  logged both failures, with `AddDllDirectory` succeeding (no note).
+
+**Why no search finds the runtime folder** (2026-10-29, measured on the ReShade client):
+- **`PATH` is rewritten.** Read from the running game's process environment block, `PATH` was
+  `C:\Program Files (x86)\Steam;` followed by the 25 entries the process started with: neither the
+  runtime folder the loader put first nor `gmod.exe`'s own `bin\win64` entry is left, so something
+  rewrites it after both from the starting value, apparently the Steam client.
+- **`gmod.exe` rewrites it too, harmlessly:** it formats `PATH=%s;%s` (its folder, then the `PATH` it
+  read; code at `0x14005736E`, with warnings for a game path of 260 characters or more and for the two
+  together passing 8,192) and then checks the command line for `--type=` (Chromium's helper processes).
+- **The standard search is in effect.** `gmod.exe` holds Chromium's sandbox mitigations; their
+  DLL-search flag (`0x200`) calls `SetDefaultDllDirectories(0xC00)` (System32 and user folders;
+  `0x1400018FA`, the function name resolved at run time, so no import table shows it). Under that set
+  an `AddDllDirectory` folder would be searched; since the game's loads did not find the folder, they
+  use the standard search, which reads `SetDllDirectory`'s folder (M4) but never `AddDllDirectory`'s.
+  Modules of the game process that name these functions: `gmod.exe`, `libcef.dll` (both
+  `SetDefaultDllDirectories`), `apphelp.dll`, `client.dll`, `server.dll`, `GameAnalytics.dll`
+  (`AddDllDirectory`), and `gmcl_rtxfixesbinary_win64.dll`, `dxgi.dll`, `NvMemMapStoragex.dll`
+  (`SetDllDirectory`).
+- **The files are fine.** In a fresh process (`out\round8\tools\probe_search*.py`), all of
+  `amd_fidelityfx_vk.dll`, `cudart64_13.dll` and `nvrtc64_130_0.dll` load from the deployed runtime
+  folder: by bare name with it first on `PATH`; by bare name after `AddDllDirectory` and
+  `SetDefaultDllDirectories(0xC00)`, also after a DXGI adapter list and a Vulkan instance on the NVIDIA
+  driver, and after any `SetDllDirectoryA` call; and by absolute path. Their dependencies are System32's
+  (`MSVCP140`, `VCRUNTIME140`, `vulkan-1`), the same files the game loads.
+- So loader 0.5.0 loads the four right after the runtime, by absolute path (ADR 0030): a later
+  bare-name load binds to the loaded module. They are 113 MB (`nvrtc64_130_0.dll` 96.7 MB,
+  `amd_fidelityfx_vk.dll` 8.9 MB, `nvrtc-builtins64_133.dll` 6.4 MB, `cudart64_13.dll` 0.5 MB).
+- **Result** (`out\round8\e2e\sessions`, the same package, RTX 5090): every RTX session logs "FSR:
+  amd_fidelityfx_vk.dll loaded.", "NRC SDK: Loading the default network config data" and "NRC v0.15
+  (25 March 2026) Context successfully initialized", and stays on the Neural Radiance Cache. Activation
+  took 38.8 ms with the four against 35.8-51.1 ms without them.
+
+**The preset.** The package's classic layer pins `rtx.graphicsPreset = 4` (Custom). The fork's
+`GraphicsPreset` (`rtx_graphics_preset.h:26`) is Ultra 0, High 1, Medium 2, Low 3, Custom 4, Auto 5. It
+chooses per GPU only under Auto (`rtx_options.cpp:419`, `rtx_initializer.cpp:128`): for a non-NVIDIA
+GPU, Low with `applyNonNvidiaDefaults` (resolution scale 0.5, TAA-U and NIS at Performance;
+`rtx_gpu_profile.cpp:203-209`, `rtx_options.cpp:450-460`). Per-GPU overrides
+(`rtx.gpuOverride.graphicsPreset.VVVV_DDDD`, `rtx_gpu_overrides.h:38`) name one vendor and device id
+each and are read only under Auto.
+
+**What an AMD GPU needs** (the fork, read by the side session):
+- Required are only the KHR ray-tracing extensions (`dxvk_extensions.h:326-328`: acceleration
+  structure, ray query, ray-tracing pipeline). The NVIDIA extensions (invocation reorder, low latency,
+  NVX binary import and image view handle, present metering) are optional. So Radeon RX 6000, 7000
+  and 9000 qualify; RX 5000 and older cannot start an RTX session.
+- DLSS becomes TAA-U when unsupported (`rtx_context.cpp:579-580`), NRC becomes ReSTIR GI
+  (`rtx_options.cpp:500-506`); DLSS frame generation and Reflex are NVIDIA-only; XeSS (`libxess.dll`,
+  a static import) runs on AMD.
+- On AMD, asynchronous shader prewarming is off (`rtx_initializer.cpp:205`, an old deadlock
+  workaround): expect a stutter the first time each effect is used.
+- Integrated GPUs are skipped only when a discrete GPU is there (`dxvk_instance.cpp:919`); on an APU-only
+  machine Remix uses the integrated GPU.
+
+**AMD smoke test** (2026-10-29, `out\round8\amd_smoke.ps1`, twice: before and after the preload). One
+RTX session in the ReShade client with `VK_DRIVER_FILES` set to AMD's driver manifest, so Vulkan sees
+only the Ryzen 9 9950X3D's integrated "AMD Radeon(TM) Graphics" (vendor `0x1002`, RDNA 2). DXGI still
+lists the RTX 5090, so the non-NVIDIA layer stayed off and the preset Custom (4).
+- Remix took the Radeon, found NRC unsupported (`VK_NVX_binary_import` and `VK_NVX_image_view_handle`
+  missing) and switched to ReSTIR GI; NGX was not available (DLSS off) and Reflex failed; "AMD driver
+  detected" set the ray-tracing modes (trace ray for indirect light, ray query for the G-buffer and
+  direct light). The map loaded.
+- With the preload, "FSR: amd_fidelityfx_vk.dll loaded." (before it, "could not be loaded").
+- In both runs: many "GetShaderModule: Out of range of supported shader model", then the fork's FSR
+  sharpening pass (`fork_rcas`) failed to compile and, a second later, `VK_ERROR_DEVICE_LOST` (60-75 s
+  after start). The game then hung until stopped; `poc_session.py`'s timeout did not end it. So this
+  integrated GPU cannot run an RTX session; a discrete Radeon (RX 6000 or newer) was not available to try.

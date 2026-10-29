@@ -47,7 +47,8 @@ dropped, so before a save or the camera the script waits until `console.log` has
 
 - `install`: runs [`install-loader.ps1`](install-loader.ps1.md) for `--config` (Release by default)
   and writes `native-loader\config.json` from `--allow-local`, `--allow-dev`, `--allow-workshop`
-  (each repeatable), `--remix on|off` and `--require-insecure yes|no`. An existing `config.json` is
+  (each repeatable), `--remix on|off`, `--reshade auto|on|off` (`remix.reshade`, loader 0.5.0; left out
+  unless given) and `--require-insecure yes|no`. An existing `config.json` is
   never replaced silently. If its bytes differ from what this install would write, the step is
   refused before the installer runs, and nothing changes. With `--replace-config` the old file is
   first saved as `<evidence>\config.json.before-<UTC time>` and the copy checked. The evidence folder
@@ -87,7 +88,11 @@ dropped, so before a save or the camera the script waits until `console.log` has
   `--camera x,y,z,pitch,yaw,roll[,fov]` pins the view with a client `CalcView` hook; `--hide-hud`
   hides the HUD and view model (client hooks, plus `cl_drawhud 0` / `r_drawviewmodel 0`, which are not
   archived and are set back before quitting) and closes Derma dialogs for 30 s. After `--settle`
-  seconds it saves `--screenshots` PNGs of the client area (`PrintWindow` with `PW_RENDERFULLCONTENT`,
+  seconds, `--fps SECONDS` times every frame for that long (client Lua through the console, a
+  `PostRender` hook, sent once more if its result does not come) and records `fps`: `frames`,
+  `seconds`, `fps`, `median_ms`, `p99_ms` and `max_ms`. A game window without focus sleeps between
+  frames (`engine_no_focus_sleep`), so a performance run also sends `--console "engine_no_focus_sleep 0"`
+  and `--console "fps_max 0"`. Then it saves `--screenshots` PNGs of the client area (`PrintWindow` with `PW_RENDERFULLCONTENT`,
   so the window need not be in front; a screen grab if that comes back black), lists the modules,
   sends `quit` and waits for the exit (`--quit-timeout`); if that fails the game and its helpers are
   terminated and the record says so (`normal_quit: false`). Only what this run started is ended: the

@@ -38,6 +38,29 @@ using DisplayGet = std::function<Display()>;
 // Win32 display adapter shared by the CLI and bootstrap (EnumDisplaySettingsW, physical pixels).
 Display primary_display();
 
+// The PCI vendor ids of the computer's hardware graphics adapters (0x10DE NVIDIA, 0x1002 AMD, 0x8086
+// Intel); empty when they cannot be read. The plan reads them only when it activates (ADR 0030).
+using GpuGet = std::function<std::vector<unsigned>()>;
+
+// Win32 adapter shared by the CLI and bootstrap: DXGI, loaded from System32 at run time, software
+// adapters left out.
+std::vector<unsigned> graphics_adapters();
+
+inline constexpr unsigned kNvidia = 0x10DE;
+
+// Remix's defaults on a computer without an NVIDIA GPU (ADR 0030). The package's classic settings pin
+// the graphics preset to Custom, tuned for NVIDIA GPUs; this layer, written by the bootstrap above the
+// package's layers and below the user's own files, gives Remix its automatic choice for the GPU back.
+inline constexpr std::string_view kNonNvidiaLayer = "native-loader/remix/non-nvidia.conf";
+std::string non_nvidia_layer_text();
+
+// The runtime's DLLs that load late by bare name (ADR 0030): the fork's FSR probe (amd_fidelityfx_vk.dll)
+// and NRC's CUDA runtime and compiler (cudart64_*, nvrtc64_*, nvrtc-builtins64_*). In GMod no search
+// finds them in the runtime folder by then (RESEARCH.md section 27), so the bootstrap loads them by
+// absolute path right after the runtime and the late loads bind to those modules. A file name, ASCII,
+// any case.
+bool late_runtime_dll(std::string_view file_name);
+
 struct Plan {
   bool activate = false;  // false: the runtime is not loaded and nothing below is applied
   std::string reason;     // why not, or (when active) a short note
@@ -46,7 +69,12 @@ struct Plan {
 
   std::string runtime_dll;  // deployed d3d9.dll, relative to root; metadata may be present while RTX is off
   std::string runtime_dir;  // folder added to the DLL search for late bare-name loads (relative)
+  // The runtime package's deployed late_runtime_dll files at the top of runtime_dir, relative to root,
+  // sorted; loaded after the runtime. Only filled when the plan activates.
+  std::vector<std::string> preload;
   bool prefer_system_vulkan = false;
+  std::vector<unsigned> gpu_vendors;  // the hardware adapters' vendor ids, when the plan activates
+  bool non_nvidia = false;            // none of them is NVIDIA: kNonNvidiaLayer goes into DXVK_CONFIG_FILE
 
   // SetEnvironmentVariable calls, in order: the two config-file layer lists first (only when the
   // package adds layers, retaining the user's list last), then the package's own variables
@@ -86,8 +114,9 @@ struct Plan {
 // The runtime package is the deployed package that has a remix section and a payload. With none, or
 // with remix.enabled false, the plan is inactive. `command_line` is the process command line, read
 // only to skip launch arguments the user set. `display` is called at most once, and only when the
-// plan sizes the window.
+// plan sizes the window. `gpus` is called once when the plan activates; without it (or with no
+// adapter found) the computer counts as having an NVIDIA GPU, so nothing changes.
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
-          std::wstring_view command_line, const DisplayGet& display);
+          std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus = {});
 
 }  // namespace nl::activate

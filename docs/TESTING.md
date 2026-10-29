@@ -163,6 +163,25 @@ the hold kept it at the next start, and RTX off (`remix.enabled: false`) used Sy
 | PoC | `H:\SteamLibrary\steamapps\common\GarrysMod_PoC` | All development and in-game tests |
 | Field | `H:\SteamLibrary\steamapps\common\GarrysMod` | Only with the user's explicit go-ahead (AGENTS.md rule 1) |
 | RTX_c | `H:\SteamLibrary\steamapps\common\GarrysMod_RTX_c` | Reference for the expected look and file set; read-only |
+| ReShade client | `H:\SteamLibrary\steamapps\common\GarrysMod_ReShade` | A second vanilla copy (2026-10-29, `make_vanilla_copy.py`) with ReShade 6.8.0 set up for Direct3D 9 in `bin\win64` and two test effects of ours: ReShade compatibility and frame-rate runs ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md), [RESEARCH.md](RESEARCH.md) section 26) |
+
+### Frame-rate runs
+
+`poc_session.py run --fps 30 --camera <pinned view> --console "engine_no_focus_sleep 0" --console
+"fps_max 0"` times every frame in the game. Frame rates are only comparable on a quiet machine: in
+round 8 a build and `.gma` packing by another session made ReShade's layer look 35 % slower than it
+is, while runs without the layer lost 3 %. So check, before and during each run, that no game of
+another install runs and that the processor is idle, and alternate the cases (with, without).
+Another session's runs on the PoC share the one GPU too.
+
+### An AMD GPU on this machine
+
+The Ryzen 9 9950X3D has an integrated Radeon. Setting `VK_DRIVER_FILES` to AMD's Vulkan driver
+manifest (`C:\WINDOWS\System32\DriverStore\FileRepository\u0200157.inf_amd64_*\B025930\amd-vulkan64.json`)
+for the one `poc_session.py run` makes Vulkan, and so Remix, see only that GPU; nothing on the system
+changes. DXGI still lists the RTX 5090, so the loader's non-NVIDIA layer stays off. The integrated GPU
+loses its device about a minute into the session and the game then hangs (RESEARCH.md section 27):
+stop it with a watchdog, the session timeout does not.
 
 ### The PoC install
 

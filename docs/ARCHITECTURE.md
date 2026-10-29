@@ -38,13 +38,20 @@ Steam ─► GarrysMod\gmod.exe (launcher) ─► bin\win64\gmod.exe   (working 
                override file (ADR 0014); apply environment and layers,
                reversible kernelbase W/A + PEB command-line descriptor swap,
                optional preload of System32\vulkan-1.dll,
-               the runtime folder first on PATH for delay loads (ADR 0010), then
-               LoadLibraryExW(<absolute package runtime d3d9.dll>, LOAD_WITH_ALTERED_SEARCH_PATH)
+               the runtime folder first on PATH (ADR 0010) and an AddDllDirectory folder,
+               without an NVIDIA GPU a layer with Remix's own preset (ADR 0030),
+               ReShade's Vulkan layer when remix.reshade allows it: native-loader\reshade
+               made once from bin\win64\ReShade.ini, VK_ADD_LAYER_PATH, VK_INSTANCE_LAYERS,
+               RESHADE_BASE_PATH_OVERRIDE (ADR 0028), then
+               LoadLibraryExW(<absolute package runtime d3d9.dll>, LOAD_WITH_ALTERED_SEARCH_PATH),
+               then the runtime's late bare-name DLLs (FSR, NRC's CUDA) by absolute path: by the
+               time the runtime asks for them, PATH has been rewritten (ADR 0030)
      report    native-loader\logs\loader.log, atomic garrysmod\data\native-loader\status.json
    then jump to the original entry point
 3. Engine start-up. When shaderapidx9.dll loads, its import of "d3d9.dll" binds to the
    module already loaded under that name: the Remix runtime. No preload → normal search
-   → whatever d3d9.dll the install has (vanilla system DLL, or the user's DXVK).
+   → whatever d3d9.dll the install has (vanilla system DLL, the user's DXVK, or a ReShade
+   set up for Direct3D 9, which an RTX session therefore never loads).
 4. In game. gmcl_RTXFixesBinary finds the runtime with LoadLibraryW("d3d9.dll") as before.
    The Lua companion shows status. Workshop downloads land during the session and are
    deployed at the next launch ("restart to apply").
@@ -61,6 +68,7 @@ continues vanilla. A broken deployment is rolled back from the journal on the ne
 | Entry-point hook | Real work (file I/O, `LoadLibrary`) is unsafe under the loader lock in `DllMain`; at the EXE entry point all static imports are loaded and the lock is free |
 | Preloading `d3d9.dll` | Windows binds an import to an already-loaded module of the same name, wherever it came from, so the runtime lives in a versioned folder and `bin\win64` stays clean ([ADR 0004](decisions/0004-runtime-in-versioned-folder.md)) |
 | Config layers through env vars | The runtime accepts comma-separated lists in `DXVK_CONFIG_FILE` and `DXVK_RTX_CONFIG_FILE`; package defaults go below the user's own `rtx.conf` instead of overwriting it |
+| ReShade as a Vulkan layer | The runtime renders through Vulkan, so a Direct3D 9 ReShade has nothing to draw on in an RTX session (and never loads there). The Vulkan loader takes a layer from environment variables at instance creation, and ReShade its base folder from one, so the layer and its own settings apply to the RTX session only ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md)) |
 | Patch sets applied at module load | RTXFixesBinary applies its culling patches from Lua, after the device exists; its shaderapidx9/materialsystem sets "don't apply properly" that late. Patching when the DLL is mapped, before its code runs, should fix that (verified in M5) |
 | Two-phase updates | GMod downloads Workshop updates after start-up, when `d3d9.dll` is already loaded; replacing a loaded runtime is impossible, so the next launch deploys it |
 | Status file instead of a binary module | The Lua companion only needs to read state; `file.Read` on `data/` needs no native code |

@@ -107,7 +107,7 @@ if ($Uninstall) {
         # else stays: a payload file the user changed (nlctl uninstall leaves those in place), or a
         # journal nlctl uninstall had to keep because it could not remove everything yet.
         $own = @('config.json', 'bootstrap-install.json', 'disable', 'session_cvars.json', 'logs\loader.log',
-                 'replaced\winmm.dll', 'replaced\winmm.pdb') + @(1..5 | ForEach-Object { "logs\loader.log.$_" })
+                 'replaced\winmm.dll', 'replaced\winmm.pdb', 'remix\non-nvidia.conf') + @(1..5 | ForEach-Object { "logs\loader.log.$_" })
         foreach ($name in $own) {
             $path = Join-Path $deleteTarget $name
             if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path -Force }

@@ -35,6 +35,7 @@ Both files are read from the `DATA` path (`garrysmod/data/`) with `file.Read` an
 | `loader_version`, `process_id`, `utc` | first line; `utc` (`YYYY-MM-DDThh:mm:ss.fffZ`) gives the age |
 | `deployment.outcome`, `.generation`, `.reason`, `.blocked_by`, `.skipped[]` (`package`, `reason`) | deployment line, skipped packages |
 | `activation.outcome`, `.reason`, `.runtime.id`, `.runtime.version` | activation and runtime lines |
+| `activation.reshade.outcome`, `.reason`, `.settings` (loader 0.5.0, [ADR 0028](../../../../../docs/decisions/0028-reshade-in-rtx-sessions.md)) | `reshade: active (ReShade from ...), settings migrated in native-loader\reshade`; no line when no package carries ReShade or the status is older |
 | `session.cvars`, `.cvars_exec`, `.recorded`, `.restore_values`, `.restore_exec`, `.notes[]` | the session-variable and restore lines, and every note |
 | `packages[]`: `id`, `label`, `source`, `time_updated` | the update notice for Workshop packages (below) |
 | `errors[]` | the first five |
@@ -62,7 +63,9 @@ game itself (a long stay in the main menu) shows its own report as stale.
 - The update notice: for each deployed Workshop package, `steamworks.FileInfo` asks Steam for the
   item's update time. That is a Steam request, not one of its own.
   - When Steam has a newer version than the one deployed, it prints the notice once per item per
-    session, and shows a `notification.AddLegacy` hint.
+    session, and shows a `notification.AddLegacy` hint, in the player's language when the
+    translations load (`nativeloader/i18n.lua` through `include`, English otherwise; the console
+    lines stay English).
   - A timer (`nativeloader_updates`, every 600 seconds) checks again, because Steam may download an
     update while the game runs.
 - No file writes and no hooks. It runs on the client only (`lua/autorun/client`, plus a `CLIENT`

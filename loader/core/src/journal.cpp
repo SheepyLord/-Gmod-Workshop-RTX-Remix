@@ -192,9 +192,17 @@ std::vector<manifest::ModuleDependency> dependencies_of(const Value& value) {
   return out;
 }
 
+manifest::Reshade reshade_of(const Value& value) {
+  only_keys(value, "reshade", {"layer"});
+  manifest::Reshade r;
+  r.layer = required(value, "layer", "reshade").as_string("reshade layer");
+  if (const std::string why = paths::problem(r.layer); !why.empty()) fail("reshade layer \"" + r.layer + "\": " + why);
+  return r;
+}
+
 Package package_of(const Value& value) {
   only_keys(value, "package", {"id", "version", "manifest_sha256", "source", "location", "payload", "remix", "session", "requires_remix",
-                               "module_dependencies"});
+                               "module_dependencies", "reshade"});
   Package p;
   p.id = required(value, "id", "package").as_string("package id");
   if (p.id.empty() || p.id.find('/') != std::string::npos || !paths::is_safe(p.id)) fail("package id \"" + p.id + "\" is invalid");
@@ -218,6 +226,8 @@ Package package_of(const Value& value) {
   if (const Value* flag = value.find("requires_remix")) p.requires_remix = flag->as_bool("package requires_remix");
   // Written only when there are some (ADR 0024).
   if (const Value* dependencies = value.find("module_dependencies")) p.module_dependencies = dependencies_of(*dependencies);
+  // Written only for a package that carries ReShade (ADR 0028).
+  if (const Value* reshade = value.find("reshade")) p.reshade = reshade_of(*reshade);
   return p;
 }
 
@@ -330,7 +340,8 @@ std::string package_json(const Package& p) {
          ", \"remix\": " + (p.remix ? remix_json(*p.remix) : std::string("null")) +
          ", \"session\": " + (p.session.empty() ? std::string("null") : session_json(p.session)) +
          (p.requires_remix ? ", \"requires_remix\": true" : "") +
-         (p.module_dependencies.empty() ? "" : ", \"module_dependencies\": " + dependencies_json(p.module_dependencies)) + "}";
+         (p.module_dependencies.empty() ? "" : ", \"module_dependencies\": " + dependencies_json(p.module_dependencies)) +
+         (p.reshade ? ", \"reshade\": {\"layer\": " + q(p.reshade->layer) + "}" : "") + "}";
 }
 
 std::string generation_json(const std::optional<Generation>& g) {

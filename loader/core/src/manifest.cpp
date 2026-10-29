@@ -248,6 +248,7 @@ const char* kind_name(Kind kind) {
     case Kind::lua_addon: return "lua-addon";
     case Kind::patch_set: return "patch-set";
     case Kind::module_override: return "module-override";
+    case Kind::reshade: return "reshade";
   }
   return "?";
 }
@@ -270,7 +271,8 @@ Manifest parse(std::string_view json_text) {
   try {
     if (!root.is_object()) fail("the document must be a JSON object");
     only_keys(root, "the manifest", {"schema", "id", "name", "version", "kinds", "requires_loader", "requires_remix", "files", "remix",
-                                     "root_files", "patch_sets", "module_overrides", "session_cvars", "module_dependencies"});
+                                     "root_files", "patch_sets", "module_overrides", "session_cvars", "module_dependencies",
+                                     "reshade"});
 
     const std::int64_t schema = required(root, "schema").as_int("schema");
     if (schema != kSchema) fail("schema " + std::to_string(schema) + " is not supported (this loader reads schema 1)");
@@ -299,6 +301,7 @@ Manifest parse(std::string_view json_text) {
       else if (name == "lua-addon") k = Kind::lua_addon;
       else if (name == "patch-set") k = Kind::patch_set;
       else if (name == "module-override") k = Kind::module_override;
+      else if (name == "reshade") k = Kind::reshade;
       else fail("unknown kind \"" + name + "\"");
       if (m.has(k)) fail("kind \"" + name + "\" is listed twice");
       m.kinds.push_back(k);
@@ -378,6 +381,21 @@ Manifest parse(std::string_view json_text) {
       m.remix = std::move(r);
     }
     if (m.has(Kind::remix_runtime) && !m.remix) fail("kind remix-runtime needs a \"remix\" section");
+
+    // ReShade for RTX sessions (loader 0.5.0, ADR 0028): a Vulkan layer the bootstrap enables.
+    if (const Value* reshade = root.find("reshade")) {
+      if (!m.has(Kind::reshade)) fail("\"reshade\" is only allowed with kind reshade");
+      only_keys(*reshade, "reshade", {"layer"});
+      Reshade r;
+      r.layer = safe_path(required(*reshade, "layer").as_string("reshade.layer"), "reshade.layer");
+      const std::string folded_layer = paths::fold(r.layer);
+      if (folded_layer.size() < 6 || folded_layer.substr(folded_layer.size() - 5) != ".json") {
+        fail("reshade.layer \"" + r.layer + "\" must be a .json file");
+      }
+      if (!in_payload(r.layer)) fail("reshade.layer \"" + r.layer + "\" is not listed under native/payload/");
+      m.reshade = std::move(r);
+    }
+    if (m.has(Kind::reshade) && !m.reshade) fail("kind reshade needs a \"reshade\" section");
 
     if (const Value* roots = root.find("root_files")) {
       for (const Value& item : roots->as_array("root_files")) {

@@ -1,0 +1,413 @@
+# Translations of the GMod native loader companion (the RTX Remix tab, the guide).
+# Edit msgstr only; see companion/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader companion\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:211
+#, c-format
+msgid "RTX package %s was updated: restart Garry's Mod to use it"
+msgstr "Le paquet RTX %s a été mis à jour : redémarrez Garry's Mod pour l'utiliser"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:10
+msgid "Welcome"
+msgstr "Bienvenue"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:12
+msgid "RTX Remix is running"
+msgstr "RTX Remix est actif"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:13
+msgid "Garry's Mod is path traced by NVIDIA RTX Remix. The native loader (bin\\win64\\winmm.dll) put the RTX package from the Workshop in place and started Remix before the game made its renderer."
+msgstr "Garry's Mod est rendu en path tracing par NVIDIA RTX Remix. Le chargeur natif (bin\\win64\\winmm.dll) a mis en place le paquet RTX du Workshop et a démarré Remix avant que le jeu ne crée son moteur de rendu."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:14
+msgid "Everything RTX is in the spawn menu's RTX Remix tab: the settings of the RTX add-ons, the common Remix settings, and this guide."
+msgstr "Tout ce qui concerne RTX se trouve dans l'onglet RTX Remix du menu des apparitions : les paramètres des addons RTX, les réglages Remix usuels et ce guide."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:15
+msgid "Turning RTX off or on"
+msgstr "Désactiver ou activer RTX"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:16
+msgid "RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too."
+msgstr "Pour désactiver RTX un moment sans rien désinstaller : dans native-loader\\config.json, ajoutez  \"remix\": { \"enabled\": false }  et relancez le jeu. Le jeu redevient alors un Garry's Mod ordinaire ; les addons RTX sont eux aussi laissés de côté."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:17
+msgid "The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam."
+msgstr "Le jeu s'affiche dans une fenêtre sans bordure de la taille de votre écran. Le plein écran exclusif fait planter Remix. Pour une autre taille, ajoutez -w <width> -h <height> aux options de lancement du jeu dans Steam."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:19
+msgid "Remix menu"
+msgstr "Menu Remix"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:21
+msgid "Alt+X opens Remix's own menu"
+msgstr "Alt+X ouvre le menu de Remix"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:22
+msgid "The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option."
+msgstr "Le menu simple propose les préréglages graphiques, le DLSS et la génération d'images. Le menu développeur, « Paramètres développeur » (Developer Settings), contient toutes les options."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:23
+msgid "Making changes stick"
+msgstr "Conserver vos modifications"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:24
+msgid "1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed."
+msgstr "1. Réglez d'abord « Préréglage graphique » (Graphics Preset) sur « Personnalisé » (Custom). Tout autre préréglage est réappliqué à chaque démarrage et remplace les paramètres que vous avez modifiés un par un."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:25
+msgid "2. Change what you want."
+msgstr "2. Modifiez ce que vous voulez."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:26
+msgid "3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults."
+msgstr "3. Enregistrez : les paramètres graphiques avec « Paramètres utilisateur (user.conf) : Enregistrer » (User Settings (user.conf): Save), les paramètres développeur avec « Configuration Remix (rtx.conf) : Enregistrer » (Remix Config (rtx.conf): Save). Les deux fichiers se trouvent dans le dossier de Garry's Mod et l'emportent sur les valeurs par défaut du paquet."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:27
+msgid "Do not press 'Migrate N Developer Settings to rtx.conf' and check 'View Changes' before saving: the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map."
+msgstr "N'appuyez pas sur « Migrer N paramètres développeur vers rtx.conf » (Migrate N Developer Settings to rtx.conf) et vérifiez « Voir les modifications » (View Changes) avant d'enregistrer : les correctifs RTX règlent certaines valeurs pour la carte en cours via la Remix API, et les enregistrer les appliquerait à toutes les cartes."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:29
+msgid "Settings"
+msgstr "Paramètres"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:30
+msgid "Defaults from the original RTX install"
+msgstr "Valeurs par défaut de l'installation RTX d'origine"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:31
+msgid "Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet."
+msgstr "Remix démarre avec les paramètres de l'installation RTX d'origine (ses fichiers rtx.conf, dxvk.conf et user.conf). Les paramètres propres aux addons RTX ont reçu une fois les valeurs de cette même installation, là où vous ne les aviez pas encore modifiés."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:32
+msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed."
+msgstr "Onglet RTX Remix > Pour commencer > « Utiliser les paramètres RTX classiques » (console : nativeloader_rtx_defaults) les applique tous de nouveau, en écrasant aussi les valeurs que vous avez modifiées."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+msgid "Common Remix settings"
+msgstr "Réglages Remix usuels"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:34
+msgid "RTX Remix tab > Remix settings: preset, upscaler, DLSS quality, frame generation, indirect lighting, bounces, fog, sky, sun and clouds. A value set there is kept and applied at every start; '(leave to Remix)' hands it back to Remix's files."
+msgstr "Onglet RTX Remix > Paramètres Remix : préréglage, mise à l'échelle, qualité DLSS, génération d'images, éclairage indirect, rebonds de lumière, brouillard, ciel, soleil et nuages. Une valeur choisie là est conservée et appliquée à chaque démarrage ; « (laisser à Remix) » la rend aux fichiers de Remix."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+msgid "Lights"
+msgstr "Lumières"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:37
+msgid "Flashlight"
+msgstr "Lampe torche"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:38
+msgid "The flashlight key gives a path-traced flashlight. Its brightness, cone and offsets are under RTX Remix tab > Lights > Flashlight."
+msgstr "La touche de la lampe torche allume une lampe en path tracing. Sa luminosité, son cône et ses décalages se trouvent dans l'onglet RTX Remix > Lumières > Flashlight."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
+msgid "Map lights"
+msgstr "Lumières de la carte"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
+msgid "By default the map's own lights are lit by Remix from the game's lights (the 'light updater'). 'Disable Remix API Lights' under Rendering > Base Options switches between that and converting every map light into a Remix light."
+msgstr "Par défaut, les lumières propres à la carte sont rendues par Remix à partir des lumières du jeu (le « light updater »). « Disable Remix API Lights », dans Rendu > Base Options, bascule entre ce mode et la conversion de chaque lumière de la carte en lumière Remix."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:41
+msgid "Advanced MMD Animation Player"
+msgstr "Advanced MMD Animation Player"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:42
+msgid "Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start."
+msgstr "Sa lampe torche devient une lumière Remix quand le module des correctifs RTX s'est connecté à la Remix API (nativeloader_status affiche « Remix API: ready »). L'intensité de la lumière croît avec son rayon : avec un rayon de 1, elle est presque invisible ; une valeur de 20 à 30 est un bon point de départ."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
+msgid "Troubleshooting"
+msgstr "Dépannage"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
+msgid "First look"
+msgstr "Où regarder d'abord"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
+msgid "Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready."
+msgstr "Console : nativeloader_status. Cette commande affiche ce que le chargeur a déployé et activé, les patchs de la session et si la Remix API est prête."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:47
+msgid "Files to look at"
+msgstr "Fichiers à consulter"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
+msgid "native-loader\\logs\\loader.log - what the loader did at this start."
+msgstr "native-loader\\logs\\loader.log – ce que le chargeur a fait à ce démarrage."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:49
+msgid "garrysmod\\data\\native-loader\\status.json and session.json - the same as data."
+msgstr "garrysmod\\data\\native-loader\\status.json et session.json – la même chose sous forme de données."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
+msgid "rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top."
+msgstr "rtx-remix\\logs\\remix-dxvk.log – le journal propre à Remix, avec tous les paramètres appliqués vers le début."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:51
+msgid "Common problems"
+msgstr "Problèmes fréquents"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
+msgid "The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default)."
+msgstr "Le jeu se ferme au démarrage : cherchez « last_crash » dans rtx-remix\\logs et regardez la fin de remix-dxvk.log. Gardez le jeu en mode fenêtré (c'est le cas par défaut)."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
+msgid "An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare."
+msgstr "Un addon dessine par-dessus l'image ou annule des paramètres RTX : la console le nomme (« [nativeloader] kept ... »). nativeloader_guard 0 désactive la protection pour comparer."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
+msgid "Low frame rate: choose a lower preset or DLSS quality. Frame generation needs an RTX 40 or newer GPU."
+msgstr "Fréquence d'images faible : choisissez un préréglage plus bas ou une qualité DLSS inférieure. La génération d'images nécessite un GPU RTX 40 ou plus récent."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
+msgid "'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game."
+msgstr "Le message « Couldn't mount file » pour l'article RTX du Workshop est normal : c'est le chargeur qui le déploie, et non le jeu."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
+msgid "Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu')."
+msgstr "Les paramètres reviennent après un redémarrage : réglez le préréglage sur « Personnalisé » (Custom) et enregistrez (voir « Menu Remix »)."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
+msgid "RTX Remix guide"
+msgstr "Guide RTX Remix"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:16
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+msgid "Rendering"
+msgstr "Rendu"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:19
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+msgid "Water and glass"
+msgstr "Eau et verre"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
+msgid "Start here"
+msgstr "Pour commencer"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+msgid "Remix settings"
+msgstr "Paramètres Remix"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:27
+msgid "Graphics preset"
+msgstr "Préréglage"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "Ultra"
+msgstr "Ultra"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "High"
+msgstr "Élevé"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "Medium"
+msgstr "Moyen"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "Low"
+msgstr "Faible"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:29
+msgid "Custom (keeps your own settings)"
+msgstr "Personnalisé (vos réglages)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:29
+msgid "Automatic (by GPU)"
+msgstr "Auto (selon le GPU)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:30
+msgid "Upscaler"
+msgstr "Mise à l'échelle"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:31
+msgid "None"
+msgstr "Aucune"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:32
+msgid "DLSS quality"
+msgstr "Qualité DLSS"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Ultra performance"
+msgstr "Ultra performances"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Performance"
+msgstr "Performances"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Balanced"
+msgstr "Équilibré"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Quality"
+msgstr "Qualité"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:34
+msgid "Auto"
+msgstr "Auto"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:34
+msgid "Full resolution (DLAA)"
+msgstr "Pleine résolution (DLAA)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:35
+msgid "Frame generation"
+msgstr "Génération d'images"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:127
+msgid "Off"
+msgstr "Désactivé"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:37
+msgid "Indirect lighting"
+msgstr "Éclairage indirect"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:38
+msgid "Importance sampled"
+msgstr "Échantillonnage préférentiel"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:38
+msgid "Neural Radiance Cache"
+msgstr "Neural Radiance Cache"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:39
+msgid "Hashed radiance cache"
+msgstr "Hashed radiance cache"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:40
+msgid "Most light bounces"
+msgstr "Rebonds max."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:41
+msgid "Fog distance (m)"
+msgstr "Dist. du brouillard (m)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:42
+msgid "Larger is clearer."
+msgstr "Plus la valeur est grande, plus le brouillard est léger."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:43
+msgid "Fog scattering"
+msgstr "Diffusion du brouillard"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:44
+msgid "How much the fog scatters light forward (-1 to 1)."
+msgstr "Part de la lumière que le brouillard diffuse vers l’avant (de -1 à 1)."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:45
+msgid "Sky brightness"
+msgstr "Luminosité du ciel"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:46
+msgid "Sun height (degrees)"
+msgstr "Hauteur du soleil (°)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:47
+msgid "Sun direction (degrees)"
+msgstr "Direction du soleil (°)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:48
+msgid "Clouds"
+msgstr "Nuages"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:49
+msgid "Post effects"
+msgstr "Post-traitement"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:49
+msgid "Bloom, motion blur and film grain."
+msgstr "Bloom, flou de mouvement et grain."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:50
+msgid "Tone map colour purity"
+msgstr "Pureté des couleurs"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:97
+msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
+msgstr "RTX Remix fonctionne dans cette session grâce au chargeur natif. Tout ce qui concerne RTX se trouve dans cet onglet."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:98
+msgid "Open the RTX Remix guide"
+msgstr "Ouvrir le guide RTX Remix"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:99
+msgid "Print the loader's status to the console"
+msgstr "Afficher l'état du chargeur dans la console"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:100
+msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
+msgstr "Paramètres classiques : les valeurs de l'installation RTX d'origine. Elles ont été appliquées une fois, seulement là où un paramètre était encore à sa valeur par défaut. Ce bouton les applique toutes de nouveau."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:101
+msgid "Use the classic RTX settings"
+msgstr "Utiliser les paramètres RTX classiques"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:102
+msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
+msgstr "Empêcher les addons d'annuler les paramètres RTX ou d'ajouter du post-traitement à l'image"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:103
+msgid "RTX session guard"
+msgstr "Protection de la session RTX"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:104
+msgid "Turn this off only to test an add-on that misbehaves."
+msgstr "Ne désactivez ceci que pour tester un addon qui se comporte mal."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:105
+msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
+msgstr "Menu propre à Remix : appuyez sur Alt+X. Choisissez « Personnalisé » (Custom) comme préréglage graphique avant de modifier des paramètres un par un, puis enregistrez, sinon ils reviennent au prochain démarrage."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:106
+msgid "Language"
+msgstr "Langue"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:107
+msgid "Same as Garry's Mod"
+msgstr "Comme Garry's Mod"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:109
+msgid "Language of this tab and the guide"
+msgstr "Langue (onglet et guide)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:114
+msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
+msgstr "La Remix API n'est pas disponible dans cette session : ces paramètres ne peuvent donc pas être appliqués. Exécutez nativeloader_status pour plus de détails."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:116
+msgid "A setting chosen here is kept and applied at every start. Clear it (the empty choice, or the reset button) to leave it to Remix's own files."
+msgstr "Un paramètre choisi ici est conservé et appliqué à chaque démarrage. Effacez-le (le choix vide ou le bouton de réinitialisation) pour le laisser aux fichiers de Remix."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:121
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:125
+msgid "(leave to Remix)"
+msgstr "(laisser à Remix)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:126
+msgid "On"
+msgstr "Activé"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:135
+msgid "Reset these to Remix's own values"
+msgstr "Rétablir les valeurs de Remix"

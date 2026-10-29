@@ -36,6 +36,8 @@ class RuntimeActivation {
   cmdline::SwapResult command_line_;
   HMODULE vulkan_ = nullptr;
   HMODULE runtime_ = nullptr;
+  std::vector<HMODULE> preloaded_;  // the runtime's late bare-name DLLs, loaded after it (ADR 0030)
+  DLL_DIRECTORY_COOKIE dll_directory_ = nullptr;  // the runtime folder for loads that search user folders
   bool directory_changed_ = false;
   bool hooks_installed_ = false;
   bool touched_ = false;

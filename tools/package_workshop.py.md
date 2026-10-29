@@ -34,6 +34,7 @@ python tools\package_workshop.py --part out\packages\m5\runtime-b.gma --part out
 | `requires_remix` | True if any part has it |
 | `files` | United. A path in two parts (compared without case) is refused |
 | `remix` | At most one part may carry a runtime |
+| `reshade` | At most one part may carry ReShade ([ADR 0028](../docs/decisions/0028-reshade-in-rtx-sessions.md)) |
 | `root_files`, `module_overrides`, `patch_sets`, `module_dependencies` | Concatenated. The manifest parser then refuses overlaps and duplicates (a module two parts give dependencies for, for example) |
 | `session_cvars` | United. The same variable with two values is refused |
 | any other key | Refused: the tool does not know how to merge it |

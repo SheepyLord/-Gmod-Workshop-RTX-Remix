@@ -197,6 +197,11 @@ class PackageFixesTests(unittest.TestCase):
                     files[target + rel[len(area):]] = rel
         out = {key: self.repo / rel for key, rel in files.items()}
         out.update(companion_files())
+        # The companion's translations, built from companion/i18n/*.po (companion_i18n.py).
+        built = self.root / 'expected-i18n_data.lua'
+        text = package_fixes.companion_i18n.build_text(package_fixes.companion_i18n.check())
+        built.write_bytes(text.encode('utf-8'))
+        out[package_fixes.COMPANION_I18N] = built
         return out
 
     def test_manifest_structure(self):
@@ -465,6 +470,9 @@ class PackageFixesTests(unittest.TestCase):
             self.assertEqual([row[2] for row in rows], sorted(m['files'], key=str.lower) + ['native/manifest.json'])
             for size, sha256, path, source, note in rows[:-1]:
                 self.assertEqual({'size': int(size), 'sha256': sha256}, m['files'][path])
+                if path == package_fixes.COMPANION_I18N:  # built at packing time: named by its sources
+                    self.assertEqual((Path(source), note), (REPO / 'companion' / 'i18n', 'built from the .po files by companion_i18n.py'))
+                    continue
                 self.assertEqual((Path(source), note), (expected[path], ''))
             self.assertEqual(rows[-1][:3], [str(len(manifest)), hashlib.sha256(manifest).hexdigest(), 'native/manifest.json'])
 

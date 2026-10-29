@@ -253,7 +253,17 @@ void startup_cxx(StartupContext& context) noexcept {
       const journal::Generation none;
       const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
       context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW(),
-                                                      activate::primary_display);
+                                                      activate::primary_display, activate::graphics_adapters);
+      if (context.report.activation.plan.activate) {
+        // ReShade (ADR 0028) is decided for RTX sessions only; a problem reading for it costs ReShade.
+        auto& shade = context.report.activation.reshade;
+        try {
+          shade.plan = reshade::plan(generation, context.prepared.config, reshade::probe(context.root, generation));
+        } catch (const std::exception& error) {
+          shade.plan.reason = std::string("ReShade not checked: ") + error.what();
+        }
+        shade.reason = shade.plan.reason;
+      }
       context.runtime.apply(context.root, generation, context.report.activation, context.report.session);
     } else {
       context.report.activation.reason = context.prepared.reason;

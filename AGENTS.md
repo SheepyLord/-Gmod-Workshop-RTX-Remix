@@ -28,7 +28,7 @@ patched copy of GMod managed by RTXLauncher.
 | `tools/` | Build, test and maintenance scripts; each has a `.md` beside it |
 | `tools/steam/` | Steam depot manifest tools: verify an install, build the vanilla PoC copy |
 | `tools/gmapack/` | Vendored `.gma` reader and writer (Python) |
-| `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder) |
+| `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder); `reshade/` holds only ReShade's licence, for the unchanged ReShade binary the RTX package carries |
 | `dist/` | What the end-user bundle ships besides `winmm.dll`: the default `native-loader/config.json` and the player README ([ADR 0017](docs/decisions/0017-release-bundle-and-ci.md)) |
 | `.github/workflows/` | CI: `build.yml` runs `tools\test.ps1 -Config Release` on every push and pull request and keeps the bundle as an artifact; a `v*` tag releases it |
 | `docs/` | Architecture, package format, on-disk layout, testing, roadmap, research, decisions |
