@@ -243,7 +243,7 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   }
   // PATH is not read by loads that search the "safe" set of folders (LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
   // or every load once some module calls SetDefaultDllDirectories). The runtime's FSR DLL and NRC's
-  // CUDA DLLs (cudart, nvrtc) load that way and were never found (RESEARCH.md section 26); naming the
+  // CUDA DLLs (cudart, nvrtc) load that way and were never found (RESEARCH.md section 27); naming the
   // runtime folder as a user folder lets those searches find it too.
   dll_directory_ = AddDllDirectory(dll.parent_path().c_str());
   if (dll_directory_) touched_ = true;

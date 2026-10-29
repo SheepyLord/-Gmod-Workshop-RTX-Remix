@@ -1298,7 +1298,77 @@ subscriptions):
 - Guinaifen's manifest: id `guinaifen-rtx`, kinds `lua-addon` and `root-files`, roots
   `garrysmod/addons/mmdhl_guinaifen` and `rtx-remix/mods/pbr_guinaifen`, no `remix` section.
 
-## 25. ReShade with the Remix runtime (2026-10-29, Claude)
+## 25. Translated Remix menus: the runtime fork's i18n (2026-10-29, Claude)
+
+**Where the runtime comes from.**
+- The fork's main checkout (`H:\BACKUP_20260815\Modding\dxvk-remix-gmod`, branch `gmod-1.6.1` at
+  `c6b48ed1`) is in the middle of merging tag `remix-1.6.1` (`MERGE_HEAD` `1e6d66c6`, since
+  2026-10-25 03:33; `submodules/rtxdi` unresolved, with 3 modified files in the submodule). 415
+  tracked files differ from `HEAD`, 4 are untracked.
+- No source file is newer than `_CompRelease_x64\src\d3d9\d3d9.dll` (2026-10-27 11:32:17, SHA-256
+  `A8E39D93...`, the runtime of `runtime-b4`): that working tree is its source.
+- The translation work is branch `claude/remix-i18n` in the worktree
+  `dxvk-remix-gmod\.claude\worktrees\remix-i18n`: one snapshot commit of that working tree (not a
+  real merge; submodules are junctions to the main checkout's), then the i18n commit. Its
+  `_CompRelease_x64` is configured like the main one (`-Dbuildtype=release -Dbackend=ninja
+  -Denable_tracy=false -Ddownload_apics=False -Dremix_with_shim=false`); meson 1.12.1 runs as
+  `python -m mesonbuild.mesonmain`, MSVC through `tools\lib\VsDevEnv.psm1`.
+- A full build of the snapshot in the fresh worktree took **3.9 min** (32 threads, configure
+  included); after a `.po` edit **0.2-0.7 min**.
+
+**The menus' text and fonts.**
+- ImGui is vendored **1.88 WIP** (`src/dxvk/imgui`), with stb_truetype 1.26 (reads CFF OpenType).
+- The atlas had only ASCII: NVIDIA Sans App Medium/Bold (letters and symbols) with Roboto Mono
+  digits merged, 16 px; Bold also 24 px for the large UI mode.
+- NVIDIA Sans App 3.000 maps 492 characters: Latin-1 (all but U+00A6, U+00B5), 102 of Latin
+  Extended-A, U+0400-045F complete; no arrows or math symbols (→ ≤ ≥ ≈ ∞). French and Russian
+  need no other font.
+- Fonts with CJK glyphs on this machine under the SIL OFL 1.1 (licence in the name table):
+  - SteamVR's `tools\steamvr_environments\game\steamtours\panorama\fonts\notosans{sc,tc,jp,kr}-regular.otf`,
+    Noto Sans SC/TC/JP/KR 1.004, static Regular, CFF; KR has all 11,172 hangul syllables;
+  - Windows 11's `C:\Windows\Fonts\NotoSansSC-VF.ttf` and `NotoSansJP-VF.ttf`, variable fonts whose
+    default instance is weight 100 (no TC, no KR).
+- ImGui sizes a font by its line height, (hhea ascender - descender) / unitsPerEm: NVIDIA Sans
+  1.26 em, Noto Sans CJK 1.48 em. Merged at the same pixel size, CJK glyphs come out 15% smaller, so
+  they are merged at 16 x 1.48 / 1.26 = 18.8 px (same em).
+- The menus' text: 2,949 messages, 39,034 English words; 969 are descriptions of options the menus
+  bind (of 1,253 options declared).
+
+**Measured on the PoC (RTX 5090, 1600x900 window).**
+- `RemixConfig` (the fixes' Lua table) exists only with add-ons mounted: the fixes package deploys
+  its Lua as add-ons, and `poc_session.py run` passes `-noaddons` unless `--addons`.
+- A language change applies at the next frame: the Remix log has `[i18n] menu language: zh-CN`
+  and, one frame later, the rebuilt atlas 40-50 ms after it.
+- The font atlas (RGBA8, regular 16 px, bold 16 px and large 24 px fonts, CJK merged with
+  `OversampleH = 1`):
+
+  | Language | Atlas | Glyphs |
+  |---|---|---|
+  | en | 512x512 | 366 |
+  | fr | 512x512 | 444 |
+  | ru | 512x512 | 543 |
+  | ko | 1024x1024 | 2,637 |
+  | ja | 1024x1024 | 3,258 |
+  | zh-TW | 1024x2048 | 3,927 |
+  | zh-CN | 1024x2048 | 3,939 |
+
+  (all 3,293 messages translated; English includes the glyphs of the language names.)
+- The runtime part: `runtime-b5.gma`, 190 files and the manifest, 984,550,074 bytes;
+  `d3d9.dll` 345,815,040 bytes (SHA-256 `b91b2161...`), 7.1 MB more than runtime-b4's
+  (the four CJK subsets are 4.7 MB: SC 1.54 MB with 7,586 characters, TC 1.37 MB / 6,034, JP 1.45 MB /
+  7,022, KR 0.34 MB / 3,447). Everything else in the package is runtime-b4's.
+- The session that switched through every language (`out\i18n\sessions\t5`) quit normally. Its Remix
+  log has the same errors as runtime-b4 sessions of the same evening: `GetShaderModule: Out of range
+  of supported shader model` (the classic `dxvk.conf`'s `d3d9.shaderModel = 0`, section 11), the
+  Neural Radiance Cache failing to initialise, and 47 common device objects not disposed at exit.
+- A process that is not DPI-aware sees the 1600x900 game window as 800x450 at 200 % scaling, and
+  `PrintWindow` into a bitmap of that size captures only the top-left quarter;
+  `poc_session.py` calls `SetProcessDPIAware()` for this reason.
+- Mouse messages posted to the game window reach the menus: the fork forwards them to ImGui from
+  the game's window procedure whenever no raw input arrived in the last ~100 ms
+  (`fork_hooks::overlayInputForward`).
+
+## 26. ReShade with the Remix runtime (2026-10-29, Claude)
 
 **The test client.** `H:\SteamLibrary\steamapps\common\GarrysMod_ReShade`, made with
 `make_vanilla_copy.py` from the field install: 2,877 depot files, 7,279,873,012 bytes, all verified, in
@@ -1383,7 +1453,7 @@ RTX 5090, frames counted by the engine; DLSS frame generation shows about three 
   afterwards held the overlay's windows at 4K size, so the overlay was open (the window covered the
   screen). The final runs give the overlay a key nobody presses.
 
-## 26. The runtime's late DLLs, and GPUs that are not NVIDIA's (2026-10-29, Claude and a side session)
+## 27. The runtime's late DLLs, and GPUs that are not NVIDIA's (2026-10-29, Claude and a side session)
 
 **FSR and NRC never loaded under the loader.** From the Remix logs and module lists kept under `out\`:
 - The classic install (`m5\acceptance\ref-*`) and the M4 loader runs log "FSR: amd_fidelityfx_vk.dll

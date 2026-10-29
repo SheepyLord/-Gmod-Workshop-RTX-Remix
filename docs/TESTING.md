@@ -163,7 +163,7 @@ the hold kept it at the next start, and RTX off (`remix.enabled: false`) used Sy
 | PoC | `H:\SteamLibrary\steamapps\common\GarrysMod_PoC` | All development and in-game tests |
 | Field | `H:\SteamLibrary\steamapps\common\GarrysMod` | Only with the user's explicit go-ahead (AGENTS.md rule 1) |
 | RTX_c | `H:\SteamLibrary\steamapps\common\GarrysMod_RTX_c` | Reference for the expected look and file set; read-only |
-| ReShade client | `H:\SteamLibrary\steamapps\common\GarrysMod_ReShade` | A second vanilla copy (2026-10-29, `make_vanilla_copy.py`) with ReShade 6.8.0 set up for Direct3D 9 in `bin\win64` and two test effects of ours: ReShade compatibility and frame-rate runs ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md), [RESEARCH.md](RESEARCH.md) section 25) |
+| ReShade client | `H:\SteamLibrary\steamapps\common\GarrysMod_ReShade` | A second vanilla copy (2026-10-29, `make_vanilla_copy.py`) with ReShade 6.8.0 set up for Direct3D 9 in `bin\win64` and two test effects of ours: ReShade compatibility and frame-rate runs ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md), [RESEARCH.md](RESEARCH.md) section 26) |
 
 ### Frame-rate runs
 

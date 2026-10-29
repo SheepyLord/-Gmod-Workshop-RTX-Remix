@@ -46,6 +46,21 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **Labels of the RTX Remix tab no longer cut off**: "Post effects", the fog sliders, the guard and the
   language choice have short labels, with the rest on a help line.
 
+### Added (the RTX Remix menus in six more languages)
+
+- **The Remix menus (Alt+X) in Simplified Chinese, Traditional Chinese, Japanese, Korean, French and
+  Russian.** The RTX package's runtime part is now `out\packages\i18n\runtime-b5.gma`: runtime-b4 with
+  a `d3d9.dll` built from the runtime fork's branch `claude/remix-i18n`.
+  - A language combo at the top of the graphics settings window's General tab and of the developer
+    menu (`rtx.gui.language`, English by default; **Save Settings** keeps it in `user.conf`). The menus
+    switch at the next frame.
+  - Translated: labels, buttons, headers, combo entries, messages, tooltips, and the descriptions of
+    the options the menus show (3,293 messages). The text is one UTF-8 `.po` file per language in the
+    fork's `i18n` folder, which the build embeds: an edited file is in the next build.
+  - Chinese, Japanese and Korean glyphs come from subsets of Noto Sans SC, TC, JP and KR (SIL Open
+    Font License 1.1); the font atlas holds only the selected language's glyphs.
+  - Facts and measurements: [RESEARCH.md](docs/RESEARCH.md) section 25.
+
 ### Changed (the seventh field round; loader 0.4.0)
 
 - **Content packages from any subscribed Workshop item load without the allowlist**

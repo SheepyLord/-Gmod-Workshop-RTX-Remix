@@ -16,7 +16,7 @@
 Measured in a separate client, `GarrysMod_ReShade` (a vanilla copy made with
 [`make_vanilla_copy.py`](../../tools/steam/make_vanilla_copy.py.md)), with ReShade 6.8.0 set up the way
 its setup does for Direct3D 9 (`bin\win64\d3d9.dll`, `ReShade.ini`, a preset, `reshade-shaders`) and a
-marker effect of our own ([RESEARCH.md](../RESEARCH.md) section 25):
+marker effect of our own ([RESEARCH.md](../RESEARCH.md) section 26):
 
 - **The Direct3D 9 ReShade never reaches an RTX session.** The bootstrap loads the runtime's `d3d9.dll`
   by absolute path at the entry point, and `shaderapidx9.dll`'s import binds to that module. The game
@@ -37,7 +37,7 @@ marker effect of our own ([RESEARCH.md](../RESEARCH.md) section 25):
   3840 x 2160 a light effect (our marker) cost 0.9 ms a frame (83-84 frames a second against 90, 7 %)
   and a heavy blur 2.8 ms (72). While other work kept the processor busy (a runtime build, `.gma`
   packing), the 1280 x 720 runs with the layer lost 35 % against 3 % for runs without ReShade: the
-  layer's work sits on the runtime's command threads. The full table is in RESEARCH.md section 25.
+  layer's work sits on the runtime's command threads. The full table is in RESEARCH.md section 26.
 
 ## Decision
 

@@ -12,7 +12,7 @@
 ## Context
 
 - **The runtime's late DLLs were never found under the loader** ([RESEARCH.md](../RESEARCH.md)
-  section 26). The runtime lives in `native-loader\packages\...\runtime`, not beside `gmod.exe`. Its
+  section 27). The runtime lives in `native-loader\packages\...\runtime`, not beside `gmod.exe`. Its
   static imports load with it (`LOAD_WITH_ALTERED_SEARCH_PATH`), but four DLLs are loaded later by
   bare name: `amd_fidelityfx_vk.dll` (FSR, `rtx_fork_fsr.cpp:537`), and `cudart64_13.dll`,
   `nvrtc64_130_0.dll` and `nvrtc-builtins64_133.dll` (CUDA, for the Neural Radiance Cache). Since M5 the
