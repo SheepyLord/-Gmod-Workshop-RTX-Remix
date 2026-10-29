@@ -1505,6 +1505,18 @@ RTX 5090, frames counted by the engine; DLSS frame generation shows about three 
   amd_fidelityfx_vk.dll loaded.", "NRC SDK: Loading the default network config data" and "NRC v0.15
   (25 March 2026) Context successfully initialized", and stays on the Neural Radiance Cache. Activation
   took 38.8 ms with the four against 35.8-51.1 ms without them.
+- **In the field install** (2026-10-29, `out\round8\field`): loader 0.5.0 in place of 0.4.0, the same
+  package from the Workshop, two sessions with the user's add-ons and Workshop items.
+  - The first start deployed generation 17 (200 changes, 16,637 file operations, 5.2 s) and activated
+    the runtime in 45 ms with the four preloaded. The second found nothing to deploy (start-up 0.25 s,
+    activation 40 ms).
+  - Both log "FSR: amd_fidelityfx_vk.dll loaded." and NRC's "Context successfully initialized".
+    Round 7's field session (`out\round7\field`) logged both failures and ran on importance-sampled
+    indirect light.
+  - Ray tracing began 20-22 s after the map loaded, so the first run's screenshot, taken seconds
+    later, is black (1 FPS). The second run (`--settle 60`) shows gm_construct path-traced (mean RGB
+    116, 111, 97).
+  - All 2,877 depot files still verify, `autoexec.cfg` aside.
 
 **The preset.** The package's classic layer pins `rtx.graphicsPreset = 4` (Custom). The fork's
 `GraphicsPreset` (`rtx_graphics_preset.h:26`) is Ultra 0, High 1, Medium 2, Low 3, Custom 4, Auto 5. It
