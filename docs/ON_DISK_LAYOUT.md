@@ -21,9 +21,16 @@ GarrysMod\
 │  ├─ bootstrap-install.json               the bootstrap's install receipt (install-loader.ps1)
 │  ├─ session_cvars.json                   M5: the user's archived values of the RTX session variables,
 │  │                                         kept until a start without RTX has put them back
+│  ├─ remix\non-nvidia.conf                loader 0.5.0: written at each RTX start on a computer without an
+│  │                                         NVIDIA GPU: Remix's automatic preset (ADR 0030)
+│  ├─ reshade\                             loader 0.5.0: ReShade's base folder in RTX sessions (ADR 0028):
+│  │                                         ReShade.ini, presets, ReShade.log; made once from
+│  │                                         bin\win64\ReShade.ini, then the user's (never journaled)
 │  └─ logs\loader.log                      start-up step log (rotated)
 ├─ rtx-remix\mods\<mod>\...                root files from packages (journaled)
 ├─ rtx.conf, dxvk.conf, user.conf          the user's own Remix configs (top layers; never overwritten)
+├─ bin\win64\d3d9.dll, ReShade.ini, ...    a ReShade the user set up for Direct3D 9: never written; RTX
+│                                            sessions bind the runtime's d3d9.dll instead (ADR 0028)
 └─ garrysmod\
    ├─ lua\bin\gmcl_*_win64.dll             binary modules from packages (journaled)
    ├─ addons\<addon>\...                   M5: Lua add-on folders from packages (journaled)
@@ -36,7 +43,8 @@ GarrysMod\
 
 `nlctl uninstall` (or [`uninstall-loader.ps1`](../tools/uninstall-loader.ps1.md)) removes everything
 the journal lists, then the journal and the lock. `config.json`, the receipt and the logs stay
-unless `uninstall-loader.ps1 -RemoveConfig` removes them too.
+unless `uninstall-loader.ps1 -RemoveConfig` removes them too. `native-loader\reshade` holds the
+user's ReShade settings for RTX sessions: both keep it, and `-RemoveConfig` lists it as kept.
 
 `-RemoveConfig` also removes the folders left empty, and `native-loader` itself if it is empty. A
 payload file the user changed (which uninstall leaves in place) stays, and is listed. How the deployer
@@ -63,7 +71,7 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
     "local": ["garrysmod/addons/rtx-remix-runtime.gma"],
     "dev_folders": ["D:/dev/rtx-remix-runtime"]
   },
-  "remix": { "enabled": true },
+  "remix": { "enabled": true, "reshade": "auto" },
   "patch_sets": { "require_insecure": true }
 }
 ```
@@ -77,6 +85,7 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
 | `allow.dev_folders` | `[]` | unpacked package folders (with `native/manifest.json`), relative or absolute |
 | `allow.subscribed_content` | `true` | content-only packages from every subscribed Workshop item, without listing them ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)); `false` turns that off |
 | `remix.enabled` | `true` | `false`: runtime packages stay planned but no runtime is loaded (vanilla rendering) |
+| `remix.reshade` | `"auto"` | the RTX package's ReShade in RTX sessions ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md)): `"auto"` when the game has a ReShade (`bin\win64\ReShade.ini`) or `native-loader\reshade\ReShade.ini` exists, `"on"` always, `"off"` never |
 | `patch_sets.require_insecure` | `true` | in-memory patch sets (M5) only with `-insecure` |
 
 - `allow` is the native-code allowlist ([ADR 0003](decisions/0003-native-trust-allowlist.md)).
@@ -157,6 +166,8 @@ renames it over status.json; simultaneous instances cannot share a temporary fil
 | `activation.launch_arguments.fallback_launch_options` | Exact missing options to supply manually after a refused swap; the loader never writes Steam settings |
 | `activation.system_vulkan_path` | Retained System32 preload path, or empty when absent/undone |
 | `activation.windows_error`, `missing_system_dependencies` | Win32/SEH code and missing System32 redistributable/Vulkan DLL names when preload fails |
+| `activation.gpu_vendors`, `non_nvidia` | Loader 0.5.0, ADR 0030: the hardware graphics adapters' PCI vendor ids (DXGI; empty when not read or RTX is off), and whether none is NVIDIA, so `native-loader/remix/non-nvidia.conf` is in `layers.dxvk` |
+| `activation.reshade` | Loader 0.5.0, ADR 0028: `outcome` (`active`, `off`, `failed`: the session runs without ReShade), `reason`, `package`, `layer`, `layer_manifest`, `folder`, `settings` (`kept`, `migrated`, `fresh`), `presets` copied this start, `environment` set for the layer, `notes` |
 | `activation.rolled_back`, `elapsed_ms` | Whether applied settings were undone, and activation duration |
 | `errors` | Startup errors, JSON-escaped strings; empty on ordinary success/inactivity |
 

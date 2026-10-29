@@ -17,7 +17,7 @@ Install
    https://steamcommunity.com/sharedfiles/filedetails/?id=3829070317
 4. In Steam, set Garry's Mod's beta branch to x86-64 (Properties > Betas), then start the game.
    - The first start after a download deploys the package, about 1.5 GB, which takes a few seconds.
-     It needs this loader (0.3.0 or later).
+     It needs this loader (0.5.0 or later); an older loader keeps the version it has.
    - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
      Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer for
      RTX sessions. If you put copies of them into garrysmod\addons or their files into
@@ -30,6 +30,17 @@ Install
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.
    - In the game: the spawn menu's "RTX Remix" tab holds every RTX setting, and the console command
      nativeloader_guide opens a guide (it opens by itself the first time).
+
+Graphics cards
+--------------
+
+- RTX Remix needs a GPU with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or
+  newer, Intel Arc. An older card cannot start an RTX session; turn RTX off ("remix": { "enabled":
+  false } below) or start with -nonativeloader.
+- On AMD and Intel: DLSS, DLSS frame generation and Reflex are NVIDIA-only. FSR (upscaling and frame
+  generation) and XeSS work. Without an NVIDIA GPU, Remix picks its graphics preset for your GPU at
+  the start (native-loader\remix\non-nvidia.conf); a preset you choose in Remix's menu (Alt+X) and
+  save there still wins. The first time each effect is used you may see a short stutter.
 
 Settings (native-loader\config.json)
 ------------------------------------
@@ -46,6 +57,25 @@ RTX content from other Workshop items
 - Such a package may only hold Remix mods and Lua add-ons. A package that also carries native code
   is skipped until you add its Workshop id to "workshop" under "allow".
 - To use only what "allow" lists: add "subscribed_content": false under "allow".
+
+ReShade
+-------
+
+- RTX Remix draws through Vulkan, so a ReShade installed for Direct3D 9 (bin\win64\d3d9.dll) has
+  nothing to work on with RTX. It never loads into an RTX session, and the loader never changes
+  its files: without RTX it works exactly as before.
+- The RTX package brings ReShade 6.8.0 (by crosire, BSD 3-clause) for RTX sessions instead. If
+  ReShade is set up for the game (bin\win64\ReShade.ini), the first RTX session copies its settings
+  and presets into native-loader\reshade, and RTX sessions use those copies from then on. Your own
+  ReShade.ini and presets stay as they are, so turning RTX off or removing the package needs no
+  restoring.
+- Home opens ReShade's overlay in an RTX session, as usual.
+- ReShade costs some frame rate. Measured on an RTX 5090: nothing measurable at 1280 x 720; at
+  3840 x 2160 a light effect cost about 0.9 ms a frame (7 %) and a heavy full-screen blur 2.8 ms.
+  With "auto", the default, it is on only where ReShade is set up for the game. Setting
+  "remix": { "reshade": "off" } in config.json turns it off; "on" turns it on for a game without a
+  ReShade of its own.
+- To take your Direct3D 9 settings over again, delete native-loader\reshade\ReShade.ini.
 
 Updating
 --------

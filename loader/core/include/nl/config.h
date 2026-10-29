@@ -19,6 +19,11 @@ class Error : public std::runtime_error {
 inline constexpr int kSchema = 1;
 inline constexpr std::string_view kConfigPath = "native-loader/config.json";
 
+// remix.reshade (ADR 0028): the RTX package's ReShade in RTX sessions. automatic ("auto") enables it
+// when the game has a ReShade set up (bin\win64\ReShade.ini) or RTX sessions already have settings
+// of their own (native-loader\reshade\ReShade.ini).
+enum class Reshade { automatic, on, off };
+
 struct Config {
   bool enabled = true;
   std::vector<std::string> workshop;     // Workshop item ids (decimal digits)
@@ -28,6 +33,7 @@ struct Config {
   // code still needs the allowlist: such a package may only hold Remix mods and Lua add-ons.
   bool subscribed_content = true;
   bool remix_enabled = true;             // false: runtime packages are planned but not activated
+  Reshade reshade = Reshade::automatic;
   bool patch_sets_require_insecure = true;
   bool from_file = false;                // false: defaults, because config.json does not exist
 };

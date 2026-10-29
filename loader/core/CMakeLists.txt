@@ -19,6 +19,7 @@ add_library(nl_core STATIC
   src/patch.cpp
   src/paths.cpp
   src/planner.cpp
+  src/reshade.cpp
   src/session.cpp
   src/sha256.cpp
   src/startup.cpp

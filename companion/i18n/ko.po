@@ -1,0 +1,413 @@
+# Translations of the GMod native loader companion (the RTX Remix tab, the guide).
+# Edit msgstr only; see companion/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader companion\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:211
+#, c-format
+msgid "RTX package %s was updated: restart Garry's Mod to use it"
+msgstr "RTX 패키지 %s이(가) 업데이트되었습니다. 사용하려면 Garry's Mod를 재시작하세요."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:10
+msgid "Welcome"
+msgstr "환영합니다"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:12
+msgid "RTX Remix is running"
+msgstr "RTX Remix가 실행 중입니다"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:13
+msgid "Garry's Mod is path traced by NVIDIA RTX Remix. The native loader (bin\\win64\\winmm.dll) put the RTX package from the Workshop in place and started Remix before the game made its renderer."
+msgstr "Garry's Mod는 NVIDIA RTX Remix로 패스 트레이싱되고 있습니다. 네이티브 로더(bin\\win64\\winmm.dll)가 창작마당의 RTX 패키지를 배치하고, 게임이 렌더러를 만들기 전에 Remix를 시작했습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:14
+msgid "Everything RTX is in the spawn menu's RTX Remix tab: the settings of the RTX add-ons, the common Remix settings, and this guide."
+msgstr "RTX에 관한 모든 것은 스폰 메뉴의 'RTX Remix' 탭에 있습니다. RTX 애드온의 설정, 주요 Remix 설정, 그리고 이 가이드입니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:15
+msgid "Turning RTX off or on"
+msgstr "RTX 끄기와 켜기"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:16
+msgid "RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too."
+msgstr "제거하지 않고 잠시 RTX를 끄려면 native-loader\\config.json에  \"remix\": { \"enabled\": false }  항목을 추가하고 게임을 다시 시작하세요. 그러면 게임은 일반 Garry's Mod가 되며, RTX 애드온도 불러오지 않습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:17
+msgid "The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam."
+msgstr "게임은 화면과 같은 크기의 테두리 없는 창으로 실행됩니다. 독점 전체 화면에서는 Remix가 충돌합니다. 다른 크기를 원하면 Steam에서 게임의 실행 옵션에 -w <width> -h <height>를 넣으세요."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:19
+msgid "Remix menu"
+msgstr "Remix 메뉴"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:21
+msgid "Alt+X opens Remix's own menu"
+msgstr "Alt+X로 Remix 자체 메뉴가 열립니다"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:22
+msgid "The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option."
+msgstr "간단한 메뉴에는 그래픽 프리셋, DLSS, 프레임 생성이 있습니다. 개발자 메뉴인 '개발자 설정'(Developer Settings)에는 모든 옵션이 있습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:23
+msgid "Making changes stick"
+msgstr "변경 사항 유지하기"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:24
+msgid "1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed."
+msgstr "1. 먼저 '그래픽 프리셋'(Graphics Preset)을 '사용자 지정'(Custom)으로 설정하세요. 다른 프리셋은 실행할 때마다 다시 적용되어 개별적으로 바꾼 설정을 덮어씁니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:25
+msgid "2. Change what you want."
+msgstr "2. 원하는 설정을 바꾸세요."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:26
+msgid "3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults."
+msgstr "3. 저장: 그래픽 설정은 '사용자 설정(user.conf): 저장'(User Settings (user.conf): Save)으로, 개발자 설정은 'Remix 설정(rtx.conf): 저장'(Remix Config (rtx.conf): Save)으로 저장하세요. 두 파일 모두 Garry's Mod 폴더에 있으며 패키지의 기본값보다 우선합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:27
+msgid "Do not press 'Migrate N Developer Settings to rtx.conf' and check 'View Changes' before saving: the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map."
+msgstr "'개발자 설정 N개를 rtx.conf로 이전'(Migrate N Developer Settings to rtx.conf)은 누르지 말고, 저장하기 전에 '변경 사항 보기'(View Changes)에서 내용을 확인하세요. RTX fixes가 Remix API를 통해 현재 맵에 맞춘 값을 일부 설정하므로, 이를 저장하면 모든 맵에 적용됩니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:29
+msgid "Settings"
+msgstr "설정"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:30
+msgid "Defaults from the original RTX install"
+msgstr "기존 RTX 환경의 기본값"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:31
+msgid "Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet."
+msgstr "Remix는 기존 RTX 환경의 설정(그 환경의 rtx.conf, dxvk.conf, user.conf)으로 시작합니다. RTX 애드온 자체의 설정에도, 아직 바꾸지 않은 항목에 한해 같은 환경의 값이 한 번 적용되었습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:32
+msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed."
+msgstr "'RTX Remix' 탭 > '시작하기' > '클래식 RTX 설정 사용'(콘솔: nativeloader_rtx_defaults)은 이 값들을 모두 다시 적용하며, 바꾼 값도 덮어씁니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+msgid "Common Remix settings"
+msgstr "주요 Remix 설정"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:34
+msgid "RTX Remix tab > Remix settings: preset, upscaler, DLSS quality, frame generation, indirect lighting, bounces, fog, sky, sun and clouds. A value set there is kept and applied at every start; '(leave to Remix)' hands it back to Remix's files."
+msgstr "'RTX Remix' 탭 > 'Remix 설정': 프리셋, 업스케일러, DLSS 품질, 프레임 생성, 간접 조명, 바운스, 안개, 하늘, 태양, 구름. 거기서 설정한 값은 유지되며 실행할 때마다 적용됩니다. '(Remix에 맡김)'을 고르면 다시 Remix의 설정 파일을 따릅니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+msgid "Lights"
+msgstr "조명"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:37
+msgid "Flashlight"
+msgstr "손전등"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:38
+msgid "The flashlight key gives a path-traced flashlight. Its brightness, cone and offsets are under RTX Remix tab > Lights > Flashlight."
+msgstr "손전등 키를 누르면 패스 트레이싱된 손전등이 켜집니다. 밝기, 원뿔 각도, 오프셋은 'RTX Remix' 탭 > '조명' > 'Flashlight'에 있습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
+msgid "Map lights"
+msgstr "맵 조명"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
+msgid "By default the map's own lights are lit by Remix from the game's lights (the 'light updater'). 'Disable Remix API Lights' under Rendering > Base Options switches between that and converting every map light into a Remix light."
+msgstr "기본적으로 맵 자체의 조명은 게임의 조명을 바탕으로 Remix가 밝힙니다('light updater'). '렌더링' > 'Base Options'의 'Disable Remix API Lights'로 이 방식과, 맵의 모든 조명을 Remix 조명으로 바꾸는 방식 사이를 전환합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:41
+msgid "Advanced MMD Animation Player"
+msgstr "Advanced MMD Animation Player"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:42
+msgid "Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start."
+msgstr "이 애드온의 손전등은 RTX fixes의 모듈이 Remix API에 연결되면 Remix 조명이 됩니다(nativeloader_status에 'Remix API: ready'라고 표시됩니다). 조명의 세기는 반경에 따라 커집니다. 반경 1은 거의 보이지 않으며, 20~30으로 시작하는 것이 좋습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
+msgid "Troubleshooting"
+msgstr "문제 해결"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
+msgid "First look"
+msgstr "먼저 확인하기"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
+msgid "Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready."
+msgstr "콘솔: nativeloader_status. 로더가 배치하고 활성화한 항목, 세션의 패치, Remix API 준비 여부를 출력합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:47
+msgid "Files to look at"
+msgstr "확인할 파일"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
+msgid "native-loader\\logs\\loader.log - what the loader did at this start."
+msgstr "native-loader\\logs\\loader.log - 이번 실행에서 로더가 한 작업."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:49
+msgid "garrysmod\\data\\native-loader\\status.json and session.json - the same as data."
+msgstr "garrysmod\\data\\native-loader\\status.json 및 session.json - 같은 내용을 데이터로 기록한 것."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
+msgid "rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top."
+msgstr "rtx-remix\\logs\\remix-dxvk.log - Remix 자체 로그. 실제로 적용되는 모든 설정이 앞부분에 있습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:51
+msgid "Common problems"
+msgstr "자주 발생하는 문제"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
+msgid "The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default)."
+msgstr "시작 도중 게임이 종료되는 경우: rtx-remix\\logs에서 'last_crash'를 찾고 remix-dxvk.log의 끝부분을 확인하세요. 게임은 창 모드로 두세요(기본값이 창 모드입니다)."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
+msgid "An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare."
+msgstr "애드온이 화면 위에 그리거나 RTX 설정을 되돌리는 경우: 콘솔에 해당 애드온의 이름이 표시됩니다('[nativeloader] kept ...'). 비교하려면 nativeloader_guard 0으로 보호 기능을 끄세요."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
+msgid "Low frame rate: choose a lower preset or DLSS quality. Frame generation needs an RTX 40 or newer GPU."
+msgstr "프레임 속도가 낮은 경우: 더 낮은 프리셋이나 DLSS 품질을 고르세요. 프레임 생성에는 RTX 40 시리즈 이상의 GPU가 필요합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
+msgid "'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game."
+msgstr "RTX 창작마당 아이템에 대한 'Couldn't mount file'은 정상입니다. 게임 대신 로더가 이 아이템을 배치하기 때문입니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
+msgid "Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu')."
+msgstr "재시작하면 설정이 원래대로 돌아오는 경우: 프리셋을 '사용자 지정'(Custom)으로 설정하고 '저장'(Save)을 누르세요('Remix 메뉴' 참고)."
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
+msgid "RTX Remix guide"
+msgstr "RTX Remix 가이드"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:16
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+msgid "Rendering"
+msgstr "렌더링"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:19
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+msgid "Water and glass"
+msgstr "물과 유리"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
+msgid "Start here"
+msgstr "시작하기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+msgid "Remix settings"
+msgstr "Remix 설정"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:27
+msgid "Graphics preset"
+msgstr "그래픽 프리셋"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "Ultra"
+msgstr "울트라"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "High"
+msgstr "높음"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "Medium"
+msgstr "중간"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:28
+msgid "Low"
+msgstr "낮음"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:29
+msgid "Custom (keeps your own settings)"
+msgstr "사용자 지정(내 설정 유지)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:29
+msgid "Automatic (by GPU)"
+msgstr "자동(GPU에 따라)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:30
+msgid "Upscaler"
+msgstr "업스케일러"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:31
+msgid "None"
+msgstr "없음"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:32
+msgid "DLSS quality"
+msgstr "DLSS 품질"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Ultra performance"
+msgstr "울트라 성능"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Performance"
+msgstr "성능"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Balanced"
+msgstr "균형"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:33
+msgid "Quality"
+msgstr "품질"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:34
+msgid "Auto"
+msgstr "자동"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:34
+msgid "Full resolution (DLAA)"
+msgstr "전체 해상도(DLAA)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:35
+msgid "Frame generation"
+msgstr "프레임 생성"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:127
+msgid "Off"
+msgstr "끄기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:37
+msgid "Indirect lighting"
+msgstr "간접 조명"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:38
+msgid "Importance sampled"
+msgstr "중요도 샘플링"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:38
+msgid "Neural Radiance Cache"
+msgstr "Neural Radiance Cache"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:39
+msgid "Hashed radiance cache"
+msgstr "Hashed radiance cache"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:40
+msgid "Most light bounces"
+msgstr "최대 조명 바운스"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:41
+msgid "Fog distance (m)"
+msgstr "안개 거리(m)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:42
+msgid "Larger is clearer."
+msgstr "클수록 안개가 옅어집니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:43
+msgid "Fog scattering"
+msgstr "안개 산란"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:44
+msgid "How much the fog scatters light forward (-1 to 1)."
+msgstr "안개가 빛을 앞쪽으로 산란시키는 정도(-1~1)."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:45
+msgid "Sky brightness"
+msgstr "하늘 밝기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:46
+msgid "Sun height (degrees)"
+msgstr "태양 고도(도)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:47
+msgid "Sun direction (degrees)"
+msgstr "태양 방향(도)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:48
+msgid "Clouds"
+msgstr "구름"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:49
+msgid "Post effects"
+msgstr "후처리 효과"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:49
+msgid "Bloom, motion blur and film grain."
+msgstr "블룸, 모션 블러, 필름 그레인."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:50
+msgid "Tone map colour purity"
+msgstr "톤 매핑 색 순도"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:97
+msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
+msgstr "이번 세션에서는 RTX Remix가 네이티브 로더를 통해 실행되고 있습니다. RTX에 관한 모든 것은 이 탭에 있습니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:98
+msgid "Open the RTX Remix guide"
+msgstr "RTX Remix 가이드 열기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:99
+msgid "Print the loader's status to the console"
+msgstr "로더 상태를 콘솔에 출력"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:100
+msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
+msgstr "클래식 설정: 기존 RTX 환경의 값입니다. 아직 기본값이던 설정에만 한 번 적용되었습니다. 이 버튼은 이 값들을 모두 다시 적용합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:101
+msgid "Use the classic RTX settings"
+msgstr "클래식 RTX 설정 사용"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:102
+msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
+msgstr "애드온이 RTX 설정을 되돌리거나 화면에 후처리를 덧그리지 못하게 막기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:103
+msgid "RTX session guard"
+msgstr "RTX 세션 보호"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:104
+msgid "Turn this off only to test an add-on that misbehaves."
+msgstr "오작동하는 애드온을 테스트할 때만 끄세요."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:105
+msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
+msgstr "Remix 자체 메뉴: Alt+X를 누르세요. 개별 설정을 바꾸기 전에 그래픽 프리셋으로 '사용자 지정'(Custom)을 고르고, 그다음 '저장'(Save)을 누르세요. 그렇지 않으면 다음 실행 시 원래대로 돌아갑니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:106
+msgid "Language"
+msgstr "언어"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:107
+msgid "Same as Garry's Mod"
+msgstr "Garry's Mod와 동일"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:109
+msgid "Language of this tab and the guide"
+msgstr "언어(이 탭과 가이드)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:114
+msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
+msgstr "이번 세션에서는 Remix API를 사용할 수 없어 이 설정들을 적용할 수 없습니다. 자세한 내용은 nativeloader_status를 실행하세요."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:116
+msgid "A setting chosen here is kept and applied at every start. Clear it (the empty choice, or the reset button) to leave it to Remix's own files."
+msgstr "여기서 고른 설정은 유지되며 실행할 때마다 적용됩니다. Remix 자체 설정 파일에 맡기려면 설정을 지우세요(빈 선택지 또는 초기화 버튼)."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:121
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:125
+msgid "(leave to Remix)"
+msgstr "(Remix에 맡김)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:126
+msgid "On"
+msgstr "켜기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:135
+msgid "Reset these to Remix's own values"
+msgstr "이 설정들을 Remix 자체 값으로 초기화"

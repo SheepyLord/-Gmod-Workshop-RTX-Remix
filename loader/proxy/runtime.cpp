@@ -55,6 +55,7 @@ bool RuntimeActivation::rollback() noexcept {
   }
   if (runtime_) { if (FreeLibrary(runtime_)) runtime_ = nullptr; else ok = false; }
   if (directory_changed_) { if (SetDllDirectoryW(nullptr)) directory_changed_ = false; else ok = false; }
+  if (dll_directory_) { if (RemoveDllDirectory(dll_directory_)) dll_directory_ = nullptr; else ok = false; }
   if (vulkan_) { if (FreeLibrary(vulkan_)) vulkan_ = nullptr; else ok = false; }
   if (!command_line_.restore()) ok = false;
   for (auto it = environment_.rbegin(); it != environment_.rend(); ++it) {
@@ -131,6 +132,11 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     report.environment_set.clear();
     report.arguments_added.clear();
     report.vulkan_path.clear();
+    report.reshade.environment.clear();
+    if (report.reshade.outcome == "active") {
+      report.reshade.outcome = "failed";
+      report.reshade.reason = "the activation was rolled back";
+    }
     report.elapsed_ms = elapsed_ms();
     return false;
   };
@@ -170,6 +176,20 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   for (const auto& layer : runtime->remix->rtx_conf_layers) check_file(runtime->payload + '/' + layer);
   for (const auto& layer : runtime->remix->dxvk_conf_layers) check_file(runtime->payload + '/' + layer);
   for (const auto& item : plan.module_overrides) check_file(item.file);
+
+  // Without an NVIDIA GPU, the loader's own Remix layer (ADR 0030), which DXVK_CONFIG_FILE lists. A
+  // layer that cannot be written costs Remix's automatic preset, not the session (Remix skips a missing file).
+  if (plan.non_nvidia) {
+    try {
+      const std::string_view layer = activate::kNonNvidiaLayer;
+      const std::string folder(layer.substr(0, layer.rfind('/')));
+      fs::refuse_links(root, folder);
+      if (!fs::stat(fs::join(root, folder)).exists) fs::win32().create_directory(fs::join(root, folder));
+      write_if_changed(root, layer, activate::non_nvidia_layer_text());
+    } catch (const std::exception& error) {
+      session.notes.push_back(std::string("the non-NVIDIA Remix layer was not written: ") + error.what());
+    }
+  }
 
   // Capture every previous value and allocate every new value before applying the first setting.
   environment_.reserve(plan.env.size());
@@ -220,6 +240,64 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     environment_.push_back({L"PATH", value, previous ? std::optional(wide(*previous)) : std::nullopt, true});
     touched_ = true;
     if (!SetEnvironmentVariableW(L"PATH", value.c_str())) { const auto error = GetLastError(); return fail("PATH update failed", error); }
+  }
+  // PATH is not read by loads that search the "safe" set of folders (LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
+  // or every load once some module calls SetDefaultDllDirectories). The runtime's FSR DLL and NRC's
+  // CUDA DLLs (cudart, nvrtc) load that way and were never found (RESEARCH.md section 26); naming the
+  // runtime folder as a user folder lets those searches find it too.
+  dll_directory_ = AddDllDirectory(dll.parent_path().c_str());
+  if (dll_directory_) touched_ = true;
+  else session.notes.push_back("AddDllDirectory for the runtime folder failed (Windows error " + std::to_string(GetLastError()) +
+                               "); late loads that skip PATH will not find the runtime's DLLs");
+
+  // ReShade (ADR 0028): the package's Vulkan layer, with its own settings folder, for this session.
+  // The Vulkan loader reads the layer variables when the runtime creates its instance, ReShade its
+  // base path when the layer loads. A ReShade that cannot be prepared costs ReShade, not the session.
+  auto& shade = report.reshade;
+  if (shade.plan.enable) {
+    std::vector<std::pair<std::string, std::wstring>> values;
+    try {
+      check_file(shade.plan.layer_manifest);
+      check_file(shade.plan.library);
+      const auto folder = std::filesystem::absolute(fs::join(root, reshade::kFolder)).lexically_normal();
+      const auto layers = std::filesystem::absolute(fs::join(root, shade.plan.layer_dir)).lexically_normal();
+      if (folder.native().find(L';') != std::wstring::npos || layers.native().find(L';') != std::wstring::npos)
+        throw std::runtime_error("the game's path holds a ';', which the Vulkan loader takes for a list separator");
+      const auto prepared = reshade::prepare(root, shade.plan.settings);
+      shade.folder = fs::utf8(folder);
+      shade.settings = prepared.settings;
+      shade.presets = prepared.presets;
+      shade.notes = prepared.notes;
+      // Ours first; a list the user set stays after it.
+      const auto listed_first = [](const std::wstring& ours, const char* name) {
+        const auto previous = activate::environment_value(name);
+        return previous && !previous->empty() ? ours + L";" + wide(*previous) : ours;
+      };
+      values.emplace_back("VK_ADD_LAYER_PATH", listed_first(layers.native(), "VK_ADD_LAYER_PATH"));
+      values.emplace_back("VK_INSTANCE_LAYERS", listed_first(wide(shade.plan.layer_name), "VK_INSTANCE_LAYERS"));
+      if (const auto user = activate::environment_value("RESHADE_BASE_PATH_OVERRIDE"))
+        shade.notes.push_back("RESHADE_BASE_PATH_OVERRIDE was \"" + *user + "\"; this session uses native-loader/reshade");
+      values.emplace_back("RESHADE_BASE_PATH_OVERRIDE", folder.native());
+      if (!activate::environment_value(std::string(reshade::kGlobalLayerOff))) values.emplace_back(reshade::kGlobalLayerOff, L"1");
+    } catch (const std::exception& error) {
+      shade.outcome = "failed";
+      shade.reason = std::string("ReShade not enabled: ") + error.what();
+      values.clear();
+    }
+    for (const auto& [name, value] : values) {
+      const auto previous = activate::environment_value(name);
+      environment_.push_back({wide(name), value, previous ? std::optional(wide(*previous)) : std::nullopt, true});
+      touched_ = true;
+      if (!SetEnvironmentVariableW(wide(name).c_str(), value.c_str())) {
+        const auto error = GetLastError();
+        return fail("SetEnvironmentVariableW failed for " + name, error);
+      }
+      shade.environment.emplace_back(name, fs::utf8(std::filesystem::path(value)));
+    }
+    if (!values.empty()) {
+      shade.outcome = "active";
+      shade.reason = shade.plan.reason;
+    }
   }
 
   // Patch sets and module overrides (M5) for the engine DLLs that load after this point, and what

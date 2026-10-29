@@ -8,12 +8,20 @@
     "tags": [
       "realism"
     ],
-    "description": "Native package for the GMod native loader: the RTX Remix runtime and the RTX fixes. It needs the loader (bin\\win64\\winmm.dll) and a native-loader\\config.json that allowlists this item. GMod does not mount this item itself; the loader deploys it."
+    "description": "Native package for the GMod native loader: the RTX Remix runtime, the RTX fixes and ReShade for RTX sessions. It needs the loader 0.5.0 or later (bin\\win64\\winmm.dll) and a native-loader\\config.json that allowlists this item. GMod does not mount this item itself; the loader deploys it."
   },
   "parts": [
     {
       "name": "runtime",
       "package": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\round2\\runtime-b4.gma"
+    },
+    {
+      "name": "reshade",
+      "build": "package_reshade",
+      "args": [
+        "--setup",
+        "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\reshade\\ReShade_Setup_6.8.0.exe"
+      ]
     },
     {
       "name": "fixes",

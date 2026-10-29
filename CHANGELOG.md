@@ -6,6 +6,46 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (round 8; loader 0.5.0)
+
+- **ReShade in RTX sessions** ([ADR 0028](docs/decisions/0028-reshade-in-rtx-sessions.md)). RTX Remix
+  draws through Vulkan, so a ReShade installed for Direct3D 9 has nothing to work on with RTX.
+  - The Direct3D 9 ReShade (`bin\win64\d3d9.dll`) never loads into an RTX session: the game binds the
+    runtime's `d3d9.dll`, preloaded at the entry point. Its files are never written, so without RTX
+    it works exactly as before.
+  - The RTX package carries ReShade 6.8.0 (by crosire, BSD 3-clause), unchanged from the official
+    setup, as the Vulkan layer `VK_LAYER_nativeloader_reshade` ([`package_reshade.py`](tools/package_reshade.py.md),
+    manifest section `reshade`, kind `reshade`).
+  - In RTX sessions the bootstrap enables it (`remix.reshade`: `"auto"`, the default, when the game
+    has a ReShade or RTX sessions have settings of their own; `"on"`; `"off"`), with its own settings
+    folder `native-loader\reshade`. The first RTX session copies the game's `ReShade.ini` there, paths
+    made absolute and presets copied; later sessions keep it. `status.json` `activation.reshade` and
+    `nlctl activation` say what happened.
+  - The RTX package now needs loader 0.5.0.
+- **The companion in six languages** ([ADR 0029](docs/decisions/0029-companion-translations.md)): the
+  RTX Remix tab, the guide and the update notice in Simplified and Traditional Chinese, Japanese,
+  Korean, French and Russian. The language follows Garry's Mod's; "Start here" can choose another
+  (`nativeloader_language`). The text is in gettext files in [`companion/i18n`](companion/i18n/README.md)
+  for review; [`companion_i18n.py`](tools/companion_i18n.py.md) makes and checks them, and the RTX
+  package's build puts them into the add-on.
+- **`poc_session.py run --fps SECONDS`** times every frame in the game (a client `PostRender` hook)
+  and records frames, the frame rate, the median, 99th-percentile and longest frame.
+- **Computers without an NVIDIA GPU start from Remix's own preset** ([ADR 0030](docs/decisions/0030-non-nvidia-gpus-and-late-runtime-dlls.md)).
+  The package's classic settings pin the Custom preset, tuned for an RTX 5090. With no NVIDIA adapter
+  (DXGI), the bootstrap adds `native-loader\remix\non-nvidia.conf` (`rtx.graphicsPreset = 5`) above the
+  package's layers and below the user's own files. NVIDIA systems see no change.
+
+### Fixed (round 8)
+
+- **FSR and the Neural Radiance Cache never loaded under the loader** (since M5, ADR 0030). The
+  runtime loads `amd_fidelityfx_vk.dll` and CUDA's `cudart64_13.dll` and `nvrtc64_*.dll` late, by bare
+  name, through searches that skip `PATH`, where the loader had put the runtime folder. The Remix log
+  said "FSR ... could not be loaded" and "Failed to initialize NRC" in every loader session. The runtime
+  folder is now also an `AddDllDirectory` folder. AMD players get FSR; NVIDIA players get NRC back, as in
+  the classic install.
+- **Labels of the RTX Remix tab no longer cut off**: "Post effects", the fog sliders, the guard and the
+  language choice have short labels, with the rest on a help line.
+
 ### Changed (the seventh field round; loader 0.4.0)
 
 - **Content packages from any subscribed Workshop item load without the allowlist**

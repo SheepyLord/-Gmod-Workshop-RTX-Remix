@@ -31,10 +31,10 @@ and a foreign DLL is always refused. [`workflow.ps1`](workflow.ps1.md) `-Install
 `-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` (requires
 `-Uninstall`) deletes the loader's own control and log files in `native-loader` (`config.json`,
 `bootstrap-install.json`, `disable`, `session_cvars.json`, `replaced\winmm.dll` and `.pdb`,
-`logs\loader.log` and its rotations),
+`remix\non-nvidia.conf` (ADR 0030), `logs\loader.log` and its rotations),
 then every folder left empty, then `native-loader` itself if empty. Any other file stays and is
-listed in a warning: a payload file the user changed (`nlctl uninstall` leaves those in place), or a
-journal `nlctl uninstall` had to keep. Reparse points in affected paths or the removal tree are
+listed in a warning: a payload file the user changed (`nlctl uninstall` leaves those in place), a
+journal `nlctl uninstall` had to keep, or the RTX sessions' ReShade settings in `reshade\` (ADR 0028). Reparse points in affected paths or the removal tree are
 refused, and the absolute target must equal the game's own `native-loader` directory.
 
 A game whose folder matches `installdir` in an `appmanifest_*.acf` in its library's `steamapps`

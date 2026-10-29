@@ -3,8 +3,8 @@ subscriber needs: for example the RTX Remix runtime and the RTX fixes (ADR 0016)
 
 Each --part is a package folder (native/manifest.json beside its files) or a .gma archive. The
 manifests are merged: kinds and the session extras are united, exactly one part may carry the
-runtime ("remix"), and no file may come from two parts. Every file is copied and checked against
-its part's manifest (size, SHA-256). The result is a package folder (--out) and/or a .gma packed
+runtime ("remix") and at most one ReShade ("reshade"), and no file may come from two parts. Every
+file is copied and checked against its part's manifest (size, SHA-256). The result is a package folder (--out) and/or a .gma packed
 with gmapack (--gma), with addon.json giving the Workshop title, type and tags. A content digest
 (the merged manifest without its version and name, plus the Workshop metadata) tells whether two
 builds differ. See package_workshop.py.md.
@@ -27,7 +27,7 @@ import gmapack  # noqa: E402
 
 MANIFEST = 'native/manifest.json'
 KNOWN_KEYS = {'schema', 'id', 'name', 'version', 'kinds', 'requires_loader', 'requires_remix', 'files', 'remix', 'root_files',
-              'module_overrides', 'patch_sets', 'session_cvars', 'module_dependencies'}
+              'module_overrides', 'patch_sets', 'session_cvars', 'module_dependencies', 'reshade'}
 ADDON_TYPES = ('gamemode', 'map', 'weapon', 'vehicle', 'npc', 'entity', 'tool', 'effects', 'model', 'servercontent')
 ADDON_TAGS = ('fun', 'roleplay', 'scenic', 'movie', 'realism', 'cartoon', 'water', 'comic', 'build')
 CHUNK = 1 << 20
@@ -149,6 +149,11 @@ def merge(manifests: list[dict], ident: str, version: str, name: str | None) -> 
         raise CombineError('more than one part carries a runtime ("remix")')
     if remix:
         out['remix'] = remix[0]
+    reshade = [m['reshade'] for m in manifests if 'reshade' in m]
+    if len(reshade) > 1:
+        raise CombineError('more than one part carries ReShade ("reshade")')
+    if reshade:
+        out['reshade'] = reshade[0]
     for key in ('root_files', 'module_overrides', 'patch_sets', 'module_dependencies'):
         items = [item for m in manifests for item in m.get(key, [])]
         if items:

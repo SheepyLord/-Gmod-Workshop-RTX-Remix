@@ -2,7 +2,8 @@
 
 The in-game RTX Remix guide. Client only, in RTX sessions (the companion ships in the RTX-only
 package). The console command `nativeloader_guide`, or RTX Remix tab > Start here, opens a window with
-five pages:
+five pages, in the player's language ([`../../nativeloader/i18n.lua`](../../nativeloader/i18n.lua.md): the page
+titles, headings and paragraphs are marked with `N("...")` and translated when the window opens):
 
 | Page | What it says |
 |---|---|

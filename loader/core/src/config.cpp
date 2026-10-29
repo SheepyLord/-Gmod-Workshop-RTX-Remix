@@ -75,8 +75,15 @@ Config parse(std::string_view json_text) {
       if (const Value* dev = allow->find("dev_folders")) c.dev_folders = unique_strings(*dev, "allow.dev_folders");
     }
     if (const Value* remix = root.find("remix")) {
-      only_keys(*remix, "remix", {"enabled"});
+      only_keys(*remix, "remix", {"enabled", "reshade"});
       if (const Value* enabled = remix->find("enabled")) c.remix_enabled = enabled->as_bool("remix.enabled");
+      if (const Value* reshade = remix->find("reshade")) {
+        const std::string& mode = reshade->as_string("remix.reshade");
+        if (mode == "auto") c.reshade = Reshade::automatic;
+        else if (mode == "on") c.reshade = Reshade::on;
+        else if (mode == "off") c.reshade = Reshade::off;
+        else fail("remix.reshade must be \"auto\", \"on\" or \"off\"");
+      }
     }
     if (const Value* patches = root.find("patch_sets")) {
       only_keys(*patches, "patch_sets", {"require_insecure"});

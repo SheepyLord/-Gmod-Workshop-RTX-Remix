@@ -17,6 +17,13 @@ local function say(line)
     MsgN("[nativeloader] " .. line)
 end
 
+-- The update notice is shown in the player's language (nativeloader/i18n.lua); the console lines stay
+-- English, for reports.
+local function L(text)
+    local ok, i18n = pcall(include, "nativeloader/i18n.lua")
+    return ok and istable(i18n) and i18n.L(text) or text
+end
+
 -- t[k1][k2]... without erroring on a missing level.
 local function field(t, ...)
     for i = 1, select("#", ...) do
@@ -121,6 +128,13 @@ local function report_status()
     if runtime_id ~= "" then
         say("runtime: " .. runtime_id .. " " .. text(field(activation, "runtime", "version")))
     end
+    -- ReShade in RTX sessions (loader 0.5.0, ADR 0028): an older loader's status has no such field.
+    local shade = field(activation, "reshade")
+    if shade and text(field(shade, "package"), "") ~= "" then
+        local settings = text(field(shade, "settings"), "")
+        say("reshade: " .. text(field(shade, "outcome")) .. " (" .. text(field(shade, "reason"), "") .. ")" ..
+            (settings ~= "" and ", settings " .. settings .. " in native-loader\\reshade" or ""))
+    end
 
     local errors = list(status.errors)
     for i = 1, math.min(#errors, 5) do say("error: " .. text(errors[i])) end
@@ -194,7 +208,8 @@ local function check_updates(status)
                 say(text(id) .. " has a newer Workshop version (" .. os.date("!%Y-%m-%d %H:%M UTC", updated) ..
                     "); it is deployed when Garry's Mod starts again.")
                 if notification and notification.AddLegacy then
-                    notification.AddLegacy("RTX package " .. text(id) .. " was updated: restart Garry's Mod to use it", NOTIFY_HINT or 3, 15)
+                    notification.AddLegacy(string.format(L("RTX package %s was updated: restart Garry's Mod to use it"), text(id)),
+                                           NOTIFY_HINT or 3, 15)
                 end
             end)
         end

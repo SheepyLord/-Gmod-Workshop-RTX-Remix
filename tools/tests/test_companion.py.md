@@ -11,6 +11,8 @@ harness written to a scratch folder under `out\tmp`.
 - The deployed version, and a local package, print and raise nothing about updates.
 - The status says "Remix API: ready (RemixLight, RemixConfig)" when the RTX fixes' tables exist,
   and "not available" when they do not (`hook`, `istable`, `isfunction` mocked too).
+- A `reshade:` line shows ReShade's outcome, reason and settings from a loader 0.5.0 status, and none
+  appears for an older status without `activation.reshade`.
 - Every Lua file of the companion compiles under LuaJIT (`loadfile`, nothing runs): the guard, the
   defaults, the menu, the guide and the generated table.
 

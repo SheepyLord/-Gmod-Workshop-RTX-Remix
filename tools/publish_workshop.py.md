@@ -24,13 +24,16 @@ python tools\publish_workshop.py --install-source-hooks <add-on repo> [--any-bra
 |---|---|
 | `item` | The Workshop item id that is updated |
 | `package` | The combined package's `id` and `name`, and the Workshop `title`, `type`, `tags` and `description` written into the archive |
-| `parts` | The packages that go in, in order. Either `{"package": "<.gma or package folder>"}`, used as it is, or `{"build": "package_fixes"\|"package_runtime"\|"package_content", "args": [...]}`, built afresh by that packager with those arguments |
+| `parts` | The packages that go in, in order. Either `{"package": "<.gma or package folder>"}`, used as it is, or `{"build": "package_fixes"\|"package_runtime"\|"package_content"\|"package_reshade", "args": [...]}`, built afresh by that packager with those arguments |
 | `gmpublish` | The `gmpublish.exe` that uploads. It runs from its game root, which must hold `steam_appid.txt` |
 
 Today's parts are:
 - **the runtime**, pinned as `out\packages\round2\runtime-b4.gma`: runtime B with the classic install's
   settings as one low defaults layer ([ADR 0021](../docs/decisions/0021-remix-defaults-in-one-low-layer.md));
-- **the RTX fixes**, rebuilt from the fixes repository with the classic install's modules and the debug
+- **ReShade 6.8.0** for RTX sessions, built by [`package_reshade.py`](package_reshade.py.md) from the
+  pinned official setup in `out\packages\reshade\` ([ADR 0028](../docs/decisions/0028-reshade-in-rtx-sessions.md));
+- **the RTX fixes** (with the companion and its translations from `companion/i18n`), rebuilt from
+  the fixes repository with the classic install's modules and the debug
   module;
 - **Emissives**, the classic install's Remix mod for HL2's fluorescent lights, pinned as
   `out\packages\round3\emissives.gma` ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md));
@@ -62,7 +65,8 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
    there, so only one publish runs at a time. It waits up to
    two hours for a running publish, and takes over a lock whose owner is gone.
 3. **Fingerprint.** It computes a fingerprint of everything that can change the item:
-   - this repository's packaging inputs in `HEAD`;
+   - this repository's packaging inputs in `HEAD` (the companion and its translations, the packagers,
+     `third_party/reshade`, gmapack, `workshop.json`);
    - `workshop.json`;
    - each part's paths: a git repository by its commit and changed files, a folder by each file's
      name, size and time, a file by its size and time.

@@ -1,7 +1,13 @@
 # nativeloader_menu.lua
 
 The companion's "RTX Remix" spawn-menu tab ([ADR 0022](../../../../../docs/decisions/0022-companion-rtx-session-guard.md)).
-Client only; it runs in RTX sessions (the companion ships in the RTX-only package).
+Client only; it runs in RTX sessions (the companion ships in the RTX-only package). Its text is
+translated ([`../../nativeloader/i18n.lua`](../../nativeloader/i18n.lua.md), [ADR 0029](../../../../../docs/decisions/0029-companion-translations.md)):
+labels are written as `L("...")`, or `N("...")` in tables and translated where they are shown; the
+category names stay English inside, only their labels are translated. "Start here" ends with the
+choice "Language" (`nativeloader_language`: same as Garry's Mod, or one of the seven languages, each
+named in itself). Labels are kept within GMod's widths (about 100 pixels for a combo box, 114 for a
+slider); what does not fit is a help line below the control (an option's sixth field).
 
 - **One tab.** The RTX add-ons register their panels under four Utilities categories: "RTX",
   "RTX Remix", "RTX Remix - API Lights" and "Glass Rewrite Remixed". A wrapper around

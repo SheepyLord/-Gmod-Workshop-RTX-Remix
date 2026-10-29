@@ -2,6 +2,7 @@
 // Machine-readable M4 startup result, shared with tests and uninstall; schema documented on disk.
 #include "nl/activate.h"
 #include "nl/deploy.h"
+#include "nl/reshade.h"
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -11,6 +12,17 @@
 namespace nl::status {
 inline constexpr std::string_view kDirectory = "garrysmod/data/native-loader";
 inline constexpr std::string_view kPath = "garrysmod/data/native-loader/status.json";
+// ReShade in this RTX session (ADR 0028).
+struct Reshade {
+  reshade::Plan plan;
+  std::string outcome = "off";  // active, off (not enabled: plan.reason), failed (the session runs without it)
+  std::string reason;
+  std::string folder;           // absolute native-loader\reshade
+  std::string settings;         // kept, migrated or fresh
+  std::vector<std::string> presets;  // copied into the folder this start
+  std::vector<std::pair<std::string, std::string>> environment;  // set for the layer
+  std::vector<std::string> notes;
+};
 struct Activation {
   activate::Plan plan;
   std::string outcome = "inactive";
@@ -25,6 +37,7 @@ struct Activation {
   std::uint32_t windows_error = 0;
   bool rolled_back = false;
   double elapsed_ms = 0;
+  Reshade reshade;
 };
 // RTX-session extras (M5): what start-up set up for this session; results of the patch sets and
 // overrides that apply later, as engine DLLs load, go to session.json.

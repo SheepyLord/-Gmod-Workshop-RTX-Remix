@@ -19,6 +19,7 @@ import stat
 import subprocess
 import sys
 
+import companion_i18n
 from package_runtime import (GMAPACK, ID, SEMVER, PackageError, check_private, copy_hashed, inside, inventory_paths,
                              is_link, path_problem, replace_folder, write_inventories)
 
@@ -27,6 +28,8 @@ REPO = os.path.dirname(HERE)
 DEFAULT_FIXES = os.path.join(os.path.dirname(REPO), 'garrys-mod-rtx-remixed')  # the checkout beside this repo
 COMPANION = os.path.join(REPO, 'companion', 'nativeloader')
 COMPANION_NAME = 'nativeloader'
+# The companion's translations, built from companion/i18n/*.po into the add-on (companion_i18n.py).
+COMPANION_I18N = 'native/root/garrysmod/addons/nativeloader/lua/nativeloader/i18n_data.lua'
 
 DEFAULT_ID = 'rtx-fixes'
 REQUIRES_LOADER = '>=0.2.0'  # the first loader with lua-addon, patch sets, module overrides, session cvars (M5)
@@ -320,6 +323,7 @@ def build(args):
     inventories = inventory_paths([o for o in (out, gma) if o])
 
     files = {}  # package path -> source file
+    generated = None  # the companion's built translations (a scratch file, removed at the end)
     roots = []  # (root_files path, kind)
     junk = []
     addons_dir = os.path.join(tree, 'garrysmod', 'addons')
@@ -355,6 +359,9 @@ def build(args):
             raise PackageError('add-on %s has no files (an uninitialised git submodule?): run "git submodule '
                                'update --init" in the fixes repo, or leave it out with --exclude-addon %s' % (name, name))
         files.update(found)
+        if folder == COMPANION:
+            generated = companion_translations()
+            files[COMPANION_I18N] = generated
         roots.append(('garrysmod/addons/' + name, 'lua-addon'))
     mods_dir = os.path.join(tree, 'rtx-remix', 'mods')
     mods, empty_mods = [], []
@@ -476,14 +483,37 @@ def build(args):
         if out:
             replace_folder(work, out)
             work = None
+        sources, notes = dict(files), {rel: 'allowed with --allow-private: ' + reason for rel, reason in allowed.items()}
+        if generated:
+            sources[COMPANION_I18N] = companion_i18n.I18N  # the scratch file is gone by now
+            notes[COMPANION_I18N] = 'built from the .po files by companion_i18n.py'
         summary['inventory'] = write_inventories(
             inventories, '%s %s: %d files and native/manifest.json, %s bytes; written by package_fixes.py' % (
                 args.id, version, len(listed), format(summary['bytes'], ',')),
-            listed, files, text, {rel: 'allowed with --allow-private: ' + reason for rel, reason in allowed.items()})
+            listed, sources, text, notes)
         return summary
     finally:
         if work and os.path.isdir(work):
             shutil.rmtree(work)
+        if generated and os.path.exists(generated):
+            os.remove(generated)
+
+
+def companion_translations():
+    """The companion's translations as the Lua table it reads (companion_i18n.py build), in a scratch
+    file under out\\tmp that the caller removes. Its time is the newest translation file's, so the same
+    .po files give the same package version."""
+    scratch = os.path.join(REPO, 'out', 'tmp')
+    os.makedirs(scratch, exist_ok=True)
+    path = os.path.join(scratch, 'companion-i18n-%d.lua' % os.getpid())
+    try:
+        companion_i18n.build(path)
+    except companion_i18n.I18nError as error:
+        raise PackageError('the companion translations (companion/i18n) do not check: %s' % error)
+    sources = [os.path.join(companion_i18n.I18N, name) for name in os.listdir(companion_i18n.I18N) if name.endswith('.po')]
+    newest = max(os.stat(source).st_mtime for source in sources)
+    os.utime(path, (newest, newest))
+    return path
 
 
 def shown(path, tree):

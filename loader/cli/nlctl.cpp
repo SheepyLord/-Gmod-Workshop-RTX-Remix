@@ -17,6 +17,7 @@
 #include "nl/manifest.h"
 #include "nl/package.h"
 #include "nl/planner.h"
+#include "nl/reshade.h"
 #include "nl/startup.h"
 
 #include <windows.h>
@@ -420,20 +421,37 @@ int cmd_activation(const fs::path& game_root, bool json) {
   nl::activate::Plan plan;
   if (!config.from_file) plan.reason = "native-loader/config.json is absent";
   else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
-  else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"", nl::activate::primary_display);
+  else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"", nl::activate::primary_display,
+                                 nl::activate::graphics_adapters);
+  // ReShade (ADR 0028), as the bootstrap decides it for an RTX session.
+  nl::reshade::Plan shade;
+  if (plan.activate) {
+    try {
+      shade = nl::reshade::plan(*journal->current, config, nl::reshade::probe(game_root, *journal->current));
+    } catch (const std::exception& error) {
+      shade.reason = std::string("ReShade not checked: ") + error.what();
+    }
+  }
   if (json) {
     std::string out = "{\n  \"activate\": " + std::string(plan.activate ? "true" : "false");
     out += ",\n  \"reason\": " + nl::json::quote(plan.reason);
     out += ",\n  \"runtime_dll\": " + (plan.runtime_dll.empty() ? std::string("null") : nl::json::quote(plan.runtime_dll));
     out += ",\n  \"runtime_dir\": " + (plan.runtime_dir.empty() ? std::string("null") : nl::json::quote(plan.runtime_dir));
     out += ",\n  \"prefer_system_vulkan\": " + std::string(plan.prefer_system_vulkan ? "true" : "false");
+    out += ",\n  \"gpu_vendors\": [";
+    for (std::size_t i = 0; i < plan.gpu_vendors.size(); ++i) out += (i ? ", " : "") + std::to_string(plan.gpu_vendors[i]);
+    out += "],\n  \"non_nvidia\": " + std::string(plan.non_nvidia ? "true" : "false");
     out += ",\n  \"env\": [";
     for (std::size_t i = 0; i < plan.env.size(); ++i) {
       out += (i ? ",\n    " : "\n    ") + std::string("{\"name\": ") + nl::json::quote(plan.env[i].first) +
              ", \"value\": " + nl::json::quote(plan.env[i].second) + "}";
     }
     out += plan.env.empty() ? "]" : "\n  ]";
-    out += ",\n  \"launch_args\": " + string_array_json(plan.launch_args) + "\n}\n";
+    out += ",\n  \"launch_args\": " + string_array_json(plan.launch_args);
+    out += ",\n  \"reshade\": {\"enable\": " + std::string(shade.enable ? "true" : "false") + ", \"reason\": " +
+           nl::json::quote(shade.reason) + ", \"package\": " + nl::json::quote(shade.package) + ", \"layer\": " +
+           nl::json::quote(shade.layer_name) + ", \"layer_manifest\": " + nl::json::quote(shade.layer_manifest) +
+           ", \"settings\": " + nl::json::quote(shade.enable ? nl::reshade::settings_name(shade.settings) : "") + "}\n}\n";
     print(out);
     return kOk;
   }
@@ -444,10 +462,24 @@ int cmd_activation(const fs::path& game_root, bool json) {
   print("would load  " + plan.runtime_dll + "\n");
   print("dll search  + " + plan.runtime_dir + "\n");
   print(std::string("vulkan      ") + (plan.prefer_system_vulkan ? "preload System32 vulkan-1.dll first" : "runtime's own") + "\n");
+  std::string vendors;
+  for (const unsigned vendor : plan.gpu_vendors) {
+    char hex[8];
+    std::snprintf(hex, sizeof(hex), "%04X", vendor);
+    vendors += (vendors.empty() ? "" : " ") + std::string(hex);
+  }
+  print("gpus        " + (vendors.empty() ? std::string("(not read)") : vendors) +
+        (plan.non_nvidia ? ": no NVIDIA GPU, Remix chooses its preset (" + std::string(nl::activate::kNonNvidiaLayer) + ")" : "") + "\n");
   for (const auto& [name, value] : plan.env) print("env         " + name + "=" + value + "\n");
   std::string args;
   for (const auto& a : plan.launch_args) args += (args.empty() ? "" : " ") + a;
   print("launch args " + (args.empty() ? std::string("(none to add)") : args) + "\n");
+  if (shade.enable) {
+    print("reshade     " + shade.layer_name + " from " + shade.layer_dir + ", settings: " + nl::reshade::settings_name(shade.settings) +
+          " (native-loader/reshade)\n");
+  } else {
+    print("reshade     off: " + shade.reason + "\n");
+  }
   return kOk;
 }
 
