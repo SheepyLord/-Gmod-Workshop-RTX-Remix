@@ -29,6 +29,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0021](0021-remix-defaults-in-one-low-layer.md) | Remix defaults ship as one low `DXVK_CONFIG_FILE` layer; `DXVK_RTX_CONFIG_FILE` stays unset, so the player's saved `rtx.conf` and `user.conf` win; forced windowed mode | Accepted 2026-10-29; supersedes 0008's layer-order assumption |
 | [0022](0022-companion-rtx-session-guard.md) | The companion guards RTX sessions against add-ons that undo them, gathers the RTX menus into one tab with more Remix settings, and carries an illustrated guide | Accepted 2026-10-29 (the user) |
 | [0023](0023-content-packages-and-modern-house-item.md) | Content packages carry Remix mods and their Lua; Modern House RTX is its own hidden Workshop item (3829275998); the Emissives mod ships in the RTX package, Water and Poolday do not | Accepted 2026-10-29 (the user) |
+| [0024](0024-bundled-addons-and-module-dependencies.md) | The RTX package bundles the user's five add-ons and Model Hotloader's natives, rebuilt from their sources at every publish; loader 0.3.0 loads a module's runtime DLL first, in every session (`module_dependencies`) | Accepted 2026-10-29 (the user) |
 
 ## Template
 

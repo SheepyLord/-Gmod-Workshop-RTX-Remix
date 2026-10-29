@@ -15,6 +15,7 @@ python tools\publish_workshop.py                     # publish now (skips if not
 python tools\publish_workshop.py --dry-run           # build and compare, upload nothing
 python tools\publish_workshop.py --force             # build and upload even if unchanged
 python tools\publish_workshop.py --uninstall-hooks   # remove this script's hooks
+python tools\publish_workshop.py --install-source-hooks <add-on repo> [--any-branch]  # a part's source repository
 ```
 
 ## `workshop.json`
@@ -35,7 +36,18 @@ Today's parts are:
   `out\packages\round3\emissives.gma` ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md));
 - **Remove_halo**, the user's one-line add-on (`halo.Add` does nothing), rebuilt from its folder
   `H:\BACKUP_20260815\Modding\ipg\Remove_halo` by [`package_content.py`](package_content.py.md) at
-  every publish, so an edit there reaches the item at the next commit or push of `main`.
+  every publish, so an edit there reaches the item at the next commit or push of `main`;
+- **the user's five add-ons**, each rebuilt from its source at every publish
+  ([ADR 0024](../docs/decisions/0024-bundled-addons-and-module-dependencies.md)):
+  - Model Hotloader: its add-on and six natives from the classic install, its runtime loaded before
+    both modules;
+  - Advanced Material Editor: from its working copy, without its test textures, plus its RTX bridge
+    module from the classic install;
+  - Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer: from
+    their working copies.
+
+The fixes part takes its modules from the classic install too, so a module rebuilt and installed
+there (as the visibility-tuned `gmcl_RTXFixesBinary_win64.dll` was) ships with the next publish.
 
 The Modern House RTX package is a separate test item (3829275998), uploaded by hand with
 `gmpublish update`, not by this script.
@@ -79,6 +91,17 @@ They go in the common `.git\hooks`, shared by every worktree. Each one is marked
 | `post-commit` | after a commit, when the branch is `main` |
 | `post-merge` | after a merge or pull, when the branch is `main` |
 | `pre-push` | when `refs/heads/main` is pushed |
+
+**Hooks in the parts' source repositories** (`--install-source-hooks REPO`, repeatable; ADR 0024):
+`post-commit` and `post-merge` in that repository run this checkout's script by its absolute path, so
+an update there rebuilds the parts and uploads if the item's content changed.
+- They fire on that repository's `main`, or on any branch with `--any-branch`.
+- Installed (2026-10-29) in:
+  - the material editor's, the bodygroup destruction's and the motion importer's repositories (`main`);
+  - the fixes fork and Model Hotloader's repository (any branch): their builds reach the classic
+    install from feature-branch worktrees.
+- `--uninstall-source-hooks REPO` removes them. They carry the same marker, and an unmarked hook is
+  never replaced without `--force-hooks`.
 
 Each hook runs `publish_workshop.py --background --reason "<what> <commit>"`.
 - The background run is detached, so the commit, merge or push returns at once.

@@ -222,9 +222,10 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     if (!SetEnvironmentVariableW(L"PATH", value.c_str())) { const auto error = GetLastError(); return fail("PATH update failed", error); }
   }
 
-  // Patch sets and module overrides (M5) for the engine DLLs that load after this point.
+  // Patch sets and module overrides (M5) for the engine DLLs that load after this point, and what
+  // binary modules need loaded before them (ADR 0024).
   for (const auto& set : plan.patch_sets) session.patches += set.set.patches.size();
-  if (!plan.patch_sets.empty() || !plan.module_overrides.empty()) {
+  if (!plan.patch_sets.empty() || !plan.module_overrides.empty() || !plan.module_dependencies.empty()) {
     modules::Setup setup;
     setup.root = std::filesystem::absolute(root);
     session.patches_allowed = !plan.patch_sets.empty() &&
@@ -238,9 +239,15 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
       setup.overrides.emplace_back(item.module, std::filesystem::absolute(fs::join(root, item.file)).lexically_normal());
       session.overrides.push_back(item.module);
     }
+    for (const auto& item : plan.module_dependencies) {
+      std::vector<std::filesystem::path> files;
+      for (const auto& file : item.load_first) files.push_back(std::filesystem::absolute(fs::join(root, file)).lexically_normal());
+      setup.dependencies.emplace_back(std::filesystem::absolute(fs::join(root, item.module)).lexically_normal(), std::move(files));
+      session.module_dependencies.push_back(item.module);
+    }
     setup.session_json_base = "  \"process_id\": " + std::to_string(GetCurrentProcessId()) + ",\n";
     std::string error;
-    if (!setup.patch_sets.empty() || !setup.overrides.empty()) {
+    if (!setup.patch_sets.empty() || !setup.overrides.empty() || !setup.dependencies.empty()) {
       // Owned before the call: install() can fail after publishing hooks, and rollback must undo them
       // then too (R1-002); uninstall() is safe whatever install() got to.
       hooks_installed_ = true;

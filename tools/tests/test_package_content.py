@@ -132,8 +132,9 @@ class PackageContentTests(unittest.TestCase):
     def test_archive_only_build_links_and_matches_a_folder_build(self):
         out, gma = self.root / 'pkg', self.root / 'only.gma'
         self.build('--out', out, '--version', '1.0.0')
+        self.assertFalse(self.build('--gma', self.root / 'copied.gma', '--version', '1.0.0')['linked'])  # links are opt-in
         summary = self.build('--gma', gma, '--version', '1.0.0', '--title', 'House', '--type', 'effects',
-                             '--tag', 'realism', '--tag', 'scenic')
+                             '--tag', 'realism', '--tag', 'scenic', '--link')
         self.assertTrue(summary['linked'])
         # nlctl refuses hard-linked files in a folder, so a linked build is checked as the archive.
         self.assertEqual(bool(summary['validated_by']), bool(built_nlctl()))
@@ -181,11 +182,18 @@ class PackageContentTests(unittest.TestCase):
         self.assertEqual((code, 'café.dds' in err), (1, True))
         bad.unlink()
         self.write(self.addon / 'lua' / 'debug.log', b'private')
-        code, _, err = self.run_tool('--id', 'x', '--addon', self.addon, '--out', self.root / 'x')
+        log = 'native/root/garrysmod/addons/house_rtx/lua/debug.log'
+        # gmad would not publish a log, so the add-on filter leaves it out before it could be refused...
+        self.assertIn(log, self.build('--out', self.root / 'filtered')['filtered'])
+        # ...and without the filter, or in a mod, a private-looking file is refused unless named.
+        code, _, err = self.run_tool('--id', 'x', '--addon', self.addon, '--no-addon-filter', '--out', self.root / 'x')
         self.assertEqual(code, 1)
-        self.assertIn('native/root/garrysmod/addons/house_rtx/lua/debug.log', err)
-        summary = self.build('--out', self.root / 'pkg', '--allow-private', 'native/root/garrysmod/addons/house_rtx/lua/debug.log')
-        self.assertEqual(summary['allowed_private'], ['native/root/garrysmod/addons/house_rtx/lua/debug.log'])
+        self.assertIn(log, err)
+        summary = self.build('--out', self.root / 'pkg', '--no-addon-filter', '--allow-private', log)
+        self.assertEqual(summary['allowed_private'], [log])
+        self.write(self.mod / 'logs' / 'capture.txt', b'private')
+        code, _, err = self.run_tool('--id', 'x', '--mod', self.mod, '--out', self.root / 'x')
+        self.assertEqual((code, 'native/root/rtx-remix/mods/house_rtx/logs/capture.txt' in err), (1, True))
         self.assertFalse((self.root / 'x').exists())
         self.assertEqual(self.leftovers(), [])
 
@@ -203,6 +211,70 @@ class PackageContentTests(unittest.TestCase):
         self.assertEqual(code, 0, err)
         self.assertRegex(out, r'^Package house-rtx 0\.0\.0-dev\.\d{12}\+[0-9a-f]{8}: 7 files')
         self.assertIn('mods       house_rtx', out)
+
+    def test_addons_keep_only_what_gmad_would_publish(self):
+        dev = self.src / 'dev_addon'
+        for rel, data in {'addon.json': b'{"title": "dev", "ignore": ["lua/dev/*", "*.psd"]}',
+                          'lua/autorun/dev.lua': b'-- kept', 'lua/dev/scratch.lua': b'-- ignored by addon.json',
+                          'materials/dev/icon.png': b'PNG', 'icon.psd': b'PSD', 'README.md': b'# notes',
+                          '.codex_stage/lua/autorun/old.lua': b'-- a staging copy', 'native/bridge.cpp': b'int x;',
+                          'shaders/fxc/dev_ps20b.vcs': b'VCS', 'data_static/dev.json': b'{}'}.items():
+            self.write(dev / rel, data)
+        summary = self.build('--addon', dev, '--out', self.root / 'pkg')
+        prefix = 'native/root/garrysmod/addons/dev_addon/'
+        kept = sorted(p[len(prefix):] for p in self.manifest(self.root / 'pkg')['files'] if p.startswith(prefix))
+        self.assertEqual(kept, ['addon.json', 'data_static/dev.json', 'lua/autorun/dev.lua', 'materials/dev/icon.png',
+                                'shaders/fxc/dev_ps20b.vcs'])
+        self.assertEqual(sorted((p[len(prefix):] for p in summary['filtered'] if p.startswith(prefix)), key=str.lower),
+                         ['.codex_stage/lua/autorun/old.lua', 'icon.psd', 'lua/dev/scratch.lua', 'native/bridge.cpp', 'README.md'])
+        narrower = self.build('--addon', dev, '--out', self.root / 'narrower', '--ignore', 'materials/*')
+        self.assertIn(prefix + 'materials/dev/icon.png', narrower['filtered'])
+        everything = self.build('--addon', dev, '--out', self.root / 'all', '--no-addon-filter')
+        self.assertEqual(everything['filtered'], [])
+        self.assertIn(prefix + 'README.md', self.manifest(self.root / 'all')['files'])
+
+    def test_an_addon_under_another_name_and_a_leading_bang(self):
+        code, out, err = self.run_tool('--json', '--id', 'x', '--addon-as', '!house_first', self.addon, '--out', self.root / 'pkg')
+        self.assertEqual(code, 0, err)
+        roots = [r['path'] for r in self.manifest(self.root / 'pkg')['root_files']]
+        self.assertEqual(roots, ['garrysmod/addons/!house_first'])
+        self.assertEqual(json.loads(out)['addons'], ['!house_first'])
+        code, _, err = self.run_tool('--id', 'x', '--addon-as', 'bad name', self.addon, '--out', self.root / 'x')
+        self.assertEqual((code, 'bad name' in err), (1, True))
+
+    def test_binary_modules_and_the_runtime_they_load_first(self):
+        natives = {name: self.write(self.src / 'bin' / name, name.encode())
+                   for name in ('gmcl_mmdhl_win64.dll', 'gmsv_mmdhl_win64.dll', 'mmdhl_runtime_win64.dll', 'mmdhl_worker.exe')}
+        args = [arg for path in natives.values() for arg in ('--lua-bin', path)]
+        summary = self.build(*args, '--load-first', 'gmcl_mmdhl_win64.dll=mmdhl_runtime_win64.dll',
+                             '--load-first', 'GMSV_mmdhl_win64.dll=mmdhl_runtime_win64.dll', '--out', self.root / 'pkg')
+        m = self.manifest(self.root / 'pkg')
+        self.assertEqual(m['kinds'], ['lua-binary-module', 'lua-addon', 'root-files'])
+        self.assertEqual(m['requires_loader'], '>=0.3.0')
+        self.assertEqual(m['module_dependencies'], [
+            {'module': 'garrysmod/lua/bin/gmcl_mmdhl_win64.dll', 'load_first': ['garrysmod/lua/bin/mmdhl_runtime_win64.dll']},
+            {'module': 'garrysmod/lua/bin/gmsv_mmdhl_win64.dll', 'load_first': ['garrysmod/lua/bin/mmdhl_runtime_win64.dll']}])
+        for name in natives:
+            self.assertIn({'path': 'garrysmod/lua/bin/' + name, 'policy': 'replace-owned'}, m['root_files'])
+            self.assertIn('native/root/garrysmod/lua/bin/' + name, m['files'])
+        self.assertEqual(sorted(summary['lua_bin']), sorted(natives))
+        # Without a dependency the package needs only the M5 loader.
+        plain = self.build('--lua-bin', natives['mmdhl_worker.exe'], '--out', self.root / 'plain')
+        self.assertEqual(self.manifest(self.root / 'plain')['requires_loader'], '>=0.2.0')
+        self.assertEqual(plain['module_dependencies'], [])
+        dll, runtime = natives['gmcl_mmdhl_win64.dll'], natives['mmdhl_runtime_win64.dll']
+        for bad in (['--load-first', 'gmcl_mmdhl_win64.dll'],                                   # no =
+                    ['--load-first', 'gmcl_mmdhl_win64.dll=nowhere.dll'],                       # not a --lua-bin file
+                    ['--load-first', 'gmcl_mmdhl_win64.dll=mmdhl_worker.exe'],                  # not a .dll
+                    ['--load-first', 'gmcl_mmdhl_win64.dll=gmcl_mmdhl_win64.dll'],              # itself
+                    ['--load-first', 'gmcl_mmdhl_win64.dll=mmdhl_runtime_win64.dll'] * 2,       # twice
+                    ['--lua-bin', dll],                                                         # same name twice
+                    ['--lua-bin', self.src / 'bin' / 'missing.dll']):
+            code, _, err = self.run_tool('--id', 'x', *args, *bad, '--out', self.root / 'x')
+            self.assertEqual(code, 1, bad)
+            self.assertTrue(err.startswith('error: '), err)
+        self.assertFalse((self.root / 'x').exists())
+        self.assertTrue(runtime.is_file())
 
     @unittest.skipUnless(built_nlctl(), 'nlctl.exe 0.2.0 or newer is not built (tools\\build.ps1)')
     def test_nlctl_accepts_the_folder_and_the_archive(self):

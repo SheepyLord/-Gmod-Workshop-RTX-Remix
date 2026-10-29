@@ -16,7 +16,13 @@ Install
 3. Subscribe to the RTX Remix item on the Steam Workshop:
    https://steamcommunity.com/sharedfiles/filedetails/?id=3829070317
 4. In Steam, set Garry's Mod's beta branch to x86-64 (Properties > Betas), then start the game.
-   - The first start after a download deploys the package, about 1.4 GB, which takes a few seconds.
+   - The first start after a download deploys the package, about 1.5 GB, which takes a few seconds.
+     It needs this loader (0.3.0 or later).
+   - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
+     Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer for
+     RTX sessions. If you put copies of them into garrysmod\addons or their files into
+     garrysmod\lua\bin yourself, move those out first: the loader never replaces files it did not
+     place, and stops at them.
    - The console line "Couldn't mount file" for the item is expected: the loader deploys it instead
      of GMod.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen

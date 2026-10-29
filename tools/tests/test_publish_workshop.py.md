@@ -21,5 +21,6 @@ cd tools; python -m unittest tests.test_publish_workshop
 | config errors | a bad item id, a part with neither or both sources, an unknown builder |
 | the lock takes over a dead owner and waits for a live one | |
 | install, refuse foreign and uninstall | all three hooks carry the marker and LF line endings; a foreign hook is refused unless forced; uninstall removes only ours |
+| source hooks call this checkout's script by absolute path | `post-commit` and `post-merge` in a part's source repository: the marker, the main checkout's script, the add-on's name in the change notes, `main` only (every branch with `--any-branch`), LF; nothing written when one target hook is foreign; uninstall leaves foreign hooks alone |
 
 Exit 0 when every test passes.

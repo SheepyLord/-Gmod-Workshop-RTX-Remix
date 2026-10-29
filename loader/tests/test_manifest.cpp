@@ -231,3 +231,65 @@ TEST_CASE("manifest: contents must match the listed files") {
   extra.push_back({"native/payload/runtime/extra.dll", 1});
   CHECK_THROWS_AS(nl::manifest::check_contents(m, extra), Error);
 }
+
+namespace {
+
+// A content package with a binary module whose runtime DLL must load first (ADR 0024).
+std::string dependent(const std::string& dependencies) {
+  return R"({"schema": 1, "id": "hotloader", "version": "2.3.1", "kinds": ["lua-binary-module", "lua-addon"],
+    "files": {
+      "native/root/garrysmod/lua/bin/gmcl_mmdhl_win64.dll": {"size": 4, "sha256": ")" + kSha + R"("},
+      "native/root/garrysmod/lua/bin/gmsv_mmdhl_win64.dll": {"size": 4, "sha256": ")" + kSha + R"("},
+      "native/root/garrysmod/lua/bin/mmdhl_runtime_win64.dll": {"size": 4, "sha256": ")" + kSha + R"("},
+      "native/root/garrysmod/lua/bin/mmdhl_worker.exe": {"size": 4, "sha256": ")" + kSha + R"("},
+      "native/root/garrysmod/addons/mmd_hotloader/lua/autorun/mmdhl.lua": {"size": 4, "sha256": ")" + kSha + R"("}
+    },
+    "root_files": [
+      {"path": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll"}, {"path": "garrysmod/lua/bin/gmsv_mmdhl_win64.dll"},
+      {"path": "garrysmod/lua/bin/mmdhl_runtime_win64.dll"}, {"path": "garrysmod/lua/bin/mmdhl_worker.exe"},
+      {"path": "garrysmod/addons/mmd_hotloader"}
+    ])" + dependencies + "}";
+}
+
+}  // namespace
+
+TEST_CASE("manifest: module_dependencies name lua/bin DLLs the package deploys (ADR 0024)") {
+  const auto m = nl::manifest::parse(dependent(R"(, "module_dependencies": [
+      {"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": ["garrysmod/lua/bin/mmdhl_runtime_win64.dll"]},
+      {"module": "garrysmod/lua/bin/GMSV_mmdhl_win64.dll", "load_first": ["garrysmod/lua/bin/mmdhl_runtime_win64.dll"]}])"));
+  REQUIRE(m.module_dependencies.size() == 2);
+  CHECK(m.module_dependencies[0].module == "garrysmod/lua/bin/gmcl_mmdhl_win64.dll");
+  REQUIRE(m.module_dependencies[0].load_first.size() == 1);
+  CHECK(m.module_dependencies[0].load_first[0] == "garrysmod/lua/bin/mmdhl_runtime_win64.dll");
+  CHECK(m.module_dependencies[1].module == "garrysmod/lua/bin/GMSV_mmdhl_win64.dll");  // as written; compared without case
+  CHECK(nl::manifest::parse(dependent("")).module_dependencies.empty());
+
+  const std::string runtime = R"("garrysmod/lua/bin/mmdhl_runtime_win64.dll")";
+  const std::vector<std::string> bad = {
+      R"(, "module_dependencies": [])",
+      R"(, "module_dependencies": {})",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll"}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": []}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": [)" + runtime + R"(], "x": 1}])",
+      // not a .dll, not deployed, outside lua/bin, unsafe
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/mmdhl_worker.exe", "load_first": [)" + runtime + R"(]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": ["garrysmod/lua/bin/mmdhl_worker.exe"]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_other_win64.dll", "load_first": [)" + runtime + R"(]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": ["garrysmod/lua/bin/nowhere.dll"]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/addons/mmd_hotloader/x.dll", "load_first": [)" + runtime + R"(]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin", "load_first": [)" + runtime + R"(]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/../bin/gmcl_mmdhl_win64.dll", "load_first": [)" + runtime + R"(]}])",
+      // itself, twice, too many
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": ["garrysmod/lua/bin/GMCL_mmdhl_win64.dll"]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": [)" + runtime + R"(, "garrysmod/lua/bin/MMDHL_runtime_win64.dll"]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": [)" + runtime + R"(]},
+                                   {"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": [)" + runtime + R"(]}])",
+      R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": [)" +
+          runtime + "," + runtime + "," + runtime + "," + runtime + "," + runtime + "," + runtime + "," + runtime + "," + runtime + "," + runtime + R"(]}])",
+  };
+  for (const auto& text : bad) CHECK_THROWS_AS(nl::manifest::parse(dependent(text)), Error);
+  // The paths are lua/bin root files, so the kind is needed.
+  std::string without_kind = dependent(R"(, "module_dependencies": [{"module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": [)" + runtime + "]}]");
+  without_kind.replace(without_kind.find(R"("lua-binary-module", )"), std::string(R"("lua-binary-module", )").size(), "");
+  CHECK_THROWS_AS(nl::manifest::parse(without_kind), Error);
+}

@@ -40,6 +40,84 @@
         "--addon",
         "H:\\BACKUP_20260815\\Modding\\ipg\\Remove_halo"
       ]
+    },
+    {
+      "name": "model-hotloader",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "model-hotloader",
+        "--name",
+        "Model Hotloader",
+        "--requires-remix",
+        "--addon",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\addons\\mmd_hotloader",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\gmcl_mmdhl_win64.dll",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\gmsv_mmdhl_win64.dll",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\mmdhl_runtime_win64.dll",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\lib_coacd.dll",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\mmdhl_worker.exe",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\mmdhl-native-release.json",
+        "--load-first",
+        "gmcl_mmdhl_win64.dll=mmdhl_runtime_win64.dll",
+        "--load-first",
+        "gmsv_mmdhl_win64.dll=mmdhl_runtime_win64.dll"
+      ]
+    },
+    {
+      "name": "advanced-material-editor",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "advanced-material-editor",
+        "--requires-remix",
+        "--addon",
+        "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_material_editor",
+        "--ignore",
+        "materials/models/*",
+        "--lua-bin",
+        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\gmcl_advmat_rtx_bridge_win64.dll"
+      ]
+    },
+    {
+      "name": "advanced-bodygroup-tool",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "advanced-bodygroup-tool",
+        "--requires-remix",
+        "--addon-as",
+        "advanced_bodygroup_tool",
+        "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_bodygroup_tool"
+      ]
+    },
+    {
+      "name": "procedural-bodygroup-destruction",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "procedural-bodygroup-destruction",
+        "--requires-remix",
+        "--addon",
+        "H:\\BACKUP_20260815\\Modding\\ipg\\!gmod_bullet_break_simulator"
+      ]
+    },
+    {
+      "name": "character-motion-importer",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "character-motion-importer",
+        "--requires-remix",
+        "--addon",
+        "H:\\BACKUP_20260815\\Modding\\ipg\\Gmod-Mmd-Motion-Importer\\mmd_vmd_npc"
+      ]
     }
   ],
   "gmpublish": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_PoC\\bin\\win64\\gmpublish.exe"

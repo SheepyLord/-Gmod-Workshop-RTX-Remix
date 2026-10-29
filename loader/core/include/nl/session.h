@@ -71,4 +71,9 @@ bool ours_or_absent(const std::filesystem::path& path);
 // requires_remix placed in `generation`: hidden from a session without an active runtime (ADR 0013).
 std::vector<std::string> hidden_addons(const journal::Generation& generation);
 
+// The binary modules of `generation` that need files loaded before them, from every package (ADR
+// 0024): one entry per module (paths compare without case), its load_first lists joined in package
+// order without repeats. Applied in every session, RTX or not.
+std::vector<manifest::ModuleDependency> module_dependencies(const journal::Generation& generation);
+
 }  // namespace nl::session

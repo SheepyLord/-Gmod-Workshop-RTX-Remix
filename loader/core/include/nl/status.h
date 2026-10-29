@@ -39,6 +39,7 @@ struct Session {
   std::vector<std::string> overrides;  // module names
   std::string hooks;               // installed, not needed, or why not
   std::vector<std::string> hidden_addons;  // no runtime this session: requires_remix add-on folders hidden (ADR 0013)
+  std::vector<std::string> module_dependencies;  // binary modules whose files load first, every session (ADR 0024)
   std::vector<std::string> notes;
 };
 // A package of the committed generation and where it came from (M6): the companion compares a

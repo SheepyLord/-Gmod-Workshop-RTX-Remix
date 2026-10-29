@@ -173,8 +173,28 @@ manifest::Session session_of(const Value& value) {
   return s;
 }
 
+std::vector<manifest::ModuleDependency> dependencies_of(const Value& value) {
+  const auto lua_bin_file = [](const std::string& path) {
+    return paths::is_safe(path) && paths::within(path, "garrysmod/lua/bin") && paths::fold(path) != "garrysmod/lua/bin";
+  };
+  std::vector<manifest::ModuleDependency> out;
+  for (const Value& item : value.as_array("package module_dependencies")) {
+    only_keys(item, "module dependency", {"module", "load_first"});
+    manifest::ModuleDependency d;
+    d.module = required(item, "module", "module dependency").as_string("module dependency module");
+    if (!lua_bin_file(d.module)) fail("module dependency \"" + d.module + "\" is invalid");
+    d.load_first = strings(required(item, "load_first", "module dependency"), "module dependency load_first");
+    if (d.load_first.empty() || !std::all_of(d.load_first.begin(), d.load_first.end(), lua_bin_file)) {
+      fail("module dependency \"" + d.module + "\" has an invalid load_first");
+    }
+    out.push_back(std::move(d));
+  }
+  return out;
+}
+
 Package package_of(const Value& value) {
-  only_keys(value, "package", {"id", "version", "manifest_sha256", "source", "location", "payload", "remix", "session", "requires_remix"});
+  only_keys(value, "package", {"id", "version", "manifest_sha256", "source", "location", "payload", "remix", "session", "requires_remix",
+                               "module_dependencies"});
   Package p;
   p.id = required(value, "id", "package").as_string("package id");
   if (p.id.empty() || p.id.find('/') != std::string::npos || !paths::is_safe(p.id)) fail("package id \"" + p.id + "\" is invalid");
@@ -196,6 +216,8 @@ Package package_of(const Value& value) {
   if (const Value* session = value.find("session"); session && !session->is_null()) p.session = session_of(*session);
   // Written only when true (ADR 0013).
   if (const Value* flag = value.find("requires_remix")) p.requires_remix = flag->as_bool("package requires_remix");
+  // Written only when there are some (ADR 0024).
+  if (const Value* dependencies = value.find("module_dependencies")) p.module_dependencies = dependencies_of(*dependencies);
   return p;
 }
 
@@ -293,12 +315,22 @@ std::string session_json(const manifest::Session& s) {
   return out + "}}";
 }
 
+std::string dependencies_json(const std::vector<manifest::ModuleDependency>& dependencies) {
+  std::string out = "[";
+  for (std::size_t i = 0; i < dependencies.size(); ++i) {
+    out += (i ? ", " : "") + std::string("{\"module\": ") + q(dependencies[i].module) + ", \"load_first\": " +
+           strings_json(dependencies[i].load_first) + "}";
+  }
+  return out + "]";
+}
+
 std::string package_json(const Package& p) {
   return "{\"id\": " + q(p.id) + ", \"version\": " + q(p.version) + ", \"manifest_sha256\": " + q(p.manifest_sha256) +
          ", \"source\": " + q(p.source) + ", \"location\": " + q(p.location) + ", \"payload\": " + q(p.payload) +
          ", \"remix\": " + (p.remix ? remix_json(*p.remix) : std::string("null")) +
          ", \"session\": " + (p.session.empty() ? std::string("null") : session_json(p.session)) +
-         (p.requires_remix ? ", \"requires_remix\": true" : "") + "}";
+         (p.requires_remix ? ", \"requires_remix\": true" : "") +
+         (p.module_dependencies.empty() ? "" : ", \"module_dependencies\": " + dependencies_json(p.module_dependencies)) + "}";
 }
 
 std::string generation_json(const std::optional<Generation>& g) {

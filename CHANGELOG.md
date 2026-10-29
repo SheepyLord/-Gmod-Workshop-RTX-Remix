@@ -6,6 +6,30 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (the fourth field round; loader 0.3.0)
+
+- **The RTX package bundles the user's five add-ons**
+  ([ADR 0024](docs/decisions/0024-bundled-addons-and-module-dependencies.md)):
+  - Model Hotloader 2.3.1 with its binary modules, runtime, worker and CoACD;
+  - Advanced Material Editor with its RTX bridge module;
+  - Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer.
+
+  Each is a part of `workshop.json` rebuilt from its source at every publish. Commits in their
+  repositories, and on any branch of the fixes fork and of Model Hotloader's repository, start a
+  publish (`publish_workshop.py --install-source-hooks`). The fixes module another session rebuilt
+  with a tuned visibility rule ships the same way.
+- **Module dependencies (loader 0.3.0):** a manifest's `module_dependencies` names files a binary
+  module needs loaded first. Model Hotloader's modules import `mmdhl_runtime_win64.dll`, which Windows
+  looks for next to `gmod.exe`. The bootstrap loads it from `garrysmod\lua\bin` by absolute path just
+  before the game loads the module, in every session, so nothing goes into `bin\win64`. Reported in
+  `status.json` and `session.json`; tested in the synthetic M5 session test.
+- **`package_content.py`:**
+  - add-ons as gmad publishes them (GMod's whitelist and the add-on's `addon.json` ignore list);
+  - `--addon-as` for another folder name, and `--ignore`;
+  - `--lua-bin` for binary modules, and `--load-first` for their runtimes;
+  - hard links only with `--link`.
+- **`package_workshop.py`** merges `module_dependencies`.
+
 ### Fixed (the third field round)
 
 - **The player's own model was drawn in first person again** (the pseudo player). The classic

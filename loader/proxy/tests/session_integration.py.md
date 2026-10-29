@@ -7,14 +7,22 @@ generated game root with the M4 fake runtime. Never starts a real game.
 
 ```text
 python -I -B session_integration.py --repo <repo> --host <nl_proxy_host.exe> --proxy <winmm.dll>
-  --runtime <folder of the fake d3d9.dll> --fixtures <folder of the M5 engine.dll, stdshader_dx6.dll, filesystem_stdio.dll>
+  --runtime <folder of the fake d3d9.dll> --fixtures <folder of the M5 engine.dll, stdshader_dx6.dll, filesystem_stdio.dll,
+                                                     lua_shared.dll, gmcl_nl_dep_win64.dll, nl_dep_runtime_win64.dll>
   --scratch <repo>\out\tmp\m5-session-<config> --config Debug|Release
 ```
 
 It builds a runtime package with [`package_runtime.py`](../../../tools/package_runtime.py.md) and a
 fixes package as a development folder, marked `requires_remix` (a patch set for `engine.dll` that
-rewrites the fixture's marker, an override of `stdshader_dx6.dll`, two session variables, and an
-add-on folder `garrysmod/addons/nl_rtx_addon`). It places the host as `bin\win64\gmod.exe` beside the
+rewrites the fixture's marker, an override of `stdshader_dx6.dll`, two session variables, an add-on
+folder `garrysmod/addons/nl_rtx_addon`, and, for loader 0.3.0's `module_dependencies`
+([ADR 0024](../../../docs/decisions/0024-bundled-addons-and-module-dependencies.md)), a binary module
+`gmcl_nl_dep_win64.dll` whose static import `nl_dep_runtime_win64.dll` is deployed only beside it in
+`garrysmod/lua/bin`). The probe loads that module through a fake `lua_shared.dll`, as GMod's
+`require` does: it must load, its runtime loaded first (both reports say so), in the RTX runs, the
+runs without RTX and after the failed activation; with the loader switched off
+(`NATIVE_LOADER_DISABLE`) it must fail with `ERROR_MOD_NOT_FOUND` (126), which shows the fixture needs
+the hook. It places the host as `bin\win64\gmod.exe` beside the
 built `winmm.dll` and the three fixtures, creates the user's own add-on folder `user_addon`, writes a
 `config.cfg` with the user's values, then runs the host's `--m5-probe` ten times. Each probe also
 lists `garrysmod\addons` through the fake `filesystem_stdio.dll`, relative with the A functions and

@@ -186,6 +186,9 @@ The M1 log header still proves entry timing. M4 appends `deployment.outcome`, `.
   "restore_exec", "patches", "patches_allowed", "overrides", "hooks", "hidden_addons", "notes"}`:
   what start-up set up.
 - The journal's package records carry `"requires_remix": true` for packages that set it.
+- From loader 0.3.0 they also carry `"module_dependencies"` for packages that declare them
+  ([ADR 0024](decisions/0024-bundled-addons-and-module-dependencies.md)): the start-up code reads them
+  from the journal in sessions without a runtime too. An older loader cannot read such a journal.
 - `native-loader/session_cvars.json`: `{"schema": 2, "restore_issued": bool, "values": {name:
   the user's value}, "session_values": {name: the RTX session's value}}`. Schema 1 (without
   `session_values`) is still read. The record's life

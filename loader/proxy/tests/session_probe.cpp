@@ -39,6 +39,13 @@ int session_probe(const wchar_t* output, const wchar_t* bin) {
     if (list_w) addons_w = list_w((root / L"garrysmod" / L"addons" / L"*").c_str());
     if (list_a) other_a = list_a("garrysmod\\cfg\\*");
   }
+  // A binary module loaded the way GMod's lua_shared.dll loads one for require() (ADR 0024),
+  // relative to the working directory (the game root).
+  std::string dep_module;
+  if (const HMODULE lua_shared = LoadLibraryW((folder / L"lua_shared.dll").c_str())) {
+    const auto require = reinterpret_cast<const char* (*)(const char*)>(GetProcAddress(lua_shared, "nl_dep_require"));
+    if (require) dep_module = require("garrysmod\\lua\\bin\\gmcl_nl_dep_win64.dll");
+  }
   std::string out = "{\n  \"process_id\": " + std::to_string(GetCurrentProcessId()) +
                     ",\n  \"command_line_w\": " + nl::json::quote(utf8(GetCommandLineW())) +
                     ",\n  \"engine_path\": " + nl::json::quote(module_path(engine)) +
@@ -47,7 +54,7 @@ int session_probe(const wchar_t* output, const wchar_t* bin) {
                     ",\n  \"shader_path\": " + nl::json::quote(module_path(shader)) +
                     ",\n  \"shader_error\": " + std::to_string(shader_error) +
                     ",\n  \"addons_a\": " + nl::json::quote(addons_a) + ",\n  \"addons_w\": " + nl::json::quote(addons_w) +
-                    ",\n  \"other_a\": " + nl::json::quote(other_a) + "\n}\n";
+                    ",\n  \"other_a\": " + nl::json::quote(other_a) + ",\n  \"dep_module\": " + nl::json::quote(dep_module) + "\n}\n";
   std::ofstream(std::filesystem::path(output), std::ios::binary) << out;
   return 0;
 }

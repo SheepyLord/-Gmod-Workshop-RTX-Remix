@@ -68,6 +68,7 @@ The manifest is strict JSON (RFC 8259, UTF-8, no comments, trailing commas or du
 | `remix` | with `remix-runtime` only | see below |
 | `root_files` | for `root-files` / `lua-binary-module` / `lua-addon` | see below |
 | `patch_sets`, `module_overrides`, `session_cvars` | M5, optional | RTX-session extras, see below |
+| `module_dependencies` | loader 0.3.0, optional | files a binary module needs loaded before it, in every session; see below |
 
 `files` keys must pass the path rules (below), lie under `native/payload/` or `native/root/`, and be
 unique without case. When a package is loaded, `check_contents` requires every listed file to be in
@@ -149,6 +150,29 @@ Applied only in sessions where a runtime activates, so RTX off stays vanilla
 | `session_cvars` | console variable assignments run through a generated `cfg/nativeloader_session.cfg`: names `[A-Za-z0-9_]{1,64}` starting with `r_`, `mat_`, `cl_`, `gmod_`, `rtx_` or `studio_` (or `sv_cheats`), values `[A-Za-z0-9_.+-]{0,32}`, at most 256. The user's archived values are recorded first and put back at the next start without RTX |
 
 `remix.launch_args` also accepts `-insecure` from loader 0.2.0.
+
+### `module_dependencies` (loader 0.3.0, ADR 0024)
+
+```json
+"module_dependencies": [
+  { "module": "garrysmod/lua/bin/gmcl_mmdhl_win64.dll", "load_first": ["garrysmod/lua/bin/mmdhl_runtime_win64.dll"] }
+]
+```
+
+Windows looks for a module's static imports next to `gmod.exe` (`bin/win64`), not next to the
+module, and the package format cannot place files in `bin/`. When a game module loads `module` (GMod's
+`lua_shared.dll` does so for `require`), the bootstrap first loads each of `load_first` by its absolute
+path, once per process. The module's import of the same base name then binds to that loaded file.
+
+| Rule | |
+|---|---|
+| Paths | `module` and every `load_first` entry are `.dll` root files under `garrysmod/lua/bin/` that the package lists (`native/root/<path>`); kind `lua-binary-module` |
+| Counts | 1-64 entries; each `load_first` 1-8 files, no repeats, never the module itself; a module once |
+| Sessions | **Every session**, RTX or not: the package's files are on disk in every session, and another add-on (a Workshop copy of the same tool) may load the module without RTX |
+| Reports | `status.json` `session.module_dependencies` names the modules; `session.json` `module_dependencies.loaded` records each file loaded first, with its result and Windows error |
+
+An older loader refuses a manifest with this key (unknown keys are errors); packages that use it
+declare `requires_loader` `>=0.3.0`.
 
 A package's own files are on disk in every session, RTX or not. Lua add-ons that only make sense with
 Remix (the RTX fixes') belong in a package marked `"requires_remix": true`: without an active runtime

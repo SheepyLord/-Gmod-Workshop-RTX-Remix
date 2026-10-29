@@ -1042,3 +1042,81 @@ material rendered as solid red slabs, with the mod and without it. Test with the
 - The test copies of Water, SubUSDs and Emissives moved out of `rtx-remix\mods` into
   `out\round3\field-removed-mods`; the package now deploys Emissives.
 - The round-2 copies of Poolday, `gmodrtx_poolday_fix` and `Poolday_mirror_fix` stay.
+
+## 21. Fourth field round: the bundled add-ons and module dependencies (2026-10-29, Claude)
+
+**Model Hotloader's natives** ([ADR 0024](decisions/0024-bundled-addons-and-module-dependencies.md)):
+
+- **The import.** `gmcl_mmdhl_win64.dll` and `gmsv_mmdhl_win64.dll` statically import
+  `mmdhl_runtime_win64.dll` (PE import tables). The runtime imports only system DLLs and loads
+  `lib_coacd.dll` itself.
+- **Who loads modules.** GMod's `lua_shared.dll` imports `LoadLibraryExA` and `LoadLibraryExW`;
+  `client.dll` and `server.dll` import `LoadLibraryA` and `LoadLibraryExW`. Binary modules load without
+  `LOAD_WITH_ALTERED_SEARCH_PATH`, so Windows looks for the runtime next to `gmod.exe`. Model Hotloader's
+  installer copies it into `bin\win64` for that reason; its import worker `mmdhl_worker.exe` finds the
+  copy in `lua\bin`, beside itself.
+- **The release layout.** Its release script (`scripts/package-dropin.py`) stages two drop-in trees:
+  - `-win64-vulkan` carries a patched DXVK `d3d9.dll`;
+  - `-win64-opengl-remix` leaves Direct3D 9 to Remix.
+
+  Both hold `lua\bin\{gmcl,gmsv}_mmdhl_win64.dll`, `mmdhl_runtime_win64.dll`, `lib_coacd.dll`,
+  `mmdhl_worker.exe` and `mmdhl-native-release.json` (the version file the add-on checks), plus
+  `shaders\fxc\mmdhl_{ps20b,vs20}.vcs` and `bin\win64\mmdhl_runtime_win64.dll`. The add-on's own
+  `shaders/fxc` has the same two shaders, byte for byte.
+- **Releases.** The newest local release is 2.3.0 (build `1df48dac`, 2026-10-12). The repository's
+  `main` is at "Version 2.3.1" (2026-10-26) with staged changes.
+- **What the classic install runs.** Its `mmd_hotloader` folder matches the main repository's working
+  tree. Its natives are byte-identical to the build in the worktree `wt-full-textures-props`
+  (`gmcl_mmdhl_win64.dll` 2,843,648 bytes, 2026-10-26 16:21).
+
+**The user's own Workshop items for the five add-ons**, all subscribed:
+
+| Item | Add-on | Note |
+|---|---|---|
+| 3810025467 | Model Hotloader | 2.3.0 |
+| 3718373357 | MMD VMD NPC Animation (the motion importer) | |
+| 3789611737 | Procedural Bodygroup Destruction | 0.19.15 |
+| 3791888631 | Advanced Bodygroup Tool | |
+| 3793132326 | Advanced Material Editor | 57 files: its Lua and `materials/advmat/shift.png` |
+
+**The parts**, built with `package_content.py`, add-ons filtered as gmad publishes them:
+
+| Part | Files | Bytes | Left out by the filter | Compared with |
+|---|---|---|---|---|
+| Model Hotloader (add-on and six natives) | 110 | 86,924,394 | | |
+| Advanced Material Editor (and its bridge) | 59 | 2,748,327 | 1,846 | 266 MB unfiltered: 14 character textures of 16 MB each committed under `materials/models/sheepylord/hsin`, which the published add-on leaves out (`--ignore materials/models/*`) |
+| Advanced Bodygroup Tool | 6 | 212,124 | 37 | the Workshop's 212,438-byte GMA |
+| Procedural Bodygroup Destruction | 16 | 753,816 | 16,714 | the local 0.20.0 GMA, 754,307 bytes |
+| Character Motion Importer | 17 | 19,315,255 | | the Workshop's 19,334,061 bytes |
+
+The combined RTX package with the nine parts is 1,541,278,091 bytes.
+
+**Measured with loader 0.3.0:**
+
+- **PoC, RTX:** deployed (234 changes). When the game loaded `gmsv_mmdhl_win64.dll`, the bootstrap first
+  loaded `mmdhl_runtime_win64.dll` from `lua\bin` (`session.json`). Model Hotloader's native module is
+  live on the server and the client (`mmdhl.native` set); no Lua errors.
+- **PoC, without RTX:** the package's 16 add-on folders are hidden (`mmdhl` is nil and
+  `lua/autorun/mmdhl.lua` is not in the `GAME` path). `require("mmdhl")` succeeds, with the runtime
+  loaded first for `gmcl_mmdhl_win64.dll`. A subscribed Workshop copy can therefore use the bundled
+  natives in a normal session.
+- **Field, RTX:** deployed (407 changes) and active, no Lua errors, the module live on both sides. The
+  first-person view in the pool rooms shows no body.
+- **Field, moved out first** (the loader never replaces files it did not place):
+  - `mmd_hotloader`, `mmd_vmd_npc` and the `advanced_bodygroup_tool` symlink went to `addons_d`;
+  - the six Model Hotloader 2.3.0 files in `lua\bin` went to the round-4 backup. Three of them were hard
+    links into a Model Hotloader validation folder (`!Gmodl_MMD_Hot_Loader\.claude\worktrees\
+    mmd-importer-performance-87a36d\validation\multiplayer\client*`);
+  - so did `bin\win64\mmdhl_runtime_win64.dll` (10,710,016 bytes, 2.3.0).
+
+**The visibility-tuned fixes module.**
+- Another session rebuilt `gmcl_RTXFixesBinary_win64.dll` (1,444,352 bytes, SHA-256 `189765c0...`,
+  2026-10-28 21:19) in the fork worktree `rtx-remix-map-enhancement-bda9ac`. Its branch commit `e4d548d`
+  is "Backrooms RTX: keep the room next door in the ray-traced scene" (`source/culling_patches.cpp`,
+  +100 lines).
+- It installed the module into the classic install's `lua\bin`, where the fixes part takes its modules,
+  so the test package carries it byte for byte.
+- The field had the earlier `485667b7...`.
+
+**Hooks.** The add-on repositories (the bodygroup tool has none), the fixes fork and Model Hotloader's repository had no git
+hooks. Their default branch is `main`, except the fork's checked-out `sheepylord/rtx-water-poolrooms`.

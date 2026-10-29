@@ -82,6 +82,14 @@ struct Session {
   bool empty() const noexcept { return patch_sets.empty() && module_overrides.empty() && cvars.empty(); }
 };
 
+// A binary module that needs other files loaded before it (loader 0.3.0, ADR 0024). Windows looks
+// for a module's static imports next to gmod.exe, not next to the module, so when GMod loads
+// `module` the bootstrap first loads each of `load_first` by its absolute path, in every session.
+struct ModuleDependency {
+  std::string module;                   // a root file under garrysmod/lua/bin/, a .dll
+  std::vector<std::string> load_first;  // root files under garrysmod/lua/bin/, .dll, loaded in order
+};
+
 // Checks used by the manifest and the journal.
 bool valid_module_name(std::string_view name);
 bool valid_cvar_name(std::string_view name);
@@ -102,6 +110,7 @@ struct Manifest {
   std::vector<RootFile> root_files;
   Session session;  // patch_sets, module_overrides, session_cvars
   bool requires_remix = false;  // its add-on folders are hidden from sessions without a runtime (ADR 0013)
+  std::vector<ModuleDependency> module_dependencies;  // every session, RTX or not (ADR 0024)
   bool has(Kind kind) const noexcept;
 };
 
