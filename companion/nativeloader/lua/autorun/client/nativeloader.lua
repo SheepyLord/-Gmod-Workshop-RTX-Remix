@@ -201,6 +201,16 @@ local function check_updates(status)
     end
 end
 
+-- Whether the RTX fixes' module reached the Remix API: it creates RemixLight and RemixConfig only then,
+-- and API lights (the fixes' flashlight, AMAP's RTX flashlight) need them.
+local function report_api()
+    if istable(RemixLight) and isfunction(RemixLight.CreateSphere) then
+        say("Remix API: ready (RemixLight" .. (istable(RemixConfig) and ", RemixConfig" or "") .. ")")
+    else
+        say("Remix API: not available - the RTX fixes' module did not reach the runtime (see the lines from [gmRTX - Binary Module])")
+    end
+end
+
 local function report()
     local ok, err = pcall(function()
         local status = report_status()
@@ -209,10 +219,13 @@ local function report()
         check_updates(status)
     end)
     if not ok then say("could not print the status: " .. tostring(err)) end
+    report_api()
 end
 
 concommand.Add("nativeloader_status", report, nil, "Prints the native loader's start-up and session status")
 report()
+-- The fixes' module loads after this file; say whether it reached the API once the session is up.
+hook.Add("InitPostEntity", "nativeloader_api", function() timer.Simple(3, report_api) end)
 -- Steam may download an update while the game runs: look again every ten minutes.
 timer.Create("nativeloader_updates", 600, 0, function()
     local status = read_json(STATUS_FILE)

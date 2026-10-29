@@ -93,7 +93,8 @@ left out of the fixes repo.
 - `--repo <folder>`: the fixes repo, read only. Default: `garrys-mod-rtx-remixed` beside this repo
   (`H:\BACKUP_20260815\Modding\garrys-mod-rtx-remixed` on the main machine).
 - `--modules-from <folder>`: where the built modules are (default `<repo>\x86_64\Release`).
-- `--with-debug-module`: also package `gmcl_rtxdebug_win64.dll`.
+- `--with-debug-module`: also package `gmcl_rtxdebug_win64.dll` and its add-on `rtx_debug` (one file,
+  `require("rtxdebug")`), from the fixes' debug submodule `source/debug/addon`, as the classic install has them.
 - `--exclude-addon <name>` (repeatable): leave an add-on out, compared without case;
   `nativeloader` leaves out the companion. An unknown name is refused.
 - `--no-patch-sets`: no `patch_sets` (and no kind `patch-set`).

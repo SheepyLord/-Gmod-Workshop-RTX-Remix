@@ -6,6 +6,47 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (the second field round: rendering parity with the classic install)
+
+- **Remix settings saved in the menu came back at the next start.** In the runtime fork the first
+  entry of a layer list is the strongest, so the package's layer beat the player's saved `rtx.conf`
+  ([ADR 0021](docs/decisions/0021-remix-defaults-in-one-low-layer.md)).
+  - The package now ships its Remix defaults as one low `DXVK_CONFIG_FILE` layer and leaves
+    `DXVK_RTX_CONFIG_FILE` unset.
+  - The player's `rtx.conf` and `user.conf` now win.
+- **The classic RTX install's settings are now the defaults**
+  ([ADR 0020](docs/decisions/0020-classic-rtx-settings-as-defaults.md)).
+  - Its `dxvk.conf`, `rtx.conf` and `user.conf` are merged into that layer
+    (`tools\remix_defaults.py`). Texture-hash lists combine as Remix layers do.
+  - The RTX add-ons' settings get the classic values once, where still at their defaults (companion,
+    `tools\classic_defaults.py`). Examples: no pseudo player or pseudo weapon, the light updater
+    instead of hundreds of API map lights, and the classic flashlight and water.
+  - This fixes the MMD player model drawn in first person through the pseudo player, the fog-filled
+    pool rooms, and the colour cast.
+- **The runtime is forced windowed** (`DXVK_FORCE_WINDOWED=1` in the package), so even an in-game
+  switch to fullscreen cannot reach the crash of ADR 0018.
+
+### Added (the second field round)
+
+- **A guard for RTX sessions in the companion**
+  ([ADR 0022](docs/decisions/0022-companion-rtx-session-guard.md)). Lua from other add-ons can no
+  longer undo the session's settings or switch motion blur on (FPS Boost, Draconic Base). Stock
+  post-processing no longer paints over the path-traced image. `nativeloader_guard 0` turns it off.
+- **One "RTX Remix" spawn-menu tab.** The RTX add-ons' panels are gathered there, with "Start here"
+  and "Remix settings" (preset, upscaler, DLSS, frame generation, indirect lighting, bounces, fog,
+  sky, sun, clouds, post effects). Those settings are kept across sessions.
+- **An in-game guide** (`nativeloader_guide`, opens once). It covers the Remix menu and how settings
+  persist, the classic defaults, lights, and troubleshooting with the log files.
+- **The companion reports whether the RTX fixes reached the Remix API** ("Remix API: ready").
+- **The RTX debug module ships with its add-on** (`rtx_debug`; `package_fixes.py --with-debug-module`).
+- **Loader:** a layer list of 260 characters or more, which the runtime would ignore, is reported in
+  the session notes.
+- **`poc_session.py`:**
+  - `--change-map` loads a mounted Workshop map without a save;
+  - `--mount-workshop` takes several items;
+  - `--no-window` uses the game's own window settings;
+  - console commands wait for the console to go quiet.
+
 ### Fixed (the first field test of the release bundle; loader 0.2.1)
 
 - **RTX sessions crashed to the desktop about 9 s after start** when the game ran in exclusive

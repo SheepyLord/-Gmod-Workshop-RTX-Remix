@@ -57,14 +57,19 @@ dropped, so before a save or the camera the script waits until `console.log` has
 - `config`: rewrites `config.json` the same way, between runs (no check: replacing it is its job).
 - `run --name <step>`: launches `bin\win64\gmod.exe` from the game root with
   `-game garrysmod -console -windowed -w 1280 -h 720 -condebug -noworkshop -noaddons`
-  (`--workshop`, `--addons` leave the last two out), `--extra` arguments, `+maxplayers 1`
+  (`--workshop`, `--addons` leave the last two out; `--no-window` leaves out `-windowed -w -h`, so the
+  game's saved video settings and the loader's window options apply), `--extra` arguments, `+maxplayers 1`
   (`--players`), `+mat_dxlevel` (prints the level), `+map gm_construct` (`--map`) and `--post`
   arguments. It waits for `Clientside Lua startup!` in `console.log` (`--timeout`, 300 s), then:
   `--load-save <name>` sends `gm_load` and waits for the next map (`save_command` and `save_loaded`
   in the record: `gm_load` prints nothing when the save's map is missing); with
   `--mount-workshop <id>` it first mounts that installed Workshop item from client Lua
   (`steamworks.DownloadUGC`, then `game.MountGMA`, as GMod does for a Workshop save), so a save whose
-  map is a Workshop item loads in a session started with `-noworkshop`; `--console` commands are sent;
+  map is a Workshop item loads in a session started with `-noworkshop`; `--change-map <map>` instead
+  sends `map <map>` and waits for that map (`map_command` and `map_changed`), so a Workshop map such
+  as `gm_poolrooms` loads the same way without a save. `--mount-workshop` is repeatable: a library a
+  local add-on needs (Zippy's Library, 3146473253, for the user's `enhanced_blood`) is mounted the same
+  way from the user's own subscription, never copied (`workshop_mounted_items`); `--console` commands are sent;
   `--camera x,y,z,pitch,yaw,roll[,fov]` pins the view with a client `CalcView` hook; `--hide-hud`
   hides the HUD and view model (client hooks, plus `cl_drawhud 0` / `r_drawviewmodel 0`, which are not
   archived and are set back before quitting) and closes Derma dialogs for 30 s. After `--settle`

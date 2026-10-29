@@ -39,8 +39,12 @@ util = { JSONToTable = function(text) return TABLES[text] end }
 steamworks = { FileInfo = function(id, callback) callback(WORKSHOP[id]) end }
 notification = { AddLegacy = function(text) notices[#notices + 1] = text end }
 NOTIFY_HINT = 3
-timer = { Create = function() end }
+timer = { Create = function() end, Simple = function() end }
 concommand = { Add = function() end }
+hook = { Add = function() end }
+istable = function(value) return type(value) == "table" end
+isfunction = function(value) return type(value) == "function" end
+if API then RemixLight = { CreateSphere = function() end }; RemixConfig = {} end
 dofile(COMPANION)
 for _, line in ipairs(out) do print("OUT " .. line) end
 for _, line in ipairs(notices) do print("NOTICE " .. line) end
@@ -49,13 +53,14 @@ for _, line in ipairs(notices) do print("NOTICE " .. line) end
 
 @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')
 class CompanionTests(unittest.TestCase):
-    def run_companion(self, status, workshop):
+    def run_companion(self, status, workshop, api=False):
         text = json.dumps(status)
         with tempfile.TemporaryDirectory(dir=REPO / 'out' / 'tmp') as scratch:
             script = Path(scratch) / 'harness.lua'
             script.write_text('FILES = ' + lua_value({'native-loader/status.json': text}) + '\n'
                               'TABLES = ' + lua_value({text: status}) + '\n'
                               'WORKSHOP = ' + lua_value(workshop) + '\n'
+                              'API = ' + lua_value(api) + '\n'
                               'COMPANION = ' + lua_value(str(COMPANION)) + '\n' + HARNESS, encoding='utf-8')
             done = subprocess.run([LUAJIT, str(script)], capture_output=True, text=True, timeout=30)
         self.assertEqual(done.returncode, 0, done.stderr)
@@ -80,6 +85,22 @@ class CompanionTests(unittest.TestCase):
             {'id': 'rtx-fixes', 'version': '1.0.0', 'source': 'local', 'label': 'C:/fixes.gma', 'time_updated': None}]),
             {'123': {'updated': 200}})
         self.assertFalse([line for line in lines if line.startswith('NOTICE') or 'newer Workshop version' in line], lines)
+
+    def test_the_status_says_whether_the_remix_api_is_ready(self):
+        status = self.status([])
+        ready = self.run_companion(status, {}, api=True)
+        self.assertIn('OUT [nativeloader] Remix API: ready (RemixLight, RemixConfig)', ready)
+        missing = self.run_companion(status, {}, api=False)
+        self.assertTrue(any(line.startswith('OUT [nativeloader] Remix API: not available') for line in missing), missing)
+
+    def test_every_companion_lua_file_compiles(self):
+        files = sorted((REPO / 'companion' / 'nativeloader' / 'lua').rglob('*.lua'))
+        self.assertGreaterEqual(len(files), 6)
+        for path in files:
+            # loadfile only compiles the file; nothing of it runs (GMod's functions are not there).
+            done = subprocess.run([LUAJIT, '-e', 'assert(loadfile([==[' + str(path) + ']==]))'], capture_output=True,
+                                  text=True, timeout=30)
+            self.assertEqual(done.returncode, 0, f'{path.name}: {done.stderr}')
 
 
 if __name__ == '__main__':

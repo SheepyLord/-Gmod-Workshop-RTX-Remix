@@ -22,6 +22,8 @@ Install
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.
+   - In the game: the spawn menu's "RTX Remix" tab holds every RTX setting, and the console command
+     nativeloader_guide opens a guide (it opens by itself the first time).
 
 Settings (native-loader\config.json)
 ------------------------------------

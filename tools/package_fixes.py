@@ -33,6 +33,7 @@ REQUIRES_LOADER = '>=0.2.0'  # the first loader with lua-addon, patch sets, modu
 MAIN_MODULE = 'gmcl_RTXFixesBinary_win64.dll'
 MODULES = (MAIN_MODULE, 'gmcl_rtxwater_win64.dll')
 DEBUG_MODULE = 'gmcl_rtxdebug_win64.dll'
+DEBUG_ADDON = 'rtx_debug'
 SHADER_DLL = 'stdshader_dx6.dll'
 # Folders the fixes rewrite at run time (the ToPBR converter writes its results and its generation
 # counter into its own Remix mod): create-only, like the seed data, so a reinstall or an update never
@@ -336,6 +337,15 @@ def build(args):
         if not os.path.isdir(COMPANION):
             raise PackageError('the companion folder %s is missing' % COMPANION)
         sources.append((COMPANION_NAME, COMPANION))
+    if args.with_debug_module:
+        # The debug module comes with its one-file add-on (require("rtxdebug")), from the fixes' debug
+        # submodule, as the classic install has it.
+        debug_addon = os.path.join(repo, 'source', 'debug', 'addon')
+        if DEBUG_ADDON in known:
+            raise PackageError('the fixes have an add-on named %s, which is the debug add-on\'s name' % known[DEBUG_ADDON])
+        if not os.path.isdir(debug_addon):
+            raise PackageError('--with-debug-module: %s is missing (git submodule update --init in the fixes repo)' % debug_addon)
+        sources.append((DEBUG_ADDON, debug_addon))
     for name, folder in sources:
         if not ADDON_NAME.match(name):
             raise PackageError('add-on folder "%s": a name must be 1-64 characters of A-Z a-z 0-9 _ . - '

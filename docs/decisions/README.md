@@ -25,6 +25,9 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0017](0017-release-bundle-and-ci.md) | GitHub builds the loader on every push; the release bundle (winmm.dll, a README and a default `config.json` that allows item 3829070317) is extracted into the game folder | Accepted 2026-10-28 (the user) |
 | [0018](0018-rtx-sessions-in-a-borderless-window.md) | RTX sessions run in a borderless window the size of the primary display, unless the player chose a window mode: the Remix runtime crashes on exclusive-fullscreen mode switches | Accepted 2026-10-28 |
 | [0019](0019-agents-push-main-and-update-workshop.md) | Agents push `main` and update the project's Workshop items without asking; other branches, tags, force pushes and visibility still need the user | Accepted 2026-10-28 (the user) |
+| [0020](0020-classic-rtx-settings-as-defaults.md) | The classic RTX install's settings are the package's defaults: Remix's in its defaults layer, the RTX add-ons' as first-run defaults in the companion | Accepted 2026-10-29 (the user) |
+| [0021](0021-remix-defaults-in-one-low-layer.md) | Remix defaults ship as one low `DXVK_CONFIG_FILE` layer; `DXVK_RTX_CONFIG_FILE` stays unset, so the player's saved `rtx.conf` and `user.conf` win; forced windowed mode | Accepted 2026-10-29; supersedes 0008's layer-order assumption |
+| [0022](0022-companion-rtx-session-guard.md) | The companion guards RTX sessions against add-ons that undo them, gathers the RTX menus into one tab with more Remix settings, and carries an illustrated guide | Accepted 2026-10-29 (the user) |
 
 ## Template
 
