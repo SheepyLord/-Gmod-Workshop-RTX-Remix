@@ -83,6 +83,24 @@ TEST_CASE("planner: a higher-precedence source shadows the same id") {
   CHECK(plan.runtime()->item.candidate.label == "D:/dev/rt");
 }
 
+TEST_CASE("planner: a package found among the subscriptions deploys only if it holds content (ADR 0027)") {
+  auto content = item(Source::workshop, "3829348717", package("guinaifen-rtx", false, "pbr_guinaifen"));
+  content.candidate.content_only = true;
+  auto native = item(Source::workshop, "3829999999", package("someone-elses-runtime", true));
+  native.candidate.content_only = true;
+  const auto plan = nl::planner::make_plan({content, native}, nl::config::Config{}, kLoader);
+  REQUIRE(plan.decisions.size() == 2);
+  CHECK(plan.decisions[0].active);
+  CHECK(!plan.decisions[1].active);
+  CHECK(plan.decisions[1].reason.find("remix-runtime") != std::string::npos);
+  CHECK(plan.decisions[1].reason.find("add Workshop item 3829999999 to allow.workshop") != std::string::npos);
+  CHECK(plan.runtime() == nullptr);
+  // Allowlisted, the same package deploys and its runtime loads.
+  native.candidate.content_only = false;
+  const auto listed = nl::planner::make_plan({native}, nl::config::Config{}, kLoader);
+  CHECK(listed.decisions[0].active && listed.decisions[0].activate_runtime);
+}
+
 TEST_CASE("planner: a broken higher-precedence copy does not block a working one") {
   const std::vector<Considered> items = {
       item(Source::dev_folder, "D:/dev/rt", nullptr, "manifest: missing \"version\""),

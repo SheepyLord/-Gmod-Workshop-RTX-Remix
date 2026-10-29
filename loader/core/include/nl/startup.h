@@ -18,6 +18,10 @@ namespace nl::startup {
 // unsubscribed Workshop items win (ADR 0025).
 std::optional<std::string> keep_last_good_reason(const journal::Generation& current, const planner::Plan& proposed);
 
+// The Workshop items the journal's current generation deployed packages from (discovery's
+// deployed_workshop, ADR 0027). Empty without a journal or a current generation.
+std::set<std::string> deployed_workshop_items(const std::optional<journal::Journal>& journal);
+
 // Pure: the current packages the proposed plan removes because the user unsubscribed from their
 // Workshop item. The deployer keeps no rollback copy of them, so all their files go (ADR 0025).
 std::set<std::string> unsubscribed_packages(const journal::Generation& current, const planner::Plan& proposed);

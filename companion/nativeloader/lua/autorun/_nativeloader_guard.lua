@@ -61,6 +61,23 @@ function player_meta:ConCommand(command, ...)
     if not name or allow(name, value, 3) then return con_command(self, command, ...) end
 end
 
+-- Motion blur stays off in the engine, but some add-ons insist on it: Draconic Base checks every second,
+-- prints "Disabling motion blur will break addons' effects..." and asks for it again, which the guard
+-- above drops, so the line came back every second. Lua that reads it (GetConVar, and GetConVarNumber,
+-- which uses it) sees it on, so such add-ons are content. The engine's value, which the console shows,
+-- does not change.
+if pinned.mat_motion_blur_enabled == "0" then
+    local blur = GetConVar("mat_motion_blur_enabled")  -- GetConVar caches it: the object add-ons get too
+    local convar = FindMetaTable("ConVar")
+    for method, on in pairs({ GetInt = 1, GetFloat = 1, GetBool = true, GetString = "1" }) do
+        local original = convar[method]
+        convar[method] = function(self, ...)
+            if rawequal(self, blur) and enabled:GetBool() then return on end
+            return original(self, ...)
+        end
+    end
+end
+
 -- The post-process functions and halos are defined while the client loads; replace them once it has.
 hook.Add("Initialize", "nativeloader_guard", function()
     local originals = {}

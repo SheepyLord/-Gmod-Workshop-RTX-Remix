@@ -75,11 +75,16 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
 | `allow.workshop` | `[]` | Workshop item ids **as strings** (large numbers lose digits in some editors), no repeats |
 | `allow.local` | `[]` | `.gma` / `.bin` archives, relative to the game root or absolute |
 | `allow.dev_folders` | `[]` | unpacked package folders (with `native/manifest.json`), relative or absolute |
+| `allow.subscribed_content` | `true` | content-only packages from every subscribed Workshop item, without listing them ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)); `false` turns that off |
 | `remix.enabled` | `true` | `false`: runtime packages stay planned but no runtime is loaded (vanilla rendering) |
 | `patch_sets.require_insecure` | `true` | in-memory patch sets (M5) only with `-insecure` |
 
 - `allow` is the native-code allowlist ([ADR 0003](decisions/0003-native-trust-allowlist.md)).
-  Nothing else is opened as a package; without a config file nothing is allowlisted.
+  Without a config file nothing is allowlisted and the loader does nothing.
+- With a config file, the subscribed Workshop items are opened too, unless
+  `allow.subscribed_content` is `false`. A package found there may hold only Remix mods and Lua
+  add-ons ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)); one with native code
+  is skipped until its item is listed in `allow.workshop`.
 - Strict JSON; **unknown keys are errors** (a typo such as `"alow"` stops the loader instead of
   silently allowing nothing or something else). An invalid file leaves the loader inactive.
 - Which allowlisted package wins when several qualify: [ADR 0006](decisions/0006-package-precedence-and-planning.md).

@@ -58,7 +58,8 @@ Config parse(std::string_view json_text) {
     c.from_file = true;
     if (const Value* enabled = root.find("enabled")) c.enabled = enabled->as_bool("enabled");
     if (const Value* allow = root.find("allow")) {
-      only_keys(*allow, "allow", {"workshop", "local", "dev_folders"});
+      only_keys(*allow, "allow", {"workshop", "local", "dev_folders", "subscribed_content"});
+      if (const Value* content = allow->find("subscribed_content")) c.subscribed_content = content->as_bool("allow.subscribed_content");
       if (const Value* ids = allow->find("workshop")) {
         for (const Value& id : ids->as_array("allow.workshop")) {
           if (!id.is_string()) fail("allow.workshop ids must be strings, for example \"3600000000\" (large numbers lose digits)");

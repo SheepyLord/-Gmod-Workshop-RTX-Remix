@@ -17,6 +17,7 @@
 #include "nl/manifest.h"
 #include "nl/package.h"
 #include "nl/planner.h"
+#include "nl/startup.h"
 
 #include <windows.h>
 
@@ -326,10 +327,26 @@ int cmd_manifest(const fs::path& location, bool json) {
   }
 }
 
+// Discovery's view of the install, as start-up builds it: the library, and the Workshop items the
+// journal's current generation deployed from (ADR 0027).
+nl::discovery::Environment environment(const fs::path& game_root, const std::optional<fs::path>& steam_dir,
+                                       const nl::config::Config& config) {
+  // As start-up: Steam's library list (or --steam-dir) for an allowlisted Workshop item, otherwise
+  // only the library the game sits in.
+  auto env = !config.workshop.empty() || steam_dir ? nl::discovery::environment_for(game_root, steam_dir)
+                                                   : nl::discovery::environment_in_library(game_root);
+  try {
+    env.deployed_workshop = nl::startup::deployed_workshop_items(nl::journal::load(game_root));
+  } catch (const nl::journal::Error&) {
+    // An invalid journal: plan still shows what discovery finds, and apply refuses on its own.
+  }
+  return env;
+}
+
 // What the bootstrap would do at start-up, read-only: config, discovery, package loading, plan.
 int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir, bool json) {
   const nl::config::Config config = nl::config::load(game_root);
-  const auto env = nl::discovery::environment_for(game_root, steam_dir);
+  const auto env = environment(game_root, steam_dir, config);
   const auto plan = nl::planner::make_plan(nl::planner::consider(nl::discovery::discover(config, env)), config,
                                            *nl::manifest::parse_version(nl::version()));
   const auto* runtime = plan.runtime();
@@ -338,7 +355,8 @@ int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir
     out += ",\n  \"config\": {\"from_file\": " + std::string(config.from_file ? "true" : "false") +
            ", \"enabled\": " + (config.enabled ? "true" : "false") + ", \"remix_enabled\": " +
            (config.remix_enabled ? "true" : "false") + ", \"allowlisted\": " +
-           std::to_string(config.workshop.size() + config.local.size() + config.dev_folders.size()) + "}";
+           std::to_string(config.workshop.size() + config.local.size() + config.dev_folders.size()) +
+           ", \"subscribed_content\": " + (config.subscribed_content ? "true" : "false") + "}";
     out += ",\n  \"workshop_content\": " + (env.workshop_content ? nl::json::quote(utf8(*env.workshop_content)) : "null");
     out += ",\n  \"disabled_workshop\": " + std::to_string(env.disabled_workshop.size());
     out += ",\n  \"runtime\": " + (runtime ? nl::json::quote(runtime->item.package->manifest.id) : "null");
@@ -349,6 +367,7 @@ int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir
       out += (i ? ",\n    " : "\n    ");
       out += "{\"source\": \"" + std::string(nl::discovery::source_name(c.source)) + "\", \"label\": " +
              nl::json::quote(c.label) + ", \"location\": " + (c.location.empty() ? "null" : nl::json::quote(utf8(c.location))) +
+             ", \"content_only\": " + (c.content_only ? "true" : "false") +
              ", \"active\": " + (d.active ? "true" : "false") + ", \"activate_runtime\": " +
              (d.activate_runtime ? "true" : "false") + ", \"reason\": " + nl::json::quote(d.reason) +
              ", \"time_updated\": " + (c.time_updated ? std::to_string(*c.time_updated) : "null") + ", \"package\": ";
@@ -372,13 +391,17 @@ int cmd_plan(const fs::path& game_root, const std::optional<fs::path>& steam_dir
         (env.workshop_content ? utf8(*env.workshop_content) : std::string("not found")) + "\n");
   for (const auto& d : plan.decisions) {
     const auto& c = d.item.candidate;
-    std::string line = (d.active ? "ACTIVE  " : "skipped ") + std::string(nl::discovery::source_name(c.source)) + " " + c.label;
+    std::string line = (d.active ? "ACTIVE  " : "skipped ") + std::string(nl::discovery::source_name(c.source)) + " " + c.label +
+                       (c.content_only ? " (subscribed, content only)" : "");
     if (d.item.package) line += " -> " + d.item.package->manifest.id + " " + d.item.package->manifest.version.text;
     if (d.activate_runtime) line += " [runtime will be loaded]";
     if (!d.reason.empty()) line += ": " + d.reason;
     print(line + "\n");
   }
-  print(std::to_string(plan.decisions.size()) + " allowlisted source(s); runtime: " +
+  const auto subscribed = std::count_if(plan.decisions.begin(), plan.decisions.end(),
+                                        [](const auto& d) { return d.item.candidate.content_only; });
+  print(std::to_string(plan.decisions.size() - subscribed) + " allowlisted source(s), " + std::to_string(subscribed) +
+        " content package(s) from subscriptions; runtime: " +
         (runtime ? runtime->item.package->manifest.id : std::string("none")) + "\n");
   return kOk;
 }
@@ -480,7 +503,7 @@ int print_report(const nl::deploy::Report& r, bool json) {
 // Deploys what `plan` shows: the same config, discovery and package loading, then nl::deploy.
 int cmd_apply(const fs::path& game_root, const std::optional<fs::path>& steam_dir, bool json, bool dry_run) {
   const nl::config::Config config = nl::config::load(game_root);
-  const auto env = nl::discovery::environment_for(game_root, steam_dir);
+  const auto env = environment(game_root, steam_dir, config);
   nl::deploy::Options options;
   options.dry_run = dry_run;
   return print_report(nl::deploy::apply(game_root, nl::planner::consider(nl::discovery::discover(config, env)), config,

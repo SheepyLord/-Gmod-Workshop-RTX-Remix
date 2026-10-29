@@ -17,6 +17,10 @@ Covers:
 - **`step_run` writes nothing into the game folder for client Lua.** A reference run leaves an
   existing `garrysmod\data\nl_session\` (R1-015's repro) and the rest of the folder exactly as it was.
   A run with `--camera` sends exactly the expected console lines and creates no `garrysmod\data`.
+- **With `--workshop`, no map before the Workshop is mounted.** The command line carries no `+map`
+  and no `-noworkshop`, and carries `-multirun`. `map gm_construct` goes through the console only after the second
+  `Mounted ... workshop addons!` line and 5 s of quiet. Without `--workshop` the map stays on the
+  command line.
 - **Ending only what a run started (R1-019).** `classify` takes the launched game and its
   descendants, a helper reached through a non-game process included. It leaves out a game with
   another parent, one older than the launch, one whose parent PID was recycled by a newer process,

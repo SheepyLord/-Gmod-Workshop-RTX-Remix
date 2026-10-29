@@ -56,11 +56,25 @@ dropped, so before a save or the camera the script waits until `console.log` has
   `sha256`. A config that changes while the installer runs is kept, and the step fails.
 - `config`: rewrites `config.json` the same way, between runs (no check: replacing it is its job).
 - `run --name <step>`: launches `bin\win64\gmod.exe` from the game root with
-  `-game garrysmod -console -windowed -w 1280 -h 720 -condebug -noworkshop -noaddons`
+  `-game garrysmod -multirun -console -windowed -w 1280 -h 720 -condebug -noworkshop -noaddons`
+  (`-multirun`: the user may be playing another install meanwhile, and Source ends a second
+  instance at once otherwise, with exit -1 and an empty log; a game of the same install is still
+  refused before the launch)
   (`--workshop`, `--addons` leave the last two out; `--no-window` leaves out `-windowed -w -h`, so the
   game's saved video settings and the loader's window options apply), `--extra` arguments, `+maxplayers 1`
   (`--players`), `+mat_dxlevel` (prints the level), `+map gm_construct` (`--map`) and `--post`
-  arguments. It waits for `Clientside Lua startup!` in `console.log` (`--timeout`, 300 s), then:
+  arguments.
+  - **With `--workshop` the map is not on the command line.** GMod mounts Workshop add-ons twice at
+    start: first before Steam has listed the subscriptions (`Mounted 0 of 755 workshop addons!`),
+    then once it has (`Addons have changes - remounting`, `Mounted 752 of 755 workshop addons!`).
+  - A map asked for in between waits on that fetch ("Waiting for Steam Workshop to finish...") and
+    the window stops answering.
+  - So the run starts at the menu, waits for the second mount line (or a first one that mounted
+    something, or had nothing to mount) and 5 s of quiet log, then sends `map <name>`.
+  - The record has `workshop_mounted`, `workshop_ready`, `quiet_before_map`, `seconds_to_workshop`
+    and `map_command`.
+
+  It waits for `Clientside Lua startup!` in `console.log` (`--timeout`, 300 s), then:
   `--load-save <name>` sends `gm_load` and waits for the next map (`save_command` and `save_loaded`
   in the record: `gm_load` prints nothing when the save's map is missing); with
   `--mount-workshop <id>` it first mounts that installed Workshop item from client Lua

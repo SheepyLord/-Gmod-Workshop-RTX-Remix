@@ -6,6 +6,34 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Changed (the seventh field round; loader 0.4.0)
+
+- **Content packages from any subscribed Workshop item load without the allowlist**
+  ([ADR 0027](docs/decisions/0027-content-packages-from-any-subscription.md)). Players cannot change
+  the allowlist after installing, so a PBR package someone else publishes (such as 3829348717) never
+  loaded.
+  - Start-up now opens every subscribed item whose `.gma` lists `native/manifest.json`.
+  - Such a package may hold only Remix mods (USD, textures, MDL) and Lua add-ons (GMod's Workshop
+    whitelist). One with native code is skipped with a reason telling how to allowlist it; native code
+    still comes only from `allow.workshop` (the RTX item).
+  - `"allow": {"subscribed_content": false}` turns it off. Deployed content keeps keep-last-good, and
+    unsubscribing or disabling the item removes it.
+  - The subscriptions are read from the library the game sits in. Steam's library list is used only
+    for an allowlisted Workshop item, so a game copied elsewhere scans none.
+  - `nlctl plan` marks such candidates as "(subscribed, content only)".
+
+### Fixed (the seventh field round)
+
+- **"Disabling motion blur will break addons' effects..." every second.** Draconic Base (1847505933)
+  checks motion blur once a second and asks for it again; the RTX session guard keeps it off for
+  Remix, so the line came back every second. In RTX sessions, Lua that reads `mat_motion_blur_enabled`
+  (through `GetConVar`, which `GetConVarNumber` also uses) now sees it on, while the engine keeps it off.
+  Measured on the PoC with Workshop add-ons: no such line in a whole session, and no Lua errors.
+- **`poc_session.py run --workshop` no longer loads a map before the Workshop is mounted.** A map
+  requested while GMod still fetched the ~755 subscriptions waited on the fetch, and the game stopped
+  answering (or exited -1). The run now starts at the menu, waits for the second "Mounted N of M
+  workshop addons!" and a quiet log, then sends `map`.
+
 ### Fixed (the sixth field round)
 
 - **Model Hotloader no longer warns about its runtime in RTX sessions**
