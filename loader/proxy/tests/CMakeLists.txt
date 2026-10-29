@@ -52,6 +52,19 @@ endforeach()
 set_target_properties(nl_m5_engine PROPERTIES OUTPUT_NAME engine)
 set_target_properties(nl_m5_shader PROPERTIES OUTPUT_NAME stdshader_dx6)
 set_target_properties(nl_m5_filesystem PROPERTIES OUTPUT_NAME filesystem_stdio)
+# ADR 0024: a lua_shared.dll that loads binary modules as GMod's does, and a module whose static import
+# (its runtime) lives only in garrysmod\lua\bin.
+add_library(nl_dep_runtime SHARED fixture_dep_runtime.cpp)
+add_library(nl_dep_module SHARED fixture_dep_module.cpp)
+add_library(nl_dep_luashared SHARED fixture_luashared.cpp)
+foreach(target IN ITEMS nl_dep_runtime nl_dep_module nl_dep_luashared)
+  target_link_libraries(${target} PRIVATE nl_build_options)
+  set_target_properties(${target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/m5")
+endforeach()
+set_target_properties(nl_dep_runtime PROPERTIES OUTPUT_NAME nl_dep_runtime_win64)
+set_target_properties(nl_dep_module PROPERTIES OUTPUT_NAME gmcl_nl_dep_win64)
+set_target_properties(nl_dep_luashared PROPERTIES OUTPUT_NAME lua_shared)
+target_link_libraries(nl_dep_module PRIVATE nl_dep_runtime)
 add_test(NAME nl_session_integration
   COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/session_integration.py"
     --repo "${PROJECT_SOURCE_DIR}" --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>"

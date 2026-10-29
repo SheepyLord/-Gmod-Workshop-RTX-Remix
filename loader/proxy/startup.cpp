@@ -172,26 +172,37 @@ void restore_session_cvars(StartupContext& context) noexcept {
 }
 
 // Without a runtime, the add-on folders of packages marked requires_remix are left out of GMod's
-// searches of garrysmod\addons, so their Lua does not run (ADR 0013). Nothing on disk changes.
+// searches of garrysmod\addons, so their Lua does not run (ADR 0013). Nothing on disk changes. What
+// binary modules need loaded before them applies here too (ADR 0024): the package's modules are on
+// disk in every session, and another add-on (a Workshop copy) may load them.
 void hide_rtx_addons(StartupContext& context) noexcept {
   auto& report = context.report.session;
   try {
     if (!context.prepared.journal || !context.prepared.journal->current) return;
     auto names = session::hidden_addons(*context.prepared.journal->current);
-    if (names.empty()) return;
+    const auto dependencies = session::module_dependencies(*context.prepared.journal->current);
+    if (names.empty() && dependencies.empty()) return;
     modules::Setup setup;
     setup.root = std::filesystem::absolute(context.root);
     setup.hidden_addons = names;
+    std::vector<std::string> modules;
+    for (const auto& item : dependencies) {
+      std::vector<std::filesystem::path> files;
+      for (const auto& file : item.load_first) files.push_back(std::filesystem::absolute(fs::join(context.root, file)).lexically_normal());
+      setup.dependencies.emplace_back(std::filesystem::absolute(fs::join(context.root, item.module)).lexically_normal(), std::move(files));
+      modules.push_back(item.module);
+    }
     setup.session_json_base = "  \"process_id\": " + std::to_string(GetCurrentProcessId()) + ",\n";
     std::string error;
     if (!modules::install(std::move(setup), error)) {
-      report.notes.push_back("add-on folders not hidden: " + error);
+      report.notes.push_back("add-on folders not hidden, module dependencies not loaded: " + error);
       return;
     }
     report.hidden_addons = std::move(names);
+    report.module_dependencies = std::move(modules);
     report.hooks = "installed";
   } catch (const std::exception& error) {
-    report.notes.push_back(std::string("add-on folders not hidden: ") + error.what());
+    report.notes.push_back(std::string("add-on folders not hidden, module dependencies not loaded: ") + error.what());
   }
 }
 

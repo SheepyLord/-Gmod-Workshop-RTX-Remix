@@ -4,7 +4,10 @@
 // package's replacement for an overridden module in bin\win64 (stdshader_dx6.dll). Sessions without a
 // runtime (ADR 0013): import hooks on filesystem_stdio.dll's FindFirstFile*/FindNextFile* that leave
 // the add-on folders of requires_remix packages out of its searches of garrysmod\addons, so GMod
-// does not mount them. Installed for the rest of the process; uninstall() is for rollback before commit.
+// does not mount them. Every session (ADR 0024): the same LoadLibrary* hooks load what a package's
+// binary module needs (its runtime DLL in garrysmod\lua\bin) by absolute path just before the game
+// loads the module, since Windows would look for it next to gmod.exe. Installed for the rest of the
+// process; uninstall() is for rollback before commit.
 
 #include "nl/manifest.h"
 
@@ -20,6 +23,8 @@ struct Setup {
   std::vector<manifest::PatchSet> patch_sets;     // empty if not allowed this session
   std::vector<std::pair<std::string, std::filesystem::path>> overrides;  // module -> absolute replacement
   std::vector<std::string> hidden_addons;         // folder names under garrysmod\addons to leave out (no runtime)
+  // Absolute module path -> absolute paths loaded before it, in order, when a game module loads it.
+  std::vector<std::pair<std::filesystem::path, std::vector<std::filesystem::path>>> dependencies;
   std::string session_json_base;                  // fields written ahead of the results in session.json
 };
 

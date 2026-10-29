@@ -74,8 +74,9 @@ def main():
                     str(runtime_package), '--id', 'm5-runtime', '--version', '1.0.0', '--no-system-vulkan', '--json'],
                    cwd=repo, check=True, capture_output=True, text=True)
 
-    # The fixes package as a development folder: a patch set, an override, session variables, and an
-    # add-on folder that only makes sense with RTX (requires_remix).
+    # The fixes package as a development folder: a patch set, an override, session variables, an
+    # add-on folder that only makes sense with RTX (requires_remix), and (ADR 0024) a binary module
+    # whose runtime, a static import, is deployed only beside it in garrysmod/lua/bin.
     fixes = scratch / 'fixes'
     shader = (args.fixtures / 'stdshader_dx6.dll').read_bytes()
     (fixes / 'native/payload/shaders').mkdir(parents=True)
@@ -83,13 +84,21 @@ def main():
     addon_lua = b'print("nl_rtx_addon")' + bytes([10])
     (fixes / 'native/root/garrysmod/addons/nl_rtx_addon/lua/autorun').mkdir(parents=True)
     (fixes / 'native/root/garrysmod/addons/nl_rtx_addon/lua/autorun/nl.lua').write_bytes(addon_lua)
+    lua_bin = {name: (args.fixtures / name).read_bytes() for name in ('gmcl_nl_dep_win64.dll', 'nl_dep_runtime_win64.dll')}
+    (fixes / 'native/root/garrysmod/lua/bin').mkdir(parents=True)
+    for name, data in lua_bin.items():
+        (fixes / 'native/root/garrysmod/lua/bin' / name).write_bytes(data)
     write_json(fixes / 'native/manifest.json', {
-        'schema': 1, 'id': 'm5-fixes', 'version': '1.0.0', 'kinds': ['patch-set', 'module-override', 'lua-addon'],
+        'schema': 1, 'id': 'm5-fixes', 'version': '1.0.0', 'kinds': ['patch-set', 'module-override', 'lua-addon', 'lua-binary-module'],
         'requires_remix': True,
         'files': {'native/payload/shaders/stdshader_dx6.dll': {'size': len(shader), 'sha256': hashlib.sha256(shader).hexdigest()},
                   'native/root/garrysmod/addons/nl_rtx_addon/lua/autorun/nl.lua':
-                      {'size': len(addon_lua), 'sha256': hashlib.sha256(addon_lua).hexdigest()}},
-        'root_files': [{'path': 'garrysmod/addons/nl_rtx_addon'}],
+                      {'size': len(addon_lua), 'sha256': hashlib.sha256(addon_lua).hexdigest()},
+                  **{'native/root/garrysmod/lua/bin/' + name: {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+                     for name, data in lua_bin.items()}},
+        'root_files': [{'path': 'garrysmod/addons/nl_rtx_addon'}] + [{'path': 'garrysmod/lua/bin/' + name} for name in lua_bin],
+        'module_dependencies': [{'module': 'garrysmod/lua/bin/gmcl_nl_dep_win64.dll',
+                                 'load_first': ['garrysmod/lua/bin/nl_dep_runtime_win64.dll']}],
         'patch_sets': [{'module': 'engine.dll', 'patches': [
             {'name': 'marker', 'find': b'NLM5PATCH:'.hex() + '??' * 6, 'offset': 10, 'replace': b'AFTER!'.hex()}]}],
         'module_overrides': [{'module': 'stdshader_dx6.dll', 'file': 'native/payload/shaders/stdshader_dx6.dll'}],
@@ -103,6 +112,7 @@ def main():
     shutil.copy2(args.fixtures / 'engine.dll', bin_folder / 'engine.dll')
     shutil.copy2(args.fixtures / 'stdshader_dx6.dll', bin_folder / 'stdshader_dx6.dll')
     shutil.copy2(args.fixtures / 'filesystem_stdio.dll', bin_folder / 'filesystem_stdio.dll')
+    shutil.copy2(args.fixtures / 'lua_shared.dll', bin_folder / 'lua_shared.dll')
     (root / 'garrysmod/addons/user_addon').mkdir(parents=True)  # the user's own: never hidden
     (root / 'garrysmod/cfg').mkdir(parents=True)
     config_cfg = root / 'garrysmod/cfg/config.cfg'
@@ -139,6 +149,17 @@ def main():
     def passed(text):
         print('ok  ' + text, flush=True)
 
+    def dependency_loaded(name, probe, status, session):
+        """ADR 0024: the module loaded with its runtime from garrysmod/lua/bin, and both reports say so."""
+        dep = probe['dep_module']
+        check(not dep.startswith('!') and dep.endswith('|nl-dep-runtime') and
+              Path(dep.split('|')[0]).parent == root / 'garrysmod/lua/bin', f'{name}: module with its runtime in lua/bin: {dep}')
+        check(status['session']['module_dependencies'] == ['garrysmod/lua/bin/gmcl_nl_dep_win64.dll'],
+              f'{name}: dependencies not reported: {status["session"]}')
+        loaded = session and session['module_dependencies']['loaded']
+        check(loaded and loaded[0]['result'] == 'loaded' and loaded[0]['loaded_first'].lower().endswith('nl_dep_runtime_win64.dll'),
+              f'{name}: session.json dependencies: {session and session.get("module_dependencies")}')
+
     shader_vanilla = bin_folder / 'stdshader_dx6.dll'
     try:
         probe, status, session = run('rtx-insecure', ['-insecure'])
@@ -158,7 +179,9 @@ def main():
         both = 'nl_rtx_addon|user_addon'
         check(probe['addons_a'] == both and probe['addons_w'] == both, f'RTX session must see every add-on: {probe}')
         check(status['session']['hidden_addons'] == [], 'add-ons hidden with RTX on')
-        passed('RTX with -insecure: patch before DllMain, override, session cfg, user values recorded, every add-on visible')
+        dependency_loaded('rtx-insecure', probe, status, session)
+        passed('RTX with -insecure: patch before DllMain, override, session cfg, user values recorded, every add-on visible, '
+               'a module\'s runtime loaded first from lua/bin')
 
         record_bytes = record.read_bytes()
         cfg_time = session_cfg.stat().st_mtime_ns
@@ -204,8 +227,18 @@ def main():
         check(session and session['hidden_addons']['left_out'] == ['nl_rtx_addon'], f'session.json hidden: {session}')
         check((root / 'garrysmod/addons/nl_rtx_addon/lua/autorun/nl.lua').read_bytes() == addon_lua, 'add-on changed on disk')
         check(session and session.get('utc'), f'session.json has no time: {session}')
+        dependency_loaded('off-restore', probe, status, session)
         passed('RTX off: vanilla engine and shader, the restore cfg runs once and keeps the user\'s own change, '
-               'the RTX-only add-on hidden (still on disk)')
+               'the RTX-only add-on hidden (still on disk), the module\'s runtime still loaded first')
+
+        # The loader off: Windows looks for the module's runtime next to gmod.exe and finds none.
+        done = subprocess.run([str(bin_folder / 'gmod.exe'), '--m5-probe', str(root / 'probe.json'), str(bin_folder)], cwd=root,
+                              env={**os.environ, 'NATIVE_LOADER_DISABLE': '1'}, timeout=60, capture_output=True,
+                              creationflags=subprocess.CREATE_NO_WINDOW)
+        check(done.returncode == 0, f'loader off: host exit {done.returncode:#x}')
+        check(json.loads((root / 'probe.json').read_text(encoding='utf-8'))['dep_module'] == '!126',
+              'the module found its runtime without the loader: the test proves nothing')
+        passed('with the loader off the same module does not load (ERROR_MOD_NOT_FOUND): the runtime in lua/bin needs the hook')
 
         probe, status, session = run('off-again')
         check(not record.exists(), 'record kept after its restore ran')
@@ -270,7 +303,9 @@ def main():
         check(probe['addons_a'] == 'user_addon' and probe['addons_w'] == 'user_addon',
               f'RTX-only add-on visible after a failed activation: {probe["addons_a"]!r} {probe["addons_w"]!r}')
         check(status['session']['hidden_addons'] == ['nl_rtx_addon'], f'hidden not reported: {status["session"]}')
-        passed('a runtime that fails to load: hooks undone, no patch or override, the RTX-only add-on hidden')
+        dependency_loaded('rtx-attach-fails', probe, status, session)
+        passed('a runtime that fails to load: hooks undone, no patch or override, the RTX-only add-on hidden, '
+               'the module\'s runtime loaded first by the second installation')
     finally:
         for _ in range(30):
             try:

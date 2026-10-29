@@ -34,7 +34,8 @@ std::string session_json(const Session& s) {
          ",\"recorded\":" + std::to_string(s.recorded) + ",\"restore_values\":" + std::to_string(s.restore_values) +
          ",\"restore_exec\":" + json::quote(s.restore_exec) + ",\"patches\":" + std::to_string(s.patches) +
          ",\"patches_allowed\":" + (s.patches_allowed ? "true" : "false") + ",\"overrides\":" + strings(s.overrides) +
-         ",\"hooks\":" + json::quote(s.hooks) + ",\"hidden_addons\":" + strings(s.hidden_addons) + ",\"notes\":" + strings(s.notes) + "}";
+         ",\"hooks\":" + json::quote(s.hooks) + ",\"hidden_addons\":" + strings(s.hidden_addons) +
+         ",\"module_dependencies\":" + strings(s.module_dependencies) + ",\"notes\":" + strings(s.notes) + "}";
 }
 std::string packages_json(const std::vector<PackageSource>& packages) {
   std::string out = "[";

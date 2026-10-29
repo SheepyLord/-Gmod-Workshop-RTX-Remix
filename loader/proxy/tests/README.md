@@ -18,6 +18,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `install_tests.ps1` | Synthetic installer/hash/foreign-file/Steam protection cases; [usage](install_tests.ps1.md) |
 | `fixture_engine.cpp`, `fixture_shader.cpp` | M5: a fake `engine.dll` whose marker a patch set rewrites (DllMain copies it, so the probe sees whether the patch came first) and a `stdshader_dx6.dll` to override |
 | `fixture_filesystem.cpp` | M5 (ADR 0013): a fake `filesystem_stdio.dll` that lists a folder with `FindFirstFileA`/`FindNextFileA` and `FindFirstFileExW`/`FindNextFileW` through its own imports, as GMod's does when it mounts add-ons |
+| `fixture_luashared.cpp`, `fixture_dep_module.cpp`, `fixture_dep_runtime.cpp` | Loader 0.3.0 (ADR 0024): a fake `lua_shared.dll` that loads a binary module with `LoadLibraryExA` through its own import, as GMod's does for `require`, and a `gmcl_nl_dep_win64.dll` whose static import `nl_dep_runtime_win64.dll` is deployed only beside it in `garrysmod\lua\bin` |
 | `session_probe.h`, `session_probe.cpp` | M5 host probe (`--m5-probe`): loads `bin\win64\engine.dll` and `stdshader_dx6.dll` as the engine does, lists `garrysmod\addons` (relative and absolute) and `garrysmod\cfg` through the fake `filesystem_stdio.dll`, and records it all with the command line |
 | `session_integration.py` | M5 synthetic acceptance: patch before DllMain, override, session cfg, restore; [usage](session_integration.py.md) |
 | `check_imports.py` | Standard-library PE import/delay-import check: the bootstrap must import only KERNEL32; [usage](check_imports.py.md) |
@@ -46,4 +47,7 @@ without `-insecure` (no patches, override still), RTX off (vanilla engine and sh
 once), the next start (record forgotten), and a later RTX session (recorded again). R1 added an
 invalid journal (no restore), a restore that keeps a value the user changed, a `filesystem_stdio.dll`
 without an import name table, and junctions where `loader.log` and `session.json` live (never written
-through). Evidence under `out/m5-synthetic`.
+through). Evidence under `out/m5-synthetic`. Loader 0.3.0 added module dependencies to the same
+package: the probe loads the fake module through the fake `lua_shared.dll` in RTX sessions, in starts
+without RTX and after a failed activation (it loads, its runtime loaded first from `lua\bin`), and with
+the loader off (`ERROR_MOD_NOT_FOUND`).

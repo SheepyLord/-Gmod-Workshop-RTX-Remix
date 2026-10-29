@@ -91,6 +91,10 @@ struct State {
   std::vector<HANDLE> searches;              // open searches of the add-ons folder
   std::vector<std::string> hidden_seen;      // folders a search actually left out
   std::vector<std::string> search_hooked;    // modules whose searches are filtered
+  // Every session (ADR 0024): binary modules and what is loaded before them.
+  std::vector<std::pair<std::wstring, std::vector<std::wstring>>> dependencies;  // lower-case module path -> paths
+  std::vector<std::wstring> loaded_first;     // lower-case paths already loaded (or tried) once
+  std::vector<std::string> dependencies_done; // JSON objects
 };
 // Published before the first import slot points at a hook, and never cleared or freed: a hook reads
 // it once and keeps using that state, even while uninstall() runs on another thread (R1-003). An
@@ -177,10 +181,40 @@ HMODULE load_replacement(State& s, std::wstring_view requested, const std::pair<
 
 constexpr DWORD kNotAnImage = LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE;
 
+// Before a load of a binary module that needs other files (ADR 0024), loads each of them by its
+// absolute path, once per process. The module's static import of the same base name then binds to
+// the loaded file, wherever Windows would have searched (next to gmod.exe first). A file that fails to
+// load is reported; the module's own load then fails as it would have.
+void load_first(State& s, std::wstring_view requested) {
+  if (s.dependencies.empty() || requested.empty()) return;
+  const std::wstring path = lower(full_path(requested));
+  for (const auto& [module, files] : s.dependencies) {
+    if (module != path) continue;
+    for (const auto& file : files) {
+      const std::wstring key = lower(file);
+      AcquireSRWLockExclusive(&s.lock);
+      const bool done = std::find(s.loaded_first.begin(), s.loaded_first.end(), key) != s.loaded_first.end();
+      if (!done) s.loaded_first.push_back(key);
+      ReleaseSRWLockExclusive(&s.lock);
+      if (done) continue;
+      const HMODULE loaded = s.load_ex_w(file.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+      const DWORD error = loaded ? 0 : GetLastError();
+      std::string entry = "{\"module\": " + json::quote(narrow(module)) + ", \"loaded_first\": " + json::quote(narrow(file)) +
+                          ", \"result\": " + json::quote(loaded ? "loaded" : "failed") + ", \"windows_error\": " + std::to_string(error) + "}";
+      AcquireSRWLockExclusive(&s.lock);
+      s.dependencies_done.push_back(std::move(entry));
+      ReleaseSRWLockExclusive(&s.lock);
+      write_session_json();
+    }
+    return;
+  }
+}
+
 HMODULE WINAPI hook_load_a(LPCSTR name) {
   State& s = *state();
   if (s.active.load(std::memory_order_acquire)) {
     const std::wstring wide = widen_ansi(name);
+    load_first(s, wide);
     if (const auto* item = override_for(s, wide)) return load_replacement(s, wide, *item, nullptr, 0);
   }
   return s.load_a(name);
@@ -188,6 +222,7 @@ HMODULE WINAPI hook_load_a(LPCSTR name) {
 HMODULE WINAPI hook_load_w(LPCWSTR name) {
   State& s = *state();
   if (s.active.load(std::memory_order_acquire)) {
+    load_first(s, name ? name : L"");
     if (const auto* item = override_for(s, name ? name : L"")) return load_replacement(s, name, *item, nullptr, 0);
   }
   return s.load_w(name);
@@ -196,6 +231,7 @@ HMODULE WINAPI hook_load_ex_a(LPCSTR name, HANDLE file, DWORD flags) {
   State& s = *state();
   if (s.active.load(std::memory_order_acquire) && (flags & kNotAnImage) == 0) {
     const std::wstring wide = widen_ansi(name);
+    load_first(s, wide);
     if (const auto* item = override_for(s, wide)) return load_replacement(s, wide, *item, file, flags);
   }
   return s.load_ex_a(name, file, flags);
@@ -203,6 +239,7 @@ HMODULE WINAPI hook_load_ex_a(LPCSTR name, HANDLE file, DWORD flags) {
 HMODULE WINAPI hook_load_ex_w(LPCWSTR name, HANDLE file, DWORD flags) {
   State& s = *state();
   if (s.active.load(std::memory_order_acquire) && (flags & kNotAnImage) == 0) {
+    load_first(s, name ? name : L"");
     if (const auto* item = override_for(s, name ? name : L"")) return load_replacement(s, name, *item, file, flags);
   }
   return s.load_ex_w(name, file, flags);
@@ -409,7 +446,7 @@ int hook_imports_recorded(void* module, const char* function, void* replacement,
 }
 
 void hook_loads(State& s, void* module) {
-  if (s.overrides.empty()) return;
+  if (s.overrides.empty() && s.dependencies.empty()) return;
   hook_imports_recorded(module, "LoadLibraryA", reinterpret_cast<void*>(&hook_load_a), &s.hooked);
   hook_imports_recorded(module, "LoadLibraryW", reinterpret_cast<void*>(&hook_load_w), &s.hooked);
   hook_imports_recorded(module, "LoadLibraryExA", reinterpret_cast<void*>(&hook_load_ex_a), &s.hooked);
@@ -449,7 +486,7 @@ void handle(State& s, void* base, const std::wstring& full_name, const std::wstr
       changed = true;
     }
   }
-  if (!s.overrides.empty()) {
+  if (!s.overrides.empty() || !s.dependencies.empty()) {
     hook_loads(s, base);
     AcquireSRWLockExclusive(&s.lock);
     s.modules_seen.push_back(name);
@@ -551,6 +588,11 @@ bool install(Setup setup, std::string& error) {
     fresh->overrides.emplace_back(lower(wide), full_path(file.native()));
   }
   for (const auto& name : setup.hidden_addons) fresh->hidden.push_back(lower(std::wstring(name.begin(), name.end())));  // ASCII
+  for (const auto& [module, files] : setup.dependencies) {
+    std::vector<std::wstring> paths;
+    for (const auto& file : files) paths.push_back(full_path(file.native()));
+    fresh->dependencies.emplace_back(lower(full_path(module.native())), std::move(paths));
+  }
   fresh->addons_folder = fresh->root_prefix + L"garrysmod\\addons";
   fresh->hooked.reserve(64);
   fresh->setup = std::move(setup);
@@ -610,6 +652,11 @@ std::string results_json() {
   for (const auto& name : s->hidden) configured.push_back(narrow(name));
   out += "  \"hidden_addons\": {\"folders\": " + strings(configured) + ", \"left_out\": " + strings(s->hidden_seen) +
          ", \"search_hooks\": " + strings(s->search_hooked) + "},\n";
+  std::vector<std::string> dependent;
+  for (const auto& item : s->dependencies) dependent.push_back(narrow(item.first));
+  out += "  \"module_dependencies\": {\"modules\": " + strings(dependent) + ", \"loaded\": [";
+  for (std::size_t i = 0; i < s->dependencies_done.size(); ++i) out += (i ? ", " : "") + s->dependencies_done[i];
+  out += "]},\n";
   out += "  \"notes\": " + strings(s->notes) + ",\n";
   out += "  \"hooked_modules\": " + std::to_string(s->modules_seen.size()) + "\n}\n";
   ReleaseSRWLockShared(&s->lock);

@@ -149,6 +149,36 @@ class HookTests(unittest.TestCase):
         pub.install_hooks(True, self.repo)
         self.assertIn(pub.HOOK_MARKER, (hooks / 'pre-push').read_text(encoding='utf-8'))
 
+    def test_source_hooks_call_this_checkouts_script_by_absolute_path(self):
+        source = self.repo / '!add-on'
+        subprocess.run(['git', 'init', '-q', str(source)], check=True)
+        hooks = pub.hooks_folder(source)
+        written = pub.install_source_hooks(source, False)
+        self.assertEqual(sorted(Path(p).name for p in written), ['post-commit', 'post-merge'])
+        script = (pub.main_checkout() / 'tools' / 'publish_workshop.py').as_posix()
+        for name in ('post-commit', 'post-merge'):
+            text = (hooks / name).read_bytes()
+            self.assertIn(pub.HOOK_MARKER.encode(), text)
+            self.assertIn(f'python "{script}" --background'.encode(), text)
+            self.assertIn(b'"!add-on ', text)  # the add-on's name in the change notes
+            self.assertIn(b'"main"', text)
+            self.assertNotIn(b'\r\n', text)
+        self.assertFalse((hooks / 'pre-push').exists())
+        (hooks / 'post-merge').write_text('#!/bin/sh\necho mine\n', encoding='utf-8')
+        before = (hooks / 'post-commit').read_bytes()
+        with self.assertRaisesRegex(pub.PublishError, 'not ours'):
+            pub.install_source_hooks(source, False)
+        self.assertEqual((hooks / 'post-commit').read_bytes(), before)  # nothing written when one is foreign
+        removed = pub.uninstall_hooks(source, pub.source_hooks(source, Path('x')))
+        self.assertEqual([Path(p).name for p in removed], ['post-commit'])
+        self.assertEqual((hooks / 'post-merge').read_text(encoding='utf-8'), '#!/bin/sh\necho mine\n')
+        # A repository whose builds reach the classic install from feature branches: every branch.
+        (hooks / 'post-merge').unlink()
+        pub.install_source_hooks(source, False, any_branch=True)
+        text = (hooks / 'post-commit').read_text(encoding='utf-8')
+        self.assertNotIn('"main"', text)
+        self.assertIn('any branch', text)
+
 
 if __name__ == '__main__':
     unittest.main()

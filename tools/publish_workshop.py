@@ -308,14 +308,51 @@ def install_hooks(force: bool, repo: Path = REPO) -> list[str]:
     return written
 
 
-def uninstall_hooks(repo: Path = REPO) -> list[str]:
+def uninstall_hooks(repo: Path = REPO, hooks=HOOKS) -> list[str]:
     removed = []
-    for name, _ in HOOKS:
+    for name, _ in hooks:
         target = hooks_folder(repo) / name
         if target.exists() and HOOK_MARKER in target.read_text(encoding='utf-8', errors='replace'):
             target.unlink()
             removed.append(str(target))
     return removed
+
+
+def main_checkout(repo: Path = REPO) -> Path:
+    """The main checkout of this repository: the folder of its common .git, whichever worktree runs this."""
+    common = Path(git('rev-parse', '--git-common-dir', cwd=repo))
+    return (common if common.is_absolute() else repo / common).resolve().parent
+
+
+def source_hooks(source: Path, script: Path, any_branch: bool = False) -> tuple:
+    """Hooks for the git repository of an add-on that a part is built from (ADR 0024): a commit or a
+    merge on its main branch (or, with any_branch, on any branch: for repositories whose builds reach
+    the classic install from feature-branch worktrees) runs this repository's publish script, which
+    rebuilds the parts and uploads only if the item's content changed."""
+    def text(what: str) -> str:
+        where = 'any branch' if any_branch else 'main'
+        return (f'#!/bin/sh\n{HOOK_MARKER}: a {what} on {where} of this repository also updates the RTX package\'s Workshop item,\n'
+                f'# whose parts are rebuilt from what it delivers ({script.as_posix()}).\n' +
+                ('' if any_branch else '[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0\n') +
+                f'python "{script.as_posix()}" --background --reason "{source.name} {what} $(git rev-parse --short HEAD)" || true\n'
+                'exit 0\n')
+    return (('post-commit', text('commit')), ('post-merge', text('merge')))
+
+
+def install_source_hooks(source: Path, force: bool, repo: Path = REPO, any_branch: bool = False) -> list[str]:
+    script = main_checkout(repo) / 'tools' / 'publish_workshop.py'
+    folder = hooks_folder(source)
+    folder.mkdir(parents=True, exist_ok=True)
+    hooks = source_hooks(source.resolve(), script, any_branch)
+    for name, _ in hooks:  # check every hook before writing any
+        target = folder / name
+        if target.exists() and HOOK_MARKER not in target.read_text(encoding='utf-8', errors='replace') and not force:
+            raise PublishError(f'{target} exists and is not ours; --force-hooks replaces it')
+    written = []
+    for name, text in hooks:
+        (folder / name).write_bytes(text.encode('utf-8'))  # LF line endings: git runs hooks with sh
+        written.append(str(folder / name))
+    return written
 
 
 # ---------------------------------------------------------------- main
@@ -331,6 +368,13 @@ def main(argv=None) -> int:
     parser.add_argument('--install-hooks', action='store_true', help='install the post-commit and pre-push hooks, then stop')
     parser.add_argument('--uninstall-hooks', action='store_true', help='remove this script\'s hooks, then stop')
     parser.add_argument('--force-hooks', action='store_true', help='with --install-hooks: replace hooks that are not ours')
+    parser.add_argument('--install-source-hooks', action='append', default=[], type=Path, metavar='REPO',
+                        help='install hooks in the git repository of an add-on a part is built from: a commit or merge on its '
+                             'main runs this script (repeatable), then stop')
+    parser.add_argument('--uninstall-source-hooks', action='append', default=[], type=Path, metavar='REPO',
+                        help='remove this script\'s hooks from such a repository (repeatable), then stop')
+    parser.add_argument('--any-branch', action='store_true',
+                        help='with --install-source-hooks: publish after commits on any branch, not only main')
     args = parser.parse_args(argv)
     try:
         if args.install_hooks:
@@ -338,6 +382,12 @@ def main(argv=None) -> int:
             return 0
         if args.uninstall_hooks:
             print('\n'.join(uninstall_hooks()) or 'no hooks of ours')
+            return 0
+        if args.install_source_hooks or args.uninstall_source_hooks:
+            for source in args.install_source_hooks:
+                print('\n'.join(install_source_hooks(source, args.force_hooks, any_branch=args.any_branch)))
+            for source in args.uninstall_source_hooks:
+                print('\n'.join(uninstall_hooks(source, source_hooks(source, Path('x')))) or f'no hooks of ours in {source}')
             return 0
         logs = STATE / 'logs'
         logs.mkdir(parents=True, exist_ok=True)

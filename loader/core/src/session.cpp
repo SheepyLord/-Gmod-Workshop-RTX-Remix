@@ -199,4 +199,21 @@ std::vector<std::string> hidden_addons(const journal::Generation& generation) {
   return names;
 }
 
+std::vector<manifest::ModuleDependency> module_dependencies(const journal::Generation& generation) {
+  std::vector<manifest::ModuleDependency> out;
+  for (const auto& package : generation.packages) {
+    for (const auto& dependency : package.module_dependencies) {
+      const std::string module = paths::fold(dependency.module);
+      auto it = std::find_if(out.begin(), out.end(), [&](const manifest::ModuleDependency& d) { return paths::fold(d.module) == module; });
+      if (it == out.end()) it = out.insert(out.end(), manifest::ModuleDependency{dependency.module, {}});
+      for (const auto& first : dependency.load_first) {
+        const bool listed = std::any_of(it->load_first.begin(), it->load_first.end(),
+                                        [&](const std::string& f) { return paths::fold(f) == paths::fold(first); });
+        if (!listed) it->load_first.push_back(first);
+      }
+    }
+  }
+  return out;
+}
+
 }  // namespace nl::session

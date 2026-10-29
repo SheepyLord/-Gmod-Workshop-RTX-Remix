@@ -3,6 +3,7 @@
 #include "nl/cmdline.h"
 #include "nl/fs.h"
 #include "nl/paths.h"
+#include "nl/session.h"
 #include <windows.h>
 
 #include <algorithm>
@@ -229,6 +230,7 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
       else p.session_cvars.emplace_back(name, value);
     }
   }
+  p.module_dependencies = session::module_dependencies(generation);
   return p;
 }
 

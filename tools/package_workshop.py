@@ -27,7 +27,7 @@ import gmapack  # noqa: E402
 
 MANIFEST = 'native/manifest.json'
 KNOWN_KEYS = {'schema', 'id', 'name', 'version', 'kinds', 'requires_loader', 'requires_remix', 'files', 'remix', 'root_files',
-              'module_overrides', 'patch_sets', 'session_cvars'}
+              'module_overrides', 'patch_sets', 'session_cvars', 'module_dependencies'}
 ADDON_TYPES = ('gamemode', 'map', 'weapon', 'vehicle', 'npc', 'entity', 'tool', 'effects', 'model', 'servercontent')
 ADDON_TAGS = ('fun', 'roleplay', 'scenic', 'movie', 'realism', 'cartoon', 'water', 'comic', 'build')
 CHUNK = 1 << 20
@@ -149,7 +149,7 @@ def merge(manifests: list[dict], ident: str, version: str, name: str | None) -> 
         raise CombineError('more than one part carries a runtime ("remix")')
     if remix:
         out['remix'] = remix[0]
-    for key in ('root_files', 'module_overrides', 'patch_sets'):
+    for key in ('root_files', 'module_overrides', 'patch_sets', 'module_dependencies'):
         items = [item for m in manifests for item in m.get(key, [])]
         if items:
             out[key] = items

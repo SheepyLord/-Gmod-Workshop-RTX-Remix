@@ -76,6 +76,9 @@ struct Plan {
   std::vector<PatchSet> patch_sets;
   std::vector<Override> module_overrides;
   std::vector<std::pair<std::string, std::string>> session_cvars;  // a later package wins a name
+  // Binary modules that need files loaded before them (ADR 0024). They apply in every session; a
+  // start without a runtime installs them itself (proxy startup.cpp).
+  std::vector<manifest::ModuleDependency> module_dependencies;
   std::vector<std::string> notes;  // e.g. a module two packages override (the first wins)
   bool patch_sets_need_insecure = true;  // config patch_sets.require_insecure
 };

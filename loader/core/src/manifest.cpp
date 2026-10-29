@@ -270,7 +270,7 @@ Manifest parse(std::string_view json_text) {
   try {
     if (!root.is_object()) fail("the document must be a JSON object");
     only_keys(root, "the manifest", {"schema", "id", "name", "version", "kinds", "requires_loader", "requires_remix", "files", "remix",
-                                     "root_files", "patch_sets", "module_overrides", "session_cvars"});
+                                     "root_files", "patch_sets", "module_overrides", "session_cvars", "module_dependencies"});
 
     const std::int64_t schema = required(root, "schema").as_int("schema");
     if (schema != kSchema) fail("schema " + std::to_string(schema) + " is not supported (this loader reads schema 1)");
@@ -510,6 +510,40 @@ Manifest parse(std::string_view json_text) {
         m.session.cvars.emplace_back(name, text);
       }
       if (m.session.cvars.size() > 256) fail("session_cvars: at most 256 entries");
+    }
+
+    // Binary modules that need files loaded before them (loader 0.3.0, ADR 0024): every session.
+    if (const Value* dependencies = root.find("module_dependencies")) {
+      if (!m.has(Kind::lua_binary_module)) fail("\"module_dependencies\" needs kind lua-binary-module");
+      // A .dll the package deploys to garrysmod/lua/bin/.
+      const auto lua_bin_dll = [&](const std::string& text, const std::string& what) {
+        const std::string path = safe_path(text, what);
+        const std::string folded = paths::fold(path);
+        if (!paths::within(folded, "garrysmod/lua/bin") || folded == "garrysmod/lua/bin") {
+          fail(what + " \"" + path + "\" must be under garrysmod/lua/bin/");
+        }
+        if (folded.size() < 5 || folded.substr(folded.size() - 4) != ".dll") fail(what + " \"" + path + "\" must be a .dll");
+        if (!listed.count("native/root/" + folded)) fail(what + " \"" + path + "\" is not listed under native/root/");
+        return path;
+      };
+      std::set<std::string> modules;
+      for (const Value& item : dependencies->as_array("module_dependencies")) {
+        only_keys(item, "module_dependencies entry", {"module", "load_first"});
+        ModuleDependency d;
+        d.module = lua_bin_dll(required(item, "module").as_string("module_dependencies module"), "module_dependencies module");
+        if (!modules.insert(paths::fold(d.module)).second) fail("module_dependencies module \"" + d.module + "\" is listed twice");
+        std::set<std::string> seen;
+        for (const std::string& text : string_list(required(item, "load_first"), "module_dependencies load_first")) {
+          const std::string first = lua_bin_dll(text, "module_dependencies load_first entry");
+          if (paths::fold(first) == paths::fold(d.module)) fail("module \"" + d.module + "\" cannot be loaded before itself");
+          if (!seen.insert(paths::fold(first)).second) fail("module_dependencies load_first entry \"" + first + "\" is listed twice");
+          d.load_first.push_back(first);
+        }
+        if (d.load_first.empty() || d.load_first.size() > 8) fail("module \"" + d.module + "\": load_first must list 1-8 files");
+        m.module_dependencies.push_back(std::move(d));
+      }
+      if (m.module_dependencies.empty()) fail("module_dependencies must not be empty");
+      if (m.module_dependencies.size() > 64) fail("module_dependencies: at most 64 entries");
     }
     // Every file under native/root/ must belong to a declared root file.
     for (const std::string& f : listed) {
