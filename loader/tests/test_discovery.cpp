@@ -1,3 +1,4 @@
+#include "gma_fixture.h"
 #include "nl/discovery.h"
 #include "nl_test.h"
 
@@ -141,6 +142,56 @@ TEST_CASE("discovery: only an item Steam lists nowhere, with its folder gone, co
   touch(acf, R"("SomethingElse" { })");  // no AppWorkshop section: not Steam's Workshop record
   c = nl::discovery::discover(config, env);
   CHECK(!c[3].unsubscribed);
+  fs::remove_all(dir);
+}
+
+TEST_CASE("discovery: subscribed items holding a package are content-only candidates after the allowlist (ADR 0027)") {
+  const auto dir = nl::test::scratch_dir("discovery_subscribed");
+  const FakeLibrary lib(dir);
+  const auto gma = [&](const std::string& item, const std::string& name, bool package) {
+    nl::test::FixtureArchive archive;
+    if (package) archive.files.push_back({"native/manifest.json", "{}"});
+    archive.files.push_back({"lua/autorun/x.lua", "-- x"});
+    touch(lib.content / item / name, nl::test::build_gma(archive));
+  };
+  gma("1000", "pbr.gma", true);
+  gma("999", "another.gma", true);
+  gma("900", "plain.gma", false);  // an ordinary add-on
+  gma("1100", "a.gma", true);      // two archives: not taken
+  gma("1100", "b.gma", true);
+  gma("1200", "off.gma", true);    // disabled in GMod's addon list
+  touch(lib.content / "1300" / "387671470694828055_legacy.bin", "LZMA");  // never scanned
+  touch(lib.game / "garrysmod" / "cfg" / "addonnomount.txt",
+        "\"addonnomount\"\n{\n\t\"1\"\t\t\"222\"\n\t\"2\"\t\t\"1200\"\n}\n");
+  CHECK(nl::discovery::lists_native_manifest(lib.content / "1000" / "pbr.gma"));
+  CHECK(!nl::discovery::lists_native_manifest(lib.content / "900" / "plain.gma"));
+  CHECK(!nl::discovery::lists_native_manifest(lib.content / "111" / "runtime.gma"));  // not a GMAD archive
+  CHECK(!nl::discovery::lists_native_manifest(lib.content / "nowhere.gma"));
+
+  nl::config::Config config;
+  config.workshop = {"111", "1000"};  // an allowlisted item is not listed again as content
+  auto env = nl::discovery::environment_for(lib.game, dir / "no-steam");
+  auto c = nl::discovery::discover(config, env);
+  REQUIRE(c.size() == 3);
+  CHECK(c[0].label == "111" && !c[0].content_only);
+  CHECK(c[1].label == "1000" && !c[1].content_only);
+  CHECK(c[2].label == "999" && c[2].content_only && c[2].problem.empty() && c[2].location.filename() == "another.gma");
+
+  // Deployed content keeps a candidate: disabled (removed), gone from Steam (unsubscribed), installed.
+  config.workshop = {"111"};
+  env.deployed_workshop = {"111", "1200", "1400", "1000"};
+  c = nl::discovery::discover(config, env);
+  REQUIRE(c.size() == 5);
+  CHECK(c[1].label == "999" && c[2].label == "1000" && c[3].label == "1200" && c[4].label == "1400");  // item order
+  for (std::size_t i = 1; i < c.size(); ++i) CHECK(c[i].content_only);
+  CHECK(c[2].problem.empty());
+  CHECK(c[3].disabled_by_user);
+  CHECK(c[4].unsubscribed);  // no folder, and Steam's record lists only 111
+
+  config.subscribed_content = false;
+  c = nl::discovery::discover(config, env);
+  REQUIRE(c.size() == 1);
+  CHECK(c[0].label == "111");
   fs::remove_all(dir);
 }
 

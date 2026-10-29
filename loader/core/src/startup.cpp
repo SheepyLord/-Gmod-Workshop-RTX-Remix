@@ -43,6 +43,17 @@ std::optional<std::string> keep_last_good_reason(const journal::Generation& curr
   return std::nullopt;
 }
 
+std::set<std::string> deployed_workshop_items(const std::optional<journal::Journal>& journal) {
+  std::set<std::string> ids;
+  if (!journal || !journal->current) return ids;
+  for (const auto& package : journal->current->packages) {
+    if (package.source != discovery::source_name(discovery::Source::workshop)) continue;
+    // The archive's folder is the item: .../workshop/content/4000/<id>/<name>.gma (as same_source reads it).
+    ids.insert(fs::utf8(fs::join({}, package.location).lexically_normal().parent_path().filename()));
+  }
+  return ids;
+}
+
 std::set<std::string> unsubscribed_packages(const journal::Generation& current, const planner::Plan& proposed) {
   std::set<std::string> out;
   for (const auto& deployed : current.packages) {
@@ -84,9 +95,13 @@ Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
       // Check before any deployment-side writes, including lock creation or stale-file cleanup.
       fs::refuse_links(root, journal::kPath);
       result.journal = journal::load(root);
+      // Steam's library list only for an allowlisted Workshop item; the subscriptions alone come from
+      // the library the game sits in (ADR 0027).
       discovery::Environment environment;
-      if (result.config.workshop.empty()) environment.game_root = root;
-      else environment = discovery::environment_for(root);
+      if (!result.config.workshop.empty()) environment = discovery::environment_for(root);
+      else if (result.config.subscribed_content) environment = discovery::environment_in_library(root);
+      else environment.game_root = root;
+      environment.deployed_workshop = deployed_workshop_items(result.journal);
       auto considered = planner::consider(discovery::discover(result.config, environment));
       std::vector<discovery::Candidate> candidates;
       for (const auto& item : considered) candidates.push_back(item.candidate);

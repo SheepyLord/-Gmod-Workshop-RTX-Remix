@@ -1,6 +1,7 @@
 #pragma once
 // The user's loader policy: <game root>\native-loader\config.json (docs/ON_DISK_LAYOUT.md). Above
-// all, the allowlist: only the sources listed here are ever opened as packages (ADR 0003).
+// all, the allowlist: only the sources listed here may deploy native code (ADR 0003). Subscribed
+// Workshop items are also opened, as content-only packages, unless subscribed_content is false (ADR 0027).
 
 #include <filesystem>
 #include <stdexcept>
@@ -23,6 +24,9 @@ struct Config {
   std::vector<std::string> workshop;     // Workshop item ids (decimal digits)
   std::vector<std::string> local;        // archive paths, relative to the game root or absolute
   std::vector<std::string> dev_folders;  // package folders, relative to the game root or absolute
+  // Content-only packages from every subscribed Workshop item, without listing them (ADR 0027). Native
+  // code still needs the allowlist: such a package may only hold Remix mods and Lua add-ons.
+  bool subscribed_content = true;
   bool remix_enabled = true;             // false: runtime packages are planned but not activated
   bool patch_sets_require_insecure = true;
   bool from_file = false;                // false: defaults, because config.json does not exist

@@ -30,9 +30,22 @@ TEST_CASE("config: only the schema is required; defaults allow nothing") {
   CHECK(c.enabled);
   CHECK(c.workshop.empty() && c.local.empty() && c.dev_folders.empty());
   CHECK(c.remix_enabled);
+  CHECK(c.subscribed_content);  // content-only packages from subscriptions, without listing them (ADR 0027)
   const nl::config::Config defaults;
   CHECK(!defaults.from_file);
   CHECK(defaults.workshop.empty());
+}
+
+TEST_CASE("config: allow.subscribed_content switches content packages from subscriptions off") {
+  CHECK(!nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": false}})").subscribed_content);
+  CHECK(nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": true, "workshop": ["1"]}})").subscribed_content);
+  bool rejected = false;
+  try {
+    nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": "no"}})");
+  } catch (const Error&) {
+    rejected = true;
+  }
+  CHECK(rejected);
 }
 
 TEST_CASE("config: typos and unsafe values are errors") {

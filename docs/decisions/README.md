@@ -32,6 +32,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0024](0024-bundled-addons-and-module-dependencies.md) | The RTX package bundles the user's five add-ons and Model Hotloader's natives, rebuilt from their sources at every publish; loader 0.3.0 loads a module's runtime DLL first, in every session (`module_dependencies`) | Accepted 2026-10-29 (the user) |
 | [0025](0025-unsubscribe-removes-the-package.md) | Unsubscribing from a Workshop item removes its package completely: Steam lists the item nowhere and its folder is gone, so start-up removes the package and keeps no rollback copy (loader 0.3.1); amends 0007 and 0009 | Accepted 2026-10-29 (the user) |
 | [0026](0026-addon-file-from-its-repository.md) | A bundled add-on may take single files from its own repository (`package_content.py --addon-file`): Model Hotloader's fixed install check comes from its main checkout until the classic install has it; extends 0024 | Accepted 2026-10-29 (the user) |
+| [0027](0027-content-packages-from-any-subscription.md) | Content packages from any subscribed Workshop item deploy without the allowlist: discovery opens the subscriptions, and a package found there may hold only Remix mods and Lua add-ons (GMod's Workshop whitelist); native code still needs the allowlist; `allow.subscribed_content` switches it off (loader 0.4.0); amends 0003 | Accepted 2026-10-29 (the user) |
 
 ## Template
 

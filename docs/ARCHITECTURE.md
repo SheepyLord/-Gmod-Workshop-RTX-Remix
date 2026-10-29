@@ -10,7 +10,9 @@ are in [decisions/](decisions/README.md).
 - Steam's files stay byte-identical on disk, so updates and "verify integrity" never fight us.
 - With RTX off, or anything going wrong, the game runs exactly as vanilla.
 - Native code only from allowlisted packages until signed packages exist
-  ([ADR 0003](decisions/0003-native-trust-allowlist.md)).
+  ([ADR 0003](decisions/0003-native-trust-allowlist.md)). Content packages (Remix mods, Lua add-ons)
+  from any subscribed Workshop item need no allowlisting
+  ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)).
 - Not goals (for now): 32-bit GMod, dedicated servers, Linux/Proton.
 
 ## Boot sequence
@@ -26,7 +28,8 @@ Steam ─► GarrysMod\gmod.exe (launcher) ─► bin\win64\gmod.exe   (working 
      • patch the EXE entry point to jump to our start-up step
 2. Start-up step (EXE entry point, loader lock free, before WinMain and before any engine DLL)
      preflight valid enabled config and valid journal; missing/disabled/invalid means stay vanilla
-     discover  allowlisted Workshop items + local .gma + dev folders; distinguish explicit addon disable
+     discover  allowlisted Workshop items + local .gma + dev folders; distinguish explicit addon disable;
+               then the subscribed items whose .gma holds a package, as content-only candidates
      plan      choose package versions, resolve conflicts (one active runtime); keep the last good
                generation if an unavailable/invalid still-allowlisted source would remove/replace it
      deploy    stage → verify CRC32 + SHA-256 → atomic rename; journal every write; back up

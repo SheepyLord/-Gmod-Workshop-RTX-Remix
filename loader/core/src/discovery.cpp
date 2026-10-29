@@ -1,4 +1,5 @@
 #include "nl/discovery.h"
+#include "nl/gma.h"
 
 #include "nl/manifest.h"
 #include "nl/paths.h"
@@ -6,6 +7,7 @@
 
 #include <windows.h>
 
+#include <algorithm>
 #include <charconv>
 #include <system_error>
 
@@ -119,7 +121,9 @@ std::set<std::string> read_addonnomount(const fs::path& game_root) {
   return ids;
 }
 
-Environment environment_for(const fs::path& game_root, const std::optional<fs::path>& steam_root) {
+namespace {
+
+Environment environment(const fs::path& game_root, bool ask_steam, const std::optional<fs::path>& steam_root) {
   Environment env;
   env.game_root = game_root;
   env.disabled_workshop = read_addonnomount(game_root);
@@ -128,7 +132,7 @@ Environment environment_for(const fs::path& game_root, const std::optional<fs::p
   if (paths::fold(utf8(root.parent_path().filename())) == "common" &&
       paths::fold(utf8(root.parent_path().parent_path().filename())) == "steamapps") {
     steamapps = root.parent_path().parent_path();
-  } else if (const auto steam = steam_root ? steam_root : steam_from_registry()) {
+  } else if (const auto steam = !ask_steam ? std::nullopt : steam_root ? steam_root : steam_from_registry()) {
     steamapps = library_from_steam(*steam);
   }
   if (steamapps) {
@@ -136,6 +140,16 @@ Environment environment_for(const fs::path& game_root, const std::optional<fs::p
     env.appworkshop_acf = *steamapps / "workshop" / "appworkshop_4000.acf";
   }
   return env;
+}
+
+}  // namespace
+
+Environment environment_for(const fs::path& game_root, const std::optional<fs::path>& steam_root) {
+  return environment(game_root, true, steam_root);
+}
+
+Environment environment_in_library(const fs::path& game_root) {
+  return environment(game_root, false, std::nullopt);
 }
 
 std::vector<Candidate> discover(const config::Config& config, const Environment& env) {
@@ -161,9 +175,11 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
     out.push_back(std::move(c));
   }
 
+  // Content-only packages from the subscribed items, without the allowlist (ADR 0027).
+  const bool subscribed = config.subscribed_content && env.workshop_content.has_value();
   vdf::Node acf;
   bool have_acf = false;
-  if (!config.workshop.empty() && !env.appworkshop_acf.empty() && is_file(env.appworkshop_acf)) {
+  if ((!config.workshop.empty() || subscribed) && !env.appworkshop_acf.empty() && is_file(env.appworkshop_acf)) {
     try {
       acf = vdf::load(env.appworkshop_acf);
       have_acf = true;
@@ -177,7 +193,7 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
   const vdf::Node* installed = app ? app->find("WorkshopItemsInstalled") : nullptr;
   const vdf::Node* details = app ? app->find("WorkshopItemDetails") : nullptr;
 
-  for (const std::string& id : config.workshop) {
+  const auto workshop = [&](const std::string& id) {
     Candidate c{Source::workshop, id, {}, {}, {}, {}};
     if (installed) {
       if (const vdf::Node* item = installed->find(id)) {
@@ -220,9 +236,54 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
         c.location = archives.front();
       }
     }
+    return c;
+  };
+  for (const std::string& id : config.workshop) out.push_back(workshop(id));
+  if (!subscribed) return out;
+
+  // Every other installed item whose single .gma is a package, and every other deployed one, by id.
+  const std::set<std::string> listed(config.workshop.begin(), config.workshop.end());
+  const auto workshop_id = [](const std::string& name) {
+    return !name.empty() && name.size() <= 20 && name[0] != '0' &&
+           std::all_of(name.begin(), name.end(), [](char ch) { return ch >= '0' && ch <= '9'; });
+  };
+  std::set<std::string> found;
+  std::error_code ec;
+  for (const auto& entry : fs::directory_iterator(*env.workshop_content, ec)) {
+    const std::string id = utf8(entry.path().filename());
+    if (!workshop_id(id) || listed.count(id) || !is_dir(entry.path())) continue;
+    if (env.disabled_workshop.count(id) && !env.deployed_workshop.count(id)) continue;
+    std::vector<fs::path> archives;
+    std::error_code inner;
+    for (const auto& file : fs::directory_iterator(entry.path(), inner)) {
+      if (ends_with_folded(utf8(file.path().filename()), ".gma") && is_file(file.path())) archives.push_back(file.path());
+    }
+    if (archives.size() == 1 && lists_native_manifest(archives.front())) found.insert(id);
+  }
+  for (const std::string& id : env.deployed_workshop) {
+    if (workshop_id(id) && !listed.count(id)) found.insert(id);
+  }
+  std::vector<std::string> order(found.begin(), found.end());
+  std::sort(order.begin(), order.end(), [](const std::string& a, const std::string& b) {
+    return a.size() != b.size() ? a.size() < b.size() : a < b;  // numeric: no leading zeros
+  });
+  for (const std::string& id : order) {
+    Candidate c = workshop(id);
+    c.content_only = true;
     out.push_back(std::move(c));
   }
   return out;
+}
+
+bool lists_native_manifest(const fs::path& archive) {
+  try {
+    gma::FileSource source(archive);
+    const gma::Index index = gma::read_index(source);
+    return std::any_of(index.entries.begin(), index.entries.end(),
+                       [](const gma::Entry& e) { return paths::fold(e.path) == manifest::kManifestPath; });
+  } catch (const std::exception&) {
+    return false;  // unreadable, not a GMAD archive, or beyond the reader's limits
+  }
 }
 
 }  // namespace nl::discovery

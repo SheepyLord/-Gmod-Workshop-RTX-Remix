@@ -958,3 +958,45 @@ TEST_CASE("startup deployment: a late bad archive keeps all current packages wit
   CHECK(g.journal().current->packages[0].id == "test-mods");
   CHECK(g.has("rtx-remix/mods/test_mod/new.txt"));
 }
+
+TEST_CASE("startup deployment: a subscription's content package needs no allowlist; native code does (ADR 0027)") {
+  const auto dir = nl::test::scratch_dir("startup_subscribed");
+  const sfs::path steamapps = dir / "lib" / "steamapps";
+  const sfs::path root = steamapps / "common" / "game";  // where discovery finds the library's Workshop folder
+  const sfs::path content = steamapps / "workshop" / "content" / "4000";
+  const sfs::path config = root / "native-loader" / "config.json";
+  write_file(root / "bin" / "win64" / "gmod.exe", "");
+  sfs::create_directories(root / "garrysmod" / "cfg");
+  write_file(config, R"({"schema": 1})");
+  const std::string items = "\"700\" { \"size\" \"1\" } \"701\" { \"size\" \"1\" } ";
+  write_file(steamapps / "workshop" / "appworkshop_4000.acf",
+             "\"AppWorkshop\" { \"WorkshopItemsInstalled\" { " + items + "} \"WorkshopItemDetails\" { " + items + "} }");
+  write_gma(content / "700" / "mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}, {kMod + "a.dds", "A"}}));
+  write_gma(content / "701" / "runtime.gma", runtime("1.0.0", "MZ-one"));
+  const auto has = [&](const std::string& relative) { return nl::fs::stat(nl::fs::join(root, relative)).exists; };
+
+  const auto first = nl::startup::prepare(root, GetCurrentProcessId());
+  REQUIRE(first.deployment.outcome == "deployed");
+  REQUIRE(first.deployment.packages.size() == 1);
+  CHECK(first.deployment.packages[0].rfind("test-mods ", 0) == 0);
+  CHECK(nl::fs::read_file(nl::fs::join(root, kModDir + "mod.usda"), 1 << 20) == "#usda v1\n");
+  CHECK(skipped_because(first.deployment, "add Workshop item 701 to allow.workshop"));
+  CHECK(!has("native-loader/packages/test-runtime"));
+
+  // Allowlisted, the runtime deploys as well, and the content stays.
+  write_file(config, R"({"schema": 1, "allow": {"workshop": ["701"]}})");
+  const auto second = nl::startup::prepare(root, GetCurrentProcessId());
+  REQUIRE(second.deployment.outcome == "deployed");
+  CHECK(second.deployment.packages.size() == 2);
+  CHECK(has("native-loader/packages/test-runtime/1.0.0_2/runtime/d3d9.dll"));
+  CHECK(has(kModDir + "mod.usda"));
+
+  // The off switch: packages from subscriptions are no longer planned, so the content goes.
+  write_file(config, R"({"schema": 1, "allow": {"workshop": ["701"], "subscribed_content": false}})");
+  const auto third = nl::startup::prepare(root, GetCurrentProcessId());
+  REQUIRE(third.deployment.outcome == "deployed");
+  CHECK(third.deployment.packages.size() == 1);
+  CHECK(!has(kModDir + "mod.usda"));
+  CHECK(has("native-loader/packages/test-runtime/1.0.0_2/runtime/d3d9.dll"));
+  sfs::remove_all(dir);
+}

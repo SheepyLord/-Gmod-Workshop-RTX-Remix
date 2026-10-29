@@ -1,5 +1,6 @@
 #include "nl/planner.h"
 
+#include "nl/content.h"
 #include "nl/paths.h"
 
 #include <exception>
@@ -56,6 +57,14 @@ Plan make_plan(const std::vector<Considered>& considered, const config::Config& 
       continue;
     }
     const manifest::Manifest& m = item.package->manifest;
+    if (item.candidate.content_only) {
+      // Found among the subscribed items, not through the allowlist: content only (ADR 0027).
+      if (const std::string why = content::problem(m); !why.empty()) {
+        skip("not in the allowlist, so it may hold only Remix mods and Lua add-ons, but " + why +
+             "; to deploy it, add Workshop item " + item.candidate.label + " to allow.workshop in native-loader/config.json");
+        continue;
+      }
+    }
     if (m.requires_loader && manifest::compare(loader, *m.requires_loader) < 0) {
       skip("needs loader >=" + m.requires_loader->text + "; this is " + loader.text);
       continue;

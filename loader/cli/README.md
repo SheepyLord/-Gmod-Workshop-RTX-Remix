@@ -56,10 +56,12 @@ These four commands, and `status`, exit with:
 - `2`: an invalid `config.json` or `state.json`.
 
 `plan` runs the deployment half of what the bootstrap runs at start-up, without changing anything:
-it reads `native-loader\config.json`, finds every allowlisted source, loads each package and prints
-one decision per source (active, or why not; [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)).
-`--steam-dir` replaces the registry lookup of Steam's folder when the game root is outside a Steam
-library. Exit `0` when a plan was made (even if everything was skipped), `2` for an invalid config.
+it reads `native-loader\config.json`, finds every allowlisted source and every subscribed Workshop
+item that holds a package (marked "subscribed, content only",
+[ADR 0027](../../docs/decisions/0027-content-packages-from-any-subscription.md)), loads each package
+and prints one decision per source (active, or why not;
+[ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)). `--steam-dir` replaces the
+registry lookup of Steam's folder when the game root is outside a Steam library. Exit `0` when a plan was made (even if everything was skipped), `2` for an invalid config.
 
 `activation` shows the other half: from the deployed current generation it prints what start-up
 would do with the runtime ([ADR 0008](../../docs/decisions/0008-activation-at-startup.md)) — the

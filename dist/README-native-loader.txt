@@ -36,7 +36,16 @@ Settings (native-loader\config.json)
 
 - RTX off, without uninstalling:  { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "enabled": false } }
 - The loader off:                  add "enabled": false
-- Nothing else in the file is needed. The loader only ever uses what "allow" lists.
+- Nothing else in the file is needed. Native code comes only from what "allow" lists.
+
+RTX content from other Workshop items
+-------------------------------------
+
+- Subscribe to an RTX content package (Remix materials and mods, such as a character's PBR textures)
+  and it loads at your next start, with loader 0.4.0 or later. No change to config.json is needed.
+- Such a package may only hold Remix mods and Lua add-ons. A package that also carries native code
+  is skipped until you add its Workshop id to "workshop" under "allow".
+- To use only what "allow" lists: add "subscribed_content": false under "allow".
 
 Updating
 --------

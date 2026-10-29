@@ -45,7 +45,8 @@ patched copy of GMod managed by RTXLauncher.
    [`tools/steam/verify_install.py`](tools/steam/verify_install.py.md) proves an install is still vanilla.
 3. **Never touch Remix `user.conf`**, and never overwrite a file the user edited (compare hashes first).
 4. **Native code is opt-in.** Only allowlisted packages may deploy or load native code
-   ([ADR 0003](docs/decisions/0003-native-trust-allowlist.md)). Do not loosen the allowlist, the path
+   ([ADR 0003](docs/decisions/0003-native-trust-allowlist.md)); a package from any other subscribed
+   Workshop item may hold content only ([ADR 0027](docs/decisions/0027-content-packages-from-any-subscription.md)). Do not loosen the allowlist, the path
    rules or the off switches without a new decision record that the user agreed to.
 5. **Ask before anything outward-facing:** pushing to `origin`, publishing or updating a Workshop
    item, changing Steam settings or launch options, deleting user data.

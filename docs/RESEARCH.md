@@ -1246,3 +1246,54 @@ repository's `main` working tree, byte for byte, except `lua/mmdhl/native_policy
 - No earlier source-repository commit had run one (no other such log existed).
 - The 15 names `git rev-parse --local-env-vars` lists on git 2.56.0 are the ones the script now
   removes.
+
+## 24. The seventh field round: Draconic's motion blur, GMod's Workshop mount, subscribed content (2026-10-29, Claude)
+
+**"Disabling motion blur will break addons' effects..." every second.**
+- It is not GMod's: no game DLL or depot Lua has the line. A scan of the Lua inside all 677 installed
+  `.gma` archives found it in Draconic Base (1847505933), `lua/draconic/cl/library.lua:242-248`.
+- Once a second (`rt > MBlurCheck`, then `+1`), if `GetConVar("mat_motion_blur_enabled"):GetInt() < 1`,
+  it prints the line and runs `LocalPlayer():ConCommand("mat_motion_blur_enabled 1")` and
+  `ConCommand("mat_motion_blur_strength 0")`. It cites garrysmod-requests issue 2110.
+- The companion's guard pins `mat_motion_blur_enabled` at 0 in RTX sessions (ADR 0022) and drops that
+  command, so the check failed every second. GMod caches `GetConVar` objects per name
+  (`lua/includes/util.lua:574`), so the guard recognizes the convar by identity.
+
+**GMod's Workshop mount at start**, measured at the main menu with no map requested (the PoC, 755
+subscriptions):
+- 4.0 s: `Mounted 0 of 755 workshop addons!`, before Steam has listed the subscriptions.
+- 5.0 s: `Addons have changes - remounting`, then for each native-loader package
+  `Couldn't mount addon file '<path>' from '<title>' (<id>)`.
+- 7.0 s: `Mounted 752 of 755 workshop addons!`.
+- A map on the command line (`+map`) in a session with Workshop add-ons waits on that fetch: the
+  window shows "Fetching Subscriptions... 0 of 755" and "Waiting for Steam Workshop to finish...", and
+  goes Not Responding. One such run exited -1 after 21 s with an empty `console.log`. The user had seen
+  agents do this nine times. `poc_session.py` now starts such runs at the menu.
+
+**Why GMod's addon list shows the packages red.**
+- `html/js/menu/control.Addons.js:488` adds the class `invalid` (`html/css/Workshop.css:484`,
+  `#d22`) when the item from `engine.GetAddons()` has an `invalid_reason`. GMod sets that when it cannot
+  mount the archive, and a native-loader package cannot be mounted: its files are under `native/`,
+  which GMod's Workshop whitelist does not take.
+- The menu state loads a fixed list of files (`lua/menu/menu.lua`, `includes/init_menu.lua`): no
+  plugin folder, and this build has no `lua_run_menu` (the binaries hold only `lua_run` and
+  `lua_run_cl`). So nothing of ours can run in the menu state without editing depot files or
+  injecting code into `lua_shared.dll` from the bootstrap.
+- The console line comes from `filesystem_stdio.dll` (format `Couldn't mount addon file '%s' from
+  '%s' (%llu)`). It imports `Warning`, `Msg`, `DevMsg`, `DevWarning`, `ConColorMsg` and
+  `LoggingSystem_Log` from `tier0.dll`. GMod's x64 `tier0.dll` exports the `LoggingSystem_*` API, but
+  not `SpewOutputFunc`, `GetSpewOutputFunc`, `WarningV` or `MsgV`.
+
+**Native-loader packages among the subscriptions** (ADR 0027):
+- Reading the index of all 677 installed `.gma` archives (98,793 entries) for `native/manifest.json`
+  took 0.29 s in Python, warm. It found three packages, each listing the manifest first: 3829070317 (the
+  RTX package), 3829275998 (Modern House RTX) and 3829348717 (Guinaifen RTX).
+- What they deploy, by area:
+
+  | Package | `garrysmod/addons` | `rtx-remix/mods` | Elsewhere |
+  |---|---|---|---|
+  | Guinaifen RTX | 28 `dat`, 2 `json` | 44 `dds`, 2 `usda` | |
+  | Modern House RTX | 6 `lua`, 1 `json`, 1 `vtf` | 490 `dds`, 2 `usda` | |
+  | RTX package | `lua`, `vtf`, `vmt`, `dat`, `png`, `json` and more | `dds`, `usda`, `bmp`, `mdl`, `txt` | `garrysmod/lua/bin`: 8 `dll`, 1 `exe`, 1 `json`; 191 payload files |
+- Guinaifen's manifest: id `guinaifen-rtx`, kinds `lua-addon` and `root-files`, roots
+  `garrysmod/addons/mmdhl_guinaifen` and `rtx-remix/mods/pbr_guinaifen`, no `remix` section.

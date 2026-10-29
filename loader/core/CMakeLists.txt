@@ -5,6 +5,7 @@ add_library(nl_core STATIC
   src/activate.cpp
   src/cmdline.cpp
   src/config.cpp
+  src/content.cpp
   src/crc32.cpp
   src/deploy.cpp
   src/discovery.cpp

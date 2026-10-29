@@ -29,6 +29,7 @@ FIELD_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
 MAP_MARKER = re.compile(r"(?m)^Clientside Lua startup!\s*$")
 MOUNT_MARKER = re.compile(r"(?m)^NL_SESSION_MOUNT true")
 EYE_MARKER = re.compile(r"(?m)^NL_SESSION_EYE ")
+WORKSHOP_MOUNTED = re.compile(r"(?m)^Mounted (\d+) of (\d+) workshop addons!")
 LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 
@@ -586,10 +587,18 @@ def step_run(args) -> dict:
     remix_log = root / "rtx-remix" / "logs" / "remix-dxvk.log"
     remix_before = remix_log.stat().st_mtime if remix_log.exists() else None
     window = [] if args.no_window else ["-windowed", "-w", str(args.width), "-h", str(args.height)]
-    arguments = ["-game", "garrysmod", "-console", *window,
+    # -multirun: the user may be playing another install meanwhile, and Source otherwise ends a second
+    # instance at once (exit -1, nothing in the log). This install's own game is still refused above.
+    arguments = ["-game", "garrysmod", "-multirun", "-console", *window,
                  "-condebug", *([] if args.workshop else ["-noworkshop"]), *([] if args.addons else ["-noaddons"]),
                  *args.extra, "+maxplayers", str(args.players), "+mat_dxlevel"]
-    arguments += ["+map", args.map] if args.map else []
+    # Workshop add-ons mount twice at start: before Steam has listed the subscriptions ("Mounted 0 of 755
+    # workshop addons!") and again once it has ("Addons have changes - remounting", then "Mounted 752 of
+    # 755 ..."). A map asked for in between waits on that fetch ("Waiting for Steam Workshop to
+    # finish...") and the window stops answering. So with --workshop the game starts at the menu, and the
+    # map is asked for through the console once the Workshop is mounted.
+    menu_first = bool(args.workshop and args.map)
+    arguments += ["+map", args.map] if args.map and not menu_first else []
     arguments += args.post
     environment = dict(os.environ)
     environment.pop("NATIVE_LOADER_DISABLE", None)
@@ -622,6 +631,22 @@ def step_run(args) -> dict:
             time.sleep(0.5)
         return False
 
+    def wait_workshop(deadline: float) -> dict:
+        """Waits for the Workshop mount that follows Steam's list of subscriptions (see menu_first): a
+        second "Mounted N of M workshop addons!", or a first that mounted some or had none to mount,
+        then for the log to be quiet for 5 s."""
+        found: list[tuple[str, str]] = []
+
+        def done() -> bool:
+            return len(found) >= 2 or any(int(n) or not int(m) for n, m in found)
+
+        while time.monotonic() < deadline and process.poll() is None and not done():
+            time.sleep(0.5)
+            found = WORKSHOP_MOUNTED.findall(log_text())
+        ready = done()
+        return {"workshop_mounted": [f"{n} of {m}" for n, m in found], "workshop_ready": ready,
+                "quiet_before_map": ready and wait_quiet(5, 60), "seconds_to_workshop": round(time.monotonic() - began, 1)}
+
     not_ours: set[int] = set()
 
     def stop() -> list[int]:
@@ -636,7 +661,11 @@ def step_run(args) -> dict:
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     record["pid"] = process.pid
     try:
-        loaded = wait_for_map(1, began + args.timeout)
+        if menu_first:
+            record.update(wait_workshop(began + args.timeout))
+            hwnd = console_window(process.pid) if record["workshop_ready"] else None
+            record["map_command"] = bool(hwnd) and console(hwnd, f"map {args.map}")
+        loaded = wait_for_map(1, began + args.timeout) if not menu_first or record["map_command"] else False
         record["map_loaded"] = loaded
         record["seconds_to_map"] = round(time.monotonic() - began, 1)
         modules = modules_of(process.pid) if process.poll() is None else []

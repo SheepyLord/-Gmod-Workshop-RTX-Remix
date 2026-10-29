@@ -179,6 +179,24 @@ Remix (the RTX fixes') belong in a package marked `"requires_remix": true`: with
 the bootstrap hides its add-on folders from GMod, so their Lua does not run
 ([ADR 0013](decisions/0013-rtx-only-addons-hidden-without-rtx.md)).
 
+## Content-only packages (loader 0.4.0, ADR 0027)
+
+A package needs no allowlisting when it holds content only. Then any player who subscribes to its
+Workshop item gets it at the next start ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)).
+Such a package may hold:
+
+- kinds `root-files` and `lua-addon` only: no `remix`, `patch_sets`, `module_overrides`,
+  `session_cvars` or `module_dependencies`, and no files under `native/payload/`;
+- root files under `rtx-remix/mods/<mod>/` that are Remix data: `.usd .usda .usdc .usdz .dds .png .jpg
+  .jpeg .tga .bmp .exr .hdr .mdl .json .txt`;
+- root files under `garrysmod/addons/<add-on>/` that GMod's Workshop whitelist takes (the table in
+  gmad, also in [`tools/gmapack`](../tools/gmapack/gmapack.py.md)), and `addon.json`.
+  [`package_content.py`](../tools/package_content.py.md) filters add-ons that way already.
+
+The loader finds such a package by reading the index of every installed `.gma` for
+`native/manifest.json`. A package that holds anything else is skipped, with a reason that says to list
+its item in `allow.workshop`, which then deploys all of it.
+
 ## Path rules
 
 Every path in a manifest, and every package path that is deployed, must pass `nl::paths::problem`:

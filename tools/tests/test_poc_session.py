@@ -240,6 +240,63 @@ class StepRunTests(unittest.TestCase):
         self.assertEqual(sent, ps.client_lua_lines('camera', ps.camera_lua(args.camera, False)) + ['quit'])
         self.assertFalse(data.exists())
 
+    def test_with_workshop_add_ons_the_map_waits_for_the_workshop_mount(self):
+        # A map on the command line, or sent while Steam still lists the subscriptions, waits on that
+        # fetch and the game stops answering: the run starts at the menu and asks for the map once the
+        # second mount is done and the log is quiet.
+        clock, game, sent, launched = Clock(), FakeGame(), [], []
+        log = self.root / 'garrysmod' / 'console.log'
+
+        def launch(arguments, **_):
+            launched.append(arguments)
+            log.write_text('Mounted 0 of 755 workshop addons!\n', encoding='utf-8')
+            return game
+
+        def sleep(seconds):
+            clock.sleep(seconds)
+            if clock.now > 1010 and 'remounting' not in log.read_text(encoding='utf-8'):
+                with open(log, 'a', encoding='utf-8') as handle:
+                    handle.write('Addons have changes - remounting\nMounted 752 of 755 workshop addons!\n')
+
+        def console(hwnd, command, attempts=6):
+            sent.append((clock.now, command))
+            if command == 'map gm_construct':
+                self.assertIn('Mounted 752 of 755', log.read_text(encoding='utf-8'))
+                with open(log, 'a', encoding='utf-8') as handle:
+                    handle.write('Clientside Lua startup!\n')
+            elif command == 'quit':
+                game.quit()
+            return True
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'console', side_effect=console), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'game_window', return_value=None), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(run_args(self.root, self.evidence, workshop=True))
+        self.assertNotIn('+map', launched[0])
+        self.assertNotIn('-noworkshop', launched[0])
+        self.assertIn('-multirun', launched[0])  # beside another install the user may be playing
+        self.assertEqual(record['workshop_mounted'], ['0 of 755', '752 of 755'])
+        self.assertTrue(record['workshop_ready'] and record['quiet_before_map'] and record['map_command'])
+        self.assertTrue(record['map_loaded'])
+        commands = [command for _, command in sent]
+        self.assertEqual(commands, ['map gm_construct', 'quit'])
+        self.assertGreater(sent[0][0], 1015)  # after the remount, and 5 s of quiet
+        # Without Workshop add-ons the map stays on the command line.
+        log.unlink()
+        launched.clear()
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=lambda a, **k: launched.append(a) or FakeGame(running=False)), \
+                mock.patch.object(ps.time, 'sleep'):
+            record = ps.step_run(run_args(self.root, self.evidence))
+        self.assertEqual(launched[0][-2:], ['+map', 'gm_construct'])
+        self.assertNotIn('workshop_ready', record)
+
     def test_cleanup_leaves_a_game_this_run_did_not_start(self):
         # R1-019's repro: a same-root game that appears after the preflight is somebody else's.
         calls = iter([[]])

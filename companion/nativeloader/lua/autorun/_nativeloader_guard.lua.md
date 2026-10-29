@@ -9,6 +9,11 @@ Its name sorts first among the autorun files, so it is in place before other add
   `Player:ConCommand` that would change one of them is dropped. The console says so once per caller
   and variable: `[nativeloader] kept r_threaded_particles at 0 for RTX: lua/autorun/client/cl_antilag.lua tried 1`.
   Typing a command in the console is not Lua, so it still works.
+- **Motion blur reads as on.** The engine keeps `mat_motion_blur_enabled` at 0, but Lua that reads it
+  through `GetConVar(...)` (`GetInt`, `GetFloat`, `GetBool`, `GetString`) sees it as on, and so does
+  `GetConVarNumber`, which GMod builds on `GetConVar`. Draconic Base otherwise printed "Disabling motion
+  blur will break addons' effects. Setting mat_motion_blur_strength to 0 instead..." every second and
+  asked for it again. The engine and the console still see the real value.
 - **No raster post-processing over the path-traced image.** After the client initialises, the stock
   functions `DrawBloom`, `DrawColorModify`, `DrawSharpen`, `DrawMotionBlur`, `DrawToyTown`,
   `DrawMaterialOverlay`, `DrawSobel`, `DrawSunbeams`, `DrawTexturize`, `DrawBokehDOF` and `halo.Render`
