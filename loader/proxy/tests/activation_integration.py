@@ -242,7 +242,9 @@ def main():
         layer_copies = status['activation']['layer_copies']
         check([layer['copy'] for layer in layer_copies] == ['native-loader/remix/rtx-1.conf', 'native-loader/remix/dxvk-1.conf'],
               f'layer copies: {layer_copies}')
-        check(status['activation']['layers']['dxvk'] == ['native-loader/remix/dxvk-1.conf', 'dxvk.conf'],
+        # A computer without an NVIDIA GPU (CI's runner) also gets the loader's non-NVIDIA layer (ADR 0030).
+        loader_layers = ['native-loader/remix/non-nvidia.conf'] if status['activation']['non_nvidia'] else []
+        check(status['activation']['layers']['dxvk'] == ['native-loader/remix/dxvk-1.conf', *loader_layers, 'dxvk.conf'],
               f'the runtime is not given the copy: {status["activation"]["layers"]}')
         rtx_copy = copies.root / layer_copies[0]['copy']
         rtx_copy.write_text('rtx.test = False\n', encoding='ascii')
@@ -252,7 +254,7 @@ def main():
         dxvk_copy.mkdir()  # a folder in its place: the copy cannot be written
         result = copies.run()
         fallback = active(copies, result)
-        check(result[0]['environment']['DXVK_CONFIG_FILE'] == layer_copies[1]['source'] + ',dxvk.conf',
+        check(result[0]['environment']['DXVK_CONFIG_FILE'] == ','.join([layer_copies[1]['source'], *loader_layers, 'dxvk.conf']),
               f'an unwritten copy did not fall back to its source: {result[0]["environment"]}')
         check([layer['copy'] for layer in fallback['activation']['layer_copies']] == ['native-loader/remix/rtx-1.conf'],
               'an unwritten copy is still reported as used')

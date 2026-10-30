@@ -232,6 +232,10 @@ build. RESEARCH.md section 32.
   config file" for both. The map loaded in 17.5 s, the frames are path-traced (no black screen), 7
   patches, the shader override, Model Hotloader's runtime loaded before its modules (no session notes),
   no Lua errors, a normal quit. Not run on a GPU that is not NVIDIA's.
+- CI's runner has no NVIDIA GPU: there the activation integration test's list is the copy, then
+  `native-loader/remix/non-nvidia.conf`, then `dxvk.conf` (the bootstrap with a fake runtime, not a
+  Remix session). The first version of the new check expected the NVIDIA-only list and failed on CI
+  (`b313477`); it now follows `activation.non_nvidia`.
 - While a game held most of the memory, the installer's tests failed with `OutOfMemoryException`:
   `install-loader.ps1` kept its rollback copies as arrays of boxed bytes (3.1 GB at the peak). Fixed; 236
   MB.
