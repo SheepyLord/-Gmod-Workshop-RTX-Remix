@@ -128,3 +128,8 @@ coverage lives in tools/tests/test_glass_map.py and glass_map_harness.lua
 The bundled Model Hotloader renderer now routes depth behavior by native shader-family detection.
 Coverage is in tools/tests/test_hotloader_depth.py and hotloader_depth_harness.lua; see
 [ADR 0041](decisions/0041-hotloader-remix-depth-materials.md).
+
+Remix persistence regressions use [`tools/tests/test_remix_settings.py`](../tools/tests/test_remix_settings.py.md)
+and its Lua widget/lifecycle harness. Common Remix numeric controls are unbound and selected
+explicitly; startup replay is opt-in. Runtime patch 0008 adds atomic checked Save and non-destructive
+failed Reload ([ADR 0044](decisions/0044-remix-settings-persistence.md)).

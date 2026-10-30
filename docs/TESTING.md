@@ -316,3 +316,21 @@ The PoC acceptance probe loads the specific reported asset from the existing cac
 requests and actual draws, checks both depth-view flags from a render hook, and inspects its own
 console and screenshots. No user model is copied into the repository or release. Use a fresh
 process-only DXVK_LOG_PATH for the RTX test, leaving upload permissions and user.conf unchanged.
+
+### Remix settings persistence
+
+`tools/tests/test_remix_settings.py` runs seven Lua lifecycle scenarios: fresh controls, archived
+legacy zeros, explicit startup replay, deliberate zero edits, native Save followed by restart,
+invalid values, and clearing overrides. Repeated panel construction and programmatic synchronization
+must send no values. The existing sky tests cover actually applied fog ownership.
+
+Runtime patch 0008 extends test_option_layer_export in its dedicated _CompUnitTest_x64 build. It
+locks the destination against replacement, verifies failed Save leaves the original and unsaved
+state intact, unlocks and retries, checks zero and unknown-key round trips, denies reads during
+Reload, and proves live edits survive that failure. Missing directories fail cleanly and no staging
+files remain. Do not run runtime unit tests from the game build directory.
+
+PoC acceptance builds the real DForm/DNumSlider controls with the existing archived zeros, captures
+Remix API writes while opening and reopening them, exercises an explicit zero and startup replay,
+and checks another launch without replay. Snapshot client.vdf/server.vdf along with the usual
+bootstrap/config/video settings. Hash user.conf without editing it. Keep only own-session logs.

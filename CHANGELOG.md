@@ -6,6 +6,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Fix Common Remix sliders turning unset settings into archived zeros. Remix's saved settings now
+  win at launch unless startup overrides are explicitly enabled; numeric overrides require a
+  selection. Runtime saves replace files atomically, retain unsaved state on failure, and failed
+  reloads keep live edits ([ADR 0044](docs/decisions/0044-remix-settings-persistence.md)).
+
 - Keep first-person arms visible independently of primary-space player bodies. Isolate local-body
   texture categories so shared-texture players and ragdolls stay visible, and add translated RTX-tab
   controls for local-player shadows and body height ([ADR 0043](docs/decisions/0043-player-body-viewmodel-and-shadows.md)).

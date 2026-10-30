@@ -3,8 +3,8 @@
 -- are moved into this tab as they register, untouched. The tab adds:
 --   * Start here: status, the guide, the classic settings, the guard, the language;
 --   * Remix settings: common Remix options. A value set here is kept in a saved client setting
---     (nativeloader_remix_<name>) and given to Remix at every session start through the RTX fixes'
---     RemixConfig API. Empty means "leave it to Remix's own files".
+--     (nativeloader_remix_<name>) and applied when edited. Replaying them at startup is opt-in;
+--     otherwise Remix's own saved files remain authoritative.
 --   * Sky and weather: the physical sky, its time of day and the weather (nativeloader_sky.lua).
 -- The tab's text is translated (nativeloader/i18n.lua). Documented in nativeloader_menu.lua.md beside this file.
 local i18n = include("nativeloader/i18n.lua")
@@ -51,12 +51,15 @@ local FOG = {
     dust = { "0.87, 0.73, 0.5", "60", "0.85, 0.75, 0.65", "0.4" },
     smoke = { "0.87, 0.73, 0.5", "20", "0.85, 0.75, 0.65", "0.6" },
 }
+local fog_active = false
+hook.Add("NativeLoaderRemixFogOverride", "nativeloader_menu", function() return fog_active end)
 local function apply_fog(name)
     local values = FOG[name]
     if not values then return end
     RemixConfig.SetConfigVariable("rtx.volumetrics.enable", "True")
     RemixConfig.SetConfigVariable("rtx.volumetrics.enableFogRemap", "False")
     for i, option in ipairs(FOG_OPTIONS) do RemixConfig.SetConfigVariable(option, values[i]) end
+    fog_active = true
 end
 
 -- Remix options with a short name, a label and the control kind, and for a choice that sets several
@@ -77,10 +80,10 @@ local OPTIONS = {
     { "indirect_mode", "rtx.integrateIndirectMode", N("Indirect lighting"), "choice",
         { { N("Importance sampled"), "0" }, { "ReSTIR GI", "1" }, { N("Neural Radiance Cache"), "2" },
           { N("Hashed radiance cache"), "3" } } },
-    { "max_bounces", "rtx.pathMaxBounces", N("Max light bounces"), "number", { 1, 16, 0 } },
+    { "max_bounces", "rtx.pathMaxBounces", N("Max light bounces"), "number", { 1, 16, 0, 4 } },
     -- The sun and the clouds are the "Sky and weather" panel's (nativeloader_sky.lua), and so is the
     -- fog, unless a fog preset is chosen here.
-    { "sky_brightness", "rtx.skyBrightness", N("Sky brightness"), "number", { 0, 10, 2 },
+    { "sky_brightness", "rtx.skyBrightness", N("Sky brightness"), "number", { 0, 10, 2, 1 },
         N("The map's own skybox only.") },
     { "fog", "rtx.volumetrics", N("Fog"), "choice",
         { { N("Remix default"), "default" }, { N("Heavy fog"), "heavyFog" }, { N("Light fog"), "lightFog" },
@@ -88,28 +91,66 @@ local OPTIONS = {
         N("Remix's volumetric fog presets. One chosen here replaces the weather's fog. Dense fog stays dark where no light reaches it."),
         apply_fog },
     { "post_effects", "rtx.postfx.enable", N("Post effects"), "bool", nil, N("Bloom, motion blur and film grain.") },
-    { "colour_purity", "rtx.tonemap.psycho17.purityScale", N("Tone map colour purity"), "number", { 0, 3, 2 } },
+    { "colour_purity", "rtx.tonemap.psycho17.purityScale", N("Tone map colour purity"), "number", { 0, 5, 2, 1 } },
 }
 
-local convars = {}
+local replay = CreateClientConVar("nativeloader_remix_reapply", "0", true, false,
+    "Explicitly reapply RTX tab overrides at map start, instead of using only Remix's saved settings")
+local convars, enabled = {}, {}
 for _, option in ipairs(OPTIONS) do
     convars[option[1]] = CreateClientConVar("nativeloader_remix_" .. option[1], "", true, false,
         "Remix " .. option[2] .. " set from the RTX Remix tab (empty: leave it to Remix's files)")
+    if option[4] == "number" then
+        -- Old sliders could archive zero just by opening the panel. Retain the value, but require
+        -- a new explicit selection before using it; zero itself can be an intentional setting.
+        enabled[option[1]] = CreateClientConVar("nativeloader_remix_" .. option[1] .. "_enabled", "0", true, false)
+    end
 end
 
+local function number_value(option)
+    local value = tonumber(convars[option[1]]:GetString())
+    local range = option[5]
+    if value and value == value and value >= range[1] and value <= range[2] then return value end
+end
+
+local started = false
 local function push(option)
     local value = convars[option[1]]:GetString()
-    if value == "" or not remix_ready() then return end
+    if not started or value == "" or not remix_ready() then return end
+    if option[4] == "number" then
+        if not enabled[option[1]]:GetBool() or number_value(option) == nil then return end
+    elseif option[4] == "choice" then
+        local valid = false
+        for _, choice in ipairs(option[5]) do if choice[2] == value then valid = true end end
+        if not valid then return end
+    elseif value ~= "0" and value ~= "1" then
+        return
+    end
     if option[7] then return option[7](value) end
     if option[4] == "bool" then value = tobool(value) and "True" or "False" end
     RemixConfig.SetConfigVariable(option[2], value)
 end
 
 for _, option in ipairs(OPTIONS) do
-    cvars.AddChangeCallback("nativeloader_remix_" .. option[1], function() push(option) end, "nativeloader_menu")
+    cvars.AddChangeCallback("nativeloader_remix_" .. option[1], function()
+        if option[1] == "fog" and convars.fog:GetString() == "" then fog_active = false end
+        push(option)
+    end, "nativeloader_menu")
+    if enabled[option[1]] then
+        cvars.AddChangeCallback("nativeloader_remix_" .. option[1] .. "_enabled", function()
+            if enabled[option[1]]:GetBool() and number_value(option) == nil then
+                RunConsoleCommand("nativeloader_remix_" .. option[1], tostring(option[5][4]))
+            else
+                push(option)
+            end
+        end, "nativeloader_menu")
+    end
 end
 hook.Add("InitPostEntity", "nativeloader_remix_options", function()
-    timer.Simple(4, function() for _, option in ipairs(OPTIONS) do push(option) end end)
+    timer.Simple(4, function()
+        started = true
+        if replay:GetBool() then for _, option in ipairs(OPTIONS) do push(option) end end
+    end)
 end)
 
 -- Move the RTX add-ons' panels into the tab as they register (they do so in PopulateToolMenu).
@@ -159,7 +200,9 @@ local function remix_settings(panel)
     if not remix_ready() then
         panel:Help(L("The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."))
     end
-    panel:Help(L("A setting chosen here is kept and applied at every start. Clear it (the empty choice, or the reset button) to leave it to Remix's own files."))
+    panel:Help(L("Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."))
+    panel:CheckBox(L("Reapply these overrides at every launch"), "nativeloader_remix_reapply")
+    panel:ControlHelp(L("Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."))
     for _, option in ipairs(OPTIONS) do
         local name = "nativeloader_remix_" .. option[1]
         if option[4] == "choice" then
@@ -173,12 +216,34 @@ local function remix_settings(panel)
             box:AddChoice(L("Off"), "0")
         else
             local range = option[5]
-            panel:NumSlider(L(option[3]), name, range[1], range[2], range[3])
+            panel:CheckBox(string.format(L("Set %s here"), L(option[3])), name .. "_enabled")
+            -- Never bind a numeric widget to the empty-string sentinel. Set up its range and
+            -- initial value before installing the edit handler, and guard later read-only syncs.
+            local slider = panel:NumSlider(L(option[3]), nil, range[1], range[2], range[3])
+            local syncing = false
+            local last_value, last_enabled
+            local function sync()
+                local value = number_value(option) or range[4]
+                local active = enabled[option[1]]:GetBool()
+                if value == last_value and active == last_enabled then return end
+                last_value, last_enabled = value, active
+                syncing = true
+                slider:SetValue(value)
+                slider:SetEnabled(active)
+                syncing = false
+            end
+            sync()
+            slider.OnValueChanged = function(_, value)
+                if syncing or not enabled[option[1]]:GetBool() then return end
+                RunConsoleCommand(name, tostring(math.Round(math.Clamp(value, range[1], range[2]), range[3])))
+            end
+            slider.Think = sync
         end
         -- A label holds about 100 pixels; what does not fit goes below the control.
         if option[6] then panel:ControlHelp(L(option[6])) end
     end
-    panel:Button(L("Reset these to Remix's own values"), "nativeloader_remix_reset")
+    panel:ControlHelp(L("Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."))
+    panel:Button(L("Clear this panel's overrides"), "nativeloader_remix_reset")
 end
 
 local function player_settings(panel)
@@ -189,7 +254,11 @@ local function player_settings(panel)
 end
 
 concommand.Add("nativeloader_remix_reset", function()
-    for _, option in ipairs(OPTIONS) do RunConsoleCommand("nativeloader_remix_" .. option[1], "") end
+    for _, option in ipairs(OPTIONS) do
+        RunConsoleCommand("nativeloader_remix_" .. option[1], "")
+        if enabled[option[1]] then RunConsoleCommand("nativeloader_remix_" .. option[1] .. "_enabled", "0") end
+    end
+    RunConsoleCommand("nativeloader_remix_reapply", "0")
     print("[nativeloader] Remix settings from the RTX Remix tab cleared; they apply from Remix's files at the next start.")
 end)
 

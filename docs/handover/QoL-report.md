@@ -377,3 +377,35 @@ importance-sampled GI after startup; the shipping GI defaults are unchanged. Exi
 pseudoweapon and built-in engine material diagnostics are outside the body-proxy change. The old
 world-weapon proxy still follows its separate existing controls and the body primary-space setting.
 No real field-install files were written, and no new public release or Workshop item was created.
+
+## Remix settings persistence (2026-10-30)
+
+User request 9: fix purity becoming zero at launch and saved settings being overridden or lost.
+The Common Remix panel no longer binds empty-string settings to numeric widgets. Numeric overrides
+require an explicit selection; old drafts are kept but inactive. Startup replay is a new opt-in,
+off by default, so Alt+X saves remain authoritative at the next launch. Choices and numeric values
+are validated; programmatic initialization and synchronization send nothing. The panel explains
+that it shows its override drafts, not a live Remix readout, in all six languages. Fog ownership
+tracks whether a preset was actually applied in this session.
+
+Runtime patch 0008 makes Save atomic, checks failures, and advances the saved baseline only after
+success. Failed Reload keeps active values. Legitimate zero settings remain supported. No manual
+user.conf changes or field-install writes.
+
+Validation: `tools/test.ps1 -Config Release` passed (18 CTest groups, 262 Python tests), as did the
+seven Lua lifecycle scenarios, the dedicated runtime option-layer export/save/reload tests, the
+native rebuild and eight-patch recipe verification. All six companion catalogs contain 178
+translations; all six bundled-add-on catalogs still contain 472 translations.
+
+The PoC hit the existing HWSkin model-cache reload crash before the probe. Two clean acceptance
+sessions on the isolated stock fixture (`legacy-live-first`, `legacy-live-restart`) loaded the map,
+quit normally, reported zero Lua errors and captured screenshots. A test-only GI=0 layer isolated
+the earlier NRC/model-cache issues; runtime and Lua bytes matched the shipment. The menu sent no
+numeric startup writes with legacy zeros, nor when opened or reopened. Explicit purity 0 and 1.61
+each reached Remix once. The next process retained the selected draft and sent no stale menu writes;
+Remix loaded purity 1.12 from its own configuration. The independent map-light wrapper's positive
+sky-brightness update was identified separately from menu writes.
+
+Both test installs' bootstrap, config, client/server VDF and video preferences were restored and
+hash-verified. Native user config files remained unchanged; the test addon and marker were removed.
+Evidence and delivery receipts are under out/settings-evidence and out/settings-*.log.
