@@ -1,0 +1,11 @@
+{
+	"title": "Advanced Bodygroup Tool",
+	"type": "tool",
+	"tags": [ "build", "fun" ],
+	"ignore": [
+		"*.psd",
+		"*.xcf",
+		"*.gma",
+		"README.md"
+	]
+}

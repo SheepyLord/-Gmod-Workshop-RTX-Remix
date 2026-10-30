@@ -2,12 +2,14 @@
 
 Keeps the project's Workshop item, 3829070317, up to date
 ([ADR 0016](../docs/decisions/0016-one-workshop-item-kept-current.md)). It builds the combined RTX
-package from the inputs in [`workshop.json`](workshop.json), and uploads it with GMod's
-`gmpublish.exe` when its content changed.
+package from this repository alone, as [`workshop.json`](workshop.json) lays it out
+([ADR 0033](../docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)), and uploads it with
+GMod's `gmpublish.exe` when its content changed. [`build_package.py`](build_package.py.md) is the same
+build without the upload.
 
 Its git hooks run it in the background, so that:
 - a commit or a merge on `main` updates the item;
-- a push of `main` updates GitHub and the item.
+- a push of `main` updates GitHub (with the Git LFS files) and the item.
 
 ```powershell
 python tools\publish_workshop.py --install-hooks     # once per clone: the hooks below
@@ -15,7 +17,7 @@ python tools\publish_workshop.py                     # publish now (skips if not
 python tools\publish_workshop.py --dry-run           # build and compare, upload nothing
 python tools\publish_workshop.py --force             # build and upload even if unchanged
 python tools\publish_workshop.py --uninstall-hooks   # remove this script's hooks
-python tools\publish_workshop.py --install-source-hooks <add-on repo> [--any-branch]  # a part's source repository
+python tools\publish_workshop.py --uninstall-source-hooks <add-on repo>  # remove ADR 0024's hooks there
 ```
 
 ## `workshop.json`
@@ -24,38 +26,31 @@ python tools\publish_workshop.py --install-source-hooks <add-on repo> [--any-bra
 |---|---|
 | `item` | The Workshop item id that is updated |
 | `package` | The combined package's `id` and `name`, and the Workshop `title`, `type`, `tags` and `description` written into the archive |
-| `parts` | The packages that go in, in order. Either `{"package": "<.gma or package folder>"}`, used as it is, or `{"build": "package_fixes"\|"package_runtime"\|"package_content"\|"package_reshade", "args": [...]}`, built afresh by that packager with those arguments |
+| `parts` | The packages that go in, in order. Either `{"package": "<.gma or package folder>"}`, used as it is, or `{"build": "package_fixes"\|"package_runtime"\|"package_content"\|"package_reshade", "args": [...]}`, built afresh by that packager with those arguments. Relative paths are relative to this repository; every part reads `out/inputs/<part>/...`, unpacked from `packages/<part>/` |
 | `gmpublish` | The `gmpublish.exe` that uploads. It runs from its game root, which must hold `steam_appid.txt` |
 
-Today's parts are:
-- **the runtime**, pinned as `out\packages\sky\runtime-b6.gma`: runtime B with the classic install's
-  settings as one low defaults layer ([ADR 0021](../docs/decisions/0021-remix-defaults-in-one-low-layer.md)),
-  a `d3d9.dll` from the fork branch `claude/sky-night` (translated menus, [RESEARCH.md](../docs/RESEARCH.md)
-  section 25; the real Moon, the night sky image and eclipses, section 29), the sky's textures in
-  `runtime\atmosphere\` (the Moon from NASA, the night sky from Night Sky HD LE), and a second dxvk
-  layer that gives shader compilation every hardware
-  thread but two ([ADR 0032](../docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md));
+Today's parts, each from its folder in [`packages/`](../packages/README.md):
+- **the runtime**, built by [`package_runtime.py`](package_runtime.py.md) from `packages/runtime`: the
+  fork's `d3d9.dll` ([runtime/](../runtime/README.md): translated menus, [RESEARCH.md](../docs/RESEARCH.md)
+  section 25; the real Moon, the night sky image and eclipses, section 29), NVIDIA's DLLs, the sky's
+  textures in `atmosphere\`, the classic install's settings as one low defaults layer
+  ([ADR 0021](../docs/decisions/0021-remix-defaults-in-one-low-layer.md)) and a second dxvk layer that
+  gives shader compilation every hardware thread but two ([ADR 0032](../docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md));
 - **ReShade 6.8.0** for RTX sessions, built by [`package_reshade.py`](package_reshade.py.md) from the
-  pinned official setup in `out\packages\reshade\` ([ADR 0028](../docs/decisions/0028-reshade-in-rtx-sessions.md));
-- **the RTX fixes** (with the companion and its translations from `companion/i18n`), rebuilt from
-  the fixes repository with the classic install's modules and the debug
-  module;
-- **Emissives**, the classic install's Remix mod for HL2's fluorescent lights, pinned as
-  `out\packages\round3\emissives.gma` ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md));
-- **Remove_halo**, the user's one-line add-on (`halo.Add` does nothing), rebuilt from its folder
-  `H:\BACKUP_20260815\Modding\ipg\Remove_halo` by [`package_content.py`](package_content.py.md) at
-  every publish, so an edit there reaches the item at the next commit or push of `main`;
-- **the user's five add-ons**, each rebuilt from its source at every publish
-  ([ADR 0024](../docs/decisions/0024-bundled-addons-and-module-dependencies.md)):
-  - Model Hotloader: its add-on and six natives from the classic install, its runtime loaded before
-    both modules;
-  - Advanced Material Editor: from its working copy, without its test textures, plus its RTX bridge
-    module from the classic install;
-  - Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer: from
-    their working copies.
+  official setup ([ADR 0028](../docs/decisions/0028-reshade-in-rtx-sessions.md));
+- **the RTX fixes**, built by [`package_fixes.py`](package_fixes.py.md) from their files and binary
+  modules, with the companion and its translations from this repository's `companion/`;
+- **Emissives**, the classic install's Remix mod for HL2's fluorescent lights, as packaged in round 3
+  ([ADR 0023](../docs/decisions/0023-content-packages-and-modern-house-item.md));
+- **Remove_halo**, the user's one-line add-on (`halo.Add` does nothing), and **the user's five
+  add-ons** ([ADR 0024](../docs/decisions/0024-bundled-addons-and-module-dependencies.md)), built by
+  [`package_content.py`](package_content.py.md): Model Hotloader with its natives and its runtime
+  loaded before both modules, Advanced Material Editor (without its test textures) with its RTX
+  bridge module, Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion
+  Importer.
 
-The fixes part takes its modules from the classic install too, so a module rebuilt and installed
-there (as the visibility-tuned `gmcl_RTXFixesBinary_win64.dll` was) ships with the next publish.
+A change to any of them reaches the item through an import into `packages/` and a commit here
+(packages/README.md, "Updating a part"); their own repositories no longer reach it.
 
 The Modern House RTX package is a separate test item (3829275998), uploaded by hand with
 `gmpublish update`, not by this script.
@@ -63,24 +58,26 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
 ## What a run does
 
 1. **Uncommitted changes.** It refuses when the packaging inputs in this repository have uncommitted
-   changes, which would otherwise go into the item: `companion/`, the four packagers, `gmapack.py`
-   and `workshop.json`. `--dry-run` and `--allow-dirty` skip this check.
+   changes, which would otherwise go into the item: `companion/`, `packages/`, `tools/inputs.py`, the
+   four packagers, `package_workshop.py`, `gmapack.py`, `third_party/reshade` and `workshop.json`.
+   `--dry-run` and `--allow-dirty` skip this check.
 2. **Lock.** Its state lives in the **main checkout's** `out\workshop`, whichever worktree runs it, so
    every worktree shares one record of what the item holds. It takes `out\workshop\publish.lock`
    there, so only one publish runs at a time. It waits up to
    two hours for a running publish, and takes over a lock whose owner is gone.
 3. **Fingerprint.** It computes a fingerprint of everything that can change the item:
-   - this repository's packaging inputs in `HEAD` (the companion and its translations, the packagers,
-     `third_party/reshade`, gmapack, `workshop.json`);
+   - those packaging inputs in `HEAD` (their git tree, which for an LFS file is its pointer and so
+     its content's oid) and any uncommitted change to them;
    - `workshop.json`;
-   - each part's paths: a git repository by its commit and changed files, a folder by each file's
-     name, size and time, a file by its size and time.
+   - any absolute path a part names (none does today): a git repository by its commit and changed
+     files, a folder by each file's name, size and time, a file by its size and time.
 
    If the fingerprint matches the last upload's, it stops: **unchanged inputs**. This is the usual
    result of a commit that touches only docs or loader code; the item does not contain `winmm.dll`.
-4. **Build.** It builds the parts and combines them with
-   [`package_workshop.py`](package_workshop.py.md) into
-   `out\workshop\<id>-<version>.gma`, keeping only the newest archive (about 1.4 GB). The version is
+4. **Build.** It unpacks the `packages/` parts the config reads into `out\inputs\`
+   ([`inputs.py`](inputs.py.md): every file checked against its index, its recorded time restored),
+   builds the parts and combines them with [`package_workshop.py`](package_workshop.py.md) into
+   `out\workshop\<id>-<version>.gma`, keeping only the newest archive (about 1.8 GB). The version is
    `0.0.0-dev.<UTC time>+<fingerprint prefix>`. The packagers check each part, and
    `package_workshop.py` the combined manifest, with `nlctl.exe` from this checkout's `out\build`
    (`win64-release`, else `win64-debug`), so that build must know the manifest. After a change that
@@ -100,29 +97,18 @@ They go in the common `.git\hooks`, shared by every worktree. Each one is marked
 `# nl-workshop-hook`; a hook without that marker is never replaced unless `--force-hooks` is given.
 `--uninstall-hooks` removes only marked hooks.
 
-| Hook | When it publishes |
-|---|---|
-| `post-commit` | after a commit, when the branch is `main` |
-| `post-merge` | after a merge or pull, when the branch is `main` |
-| `pre-push` | when `refs/heads/main` is pushed |
+`packages/` keeps its binaries in Git LFS, and these hooks take the place of the ones `git lfs
+install` writes, so each runs Git LFS's step first.
 
-**Hooks in the parts' source repositories** (`--install-source-hooks REPO`, repeatable; ADR 0024):
-`post-commit` and `post-merge` in that repository run this checkout's script by its absolute path, so
-an update there rebuilds the parts and uploads if the item's content changed.
-- They fire on that repository's `main`, or on any branch with `--any-branch`.
-- Installed (2026-10-29) in:
-  - the material editor's, the bodygroup destruction's and the motion importer's repositories (`main`);
-  - the fixes fork and Model Hotloader's repository (any branch): their builds reach the classic
-    install from feature-branch worktrees.
-- `--uninstall-source-hooks REPO` removes them. They carry the same marker, and an unmarked hook is
-  never replaced without `--force-hooks`.
-- **Git's hook environment is ignored.** Git runs a hook with the hooked repository in `GIT_DIR`,
-  `GIT_INDEX_FILE` and the like. The script removes those variables (`GIT_LOCAL_ENV`, the names `git
-  rev-parse --local-env-vars` lists) before any git call, so its git calls read this repository.
-  - Before round 6 they read the source repository instead. Each such run saw this repository's
-    packaging inputs as untracked, refused ("uncommitted changes in the packaging inputs"), and left
-    its log in the source repository's `out\workshop\logs`.
-  - So until then no source-repository commit had updated the item.
+| Hook | Git LFS's step | When it publishes |
+|---|---|---|
+| `post-commit` | `git lfs post-commit` | after a commit, when the branch is `main` |
+| `post-merge` | `git lfs post-merge` | after a merge or pull, when the branch is `main` |
+| `post-checkout` | `git lfs post-checkout` | never |
+| `pre-push` | `git lfs pre-push`, which uploads the LFS files the push needs; without git-lfs on the path the push stops (exit 2) | when `refs/heads/main` is pushed |
+
+`pre-push` reads the refs git gives it once and hands the same lines to Git LFS and to its own loop.
+Without git-lfs the other hooks skip its step and go on.
 
 Each hook runs `publish_workshop.py --background --reason "<what> <commit>"`.
 - The background run is detached, so the commit, merge or push returns at once.
@@ -131,13 +117,23 @@ Each hook runs `publish_workshop.py --background --reason "<what> <commit>"`.
   merge or push of `main` tries again.
 - Commits on other branches publish nothing.
 
+**Git's hook environment is ignored.** Git runs a hook with the hooked repository in `GIT_DIR`,
+`GIT_INDEX_FILE` and the like. The script removes those variables (`GIT_LOCAL_ENV`, the names `git
+rev-parse --local-env-vars` lists) before any git call, so its git calls read this repository.
+
+**The add-ons' repositories** carried hooks of this script until ADR 0033 (ADR 0024: their commits
+rebuilt the parts and uploaded). They were removed on 2026-10-30, from the fixes fork, Model
+Hotloader's, the material editor's, the bodygroup destruction's and the motion importer's
+repositories. `--uninstall-source-hooks REPO` removes them from another clone; it removes only
+`post-commit` and `post-merge` hooks that carry the marker.
+
 ## Side effects and exit codes
 
 - **Outward-facing:** it updates the Workshop item. AGENTS.md rule 5 allows that for this item
   without asking (the user's instruction, 2026-10-28). It never changes the item's visibility,
   title or description; those stay on the item's page.
-- **Writes:** `out\workshop\` (the archive, state files, logs, a scratch build folder), the
-  packagers' own scratch in `out\tmp`, and the hooks.
+- **Writes:** `out\workshop\` (the archive, state files, logs, a scratch build folder), `out\inputs\`,
+  the packagers' own scratch in `out\tmp`, and the hooks.
 - **Exit codes:** 0 on success or when there is nothing to do (the JSON result says which:
   `unchanged-inputs`, `unchanged-content`, `dry-run` or `uploaded`). 1 on a refusal or failure, with
   the reason on stderr.

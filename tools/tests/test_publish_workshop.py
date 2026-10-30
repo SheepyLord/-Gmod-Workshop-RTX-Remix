@@ -132,11 +132,13 @@ class HookTests(unittest.TestCase):
     def test_install_refuse_foreign_and_uninstall(self):
         hooks = pub.hooks_folder(self.repo)
         written = pub.install_hooks(False, self.repo)
-        self.assertEqual(sorted(Path(p).name for p in written), ['post-commit', 'post-merge', 'pre-push'])
-        for name in ('post-commit', 'post-merge', 'pre-push'):
+        self.assertEqual(sorted(Path(p).name for p in written), ['post-checkout', 'post-commit', 'post-merge', 'pre-push'])
+        for name in ('post-checkout', 'post-commit', 'post-merge', 'pre-push'):
             text = (hooks / name).read_bytes()
             self.assertIn(pub.HOOK_MARKER.encode(), text)
             self.assertNotIn(b'\r\n', text)
+            # Each runs Git LFS's own step, as the hooks `git lfs install` writes would (ADR 0033).
+            self.assertIn(b'git lfs ' + name.encode(), text)
         self.assertIn(b'"main"', (hooks / 'post-commit').read_bytes())
         self.assertIn(b'refs/heads/main', (hooks / 'pre-push').read_bytes())
         pub.install_hooks(False, self.repo)  # ours: replaced quietly
@@ -144,40 +146,48 @@ class HookTests(unittest.TestCase):
         with self.assertRaisesRegex(pub.PublishError, 'not ours'):
             pub.install_hooks(False, self.repo)
         removed = pub.uninstall_hooks(self.repo)
-        self.assertEqual(sorted(Path(p).name for p in removed), ['post-commit', 'post-merge'])
+        self.assertEqual(sorted(Path(p).name for p in removed), ['post-checkout', 'post-commit', 'post-merge'])
         self.assertEqual((hooks / 'pre-push').read_text(encoding='utf-8'), '#!/bin/sh\necho mine\n')
         pub.install_hooks(True, self.repo)
         self.assertIn(pub.HOOK_MARKER, (hooks / 'pre-push').read_text(encoding='utf-8'))
 
-    def test_source_hooks_call_this_checkouts_script_by_absolute_path(self):
+    def test_the_hooks_are_valid_sh(self):
+        # The sh git runs hooks with: on Windows, Git for Windows' own, beside git.exe (not on the path
+        # in PowerShell or cmd).
+        sh = shutil.which('sh')
+        git = shutil.which('git')
+        if not sh and git:
+            root = Path(git).resolve().parents[1]
+            sh = next((str(p) for p in (root / 'bin' / 'sh.exe', root / 'usr' / 'bin' / 'sh.exe') if p.is_file()), None)
+        if not sh:
+            self.skipTest('no sh beside git or on the path')
+        for name, text in pub.HOOKS:
+            path = self.repo / (name + '.sh')
+            path.write_bytes(text.encode('utf-8'))
+            done = subprocess.run([sh, '-n', str(path)], capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, f'{name}: {done.stderr}')
+
+    def test_old_source_hooks_are_removed_and_only_ours(self):
+        # ADR 0024 put hooks in the add-ons' repositories; since ADR 0033 the parts live in packages/,
+        # and --uninstall-source-hooks takes them out again without touching anyone else's hooks.
         source = self.repo / '!add-on'
         subprocess.run(['git', 'init', '-q', str(source)], check=True)
         hooks = pub.hooks_folder(source)
-        written = pub.install_source_hooks(source, False)
-        self.assertEqual(sorted(Path(p).name for p in written), ['post-commit', 'post-merge'])
-        script = (pub.main_checkout() / 'tools' / 'publish_workshop.py').as_posix()
-        for name in ('post-commit', 'post-merge'):
-            text = (hooks / name).read_bytes()
-            self.assertIn(pub.HOOK_MARKER.encode(), text)
-            self.assertIn(f'python "{script}" --background'.encode(), text)
-            self.assertIn(b'"!add-on ', text)  # the add-on's name in the change notes
-            self.assertIn(b'"main"', text)
-            self.assertNotIn(b'\r\n', text)
-        self.assertFalse((hooks / 'pre-push').exists())
+        hooks.mkdir(parents=True, exist_ok=True)
+        (hooks / 'post-commit').write_text(f'#!/bin/sh\n{pub.HOOK_MARKER}: a commit on main of this repository\n',
+                                           encoding='utf-8')
         (hooks / 'post-merge').write_text('#!/bin/sh\necho mine\n', encoding='utf-8')
-        before = (hooks / 'post-commit').read_bytes()
-        with self.assertRaisesRegex(pub.PublishError, 'not ours'):
-            pub.install_source_hooks(source, False)
-        self.assertEqual((hooks / 'post-commit').read_bytes(), before)  # nothing written when one is foreign
-        removed = pub.uninstall_hooks(source, pub.source_hooks(source, Path('x')))
-        self.assertEqual([Path(p).name for p in removed], ['post-commit'])
+        self.assertEqual(pub.main(['--uninstall-source-hooks', str(source)]), 0)
+        self.assertFalse((hooks / 'post-commit').exists())
         self.assertEqual((hooks / 'post-merge').read_text(encoding='utf-8'), '#!/bin/sh\necho mine\n')
-        # A repository whose builds reach the classic install from feature branches: every branch.
-        (hooks / 'post-merge').unlink()
-        pub.install_source_hooks(source, False, any_branch=True)
-        text = (hooks / 'post-commit').read_text(encoding='utf-8')
-        self.assertNotIn('"main"', text)
-        self.assertIn('any branch', text)
+        self.assertFalse(hasattr(pub, 'install_source_hooks'))
+
+    def test_the_parts_a_config_unpacks(self):
+        config = {'parts': [{'name': 'a', 'build': 'package_runtime', 'args': ['--runtime', 'out/inputs/runtime/files']},
+                            {'name': 'b', 'package': 'out\\inputs\\emissives\\emissives.gma'},
+                            {'name': 'c', 'package': str(self.repo / 'elsewhere.gma')},
+                            {'name': 'd', 'build': 'package_content', 'args': ['--addon', 'out/inputs/runtime/x']}]}
+        self.assertEqual(pub.input_parts(config), ['emissives', 'runtime'])
 
     def test_a_source_repositorys_hook_environment_does_not_redirect_git(self):
         # Git runs hooks with the hooked repository in GIT_DIR and GIT_INDEX_FILE. The script must

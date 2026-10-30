@@ -11,7 +11,15 @@
 # Vendored third-party code stays byte-identical to upstream (hashes in each README): no EOL conversion.
 third_party/** -text
 
-# Binary formats this project handles (none should be committed; see AGENTS.md rule 6).
+# The RTX package's inputs (ADR 0033) stay byte-identical to what packages/<part>/files.json indexes:
+# no EOL conversion anywhere under packages/, and every binary there is stored xz-compressed in Git LFS.
+packages/** -text
+packages/**/*.xz filter=lfs diff=lfs merge=lfs -text
+
+# The runtime fork's patches apply byte for byte.
+runtime/patches/*.patch -text
+
+# Binary formats this project handles; outside packages/ none is committed (AGENTS.md rule 6).
 *.gma       binary
 *.dll       binary
 *.exe       binary

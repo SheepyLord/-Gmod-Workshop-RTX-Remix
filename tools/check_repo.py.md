@@ -12,7 +12,9 @@ exits 1 if there is any; [`test.ps1`](test.ps1.md) runs it first.
 | [`docs/COMPONENTS.md`](../docs/COMPONENTS.md) mentions every folder under `loader/` and `tools/` | The component map stays complete |
 | `CLAUDE.md` imports `@AGENTS.md` | One source of agent instructions |
 
-Skipped folders: `.git`, `out`, `build`, `__pycache__`, `third_party`, `.vs`, virtual environments.
+Skipped folders: `.git`, `out`, `build`, `__pycache__`, `third_party`, `.vs`, virtual environments, and
+the top-level `packages` (the RTX package's vendored inputs, whose add-ons bring their own scripts and
+READMEs, [ADR 0033](../docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)).
 Links inside code blocks and inline code are not checked.
 
 ## Usage

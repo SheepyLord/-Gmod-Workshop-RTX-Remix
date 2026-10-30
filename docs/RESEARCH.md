@@ -1884,3 +1884,66 @@ arguments as runtime-b5, and the compiler-threads layer. 197 files and the manif
 bytes, version `0.0.0-dev.202610292335+a2e1708e`; the `.gma` 1,229,349,449. `d3d9.dll` 362,684,416
 bytes, SHA-256 `a2e1708e...`. The combined RTX package built from it (`out\sky\build_e2e.py`): 877
 files, 1,798,369,314 bytes.
+
+## 30. One repository: the package's inputs in Git LFS (2026-10-30, Claude)
+
+**Where the package came from before** (`tools/workshop.json` at `bbab69e`): ten parts from six places
+outside this repository. Measured with `out\sky\inventory_inputs.py` (git metadata, `_Comp*` build
+folders and `external\` left out):
+
+| Source | Files | Size | Origin |
+|---|---|---|---|
+| runtime-b6's tree (`out\sky\runtime-b6-src\runtime`, the runtime-b4 extract plus the sky textures) | 189 | 977 MB | built; `d3d9.dll` 339 MB, `nvngx_dlssnr.dll` 266 MB, `nvrtc64_130_0.dll` 101 MB |
+| the fixes repository (`garrys-mod-rtx-remixed`) | 64,565 | 83.7 GB | `SheepyLord/garrys-mod-rtx-remixed`; its `source\` map extracts and work trees |
+| the classic install's `garrysmod\lua\bin` | 21 | 35 MB | built modules |
+| Model Hotloader (the classic install's add-on; its repository) | 104; 27,381 | 61 MB; 2.9 GB | `SheepyLord/Gmod-Model-Hotloader-with-Vulkan` |
+| the material editor | 1,910 | 3.9 GB | `SheepyLord/-advanced_material_editor` (work trees) |
+| the bullet-break simulator | 16,721 | 3.7 GB | `SheepyLord/-gmod_bullet_break_simulator` (a 961 MB theater build, artifacts) |
+| the motion importer | 275 | 362 MB | `SheepyLord/Gmod-Mmd-Motion-Importer` |
+| the runtime fork's worktree | 19,047 | 3.6 GB | `sambow23/dxvk-remix-gmod`, NVIDIA's SDK submodules (`nvngx_dlssd.dll` twice, `nvrtc`) |
+
+**What the parts actually use** (each packager's `<out>.inventory.txt`, the `source` column), imported
+by `out\sky\migrate_parts.py` into `packages\`:
+
+| Part | Files | Size | Stored |
+|---|---|---|---|
+| runtime | 197 | 1,229.4 MB | 412.4 MB |
+| fixes | 444 | 449.7 MB | 116.5 MB |
+| model-hotloader | 111 | 87.0 MB | 68.2 MB |
+| character-motion-importer | 17 | 19.3 MB | 9.1 MB |
+| reshade | 1 | 4.1 MB | 4.0 MB |
+| emissives | 1 | 3.8 MB | 0.1 MB |
+| advanced-material-editor | 59 | 2.7 MB | 2.5 MB |
+| procedural-bodygroup-destruction | 16 | 0.8 MB | 0.8 MB |
+| advanced-bodygroup-tool | 6 | 0.2 MB | 0.2 MB |
+| remove-halo | 1 | 27 bytes | 27 bytes |
+
+853 files, 1.8 GB, stored in 614 MB (588 MB on disk). The packagers read two files they do not list:
+the fixes' `garrysmod\garrysmod\cfg\autoexec.cfg` (session variables) and, for `--addon-file`, the
+add-on's own file it replaces (Model Hotloader's `installation.lua`: "the add-on has no such file to
+replace" otherwise).
+
+- **LZMA (xz, preset 6) on the first 64 MB:** `d3d9.dll` 0.17 (5.0 MB/s), `nvngx_dlssnr.dll` 0.70,
+  `nvrtc64_130_0.dll` 0.30, `stars.dds` 0.05 (mostly black). Decompression runs far faster.
+- **Parity.** `tools/build_package.py --compare out\workshop\published.json` from the imported parts:
+  877 files, a 1,798,746,608-byte archive, content digest `942d0083...`, equal to the upload of
+  `bbab69e` (version `0.0.0-dev.20261030000530+f6c615a6`). The digest leaves out versions, but the
+  part versions came out the same too: `unpack` restores each file's recorded time, and the packagers
+  stamp versions from the newest input's time.
+- **The runtime rebuild is deterministic.** `runtime/build_runtime.ps1` on the fork worktree
+  `remix-i18n` (the base plus the four patches) built a `d3d9.dll` with the packaged SHA-256
+  (`d9cf79e6...`).
+- **Git LFS on GitHub** (docs.github.com, billing for Git LFS, read 2026-10-30): GitHub Free and Pro
+  include 10 GiB of storage and 10 GiB of bandwidth a month; Actions downloads count against the
+  owner's bandwidth; over the bandwidth (no payment method) LFS is disabled for the account until the
+  next month; over the storage, pushes of new LFS files fail. The repository is private
+  (`gh repo view`: `PRIVATE`).
+- **`git lfs install` and this repository's hooks.** `post-commit`, `post-merge` and `pre-push` were
+  already this project's (the Workshop publisher), so `git lfs install` would not have written its own.
+  Without `git lfs pre-push`, a push sends pointer files whose content GitHub never receives. The
+  publisher's hooks now run Git LFS's step first; `pre-push` reads git's ref lines once and gives them
+  to both.
+- **The runtime fork's patches:** `git format-patch --binary --no-signature --zero-commit
+  c6b48ed1..claude/sky-night`: 0001 the snapshot 2,852,185 bytes, 0002 the translated menus
+  11,434,313 (generated tables), 0003 the glossaries 70,971, 0004 the sky 63,303. The snapshot adds
+  six lines to `.gitmodules`.

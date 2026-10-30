@@ -1,0 +1,26 @@
+{
+	"title": "Advanced Material Editor",
+	"type": "tool",
+	"tags":
+	[
+		"build",
+		"fun"
+	],
+	"ignore":
+	[
+		"1.jpg",
+		"2.jpg",
+		"3.jpg",
+		"ICON.png",
+		"Images.pptx",
+		"Release Note.txt",
+		"*.md",
+		"dev/*",
+		"native/*",
+		".git/*",
+		".gitattributes",
+		".gitignore",
+		"*.psd",
+		"*.pdn"
+	]
+}

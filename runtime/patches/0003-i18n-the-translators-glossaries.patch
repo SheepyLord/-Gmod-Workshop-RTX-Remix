@@ -1,0 +1,1372 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Thu, 29 Oct 2026 03:37:25 -0700
+Subject: [PATCH 3/4] i18n: the translators' glossaries
+
+The style and term choices each of the six translations follows, so edits keep a term the same across the menus.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ i18n/README.md         |   1 +
+ i18n/glossary/fr.md    | 308 +++++++++++++++++++++++++++++++++++++++++
+ i18n/glossary/ja.md    | 173 +++++++++++++++++++++++
+ i18n/glossary/ko.md    | 160 +++++++++++++++++++++
+ i18n/glossary/ru.md    | 213 ++++++++++++++++++++++++++++
+ i18n/glossary/zh-CN.md | 230 ++++++++++++++++++++++++++++++
+ i18n/glossary/zh-TW.md | 216 +++++++++++++++++++++++++++++
+ 7 files changed, 1301 insertions(+)
+ create mode 100644 i18n/glossary/fr.md
+ create mode 100644 i18n/glossary/ja.md
+ create mode 100644 i18n/glossary/ko.md
+ create mode 100644 i18n/glossary/ru.md
+ create mode 100644 i18n/glossary/zh-CN.md
+ create mode 100644 i18n/glossary/zh-TW.md
+
+diff --git a/i18n/README.md b/i18n/README.md
+index e7eeded2..7a8bd661 100644
+--- a/i18n/README.md
++++ b/i18n/README.md
+@@ -17,6 +17,7 @@ names stay as they are.
+ |---|---|
+ | `remix.pot` | The English text, extracted from the sources. Generated: do not edit |
+ | `zh-CN.po`, `zh-TW.po`, `ja.po`, `ko.po`, `fr.po`, `ru.po` | One UTF-8 file per language: each English `msgid` with its `msgstr` |
++| `glossary/<language>.md` | The style and the term choices each translation follows; keep to them when you edit, so a term reads the same everywhere |
+ | `fonts/NotoSans{SC,TC,JP,KR}.otf` | Chinese, Japanese and Korean glyphs (NVIDIA Sans has Latin and Cyrillic); `fonts/OFL.txt` is their licence |
+ | `tools/update_strings.py` | Extracts the text into `remix.pot` and merges it into every `.po` |
+ | `tools/embed.py` | Run by the build: checks the `.po` files and builds them into the runtime |
+diff --git a/i18n/glossary/fr.md b/i18n/glossary/fr.md
+new file mode 100644
+index 00000000..d9f29d76
+--- /dev/null
++++ b/i18n/glossary/fr.md
+@@ -0,0 +1,308 @@
++# French (fr) glossary for the RTX Remix menus
++
++Terms chosen for the French translation of the RTX Remix runtime menus (User Graphics Settings and
++the RTX Remix Developer Menu). Every batch keeps to them.
++
++## Style
++
++- **Register.** Labels, buttons, headers and combo entries: an infinitive for an action
++  ("Enregistrer", "Réinitialiser") or a noun phrase for a setting ("Distance d'affichage"). Tooltips:
++  full sentences, the reader is addressed as "vous".
++- **Capitalisation.** French sentence case: only the first word and proper names take a capital
++  ("Paramètres graphiques utilisateur", not "Paramètres Graphiques Utilisateur"). Capitals keep
++  their accents (État, Éclairage, À propos).
++- **Spacing.** French spacing with ordinary spaces (never narrow or no-break spaces): a space before
++  `:` `;` `?` `!` and inside guillemets (« Aucun »). No space before `...` or `,` `.`.
++- **Quotes.** Quoted UI names and values in prose use « ... »; text that must be typed exactly,
++  code and anything in backticks stays as in the English.
++- **Apostrophe.** Straight apostrophe `'`.
++- **Numbers and units.** Kept exactly as in the English (decimal point, `0.5`, not `0,5`; `ms`, `px`,
++  `MB`, `GB`, `fps`, `%`, `m`, `km`, `K`, `EV`, `nits`), because they match config values. In printf
++  formats the layout of numbers, units and `%%` is not changed.
++- **Abbreviations.** max. / min. after a noun in labels ("Distance max."), "nb" is not used: write
++  "Nombre de ...".
++- **Kept in English.** Config names (`rtx.*`, `dxvk.*`), file names, environment variables, key names,
++  product and technique names (RTX, Remix, DLSS, DLSS-RR, DLSS-FG, DLAA, Ray Reconstruction, Reflex,
++  NRD, ReBLUR, ReLAX, ReSTIR, ReSTIR GI, RTXDI, NRC, SHaRC, NEE, XeSS, FSR, TAA, TAA-U, NIS, USD,
++  HDR, SDR, ACES, AgX, Hable Filmic, OMM, PSR, PSTR, GI, IBL, SSS, LOD, BLAS, TLAS, VRAM, GPU, CPU,
++  Vulkan, D3D9, ImGui, Nsight, Garry's Mod, Numos), USD terms (prim, stage), and short code words that
++  name a mode or value.
++
++## Common UI words
++
++| English | French |
++|---|---|
++| Enable / Disable (action) | Activer / Désactiver |
++| Enabled / Disabled (state) | Activé / Désactivé |
++| On / Off (value) | Activé / Désactivé |
++| None | Aucun |
++| Auto / Automatic | Auto / Automatique |
++| Default | Par défaut |
++| Custom | Personnalisé |
++| Low / Medium / High / Ultra | Faible / Moyen / Élevé / Ultra |
++| Minimum / Maximum, Min / Max | Minimum / Maximum, min. / max. |
++| Save | Enregistrer |
++| Reset | Réinitialiser |
++| Apply | Appliquer |
++| Load | Charger |
++| Reload | Recharger |
++| Clear | Effacer (a list, a selection) / Vider (a cache) |
++| Refresh | Actualiser |
++| Show / Hide | Afficher / Masquer |
++| Toggle | Basculer (verb), activer/désactiver |
++| Settings | Paramètres |
++| Setting / Option | Paramètre / Option |
++| Advanced | Avancé |
++| General | Général |
++| Warning | Avertissement |
++| Note: | Remarque : |
++| Unsaved changes | Modifications non enregistrées |
++| Restart required | Redémarrage requis |
++| takes effect / applies live | prend effet / s'applique immédiatement |
++| Developer Menu | Menu développeur |
++| User Graphics Settings | Paramètres graphiques utilisateur |
++| Tooltip | Info-bulle |
++| Slider / Checkbox / Combo | Curseur / Case à cocher / Liste déroulante |
++| Hotkey / shortcut | Raccourci clavier |
++| Folder / directory | Dossier |
++| File path | Chemin du fichier |
++| Log | Journal |
++| Screenshot | Capture d'écran |
++| Overlay | Superposition |
++| Viewport | Fenêtre d'affichage |
++| Driver | Pilote |
++| Crash | Plantage |
++| Legacy | Hérité |
++| Experimental | Expérimental |
++| Fallback | De secours / solution de repli |
++| Override (verb) | Forcer / remplacer (by context) |
++| Asset | Ressource |
++| Runtime (the Remix runtime) | runtime (masc.) |
++| Game | Jeu |
++| Original game | Jeu d'origine |
++
++## Rendering terms
++
++| English | French |
++|---|---|
++| render (verb) / rendering, render (noun) | effectuer le rendu, rendre / rendu |
++| renderer | moteur de rendu |
++| path tracing / path tracer | path tracing / path tracer |
++| ray tracing / ray-traced | ray tracing / en ray tracing |
++| ray | rayon |
++| primary / secondary / indirect rays | rayons primaires / secondaires / indirects |
++| bounce | rebond |
++| sample / samples per pixel / sampling | échantillon / échantillons par pixel / échantillonnage |
++| importance sampling | échantillonnage préférentiel |
++| resampling (ReSTIR) / reuse | rééchantillonnage / réutilisation |
++| reservoir | réservoir |
++| Russian roulette | roulette russe |
++| denoiser / denoising | débruiteur / débruitage |
++| noise | bruit |
++| firefly | luciole (pixel isolé surexposé) |
++| boiling (artifact) | bouillonnement |
++| ghosting | ghosting (traînées fantômes) |
++| flickering / shimmering | scintillement |
++| artifact | artefact |
++| blur | flou |
++| sharpness / sharpen | netteté / accentuer la netteté |
++| upscaling / upscaler | mise à l'échelle / méthode de mise à l'échelle |
++| Super Resolution | Super Resolution (DLSS) |
++| Ray Reconstruction | Ray Reconstruction |
++| frame generation | génération d'images |
++| frame | image (per frame = par image; frame rate = fréquence d'images) |
++| frame time | temps d'image |
++| latency / low latency | latence / faible latence |
++| resolution / render resolution / output resolution | résolution / résolution de rendu / résolution de sortie |
++| resolution scale | échelle de résolution |
++| anti-aliasing / aliasing | anticrénelage / crénelage (aliasing) |
++| temporal / spatial | temporel / spatial |
++| history (temporal) | historique |
++| accumulation | accumulation |
++| reprojection | reprojection |
++| motion vectors | vecteurs de mouvement |
++| jitter | jitter |
++| preset | préréglage |
++| quality / performance / balanced | qualité / performances / équilibré |
++| texture | texture |
++| material | matériau (pl. matériaux) |
++| shader | shader (masc.) |
++| shader compilation | compilation des shaders |
++| pipeline | pipeline (masc.) |
++| pass | passe |
++| buffer | tampon (G-buffer stays) |
++| mesh | maillage |
++| geometry | géométrie |
++| vertex / vertex color | sommet / couleur de sommet |
++| normal / normal map | normale / carte de normales |
++| tangent | tangente |
++| triangle | triangle |
++| instance | instance |
++| draw call | draw call (masc.) |
++| fixed function (pipeline) | pipeline à fonction fixe |
++| skinning | skinning |
++| bounding box | boîte englobante |
++| culling / anti-culling | élimination (culling) / anti-culling |
++| frustum | frustum |
++| LOD bias | biais de LOD |
++| mipmap | mipmap |
++| hash | hash (masc.) |
++| debug view | vue de débogage |
++| debugging | débogage |
++| world space / screen space | espace monde / espace écran |
++| world units | unités du monde |
++| near plane / far plane | plan proche / plan lointain |
++| field of view | champ de vision |
++| free camera | caméra libre |
++| main camera | caméra principale |
++| view model (first-person weapon) | view model (modèle à la première personne) |
++| scene | scène |
++| scene scale | échelle de la scène |
++| cache | cache |
++| memory / video memory | mémoire / mémoire vidéo |
++| budget | budget |
++| threshold | seuil |
++| factor / multiplier / scale | facteur / multiplicateur / échelle |
++| strength / intensity | intensité (force when it is a filter strength) |
++| bias / offset | biais / décalage |
++| range | plage |
++| weight | poids |
++| probability | probabilité |
++| clamp | limiter |
++| higher / lower values | des valeurs plus élevées / plus faibles |
++| performance cost | coût en performances |
++
++## Lighting and materials
++
++| English | French |
++|---|---|
++| light (a source) / lights | lumière / lumières |
++| lighting | éclairage |
++| direct / indirect lighting | éclairage direct / indirect |
++| global illumination | illumination globale |
++| emissive / emission | émissif / émission |
++| emissive intensity | intensité émissive |
++| fallback light | lumière de secours |
++| sphere / rect / disk / cylinder / distant / dome light | lumière sphérique / rectangulaire / disque / cylindrique / distante / dôme |
++| light shaping, cone angle, cone softness | mise en forme de la lumière, angle du cône, douceur du cône |
++| falloff / attenuation | atténuation |
++| shadow / soft shadows | ombre / ombres douces |
++| radiance / irradiance / luminance | radiance / irradiance / luminance |
++| exposure / auto exposure | exposition / exposition automatique |
++| eye adaptation | adaptation oculaire |
++| tone mapping / tone mapper | tone mapping (mappage des tons) / opérateur de tone mapping |
++| bloom | bloom |
++| glow | lueur |
++| brightness | luminosité |
++| color grading | étalonnage des couleurs |
++| dithering | tramage |
++| vignette | vignettage |
++| chromatic aberration | aberration chromatique |
++| film grain | grain de film |
++| motion blur | flou de mouvement |
++| depth of field | profondeur de champ |
++| albedo | albédo |
++| roughness | rugosité |
++| metallic | métallique |
++| specular / diffuse | spéculaire / diffus |
++| opacity / opaque / translucent / transparency | opacité / opaque / translucide / transparence |
++| alpha test / alpha blend / alpha channel | test alpha / mélange alpha / canal alpha |
++| subsurface scattering | diffusion sous-surfacique (SSS) |
++| diffusion profile | profil de diffusion |
++| transmission | transmission |
++| refraction / reflection | réfraction / réflexion |
++| thin film | couche mince |
++| anisotropy | anisotropie |
++| displacement / displacement mapping | déplacement / mappage de déplacement |
++| height map | carte de hauteur |
++| opacity micromap | micromap d'opacité (OMM) |
++| decal | décalque |
++| billboard / sprite | billboard / sprite |
++| hair cards | hair cards |
++| lobe | lobe |
++| legacy material | matériau hérité |
++| replacement / replaced | remplacement / remplacé |
++| enhancement / mod | amélioration / mod (masc.) |
++| capture / capture the scene | capture / capturer la scène |
++| layer (config layers, USD) | couche |
++| ray portal | portail de rayons |
++| radiance cache (NRC) / training | cache de radiance / entraînement |
++| training records | enregistrements d'entraînement |
++
++## Volumetrics, sky and weather
++
++| English | French |
++|---|---|
++| volumetric / volumetrics | volumétrique / effets volumétriques |
++| volumetric lighting | éclairage volumétrique |
++| froxel / froxel grid | froxel / grille de froxels |
++| fog / heterogeneous fog | brouillard / brouillard hétérogène |
++| haze | brume |
++| scattering / single scattering | diffusion / diffusion simple |
++| transmittance | transmittance |
++| Mie / Rayleigh | Mie / Rayleigh (anisotropie de Mie) |
++| sky / skybox / atmosphere | ciel / skybox / atmosphère |
++| aerial perspective | perspective aérienne |
++| sun / moon / stars / Milky Way | soleil / lune / étoiles / Voie lactée |
++| sun elevation / rotation / size | élévation / rotation / taille du soleil |
++| cloud / cloud layer | nuage / couche nuageuse |
++| silver lining | liseré argenté |
++| weather / weather preset | météo / préréglage météo |
++| rain / snow / wind / lightning / puddles / wetness | pluie / neige / vent / éclairs / flaques / humidité |
++| water / animated water | eau / eau animée |
++| particle / particle system / spawn | particule / système de particules / apparition (faire apparaître) |
++| terrain / baked terrain | terrain / terrain précalculé |
++
++## Decisions made while translating
++
++| English | French |
++|---|---|
++| UI (as a category of draw calls) | interface (UI) |
++| hashes (plural) | hashs |
++| override (noun, a value that overrides) / per-GPU overrides | valeur forcée / valeurs forcées par GPU |
++| Thin-Walled | Paroi mince |
++| sky probe | sonde du ciel |
++| left-handed / right-handed, handedness | main gauche / main droite, orientation |
++| texture stage (D3D9) | étage de texture |
++| throughput (path throughput) | throughput |
++| V-Sync | V-Sync (la V-Sync) |
++| HUD | HUD |
++| Legacy Theme | Thème classique |
++| memory aliasing (resource aliasing) | aliasing (d'aliasing) |
++| USD stage / USD layer / sublayer | stage USD / couche USD / sous-couche |
++| Remix Logic, graph | Remix Logic, graphe |
++| release build | build de production |
++| present (Vulkan present) | présentation |
++| importance sampled (mode) | Échantillonnage préférentiel |
++| Transformer model (DLSS) | modèle Transformer |
++| identifiers shown as combo entries (FrameBegin, VK_IMAGE_TYPE_2D, D3DFOG_EXP, ViewModel, Portal0) | unchanged |
++| Applies live | S'applique immédiatement |
++| bake / re-bake (precomputed data) | précalcul / relancer le précalcul |
++| (ray) march / march step | marche / pas de marche |
++| airglow | luminescence atmosphérique |
++| Game-drivable per-frame; ... runtime push | Peut être piloté(e) par le jeu à chaque image ; ... valeur transmise pendant l'exécution |
++| time cycle (day/night clock) | cycle temporel |
++| thunderstorm / rainstorm | orage / tempête de pluie |
++| shadow shaft | faisceau d'ombre |
++| UI names referenced in tooltips before their own batch: Test Strike, Bottom Darkening, Underside Shading, Uncategorized, Add Light to Texture, Save rtx.conf Layer, Sample Memory | « Éclair de test », « Assombrissement du dessous », « Ombrage du dessous », « Sans catégorie », « Ajouter une lumière aux textures », « Enregistrer la couche rtx.conf », « Échantillonner la mémoire » |
++| Sky Ambient Fill / Night Sky Brightness / Sun Size / Shadow Softness / Time Cycle / North Offset | Appoint ambiant du ciel / Luminosité du ciel nocturne / Taille du soleil / Douceur des ombres / Cycle temporel / Décalage du nord |
++| fill (lighting term) | appoint (éclairage d'appoint) |
++| Advanced (section) / Basic (section) | Avancé / Base |
++| Sun Shadow (Near) / Strikes Per Minute / Weather Variation / Sky Fill | « Ombre solaire (proche) » / « Éclairs par minute » / « Variation météo » / Appoint du ciel |
++| GPU Print | GPU Print |
++| free camera key labels (MoveForward:, YawLeft:, ...) | Avancer :, Tourner à gauche :, ... |
++| Nearest / Linear (sampler) | Plus proche / Linéaire |
++| Bottom buttons of the graphics settings window (max. 18 characters): Developer Settings Menu / Save Settings / Delete All User Settings | Menu développeur / Enregistrer / Tout réinitialiser |
++| Sky Textures (texture category, referenced in tooltips) | « Textures du ciel » |
++| Developer menu tabs: Rendering / Game Setup / Enhancements / About / Dev Settings / Plugin | Rendu / Config. du jeu / Améliorations / À propos / Développeur / Plugin |
++| Option layer buttons (fixed width): Save / Discard Changes / Delete All / Remove Dupes | Enregistrer / Abandonner / Tout effacer / Dédoublonner |
++| Debug Knob (debug view parameter) | Réglage de débogage |
++| Parameterize via: (debug view descriptions) | Paramètres : |
++| Noisy / Denoised / Demodulated (debug views) | bruité / débruité / démodulé |
++| Add Light to Textures (texture category); quoted in tooltips | « Ajouter une lumière aux textures » (the backtick name `Add Light to Texture` is kept beside it) |
++| Uncategorized | Sans catégorie |
++| (optional) in texture category names | (facultatif) |
++| Values that are written to config files or passed back to code (True / False in the per-GPU overrides, weather preset ids clear, partlyCloudy, rainstorm..., the ID suffix User) | unchanged |
++| Mist / Haze (volumetric presets) | Brume / Brume sèche |
++| Thunderstorm / Rainstorm (in prose) | orage / tempête de pluie |
++| ms, MiB, MB, GB, deg, km, m, cm, % in formats | unchanged; a thousands separator in prose is a space (10 000), because 10,000 reads as 10 in French |
+diff --git a/i18n/glossary/ja.md b/i18n/glossary/ja.md
+new file mode 100644
+index 00000000..c43ab803
+--- /dev/null
++++ b/i18n/glossary/ja.md
+@@ -0,0 +1,173 @@
++# Japanese (ja) glossary for the RTX Remix menus
++
++## Style
++
++- Labels, buttons, headers and combo entries: short noun phrases (体言止め).
++  - "Enable X" (checkbox or button) -> 「X を有効化」; "Disable X" -> 「X を無効化」
++  - "Show X" -> 「X を表示」; "Use X" -> 「X を使用」; "X Mode" -> 「X モード」
++  - States: Enabled -> 有効, Disabled -> 無効, On -> オン, Off -> オフ
++- Tooltips, descriptions and messages: です/ます調, full sentences, 、 and 。
++  - "Enables X" -> 「X を有効にします。」; "Whether X" -> 「X するかどうか」
++- A half-width space between Japanese text and an adjacent Latin word, identifier or number
++  (「DLSS を有効化」, 「最大 8 個」), but not next to Japanese punctuation 、。「」.
++- Punctuation that mirrors the English structure stays half-width: `( )`, `:`, `...`, `->`, `[ ]`,
++  `/`, `%`, `~`, `<=`, `>=`. No full-width spaces, no full-width letters or digits.
++- English double quotes around a UI name or term -> 「」; quotes around a literal value, file name or
++  code stay `"..."` (or backticks if the English uses them).
++- Kept in English: option names (`rtx.*`, `dxvk.*`), file names, env vars, backticked text, key
++  names (Alt+X, Ctrl, Shift), numbers and units, and the product or technique names in the brief
++  (RTX, Remix, DLSS, DLSS-RR, DLSS-FG, DLAA, NRD, ReBLUR, ReLAX, ReSTIR GI, RTXDI, NRC, SHaRC, NEE,
++  XeSS, FSR, TAA-U, NIS, Reflex, USD, HDR, ACES, AgX, OMM, PSR, PSTR, GI, IBL, SSS, LOD, BLAS, TLAS,
++  VRAM, GPU, CPU, Vulkan, D3D9, ImGui, Numos, Garry's Mod (GMod), Nsight, RTX Remix Toolkit).
++- Identifiers shown as values (`D3DFOG_EXP`, `AutoExposure_Histogram`, enum names) stay as they are.
++
++## Terms
++
++| English | Japanese |
++|---|---|
++| render / rendering | レンダリング |
++| renderer | レンダラー |
++| render resolution | レンダリング解像度 |
++| path tracing / path tracer | パストレーシング / パストレーサー |
++| ray tracing / ray | レイトレーシング / レイ |
++| denoiser / denoising / denoise | デノイザー / ノイズ除去 / ノイズを除去する |
++| noise | ノイズ |
++| texture | テクスチャ |
++| material | マテリアル |
++| shader | シェーダー |
++| upscaler / upscaling | アップスケーラー / アップスケーリング |
++| super resolution (DLSS SR) | 超解像 |
++| frame generation | フレーム生成 |
++| Ray Reconstruction | レイ再構成 (NVIDIA Japan's term; "DLSS-RR"/"RR" stay) |
++| preset | プリセット |
++| settings / options | 設定 / オプション |
++| layer / config layer | レイヤー / 設定レイヤー |
++| capture | キャプチャ |
++| replacement / replacement assets | 置き換え / 置き換えアセット |
++| enhancement(s) (Remix mod content) | 強化 / 強化アセット (Enhanced Assets -> 強化アセット) |
++| detail enhancement (image filter) | ディテール強調 |
++| mod | MOD |
++| asset | アセット |
++| light (object) / light source | ライト / 光源 |
++| lighting | ライティング |
++| emissive / emission | エミッシブ / 発光 |
++| volumetrics / volumetric | ボリューメトリック |
++| volume | ボリューム |
++| fog | フォグ |
++| exposure / auto exposure | 露出 / 自動露出 |
++| tone mapping / tonemapper | トーンマッピング / トーンマッパー |
++| bloom | ブルーム |
++| culling / anti-culling | カリング / アンチカリング |
++| hash | ハッシュ |
++| enable / disable | 有効化 (有効にする) / 無効化 (無効にする) |
++| enabled / disabled | 有効 / 無効 |
++| reset | リセット |
++| save / load / reload | 保存 / 読み込み / 再読み込み |
++| apply / cancel / close | 適用 / キャンセル / 閉じる |
++| restore / revert | 復元 / 元に戻す |
++| clear / delete / remove / add | クリア / 削除 / 削除 / 追加 |
++| default | デフォルト |
++| custom | カスタム |
++| auto / automatic | 自動 |
++| none | なし |
++| Low / Medium / High / Ultra | 低 / 中 / 高 / ウルトラ |
++| quality / performance / balanced | 品質 / パフォーマンス / バランス |
++| Ultra Performance | ウルトラパフォーマンス |
++| native | ネイティブ |
++| resolution | 解像度 |
++| frame / frame rate | フレーム / フレームレート |
++| latency | 遅延 |
++| VSync | 垂直同期 |
++| graphics | グラフィックス |
++| User Graphics Settings | ユーザーグラフィックス設定 |
++| Developer Menu | 開発者メニュー |
++| advanced / general | 詳細 / 全般 |
++| debug / debug view | デバッグ / デバッグビュー |
++| visualize / visualization | 可視化 |
++| statistics / profiler | 統計 / プロファイラー |
++| memory / budget / cache | メモリ / バジェット / キャッシュ |
++| streaming / compression | ストリーミング / 圧縮 |
++| geometry / mesh / instance | ジオメトリ / メッシュ / インスタンス |
++| vertex / normal / tangent | 頂点 / 法線 / 接線 |
++| normal map / height map | ノーマルマップ / ハイトマップ |
++| albedo / roughness / metallic | アルベド / ラフネス / メタリック |
++| opacity / transparency | 不透明度 / 透明度 |
++| translucent / transparent | 半透明 / 透明 |
++| anisotropy | 異方性 |
++| subsurface (scattering) | サブサーフェス (スキャタリング) |
++| displacement | ディスプレイスメント |
++| decal / portal | デカール / ポータル |
++| terrain / bake | 地形 / ベイク |
++| sky / skybox / atmosphere | スカイ / スカイボックス / 大気 |
++| sun / moon / cloud | 太陽 / 月 / 雲 |
++| weather / rain / snow / wind | 天候 / 雨 / 雪 / 風 |
++| particle | パーティクル |
++| camera / view model | カメラ / ビューモデル |
++| direct / indirect | 直接 / 間接 |
++| diffuse / specular | ディフューズ / スペキュラー |
++| reflection / refraction | 反射 / 屈折 |
++| shadow | 影 (シャドウレイ, シャドウマップ in compounds) |
++| caustics | コースティクス |
++| global illumination | グローバルイルミネーション (GI) |
++| sample / samples per pixel | サンプル / ピクセルあたりのサンプル数 |
++| bounce | バウンス |
++| temporal / spatial | テンポラル / 空間 |
++| accumulation / history | 蓄積 / 履歴 |
++| motion vectors / jitter | モーションベクトル / ジッター |
++| sharpness / sharpening | シャープネス / シャープ化 |
++| threshold | しきい値 |
++| intensity / strength | 強度 / 強さ |
++| radiance / irradiance | 放射輝度 / 放射照度 |
++| luminance / brightness | 輝度 / 明るさ |
++| scale / bias / offset | スケール / バイアス / オフセット |
++| radius / distance / falloff | 半径 / 距離 / 減衰 |
++| clamp | クランプ |
++| mip / mipmap | ミップ / ミップマップ |
++| override | オーバーライド |
++| fallback | フォールバック |
++| toggle | 切り替え |
++| show / hide | 表示 / 非表示 |
++| select / selection / highlight | 選択 / 選択 / ハイライト |
++| ignore | 無視 |
++| warning / error | 警告 / エラー |
++| restart | 再起動 |
++| experimental / deprecated | 実験的 / 非推奨 |
++| supported / unsupported | 対応 / 非対応 |
++| runtime / bridge | ランタイム / ブリッジ |
++| stage / prim (USD) | ステージ / プリム |
++| hotkey | ホットキー |
++| window / tab / overlay | ウィンドウ / タブ / オーバーレイ |
++| Workshop | ワークショップ |
++
++## Decisions made while translating (applied in every batch)
++
++| English | Japanese | Note |
++|---|---|---|
++| Quality (as an upscaler mode: DLSS/XeSS/NIS/TAA-U) | クオリティ | pairs with バランス / パフォーマンス; "quality" as a noun stays 品質 |
++| Ultra Quality / Ultra Performance | ウルトラクオリティ / ウルトラパフォーマンス | |
++| Enhancements (tab, header) / Reload Enhancements | 強化アセット / 強化アセットを再読み込み | |
++| Enhanced Materials / Meshes / Lights | 強化マテリアル / 強化メッシュ / 強化ライト | |
++| X Enabled (checkbox label) | X 有効 | "Enable X" stays X を有効化 |
++| present / presentation (swapchain) | Present | kept as the API term |
++| interactions (resolver) | 相互作用 | |
++| resolve / resolver | リゾルブ / リゾルバー | |
++| aerial perspective | 空気遠近法 | |
++| froxel / in-scatter / extinction | フロクセル / インスキャッタ / 消散 | |
++| silver lining | シルバーライニング | |
++| view distance | 描画距離 | |
++| Debug Knob | デバッグ用つまみ | |
++| Game Setup / Dev Settings / About | ゲームのセットアップ / 開発者設定 / 情報 | developer menu tabs |
++| texture categories ("... (optional)") | 〜テクスチャ (任意) | e.g. Add Light to Textures (optional) -> ライトを追加するテクスチャ (任意) |
++| Uncategorized | 未分類 | |
++| precipitation | 降水 | |
++| Weather Preset Editor | 天候プリセットエディター | |
++| deg (unit in labels) | 度 | |
++
++Kept in English on purpose: render-pass and enum identifiers (FrameBegin, D3DFOG_EXP, VK_IMAGE_TYPE_2D,
++DownScaledExtent, ViewModel, ...), the weather preset keys shown in the combo and status line (clear,
++partlyCloudy, thunderstorm, ...), config values True / False, the AgX looks Golden / Punchy, the technique
++names RTX Neural Radiance Cache, Spatially Hashed Radiance Cache, Weighted Blended OIT, Quadtree POM,
++Raymarched POM. Labels that are still built at run time and not in the catalogue (Sky Ambient Fill,
++Underside Shading, Sun Shadow (Near), Transmittance Distance, the weather editor groups such as
++Precipitation) stay English where a tooltip quotes them. Backticked text stays as written; where it names a
++translated button or category, the Japanese label follows in parentheses (ids 10, 2360-2363).
+diff --git a/i18n/glossary/ko.md b/i18n/glossary/ko.md
+new file mode 100644
+index 00000000..fbbfd7f0
+--- /dev/null
++++ b/i18n/glossary/ko.md
+@@ -0,0 +1,160 @@
++# Korean (ko) glossary for the RTX Remix menus
++
++Style: tooltips and messages are full sentences in 합니다체 (…합니다, …됩니다; instructions to the
++reader as …하십시오). Labels, buttons, headers and combo entries are noun phrases (e.g. "Enable Bloom" -> "블룸 활성화",
++"Show Lights" -> "조명 표시"). No trailing period on labels. Korean particles after Latin words or
++numbers follow the pronunciation (DLSS를, Remix를, GPU가, rtx.conf를, 1로, 0으로).
++
++Kept as written (never translated): rtx.* / dxvk.* option names, file names, environment variables,
++anything in backticks, key names (Alt+X, Ctrl, Shift), numbers and units, and product or technique
++names: RTX, Remix, NVIDIA, DLSS, DLSS-RR, DLSS-FG, DLAA, NRD, ReBLUR, ReLAX, ReSTIR, ReSTIR GI, RTXDI,
++NRC, SHaRC, NEE, XeSS, FSR, TAA, TAA-U, NIS, Reflex, USD, HDR, SDR, ACES, AgX, OMM, PSR, PSTR, GI,
++IBL, SSS, LOD, BLAS, TLAS, VRAM, GPU, CPU, Vulkan, D3D9, Garry's Mod, ImGui, Numos, UI, HUD, API.
++Code values such as true / false stay English ("true로 설정하면").
++
++Punctuation: ASCII only, as in the English (`->`, `<=`, `>=`, `~`, `...`); no arrows, no CJK brackets.
++
++## Core terms
++
++| English | Korean |
++|---|---|
++| render, rendering | 렌더링 (render pass: 렌더 패스; render resolution: 렌더링 해상도; render target: 렌더 타깃) |
++| path tracing / path tracer | 패스 트레이싱 / 패스 트레이서 |
++| ray tracing, raytracing | 레이 트레이싱 |
++| ray | 광선 (ray portal: 레이 포털) |
++| denoiser / denoising | 디노이저 / 디노이징 |
++| noise / noisy | 노이즈 / 노이즈가 많은 |
++| texture | 텍스처 |
++| material | 머티리얼 |
++| shader | 셰이더 |
++| upscaler / upscaling | 업스케일러 / 업스케일링 |
++| frame generation | 프레임 생성 |
++| Ray Reconstruction | Ray Reconstruction (as NVIDIA's Korean UI keeps it) |
++| preset | 프리셋 |
++| layer (config layer) | 레이어 (설정 레이어) |
++| capture (USD capture) | 캡처 |
++| replacement (assets) | 교체 (교체 에셋, 교체 머티리얼) |
++| enhancement / enhanced assets | 향상 / 향상된 에셋 |
++| mod | 모드 (mod.usda kept) |
++| mode | 모드 |
++| asset | 에셋 |
++| light (object), lights | 조명 (sphere light: 구체 조명, rect light: 사각형 조명, disk light: 원판 조명, cylinder light: 원통 조명, distant light: 원거리 조명, dome light: 돔 조명) |
++| light source | 광원 |
++| lighting | 조명 |
++| emissive / emission | 이미시브 / 방출 |
++| volumetrics / volumetric | 볼류메트릭 |
++| fog | 안개 |
++| exposure / auto exposure | 노출 / 자동 노출 |
++| tone mapping / tonemapper | 톤 매핑 / 톤 매퍼 |
++| bloom | 블룸 |
++| anti-culling / culling | 안티 컬링 / 컬링 |
++| hash | 해시 |
++| enable / enabled (state) | 활성화 / 활성화됨 ("When enabled, ..." -> "활성화하면 ...") |
++| disable / disabled (state) | 비활성화 / 비활성화됨 |
++| reset | 초기화 ("Reset to default" -> "기본값으로 초기화") |
++| save | 저장 |
++| load (button) / load (technical) | 불러오기 / 로드 |
++| apply | 적용 |
++| settings / options / option | 설정 / 옵션 / 옵션 |
++| config / config file | 설정 / 설정 파일 |
++| default | 기본값 |
++| custom | 사용자 지정 |
++| advanced | 고급 |
++| debug | 디버그 |
++| developer menu | 개발자 메뉴 |
++| User Graphics Settings | 사용자 그래픽 설정 |
++| quality / performance | 품질 / 성능 |
++| resolution | 해상도 |
++| sample / samples per pixel | 샘플 / 픽셀당 샘플 수 |
++| bounce | 바운스 |
++| direct / indirect lighting | 직접 조명 / 간접 조명 |
++| global illumination | 전역 조명 (GI) |
++| reflection / refraction | 반사 / 굴절 |
++| translucent / transparent / opacity | 반투명 / 투명 / 불투명도 |
++| albedo / roughness / metallic | 알베도 / 거칠기 / 금속성 |
++| normal (map) | 노멀 (노멀 맵) |
++| height map / displacement | 높이 맵 / 디스플레이스먼트 |
++| subsurface scattering | 표면 하 산란 (SSS) |
++| particle | 파티클 |
++| sky / skybox / atmosphere | 하늘 / 스카이박스 / 대기 |
++| weather | 날씨 |
++| geometry / mesh / instance | 지오메트리 / 메시 / 인스턴스 |
++| draw call / vertex | 드로우 콜 / 버텍스 |
++| decal / terrain | 데칼 / 지형 |
++| shadow | 그림자 |
++| temporal / spatial | 시간적 / 공간적 |
++| accumulation | 누적 |
++| history | 히스토리 |
++| motion vector | 모션 벡터 |
++| anti-aliasing | 안티에일리어싱 |
++| sharpening / sharpness | 샤프닝 / 선명도 |
++| mip / mipmap | 밉 / 밉맵 |
++| anisotropic filtering | 이방성 필터링 |
++| threshold | 임계값 |
++| intensity | 강도 |
++| radius | 반경 |
++| scale (multiplier) | 배율 |
++| bias | 바이어스 |
++| falloff / attenuation | 감쇠 |
++| budget (VRAM) | 예산 |
++| cache / buffer / memory | 캐시 / 버퍼 / 메모리 |
++| frame rate / frame time | 프레임 속도 / 프레임 시간 |
++| latency / low latency | 지연 시간 / 저지연 |
++| V-Sync | 수직 동기화 |
++| hot reload | 핫 리로드 |
++| export / import | 내보내기 / 가져오기 |
++| show / hide | 표시 / 숨기기 |
++| window / tab | 창 / 탭 |
++| statistics / profiler | 통계 / 프로파일러 |
++| warning / error | 경고 / 오류 |
++
++## Terms settled while translating
++
++| English | Korean |
++|---|---|
++| G-Buffer, GBuffer | G버퍼 |
++| view model | 뷰모델 |
++| extent (image size) | 치수 / 크기 |
++| throughput (path) | 스루풋 |
++| crash | 크래시 (collision stays 충돌) |
++| aerial perspective | 대기 원근 |
++| haze / halo / glow | 연무 / 헤일로 / 광채 |
++| froxel / handoff | 프록셀 / 인계 지점 |
++| silver lining (clouds) | 은빛 테두리 |
++| Rayleigh / Mie | 레일리 / Mie |
++| coverage (clouds) | 구름양 |
++| strike (lightning) | 낙뢰 |
++| artistic / stylistic | 연출용 |
++| Remix Logic | Remix Logic (feature name kept) |
++| RTX Neural Radiance Cache, Spatially Hashed Radiance Cache | kept in English (technique names) |
++| internal pass and enum identifiers (FrameBegin, VK_*, D3DFOG_*) | unchanged |
++| texture categories named in other text ('Terrain', 'Uncategorized', 'Add Light to Texture') | 지형, 미분류, 텍스처에 조명 추가 |
++| 'Test Strike' button / 'Bottom Darkening' / 'Underside Shading' | 테스트 낙뢰 / 아랫면 어둡게 / 아랫면 음영 |
++| fallback light / light shaping | 대체 조명 / 조명 셰이핑 |
++| Debug Knob / Debug View | 디버그 조절값 / 디버그 뷰 |
++| fork diagnostic (debug-view descriptions) | 포크 진단 기능 |
++| noisy / denoised / demodulated (debug views) | 노이즈 있는 / 디노이징된 / 디모듈레이션된 |
++| Shadows / Highlights (tonemapper controls) | 섀도 / 하이라이트 |
++| Reservoir (ReSTIR) | Reservoir (kept) |
++| precipitation / drop (rain) | 강수 / 빗방울 |
++| weather presets: clear, partlyCloudy, overcast, hazy, foggy, drizzle, rainstorm, thunderstorm, snow, blizzard, sandstorm, smoggy | 맑음, 구름 조금, 흐림, 연무, 안개, 이슬비, 폭우, 뇌우, 눈, 눈보라, 모래 폭풍, 스모그 |
++| texture category "(optional)" suffix | (선택 사항) |
++| tabs: Game Setup / Dev Settings / About | 게임 설정 / 개발자 설정 / 정보 |
++| True / False as config values | True / False (kept; only On/Off are display labels: 켜기 / 끄기) |
++| state words in status lines (off, active) | 꺼짐, 활성 |
++
++## UI values (combo entries)
++
++| English | Korean |
++|---|---|
++| Off / On | 끄기 / 켜기 (as in NVIDIA's Korean Control Panel) |
++| None | 없음 |
++| Auto | 자동 |
++| Low / Medium / High / Ultra | 낮음 / 중간 / 높음 / 울트라 |
++| Very Low / Very High | 매우 낮음 / 매우 높음 |
++| Minimum / Maximum | 최소 / 최대 |
++| Performance / Balanced / Quality (DLSS modes) | 성능 / 균형 / 품질 |
++| Ultra Performance / Ultra Quality | 울트라 성능 / 울트라 품질 |
++| Native | 네이티브 |
++| Custom | 사용자 지정 |
++| Yes / No / OK / Cancel / Close | 예 / 아니요 / 확인 / 취소 / 닫기 |
+diff --git a/i18n/glossary/ru.md b/i18n/glossary/ru.md
+new file mode 100644
+index 00000000..07749f65
+--- /dev/null
++++ b/i18n/glossary/ru.md
+@@ -0,0 +1,213 @@
++# Russian (ru) glossary for the RTX Remix menus
++
++Style: labels, buttons and combo entries are short noun phrases or infinitives ("Включить V-Sync",
++"Масштаб разрешения"); tooltips are full sentences with the formal "вы". "When enabled, ..." is
++"Если включено, ...", "When disabled, ..." is "Если отключено, ...". Quotes around UI names and values
++are «ёлочки»; a punctuation dash is " — "; "e.g." is "например", "i.e." is "т. е.". The letter ё is
++always written (всё, её, ещё, объём, отключён, чёрный, плёнка, запечённый). Numbers, units (ms, px,
++MB, MiB, GB, cm, m, K, EV, nits), option names, file names, key names and anything in backticks stay
++exactly as in English. A UI label referred to in a tooltip uses the Russian label of that control in
++«ёлочки» (for example «Затемнение снизу», «Текстура ландшафта», «Сохранить»); a label that is not in
++the string catalogue stays English (Underside Shading, Surface Contrast, Surface Noise Scale,
++Transmittance Distance, Sun Shadow (Near), the weather panel's Weather and Precipitation groups).
++Config values and enum names quoted in option tooltips stay as the config spells them (None,
++Never, NoLightsPresent, CameraPosition, WhiteNoise, True/False).
++
++## Width limits (measured with NVIDIA Sans)
++
++| Where | Russian |
++|---|---|
++| Graphics settings window, bottom buttons (max ~18 characters) | Меню разработчика / Сохранить / Сбросить всё |
++| Developer menu tabs (450 px window) | Рендеринг / Настройка игры / Улучшения / О Remix / Разработка |
++| Game Setup tabs | Шаг 1: категории текстур / Шаг 2: настройка параметров |
++| Option layer buttons (four per row) | Сохранить / Откатить / Удалить всё / Убрать дубли |
++| Free camera key labels (150 px column) | Быстрее: / Вперёд: / Влево: / Наклон вверх: / Поворот вправо: ... |
++
++## Core terms
++
++| English | Russian | Notes |
++|---|---|---|
++| render, rendering | рендеринг; рендерить, отрисовывать | renderer: рендерер |
++| render resolution | разрешение рендеринга | |
++| path tracing, path tracer | трассировка пути, трассировщик пути | as on Russian Wikipedia and NVIDIA RU |
++| ray tracing, raytracing | трассировка лучей | ray: луч |
++| primary / secondary rays | первичные / вторичные лучи | |
++| denoiser, denoising | шумоподавитель, шумоподавление | denoised: очищенный от шума |
++| texture | текстура | texcoords: текстурные координаты |
++| material | материал | legacy material: исходный материал (the game's original) |
++| shader | шейдер | vertex/pixel shader: вершинный/пиксельный шейдер |
++| upscaler, upscaling | апскейлер, масштабирование | Upscaler Type: Тип апскейлера |
++| frame generation | генерация кадров | DLSS Frame Generation: генерация кадров DLSS |
++| preset | пресет | Graphics Preset: Пресет графики |
++| layer (config, USD) | слой | option layer: слой параметров; sublayer: подслой |
++| capture (Remix scene capture) | захват; захватить | capture file: файл захвата |
++| replacement | замена | replacement material: материал-замена |
++| enhancement, enhanced assets | улучшение, улучшенные ассеты | |
++| mod | мод | mod.usda stays as is |
++| asset | ассет | |
++| light (an object) | источник света | lighting: освещение; light (energy): свет |
++| emissive, emission | эмиссивный, эмиссия | Emissive Intensity: Интенсивность эмиссии; emissive glow: эмиссивное свечение |
++| volumetric, volumetrics | объёмный, объёмные эффекты | volumetric lighting: объёмное освещение; froxel: фроксель |
++| fog | туман | |
++| exposure | экспозиция | auto exposure: автоэкспозиция |
++| tone mapping, tonemapper | тональная компрессия, оператор тональной компрессии | |
++| bloom | свечение (bloom) | header "Свечение (bloom)"; inside its section "свечение" |
++| culling, anti-culling | отсечение, антиотсечение | frustum: пирамида видимости |
++| hash | хеш | hash collision: коллизия хешей |
++| enable / disable | включить / отключить | Enabled / Disabled (values): Включено / Отключено |
++| On / Off (values) | Вкл. / Выкл. | None: Нет; Auto: Авто; Default: По умолчанию; Custom: Пользовательский |
++| Low / Medium / High / Ultra | Низкое / Среднее / Высокое / Ультра | neuter: they name quality levels |
++| reset | сбросить | Reset to default: Сбросить к значению по умолчанию |
++| save / load / reload | сохранить / загрузить / перезагрузить | unsaved changes: несохранённые изменения |
++| apply / revert | применить / отменить | |
++| settings / option / value | настройки / параметр / значение | config: конфигурация |
++| advanced | дополнительно | |
++| experimental | экспериментальный, [экспериментально] | |
++| debug, debug view | отладка, отладочный вид | |
++| overlay | наложение | |
++
++## Rendering vocabulary
++
++| English | Russian |
++|---|---|
++| sample, sampling | сэмпл, сэмплирование (samples per pixel: сэмплов на пиксель) |
++| importance sampling | выборка по значимости |
++| resampling | ресэмплинг (повторная выборка) |
++| bounce | отскок (Max Light Bounces: Макс. отскоков света) |
++| direct / indirect lighting | прямое / непрямое освещение |
++| global illumination | глобальное освещение (GI) |
++| radiance, radiance cache | излучение, кэш излучения |
++| irradiance | облучённость |
++| luminance | яркость |
++| specular / diffuse | зеркальный / диффузный |
++| reflection / refraction | отражение / преломление |
++| translucent, translucency | полупрозрачный, полупрозрачность |
++| transparency, opacity | прозрачность, непрозрачность |
++| transmittance | пропускание |
++| subsurface scattering | подповерхностное рассеивание |
++| albedo / roughness / metallic | альбедо / шероховатость / металличность |
++| normal, normal map | нормаль, карта нормалей |
++| height map, displacement | карта высот, смещение (displacement) |
++| thin film / thin-walled | тонкая плёнка / тонкостенный |
++| IOR | IOR (показатель преломления) |
++| anisotropy | анизотропия |
++| alpha test, alpha blend, cutout | альфа-тест, альфа-смешивание, альфа-отсечка |
++| mesh, geometry, vertex | меш, геометрия, вершина |
++| instance | экземпляр |
++| draw call | вызов отрисовки |
++| primitive | примитив |
++| skinning, bone | скиннинг, кость |
++| decal | декаль |
++| terrain, terrain baking | ландшафт, запекание ландшафта |
++| bake, baked lighting | запекание, запечённое освещение |
++| sky, skybox, sky probe | небо, скайбокс, зонд неба |
++| atmosphere, weather | атмосфера, погода |
++| particles, emitter, spawn | частицы, эмиттер, появление (spawn rate: частота появления) |
++| view model | модель от первого лица |
++| player model | модель игрока |
++| camera, FOV | камера, угол обзора (FOV) |
++| near / far plane | ближняя / дальняя плоскость |
++| frustum | пирамида видимости |
++| motion vectors | векторы движения |
++| jitter | джиттер |
++| temporal / spatial | временной / пространственный |
++| accumulation, history | накопление, история |
++| ghosting, flickering | шлейфы (ghosting), мерцание |
++| fireflies | светлячки |
++| clamp | ограничение, ограничить |
++| threshold / bias / offset | порог / смещение / смещение |
++| scale / strength / intensity | масштаб / сила / интенсивность |
++| radius / falloff | радиус / затухание |
++| anti-aliasing | сглаживание |
++| sharpness, sharpening | резкость, повышение резкости |
++| motion blur | размытие в движении |
++| depth of field | глубина резкости |
++| chromatic aberration | хроматическая аберрация |
++| vignette | виньетка |
++| film grain | зернистость плёнки |
++| post-processing | постобработка |
++| compositing (Composition) | композитинг |
++| color grading | цветокоррекция |
++| saturation / contrast / gamma | насыщенность / контраст / гамма |
++| white point | точка белого |
++| pass (render pass) | проход |
++| G-buffer | G-буфер |
++| buffer, cache | буфер, кэш |
++| mipmap, MIP level | MIP-уровень |
++| texture streaming | потоковая загрузка текстур |
++| budget (memory) | бюджет |
++| VRAM, video memory | VRAM, видеопамять |
++| compression | сжатие |
++| resource aliasing | алиасинг ресурсов (memory aliasing, not anti-aliasing) |
++| latency | задержка |
++| present (swap chain) | вывод кадра (Present) |
++| frame / frame rate | кадр / частота кадров |
++| performance / quality | производительность / качество |
++| Russian roulette | русская рулетка |
++| path throughput | пропускная способность пути |
++| reservoir | резервуар |
++| reuse (spatial / temporal) | переиспользование (пространственное / временное) |
++| axis-aligned bounding box | ограничивающий параллелепипед, выровненный по осям; AABB in tight labels |
++| boiling (noise) | «кипение» |
++| disocclusion | дисокклюзия |
++| aerial perspective | воздушная перспектива |
++| silver lining (clouds) | серебристая кайма |
++| airglow | собственное свечение (ночного неба) |
++| ray marching, march | марширование лучей, марш |
++| froxel | фроксель |
++| light shaping | формирование конуса света |
++| fallback light | резервный источник света |
++| resolver, resolve | резолвер, резолвинг |
++| stealing (ReSTIR samples) | заимствование |
++| texture category names | translated (Текстура неба, Текстура ландшафта, Добавить свет к текстурам (необязательно), ...) |
++| debug view names | translated; "X: Noisy Color" pattern is "...: шумный цвет", "Denoised" is "очищенный" |
++| weather presets (clear, drizzle, ...) | lowercase Russian weather words: ясно, морось, туман, дымка, пасмурно, переменная облачность, ливень, гроза, снег, метель, песчаная буря, смог |
++| probe | зонд |
++| graph, component, node | граф, компонент, узел |
++| prim, stage (USD) | прим, сцена USD (stage) |
++
++## UI vocabulary
++
++| English | Russian |
++|---|---|
++| Developer Menu | Меню разработчика |
++| User Graphics Settings | Пользовательские настройки графики |
++| UI | интерфейс |
++| HUD | HUD |
++| hotkey, key binding | горячая клавиша, сочетание клавиш |
++| toggle | переключить; показать/скрыть |
++| left / right / middle click | левый / правый / средний щелчок |
++| hover | навести курсор |
++| screenshot | снимок экрана |
++| log | журнал |
++| folder, directory, path | папка, папка, путь |
++| category | категория |
++| Step 1, Step 2 | Шаг 1, Шаг 2 |
++| Warning / Note / Disclaimer | Внимание / Примечание / Внимание |
++| game units | игровые единицы |
++
++## DLSS, XeSS and Reflex modes
++
++| English | Russian |
++|---|---|
++| Ultra Performance | Ультрапроизводительность |
++| Performance | Производительность |
++| Balanced | Баланс |
++| Quality | Качество |
++| Ultra Quality / Ultra Quality Plus | Ультракачество / Ультракачество плюс |
++| Native Anti-Aliasing | Нативное сглаживание |
++| Full Resolution | Полное разрешение |
++| Fullscreen (NIS/TAA-U preset) | Полный экран |
++| Enabled + Boost (Reflex) | Включено + ускорение |
++
++## Kept in English
++
++Product and technique names from BRIEF rule 2 (RTX, Remix, DLSS, DLSS-RR, DLSS-FG, DLAA, Ray
++Reconstruction, NRD, ReBLUR, ReLAX, ReSTIR, ReSTIR GI, RTXDI, NRC, SHaRC, NEE, XeSS, FSR, TAA, TAA-U,
++NIS, Reflex, USD, HDR, SDR, ACES, AgX, OMM, PSR, PSTR, GI, IBL, SSS, LOD, BLAS, TLAS, VRAM, GPU, CPU,
++Vulkan, D3D9, Garry's Mod, ImGui, Numos), plus: RTX Neural Radiance Cache, Spatially Hashed Radiance
++Cache, Remix Logic, Nsight Graphics, V-Sync, POM, AABB, RHW, FP16, sRGB; enum and pass names shown
++as identifiers (FrameBegin, ViewModel, Portal0, VK_IMAGE_TYPE_2D, D3DFOG_LINEAR, RayQuery (CS), ...);
++"preserve path" (a code path name); DLSS 3D-Guided Neural Rendering, Shader Execution Reordering,
++Weighted Blended OIT, Sampler Feedback, Quadtree POM, Raymarched POM, Hillaire, Henyey-Greenstein,
++Nubis Cubed / Nubis3, FNV; the reserved file names CON, PRN, AUX, NUL, COM[1-9], LPT[1-9].
+diff --git a/i18n/glossary/zh-CN.md b/i18n/glossary/zh-CN.md
+new file mode 100644
+index 00000000..7fe4c799
+--- /dev/null
++++ b/i18n/glossary/zh-CN.md
+@@ -0,0 +1,230 @@
++# zh-CN glossary (Simplified Chinese, mainland conventions)
++
++Terms follow NVIDIA's Chinese UI (GeForce/NVIDIA App, NVIDIA China site) where one exists.
++
++## Style
++
++- Labels, buttons, combo entries: short noun or verb phrases, no full stop.
++- Tooltips and descriptions: full sentences ending in 。, full-width punctuation ，。：；（）“”.
++- A half-width space between Chinese and Latin words or numbers (启用 DLSS, 每像素 1 次采样); none
++  next to full-width punctuation.
++- Parentheses: （） around Chinese text, () around Latin text, units or numbers, e.g. 延迟 (ms).
++- A trailing colon after Chinese text becomes ：; trailing spaces and `...` are kept exactly as in
++  the English.
++- UI names quoted in sentences use “”; quotes that are part of a value, path or code stay ASCII.
++- Kept as written: `rtx.*`/`dxvk.*` options, file names, environment variables, anything in
++  backticks, keys (Alt+X, Ctrl, Shift), numbers and units (ms, px, MB, GB, fps, %, m, K, EV, nits),
++  product and technique names (RTX, Remix, NVIDIA, DLSS, DLSS-RR, DLSS-FG, DLAA, NRD, ReBLUR, ReLAX,
++  ReSTIR, ReSTIR GI, RTXDI, NRC, SHaRC, NEE, XeSS, FSR, TAA, TAA-U, NIS, Reflex, USD, HDR, SDR, ACES,
++  AgX, OMM, PSR, PSTR, GI, IBL, SSS, LOD, BLAS, TLAS, VRAM, GPU, CPU, Vulkan, D3D9, Garry's Mod,
++  ImGui, Numos), and short code words that name a mode or value.
++- printf conversions unchanged and in order; a literal percent sign in a format string is `%%`.
++
++## Rendering
++
++| English | zh-CN | Notes |
++|---|---|---|
++| render / rendering | 渲染 | |
++| path tracing / path tracer | 路径追踪 / 路径追踪器 | |
++| ray tracing / raytraced | 光线追踪 / 光线追踪的 | |
++| ray | 光线 | primary / secondary ray: 主光线 / 次级光线 |
++| path | 路径 | |
++| bounce | 反弹 | number of bounces: 反弹次数 |
++| sample (n.) / sampling | 采样 / 采样 | samples per pixel: 每像素采样数 |
++| resampling / reuse | 重采样 / 复用 | |
++| reservoir | 蓄水池 | ReSTIR reservoirs |
++| temporal / spatial | 时域 / 空间 | temporal accumulation: 时域累积 |
++| accumulation | 累积 | |
++| denoiser / denoising | 降噪器 / 降噪 | |
++| noise | 噪点 (visible) / 噪声 (function: blue noise 蓝噪声) | |
++| firefly | 萤火虫噪点 | |
++| ghosting | 重影 | |
++| flicker / shimmering | 闪烁 | |
++| upscaler / upscaling | 超分辨率技术 / 超分辨率 | label "Upscaler" → 超分辨率; verb upscale → 放大 |
++| resolution | 分辨率 | render / output resolution: 渲染 / 输出分辨率 |
++| frame generation | 帧生成 | DLSS Frame Generation: DLSS 帧生成; multi frame generation: 多帧生成 |
++| Ray Reconstruction | 光线重建 | as NVIDIA writes it: DLSS 光线重建 |
++| Reflex low latency / Boost | Reflex 低延迟 / 加速 | modes: 关闭 / 启用 / 启用 + 加速 |
++| latency | 延迟 | |
++| frame rate / frame time | 帧率 / 帧时间 | |
++| global illumination | 全局光照 | |
++| direct / indirect lighting | 直接光照 / 间接光照 | |
++| specular / diffuse | 镜面 / 漫反射 | |
++| reflection / refraction | 反射 / 折射 | |
++| shadow | 阴影 | |
++| occlusion / ambient occlusion | 遮挡 / 环境光遮蔽 | |
++| culling | 剔除 | |
++| anti-culling | 反剔除 | |
++| motion vectors | 运动矢量 | |
++| depth / normal / tangent | 深度 / 法线 / 切线 | |
++| geometry | 几何体 | |
++| mesh | 网格 | |
++| instance | 实例 | |
++| vertex / triangle / primitive | 顶点 / 三角形 / 图元 | |
++| draw call | 绘制调用 | |
++| render target | 渲染目标 | |
++| buffer | 缓冲区 | |
++| shader | 着色器 | shader compilation: 着色器编译 |
++| pipeline | 管线 | |
++| post-processing | 后处理 | |
++| composite | 合成 | |
++| clamp | 钳制 | |
++| bias | 偏差 (statistical) / 偏移 (positional offset) | |
++| threshold | 阈值 | |
++| intensity / strength | 强度 | |
++| falloff / attenuation | 衰减 | |
++| jitter / dithering | 抖动 | |
++| filtering | 过滤 (texture) / 滤波 (denoiser signal) | |
++| sharpening / sharpness | 锐化 / 锐度 | |
++
++## Materials and textures
++
++| English | zh-CN |
++|---|---|
++| texture | 纹理 |
++| material | 材质 |
++| albedo | 反照率 |
++| roughness | 粗糙度 |
++| metallic | 金属度 |
++| normal map | 法线贴图 |
++| height map / displacement | 高度图 / 置换 |
++| emissive | 自发光 |
++| opacity / opaque | 不透明度 / 不透明 |
++| translucent / translucency | 半透明 |
++| subsurface scattering | 次表面散射 |
++| thin film | 薄膜 |
++| anisotropy | 各向异性 |
++| alpha test / alpha blend | Alpha 测试 / Alpha 混合 |
++| cutout | 镂空 |
++| tint | 染色 |
++| mip / mipmap | Mip / Mip 贴图 |
++| texture streaming | 纹理流式加载 |
++| texture category | 纹理类别 |
++| lightmap | 光照贴图 |
++| decal | 贴花 |
++| terrain | 地形 |
++| opacity micromap | 不透明度微映射 (OMM) |
++
++## Lights, sky, volumetrics, post
++
++| English | zh-CN |
++|---|---|
++| light (source) | 光源 |
++| lighting | 光照 |
++| sun / moon / stars | 太阳 / 月亮 / 星星 |
++| sky / skybox | 天空 / 天空盒 |
++| atmosphere | 大气 |
++| weather | 天气 |
++| cloud | 云 |
++| volumetrics / volumetric | 体积效果 / 体积 |
++| volumetric lighting / fog | 体积光照 / 体积雾 |
++| fog | 雾 |
++| scattering | 散射 |
++| particles / particle system | 粒子 / 粒子系统 |
++| exposure / auto exposure | 曝光 / 自动曝光 |
++| eye adaptation | 人眼适应 |
++| tone mapping / tonemapper | 色调映射 / 色调映射器 |
++| local / global tone mapping | 局部 / 全局色调映射 |
++| bloom | 泛光 |
++| vignette | 暗角 |
++| chromatic aberration | 色差 |
++| film grain | 胶片颗粒 |
++| motion blur | 动态模糊 |
++| depth of field | 景深 |
++| color grading | 调色 |
++| saturation / contrast / brightness | 饱和度 / 对比度 / 亮度 |
++| luminance | 亮度 |
++| radiance / irradiance | 辐射度 / 辐照度 |
++| white point | 白点 |
++| gamma | 伽马 |
++| camera | 摄像机 |
++| view model / player model | 视图模型 / 玩家模型 |
++| portal / ray portal | 传送门 / 光线传送门 |
++
++## Remix and modding
++
++| English | zh-CN | Notes |
++|---|---|---|
++| capture | 捕获 | scene capture to USD |
++| replacement / replacement asset | 替换 / 替换资产 | |
++| enhancement / enhanced assets | 增强 / 增强资产 | |
++| mod | 模组 | `mod.usda` stays |
++| layer / config layer | 层 / 配置层 | |
++| preset | 预设 | |
++| hash / hash rule | 哈希 / 哈希规则 | texture / geometry / asset hash: 纹理 / 几何 / 资产哈希 |
++| asset | 资产 | |
++| game setup | 游戏设置 | |
++| legacy (original game content) | 原版 | e.g. legacy material: 原版材质 |
++| override | 覆盖 | |
++| fallback | 回退 | |
++| runtime | 运行时 | |
++| plugin | 插件 | |
++| picking / highlight / selection | 拾取 / 高亮 / 选择 | |
++| wireframe | 线框 | |
++| scene / object | 场景 / 物体 (scene) or 对象 (code) | |
++
++## UI words
++
++| English | zh-CN |
++|---|---|
++| settings / option | 设置 / 选项 |
++| config / configuration | 配置 |
++| enable / disable | 启用 / 禁用 |
++| enabled / disabled (state) | 已启用 / 已禁用 |
++| on / off (combo values) | 开启 / 关闭 |
++| reset | 重置 |
++| save / load | 保存 / 加载 |
++| apply / cancel / close / OK | 应用 / 取消 / 关闭 / 确定 |
++| show / hide | 显示 / 隐藏 |
++| default / custom / auto | 默认 / 自定义 / 自动 |
++| none | 无 |
++| low / medium / high / ultra | 低 / 中 / 高 / 超高 |
++| quality / balanced / performance / ultra performance (DLSS modes) | 质量 / 平衡 / 性能 / 超级性能 |
++| image quality | 画质 |
++| advanced / basic | 高级 / 基础 |
++| debug | 调试 |
++| developer menu | 开发者菜单 |
++| User Graphics Settings | 用户图形设置 |
++| statistics | 统计 |
++| profiler | 性能分析器 |
++| warning / error | 警告 / 错误 |
++| driver | 驱动程序 |
++| supported / unsupported | 支持 / 不支持 |
++| recommended | 推荐 |
++| memory / GPU memory | 内存 / 显存 (VRAM stays VRAM) |
++| cache / budget | 缓存 / 预算 |
++| hotkey / shortcut | 快捷键 |
++| window / tab | 窗口 / 选项卡 |
++| tooltip | 提示 |
++
++## Settled while translating
++
++| English | zh-CN | Notes |
++|---|---|---|
++| Enabled / Disabled as combo entries | 启用 / 禁用 | as status text (Light Shaping: Enabled): 已启用 / 已禁用 |
++| pass (render pass) | 阶段 | Integrate Indirect pass: 间接积分阶段 |
++| resolve / resolver | 解析 / 解析器 | |
++| lobe | 波瓣 | |
++| throughput | 通量 | |
++| boiling (artifact) | 沸腾噪点 | |
++| disocclusion | 去遮挡 | |
++| (resource) aliasing | 别名 | |
++| aerial perspective | 空气透视 | |
++| haze | 雾霭 (sky/atmosphere text) / 霾 (preset name) | |
++| silver lining | 银边 | |
++| airglow | 气辉 | |
++| Mie / Rayleigh | 米氏 / 瑞利 | |
++| froxel, USD Stage, prim | kept: froxel, Stage | |
++| billboard | 公告板 | |
++| hair cards | 毛发面片 | |
++| fallback light | 回退光源 | |
++| light shaping | 光源塑形 | |
++| effect light | 效果光源 | Add Light to Texture: 为纹理添加光源 |
++| sprite sheet | 精灵表 | |
++| precipitation | 降水 | |
++| sampling rate (sparse rendering) | 采样率 | |
++| Ultra Quality / Ultra Quality Plus (XeSS) | 超高质量 / 超高质量 Plus | |
++| Insane (quality level) | 极致 | |
++| legacy (older behaviour of the code) | 旧版 | legacy (original game content): 原版 |
++| pipeline enum and pass names (FrameBegin, ViewModel, D3DFOG_*, VK_*) | kept unchanged | they are code identifiers |
++| backticked button names | kept, Chinese name added after them | `Sample Memory`（内存采样） |
+diff --git a/i18n/glossary/zh-TW.md b/i18n/glossary/zh-TW.md
+new file mode 100644
+index 00000000..3cbd20aa
+--- /dev/null
++++ b/i18n/glossary/zh-TW.md
+@@ -0,0 +1,216 @@
++# zh-TW glossary (Traditional Chinese, Taiwan)
++
++Taiwan terms throughout (not mainland ones): 檔案, 記憶體, 效能, 品質, 支援, 資訊, 顯示卡, 程式, 資料,
++物件, 預設值, 自訂, 進階, 介面, 視窗, 選單, 螢幕, 網路, 硬體, 軟體, 驅動程式, 快取, 雜湊.
++
++## Style
++
++- Labels, buttons, combo entries: short noun or verb phrases, no sentence-final 。.
++- Tooltips and descriptions: full sentences ending in 。; full-width punctuation in Chinese text
++  (，。：；！？、「」（）).
++- Parentheses: full-width （） when the content has Chinese, half-width ( ) when it is only Latin
++  letters, numbers or units, e.g. `(ms)`, `(DLSS)`.
++- A trailing colon of a label becomes the full-width colon `：` after Chinese text and stays `:` after
++  Latin text or numbers. A trailing `...` stays `...`.
++- Quoted UI names and values use 「」; text in backticks and option names stay exactly as written.
++- One half-width space between Chinese and Latin words or numbers: 啟用 DLSS、2 次反彈、10 ms.
++- No emoji, arrows or math symbols the English does not use; write `->`, `<=`, `>=`, `~`.
++
++## Kept in English
++
++Option and file names (`rtx.*`, `dxvk.*`, `rtx.conf`, `user.conf`, `mod.usda`, `*.dll`), env
++variables, key names (Alt+X, Ctrl, Shift), numbers and units (ms, px, MB, GB, fps, %, m, cm, km, K,
++EV, nits), product and technique names: RTX, Remix, NVIDIA, DLSS, DLSS-RR, DLSS-FG, DLAA, NRD,
++ReBLUR, ReLAX, ReSTIR, ReSTIR GI, RTXDI, NRC, SHaRC, NEE, XeSS, FSR, TAA, TAA-U, NIS, Reflex, USD,
++HDR, SDR, ACES, AgX, OMM, PSR, PSTR, GI, IBL, SSS, LOD, BLAS, TLAS, VRAM, GPU, CPU, Vulkan, D3D9,
++Garry's Mod, ImGui, Numos, Bridge, mip, froxel, prim, spp, EV100, LUT, AABB, UI, alpha, G-buffer.
++
++## Terms
++
++| English | zh-TW |
++|---|---|
++| render / rendering | 渲染 |
++| renderer | 渲染器 |
++| path tracing / path tracer | 路徑追蹤 / 路徑追蹤器 |
++| ray tracing | 光線追蹤 |
++| ray | 光線 |
++| denoiser / denoising | 降噪器 / 降噪 |
++| noise / noisy | 雜訊 / 雜訊多 |
++| texture | 紋理 |
++| material | 材質 |
++| shader | 著色器 |
++| upscaler / upscaling | 升頻器 / 升頻 |
++| Super Resolution (DLSS) | 超解析度 |
++| Ray Reconstruction | 光線重建 |
++| frame generation | 畫格生成 |
++| frame / frame rate / frame time | 畫格 / 畫格率 / 畫格時間 |
++| resolution | 解析度 |
++| preset | 預設 |
++| default (noun) / by default | 預設值 / 預設為 |
++| default (adjective) | 預設 |
++| custom | 自訂 |
++| settings / setting | 設定 |
++| option | 選項 |
++| configuration / config file | 組態 / 設定檔 |
++| config layer | 設定層 |
++| layer (USD, mod) | 圖層 |
++| enable / disable | 啟用 / 停用 |
++| enabled / disabled (state) | 已啟用 / 已停用 |
++| on / off (values) | 開啟 / 關閉 |
++| toggle | 切換 |
++| reset | 重設 |
++| save / load | 儲存 / 載入 |
++| reload / refresh | 重新載入 / 重新整理 |
++| apply | 套用 |
++| clear | 清除 |
++| export / import | 匯出 / 匯入 |
++| capture (noun / verb) | 擷取 |
++| screenshot | 螢幕擷圖 |
++| replacement / replace | 替換 |
++| enhancement(s) | 強化 / 強化內容 |
++| mod | 模組 |
++| asset | 資產 |
++| light (source) | 光源 |
++| lighting | 照明 |
++| emissive | 自發光 |
++| volumetrics / volumetric | 體積效果 / 體積 |
++| volumetric lighting / fog | 體積光 / 體積霧 |
++| fog | 霧 |
++| exposure / auto exposure | 曝光 / 自動曝光 |
++| tone mapping / tonemapper | 色調對應 / 色調對應器 |
++| bloom | 光暈 |
++| post-processing | 後製處理 |
++| anti-culling / culling | 反剔除 / 剔除 |
++| hash | 雜湊 |
++| category | 類別 |
++| debug / debug view | 偵錯 / 偵錯檢視 |
++| view | 檢視 |
++| visualize / visualization | 視覺化 |
++| overlay | 覆疊 |
++| camera | 攝影機 |
++| view model (first-person) | 視角模型 |
++| player model | 玩家模型 |
++| sky / skybox | 天空 / 天空盒 |
++| atmosphere | 大氣 |
++| weather | 天氣 |
++| particle | 粒子 |
++| decal | 貼花 |
++| terrain | 地形 |
++| lightmap | 光照貼圖 |
++| normal map | 法線貼圖 |
++| mesh / geometry / vertex | 網格 / 幾何 / 頂點 |
++| instance | 實例 |
++| object | 物件 |
++| draw call | 繪製呼叫 |
++| primitive | 圖元 |
++| rasterization | 點陣化 |
++| sample / sampling | 取樣 |
++| bounce | 反彈 |
++| reservoir | 儲存池 |
++| resampling | 重新取樣 |
++| temporal / spatial | 時域 / 空間 |
++| accumulation | 累積 |
++| history | 歷史 |
++| cache | 快取 |
++| radiance / irradiance | 輻射亮度（輻射，複合詞中） / 輻照度 |
++| direct / indirect | 直接 / 間接 |
++| global illumination | 全域照明 |
++| specular / diffuse | 鏡面 / 漫反射 |
++| reflection / refraction | 反射 / 折射 |
++| shadow | 陰影 |
++| occlusion | 遮蔽 |
++| opacity / opaque | 不透明度 / 不透明 |
++| translucent / transparent | 半透明 / 透明 |
++| subsurface scattering | 次表面散射 |
++| roughness / metallic / albedo | 粗糙度 / 金屬度 / 反照率 |
++| anisotropy / anisotropic | 非等向性 |
++| displacement / height map | 位移 / 高度圖 |
++| luminance / brightness | 亮度 |
++| contrast / saturation | 對比 / 飽和度 |
++| intensity | 強度 |
++| threshold | 臨界值 |
++| bias / offset | 偏差 / 偏移 |
++| scale | 縮放 / 比例 |
++| clamp | 限制 |
++| anti-aliasing / aliasing | 反鋸齒 / 鋸齒 |
++| sharpening / sharpness | 銳化 / 銳利度 |
++| motion vector | 動態向量 |
++| motion blur / depth of field | 動態模糊 / 景深 |
++| ghosting / flickering / artifact | 殘影 / 閃爍 / 瑕疵 |
++| firefly (bright noise) | 亮點 |
++| dithering | 混色 |
++| vignette / film grain / chromatic aberration | 暈影 / 底片顆粒 / 色像差 |
++| latency / low latency | 延遲 / 低延遲 |
++| Reflex On + Boost | 開啟 + 加速 |
++| VSync | 垂直同步 |
++| memory / VRAM budget | 記憶體 / VRAM 預算 |
++| texture streaming | 紋理串流 |
++| performance / quality / balanced | 效能 / 品質 / 平衡 |
++| Low / Medium / High / Ultra | 低 / 中 / 高 / 極高 |
++| Very Low / Very High | 極低 / 非常高 |
++| None / Auto | 無 / 自動 |
++| advanced / basic | 進階 / 基本 |
++| developer / user | 開發者 / 使用者 |
++| runtime (Remix) | 執行階段 |
++| buffer / render target | 緩衝區 / 渲染目標 |
++| swapchain / present | 交換鏈 / 呈現 |
++| override | 覆寫 |
++| fallback | 備用 |
++| legacy | 舊版 |
++| experimental | 實驗性 |
++| hotkey / shortcut | 快速鍵 |
++| window / menu / tab / button | 視窗 / 選單 / 分頁 / 按鈕 |
++| file / folder / path | 檔案 / 資料夾 / 路徑 |
++| driver / hardware | 驅動程式 / 硬體 |
++| graphics card | 顯示卡 |
++| statistics | 統計資料 |
++| profiler / profiling | 效能分析工具 / 效能分析 |
++| log | 記錄 |
++| warning / error | 警告 / 錯誤 |
++| iteration | 迭代 |
++| probability | 機率 |
++| coordinate / world space / screen space | 座標 / 世界空間 / 螢幕空間 |
++| portal | 傳送門 |
++| voxel | 體素 |
++| billboard / sprite | 公告板 / 精靈圖 |
++| bone / skinning | 骨骼 / 蒙皮 |
++| bounding box | 邊界框 |
++| wireframe | 線框 |
++| grid | 格線 |
++| selection / select | 選取 |
++| highlight | 標示 |
++| stochastic | 隨機 |
++| baked / bake | 烘焙 |
++| stage (USD) | stage（保留英文） |
++| color | 色彩 |
++| video memory (vidmem) | 顯示記憶體 |
++| graph (Remix Logic) | 節點圖 |
++| resource aliasing | 別名 |
++| pass (render pass) | 階段 |
++| lobe (BSDF) | 波瓣 |
++| halo | 光環 |
++| aerial perspective | 空氣透視 |
++| haze | 霧氣 |
++| froxel / slice | froxel / 切片 |
++| march / raymarch | 步進 / 光線步進 |
++| Russian roulette | 俄羅斯輪盤 |
++| interaction (surface) | 交互 |
++| shadow terminator | 明暗交界 |
++| diffusion profile | 擴散設定檔 |
++| sampler feedback | 取樣器回饋 |
++| Enhancements (tab) / enhanced assets | 強化內容 / 強化資產 |
++
++## Names left in English
++
++Texture category names and the atmosphere/volumetrics labels came in batch 16 (e.g. 地形紋理,
++為紋理加入光源（選用）, 未分類, 底部變暗, 夜空亮度, 每分鐘雷擊次數, 透射率色彩); tooltips quote
++them by these translations. Labels that are still not extracted (the weather preset editor's field
++table, e.g. Underside Shading) and names that are no menu label (Sun Shadow (Near), Surface
++Contrast, Transmittance Distance) stay English in 「」. GPU-override values True/False stay
++English: they are config values, the displayed labels are On/Off. Pass, enum and Vulkan identifiers in debug lists (FrameBegin, VK_IMAGE_TYPE_2D, D3DFOG_EXP)
++stay unchanged. Text in backticks stays; when it names a translated button, the Chinese label
++follows in （）. Weather preset ids in the Target Preset combo (clear, partlyCloudy, ...) stay
++English: the code passes the combo strings to setTargetPreset() and they are the
++rtx.weather.preset.<name> keys. Labels drawn through dragFloatWithWeatherOverride (Night Sky
++Brightness, Bottom Darkening, Sky Ambient Fill, ...) are not in remix.pot, so tooltips quote them in
++English.

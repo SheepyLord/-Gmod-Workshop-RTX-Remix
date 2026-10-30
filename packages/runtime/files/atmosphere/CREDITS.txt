@@ -1,0 +1,22 @@
+Sky textures for the RTX Remix runtime's physical sky (rtx.skyMode 1)
+=====================================================================
+
+moon_albedo.dds, moon_normal.dds
+  The Moon's colour and relief, converted from NASA's CGI Moon Kit
+  (https://svs.gsfc.nasa.gov/4720): lroc_color_poles_4k.tif (colour, from the Lunar
+  Reconnaissance Orbiter Camera) and ldem_4.tif (elevation, from the Lunar Orbiter Laser Altimeter).
+  Credit: NASA's Scientific Visualization Studio.
+  The conversion: the colour resized to 2048x1024 in linear light and scaled so the near side's mean
+  linear luminance is 0.25, BC7 (sRGB) with mipmaps; the relief as a tangent-space normal map (x east,
+  y north) from the elevation's slopes, BC5 with mipmaps. Simple cylindrical projection, north up.
+
+stars.dds, galaxy.dds, nebula.dds
+  The night sky, from Night Sky HD LE by PraedythXVI
+  (https://www.nexusmods.com/skyrim/mods/107102): the star sphere ("Thorn Shaped option 3",
+  textures\sky\skystars.dds) and the galaxy (textures\sky\skyrimgalaxy.dds) as they are, and the
+  "FullNebula" option 1 sphere with the mod's constellations (textures\sky\skyrimconstellations.dds,
+  remapped from its mesh) added in. Stars, galaxy and constellations: made by PraedythXVI. The
+  FullNebula textures are PraedythXVI's edit of nebula images by Era-7 on Cubebrush, which Era-7
+  provides as free, open assets; this project's maintainer has permission to use them.
+  The mod's permissions allow converting it for other games and using its assets with credit to its
+  creator, not in anything sold.

@@ -19,6 +19,9 @@ from urllib.parse import unquote
 SCRIPT_EXTS = {'.ps1', '.psm1', '.py', '.bat', '.cmd', '.lua', '.sh'}
 SOURCE_EXTS = {'.c', '.cc', '.cpp', '.cxx', '.h', '.hh', '.hpp', '.inl', '.asm', '.def', '.rc', '.in'}
 SKIP_DIRS = {'.git', 'out', 'build', '__pycache__', 'third_party', '.vs', '.venv', 'venv', 'node_modules'}
+# Top-level folders of vendored content, kept byte for byte (ADR 0033): the RTX package's inputs, whose
+# add-ons bring their own scripts and READMEs.
+SKIP_TOP = {'packages'}
 COMPONENT_ROOTS = ('loader', 'tools')
 
 LINK_RE = re.compile(r'\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)')
@@ -32,7 +35,7 @@ def _files(root):
         current = stack.pop()
         for entry in sorted(current.iterdir()):
             if entry.is_dir():
-                if entry.name not in SKIP_DIRS:
+                if entry.name not in SKIP_DIRS and not (current == root and entry.name in SKIP_TOP):
                     stack.append(entry)
             else:
                 yield entry

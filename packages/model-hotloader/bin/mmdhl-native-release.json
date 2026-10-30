@@ -1,0 +1,35 @@
+{
+  "api": 1,
+  "build": "ecd7c426c0b5-20261026T225907Z",
+  "installApi": 1,
+  "platform": "win64",
+  "release": "2.3.1",
+  "files": {
+    "client": {
+      "name": "gmcl_mmdhl_win64.dll",
+      "size": 2843648,
+      "sha256": "c1a681384be7062eb98e439d08882e55d7cb84b10ecd17e6d1dcdcfc05af49d8"
+    },
+    "server": {
+      "name": "gmsv_mmdhl_win64.dll",
+      "size": 1862144,
+      "sha256": "2b1f92cfd3f5b6251050698ddc1c9416c83621325fece57a99dca8b74aa281c0"
+    },
+    "runtime": {
+      "name": "mmdhl_runtime_win64.dll",
+      "size": 10736128,
+      "sha256": "351a70687abaace51cf5ca60b3bb8f48cad6cb1e2d5b9def74a9d624a06a0bed"
+    },
+    "worker": {
+      "name": "mmdhl_worker.exe",
+      "size": 4148224,
+      "sha256": "808a5c109b379ff2b519eef79f986e69b296e09771ca28279f342f29558f222e"
+    },
+    "coacd": {
+      "name": "lib_coacd.dll",
+      "size": 6169600,
+      "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+    }
+  },
+  "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases"
+}

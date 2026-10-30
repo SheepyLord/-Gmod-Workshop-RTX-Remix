@@ -13,14 +13,25 @@
   "parts": [
     {
       "name": "runtime",
-      "package": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\sky\\runtime-b6.gma"
+      "build": "package_runtime",
+      "args": [
+        "--runtime",
+        "out/inputs/runtime/files",
+        "--dxvk-conf",
+        "out/inputs/runtime/layers/classic_remix_defaults.conf",
+        "--dxvk-conf",
+        "out/inputs/runtime/layers/compiler_threads.conf",
+        "--env",
+        "DXVK_FORCE_WINDOWED=1",
+        "--insecure"
+      ]
     },
     {
       "name": "reshade",
       "build": "package_reshade",
       "args": [
         "--setup",
-        "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\reshade\\ReShade_Setup_6.8.0.exe"
+        "out/inputs/reshade/ReShade_Setup_6.8.0.exe"
       ]
     },
     {
@@ -28,15 +39,15 @@
       "build": "package_fixes",
       "args": [
         "--repo",
-        "H:\\BACKUP_20260815\\Modding\\garrys-mod-rtx-remixed",
+        "out/inputs/fixes",
         "--modules-from",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin",
+        "out/inputs/fixes/modules",
         "--with-debug-module"
       ]
     },
     {
       "name": "emissives",
-      "package": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\round3\\emissives.gma"
+      "package": "out/inputs/emissives/emissives.gma"
     },
     {
       "name": "remove-halo",
@@ -46,7 +57,7 @@
         "remove-halo",
         "--requires-remix",
         "--addon",
-        "H:\\BACKUP_20260815\\Modding\\ipg\\Remove_halo"
+        "out/inputs/remove-halo/Remove_halo"
       ]
     },
     {
@@ -59,22 +70,22 @@
         "Model Hotloader",
         "--requires-remix",
         "--addon",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\addons\\mmd_hotloader",
+        "out/inputs/model-hotloader/mmd_hotloader",
         "--addon-file",
         "mmd_hotloader/lua/mmdhl/installation.lua",
-        "H:\\BACKUP_20260815\\Modding\\ipg\\!GMHLVK\\Gmod-Model-Hotloader-with-Vulkan\\addon\\lua\\mmdhl\\installation.lua",
+        "out/inputs/model-hotloader/overrides/installation.lua",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\gmcl_mmdhl_win64.dll",
+        "out/inputs/model-hotloader/bin/gmcl_mmdhl_win64.dll",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\gmsv_mmdhl_win64.dll",
+        "out/inputs/model-hotloader/bin/gmsv_mmdhl_win64.dll",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\mmdhl_runtime_win64.dll",
+        "out/inputs/model-hotloader/bin/mmdhl_runtime_win64.dll",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\lib_coacd.dll",
+        "out/inputs/model-hotloader/bin/lib_coacd.dll",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\mmdhl_worker.exe",
+        "out/inputs/model-hotloader/bin/mmdhl_worker.exe",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\mmdhl-native-release.json",
+        "out/inputs/model-hotloader/bin/mmdhl-native-release.json",
         "--load-first",
         "gmcl_mmdhl_win64.dll=mmdhl_runtime_win64.dll",
         "--load-first",
@@ -89,11 +100,11 @@
         "advanced-material-editor",
         "--requires-remix",
         "--addon",
-        "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_material_editor",
+        "out/inputs/advanced-material-editor/!advanced_material_editor",
         "--ignore",
         "materials/models/*",
         "--lua-bin",
-        "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin\\gmcl_advmat_rtx_bridge_win64.dll"
+        "out/inputs/advanced-material-editor/bin/gmcl_advmat_rtx_bridge_win64.dll"
       ]
     },
     {
@@ -105,7 +116,7 @@
         "--requires-remix",
         "--addon-as",
         "advanced_bodygroup_tool",
-        "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_bodygroup_tool"
+        "out/inputs/advanced-bodygroup-tool/!advanced_bodygroup_tool"
       ]
     },
     {
@@ -116,7 +127,7 @@
         "procedural-bodygroup-destruction",
         "--requires-remix",
         "--addon",
-        "H:\\BACKUP_20260815\\Modding\\ipg\\!gmod_bullet_break_simulator"
+        "out/inputs/procedural-bodygroup-destruction/!gmod_bullet_break_simulator"
       ]
     },
     {
@@ -127,7 +138,7 @@
         "character-motion-importer",
         "--requires-remix",
         "--addon",
-        "H:\\BACKUP_20260815\\Modding\\ipg\\Gmod-Mmd-Motion-Importer\\mmd_vmd_npc"
+        "out/inputs/character-motion-importer/mmd_vmd_npc"
       ]
     }
   ],

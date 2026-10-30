@@ -1,0 +1,114 @@
+{
+ "schema": 1,
+ "part": "procedural-bodygroup-destruction",
+ "origins": {
+  "!gmod_bullet_break_simulator": {
+   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!gmod_bullet_break_simulator",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/ipg/!gmod_bullet_break_simulator",
+    "remote": "https://github.com/SheepyLord/-gmod_bullet_break_simulator.git",
+    "commit": "7478b94ad705a4fc10161abc738214eec7497255",
+    "dirty": true
+   },
+   "imported": "2026-10-30T00:42:46+00:00"
+  }
+ },
+ "files": {
+  "!gmod_bullet_break_simulator/addon.json": {
+   "size": 273,
+   "sha256": "b3bb3209fd6fd9361a359e26fc42a8c0f06b56e59ea46702e86a1b9f75a64d24",
+   "mtime_ns": 1789781554612398400,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/autorun/bullet_break_simulator_loader.lua": {
+   "size": 1607,
+   "sha256": "b15e1fa19dfbe8f816c1c7d390a657b644a0b3cf93f53d096bd1ae3515182e31",
+   "mtime_ns": 1789788016226409000,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_10_i18n.lua": {
+   "size": 84824,
+   "sha256": "ae331259fcbd8baad04529617aedb5e7d85aab7a90d01c9d17f8b50d9d321cd9",
+   "mtime_ns": 1789787645758739500,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_20_filters.lua": {
+   "size": 14864,
+   "sha256": "8c65e5dfe417b4ee9cdafcf4411ddb2733df8f9b3cdcad938e683ec85db7647f",
+   "mtime_ns": 1787861333595499500,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_21_mdl_bodyparts.lua": {
+   "size": 8216,
+   "sha256": "fda8a077470fcc6e5e411792a32892c5c1c866d410fecff172e20f4f46b9d653",
+   "mtime_ns": 1787682075159674700,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_22_shape.lua": {
+   "size": 11063,
+   "sha256": "4a67cd20b7db0c6306aff9d51d04039bad60351640c217de238cfae4745178ad",
+   "mtime_ns": 1787465498943125100,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua": {
+   "size": 11292,
+   "sha256": "d80de96f0353a5daeb60e515b5ad728f8505cf5159823d5e7b71f3c5693b3866",
+   "mtime_ns": 1787726197784207700,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_29_mesh_preparation.lua": {
+   "size": 4729,
+   "sha256": "01e68967376e904e966181a456b6287efd30e1c34af2afb6b5919e054b63a68d",
+   "mtime_ns": 1789788589930366600,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua": {
+   "size": 188589,
+   "sha256": "399f53f6749bacdf2e766cd0ff3c371190c03600759e9fcc4c678a55302b14d0",
+   "mtime_ns": 1790993089913678700,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_32_mesh_persistence.lua": {
+   "size": 50127,
+   "sha256": "0ee13b98d82805902543fe73c2e14882fa21a64f0a61b38e0b34514e04d5ab7a",
+   "mtime_ns": 1789788306308106900,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_39_material_safety.lua": {
+   "size": 5549,
+   "sha256": "72b91d7a81d685a5eec5e74099283dda7cf13b13ef3de25f9417cb6bfaa8e858",
+   "mtime_ns": 1789782778296903000,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua": {
+   "size": 322710,
+   "sha256": "9d0c5b2117f73e6c28dc96160a66d880d1590207524c59fc8eb046f15dfde1ff",
+   "mtime_ns": 1790993089915677600,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_90_settings.lua": {
+   "size": 27198,
+   "sha256": "84082b774c444dd2975a696ba1e1a0dde6199d3afe3cf36cc7ed00bd88f61fea",
+   "mtime_ns": 1789787420306351700,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/sh_00_config.lua": {
+   "size": 16979,
+   "sha256": "1bf6ee1e10b4a870e303995b852b1c07daa44cb0458ff2fff825fc647b675261",
+   "mtime_ns": 1790993089901125800,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/sh_10_network.lua": {
+   "size": 384,
+   "sha256": "51e37f2f6e99d498412100669f868654675d6817aa3cbef9aa8d7285c3a2e49f",
+   "mtime_ns": 1787521794218590100,
+   "stored": "plain"
+  },
+  "!gmod_bullet_break_simulator/lua/bullet_break_simulator/sv_20_hits.lua": {
+   "size": 5412,
+   "sha256": "e86c48143017359ca5286adb9c25fb71c56c652486c058a7ad09f7903a9cf0c3",
+   "mtime_ns": 1790993089911169400,
+   "stored": "plain"
+  }
+ }
+}

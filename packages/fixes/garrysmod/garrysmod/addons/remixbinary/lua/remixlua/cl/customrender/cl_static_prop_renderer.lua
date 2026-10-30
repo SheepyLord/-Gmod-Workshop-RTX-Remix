@@ -1,0 +1,1369 @@
+if not CLIENT then return end
+local RenderCore = include("remixlua/cl/customrender/render_core.lua") or RemixRenderCore
+-- Re-Renders all static props to bypass engine culling 
+-- Author: CR
+
+local convar_Enable = CreateClientConVar("rtx_spr_enable", "0", true, false, "Enable custom rendering of static props")
+local convar_Debug = CreateClientConVar("rtx_spr_debug", "0", true, false, "Enable debug prints for static prop renderer")
+local convar_Whitelist = CreateClientConVar("rtx_spr_mat_whitelist", "", true, false, "Comma-separated material name substrings to include")
+local convar_Blacklist = CreateClientConVar("rtx_spr_mat_blacklist", "", true, false, "Comma-separated material name substrings to exclude")
+local convar_UsePVS = CreateClientConVar("rtx_spr_use_pvs", "1", true, false, "Enable PVS culling for static props")
+local convar_PVSSafetyDistance = CreateClientConVar("rtx_spr_pvs_safety_distance", "0", true, false, "Distance within which PVS culling is disabled (prevents close-range culling bugs)")
+local convar_FrameSkip = CreateClientConVar("rtx_spr_frame_skip", "2", true, false, "Update prop visibility every N frames (2 = every other frame, 1 = every frame)")
+local convar_UseMeshCombining = CreateClientConVar("rtx_spr_mesh_combining", "0", true, false, "Combine props into single meshes per material to reduce draw calls")
+local convar_CullDistance = CreateClientConVar("rtx_spr_cull_distance", "0", true, false, "Sphere-based max render distance for static props (0 = disabled). With PVS on: additional post-PVS filter. With PVS off: sole culling method.")
+
+-- Per-map PVS safety distance persistence
+local PVS_SAFETY_FILE = "rtx_pvs_safety_distances.txt"
+
+local function GetCurrentMapName()
+    return game.GetMap() or "unknown"
+end
+
+local function LoadPerMapPVSSettings()
+    if not file.Exists(PVS_SAFETY_FILE, "DATA") then
+        return {}
+    end
+    
+    local json = file.Read(PVS_SAFETY_FILE, "DATA")
+    if not json then return {} end
+    
+    local ok, data = pcall(util.JSONToTable, json)
+    if not ok or not data then return {} end
+    
+    return data
+end
+
+local function SavePerMapPVSSettings(mapSettings)
+    local json = util.TableToJSON(mapSettings, true)
+    if json then
+        file.Write(PVS_SAFETY_FILE, json)
+    end
+end
+
+local function ApplyMapPVSSettings()
+    local mapName = GetCurrentMapName()
+    local settings = LoadPerMapPVSSettings()
+    
+    if settings[mapName] and settings[mapName].pvs_safety_distance then
+        local savedDistance = settings[mapName].pvs_safety_distance
+        RunConsoleCommand("rtx_spr_pvs_safety_distance", tostring(savedDistance))
+    else
+        -- No saved value for this map, reset to default (0)
+        RunConsoleCommand("rtx_spr_pvs_safety_distance", "0")
+    end
+end
+
+local function SaveCurrentMapPVSSettings()
+    local mapName = GetCurrentMapName()
+    local currentDistance = convar_PVSSafetyDistance:GetFloat()
+    
+    local settings = LoadPerMapPVSSettings()
+    settings[mapName] = settings[mapName] or {}
+    settings[mapName].pvs_safety_distance = currentDistance
+    
+    SavePerMapPVSSettings(settings)
+end
+
+-- Apply saved settings when map loads
+hook.Add("InitPostEntity", "RTX_SPR_LoadMapSettings", function()
+    timer.Simple(0.1, ApplyMapPVSSettings)
+end)
+
+-- Save settings when convar changes
+cvars.AddChangeCallback("rtx_spr_pvs_safety_distance", function(convar, oldValue, newValue)
+    -- Only save if the value actually changed and we're in a map
+    if oldValue ~= newValue and GetCurrentMapName() ~= "unknown" then
+        timer.Simple(0.5, SaveCurrentMapPVSSettings)
+    end
+end, "RTX_SPR_SavePVSDistance")
+
+-- Global state
+local isDataReady = false
+local isCachingInProgress = false
+local cachedStaticProps = {}
+local meshCache = {}  -- Maps model path to IMesh objects
+local lastDebugFrame = 0
+local worldProps = {}
+local sprStats = { rendered = 0, total = 0 }
+local sprBuildStats = { startTime = 0, endTime = 0, built = 0, active = false }
+-- Expose build state for progress tracking
+if RemixRenderCore then RemixRenderCore._sprBuildState = sprBuildStats end
+
+-- Frame skipping cache
+local cachedRenderList = { world = {} }
+local lastUpdateFrame = { world = -1 }
+
+-- Set to true once the world geometry AABB becomes available and we log that culling is active.
+local _skyAABBCullLogged = false
+
+-- Combined mesh cache (per material) - built once during initialization
+local combinedMeshes = {} -- [materialName] = { material = IMaterial, mesh = IMesh, propCount = N, props = {prop indices} }
+local combinedMeshesBuilt = false
+local MAX_VERTS_PER_COMBINED_MESH = 21000 -- Leave room under 21845 vertex limit
+
+-- Build a combined mesh from multiple props with the same material (forward declare)
+local BuildCombinedMesh
+
+-- Build all combined meshes once during initialization
+local function BuildAllCombinedMeshes()
+    combinedMeshes = {}
+    combinedMeshesBuilt = false
+    
+    -- Group world props by material
+    local materialGroups = {} -- [materialName] = { props = {indices}, material = IMaterial }
+    
+    for idx, prop in ipairs(worldProps) do
+        if prop.cachedMesh and prop.cachedMesh.meshes then
+            for _, meshInfo in ipairs(prop.cachedMesh.meshes) do
+                local mat = meshInfo.material
+                if mat and mat.GetName then
+                    local matName = mat:GetName()
+                    
+                    if not materialGroups[matName] then
+                        materialGroups[matName] = {
+                            material = mat,
+                            propIndices = {}
+                        }
+                    end
+                    
+                    table.insert(materialGroups[matName].propIndices, idx)
+                end
+            end
+        end
+    end
+    
+    -- Build combined mesh for each material group (may create multiple batches per material)
+    local batchCounter = 0
+    for matName, group in pairs(materialGroups) do
+        -- Smart batching: accumulate props until we approach vertex limit
+        local currentBatch = {}
+        local currentBatchIndices = {}
+        local estimatedVerts = 0
+        local VERT_ESTIMATE_PER_PROP = 300 -- Conservative average
+        
+        for _, propIdx in ipairs(group.propIndices) do
+            local prop = worldProps[propIdx]
+            local propVerts = (prop.cachedMesh and prop.cachedMesh.vertexCount) or VERT_ESTIMATE_PER_PROP
+            
+            -- Start new batch if this prop would exceed limit
+            if estimatedVerts + propVerts > MAX_VERTS_PER_COMBINED_MESH and #currentBatch > 0 then
+                -- Build current batch
+                local combinedMesh = BuildCombinedMesh(currentBatch, group.material)
+                if combinedMesh then
+                    batchCounter = batchCounter + 1
+                    local batchKey = matName .. "_batch" .. batchCounter
+                    
+                    -- Pre-calculate unique clusters for this batch for faster PVS checks
+                    local batchClusters = {}
+                    for _, idx in ipairs(currentBatchIndices) do
+                        local prop = worldProps[idx]
+                        if prop.clusters then
+                            for cl in pairs(prop.clusters) do
+                                batchClusters[cl] = true
+                            end
+                        end
+                    end
+                    
+                    combinedMeshes[batchKey] = {
+                        material = group.material,
+                        mesh = combinedMesh,
+                        propCount = #currentBatch,
+                        propIndices = currentBatchIndices,
+                        clusters = batchClusters, -- Cache for fast PVS checks
+                        submitData = { material = group.material, mesh = combinedMesh, translucent = false }
+                    }
+                end
+                
+                -- Reset for next batch
+                currentBatch = {}
+                currentBatchIndices = {}
+                estimatedVerts = 0
+            end
+            
+            -- Add prop to current batch
+            table.insert(currentBatch, {
+                prop = prop,
+                mesh = nil
+            })
+            table.insert(currentBatchIndices, propIdx)
+            estimatedVerts = estimatedVerts + propVerts
+        end
+        
+        -- Build final batch for this material
+        if #currentBatch > 0 then
+            local combinedMesh = BuildCombinedMesh(currentBatch, group.material)
+            if combinedMesh then
+                batchCounter = batchCounter + 1
+                local batchKey = matName .. "_batch" .. batchCounter
+                
+                -- Pre-calculate unique clusters for this batch for faster PVS checks
+                local batchClusters = {}
+                for _, idx in ipairs(currentBatchIndices) do
+                    local prop = worldProps[idx]
+                    if prop.clusters then
+                        for cl in pairs(prop.clusters) do
+                            batchClusters[cl] = true
+                        end
+                    end
+                end
+                
+                combinedMeshes[batchKey] = {
+                    material = group.material,
+                    mesh = combinedMesh,
+                    propCount = #currentBatch,
+                    propIndices = currentBatchIndices,
+                    clusters = batchClusters, -- Cache for fast PVS checks
+                    submitData = { material = group.material, mesh = combinedMesh, translucent = false }
+                }
+            end
+        end
+    end
+    
+    combinedMeshesBuilt = true
+    
+    -- Free triangle data to save memory (no longer needed after combining)
+    if convar_UseMeshCombining:GetBool() then
+        for _, prop in ipairs(worldProps) do
+            if prop.cachedMesh and prop.cachedMesh.meshes then
+                for _, meshInfo in ipairs(prop.cachedMesh.meshes) do
+                    meshInfo.triangles = nil
+                end
+            end
+        end
+    end
+end
+
+-- Build a combined mesh from multiple props with the same material
+BuildCombinedMesh = function(propList, material)
+    if not propList or #propList == 0 or not material then return nil end
+    
+    local allVertices = {}
+    local totalVerts = 0
+    
+    -- Cache material name once
+    local targetMatName = material:GetName()
+    
+    -- Extract and transform vertices from each prop using cached vertex data
+    for _, propData in ipairs(propList) do
+        local prop = propData.prop
+        local matrix = prop.matrix
+        
+        -- Pre-calculate rotation vectors once per prop (not per vertex)
+        local ang = matrix:GetAngles()
+        local fwd = ang:Forward()
+        local right = ang:Right()
+        local up = ang:Up()
+        
+        -- Use cached mesh data which includes raw triangles
+        if prop.cachedMesh and prop.cachedMesh.meshes then
+            for _, meshInfo in ipairs(prop.cachedMesh.meshes) do
+                -- Skip if no triangles cached or material doesn't match
+                if not meshInfo.triangles or not meshInfo.material then continue end
+                
+                local meshMatName = meshInfo.material:GetName()
+                
+                if meshMatName == targetMatName then
+                    local triangles = meshInfo.triangles
+                    
+                    -- Transform each vertex
+                    for i = 1, #triangles do
+                        local vert = triangles[i]
+                        
+                        -- Transform position
+                        local transformedPos = matrix * vert.pos
+                        
+                        -- Transform normal by rotation part of matrix
+                        local transformedNormal = vert.normal
+                        if vert.normal then
+                            local nx, ny, nz = vert.normal.x, vert.normal.y, vert.normal.z
+                            transformedNormal = fwd * nx + right * ny + up * nz
+                            transformedNormal:Normalize()
+                        end
+                        
+                        allVertices[totalVerts + 1] = {
+                            pos = transformedPos,
+                            normal = transformedNormal,
+                            u = vert.u,
+                            v = vert.v,
+                            userdata = vert.userdata
+                        }
+                        
+                        totalVerts = totalVerts + 1
+                        
+                        -- Safety check: don't exceed vertex limit
+                        if totalVerts >= MAX_VERTS_PER_COMBINED_MESH then
+                            break
+                        end
+                    end
+                end
+                
+                if totalVerts >= MAX_VERTS_PER_COMBINED_MESH then
+                    break
+                end
+            end
+        end
+        
+        if totalVerts >= MAX_VERTS_PER_COMBINED_MESH then
+            break
+        end
+    end
+    
+    if #allVertices == 0 then return nil end
+    
+    -- Build the combined mesh
+    local combinedMesh = Mesh(material)
+    mesh.Begin(combinedMesh, MATERIAL_TRIANGLES, #allVertices / 3)
+    
+    for _, vert in ipairs(allVertices) do
+        mesh.Position(vert.pos)
+        mesh.Normal(vert.normal or Vector(0, 0, 1))
+        mesh.TexCoord(0, vert.u or 0, vert.v or 0)
+        if vert.userdata then
+            mesh.UserData(vert.userdata[1] or 0, vert.userdata[2] or 0, vert.userdata[3] or 0, vert.userdata[4] or 0)
+        end
+        mesh.AdvanceVertex()
+    end
+    
+    mesh.End()
+    
+    if RenderCore and RenderCore.TrackMesh then
+        RenderCore.TrackMesh(combinedMesh)
+    end
+    
+    return combinedMesh
+end
+
+local function IsPVSValid(pvs)
+    if not pvs then return false end
+    for _, v in pairs(pvs) do
+        if v then return true end
+    end
+    return false
+end
+
+-- Debug helper function
+local DebugPrint = (RenderCore and RenderCore.CreateDebugPrint)
+    and RenderCore.CreateDebugPrint("Static Render Debug", convar_Debug)
+    or function(...)
+        if convar_Debug:GetBool() then
+            print("[Static Render Debug]", ...)
+        end
+    end
+
+-- Use RenderCore material cache directly
+local function GetCachedMaterial(matName)
+    return (RenderCore and RenderCore.GetMaterial) and RenderCore.GetMaterial(matName) or Material(matName or "debug/debugwhite")
+end
+
+-- Cache for skin material remapping: [modelPath] = { [skinIndex] = { [defaultMat] = skinnedMat } }
+local skinMaterialCache = {}
+
+-- Parse the MDL file's skin table and texture names to build a material
+-- remap for non-default skins. Entity:GetMaterials() does NOT change
+-- with skin, so we must read the binary MDL data directly.
+--
+-- MDL header layout (relevant fields, Source 2007 / GMod engine):
+--   0xCC: numtextures (int)
+--   0xD0: textureindex (int)       -- offset to mstudiotexture_t array
+--   0xD4: numcdtextures (int)
+--   0xD8: cdtextureindex (int)     -- offset to texture dir path offsets
+--   0xDC: numskinref (int)         -- material slots per skin
+--   0xE0: numskinfamilies (int)    -- number of skin families
+--   0xE4: skinindex (int)          -- offset to skin lookup table
+--
+-- Each mstudiotexture_t is 64 bytes; first int is name_offset relative to entry start.
+-- Skin table is unsigned short[numskinfamilies][numskinref].
+
+-- Read an unsigned 16-bit value from a File handle (little-endian)
+local function FileReadUShort(f)
+    local lo = f:ReadByte()
+    local hi = f:ReadByte()
+    if not lo or not hi then return nil end
+    return hi * 256 + lo
+end
+
+-- Cache parsed MDL data per model path to avoid re-reading the file for different skins
+local mdlSkinDataCache = {}
+
+local function ParseMDLSkinTable(modelPath)
+    if mdlSkinDataCache[modelPath] ~= nil then
+        local cached = mdlSkinDataCache[modelPath]
+        return cached or nil -- false -> nil, table -> table
+    end
+    
+    local f = file.Open(modelPath, "rb", "GAME")
+    if not f then
+        mdlSkinDataCache[modelPath] = false
+        return nil
+    end
+    
+    local ok, result = pcall(function()
+        -- Read texture info (0xCC-0xD3)
+        f:Seek(0xCC)
+        local numTextures = f:ReadLong()
+        local textureIndex = f:ReadLong()
+        
+        -- Read texture directory paths count and offset (0xD4-0xDB)
+        local numCdTextures = f:ReadLong()
+        local cdTextureIndex = f:ReadLong()
+        
+        -- Read skin table header (0xDC-0xE7)
+        local numSkinRef = f:ReadLong()
+        local numSkinFamilies = f:ReadLong()
+        local skinRefIndex = f:ReadLong()
+        
+        if numSkinFamilies <= 1 or numSkinRef == 0 then
+            return nil -- Only one skin (default), no remapping needed
+        end
+        
+        -- Sanity checks to avoid reading garbage
+        if numTextures <= 0 or numTextures > 1024 then return nil end
+        if numSkinRef > 1024 or numSkinFamilies > 256 then return nil end
+        
+        -- Read texture directory paths
+        local cdTexturePaths = {}
+        for i = 0, numCdTextures - 1 do
+            f:Seek(cdTextureIndex + i * 4)
+            local pathOffset = f:ReadLong()
+            if not pathOffset or pathOffset <= 0 then continue end
+            f:Seek(pathOffset)
+            
+            local path = ""
+            for _ = 1, 256 do
+                local byte = f:ReadByte()
+                if not byte or byte == 0 then break end
+                path = path .. string.char(byte)
+            end
+            path = string.lower(string.gsub(path, "\\", "/"))
+            if path ~= "" and string.sub(path, -1) ~= "/" then
+                path = path .. "/"
+            end
+            cdTexturePaths[i] = path
+        end
+        
+        -- Read texture names
+        local textureNames = {}
+        for i = 0, numTextures - 1 do
+            local entryOffset = textureIndex + i * 64
+            f:Seek(entryOffset)
+            local nameOffset = f:ReadLong()
+            if not nameOffset then continue end
+            
+            f:Seek(entryOffset + nameOffset)
+            local name = ""
+            for _ = 1, 256 do
+                local byte = f:ReadByte()
+                if not byte or byte == 0 then break end
+                name = name .. string.char(byte)
+            end
+            textureNames[i] = string.lower(string.gsub(name, "\\", "/"))
+        end
+        
+        -- Read the full skin table: unsigned short[numSkinFamilies][numSkinRef]
+        f:Seek(skinRefIndex)
+        local skinTable = {}
+        for family = 0, numSkinFamilies - 1 do
+            skinTable[family] = {}
+            for ref = 0, numSkinRef - 1 do
+                local val = FileReadUShort(f)
+                if not val then return nil end
+                skinTable[family][ref] = val
+            end
+        end
+        
+        return {
+            textureNames = textureNames,
+            cdTexturePaths = cdTexturePaths,
+            skinTable = skinTable,
+            numSkinFamilies = numSkinFamilies,
+            numSkinRef = numSkinRef,
+        }
+    end)
+    
+    f:Close()
+    
+    if not ok then
+        DebugPrint("Failed to parse MDL skin table for:", modelPath, result)
+        mdlSkinDataCache[modelPath] = false
+        return nil
+    end
+    
+    mdlSkinDataCache[modelPath] = result or false
+    return result
+end
+
+local function GetSkinMaterialRemap(modelPath, skin)
+    if not skin or skin == 0 then return nil end
+    
+    -- Check cache first
+    if skinMaterialCache[modelPath] and skinMaterialCache[modelPath][skin] then
+        return skinMaterialCache[modelPath][skin]
+    end
+    
+    -- Parse the MDL skin table
+    local mdlData = ParseMDLSkinTable(modelPath)
+    if not mdlData then return nil end
+    
+    if skin >= mdlData.numSkinFamilies then
+        DebugPrint("Skin index", skin, "out of range for", modelPath, "(max:", mdlData.numSkinFamilies - 1, ")")
+        return nil
+    end
+    
+    -- Build remap: for each skin ref slot where the texture index differs,
+    -- record the default texture name -> target texture name mapping.
+    -- We match by suffix since util.GetModelMeshes returns full paths
+    -- (cdtexture dir + texture name) and we only know the texture name part.
+    local remap = {}
+    local hasChanges = false
+    local defaultFamily = mdlData.skinTable[0]
+    local targetFamily = mdlData.skinTable[skin]
+    
+    for ref = 0, mdlData.numSkinRef - 1 do
+        local defaultIdx = defaultFamily[ref]
+        local targetIdx = targetFamily[ref]
+        
+        if defaultIdx ~= targetIdx then
+            local defaultTexName = mdlData.textureNames[defaultIdx]
+            local targetTexName = mdlData.textureNames[targetIdx]
+            
+            if defaultTexName and targetTexName then
+                -- Store as texture name -> texture name (both lowercase)
+                -- Will be matched by suffix against the full material path
+                remap[defaultTexName] = targetTexName
+                hasChanges = true
+            end
+        end
+    end
+    
+    if not hasChanges then return nil end
+    
+    -- Cache the result
+    skinMaterialCache[modelPath] = skinMaterialCache[modelPath] or {}
+    skinMaterialCache[modelPath][skin] = remap
+    
+    DebugPrint("Built skin remap for", modelPath, "skin", skin, "(", table.Count(remap), "remapped materials)")
+    return remap
+end
+
+-- Apply skin remap to a material path from util.GetModelMeshes.
+-- The remap table maps short texture names (e.g. "vendingmachine01")
+-- to replacement names. The full path is like "models/props/vendingmachine01",
+-- so we match by suffix and replace the texture name portion.
+local function ApplySkinRemap(materialPath, skinRemap)
+    if not skinRemap then return materialPath end
+    local lowerPath = string.lower(materialPath)
+    
+    for defaultTex, targetTex in pairs(skinRemap) do
+        -- Check if the material path ends with the default texture name
+        -- (possibly preceded by a slash)
+        local suffix = "/" .. defaultTex
+        if string.sub(lowerPath, -#suffix) == suffix then
+            -- Replace the texture name portion, preserving the directory prefix
+            local prefix = string.sub(materialPath, 1, #materialPath - #defaultTex)
+            return prefix .. targetTex
+        end
+        -- Also check exact match (no directory prefix)
+        if lowerPath == defaultTex then
+            return targetTex
+        end
+    end
+    
+    return materialPath
+end
+
+-- Shared with BSP material categorization. util.GetModelMaterials only reports
+-- skin 0, so consumers that need the material used by a particular static prop
+-- must apply the MDL skin-family table themselves.
+RTXModelSkinResolver = RTXModelSkinResolver or {}
+function RTXModelSkinResolver.GetMaterialNames(modelPath, skin, baseMaterialNames)
+    local resolved = {}
+    local seen = {}
+    local skinRemap = GetSkinMaterialRemap(modelPath, tonumber(skin) or 0)
+
+    for _, materialPath in ipairs(baseMaterialNames or {}) do
+        local resolvedPath = ApplySkinRemap(materialPath, skinRemap)
+        local key = string.lower(resolvedPath or "")
+        if key ~= "" and not seen[key] then
+            seen[key] = true
+            table.insert(resolved, resolvedPath)
+        end
+    end
+
+    return resolved
+end
+
+-- Get mesh data directly using GetModelMeshes
+local function GetModelMeshes(modelPath)
+    -- Load the model if not already loaded
+    if not util.IsModelLoaded(modelPath) then
+        util.PrecacheModel(modelPath)
+    end
+    
+    -- util.GetModelMeshes always returns skin 0 materials;
+    -- skin remapping is handled separately via GetSkinMaterialRemap
+    return util.GetModelMeshes(modelPath, 0, 0)
+end
+
+local function IsMaterialAllowedName(matName)
+    if not matName then return false end
+    if RenderCore and RenderCore.IsMaterialAllowed then
+        return RenderCore.IsMaterialAllowed(matName, convar_Whitelist:GetString(), convar_Blacklist:GetString())
+    end
+    -- Fallback: allow by default if core helper missing
+    return true
+end
+
+-- Process a static prop and prepare rendering data
+local function ProcessStaticProp(propData)
+    local modelPath = propData.PropType
+    if not modelPath or modelPath == "" then
+        DebugPrint("Static prop has no model path")
+        return nil
+    end
+    
+    -- Create the prop data structure
+    local prop = {
+        model = modelPath,
+        origin = propData.Origin,
+        angles = propData.Angles,
+        skin = propData.Skin or 0,
+        color = propData.DiffuseModulation or Color(255, 255, 255),
+        vertexCount = 0 -- Will be set during mesh processing
+    }
+
+    -- Precompute transform matrix (static props don't move)
+    local matrix = Matrix()
+    matrix:Translate(prop.origin)
+    matrix:Rotate(prop.angles)
+    prop.matrix = matrix
+
+    -- Check if this is a skybox prop
+    local isSkyboxProp = false
+    prop.skyMatrix = nil  -- render-time skybox-to-world matrix (nil for world props)
+    if NikNaks and NikNaks.CurrentMap and NikNaks.CurrentMap:HasSkyBox() then
+        local skyPos = NikNaks.CurrentMap:GetSkyBoxPos()
+        local skyMinBounds, skyMaxBounds = NikNaks.CurrentMap:GetSkyboxSize()
+        
+        -- Check if the prop is within skybox bounds
+        if skyMinBounds and skyMaxBounds and propData.Origin then
+            isSkyboxProp = propData.Origin:WithinAABox(skyMinBounds, skyMaxBounds)
+        end
+        
+        -- For skybox props, keep prop.matrix at the original skybox-space transform
+        -- (Translate + Rotate, no scale). Baked vertices will land in skybox space
+        -- (inside BSP) so the engine won't cull them. A separate skybox-to-world
+        -- matrix is applied at render time to visually place them in world space.
+        if isSkyboxProp and skyPos then
+            local skyScale = NikNaks.CurrentMap:GetSkyBoxScale() or 16
+            local m = Matrix()
+            m:Scale(Vector(skyScale, skyScale, skyScale))
+            m:Translate(-skyPos)
+            prop.skyMatrix = m
+            -- Pre-compute the world-space origin for AABB-based culling in CollectWorldProps.
+            prop.worldOrigin = Vector(
+                (propData.Origin.x - skyPos.x) * skyScale,
+                (propData.Origin.y - skyPos.y) * skyScale,
+                (propData.Origin.z - skyPos.z) * skyScale
+            )
+            prop.skyWorldScale = skyScale
+        end
+    end
+
+    -- Store this information in the prop data
+    prop.isSkybox = isSkyboxProp
+    
+    -- Compute cache key early so it can be used for cluster lookups below
+    local cacheKey = modelPath .. "_skin" .. prop.skin
+    
+    -- Cache BSP clusters for PVS checks (multi-cluster for better precision)
+    -- Use AABB to find all clusters this prop touches
+    prop.clusters = {}
+    if NikNaks and NikNaks.CurrentMap and meshCache[cacheKey] and not meshCache[cacheKey].error then
+        local meshData = meshCache[cacheKey]
+        if meshData.mins and meshData.maxs then
+            -- Transform bounds to world space
+            local corners = {
+                prop.matrix * meshData.mins,
+                prop.matrix * meshData.maxs,
+                prop.matrix * Vector(meshData.mins.x, meshData.mins.y, meshData.maxs.z),
+                prop.matrix * Vector(meshData.mins.x, meshData.maxs.y, meshData.mins.z),
+                prop.matrix * Vector(meshData.maxs.x, meshData.mins.y, meshData.mins.z),
+                prop.matrix * Vector(meshData.maxs.x, meshData.maxs.y, meshData.mins.z),
+                prop.matrix * Vector(meshData.maxs.x, meshData.mins.y, meshData.maxs.z),
+                prop.matrix * Vector(meshData.mins.x, meshData.maxs.y, meshData.maxs.z),
+            }
+            -- Find AABB of transformed corners
+            local worldMins = Vector(math.huge, math.huge, math.huge)
+            local worldMaxs = Vector(-math.huge, -math.huge, -math.huge)
+            for _, corner in ipairs(corners) do
+                if corner.x < worldMins.x then worldMins.x = corner.x end
+                if corner.y < worldMins.y then worldMins.y = corner.y end
+                if corner.z < worldMins.z then worldMins.z = corner.z end
+                if corner.x > worldMaxs.x then worldMaxs.x = corner.x end
+                if corner.y > worldMaxs.y then worldMaxs.y = corner.y end
+                if corner.z > worldMaxs.z then worldMaxs.z = corner.z end
+            end
+            
+            -- Get all leaves that intersect this AABB (pcall the entire loop to
+            -- prevent a single bad leaf from killing the caching coroutine)
+            if NikNaks.CurrentMap.AABBInLeafs then
+                local ok, leaves = pcall(function() return NikNaks.CurrentMap:AABBInLeafs(0, worldMins, worldMaxs) end)
+                if ok and leaves then
+                    local clusterOk, clusterErr = pcall(function()
+                        for _, leaf in ipairs(leaves) do
+                            local cl = leaf.GetCluster and leaf:GetCluster() or -1
+                            if cl and cl >= 0 then
+                                prop.clusters[cl] = true
+                            end
+                        end
+                    end)
+                    if not clusterOk then
+                        DebugPrint("AABB cluster extraction error:", clusterErr)
+                    end
+                end
+            end
+        end
+    end
+    -- Always include the origin-based cluster as a safety net so props whose
+    -- model origin is outside their geometry bounds are never missed by PVS
+    if NikNaks and NikNaks.CurrentMap and NikNaks.CurrentMap.ClusterFromPoint then
+        local cl = NikNaks.CurrentMap:ClusterFromPoint(prop.origin) or -1
+        if cl >= 0 then
+            prop.clusters[cl] = true
+        end
+    end
+    
+    -- Check if we already cached this model's mesh
+    if not meshCache[cacheKey] then
+        -- Get the mesh data (always returns skin 0 materials)
+        local meshData = GetModelMeshes(modelPath)
+        
+        if not meshData or #meshData == 0 then
+            DebugPrint("Failed to get mesh data for:", modelPath)
+            -- Store an empty entry to avoid repeatedly trying to process it
+            meshCache[cacheKey] = {
+                meshes = nil,
+                error = true
+            }
+            return nil
+        end
+        
+        -- Process mesh groups and maintain their material relationships
+        local processedMeshes = {}
+        local mins = Vector(math.huge, math.huge, math.huge)
+        local maxs = Vector(-math.huge, -math.huge, -math.huge)
+        local totalVertexCount = 0
+        
+        -- Get skin material remap table (nil if skin 0 or no changes)
+        local skinRemap = GetSkinMaterialRemap(modelPath, prop.skin)
+        
+        -- Process each mesh group
+        for _, group in ipairs(meshData) do
+            if group.triangles and #group.triangles > 0 then
+                local material = group.material or "models/debug/debugwhite"
+                
+                -- Apply skin material remapping if this prop uses a non-default skin
+                if skinRemap then
+                    material = ApplySkinRemap(material, skinRemap)
+                end
+                
+                if material and not IsMaterialAllowedName(material) then
+                    continue
+                end
+                
+                -- Create or get cached material
+                local mat = GetCachedMaterial(material)
+                
+                -- Validate vertices for this group
+                local valid = true
+                if RenderCore and RenderCore.ValidateVertex then
+                    for _, vert in ipairs(group.triangles) do
+                        if not RenderCore.ValidateVertex(vert.pos) then
+                            valid = false
+                            break
+                        end
+                    end
+                end
+                if not valid then
+                    continue
+                end
+
+                -- Create mesh for this group
+                local mesh = Mesh()
+                mesh:BuildFromTriangles(group.triangles)
+                
+                -- Add to processed meshes (store raw triangles for combining)
+                table.insert(processedMeshes, {
+                    mesh = mesh,
+                    material = mat,
+                    triangles = group.triangles -- Store raw vertex data for mesh combining
+                })
+
+                if RenderCore and RenderCore.TrackMesh then
+                    RenderCore.TrackMesh(mesh)
+                end
+                
+                -- Update bounds and vertex count
+                totalVertexCount = totalVertexCount + #group.triangles
+                for _, vert in ipairs(group.triangles) do
+                    if vert.pos.x < mins.x then mins.x = vert.pos.x end
+                    if vert.pos.y < mins.y then mins.y = vert.pos.y end
+                    if vert.pos.z < mins.z then mins.z = vert.pos.z end
+                    if vert.pos.x > maxs.x then maxs.x = vert.pos.x end
+                    if vert.pos.y > maxs.y then maxs.y = vert.pos.y end
+                    if vert.pos.z > maxs.z then maxs.z = vert.pos.z end
+                end
+            end
+        end
+        
+        if #processedMeshes > 0 then
+            -- Store in the cache
+            meshCache[cacheKey] = {
+                meshes = processedMeshes,
+                mins = mins,
+                maxs = maxs,
+                vertexCount = totalVertexCount
+            }
+            
+            DebugPrint("Cached mesh for model:", modelPath, "skin:", prop.skin, "#mesh groups:", #processedMeshes, "vertices:", totalVertexCount)
+        else
+            DebugPrint("No valid mesh groups found for model:", modelPath)
+            meshCache[cacheKey] = {
+                meshes = nil,
+                error = true
+            }
+            return nil
+        end
+    elseif meshCache[cacheKey].error then
+        return nil  -- Skip previously failed models
+    end
+    
+    -- Link to the cached mesh data (shared model-local meshes reused across instances)
+    prop.cachedMesh = meshCache[cacheKey]
+    prop.vertexCount = meshCache[cacheKey].vertexCount or 0
+    
+    -- Pre-allocate submit tables to avoid per-frame GC pressure.
+    -- Each entry is a reusable table passed directly to RenderCore.Submit.
+    -- Shared IMesh objects are drawn with cam.PushModelMatrix for positioning.
+    -- For skybox props, the render matrix composes skybox-to-world on top of the prop transform.
+    local cached = meshCache[cacheKey]
+    if cached.meshes then
+        local renderMatrix = prop.matrix
+        -- For skybox props, compose skybox-to-world * prop.matrix so the shared
+        -- model-local mesh is positioned in skybox space then scaled to world space.
+        if prop.skyMatrix then
+            renderMatrix = prop.skyMatrix * prop.matrix
+        end
+        
+        local submitList = {}
+        for _, meshInfo in ipairs(cached.meshes) do
+            if meshInfo.mesh and meshInfo.material then
+                submitList[#submitList + 1] = {
+                    material = meshInfo.material,
+                    mesh = meshInfo.mesh,
+                    matrix = renderMatrix,
+                    translucent = false,
+                    color = prop.color
+                }
+            end
+        end
+        prop.submitList = submitList
+    end
+    
+    return prop
+end
+
+-- Collect all props into world list (skybox props are already transformed to world space)
+local function CollectWorldProps()
+    worldProps = {}
+    local skyboxCount = 0
+    _skyAABBCullLogged = false
+
+    -- Note: AABB-based skybox prop culling runs at render time (in the per-frame
+    -- visibility loop) so it automatically picks up the world AABB once the geometry
+    -- renderers finish their build pass — no ordering dependency here.
+    for _, prop in ipairs(cachedStaticProps) do
+        if prop.isSkybox then
+            skyboxCount = skyboxCount + 1
+        end
+        table.insert(worldProps, prop)
+    end
+
+    print(string.format("[Static Render] Collected props: %d total (%d skybox — culling applied at render time)",
+                        #worldProps, skyboxCount))
+end
+
+-- Cache static props from NikNaks data
+local function CacheMapStaticProps()
+    if isCachingInProgress then return end
+    
+    DebugPrint("Checking NikNaks availability...")
+    
+    if not NikNaks then
+        DebugPrint("NikNaks module not found!")
+        timer.Simple(1, CacheMapStaticProps)
+        return
+    end
+    
+    if not NikNaks.CurrentMap then
+        DebugPrint("NikNaks.CurrentMap not available yet.")
+        timer.Simple(1, CacheMapStaticProps)
+        return
+    end
+    
+    if not NikNaks.CurrentMap.GetStaticProps then
+        DebugPrint("NikNaks.CurrentMap.GetStaticProps function doesn't exist!")
+        DebugPrint("Available functions:", table.concat(table.GetKeys(NikNaks.CurrentMap), ", "))
+        timer.Simple(1, CacheMapStaticProps)
+        return
+    end
+    
+    isCachingInProgress = true
+    print("[Static Render] Starting static prop data caching...")
+    sprBuildStats.startTime = SysTime()
+    sprBuildStats.endTime = 0
+    sprBuildStats.built = 0
+    sprBuildStats.active = true
+    
+    -- Clear previous caches
+    table.Empty(cachedStaticProps)
+    
+    -- Get static props data from NikNaks
+    local okProps, staticPropsRaw = pcall(function() return NikNaks.CurrentMap:GetStaticProps() end)
+    if not okProps then
+        print("[Static Render] GetStaticProps() errored")
+        isCachingInProgress = false
+        sprBuildStats.active = false
+        isDataReady = true
+        return
+    end
+    if not staticPropsRaw or type(staticPropsRaw) ~= "table" then
+        print("[Static Render] GetStaticProps() returned invalid data:", staticPropsRaw)
+        isCachingInProgress = false
+        sprBuildStats.active = false
+        isDataReady = true -- Mark as ready to prevent retries
+        return
+    end
+    
+    -- NikNaks stores static props with 0-based indices; build a sequential list
+    -- so we can safely iterate and count them.
+    local staticPropsList = {}
+    for _, propData in pairs(staticPropsRaw) do
+        staticPropsList[#staticPropsList + 1] = propData
+    end
+    
+    -- Debug output
+    print("[Static Render] Retrieved", #staticPropsList, "static props")
+    
+    -- Coroutine-driven processing within a per-frame budget
+    local processedSoFar = 0
+    local skippedSoFar = 0
+    local co
+    co = coroutine.create(function()
+        local startTime = SysTime()
+        local frameBudget = 0.003
+        for i = 1, #staticPropsList do
+            local propData = staticPropsList[i]
+            local prop = ProcessStaticProp(propData)
+            if prop then
+                table.insert(cachedStaticProps, prop)
+                processedSoFar = processedSoFar + 1
+                sprBuildStats.built = sprBuildStats.built + 1
+            else
+                skippedSoFar = skippedSoFar + 1
+            end
+            if SysTime() - startTime > frameBudget then
+                coroutine.yield()
+                local spent = SysTime() - startTime
+                if RenderCore and RenderCore.UpdateFrameBudget then
+                    frameBudget = RenderCore.UpdateFrameBudget(spent, frameBudget)
+                else
+                    if spent > frameBudget * 1.2 then
+                        frameBudget = math.max(0.001, frameBudget * 0.95)
+                    elseif spent < frameBudget * 0.8 then
+                        frameBudget = math.min(0.006, frameBudget * 1.05)
+                    end
+                end
+                startTime = SysTime()
+            end
+        end
+        CollectWorldProps()
+        
+        -- Build combined meshes once after caching
+        if convar_UseMeshCombining:GetBool() then
+            print("[Static Render] Building combined meshes...")
+            BuildAllCombinedMeshes()
+            print(string.format("[Static Render] Built %d combined meshes", table.Count(combinedMeshes)))
+        end
+        
+        isDataReady = true
+        isCachingInProgress = false
+        print(string.format("[Static Render] Caching complete. %d static props processed, %d skipped.", 
+                           processedSoFar, skippedSoFar))
+        sprStats.total = processedSoFar
+        sprBuildStats.endTime = SysTime()
+        sprBuildStats.active = false
+    end)
+    -- Schedule coroutine advancement via RenderCore job system to reduce timer overhead
+    local jobId = "StaticPropsCacheJob"
+    RenderCore.ScheduleJob(jobId, function()
+        if not co or coroutine.status(co) == "dead" then
+            isCachingInProgress = false
+            sprBuildStats.active = false
+            return false
+        end
+        
+        local ok, err = coroutine.resume(co)
+        if not ok then
+            ErrorNoHalt("[Static Render] Cache coroutine error: " .. tostring(err) .. "\n")
+            isCachingInProgress = false
+            sprBuildStats.active = false
+            sprBuildStats.built = 0
+            isDataReady = true -- Mark as ready to prevent infinite retries
+            return false
+        end
+        
+        local isDead = coroutine.status(co) == "dead"
+        if isDead then
+            isCachingInProgress = false
+            sprBuildStats.active = false
+        end
+        return not isDead
+    end)
+end
+
+-- Hook to initiate caching when the map is ready
+RenderCore.Register("InitPostEntity", "CustomStaticRender_InitCache", function()
+    -- Only start caching if the addon is enabled
+    if convar_Enable:GetBool() then
+        -- Delay slightly to ensure NikNaks has loaded its data
+        timer.Simple(3, CacheMapStaticProps)
+    else
+        print("[Custom Static Renderer] Skipping initial cache (addon disabled)")
+    end
+end)
+
+-- Clean up caches on disconnect/map change
+RenderCore.Register("ShutDown", "CustomStaticRender_Cleanup", function()
+    print("[Static Render] Cleaning up caches.")
+    -- Rely on core to destroy tracked meshes
+    if RenderCore and RenderCore.DestroyTrackedMeshes then
+        RenderCore.DestroyTrackedMeshes()
+    end
+    table.Empty(cachedStaticProps)
+    table.Empty(worldProps)
+    table.Empty(meshCache)
+    table.Empty(skinMaterialCache)
+    table.Empty(mdlSkinDataCache)
+    table.Empty(combinedMeshes)
+    combinedMeshesBuilt = false
+    
+    isDataReady = false
+    isCachingInProgress = false
+end)
+
+-- Render the static props
+RenderCore.Register("PreDrawOpaqueRenderables", "CustomStaticRender_DrawProps", function(bDrawingDepth, bDrawingSkybox_param)
+    if not convar_Enable:GetBool() or not isDataReady or isCachingInProgress then
+        return
+    end
+    
+    -- Skip rendering static props in offscreen RTs (e.g., rear-view camera with dynamic_only filter)
+    if RenderCore and RenderCore.IsOffscreen and RenderCore.IsOffscreen() then
+        return
+    end
+    
+    -- All props (world + transformed skybox) rendered together
+    local propsToRender = worldProps
+    local cacheKey = "world"
+    
+    -- Frame skip optimization: only rebuild visibility list every N frames
+    local currentFrame = FrameNumber()
+    local frameSkip = math.max(1, convar_FrameSkip:GetInt())
+    local shouldUpdate = (currentFrame - lastUpdateFrame[cacheKey]) >= frameSkip
+    
+    -- Update visibility list if needed
+    if shouldUpdate then
+        lastUpdateFrame[cacheKey] = currentFrame
+        table.Empty(cachedRenderList[cacheKey])
+    end
+    
+    if #propsToRender == 0 then
+        if convar_Debug:GetBool() then
+            local frameCount = FrameNumber()
+            if lastDebugFrame ~= frameCount then
+                lastDebugFrame = frameCount
+            end
+        end
+        return
+    end
+    
+    local renderedProps = 0
+    local skippedProps = 0
+    
+    -- Use cached EyePos from RenderCore to avoid redundant engine calls
+    local playerPos = (RenderCore and RenderCore.GetCachedEyePos and RenderCore.GetCachedEyePos()) or EyePos()
+    -- Use centralized PVS from RenderCore
+    local usePVS = convar_UsePVS:GetBool()
+    local pvs = (usePVS and RenderCore and RenderCore.GetPVS) and RenderCore.GetPVS(playerPos) or nil
+    
+    -- Cache ConVar checks to avoid duplicate calls
+    local useMeshCombining = convar_UseMeshCombining:GetBool()
+    local sky3dEnabled = not (RenderCore and RenderCore.Is3DSkyEnabled and not RenderCore.Is3DSkyEnabled())
+    local shouldDebug = convar_Debug:GetBool()
+    local frameCount = FrameNumber()
+    local isNewFrame = lastDebugFrame ~= frameCount
+
+    -- Fetch the current world geometry AABB for skybox prop culling.
+    -- This is populated by the geometry renderers after their build pass, so the first
+    -- few frames after map load may not have it yet — that's fine, we just skip culling.
+    local wAABBMins, wAABBMaxs
+    if RenderCore and RenderCore.GetWorldGeometryAABB then
+        wAABBMins, wAABBMaxs = RenderCore.GetWorldGeometryAABB()
+    end
+    if wAABBMins and not _skyAABBCullLogged then
+        _skyAABBCullLogged = true
+        print(string.format("[StaticProps] World AABB now available — skybox prop culling active: (%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)",
+            wAABBMins.x, wAABBMins.y, wAABBMins.z, wAABBMaxs.x, wAABBMaxs.y, wAABBMaxs.z))
+    end
+
+    if shouldDebug and isNewFrame then
+        DebugPrint("Attempting to render", #propsToRender, "props")
+    end
+    
+    -- Build or use cached render list
+    if shouldUpdate then
+        -- Pre-compute PVS visibility for all clusters once (faster than per-prop checks)
+        local visibleClusters = {}
+        if pvs then
+            for cl, visible in pairs(pvs) do
+                if visible then
+                    visibleClusters[cl] = true
+                end
+            end
+        end
+        
+        -- Compute safety distance once
+        local safetyDist = convar_PVSSafetyDistance:GetFloat()
+        local safetyDistSqr = safetyDist * safetyDist
+        
+        -- Compute distance culling threshold once (nil = disabled)
+        local cullDist = convar_CullDistance:GetFloat()
+        local cullDistSqr = (cullDist > 0) and (cullDist * cullDist) or nil
+        
+        for _, prop in ipairs(propsToRender) do
+            local meshData = prop.cachedMesh
+            if not meshData or not meshData.meshes then
+                skippedProps = skippedProps + 1
+                continue
+            end
+            -- Skip PVS culling for skybox props — their world-space positions
+            -- are outside the BSP's leaf/cluster structure so PVS lookups
+            -- would incorrectly cull them. Skybox geometry represents distant
+            -- scenery that should always be visible.
+            if not prop.isSkybox then
+                -- PVS culling for regular world props
+                if pvs and prop.clusters and next(prop.clusters) then
+                    -- Safety distance check: always render props very close to player
+                    local withinSafetyDistance = false
+                    if safetyDist > 0 and playerPos then
+                        local distSqr = prop.origin:DistToSqr(playerPos)
+                        withinSafetyDistance = distSqr < safetyDistSqr
+                    end
+                    
+                    if not withinSafetyDistance then
+                        -- Fast cluster visibility check using pre-computed visible set
+                        local anyVisible = false
+                        for cl in pairs(prop.clusters) do
+                            if visibleClusters[cl] then
+                                anyVisible = true
+                                break
+                            end
+                        end
+                        if not anyVisible then
+                            skippedProps = skippedProps + 1
+                            continue
+                        end
+                    end
+                end
+            end
+            
+            -- Skip skybox props if 3D sky rendering is disabled
+            if prop.isSkybox and not sky3dEnabled then
+                skippedProps = skippedProps + 1
+                continue
+            end
+
+            -- Cull skybox props whose world-space AABB is fully inside the main map AABB.
+            -- The world AABB is populated by the geometry renderers; on the first few frames
+            -- after load it may be nil, in which case we skip culling for this prop.
+            if prop.isSkybox and wAABBMins and prop.worldOrigin then
+                local wOrigin = prop.worldOrigin
+                local sc = prop.skyWorldScale or 1
+                local cacheKey2 = prop.model .. "_skin" .. (prop.skin or 0)
+                local md = meshCache[cacheKey2]
+                local pMins, pMaxs
+                if md and md.mins and md.maxs then
+                    pMins = Vector(wOrigin.x + md.mins.x * sc, wOrigin.y + md.mins.y * sc, wOrigin.z + md.mins.z * sc)
+                    pMaxs = Vector(wOrigin.x + md.maxs.x * sc, wOrigin.y + md.maxs.y * sc, wOrigin.z + md.maxs.z * sc)
+                else
+                    pMins = wOrigin
+                    pMaxs = wOrigin
+                end
+                if pMins.x >= wAABBMins.x and pMins.y >= wAABBMins.y and pMins.z >= wAABBMins.z
+                and pMaxs.x <= wAABBMaxs.x and pMaxs.y <= wAABBMaxs.y and pMaxs.z <= wAABBMaxs.z then
+                    skippedProps = skippedProps + 1
+                    continue
+                end
+            end
+            
+            -- Distance culling (non-skybox only).
+            -- When PVS is on:  additional filter applied to props that already passed PVS.
+            -- When PVS is off: sole culling method (pvs is nil so the PVS block above was skipped).
+            if cullDistSqr and not prop.isSkybox then
+                if prop.origin:DistToSqr(playerPos) > cullDistSqr then
+                    skippedProps = skippedProps + 1
+                    continue
+                end
+            end
+            
+            -- Add to render list
+            local list = cachedRenderList[cacheKey]
+            list[#list + 1] = prop
+        end
+    end
+    
+    -- Render combined meshes or individual props
+    if useMeshCombining and combinedMeshesBuilt then
+        -- Track unique props to avoid double-counting (props with multiple materials)
+        local renderedPropIndices = {}
+        
+        -- Render pre-built combined meshes (just check PVS per material group)
+        for matName, combined in pairs(combinedMeshes) do
+            -- Fast PVS check using cached cluster set
+            local anyVisible = false
+            if not pvs then
+                anyVisible = true -- No PVS, render everything
+            else
+                -- Check if any cached cluster is visible (much faster than iterating props)
+                if combined.clusters then
+                    for cl in pairs(combined.clusters) do
+                        if pvs[cl] then
+                            anyVisible = true
+                            break
+                        end
+                    end
+                else
+                    anyVisible = true -- No cluster data, render to be safe
+                end
+            end
+            
+            if anyVisible and combined.submitData then
+                RenderCore.Submit(combined.submitData)
+                
+                -- Count unique props only (avoid double-counting multi-material props)
+                for _, propIdx in ipairs(combined.propIndices or {}) do
+                    if not renderedPropIndices[propIdx] then
+                        renderedPropIndices[propIdx] = true
+                        renderedProps = renderedProps + 1
+                    end
+                end
+            end
+        end
+    else
+        -- Render individual props using pre-allocated submit tables (zero per-frame allocs)
+        for _, prop in ipairs(cachedRenderList[cacheKey]) do
+            local submitList = prop.submitList
+            if submitList then
+                for i = 1, #submitList do
+                    RenderCore.Submit(submitList[i])
+                end
+            end
+            renderedProps = renderedProps + 1
+        end
+    end
+    
+    sprStats.rendered = renderedProps
+    sprStats.skipped = skippedProps
+    
+    -- Debug output
+    if shouldDebug and isNewFrame then
+        DebugPrint("Rendered", renderedProps, "props",
+                  skippedProps, "skipped")
+        lastDebugFrame = frameCount
+    end
+end)
+
+-- Add reload command
+concommand.Add("rtx_spr_reload", function()
+    print("[Static Render] Manually reloading cache...")
+    isDataReady = false
+    isCachingInProgress = false
+    
+    if RenderCore and RenderCore.DestroyTrackedMeshes then
+        RenderCore.DestroyTrackedMeshes()
+    end
+    table.Empty(cachedStaticProps)
+    table.Empty(worldProps)
+    table.Empty(meshCache)
+    table.Empty(skinMaterialCache)
+    table.Empty(mdlSkinDataCache)
+    
+    timer.Simple(0.1, CacheMapStaticProps)
+end)
+
+-- Disable engine props only if custom renderer is enabled
+if convar_Enable:GetBool() then
+    RunConsoleCommand("r_drawstaticprops", "0")
+end
+
+-- ConVar Changes
+cvars.AddChangeCallback("rtx_spr_enable", function(_, _, new)
+    if tobool(new) then
+        RunConsoleCommand("r_drawstaticprops", "0")
+        if not isDataReady and not isCachingInProgress then
+            timer.Simple(0.1, CacheMapStaticProps)
+        end
+    else
+        RunConsoleCommand("r_drawstaticprops", "1")
+    end
+end, "RTXStaticPropEnable")
+
+print("[Custom Static Renderer] Loaded.")
+
+-- Stats provider
+RenderCore.RegisterStats("StaticProps", function()
+    local built = sprBuildStats.built or 0
+    local t = (sprBuildStats.endTime > 0 and sprBuildStats.endTime or SysTime()) - (sprBuildStats.startTime or 0)
+    local rate = (t > 0) and (built / t) or 0
+    return string.format("Static props: %d/%d (skipped:%d) | build: %.2fs, %.1f/s", sprStats.rendered or 0, sprStats.total or 0, sprStats.skipped or 0, t, rate)
+end)
+
+-- Rebuild sink and debounced cvar watchers
+RenderCore.RegisterRebuildSink("StaticPropsRebuild", function(token, reason)
+    -- Best-effort: clear current caches and rebuild
+    isDataReady = false
+    isCachingInProgress = false
+    if RenderCore and RenderCore.DestroyTrackedMeshes then
+        RenderCore.DestroyTrackedMeshes()
+    end
+    table.Empty(cachedStaticProps)
+    table.Empty(worldProps)
+    table.Empty(meshCache)
+    table.Empty(skinMaterialCache)
+    table.Empty(mdlSkinDataCache)
+    timer.Simple(0.1, CacheMapStaticProps)
+end)
+
+local function DebounceRebuildOnCvar(name)
+    cvars.AddChangeCallback(name, function()
+        if RenderCore and RenderCore.RequestRebuild then
+            RenderCore.RequestRebuild(name)
+        end
+    end, "StaticPropsRebuild-" .. name)
+end
+
+DebounceRebuildOnCvar("rtx_spr_mat_whitelist")
+DebounceRebuildOnCvar("rtx_spr_mat_blacklist")
+DebounceRebuildOnCvar("rtx_spr_distance")

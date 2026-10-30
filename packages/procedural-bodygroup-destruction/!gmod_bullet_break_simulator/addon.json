@@ -1,0 +1,20 @@
+{
+	"title": "Procedural Bodygroup Destruction",
+	"type": "effects",
+	"tags": [
+		"fun",
+		"scenic"
+	],
+	"ignore": [
+		"*.md",
+		"*.gma",
+		"Icon.png",
+		"Icon.psd",
+		"atic/*",
+		"tests/*",
+		"_abt_hover_work/*",
+		"_abt_i18n_work/*",
+		"Release Note.txt",
+		".git/*"
+	]
+}

@@ -1,11 +1,13 @@
 <#
 .SYNOPSIS
-Runs the CI build workflow (.github/workflows/build.yml) on this machine: the Release checks, then the
-end-user bundle in out\dist. -Install also puts the fresh build into a game, for a quick field test.
+Runs the CI build workflows (.github/workflows/) on this machine: the Release checks, then the
+end-user bundle in out\dist; -Package also builds the combined RTX package from packages\ (the
+package workflow, ADR 0033). -Install also puts the fresh build into a game, for a quick field test.
 #>
 [CmdletBinding()]
 param(
     [switch] $SkipTests,
+    [switch] $Package,
     [string] $Install,
     [switch] $AllowSteamManaged,
     [switch] $ReplaceUntracked
@@ -32,6 +34,16 @@ if ($LASTEXITCODE) { throw "package_loader.py failed (exit code $LASTEXITCODE)."
 $summary = ($output -join "`n") | ConvertFrom-Json
 Write-Host "Bundle:  $($summary.bundle)"
 if ($summary.symbols) { Write-Host "Symbols: $($summary.symbols)" }
+
+if ($Package) {
+    # The RTX package from this repository alone: packages\ (Git LFS content, `git lfs pull` first)
+    # unpacked into out\inputs, every part built, combined, checked with the nlctl.exe just built.
+    Write-Host '==> RTX package (tools\inputs.py verify, tools\build_package.py)'
+    & python (Join-Path $PSScriptRoot 'inputs.py') verify
+    if ($LASTEXITCODE) { throw "packages\ does not match its indexes (exit code $LASTEXITCODE)." }
+    & python (Join-Path $PSScriptRoot 'build_package.py') --require-nlctl --out (Join-Path $repo 'out\dist')
+    if ($LASTEXITCODE) { throw "build_package.py failed (exit code $LASTEXITCODE)." }
+}
 
 if ($Install) {
     # install-loader.ps1 copies the same build the bundle holds, records it, and keeps every refusal

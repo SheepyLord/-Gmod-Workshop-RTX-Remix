@@ -1,0 +1,12 @@
+{
+ "about": "The commit of the RTX Remix runtime fork that runtime/patches apply to (ADR 0033). runtime/build_runtime.ps1 reads it.",
+ "repository": "https://github.com/sambow23/dxvk-remix-gmod.git",
+ "branch": "gmod-numos3",
+ "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
+ "build_dir": "_CompRelease_x64",
+ "flavour": "release",
+ "packaged": {
+  "d3d9.dll": "d9cf79e604e5b2befafe39f5982f9b60ac43eba48072af1c4a2c5199e422ab5a",
+  "built_from": "claude/sky-night f9937026 (the four patches on the commit above)"
+ }
+}
