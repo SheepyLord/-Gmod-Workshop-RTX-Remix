@@ -106,7 +106,8 @@ def walk_error(err):
 
 def is_junk(name):
     lower = name.lower()
-    return lower in JUNK or lower.endswith('.bak') or (lower.startswith('.gmapack-') and lower.endswith('.part'))
+    # GMod enumerates every loose file in lua/entities and tries to include it, including docs.
+    return lower in JUNK or lower.endswith(('.bak', '.lua.md')) or (lower.startswith('.gmapack-') and lower.endswith('.part'))
 
 
 def is_map_log(folder, name):
@@ -135,10 +136,10 @@ def collect(top, prefix, junk, docs=True):
         dirs.sort()
         for name in sorted(names):
             source = os.path.join(folder, name)
+            if not docs and name.lower().endswith('.md'):
+                continue
             if is_junk(name) or is_map_log(folder, name):
                 junk.append(source)
-                continue
-            if not docs and name.lower().endswith('.md'):
                 continue
             regular_file(source)
             found[prefix + '/' + os.path.relpath(source, top).replace(os.sep, '/')] = source

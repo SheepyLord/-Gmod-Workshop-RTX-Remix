@@ -47,8 +47,8 @@ if native.SetSoftAlpha then
  cvars.AddChangeCallback('mmdhl_soft_alpha',function(_,_,value) native.SetSoftAlpha(tonumber(value)~=0) end,'MMDHL.SoftAlpha')
 end
 local directions={Vector(1,0,0),Vector(-1,0,0),Vector(0,1,0),Vector(0,-1,0),Vector(0,0,1),Vector(0,0,-1)}
-if mmdhl.sourceTextureVersion~=10 then
- mmdhl.sourceMaterials={} mmdhl.sourceBlendMaterials={} mmdhl.depthMaterials={} mmdhl.shadowMaterials={} mmdhl.softMaterials={} mmdhl.sourceTextureVersion=10
+if mmdhl.sourceTextureVersion~=11 then
+ mmdhl.sourceMaterials={} mmdhl.sourceBlendMaterials={} mmdhl.depthMaterials={} mmdhl.shadowMaterials={} mmdhl.softMaterials={} mmdhl.sourceTextureVersion=11
 end
 mmdhl.sourceMaterials=mmdhl.sourceMaterials or {}
 mmdhl.sourceBlendMaterials=mmdhl.sourceBlendMaterials or {}
@@ -190,7 +190,11 @@ function mmdhl.LightingOrigin(ent)
 end
 local remixPreview
 function mmdhl.UsesRemixPreview()
- if remixPreview==nil then remixPreview=mmdhl.Decode(native.RenderStats()).fixedFunctionRemix==true end
+ if remixPreview==nil then
+  -- RenderStats alone can report the default before the native renderer resolves its shader DLL.
+  if native.CheckRenderer then native.CheckRenderer() end
+  remixPreview=mmdhl.Decode(native.RenderStats()).fixedFunctionRemix==true
+ end
  return remixPreview
 end
 local previewMaterials={}
@@ -280,7 +284,11 @@ local function draw(ent,translucent,depth)
  if ent.MMDNamesSent~=id or ent.MMDNamesVersion~=mmdhl.sourceTextureVersion then
   if SysTime()<(ent.MMDNamesRetry or 0) then return end
   local color,err=materials(id,info,false) if not color then mmdhl.renderError=err return end
-  local depthMats,depthError=materials(id,info,true)
+  -- Remix's fixed-function shader family has no DepthWrite. Its ray tracer uses the color
+  -- geometry for occlusion/shadows, so keep valid public names in the unused depth slots.
+  local remix=mmdhl.UsesRemixPreview()
+  local depthMats,depthError
+  if remix then depthMats=color else depthMats,depthError=materials(id,info,true) end
   if not depthMats then mmdhl.renderError=depthError if depth then return end end
   -- Soft-alpha copies are optional: an asset without soft triangles (or an older
   -- native build) has none, and pending ones only delay the complete registration.
@@ -291,7 +299,10 @@ local function draw(ent,translucent,depth)
   -- and are never drawn. Only a complete registration earns MMDNamesSent.
   if complete or ent.MMDColorNamesSent~=id or ent.MMDNamesVersion~=mmdhl.sourceTextureVersion then
    local names={color={},depth={},soft=soft and soft.soft,core=soft and soft.core}
-   for i in ipairs(color) do names.color[i]=info.materials[i].path names.depth[i]=depthMats and '!'..depthMats[i]:GetName() or '' end
+   for i in ipairs(color) do
+    names.color[i]=info.materials[i].path
+    names.depth[i]=remix and info.materials[i].path or depthMats and '!'..depthMats[i]:GetName() or ''
+   end
    local ok,err=native.SetInstanceMaterials(instance,util.TableToJSON(names))
    if not ok then ent.MMDNamesRetry=SysTime()+.25 mmdhl.renderError=err return end
    ent.MMDNamesRetry=nil ent.MMDColorNamesSent=id ent.MMDNamesVersion=mmdhl.sourceTextureVersion
@@ -341,6 +352,7 @@ end
 function mmdhl.DrawCarrier(ent,translucent,flags)
  if not mmdhl.IsMMD(ent) or mmdhl.GetInstance(ent)<1 then return end
  local depth=bit.band(flags or 0,STUDIO_SHADOWDEPTHTEXTURE or 1073741824)~=0 or bit.band(flags or 0,STUDIO_SSAODEPTHTEXTURE or 536870912)~=0
+ if depth and mmdhl.UsesRemixPreview() then return end
  draw(ent,translucent,depth)
  if not depth then render.RenderFlashlights(function() draw(ent,translucent,false) end) end
 end

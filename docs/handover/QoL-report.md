@@ -183,3 +183,55 @@ functional payload is byte-identical to the successful RTX test; its subsequent 
 PoC config.json and config.cfg were restored to their saved hashes. Shared video settings matched
 the before snapshot, so no registry write was needed. The test's two DATA reports were saved to
 evidence and removed from the PoC. No user game was stopped or operated.
+
+## Hotloader DepthWrite shader errors (2026-10-30)
+
+Implemented on `codex/hotloader-depth` from main `77a80dc`
+([ADR 0041](../decisions/0041-hotloader-remix-depth-materials.md)). The reported model's 83 material
+slots reproduced 83 depth-material creation requests and 131 unknown DepthWrite shader lines.
+The fixed-function Remix shader family lacks that programmable shader; Hotloader created it
+eagerly while registering the normal color draw.
+
+The bundled Lua renderer now initializes the native backend before caching its flag. Remix uses
+valid public color names in unused depth slots and skips Source depth-view draws; its normal color
+geometry still supplies the ray tracer. Programmable Source retains the existing depth shader,
+real texture bindings, alpha/cull settings and upload retry behavior. Cache version 11 refreshes
+existing material maps. No console filter, native binary or asset-format change is involved.
+
+The regression test executes the actual material builders and DrawCarrier for both backends,
+including initialization, stale caches, pending Source textures, both depth flags, color/flashlight
+draws, state restoration and cached registration. In-game acceptance uses the reported asset from
+the PoC cache; no model files are copied to source control or included in the published package.
+Evidence is in the task worktree's out/hotloader-depth.
+
+Real acceptance passed on both shader families. The fixed RTX run made zero depth-material
+requests and zero Hotloader unknown-shader messages, while executing 614 color draws; both forced
+Source depth flags submitted zero draws. The baseline had 83 Hotloader messages (131 total with
+48 separate built-in messages). Those built-in messages were unchanged, demonstrating that no
+console filtering hid other errors.
+
+The ordinary Source probe did not load the cached model; its status reported a deleted asset.
+Source rendering remains covered by the executable regression tests. A separate real Source shader
+probe at DX level 95 confirmed valid DepthWrite materials with the original alpha threshold 0.5.
+No native binaries or real model files are added to the package; only the renderer Lua changes.
+
+The complete-package acceptance also caught a prior glass-release packaging mistake: its adjacent
+procedural_shard.lua.md was being included as Lua by GMod. The fixes packager now keeps *.lua.md
+in source inputs and out of deployed scripts, preserving normal README/license files. The new
+packaging regression passed. Built-in engine depth warnings remain unchanged; Hotloader-specific
+shader requests and warnings are eliminated without filtering console output.
+
+Final complete-package acceptance passed: zero Hotloader depth-material requests, zero Hotloader
+unknown-shader lines, zero Lua errors, 619 color draws, normal exit 0. Both forced Source depth flags
+were skipped on Remix. The source-documentation packaging regression is fixed in that tested
+archive. The real Source shader-only probe confirmed the original DepthWrite recipe at DX level
+95; the complete Source model probe lacked its managed cached asset, so it is not reported as a
+model-rendering pass. Offline tests execute the real Source builder and draw routing.
+
+The final full suite passed all **17 CTest groups** and **258 Python tests**, including the new
+shader-routing and sidecar-packaging regressions. Package validation passed; its 919 payload files
+have digest `794173d43f825560` (prefix). Relative to the current Workshop package, only Hotloader's
+native_render.lua and the manifest change, and four Lua documentation sidecars are removed from
+deployment. Their indexed source copies remain. PoC config.json and config.cfg were restored to
+their saved hashes; video settings matched the before snapshot. User.conf and the field install
+were not manually edited. No real model data is included in the package or source commit.

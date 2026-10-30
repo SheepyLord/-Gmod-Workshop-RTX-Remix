@@ -42,3 +42,9 @@ and PoC evidence are in [the QoL report](handover/QoL-report.md#native-package-a
 The Modern House glass batch adds persistent debris for native breakable brush panes, with native
 map behavior preserved and bounded mesh synchronization ([ADR 0040](decisions/0040-native-map-glass-debris.md)).
 See the [QoL report](handover/QoL-report.md#modern-house-map-glass-2026-10-30) for validation and delivery.
+
+## Hotloader shader compatibility (2026-10-30)
+
+The DepthWrite batch routes material registration and depth views according to the active shader
+family ([ADR 0041](decisions/0041-hotloader-remix-depth-materials.md)). See the
+[QoL report](handover/QoL-report.md#hotloader-depthwrite-shader-errors-2026-10-30).

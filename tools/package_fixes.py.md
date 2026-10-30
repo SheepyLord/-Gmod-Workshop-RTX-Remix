@@ -62,6 +62,9 @@ From the fixes as of 2026-10-28 that gives 34 variables (`sv_cheats 1`, `mat_dis
 
 ## Left out
 
+- Adjacent `*.lua.md` source documentation remains in the repository and indexed inputs. It is
+  excluded from deployment: GMod tries to include even non-Lua loose files in `lua/entities`.
+  Ordinary addon READMEs and license documents remain included.
 - The Steam files the fixes overwrite: `garrysmod\lua\menu\**`, `garrysmod\gamemodes\**`,
   `garrysmod\html\**` ([AGENTS.md](../AGENTS.md) rule 2).
 - The root `rtx.conf` and `dxvk.conf`: they are runtime configuration, layers of the runtime package:
