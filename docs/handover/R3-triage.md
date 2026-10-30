@@ -22,7 +22,7 @@ Claude's verification of every finding in [R3-report.md](R3-report.md) (Codex, `
 | R3-014 | P1 | Confirmed, and worse: the shipped DLL was not what `runtime/` builds | P1 | Fixed: exact worktree check, `-Verify`, build record and repo gate (ADR 0034) |
 | R3-015 | (user) | The sky's 0.25 s update moved it in visible steps | — | Fixed: `nativeloader_sky_interval`, default 0.02 s, slider, six languages |
 | R3-016 | (user) | Confirmed in the live game: Modern House RTX forced `r_forcehwlight 1`, and Source's hardware skinning then gives Remix no bones | P1 | Fixed in Modern House RTX; item 3829275998 updated; the user confirmed it in game |
-| R3-017 | (Claude, while probing R3-016) | A `DXVK_CONFIG_FILE` over 259 characters reads as empty in the runtime and drops every package layer; the published package's is 273-277 without an NVIDIA GPU | P1 | Recorded; the fix needs a choice (below) |
+| R3-017 | (Claude, while probing R3-016) | A `DXVK_CONFIG_FILE` over 259 characters reads as empty in the runtime and drops every package layer; the published package's is 273-277 without an NVIDIA GPU | P1 | Fixed as the user chose: the runtime reads short copies of the layers (ADR 0036, loader 0.6.0) |
 
 ## The findings
 
@@ -179,10 +179,17 @@ the runtime then loads `dxvk.conf` alone, silently. The loader writes the layers
 game folder, so the Steam path does not count, but the package's id and version appear twice. The
 published package's value is 237-241 characters on an NVIDIA GPU and 273-277 without one (the
 non-NVIDIA layer adds 37): so without an NVIDIA GPU an RTX session runs without the package's layers
-today. A probe package at 261 characters started with a black screen. Not changed yet: the loader has to
-give the runtime shorter paths (for one, copies of the package's layers under fixed short names in
-`native-loader\remix`, as it writes `non-nvidia.conf`), which is a change to activation. RESEARCH.md
-section 32.
+today. A probe package at 261 characters started with a black screen. The limit itself was known
+(RESEARCH.md section 19; the loader only noted a long list). Fixed as the user chose ("Yes, fix
+R3-017"; [ADR 0036](../decisions/0036-remix-layers-as-short-copies.md)): the plan lists each package
+layer as `native-loader/remix/dxvk-<n>.conf` or `rtx-<n>.conf`, which the bootstrap writes at every RTX
+start from the payload file it has just checked, byte for byte; one it cannot write goes back to its
+source in the list (`activate::use_sources`), with a note. The published package's list is now 73
+characters, 109 without an NVIDIA GPU. Tests: the plan's lists for the published payload folder and a
+far longer one, on an AMD GPU; `use_sources`; in the activation integration test, the copies equal
+their sources, a copy changed by hand is written again, and a folder in a copy's place falls back to
+the source. The root fix, a larger buffer in the runtime's `getEnvVar`, waits for the next runtime
+build. RESEARCH.md section 32.
 
 ## Evidence
 
@@ -208,10 +215,23 @@ section 32.
   meshes and bones are right. The first load of the map after Steam's update ended in an engine error
   during loading (a GMod crash dump, `tier0`/`engine.dll`/`GameUI.dll`, no Lua state yet, the runtime's
   log quiet); the next start loaded it.
+- R3-017 (branch `r3-001`): `tools\test.ps1` passed (`repo conventions OK`; 17 of 17 CTests; GMA 28,
+  Steam tools 25, tools 188; `All checks passed.`), with the field game running. The activation
+  integration test's 21 cases include the copies, a rewritten copy and the fallback (`the Remix layer
+  native-loader/remix/dxvk-1.conf was not written (... Windows error 5); the runtime reads
+  native-loader/packages/m4-runtime/1.0.0_1/config/dxvk/01_defaults.conf instead`). `nlctl activation`
+  on the PoC's RTX package: `DXVK_CONFIG_FILE=native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,dxvk.conf`
+  (73 characters); neither of its layers holds a path. Not run: an RTX session with the new loader
+  (the field game was running and the machine had about 4 GB of memory to spare), or on a GPU that is
+  not NVIDIA's.
+- While a game held most of the memory, the installer's tests failed with `OutOfMemoryException`:
+  `install-loader.ps1` kept its rollback copies as arrays of boxed bytes (3.1 GB at the peak). Fixed; 236
+  MB.
 
 ## Left open
 
 - R3-002: a disc tint, if the user wants it (a runtime rebuild).
-- R3-017: shorter layer paths for the runtime (a change to activation).
+- R3-017: the runtime's own 260-character buffer (`getEnvVar`), at its next rebuild; a session on a GPU
+  that is not NVIDIA's has not been run.
 - R3-011: the licence review before anything goes public.
 - R3-015: a look in game (the default interval's smoothness and cost).

@@ -91,8 +91,15 @@ TEST_CASE("activate: config layers go below the user's root conf, in order") {
   const std::string* rtx = env_value(plan, "DXVK_RTX_CONFIG_FILE");
   const std::string* dxvk = env_value(plan, "DXVK_CONFIG_FILE");
   REQUIRE(rtx && dxvk);
-  CHECK(*rtx == payload + "/config/rtx/01_base.conf," + payload + "/config/rtx/02_look.conf,rtx.conf");
-  CHECK(*dxvk == payload + "/config/dxvk/01_dxvk.conf,dxvk.conf");
+  CHECK(*rtx == "native-loader/remix/rtx-1.conf,native-loader/remix/rtx-2.conf,rtx.conf");
+  CHECK(*dxvk == "native-loader/remix/dxvk-1.conf,dxvk.conf");
+  // Each is a copy of the package's file in its payload folder (ADR 0036).
+  REQUIRE(plan.layer_copies.size() == 3);
+  CHECK(plan.layer_copies[0].source == payload + "/config/rtx/01_base.conf");
+  CHECK(plan.layer_copies[0].copy == "native-loader/remix/rtx-1.conf");
+  CHECK(plan.layer_copies[1].source == payload + "/config/rtx/02_look.conf");
+  CHECK(plan.layer_copies[2].source == payload + "/config/dxvk/01_dxvk.conf");
+  CHECK(plan.layer_copies[2].copy == "native-loader/remix/dxvk-1.conf");
 }
 
 TEST_CASE("activate: the user's own environment wins over the package") {
@@ -103,7 +110,7 @@ TEST_CASE("activate: the user's own environment wins over the package") {
   const auto plan = activate::plan(gen, config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", "base.conf,My overrides.conf"},
                                   {"DXVK_LOG_LEVEL", "debug"}}), L"gmod.exe", uhd);
   REQUIRE(env_value(plan, "DXVK_RTX_CONFIG_FILE"));
-  CHECK(*env_value(plan, "DXVK_RTX_CONFIG_FILE") == "p/config/rtx/01_base.conf,base.conf,My overrides.conf");
+  CHECK(*env_value(plan, "DXVK_RTX_CONFIG_FILE") == "native-loader/remix/rtx-1.conf,base.conf,My overrides.conf");
   CHECK(env_value(plan, "DXVK_LOG_LEVEL") == nullptr);        // user set it: left alone
   const std::string* rtx_test = env_value(plan, "RTX_TEST");
   REQUIRE(rtx_test);
@@ -119,21 +126,59 @@ TEST_CASE("activate: both user config lists remain last and ordinary empty value
                            {"DXVK_CONFIG_FILE", "dxvk-user.conf,top.conf"}, {"RTX_TEST", ""}});
   const auto p = activate::plan(with_runtime("p", remix), config::Config{}, env, L"gmod.exe", uhd);
   REQUIRE(env_value(p, "DXVK_RTX_CONFIG_FILE") && env_value(p, "DXVK_CONFIG_FILE"));
-  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "p/config/rtx/base.conf,用户.conf,final.conf");
-  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "p/config/dxvk/base.conf,dxvk-user.conf,top.conf");
+  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "native-loader/remix/rtx-1.conf,用户.conf,final.conf");
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "native-loader/remix/dxvk-1.conf,dxvk-user.conf,top.conf");
   CHECK(env_value(p, "RTX_TEST") == nullptr);
 }
 
-TEST_CASE("activate: a layer list the runtime would ignore (260 characters or more) is noted") {
+TEST_CASE("activate: the package's layers are listed as short copies, whatever its payload folder (R3-017, ADR 0036)") {
   auto remix = base_remix();
-  remix.dxvk_conf_layers = {"config/dxvk/01_defaults.conf"};
-  const auto short_plan = activate::plan(with_runtime("native-loader/packages/x/1_1", remix), config::Config{}, none(), L"gmod.exe", uhd);
-  CHECK(short_plan.notes.empty());
-  const std::string payload = "native-loader/packages/" + std::string(220, 'p') + "/1_1";
-  const auto long_plan = activate::plan(with_runtime(payload, remix), config::Config{}, none(), L"gmod.exe", uhd);
-  REQUIRE(long_plan.notes.size() == 1);
-  CHECK(long_plan.notes[0].find("DXVK_CONFIG_FILE is ") == 0);
-  CHECK(env_value(long_plan, "DXVK_CONFIG_FILE") != nullptr);  // still set: the note explains the fallback
+  remix.dxvk_conf_layers = {"config/dxvk/01_classic_remix_defaults.conf", "config/dxvk/02_compiler_threads.conf"};
+  const auto amd = [] { return std::vector<unsigned>{0x1002}; };
+  // The published package's folder (the list was 275 characters there without an NVIDIA GPU), and a far
+  // longer one: the list is the same.
+  for (const std::string& payload : {std::string("native-loader/packages/gmod-rtx-remix/0.0.0-dev.20261030022927+8beef27e_21"),
+                                     "native-loader/packages/" + std::string(220, 'p') + "/1_1"}) {
+    const auto p = activate::plan(with_runtime(payload, remix), config::Config{}, none(), L"gmod.exe", uhd, amd);
+    REQUIRE(env_value(p, "DXVK_CONFIG_FILE") != nullptr);
+    CHECK(*env_value(p, "DXVK_CONFIG_FILE") ==
+          "native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,native-loader/remix/non-nvidia.conf,dxvk.conf");
+    CHECK(p.notes.empty());
+    REQUIRE(p.layer_copies.size() == 2);
+    CHECK(p.layer_copies[1].source == payload + "/config/dxvk/02_compiler_threads.conf");
+  }
+  // Only a long list of the user's own can still reach the limit: noted, and still set.
+  const auto own = activate::plan(with_runtime("p", remix), config::Config{},
+                                  values({{"DXVK_CONFIG_FILE", std::string(250, 'u') + ".conf"}}), L"gmod.exe", uhd);
+  REQUIRE(own.notes.size() == 1);
+  CHECK(own.notes[0].find("DXVK_CONFIG_FILE is ") == 0);
+  CHECK(env_value(own, "DXVK_CONFIG_FILE") != nullptr);  // still set: the note explains the fallback
+}
+
+TEST_CASE("activate: a copy the bootstrap could not write is replaced by its source (ADR 0036)") {
+  auto remix = base_remix();
+  remix.rtx_conf_layers = {"config/rtx/base.conf"};
+  remix.dxvk_conf_layers = {"config/dxvk/01.conf", "config/dxvk/02.conf"};
+  auto p = activate::plan(with_runtime("p", remix), config::Config{}, none(), L"gmod.exe", uhd);
+  activate::use_sources(p, {"native-loader/remix/dxvk-2.conf"});
+  REQUIRE(env_value(p, "DXVK_CONFIG_FILE") != nullptr);
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "native-loader/remix/dxvk-1.conf,p/config/dxvk/02.conf,dxvk.conf");
+  CHECK((p.dxvk_layers == std::vector<std::string>{"native-loader/remix/dxvk-1.conf", "p/config/dxvk/02.conf", "dxvk.conf"}));
+  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "native-loader/remix/rtx-1.conf,rtx.conf");  // the other list is untouched
+  REQUIRE(p.layer_copies.size() == 2);  // the copy that was not written is no longer listed as one
+  CHECK(p.layer_copies[1].copy == "native-loader/remix/dxvk-1.conf");
+  CHECK(p.notes.empty());
+  const auto before = p.env;
+  activate::use_sources(p, {});
+  CHECK(p.env == before);
+
+  // A source too long for the runtime once listed: noted.
+  auto q = activate::plan(with_runtime("native-loader/packages/" + std::string(240, 'p') + "/1_1", remix), config::Config{}, none(),
+                          L"gmod.exe", uhd);
+  CHECK(q.notes.empty());
+  activate::use_sources(q, {"native-loader/remix/dxvk-1.conf"});
+  REQUIRE(q.notes.size() == 1);
+  CHECK(q.notes[0].find("DXVK_CONFIG_FILE is ") == 0);
 }
 
 TEST_CASE("activate: empty config variables retain the runtime's default user root layer") {
@@ -141,7 +186,7 @@ TEST_CASE("activate: empty config variables retain the runtime's default user ro
   remix.rtx_conf_layers = {"config/base.conf"};
   const auto p = activate::plan(with_runtime("p", remix), config::Config{}, values({{"DXVK_RTX_CONFIG_FILE", ""}}), L"gmod.exe", uhd);
   REQUIRE(env_value(p, "DXVK_RTX_CONFIG_FILE"));
-  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "p/config/base.conf,rtx.conf");
+  CHECK(*env_value(p, "DXVK_RTX_CONFIG_FILE") == "native-loader/remix/rtx-1.conf,rtx.conf");
 }
 
 TEST_CASE("activate: launch arguments the user already passed are not repeated") {
@@ -220,7 +265,7 @@ TEST_CASE("activate: without an NVIDIA GPU Remix chooses its own preset, from a 
   remix.dxvk_conf_layers = {"config/dxvk/01_classic_remix_defaults.conf"};
   const auto gen = with_runtime("p", remix);
   const auto gpus = [](std::vector<unsigned> vendors) { return [vendors] { return vendors; }; };
-  const std::string classic = "p/config/dxvk/01_classic_remix_defaults.conf";
+  const std::string classic = "native-loader/remix/dxvk-1.conf";  // the copy of the package's classic layer
 
   // An AMD (or Intel) GPU alone: the loader's layer goes above the package's, below the user's dxvk.conf.
   auto p = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd, gpus({0x1002}));

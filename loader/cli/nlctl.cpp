@@ -448,6 +448,12 @@ int cmd_activation(const fs::path& game_root, bool json) {
              ", \"value\": " + nl::json::quote(plan.env[i].second) + "}";
     }
     out += plan.env.empty() ? "]" : "\n  ]";
+    out += ",\n  \"layer_copies\": [";
+    for (std::size_t i = 0; i < plan.layer_copies.size(); ++i) {
+      out += (i ? ", " : "") + std::string("{\"copy\": ") + nl::json::quote(plan.layer_copies[i].copy) +
+             ", \"source\": " + nl::json::quote(plan.layer_copies[i].source) + "}";
+    }
+    out += "]";
     out += ",\n  \"launch_args\": " + string_array_json(plan.launch_args);
     out += ",\n  \"reshade\": {\"enable\": " + std::string(shade.enable ? "true" : "false") + ", \"reason\": " +
            nl::json::quote(shade.reason) + ", \"package\": " + nl::json::quote(shade.package) + ", \"layer\": " +
@@ -475,6 +481,7 @@ int cmd_activation(const fs::path& game_root, bool json) {
   print("gpus        " + (vendors.empty() ? std::string("(not read)") : vendors) +
         (plan.non_nvidia ? ": no NVIDIA GPU, Remix chooses its preset (" + std::string(nl::activate::kNonNvidiaLayer) + ")" : "") + "\n");
   for (const auto& [name, value] : plan.env) print("env         " + name + "=" + value + "\n");
+  for (const auto& layer : plan.layer_copies) print("layer copy  " + layer.copy + " <- " + layer.source + "\n");
   std::string args;
   for (const auto& a : plan.launch_args) args += (args.empty() ? "" : " ") + a;
   print("launch args " + (args.empty() ? std::string("(none to add)") : args) + "\n");

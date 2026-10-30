@@ -181,15 +181,33 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   for (const auto& layer : runtime->remix->dxvk_conf_layers) check_file(runtime->payload + '/' + layer);
   for (const auto& item : plan.module_overrides) check_file(item.file);
 
+  const auto layer_folder = [&] {
+    const std::string folder(activate::kLayerFolder);
+    fs::refuse_links(root, folder);
+    if (!fs::stat(fs::join(root, folder)).exists) fs::win32().create_directory(fs::join(root, folder));
+  };
+  // The package's layers reach the runtime as copies with short names (ADR 0036, R3-017), written from
+  // the files just checked, byte for byte. One that cannot be written is replaced by its source in the
+  // lists, which may then be too long for the runtime; a note says so.
+  std::vector<std::string> unwritten;
+  for (const auto& layer : plan.layer_copies) {
+    try {
+      layer_folder();
+      write_if_changed(root, layer.copy, fs::read_file(fs::join(root, layer.source), std::size_t{1} << 24));
+    } catch (const std::exception& error) {
+      unwritten.push_back(layer.copy);
+      session.notes.push_back("the Remix layer " + layer.copy + " was not written (" + error.what() + "); the runtime reads " +
+                              layer.source + " instead");
+    }
+  }
+  if (!unwritten.empty()) activate::use_sources(report.plan, unwritten);
+
   // Without an NVIDIA GPU, the loader's own Remix layer (ADR 0030), which DXVK_CONFIG_FILE lists. A
   // layer that cannot be written costs Remix's automatic preset, not the session (Remix skips a missing file).
   if (plan.non_nvidia) {
     try {
-      const std::string_view layer = activate::kNonNvidiaLayer;
-      const std::string folder(layer.substr(0, layer.rfind('/')));
-      fs::refuse_links(root, folder);
-      if (!fs::stat(fs::join(root, folder)).exists) fs::win32().create_directory(fs::join(root, folder));
-      write_if_changed(root, layer, activate::non_nvidia_layer_text());
+      layer_folder();
+      write_if_changed(root, activate::kNonNvidiaLayer, activate::non_nvidia_layer_text());
     } catch (const std::exception& error) {
       session.notes.push_back(std::string("the non-NVIDIA Remix layer was not written: ") + error.what());
     }

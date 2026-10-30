@@ -45,7 +45,9 @@ and a foreign DLL is kept as the original, as without the switch. [`workflow.ps1
 `-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` (requires
 `-Uninstall`) deletes the loader's own control and log files in `native-loader` (`config.json`,
 `bootstrap-install.json`, `disable`, `session_cvars.json`, `replaced\winmm.dll` and `.pdb`,
-`remix\non-nvidia.conf` (ADR 0030), `logs\loader.log` and its rotations),
+`remix\non-nvidia.conf` (ADR 0030), the copies of the package's Remix layers `remix\dxvk-<n>.conf` and
+`remix\rtx-<n>.conf` ([ADR 0036](../docs/decisions/0036-remix-layers-as-short-copies.md)),
+`logs\loader.log` and its rotations),
 then every folder left empty, then `native-loader` itself if empty. Any other file stays and is
 listed in a warning: a payload file the user changed (`nlctl uninstall` leaves those in place), a
 journal `nlctl uninstall` had to keep, an original in `original\` that could not be put back, or the

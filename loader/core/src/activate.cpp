@@ -31,16 +31,29 @@ bool same_option(std::wstring_view token, std::string_view name) {
   });
 }
 
-// The package's layers (low priority first) under its payload folder, then a layer of the loader's own
-// if any (ADR 0030), then the user's root conf on top (the editable layer the Remix menu saves to), as
-// a comma-separated list relative to the root.
-std::string layer_list(const std::string& payload, const std::vector<std::string>& layers, std::string_view loader_layer,
-                       std::string_view user_conf) {
+// The package's layers (low priority first, as their copies: ADR 0036), then a layer of the loader's
+// own if any (ADR 0030), then the user's root conf on top (the editable layer the Remix menu saves to),
+// as a comma-separated list relative to the root.
+std::string layer_list(const std::vector<std::string>& layers, std::string_view loader_layer, std::string_view user_conf) {
   std::string value;
-  for (const std::string& layer : layers) value += payload + "/" + layer + ",";
+  for (const std::string& layer : layers) value += layer + ",";
   if (!loader_layer.empty()) value += std::string(loader_layer) + ",";
   value += user_conf;
   return value;
+}
+
+std::string joined(const std::vector<std::string>& layers) {
+  std::string value;
+  for (std::size_t i = 0; i < layers.size(); ++i) value += (i ? "," : "") + layers[i];
+  return value;
+}
+
+// The runtime reads these variables into a 260-character buffer and takes a longer value as empty: it
+// then uses the bare root conf and none of the package's layers (RESEARCH.md sections 19 and 32).
+void note_length(std::vector<std::string>& notes, const std::string& name, const std::string& value) {
+  if (value.size() >= kMaxLayerList)
+    notes.push_back(name + " is " + std::to_string(value.size()) + " characters; the runtime reads at most " +
+                    std::to_string(kMaxLayerList - 1) + " and ignores a longer list");
 }
 
 std::vector<std::string> split_layers(std::string_view value) {
@@ -241,25 +254,26 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
   }
   std::sort(p.preload.begin(), p.preload.end());
 
-  const auto add_layers = [&](const char* name, const std::vector<std::string>& package_layers, std::string_view loader_layer,
-                              const char* default_user, std::vector<std::string>& effective) {
+  // Each package layer is listed as its copy in kLayerFolder (ADR 0036), so the lists stay short
+  // whatever the payload folder's name: the bootstrap writes the copies from the payload.
+  const auto add_layers = [&](const char* name, std::string_view kind, const std::vector<std::string>& package_layers,
+                              std::string_view loader_layer, const char* default_user, std::vector<std::string>& effective) {
     const auto user = env(name);
     if (user) p.user_env.emplace_back(name, *user);
-    const auto value = layer_list(runtime->payload, package_layers, loader_layer,
-                                  user && !user->empty() ? std::string_view(*user) : default_user);
+    std::vector<std::string> copies;
+    for (std::size_t i = 0; i < package_layers.size(); ++i) {
+      copies.push_back(std::string(kLayerFolder) + "/" + std::string(kind) + "-" + std::to_string(i + 1) + ".conf");
+      p.layer_copies.push_back({runtime->payload + "/" + package_layers[i], copies.back()});
+    }
+    const auto value = layer_list(copies, loader_layer, user && !user->empty() ? std::string_view(*user) : default_user);
     effective = split_layers(value);
     if (!package_layers.empty() || !loader_layer.empty()) {
-      // The runtime reads these variables into a 260-character buffer and takes a longer value as
-      // empty: it would then use the bare root conf and none of the package's layers (RESEARCH.md
-      // section 19).
-      if (value.size() >= kMaxLayerList)
-        p.notes.push_back(std::string(name) + " is " + std::to_string(value.size()) + " characters; the runtime reads at most " +
-                          std::to_string(kMaxLayerList - 1) + " and ignores a longer list");
+      note_length(p.notes, name, value);  // only a long list of the user's own reaches the limit now
       p.env.emplace_back(name, value);
     }
   };
-  add_layers("DXVK_RTX_CONFIG_FILE", remix.rtx_conf_layers, {}, "rtx.conf", p.rtx_layers);
-  add_layers("DXVK_CONFIG_FILE", remix.dxvk_conf_layers, p.non_nvidia ? kNonNvidiaLayer : std::string_view{}, "dxvk.conf",
+  add_layers("DXVK_RTX_CONFIG_FILE", "rtx", remix.rtx_conf_layers, {}, "rtx.conf", p.rtx_layers);
+  add_layers("DXVK_CONFIG_FILE", "dxvk", remix.dxvk_conf_layers, p.non_nvidia ? kNonNvidiaLayer : std::string_view{}, "dxvk.conf",
              p.dxvk_layers);
   for (const auto& [name, value] : remix.env) {
     const auto user = env(name);
@@ -294,6 +308,28 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
   }
   p.module_dependencies = session::module_dependencies(generation);
   return p;
+}
+
+void use_sources(Plan& plan, const std::vector<std::string>& unwritten) {
+  const auto missing = [&](const Plan::LayerCopy& layer) {
+    return std::find(unwritten.begin(), unwritten.end(), layer.copy) != unwritten.end();
+  };
+  bool changed = false;
+  for (const Plan::LayerCopy& layer : plan.layer_copies) {
+    if (!missing(layer)) continue;
+    for (auto* list : {&plan.rtx_layers, &plan.dxvk_layers}) std::replace(list->begin(), list->end(), layer.copy, layer.source);
+    changed = true;
+  }
+  if (!changed) return;
+  std::erase_if(plan.layer_copies, missing);
+  for (auto& [name, value] : plan.env) {
+    const std::vector<std::string>* list = name == "DXVK_RTX_CONFIG_FILE" ? &plan.rtx_layers
+                                           : name == "DXVK_CONFIG_FILE"   ? &plan.dxvk_layers
+                                                                          : nullptr;
+    if (!list || joined(*list) == value) continue;
+    value = joined(*list);
+    note_length(plan.notes, name, value);
+  }
 }
 
 }  // namespace nl::activate

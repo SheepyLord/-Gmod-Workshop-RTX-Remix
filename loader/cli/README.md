@@ -72,7 +72,10 @@ would do with the runtime ([ADR 0008](../../docs/decisions/0008-activation-at-st
 is preloaded first, the environment variables it would set (config-file layer lists and the
 package's own, skipping any this shell already has set) and the launch arguments it would add.
 Package config layers precede the existing user list; absent/empty config lists use the default
-root conf last. Missing/disabled config and pending journal transactions are inactive. It
+root conf last. From loader 0.6.0 the lists name the short copies the bootstrap writes in
+`native-loader/remix`, and `layer_copies` (a `layer copy` line in text) gives each copy's source in the
+payload ([ADR 0036](../../docs/decisions/0036-remix-layers-as-short-copies.md)). Missing/disabled config
+and pending journal transactions are inactive. It
 reads the journal and config only. Launch arguments are shown as the package's whole set, since
 nlctl does not have the game's command line. Exit `0` always (or `2` for an invalid journal/config).
 

@@ -6,6 +6,22 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (R3-017: the package's Remix settings on every GPU; loader 0.6.0)
+
+- **The runtime reads the package's Remix layers from short copies**
+  ([ADR 0036](docs/decisions/0036-remix-layers-as-short-copies.md)). The runtime ignores a
+  `DXVK_CONFIG_FILE` of 260 characters or more and then loads `dxvk.conf` alone; the published
+  package's list was 237-241 characters on an NVIDIA GPU and 273-277 without one, so on AMD and Intel
+  GPUs an RTX session ran without the package's settings. Each RTX start now writes the package's
+  layers, byte for byte, to `native-loader\remix\dxvk-<n>.conf` (and `rtx-<n>.conf`) and lists those:
+  73 characters, 109 without an NVIDIA GPU, whatever the version. `status.json` `activation.layer_copies`
+  and `nlctl activation` give each copy's source; a copy that cannot be written falls back to its
+  source with a note. `install-loader.ps1 -RemoveState` removes the copies.
+- **`install-loader.ps1` keeps its rollback copies as byte arrays.** `$x = if (...) { ReadAllBytes }`
+  enumerated the old DLL and PDB into arrays of boxed bytes: over a gigabyte for a Debug build's 35 MB
+  PDB, 3.1 GB at the peak of the installer's tests, which failed with `OutOfMemoryException` while a
+  game held most of the machine's memory. Now 236 MB at the peak.
+
 ### Changed (restore automatically; loader 0.6.0, R3-001)
 
 - **The package's files are put back** ([ADR 0035](docs/decisions/0035-restore-automatically.md), the

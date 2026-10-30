@@ -37,6 +37,14 @@ std::string session_json(const Session& s) {
          ",\"hooks\":" + json::quote(s.hooks) + ",\"hidden_addons\":" + strings(s.hidden_addons) +
          ",\"module_dependencies\":" + strings(s.module_dependencies) + ",\"notes\":" + strings(s.notes) + "}";
 }
+std::string copies_json(const std::vector<activate::Plan::LayerCopy>& copies) {
+  std::string result = "[";
+  for (const auto& layer : copies) {
+    if (result.size() > 1) result += ',';
+    result += "{\"copy\":" + json::quote(layer.copy) + ",\"source\":" + json::quote(layer.source) + '}';
+  }
+  return result + ']';
+}
 std::string numbers(const std::vector<unsigned>& values) {
   std::string result = "[";
   for (const unsigned value : values) {
@@ -87,7 +95,8 @@ std::string serialize(const Report& r) {
       "},\"system_vulkan_path\":" + json::quote(a.vulkan_path) + ",\"gpu_vendors\":" + numbers(p.gpu_vendors) +
       ",\"non_nvidia\":" + (p.non_nvidia ? "true" : "false") + ",\"environment\":{\"requested\":" + pairs(p.env) + ",\"set\":" + pairs(a.environment_set) +
       ",\"user_values_kept\":" + pairs(p.user_env) + "},\"layers\":{\"rtx\":" + strings(p.rtx_layers) +
-      ",\"dxvk\":" + strings(p.dxvk_layers) + "},\"launch_arguments\":{\"requested\":" + strings(p.launch_args) +
+      ",\"dxvk\":" + strings(p.dxvk_layers) + "},\"layer_copies\":" + copies_json(p.layer_copies) +
+      ",\"launch_arguments\":{\"requested\":" + strings(p.launch_args) +
       ",\"added\":" + strings(a.arguments_added) + ",\"already_present\":" + strings(p.present_args) +
       ",\"fallback_launch_options\":" + json::quote(a.fallback_launch_options) +
       "},\"missing_system_dependencies\":" + strings(a.missing_system_dependencies) +
@@ -114,6 +123,7 @@ std::string log_fields(const Report& r) {
       << "\nactivation.gpu_vendors=" << numbers(a.plan.gpu_vendors) << "\nactivation.non_nvidia=" << a.plan.non_nvidia
       << "\nactivation.environment.set=" << pairs(a.environment_set) << "\nactivation.environment.user_values_kept=" << pairs(a.plan.user_env)
       << "\nactivation.layers.rtx=" << strings(a.plan.rtx_layers) << "\nactivation.layers.dxvk=" << strings(a.plan.dxvk_layers)
+      << "\nactivation.layer_copies=" << copies_json(a.plan.layer_copies)
       << "\nactivation.arguments.added=" << strings(a.arguments_added) << "\nactivation.arguments.already_present=" << strings(a.plan.present_args)
       << "\nactivation.fallback_launch_options=" << json::quote(a.fallback_launch_options)
       << "\nactivation.windows_error=" << a.windows_error << "\nactivation.missing_system_dependencies=" << strings(a.missing_system_dependencies)
