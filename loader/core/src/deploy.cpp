@@ -246,8 +246,14 @@ void undo(Run& run, const Step& step) {
     // loader's own folders (a file moved aside) is retired: deleted once clean-up finds it unchanged.
     if (!step.sha256.empty() && !at_to.directory && paths::within(step.to, kLoaderDir) &&
         fs::hash_file(to).sha256 == step.sha256) {
-      run.journal.retired.push_back({step.to, "", step.sha256, at_to.size, at_to.mtime, false});
-      run.note(step.from + " changed while a deployment was interrupted; the loader's earlier copy of it is deleted");
+      if (paths::within(step.to, journal::kOriginals) || paths::within(step.to, journal::kEdits)) {
+        // Someone else's file the loader had moved out of the way: never deleted (ADR 0035).
+        run.note(step.from + " changed while a deployment was interrupted; the file the loader had moved from there stays at " +
+                 step.to);
+      } else {
+        run.journal.retired.push_back({step.to, "", step.sha256, at_to.size, at_to.mtime, false});
+        run.note(step.from + " changed while a deployment was interrupted; the loader's earlier copy of it is deleted");
+      }
     }
     return;
   }
@@ -277,10 +283,60 @@ bool through_link(const Run& run, std::string_view relative) {
   }
 }
 
-// Clean-up: the staging folder, retired files that are still unchanged, and the empty folders the
-// loader made. Each part can be interrupted and redone. Something that cannot be removed now (open
-// in another program, read-only) stays listed and is tried again by the next run, so clean-up never
-// stops a command; only a journal that cannot be written does. Returns false if something stayed.
+void make_parents(Run& run, std::string_view file);
+
+// Puts back the originals (ADR 0035) whose path no generation refers to any more: a package
+// stopped placing the file, or everything was uninstalled. One whose path is taken again, or whose
+// kept copy changed, stays where it is. Returns false if one could not be moved yet.
+bool restore_originals(Run& run, bool& changed) {
+  std::set<std::string> managed;
+  for (const std::optional<Generation>* g : {&run.journal.current, &run.journal.previous}) {
+    if (!*g) continue;
+    for (const File& f : (*g)->files) managed.insert(fold(f.path));
+  }
+  bool complete = true;
+  std::vector<File> originals;
+  for (const File& o : run.journal.originals) {
+    const std::string kept = std::string(journal::kOriginals) + "/" + o.path;
+    if (managed.count(fold(o.path))) {
+      originals.push_back(o);
+      continue;
+    }
+    if (through_link(run, kept) || through_link(run, o.path)) {
+      run.note(o.path + ": its original stays at " + kept + ", because one of the two paths now passes through a link");
+      originals.push_back(o);
+      continue;
+    }
+    try {
+      if (!unchanged(run.at(kept), o, true)) {
+        run.note(o.path + ": its original at " + kept + " is gone or changed, so the loader no longer puts it back");
+        changed = true;
+        continue;
+      }
+      if (fs::stat(run.at(o.path)).exists) {
+        run.note(o.path + ": its original stays at " + kept + ", because another file is there now");
+        originals.push_back(o);
+        continue;
+      }
+      make_parents(run, o.path);
+      run.disk.move(run.at(kept), run.at(o.path), false);
+      run.report.changes.push_back({"restore-original", o.path});
+      changed = true;
+    } catch (const fs::Error& e) {
+      run.note(o.path + ": its original could not be put back yet (" + e.what() + "); the next run tries again");
+      originals.push_back(o);
+      complete = false;
+    }
+  }
+  run.journal.originals = std::move(originals);
+  return complete;
+}
+
+// Clean-up: the staging folder, retired files that are still unchanged, originals to put back, and
+// the empty folders the loader made. Each part can be interrupted and redone. Something that cannot
+// be removed now (open in another program, read-only) stays listed and is tried again by the next
+// run, so clean-up never stops a command; only a journal that cannot be written does. Returns false
+// if something stayed.
 bool collect(Run& run) {
   bool complete = true;
   if (fs::stat(run.at(kStaging)).exists) {
@@ -319,6 +375,8 @@ bool collect(Run& run) {
   }
   bool changed = retired.size() != run.journal.retired.size();
   run.journal.retired = std::move(retired);
+  // Before the folders: an original's folder may be one the loader made, which it then keeps.
+  if (!restore_originals(run, changed)) complete = false;
   std::vector<std::string> dirs = run.journal.dirs;
   std::sort(dirs.begin(), dirs.end(), [](const std::string& a, const std::string& b) { return fold(a) > fold(b); });  // children first
   std::vector<std::string> kept;
@@ -669,10 +727,12 @@ Planned work_out(const Run& run, const planner::Decision& decision, std::size_t 
 
 enum class Act {
   keep,         // in place as recorded
-  keep_edited,  // in place, but the user changed it: left alone
+  keep_edited,  // a create-only file the user changed: theirs, left alone
   adopt,        // already there with the right content, not placed by the loader
   install,      // new (or the loader's copy is gone): extract and place
   replace,      // the loader's copy, unchanged, and the package has a new version
+  put_back,     // the loader's copy changed after it placed it: the changed copy is kept, the package's put back (ADR 0035)
+  take_over,    // someone else's file is there (or one the loader adopted): kept as the original, the package's placed
   skip,         // create-only and someone else's file is there: kept
   remove,       // the plan no longer has it and it is unchanged: moved aside
   drop,         // the plan no longer has it, but it changed or is gone: no longer tracked
@@ -685,13 +745,36 @@ struct RootPlan {
   manifest::FileInfo info;        // the version wanted
   const File* current = nullptr;  // the current generation's record
   Act act = Act::install;
-  std::uint64_t mtime = 0;  // adopt: the file's time
+  std::uint64_t mtime = 0;  // adopt, put_back, take_over: the file's time
   bool missing = false;     // drop: the file is gone
   bool linked = false;      // drop: its path passes through a link now
+  // put_back, take_over: the file in place, and where it goes (journal::kOriginals for the first file
+  // the loader displaces at a path, which it puts back later; journal::kEdits otherwise, kept).
+  manifest::FileInfo found;
+  std::string kept_at;
+  bool original = false;
 };
 
+// The acts that put the package's copy in place.
+bool places(Act act) {
+  return act == Act::install || act == Act::replace || act == Act::put_back || act == Act::take_over;
+}
+
+// Where the file at `path` goes when the loader displaces it (ADR 0035): it becomes the path's
+// original unless one is kept already, in which case it is kept as a changed copy.
+void displace(const Run& run, RootPlan& rp, const Path& target, std::uint64_t tx) {
+  const fs::Hash h = fs::hash_file(target);
+  rp.found = {h.size, h.sha256};
+  rp.mtime = fs::stat(target).mtime;
+  const bool kept = std::any_of(run.journal.originals.begin(), run.journal.originals.end(),
+                                [&](const File& o) { return fold(o.path) == fold(rp.path); });
+  rp.original = rp.act == Act::take_over && !kept;
+  rp.kept_at = rp.original ? std::string(journal::kOriginals) + "/" + rp.path
+                           : std::string(journal::kEdits) + "/" + std::to_string(tx) + "/" + rp.path;
+}
+
 // What happens to one root file of the plan. Throws PackageProblem if its package cannot place it.
-RootPlan decide(const Run& run, const Planned::Root& r, const File* current) {
+RootPlan decide(const Run& run, const Planned::Root& r, const File* current, std::uint64_t tx) {
   RootPlan rp;
   rp.path = r.path;
   rp.package_path = r.package_path;
@@ -706,33 +789,39 @@ RootPlan decide(const Run& run, const Planned::Root& r, const File* current) {
   const Path target = run.at(r.path);
   const fs::Stat s = fs::stat(target);
   if (s.exists && (s.directory || s.link)) throw PackageProblem(r.path + " exists as a folder or a link");
+  // A replace-owned path holds the package's file (ADR 0035): whatever else is found there is kept
+  // aside and the package's copy goes in. Create-only files belong to the user once they exist.
+  const bool create_only = r.policy == manifest::Policy::create_only;
   if (!s.exists) {
     rp.act = Act::install;
   } else if (current) {
     if (current->sha256 == r.info.sha256) {
-      rp.act = unchanged(target, *current, false) ? Act::keep : Act::keep_edited;
-    } else if (r.policy == manifest::Policy::create_only) {
+      if (unchanged(target, *current, false)) {
+        rp.act = Act::keep;
+      } else {
+        rp.act = create_only ? Act::keep_edited : current->adopted ? Act::take_over : Act::put_back;
+      }
+    } else if (create_only) {
       rp.act = Act::keep;  // never replaced, not even by a new version
     } else if (current->adopted) {
-      throw PackageProblem(r.path +
-                           " was there before the loader, which does not replace it with another version; delete it to let the "
-                           "loader manage it");
+      rp.act = Act::take_over;  // the user's file, which the package no longer matches
     } else {
-      rp.act = unchanged(target, *current, true) ? Act::replace : Act::keep_edited;
+      rp.act = unchanged(target, *current, true) ? Act::replace : Act::put_back;
     }
   } else if (fs::hash_file(target).sha256 == r.info.sha256) {
     rp.act = Act::adopt;
     rp.mtime = s.mtime;
-  } else if (r.policy == manifest::Policy::create_only) {
+  } else if (create_only) {
     rp.act = Act::skip;
   } else {
-    throw PackageProblem(r.path + " already exists and was not placed by the loader, which does not replace such files");
+    rp.act = Act::take_over;
   }
+  if (rp.act == Act::put_back || rp.act == Act::take_over) displace(run, rp, target, tx);
   return rp;
 }
 
 // Decides every root file: the plan's, and the current generation's that the plan no longer has.
-std::vector<RootPlan> check_roots(const Run& run, const std::vector<Planned>& planned) {
+std::vector<RootPlan> check_roots(const Run& run, const std::vector<Planned>& planned, std::uint64_t tx) {
   std::map<std::string, const File*> current;
   if (run.journal.current) {
     for (const File& f : run.journal.current->files) {
@@ -747,7 +836,7 @@ std::vector<RootPlan> check_roots(const Run& run, const std::vector<Planned>& pl
       wanted.insert(key);
       const auto found = current.find(key);
       try {
-        RootPlan rp = decide(run, r, found == current.end() ? nullptr : found->second);
+        RootPlan rp = decide(run, r, found == current.end() ? nullptr : found->second, tx);
         rp.planned = i;
         out.push_back(std::move(rp));
       } catch (const PackageProblem& e) {
@@ -777,9 +866,16 @@ std::vector<std::string> notes_for(const std::vector<RootPlan>& roots) {
   std::vector<std::string> notes;
   for (const RootPlan& r : roots) {
     if (r.act == Act::keep_edited) {
-      notes.push_back(r.path + (r.current->sha256 != r.info.sha256
-                                    ? ": not updated to the package's new version, because it changed after the loader placed it"
-                                    : ": changed after the loader placed it; left as it is"));
+      notes.push_back(r.path + ": changed after the loader created it; left as it is (create-only)");
+    } else if (r.act == Act::put_back) {
+      notes.push_back(r.path + ": changed after the loader placed it; the package's copy is back, and the changed one is kept at " +
+                      r.kept_at);
+    } else if (r.act == Act::take_over && r.original) {
+      notes.push_back(r.path + ": was there before the loader; kept at " + r.kept_at +
+                      " and put back once the loader no longer manages this path (uninstall)");
+    } else if (r.act == Act::take_over) {
+      notes.push_back(r.path + ": was in the package's way; kept at " + r.kept_at +
+                      " (the file the loader found here first stays the one it puts back)");
     } else if (r.act == Act::skip) {
       notes.push_back(r.path + ": already there; the existing file is kept (create-only)");
     } else if (r.act == Act::drop && r.linked) {
@@ -805,9 +901,7 @@ std::map<std::string, std::string> staging_targets(const Planned& p, std::size_t
     }
   }
   for (const RootPlan& r : roots) {
-    if (r.planned == position && (r.act == Act::install || r.act == Act::replace)) {
-      targets.emplace(fold(r.package_path), base + "/root/" + r.path);
-    }
+    if (r.planned == position && places(r.act)) targets.emplace(fold(r.package_path), base + "/root/" + r.path);
   }
   return targets;
 }
@@ -856,7 +950,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       throw Broken{i, e.what()};
     }
   }
-  const std::vector<RootPlan> roots = check_roots(run, planned);
+  const std::vector<RootPlan> roots = check_roots(run, planned, tx);
   std::vector<journal::Package> records;
   for (const Planned& p : planned) records.push_back(p.record);
   const Generation none;
@@ -872,7 +966,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
 
   const std::vector<std::string> wanted = package_set(records);
   bool work = std::any_of(roots.begin(), roots.end(), [](const RootPlan& r) {
-    return r.act == Act::install || r.act == Act::replace || r.act == Act::remove || r.act == Act::adopt || r.act == Act::drop;
+    return places(r.act) || r.act == Act::remove || r.act == Act::adopt || r.act == Act::drop;
   });
   for (const Planned& p : planned) {
     const auto same = std::find_if(cur.packages.begin(), cur.packages.end(), [&](const journal::Package& c) { return c.id == p.record.id; });
@@ -898,6 +992,8 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   for (const RootPlan& r : roots) {
     if (r.act == Act::install) changes.push_back({"add", r.path});
     if (r.act == Act::replace) changes.push_back({"replace", r.path});
+    if (r.act == Act::put_back) changes.push_back({"put-back", r.path});
+    if (r.act == Act::take_over) changes.push_back({"take-over", r.path});
     if (r.act == Act::remove) changes.push_back({"remove", r.path});
     if (r.act == Act::adopt) changes.push_back({"adopt", r.path});
   }
@@ -952,6 +1048,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
     }
   };
   std::vector<Step> aside;
+  std::vector<Step> displaced;  // files kept as originals or changed copies (ADR 0035), not rollback copies
   std::vector<Step> payload_moves;
   std::vector<Step> installs;
   for (const RootPlan& r : roots) {
@@ -960,7 +1057,11 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       parents_of(to);
       aside.push_back({Step::Op::move, r.path, to, r.current->sha256});
     }
-    if (r.act == Act::install || r.act == Act::replace) {
+    if (r.act == Act::put_back || r.act == Act::take_over) {
+      parents_of(r.kept_at);
+      displaced.push_back({Step::Op::move, r.path, r.kept_at, r.found.sha256});
+    }
+    if (places(r.act)) {
       const Staged& s = staged.at(planned[r.planned].index).at(fold(r.package_path));
       parents_of(r.path);
       installs.push_back({Step::Op::move, s.from, r.path, s.sha256});
@@ -980,6 +1081,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   std::vector<Step> steps;
   for (const auto& dir : make) steps.push_back({Step::Op::make_dir, "", dir.second, ""});
   append(steps, aside);
+  append(steps, displaced);
   append(steps, payload_moves);
   append(steps, installs);
 
@@ -1017,12 +1119,14 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
         next_gen.files.push_back({r.path, planned[r.planned].record.id, r.info.sha256, r.info.size, r.mtime, true});
         break;
       case Act::install:
-      case Act::replace: {
+      case Act::replace:
+      case Act::put_back:
+      case Act::take_over: {
         const Staged& s = staged.at(planned[r.planned].index).at(fold(r.package_path));
         next_gen.files.push_back({r.path, planned[r.planned].record.id, s.sha256, s.size, s.mtime, false});
-        // The loader's earlier copy was gone, so nothing was kept: the previous generation must not
-        // claim it, or a rollback could never be done.
-        if (r.act == Act::install && r.current && !r.current->adopted) left.insert(fold(r.path));
+        // The loader's earlier copy was gone (or changed), so nothing was kept: the previous
+        // generation must not claim it, or a rollback could never be done.
+        if ((r.act == Act::install || r.act == Act::put_back) && r.current && !r.current->adopted) left.insert(fold(r.path));
         break;
       }
       case Act::drop:
@@ -1060,6 +1164,11 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   }
   next.hold.reset();
   next.pending.reset();
+  for (const RootPlan& r : roots) {
+    if (r.act == Act::take_over && r.original) {
+      next.originals.push_back({r.path, planned[r.planned].record.id, r.found.sha256, r.found.size, r.mtime, false});
+    }
+  }
   for (const auto& dir : make) add_dir(next.dirs, dir.second);
   sort_dirs(next.dirs);
   append(next.retired, retired_after(run.journal, steps, next, left));
@@ -1226,6 +1335,7 @@ void remove_all(Run& run) {
   next.loader = std::string(nl::version());
   next.next = run.journal.next;
   for (const auto& entry : locations(run.journal)) next.retired.push_back(entry.second);
+  next.originals = run.journal.originals;  // put back once the loader's copies are deleted (ADR 0035)
   next.dirs = run.journal.dirs;
   if (run.journal.current) {
     for (const File& f : run.journal.current->files) {
@@ -1234,6 +1344,7 @@ void remove_all(Run& run) {
   }
   if (run.dry_run) {
     for (const File& f : next.retired) run.report.changes.push_back({"delete", f.path});
+    for (const File& o : next.originals) run.report.changes.push_back({"restore-original", o.path});
     run.report.outcome = "planned";
     return;
   }
@@ -1248,6 +1359,10 @@ void remove_all(Run& run) {
       run.note("not everything could be deleted yet; run uninstall again to finish");
     } else {
       if (had_journal) {
+        for (const File& o : run.journal.originals) {
+          run.note(o.path + ": its original is left at " + std::string(journal::kOriginals) + "/" + o.path +
+                   "; put it back by hand");
+        }
         for (const std::string& dir : run.journal.dirs) run.note(dir + ": folder kept; it holds files the loader did not place");
         run.disk.remove_file(run.at(journal::kPath));
       }

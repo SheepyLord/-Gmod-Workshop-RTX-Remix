@@ -8,9 +8,11 @@ Removes the native loader from an x64 GMod install, defaulting to the PoC, in tw
 1. `nlctl uninstall <game root>`: every file and folder the loader deployed, as its journal
    (`native-loader\state.json`) lists them, then the journal and `native-loader\lock`. Files changed
    since the loader placed them, and files that were there before it (adopted), stay and are
-   reported. See [loader/cli/README.md](../loader/cli/README.md).
+   reported. Files the loader had kept aside in `native-loader\backup\originals` are put back
+   ([ADR 0035](../docs/decisions/0035-restore-automatically.md)). See
+   [loader/cli/README.md](../loader/cli/README.md).
 2. [`install-loader.ps1`](install-loader.ps1.md) `-Uninstall`: the bootstrap's `winmm.dll` and PDB,
-   only if they are ours and unedited.
+   only if they are ours and unedited, then a foreign `winmm.dll` the install had kept, put back.
 
 ```powershell
 tools\uninstall-loader.ps1                                # the PoC; keeps native-loader\config.json

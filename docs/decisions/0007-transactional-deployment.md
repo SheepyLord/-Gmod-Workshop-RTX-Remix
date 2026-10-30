@@ -2,6 +2,9 @@
 
 - Status: Accepted 2026-10-27; revised the same day, before it was merged, after an independent
   review (per-file payload moves, clean-up that never stops a command, links, ASCII paths, the hold)
+- **Superseded in part by [0035](0035-restore-automatically.md)** (2026-10-29, the user): decision 5's
+  rules for a changed `replace-owned` file (now put back, the changed copy kept) and for someone else's
+  file at a `replace-owned` target (now taken over and put back later). The rest of this record stands.
 - Decided by: Claude, implementing M3 within the plan the user approved on 2026-10-27
 - Refines: [ADR 0004](0004-runtime-in-versioned-folder.md) (the payload folder's name, below)
 

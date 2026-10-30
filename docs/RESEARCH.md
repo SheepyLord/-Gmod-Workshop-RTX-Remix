@@ -1991,3 +1991,58 @@ give the same table.
 skipped and reported, "the pattern does not occur (another build?)" or "the pattern occurs more than
 once" (`loader/core/src/patch.cpp:69`). No game DLL is pinned by hash. The `stdshader_dx6.dll`
 override (the fixes' build) is loaded in place of the game's whatever the game's build.
+
+## 32. R3-016: limbs in bind pose on Modern House; the runtime's 259-character variables (2026-10-29, Claude)
+
+**What the user saw** (field install, `modern_house` with Modern House RTX): a new HSR character's
+ragdoll (`[577 | -1] prop_ragdoll`), the player and the view model drawn with limbs, clothes and hair
+in bind pose around the pelvis. Model Hotloader's models and Hibiki
+(`models/littlesdy/kancolle/desdiv6/hibiki/e_hibiki_npc.mdl`, `[566 | -1] npc_citizen`) were right.
+Measured in that live session with the RTXDebug module and a probe in the runtime:
+
+- **The trigger:** Modern House RTX's `modern_house_rtx.lua` set `r_forcehwlight 1` among its scoped
+  settings, every PreRender on its map. `r_forcehwlight 0` in the same session put every model right at
+  once; 1 broke them again.
+- **The mechanism:** with it on, the RTX fixes' hook on `R_StudioSetupSkinAndLighting`
+  (`prop_fixes.cpp`) forces hardware lighting on every model. With `r_forcehwskin 0`, a mesh Source can
+  skin on the GPU (a DX90 `.vtx` and no `.sw.vtx`: the HSR characters, the player model, the hands) then
+  goes through Source's fixed-function hardware skinning, which in this build sets neither
+  `D3DRS_VERTEXBLEND` nor `D3DRS_INDEXEDVERTEXBLENDENABLE` nor any `WORLDMATRIX(1+)`. The probe
+  (`processSkinning` in `src/d3d9/d3d9_rtx.cpp`, logging each draw; removed afterwards) logged
+  `vb=0 ivb=0 maxBoneSeen=0` for every such draw. The runtime reads vertex blend off as "not skinned"
+  and draws the mesh rigid with `WORLDMATRIX(0)`, the first bone: the pelvis.
+- **Why some models were right:** Model Hotloader skins its models on the CPU itself, and Hibiki's
+  model has a `.sw.vtx`, so Source skins it on the CPU.
+- **`mat_softwareskin` does not hold:** it is `FCVAR_CHEAT` (flags 16384, `Engine.GetConVar`). The
+  loader's `nativeloader_session.cfg` and the fixes' `autoexec.cfg` set it to 1, and with 1 every model
+  draws right even with `r_forcehwlight 1`; but Source puts cheat variables back to their defaults when
+  `sv_cheats` goes from 1 to 0, and its default is 0 (seen in the session: 1, then `sv_cheats 1` and
+  `0`, then 0).
+- **The classic install never ran with `r_forcehwlight 1`:** its launch line has
+  `+r_forcehwlight 1`, but the variable is created later by `gmcl_RTXFixesBinary`, so the launch
+  option finds nothing to set and is dropped.
+- **The fix:** Modern House RTX no longer sets it (`garrys-mod-rtx-remixed`, branch
+  `claude/modern-house-rtx`, `e96ad7f`); item 3829275998 updated to `0.0.0-dev.202610300425+d7efd636`
+  (`gma_sha256 d90c206b...`).
+
+**`DXVK_CONFIG_FILE` (and every variable the runtime reads) holds at most 259 characters (R3-017).**
+`env::getEnvVar` (`src/util/util_env.cpp:47-54` in the fork) reads it with `GetEnvironmentVariableW`
+into a `MAX_PATH` buffer. A longer value does not fit, nothing is copied, and the variable reads as
+empty; `RtxOptionLayer::resolveConfigPaths` (`src/dxvk/rtx_render/rtx_option_layer.cpp:617-627`) then
+falls back to `dxvk.conf` alone. Every package layer is dropped without a message. A probe package
+with a longer version reached 261 characters and started with a black screen; with a shorter version
+(235) it rendered. The loader's paths are relative to the game folder, so the Steam library's path does
+not count; the package's id, version and generation do, twice, and every added layer:
+
+| `DXVK_CONFIG_FILE` of the published package (`0.0.0-dev.20261030022927+8beef27e`) | Characters |
+|---|---|
+| NVIDIA GPU, generation 9 / 21 / 999 | 237 / 239 / 241 |
+| No NVIDIA GPU (`native-loader/remix/non-nvidia.conf` added, ADR 0030), the same | 273 / 275 / 277 |
+
+So without an NVIDIA GPU, an RTX session of the published package runs without its layers.
+
+**The runtime build is reproducible but for its stamps.** Built again in the same verified worktree
+(`build_runtime.ps1 -Verify` passes), `d3d9.dll` has the same size (362,791,936 bytes) and differs from
+the packaged one (`d9cf79e6...`, now `d899908e...`) in 15 bytes: the PE time stamp and checksum in the
+header, the time stamp's three copies in the debug directory, and one byte of the CodeView record
+(`0x1f` against `0x23`, the PDB age).

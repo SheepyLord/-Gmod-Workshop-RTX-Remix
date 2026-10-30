@@ -25,6 +25,9 @@ $targetDir = Join-Path $resolvedRoot 'bin\win64'
 $stateDir = Join-Path $resolvedRoot 'native-loader'
 $receiptPath = Join-Path $stateDir 'bootstrap-install.json'
 $replacedDir = Join-Path $stateDir 'replaced'
+$originalDir = Join-Path $stateDir 'original'
+$originalDll = Join-Path $originalDir 'winmm.dll'
+$originalPdb = Join-Path $originalDir 'winmm.pdb'
 $dllPath = Join-Path $targetDir 'winmm.dll'
 $pdbPath = Join-Path $targetDir 'winmm.pdb'
 $sourceDir = Join-Path $repo "out\build\win64-$($Config.ToLowerInvariant())\loader\proxy"
@@ -37,7 +40,7 @@ function Assert-OrdinaryPath([string] $Path) {
     }
 }
 foreach ($path in @($resolvedRoot, (Join-Path $resolvedRoot 'bin'), $targetDir, $stateDir, $receiptPath, $dllPath, $pdbPath, $replacedDir,
-                    (Join-Path $replacedDir 'winmm.dll'), (Join-Path $replacedDir 'winmm.pdb'))) {
+                    (Join-Path $replacedDir 'winmm.dll'), (Join-Path $replacedDir 'winmm.pdb'), $originalDir, $originalDll, $originalPdb)) {
     Assert-OrdinaryPath $path
 }
 if ((Test-Path -LiteralPath $stateDir) -and -not (Test-Path -LiteralPath $stateDir -PathType Container)) {
@@ -70,8 +73,29 @@ if (Test-Path -LiteralPath $receiptPath) {
     $receipt = [IO.File]::ReadAllText($receiptPath) | ConvertFrom-Json
     if ($receipt.schema -ne 1) { throw 'Unsupported bootstrap install receipt.' }
 }
-if (Test-Path -LiteralPath $dllPath) {
-    if (-not (Test-LoaderIdentity $dllPath)) { throw "Refusing foreign winmm.dll: $dllPath" }
+# A winmm.dll that is not the loader (another mod's DLL loader, say) is moved to native-loader\original
+# with its .pdb, recorded in the receipt, and put back by -Uninstall (ADR 0035). Only one is kept: the
+# one that was there first.
+$foreign = (Test-Path -LiteralPath $dllPath) -and -not (Test-LoaderIdentity $dllPath)
+if ($foreign) {
+    if ($Uninstall) { throw "Refusing foreign winmm.dll: $dllPath (the loader is not installed there)" }
+    if ((Test-Path -LiteralPath $originalDll) -or (Test-Path -LiteralPath $originalPdb)) {
+        throw "Refusing foreign winmm.dll: $dllPath; $originalDir already keeps the winmm.dll that was there first. Move one of the two away."
+    }
+}
+function Restore-Original {
+    $recorded = if ($receipt -and $receipt.PSObject.Properties['original']) { $receipt.original } else { $null }
+    foreach ($pair in @(@($originalDll, $dllPath, 'dll_sha256'), @($originalPdb, $pdbPath, 'pdb_sha256'))) {
+        if (-not (Test-Path -LiteralPath $pair[0])) { continue }
+        $expected = if ($recorded) { $recorded.($pair[2]) } else { $null }
+        if (-not $expected -or (Get-HashOrNull $pair[0]) -cne $expected -or (Test-Path -LiteralPath $pair[1])) {
+            Write-Warning "Not put back: $($pair[0]) (not the file the install kept, or $($pair[1]) exists); it stays where it is."
+            continue
+        }
+        Move-Item -LiteralPath $pair[0] -Destination $pair[1]
+        Write-Host "Put back the original $($pair[1])"
+    }
+    if ((Test-Path -LiteralPath $originalDir) -and -not (Get-ChildItem -LiteralPath $originalDir -Force)) { Remove-Item -LiteralPath $originalDir }
 }
 function Assert-Unedited([string] $Path, [string] $RecordedHash, [string] $BuildPath) {
     if (-not (Test-Path -LiteralPath $Path)) { return }
@@ -83,10 +107,15 @@ function Assert-Unedited([string] $Path, [string] $RecordedHash, [string] $Build
 }
 $knownDllHash = if ($receipt) { $receipt.dll_sha256 } else { $null }
 $knownPdbHash = if ($receipt) { $receipt.pdb_sha256 } else { $null }
+# The .pdb beside a foreign DLL goes with it, unless it is the loader's own: a DLL put over the
+# installed loader leaves the loader's .pdb behind, which the install then replaces as usual.
+$foreignPdb = $foreign -and (Test-Path -LiteralPath $pdbPath) -and
+    (Get-HashOrNull $pdbPath) -cnotin @($knownPdbHash, (Get-HashOrNull $sourcePdb))
 # -ReplaceUntracked: a loader no receipt records, such as a release bundle extracted by hand. Its DLL
 # passed the identity check above; both files are copied to native-loader\replaced before the install.
-$replaceUntracked = $ReplaceUntracked -and -not $receipt -and ((Test-Path -LiteralPath $dllPath) -or (Test-Path -LiteralPath $pdbPath))
-if (-not $replaceUntracked) {
+$replaceUntracked = $ReplaceUntracked -and -not $foreign -and -not $receipt -and
+    ((Test-Path -LiteralPath $dllPath) -or (Test-Path -LiteralPath $pdbPath))
+if (-not $replaceUntracked -and -not $foreign) {
     Assert-Unedited $dllPath $knownDllHash $sourceDll
     Assert-Unedited $pdbPath $knownPdbHash $sourcePdb
 }
@@ -102,6 +131,7 @@ if ($Uninstall) {
     if (-not $PSCmdlet.ShouldProcess($resolvedRoot, 'Uninstall verified native loader bootstrap')) { return }
     if (Test-Path -LiteralPath $dllPath) { Remove-Item -LiteralPath $dllPath -Force }
     if (Test-Path -LiteralPath $pdbPath) { Remove-Item -LiteralPath $pdbPath -Force }
+    Restore-Original
     if ($RemoveState -and (Test-Path -LiteralPath $stateDir)) {
         # Only the loader's own control and log files, then the folders left empty (R1-014). Anything
         # else stays: a payload file the user changed (nlctl uninstall leaves those in place), or a
@@ -150,8 +180,15 @@ $oldDll = if (Test-Path -LiteralPath $dllPath) { [IO.File]::ReadAllBytes($dllPat
 $oldPdb = if (Test-Path -LiteralPath $pdbPath) { [IO.File]::ReadAllBytes($pdbPath) } else { $null }
 $oldReceipt = if (Test-Path -LiteralPath $receiptPath) { [IO.File]::ReadAllBytes($receiptPath) } else { $null }
 $hadState = Test-Path -LiteralPath $stateDir
+$hadOriginalDir = Test-Path -LiteralPath $originalDir
 try {
     New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    if ($foreign) {
+        New-Item -ItemType Directory -Path $originalDir -Force | Out-Null
+        Move-Item -LiteralPath $dllPath -Destination $originalDll
+        if ($foreignPdb) { Move-Item -LiteralPath $pdbPath -Destination $originalPdb }
+        Write-Host "Kept the winmm.dll that was there in $originalDir; -Uninstall puts it back"
+    }
     if ($replaceUntracked) {
         New-Item -ItemType Directory -Path $replacedDir -Force | Out-Null
         foreach ($saved in @(@($dllPath, $oldDll), @($pdbPath, $oldPdb))) {
@@ -163,14 +200,27 @@ try {
     Copy-Item -LiteralPath $sourcePdb -Destination $pdbPath -Force
     $newReceipt = [ordered]@{schema=1; version=([Diagnostics.FileVersionInfo]::GetVersionInfo($sourceDll)).FileVersion;
         dll_sha256=(Get-HashOrNull $dllPath); pdb_sha256=(Get-HashOrNull $pdbPath); installed_utc=[DateTime]::UtcNow.ToString('o')}
+    # The kept original, recorded now or by an earlier install while it is still kept, so -Uninstall
+    # puts back that file only.
+    if ($foreign) {
+        $newReceipt.original = [ordered]@{dll_sha256=(Get-HashOrNull $originalDll); pdb_sha256=(Get-HashOrNull $originalPdb)}
+    } elseif ($receipt -and $receipt.PSObject.Properties['original'] -and
+              ((Test-Path -LiteralPath $originalDll) -or (Test-Path -LiteralPath $originalPdb))) {
+        $newReceipt.original = $receipt.original
+    }
     [IO.File]::WriteAllText($receiptPath, ($newReceipt | ConvertTo-Json) + "`n", [Text.UTF8Encoding]::new($false))
     if ($writeConfig) { Copy-Item -LiteralPath $configSource -Destination $configPath }
 } catch {
-    # Roll back only the exact paths this invocation owns: the three files, and a config.json it began
-    # to write where there was none.
+    # Roll back only the exact paths this invocation owns: the three files (a foreign winmm.dll and
+    # .pdb come back from their bytes, and the copies kept of them go), and a config.json it began to
+    # write where there was none.
     foreach ($saved in @(@($dllPath, $oldDll), @($pdbPath, $oldPdb), @($receiptPath, $oldReceipt))) {
         if ($null -ne $saved[1]) { [IO.File]::WriteAllBytes($saved[0], [byte[]] $saved[1]) }
         elseif (Test-Path -LiteralPath $saved[0]) { Remove-Item -LiteralPath $saved[0] -Force }
+    }
+    if ($foreign) {
+        foreach ($kept in @($originalDll, $originalPdb)) { if (Test-Path -LiteralPath $kept) { Remove-Item -LiteralPath $kept -Force } }
+        if (-not $hadOriginalDir -and (Test-Path -LiteralPath $originalDir)) { Remove-Item -LiteralPath $originalDir }
     }
     if ($writeConfig -and (Test-Path -LiteralPath $configPath)) { Remove-Item -LiteralPath $configPath -Force }
     if (-not $hadState -and (Test-Path -LiteralPath $stateDir) -and -not (Get-ChildItem -LiteralPath $stateDir -Force)) {

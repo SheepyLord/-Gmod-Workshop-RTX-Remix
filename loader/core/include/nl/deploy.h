@@ -57,8 +57,9 @@ struct Report {
 };
 
 // Deploys the active packages of the plan made from `considered`. A package whose files fail their
-// checks, or whose target belongs to someone else, is re-planned as broken, so a lower-precedence
-// copy can take over (ADR 0006). Throws journal::Error if state.json is invalid.
+// checks, or whose target is a folder or a link, is re-planned as broken, so a lower-precedence copy
+// can take over (ADR 0006). A file in a package's way is kept aside and put back later (ADR 0035).
+// Throws journal::Error if state.json is invalid.
 Report apply(const std::filesystem::path& root, std::vector<planner::Considered> considered, const config::Config& config,
              const manifest::Version& loader, const Options& options = {});
 
@@ -66,8 +67,9 @@ Report apply(const std::filesystem::path& root, std::vector<planner::Considered>
 // packages changes again. Rolling back twice returns to where it started.
 Report rollback(const std::filesystem::path& root, const Options& options = {});
 
-// Removes every file and folder the loader placed and its journal. Files changed since they were
-// placed stay and are reported. config.json, the bootstrap and its logs are not touched.
+// Removes every file and folder the loader placed and its journal, and puts back the originals it
+// kept (ADR 0035). Files changed since they were placed stay and are reported. config.json, the
+// bootstrap and its logs are not touched.
 Report uninstall(const std::filesystem::path& root, const Options& options = {});
 
 // Only undoes an interrupted transaction and finishes pending clean-up.

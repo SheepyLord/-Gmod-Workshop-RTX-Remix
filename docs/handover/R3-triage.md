@@ -6,7 +6,7 @@ Claude's verification of every finding in [R3-report.md](R3-report.md) (Codex, `
 
 | ID | Codex | Verdict | Severity | What was done |
 |---|---|---|---|---|
-| R3-001 | P0 | Confirmed: the gap is real; it is not a boundary against a local attacker | P2 | **Waiting on the user's decision** (below). Not changed |
+| R3-001 | P0 | Confirmed: the gap is real; it is not a boundary against a local attacker | P2 | Fixed as the user decided: the package's files are put back, what was in their place kept, dependencies load only as deployed (ADR 0035, loader 0.6.0; branch `r3-001`) |
 | R3-002 | P1 | Confirmed: the textured Moon ignores `moon0.color` | P3 | Kept as designed for now (below) |
 | R3-003 | P0 | Confirmed (Codex's repro) | P1 | Fixed: unpack hashes every file it keeps |
 | R3-004 | P0 | Confirmed | P1 | Fixed: `--commit`, built from the checkout that has the pushed commit |
@@ -21,6 +21,8 @@ Claude's verification of every finding in [R3-report.md](R3-report.md) (Codex, `
 | R3-013 | P1 | Plausible (no live repro) | P3 | Fixed: a partial first mount waits up to 20 s for a remount |
 | R3-014 | P1 | Confirmed, and worse: the shipped DLL was not what `runtime/` builds | P1 | Fixed: exact worktree check, `-Verify`, build record and repo gate (ADR 0034) |
 | R3-015 | (user) | The sky's 0.25 s update moved it in visible steps | — | Fixed: `nativeloader_sky_interval`, default 0.02 s, slider, six languages |
+| R3-016 | (user) | Confirmed in the live game: Modern House RTX forced `r_forcehwlight 1`, and Source's hardware skinning then gives Remix no bones | P1 | Fixed in Modern House RTX; item 3829275998 updated |
+| R3-017 | (Claude, while probing R3-016) | A `DXVK_CONFIG_FILE` over 259 characters reads as empty in the runtime and drops every package layer; the published package's is 273-277 without an NVIDIA GPU | P1 | Recorded; the fix needs a choice (below) |
 
 ## The findings
 
@@ -35,7 +37,26 @@ loads any `gmcl_*.dll` there with no loader involved, and such a writer could re
 itself. It is a consistency gap: the loader should not itself load native code it did not deploy.
 The user asked for an explanation and a question first, because a GMod update changes game binaries;
 see the closing message of the session and RESEARCH.md section 31 for what such an update does to the
-patch sets and the shader override. Left unchanged until the user decides.
+patch sets and the shader override.
+
+The user decided: "Proceed to Restore automatically: put the package's copy back at the next start.
+Everything should respect this package", and a `winmm.dll` already there before the install is kept
+and put back at uninstall. Done on branch `r3-001`
+([ADR 0035](../decisions/0035-restore-automatically.md), loader 0.6.0):
+- A `replace-owned` file that changed is put back at the next start (`put-back`), the changed copy
+  kept in `native-loader/backup/edits/<transaction>/`; `keep_edited` is left for `create-only` files.
+- A file in a package's way, or an adopted one the package now differs from, is taken over
+  (`take-over`): kept in `native-loader/backup/originals/` (journal `originals`) and put back by
+  clean-up once no generation names its path and the path is free (`restore-original`), which
+  `nlctl uninstall` reaches too. An undo never retires a file moved into either folder.
+- `session::deployed_files`: `load_first` files load only when the current generation records them
+  with their size and time, in RTX sessions (`runtime.cpp`) and without RTX (`startup.cpp`); the others
+  are left out with a session note.
+- `install-loader.ps1` keeps a foreign `winmm.dll` (and its PDB, unless the loader's) in
+  `native-loader\original\`, recorded in the receipt, and `-Uninstall` puts it back.
+- Tests: six deployer cases (foreign and adopted files, put-back with rollback, a new version over an
+  adopted file, an original dropped two generations later, one whose place is taken, one put back at
+  once on unsubscribe), the journal's `originals`, `deployed_files`, and the installer's (49 checks).
 
 **R3-002: the textured Moon ignores `rtx.atmosphere.moon0.color`.** Confirmed in
 `runtime/patches/0004` (`evalTexturedMoon`, the albedo is the map scaled to `moonTextureAlbedo`). The
@@ -137,6 +158,32 @@ roof now follows the time passed, so it stays half a second at any interval. Unc
 still not sent again, so a still sky costs Lua work only. Tests (mock): the default, the adjustment,
 the map's sky kept; the fade unchanged at 0.25 s steps. Not measured in game yet.
 
+**R3-016 (the user): limbs in bind pose on Modern House.** On `modern_house`, new HSR characters, their
+ragdolls, the player and the hands were drawn with limbs, clothes and hair at the pelvis; Model
+Hotloader's models and Hibiki were right. Found in the user's live session (RTXDebug module, then a
+probe build of the runtime deployed from a dev folder): Modern House RTX set `r_forcehwlight 1`; the RTX
+fixes then light every model on the GPU, and with `r_forcehwskin 0` Source skins a model without a
+`.sw.vtx` through its fixed-function hardware path, which never sets the vertex-blend state, so Remix
+draws it rigid on its first bone. Setting it to 0 in the live game fixed every model at once. The
+classic install never had it on (its `+r_forcehwlight 1` comes before the variable exists), and the
+loader's `mat_softwareskin 1`, which would cover it, is a cheat variable that Source resets when
+`sv_cheats` goes back to 0. Fixed in Modern House RTX (`garrys-mod-rtx-remixed`
+`claude/modern-house-rtx` `e96ad7f`), and the hidden item 3829275998 updated. RESEARCH.md section 32.
+Possible hardening in the RTX fixes (the user's GPL repository, not changed here): their hook could
+leave skinned models alone while `r_forcehwskin` is 0, and their `autoexec.cfg` line
+`r_forcehwlight 1` (inactive today, for the reason above) could go.
+
+**R3-017 (found while probing R3-016): a long `DXVK_CONFIG_FILE` drops every layer.** The runtime reads
+environment variables into a `MAX_PATH` buffer; a value of 260 characters or more reads as empty, and
+the runtime then loads `dxvk.conf` alone, silently. The loader writes the layers' paths relative to the
+game folder, so the Steam path does not count, but the package's id and version appear twice. The
+published package's value is 237-241 characters on an NVIDIA GPU and 273-277 without one (the
+non-NVIDIA layer adds 37): so without an NVIDIA GPU an RTX session runs without the package's layers
+today. A probe package at 261 characters started with a black screen. Not changed yet: the loader has to
+give the runtime shorter paths (for one, copies of the package's layers under fixed short names in
+`native-loader\remix`, as it writes `non-nvidia.conf`), which is a change to activation. RESEARCH.md
+section 32.
+
 ## Evidence
 
 - Branch `r3-fixes`, worktree `out\worktrees\r3-fixes`: `tools\test.ps1` passed: `repo conventions OK`;
@@ -148,10 +195,19 @@ the map's sky kept; the fade unchanged at 0.25 s steps. Not measured in game yet
   (`nativeloader_sky.lua`, `weather_presets.lua`, `i18n_data.lua`); no other manifest key changed.
 - `runtime\build_runtime.ps1 -Verify` on `remix-i18n`: "is what runtime\base.json builds ... 4
   patches (tree 815f0dca...), 2 submodule settings, 2 clones"; built DLL `d9cf79e6...`, the packaged one.
+- Branch `r3-001` (R3-001, worktree `out\worktrees\r3-001`): `tools\test.ps1` passed: `repo conventions
+  OK`; `100% tests passed, 0 tests failed out of 17`; GMA tests 28 (1 skipped), Steam tool tests 25
+  (1 skipped), tool tests 188; `All checks passed.` The installer's tests alone: `Installer OK: 49
+  checks`.
+- R3-016: in the live session, `r_forcehwlight 0` put every model right and 1 broke them again; after
+  the R3-016 probe the runtime worktree was put back and `-Verify` passes again (the rebuilt DLL differs
+  from the packaged one only in its stamps, RESEARCH.md section 32). Steam has the updated Modern House
+  item (`modern-house-rtx.gma`, SHA-256 `d90c206b...`).
 
 ## Left open
 
-- R3-001: the user's decision.
 - R3-002: a disc tint, if the user wants it (a runtime rebuild).
+- R3-016: a look in game once Steam has the updated Modern House item.
+- R3-017: shorter layer paths for the runtime (a change to activation).
 - R3-011: the licence review before anything goes public.
 - R3-015: a look in game (the default interval's smoothness and cost).

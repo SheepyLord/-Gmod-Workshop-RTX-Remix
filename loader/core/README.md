@@ -91,9 +91,11 @@ The full design is [ADR 0007](../../docs/decisions/0007-transactional-deployment
 - A run stages and checks everything (size, CRC-32, SHA-256) before anything in place changes. It
   records the steps in the journal (`pending`), renames within one volume, then commits. An
   unfinished transaction is undone by the next run, step by step, each step only if it happened.
-- Only files the journal records are replaced or removed, and only after a full SHA-256 shows they
-  are unchanged. Someone else's file blocks its package (or is adopted if identical). Changed files
-  are left and reported. Folders go only when empty.
+- Only files the journal records are deleted, and only after a full SHA-256 shows they are
+  unchanged. A changed `replace-owned` file is moved to `backup/edits` and the package's copy put
+  back; someone else's file in a package's way is moved to `backup/originals` and put back once no
+  generation names its path; an identical one is adopted (ADR 0035). The loader never deletes either
+  folder's files. Folders go only when empty.
 - Nothing is placed, moved or deleted through a link anywhere below the game folder.
 - Clean-up never stops a command: what it cannot delete now stays listed, with a note, for the next
   run; uninstall keeps the journal until everything is gone.

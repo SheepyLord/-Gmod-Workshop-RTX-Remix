@@ -46,7 +46,11 @@ patched copy of GMod managed by RTXLauncher.
 2. **Never write Steam's files on disk.** Depot files in any install stay byte-identical; anything we
    need differently happens in memory or through a declared, journaled override (later milestones).
    [`tools/steam/verify_install.py`](tools/steam/verify_install.py.md) proves an install is still vanilla.
-3. **Never touch Remix `user.conf`**, and never overwrite a file the user edited (compare hashes first).
+3. **Never touch Remix `user.conf`**, and never destroy a file the user edited (compare hashes first).
+   A package's `replace-owned` file that changed is put back, and whatever was in its place is kept
+   (`native-loader\backup\edits`, or `backup\originals`, put back when the package goes); a
+   `create-only` file the user changed stays theirs ([ADR 0035](docs/decisions/0035-restore-automatically.md),
+   the user, 2026-10-29).
 4. **Native code is opt-in.** Only allowlisted packages may deploy or load native code
    ([ADR 0003](docs/decisions/0003-native-trust-allowlist.md)); a package from any other subscribed
    Workshop item may hold content only ([ADR 0027](docs/decisions/0027-content-packages-from-any-subscription.md)). Do not loosen the allowlist, the path

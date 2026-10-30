@@ -24,6 +24,10 @@ class Error : public std::runtime_error {
 
 inline constexpr int kSchema = 1;
 inline constexpr std::string_view kPath = "native-loader/state.json";
+// Where the files the loader displaced are kept (ADR 0035): the originals it puts back, and the
+// changed copies of its own files it replaced with the package's (never deleted by the loader).
+inline constexpr std::string_view kOriginals = "native-loader/backup/originals";
+inline constexpr std::string_view kEdits = "native-loader/backup/edits";
 
 // A file the loader placed, or found already there with the right content (adopted). Paths are
 // relative to the game root and '/'-separated.
@@ -79,6 +83,9 @@ struct Journal {
   std::optional<Generation> previous;  // what rollback returns to
   std::string previous_backup;         // folder holding the previous generation's files that current replaced or removed
   std::vector<File> retired;           // waiting to be deleted (only while still unchanged)
+  // Files that were at a package's path before the loader took the path over (ADR 0035), kept at
+  // kOriginals/<path> and put back once no generation refers to the path and it is free (uninstall).
+  std::vector<File> originals;
   std::vector<std::string> dirs;       // folders the loader created; removed once empty
   // After a rollback: the packages ("id@manifest_sha256") it rolled back from, which apply does not
   // deploy again until the planned set differs. The set may be empty; nullopt means no hold.

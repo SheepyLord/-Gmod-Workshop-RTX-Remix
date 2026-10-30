@@ -1,17 +1,25 @@
 // Module dependencies (loader 0.3.0, ADR 0024): files a package's binary module needs loaded before
 // it, kept in the journal and applied in every session. The manifest rules are in test_manifest.cpp.
 #include "nl/activate.h"
+#include "nl/fs.h"
 #include "nl/journal.h"
 #include "nl/manifest.h"
 #include "nl/session.h"
 #include "nl_test.h"
 
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <string>
 
 namespace {
 
 const std::string kSha(64, 'a');
+
+void write_file(const std::filesystem::path& file, const std::string& bytes) {
+  std::filesystem::create_directories(file.parent_path());
+  std::ofstream(file, std::ios::binary | std::ios::trunc) << bytes;
+}
 
 nl::journal::Package package(const std::string& id, std::vector<nl::manifest::ModuleDependency> dependencies) {
   nl::journal::Package p;
@@ -88,4 +96,28 @@ TEST_CASE("dependencies: an RTX session's plan carries them; a plan that does no
   // Without RTX the start-up code installs them from the journal itself (proxy startup.cpp).
   config.remix_enabled = false;
   CHECK(nl::activate::plan(generation, config, none, L"gmod.exe", screen).module_dependencies.empty());
+}
+
+TEST_CASE("dependencies: only a file as the deployer left it is loaded first (R3-001)") {
+  const auto dir = nl::test::scratch_dir("dependencies_deployed");
+  const auto root = dir / "game";
+  write_file(root / "garrysmod" / "lua" / "bin" / "mmdhl_runtime_win64.dll", "MZ-runtime");
+  write_file(root / "garrysmod" / "lua" / "bin" / "extra.dll", "MZ-extra");
+  const auto stat = [&](const std::string& relative) { return nl::fs::stat(nl::fs::join(root, relative)); };
+  nl::journal::Generation generation{1, {package("hotloader", {{kClient, {kRuntime}}})}, {}};
+  generation.files.push_back({kRuntime, "hotloader", kSha, stat(kRuntime).size, stat(kRuntime).mtime, false});
+
+  std::vector<std::string> notes;
+  const std::vector<std::string> wanted{kRuntime, "garrysmod/lua/bin/extra.dll"};
+  CHECK(nl::session::deployed_files(generation, root, wanted, notes) == std::vector<std::string>{kRuntime});
+  REQUIRE(notes.size() == 1);
+  CHECK(notes[0].find("did not deploy it") != std::string::npos);  // extra.dll is no file of the journal's
+
+  notes.clear();
+  write_file(root / "garrysmod" / "lua" / "bin" / "mmdhl_runtime_win64.dll", "MZ-runtime, replaced");
+  CHECK(nl::session::deployed_files(generation, root, {kRuntime}, notes).empty());
+  REQUIRE(notes.size() == 1);
+  CHECK(notes[0].find("changed since the loader deployed it") != std::string::npos);
+  std::error_code ec;
+  std::filesystem::remove_all(dir, ec);
 }

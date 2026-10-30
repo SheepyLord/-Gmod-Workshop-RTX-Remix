@@ -12,7 +12,9 @@ Install
 1. Close Garry's Mod.
 2. Extract this zip into your Garry's Mod folder, the one that holds gmod.exe, for example
    C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
-   Windows may ask whether to merge the folders: say yes.
+   Windows may ask whether to merge the folders: say yes. If bin\win64 already holds a winmm.dll
+   (another mod's loader), the zip replaces it: keep a copy first, to put back when you remove
+   this loader.
 3. Subscribe to the RTX Remix item on the Steam Workshop:
    https://steamcommunity.com/sharedfiles/filedetails/?id=3829070317
 4. In Steam, set Garry's Mod's beta branch to x86-64 (Properties > Betas), then start the game.
@@ -21,8 +23,11 @@ Install
    - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
      Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer for
      RTX sessions. If you put copies of them into garrysmod\addons or their files into
-     garrysmod\lua\bin yourself, move those out first: the loader never replaces files it did not
-     place, and stops at them.
+     garrysmod\lua\bin yourself, the loader (0.6.0 or later) moves the files in the package's way
+     to native-loader\backup\originals and puts them back when the package is removed. An older
+     loader stops at them: move them out first.
+   - The package's files stay as the package has them: one you change is put back at the next
+     start, and your copy is kept in native-loader\backup\edits.
    - The console line "Couldn't mount file" for the item is expected: the loader deploys it instead
      of GMod.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
@@ -91,8 +96,11 @@ Removing
 --------
 
 - Unsubscribe from the RTX Remix item: Steam deletes it when you next start the game from Steam, and
-  the loader (0.3.1 or later) then removes the package and every file it deployed. Files you changed
-  yourself stay. Subscribing again brings it back.
-- Delete bin\win64\winmm.dll: the next start is plain Garry's Mod again.
+  the loader (0.3.1 or later) then removes the package and every file it deployed, and puts back
+  your own files it had moved aside (0.6.0). Copies of package files you had changed stay in
+  native-loader\backup\edits. Subscribing again brings it back.
+- Delete bin\win64\winmm.dll: the next start is plain Garry's Mod again. Do it after the
+  unsubscribed package is gone (one start later), so your own files are back first; otherwise
+  they stay in native-loader\backup\originals.
 - The files the loader deployed stay where they are but are no longer used. To remove them too, see
   the project's uninstall steps: "nlctl uninstall" in the loader's repository.

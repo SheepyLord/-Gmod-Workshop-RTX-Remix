@@ -123,14 +123,20 @@ Root files may not overlap each other. Each must have files under `native/root/<
 under `native/root/` must belong to one, and a declared `root-files` or `lua-binary-module` kind must
 be used.
 
-`replace-owned` lets the loader replace files it deployed earlier that the user has not edited;
-`create-only` never replaces an existing file. Ownership is tracked in the journal
-(`native-loader\state.json`, [ON_DISK_LAYOUT.md](ON_DISK_LAYOUT.md)):
+`replace-owned` means the path holds the package's file; `create-only` never replaces an existing
+file. Ownership is tracked in the journal (`native-loader\state.json`,
+[ON_DISK_LAYOUT.md](ON_DISK_LAYOUT.md)); from loader 0.6.0
+([ADR 0035](decisions/0035-restore-automatically.md)):
 
-- A file someone else placed at a `replace-owned` target blocks the package, unless it already has
-  the right content (then it is adopted and never moved or deleted).
-- At a `create-only` target, someone else's file is simply kept.
-- A file the loader placed that has changed since stays as it is and is reported.
+- A file the loader placed at a `replace-owned` target that changed since is put back at the next
+  start; the changed copy is kept in `native-loader\backup\edits\<transaction>\`.
+- A file someone else placed at a `replace-owned` target with other content is taken over: kept in
+  `native-loader\backup\originals\` and put back once no generation names its path (the package
+  stopped placing it, or uninstall). With the right content it is adopted instead; once it changes,
+  or a new version of the package differs from it, it is taken over the same way.
+- At a `create-only` target, someone else's file is simply kept, and a file the loader created that
+  changed since stays as it is and is reported.
+- Older loaders left a changed file in place and stopped at someone else's.
 
 ### RTX-session extras (loader 0.2.0, M5)
 

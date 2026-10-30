@@ -33,6 +33,11 @@ Otherwise, non-ASCII text passes here and fails there (see section 17 of [RESEAR
   rollback back, retirement of the oldest generation, foreign and adopted files, changed files,
   create-only, the fallback past a package that fails its SHA-256, junctions, dry run, the lock,
   an invalid journal, uninstall back to the original folder.
+- Restoring automatically (loader 0.6.0, [ADR 0035](decisions/0035-restore-automatically.md)): a
+  changed file put back with its change kept (and a rollback over that), a foreign file taken over and
+  put back at uninstall, a new version over an adopted file, an original put back once no generation
+  names its path, at once after an unsubscribe, or kept while another file is there; the journal's
+  `originals`; `load_first` files loaded only as deployed (`test_dependencies.cpp`).
 
 **Fault injection.** Each fault test builds the state before a command, runs the command
 uninterrupted to get the state after it, then interrupts or fails it before each of its changes,
@@ -101,7 +106,8 @@ and checks every CRC and, for LZMA, GMod's footer; see [RESEARCH.md](RESEARCH.md
 ### M1 bootstrap checks
 
 `tools/build.ps1` also runs `nl_proxy_tests` (16 pure/export/forwarding/child-host cases),
-`nl_proxy_generated_exports` and `nl_proxy_installer` (synthetic roots only). Both configurations
+`nl_proxy_generated_exports` and `nl_proxy_installer` (synthetic roots only; since ADR 0035 also a
+foreign `winmm.dll` kept in `native-loader\original` and put back by `-Uninstall`). Both configurations
 use static CRT. Generate/update committed exports with `python loader/proxy/generate_exports.py`.
 Before installation check runtime dependencies with `py -3.12 tools/diag/pe_imports.py
 out/build/win64-release/loader/proxy/winmm.dll` on this machine (the Python with `pefile`).

@@ -6,6 +6,31 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Changed (restore automatically; loader 0.6.0, R3-001)
+
+- **The package's files are put back** ([ADR 0035](docs/decisions/0035-restore-automatically.md), the
+  user's decision on R3-001). A `replace-owned` file the loader placed that changed since is replaced
+  by the package's copy at the next start, also when the package has a new version; the changed copy
+  is kept in `native-loader\backup\edits\<transaction>\`. Until now it stayed in place for good.
+- **A file in a package's way is taken over** instead of stopping the package: it is kept in
+  `native-loader\backup\originals\` (journal `originals`) and put back once no generation names its
+  path, at once when its Workshop item is unsubscribed, and at `nlctl uninstall`. An identical file is
+  still adopted, until it changes or a new version differs. Reports show `put-back`, `take-over` and
+  `restore-original`. AGENTS.md rule 3 reads accordingly.
+- **A module's `load_first` files load only as the loader deployed them** (journal record, size and
+  time), with RTX and without; otherwise a session note says why one was left out (R3-001).
+- **`install-loader.ps1` keeps a foreign `winmm.dll`** (another mod's loader) with its PDB in
+  `native-loader\original\` and puts it back at `-Uninstall`, instead of refusing to install. The
+  player README says to keep a copy before extracting the zip over one.
+
+### Fixed (R3-016: limbs in bind pose on Modern House)
+
+- **Modern House RTX** (test item 3829275998) no longer sets `r_forcehwlight 1`. With it, the RTX
+  fixes light every model on the GPU, and with `r_forcehwskin 0` Source then skins a model without a
+  `.sw.vtx` through a fixed-function path that never sets the vertex-blend state Remix reads, so the
+  model was drawn rigid on its first bone: limbs, clothes and hair around the pelvis (new HSR models,
+  ragdolls, the player). Found in the live game with a runtime probe; the item was updated.
+
 ### Fixed (review R3: robustness, stability, bugs; [triage](docs/handover/R3-triage.md))
 
 - **Unpacking `packages/`** checks every file it keeps by SHA-256, not by size and time (R3-003), and
