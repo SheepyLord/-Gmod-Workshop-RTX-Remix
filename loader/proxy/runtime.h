@@ -19,7 +19,8 @@ class RuntimeActivation {
   RuntimeActivation(const RuntimeActivation&) = delete;
   RuntimeActivation& operator=(const RuntimeActivation&) = delete;
   bool apply(const std::filesystem::path& root, const journal::Generation& generation, status::Activation& report,
-             status::Session& session);
+             status::Session& session,
+             const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& read_redirects = {});
   bool rollback() noexcept;
   void commit() noexcept;
   bool touched() const noexcept { return touched_; }

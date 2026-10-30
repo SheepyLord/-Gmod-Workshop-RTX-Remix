@@ -100,8 +100,35 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
    **unchanged content**. It records the new fingerprint, so the next run stops at step 3.
 6. **Upload.** It runs `gmpublish update -id <item> -addon <archive> -changes "<version> from <commit>
    (<reason>)"`. Steam must be running and logged in to the item's owner.
+   If the reviewed publisher incorrectly rejects Steam's process-presence check, the guarded fallback
+   below retries with an isolated copy. Real Steam initialization and authorization still run normally.
 7. **Record.** It writes `out\workshop\published.json`: item, fingerprint, digest, version, the
    archive's SHA-256, commit, reason and time. `build.json` records the last build, uploaded or not.
+
+### Stale Steam process detection
+
+On 2026-10-30, Steam's `HKCU\Software\Valve\Steam\ActiveProcess` named an old PID even though the
+client was running in the current user's session. The publisher's `SteamAPI_IsSteamRunning()` returned
+false; both `SteamAPI_InitFlat()` and the publisher's exact-version API initialization succeeded. Its
+early error therefore prevented a valid upload before Steam initialization was attempted.
+
+The fallback is eligible only for the exact early message `Couldn't initialize Steam!` followed by
+`Make sure it is running!`. Later API initialization, login, account ownership, network and upload
+failures remain failures. It requires both complete file hashes and the expected machine-code window:
+
+- `gmpublish.exe`: SHA-256 `fd999f4f90ff1b7e3e1f293574f90a3e18fa056b65a574901eb1f4f2be27107e`.
+- `steam_api64.dll`: SHA-256 `eb17909a76668cf9ae0b92a618a34a50f6c73d3a6787cb4dd8ce36a8b10bfb75`.
+- File offset `0x7595`: `75 0c` (`JNZ +0x0c`) becomes `eb 0c` (`JMP +0x0c`), past only the obsolete
+  process-presence error. The next block still calls the original real Steam API initialization.
+
+A bounded child process first performs real read-only `SteamAPI_InitFlat()` initialization for app
+4000, using the hash-checked dependency copy. Failure refuses the retry. Raw probe diagnostics stay
+captured, since Steam can print account identifiers. A successful probe permits the isolated publisher
+copy under this checkout's `out/tmp/gmpublish-preflight-*`; the vendor's original UGC upload,
+authentication, ownership and visibility behavior remain in place. The retry keeps the original game
+working directory, item, archive and change notes. The temporary executable and DLL are removed when
+the process exits. Steam's originals, registry, settings and running processes are never changed.
+Another vendor build fails closed until its exact code is reviewed and these guards are updated.
 
 ## Hooks (`--install-hooks`)
 

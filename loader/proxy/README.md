@@ -20,6 +20,7 @@ See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
 
 | File | Purpose |
 |---|---|
+| `presentation.h`, `presentation.cpp` | Loader 0.7.0: validate current Workshop package identities, build inert display GMAs and a targeted addon-menu overlay under `native-loader/presentation`; exact read redirects give GMod blue native-package cards and normal Workshop descriptions without changing depot or Workshop files ([ADR 0039](../../docs/decisions/0039-native-package-addon-presentation.md)) |
 | `CMakeLists.txt` | MASM/RC, `nl_proxy_logic`, DLL, export consistency check and tests |
 | `activation.h`, `activation.cpp` | Pure path/root, quoted argument and off-switch decisions |
 | `bootstrap.h` | Fixed process state shared by the hook and logger |

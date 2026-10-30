@@ -117,7 +117,8 @@ void mark_restore_issued(const std::filesystem::path& root) {
 }
 
 bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::Generation& generation,
-                              status::Activation& report, status::Session& session) {
+                              status::Activation& report, status::Session& session,
+                              const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& read_redirects) {
   began_ = std::chrono::steady_clock::now();
   started_ = true;
   const auto& plan = report.plan;
@@ -325,9 +326,10 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   // Patch sets and module overrides (M5) for the engine DLLs that load after this point, and what
   // binary modules need loaded before them (ADR 0024).
   for (const auto& set : plan.patch_sets) session.patches += set.set.patches.size();
-  if (!plan.patch_sets.empty() || !plan.module_overrides.empty() || !plan.module_dependencies.empty()) {
+  if (!plan.patch_sets.empty() || !plan.module_overrides.empty() || !plan.module_dependencies.empty() || !read_redirects.empty()) {
     modules::Setup setup;
     setup.root = std::filesystem::absolute(root);
+    setup.read_redirects = read_redirects;
     session.patches_allowed = !plan.patch_sets.empty() &&
         (!plan.patch_sets_need_insecure || cmdline::has_arg(GetCommandLineW(), L"-insecure"));
     if (session.patches_allowed) {
@@ -349,7 +351,7 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     }
     setup.session_json_base = "  \"process_id\": " + std::to_string(GetCurrentProcessId()) + ",\n";
     std::string error;
-    if (!setup.patch_sets.empty() || !setup.overrides.empty() || !setup.dependencies.empty()) {
+    if (!setup.patch_sets.empty() || !setup.overrides.empty() || !setup.dependencies.empty() || !setup.read_redirects.empty()) {
       // Owned before the call: install() can fail after publishing hooks, and rollback must undo them
       // then too (R1-002); uninstall() is safe whatever install() got to.
       hooks_installed_ = true;

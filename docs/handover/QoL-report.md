@@ -104,3 +104,36 @@ No public release, tag, visibility change, field installation or Workshop item d
 this batch. Original add-on checkouts and the runtime fork's original checkout were left unchanged;
 runtime changes are isolated in `out/worktrees/runtime-translations` and exported as patches.
 Delivery uses the project's normal main merge/push and hidden-item publish hooks after validation.
+
+## Native package addon cards (2026-10-30)
+
+Implemented on `codex/native-addon-menu` from main `19d3e41`, as loader **0.7.0**
+([ADR 0039](../decisions/0039-native-package-addon-presentation.md)). Current deployed Workshop
+packages receive inert display archives; GMod mounts those while the loader continues to validate
+and deploy the original native archives. Exact read-only filesystem redirects also provide a blue
+card style and restore the existing Workshop description flow. No whitelist or trust rule is relaxed.
+No depot or Workshop file is edited. Failed/unhandled packages retain ordinary error reporting.
+
+The PoC main-menu test used Workshop enabled and RTX disabled. It mounted **761 of 761** subscriptions,
+logged all four archive reads and the menu script read, showed all four native cards blue, and
+showed the runtime's actual description. Neither requested console warning appeared. The session
+quit normally with exit 0. PoC config files and its own video registry changes were restored; the
+PoC keeps the tested 0.7.0 loader. Evidence lives in the task worktree's `out/native-addon-menu`.
+
+The earlier Steam publication failure was a false presence check: the old registry PID made
+`SteamAPI_IsSteamRunning` return false although real API initialization succeeded. A fallback for
+one reviewed publisher/API build uses an isolated copy with only that preflight branch skipped,
+after successful real initialization. Original authentication and ownership checks remain.
+
+Validation completed: `tools/test.ps1 -Config Release` passed all **17 CTests** and **255 Python
+tests** (seven expected skips). The proxy test group includes nine presentation/cache/IAT cases;
+21 publisher tests include seven new fallback cases. Six assertions executed the actual generated
+menu functions in Node, including disabled/floating cards and unrelated invalid addons. The branch
+package passed nlctl validation: 917 payload files, digest `ef5a6e4d8ba631ac` (prefix). Its content
+matches the previous main translation build; that update was still awaiting successful publication.
+
+Installed the tested 0.7.0 bootstrap in the PoC and field install for the requested menu fix. The
+field's earlier DLL, installer receipt and config are hash-verified in main-checkout
+`out/field-backups/20261030-loader-0.7.0`, with `SHA256SUMS.txt`. Read-only apply and activation
+previews passed. The field config is byte-identical; no game was running or stopped. The change
+takes effect on the next launch. No Remix user.conf, Steam launch setting or depot file was edited.

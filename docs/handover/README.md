@@ -29,3 +29,10 @@ so the next agent has the full story without the chat transcripts.
 - What was built (files), decisions taken (with any new decision record), test evidence (commands
   and the lines that show success), deviations from the brief, open issues, questions for the user.
 - Facts worth keeping also go into [docs/RESEARCH.md](../RESEARCH.md); the report links to them.
+
+## Native package addon menu
+
+The 2026-10-30 continuation of QoL adds loader 0.7.0's native-package warning suppression, blue cards
+and Workshop descriptions. See [QoL-report.md](QoL-report.md#native-package-addon-cards-2026-10-30)
+and [ADR 0039](../decisions/0039-native-package-addon-presentation.md). Source branch:
+`codex/native-addon-menu`, worktree `out/worktrees/native-addon-menu`.

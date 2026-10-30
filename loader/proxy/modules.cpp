@@ -48,6 +48,10 @@ using FindFirstExW = HANDLE(WINAPI*)(LPCWSTR, FINDEX_INFO_LEVELS, LPVOID, FINDEX
 using FindNextA = BOOL(WINAPI*)(HANDLE, LPWIN32_FIND_DATAA);
 using FindNextW = BOOL(WINAPI*)(HANDLE, LPWIN32_FIND_DATAW);
 using FindCloseFn = BOOL(WINAPI*)(HANDLE);
+using CreateA = HANDLE(WINAPI*)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+using CreateW = HANDLE(WINAPI*)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+using AttributesA = BOOL(WINAPI*)(LPCSTR, GET_FILEEX_INFO_LEVELS, LPVOID);
+using AttributesW = BOOL(WINAPI*)(LPCWSTR, GET_FILEEX_INFO_LEVELS, LPVOID);
 
 // The module whose searches mount GMod's add-on folders (it imports FindFirstFileA/ExW and
 // FindNextFileA/W: docs/RESEARCH.md section 13).
@@ -95,6 +99,17 @@ struct State {
   std::vector<std::pair<std::wstring, std::vector<std::wstring>>> dependencies;  // lower-case module path -> paths
   std::vector<std::wstring> loaded_first;     // lower-case paths already loaded (or tried) once
   std::vector<std::string> dependencies_done; // JSON objects
+  struct ReadRedirect {
+    std::wstring source, replacement;
+    std::string relative;
+    std::uint64_t size, mtime;
+  };
+  std::vector<ReadRedirect> read_redirects;
+  CreateA create_a = nullptr;
+  CreateW create_w = nullptr;
+  AttributesA attributes_a = nullptr;
+  AttributesW attributes_w = nullptr;
+  std::vector<std::string> reads_seen, read_hooked;
 };
 // Published before the first import slot points at a hook, and never cleared or freed: a hook reads
 // it once and keeps using that state, even while uninstall() runs on another thread (R1-003). An
@@ -360,6 +375,95 @@ BOOL WINAPI hook_find_close(HANDLE search) {
   return s.find_close(search);
 }
 
+// ---- Read-only presentation of native containers and the menu. Never hook the loader's own
+// reads, Steam's writes, or the whitelist. The original archive is still the deployer's source.
+std::wstring read_path(std::wstring_view path) {
+  auto result = lower(full_path(path));
+  if (result.starts_with(L"\\\\?\\unc\\")) result = L"\\\\" + result.substr(8);
+  else if (result.starts_with(L"\\\\?\\") && result.size() > 6 && result[5] == L':') result.erase(0, 4);
+  return result;
+}
+
+const State::ReadRedirect* redirect_for(State& s, std::wstring_view path) noexcept {
+  if (path.empty() || s.read_redirects.empty()) return nullptr;
+  try {
+    const auto key = read_path(path);
+    for (const auto& item : s.read_redirects) {
+      if (item.source != key) continue;
+      fs::refuse_links(s.setup.root, item.relative);
+      const auto info = fs::stat(item.replacement);
+      if (!info.exists || info.directory || info.link || info.size != item.size || info.mtime != item.mtime) return nullptr;
+      return &item;
+    }
+  } catch (...) {
+  }
+  return nullptr;
+}
+
+bool read_only(DWORD access, DWORD disposition, DWORD flags) noexcept {
+  return disposition == OPEN_EXISTING && (flags & FILE_FLAG_DELETE_ON_CLOSE) == 0 &&
+      (access & ~(GENERIC_READ | FILE_GENERIC_READ)) == 0;
+}
+
+const State::ReadRedirect* redirect_for_ansi(State& s, LPCSTR name) noexcept {
+  try { return redirect_for(s, widen_ansi(name)); } catch (...) { return nullptr; }
+}
+
+void record_read(State& s, const State::ReadRedirect& item) noexcept {
+  try {
+  const auto text = narrow(item.source);
+  bool added = false;
+  AcquireSRWLockExclusive(&s.lock);
+  try {
+  if (std::find(s.reads_seen.begin(), s.reads_seen.end(), text) == s.reads_seen.end()) {
+    s.reads_seen.push_back(text);
+    added = true;
+  }
+  } catch (...) { ReleaseSRWLockExclusive(&s.lock); return; }
+  ReleaseSRWLockExclusive(&s.lock);
+  if (added) write_session_json();
+  } catch (...) {}
+}
+
+HANDLE WINAPI hook_create_a(LPCSTR name, DWORD access, DWORD sharing, LPSECURITY_ATTRIBUTES security,
+                            DWORD disposition, DWORD flags, HANDLE template_file) {
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire) && read_only(access, disposition, flags)) {
+    if (const auto* item = redirect_for_ansi(s, name)) {
+      const HANDLE file = s.create_w(item->replacement.c_str(), access, sharing, security, disposition, flags, template_file);
+      if (file != INVALID_HANDLE_VALUE) { record_read(s, *item); return file; }
+    }
+  }
+  return s.create_a(name, access, sharing, security, disposition, flags, template_file);
+}
+
+HANDLE WINAPI hook_create_w(LPCWSTR name, DWORD access, DWORD sharing, LPSECURITY_ATTRIBUTES security,
+                            DWORD disposition, DWORD flags, HANDLE template_file) {
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire) && read_only(access, disposition, flags)) {
+    if (const auto* item = redirect_for(s, name ? name : L"")) {
+      const HANDLE file = s.create_w(item->replacement.c_str(), access, sharing, security, disposition, flags, template_file);
+      if (file != INVALID_HANDLE_VALUE) { record_read(s, *item); return file; }
+    }
+  }
+  return s.create_w(name, access, sharing, security, disposition, flags, template_file);
+}
+
+BOOL WINAPI hook_attributes_a(LPCSTR name, GET_FILEEX_INFO_LEVELS level, LPVOID data) {
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire)) {
+    if (const auto* item = redirect_for_ansi(s, name)) return s.attributes_w(item->replacement.c_str(), level, data);
+  }
+  return s.attributes_a(name, level, data);
+}
+BOOL WINAPI hook_attributes_w(LPCWSTR name, GET_FILEEX_INFO_LEVELS level, LPVOID data) {
+  State& s = *state();
+  if (s.active.load(std::memory_order_acquire)) {
+    if (const auto* item = redirect_for(s, name ? name : L"")) return s.attributes_w(item->replacement.c_str(), level, data);
+  }
+  return s.attributes_w(name, level, data);
+}
+
 bool import_from_loader_dll(const char* dll) {
   const auto starts = [&](const char* prefix) { return _strnicmp(dll, prefix, std::strlen(prefix)) == 0; };
   return starts("kernel32") || starts("kernelbase") || starts("api-ms-win-core-libraryloader") || starts("api-ms-win-core-file");
@@ -467,6 +571,20 @@ void hook_searches(State& s, void* module, const std::wstring& base_name) {
   if (!changed) note(s, narrow(lower(base_name)) + ": no file-search imports found to hook; the RTX-only add-ons are not hidden");
 }
 
+void hook_reads(State& s, void* module, const std::wstring& base_name) {
+  if (s.read_redirects.empty() || lower(base_name) != kSearchModule) return;
+  int changed = hook_imports_recorded(module, "CreateFileA", reinterpret_cast<void*>(&hook_create_a), &s.hooked);
+  changed += hook_imports_recorded(module, "CreateFileW", reinterpret_cast<void*>(&hook_create_w), &s.hooked);
+  changed += hook_imports_recorded(module, "GetFileAttributesExA", reinterpret_cast<void*>(&hook_attributes_a), &s.hooked);
+  changed += hook_imports_recorded(module, "GetFileAttributesExW", reinterpret_cast<void*>(&hook_attributes_w), &s.hooked);
+  auto entry = narrow(lower(base_name)) + " (" + std::to_string(changed) + " imports)";
+  AcquireSRWLockExclusive(&s.lock);
+  try { s.read_hooked.push_back(std::move(entry)); }
+  catch (...) { ReleaseSRWLockExclusive(&s.lock); throw; }
+  ReleaseSRWLockExclusive(&s.lock);
+  if (!changed) note(s, "native package presentation unavailable: no filesystem read imports found");
+}
+
 bool game_module(const State& s, const std::wstring& path) {
   return path.compare(0, s.root_prefix.size(), s.root_prefix) == 0 && path.compare(0, s.loader_prefix.size(), s.loader_prefix) != 0;
 }
@@ -494,6 +612,10 @@ void handle(State& s, void* base, const std::wstring& full_name, const std::wstr
   }
   if (!s.hidden.empty() && lower(base_name) == kSearchModule) {
     hook_searches(s, base, base_name);
+    changed = true;
+  }
+  if (!s.read_redirects.empty() && lower(base_name) == kSearchModule) {
+    hook_reads(s, base, base_name);
     changed = true;
   }
   if (changed) write_session_json();
@@ -573,6 +695,10 @@ bool install(Setup setup, std::string& error) {
   fresh->find_next_a = reinterpret_cast<FindNextA>(GetProcAddress(kernel32, "FindNextFileA"));
   fresh->find_next_w = reinterpret_cast<FindNextW>(GetProcAddress(kernel32, "FindNextFileW"));
   fresh->find_close = reinterpret_cast<FindCloseFn>(GetProcAddress(kernel32, "FindClose"));
+  fresh->create_a = reinterpret_cast<CreateA>(GetProcAddress(kernel32, "CreateFileA"));
+  fresh->create_w = reinterpret_cast<CreateW>(GetProcAddress(kernel32, "CreateFileW"));
+  fresh->attributes_a = reinterpret_cast<AttributesA>(GetProcAddress(kernel32, "GetFileAttributesExA"));
+  fresh->attributes_w = reinterpret_cast<AttributesW>(GetProcAddress(kernel32, "GetFileAttributesExW"));
   if (!fresh->load_a || !fresh->load_w || !fresh->load_ex_a || !fresh->load_ex_w || !fresh->find_first_a || !fresh->find_first_w ||
       !fresh->find_first_ex_w || !fresh->find_next_a || !fresh->find_next_w || !fresh->find_close) {
     error = "LoadLibrary or FindFirstFile functions not found";
@@ -594,6 +720,23 @@ bool install(Setup setup, std::string& error) {
     fresh->dependencies.emplace_back(lower(full_path(module.native())), std::move(paths));
   }
   fresh->addons_folder = fresh->root_prefix + L"garrysmod\\addons";
+  if (!setup.read_redirects.empty() && (!fresh->create_a || !fresh->create_w || !fresh->attributes_a || !fresh->attributes_w)) {
+    error = "native package presentation: filesystem functions not found";
+    return false;
+  }
+  for (const auto& [source, replacement] : setup.read_redirects) {
+    const auto normalized = std::filesystem::absolute(replacement).lexically_normal();
+    auto relative = fs::utf8(normalized.lexically_relative(std::filesystem::absolute(setup.root).lexically_normal()));
+    std::replace(relative.begin(), relative.end(), '\\', '/');
+    if (!relative.starts_with("native-loader/presentation/")) {
+      error = "native package presentation: replacement is outside its cache";
+      return false;
+    }
+    fs::refuse_links(setup.root, relative);
+    const auto info = fs::stat(normalized);
+    if (!info.exists || info.link || info.directory) continue;
+    fresh->read_redirects.push_back({read_path(source.native()), normalized.native(), relative, info.size, info.mtime});
+  }
   fresh->hooked.reserve(64);
   fresh->setup = std::move(setup);
   State& s = *fresh;
@@ -610,6 +753,7 @@ bool install(Setup setup, std::string& error) {
         if (!game_module(s, lower(entry.szExePath))) continue;
         hook_loads(s, entry.modBaseAddr);
         hook_searches(s, entry.modBaseAddr, entry.szModule);
+        hook_reads(s, entry.modBaseAddr, entry.szModule);
       }
       CloseHandle(snapshot);
     }
@@ -657,6 +801,10 @@ std::string results_json() {
   out += "  \"module_dependencies\": {\"modules\": " + strings(dependent) + ", \"loaded\": [";
   for (std::size_t i = 0; i < s->dependencies_done.size(); ++i) out += (i ? ", " : "") + s->dependencies_done[i];
   out += "]},\n";
+  std::vector<std::string> presented;
+  for (const auto& item : s->read_redirects) presented.push_back(narrow(item.source));
+  out += "  \"package_presentation\": {\"configured\": " + strings(presented) + ", \"read\": " + strings(s->reads_seen) +
+         ", \"hooks\": " + strings(s->read_hooked) + "},\n";
   out += "  \"notes\": " + strings(s->notes) + ",\n";
   out += "  \"hooked_modules\": " + std::to_string(s->modules_seen.size()) + "\n}\n";
   ReleaseSRWLockShared(&s->lock);

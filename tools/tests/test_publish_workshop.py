@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TOOLS = Path(__file__).resolve().parents[1]
 REPO = TOOLS.parent
@@ -28,6 +29,133 @@ def write_package(folder: Path, manifest: dict, files: dict) -> Path:
     (folder / 'native').mkdir(parents=True, exist_ok=True)
     (folder / 'native' / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
     return folder
+
+
+class PublisherPreflightTests(unittest.TestCase):
+    """No Steam calls: synthetic reviewed bytes, and mocked API/process boundaries."""
+    def setUp(self):
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        self.root = Path(tempfile.mkdtemp(prefix='test-publisher-preflight-', dir=SCRATCH))
+        self.game = self.root / 'game'
+        self.tool = self.game / 'bin' / 'win64' / 'gmpublish.exe'
+        self.tool.parent.mkdir(parents=True)
+        data = bytearray(pub.COMPAT_PREFLIGHT_OFFSET + len(pub.COMPAT_PREFLIGHT_BYTES) + 32)
+        data[:2] = b'MZ'
+        data[pub.COMPAT_PREFLIGHT_OFFSET:pub.COMPAT_PREFLIGHT_OFFSET + len(pub.COMPAT_PREFLIGHT_BYTES)] = pub.COMPAT_PREFLIGHT_BYTES
+        self.original = bytes(data)
+        self.tool.write_bytes(self.original)
+        self.api = self.tool.with_name('steam_api64.dll')
+        self.dependency = b'MZ synthetic Steam API dependency'
+        self.api.write_bytes(self.dependency)
+        self.config = {'item': '123', 'gmpublish': str(self.tool)}
+        self.gma = self.root / 'package.gma'
+        self.log = []
+        self.patches = [mock.patch.object(pub, 'REPO', self.root),
+                        mock.patch.object(pub, 'COMPAT_PUBLISHER_SHA256', hashlib.sha256(self.original).hexdigest()),
+                        mock.patch.object(pub, 'COMPAT_STEAM_API_SHA256', hashlib.sha256(self.dependency).hexdigest()),
+                        mock.patch.object(pub, 'steam_running', return_value=True)]
+        for patch in self.patches:
+            patch.start()
+
+    def tearDown(self):
+        for patch in reversed(self.patches):
+            patch.stop()
+        shutil.rmtree(self.root)
+
+    @staticmethod
+    def done(output, returncode=0):
+        return subprocess.CompletedProcess([], returncode, stdout=output, stderr='')
+
+    def test_success_uses_original_publisher_without_probe(self):
+        with mock.patch.object(pub.subprocess, 'run', return_value=self.done('Success!')) as run, \
+                mock.patch.object(pub, 'steam_api_ready') as probe:
+            self.assertEqual(pub.upload(self.config, self.gma, 'notes', self.log.append), 'Success!')
+        probe.assert_not_called()
+        self.assertEqual(run.call_args.args[0][0], str(self.tool))
+
+    def test_exact_preflight_failure_retries_only_reviewed_copy(self):
+        commands = []
+
+        def run(command, **kwargs):
+            commands.append(list(command))
+            self.assertEqual(kwargs['cwd'], self.game)
+            if len(commands) == 1:
+                return self.done('Publisher\r\nError:\r\n\r\n' + pub.COMPAT_PREFLIGHT_ERROR.replace('\n', '\r\n'))
+            copy = Path(command[0])
+            self.assertTrue(copy.is_relative_to(self.root / 'out' / 'tmp'))
+            patched = copy.read_bytes()
+            changed = [i for i, pair in enumerate(zip(self.original, patched)) if pair[0] != pair[1]]
+            self.assertEqual(changed, [pub.COMPAT_BRANCH_OFFSET])
+            self.assertEqual(self.original[pub.COMPAT_BRANCH_OFFSET:pub.COMPAT_BRANCH_OFFSET + 2], b'\x75\x0c')
+            self.assertEqual(patched[pub.COMPAT_BRANCH_OFFSET:pub.COMPAT_BRANCH_OFFSET + 2], b'\xeb\x0c')
+            self.assertEqual(copy.with_name('steam_api64.dll').read_bytes(), self.dependency)
+            return self.done('Success!')
+
+        with mock.patch.object(pub.subprocess, 'run', side_effect=run), \
+                mock.patch.object(pub, 'steam_api_ready', return_value=True) as probe:
+            self.assertEqual(pub.upload(self.config, self.gma, 'notes', self.log.append), 'Success!')
+        self.assertEqual(commands[0][1:], commands[1][1:])  # same item, archive and notes
+        probe.assert_called_once()
+        self.assertEqual(probe.call_args.args[1], self.game)
+        self.assertEqual(self.tool.read_bytes(), self.original)
+        self.assertEqual(self.api.read_bytes(), self.dependency)
+        self.assertFalse(Path(commands[1][0]).exists())  # isolated copy cleaned after child exits
+
+    def test_later_api_login_and_owner_failures_do_not_retry(self):
+        for text in ("Couldn't initialize Steam!\nMake sure it is running and is not in compatibility/administrator mode!\nerror",
+                     'You must own this item', 'Not logged in', 'Access denied'):
+            with self.subTest(text=text), \
+                    mock.patch.object(pub.subprocess, 'run', return_value=self.done(text)) as run, \
+                    mock.patch.object(pub, 'steam_api_ready') as probe:
+                with self.assertRaises(pub.PublishError):
+                    pub.upload(self.config, self.gma, 'notes', self.log.append)
+                self.assertEqual(run.call_count, 1)
+                probe.assert_not_called()
+
+    def test_unknown_binary_dependency_and_changed_code_fail_closed(self):
+        folder = self.root / 'isolated'
+        folder.mkdir()
+        cases = ('publisher', 'dependency', 'code')
+        for case in cases:
+            with self.subTest(case=case), mock.patch.object(pub, 'steam_api_ready') as probe:
+                self.tool.write_bytes(self.original)
+                self.api.write_bytes(self.dependency)
+                patch = mock.patch.object(pub, 'COMPAT_PREFLIGHT_BYTES', b'changed') if case == 'code' else mock.patch.object(pub, 'LOCK_WAIT', pub.LOCK_WAIT)
+                if case == 'publisher': self.tool.write_bytes(self.original + b'new build')
+                if case == 'dependency': self.api.write_bytes(b'MZ different dependency')
+                with patch, self.assertRaisesRegex(pub.PublishError, 'fallback refused'):
+                    pub.compatibility_publisher(self.tool, self.game, folder)
+                probe.assert_not_called()
+                self.assertFalse((folder / 'gmpublish.exe').exists())
+
+    def test_actual_api_initialization_must_succeed(self):
+        with mock.patch.object(pub.subprocess, 'run', return_value=self.done(pub.COMPAT_PREFLIGHT_ERROR)) as run, \
+                mock.patch.object(pub, 'steam_api_ready', return_value=False):
+            with self.assertRaisesRegex(pub.PublishError, 'initialization failed'):
+                pub.upload(self.config, self.gma, 'notes', self.log.append)
+            self.assertEqual(run.call_count, 1)
+        self.assertEqual(self.tool.read_bytes(), self.original)
+
+    def test_failed_compatibility_upload_is_not_reported_as_success(self):
+        with mock.patch.object(pub.subprocess, 'run', side_effect=[self.done(pub.COMPAT_PREFLIGHT_ERROR),
+                                                                 self.done('Access denied')]) as run, \
+                mock.patch.object(pub, 'steam_api_ready', return_value=True):
+            with self.assertRaises(pub.PublishError):
+                pub.upload(self.config, self.gma, 'notes', self.log.append)
+            self.assertEqual(run.call_count, 2)
+
+    def test_probe_is_process_local_bounded_and_hides_raw_diagnostics(self):
+        with mock.patch.object(pub.subprocess, 'run', return_value=self.done('private diagnostics')) as run:
+            self.assertTrue(pub.steam_api_ready(self.api, self.game))
+        self.assertEqual(run.call_args.kwargs['env']['SteamAppId'], '4000')
+        self.assertEqual(run.call_args.kwargs['cwd'], self.game)
+        self.assertEqual(run.call_args.kwargs['timeout'], 30)
+        self.assertTrue(run.call_args.kwargs['capture_output'])
+        for outcome in (self.done('bad', 1), subprocess.TimeoutExpired([], 30), OSError('unavailable')):
+            with self.subTest(outcome=outcome), mock.patch.object(pub.subprocess, 'run') as run:
+                if isinstance(outcome, BaseException): run.side_effect = outcome
+                else: run.return_value = outcome
+                self.assertFalse(pub.steam_api_ready(self.api, self.game))
 
 
 class PublishTests(unittest.TestCase):

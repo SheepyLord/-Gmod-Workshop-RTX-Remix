@@ -6,6 +6,8 @@ Unit tests for [`publish_workshop.py`](../publish_workshop.py.md).
 - The upload step is replaced by a recorder, so `gmpublish` never runs and nothing reaches the
   Workshop.
 - The hook tests use a throwaway `git init` repository under `out\tmp`.
+- Publisher preflight tests use synthetic bytes with the reviewed instruction window, mocked real
+  API initialization and mocked child processes. They never initialize Steam or run an upload.
 
 ```powershell
 cd tools; python -m unittest tests.test_publish_workshop
@@ -27,5 +29,11 @@ cd tools; python -m unittest tests.test_publish_workshop
 | a source repository's hook environment does not redirect git | the script run as a hook would run it, with `GIT_DIR`, `GIT_INDEX_FILE` and `GIT_WORK_TREE` naming another repository: its shared state and `git rev-parse --show-toplevel` are still this repository's, and no repository-local git variable is left |
 | old source hooks are removed and only ours | `--uninstall-source-hooks` removes a marked `post-commit` that ADR 0024 put in an add-on's repository and leaves a foreign `post-merge`; `install_source_hooks` is gone (ADR 0033) |
 | the parts a config unpacks | `input_parts()`: the `packages/` parts that `out/inputs/<part>/...` paths name, with either slash, and nothing for paths elsewhere |
+| normal publisher success | runs the original executable once, without a compatibility probe or copy |
+| exact stale-process error | retries from a temporary copy; only the reviewed conditional-branch opcode changes; same item, archive, notes and game working directory; dependency bytes stay exact; originals remain unchanged and temporary copies are removed |
+| later initialization/login/owner failures | never trigger the early-process fallback |
+| unreviewed executable/API or mismatched code window | fail closed before the probe or copied executable can run |
+| unsuccessful real initialization or fallback upload | remains a failure; never claims publication |
+| initialization probe | app ID is process-local, timeout is bounded, raw diagnostic output is captured, and errors/timeouts refuse fallback |
 
 Exit 0 when every test passes.

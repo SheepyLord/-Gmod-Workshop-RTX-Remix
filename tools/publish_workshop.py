@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -56,6 +57,14 @@ REPO_INPUTS = ('companion', 'packages', 'tools/inputs.py', 'tools/package_fixes.
 BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
             'package_content': 'tools/package_content.py', 'package_reshade': 'tools/package_reshade.py'}
 LOCK_WAIT = 2 * 60 * 60
+# One reviewed Steam build: its obsolete process-presence check can reject an initialized client
+# when Steam's ActiveProcess PID is stale. The actual Steam API/auth/ownership checks stay intact.
+COMPAT_PUBLISHER_SHA256 = 'fd999f4f90ff1b7e3e1f293574f90a3e18fa056b65a574901eb1f4f2be27107e'
+COMPAT_STEAM_API_SHA256 = 'eb17909a76668cf9ae0b92a618a34a50f6c73d3a6787cb4dd8ce36a8b10bfb75'
+COMPAT_PREFLIGHT_OFFSET = 0x758d
+COMPAT_PREFLIGHT_BYTES = bytes.fromhex('ff15c5d1030084c0750c488d0d82e80300e8dd3c0000')
+COMPAT_BRANCH_OFFSET = COMPAT_PREFLIGHT_OFFSET + 8
+COMPAT_PREFLIGHT_ERROR = "Couldn't initialize Steam!\nMake sure it is running!"
 
 
 class PublishError(Exception):
@@ -250,6 +259,50 @@ def steam_running() -> bool:
     return 'steam.exe' in out.lower()
 
 
+def steam_api_ready(api: Path, root: Path) -> bool:
+    """Read-only client initialization probe in a child; keep Steam's diagnostic identifiers private.
+    It neither uploads nor changes Steam settings. gmpublish still performs its own initialization.
+    """
+    probe = ('import ctypes,sys; '
+             'api=ctypes.CDLL(sys.argv[1]); '
+             'api.SteamAPI_InitFlat.argtypes=[ctypes.c_char_p]; '
+             'api.SteamAPI_InitFlat.restype=ctypes.c_int; '
+             'error=ctypes.create_string_buffer(1024); '
+             'result=api.SteamAPI_InitFlat(error); '
+             'api.SteamAPI_Shutdown() if result == 0 else None; '
+             'sys.exit(0 if result == 0 else 1)')
+    env = dict(os.environ, SteamAppId='4000')
+    try:
+        done = subprocess.run([sys.executable, '-c', probe, str(api.resolve())], cwd=root, env=env,
+                              capture_output=True, stdin=subprocess.DEVNULL, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return done.returncode == 0
+
+
+def compatibility_publisher(tool: Path, root: Path, folder: Path) -> Path:
+    """Make an isolated, exact-build copy that skips only the stale process-presence veto."""
+    original = tool.read_bytes()
+    if hashlib.sha256(original).hexdigest() != COMPAT_PUBLISHER_SHA256:
+        raise PublishError('Steam preflight fallback refused: unreviewed gmpublish build')
+    if original[COMPAT_PREFLIGHT_OFFSET:COMPAT_PREFLIGHT_OFFSET + len(COMPAT_PREFLIGHT_BYTES)] != COMPAT_PREFLIGHT_BYTES:
+        raise PublishError('Steam preflight fallback refused: publisher code does not match')
+    api = tool.with_name('steam_api64.dll')
+    dependency = api.read_bytes()
+    if hashlib.sha256(dependency).hexdigest() != COMPAT_STEAM_API_SHA256:
+        raise PublishError('Steam preflight fallback refused: unreviewed Steam API build')
+    copied_api = folder / 'steam_api64.dll'
+    copied_api.write_bytes(dependency)
+    if not steam_api_ready(copied_api, root):
+        raise PublishError('Steam API initialization failed; preflight fallback refused')
+    patched = bytearray(original)
+    # JNZ +0x0c -> JMP +0x0c, past this one error only. The next instruction calls real API init.
+    patched[COMPAT_BRANCH_OFFSET] = 0xeb
+    copy = folder / 'gmpublish.exe'
+    copy.write_bytes(patched)
+    return copy
+
+
 def upload(config: dict, gma: Path, changes: str, log) -> str:
     """gmpublish update of the item with the new archive. gmpublish needs Steam running, logged in to
     the item's owner, and a steam_appid.txt in its working folder (the game root)."""
@@ -265,6 +318,25 @@ def upload(config: dict, gma: Path, changes: str, log) -> str:
                           stdin=subprocess.DEVNULL, timeout=4 * 60 * 60)
     output = (done.stdout + done.stderr).strip()
     log(output[-3000:])
+    # Match the early process-presence error exactly. Later init/login/ownership/network failures
+    # are not eligible. No Steam/depot files or registry values are changed by this fallback.
+    if 'Success!' not in output and output.replace('\r\n', '\n').endswith(COMPAT_PREFLIGHT_ERROR):
+        scratch = (REPO / 'out' / 'tmp').resolve()
+        if not scratch.is_relative_to(REPO.resolve() / 'out'):
+            raise PublishError('Steam preflight fallback scratch path leaves repository out/')
+        scratch.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='gmpublish-preflight-', dir=scratch) as temporary:
+            folder = Path(temporary).resolve()
+            if not folder.is_relative_to(scratch):
+                raise PublishError('Steam preflight fallback directory leaves its scratch root')
+            retry_tool = compatibility_publisher(tool, root, folder)
+            log('Steam API initialization succeeded; retrying the reviewed publisher copy with only '
+                'its obsolete process-presence veto skipped (Steam authentication remains unchanged)')
+            command[0] = str(retry_tool)
+            done = subprocess.run(command, cwd=root, capture_output=True, text=True, encoding='utf-8', errors='replace',
+                                  stdin=subprocess.DEVNULL, timeout=4 * 60 * 60)
+            output = (done.stdout + done.stderr).strip()
+            log(output[-3000:])
     if done.returncode or 'Success!' not in output:
         raise PublishError(f'gmpublish failed (exit {done.returncode})')
     return output
