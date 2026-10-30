@@ -23,9 +23,33 @@ slider); what does not fit is a help line below the control (an option's sixth f
 - **Remix settings:** common Remix options as menus and sliders:
   - the graphics preset, the upscaler, DLSS quality, frame generation and the indirect-lighting mode;
   - the most light bounces;
-  - fog distance and scattering;
-  - sky brightness, sun height and direction, clouds;
+  - sky brightness (the map's own skybox only: `rtx.skyBrightness` scales the rasterised sky probe);
+  - **fog** (`nativeloader_remix_fog`): Remix's own volumetric presets, the "Volumetric Visual
+    Presets" of its menu (`rtx_global_volumetrics.cpp`), applied as its Apply button does
+    ([ADR 0032](../../../../../docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md)):
+    `rtx.volumetrics.enable True`, `enableFogRemap False` and the preset's four values;
+
+    | Choice | `transmittanceColor` | `transmittanceMeasurementDistanceMeters` | `singleScatteringAlbedo` | `anisotropy` |
+    |---|---|---|---|---|
+    | `default` (Remix default) | 0.999 | 200 | 0.999 | 0 |
+    | `heavyFog` | 0.85 | 5 | 0.9 | -0.2 |
+    | `lightFog` | 0.93 | 15 | 0.95 | -0.1 |
+    | `mist` | 0.96 | 50 | 0.98 | 0.1 |
+    | `haze` | 0.9, 0.85, 0.75 | 70 | 0.8 | 0.2 |
+    | `dust` | 0.87, 0.73, 0.5 | 60 | 0.85, 0.75, 0.65 | 0.4 |
+    | `smoke` | 0.87, 0.73, 0.5 | 20 | 0.85, 0.75, 0.65 | 0.6 |
+
+    While one is chosen the sky's weather leaves the fog alone; "(leave to Remix)" gives it back to
+    the weather (or, without one, to Remix's files at the next start). An option whose choice sets
+    several Remix values carries the function that sets them (its seventh field);
   - post effects and tone-map purity.
+
+  The sun and the clouds moved to "Sky and weather" ([ADR 0031](../../../../../docs/decisions/0031-physical-sky-time-and-weather.md)),
+  and the weather presets set the fog unless a fog preset is chosen here. Saved values of the settings
+  that left (`nativeloader_remix_fog_distance`, `_fog_anisotropy`, `_sun_elevation`, `_sun_rotation`,
+  `_clouds`) are no longer applied.
+- **Sky and weather:** a category of its own, after "Remix settings". Its panel is built by
+  [`../nativeloader_sky.lua`](../nativeloader_sky.lua.md).
 
   How a value reaches Remix:
   - Each choice is saved as a client setting `nativeloader_remix_<name>`.

@@ -5,6 +5,7 @@
 --   * Remix settings: common Remix options. A value set here is kept in a saved client setting
 --     (nativeloader_remix_<name>) and given to Remix at every session start through the RTX fixes'
 --     RemixConfig API. Empty means "leave it to Remix's own files".
+--   * Sky and weather: the physical sky, its time of day and the weather (nativeloader_sky.lua).
 -- The tab's text is translated (nativeloader/i18n.lua). Documented in nativeloader_menu.lua.md beside this file.
 local i18n = include("nativeloader/i18n.lua")
 local L, N = i18n.L, i18n.N
@@ -18,11 +19,40 @@ local MOVED = {
     ["RTX"] = N("Water and glass"),
     ["Glass Rewrite Remixed"] = N("Water and glass"),
 }
-local CATEGORIES = { N("Start here"), N("Remix settings"), N("Rendering"), N("Lights"), N("Water and glass") }
+local CATEGORIES = { N("Start here"), N("Remix settings"), N("Sky and weather"), N("Rendering"), N("Lights"),
+    N("Water and glass") }
 
--- Remix options with a short name, a label and the control kind. Keys are the runtime's option names
--- (they appear in the classic install's rtx.conf/user.conf and the runtime log). Product names
--- (DLSS, XeSS, FSR, ...) are not translated.
+local function remix_ready()
+    return istable(RemixConfig) and isfunction(RemixConfig.SetConfigVariable)
+end
+
+-- Remix's own volumetric fog presets ("Volumetric Visual Presets" in its menu,
+-- rtx_global_volumetrics.cpp), applied as its Apply button does: the four fog values, the game's
+-- fog no longer remapped. Volumetrics are switched on too, or the preset shows nothing. The sky's
+-- weather leaves the fog alone while one is chosen (nativeloader_sky.lua).
+local FOG_OPTIONS = { "rtx.volumetrics.transmittanceColor", "rtx.volumetrics.transmittanceMeasurementDistanceMeters",
+    "rtx.volumetrics.singleScatteringAlbedo", "rtx.volumetrics.anisotropy" }
+local FOG = {
+    default = { "0.999, 0.999, 0.999", "200", "0.999, 0.999, 0.999", "0" },
+    heavyFog = { "0.85, 0.85, 0.85", "5", "0.9, 0.9, 0.9", "-0.2" },
+    lightFog = { "0.93, 0.93, 0.93", "15", "0.95, 0.95, 0.95", "-0.1" },
+    mist = { "0.96, 0.96, 0.96", "50", "0.98, 0.98, 0.98", "0.1" },
+    haze = { "0.9, 0.85, 0.75", "70", "0.8, 0.8, 0.8", "0.2" },
+    dust = { "0.87, 0.73, 0.5", "60", "0.85, 0.75, 0.65", "0.4" },
+    smoke = { "0.87, 0.73, 0.5", "20", "0.85, 0.75, 0.65", "0.6" },
+}
+local function apply_fog(name)
+    local values = FOG[name]
+    if not values then return end
+    RemixConfig.SetConfigVariable("rtx.volumetrics.enable", "True")
+    RemixConfig.SetConfigVariable("rtx.volumetrics.enableFogRemap", "False")
+    for i, option in ipairs(FOG_OPTIONS) do RemixConfig.SetConfigVariable(option, values[i]) end
+end
+
+-- Remix options with a short name, a label and the control kind, and for a choice that sets several
+-- options the function that does it. Keys are the runtime's option names (they appear in the classic
+-- install's rtx.conf/user.conf and the runtime log). Product names (DLSS, XeSS, FSR, ...) are not
+-- translated.
 local OPTIONS = {
     { "graphics_preset", "rtx.graphicsPreset", N("Graphics preset"), "choice",
         { { N("Ultra"), "0" }, { N("High"), "1" }, { N("Medium"), "2" }, { N("Low"), "3" },
@@ -38,14 +68,15 @@ local OPTIONS = {
         { { N("Importance sampled"), "0" }, { "ReSTIR GI", "1" }, { N("Neural Radiance Cache"), "2" },
           { N("Hashed radiance cache"), "3" } } },
     { "max_bounces", "rtx.pathMaxBounces", N("Most light bounces"), "number", { 1, 16, 0 } },
-    { "fog_distance", "rtx.volumetrics.transmittanceMeasurementDistanceMeters", N("Fog distance (m)"), "number", { 1, 2000, 0 },
-        N("Larger is clearer.") },
-    { "fog_anisotropy", "rtx.volumetrics.anisotropy", N("Fog scattering"), "number", { -1, 1, 2 },
-        N("How much the fog scatters light forward (-1 to 1).") },
-    { "sky_brightness", "rtx.skyBrightness", N("Sky brightness"), "number", { 0, 10, 2 } },
-    { "sun_elevation", "rtx.atmosphere.sunElevation", N("Sun height (degrees)"), "number", { -10, 90, 0 } },
-    { "sun_rotation", "rtx.atmosphere.sunRotation", N("Sun direction (degrees)"), "number", { 0, 360, 0 } },
-    { "clouds", "rtx.atmosphere.cloudEnabled", N("Clouds"), "bool" },
+    -- The sun and the clouds are the "Sky and weather" panel's (nativeloader_sky.lua), and so is the
+    -- fog, unless a fog preset is chosen here.
+    { "sky_brightness", "rtx.skyBrightness", N("Sky brightness"), "number", { 0, 10, 2 },
+        N("The map's own skybox only.") },
+    { "fog", "rtx.volumetrics", N("Fog"), "choice",
+        { { N("Remix default"), "default" }, { N("Heavy fog"), "heavyFog" }, { N("Light fog"), "lightFog" },
+          { N("Mist"), "mist" }, { N("Haze"), "haze" }, { N("Dust"), "dust" }, { N("Smoke"), "smoke" } },
+        N("Remix's volumetric fog presets. One chosen here replaces the weather's fog. Dense fog stays dark where no light reaches it."),
+        apply_fog },
     { "post_effects", "rtx.postfx.enable", N("Post effects"), "bool", nil, N("Bloom, motion blur and film grain.") },
     { "colour_purity", "rtx.tonemap.psycho17.purityScale", N("Tone map colour purity"), "number", { 0, 3, 2 } },
 }
@@ -56,13 +87,10 @@ for _, option in ipairs(OPTIONS) do
         "Remix " .. option[2] .. " set from the RTX Remix tab (empty: leave it to Remix's files)")
 end
 
-local function remix_ready()
-    return istable(RemixConfig) and isfunction(RemixConfig.SetConfigVariable)
-end
-
 local function push(option)
     local value = convars[option[1]]:GetString()
     if value == "" or not remix_ready() then return end
+    if option[7] then return option[7](value) end
     if option[4] == "bool" then value = tobool(value) and "True" or "False" end
     RemixConfig.SetConfigVariable(option[2], value)
 end

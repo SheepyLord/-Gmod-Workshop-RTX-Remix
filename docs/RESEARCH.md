@@ -1552,3 +1552,335 @@ lists the RTX 5090, so the non-NVIDIA layer stayed off and the preset Custom (4)
   sharpening pass (`fork_rcas`) failed to compile and, a second later, `VK_ERROR_DEVICE_LOST` (60-75 s
   after start). The game then hung until stopped; `poc_session.py`'s timeout did not end it. So this
   integrated GPU cannot run an RTX session; a discrete Radeon (RX 6000 or newer) was not available to try.
+
+## 28. The physical sky, time of day and weather (2026-10-29, Claude)
+
+The user's request: environmental control in the RTX settings (the sun's direction, the time of day,
+clouds and weather), looking realistic. Built in the companion ([ADR 0031](decisions/0031-physical-sky-time-and-weather.md));
+evidence in `out\sky\sessions` (e1-e7: exploration tours, the end-to-end run, the frame-rate run).
+
+**What sessions had before.**
+
+- **The sky mode.** The runtime has two (`rtx_options.h:175`): 0 rasterises the game's skybox into a
+  probe; 1, "Numos", is a physical sky (`rtx_atmosphere.*`):
+  - Hillaire scattering, Nubis-style volumetric clouds with a second layer, stars, up to four moons;
+  - lightning, and rain/snow/sand particles (`rtx_precipitation.*`);
+  - in Numos mode the sun and the moons are distant lights the atmosphere adds itself
+    (`RtxAtmosphere::syncDistantLights`).
+
+  The RTX fixes' `rtx.conf` has `rtx.skyMode = 0` and `rtx.ignoreGameDirectionalLights = False`.
+- **The package's Remix defaults layer** (`01_classic_remix_defaults.conf`, ADR 0021) carries the
+  classic install's `user.conf`, which holds what Modern House RTX once pushed through the API:
+  - `rtx.skyMode 1`, `rtx.ignoreGameDirectionalLights True`;
+  - the sun: `sunElevation 21`, `sunRotation 222`;
+  - the clouds: `cloudCoverageMean 0.27`, `cloudCoverageSpread 0.8`, `cloudTypeMean 0.9`,
+    `cloudShadowStrength 0`, `cloudVoxelShadowsEnable False`, `cloudLayer2CoverageMean 0.35`;
+  - the fog: `rtx.volumetrics.anisotropy 0.55`, `transmittanceMeasurementDistanceMeters 420`.
+
+  So every map ran that one sunny afternoon, with no cloud shadows.
+- **Live values are not saved by themselves.** Remix's per-game settings file
+  (`%LOCALAPPDATA%\NVIDIA\RTXRemix\user_settings\<hash>.conf`) holds only the consent switches, and
+  API values reach `user.conf` only through Remix's Save.
+
+**The atmosphere's conventions** (`rtx_atmosphere.cpp`):
+
+- `sunRotation` and a moon's `rotation` are bearings: degrees from the map's +y towards +x
+  (`toWorld` in `syncDistantLights` swaps y and z under `rtx.zUp`).
+- **The runtime's day cycle** (`timeCycleEnable`, `timeOfDayHours`, `latitudeDegrees`, `dayOfYear`,
+  `northOffsetDegrees`) places only the sun (`getAtmosphereArgs`, lines 579-586). With the cycle off,
+  `timeOfDayHours` is ignored, whatever its description says. The moons' position and phase and
+  `starRotation` are for the game to push.
+- **Moon phase** runs 0 (new) to 0.5 (full) to 1; the lit side faces the sun (`atmosphere_sky.slangh`,
+  `getPhaseIllumination`).
+- **The star field** is rotated about the pole axis (`starAxisElevation`, `starAxisRotation`) by
+  rotating the sampled direction (`evalStarField`), so it appears to turn the other way.
+- **Moonlight** scales with the disc's solid angle (`moonSolidAngleSr` in `syncDistantLights`).
+  - The option `angularRadius` is in fact a diameter in degrees, 3.5 by default.
+  - At 1.2 degrees the ground went nearly black.
+  - At 1.6 degrees the ground's share (`surfaceMoonBrightness`, 50) needs (3.5 / 1.6)^2 = 4.8 times
+    as much, 240, to keep the default night. At 1,100, the fourth power, a moonlit field blew out
+    white.
+  - The runtime gives the moon full strength as soon as the sun is down (`nightFactor`, the sun
+    0.02 to -0.05 in its sine). At dusk (the sun 5 degrees down) a rising full moon lit gm_construct's
+    towers bright orange, the brightest thing in the view, even at 240. Real moonlight is about a
+    fiftieth of civil twilight's light.
+- **The ground below the horizon** is the virtual planet with a constant albedo
+  (`atmosphere_common.slangh:73`, `kGroundAlbedo = 0.3`). From high up, where the map has no geometry,
+  it shows as a flat band, red at sunset.
+
+**Weather** (`rtx_weather.*`):
+
+- **The presets.** There are twelve, of 63 fields each. A field the runtime lists in
+  `FALLBACK_IF_INVARIANT` is taken over only when the presets disagree on it; 27 fields are the same
+  in all twelve.
+- **The blender** is driven by `remixapi_SetGameValue("__weather.target", <name>)`
+  (`rtx_remix_api.cpp:2831`); `SetConfigVariable` cannot reach it.
+- **What Lua can reach.** The RTX fixes' Lua API has no `SetGameValue`, and its `GetConfigVariable`
+  reads `rtx.conf` from disk (`source/remixapi/remixapi.cpp:1111`).
+- **Blends:** angles take the short way round; fog distance blends in 1/distance; switches flip at the
+  midpoint.
+- **Variation.** Cover, wind speed and wind direction wander on a 300 s noise (`driftNoise1D`), with
+  per-preset speed and intensity in the fork's `docs/integrators/weather-presets.md`.
+- **Cover changes do not re-bake the clouds.** The cloud SDF's bake key holds no cover, and the
+  thickness is quantised to 0.25 km (`CloudNvdfBakeKey`), so changing the cover often is cheap.
+
+**GMod's scale.** A Remix metre is 100 units (`getMeterToWorldUnitScale`, `rtx.sceneScale 1`), and a
+GMod unit is 1.905 cm, so a Remix metre is 1.905 real metres.
+
+- **The map's size.** gm_construct's playable area is about 7,000 by 4,000 units, 70 by 40 Remix
+  metres. The game's trace up from its field hits the sky ceiling at z 9,984. Its `light_environment`
+  has pitch -56 and yaw 306: the sun is 56 degrees high at bearing 324.
+- **The fog colour is sRGB.** `rtx.volumetrics.transmittanceColor` is gamma-encoded; the runtime
+  turns it linear before it uses it (`rtx_global_volumetrics.h:144`, `getVolumeArgs` in the `.cpp`).
+  0.92 is 0.83 linear, and for the presets' colours the extinction is 2.21-2.27 times what the raw
+  value suggests.
+- **The presets' fog**, made for kilometre-wide worlds, does not show inside a map. "Foggy" (0.92 over
+  80 m) keeps about 85 % of the light across gm_construct.
+- **Dense froxel fog turns black.** The froxel fog (`rtx.volumetrics`) is lit by lights only, not by
+  the sky. Set from a visibility of 80 real metres, the ground and walls went black under a white sky;
+  at 260 m everything was dark and murky; from 660 m up it reads as mist. (The first sessions worked
+  the distance out from the raw colour and so took these for 180 m, 600 m and 1.5 km; the companion
+  now uses the linear colour, with visibilities 2.27 times smaller for the same fog.)
+- **The atmosphere's haze does not help.** Its aerial perspective starts at the froxel range
+  (`froxelMaxDistanceMeters`, 20) and fades in over 50-250 m. Raising the aerosol density to 100-400
+  barely touched the map; at 1,500 the whole scene went black. Widening the froxel range to 80 m only
+  hands the whole map to the unlit froxel fog.
+
+**Rain and snow** (`rtx_precipitation.*`, `particle_system_spawn.comp.slang`):
+
+- **No drop was ever born with the runtime's cover test.** With `occludeUnderCover` (the default), the
+  shelter probe traces up to `100000 * sceneScale` units (line 286), and above gm_construct it found
+  cover everywhere.
+  - The 3D skybox room hangs over the map: its miniature shows overhead in the path-traced sky, drawn
+    because RTX sessions set `r_novis 1`.
+  - The ray hits geometry the camera does not see, such as the room's floor from below.
+- **With the test off, rain and snow fall.** The default volume, 20 Remix metres around the camera and
+  14 above, is 2,000 and 1,400 units, so few drops land near the player. At 8 and 6 they are dense.
+- **Against a bright sky** both rain streaks and flakes read darker than the sky, as real ones do.
+
+**The cloud shadows.** With `cloudVoxelShadowsEnable True` (the runtime's default), cumulus shadows
+drift over gm_construct's field, with sharp sunlit patches.
+
+**What it costs** (2026-10-29, `out\sky\sessions\e8-final`, RTX 5090, 1280x720, the PoC's
+settings with DLSS frame generation, machine otherwise idle). Rendered frames over 20 s at the field
+camera, timed by a `PostRender` hook; the game's own counter showed about three times as many, the
+generated frames included:
+
+| Sky | fps | median | p99 |
+|---|---|---|---|
+| Physical, partly cloudy | 148.3 | 6.74 ms | 8.74 ms |
+| Physical, thunderstorm (rain, lightning) | 148.7 | 6.74 ms | 8.66 ms |
+| The map's skybox | 150.5 | 6.65 ms | 8.39 ms |
+| Physical again, partly cloudy | 147.7 | 6.78 ms | 8.90 ms |
+
+So the physical sky costs about 0.1 ms a frame here (1.5 %), and rain costs nothing measurable. The
+rate may sit near the frame-generation pacing, which could hide some of the cost; a slower GPU pays
+more for the clouds, which are marched at full resolution.
+
+## 29. The real Moon and night sky, eclipses and fog presets (2026-10-29, Claude)
+
+**The Moon's source.** Downloaded 2026-10-29, with the user's go-ahead, into
+`out\downloads\nasa-svs`, from NASA's Scientific Visualization Studio: the CGI Moon Kit
+(https://svs.gsfc.nasa.gov/4720). Credit line: "NASA's Scientific Visualization Studio".
+
+| File | Bytes | SHA-256 | What |
+|---|---|---|---|
+| `lroc_color_poles_4k.tif` | 13,095,388 | `918649a7...` | RGB 8-bit, 4096x2048, LZW |
+| `ldem_4.tif` | 4,153,352 | `330afa25...` | 32-bit float, 1440x720 (4 pixels a degree), km above 1737.4 km: -8.88 to +10.50 |
+
+- Simple cylindrical, north up, longitude 0 at the centre and east to the right (Mare Crisium at
+  +59, Tycho at the bottom).
+- Colour, linear luminance: 0.30 over the whole sphere, 0.2245 over the near side weighted towards
+  the sub-Earth point (the maria make it darker). Per channel 0.340, 0.330, 0.297, a warm grey.
+  99.9th percentile 0.80.
+- Relief: slopes at 7.58 km a pixel, p50 0.046, p90 0.16, p99 0.30.
+
+**The night sky's first source, rejected.** NASA's Deep Star Maps 2020 (https://svs.gsfc.nasa.gov/4851,
+Gaia DR2; `starmap_2020_8k.exr`, half-float, 8192x4096, J2000, RA 0h at the centre, increasing to the
+left). Its luminance: p50 0.0016, p99 0.035, p99.99 1.0, mean 0.0046. At 8192 pixels round the sky
+a star is a blob several pixels wide once magnified, and the mip choice streaked the poles; the user
+rejected it as "very blurry and unsharp". PIL has no EXR reader; `out\sky\exr_read.py` decoded it.
+
+**The night sky's source: Night Sky HD LE** (Skyrim, PraedythXVI,
+https://www.nexusmods.com/skyrim/mods/107102), the 8K archive the user supplied,
+`NightSky 8K HD LE-107102-1-0-1616679732.7z`: 316,655,566 bytes, SHA-256 `936eb7a3...`, extracted to
+`out\downloads\nightsky8k` (a FOMOD: `00Data\Meshes\Sky\stars.nif`, `00Data\tex\<option>\...`).
+
+- **Permissions** (the mod page, read in the built-in browser; WebFetch gets 403): converting it for
+  other games and using its assets are allowed with credit to the creator, not in anything sold. The
+  FullNebula textures are PraedythXVI's edit of nebula images by Era-7 on Cubebrush, free, open assets;
+  the user has permission to use them (2026-10-29).
+- **What is in it.** Every texture is BC3 (DXT5) with 14 mips, gamma-space colour and alpha:
+
+| Texture | Size | Bytes | What |
+|---|---|---|---|
+| `StarsThornShape7\...\skystars.dds` (used; also `Stars5-7`, `StarsThornShape5-6`) | 8192x8192 | 89,478,640 | small sharp stars, two hemispheres tiled |
+| `Textures\Sky\skyrimgalaxy.dds` | 8192x4096 | 44,739,408 | the galaxy band |
+| `FullNebula1\...\FullNebula.dds` (used; also 2-4) | 8192x8192 | 89,478,640 | a nebula sphere in longitude and latitude |
+| `Textures\Sky\skyrimconstellations.dds` | 8192x8192 | 89,478,640 | an atlas of constellation figures |
+
+- **The mod's sky mesh** (`stars.nif`, 79,280 bytes, SHA-256 `c09afd2a...`; read with
+  `out\sky\nif_read.py`: Skyrim LE, NIF 20.2.0.7, user version 12, BS version 83, whose geometry
+  data holds a 4-byte material CRC after the vector flags). Four shapes, all `BSSkyShaderProperty`
+  type 5, blended additively (colour times alpha) over the sky:
+  - **Stars**: a sphere whose two hemispheres share one UV layout; antipodal points get the same
+    UV. Centre `c = (0, -0.390731, 0.920505)`, theta-0 axis `(1, 0, 0)`, theta-90 axis
+    `(0, -0.920505, -0.390731)`. The UV radius at 0, 10, ... 90 degrees from `c`: 0, 0.21128,
+    0.41641, 0.60876, 0.7983, 1.01726, 1.24191, 1.46891, 1.70335, 1.95472 (interpolated between
+    rings); `uv = (1 + r cos theta, r sin theta)`, tiled. Worst error over every vertex 0.0009.
+  - **Galaxy band**: axis `n = (0.722456, -0.042907, 0.690085)`, along-axes
+    `(-0.573207, 0.520957, 0.632486)` and `(-0.386642, -0.852504, 0.351773)`;
+    `u = 2 + along x 3 / 2 pi`, `v = 0.5 - 0.5 sin(beta) / sin(40 degrees)`, half-width 40 degrees.
+    Exact.
+  - **Nebula**: `u = 0.5 + lon / 2 pi`, `v = 0.5 - lat / pi`. Exact.
+  - **Constellations**: 58 triangles of their own atlas, about 110 atlas texels a degree.
+  - Constants and checks: `out\sky\nightsky_mapping.py`. The shader treats the mesh's frame as
+    equatorial (x RA 0h, y RA 6h, z the north celestial pole).
+
+**The textures** (`out\sky\make_sky_textures.py`, `out\sky\bake_nightsky.py`; NVIDIA Texture Tools
+Exporter 2023.4.0, the one in the RTX Remix app, at `-q production`):
+
+| File | DXGI format | Size | Mips | Bytes |
+|---|---|---|---|---|
+| `moon_albedo.dds` | BC7_UNORM_SRGB (99) | 2048x1024 | 12 | 2,796,388 |
+| `moon_normal.dds` | BC5_UNORM (83) | 1440x720 | 11 | 1,383,524 |
+| `stars.dds` | BC3 (the mod's `skystars.dds`, unchanged) | 8192x8192 | 14 | 89,478,640 |
+| `galaxy.dds` | BC3 (the mod's `skyrimgalaxy.dds`, unchanged) | 8192x4096 | 14 | 44,739,408 |
+| `nebula.dds` | BC7_UNORM (98), box mips without gamma | 8192x8192 | 14 | 89,478,660 |
+
+- **Moon albedo:** resized in linear light (Lanczos) and scaled by 1.114 to a near-side mean of 0.25
+  (0.016 % of the pixels clip). The shader divides by 0.25 and multiplies by `moonTextureAlbedo`
+  (0.12).
+- **Moon relief:** central differences, east corrected by the cosine of the latitude, wrapped in
+  longitude; mips without gamma.
+- **Nebula:** `FullNebula.dds` colour times alpha, with the constellations rasterised into it from
+  their triangles (ray through the planar triangle, barycentric UV, the atlas pre-filtered 2x2,
+  added in gamma space as Skyrim adds them). The stars and the galaxy stay the mod's own files, so
+  nothing resamples their stars.
+
+**The runtime fork** (branch `claude/sky-night` in the worktree `remix-i18n`, from `2129d75f`):
+
+- **Bindings.** 216 night sky galaxy (a retired slot: no pass binds it), 217 Moon albedo, 218 Moon
+  relief, 219 night sky stars, 221 night sky nebula. 220 is `INTEGRATE_INSTRUMENTATION`, which is
+  not in the common set; the sparse-rendering passes use 240-251. `BINDING_ATMOSPHERE_MAX` is now
+  221. All five are sampled with `AtmosphereSkyViewSampler` (repeat in u, clamp in v; the stars'
+  tiling uses `frac(uv)`).
+- **`AtmosphereArgs`** takes the former `padAerial7/8` and grows by three 16-byte rows. All the new
+  fields are zeroed in `normalizeForSkyLutCache`, so they never re-bake the sky tables. What the
+  bakes must see of an eclipse is folded into `sunIlluminance` and `moons[0].color`.
+- **Loading.** `AssetDataManager::findAsset` reads the DDS (gli or the partial DDS loader). Each mip
+  goes up with `DxvkContext::updateImage`, whose pitches are bytes per row of 4x4 blocks. It happens
+  at the first physical-sky frame for what is switched on, and again only when a path option
+  changes. A 1x1 stand-in is bound until then. The three night sky layers take 223.7 MB of GPU
+  memory, the Moon 4.2 MB.
+- **The night sky's composite:** the three layers' colour times alpha added in gamma space, clamped
+  at 1, then `pow 2.2` and `starMapBrightness`. Mips without derivatives: a traced pixel is
+  `2 tan(fovY / 2) / downscaled height` radians (`skyPixelAngle`), times `2^mipBias` with the
+  materials' total mip bias (DLSS: `log2(render / output width)`, -1 at Performance), against each
+  layer's texels per radian there.
+- **The night sky's brightness, against the mod's own screenshots** (the FOMOD's `Screenshots\1.png`
+  and `2.png`, 3840x2160, `FullNebula1.png`, 1920x1080; gamma-space percentiles of the frame,
+  `out\sky\shot_stats.py`): `1.png` p50 0.039, p90 0.35, p99 0.89; `FullNebula1.png` p50 0.007,
+  p90 0.064, p99 0.47. Black space, bright nebulae, the galaxy core near white with its dust lanes.
+  - In the PoC at night (1280x720, DLSS Performance, the classic tone mapping) auto exposure sits at
+    its limit (`rtx.autoExposure.evMinValue -3.45`), so the image's brightness shows one to one: the
+    same background with the image and with the procedural stars.
+  - `starMapBrightness` 0.03, 0.06, 0.12, 0.25: p99 of the view up 0.49, 0.62, 0.76, 0.88 (session
+    `b11`). 0.12 matches the mod's nebulae.
+  - The weather's airglow held space at 0.176 whatever the image did (clear: `nightSkyBrightness`
+    0.008). At 100, 15, 10 and 5 % of it: p50 of the view up 0.176, 0.064, 0.052, 0.039; the ground
+    in the field 0.061, 0.037, 0.035, 0.033 (session `b12`). Below 15 % the image lights the ground
+    more than the airglow does. The companion sends 5 %.
+  - Few stars show at 720p: each output pixel averages the star layer over its footprint (DLSS
+    accumulates jittered samples), as Skyrim's mipmapped dome does. More show at 1440p and 4K.
+- **The Moon's terminator.** A hard `cos i > 0` against the relief normal broke the shadow line into
+  blocks at quarter and gibbous. It now follows the smooth sphere through a smoothstep about two
+  pixels wide (`2 skyPixelAngle / radius` in `cos i`, clamped to 0.004-0.08), and the relief's
+  `cos i` goes through a softplus.
+- **Black pixels along the Moon's edge in a partial solar eclipse** (session `b11`, 8 degrees of
+  view: 1 isolated black pixel at 50 %, 59 at 80 %, 6 at 93 %). They sat where a one-pixel step ran
+  from the drawn disc, about 4e4 under the presets' sun (illuminance 20), to the dark Moon. The
+  shader has no NaN there (the sky's final `max(radiance, 0)` would turn one into black, but every
+  sqrt, division and pow on that path is guarded). With two-pixel edges and the disc capped at
+  16384 the dots joined into a thin black arc along the Moon's limb, worse with Ray Reconstruction
+  off (session `b14`: 22-174 a frame, and at 60 degrees of view too). Capped at 1024 the crescent
+  read better but the pixels stayed (`b15`: 17-156).
+  - **The upscaler makes them** (session `b16`, 88 % through Remix's debug views): the composite
+    before the upscaler (`rtx.debugView.debugViewIdx 202`) is clean; the output before tone mapping
+    (200) has the black pixels and some red ones; the NaN view (260) shows none. 154 of 156 are
+    exactly (0, 0, 0).
+  - Near totality the sky around the disc has dimmed to a few per cent, so a fixed cap still left
+    the step from the dark Moon to the disc thousands of times the sky. The disc, chromosphere and
+    corona are now held together to 64 times the daylight left (the brightest channel of the
+    dimmed `sunIlluminance`), scaled as a whole so the hue stays. Session `b17`: no such pixel in
+    any close-up from 0 to 100 %, with Ray Reconstruction on or off, 2 in one wide view; the partial
+    sun now reads as a disc and a crescent instead of a glare, the corona and chromosphere as before.
+- **Eclipse geometry with the companion's moon** (1.6 degrees across, radius 0.8): umbra 2.12
+  degrees, penumbra 3.84, first penumbral contact at 4.64 degrees from the antisolar point; the
+  companion's moon passes at 5.64 without an eclipse. The drawn sun is 0.776 degrees in radius; first
+  contact at 1.576, totality inside 0.024.
+- **The worktree's build never recompiles shaders by itself.** The shaders come from one ninja edge,
+  `src/dxvk/_built_shaders.txt`, whose only input is `python.exe`, so ninja runs
+  `compile_shaders.py` only while that stamp is missing. A shader or shader-header change needs
+  `_CompRelease_x64\src\dxvk\_built_shaders.txt` deleted first; `compile_shaders.py` then rebuilds
+  what changed (all of it if the outputs are gone: 2.5 min for 582 shaders on 32 threads; the whole
+  build with a sky shader change, 2.7 min).
+  - **What a missed rebuild does.** The first runtime-b6 paired the new C++, whose `RaytraceArgs`
+    fields after `atmosphereArgs` had moved by 48 bytes, with the old shaders. The sky (read inside
+    the atmosphere block) drew, every surface came out black, and the GPU hung within half a minute
+    (`DLFG pacer: fence timed out`, `VK_ERROR_DEVICE_LOST`, Windows LiveKernelEvent 141; sessions
+    `out\sky\sessions\b2`-`b4`).
+  - Deleting the `rtx_shaders` outputs alone instead breaks the C++ build (their headers are gone).
+  - **A shader-only change needs two builds.** The regenerated headers are not outputs ninja knows
+    of, so the run that regenerates them has already judged the C++ up to date: the `.cpp` files
+    that embed the shaders (`rtx_pathtracer_gbuffer.cpp`, `rtx_pathtracer_integrate_indirect.cpp`
+    for the sky-miss path) recompile, and `d3d9.dll` relinks, only on the next run (0.6 min). A
+    change that also touches a header those files include rebuilds them in the first run; one in
+    `rtx_atmosphere.h` does not reach them. Sessions `b11`-`b13` ran with the C++ of that build and
+    the shaders of the one before.
+  - Sizes, measured with the compiler: `AtmosphereArgs` 1,232 bytes, `RaytraceArgs` 10,288, the
+    atmosphere block at offset 6,832.
+  - With the sky code the `d3d9.dll` grows from 345.8 MB to 362.7 MB: the sky-miss path is in every
+    ray-tracing permutation.
+- **Builds:** incremental, 0.2-1.1 min after a C++ change (`out\sky\build_runtime.ps1`).
+- **Shader compile threads.** `dxvk.numCompilerThreads` sizes the state cache's workers, which
+  compile Remix's own shaders (the "Compiling shaders (N remaining)" message, `dxvk_state_cache.cpp`).
+  The classic install's `dxvk.conf` sets 1. DXVK's own default (0) is (threads - 1) x 5 / 7, capped at
+  32: 22 here. The fork now reads -N as all threads but N; runtime-b6's second layer sets -2, and the
+  log says `DXVK: Using 30 compiler threads` on the PoC's Ryzen 9 9950X3D (32 threads).
+- **The Moon at 5 degrees of view** (about 15 times the usual zoom; the classic settings run DLSS
+  Performance with Ray Reconstruction: `rtx.upscalerType 1`, `rtx.qualityDLSS 1`). The lit side
+  along the terminator and the earthshine side break into diamond-shaped blocks 3-4 traced pixels
+  across, the limb into steps. What changes them (sessions `b11`-`b14`):
+  - Nothing of these: Ray Reconstruction off, DLAA (`rtx.qualityDLSS 5`), no clouds
+    (`rtx.atmosphere.cloudEnabled False`), no volumetric fog (`rtx.volumetrics.enable False`, whose
+    froxels are 4x4 traced pixels).
+  - The relief: at 0 the terminator is a clean line, at 0.5 it has a few notches, at 1 a row of
+    dark ones. The companion sets 0.6.
+  - The texture is not it: `moon_albedo.dds` decodes sharp (Copernicus' rays at 2048x1024), and
+    the full Moon, lit flat by Lommel-Seeliger, shows its craters cleanly at the same zoom.
+  - At 20 degrees of view the Moon is clean.
+  - Sky pixels give Ray Reconstruction a black albedo guide (alpha 0, `gbuffer_guides_output.slangh`),
+    and its evaluation passes no bias-current-colour mask (`rtx_ngx_wrapper.cpp`). It was the first
+    suspect, but turning it off changed nothing.
+- **Two failures on the way that were not the sky's.**
+  - A start-up "hang" right after Remix parsed its user settings (sessions `b7` and `b13b`, each the
+    first start after a crash). It is Remix's crash-report prompt: the game's only window is
+    "RTX Remix Crash Report", a modal `MessageBoxW` asking to upload the last crash
+    (`showCrashReportDialogIfNeeded`, `src/util/util_sentry.cpp`). The prompt clears Sentry's
+    crashed-last-run flag before it asks, so a session ended during it (the run's timeout) starts
+    normally the next time, uploading nothing. `RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES=1`
+    is no way round it: it also gives Sentry upload consent.
+  - An access violation in `studiorender.dll` (a null read on the material system's render thread,
+    at `studiorender.dll+0x5d353` every time) 7 s into a map, just after the RTX fixes forced a
+    model reload: sessions `b6`, `b13` and `b16`, 3 of the 17 sky sessions, two of them on a runtime
+    that had already run cleanly. No Remix code was on the stack. In `b16` the RTX fixes' own hook
+    logged it first: `[HWSkin] CRASH in DrawGroupHWSkin trampoline!`, then
+    `[HWSkin] Exception in RenderFinal trampoline (occurrence #1)`.
+
+**runtime-b6** (`out\sky\make_runtime_b6.ps1`): runtime-b4's extract with the sky fork's `d3d9.dll`
+and `atmosphere\` (the five textures and `CREDITS.txt`), the same dxvk layer, environment and launch
+arguments as runtime-b5, and the compiler-threads layer. 197 files and the manifest, 1,229,297,958
+bytes, version `0.0.0-dev.202610292335+a2e1708e`; the `.gma` 1,229,349,449. `d3d9.dll` 362,684,416
+bytes, SHA-256 `a2e1708e...`. The combined RTX package built from it (`out\sky\build_e2e.py`): 877
+files, 1,798,369,314 bytes.

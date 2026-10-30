@@ -87,7 +87,22 @@ dropped, so before a save or the camera the script waits until `console.log` has
   way from the user's own subscription, never copied (`workshop_mounted_items`); `--console` commands are sent;
   `--camera x,y,z,pitch,yaw,roll[,fov]` pins the view with a client `CalcView` hook; `--hide-hud`
   hides the HUD and view model (client hooks, plus `cl_drawhud 0` / `r_drawviewmodel 0`, which are not
-  archived and are set back before quitting) and closes Derma dialogs for 30 s. After `--settle`
+  archived and are set back before quitting) and closes Derma dialogs for 30 s.
+  - **`--lua FILE`** (repeatable) runs a client Lua file after the camera, through the console like
+    the camera's Lua. Its chunk is `nl_session_lua<n>`, and a first line that prints
+    `NL_SESSION_LUA <n>` goes in front. The file is sent again (three tries) until that line has
+    printed: Lua sent while the RTX fixes reload models is lost. The record has `lua`: `file` and
+    `started` for each.
+  - **`--lua-shots SECONDS`**, after `--settle` and before the plain screenshots, lets the Lua pace its
+    own screenshots, for a tour of views or settings in one session.
+    - Each `NL_SHOT <label>` line it prints (label: up to 48 of `A-Z a-z 0-9 _ . -`) gives one
+      screenshot, `shot-<nn>-<label>.png`.
+    - The run answers each with the console command `nl_shot_taken <nn>`, so the Lua can go on to
+      the next view.
+    - It stops at `NL_SHOT_DONE`, when the game exits or after SECONDS. The record has `lua_shots`
+      (the screenshots, with `label` and `seconds`) and `lua_shots_done`.
+
+  After `--settle`
   seconds, `--fps SECONDS` times every frame for that long (client Lua through the console, a
   `PostRender` hook, sent once more if its result does not come) and records `fps`: `frames`,
   `seconds`, `fps`, `median_ms`, `p99_ms` and `max_ms`. A game window without focus sleeps between

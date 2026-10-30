@@ -9,7 +9,7 @@ titles, headings and paragraphs are marked with `N("...")` and translated when t
 |---|---|
 | Welcome | What runs (the loader and the Workshop package); RTX off with `"remix": { "enabled": false }`; the borderless window and `-w`/`-h` in Steam's launch options |
 | Remix menu | Alt+X; set the preset to Custom before changing single settings; which Save button writes `user.conf` and which `rtx.conf`; why not to press "Migrate N Developer Settings" |
-| Settings | The classic defaults and `nativeloader_rtx_defaults`; the RTX Remix tab's Remix settings |
+| Settings | The classic defaults and `nativeloader_rtx_defaults`; the RTX Remix tab's Remix settings and its fog presets; Sky and weather: the physical sky following the map's sun, the time, the real Moon and night sky, eclipses, the weather, `nativeloader_sky_time` and `nativeloader_sky_status` |
 | Lights | The flashlight, map lights (light updater or API lights), the Advanced MMD Animation Player's flashlight and its radius |
 | Troubleshooting | `nativeloader_status`; `native-loader\logs\loader.log`, `status.json`, `session.json`, `rtx-remix\logs\remix-dxvk.log`; start-up crashes, add-on conflicts (`nativeloader_guard`), frame rate, "Couldn't mount file", settings that come back |
 

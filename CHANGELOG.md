@@ -6,6 +6,76 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (the real Moon and night sky, eclipses, fog presets; runtime-b6)
+
+- **The real Moon, the real night sky, and lunar and solar eclipses**
+  ([ADR 0032](docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md)). The RTX package's
+  runtime part is now `out\packages\sky\runtime-b6.gma`: runtime-b5 with a `d3d9.dll` from the runtime
+  fork's branch `claude/sky-night` and an `atmosphere` folder beside it, with the credits in
+  `CREDITS.txt`:
+  - the Moon's albedo and relief maps, from NASA's Scientific Visualization Studio;
+  - the night sky's star, galaxy and nebula layers, from the Skyrim mod Night Sky HD LE by
+    PraedythXVI (its permissions allow reuse with credit), its nebulae edited from Era-7's free
+    nebula images (used with permission).
+  - **The Moon** has the real Moon's face, lit as a sphere from the sun's side of the sky, its relief
+    showing along the terminator and earthshine on the night side. "Moon" has eight phases now,
+    waxing and waning.
+  - **The night sky** is a sharp image of small stars, a galaxy band, nebulae and constellations,
+    drawn the way the Skyrim mod draws it, turning with the hour, the season and the map's north.
+    "Night sky" switches back to the procedural stars. Under the image the weather's airglow drops
+    to 5 %, so space between the nebulae is dark as in Skyrim. The image adds about 220 MB of GPU
+    memory while it is on.
+  - **The Moon's shadow edge stays smooth** close up: it follows the sphere, softened over about two
+    pixels, the companion sets the relief to 0.6, and the sky's textures pick their mips the way the
+    materials do under DLSS. Zoomed in to a few degrees the Moon still shows small blocks.
+  - **Eclipses.** "Eclipse" (none, lunar, solar) and "Eclipse progress" (0 first contact to 100 the
+    middle) in "Sky and weather".
+    - A lunar eclipse darkens the full moon through the penumbra and turns it copper red in the
+      umbra (total from 70), and the moonlight dims and reddens with it.
+    - A solar eclipse covers a drawn sun disc and dims the daylight. At totality (from 90) it shows
+      the corona and the stars.
+    - Choosing one moves the clock to midnight or noon if the sun is on the wrong side of the horizon.
+  - **Fog presets under Remix settings.** "Fog" offers Remix's own volumetric presets (Remix default,
+    heavy fog, light fog, mist, haze, dust, smoke), applied as Remix's menu applies them. While one is
+    chosen the weather leaves the fog alone.
+  - The guide's settings page describes them, in the six languages too.
+  - **Shaders compile on every hardware thread but two.** The classic install's `dxvk.conf` held
+    `dxvk.numCompilerThreads = 1`, so a first start (or one after a runtime update) showed "Compiling
+    shaders" for minutes. runtime-b6 adds a second dxvk layer, `02_compiler_threads.conf`, with `-2`.
+    The fork now reads a negative count as "all threads but that many": 30 workers on a 32-thread CPU.
+  - Facts and measurements: [RESEARCH.md](docs/RESEARCH.md) section 29.
+
+### Added (sky and weather)
+
+- **A physical sky with a time of day and weather** ([ADR 0031](docs/decisions/0031-physical-sky-time-and-weather.md)).
+  RTX sessions now use the runtime's physical sky instead of a frozen afternoon. The companion's new
+  module ([`nativeloader_sky.lua`](companion/nativeloader/lua/autorun/nativeloader_sky.lua.md)) adds
+  "Sky and weather" to the RTX Remix tab:
+  - **Sun, moon and stars from one clock.** The sun, the moon of a chosen phase and the stars are
+    placed for a time of day and a season at latitude 40 ([`sky_model.lua`](companion/nativeloader/lua/nativeloader/sky_model.lua.md)).
+    By default the sky follows the map's own sun (its `light_environment`): the time at which the sun
+    stands that high, turned to stand where the map's does. Maps whose sky is named for the night start
+    at night.
+  - **Choosing.** A time of day, the sun's direction, the season, the moon, and buttons for sunrise,
+    morning, noon, sunset and night. The clock can run (`nativeloader_sky_time_passes`,
+    `nativeloader_sky_day_minutes`). Console: `nativeloader_sky_time sunset|noon|18:30|...`,
+    `nativeloader_sky_status`, `nativeloader_sky_reset`.
+  - **Weather.** The runtime's twelve presets, from clear to thunderstorm, snow, blizzard, sandstorm
+    and smog, blended over a chosen time with their slow variation of cloud cover and wind. They are
+    generated from the fork by [`tools/weather_presets.py`](tools/weather_presets.py.md).
+  - **Scaled for GMod's maps.** Fog is set from a visibility in real metres, rain and snow fall
+    around the player, and they fade out under a roof.
+  - **Other changes to the look.** Cumulus-shaped cloud shadows move over the ground again. The moon
+    is about three times its real size instead of seven, with its moonlight kept. That light fades
+    in with the twilight, so a rising moon no longer lights the map orange at dusk.
+  - **Modern House RTX** keeps its own sky on `modern_house` unless the player changes a sky setting.
+  - "Remix settings" loses sun height, sun direction, clouds, fog distance and fog scattering: the new
+    panel and the weather own them now. Saved values of those settings are no longer applied.
+  - Translated into the six languages.
+- **`poc_session.py --lua FILE` and `--lua-shots`**: a client Lua file sent through the console, which
+  paces its own screenshots (`NL_SHOT <label>`, answered with `nl_shot_taken`), so one session can
+  tour many views or settings.
+
 ### Added (round 8; loader 0.5.0)
 
 - **ReShade in RTX sessions** ([ADR 0028](docs/decisions/0028-reshade-in-rtx-sessions.md)). RTX Remix
