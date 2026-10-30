@@ -319,8 +319,7 @@ end
 
 -- A fog preset chosen under Remix settings (nativeloader_menu.lua) replaces the weather's fog.
 local function fogPresetChosen()
-    local preset = GetConVar("nativeloader_remix_fog")
-    return preset ~= nil and preset:GetString() ~= ""
+    return hook.Run("NativeLoaderRemixFogOverride") == true
 end
 
 -- Under the night sky image the weather's airglow is turned down to this fraction: as in Skyrim, the

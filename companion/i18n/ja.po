@@ -8,269 +8,269 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:637
 msgid "Clear"
 msgstr "快晴"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:637
 msgid "Partly cloudy"
 msgstr "晴れ時々曇り"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:637
 msgid "Overcast"
 msgstr "曇り"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Hazy"
 msgstr "もや"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Foggy"
 msgstr "霧"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Drizzle"
 msgstr "霧雨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Rain"
 msgstr "雨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Thunderstorm"
 msgstr "雷雨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Snow"
 msgstr "雪"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Blizzard"
 msgstr "吹雪"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:641
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Sandstorm"
 msgstr "砂嵐"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:641
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Smog"
 msgstr "スモッグ"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:642
 msgid "Spring"
 msgstr "春"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:642
 msgid "Summer"
 msgstr "夏"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:642
 msgid "Autumn"
 msgstr "秋"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:642
 msgid "Winter"
 msgstr "冬"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "New moon"
 msgstr "新月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Waxing crescent"
 msgstr "三日月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "First quarter"
 msgstr "上弦の月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "Waxing gibbous"
 msgstr "十三夜月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "Full moon"
 msgstr "満月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:646
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "Waning gibbous"
 msgstr "寝待月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:646
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "Last quarter"
 msgstr "下弦の月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:647
+#: nativeloader/lua/autorun/nativeloader_sky.lua:646
 msgid "Waning crescent"
 msgstr "有明月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:647
 msgid "No eclipse"
 msgstr "食なし"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:647
 msgid "Lunar eclipse"
 msgstr "月食"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:647
 msgid "Solar eclipse"
 msgstr "日食"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:649
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "Night sky image"
 msgstr "夜空の画像"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:649
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "Simulated stars"
 msgstr "生成した星空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:650
 msgid "Sunrise"
 msgstr "日の出"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:650
 msgid "Morning"
 msgstr "朝"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:650
 msgid "Noon"
 msgstr "正午"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:652
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Sunset"
 msgstr "日の入り"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:652
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Night"
 msgstr "夜"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:662
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:160
+#: nativeloader/lua/autorun/nativeloader_sky.lua:661
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "このセッションでは Remix API を使用できないため、これらの設定を適用できません。詳しくは nativeloader_status を実行してください。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:666
+#: nativeloader/lua/autorun/nativeloader_sky.lua:665
 #, c-format
 msgid "On this map the sky is set by %s. Changing a setting here takes it over for this session."
 msgstr "このマップの空は %s が設定しています。ここで設定を変えると、このセッションの間はこちらが引き継ぎます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:667
 msgid "Sky"
 msgstr "空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:668
 msgid "Physical sky"
 msgstr "物理ベースの空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:669
 msgid "The map's skybox"
 msgstr "マップのスカイボックス"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:671
+#: nativeloader/lua/autorun/nativeloader_sky.lua:670
 msgid "The physical sky has a sun, clouds, stars and a moon, and lights the map from them."
 msgstr "物理ベースの空には太陽、雲、星、月があり、それらがマップを照らします。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:672
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Follow the map's sun"
 msgstr "マップの太陽に合わせる"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "The time and direction of the map's own sun. Moving the time or the direction turns this off."
 msgstr "マップの太陽に合わせて時刻と方角を設定します。時刻または方角を変更すると、この設定はオフになります。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:674
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Time of day"
 msgstr "時刻"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:677
 #, c-format
 msgid "Now %s"
 msgstr "現在 %s"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:696
+#: nativeloader/lua/autorun/nativeloader_sky.lua:695
 msgid "Sun direction"
 msgstr "太陽の方角"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:697
+#: nativeloader/lua/autorun/nativeloader_sky.lua:696
 msgid "Turns the sun's path around the sky."
 msgstr "太陽の軌道を水平方向に回転させます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:698
+#: nativeloader/lua/autorun/nativeloader_sky.lua:697
 msgid "Time passes"
 msgstr "時間が進む"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:699
+#: nativeloader/lua/autorun/nativeloader_sky.lua:698
 msgid "Day length (min)"
 msgstr "1日の長さ(分)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:700
+#: nativeloader/lua/autorun/nativeloader_sky.lua:699
 msgid "Real minutes for a whole day while the time passes."
 msgstr "ゲーム内の 1 日にかかる現実の時間（分）です。「時間が進む」がオンのときに使われます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:701
+#: nativeloader/lua/autorun/nativeloader_sky.lua:700
 msgid "Sky update interval (s)"
 msgstr "空の更新間隔(秒)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:702
+#: nativeloader/lua/autorun/nativeloader_sky.lua:701
 msgid "How often the sun, moon, stars and weather move on: 0.02 is 50 times a second, 0 every frame. Longer saves a little time but the sky moves in steps."
 msgstr "太陽・月・星・天気を進める間隔です。0.02 で毎秒 50 回、0 で毎フレーム。長くすると少し軽くなりますが、空がコマ送りのように動きます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:703
+#: nativeloader/lua/autorun/nativeloader_sky.lua:702
 msgid "Season"
 msgstr "季節"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:704
+#: nativeloader/lua/autorun/nativeloader_sky.lua:703
 msgid "Moon"
 msgstr "月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:705
+#: nativeloader/lua/autorun/nativeloader_sky.lua:704
 msgid "Eclipse"
 msgstr "日食・月食"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:706
+#: nativeloader/lua/autorun/nativeloader_sky.lua:705
 msgid "Eclipse progress"
 msgstr "食の進み具合"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:707
+#: nativeloader/lua/autorun/nativeloader_sky.lua:706
 msgid "From first contact (0) to the middle (100): a lunar eclipse is total from 70, a solar one from 90. An eclipse sets the moon's phase, and the time if the sun is on the wrong side of the horizon for it."
 msgstr "欠け始め（0）から食の最大（100）まで。月食は 70 から、日食は 90 から皆既になります。食を選ぶと月の満ち欠けが決まり、太陽が地平線の反対側にあれば時刻も合わせます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:708
+#: nativeloader/lua/autorun/nativeloader_sky.lua:707
 msgid "Night sky"
 msgstr "夜空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:709
+#: nativeloader/lua/autorun/nativeloader_sky.lua:708
 msgid "Night sky image: sharp stars, a galaxy and nebulae, turning with the time and the season."
 msgstr "夜空の画像: くっきりした星、銀河、星雲が時刻と季節に合わせて回ります。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:710
+#: nativeloader/lua/autorun/nativeloader_sky.lua:709
 msgid "Weather"
 msgstr "天気"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:711
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:167
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:171
+#: nativeloader/lua/autorun/nativeloader_sky.lua:710
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:214
 msgid "(leave to Remix)"
 msgstr "(Remix に任せる)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:713
+#: nativeloader/lua/autorun/nativeloader_sky.lua:712
 msgid "Clouds, haze, fog, rain and snow. The runtime's own weather presets."
 msgstr "雲、もや、霧、雨、雪。Remix ランタイム自体の天気プリセットです。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:714
+#: nativeloader/lua/autorun/nativeloader_sky.lua:713
 msgid "Weather change (s)"
 msgstr "天気の変化(秒)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:715
+#: nativeloader/lua/autorun/nativeloader_sky.lua:714
 msgid "How long a change of weather takes."
 msgstr "天気が変わるのにかかる時間。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:716
+#: nativeloader/lua/autorun/nativeloader_sky.lua:715
 msgid "Reset the sky and weather"
 msgstr "空と天気をリセット"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:722
-#: nativeloader/lua/autorun/nativeloader_sky.lua:722
+#: nativeloader/lua/autorun/nativeloader_sky.lua:721
+#: nativeloader/lua/autorun/nativeloader_sky.lua:721
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Sky and weather"
@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "「RTX Remix」タブ > 「はじめに」 > 「クラシック RTX 設定を使用」(コンソール: nativeloader_rtx_defaults) で、これらをすべてもう一度適用します。変更した値も上書きされます。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
 msgid "Common Remix settings"
 msgstr "主な Remix 設定"
 
@@ -474,7 +474,7 @@ msgstr "RTX Remix ガイド"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
 msgid "Rendering"
 msgstr "レンダリング"
 
@@ -485,241 +485,258 @@ msgid "Water and glass"
 msgstr "水とガラス"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
 msgid "Start here"
 msgstr "はじめに"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
 msgid "Remix settings"
 msgstr "Remix 設定"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:67
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
 msgid "Graphics preset"
 msgstr "画質プリセット"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
 msgid "Ultra"
 msgstr "ウルトラ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
 msgid "High"
 msgstr "高"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
 msgid "Medium"
 msgstr "中"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
 msgid "Low"
 msgstr "低"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
 msgid "Custom (keeps your own settings)"
 msgstr "カスタム (自分の設定を維持)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
 msgid "Automatic (by GPU)"
 msgstr "自動 (GPU に応じて)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Upscaler"
 msgstr "アップスケーラー"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "None"
 msgstr "なし"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
 msgid "DLSS quality"
 msgstr "DLSS 品質"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
 msgid "Ultra performance"
 msgstr "ウルトラパフォーマンス"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
 msgid "Performance"
 msgstr "パフォーマンス"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
 msgid "Balanced"
 msgstr "バランス"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
 msgid "Quality"
 msgstr "クオリティ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
 msgid "Auto"
 msgstr "自動"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
 msgid "Full resolution (DLAA)"
 msgstr "フル解像度 (DLAA)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
 msgid "Frame generation"
 msgstr "フレーム生成"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:173
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
 msgid "Off"
 msgstr "オフ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
 msgid "Indirect lighting"
 msgstr "間接照明"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
 msgid "Importance sampled"
 msgstr "重点サンプリング"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
 msgid "Neural Radiance Cache"
 msgstr "ニューラル放射輝度キャッシュ (NRC)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
 msgid "Hashed radiance cache"
 msgstr "ハッシュ放射輝度キャッシュ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:83
 msgid "Max light bounces"
 msgstr "最大バウンス数"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:83
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Sky brightness"
 msgstr "空の明るさ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:84
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "The map's own skybox only."
 msgstr "マップ自体のスカイボックスにのみ効きます。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:85
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:88
 msgid "Fog"
 msgstr "霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
 msgid "Remix default"
 msgstr "Remix の既定値"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
 msgid "Heavy fog"
 msgstr "濃霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
 msgid "Light fog"
 msgstr "薄霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Mist"
 msgstr "靄"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Haze"
 msgstr "煙霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Dust"
 msgstr "砂塵"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Smoke"
 msgstr "煙"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:88
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:91
 msgid "Remix's volumetric fog presets. One chosen here replaces the weather's fog. Dense fog stays dark where no light reaches it."
 msgstr "Remix のボリュメトリックフォグのプリセットです。ここで選ぶと天候の霧の代わりになります。濃い霧は光の届かない所では暗いままです。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
 msgid "Post effects"
 msgstr "ポストエフェクト"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
 msgid "Bloom, motion blur and film grain."
 msgstr "ブルーム、モーションブラー、フィルムグレイン。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:91
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:94
 msgid "Tone map colour purity"
 msgstr "色純度 (トーンマップ)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:143
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:184
 msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
 msgstr "このセッションでは、RTX Remix がネイティブローダーを通じて動作しています。RTX に関するものはすべてこのタブにあります。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:185
 msgid "Open the RTX Remix guide"
 msgstr "RTX Remix ガイドを開く"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:186
 msgid "Print the loader's status to the console"
 msgstr "ローダーの状態をコンソールに表示"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:146
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:187
 msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
 msgstr "クラシック設定: 従来の RTX 環境の値です。まだデフォルトのままだった設定にだけ、一度適用されました。このボタンで、それらをすべてもう一度適用します。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:147
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:188
 msgid "Use the classic RTX settings"
 msgstr "クラシック RTX 設定を使用"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:148
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:189
 msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
 msgstr "アドオンが RTX 設定を元に戻したり、画面にポストプロセスを描画したりするのを防ぐ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:149
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:190
 msgid "RTX session guard"
 msgstr "RTX セッション保護"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:150
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:191
 msgid "Turn this off only to test an add-on that misbehaves."
 msgstr "正しく動作しないアドオンをテストするときだけオフにしてください。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:151
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:192
 msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
 msgstr "Remix 本体のメニュー: Alt+X を押してください。個別の設定を変更する前にグラフィックスプリセットで「カスタム」(Custom) を選び、そのあと「保存」(Save) を押してください。そうしないと、次回の起動時に元に戻ります。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:152
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:193
 msgid "Language"
 msgstr "言語"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:153
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:194
 msgid "Same as Garry's Mod"
 msgstr "Garry's Mod と同じ"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:155
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:196
 msgid "Language of this tab and the guide"
 msgstr "言語 (このタブとガイド)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:162
-msgid "A setting chosen here is kept and applied at every start. Clear it (the empty choice, or the reset button) to leave it to Remix's own files."
-msgstr "ここで選んだ設定は保持され、起動するたびに適用されます。Remix 本体の設定ファイルに任せるには、設定をクリアしてください (空の選択肢、またはリセットボタン)。"
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:203
+msgid "Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."
+msgstr "ここでの変更は今回のゲームに適用されます。保持するには Alt+X メニューで設定を保存してください。表示されるのはこのパネルの上書き値であり、Remix の現在値をリアルタイムで表示するものではありません。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:172
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:204
+msgid "Reapply these overrides at every launch"
+msgstr "起動するたびにこれらの上書き値を適用する"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+msgid "Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."
+msgstr "オフのままなら Remix に保存された設定が読み込まれます。このパネルの値で上書きしたい場合のみオンにしてください。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
 msgid "On"
 msgstr "オン"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
-msgid "Reset these to Remix's own values"
-msgstr "これらを Remix 本体の値に戻す"
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:219
+#, c-format
+msgid "Set %s here"
+msgstr "ここで「%s」を設定する"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:185
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:245
+msgid "Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."
+msgstr "数値を編集する前に、その項目の上書きを有効にしてください。空の明るさと色の純度には 0 も指定できます。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
+msgid "Clear this panel's overrides"
+msgstr "このパネルの上書き値をクリア"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
 msgid "Local player shadow"
 msgstr "自分のプレイヤーの影"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:186
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
 msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
 msgstr "一人称視点で自分の体の影と映り込みを表示します。他のプレイヤーやラグドールには影響しません。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:187
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
 msgid "Body height offset (units)"
 msgstr "体の高さの補正（単位）"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:188
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr "正の値にすると描画される体だけが上に移動します。カメラと当たり判定の位置は変わりません。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
 msgid "Player models"
 msgstr "プレイヤーモデル"

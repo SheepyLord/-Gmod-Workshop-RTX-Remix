@@ -1,5 +1,22 @@
 # nativeloader_menu.lua
 
+Since ADR 0044, Remix's saved files take precedence at launch unless the player explicitly enables
+`nativeloader_remix_reapply` (default 0). Changes made in this panel still apply immediately during
+the session; use Remix's Save Settings in Alt+X to save them in its user layer. The panel shows its
+retained override drafts, not live runtime values: the bundled GetConfigVariable reads only a file.
+
+Numeric overrides have an explicit archived `<name>_enabled` flag, default 0. Their unbound sliders
+are initialized and synchronized under a write guard. Only an enabled, valid numeric edit sends a
+value. Existing numeric ConVars are retained but inactive until explicitly selected, because older
+widgets could turn an empty sentinel into an archived zero. Zero remains valid for brightness and
+purity; purity now matches Remix's 0–5 range. Draft defaults are 4 bounces, brightness 1 and purity 1.
+An unset control displays this draft default without writing it. Invalid, non-finite and out-of-range
+values are not sent. Choices and booleans also reject invalid archived strings.
+
+`nativeloader_remix_reset` clears drafts, numeric selections and startup replay; it sends no synthetic
+default to Remix. Its saved files take effect next start. The fog selection suppresses weather fog
+only after the preset was actually applied, through the `NativeLoaderRemixFogOverride` hook.
+
 Player models under RTX Remix / Rendering adds the archived rtx_pseudoplayer shadow toggle and
 rtx_pseudoplayer_offset_z height slider (-32 to 64 units). Enabling the proxy requests primary
 player shadows through RemixConfig, including at startup. Height affects only the proxy's render
@@ -58,9 +75,11 @@ slider); what does not fit is a help line below the control (an option's sixth f
 
   How a value reaches Remix:
   - Each choice is saved as a client setting `nativeloader_remix_<name>`.
-  - It is given to Remix at every session start (4 s after `InitPostEntity`) and when it changes,
+  - It is given to Remix when deliberately changed, and at session start (4 s after `InitPostEntity`)
+    only if `nativeloader_remix_reapply` is enabled,
     through the RTX fixes' `RemixConfig.SetConfigVariable`, which writes into Remix's user layer.
-  - An empty value leaves the option to Remix's files: the package defaults, `rtx.conf`, `user.conf`.
+  - With startup replay off, all settings load from Remix's files. With it on, empty choices and
+    numeric overrides whose `_enabled` switch is off still leave the option to Remix's files.
   - `nativeloader_remix_reset` clears them all.
   - The option names and their numbers are the runtime's own: `rtx_options.h` and
     `rtx_graphics_preset.h` of the fork.

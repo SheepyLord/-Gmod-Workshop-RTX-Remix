@@ -1,0 +1,285 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 16:00:01 -0700
+Subject: [PATCH] Save Remix config atomically and retain edits on I/O failure
+
+---
+ src/dxvk/rtx_render/rtx_option_layer.cpp    | 22 ++++--
+ src/util/config/config.cpp                  | 88 +++++++++++++++++----
+ src/util/config/config.h                    |  6 +-
+ tests/rtx/unit/test_option_layer_export.cpp | 47 +++++++++++
+ 4 files changed, 139 insertions(+), 24 deletions(-)
+
+diff --git a/src/dxvk/rtx_render/rtx_option_layer.cpp b/src/dxvk/rtx_render/rtx_option_layer.cpp
+index a09abb09..9bac56ae 100644
+--- a/src/dxvk/rtx_render/rtx_option_layer.cpp
++++ b/src/dxvk/rtx_render/rtx_option_layer.cpp
+@@ -424,10 +424,12 @@ namespace dxvk {
+ 
+     // Write all options from this layer into a Config (save all values, not just changed)
+     RtxOptionManager::writeOptions(layerConfig, this, false);
+-    setConfig(layerConfig);
+     
+     // Save the config to disk using the layer's stored file path
+-    Config::serializeCustomConfig(getConfig(), getFilePath(), "rtx.");
++    if (!Config::serializeCustomConfig(layerConfig, getFilePath(), "rtx.")) {
++      return false;
++    }
++    setConfig(layerConfig);
+     
+     // Clear the unsaved changes cache since we just saved
+     m_hasUnsavedChanges = false;
+@@ -443,11 +445,15 @@ namespace dxvk {
+       return false;
+     }
+ 
+-    // Remove current layer values from all options (NoReset options are preserved)
+-    removeFromAllOptions();
+-
+     // Reload the config from disk using the layer's stored file path
+-    Config reloadedConfig = Config::getOptionLayerConfig(getFilePath());
++    bool loaded = false;
++    Config reloadedConfig = Config::getOptionLayerConfig(getFilePath(), &loaded);
++    if (!loaded) {
++      Logger::err(str::format("[RTX Option]: Cannot reload '", getFilePath(), "'. Current values kept."));
++      return false;
++    }
++    // Remove values only after a complete read (NoReset options are preserved).
++    removeFromAllOptions();
+     setConfig(reloadedConfig);
+ 
+     // Re-apply the layer values to all options
+@@ -525,7 +531,9 @@ namespace dxvk {
+     );
+     
+     // Serialize the config to the export path
+-    Config::serializeCustomConfig(exportConfig, exportPath, "rtx.");
++    if (!Config::serializeCustomConfig(exportConfig, exportPath, "rtx.")) {
++      return false;
++    }
+     
+     if (isNewFile) {
+       Logger::info(str::format("[RTX Option]: Created new config file with unsaved changes: ", exportPath));
+diff --git a/src/util/config/config.cpp b/src/util/config/config.cpp
+index b0beaaa4..5db93ae2 100644
+--- a/src/util/config/config.cpp
++++ b/src/util/config/config.cpp
+@@ -27,6 +27,9 @@
+ #include <utility>
+ #include <filesystem>
+ #include <algorithm>
++// NV-DXVK start: Atomic config replacement on Windows
++#include <windows.h>
++// NV-DXVK end
+ 
+ #include "config.h"
+ 
+@@ -1033,8 +1036,11 @@ namespace dxvk {
+   }
+ 
+   // NV-DXVK start: Configuration parsing logic moved out for sharing between multiple configuration loading functions
+-  static Config parseConfigFile(std::string filePath) {
++  static Config parseConfigFile(std::string filePath, bool* loaded = nullptr) {
+     Config config;
++    if (loaded) {
++      *loaded = false;
++    }
+     
+     // Open the file if it exists
+     std::ifstream stream(str::tows(filePath.c_str()).c_str());
+@@ -1055,8 +1061,16 @@ namespace dxvk {
+     // Parse the file line by line
+     std::string line;
+ 
+-    while (std::getline(stream, line))
++    while (std::getline(stream, line)) {
+       parseUserConfigLine(config, ctx, line);
++    }
++    if (stream.bad()) {
++      Logger::err(str::format("Failed to read config file: ", filePath));
++      return {};
++    }
++    if (loaded) {
++      *loaded = true;
++    }
+     
+     Logger::info("Parsed config file.");
+     return config;
+@@ -1447,9 +1461,9 @@ namespace dxvk {
+   }
+ 
+   // NV-DXVK start: Config file loading
+-  Config Config::getOptionLayerConfig(const std::string& configPath) {
++  Config Config::getOptionLayerConfig(const std::string& configPath, bool* loaded) {
+     Logger::info(str::format("Attempting to parse option layer: ", configPath, "..."));
+-    return parseConfigFile(configPath);
++    return parseConfigFile(configPath, loaded);
+   }
+   // NV-DXVK end 
+ 
+@@ -1471,21 +1485,65 @@ namespace dxvk {
+     return Config();
+   }
+ 
+-  void Config::serializeCustomConfig(const Config& config, std::string filePath, std::string filterStr) {
+-    // Open the file if it exists
+-    std::ofstream stream(str::tows(filePath.c_str()).c_str());
+-
+-    if (!stream)
+-      return;
++  // NV-DXVK start: Preserve the last complete file until a flushed replacement is ready
++  bool Config::serializeCustomConfig(const Config& config, std::string filePath, std::string filterStr) {
++    std::ostringstream stream;
++    for (const auto& line : config.m_options) {
++      if (filterStr.empty() || line.first.find(filterStr) != std::string::npos) {
++        stream << line.first << " = " << line.second << '\n';
++      }
++    }
+ 
+-    Logger::info(str::format("Serializing config file: ", filePath));
++    const auto path = str::tows(filePath.c_str());
++    std::wstring temporaryPath;
++    HANDLE file = INVALID_HANDLE_VALUE;
++    for (uint32_t attempt = 0; attempt < 16; ++attempt) {
++      temporaryPath = path + L".tmp-" + std::to_wstring(GetCurrentProcessId()) + L"-"
++        + std::to_wstring(GetTickCount64()) + L"-" + std::to_wstring(attempt);
++      file = CreateFileW(temporaryPath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr,
++                         CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
++      if (file != INVALID_HANDLE_VALUE || GetLastError() != ERROR_FILE_EXISTS) {
++        break;
++      }
++    }
++    if (file == INVALID_HANDLE_VALUE) {
++      Logger::err(str::format("Failed to stage config '", filePath, "' (Windows error ", GetLastError(), ")."));
++      return false;
++    }
+ 
+-    for (const auto& line : config.m_options) {
+-      // Write if no filter specified, or if key matches the filter
+-      if (filterStr.empty() || line.first.find(filterStr) != std::string::npos)
+-        stream << line.first << " = " << line.second << std::endl;
++    const auto fail = [&](DWORD error) {
++      if (file != INVALID_HANDLE_VALUE) {
++        CloseHandle(file);
++      }
++      DeleteFileW(temporaryPath.c_str());
++      Logger::err(str::format("Failed to save config '", filePath, "' (Windows error ", error, "). Previous file kept."));
++      return false;
++    };
++
++    const std::string contents = stream.str();
++    size_t offset = 0;
++    while (offset < contents.size()) {
++      const DWORD count = static_cast<DWORD>(std::min<size_t>(contents.size() - offset, MAXDWORD));
++      DWORD written = 0;
++      if (!WriteFile(file, contents.data() + offset, count, &written, nullptr) || !written) {
++        return fail(GetLastError());
++      }
++      offset += written;
+     }
++    if (!FlushFileBuffers(file)) {
++      return fail(GetLastError());
++    }
++    if (!CloseHandle(file)) {
++      return fail(GetLastError());
++    }
++    file = INVALID_HANDLE_VALUE;
++    if (!MoveFileExW(temporaryPath.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++      return fail(GetLastError());
++    }
++    Logger::info(str::format("Saved config file: ", filePath));
++    return true;
+   }
++  // NV-DXVK end
+ 
+   // NV-DXVK start: Extend logOptions function
+   void Config::logOptions(const char* configName) const {
+diff --git a/src/util/config/config.h b/src/util/config/config.h
+index f2b1e218..1a7af296 100644
+--- a/src/util/config/config.h
++++ b/src/util/config/config.h
+@@ -331,7 +331,7 @@ namespace dxvk {
+     
+     // NV-DXVK start: Config file loading
+     // Load a config file from the specified path
+-    static Config getOptionLayerConfig(const std::string& configPath);
++    static Config getOptionLayerConfig(const std::string& configPath, bool* loaded = nullptr);
+     // NV-DXVK end
+ 
+     /**
+@@ -348,7 +348,9 @@ namespace dxvk {
+     /**
+      * \brief Writes custom configuration to file
+      */
+-    static void serializeCustomConfig(const Config& config, std::string filePath, std::string filterStr = std::string());
++    // NV-DXVK start: Report durable, atomic config saves
++    static bool serializeCustomConfig(const Config& config, std::string filePath, std::string filterStr = std::string());
++    // NV-DXVK end
+     // END
+ 
+     // START
+diff --git a/tests/rtx/unit/test_option_layer_export.cpp b/tests/rtx/unit/test_option_layer_export.cpp
+index f8aa67d5..2df57f78 100644
+--- a/tests/rtx/unit/test_option_layer_export.cpp
++++ b/tests/rtx/unit/test_option_layer_export.cpp
+@@ -607,6 +607,52 @@ namespace option_layer_export_test {
+   }
+ 
+   // ============================================================================
++  // Failed disk operations must not replace either the saved baseline or live values.
++  void testSaveFailureAndReload() {
++    const std::string path = "test_persistent_settings.conf";
++    cleanupTestFile(path);
++    Config original;
++    original.setOption("rtx.test.export.testFloatOption", 1.25f);
++    original.setOption("rtx.unregistered.keep", std::string("authored"));
++    TEST_ASSERT(Config::serializeCustomConfig(original, path), "Initial save failed");
++    auto* layer = const_cast<RtxOptionLayer*>(RtxOptionManager::acquireLayer(path, kTestLayerKey));
++    TEST_ASSERT(layer, "Layer missing");
++    TestExportOptions::testFloatOption.setImmediately(0.f, layer);
++    TEST_ASSERT(layer->hasUnsavedChanges(), "An intentional zero should be unsaved");
++
++    const HANDLE locked = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
++    TEST_ASSERT(locked != INVALID_HANDLE_VALUE, "Could not lock original");
++    const bool savedWhileLocked = layer->save();
++    const bool stillUnsaved = layer->hasUnsavedChanges();
++    CloseHandle(locked);
++    TEST_ASSERT(!savedWhileLocked && stillUnsaved, "Failed save was reported as saved");
++    TEST_ASSERT(readOptionFromFile(path, "rtx.test.export.testFloatOption") == "1.25", "Failed save damaged original");
++    TEST_ASSERT(layer->save() && !layer->hasUnsavedChanges(), "Retry did not save");
++    TEST_ASSERT(readOptionFromFile(path, "rtx.test.export.testFloatOption") == "0", "Saved zero lost");
++    TEST_ASSERT(readOptionFromFile(path, "rtx.unregistered.keep") == "authored", "Unknown setting lost");
++
++    TestExportOptions::testFloatOption.setImmediately(2.5f, layer);
++    const HANDLE unreadable = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
++    TEST_ASSERT(unreadable != INVALID_HANDLE_VALUE, "Could not lock reads");
++    const bool loadedWhileLocked = layer->reload();
++    CloseHandle(unreadable);
++    TEST_ASSERT(!loadedWhileLocked, "Unreadable file was reported as loaded");
++    TEST_ASSERT(layer->hasUnsavedChanges(), "Failed reload lost live changes");
++    TEST_ASSERT(layer->save(), "Save after failed reload failed");
++    TEST_ASSERT(readOptionFromFile(path, "rtx.test.export.testFloatOption") == "2.5", "Failed reload changed live value");
++    TestExportOptions::testFloatOption.setImmediately(0.f, layer);
++    TEST_ASSERT(layer->reload() && !layer->hasUnsavedChanges(), "Successful reload failed");
++
++    Config absentDirectory;
++    absentDirectory.setOption("rtx.test", 1);
++    TEST_ASSERT(!Config::serializeCustomConfig(absentDirectory, "absent-settings-dir/test.conf"), "Missing directory save succeeded");
++    RtxOptionManager::releaseLayer(layer);
++    cleanupTestFile(path);
++    for (const auto& entry : std::filesystem::directory_iterator(".")) {
++      TEST_ASSERT(entry.path().filename().string().find(path + ".tmp-") != 0, "Staged file leaked");
++    }
++  }
++
+   // Test Runner
+   // ============================================================================
+   
+@@ -623,6 +669,7 @@ namespace option_layer_export_test {
+       testExportHashSetConflictInMerge();
+       testExportNonHashSetMergeOverwrite();
+       testExportNoUnsavedChanges();
++      testSaveFailureAndReload();
+       
+       std::cout << "\n=== All Option Layer Export Tests PASSED ===" << std::endl;
+     } catch (const DxvkError& e) {

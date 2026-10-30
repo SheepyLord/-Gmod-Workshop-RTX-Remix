@@ -60,3 +60,10 @@ Validation uses a fresh pinned Xenthio install under out; RTX_c is now our imple
 Separate first-person view models from primary-space player bodies, remove captured shared-player
 categories from the defaults, and scope self-shadow materials to a private body proxy. The RTX tab
 adds translated shadow and render-height controls ([ADR 0043](decisions/0043-player-body-viewmodel-and-shadows.md)).
+
+## Remix settings persistence (2026-10-30)
+
+Prevent unset Common Remix sliders from becoming startup zeros, make GMod startup replay explicit,
+and preserve native settings on failed Save or Reload ([ADR 0044](decisions/0044-remix-settings-persistence.md)).
+The panel's six translations include the ownership and save guidance. Validation and delivery are
+recorded in the [QoL report](handover/QoL-report.md#remix-settings-persistence-2026-10-30).

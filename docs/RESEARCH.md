@@ -2208,3 +2208,24 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   geometry supplies its ray tracing, so its unsupported Source-only depth draws are skipped.
 - Only bundled Lua and its indexed provenance change. The upstream Hotloader checkout, native
   release record, cached asset bytes and carrier identities are not edited by this batch.
+
+## Remix settings persistence (2026-10-30)
+
+- `nativeloader_menu.lua:100` formerly created archived numeric ConVars with empty defaults and bound
+  them directly to DNumSlider. PoC client.vdf independently contained max_bounces=0, sky_brightness=0
+  and colour_purity=0 while dropdown values remained empty. Source's numeric controls coerce empty
+  to zero. The fix uses unbound widgets, guarded initialization and explicit numeric selections;
+  startup replay is off by default (current menu lines 100–157 and 215–246).
+- The fixes' `source/remixapi/remixapi.cpp:1111` GetConfigVariable reads only a discovered rtx.conf
+  and returns empty if the key is absent. It does not read the live runtime or user.conf. The panel
+  must not treat it as a synchronized runtime getter. The new controls never use it for sync.
+- `rtx_fork_tonemap.h:99` defines Psycho17 purityScale=1.0; its native UI permits 0–5. Zero is a valid
+  authored choice, so globally replacing zero or changing user.conf during deployment is incorrect.
+- Runtime `src/util/config/config.cpp:1474` previously opened the destination with truncation and
+  silently returned on open failure. `RtxOptionLayer::save` changed its baseline before this write
+  and then always marked itself saved. Patch 0008 stages with CREATE_NEW, checks writes, flushes and
+  closes, and uses MoveFileExW with REPLACE_EXISTING/WRITE_THROUGH. The saved baseline advances only
+  after success. Reload reads completely before removing active layer values.
+- The rebuilt runtime is 362,799,104 bytes, SHA-256
+  `ab03a3f792b1f75fcbb63270ba327e836af29cdd691d2a5b9d01db0052dd296b`, from verified
+  eight-patch tree `615096202d12baa268afdac94e13eb8682094fe0`. No shader source changed.

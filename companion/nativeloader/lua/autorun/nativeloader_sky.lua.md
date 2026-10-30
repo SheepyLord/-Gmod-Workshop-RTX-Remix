@@ -1,5 +1,9 @@
 # nativeloader_sky.lua
 
+Common Remix fog presets take precedence only when the menu's `NativeLoaderRemixFogOverride` hook
+returns true, after a preset was applied in this session. An archived draft with startup replay off
+does not suppress the weather's fog (ADR 0044).
+
 The sky in RTX sessions ([ADR 0031](../../../../docs/decisions/0031-physical-sky-time-and-weather.md),
 [ADR 0032](../../../../docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md)).
 The runtime has a physical sky that the RTX fixes leave off: `rtx.skyMode 1`, with scattering,
