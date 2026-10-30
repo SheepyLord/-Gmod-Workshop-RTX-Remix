@@ -107,7 +107,10 @@ and checks every CRC and, for LZMA, GMod's footer; see [RESEARCH.md](RESEARCH.md
 
 `tools/build.ps1` also runs `nl_proxy_tests` (16 pure/export/forwarding/child-host cases),
 `nl_proxy_generated_exports` and `nl_proxy_installer` (synthetic roots only; since ADR 0035 also a
-foreign `winmm.dll` kept in `native-loader\original` and put back by `-Uninstall`). Both configurations
+foreign `winmm.dll` kept in `native-loader\original` and put back by `-Uninstall`). Since ADR 0036,
+`nl_activation_integration` also checks that every active start hands the runtime short copies equal
+to the package's layers, writes a copy changed by hand again, and falls back to the source when a copy
+cannot be written. Both configurations
 use static CRT. Generate/update committed exports with `python loader/proxy/generate_exports.py`.
 Before installation check runtime dependencies with `py -3.12 tools/diag/pe_imports.py
 out/build/win64-release/loader/proxy/winmm.dll` on this machine (the Python with `pefile`).

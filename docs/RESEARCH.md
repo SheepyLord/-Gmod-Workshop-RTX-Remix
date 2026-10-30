@@ -2041,7 +2041,11 @@ not count; the package's id, version and generation do, twice, and every added l
 | NVIDIA GPU, generation 9 / 21 / 999 | 237 / 239 / 241 |
 | No NVIDIA GPU (`native-loader/remix/non-nvidia.conf` added, ADR 0030), the same | 273 / 275 / 277 |
 
-So without an NVIDIA GPU, an RTX session of the published package runs without its layers.
+So without an NVIDIA GPU, an RTX session of the published package ran without its layers. The limit
+itself was known (section 19, and ADR 0021 noted a long list); the package's longer versions and the
+non-NVIDIA layer (ADR 0030) crossed it, and only on GPUs this machine does not test with. Fixed by
+listing short copies of the layers instead (ADR 0036): 73 characters for the published package, 109
+without an NVIDIA GPU.
 
 **The runtime build is reproducible but for its stamps.** Built again in the same verified worktree
 (`build_runtime.ps1 -Verify` passes), `d3d9.dll` has the same size (362,791,936 bytes) and differs from

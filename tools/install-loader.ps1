@@ -142,6 +142,12 @@ if ($Uninstall) {
             $path = Join-Path $deleteTarget $name
             if (Test-Path -LiteralPath $path -PathType Leaf) { Remove-Item -LiteralPath $path -Force }
         }
+        # The RTX sessions' copies of the package's Remix layers (ADR 0036): remix\dxvk-<n>.conf, remix\rtx-<n>.conf.
+        $remixDir = Join-Path $deleteTarget 'remix'
+        if (Test-Path -LiteralPath $remixDir -PathType Container) {
+            Get-ChildItem -LiteralPath $remixDir -File -Force | Where-Object { $_.Name -match '^(dxvk|rtx)-[0-9]+\.conf$' } |
+                ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
+        }
         Get-ChildItem -LiteralPath $deleteTarget -Recurse -Force -Directory | Sort-Object { $_.FullName.Length } -Descending |
             Where-Object { -not (Get-ChildItem -LiteralPath $_.FullName -Force) } | ForEach-Object { Remove-Item -LiteralPath $_.FullName }
         $kept = @(Get-ChildItem -LiteralPath $deleteTarget -Recurse -Force -File)
@@ -176,9 +182,11 @@ if ($DefaultConfig) {
     }
 }
 if (-not $PSCmdlet.ShouldProcess($resolvedRoot, "Install $Config native loader bootstrap")) { return }
-$oldDll = if (Test-Path -LiteralPath $dllPath) { [IO.File]::ReadAllBytes($dllPath) } else { $null }
-$oldPdb = if (Test-Path -LiteralPath $pdbPath) { [IO.File]::ReadAllBytes($pdbPath) } else { $null }
-$oldReceipt = if (Test-Path -LiteralPath $receiptPath) { [IO.File]::ReadAllBytes($receiptPath) } else { $null }
+# The leading comma keeps each byte[] whole: a statement's output is enumerated, which turned a 35 MB
+# Debug PDB into an object[] of boxed bytes, over a gigabyte per install.
+$oldDll = if (Test-Path -LiteralPath $dllPath) { ,[IO.File]::ReadAllBytes($dllPath) } else { $null }
+$oldPdb = if (Test-Path -LiteralPath $pdbPath) { ,[IO.File]::ReadAllBytes($pdbPath) } else { $null }
+$oldReceipt = if (Test-Path -LiteralPath $receiptPath) { ,[IO.File]::ReadAllBytes($receiptPath) } else { $null }
 $hadState = Test-Path -LiteralPath $stateDir
 $hadOriginalDir = Test-Path -LiteralPath $originalDir
 try {

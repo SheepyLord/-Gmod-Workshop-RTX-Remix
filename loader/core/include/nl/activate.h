@@ -48,6 +48,12 @@ std::vector<unsigned> graphics_adapters();
 
 inline constexpr unsigned kNvidia = 0x10DE;
 
+// The folder of the Remix layers the bootstrap writes. The package's config layers reach the runtime
+// as copies here with short fixed names, dxvk-<n>.conf and rtx-<n>.conf (ADR 0036): the runtime reads
+// DXVK_CONFIG_FILE and DXVK_RTX_CONFIG_FILE into a 260-character buffer and takes a longer value as
+// empty (RESEARCH.md sections 19 and 32), and the published package's payload folder path alone is 74.
+inline constexpr std::string_view kLayerFolder = "native-loader/remix";
+
 // Remix's defaults on a computer without an NVIDIA GPU (ADR 0030). The package's classic settings pin
 // the graphics preset to Custom, tuned for NVIDIA GPUs; this layer, written by the bootstrap above the
 // package's layers and below the user's own files, gives Remix its automatic choice for the GPU back.
@@ -83,6 +89,14 @@ struct Plan {
   std::vector<std::pair<std::string, std::string>> user_env;
   std::vector<std::string> rtx_layers;
   std::vector<std::string> dxvk_layers;
+  // The package's layers in those lists are copies (ADR 0036): `copy`, in kLayerFolder, holds the bytes
+  // of `source`, in the payload folder. The bootstrap writes each at every RTX start, after checking
+  // `source` against the journal.
+  struct LayerCopy {
+    std::string source;
+    std::string copy;
+  };
+  std::vector<LayerCopy> layer_copies;
 
   // Arguments to append to the command line: the package's launch_args minus any the user already
   // passed, in the manifest's order, then a borderless window the size of the primary display unless
@@ -118,5 +132,9 @@ struct Plan {
 // adapter found) the computer counts as having an NVIDIA GPU, so nothing changes.
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
           std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus = {});
+
+// For the copies the bootstrap could not write: their sources go into the lists and variables
+// instead, and they leave layer_copies, with a note when a list is then too long for the runtime.
+void use_sources(Plan& plan, const std::vector<std::string>& unwritten);
 
 }  // namespace nl::activate

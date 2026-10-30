@@ -31,6 +31,9 @@ GarrysMod\
 │  │                                         kept until a start without RTX has put them back
 │  ├─ remix\non-nvidia.conf                loader 0.5.0: written at each RTX start on a computer without an
 │  │                                         NVIDIA GPU: Remix's automatic preset (ADR 0030)
+│  ├─ remix\dxvk-<n>.conf, rtx-<n>.conf     loader 0.6.0: copies of the package's Remix layers, written at
+│  │                                         each RTX start from the checked payload; the runtime reads
+│  │                                         these (ADR 0036)
 │  ├─ reshade\                             loader 0.5.0: ReShade's base folder in RTX sessions (ADR 0028):
 │  │                                         ReShade.ini, presets, ReShade.log; made once from
 │  │                                         bin\win64\ReShade.ini, then the user's (never journaled)
@@ -172,7 +175,8 @@ renames it over status.json; simultaneous instances cannot share a temporary fil
 | `activation.environment.requested` | Planned `{name,value}` assignments |
 | `activation.environment.set` | Assignments retained in the final process; empty after rollback |
 | `activation.environment.user_values_kept` | Original user values preserved; config lists remain as the final suffix after package layers |
-| `activation.layers.rtx`, `dxvk` | Effective low-to-high layer lists; missing/empty user config variables use the default root conf |
+| `activation.layers.rtx`, `dxvk` | Effective low-to-high layer lists, as the runtime reads them; missing/empty user config variables use the default root conf |
+| `activation.layer_copies` | Loader 0.6.0, ADR 0036: `{copy,source}` for each package layer: the short copy in `native-loader/remix` the lists name, and the package's file it was written from. A copy that could not be written is not listed; its source is in the list instead, with a `session.notes` entry |
 | `activation.launch_arguments.requested`, `added`, `already_present` | Missing planned tokens (the package's, then the loader's borderless window, [ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)), retained additions, and existing user tokens/values such as `-dxlevel 95` or `-fullscreen` |
 | `activation.launch_arguments.fallback_launch_options` | Exact missing options to supply manually after a refused swap; the loader never writes Steam settings |
 | `activation.system_vulkan_path` | Retained System32 preload path, or empty when absent/undone |
@@ -186,7 +190,7 @@ renames it over status.json; simultaneous instances cannot share a temporary fil
 The M1 log header still proves entry timing. M4 appends `deployment.outcome`, `.generation`,
 `.change_count`, `.operations`, `.elapsed_ms`, `.recovered`, `.blocked_by`, `.error`, repeated
 `.skipped`/`.note`, plus `activation.outcome`, `.reason`, `.runtime.id/version/folder/dll`,
-`.system_vulkan_path`, `.environment.set/user_values_kept`, `.layers.rtx/dxvk`,
+`.system_vulkan_path`, `.environment.set/user_values_kept`, `.layers.rtx/dxvk`, `.layer_copies` (0.6.0),
 `.arguments.added/already_present`, `.fallback_launch_options`, `.windows_error`,
 `.missing_system_dependencies`, `.preloaded` (0.5.0), `.rolled_back`, `.elapsed_ms`, repeated `error`, and
 `startup.elapsed_ms` / `startup.complete`. Structured values use JSON on one key=value line.

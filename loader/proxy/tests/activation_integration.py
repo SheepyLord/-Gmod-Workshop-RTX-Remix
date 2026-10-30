@@ -144,6 +144,9 @@ def main():
         check(probe['command_line_w'] == original + (' ' + ' '.join(added) if added else ''), f'{game.name}: appended arguments differ')
         for variable in activation['environment']['set']:
             check(probe['environment'][variable['name']] == variable['value'], f'{game.name}: environment differs')
+        for layer in activation['layer_copies']:  # ADR 0036: the runtime reads copies, byte for byte the package's files
+            check((game.root / layer['copy']).read_bytes() == (game.root / layer['source']).read_bytes(),
+                  f'{game.name}: {layer["copy"]} is not a copy of {layer["source"]}')
         return status
 
     def vanilla(result, expected_env=None):
@@ -230,6 +233,31 @@ def main():
         preview = user.cli('activation', env={**os.environ, **user_values})
         check(preview['env'] == status['activation']['environment']['requested'], 'CLI and startup layer plans differ')
         passed('user lists remain on top, empty values and dxlevel 95 stay intact; CLI agrees')
+
+        # ADR 0036 (R3-017): the runtime gets short copies of the package's layers, whatever the payload
+        # folder's name; a copy changed by hand is written again, and one that cannot be written leaves
+        # its source in the list, with a note.
+        copies = Game('layer-copies')
+        status = active(copies, copies.run())
+        layer_copies = status['activation']['layer_copies']
+        check([layer['copy'] for layer in layer_copies] == ['native-loader/remix/rtx-1.conf', 'native-loader/remix/dxvk-1.conf'],
+              f'layer copies: {layer_copies}')
+        check(status['activation']['layers']['dxvk'] == ['native-loader/remix/dxvk-1.conf', 'dxvk.conf'],
+              f'the runtime is not given the copy: {status["activation"]["layers"]}')
+        rtx_copy = copies.root / layer_copies[0]['copy']
+        rtx_copy.write_text('rtx.test = False\n', encoding='ascii')
+        active(copies, copies.run())
+        dxvk_copy = copies.root / layer_copies[1]['copy']
+        dxvk_copy.unlink()
+        dxvk_copy.mkdir()  # a folder in its place: the copy cannot be written
+        result = copies.run()
+        fallback = active(copies, result)
+        check(result[0]['environment']['DXVK_CONFIG_FILE'] == layer_copies[1]['source'] + ',dxvk.conf',
+              f'an unwritten copy did not fall back to its source: {result[0]["environment"]}')
+        check([layer['copy'] for layer in fallback['activation']['layer_copies']] == ['native-loader/remix/rtx-1.conf'],
+              'an unwritten copy is still reported as used')
+        check(any('was not written' in note for note in fallback['session']['notes']), 'no note for the unwritten copy')
+        passed('the runtime reads short copies of the package\'s layers; a changed copy is rewritten, an unwritable one falls back')
 
         chosen = Game('user-window')
         arguments = active(chosen, chosen.run(extra=['-fullscreen', '-w', '1280', '-h', '720']))['activation']['launch_arguments']
@@ -382,7 +410,7 @@ def main():
         bad_size = Game('missing-layer')
         status = active(bad_size, bad_size.run())
         bad_size.source.unlink()
-        layer_path = bad_size.root / status['activation']['layers']['rtx'][0]
+        layer_path = bad_size.root / status['activation']['layer_copies'][0]['source']  # the package's file, not its copy
         layer_path.write_bytes(b'')
         result = bad_size.run()
         vanilla(result)

@@ -53,6 +53,9 @@ Graphics cards
 Settings (native-loader\config.json)
 ------------------------------------
 
+- native-loader\remix holds copies of the package's Remix settings, written again at every RTX start
+  (0.6.0 or later). Change your own dxvk.conf, rtx.conf and user.conf in the Garry's Mod folder
+  instead: they win over the package's.
 - RTX off, without uninstalling:  { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "enabled": false } }
 - The loader off:                  add "enabled": false
 - Nothing else in the file is needed. Native code comes only from what "allow" lists.

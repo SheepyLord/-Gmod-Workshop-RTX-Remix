@@ -92,7 +92,10 @@ identifies the package version in the journal.
 M4 applies `remix.entry` from the journaled versioned payload, validates its and the package layer
 files' recorded sizes, and requires cwd=game root and an absolute DLL path below MAX_PATH. The
 `rtx_conf_layers` / `dxvk_conf_layers` precede the user's environment lists (or root conf defaults);
-other `env` entries fill only absent variables. `launch_args` fill only missing arguments, preserving
+from loader 0.6.0 the runtime reads them as byte-for-byte copies the bootstrap writes to
+`native-loader/remix/rtx-<n>.conf` and `dxvk-<n>.conf` at each RTX start, so the lists stay within the
+runtime's 259 characters whatever the package's id, version and layer names
+([ADR 0036](decisions/0036-remix-layers-as-short-copies.md)). Other `env` entries fill only absent variables. `launch_args` fill only missing arguments, preserving
 user values. After them the loader itself adds a borderless window the size of the primary display
 (`-windowed -noborder -w W -h H`) unless the user chose a window mode; a package cannot ask for window
 options ([ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)). `prefer_system_vulkan_loader` loads System32 Vulkan before the runtime. Process changes
