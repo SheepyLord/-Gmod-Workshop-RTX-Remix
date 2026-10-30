@@ -11,3 +11,8 @@ test points `tempfile` at a folder that does not exist and checks the fixture st
 
 Run from `tools\`: `python -m unittest discover -s tests` (or `tools\test.ps1`). Scratch goes to
 `out\tmp` either way.
+
+- `test_the_stored_runtime_must_be_what_runtime_builds` (R3-014): a matching `runtime/base.json` record passes,
+  also with a reworded `why`; a changed patch, a changed submodule setting or another stored `d3d9.dll` fails.
+- `test_other_checkouts_inside_are_not_this_repos_files`: a folder with its own `.git` (a worktree in
+  `.claude/worktrees`) is skipped.

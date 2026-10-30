@@ -33,3 +33,6 @@ written to a scratch folder under `out\tmp`. No game files are read.
 
 Run with the other tool tests: `python -m unittest discover -s tests` from `tools\` (as
 `tools\test.ps1` does). Exit 0 when the tests pass.
+
+- `test_licence_texts_added_to_an_addon` (R3-011): `--add-to-addon` adds a file and a folder's files (junk
+  left out) to an add-on; a path the add-on has, an unknown add-on, no path, or a missing source is refused.

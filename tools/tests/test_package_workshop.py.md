@@ -15,6 +15,7 @@ cd tools; python -m unittest tests.test_package_workshop
 | a file in two parts is refused | including two paths that differ only in case |
 | two runtimes are refused | at most one part may carry `remix` |
 | a file that does not match its manifest is refused | and nothing is written |
+| a path outside the package is refused before anything is written | R3-008: absolute paths (either slash), `..`, an empty segment, a backslash, a path outside `native/` and a colon are refused, and the file the absolute path names keeps its bytes |
 | conflicting session values and unknown keys are refused | |
 | nlctl validates a real combination | runs only when `nlctl.exe` is built: a mod package plus a binary-module package passes `nlctl manifest` |
 

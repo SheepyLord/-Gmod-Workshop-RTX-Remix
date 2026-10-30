@@ -48,3 +48,7 @@ Covers:
 
 Side effects: the temporary folders, removed afterwards, and two short-lived Python processes.
 Exit code: unittest's (0 when all pass).
+
+- `test_a_partial_first_mount_waits_for_a_remount_for_a_while` (R3-013): `Mounted 3 of 755` first, then a
+  remount: the map waits for the second mount (`workshop_ready_by` "the remount"); without a remount it is
+  sent once `PARTIAL_MOUNT_GRACE` has passed.

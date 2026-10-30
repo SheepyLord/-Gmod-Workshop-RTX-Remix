@@ -20,7 +20,8 @@ cd tools; python -m unittest tests.test_publish_workshop
 | only the newest archive is kept | |
 | config errors | a bad item id, a part with neither or both sources, an unknown builder |
 | the fingerprint ignores unpacked inputs and the working folder | a part read from `out/inputs` does not change the fingerprint when its file appears there, nor when the script runs from another folder; an absolute path elsewhere still does |
-| the lock takes over a dead owner and waits for a live one | |
+| one publish at a time and no lock left behind | R3-005: a second handle cannot take the lock; once released it can; a process that ends holding it leaves it free; the file stays |
+| a push publishes from the checkout of the pushed commit | R3-004: in a repository with a worktree on another branch, `checkout_at` finds each commit in the checkout that has it, and nothing for a commit checked out nowhere |
 | install, refuse foreign and uninstall | all four hooks (`post-commit`, `post-merge`, `post-checkout`, `pre-push`) carry the marker and LF line endings and run Git LFS's step of the same name; a foreign hook is refused unless forced; uninstall removes only ours |
 | the hooks are valid sh | `sh -n` accepts every hook, with the `sh` git runs hooks with: on the path, or Git for Windows' own beside `git.exe` (`bin\sh.exe`, `usr\bin\sh.exe`); skipped only without either |
 | a source repository's hook environment does not redirect git | the script run as a hook would run it, with `GIT_DIR`, `GIT_INDEX_FILE` and `GIT_WORK_TREE` naming another repository: its shared state and `git rev-parse --show-toplevel` are still this repository's, and no repository-local git variable is left |
