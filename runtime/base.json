@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "7077609e831899082c861c511e75aa3f65ccbb4624bb1212deb07f224c6c133e",
-  "built_from": "d63dd1d9; verified before a translation-only meson compile -j 2 (no shader sources changed)",
+  "d3d9.dll": "ca3ce8dc21f052bf6026c74b776c8d2e4186c33e42023e29f2776852e865cefc",
+  "built_from": "2ba777de; verified seven-patch tree, incremental meson compile -j 2; only rtx_instance_manager.cpp changed, shader inputs/stamp reused",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -60,6 +60,7 @@
    "patches/0004-Atmosphere-the-real-Moon-a-night-sky-image-lunar-and.patch": "95f39f3161f04b0b0f59e35e0b222dc3e4eb394a70ab48fd9c263f2636f966be",
    "patches/0005-i18n-complete-weather-display-and-catalog-validation.patch": "4a47c6e7bd46b54d5795fe27efbb65f0283fec2401d3a2e600d300ed2f789f38",
    "patches/0006-i18n-translate-migration-controls.patch": "9ae267bef46b11ebcae23e3f1fc3ffdd29f3b07dff895c4d1499ba88c3ce1a92",
+   "patches/0007-Keep-view-models-visible-with-primary-space-player-b.patch": "d304ec7b623aebba8d0ec3bb575f0b8e35654512f2f459e8486aa78774c7d315",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

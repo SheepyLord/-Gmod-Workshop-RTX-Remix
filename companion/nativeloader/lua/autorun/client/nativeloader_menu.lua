@@ -26,6 +26,16 @@ local function remix_ready()
     return istable(RemixConfig) and isfunction(RemixConfig.SetConfigVariable)
 end
 
+CreateClientConVar("rtx_pseudoplayer", "0", true, false)
+CreateClientConVar("rtx_pseudoplayer_offset_z", "0", true, false)
+local function player_shadow()
+    if GetConVar("rtx_pseudoplayer"):GetBool() and remix_ready() then
+        RemixConfig.SetConfigVariable("rtx.playerModel.enablePrimaryShadows", "True")
+    end
+end
+cvars.AddChangeCallback("rtx_pseudoplayer", player_shadow, "nativeloader_player_shadow")
+hook.Add("InitPostEntity", "nativeloader_player_shadow", function() timer.Simple(4, player_shadow) end)
+
 -- Remix's own volumetric fog presets ("Volumetric Visual Presets" in its menu,
 -- rtx_global_volumetrics.cpp), applied as its Apply button does: the four fog values, the game's
 -- fog no longer remapped. Volumetrics are switched on too, or the preset shows nothing. The sky's
@@ -171,6 +181,13 @@ local function remix_settings(panel)
     panel:Button(L("Reset these to Remix's own values"), "nativeloader_remix_reset")
 end
 
+local function player_settings(panel)
+    panel:CheckBox(L("Local player shadow"), "rtx_pseudoplayer")
+    panel:ControlHelp(L("Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."))
+    panel:NumSlider(L("Body height offset (units)"), "rtx_pseudoplayer_offset_z", -32, 64, 1)
+    panel:ControlHelp(L("Positive values raise only the rendered body. Your camera and collision stay in place."))
+end
+
 concommand.Add("nativeloader_remix_reset", function()
     for _, option in ipairs(OPTIONS) do RunConsoleCommand("nativeloader_remix_" .. option[1], "") end
     print("[nativeloader] Remix settings from the RTX Remix tab cleared; they apply from Remix's files at the next start.")
@@ -179,4 +196,5 @@ end)
 hook.Add("PopulateToolMenu", "nativeloader_menu", function()
     add_tool_menu_option(TAB, N("Start here"), "nativeloader_start", L("Start here"), "", "", readable_panel(start_here))
     add_tool_menu_option(TAB, N("Remix settings"), "nativeloader_remix", L("Common Remix settings"), "", "", readable_panel(remix_settings))
+    add_tool_menu_option(TAB, N("Rendering"), "nativeloader_player", L("Player models"), "", "", readable_panel(player_settings))
 end)

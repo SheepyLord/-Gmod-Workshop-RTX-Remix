@@ -1,5 +1,10 @@
 # remix_defaults.py
 
+The shipped layer clears captured rtx.playerModelTextures and rtx.playerModelBodyTextures lists
+([ADR 0043](../docs/decisions/0043-player-body-viewmodel-and-shadows.md)). Local first-person proxies
+receive private categories instead; the primary-space body default is false. Shared arms/player/ragdoll textures stay ordinary world
+materials. User config files are only read; the player's own layers still override the shipment.
+
 Merges Remix config files into the single defaults layer a runtime package ships
 ([ADR 0021](../docs/decisions/0021-remix-defaults-in-one-low-layer.md)).
 

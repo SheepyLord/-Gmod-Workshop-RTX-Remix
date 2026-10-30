@@ -8,6 +8,7 @@ it exists) and delete it.
 - Texture-hash sets combine like Remix layers: a stronger file's `-0x..` removes, its `0x..` adds back,
   and net removals stay as `-` tokens.
 - A non-hash value replaces a set.
+- Captured player/body texture lists are omitted from the shipped defaults; unrelated world lists remain.
 - `main` writes the layer with its header, and returns 1 for a missing input.
 
 No game, network or install is touched. Exit codes are unittest's.

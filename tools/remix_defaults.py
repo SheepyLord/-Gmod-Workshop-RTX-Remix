@@ -62,6 +62,11 @@ def merge(paths: list[Path]) -> tuple[dict, dict]:
 # menu hides the multiplier where multi-frame generation is unsupported, so it could not be changed.
 GPU_DEPENDENT = {'rtx.frameGenerationType': '0', 'rtx.dlfg.enable': 'False', 'rtx.dlfg.maxInterpolatedFrames': '1'}
 
+# Shared player texture captures also affect arms, NPCs and ragdolls. First-person proxies own
+# private texture categories instead (ADR 0043).
+PLAYER_CATEGORIES = {'rtx.playerModelTextures': '', 'rtx.playerModelBodyTextures': '',
+                     'rtx.playerModel.enableInPrimarySpace': 'False'}
+
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -73,15 +78,16 @@ def main(argv=None) -> int:
         print('error: missing ' + ', '.join(missing), file=sys.stderr)
         return 1
     merged, origin = merge(args.inputs)
-    for key, value in GPU_DEPENDENT.items():
+    for key, value in (GPU_DEPENDENT | PLAYER_CATEGORIES).items():
         merged[key] = value
         origin[key] = 'remix_defaults.py'
     header = ['# Remix defaults for the native loader package, merged by tools/remix_defaults.py (ADR 0021).',
               '# Sources, weakest first: ' + ', '.join(p.name for p in args.inputs) + '.',
               '# Frame generation is left off and at one generated frame: it depends on the GPU (ADR 0037).',
+              '# Player texture categories are assigned to private local-body proxies (ADR 0043).',
               '# The player\'s own rtx.conf and user.conf in the game folder override every value here.']
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text('\n'.join(header + [f'{k} = {v}' for k, v in merged.items()]) + '\n', encoding='utf-8', newline='\n')
+    args.out.write_text('\n'.join(header + [f'{k} = {v}'.rstrip() for k, v in merged.items()]) + '\n', encoding='utf-8', newline='\n')
     counts = {}
     for name in origin.values():
         counts[name] = counts.get(name, 0) + 1

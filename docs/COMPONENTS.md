@@ -9,6 +9,10 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 
 ## Runs inside the game
 
+The player-body fix adds a private local-shadow proxy and RTX-tab shadow/height controls, with
+independent first-person view models in runtime patch 0007. Details and tests are in
+[ADR 0043](decisions/0043-player-body-viewmodel-and-shadows.md).
+
 Loader 0.8.0 adds prior-install migration in nl_core: static PE recognition, a bounded upstream
 path catalog, hash-verified stock recovery, and a permanent legacy archive committed with normal
 package deployment ([ADR 0042](decisions/0042-legacy-remix-migration.md)). No GPU or execution of the

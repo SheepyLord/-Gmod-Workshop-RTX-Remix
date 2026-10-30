@@ -27,20 +27,20 @@
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/runtime-translations",
     "remote": "https://github.com/sambow23/dxvk-remix-gmod.git",
-    "commit": "d63dd1d9d0fdfc725986c4cb1b11da80a3a37d9e",
+    "commit": "2ba777de47504f73954a50c0ff77f03fa7bb0926",
     "dirty": false
    },
-   "imported": "2026-10-30T10:53:42+00:00"
+   "imported": "2026-10-30T20:15:16+00:00"
   },
   "layers/classic_remix_defaults.conf": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\fg-off\\out\\tmp\\layer\\classic_remix_defaults.conf",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\player-body-arms\\out\\player-body\\classic_remix_defaults.conf",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/fg-off",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/player-body-arms",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "2901563bbadb2e5b2d511d5c54d725d5ff205e14",
+    "commit": "369dac9bc88913877745379b40db21bfe4cd4841",
     "dirty": false
    },
-   "imported": "2026-10-30T06:46:45+00:00"
+   "imported": "2026-10-30T21:31:07+00:00"
   }
  },
  "files": {
@@ -124,11 +124,11 @@
   },
   "files/d3d9.dll": {
    "size": 362792960,
-   "sha256": "7077609e831899082c861c511e75aa3f65ccbb4624bb1212deb07f224c6c133e",
-   "mtime_ns": 1793357329067872500,
+   "sha256": "ca3ce8dc21f052bf6026c74b776c8d2e4186c33e42023e29f2776852e865cefc",
+   "mtime_ns": 1793390522852274100,
    "stored": "xz",
-   "stored_size": 55354636,
-   "stored_sha256": "e90d570ea1d6fae75317640f04bb928415376198bbd1c1113ba6b4f258671339"
+   "stored_size": 55338704,
+   "stored_sha256": "e1b700e9fd2be5a4189943231cfb10fc243976bd8b45ddeae6be7d766a69d5eb"
   },
   "files/GFSDK_Aftermath_Lib.x64.dll": {
    "size": 9240728,
@@ -1313,9 +1313,9 @@
    "stored_sha256": "f3ff3066b9b64cf0d1a2e64914d16a9f41c57f0c75907485ebc60d09d638f320"
   },
   "layers/classic_remix_defaults.conf": {
-   "size": 170281,
-   "sha256": "dc1e1662f8f1c23a16bf842f4612bbaedf7d1fdac995329de62bdb9fed2eba95",
-   "mtime_ns": 1793342801172418700,
+   "size": 159304,
+   "sha256": "aecee5ed00832c4ab60403dd78b0c8da46dd08a69462a03dfd317c54e2b58ee6",
+   "mtime_ns": 1793395867181853100,
    "stored": "plain"
   },
   "layers/compiler_threads.conf": {

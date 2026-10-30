@@ -1,6 +1,6 @@
 # QoL report: complete interface translations
 
-Latest batch: [legacy Remix migration, loader 0.8.0](#legacy-remix-migration-2026-10-30).
+Latest batch: [player body, first-person arms and shadows](#player-body-first-person-arms-and-shadows-2026-10-30).
 
 2026-10-30. Implemented on `codex/translation-review`, from `main` at `7d79c12`.
 The user expanded the audit to every bundled add-on interface. The implementation is recorded in
@@ -297,3 +297,83 @@ offline legacy install may lack six stock originals that RTXLauncher overwrote w
 Missing sources, unknown edits and other builds stop safely, with the missing file in the report;
 --legacy-source supplies an explicit verified vanilla root. Custom configs remain with a note
 about any RTX commands they still contain. No human assistance was needed for this task.
+
+
+## Player body, first-person arms and shadows (2026-10-30)
+
+Implemented on codex/player-body-arms from 369dac9. [ADR 0043](../decisions/0043-player-body-viewmodel-and-shadows.md)
+records the rendering and compatibility decisions. The runtime's explicit enableInPrimarySpace
+branch discarded every viewmodel candidate. Its removal makes first-person arms/weapons independent
+of body visibility while preserving ViewModel.enable and the usual perspective correction.
+
+The default layer no longer carries 549 captured player hashes or three body hashes, and returns
+the primary-space body default to false. Original player/hand/ragdoll materials are migrated out
+of the player category in memory when automatic categorization is enabled. This handles existing
+saved configurations too: the read-only RTX_c inspection found 529 player hashes in rtx.conf and
+four in user.conf. The native removal API only knows categories in its own cache, so the migration
+supplies the missing local player-bit bookkeeping before targeted removal and preserves unrelated
+category flags. Saved configuration files are not changed.
+
+The shadow body is one independent client entity with a copied player bone pose, skin, body groups
+and player color. Only its private copied textures receive player categories. A guaranteed pixel
+change preserves alpha even for white inputs; copies are cached. Source eye shaders use a diffuse
+fallback, internal compiled material flags are filtered while semantic alpha/cull flags remain,
+and categorization waits for real draw hashes. The generic model fixer respects the proxy's custom
+draw hook; per-index overrides and lighting are restored after drawing. No real-player bones,
+camera or collision are moved. Weapon proxy ownership remains separate.
+
+The new RTX Remix / Rendering / Player models panel has Local player shadow and Body height offset
+(units), using archived rtx_pseudoplayer and rtx_pseudoplayer_offset_z. The UI range is -32 to 64;
+render offsets are bounded to 128 units. Positive height changes world Z in either legacy angle
+mode. All five labels/help strings are translated in zh-CN, zh-TW, ja, ko, fr and ru (174 companion
+strings per catalog; 472 bundled interface strings per catalog remain complete).
+
+The verified runtime source tree is the existing runtime-translations worktree, now on local
+codex/player-body-arms-runtime, commit 2ba777de. Patch 0007 contains the nine-line C++ removal.
+build_runtime.ps1 -Verify confirmed the seven-patch tree, NVAPI/RTXDI settings and DLSS/SHARC clones.
+Only rtx_instance_manager.cpp changed; incremental meson compile -j 2 reused the verified shader
+stamp. The rebuilt DLL is 362,792,960 bytes, SHA-256
+ca3ce8dc21f052bf6026c74b776c8d2e4186c33e42023e29f2776852e865cefc.
+It was imported only through inputs.py; no ABI or shader source changed.
+
+Evidence is under the main out/player-body-evidence directory and this worktree's out:
+
+- baseline-actors-chunked reproduces the reported bug with the old shipped runtime: primary-off
+  hides the world model/ragdoll and leaves the first-person weapon; primary-on shows the models
+  and removes the viewmodel. Source hand/viewmodel callbacks keep running in both states.
+- release-validation runs the full changed package through seven views: primary off/on, world
+  models with the body shadow enabled, visible body, ground shadow, 16-unit raised shadow and
+  shadow disabled. Arms, world model and ragdoll remain visible; the own shadow moves and then
+  disappears. Normal quit/exit 0, zero Lua errors, no proxy draw, duplicate-variable or early
+  procedural-lookup errors. Shared material category bits remain clear; player/camera/root-bone
+  positions remain unchanged. The controlled point light is destroyed at the end.
+- legacy-settings-validation repeats those seven views with a temporary rtx.conf containing five
+  explicitly authored shared-player hashes. Migration succeeds, other category bits are preserved,
+  and rtx.conf/user.conf hashes remain unchanged. The temporary file is removed after verification.
+- ui-diagnostic builds the actual registered player panel using stock Derma controls. After its
+  first layout/convar synchronization, changing its checkbox and slider reads back shadow=1 and
+  height=8; the screenshot shows both controls and help. Earlier helper attempts set controls before
+  their first synchronization and are not reported as product passes.
+- The clean fixture is out/legacy-game, whose depot files were verified for the previous batch.
+  RTX_c and its backups were never written. Root user.conf files were never edited. Saved PoC
+  policy/bootstrap/engine config, fresh-fixture policy/client/server config and video registry
+  values were restored and hash-checked. Reused-PoC test shadow/height values were reset off/zero.
+
+The final tools/test.ps1 -Config Release run passes all 18 CTest groups and 261 Python tests.
+Lua tests execute the actual entity, category module, model-fixer guard and menu; cases cover legacy
+unique_hashes=0, white textures, both offset modes, no real-player bone writes, skin/body groups,
+death/spectator/third-person hiding, draw failure cleanup, saved category migration with missing
+native bookkeeping, unrelated decal preservation and pending procedural hashes. Full package
+validation passes: 919 files, with 14 changed payloads; only d3d9.dll changes among binaries. No Lua
+source sidecars are deployed. Short temporary combiner paths avoid the existing long-worktree path
+limit. A local wrapper retries a transient Windows directory-rename sharing denial without changing
+product code.
+
+Validation boundaries: several reused-PoC runs failed in the existing native hardware-skinning/model
+cache reload before the probe began, including a RenderFinal trampoline exception. Those runs stay
+in the private evidence and are not counted as passes; this task does not claim to fix that startup
+instability. Fresh-fixture package runs started and quit normally. Controlled shadow sampling uses
+importance-sampled GI after startup; the shipping GI defaults are unchanged. Existing legacy
+pseudoweapon and built-in engine material diagnostics are outside the body-proxy change. The old
+world-weapon proxy still follows its separate existing controls and the body primary-space setting.
+No real field-install files were written, and no new public release or Workshop item was created.
