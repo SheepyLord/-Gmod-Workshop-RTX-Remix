@@ -29,10 +29,14 @@ repository, origin URL, commit and whether the source had local changes, and `im
 ## Commands
 
 - **`unpack`**: for every part (or the named ones) makes `out\inputs\<part>\` match the index. A file
-  whose size and time already match is kept; others are copied or decompressed through a `.tmp` file,
-  checked against the size and SHA-256, renamed into place and given the recorded time (so the
-  packagers' time-based versions are reproduced). Files the index does not list are deleted, and empty
-  folders removed. A Git LFS pointer instead of content stops it: run `git lfs pull`.
+  whose size, time and SHA-256 already match is kept (every kept file is hashed: an edited or stale one
+  with the indexed size and time would otherwise go into the package, R3-003); others are copied or
+  decompressed through a `.tmp` file, checked against the size and SHA-256, renamed into place and
+  given the recorded time (so the packagers' time-based versions are reproduced). Files the index does
+  not list are deleted, and empty folders removed. A Git LFS pointer instead of content stops it: run
+  `git lfs pull`. It writes and deletes only in real folders: the destination, a part's folder, or
+  anything below it that is a link or a junction stops it before the first write (R3-006); remove it,
+  the tree is rebuilt from `packages\`.
 - **`verify`**: every indexed file exists and matches (plain: size and SHA-256; xz: size and SHA-256 of
   the `.xz`, or, for a Git LFS pointer, its oid and size), and no file besides the part's documents is
   unindexed. `--deep` also decompresses real xz content and checks the original SHA-256. Prints the
@@ -46,8 +50,11 @@ repository, origin URL, commit and whether the source had local changes, and `im
   - Without `--inventory`, each `--root` folder is copied whole (git metadata and `desktop.ini`-style
     files left out).
   - `--file SRC=DST`: single files, for what a packager reads but does not list (`autoexec.cfg`).
-  - Unchanged files (the same size and time as indexed, with the stored file present) are not stored
-    again. `--prune` removes indexed files under the import's target prefixes that it did not bring.
+  - Every source is hashed. Unchanged files (the SHA-256 the index has, with the stored file present)
+    are not stored again, whatever their time says (R3-007). With `--inventory`, a source whose SHA-256
+    is not the one the inventory lists changed after the packager read it, and stops the import: build
+    the part again. `--prune` removes indexed files under the import's target prefixes that it did not
+    bring. The index is written whole or not at all (a `.tmp` file renamed over it).
   - Prints a JSON summary: `part`, `files`, `stored`, `removed`.
 - **`list`**: each part's file count, size and stored size.
 

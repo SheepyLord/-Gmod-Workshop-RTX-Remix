@@ -64,6 +64,11 @@ Junk is left out as [package_fixes.py](package_fixes.py.md) leaves it out (`.git
   - `--load-first MODULE=FILE` (repeatable): two `--lua-bin` `.dll` names; the loader loads FILE before
     the game loads MODULE, in every session (loader 0.3.0, `module_dependencies`).
 - **Add-on filter:** `--ignore PATTERN` (repeatable, gmad wildcards) and `--no-addon-filter`.
+- **`--add-to-addon PATH SOURCE`** (repeatable): adds SOURCE, a file or a folder (its files, junk left
+  out), to an add-on as PATH (`<add-on folder name>/<path in it>`), such as the licence texts a part
+  keeps beside it in `packages/` (R3-011: Model Hotloader's `LICENSE` and `licenses/`, Character
+  Motion Importer's `LICENSE`). Only new paths: a file the package already has is refused
+  (`--addon-file` is what replaces one).
 - **`--addon-file PATH FILE`** (repeatable): the add-on file PATH (`<add-on folder name>/<path in it>`,
   such as `mmd_hotloader/lua/mmdhl/installation.lua`; case folded) comes from FILE instead. Only a file
   the add-on has, after the filter, can be replaced, so a misspelled path is refused rather than added.

@@ -21,7 +21,10 @@ Inputs: `-GameRoot`, `-Config Debug|Release`, built DLL/PDB in `out/build/win64-
 `-DefaultConfig` (install only) also writes the release bundle's settings,
 [`dist/native-loader/config.json`](../dist/native-loader/config.json), which allow the project's
 Workshop item 3829070317 ([ADR 0017](../docs/decisions/0017-release-bundle-and-ci.md)). It writes
-them only when the install has no `native-loader\config.json`; an existing one is kept as it is.
+them only when the install has no `native-loader\config.json`; an existing one is kept as it is. The
+shipped file is checked (present, JSON) before anything is written, and copied as part of the
+install: a failed copy rolls back the DLL, PDB and receipt with it and removes the partial
+`config.json` (R3-012), so a failed `-DefaultConfig` install leaves the install as it was.
 
 `-ReplaceUntracked` (install only) replaces a `winmm.dll` and `winmm.pdb` that no receipt records,
 such as a release bundle extracted by hand, when the DLL identifies as the loader. Their bytes are

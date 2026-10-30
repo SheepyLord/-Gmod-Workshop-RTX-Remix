@@ -6,6 +6,37 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (review R3: robustness, stability, bugs; [triage](docs/handover/R3-triage.md))
+
+- **Unpacking `packages/`** checks every file it keeps by SHA-256, not by size and time (R3-003), and
+  refuses links and junctions anywhere in `out\inputs` before the first write, so its clean-up can no
+  longer delete files elsewhere (R3-006). **Importing** hashes every source, so a change that keeps
+  a file's size and time is stored, and refuses a source changed since the packager's inventory
+  (R3-007); the index is written atomically.
+- **The combiner** checks every part's file paths before writing anything: an absolute path in a
+  part's manifest had emptied that file outside the package (R3-008).
+- **Publishing** builds from the checkout that has the pushed commit checked out (`--commit`, which
+  every hook passes): a push of `main` from a worktree on another branch had built that worktree's
+  package (R3-004). The publish lock is a Windows file lock held for the whole run, so two runs can no
+  longer both take it (R3-005).
+- **The runtime build** (`runtime/build_runtime.ps1`) compares the worktree exactly with what it
+  should hold, and `tools/check_repo.py` fails while `runtime/` differs from what the stored
+  `d3d9.dll` was built from (R3-014, [ADR 0034](docs/decisions/0034-the-runtimes-build-inputs-recorded.md)).
+  That check found the shipped runtime built with NVAPI R615, three uncommitted RTXDI shader changes
+  and the DLSS and SHARC SDK clones, none of which `runtime/patches` held; `runtime/base.json` and
+  `runtime/submodules/rtxdi.patch` now record them. `-Verify` checks a worktree without building.
+- **Clearing the weather** ("leave to Remix") puts every option the weather set back to rtx.conf's
+  value, or what Remix has without it, instead of leaving the last preset in place (R3-009).
+- **The sky moves smoothly:** it updates 50 times a second instead of 4 (`nativeloader_sky_interval`,
+  default 0.02 s, 0 for every frame; a slider under "Sky and weather", in all six languages), and the
+  rain's fade under a roof follows the time passed (R3-015, the user's).
+- **Licences travel with the package:** Model Hotloader's licence and its 27 libraries' licence texts,
+  Character Motion Importer's licence, and the RTX fixes' GPL-2.0 text, beside their add-ons
+  (`--add-to-addon` in `package_content.py` and `package_fixes.py`; R3-011).
+- `install-loader.ps1 -DefaultConfig` checks the default settings before installing and writes them
+  inside the same rollback (R3-012). `poc_session.py --workshop` waits up to 20 s for a remount after
+  a partial first Workshop mount (R3-013).
+
 ### Changed (one repository builds everything: the package's inputs in Git LFS)
 
 - **This repository alone builds the RTX package**

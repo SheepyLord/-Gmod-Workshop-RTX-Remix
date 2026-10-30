@@ -11,6 +11,7 @@ exits 1 if there is any; [`test.ps1`](test.ps1.md) runs it first.
 | `CHANGELOG.md` has `## [Unreleased]` | Every notable change lands there first |
 | [`docs/COMPONENTS.md`](../docs/COMPONENTS.md) mentions every folder under `loader/` and `tools/` | The component map stays complete |
 | `CLAUDE.md` imports `@AGENTS.md` | One source of agent instructions |
+| `runtime/base.json` `packaged` matches `runtime/` (the commit, `submodules`, `clones` and every `patches/*.patch` and `submodules/*.patch` SHA-256; the `why` texts aside) and `packages/runtime`'s `files/d3d9.dll` SHA-256 | The stored runtime is what [`runtime/build_runtime.ps1`](../runtime/build_runtime.ps1.md) builds from this repository; a patch changed without a new build fails here (R3-014, [ADR 0034](../docs/decisions/0034-the-runtimes-build-inputs-recorded.md)). Skipped when there is no `runtime/base.json` |
 
 Skipped folders: `.git`, `out`, `build`, `__pycache__`, `third_party`, `.vs`, virtual environments, and
 the top-level `packages` (the RTX package's vendored inputs, whose add-ons bring their own scripts and

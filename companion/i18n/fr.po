@@ -8,261 +8,269 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:577
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Clear"
 msgstr "Dégagé"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:577
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Partly cloudy"
 msgstr "Partiellement nuageux"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:577
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Overcast"
 msgstr "Couvert"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Hazy"
 msgstr "Brumeux"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Foggy"
 msgstr "Brouillard"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Drizzle"
 msgstr "Bruine"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Rain"
 msgstr "Pluie"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:579
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Thunderstorm"
 msgstr "Orage"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:579
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Snow"
 msgstr "Neige"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:579
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Blizzard"
 msgstr "Blizzard"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:580
+#: nativeloader/lua/autorun/nativeloader_sky.lua:641
 msgid "Sandstorm"
 msgstr "Tempête de sable"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:580
+#: nativeloader/lua/autorun/nativeloader_sky.lua:641
 msgid "Smog"
 msgstr "Smog"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Spring"
 msgstr "Printemps"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Summer"
 msgstr "Été"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Autumn"
 msgstr "Automne"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Winter"
 msgstr "Hiver"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:583
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "New moon"
 msgstr "Nouvelle lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:583
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "Waxing crescent"
 msgstr "Premier croissant"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:584
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "First quarter"
 msgstr "Premier quartier"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:584
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "Waxing gibbous"
 msgstr "Gibbeuse croissante"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:584
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "Full moon"
 msgstr "Pleine lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:585
+#: nativeloader/lua/autorun/nativeloader_sky.lua:646
 msgid "Waning gibbous"
 msgstr "Gibbeuse décroissante"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:585
+#: nativeloader/lua/autorun/nativeloader_sky.lua:646
 msgid "Last quarter"
 msgstr "Dernier quartier"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:586
+#: nativeloader/lua/autorun/nativeloader_sky.lua:647
 msgid "Waning crescent"
 msgstr "Dernier croissant"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:587
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "No eclipse"
 msgstr "Pas d'éclipse"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:587
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "Lunar eclipse"
 msgstr "Éclipse de Lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:587
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "Solar eclipse"
 msgstr "Éclipse de Soleil"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:588
+#: nativeloader/lua/autorun/nativeloader_sky.lua:649
 msgid "Night sky image"
 msgstr "Image du ciel nocturne"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:588
+#: nativeloader/lua/autorun/nativeloader_sky.lua:649
 msgid "Simulated stars"
 msgstr "Étoiles simulées"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:590
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Sunrise"
 msgstr "Aube"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:590
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Morning"
 msgstr "Matin"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:590
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Noon"
 msgstr "Midi"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:591
+#: nativeloader/lua/autorun/nativeloader_sky.lua:652
 msgid "Sunset"
 msgstr "Coucher"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:591
+#: nativeloader/lua/autorun/nativeloader_sky.lua:652
 msgid "Night"
 msgstr "Nuit"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:601
+#: nativeloader/lua/autorun/nativeloader_sky.lua:662
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:142
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "La Remix API n'est pas disponible dans cette session : ces paramètres ne peuvent donc pas être appliqués. Exécutez nativeloader_status pour plus de détails."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:605
+#: nativeloader/lua/autorun/nativeloader_sky.lua:666
 #, c-format
 msgid "On this map the sky is set by %s. Changing a setting here takes it over for this session."
 msgstr "Sur cette carte, le ciel est réglé par %s. Changer un réglage ici le reprend pour cette session."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:607
+#: nativeloader/lua/autorun/nativeloader_sky.lua:668
 msgid "Sky"
 msgstr "Ciel"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:608
+#: nativeloader/lua/autorun/nativeloader_sky.lua:669
 msgid "Physical sky"
 msgstr "Ciel physique"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:609
+#: nativeloader/lua/autorun/nativeloader_sky.lua:670
 msgid "The map's skybox"
 msgstr "Skybox de la carte"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:610
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "The physical sky has a sun, clouds, stars and a moon, and lights the map from them."
 msgstr "Le ciel physique a un soleil, des nuages, des étoiles et une lune, qui éclairent la carte."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:611
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Follow the map's sun"
 msgstr "Suivre le soleil de la carte"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:612
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "The time and direction of the map's own sun. Moving the time or the direction turns this off."
 msgstr "L'heure et la direction du soleil de la carte. Déplacer l'heure ou la direction désactive ceci."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:613
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Time of day"
 msgstr "Heure"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:617
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 #, c-format
 msgid "Now %s"
 msgstr "Il est %s"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:635
+#: nativeloader/lua/autorun/nativeloader_sky.lua:696
 msgid "Sun direction"
 msgstr "Direction soleil"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:636
+#: nativeloader/lua/autorun/nativeloader_sky.lua:697
 msgid "Turns the sun's path around the sky."
 msgstr "Fait tourner la course du soleil dans le ciel."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:637
+#: nativeloader/lua/autorun/nativeloader_sky.lua:698
 msgid "Time passes"
 msgstr "Le temps passe"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:699
 msgid "Day length (min)"
 msgstr "Durée jour (min)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:700
 msgid "Real minutes for a whole day while the time passes."
 msgstr "Minutes réelles pour une journée entière quand le temps passe."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:701
+msgid "Sky update interval (s)"
+msgstr "Mise à jour du ciel (s)"
+
+#: nativeloader/lua/autorun/nativeloader_sky.lua:702
+msgid "How often the sun, moon, stars and weather move on: 0.02 is 50 times a second, 0 every frame. Longer saves a little time but the sky moves in steps."
+msgstr "Fréquence à laquelle le soleil, la lune, les étoiles et la météo avancent : 0,02 fait 50 fois par seconde, 0 à chaque image. Plus long fait gagner un peu de temps, mais le ciel avance par à-coups."
+
+#: nativeloader/lua/autorun/nativeloader_sky.lua:703
 msgid "Season"
 msgstr "Saison"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:641
+#: nativeloader/lua/autorun/nativeloader_sky.lua:704
 msgid "Moon"
 msgstr "Lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:642
+#: nativeloader/lua/autorun/nativeloader_sky.lua:705
 msgid "Eclipse"
 msgstr "Éclipse"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:706
 msgid "Eclipse progress"
 msgstr "Progression de l'éclipse"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:707
 msgid "From first contact (0) to the middle (100): a lunar eclipse is total from 70, a solar one from 90. An eclipse sets the moon's phase, and the time if the sun is on the wrong side of the horizon for it."
 msgstr "Du premier contact (0) au maximum (100) : une éclipse de Lune est totale à partir de 70, une éclipse de Soleil à partir de 90. Une éclipse fixe la phase de la Lune, et l'heure si le soleil n'est pas du bon côté de l'horizon."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:708
 msgid "Night sky"
 msgstr "Ciel nocturne"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:646
+#: nativeloader/lua/autorun/nativeloader_sky.lua:709
 msgid "Night sky image: sharp stars, a galaxy and nebulae, turning with the time and the season."
 msgstr "Image du ciel nocturne : étoiles nettes, une galaxie et des nébuleuses, qui tournent avec l'heure et la saison."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:647
+#: nativeloader/lua/autorun/nativeloader_sky.lua:710
 msgid "Weather"
 msgstr "Météo"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:711
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:149
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:153
 msgid "(leave to Remix)"
 msgstr "(laisser à Remix)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:650
+#: nativeloader/lua/autorun/nativeloader_sky.lua:713
 msgid "Clouds, haze, fog, rain and snow. The runtime's own weather presets."
 msgstr "Nuages, brume, brouillard, pluie et neige : les préréglages météo du runtime Remix."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:714
 msgid "Weather change (s)"
 msgstr "Transition (s)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:652
+#: nativeloader/lua/autorun/nativeloader_sky.lua:715
 msgid "How long a change of weather takes."
 msgstr "Durée d'un changement de temps."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:653
+#: nativeloader/lua/autorun/nativeloader_sky.lua:716
 msgid "Reset the sky and weather"
 msgstr "Réinitialiser le ciel et la météo"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:659
-#: nativeloader/lua/autorun/nativeloader_sky.lua:659
+#: nativeloader/lua/autorun/nativeloader_sky.lua:722
+#: nativeloader/lua/autorun/nativeloader_sky.lua:722
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Sky and weather"

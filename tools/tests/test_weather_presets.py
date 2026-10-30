@@ -92,6 +92,23 @@ class WeatherPresetsTests(unittest.TestCase):
         self.assertIn('      enableFogRemap = true,\n', text)
         self.assertNotIn('noiseFieldOctaves =', text)
 
+    def test_what_each_option_goes_back_to(self):
+        # R3-009: the weather left to Remix puts back what Remix has without it: the package's classic
+        # layer where it sets the option, else the runtime's default.
+        fork = self.fork()
+        layer = fork / 'classic.conf'
+        layer.write_text('# a layer\nrtx.atmosphere.cloudDensity = 2.5\nrtx.atmosphere.unrelated = 1\n', encoding='utf-8')
+        defaults = wp.read_presets(fork, layer)['defaults']
+        self.assertEqual(defaults, {'rtx.atmosphere.cloudDensity': '2.5', 'rtx.atmosphere.cloudWindDirection': '45',
+                                    'rtx.atmosphere.cloudColor': '1, 1, 1', 'rtx.volumetrics.enableFogRemap': 'False',
+                                    'rtx.volumetrics.transmittanceMeasurementDistanceMeters': '500',
+                                    'rtx.volumetrics.anisotropy': '0.05', 'rtx.weather.precipitation.fallSpeed': '8'})
+        self.assertIn('    ["rtx.atmosphere.cloudColor"] = "1, 1, 1",\n', wp.generate(wp.read_presets(fork, layer), 'abc12345'))
+        header = fork / 'src' / 'dxvk' / 'rtx_render' / 'rtx_atmosphere.h'
+        header.write_text(header.read_text(encoding='utf-8').replace('4.0f', 'kDensity'), encoding='utf-8')
+        with self.assertRaisesRegex(wp.SourceError, "defaults of \\['rtx.atmosphere.cloudDensity'\\]"):
+            wp.read_presets(fork, layer)
+
     def test_check_tells_an_out_of_date_table(self):
         fork = self.fork()
         out = fork / 'out.lua'

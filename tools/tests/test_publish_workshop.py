@@ -143,12 +143,23 @@ class PublishTests(unittest.TestCase):
         other.write_bytes(b'two!')
         self.assertNotEqual(pub.fingerprint(with_other), first)
 
-    def test_the_lock_takes_over_a_dead_owner_and_waits_for_a_live_one(self):
+    def test_one_publish_at_a_time_and_no_lock_left_behind(self):
+        # R3-005: the lock is the system's, on an open handle. A second run cannot take it, not even
+        # while the first is still setting it up, and it is free again when its holder ends.
         lock = self.root / 'publish.lock'
-        lock.write_text('999999', encoding='ascii')  # no such process
-        self.assertTrue(pub.acquire_lock(lock, 0))
-        self.assertEqual(lock.read_text(encoding='ascii'), str(os.getpid()))
-        self.assertFalse(pub.acquire_lock(lock, 0))  # this process holds it
+        lock.write_text('999999', encoding='ascii')  # what an earlier version left: no matter
+        first = pub.acquire_lock(lock, 0)
+        self.assertIsNotNone(first)
+        self.assertIsNone(pub.acquire_lock(lock, 0))  # another handle, as another run has
+        pub.release_lock(first)
+        held = subprocess.run([sys.executable, '-c', 'import os, sys; sys.path.insert(0, sys.argv[1]); '
+                               'import publish_workshop as p; from pathlib import Path; '
+                               'assert p.acquire_lock(Path(sys.argv[2]), 0); os._exit(0)', str(TOOLS), str(lock)])
+        self.assertEqual(held.returncode, 0)
+        again = pub.acquire_lock(lock, 0)  # that process ended without letting go
+        self.assertIsNotNone(again)
+        pub.release_lock(again)
+        self.assertTrue(lock.exists())
 
 
 class HookTests(unittest.TestCase):
@@ -172,6 +183,8 @@ class HookTests(unittest.TestCase):
             self.assertIn(b'git lfs ' + name.encode(), text)
         self.assertIn(b'"main"', (hooks / 'post-commit').read_bytes())
         self.assertIn(b'refs/heads/main', (hooks / 'pre-push').read_bytes())
+        for name in ('post-commit', 'post-merge', 'pre-push'):
+            self.assertIn(b'--commit', (hooks / name).read_bytes(), name)  # R3-004
         pub.install_hooks(False, self.repo)  # ours: replaced quietly
         (hooks / 'pre-push').write_text('#!/bin/sh\necho mine\n', encoding='utf-8')
         with self.assertRaisesRegex(pub.PublishError, 'not ours'):
@@ -181,6 +194,25 @@ class HookTests(unittest.TestCase):
         self.assertEqual((hooks / 'pre-push').read_text(encoding='utf-8'), '#!/bin/sh\necho mine\n')
         pub.install_hooks(True, self.repo)
         self.assertIn(pub.HOOK_MARKER, (hooks / 'pre-push').read_text(encoding='utf-8'))
+
+    def test_a_push_publishes_from_the_checkout_of_the_pushed_commit(self):
+        # R3-004: a push of main from a worktree on another branch builds main's checkout, not its own.
+        def git(*args, cwd=self.repo):
+            return subprocess.run(['git', *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+        for args in (('config', 'user.email', 't@example.invalid'), ('config', 'user.name', 't'),
+                     ('commit', '-q', '--allow-empty', '-m', 'one'), ('branch', '-M', 'main')):
+            git(*args)
+        main_sha = git('rev-parse', 'HEAD')
+        other = self.repo / 'out' / 'worktrees' / 'side'
+        git('worktree', 'add', '-q', '-b', 'side', str(other))
+        git('commit', '-q', '--allow-empty', '-m', 'two', cwd=other)
+        side_sha = git('rev-parse', 'HEAD', cwd=other)
+        same = lambda a, b: os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
+        self.assertTrue(same(pub.checkout_at(main_sha, other), self.repo))
+        self.assertTrue(same(pub.checkout_at(side_sha, self.repo), other))
+        git('commit', '-q', '--allow-empty', '-m', 'three', cwd=other)
+        self.assertIsNone(pub.checkout_at(side_sha, self.repo))  # checked out nowhere now
+        git('worktree', 'remove', '--force', str(other))
 
     def test_the_hooks_are_valid_sh(self):
         # The sh git runs hooks with: on Windows, Git for Windows' own, beside git.exe (not on the path

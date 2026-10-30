@@ -1,12 +1,64 @@
 {
- "about": "The commit of the RTX Remix runtime fork that runtime/patches apply to (ADR 0033). runtime/build_runtime.ps1 reads it.",
+ "about": "What runtime/build_runtime.ps1 builds d3d9.dll from (ADR 0033): this commit of the RTX Remix runtime fork, runtime/patches applied in order, the submodule settings and the clones below. \"packaged\" records what the d3d9.dll in packages/runtime was built from; tools/check_repo.py fails while runtime/ differs from it.",
  "repository": "https://github.com/sambow23/dxvk-remix-gmod.git",
  "branch": "gmod-numos3",
  "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
  "build_dir": "_CompRelease_x64",
  "flavour": "release",
+ "submodules": {
+  "submodules/nvapi": {
+   "commit": "87dca625e83fd89a983e19b904e5f3a580da90d2",
+   "why": "NVAPI R615 (87dca62), as the fork's own checkout builds it; the fork's tree records R570 (d08488f)"
+  },
+  "submodules/rtxdi": {
+   "patch": "submodules/rtxdi.patch",
+   "why": "the fork's uncommitted RTXDI changes (ResamplingFunctions.slangh, Reservoir.slangh, ResamplingCompileTest.comp.slang), on the recorded commit 3b39a7c"
+  }
+ },
+ "clones": {
+  "submodules/dlss": {
+   "url": "https://github.com/NVIDIA/DLSS.git",
+   "commit": "374959484e79a640feaba44c93ac8cfb0a03f5b5",
+   "why": "DLSS 310.9.1 SDK: meson reads submodules/dlss (external-build/meson.build), which the fork's tree does not record"
+  },
+  "submodules/sharc": {
+   "url": "https://github.com/NVIDIAGameWorks/Spatial-Hash-Radiance-Cache.git",
+   "commit": "4e21b585c33c83d723ca9a1e11bbb1090d145793",
+   "why": "SHARC v1.8.3, beside it in the fork's checkout and likewise not in its tree"
+  }
+ },
  "packaged": {
   "d3d9.dll": "d9cf79e604e5b2befafe39f5982f9b60ac43eba48072af1c4a2c5199e422ab5a",
-  "built_from": "claude/sky-night f9937026 (the four patches on the commit above)"
+  "built_from": "claude/sky-night f9937026 (with what the rest of this record names; checked with build_runtime.ps1 -Verify on 2026-10-29)",
+  "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
+  "submodules": {
+   "submodules/nvapi": {
+    "commit": "87dca625e83fd89a983e19b904e5f3a580da90d2",
+    "why": "NVAPI R615 (87dca62), as the fork's own checkout builds it; the fork's tree records R570 (d08488f)"
+   },
+   "submodules/rtxdi": {
+    "patch": "submodules/rtxdi.patch",
+    "why": "the fork's uncommitted RTXDI changes (ResamplingFunctions.slangh, Reservoir.slangh, ResamplingCompileTest.comp.slang), on the recorded commit 3b39a7c"
+   }
+  },
+  "clones": {
+   "submodules/dlss": {
+    "url": "https://github.com/NVIDIA/DLSS.git",
+    "commit": "374959484e79a640feaba44c93ac8cfb0a03f5b5",
+    "why": "DLSS 310.9.1 SDK: meson reads submodules/dlss (external-build/meson.build), which the fork's tree does not record"
+   },
+   "submodules/sharc": {
+    "url": "https://github.com/NVIDIAGameWorks/Spatial-Hash-Radiance-Cache.git",
+    "commit": "4e21b585c33c83d723ca9a1e11bbb1090d145793",
+    "why": "SHARC v1.8.3, beside it in the fork's checkout and likewise not in its tree"
+   }
+  },
+  "files": {
+   "patches/0001-Snapshot-gmod-1.6.1-working-tree-during-the-remix-1..patch": "1ff46454d76505ee20a121885533cbdec847bc9cbf795869767f29165527844c",
+   "patches/0002-Translate-the-Remix-menus-zh-CN-zh-TW-ja-ko-fr-ru.patch": "158f3c0f0444af422216b7de383f90b963f536c329613ae45154338712f2bb33",
+   "patches/0003-i18n-the-translators-glossaries.patch": "6fe9c9bf4f0e4f5b01f361d91156ed900f61a694cd44bd6104ef14101850eab2",
+   "patches/0004-Atmosphere-the-real-Moon-a-night-sky-image-lunar-and.patch": "95f39f3161f04b0b0f59e35e0b222dc3e4eb394a70ab48fd9c263f2636f966be",
+   "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
+  }
  }
 }

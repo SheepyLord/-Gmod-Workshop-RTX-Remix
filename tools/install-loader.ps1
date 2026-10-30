@@ -129,6 +129,22 @@ if ($Uninstall) {
 if (-not (Test-LoaderIdentity $sourceDll) -or -not (Test-Path -LiteralPath $sourcePdb -PathType Leaf)) {
     throw "Build the $Config bootstrap first: tools\build.ps1 -Config $Config"
 }
+# The release bundle's settings (ADR 0017): allow the project's Workshop item. Only when the install
+# has no config.json yet; an existing one is the user's and is never replaced. Checked before anything
+# is written, and written with the bootstrap, so a failed copy undoes the whole install (R3-012).
+$configPath = Join-Path $stateDir 'config.json'
+$configSource = Join-Path $repo 'dist\native-loader\config.json'
+$writeConfig = $false
+if ($DefaultConfig) {
+    Assert-OrdinaryPath $configPath
+    if (Test-Path -LiteralPath $configPath) {
+        Write-Host "Kept the existing $configPath"
+    } else {
+        if (-not (Test-Path -LiteralPath $configSource -PathType Leaf)) { throw "The default settings are missing: $configSource" }
+        $null = [IO.File]::ReadAllText($configSource) | ConvertFrom-Json  # throws on a damaged file
+        $writeConfig = $true
+    }
+}
 if (-not $PSCmdlet.ShouldProcess($resolvedRoot, "Install $Config native loader bootstrap")) { return }
 $oldDll = if (Test-Path -LiteralPath $dllPath) { [IO.File]::ReadAllBytes($dllPath) } else { $null }
 $oldPdb = if (Test-Path -LiteralPath $pdbPath) { [IO.File]::ReadAllBytes($pdbPath) } else { $null }
@@ -148,28 +164,19 @@ try {
     $newReceipt = [ordered]@{schema=1; version=([Diagnostics.FileVersionInfo]::GetVersionInfo($sourceDll)).FileVersion;
         dll_sha256=(Get-HashOrNull $dllPath); pdb_sha256=(Get-HashOrNull $pdbPath); installed_utc=[DateTime]::UtcNow.ToString('o')}
     [IO.File]::WriteAllText($receiptPath, ($newReceipt | ConvertTo-Json) + "`n", [Text.UTF8Encoding]::new($false))
+    if ($writeConfig) { Copy-Item -LiteralPath $configSource -Destination $configPath }
 } catch {
-    # Roll back only the three exact paths this invocation owns.
+    # Roll back only the exact paths this invocation owns: the three files, and a config.json it began
+    # to write where there was none.
     foreach ($saved in @(@($dllPath, $oldDll), @($pdbPath, $oldPdb), @($receiptPath, $oldReceipt))) {
         if ($null -ne $saved[1]) { [IO.File]::WriteAllBytes($saved[0], [byte[]] $saved[1]) }
         elseif (Test-Path -LiteralPath $saved[0]) { Remove-Item -LiteralPath $saved[0] -Force }
     }
+    if ($writeConfig -and (Test-Path -LiteralPath $configPath)) { Remove-Item -LiteralPath $configPath -Force }
     if (-not $hadState -and (Test-Path -LiteralPath $stateDir) -and -not (Get-ChildItem -LiteralPath $stateDir -Force)) {
         Remove-Item -LiteralPath $stateDir
     }
     throw
 }
 Write-Host "Bootstrap installed ($Config): $dllPath"
-
-# The release bundle's settings (ADR 0017): allow the project's Workshop item. Only when the install
-# has no config.json yet; an existing one is the user's and is never replaced.
-if ($DefaultConfig) {
-    $configPath = Join-Path $stateDir 'config.json'
-    Assert-OrdinaryPath $configPath
-    if (Test-Path -LiteralPath $configPath) {
-        Write-Host "Kept the existing $configPath"
-    } else {
-        Copy-Item -LiteralPath (Join-Path $repo 'dist\native-loader\config.json') -Destination $configPath
-        Write-Host "Default settings written: $configPath (allows Workshop item 3829070317)"
-    }
-}
+if ($writeConfig) { Write-Host "Default settings written: $configPath (allows Workshop item 3829070317)" }

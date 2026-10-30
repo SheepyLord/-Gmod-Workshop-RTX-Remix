@@ -160,6 +160,40 @@ def subfolders(parent, what):
     return names
 
 
+def add_to_addons(pairs, addons, files, junk):
+    """--add-to-addon: files an add-on folder lacks, such as the licence texts a part keeps beside it in
+    packages/ (its LICENSE and licenses/, ADR 0033). (PATH, SOURCE) pairs: PATH an add-on's name and a
+    path in it, SOURCE a file or a folder (whose files go below PATH). Only new paths: a file the
+    package already has is refused, so nothing of the add-on is replaced (--addon-file replaces).
+    `addons` maps lower-case add-on names to their folder names. Adds to `files`; returns the added."""
+    taken = {rel.lower() for rel in files}
+    added = {}
+    for target, given in pairs:
+        name, slash, inner = target.replace('\\', '/').strip('/').partition('/')
+        if not slash or not inner:
+            raise PackageError('--add-to-addon %s: expected an add-on folder name and a path in it, such as name/LICENSE' % target)
+        if name.lower() not in addons:
+            raise PackageError('--add-to-addon %s: %s is not an add-on of this package' % (target, name))
+        prefix = 'native/root/garrysmod/addons/%s/%s' % (addons[name.lower()], inner)
+        source = os.path.abspath(given)
+        if os.path.isdir(source):
+            if is_link(source):
+                raise PackageError('--add-to-addon %s %s: refusing a linked folder' % (target, given))
+            found = collect(source, prefix, junk)
+        elif os.path.isfile(source):
+            regular_file(source)
+            found = {prefix: source}
+        else:
+            raise PackageError('--add-to-addon %s %s: no such file or folder' % (target, given))
+        for rel, src in found.items():
+            if rel.lower() in taken:
+                raise PackageError('--add-to-addon %s: the package already has %s' % (target, rel))
+            taken.add(rel.lower())
+            files[rel] = src
+            added[rel] = src
+    return added
+
+
 def patch_sets():
     """The manifest's patch_sets from PATCH_SETS, checked against the loader's rules."""
     names = set()
@@ -363,6 +397,7 @@ def build(args):
             generated = companion_translations()
             files[COMPANION_I18N] = generated
         roots.append(('garrysmod/addons/' + name, 'lua-addon'))
+    add_to_addons(args.add_to_addon, {name.lower(): name for name, _ in sources}, files, junk)
     mods_dir = os.path.join(tree, 'rtx-remix', 'mods')
     mods, empty_mods = [], []
     for name in subfolders(mods_dir, 'the Remix mods folder'):
@@ -588,6 +623,9 @@ def main(argv=None):
     ap.add_argument('--modules-from', help='folder with the built gmcl_ modules (default <repo>\\x86_64\\Release)')
     ap.add_argument('--with-debug-module', action='store_true', help='also package %s' % DEBUG_MODULE)
     ap.add_argument('--exclude-addon', action='append', default=[], metavar='NAME', help='leave an add-on out (repeatable)')
+    ap.add_argument('--add-to-addon', action='append', default=[], nargs=2, metavar=('PATH', 'SOURCE'),
+                    help='add SOURCE, a file or a folder, to an add-on as PATH (name/LICENSE), such as a licence text '
+                         'the add-on folder does not have; never over a file it has (repeatable)')
     ap.add_argument('--no-patch-sets', action='store_true', help='leave out the seven patch sets')
     ap.add_argument('--cvars-from', metavar='FILE', help='take the session console variables from this .cfg '
                                                          '(default <repo>\\garrysmod\\garrysmod\\cfg\\autoexec.cfg)')

@@ -11,10 +11,10 @@ run whose build matches the uploaded content (same digest) uploads nothing. See 
 from __future__ import annotations
 
 import argparse
-import ctypes
 import datetime as _dt
 import hashlib
 import json
+import msvcrt
 import os
 import shutil
 import subprocess
@@ -137,41 +137,49 @@ def fingerprint(config: dict, repo: Path = REPO) -> str:
 
 # ---------------------------------------------------------------- lock
 
-def process_alive(pid: int) -> bool:
-    if pid <= 0:
-        return False
-    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-    handle = kernel32.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
-    if not handle:
-        return False
-    try:
-        return kernel32.WaitForSingleObject(handle, 0) == 0x102  # WAIT_TIMEOUT: still running
-    finally:
-        kernel32.CloseHandle(handle)
-
-
-def acquire_lock(path: Path, wait: float) -> bool:
-    """One publish at a time: an O_EXCL file holding the owner's PID. A lock whose owner is gone is
-    taken over. Waits up to `wait` seconds for a running publish to finish."""
+def acquire_lock(path: Path, wait: float):
+    """One publish at a time: an exclusive lock on the first byte of `path`, held through an open handle
+    for the whole run. Windows lets go of it when the process ends, however it ends, so no lock is left
+    behind, and no run can take a lock that is still being set up for a stale one. Waits up to `wait`
+    seconds for a running publish to finish. Returns the handle for release_lock, or None."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    handle = open(path, 'a+b')  # never emptied or deleted: other runs may have it open
     deadline = time.monotonic() + wait
     while True:
         try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.write(fd, str(os.getpid()).encode('ascii'))
-            os.close(fd)
-            return True
-        except FileExistsError:
-            try:
-                owner = int(path.read_text(encoding='ascii').strip() or '0')
-            except (OSError, ValueError):
-                owner = 0
-            if not process_alive(owner):
-                path.unlink(missing_ok=True)
-                continue
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            return handle
+        except OSError:
             if time.monotonic() >= deadline:
-                return False
+                handle.close()
+                return None
             time.sleep(10)
+
+
+def release_lock(handle) -> None:
+    try:
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    finally:
+        handle.close()
+
+
+def checkout_at(commit: str, repo: Path = REPO) -> Path | None:
+    """The working tree of this repository (this checkout first, then the others `git worktree list`
+    names) that has `commit` checked out, or None. A push of main publishes from there: the pushed
+    commit, not the branch of the worktree the push ran in."""
+    want = git('rev-parse', '--verify', commit + '^{commit}', cwd=repo)
+    if git('rev-parse', 'HEAD', cwd=repo) == want:
+        return repo
+    tree = None
+    for line in git('worktree', 'list', '--porcelain', cwd=repo).splitlines():
+        key, _, value = line.partition(' ')
+        if key == 'worktree':
+            tree = Path(value)
+        elif key == 'HEAD' and value == want and tree is not None:
+            return tree
+    return None
 
 
 # ---------------------------------------------------------------- build and upload
@@ -267,6 +275,10 @@ def publish(config: dict, args, log) -> dict:
     published_file = STATE / 'published.json'
     published = read_json(published_file) or {}
     print_state = {'item': str(config['item'])}
+    if getattr(args, 'commit', None):
+        want, have = git('rev-parse', '--verify', args.commit + '^{commit}'), git('rev-parse', 'HEAD')
+        if want != have:
+            raise PublishError(f'this checkout is at {have[:8]}, not at {want[:8]} as asked: nothing published')
     head = git('log', '-1', '--format=%h %s')
     dirty = git('status', '--porcelain', '--', *REPO_INPUTS)
     if dirty and not (args.dry_run or args.allow_dirty):
@@ -317,7 +329,7 @@ POST_COMMIT = f"""#!/bin/sh
 {HOOK_MARKER}: a commit on main updates the Workshop item in the background (tools/publish_workshop.py).
 command -v git-lfs >/dev/null 2>&1 && git lfs post-commit "$@"
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
-python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --reason "commit $(git rev-parse --short HEAD)" || true
+python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$(git rev-parse HEAD)" --reason "commit $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
@@ -325,7 +337,7 @@ POST_MERGE = f"""#!/bin/sh
 {HOOK_MARKER}: a merge into main (how milestone branches land) updates the Workshop item too.
 command -v git-lfs >/dev/null 2>&1 && git lfs post-merge "$@"
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
-python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --reason "merge $(git rev-parse --short HEAD)" || true
+python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$(git rev-parse HEAD)" --reason "merge $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
@@ -344,9 +356,10 @@ if [ -n "$refs" ]; then
   printf '%s\\n' "$refs" | git lfs pre-push "$@" || exit $?
 fi
 printf '%s\\n' "$refs" | while read local_ref local_sha remote_ref remote_sha; do
-  if [ "$remote_ref" = "refs/heads/main" ]; then
-    python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --reason "push $(git rev-parse --short "$local_sha")" || true
-  fi
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  case "$local_sha" in *[!0]*) ;; *) continue ;; esac  # all zeros: main is being deleted
+  # The script builds in the checkout that has the pushed commit checked out, not necessarily this one.
+  python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$local_sha" --reason "push $(git rev-parse --short "$local_sha")" || true
 done
 exit 0
 """
@@ -398,6 +411,8 @@ def main(argv=None) -> int:
     parser.add_argument('--dry-run', action='store_true', help='build and compare, upload nothing')
     parser.add_argument('--force', action='store_true', help='build and upload even if nothing changed')
     parser.add_argument('--allow-dirty', action='store_true', help='publish although packaging inputs have uncommitted changes')
+    parser.add_argument('--commit', metavar='SHA', help='publish this commit, from whichever checkout has it checked out '
+                                                         '(what the hooks pass); nothing if none has')
     parser.add_argument('--background', action='store_true', help='run detached, logging to out/workshop/logs (what the hooks use)')
     parser.add_argument('--install-hooks', action='store_true', help='install the post-commit and pre-push hooks, then stop')
     parser.add_argument('--uninstall-hooks', action='store_true', help='remove this script\'s hooks, then stop')
@@ -428,17 +443,29 @@ def main(argv=None) -> int:
                                  creationflags=0x00000008 | 0x00000200)  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
             print(f'publish_workshop: running in the background; log {log_path}')
             return 0
-        config = load_config(args.config)
-
         def log(text: str) -> None:
             print(f'[{_dt.datetime.now().strftime("%H:%M:%S")}] {text}', flush=True)
 
-        if not acquire_lock(STATE / 'publish.lock', LOCK_WAIT):
+        if args.commit:
+            # A push of main from another worktree (R3-004): the build belongs to the checkout of the
+            # pushed commit, with that checkout's own script and inputs.
+            target = checkout_at(args.commit)
+            if target is None:
+                raise PublishError(f'no checkout has {args.commit[:8]} checked out, so the item was not updated; '
+                                   'run tools/publish_workshop.py in a checkout of that commit')
+            if os.path.normcase(os.path.abspath(target)) != os.path.normcase(str(REPO)):
+                log(f'{target} has {args.commit[:8]} checked out: publishing from there')
+                forward = argv if argv is not None else sys.argv[1:]
+                return subprocess.run([sys.executable, str(Path(target) / 'tools' / 'publish_workshop.py'), *forward],
+                                      cwd=target).returncode
+        config = load_config(args.config)
+        lock = acquire_lock(STATE / 'publish.lock', LOCK_WAIT)
+        if lock is None:
             raise PublishError('another publish has held the lock for two hours')
         try:
             result = publish(config, args, log)
         finally:
-            (STATE / 'publish.lock').unlink(missing_ok=True)
+            release_lock(lock)
     except (PublishError, OSError, subprocess.SubprocessError, ValueError) as error:
         print(f'publish_workshop: {error}', file=sys.stderr)
         return 1

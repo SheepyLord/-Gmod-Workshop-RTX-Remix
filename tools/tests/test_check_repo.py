@@ -87,6 +87,33 @@ class CheckRepoTests(unittest.TestCase):
     def test_claude_md_imports_agents_md(self):
         self.assertEqual(self.problems({'CLAUDE.md': 'nothing here\n'}), ['CLAUDE.md must exist and import @AGENTS.md'])
 
+    def test_the_stored_runtime_must_be_what_runtime_builds(self):
+        # R3-014: a patch, a submodule setting or a clone changed without a new build fails the checks.
+        import hashlib
+        import json
+        patch = 'From 1\nSubject: [PATCH] x\n\n'
+        files = {'runtime/patches/0001-x.patch': patch, 'runtime/submodules/a.patch': 'diff\n',
+                 'packages/runtime/files.json': json.dumps({'files': {'files/d3d9.dll': {'sha256': 'dd'}}})}
+        make_repo(self.root, files)  # the record holds the bytes as written (Windows writes CRLF)
+        sha = lambda rel: hashlib.sha256((self.root / 'runtime' / rel).read_bytes()).hexdigest()
+        subs = {'submodules/a': {'commit': 'abc', 'why': 'because'}}
+        record = {'d3d9.dll': 'dd', 'commit': 'c1', 'submodules': subs, 'clones': {},
+                  'files': {'patches/0001-x.patch': sha('patches/0001-x.patch'), 'submodules/a.patch': sha('submodules/a.patch')}}
+        base = {'commit': 'c1', 'submodules': subs, 'packaged': record}
+        files['runtime/base.json'] = json.dumps(base)
+        self.assertEqual(self.problems(files), [])
+        reworded = dict(base, submodules={'submodules/a': {'commit': 'abc', 'why': 'reworded'}})
+        self.assertEqual(self.problems({**files, 'runtime/base.json': json.dumps(reworded)}), [])  # explanations aside
+        changed = self.problems({**files, 'runtime/patches/0001-x.patch': patch + 'more\n'})
+        self.assertEqual(len(changed), 1)
+        self.assertIn('the files differ', changed[0])
+        other = dict(base, submodules={'submodules/a': {'commit': 'def'}})
+        self.assertIn('the submodules differ', self.problems({**files, 'runtime/patches/0001-x.patch': patch,
+                                                               'runtime/base.json': json.dumps(other)})[0])
+        stored = self.problems({**files, 'runtime/base.json': json.dumps(base),
+                                'packages/runtime/files.json': json.dumps({'files': {'files/d3d9.dll': {'sha256': 'ee'}}})})
+        self.assertEqual(stored, ['packages/runtime/files/d3d9.dll is not the d3d9.dll runtime/base.json "packaged" records'])
+
 
 if __name__ == '__main__':
     unittest.main()

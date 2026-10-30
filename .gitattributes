@@ -16,8 +16,9 @@ third_party/** -text
 packages/** -text
 packages/**/*.xz filter=lfs diff=lfs merge=lfs -text
 
-# The runtime fork's patches apply byte for byte.
+# The runtime fork's patches, and those of its submodules, apply byte for byte.
 runtime/patches/*.patch -text
+runtime/submodules/*.patch -text
 
 # Binary formats this project handles; outside packages/ none is committed (AGENTS.md rule 6).
 *.gma       binary

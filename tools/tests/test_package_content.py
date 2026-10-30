@@ -271,6 +271,27 @@ class PackageContentTests(unittest.TestCase):
         self.assertFalse((self.root / 'x').exists())
         self.assertEqual(self.leftovers(), [])
 
+    def test_licence_texts_added_to_an_addon(self):
+        # R3-011: a part's LICENSE and licenses/ travel with its add-on, as new files only.
+        licence = self.write(self.root / 'part' / 'LICENSE', b'MIT\n')
+        self.write(self.root / 'part' / 'licenses' / 'zlib.txt', b'zlib\n')
+        self.write(self.root / 'part' / 'licenses' / 'Thumbs.db', b'junk')
+        self.build('--add-to-addon', 'house_rtx/LICENSE', licence, '--add-to-addon', 'house_rtx/licenses',
+                   self.root / 'part' / 'licenses', '--out', self.root / 'pkg')
+        files = self.manifest(self.root / 'pkg')['files']
+        self.assertEqual(len(files), 9)  # the add-on's seven and the two texts; no junk
+        for rel, data in (('LICENSE', b'MIT\n'), ('licenses/zlib.txt', b'zlib\n')):
+            path = 'native/root/garrysmod/addons/house_rtx/' + rel
+            self.assertEqual(files[path]['sha256'], hashlib.sha256(data).hexdigest())
+            self.assertEqual((self.root / 'pkg' / path).read_bytes(), data)
+        for bad in (['--add-to-addon', 'house_rtx/lua/autorun/house_rtx.lua', licence],  # the add-on has it
+                    ['--add-to-addon', 'other/LICENSE', licence],                        # no such add-on
+                    ['--add-to-addon', 'house_rtx', licence],                            # no path in it
+                    ['--add-to-addon', 'house_rtx/LICENSE', self.root / 'part' / 'missing']):
+            code, _, err = self.run_tool('--id', 'x', '--addon', self.addon, *bad, '--out', self.root / 'x')
+            self.assertEqual(code, 1, bad)
+        self.assertFalse((self.root / 'x').exists())
+
     def test_binary_modules_and_the_runtime_they_load_first(self):
         natives = {name: self.write(self.src / 'bin' / name, name.encode())
                    for name in ('gmcl_mmdhl_win64.dll', 'gmsv_mmdhl_win64.dll', 'mmdhl_runtime_win64.dll', 'mmdhl_worker.exe')}
