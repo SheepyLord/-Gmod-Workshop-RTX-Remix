@@ -9,6 +9,11 @@ Status: **done** (usable), **skeleton** (builds, little function), **planned** (
 
 ## Runs inside the game
 
+Loader 0.8.0 adds prior-install migration in nl_core: static PE recognition, a bounded upstream
+path catalog, hash-verified stock recovery, and a permanent legacy archive committed with normal
+package deployment ([ADR 0042](decisions/0042-legacy-remix-migration.md)). No GPU or execution of the
+old runtime is needed for planning or its generated regression tests.
+
 | Component | Path | Status | What it does |
 |---|---|---|---|
 | Bootstrap | [`loader/proxy`](../loader/proxy/README.md) → `bin\win64\winmm.dll` | M1 done (inert) | Loaded by `gmod.exe` at process start. Forwards every `winmm` export to the system DLL, checks it is inside `bin\win64\gmod.exe` and that no off switch is set, then runs the start-up step at the EXE entry point: discover packages, deploy, activate the runtime, write the status file. Any error is logged and the game continues vanilla. M1 built the inert part (forwarding, host gate, off switches, entry hook, log); the start-up step comes with M3 (deploy) and M4 (activate). |

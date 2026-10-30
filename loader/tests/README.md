@@ -34,6 +34,9 @@ backward compatible.
 | `test_cmdline.cpp` | Token/getter decoding, synthetic descriptor validation, lengths/capacity bounds, failed/partial-write rollback and scoped restoration |
 | `cmdline_host.cpp` | Separate CTest process `nl_cmdline_roundtrip`: real kernelbase W/A and PEB swap, updated lengths, then exact explicit and scoped restoration; includes original quoted/Unicode arguments |
 | `test_version.cpp` | `nl::version()` matches the CMake project version |
+| `legacy_fixture.h` | Generated inert PE export fixture shared by migration and deployment tests; no game code |
+| `test_legacy_detect.cpp` | PE32/PE32+ exports, sparse/page-boundary reads, aliases, malformed mappings and link refusal |
+| `test_legacy_migrate.cpp` | Prior-runtime detection, protected files, exact journal exceptions, ownership exclusions, unknown depot edits and backup collisions; test_deploy.cpp additionally tests migration/uninstall and every interrupted/failed filesystem operation |
 | `test_startup.cpp` | Keep-last-good source decisions, explicit removals/Workshop disable/unsubscribe, which removed packages lose their rollback copy, absent/disabled/invalid config, invalid journal and contention with/without pending transaction; late staging failure versus CLI behavior is also covered in `test_deploy.cpp` |
 | `test_status.cpp` | Status JSON schema/content, user layers and fallback details, atomic replacement and selective uninstall cleanup |
 | `fault_host.cpp` | `nl_fault_host`, test-only: one deployer command (`apply`, `rollback`, `uninstall`, `recover`) that ends itself before change N (`--kill-at N`, exit 99) or fails it (`--fail-at N`) |

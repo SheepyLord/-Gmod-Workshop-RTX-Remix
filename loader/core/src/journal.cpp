@@ -1,6 +1,7 @@
 #include "nl/journal.h"
 
 #include "nl/json.h"
+#include "nl/legacy_migrate.h"
 #include "nl/paths.h"
 
 #include <algorithm>
@@ -73,7 +74,7 @@ bool folder_area(std::string_view path) {
 
 // What a transaction may touch: those, and its staging folder.
 bool step_area(std::string_view path) {
-  return folder_area(path) || paths::within(path, "native-loader/staging");
+  return folder_area(path) || paths::within(path, "native-loader/staging") || legacy::step_path(path);
 }
 
 std::string checked_path(const Value& value, std::string_view what, bool (*allowed)(std::string_view)) {

@@ -13,6 +13,8 @@ add_library(nl_core STATIC
   src/gma.cpp
   src/journal.cpp
   src/json.cpp
+  src/legacy_detect.cpp
+  src/legacy_migrate.cpp
   src/lzma.cpp
   src/manifest.cpp
   src/package.cpp

@@ -6,6 +6,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Loader 0.8.0 automatically archives a recognized prior RTXLauncher/Remix installation before
+  deploying the shipment. Restore ten known legacy-modified Steam files from verified vanilla
+  copies, archive obsolete runtime/addon files and factory configs, and preserve user.conf,
+  personal mods and data. Backup and replacement share the crash-recoverable deployment
+  transaction; uninstall retains the legacy archive ([ADR 0042](docs/decisions/0042-legacy-remix-migration.md)).
+
 - Keep Lua sidecar documentation in source inputs and out of deployed addon scripts, fixing GMod trying to include `procedural_shard.lua.md` as an entity script.
 - Fix Hotloader's unknown `DepthWrite` shader errors on RTX Remix: initialize backend detection before material registration, avoid unsupported depth clones/passes on the fixed-function path, and retain normal Source depth rendering ([ADR 0041](docs/decisions/0041-hotloader-remix-depth-materials.md)).
 - Native map glass (`func_breakable`, including Modern House) now leaves scattered, persistent, networked physics shards when it breaks. Preserve native health and outputs, support horizontal/rotated panes, bound the debris pile, and batch late-join mesh updates ([ADR 0040](docs/decisions/0040-native-map-glass-debris.md)).

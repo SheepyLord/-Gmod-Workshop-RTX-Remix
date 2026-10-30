@@ -3,6 +3,7 @@
 #include "nl/core.h"
 #include "nl/discovery.h"
 #include "nl/gma.h"
+#include "nl/legacy_migrate.h"
 #include "nl/package.h"
 #include "nl/paths.h"
 #include "nl/sha256.h"
@@ -13,6 +14,8 @@
 #include <tlhelp32.h>
 
 #include <algorithm>
+#include <array>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <set>
@@ -177,7 +180,8 @@ struct Run {
         disk(options.filesystem ? *options.filesystem : fs::win32()),
         dry_run(options.dry_run),
         allow_running_game(options.allow_running_game),
-        exclude_process_id(options.exclude_process_id) {
+        exclude_process_id(options.exclude_process_id),
+        legacy_source(options.legacy_source) {
     report.action = action;
   }
 
@@ -189,6 +193,7 @@ struct Run {
   bool dry_run;
   bool allow_running_game;
   std::uint32_t exclude_process_id;
+  std::optional<Path> legacy_source;
   Report report;
   Journal journal;
 };
@@ -246,7 +251,8 @@ void undo(Run& run, const Step& step) {
     // loader's own folders (a file moved aside) is retired: deleted once clean-up finds it unchanged.
     if (!step.sha256.empty() && !at_to.directory && paths::within(step.to, kLoaderDir) &&
         fs::hash_file(to).sha256 == step.sha256) {
-      if (paths::within(step.to, journal::kOriginals) || paths::within(step.to, journal::kEdits)) {
+      if (paths::within(step.to, journal::kOriginals) || paths::within(step.to, journal::kEdits) ||
+          paths::within(step.to, legacy::kBackups)) {
         // Someone else's file the loader had moved out of the way: never deleted (ADR 0035).
         run.note(step.from + " changed while a deployment was interrupted; the file the loader had moved from there stays at " +
                  step.to);
@@ -472,9 +478,13 @@ bool transact(Run& run, Journal next, const std::vector<Step>& steps, std::uint6
   journal::save(run.disk, run.root, j);
   try {
     for (const Step& step : steps) {
+      fs::refuse_links(run.root, step.to);
       if (step.op == Step::Op::make_dir) {
         run.disk.create_directory(run.at(step.to));
       } else {
+        fs::refuse_links(run.root, step.from);
+        if (!step.sha256.empty() && fs::hash_file(run.at(step.from)).sha256 != step.sha256)
+          throw std::runtime_error("transaction source changed before its move: " + step.from);
         run.disk.move(run.at(step.from), run.at(step.to), false);
       }
     }
@@ -950,12 +960,43 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       throw Broken{i, e.what()};
     }
   }
-  const std::vector<RootPlan> roots = check_roots(run, planned, tx);
+  std::vector<RootPlan> roots = check_roots(run, planned, tx);
+  legacy::Migration migration;
+  if (std::any_of(plan.decisions.begin(), plan.decisions.end(),
+                  [](const planner::Decision& d) { return d.active && d.activate_runtime; })) {
+    std::set<std::string> owned;
+    if (run.journal.current) for (const auto& f : run.journal.current->files) owned.insert(fold(f.path));
+    migration = legacy::plan(run.root, owned, tx, run.legacy_source);
+    if (!migration.archive.empty()) {
+      // An earlier RTX-off deployment may already have displaced old addon files as normal
+      // uninstall originals. Move those copies into the permanent migration archive too, or a
+      // later uninstall would revive part of the former installation.
+      for (const auto& original : run.journal.originals) {
+        if (!legacy::installed_path(original.path)) continue;
+        const std::string from = std::string(journal::kOriginals) + "/" + original.path;
+        fs::refuse_links(run.root, from);
+        if (unchanged(run.at(from), original, true)) {
+          migration.files.push_back({from, {original.sha256, original.size}, {}, {}, original.path});
+        }
+      }
+    }
+    // Archiving a legacy file is permanent. It must not become a normal original that uninstall
+    // puts back, which would silently re-enable the former RTX installation.
+    for (auto& r : roots) {
+      if (!r.current && std::any_of(migration.files.begin(), migration.files.end(),
+                                    [&](const legacy::SavedFile& f) { return fold(f.path) == fold(r.path); })) {
+        r.act = Act::install;
+        r.original = false;
+        r.kept_at.clear();
+      }
+    }
+  }
   std::vector<journal::Package> records;
   for (const Planned& p : planned) records.push_back(p.record);
   const Generation none;
   const Generation& cur = run.journal.current ? *run.journal.current : none;
   std::vector<std::string> notes = notes_for(roots);
+  append(notes, migration.notes);
   // A package removed because its Workshop item was unsubscribed keeps no rollback copy (ADR 0025).
   const std::set<std::string> unsubscribed = startup::unsubscribed_packages(cur, plan);
   for (const journal::Package& p : cur.packages) {
@@ -965,7 +1006,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   }
 
   const std::vector<std::string> wanted = package_set(records);
-  bool work = std::any_of(roots.begin(), roots.end(), [](const RootPlan& r) {
+  bool work = !migration.files.empty() || std::any_of(roots.begin(), roots.end(), [](const RootPlan& r) {
     return places(r.act) || r.act == Act::remove || r.act == Act::adopt || r.act == Act::drop;
   });
   for (const Planned& p : planned) {
@@ -986,6 +1027,10 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   }
 
   std::vector<Change> changes;
+  for (const auto& file : migration.files) {
+    changes.push_back({"archive-legacy", file.path});
+    if (!file.stock_source.empty()) changes.push_back({"restore-stock", file.path});
+  }
   for (const Planned& p : planned) {
     if (p.stage_payload) changes.push_back({"payload", p.record.payload});
   }
@@ -1017,6 +1062,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       if (targets.back().count(key) && !done.count(key)) needed += file.second.size;
     }
   }
+  for (const auto& file : migration.files) needed += file.stock.size;
   ensure_space(run, needed);
   for (std::size_t i = 0; i < planned.size(); ++i) {
     StagedFiles& done = staged[planned[i].index];
@@ -1037,6 +1083,47 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
     }
   }
 
+  // Copy and verify recovery material while originals are still in place. Every write uses the
+  // same injectable filesystem as package extraction and transaction steps.
+  std::vector<Step> legacy_installs;
+  if (!migration.files.empty()) {
+    for (const auto& file : migration.files) {
+      if (file.stock_source.empty()) continue;
+      const std::string stage = std::string(kStaging) + "/" + std::to_string(tx) + "/legacy/stock/" + file.path;
+      make_parents(run, stage);
+      auto writer = run.disk.create_file(run.at(stage));
+      std::ifstream input(fs::long_path(file.stock_source), std::ios::binary);
+      if (!input) throw std::runtime_error("cannot read verified legacy stock source");
+      std::array<char, 65536> bytes{};
+      std::uint64_t copied = 0;
+      while (input) {
+        input.read(bytes.data(), bytes.size());
+        const auto size = static_cast<std::size_t>(input.gcount());
+        copied += size;
+        if (copied > file.stock.size) throw std::runtime_error("legacy stock source grew while staging");
+        if (size) writer->write(bytes.data(), size);
+      }
+      if (!input.eof()) throw std::runtime_error("cannot finish reading legacy stock source");
+      writer->close();
+      if (fs::hash_file(run.at(stage)).sha256 != file.stock.sha256)
+        throw std::runtime_error("legacy stock source changed while staging");
+      legacy_installs.push_back({Step::Op::move, stage, file.path, file.stock.sha256});
+    }
+    const std::string stage = std::string(kStaging) + "/" + std::to_string(tx) + "/legacy/manifest.json";
+    make_parents(run, stage);
+    const std::string bytes = legacy::backup_manifest(migration);
+    auto writer = run.disk.create_file(run.at(stage));
+    writer->write(bytes.data(), bytes.size());
+    writer->close();
+    legacy_installs.push_back({Step::Op::move, stage, migration.archive + "/manifest.json", sha256::of(bytes)});
+    // Neither a player nor another process may change a planned original between scan and commit.
+    for (const auto& file : migration.files) {
+      fs::refuse_links(run.root, file.path);
+      if (fs::hash_file(run.at(file.path)).sha256 != file.before.sha256)
+        throw std::runtime_error("legacy file changed while staging: " + file.path);
+    }
+  }
+
   // The steps: folders, files moved aside (kept for rollback, unless their package was unsubscribed),
   // then the new files, payload files included, each moved on its own with its hash so that undoing
   // never moves anything else.
@@ -1051,6 +1138,12 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   std::vector<Step> displaced;  // files kept as originals or changed copies (ADR 0035), not rollback copies
   std::vector<Step> payload_moves;
   std::vector<Step> installs;
+  for (const auto& file : migration.files) {
+    const std::string to = migration.archive + "/" + file.path;
+    parents_of(to);
+    displaced.push_back({Step::Op::move, file.path, to, file.before.sha256});
+  }
+  for (const auto& step : legacy_installs) parents_of(step.to);
   for (const RootPlan& r : roots) {
     if (r.act == Act::replace || r.act == Act::remove) {
       const std::string to = backup + "/" + r.path;
@@ -1082,6 +1175,7 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   for (const auto& dir : make) steps.push_back({Step::Op::make_dir, "", dir.second, ""});
   append(steps, aside);
   append(steps, displaced);
+  append(steps, legacy_installs);
   append(steps, payload_moves);
   append(steps, installs);
 
@@ -1169,6 +1263,11 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       next.originals.push_back({r.path, planned[r.planned].record.id, r.found.sha256, r.found.size, r.mtime, false});
     }
   }
+  std::erase_if(next.originals, [&](const File& original) {
+    return std::any_of(migration.files.begin(), migration.files.end(), [&](const legacy::SavedFile& saved) {
+      return !saved.restore_target.empty() && fold(saved.restore_target) == fold(original.path);
+    });
+  });
   for (const auto& dir : make) add_dir(next.dirs, dir.second);
   sort_dirs(next.dirs);
   append(next.retired, retired_after(run.journal, steps, next, left));

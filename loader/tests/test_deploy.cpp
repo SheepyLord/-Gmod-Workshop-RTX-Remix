@@ -1,10 +1,12 @@
 #include "gma_fixture.h"
+#include "legacy_fixture.h"
 #include "nl/config.h"
 #include "nl/core.h"
 #include "nl/deploy.h"
 #include "nl/discovery.h"
 #include "nl/fs.h"
 #include "nl/journal.h"
+#include "nl/legacy_migrate.h"
 #include "nl/manifest.h"
 #include "nl/planner.h"
 #include "nl/sha256.h"
@@ -387,6 +389,103 @@ TEST_CASE("deploy: the first apply places payload and root files; the next one w
   CHECK(counting.operations() == 0);
   const auto status = nl::deploy::status(g.root, true);
   CHECK(status.drift.empty());
+}
+
+TEST_CASE("deploy legacy: migration archives obsolete addon files and uninstall never reactivates old RTX") {
+  Game g("deploy_legacy");
+  const auto old_runtime = nl::test::legacy_fixture::fixture();
+  write_file(g.root / "bin/win64/d3d9.dll", old_runtime);
+  write_file(g.root / "rtx.conf", "old RTX config");
+  write_file(g.root / "user.conf", "keep user settings");
+  const std::string addon = "garrysmod/addons/remixbinary/lua/";
+  write_file(nl::fs::join(g.root, addon + "old.lua"), "obsolete Lua");
+  write_file(nl::fs::join(g.root, addon + "new.lua"), "old implementation");
+  auto p = runtime("1.0.0", "new runtime");
+  p.kinds = "[\"remix-runtime\", \"lua-addon\"]";
+  p.extra += ", \"root_files\": [{\"path\": \"garrysmod/addons/remixbinary\"}]";
+  p.files["native/root/" + addon + "new.lua"] = "new implementation";
+  g.add("runtime.gma", p);
+  g.allow({"garrysmod/addons/runtime.gma"});
+  const State before = snapshot(g.root);
+  const auto dry = apply_at(g.root, nullptr, true);
+  if (dry.outcome != "planned") {
+    std::printf("legacy dry run: %s %s\n", dry.outcome.c_str(), dry.error.c_str());
+    for (const auto& s : dry.skipped) std::printf("skipped: %s\n", s.reason.c_str());
+  }
+  REQUIRE(dry.outcome == "planned");
+  CHECK(dry.operations == 0);
+  CHECK(snapshot(g.root) == before);
+  CHECK(has_change(dry, "archive-legacy", "bin/win64/d3d9.dll"));
+  const auto deployed = apply_at(g.root);
+  REQUIRE(deployed.outcome == "deployed");
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+  CHECK(!g.has(addon + "old.lua"));
+  CHECK(g.read(addon + "new.lua") == "new implementation");
+  const std::string backup = "native-loader/backup/legacy/1/";
+  CHECK(g.read(backup + "bin/win64/d3d9.dll") == old_runtime);
+  CHECK(g.read(backup + addon + "old.lua") == "obsolete Lua");
+  CHECK(g.journal().originals.empty());
+  CHECK(apply_at(g.root).operations == 0);
+  REQUIRE(nl::deploy::uninstall(g.root, with(nullptr)).ok());
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+  CHECK(!g.has(addon + "new.lua"));
+  CHECK(g.read(backup + "bin/win64/d3d9.dll") == old_runtime);
+  CHECK(g.read("user.conf") == "keep user settings");
+}
+
+TEST_CASE("deploy legacy: failed shipment integrity and disabled RTX never archive the old installation") {
+  Game g("deploy_legacy_invalid");
+  const auto old_runtime = nl::test::legacy_fixture::fixture();
+  write_file(g.root / "bin/win64/d3d9.dll", old_runtime);
+  version_1(g);
+  write_file(g.root / "native-loader/config.json",
+             R"({"schema":1,"allow":{"local":["garrysmod/addons/runtime.gma"]},"remix":{"enabled":false}})");
+  CHECK(apply_at(g.root).ok());
+  CHECK(g.read("bin/win64/d3d9.dll") == old_runtime);
+  REQUIRE(nl::deploy::uninstall(g.root, with(nullptr)).ok());
+  g.allow({"garrysmod/addons/runtime.gma"});
+  auto bytes = g.read("garrysmod/addons/runtime.gma");
+  const auto offset = bytes.find("MZ-one");
+  REQUIRE(offset != std::string::npos);
+  bytes.at(offset) = 'X';
+  write_file(g.root / "garrysmod/addons/runtime.gma", bytes);
+  CHECK(apply_at(g.root).ok());  // package is skipped; the legacy installation stays untouched
+  CHECK(g.read("bin/win64/d3d9.dll") == old_runtime);
+  CHECK(!g.has("native-loader/backup/legacy"));
+}
+
+TEST_CASE("deploy legacy: enabling RTX after an off deployment archives old uninstall originals") {
+  Game g("deploy_legacy_off_first");
+  write_file(g.root / "bin/win64/d3d9.dll", nl::test::legacy_fixture::fixture());
+  const std::string file = "garrysmod/addons/remixbinary/lua/old.lua";
+  write_file(nl::fs::join(g.root, file), "old legacy implementation");
+  auto p = runtime("1.0.0", "new runtime");
+  p.kinds = "[\"remix-runtime\", \"lua-addon\"]";
+  p.extra += ", \"root_files\": [{\"path\": \"garrysmod/addons/remixbinary\"}]";
+  p.files["native/root/" + file] = "new implementation";
+  g.add("runtime.gma", p);
+  write_file(g.root / "native-loader/config.json",
+             R"({"schema":1,"allow":{"local":["garrysmod/addons/runtime.gma"]},"remix":{"enabled":false}})");
+  REQUIRE(apply_at(g.root).ok());
+  REQUIRE(g.journal().originals.size() == 1);
+  g.allow({"garrysmod/addons/runtime.gma"});
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  CHECK(g.journal().originals.empty());
+  CHECK(g.read("native-loader/backup/legacy/2/native-loader/backup/originals/" + file) == "old legacy implementation");
+  REQUIRE(nl::deploy::uninstall(g.root, with(nullptr)).ok());
+  CHECK(!g.has(file));
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+}
+
+TEST_CASE("deploy faults: legacy migration recovers from interruption and failure before every filesystem operation") {
+  Game g("deploy_legacy_faults");
+  version_1(g);
+  write_file(g.root / "bin/win64/d3d9.dll", nl::test::legacy_fixture::fixture());
+  write_file(g.root / "rtx.conf", "old RTX config");
+  write_file(g.root / "garrysmod/addons/remixbinary/lua/obsolete.lua", "obsolete");
+  const Command command = [](const sfs::path& root, nl::fs::FileSystem* disk) { return apply_at(root, disk); };
+  CHECK(interrupt_everywhere(g.dir / "interruptions", g.root, command, 1) > 25);
+  CHECK(fail_everywhere(g.dir / "failures", g.root, command) > 25);
 }
 
 TEST_CASE("deploy: an upgrade replaces, adds and removes; rollback restores it exactly and holds it") {

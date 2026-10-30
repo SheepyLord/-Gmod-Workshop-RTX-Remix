@@ -42,10 +42,16 @@ patched copy of GMod managed by RTXLauncher.
 1. **Develop against the PoC install.** `H:\SteamLibrary\steamapps\common\GarrysMod_PoC` is a
    byte-exact vanilla copy made for experiments. The field install `...\common\GarrysMod` is the
    user's real game: change it only when the user asks in this conversation, after backing up what
-   you will touch. `GarrysMod_RTX_c` and `GarrysMod_RTX_c_backups` are reference only; never write there.
+   you will touch. The user replaced `GarrysMod_RTX_c` with this project's implementation on
+   2026-10-30: it is no longer a classic RTX baseline. Never write there or in
+   `GarrysMod_RTX_c_backups`; prepare a fresh legacy fixture under `out` for migration tests.
 2. **Never write Steam's files on disk.** Depot files in any install stay byte-identical; anything we
    need differently happens in memory or through a declared, journaled override (later milestones).
    [`tools/steam/verify_install.py`](tools/steam/verify_install.py.md) proves an install is still vanilla.
+   The user's legacy-migration request (2026-10-30) permits one narrow exception: restore recognized
+   pre-existing RTXLauncher modifications to hash-verified stock bytes, with the old bytes archived
+   first in the deployment transaction ([ADR 0042](docs/decisions/0042-legacy-remix-migration.md)).
+   This never permits patching an otherwise vanilla depot file on disk.
 3. **Never touch Remix `user.conf`**, and never destroy a file the user edited (compare hashes first).
    A package's `replace-owned` file that changed is put back, and whatever was in its place is kept
    (`native-loader\backup\edits`, or `backup\originals`, put back when the package goes); a

@@ -1,5 +1,10 @@
 # QoL handover: the repository to Codex Astra
 
+2026-10-30 update: the user replaced GarrysMod_RTX_c with this implementation. It is no longer a
+classic RTX baseline; leave it and its backups untouched. Prior-install migration uses a fresh
+Xenthio fixture under out/legacy-game. See [ADR 0042](../decisions/0042-legacy-remix-migration.md)
+and the [QoL report](QoL-report.md) for loader 0.8.0 and validation.
+
 - From: Claude, 2026-10-29
 - To: Codex Astra, for a run of quality-of-life (QoL) changes the user will ask for
 - Start from: `main` at the commit that adds this brief (pushed to `origin`; CI green)
