@@ -87,6 +87,12 @@ class CheckRepoTests(unittest.TestCase):
     def test_claude_md_imports_agents_md(self):
         self.assertEqual(self.problems({'CLAUDE.md': 'nothing here\n'}), ['CLAUDE.md must exist and import @AGENTS.md'])
 
+    def test_other_checkouts_inside_are_not_this_repos_files(self):
+        # A worktree another session keeps in .claude/worktrees has its own .git file; its files are not
+        # this checkout's (it had failed the checks of main with every script of its packages/).
+        self.assertEqual(self.problems({'.claude/worktrees/side/.git': 'gitdir: elsewhere\n',
+                                        '.claude/worktrees/side/tools/new.py': ''}), [])
+
     def test_the_stored_runtime_must_be_what_runtime_builds(self):
         # R3-014: a patch, a submodule setting or a clone changed without a new build fails the checks.
         import hashlib
