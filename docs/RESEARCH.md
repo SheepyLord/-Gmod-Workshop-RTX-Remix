@@ -2120,3 +2120,24 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   REA snapshots and restoration records. PoC config files were restored by hash; its own video
   changes (ScreenWidth, ScreenHeight, DXLevel_V1) were restored only while they still matched the
   test's recorded values. No user's running game was operated.
+
+## Modern House native glass (2026-10-30)
+
+- The installed map 3495468649 has 52 func_breakable entities and no func_breakable_surf. Its BSP
+  entity/model lumps were read without extracting or editing the map. At runtime, 44 have a valid
+  convex VPhysics mesh whose material is glass; other entries are metal, shadow or have no physics.
+- Existing Glass-Rewrite-Remix `procedural_shard.lua` only handled func_breakable_surf. The real
+  baseline pane (*9) had health 15 and 36 physics vertices; bullet damage removed it with no shards.
+  The observed hook order was EntityTakeDamage, EntityRemoved, break_breakable, then damage return.
+  EntityRemoved alone cannot be treated as a break and cannot immediately discard the cached mesh.
+- The engine event is documented by [Facepunch](https://wiki.facepunch.com/gmod/gameevent/break_breakable).
+  Physical convex triangles come from [PhysObj:GetMeshConvexes](https://wiki.facepunch.com/gmod/PhysObj:GetMeshConvexes).
+  The addon now preserves native brush logic and uses the event for debris only.
+- The first fixed probe had 18/18 valid physics shards, 18/18 client meshes and 18 pieces still on
+  the floor after 30 seconds. The complete-package RTX run confirmed real reflected glass geometry,
+  native OnBreak output, scripted horizontal panes, 256/256 full-resync meshes, cleanup to zero
+  and 18 new pieces after rebreaking. Evidence is in the map-glass worktree under out/glass-map.
+- Runtime util_filesys.h maps DXVK_LOG_PATH to the Logs directory, which also owns the Sentry
+  database. util_sentry.cpp checks crashed-last-run before engine condebug exists. A fresh test-only
+  log directory avoids an old report prompt without touching its files or consent. Ray tracing was
+  True in the isolated run's Remix log; the game loaded and quit normally with zero Lua errors.

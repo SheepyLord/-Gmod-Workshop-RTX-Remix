@@ -275,3 +275,17 @@ A missing expected source marker must leave the ordinary menu untouched and repo
 The publisher tests mock upload processes. They verify that only the exact reviewed early Steam
 presence failure can retry, real API initialization is required, unknown hashes/bytes fail closed,
 and a successful ordinary publish does not use the fallback. Tests never upload to Workshop.
+
+### Native map glass
+
+`tools/tests/test_glass_map.py` runs the actual shipped geometry, map-break controller and packet
+writer under LuaJIT using generated physics fixtures. It checks fracture count and volume for thin,
+horizontal and rotated panes, invalid shapes, native event ordering and return values, duplicate
+breaks, unrelated entities, ordinary removal, cleanup cancellation, the debris budget, and bounded
+late-join packets. It never launches a game or needs a GPU.
+
+PoC acceptance uses the installed Modern House map: compare the baseline, damage a native pane,
+check valid independent fragments and client meshes, wait for settled persistent debris, exercise
+scripted breaks, resync a full pile, and clean up/rebreak. Read only that session's console log.
+The RTX run uses a fresh process-only DXVK_LOG_PATH under repository out/ for its logs and crash
+cache; it does not set the flag that grants automatic upload consent or edit Remix user.conf.

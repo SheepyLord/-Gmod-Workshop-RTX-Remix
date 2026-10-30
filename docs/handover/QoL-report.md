@@ -137,3 +137,49 @@ field's earlier DLL, installer receipt and config are hash-verified in main-chec
 `out/field-backups/20261030-loader-0.7.0`, with `SHA256SUMS.txt`. Read-only apply and activation
 previews passed. The field config is byte-identical; no game was running or stopped. The change
 takes effect on the next launch. No Remix user.conf, Steam launch setting or depot file was edited.
+
+## Modern House map glass (2026-10-30)
+
+The user's map-glass request is implemented on `codex/map-glass` from main `28805d5`
+([ADR 0040](../decisions/0040-native-map-glass-debris.md)). The bundled addon previously converted
+only `func_breakable_surf`, while Modern House uses ordinary `func_breakable` brushes. The original
+baseline removed the tested pane with zero procedural shards.
+
+The new server handler caches native glass physics meshes and creates independent debris only
+after the engine's real break event. Original health, filters, inputs and break outputs remain in
+control. It covers 44 glass physics panes in Modern House, including horizontal/rotated shapes.
+The shader and render mesh are those of the existing procedural glass addon. Map fragments remain
+until cleanup or the 256-piece oldest-first budget. Existing count, velocity and collision settings
+apply. Large full mesh resyncs use bounded packets; mesh bounds match received vertices.
+
+The first fixed standalone run produced 18 shards, all with valid physics; all 18 remained after
+30 seconds. The complete-package RTX run then showed reflective fragments, delivered the native
+OnBreak output, handled scripted horizontal-glass breaks, kept the pile at 256 pieces, rebuilt
+256/256 client meshes on full resync, cleared to zero on map cleanup and produced 18 new pieces
+after breaking a restored pane. It loaded Modern House, logged zero Lua errors and quit normally.
+
+The RTX test uses an RTX 5090 with ray tracing enabled, a low graphics preset and importance-sampled
+indirect lighting. A stale crash-report prompt blocked an earlier attempt before engine startup;
+that owned process was stopped without answering the prompt. A fresh process-only DXVK_LOG_PATH
+under the evidence directory isolated the next test's logs/crash cache. No upload permission or
+Remix user.conf was changed. This validates the glass effect, not a fix for earlier unrelated native
+renderer crashes.
+
+Evidence and the acceptance payloads are in the task worktree's `out/glass-map`. The field install
+is not edited by this batch; the existing loader applies the Workshop package on the next launch.
+
+Final RTX acceptance also retained an intact pane after a nonfatal hit, delivered exactly one
+native OnBreak relay output and produced 36 shards after the second, scripted horizontal-pane
+break. The tested blast did not break the native brush and produced no extra debris, preserving
+its native behavior. Bulk breaks held the pile at 256, all 256 meshes resynced, cleanup left zero
+and a restored window produced 18 again. Both complete-package RTX sessions quit normally with
+zero Lua errors. Screenshots show reflected glass fragments on the ground.
+
+Release checks passed: `tools/test.ps1 -Config Release` completed all **17 CTests** and **256 Python
+tests** (seven expected skips). The final package passed nlctl validation with 923 payload files,
+content digest `49b0cd7fa270f9ad` (prefix). Comparison with the current Workshop package shows six
+added files and changes only to the Glass-Rewrite-Remix addon plus its manifest. The final package's
+functional payload is byte-identical to the successful RTX test; its subsequent changes are docs.
+PoC config.json and config.cfg were restored to their saved hashes. Shared video settings matched
+the before snapshot, so no registry write was needed. The test's two DATA reports were saved to
+evidence and removed from the PoC. No user game was stopped or operated.

@@ -110,3 +110,8 @@ The bootstrap also provides native package presentation (loader 0.7.0,
 script overlay under `native-loader/presentation`, served through exact read-only filesystem import
 redirects. The payload journal and the actual Workshop archives keep their existing roles. The
 proxy's `presentation.cpp` and fixture tests are listed in its component READMEs.
+
+Native map glass is supplied by the indexed Glass-Rewrite-Remix part. Its server controller and
+geometry helper preserve native brush behavior and create persistent networked debris; regression
+coverage lives in tools/tests/test_glass_map.py and glass_map_harness.lua
+([ADR 0040](decisions/0040-native-map-glass-debris.md)).

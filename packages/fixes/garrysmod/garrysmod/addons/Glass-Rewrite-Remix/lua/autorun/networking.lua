@@ -20,53 +20,60 @@ if SERVER then
     hook.Add("PlayerUse", "glass_track_player_use", TrackPlayerInteraction)
     hook.Add("PhysgunPickup", "glass_track_physgun", TrackPlayerInteraction)
 
+    -- Bound every packet, including a late join after many map windows have shattered.
+    local MAX_SHARD_BYTES = 60000
+    local function shardBytes(shard)
+        if not IsValid(shard) or not shard.TRIANGLES or #shard.TRIANGLES == 0 then return end
+        local bytes = 4 + #shard.TRIANGLES * 12
+        if bytes + 8 > MAX_SHARD_BYTES then return end
+        return bytes
+    end
+    local function writeShard(shard)
+        net.WriteUInt(shard:EntIndex(), 16)
+        net.WriteUInt(#shard.TRIANGLES, 16)
+        for _, tri in ipairs(shard.TRIANGLES) do
+            local pos = tri.pos
+            net.WriteFloat(pos.x)
+            net.WriteFloat(pos.y)
+            net.WriteFloat(pos.z)
+        end
+    end
+    local function sendBatch(batch, ply)
+        if #batch == 0 then return end
+        net.Start("SHARD_NETWORK")
+        net.WriteBool(true)
+        net.WriteUInt(#batch, 16)
+        for _, shard in ipairs(batch) do writeShard(shard) end
+        net.Send(ply)
+    end
+
     -- Handles requests for shard data from clients
     net.Receive("SHARD_NETWORK", function(len, ply)
         -- If len > 0, client is requesting a single shard (post-break)
         if len > 0 then
             local shard = net.ReadEntity()
-            if not shard:IsValid() or not shard.TRIANGLES then return end
-            
-            local triangles = shard.TRIANGLES
-            if not triangles or #triangles == 0 then return end
+            if not shardBytes(shard) then return end
             
             net.Start("SHARD_NETWORK")
             net.WriteBool(false) -- Indicate this is NOT a full update
-            net.WriteUInt(shard:EntIndex(), 16)
-            net.WriteUInt(#triangles, 16)
-            
-            for _, tri in ipairs(triangles) do
-                local pos = tri.pos
-                net.WriteFloat(pos.x)
-                net.WriteFloat(pos.y)
-                net.WriteFloat(pos.z)
-            end
+            writeShard(shard)
             net.Send(ply)
         else 
             -- If len == 0, client is joining and needs all existing shards
-            net.Start("SHARD_NETWORK")
-            net.WriteBool(true) -- Indicate this IS a full update
-
             local all_shards = ents.FindByClass("procedural_shard")
-            net.WriteUInt(#all_shards, 16) -- How many shards we are sending
-
+            local batch, bytes = {}, 8
             for _, shard in ipairs(all_shards) do
-                if shard:IsValid() and shard.TRIANGLES and #shard.TRIANGLES > 0 then
-                    net.WriteUInt(shard:EntIndex(), 16)
-                    net.WriteUInt(#shard.TRIANGLES, 16)
-                    for _, tri in ipairs(shard.TRIANGLES) do
-                        local pos = tri.pos
-                        net.WriteFloat(pos.x)
-                        net.WriteFloat(pos.y)
-                        net.WriteFloat(pos.z)
+                local size = shardBytes(shard)
+                if size then
+                    if bytes + size > MAX_SHARD_BYTES then
+                        sendBatch(batch, ply)
+                        batch, bytes = {}, 8
                     end
-                else
-                    -- Send a placeholder for invalid shards
-                    net.WriteUInt(0, 16)
-                    net.WriteUInt(0, 16)
+                    batch[#batch + 1] = shard
+                    bytes = bytes + size
                 end
             end
-            net.Send(ply)
+            sendBatch(batch, ply)
         end
     end)
 else
@@ -133,6 +140,14 @@ else
             
             shard_entity.RENDER_MESH.Mesh = Mesh()
             shard_entity.RENDER_MESH.Mesh:BuildFromTriangles(shard_entity.TRIANGLES)
+            -- Map fragments have arbitrary dimensions, not the placeholder model's bounds.
+            local low, high = Vector(math.huge, math.huge, math.huge), Vector(-math.huge, -math.huge, -math.huge)
+            for _, vertex in ipairs(model_triangles) do
+                local pos = vertex.pos
+                low.x, low.y, low.z = math.min(low.x, pos.x), math.min(low.y, pos.y), math.min(low.z, pos.z)
+                high.x, high.y, high.z = math.max(high.x, pos.x), math.max(high.y, pos.y), math.max(high.z, pos.z)
+            end
+            shard_entity:SetRenderBounds(low, high)
 
             -- Hide the original reference shard if it exists
             local reference_shard = shard_entity:GetReferenceShard()
