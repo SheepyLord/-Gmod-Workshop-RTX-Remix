@@ -28,10 +28,13 @@ python tools\publish_workshop.py --install-source-hooks <add-on repo> [--any-bra
 | `gmpublish` | The `gmpublish.exe` that uploads. It runs from its game root, which must hold `steam_appid.txt` |
 
 Today's parts are:
-- **the runtime**, pinned as `out\packages\i18n\runtime-b5.gma`: runtime B with the classic install's
+- **the runtime**, pinned as `out\packages\sky\runtime-b6.gma`: runtime B with the classic install's
   settings as one low defaults layer ([ADR 0021](../docs/decisions/0021-remix-defaults-in-one-low-layer.md)),
-  and a `d3d9.dll` with translated menus from the fork branch `claude/remix-i18n`
-  ([RESEARCH.md](../docs/RESEARCH.md) section 25);
+  a `d3d9.dll` from the fork branch `claude/sky-night` (translated menus, [RESEARCH.md](../docs/RESEARCH.md)
+  section 25; the real Moon, the night sky image and eclipses, section 29), the sky's textures in
+  `runtime\atmosphere\` (the Moon from NASA, the night sky from Night Sky HD LE), and a second dxvk
+  layer that gives shader compilation every hardware
+  thread but two ([ADR 0032](../docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md));
 - **ReShade 6.8.0** for RTX sessions, built by [`package_reshade.py`](package_reshade.py.md) from the
   pinned official setup in `out\packages\reshade\` ([ADR 0028](../docs/decisions/0028-reshade-in-rtx-sessions.md));
 - **the RTX fixes** (with the companion and its translations from `companion/i18n`), rebuilt from

@@ -30,6 +30,9 @@ MAP_MARKER = re.compile(r"(?m)^Clientside Lua startup!\s*$")
 MOUNT_MARKER = re.compile(r"(?m)^NL_SESSION_MOUNT true")
 EYE_MARKER = re.compile(r"(?m)^NL_SESSION_EYE ")
 FPS_MARKER = re.compile(r"(?m)^NL_SESSION_FPS (\{.*\})\s*$")
+LUA_MARKER = re.compile(r"(?m)^NL_SESSION_LUA (\d+)\s*$")
+SHOT_MARKER = re.compile(r"(?m)^NL_SHOT ([A-Za-z0-9_.-]{1,48})\s*$")
+SHOTS_DONE_MARKER = re.compile(r"(?m)^NL_SHOT_DONE\s*$")
 WORKSHOP_MOUNTED = re.compile(r"(?m)^Mounted (\d+) of (\d+) workshop addons!")
 LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
@@ -489,6 +492,12 @@ def fps_lua(seconds: float) -> str:
             'end)\n')
 
 
+def file_lua(index: int, code: str) -> str:
+    """A --lua file as sent: a first line that prints NL_SESSION_LUA <index>, so the run can tell the
+    chunk arrived and started (RunString compiles it whole first, so a syntax error prints nothing)."""
+    return f'print("NL_SESSION_LUA {index}")\n' + code
+
+
 # ---------------------------------------------------------------- steps
 
 def nlctl_path(config: str) -> Path:
@@ -641,6 +650,34 @@ def step_run(args) -> dict:
     def wait_for_map(count: int, deadline: float) -> bool:
         return wait_for(MAP_MARKER, count, deadline)
 
+    def wait_for_lua(index: int, count: int, deadline: float) -> bool:
+        """Waits until the --lua file `index` has printed its first line `count` times in all."""
+        while time.monotonic() < deadline and process.poll() is None:
+            if LUA_MARKER.findall(log_text()).count(str(index)) >= count:
+                return True
+            time.sleep(0.5)
+        return False
+
+    def lua_shots(window: int | None, limit: float) -> tuple[list[dict], bool]:
+        """One screenshot for each "NL_SHOT <label>" line the Lua prints, in order, each answered with
+        the console command "nl_shot_taken <n>" so the Lua can go on to its next view; until it prints
+        NL_SHOT_DONE, the game exits or `limit` seconds pass. Returns the shots and whether it was done."""
+        shots, seen, began_shots = [], 0, time.monotonic()
+        while time.monotonic() < began_shots + limit and process.poll() is None:
+            text = log_text()
+            for label in SHOT_MARKER.findall(text)[seen:]:
+                seen += 1
+                if window:
+                    shot = screenshot(window, evidence / f"shot-{seen:02d}-{label}.png")
+                    shot.update(label=label, seconds=round(time.monotonic() - began_shots, 1))
+                    shots.append(shot)
+                if hwnd:
+                    console(hwnd, f"nl_shot_taken {seen}")
+            if SHOTS_DONE_MARKER.search(text):
+                return shots, True
+            time.sleep(0.25)
+        return shots, False
+
     def wait_quiet(seconds: float, limit: float) -> bool:
         """Waits until the console log has not grown for `seconds` (at most `limit` seconds)."""
         deadline, size, since = time.monotonic() + limit, -1, time.monotonic()
@@ -742,6 +779,22 @@ def step_run(args) -> dict:
                     # holds neither) and are set back before quitting.
                     console(hwnd, "cl_drawhud 0")
                     console(hwnd, "r_drawviewmodel 0")
+            if args.lua and hwnd:
+                # Lua sent while the RTX fixes reload models is lost as the camera's is: wait for quiet
+                # (done above with a camera), and send a file again until its first line has printed.
+                if not (args.camera or args.hide_hud):
+                    record["quiet_before_lua"] = wait_quiet(5, 90)
+                record["lua"] = []
+                for index, path in enumerate(args.lua, 1):
+                    code = file_lua(index, Path(path).read_text(encoding="utf-8"))
+                    started = False
+                    for _ in range(3):
+                        printed = LUA_MARKER.findall(log_text()).count(str(index))
+                        if client_lua(hwnd, f"lua{index}", code) and \
+                                wait_for_lua(index, printed + 1, time.monotonic() + 20):
+                            started = True
+                            break
+                    record["lua"].append({"file": str(path), "started": started})
             time.sleep(args.settle)
             if args.fps and hwnd and process.poll() is None:
                 # Timed in the game, frame by frame, before the screenshots (a capture can stall a frame).
@@ -754,6 +807,8 @@ def step_run(args) -> dict:
                         record["fps"] = json.loads(FPS_MARKER.findall(log_text())[-1])
                         break
             window = game_window(process.pid)
+            if args.lua_shots and process.poll() is None:
+                record["lua_shots"], record["lua_shots_done"] = lua_shots(window, args.lua_shots)
             shots = []
             for index in range(args.screenshots):
                 if window and process.poll() is None:
@@ -882,6 +937,11 @@ def main(argv=None) -> int:
     run.add_argument("--fps", type=float, metavar="SECONDS",
                      help="after --settle, time every frame for SECONDS in client Lua (record: fps)")
     run.add_argument("--console", action="append", default=[], help="console command after the map (repeatable)")
+    run.add_argument("--lua", action="append", default=[], metavar="FILE",
+                     help="client Lua file run after the map and the camera, through the console (repeatable)")
+    run.add_argument("--lua-shots", type=float, metavar="SECONDS",
+                     help="after --settle, a screenshot for each 'NL_SHOT <label>' the Lua prints, until NL_SHOT_DONE "
+                          "(at most SECONDS)")
     run.add_argument("--reference", action="store_true",
                      help="a reference install: never move its console.log or read the loader's files")
     nl = sub.add_parser("nlctl", help="run nlctl; '{root}' in the arguments becomes the game root")

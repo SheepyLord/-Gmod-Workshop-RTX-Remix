@@ -50,7 +50,7 @@ def run_args(root, evidence, **changes):
     values = dict(root=str(root), evidence=str(evidence), name='run', reference=False, allow_steam_managed=False,
                   width=1280, height=720, workshop=False, addons=False, extra=[], players=1, map='gm_construct',
                   post=[], timeout=30, load_save=None, change_map=None, mount_workshop=None, console=[], camera=None,
-                  hide_hud=False, no_window=False, fps=None,
+                  hide_hud=False, no_window=False, fps=None, lua=[], lua_shots=None,
                   settle=0, screenshots=0, shot_interval=0, quit_timeout=5)
     values.update(changes)
     return SimpleNamespace(**values)
@@ -271,6 +271,57 @@ class StepRunTests(unittest.TestCase):
         self.assertEqual(sent, ps.client_lua_lines('fps', ps.fps_lua(10.0)) + ['quit'])
         self.assertIn('hook.Add("PostRender", "nl_session_fps"', ps.fps_lua(10.0))
         self.assertIn('< 10.000 then return end', ps.fps_lua(10.0))
+        self.assertFalse((self.root / 'garrysmod' / 'data').exists())
+
+    def test_a_lua_file_paces_its_own_screenshots(self):
+        # --lua runs a file through the console like the camera Lua; --lua-shots takes one screenshot
+        # for each NL_SHOT line it prints and answers it with nl_shot_taken, until NL_SHOT_DONE.
+        clock, game, sent, shots = Clock(), FakeGame(), [], []
+        log = self.root / 'garrysmod' / 'console.log'
+        script = self.root.parent / 'tour.lua'
+        script.write_text('-- a tour\nprint("hello; world")\n', encoding='utf-8')
+        replies = {'nl_shot_taken 1': 'NL_SHOT dusk\n', 'nl_shot_taken 2': 'NL_SHOT_DONE\n'}
+
+        def launch(*_, **__):
+            log.write_text('Clientside Lua startup!\n', encoding='utf-8')
+            return game
+
+        def console(hwnd, command, attempts=6):
+            sent.append(command)
+            text = None
+            if command.endswith('"nl_session_lua1")'):
+                text = 'NL_SESSION_LUA 1\nhello; world\nNL_SHOT noon_clear\n'
+            elif command in replies:
+                text = replies[command]
+            elif command == 'quit':
+                game.quit()
+            if text:
+                with open(log, 'a', encoding='utf-8') as handle:
+                    handle.write(text)
+            return True
+
+        def screenshot(window, destination):
+            shots.append((window, destination.name))
+            return {'file': destination.name}
+
+        args = run_args(self.root, self.evidence, lua=[str(script)], lua_shots=60.0)
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'console', side_effect=console), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'game_window', return_value=9), \
+                mock.patch.object(ps, 'screenshot', side_effect=screenshot), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(args)
+        code = ps.file_lua(1, script.read_text(encoding='utf-8'))
+        self.assertTrue(code.startswith('print("NL_SESSION_LUA 1")\n'))
+        self.assertEqual(record['lua'], [{'file': str(script), 'started': True}])
+        self.assertEqual(shots, [(9, 'shot-01-noon_clear.png'), (9, 'shot-02-dusk.png')])
+        self.assertEqual([shot['label'] for shot in record['lua_shots']], ['noon_clear', 'dusk'])
+        self.assertTrue(record['lua_shots_done'])
+        self.assertEqual(sent, ps.client_lua_lines('lua1', code) + ['nl_shot_taken 1', 'nl_shot_taken 2', 'quit'])
         self.assertFalse((self.root / 'garrysmod' / 'data').exists())
 
     def test_with_workshop_add_ons_the_map_waits_for_the_workshop_mount(self):

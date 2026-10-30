@@ -17,6 +17,11 @@ Covers:
 - **`step_run` writes nothing into the game folder for client Lua.** A reference run leaves an
   existing `garrysmod\data\nl_session\` (R1-015's repro) and the rest of the folder exactly as it was.
   A run with `--camera` sends exactly the expected console lines and creates no `garrysmod\data`.
+- **A Lua file that paces its own screenshots.**
+  - `--lua` sends the file through the console, behind a first line that prints `NL_SESSION_LUA 1`.
+  - With `--lua-shots`, each `NL_SHOT <label>` line it prints gives one screenshot, named
+    `shot-<nn>-<label>.png`, and is answered with `nl_shot_taken <nn>`.
+  - `NL_SHOT_DONE` ends it. The record has the labels in order and `lua_shots_done`.
 - **With `--workshop`, no map before the Workshop is mounted.** The command line carries no `+map`
   and no `-noworkshop`, and carries `-multirun`. `map gm_construct` goes through the console only after the second
   `Mounted ... workshop addons!` line and 5 s of quiet. Without `--workshop` the map stays on the
