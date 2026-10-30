@@ -1,0 +1,161 @@
+-- The server captures VPhysics on its owning thread. Clients receive immutable
+-- shapes once, then use their rendered bone transforms for moving colliders.
+local native=mmdhl.native
+local function rotation(q)
+ local x,y,z,w=unpack(q)
+ return Angle(math.deg(math.asin(math.Clamp(2*(w*y-z*x),-1,1))),math.deg(math.atan2(2*(w*z+x*y),1-2*(y*y+z*z))),math.deg(math.atan2(2*(w*x+y*z),1-2*(x*x+y*y))))
+end
+local function quaternion(a)
+ local x,y,z=math.rad(a.r)*.5,math.rad(a.p)*.5,math.rad(a.y)*.5
+ local sx,cx,sy,cy,sz,cz=math.sin(x),math.cos(x),math.sin(y),math.cos(y),math.sin(z),math.cos(z)
+ return {sx*cy*cz-cx*sy*sz,cx*sy*cz+sx*cy*sz,cx*cy*sz-sx*sy*cz,cx*cy*cz+sx*sy*sz}
+end
+if SERVER then
+ util.AddNetworkString('mmdhl_scene') local subscribers={}
+ -- A subscriber's sphere reaches at most its farthest character, as its client
+ -- computes it, never the whole map. The client applies its own collision
+ -- choice to every character and names the kinds of objects that needs (map,
+ -- objects, living players, living NPCs). Nil: there is nothing to export for it.
+ local function interestLimit(p,state)
+  if (state.kinds or 0)==0 then return end
+  local eye,limit=p:EyePos()
+  for _,ent in ipairs(mmdhl.Entities()) do limit=math.max(limit or 0,eye:Distance(ent:GetPos())+ent:BoundingRadius()+512) end
+  return limit and math.Clamp(limit,512,16384)
+ end
+ -- One pending shape request per peer, answered at most every 20 ms (1.6 MB/s).
+ local function sendChunk(p,state)
+  local request=state.chunk state.chunk=nil state.nextChunk=RealTime()+.02
+  local bytes,err=native.ReadSceneChunk(request.id,request.offset,32768)
+  net.Start('mmdhl_scene') net.WriteUInt(1,2) net.WriteString(request.id) net.WriteUInt(request.offset,32) net.WriteBool(bytes~=nil)
+  if bytes then net.WriteUInt(#bytes,16) net.WriteData(bytes,#bytes) else net.WriteString(err or 'Collision shape expired') end net.Send(p)
+ end
+ net.Receive('mmdhl_scene',function(_,p)
+  local command=net.ReadUInt(2)
+  if command==0 then
+   -- NaN or an infinite radius is no region: treat it as leaving.
+   local radius=net.ReadBool() and net.ReadFloat()
+   if not radius or radius~=radius or math.abs(radius)==math.huge then subscribers[p]=nil return end
+   local state=subscribers[p] or {} subscribers[p]=state state.untilTime=RealTime()+3 state.radius=math.max(radius,512) state.kinds=bit.band(net.ReadUInt(5),mmdhl.CollideScene) return
+  end
+  if command~=1 or not subscribers[p] then return end
+  local state=subscribers[p] state.chunk={id=net.ReadString(),offset=net.ReadUInt(32)}
+  if RealTime()>=(state.nextChunk or 0) then sendChunk(p,state) end
+ end)
+ local nextFrame=0
+ hook.Add('Tick','MMDHL.SharedScene',function()
+  if game.SinglePlayer() then return end
+  for p,state in pairs(subscribers) do if state.chunk and IsValid(p) and RealTime()>=(state.nextChunk or 0) then sendChunk(p,state) end end
+  if CurTime()<nextFrame then return end nextFrame=CurTime()+.05
+  for p,state in pairs(subscribers) do
+   if not IsValid(p) or RealTime()>state.untilTime then subscribers[p]=nil
+   else
+    local limit=interestLimit(p,state) local raw,err
+    if limit then raw,err=native.ExportSecondaryScene(p:EyePos(),math.min(state.radius,limit),p:EntIndex(),state.kinds) end
+    if raw then
+     local bytes=util.Compress(raw)
+     -- Split snapshot metadata; every net message stays below the engine limit.
+     state.sequence=(state.sequence or 0)+1 local count=math.ceil(#bytes/48000)
+     if count<=64 then for index=1,count do local chunk=bytes:sub((index-1)*48000+1,index*48000)
+      net.Start('mmdhl_scene',true) net.WriteUInt(0,2) net.WriteUInt(state.sequence,32) net.WriteUInt(index,8) net.WriteUInt(count,8) net.WriteUInt(#chunk,16) net.WriteData(chunk,#chunk) net.Send(p)
+     end end
+    elseif err then mmdhl.sceneError=err end
+   end
+  end
+ end)
+ hook.Add('PlayerDisconnected','MMDHL.SharedScene',function(p) subscribers[p]=nil end)
+else
+ local latest,previous,assembling,transfer local known,pending={},{} local queue={} local active=false
+ -- A frame's objects are checked into clean records before anything uses them: one malformed
+ -- object (a mismatched or modified server) drops the frame instead of erroring here. A shape
+ -- is at most what the server's capture writes (12,000,000 vertices).
+ local MaxShapeBytes=160*1048576
+ local function whole(v,low,high) return isnumber(v) and v%1==0 and v>=low and v<=high end
+ local function numbers(t,n)
+  if not istable(t) or #t~=n then return nil end local out={}
+  for i=1,n do local v=t[i] if not isnumber(v) or v~=v or math.abs(v)==math.huge then return nil end out[i]=v end
+  return out
+ end
+ local function cleanObjects(list)
+  local out={}
+  for i=1,#list do
+   local o=list[i]
+   if not istable(o) or not whole(o.id,0,2^53) or not isstring(o.shape) or #o.shape~=64 or o.shape:find('[^0-9a-f]') or not whole(o.bytes,48,MaxShapeBytes) then return nil end
+   local c={id=o.id,shape=o.shape,bytes=o.bytes,static=o.static==true,owner=whole(o.owner,0,2^32) and o.owner or 0,bone=whole(o.bone,0,65535) and o.bone or 0,actor=whole(o.actor,0,2) and o.actor or 0,
+    position=numbers(o.position,3),rotation=numbers(o.rotation,4),velocity=numbers(o.velocity,3) or {0,0,0},angular=numbers(o.angular,3) or {0,0,0},center=o.center~=nil and numbers(o.center,3) or nil}
+   local q=c.rotation local length=q and q[1]^2+q[2]^2+q[3]^2+q[4]^2
+   if not c.position or not length or length<.5 or length>1.5 or (o.center~=nil and not c.center) then return nil end
+   out[i]=c
+  end
+  return out
+ end
+ local function request()
+  if transfer or #queue==0 or not active then return end
+  transfer=table.remove(queue,1) transfer.bytes={} transfer.offset=0 transfer.time=RealTime()
+  net.Start('mmdhl_scene') net.WriteUInt(1,2) net.WriteString(transfer.id) net.WriteUInt(0,32) net.SendToServer()
+ end
+ net.Receive('mmdhl_scene',function()
+  local command=net.ReadUInt(2)
+  if command==0 then
+   local sequence,index,count,size=net.ReadUInt(32),net.ReadUInt(8),net.ReadUInt(8),net.ReadUInt(16)
+   local bytes=net.ReadData(size) if count<1 or count>64 or index<1 or index>count or size>48000 then return end
+   if latest and sequence<=latest.networkSequence then return end
+   if not assembling or sequence>assembling.sequence then assembling={sequence=sequence,count=count,parts={},received=0} end
+   if sequence~=assembling.sequence or assembling.parts[index] then return end
+   assembling.parts[index]=bytes assembling.received=assembling.received+1
+   if assembling.received==count then
+    -- A frame larger than 32 MB of JSON or 20000 objects is dropped.
+    local decoded=util.Decompress(table.concat(assembling.parts),32*1048576) local frame=decoded and util.JSONToTable(decoded)
+    local objects=istable(frame) and istable(frame.objects) and #frame.objects<=20000 and cleanObjects(frame.objects)
+    if objects and isnumber(frame.timestamp) and frame.timestamp==frame.timestamp and math.abs(frame.timestamp)<math.huge then
+     local clean={objects=objects,timestamp=frame.timestamp,sequence=frame.sequence,networkSequence=sequence,received=RealTime(),byId={}}
+     for _,o in ipairs(objects) do
+      clean.byId[o.id]=o
+      if not known[o.shape] and not pending[o.shape] and #queue<2048 then pending[o.shape]=true queue[#queue+1]={id=o.shape,size=o.bytes} end
+     end
+     previous=latest latest=clean request()
+    end assembling=nil
+   end return
+  end
+  if command==1 then
+   local id,offset,ok=net.ReadString(),net.ReadUInt(32),net.ReadBool()
+   if not transfer or transfer.id~=id then return end
+   if not ok then mmdhl.sceneError=net.ReadString() pending[id]=nil transfer=nil request() return end
+   local size=net.ReadUInt(16) local bytes=net.ReadData(size)
+   -- An empty chunk short of the end would ask for the same bytes forever.
+   if offset~=transfer.offset or size>32768 or offset+size>transfer.size or (size==0 and offset<transfer.size) then mmdhl.sceneError='Invalid collision shape transfer' pending[id]=nil transfer=nil request() return end
+   transfer.bytes[#transfer.bytes+1]=bytes transfer.offset=offset+size transfer.time=RealTime()
+   if transfer.offset==transfer.size then
+    local accepted,err=native.AcceptSceneGeometry(id,table.concat(transfer.bytes)) known[id]=accepted or nil mmdhl.sceneError=err pending[id]=nil transfer=nil request()
+   else net.Start('mmdhl_scene') net.WriteUInt(1,2) net.WriteString(id) net.WriteUInt(transfer.offset,32) net.SendToServer() end
+  end
+ end)
+ local nextSubscribe=0 local publication=0
+ hook.Add('Think','MMDHL.SceneSubscription',function()
+  if game.SinglePlayer() then return end
+  if transfer and RealTime()-transfer.time>5 then pending[transfer.id]=nil transfer=nil end
+  if RealTime()<nextSubscribe then return end nextSubscribe=RealTime()+1
+  active=false local radius,kinds=4000,0
+  for _,ent in ipairs(mmdhl.Entities()) do local quality=ent.MMDPhysicsLOD local wanted=mmdhl.SceneKinds(mmdhl.GetCollisionFlags(ent))
+   if GetConVar('mmdhl_secondary_iterations'):GetInt()>0 and mmdhl.GetInstance(ent)>0 and wanted~=0 and not (quality and quality.suspended) then active=true kinds=bit.bor(kinds,wanted) radius=math.max(radius,LocalPlayer():EyePos():Distance(ent:GetPos())+ent:BoundingRadius()+512) end
+  end
+  net.Start('mmdhl_scene') net.WriteUInt(0,2) net.WriteBool(active) if active then net.WriteFloat(radius) net.WriteUInt(kinds,5) end net.SendToServer() request()
+ end)
+ function mmdhl.UpdateRemoteScene()
+  if game.SinglePlayer() or not active or not latest then return end
+  local out={sequence=publication+1,timestamp=CurTime(),objects={}} publication=out.sequence
+  local fraction=previous and math.Clamp((RealTime()-latest.received)/math.max(.001,latest.timestamp-previous.timestamp),0,1) or 1
+  for _,o in ipairs(latest.objects) do if known[o.shape] then
+   local copy=table.Copy(o) local ent=o.owner and Entity(o.owner)
+   if not o.static and IsValid(ent) then
+    -- A living player's or NPC's shadow does not follow a bone: interpolate it.
+    local bone=(o.actor or 0)==0 and ent:TranslatePhysBoneToBone(o.bone or 0) local matrix=bone and bone>=0 and ent:GetBoneMatrix(bone)
+    if matrix then copy.position={(matrix*Vector(unpack(o.center or {0,0,0}))):Unpack()} copy.rotation=quaternion(matrix:GetAngles())
+    else local old=previous and previous.byId[o.id] if old then copy.position={LerpVector(fraction,Vector(unpack(old.position)),Vector(unpack(o.position))):Unpack()} copy.rotation=quaternion(LerpAngle(fraction,rotation(old.rotation),rotation(o.rotation))) end end
+   end
+   out.objects[#out.objects+1]=copy
+  end end
+  local ok,err=native.PublishRemoteScene(util.TableToJSON(out)) if not ok then mmdhl.sceneError=err end
+  mmdhl.remoteSceneDiagnostics={objects=#out.objects,pending=#queue+(transfer and 1 or 0),age=RealTime()-latest.received}
+ end
+ hook.Add('PostCleanupMap','MMDHL.RemoteSceneCleanup',function() native.ClearRemoteScene() latest=nil previous=nil assembling=nil transfer=nil known={} pending={} queue={} end)
+end

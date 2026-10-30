@@ -1,0 +1,132 @@
+{
+ "schema": 1,
+ "part": "character-motion-importer",
+ "origins": {
+  "mmd_vmd_npc": {
+   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\Gmod-Mmd-Motion-Importer\\mmd_vmd_npc",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/ipg/Gmod-Mmd-Motion-Importer",
+    "remote": "https://github.com/SheepyLord/Gmod-Mmd-Motion-Importer.git",
+    "commit": "318b05442bc3284065ed49ad70080d1db1106c7d",
+    "dirty": false
+   },
+   "imported": "2026-10-30T00:42:51+00:00"
+  }
+ },
+ "files": {
+  "mmd_vmd_npc/addon.json": {
+   "size": 100,
+   "sha256": "e4344cc9b3b79064dd8894942cdf5f02c8cb2cdd4a0518490224e6a6129c8565",
+   "mtime_ns": 1788505009759042000,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/data_static/mmd_vmd_npc/flex_mapping_table.json": {
+   "size": 2881,
+   "sha256": "2250f4523880557a3e66137d8cf100e6acc0e8b99c685b34095bd252718c4029",
+   "mtime_ns": 1788505009759042000,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/data_static/mmd_vmd_npc/motions/motion_8f38d4be83_98de5fe977.json": {
+   "size": 13314925,
+   "sha256": "8f5b43f7f0d7f206a3e86cab921e25a2c682666f48c6715c177d4654eb7395c5",
+   "mtime_ns": 1788505009791381500,
+   "stored": "xz",
+   "stored_size": 3141692,
+   "stored_sha256": "2fb17ce89fb97c505ffc691950b8d9ce16ef4d86ed618ea826eaf0d76bff0690"
+  },
+  "mmd_vmd_npc/lua/autorun/mmd_vmd_npc.lua": {
+   "size": 3389,
+   "sha256": "f1e65ffdfcff9a8a9020a951f32c5c8993168c9c151faf03e1fb3d8b6bdd33b2",
+   "mtime_ns": 1791011508976089700,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_camera.lua": {
+   "size": 39278,
+   "sha256": "ab6102b24d430e7fd602b5bd843df4fbfcdf95c07f887e5759e93a3413d17130",
+   "mtime_ns": 1788505009793632100,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_flashlight.lua": {
+   "size": 14702,
+   "sha256": "8dfaba8be1044b24046c84d777304fc6c25430906d881ed91c46fddf430051f6",
+   "mtime_ns": 1788505009793632100,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_menu.lua": {
+   "size": 251644,
+   "sha256": "e3d192488ca0cb3f554b990f1bff193a09c41d1f1c13104829d9104a73108dd6",
+   "mtime_ns": 1791395257793433700,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_radial.lua": {
+   "size": 30588,
+   "sha256": "8cf36ca3bcb7bb0f8bcc69afd531610a28ae7975e6611cd119dd6e39da7f5ea2",
+   "mtime_ns": 1788505009794632700,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/sh_core.lua": {
+   "size": 304898,
+   "sha256": "d0af299dfb04c2368ab15b279d470ac6703814122a9cae68406672d24c332458",
+   "mtime_ns": 1791011508978089700,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/sv_cache.lua": {
+   "size": 41882,
+   "sha256": "43c73c19319aac2b4da9695f8a5560b802e997aa921698e1c7456cf6a6d0dea4",
+   "mtime_ns": 1791011508978089700,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/sv_commands.lua": {
+   "size": 205801,
+   "sha256": "9400074370f9191490fc4042024e851402666c3926afcefb18b097a995a4f60c",
+   "mtime_ns": 1791395257803369100,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/weapons/gmod_tool/stools/mmd_vmd_npc.lua": {
+   "size": 61871,
+   "sha256": "ace8398de1b52665728556b522a05c8f9657d2330bde9cadb99bf35ed86c4a35",
+   "mtime_ns": 1791011502228001700,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/materials/mmd_vmd_npc/alt.png": {
+   "size": 314,
+   "sha256": "cd74e598e02b9bd3e21b6e83f33f4494f31f950e231b58b0b5b16976cb355f3b",
+   "mtime_ns": 1788505009797718800,
+   "stored": "xz",
+   "stored_size": 376,
+   "stored_sha256": "8498017daa70d898e574f7733e6a573d34e4dde274d15999f8c22af1f4da386e"
+  },
+  "mmd_vmd_npc/materials/mmd_vmd_npc/middle_mouse.png": {
+   "size": 192,
+   "sha256": "ac15ae50ed6002e08fd7c936c02c598a06473b928225ca66a04712f605073956",
+   "mtime_ns": 1788505009797718800,
+   "stored": "xz",
+   "stored_size": 252,
+   "stored_sha256": "87fee8e9bf6e1144179fa4eeecc16c9a8e71ceb68b0a0a3bc2e4ef0524d2fd96"
+  },
+  "mmd_vmd_npc/materials/mmd_vmd_npc/shift.png": {
+   "size": 421,
+   "sha256": "28843b5c9fcb3068ca43e95dc5481a789aab8105c556dab95204d4933c41f90c",
+   "mtime_ns": 1788505009797718800,
+   "stored": "xz",
+   "stored_size": 484,
+   "stored_sha256": "846ee2b187515a135b9e06cc20c2abdbd13be8edb6f34e2d6a0fa47fef9ca6d0"
+  },
+  "mmd_vmd_npc/materials/mmd_vmd_npc/shift_e.png": {
+   "size": 485,
+   "sha256": "1f760852235df697c4d94f9c9c2d1b0b6f1406a18c2b5f4589d392e06a0dba4f",
+   "mtime_ns": 1788505009797718800,
+   "stored": "xz",
+   "stored_size": 548,
+   "stored_sha256": "b8753e592aac3d62d0994abb4697cea699d2b1b52d333071d3936d40165ee636"
+  },
+  "mmd_vmd_npc/sound/mmd_vmd_npc/music/motion_8f38d4be83_98de5fe977.mp3": {
+   "size": 5041884,
+   "sha256": "d1fb2d3d41f3b92534249ae214c102bbace6f29ed6a605bd76683c6b638d7cad",
+   "mtime_ns": 1788505009842372200,
+   "stored": "xz",
+   "stored_size": 5039768,
+   "stored_sha256": "29dfd986ed8cf80fa4ae8a444607e10e6a4f03bfec7c8ae74ba40733712f9862"
+  }
+ }
+}

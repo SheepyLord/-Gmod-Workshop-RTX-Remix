@@ -1,0 +1,746 @@
+-- Generated release evidence. Do not edit hashes by hand.
+return util.JSONToTable([==[
+{
+  "schema": 1,
+  "approved": [
+    "2.1.0-native.5",
+    "2.1.0-native.5+d4a199ab",
+    "2.1.0-native.6",
+    "2.1.0-native.7",
+    "2.1.0-native.8",
+    "2.1.0-native.9",
+    "2.1.0-native.10",
+    "2.1.0-native.11",
+    "2.1.0-native.12",
+    "2.2.0",
+    "2.3.0",
+    "2.3.1"
+  ],
+  "releases": {
+    "2.1.0-native.1": {
+      "api": 1,
+      "build": "2797e2244156-20260925T080253Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.1",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2644992,
+          "sha256": "596b92c6fc2a03c4204df7bb5d0482b50566165877228272305b7aa383d8d29e"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1781760,
+          "sha256": "1f51099973a782c00681f9f3838b3a0f7ea25f5414cc341a9966aae344ed52a0"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 8950272,
+          "sha256": "1d3d12e8037d2436e3b9f3195ec515ccd6eb264621207b430f6deaf6d2140f14"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3012096,
+          "sha256": "d4d86ca410e7d07221e8bcee496919b8d7b5bb66e267365c703660ccfffcd7af"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases"
+    },
+    "legacy-actors-preview": {
+      "release": "legacy-actors-preview",
+      "build": "unversioned",
+      "installApi": 0,
+      "api": 1,
+      "platform": "win64",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2625024,
+          "sha256": "78ba31e9ce6638abb6d64c2ca94a324a086fc9b417cabbd29a4edbf1ea260252"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1776128,
+          "sha256": "ee074843379f53baf80246e33cb290c2d64a2b71ff2b5a51d3b9d338ce77c2f5"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 8863744,
+          "sha256": "20b72a21ca0b60719c30e406dfab17bdeb4fdeacd983532b1a45075b38dba71a"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3008512,
+          "sha256": "b8d68888f2d138319d883f0384b93cebec199e05741f678ee7093665aafae58a"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases"
+    },
+    "2.1.0-native.2": {
+      "api": 1,
+      "build": "a1f0f67eab92-20260927T031511Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.2",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2726400,
+          "sha256": "e119eaaa97542d323dd3b80e3a3619284cfb54747e5b983ad446ff30a1e30332"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1811968,
+          "sha256": "190911e00af48d6f8c5a01ecf4a8d9fbc46fe05a86f413942074949fcf695a90"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9387008,
+          "sha256": "03b68425b69fb5c8546a30752926189688c7857b9401106afbcc2602644926b0"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3014144,
+          "sha256": "555c79d40074b335da4f0635315a1621eff8438b74f6d57d157a34425c0adb4c"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "f16410640295822e2e339c48ddc3301fa42881913d829d24d17a09c89f250659",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases"
+    },
+    "2.1.0-native.5": {
+      "api": 1,
+      "build": "bd28cdbcd2c4-20260927T073149Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.5",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2726912,
+          "sha256": "4fbbca739245a0896cbc913bc2acea54b64fec5eaab3551fc5138abe4574e974"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "4411dec958a06efcaa89ad94c7131ac61e501916a52a53d4c5a6addf1e5565d9"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9391104,
+          "sha256": "1ffa1eab26f7733e0ebff080764e242a85c723b650b51fe75590be55e542138a"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "eb8b18c7450fc6aec6c5a7d9556d6d146d3fa844cf7b2c1594685f770f145c91"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "ee7622c62b35762aee44673274c5c38b33605a310ec90d7754594c57a62fbe78",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.5+d4a199ab": {
+      "api": 1,
+      "build": "d4a199ab2a52-20260927T093903Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.5",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2726912,
+          "sha256": "f23f1367227f51d98b6631fdb853fc18c6c8859a31e7c13fd95c803cf4ad0763"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "b94d3f8879e960039d50d42b3504dbf9b80793d3646f8c869d2bbdcfd2ed7dd5"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9391104,
+          "sha256": "b493774f959de1f418bc9663bcd09ef25a1241a5ea9a97adae17703453443d3d"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "b23aaf875110d7c897158ad347961e818b6322164af2c1f71c17081e665f50fd"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "fb7bb4eb2910f1a1c6c0a7da95a2789be91c7e480cc0fa2bb81cce0896f6f0ce",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.5",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.6": {
+      "api": 1,
+      "build": "20be509441b1-20260927T225311Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.6",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2726400,
+          "sha256": "9172f9b2471d0284280954d2b7ce417aed830e31f6fa18a5f308fd7713dd2888"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "ee0065dd68472b9f7d1bb3b7ac3e6bfc2bacb6d7bca6d55bffe9760a3b3ddbdc"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9397248,
+          "sha256": "9eee8aee70685db57e47e54dd01c0ee12f892e52181b5b9ba9f4f9c00ec5e21d"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "f5332e67c3ab343e4a0e1786cbf91e6a81761fd91f0fbd19292e3a79df4088f1"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "8d976837d448841723a74cb6e6b6bdf3266f06563f2584500c333a38b741b8eb",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.6",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.7": {
+      "api": 1,
+      "build": "e30ae33ca48d-20260928T004008Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.7",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2744320,
+          "sha256": "ab634752ce9e4fe984187f44ee64020abb34482ef701034bf81fb07357810e4f"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "57a5f75c436559be91453026baf9c3fb715a4bdf2284dd0a10b9ed19fbb8ad7e"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9400320,
+          "sha256": "95d4c1d4a9fde9807eeba385e50afb017e482d69d95416cd88e3cb79324812ba"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "6d5e7c66300c9f783f8c9550e40beb55ef370a009f029e9265ef244750584abb"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "f16fbc85482b0477baf825bf6250072e33a7bf9243ee80cc5f474fc433b1961f",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.7",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.8": {
+      "api": 1,
+      "build": "9ac92d82612b-20260928T014613Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.8",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2744320,
+          "sha256": "b575ee7e33726553101a57a94fdb773f2817f5a0acee0a624fe31a523da227c2"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1812480,
+          "sha256": "ce9914cd130114896116b6074b9115047211b60c011ab8ef9d1dca6d8ddac282"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9401344,
+          "sha256": "423dfe72c2db5a6c40ee7f8a8c0b7c3780db7c9190ff4d2b6ec0738f106df05f"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "39944f794043382ec73551534adc6e43c07618c7b45acd82e9f97dcbf368dc21"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "3da2101e12fe6f742fb51966ec856d32cf4d737213a3f0ca0eee634bd88c34e5",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.8",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.9": {
+      "api": 1,
+      "build": "0c88b8a6fd8d-20260928T065321Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.9",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2746368,
+          "sha256": "548bcaa817fb18b42085739fa67713ae48ec96ff4aaed1c5ed71a07950b5c4f9"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1812480,
+          "sha256": "db2f4badca19d9b9e35db739bf49b866ab894b351eedfbfd8f96b4d72f2cae67"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9401344,
+          "sha256": "7eab8842f383af80f9949a8d69d063a738da1b0ac3a594dfcb86afac34665497"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "c10903e49f36eed6301f9235d1123303c398101b401b5dd93908e3fc17077167"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "38dfb4ceeb1fc4da146f8eca398cef5a93e7e3572e26fef870b8791c1de3100b",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.9",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.10": {
+      "api": 1,
+      "build": "4b7e3aa1568a-20260928T073821Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.10",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2745856,
+          "sha256": "09d0d9e09067e2910350207e91ad86d11e16212be9eb6b90448d2d87a9b00dde"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "3203001a7932ede2c2615a549af090d7ebecf0b12d5ddfea939c4e5dbec2997d"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9401856,
+          "sha256": "df94c2025ccea847fdeff4abe69e3a71f9a1452bb91a96b27dcc93c710a8ecfa"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "b3610eefeddb131e4f90f3a06708c0163a66e5a68e827905b2f15283c03cd6a5"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "ff8d2335b7e90f994a30e63475fc67a49a5be4b0ebcc7c1ffadca618025eab85",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.10",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.11": {
+      "api": 1,
+      "build": "be10d15b8f8b-20260928T100622Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.11",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2745856,
+          "sha256": "f6e7f1e1c672a8bdecb88241cd2dcbae5009a4162f0677d69b8e79ca6110e52c"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "872a27ccf6253fcc7eef4e1c7f429b0e50036374c2168b6d9f2c7cb5121adcd4"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9406976,
+          "sha256": "25859babd27fa0671d133d096598097248cae19c5909c1791fd2194520308fc1"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "7083502ccacf278f42132cd59da1313dabc55b861872039df71dd4ad27beb24a"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "9bd27956f360aeea9eaab0f3dc73fb5d24320d02006b1488f8fe5daaacce4b5d",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.11",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.1.0-native.12": {
+      "api": 1,
+      "build": "05253837f514-20260928T115210Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.1.0-native.12",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2745856,
+          "sha256": "5afe9c7dfcf44236a27a797c741fea86cef4eedeb791a2562d82f0b9b8a6db8f"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1810944,
+          "sha256": "b2118b3edfb8af6ae69093d64f3fabd7698c1eb122590f399db77fbe441475f3"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9404928,
+          "sha256": "5284077de81b69a911a5b6eaa9634f56f8bcefe7e436a2ab904a0da3a6cd3d0b"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3035648,
+          "sha256": "831f4260a3be3438614da26f69cc29b22cae5618f9e9d126def654914acbc751"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "8755920df25e4780a35cc2062785ae44f67d7ab1bbecef73b8ccf042d2dd59e9",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.1.0-native.12",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.2.0": {
+      "api": 1,
+      "build": "82dc38c80d4b-20260929T015314Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.2.0",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2746368,
+          "sha256": "707f0ea54c4e78bc57d9fe2e95f6f6cb7499742338057967347b845c627e7132"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1820672,
+          "sha256": "4b8a693b8df5cd1f956945e893a0c502108a37e1d3cc5030e85a7d5e2290f961"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 9563648,
+          "sha256": "ee910e3666886afa150ff421957efdae045c51bd94d86dbb035340bbfb962b86"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 3160576,
+          "sha256": "5c774d6e3c5ab084b0dfa6c20259a92339b5b37f09638fe9c0929b79b6b71231"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "b02bb11fe0c4ed2a115a6a1fffd848c55f2eb8a23e9c109528ea759c062ab710",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.2.0",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+    },
+    "2.3.0": {
+      "api": 1,
+      "build": "1df48dac8ccc-20261012T070650Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.3.0",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2829824,
+          "sha256": "4f3a2f534ad0d02f9ff0df7bfa2d3468ee8ad1ad12ecec0b025c4f5b4e827d39"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1856512,
+          "sha256": "7caa54d4749f6990f18ae16d685075cb3435cebac2a721a475ffd6bf34454228"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 10706944,
+          "sha256": "b648aa51faabb7ba4db4038cbc0a525c56bd82ba8ad29afb2b5cb8fe52f32bbb"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 4146176,
+          "sha256": "0f7c584ca6cfa56ffebd41746844eb9068a7ef62b621ed63e687f0a3f638ea9f"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "renderer": {
+        "name": "d3d9.dll",
+        "size": 4042752,
+        "sha256": "eb9843027fc61b808dccae5c5487cad6df8d05d484786c571e66acbdf380574f",
+        "kind": "dxvk",
+        "dxvk": "v3.1.1",
+        "patches": [
+          "0001-shared-compute-queues.patch",
+          "0002-gmod-app-profile.patch"
+        ]
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.3.0",
+      "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord",
+      "platforms": {
+        "linux64": {
+          "api": 1,
+          "build": "1df48dac8ccc-20261012T070724Z",
+          "installApi": 1,
+          "platform": "linux64",
+          "release": "2.3.0",
+          "files": {
+            "client": {
+              "name": "gmcl_mmdhl_linux64.dll",
+              "size": 2596144,
+              "sha256": "ff61aaab9e1b58eaf79ab5ee2f699a6cfc908c9963e7d43180bbf143aba53c2c"
+            },
+            "server": {
+              "name": "gmsv_mmdhl_linux64.dll",
+              "size": 2202024,
+              "sha256": "b9d1cbba81a2e136404171b80cb5aa67cc43420636b5731bd71dd9535f4b82a3"
+            },
+            "runtime": {
+              "name": "libmmdhl_runtime_linux64.so",
+              "size": 15027840,
+              "sha256": "b44054e850d090378cd6216d4a8e4ae436cb08e42ba59e2a0767829c4814353f"
+            },
+            "worker": {
+              "name": "mmdhl_worker_linux64",
+              "size": 6006128,
+              "sha256": "3437c7534fe40910aac0a1d604e6ce5a2c6b9e4f4bb6ee45a34ed382eda251db"
+            },
+            "coacd": {
+              "name": "lib_coacd.so",
+              "size": 12995121,
+              "sha256": "cfcbdf058982e3b2e6d91c98915352a32d43988992471655f9de4639b3698be8"
+            }
+          },
+          "renderer": {
+            "name": "libtogl_client.so",
+            "size": 470016,
+            "sha256": "a7a7d11b8fd8c29ffe3eec22f8cecf5b484fe8fb6403195bda26287278727704",
+            "kind": "dxvk",
+            "dxvk": "v3.1.1",
+            "patches": [
+              "0001-shared-compute-queues.patch",
+              "0002-gmod-app-profile.patch",
+              "dxvk-linux/0001-sdl2-surface-and-gmod-profile.patch"
+            ],
+            "library": {
+              "name": "libdxvk_d3d9.so",
+              "size": 8829264,
+              "sha256": "f54af343ebbd1b6b28d639131c570b3f0de848e458c56b49bec1e16d4bd64160"
+            }
+          },
+          "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases/tag/2.3.0",
+          "altUrl": "https://pan.baidu.com/s/1eUaJAUhnnnGpNSnvFojmwQ?pwd=lord"
+        }
+      }
+    },
+    "2.3.1": {
+      "api": 1,
+      "build": "ecd7c426c0b5-20261026T225907Z",
+      "installApi": 1,
+      "platform": "win64",
+      "release": "2.3.1",
+      "files": {
+        "client": {
+          "name": "gmcl_mmdhl_win64.dll",
+          "size": 2843648,
+          "sha256": "c1a681384be7062eb98e439d08882e55d7cb84b10ecd17e6d1dcdcfc05af49d8"
+        },
+        "server": {
+          "name": "gmsv_mmdhl_win64.dll",
+          "size": 1862144,
+          "sha256": "2b1f92cfd3f5b6251050698ddc1c9416c83621325fece57a99dca8b74aa281c0"
+        },
+        "runtime": {
+          "name": "mmdhl_runtime_win64.dll",
+          "size": 10736128,
+          "sha256": "351a70687abaace51cf5ca60b3bb8f48cad6cb1e2d5b9def74a9d624a06a0bed"
+        },
+        "worker": {
+          "name": "mmdhl_worker.exe",
+          "size": 4148224,
+          "sha256": "808a5c109b379ff2b519eef79f986e69b296e09771ca28279f342f29558f222e"
+        },
+        "coacd": {
+          "name": "lib_coacd.dll",
+          "size": 6169600,
+          "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806"
+        }
+      },
+      "url": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan/releases"
+    }
+  },
+  "recommended": "2.3.1"
+}
+]==])

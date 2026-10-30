@@ -1,0 +1,1131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Thu, 29 Oct 2026 17:04:23 -0700
+Subject: [PATCH 4/4] Atmosphere: the real Moon, a night sky image, lunar and
+ solar eclipses; compiler threads
+
+For the GMod companion's sky (native loader repo, ADR 0032):
+
+- Moon 0 can be drawn as the real Moon from DDS maps beside d3d9.dll
+  (rtx.atmosphere.moonTextureEnable, moonAlbedoTexture, moonNormalTexture, moonTextureAlbedo,
+  moonReliefStrength): a sphere in selenographic coordinates, north towards the ecliptic pole,
+  lit by Lommel-Seeliger plus a little Lambert from a sun the phase option places on the real sun's
+  side of the sky, with relief from the normal map and earthshine on the night side. The terminator
+  follows the smooth sphere over about two pixels; the relief's cos i goes through a softplus.
+- A night sky image can replace the procedural star field (rtx.atmosphere.starMapEnable): the
+  star, galaxy and nebula layers of the Night Sky HD layout (starMapTexture, starMapGalaxyTexture,
+  starMapNebulaTexture), each sampled through the analytic mapping of that mod's sky meshes in an
+  equatorial frame turned by the star axis and starRotation (-LST), added in gamma space as Skyrim
+  blends them, then decoded and scaled by starMapBrightness (0.12).
+- Eclipses from the geometry (rtx.atmosphere.eclipseEnable and the eclipse* scales): Earth's umbra
+  and penumbra shade moon 0 per pixel, and their disc average scales and reddens moon 0's colour for
+  every moonlight path; while moon 0 nears the sun a sun disc sized from it is drawn on primary rays,
+  with the chromosphere and a corona, and the covered fraction scales sunIlluminance (floor
+  eclipseTotalityLight). Stars come out at totality. The disc and the Moon's silhouette take two
+  pixels and the disc is capped at 16384, so the upscaler does not ring into black pixels.
+- RtxAtmosphere loads the textures itself (AssetDataManager + updateImage, one upload per path),
+  only in Numos sessions and only what is enabled; a 1x1 stand-in is bound otherwise. Bindings 216
+  (a retired slot), 217-219 and 221 (collision audit in common_binding_indices.h). Their mips come
+  from the traced pixel's angle with the materials' upscaler mip bias. AtmosphereArgs takes
+  padAerial7/8 and grows by three 16-byte rows, all zeroed in normalizeForSkyLutCache.
+- dxvk.numCompilerThreads below 0 means all hardware threads but that many (dxvk_state_cache.cpp).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ dxvk.conf                                     |   1 +
+ src/dxvk/dxvk_state_cache.cpp                 |   8 +-
+ src/dxvk/rtx_render/rtx_atmosphere.cpp        | 337 ++++++++++++++++
+ src/dxvk/rtx_render/rtx_atmosphere.h          |  86 ++++
+ .../rtx/pass/atmosphere/atmosphere_args.h     |  34 +-
+ .../rtx/pass/atmosphere/atmosphere_sky.slangh | 379 +++++++++++++++++-
+ .../shaders/rtx/pass/common_binding_indices.h |  26 +-
+ .../shaders/rtx/pass/common_bindings.slangh   |  22 +
+ 8 files changed, 883 insertions(+), 10 deletions(-)
+
+diff --git a/dxvk.conf b/dxvk.conf
+index 8e4b9732..6c99d094 100644
+--- a/dxvk.conf
++++ b/dxvk.conf
+@@ -230,6 +230,7 @@
+ # Supported values:
+ # - 0 to automatically determine the number of threads to use
+ # - any positive number to enforce the thread count
++# - a negative number -N to use all hardware threads but N (at least one)
+ 
+ # dxvk.numCompilerThreads = 0
+ 
+diff --git a/src/dxvk/dxvk_state_cache.cpp b/src/dxvk/dxvk_state_cache.cpp
+index 6b19874d..cc6a8158 100644
+--- a/src/dxvk/dxvk_state_cache.cpp
++++ b/src/dxvk/dxvk_state_cache.cpp
+@@ -215,7 +215,13 @@ namespace dxvk {
+ 
+     if (device->config().numCompilerThreads > 0)
+       numWorkers = device->config().numCompilerThreads;
+-    
++    // NV-DXVK start (fork, 2026-10-29): a negative count leaves that many hardware threads free and
++    // uses all the others (-2 on a 32-thread CPU gives 30 workers), so one config suits every machine.
++    else if (device->config().numCompilerThreads < 0)
++      numWorkers = uint32_t(std::max<int32_t>(
++        int32_t(std::max(1u, numCpuCores)) + device->config().numCompilerThreads, 1));
++    // NV-DXVK end
++
+     Logger::info(str::format("DXVK: Using ", numWorkers, " compiler threads"));
+     
+     // Start the worker threads and the file writer
+diff --git a/src/dxvk/rtx_render/rtx_atmosphere.cpp b/src/dxvk/rtx_render/rtx_atmosphere.cpp
+index 3a53b18c..44974781 100644
+--- a/src/dxvk/rtx_render/rtx_atmosphere.cpp
++++ b/src/dxvk/rtx_render/rtx_atmosphere.cpp
+@@ -51,9 +51,11 @@
+ #include <rtx_shaders/cloud_nvdf_resolve.h>
+ #include <rtx_shaders/cloud_detail_noise_baker.h>
+ #include "rtx/pass/atmosphere/cloud_nvdf.h"
++#include "rtx_asset_data_manager.h"  // sky textures (Moon, star map) are DDS assets
+ #include "../../util/util_once.h"  // ONCE() — one-shot warn when the scene TLAS is unavailable
+ #include <cmath>
+ #include <cstring>
++#include <filesystem>
+ #include <fstream>
+ #include <chrono>
+ 
+@@ -405,6 +407,20 @@ namespace {
+     args.milkyWayDustAmount          = 0.0f;
+     args.milkyWayCoreColor           = vec3(0.0f, 0.0f, 0.0f);
+     args.milkyWayDustColor           = vec3(0.0f, 0.0f, 0.0f);
++    // Sky textures and eclipse shading (fork — 2026-10-29) are per-pixel miss-path inputs. The eclipse
++    // dimming the bakes must see is already folded into sunIlluminance and moons[0].color.
++    args.skyTextureFlags             = 0u;
++    args.skyPixelAngle               = 0.0f;
++    args.moonReliefStrength          = 0.0f;
++    args.starMapBrightness           = 0.0f;
++    args.sunEclipseLight             = 0.0f;
++    args.moonTextureAlbedo           = 0.0f;
++    args.eclipseUmbraColor           = vec3(0.0f, 0.0f, 0.0f);
++    args.eclipseUmbraBrightness      = 0.0f;
++    args.eclipseUmbraScale           = 0.0f;
++    args.eclipsePenumbraScale        = 0.0f;
++    args.eclipseSunScale             = 0.0f;
++    args.eclipseCoronaBrightness     = 0.0f;
+   }
+ 
+   float quantizeDirComponent(float v, float stepRad) {
+@@ -571,6 +587,277 @@ void RtxAtmosphere::computeTimeCycleSunAngles(float timeOfDayHours, float& outEl
+   outAzimuthDeg = azimuthRad / dxvk::kDegreesToRadians + RtxAtmosphere::northOffsetDegrees();
+ }
+ 
++namespace {
++  inline float lengthOf(const Vector3& v) {
++    return std::sqrt(dot(v, v));
++  }
++
++  inline Vector3 normalizedOr(const Vector3& v, const Vector3& fallback) {
++    const float len = lengthOf(v);
++    return (len > 1e-6f) ? v * (1.0f / len) : fallback;
++  }
++
++  // Angle between two unit vectors. atan2 of the cross and dot products stays accurate at the
++  // sub-degree separations eclipses work at, where acos of the dot product loses most of its bits.
++  inline float angleBetween(const Vector3& a, const Vector3& b) {
++    return std::atan2(lengthOf(cross(a, b)), dot(a, b));
++  }
++
++  // Area shared by two discs of radii r1 and r2 whose centres are d apart. The discs are a degree or
++  // two across, so the plane formula stands in for the spherical one.
++  float discOverlapArea(float r1, float r2, float d) {
++    if (d >= r1 + r2) {
++      return 0.0f;
++    }
++    if (d <= std::abs(r1 - r2)) {
++      const float r = std::min(r1, r2);
++      return dxvk::kPi * r * r;
++    }
++    const float a1 = std::acos(std::clamp((d * d + r1 * r1 - r2 * r2) / (2.0f * d * r1), -1.0f, 1.0f));
++    const float a2 = std::acos(std::clamp((d * d + r2 * r2 - r1 * r1) / (2.0f * d * r2), -1.0f, 1.0f));
++    const float k = (-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2);
++    return r1 * r1 * a1 + r2 * r2 * a2 - 0.5f * std::sqrt(std::max(k, 0.0f));
++  }
++
++  // Sunlight reaching a point on the Moon `d` radians from the antisolar point (the centre of Earth's
++  // shadow), as an RGB fraction of full sunlight. CPU twin of evalLunarEclipseLight in
++  // atmosphere_sky.slangh: keep the two in lockstep.
++  Vector3 lunarEclipseLight(float d, float moonRadius, const AtmosphereArgs& args) {
++    const float umbra = args.eclipseUmbraScale * moonRadius;
++    const float penumbra = args.eclipsePenumbraScale * moonRadius;
++    const float edge = args.eclipseUmbraBrightness;
++    const Vector3 red(args.eclipseUmbraColor.x, args.eclipseUmbraColor.y, args.eclipseUmbraColor.z);
++    // The ozone layer passes blue light that grazes Earth's limb: a turquoise band along the umbra edge.
++    const Vector3 turquoise(0.35f, 0.75f, 1.0f);
++    if (d >= penumbra) {
++      return Vector3(1.0f, 1.0f, 1.0f);
++    }
++    if (d >= umbra) {
++      // Fraction of the sun's disc still visible from this point past Earth's limb.
++      const float t = (d - umbra) / (penumbra - umbra);
++      const float direct = t * t * (3.0f - 2.0f * t);
++      const float band = 1.5f * edge * std::exp(-t * t * 150.0f);
++      return Vector3(direct, direct, direct) + (red * edge + turquoise * band) * (1.0f - direct);
++    }
++    // Inside the umbra only refracted light arrives; deeper in it has crossed more air, so it is
++    // dimmer and redder.
++    const float x = (umbra > 0.0f) ? d / umbra : 0.0f;
++    const Vector3 deep(red.x * red.x, red.y * red.y, red.z * red.z);
++    const Vector3 tint = deep + (red - deep) * x;
++    const float band = 1.5f * edge * std::exp(-(1.0f - x) * (1.0f - x) * 150.0f);
++    return tint * (edge * (0.35f + 0.65f * x * x)) + turquoise * band;
++  }
++
++  // Folder holding the runtime's d3d9.dll; relative sky-texture paths resolve against it.
++  std::filesystem::path runtimeFolder() {
++    HMODULE module = nullptr;
++    wchar_t path[MAX_PATH] = {};
++    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
++                            reinterpret_cast<LPCWSTR>(&runtimeFolder), &module)
++        || GetModuleFileNameW(module, path, MAX_PATH) == 0) {
++      return {};
++    }
++    return std::filesystem::path(path).parent_path();
++  }
++
++  std::string resolveSkyTexturePath(const std::string& option) {
++    if (option.empty()) {
++      return {};
++    }
++    std::filesystem::path path(option);
++    if (path.is_relative()) {
++      path = runtimeFolder() / path;
++    }
++    return path.lexically_normal().string();
++  }
++} // anonymous namespace
++
++void RtxAtmosphere::applyEclipses(AtmosphereArgs& args) const {
++  args.sunEclipseLight = 1.0f;
++  const MoonParams& moon = args.moons[0];
++  if ((args.skyTextureFlags & SKY_TEXTURE_ECLIPSES) == 0u || moon.enabled < 0.5f) {
++    return;
++  }
++
++  const Vector3 sunDir = normalizedOr(Vector3(args.sunDirection.x, args.sunDirection.y, args.sunDirection.z),
++                                      Vector3(0.0f, 1.0f, 0.0f));
++  const Vector3 moonDir = normalizedOr(Vector3(moon.direction.x, moon.direction.y, moon.direction.z),
++                                       Vector3(0.0f, 0.0f, 0.0f));
++  if (dot(moonDir, moonDir) < 0.5f) {
++    return;
++  }
++  // Same fallback as evalMoonDisk for an unset size.
++  const float moonRadius = (moon.angularRadius >= 0.001f) ? moon.angularRadius : 0.5f * dxvk::kDegreesToRadians;
++
++  // Solar: the drawn sun disc is sized from the Moon (eclipseSunScale), so the two always match the
++  // way the real ones nearly do. What the Moon covers is lost from every sunlit path at once (sky
++  // bakes, clouds, the sun light); a little light from outside the Moon's shadow always remains.
++  {
++    const float sunRadius = moonRadius * args.eclipseSunScale;
++    const float covered = discOverlapArea(sunRadius, moonRadius, angleBetween(sunDir, moonDir))
++                        / (dxvk::kPi * sunRadius * sunRadius);
++    const float floorLight = std::clamp(RtxAtmosphere::eclipseTotalityLight(), 0.0f, 1.0f);
++    const float light = floorLight + (1.0f - floorLight) * std::clamp(1.0f - covered, 0.0f, 1.0f);
++    args.sunEclipseLight = light;
++    args.sunIlluminance = args.sunIlluminance * light;
++  }
++
++  // Lunar: average the shadow over the Moon's disc and fold it into the albedo every moon-light path
++  // reads (sky coupling, halo, clouds, the distant light), so moonlight dims and reddens with the
++  // Moon. The disc itself is shaded per pixel in evalMoonDisk.
++  {
++    const float centre = angleBetween(Vector3(-sunDir.x, -sunDir.y, -sunDir.z), moonDir);
++    if (centre < (args.eclipsePenumbraScale + 1.0f) * moonRadius) {
++      constexpr int kRings = 6;
++      constexpr int kSpokes = 16;
++      Vector3 sum(0.0f, 0.0f, 0.0f);
++      float weight = 0.0f;
++      for (int ring = 0; ring < kRings; ++ring) {
++        const float r = (float(ring) + 0.5f) / float(kRings) * moonRadius;
++        for (int spoke = 0; spoke < kSpokes; ++spoke) {
++          const float a = 2.0f * dxvk::kPi * (float(spoke) + 0.5f) / float(kSpokes);
++          const float dx = centre + r * std::cos(a);
++          const float dy = r * std::sin(a);
++          sum = sum + lunarEclipseLight(std::sqrt(dx * dx + dy * dy), moonRadius, args) * r;
++          weight += r;
++        }
++      }
++      const Vector3 light = sum * (1.0f / weight);
++      args.moons[0].color = vec3(moon.color.x * light.x, moon.color.y * light.y, moon.color.z * light.z);
++    }
++  }
++}
++
++void RtxAtmosphere::loadSkyTexture(Rc<DxvkContext> ctx, SkyTexture& tex, const std::string& option, const char* what) {
++  const std::string path = resolveSkyTexturePath(option);
++  if (path == tex.path) {
++    return;
++  }
++  tex.path = path;
++  tex.image = nullptr;
++  tex.view = nullptr;
++  if (path.empty()) {
++    return;
++  }
++
++  Rc<AssetData> asset = AssetDataManager::get().findAsset(path);
++  if (asset == nullptr) {
++    Logger::warn(str::format("[RTX Atmosphere] ", what, " texture missing or unreadable, keeping the procedural sky: ", path));
++    return;
++  }
++  const AssetInfo& info = asset->info();
++  const DxvkFormatInfo* formatInfo = imageFormatInfo(info.format);
++  if (info.type != AssetType::Image2D || info.mipLevels == 0 || formatInfo == nullptr) {
++    Logger::warn(str::format("[RTX Atmosphere] ", what, " texture is not a 2D DDS image: ", path));
++    return;
++  }
++
++  DxvkImageCreateInfo desc;
++  desc.type = VK_IMAGE_TYPE_2D;
++  desc.format = info.format;
++  desc.flags = 0;
++  desc.sampleCount = VK_SAMPLE_COUNT_1_BIT;
++  desc.extent = VkExtent3D { info.extent.width, info.extent.height, 1 };
++  desc.numLayers = 1;
++  desc.mipLevels = info.mipLevels;
++  desc.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
++  desc.stages = VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
++              | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
++  desc.access = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
++  desc.tiling = VK_IMAGE_TILING_OPTIMAL;
++  desc.layout = VK_IMAGE_LAYOUT_GENERAL;
++  Rc<DxvkImage> image = m_device->createImage(desc, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
++                                              DxvkMemoryStats::Category::RTXMaterialTexture, what);
++
++  for (uint32_t level = 0; level < info.mipLevels; ++level) {
++    const void* data = asset->data(0, int(level));
++    if (data == nullptr) {
++      Logger::warn(str::format("[RTX Atmosphere] ", what, " texture has an unreadable mip ", level, ": ", path));
++      return;
++    }
++    // updateImage takes its pitches in bytes per row (and layer) of blocks.
++    const VkExtent3D levelExtent = util::computeMipLevelExtent(desc.extent, level);
++    const VkExtent3D blocks = util::computeBlockCount(levelExtent, formatInfo->blockSize);
++    const VkDeviceSize rowPitch = VkDeviceSize(blocks.width) * formatInfo->elementSize;
++    ctx->updateImage(image, VkImageSubresourceLayers { formatInfo->aspectMask, level, 0, 1 },
++                     VkOffset3D { 0, 0, 0 }, levelExtent, data, rowPitch, rowPitch * blocks.height);
++    asset->evictCache(0, int(level));
++  }
++  asset->releaseSource();
++
++  ctx->emitMemoryBarrier(0,
++                         VK_PIPELINE_STAGE_TRANSFER_BIT,
++                         VK_ACCESS_TRANSFER_WRITE_BIT,
++                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
++                         VK_ACCESS_SHADER_READ_BIT);
++
++  DxvkImageViewCreateInfo viewInfo;
++  viewInfo.type = VK_IMAGE_VIEW_TYPE_2D;
++  viewInfo.format = desc.format;
++  viewInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
++  viewInfo.aspect = formatInfo->aspectMask;
++  viewInfo.minLevel = 0;
++  viewInfo.numLevels = desc.mipLevels;
++  viewInfo.minLayer = 0;
++  viewInfo.numLayers = 1;
++  tex.image = image;
++  tex.view = m_device->createImageView(image, viewInfo);
++  Logger::info(str::format("[RTX Atmosphere] Loaded the ", what, " texture (", desc.extent.width, "x",
++                           desc.extent.height, ", ", desc.mipLevels, " mips): ", path));
++}
++
++void RtxAtmosphere::ensureSkyTextureStandIn(Rc<DxvkContext> ctx) {
++  if (m_skyTextureStandIn == nullptr) {
++    DxvkImageCreateInfo desc;
++    desc.type = VK_IMAGE_TYPE_2D;
++    desc.format = VK_FORMAT_R8G8B8A8_UNORM;
++    desc.flags = 0;
++    desc.sampleCount = VK_SAMPLE_COUNT_1_BIT;
++    desc.extent = VkExtent3D { 1, 1, 1 };
++    desc.numLayers = 1;
++    desc.mipLevels = 1;
++    desc.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
++    desc.stages = VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
++                | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
++    desc.access = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
++    desc.tiling = VK_IMAGE_TILING_OPTIMAL;
++    desc.layout = VK_IMAGE_LAYOUT_GENERAL;
++    m_skyTextureStandIn = m_device->createImage(desc, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
++                                                DxvkMemoryStats::Category::RTXMaterialTexture, "sky texture stand-in");
++    const uint32_t black = 0u;
++    ctx->updateImage(m_skyTextureStandIn, VkImageSubresourceLayers { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
++                     VkOffset3D { 0, 0, 0 }, desc.extent, &black, sizeof(black), sizeof(black));
++    ctx->emitMemoryBarrier(0,
++                           VK_PIPELINE_STAGE_TRANSFER_BIT,
++                           VK_ACCESS_TRANSFER_WRITE_BIT,
++                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
++                           VK_ACCESS_SHADER_READ_BIT);
++    DxvkImageViewCreateInfo viewInfo;
++    viewInfo.type = VK_IMAGE_VIEW_TYPE_2D;
++    viewInfo.format = desc.format;
++    viewInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
++    viewInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
++    viewInfo.minLevel = 0;
++    viewInfo.numLevels = 1;
++    viewInfo.minLayer = 0;
++    viewInfo.numLayers = 1;
++    m_skyTextureStandInView = m_device->createImageView(m_skyTextureStandIn, viewInfo);
++  }
++}
++
++void RtxAtmosphere::loadSkyTextures(Rc<DxvkContext> ctx) {
++  ensureSkyTextureStandIn(ctx);
++
++  // Only what is switched on stays resident: the star map alone is tens of megabytes.
++  const bool moonTextures = RtxAtmosphere::moonTextureEnable();
++  loadSkyTexture(ctx, m_moonAlbedo, moonTextures ? RtxAtmosphere::moonAlbedoTexture() : std::string(), "Moon albedo");
++  loadSkyTexture(ctx, m_moonNormal, moonTextures ? RtxAtmosphere::moonNormalTexture() : std::string(), "Moon relief");
++  const bool starMap = RtxAtmosphere::starMapEnable();
++  loadSkyTexture(ctx, m_starMap, starMap ? RtxAtmosphere::starMapTexture() : std::string(), "night sky stars");
++  loadSkyTexture(ctx, m_starMapGalaxy, starMap ? RtxAtmosphere::starMapGalaxyTexture() : std::string(), "night sky galaxy");
++  loadSkyTexture(ctx, m_starMapNebula, starMap ? RtxAtmosphere::starMapNebulaTexture() : std::string(), "night sky nebula");
++}
++
+ AtmosphereArgs RtxAtmosphere::getAtmosphereArgs() const {
+   AtmosphereArgs args = {};
+ 
+@@ -699,6 +986,36 @@ AtmosphereArgs RtxAtmosphere::getAtmosphereArgs() const {
+     populateMoonParams(args.moons[i], i);
+   }
+ 
++  // ----- Textured Moon, star map and eclipses (fork — 2026-10-29) -----
++  // A texture flag is set only once its file is resident, so the sky never samples a stand-in.
++  args.skyTextureFlags = 0u;
++  if (RtxAtmosphere::moonTextureEnable() && m_moonAlbedo.view != nullptr) {
++    args.skyTextureFlags |= SKY_TEXTURE_MOON_ALBEDO;
++    if (m_moonNormal.view != nullptr) {
++      args.skyTextureFlags |= SKY_TEXTURE_MOON_NORMAL;
++    }
++  }
++  if (RtxAtmosphere::starMapEnable()) {
++    if (m_starMap.view != nullptr)       args.skyTextureFlags |= SKY_TEXTURE_STAR_MAP;
++    if (m_starMapGalaxy.view != nullptr) args.skyTextureFlags |= SKY_TEXTURE_GALAXY;
++    if (m_starMapNebula.view != nullptr) args.skyTextureFlags |= SKY_TEXTURE_NEBULA;
++  }
++  if (RtxAtmosphere::eclipseEnable()) {
++    args.skyTextureFlags |= SKY_TEXTURE_ECLIPSES;
++  }
++  args.skyPixelAngle           = m_skyPixelAngle;
++  args.moonReliefStrength      = std::max(RtxAtmosphere::moonReliefStrength(), 0.0f);
++  args.moonTextureAlbedo       = std::max(RtxAtmosphere::moonTextureAlbedo(), 0.0f);
++  args.starMapBrightness       = std::max(RtxAtmosphere::starMapBrightness(), 0.0f);
++  args.eclipseUmbraColor       = RtxAtmosphere::eclipseUmbraColor();
++  args.eclipseUmbraBrightness  = std::max(RtxAtmosphere::eclipseUmbraBrightness(), 0.0f);
++  args.eclipseUmbraScale       = std::max(RtxAtmosphere::eclipseUmbraScale(), 0.0f);
++  args.eclipsePenumbraScale    = std::max(RtxAtmosphere::eclipsePenumbraScale(), args.eclipseUmbraScale + 0.01f);
++  args.eclipseSunScale         = std::max(RtxAtmosphere::eclipseSunScale(), 0.01f);
++  args.eclipseCoronaBrightness = std::max(RtxAtmosphere::eclipseCoronaBrightness(), 0.0f);
++  // Needs the sun and moon 0 already in place; scales sunIlluminance and moons[0].color.
++  applyEclipses(args);
++
+   // ----- Moon NEE / atmospheric-coupling strengths (fork) -----
+   args.moonNeeStrength                 = wx ? wx->moonNeeStrength                 : RtxAtmosphere::moonNeeStrength();
+   args.moonAtmosphericCouplingStrength = wx ? wx->moonAtmosphericCouplingStrength : RtxAtmosphere::moonAtmosphericCouplingStrength();
+@@ -2617,6 +2934,12 @@ AtmosphereArgs RtxAtmosphere::updateFrame(RtxContext& ctx,
+   const VkExtent3D downscaledExtent3D = ctx.getResourceManager().getDownscaleDimensions();
+   ensureCloudRenderRT(&ctx, VkExtent2D { downscaledExtent3D.width, downscaledExtent3D.height });
+ 
++  // Sky textures: (re)load on a path change, and size one traced pixel for their mip selection,
++  // with the mip bias the materials get (a temporal upscaler resolves finer than a traced pixel).
++  loadSkyTextures(&ctx);
++  const float skyMipBias = std::clamp(ctx.getSceneManager().getTotalMipBias(), -3.0f, 3.0f);
++  m_skyPixelAngle = 2.0f * tanHalfFovY / float(std::max(downscaledExtent3D.height, 1u)) * std::exp2(skyMipBias);
++
+   computeLuts(&ctx);
+   args = getAtmosphereArgs();
+   syncDistantLights(ctx.getSceneManager().getLightManager(), args);
+@@ -2651,6 +2974,20 @@ void RtxAtmosphere::bindResources(RtxContext& ctx) {
+     ctx.bindResourceView(BINDING_ATMOSPHERE_CLOUD_SECONDARY_LUT, m_cloudSecondaryLut.view, nullptr);
+   }
+ 
++  // Sky textures, or the 1x1 stand-in for any not loaded (skyTextureFlags keeps the shader off those).
++  // Loading itself happens in updateFrame, which only runs for the physical sky.
++  ensureSkyTextureStandIn(&ctx);
++  ctx.bindResourceView(BINDING_ATMOSPHERE_MOON_ALBEDO,
++                       m_moonAlbedo.view != nullptr ? m_moonAlbedo.view : m_skyTextureStandInView, nullptr);
++  ctx.bindResourceView(BINDING_ATMOSPHERE_MOON_NORMAL,
++                       m_moonNormal.view != nullptr ? m_moonNormal.view : m_skyTextureStandInView, nullptr);
++  ctx.bindResourceView(BINDING_ATMOSPHERE_STAR_MAP,
++                       m_starMap.view != nullptr ? m_starMap.view : m_skyTextureStandInView, nullptr);
++  ctx.bindResourceView(BINDING_ATMOSPHERE_STAR_MAP_GALAXY,
++                       m_starMapGalaxy.view != nullptr ? m_starMapGalaxy.view : m_skyTextureStandInView, nullptr);
++  ctx.bindResourceView(BINDING_ATMOSPHERE_STAR_MAP_NEBULA,
++                       m_starMapNebula.view != nullptr ? m_starMapNebula.view : m_skyTextureStandInView, nullptr);
++
+   onFrameAdvanceForCloudHistory(static_cast<uint32_t>(ctx.getDevice()->getCurrentFrameId()));
+   const VkExtent3D downscaledExtent = ctx.getResourceManager().getDownscaleDimensions();
+   ensureCloudHistoryResources(&ctx, downscaledExtent);
+diff --git a/src/dxvk/rtx_render/rtx_atmosphere.h b/src/dxvk/rtx_render/rtx_atmosphere.h
+index d7a39103..c3bf2ad3 100644
+--- a/src/dxvk/rtx_render/rtx_atmosphere.h
++++ b/src/dxvk/rtx_render/rtx_atmosphere.h
+@@ -507,6 +507,67 @@ public:
+                "Master multiplier on the combined moon halo + ambient airglow contribution. "
+                "Composes with moonHaloMagnitude / moonAmbientAirglow for ratio tuning.");
+ 
++    // ----- Textured Moon, star map and eclipses (fork — 2026-10-29) -----
++    // Relative texture paths resolve against the folder that holds the runtime's d3d9.dll. A missing or
++    // unreadable file is logged once and leaves the procedural look in place.
++    RTX_OPTION("rtx.atmosphere", bool, moonTextureEnable, true,
++               "Draw moon 0 as the real Moon from moonAlbedoTexture and moonNormalTexture: a sphere lit from the "
++               "sun's side of the sky, its north towards the ecliptic pole. Falls back to the procedural "
++               "surfaceStyle while the albedo map is missing. Moons 1-3 always stay procedural.");
++    RTX_OPTION("rtx.atmosphere", std::string, moonAlbedoTexture, "atmosphere/moon_albedo.dds",
++               "DDS albedo map of the Moon in simple cylindrical projection: selenographic longitude 0 at the "
++               "centre, east to the right, north up. Relative paths resolve against the runtime's folder.");
++    RTX_OPTION("rtx.atmosphere", std::string, moonNormalTexture, "atmosphere/moon_normal.dds",
++               "DDS tangent-space normal map of the Moon's relief (x east, y north) in the same projection as "
++               "moonAlbedoTexture. Optional: without it the Moon is lit as a smooth sphere.");
++    RTX_OPTION("rtx.atmosphere", float, moonTextureAlbedo, 0.12f,
++               "Mean albedo of the textured Moon's near side (the map is scaled so its average lands here). "
++               "0.12 is the real Moon.");
++    RTX_OPTION("rtx.atmosphere", float, moonReliefStrength, 1.0f,
++               "Scales the slopes of moonNormalTexture. 0 = smooth sphere, 1 = the map as baked; higher "
++               "exaggerates the craters along the terminator.");
++    RTX_OPTION("rtx.atmosphere", bool, starMapEnable, false,
++               "Draw the night sky from a night sky image instead of the procedural star field and Milky Way: the "
++               "star, galaxy and nebula layers of the NightSky HD layout (starMapTexture, starMapGalaxyTexture, "
++               "starMapNebulaTexture), turning with starRotation about the starAxis pole. A missing layer is left "
++               "out; with none loaded the procedural sky stays.");
++    RTX_OPTION("rtx.atmosphere", std::string, starMapTexture, "atmosphere/stars.dds",
++               "DDS star layer: NightSky HD's tiled star sphere (Skyrim's textures\\sky\\skystars.dds), gamma-space "
++               "colour and alpha. Relative paths resolve against the runtime's folder.");
++    RTX_OPTION("rtx.atmosphere", std::string, starMapGalaxyTexture, "atmosphere/galaxy.dds",
++               "DDS galaxy layer: NightSky HD's galaxy band (textures\\sky\\skyrimgalaxy.dds), gamma-space colour and "
++               "alpha. Relative paths resolve against the runtime's folder.");
++    RTX_OPTION("rtx.atmosphere", std::string, starMapNebulaTexture, "atmosphere/nebula.dds",
++               "DDS nebula layer in longitude and latitude (NightSky HD's FullNebula sphere), colour already "
++               "multiplied by alpha. Relative paths resolve against the runtime's folder.");
++    RTX_OPTION("rtx.atmosphere", float, starMapBrightness, 0.12f,
++               "Brightness of the night sky image: its gamma-space colour, decoded, times this. 0.12 gives the "
++               "image's look in Skyrim at Remix's night exposure: a faint galaxy and nebulae under sharp stars.");
++    RTX_OPTION("rtx.atmosphere", bool, eclipseEnable, true,
++               "Let moon 0 be eclipsed and eclipse the sun. Opposite the sun it passes through Earth's shadow, "
++               "dimming and turning copper red, and its light on the world and the sky dims with it; in front of "
++               "the sun it covers a drawn sun disc, dims daylight and, near totality, reveals the corona and the "
++               "stars. Only the geometry decides: put moon 0 there to see one.");
++    RTX_OPTION("rtx.atmosphere", float, eclipseUmbraScale, 2.65f,
++               "Radius of Earth's umbra in Moon radii (about 2.65 at the real Moon's distance). Scaled with the "
++               "drawn Moon, so an enlarged Moon still fits inside the shadow.");
++    RTX_OPTION("rtx.atmosphere", float, eclipsePenumbraScale, 4.8f,
++               "Radius of Earth's penumbra in Moon radii (about 4.8 for the real Moon).");
++    RTX_OPTION("rtx.atmosphere", float, eclipseUmbraBrightness, 0.012f,
++               "Light left on the Moon inside the umbra, as a fraction of the full Moon: sunlight that Earth's "
++               "atmosphere bends into its shadow. Lower for a dark eclipse, higher for a bright one.");
++    RTX_OPTION("rtx.atmosphere", Vector3, eclipseUmbraColor, Vector3(1.0f, 0.36f, 0.14f),
++               "Colour of the eclipsed Moon inside the umbra; deeper in it shifts further towards red.");
++    RTX_OPTION("rtx.atmosphere", float, eclipseSunScale, 0.97f,
++               "Radius of the sun disc drawn during a solar eclipse, in moon-0 radii. Below 1 the Moon can cover "
++               "it completely (a total eclipse); above 1 a ring of sun stays (annular).");
++    RTX_OPTION("rtx.atmosphere", float, eclipseTotalityLight, 0.0006f,
++               "Daylight left while the sun is completely covered, as a fraction of full daylight: light "
++               "scattered in from outside the Moon's shadow. Stars come out as daylight falls towards this.");
++    RTX_OPTION("rtx.atmosphere", float, eclipseCoronaBrightness, 4.0e-5f,
++               "Radiance of the solar corona at the sun's limb as a fraction of the sun disc's. It stays hidden "
++               "in the daylight glare until the Moon covers the disc.");
++
+     RTX_OPTION("rtx.atmosphere", bool, cloudEnabled, true, "Enable procedural cloud rendering.");
+     RTX_OPTION("rtx.atmosphere", float, cloudDensity, 4.0f, "Cloud opacity/density multiplier.");
+     RTX_OPTION("rtx.atmosphere", float, cloudAltitude, 1.3f, "Cloud layer altitude in kilometers.");
+@@ -1116,6 +1177,19 @@ private:
+   void dispatchCloudRender(Rc<DxvkContext> ctx);
+   void dispatchCloudSecondaryLut(Rc<DxvkContext> ctx);
+ 
++  // Sky textures (fork — 2026-10-29). Owned here rather than by the texture manager, whose streaming,
++  // demotion and scene purges suit replacement assets but not a texture that must stay resident for the
++  // whole session. (Re)loaded when its path option changes; see loadSkyTextures.
++  struct SkyTexture {
++    std::string       path;   // resolved path last attempted ("" = none)
++    Rc<DxvkImage>     image;
++    Rc<DxvkImageView> view;   // null while the file is missing or unreadable
++  };
++  void ensureSkyTextureStandIn(Rc<DxvkContext> ctx);
++  void loadSkyTextures(Rc<DxvkContext> ctx);
++  void loadSkyTexture(Rc<DxvkContext> ctx, SkyTexture& tex, const std::string& option, const char* what);
++  void applyEclipses(AtmosphereArgs& args) const;
++
+   static constexpr uint32_t kTransmittanceLutWidth = 512;
+   static constexpr uint32_t kTransmittanceLutHeight = 128;
+   static constexpr uint32_t kMultiscatteringLutSize = 32;
+@@ -1197,6 +1271,18 @@ private:
+   Vector3  m_apCameraRight         { 1.0f, 0.0f, 0.0f };
+   Vector3  m_apCameraUp            { 0.0f, 1.0f, 0.0f };
+ 
++  // Angular size of one primary-view pixel, radians; set by updateFrame, read by getAtmosphereArgs for
++  // the sky textures' mip selection (ray-traced misses have no derivatives).
++  float    m_skyPixelAngle         { 0.001f };
++
++  SkyTexture        m_moonAlbedo;
++  SkyTexture        m_moonNormal;
++  SkyTexture        m_starMap;
++  SkyTexture        m_starMapGalaxy;
++  SkyTexture        m_starMapNebula;
++  Rc<DxvkImage>     m_skyTextureStandIn;  // 1x1 black, bound in place of any sky texture not loaded
++  Rc<DxvkImageView> m_skyTextureStandInView;
++
+   // Integrated once per frame by advanceCloudMotion(); read by getAtmosphereArgs().
+   Vector2  m_cloudAdvectOffset     { 0.0f, 0.0f };
+   Vector3  m_cloudEvolutionOffset  { 0.0f, 0.0f, 0.0f };
+diff --git a/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_args.h b/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_args.h
+index 68ea38fd..ed83094e 100644
+--- a/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_args.h
++++ b/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_args.h
+@@ -745,6 +745,36 @@ struct AtmosphereArgs {
+   // exponential slice distribution already makes smooth. Tying them together would charge a square
+   // for an axis that does not need it.
+   uint aerialPerspectiveLutDepthSlices;
+-  float padAerial7;
+-  float padAerial8;
++
++  // ----- Textured Moon, star map and eclipses (fork — 2026-10-29) -----
++  // Per-pixel sky shading only: normalizeForSkyLutCache zeroes all of these. What the bakes and the
++  // lights do see of an eclipse is folded in on the CPU (RtxAtmosphere::applyEclipses): a solar eclipse
++  // scales sunIlluminance, a lunar one scales and reddens moons[0].color, the albedo every moon-light
++  // path (sky coupling, halo, clouds, the distant light) reads. sunEclipseLight carries the solar factor
++  // so the sky can undo it on the visible sun disc, which keeps its surface brightness as it shrinks.
++  // The first two ride the former padAerial7/8 slots; the three rows after them grow the buffer by
++  // whole 16-byte blocks.
++  uint skyTextureFlags;          // SKY_TEXTURE_* bits: which of the Moon and star textures are bound and in use
++  float skyPixelAngle;           // Angular size of one primary-view pixel in radians, for texture LOD
++
++  float moonReliefStrength;      // Slope scale of the Moon normal map; 0 = smooth sphere
++  float starMapBrightness;       // Multiplier on the star map's radiance
++  float sunEclipseLight;         // Sunlight left by a solar eclipse, already folded into sunIlluminance (1 = none)
++  float moonTextureAlbedo;       // Mean albedo of the textured Moon's near side (the map stores that mean as 0.25)
++
++  vec3 eclipseUmbraColor;        // Tint of the Moon inside Earth's umbra (light refracted through Earth's atmosphere)
++  float eclipseUmbraBrightness;  // Light inside the umbra as a fraction of the uneclipsed Moon
++
++  float eclipseUmbraScale;       // Umbra radius in Moon radii
++  float eclipsePenumbraScale;    // Penumbra radius in Moon radii
++  float eclipseSunScale;         // Sun disc radius in moon-0 radii while it eclipses (< 1 total, > 1 annular)
++  float eclipseCoronaBrightness; // Corona radiance at the solar limb as a fraction of the sun disc's
+ };
++
++// AtmosphereArgs::skyTextureFlags bits.
++#define SKY_TEXTURE_MOON_ALBEDO 1u
++#define SKY_TEXTURE_MOON_NORMAL 2u
++#define SKY_TEXTURE_STAR_MAP    4u   // the night sky image's star layer
++#define SKY_TEXTURE_ECLIPSES    8u
++#define SKY_TEXTURE_GALAXY     16u   // its galaxy band
++#define SKY_TEXTURE_NEBULA     32u   // its nebula, with the constellations
+diff --git a/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh b/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh
+index 4dd3931b..e4802d56 100644
+--- a/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh
++++ b/src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh
+@@ -329,6 +329,119 @@ vec3 evalStarField(vec3 viewDir, AtmosphereArgs args) {
+   return totalStars * args.starBrightness + milkyWayGlow;
+ }
+ 
++// ============================================================================
++// Real sky (fork — 2026-10-29): celestial frame, star map
++// ============================================================================
++
++// Angle between two unit vectors; atan2 keeps the sub-degree separations
++// eclipses and the Moon's disc work at accurate, where acos loses its bits.
++float skyAngleBetween(vec3 a, vec3 b) {
++  return atan2(length(cross(a, b)), dot(a, b));
++}
++
++// Equatorial frame of the sky from the star axis the game pushes (pole
++// elevation = observer latitude, pole bearing = the map's north):
++//   P = north celestial pole, M = the celestial equator on the meridian (above
++//   the southern horizon), W = the west point.
++// A body at hour angle H (west positive) and declination dec then lies along
++// sin(dec) P + cos(dec) (cos(H) M + sin(H) W).
++void getCelestialFrame(AtmosphereArgs args, out vec3 P, out vec3 M, out vec3 W) {
++  const float kDegToRad = kPi / 180.0f;
++  float lat = args.starAxisElevation * kDegToRad;
++  float azN = args.starAxisRotation * kDegToRad;
++  P = vec3(cos(lat) * sin(azN), sin(lat), cos(lat) * cos(azN));
++  M = vec3(-sin(lat) * sin(azN), cos(lat), -sin(lat) * cos(azN));
++  W = vec3(-cos(azN), 0.0f, sin(azN));
++}
++
++// Local sidereal time in radians. starRotation carries -LST in degrees: the
++// convention the procedural field's Rodrigues rotation is driven with.
++float getLocalSiderealTime(AtmosphereArgs args) {
++  return -args.starRotation * (kPi / 180.0f);
++}
++
++// Radius in the star layer's UV layout at 0, 10, ... 90 degrees from its
++// hemisphere's centre: the rings of NightSky HD's stars.nif.
++static const float kStarMapRings[10] = { 0.0f, 0.21128f, 0.41641f, 0.60876f, 0.7983f,
++                                         1.01726f, 1.24191f, 1.46891f, 1.70335f, 1.95472f };
++
++// Night sky image (fork — 2026-10-29): the star dome of NightSky HD LE, a
++// Skyrim night-sky mod (stars and galaxy by PraedythXVI, nebula from Era-7's
++// images), mapped as the mod's own stars.nif maps it, so the textures show at
++// their full resolution. The mesh frame is taken as the equatorial frame (x
++// towards RA 0h, y towards RA 6h, z the north celestial pole), so the dome
++// turns with the sidereal time like a real sky. Skyrim draws these layers
++// colour times alpha, added in gamma space; the sum is made linear at the end.
++//  - Stars: one texture tiled over two hemispheres, each laid out
++//    azimuthally about its centre (opposite points share a texel): UV
++//    (1 + r cos(theta), r sin(theta)), r from kStarMapRings. About 200 texels a
++//    degree, so the stars stay small and sharp.
++//  - Galaxy: a band 40 degrees either side of a great circle, its texture
++//    three times round it.
++//  - Nebula, with the mod's constellations baked in (colour already times
++//    alpha): longitude and latitude.
++vec3 evalStarMap(vec3 dir, AtmosphereArgs args) {
++  vec3 P, M, W;
++  getCelestialFrame(args, P, M, W);
++  float sinDec = clamp(dot(dir, P), -1.0f, 1.0f);
++  float cosDec = sqrt(max(1.0f - sinDec * sinDec, 0.0f));
++  float ra = getLocalSiderealTime(args) - atan2(dot(dir, W), dot(dir, M));
++  vec3 q = vec3(cosDec * cos(ra), cosDec * sin(ra), sinDec);
++  float pixel = max(args.skyPixelAngle, 1e-6f);
++  vec3 layers = vec3(0.0f);
++
++  if ((args.skyTextureFlags & SKY_TEXTURE_STAR_MAP) != 0u) {
++    const vec3 kCentre = vec3(0.0f, -0.390731f, 0.920505f);
++    const vec3 kTheta0 = vec3(1.0f, 0.0f, 0.0f);
++    const vec3 kTheta90 = vec3(0.0f, -0.920505f, -0.390731f);
++    vec3 h = (dot(q, kCentre) < 0.0f) ? -q : q;
++    float angle = acos(clamp(dot(h, kCentre), -1.0f, 1.0f));
++    float ring = clamp(angle * (18.0f / kPi), 0.0f, 8.999f);
++    uint k = uint(ring);
++    float r = lerp(kStarMapRings[k], kStarMapRings[k + 1u], ring - float(k));
++    float theta = atan2(dot(h, kTheta90), dot(h, kTheta0));
++    vec2 uv = vec2(1.0f + r * cos(theta), r * sin(theta));
++    // Mip from the larger of the radial (dr/dangle) and round (r/sin) stretch.
++    float radial = (kStarMapRings[k + 1u] - kStarMapRings[k]) * (18.0f / kPi);
++    float around = (angle > 1e-3f) ? r / sin(angle) : radial;
++    uint width, height;
++    AtmosphereStarMap.GetDimensions(width, height);
++    float lod = max(log2(max(pixel * max(radial, around) * float(width), 1e-4f)), 0.0f);
++    // The texture tiles: wrap v by hand (the sampler clamps it).
++    vec4 s = AtmosphereStarMap.SampleLevel(AtmosphereSkyViewSampler, frac(uv), lod);
++    layers += s.rgb * s.a;
++  }
++
++  if ((args.skyTextureFlags & SKY_TEXTURE_GALAXY) != 0u) {
++    const vec3 kAxis = vec3(0.722456f, -0.042907f, 0.690085f);
++    const vec3 kAlong0 = vec3(-0.573207f, 0.520957f, 0.632486f);
++    const vec3 kAlong90 = vec3(-0.386642f, -0.852504f, 0.351773f);
++    const float kSinHalfWidth = 0.642788f;  // sin 40 degrees
++    float sinBeta = dot(q, kAxis);
++    if (abs(sinBeta) < kSinHalfWidth) {
++      float along = atan2(dot(q, kAlong90), dot(q, kAlong0));
++      vec2 uv = vec2(2.0f + along * (1.5f / kPi), 0.5f - 0.5f * sinBeta / kSinHalfWidth);
++      uint width, height;
++      AtmosphereStarMapGalaxy.GetDimensions(width, height);
++      float cosBeta = sqrt(max(1.0f - sinBeta * sinBeta, 0.0f));
++      float texelsPerRadian = max(float(width) * (1.5f / kPi), float(height) * 0.5f * cosBeta / kSinHalfWidth);
++      float lod = max(log2(max(pixel * texelsPerRadian, 1e-4f)), 0.0f);
++      vec4 g = AtmosphereStarMapGalaxy.SampleLevel(AtmosphereSkyViewSampler, uv, lod);
++      layers += g.rgb * g.a;
++    }
++  }
++
++  if ((args.skyTextureFlags & SKY_TEXTURE_NEBULA) != 0u) {
++    vec2 uv = vec2(0.5f + atan2(q.y, q.x) / (2.0f * kPi), 0.5f - asin(q.z) / kPi);
++    uint width, height;
++    AtmosphereStarMapNebula.GetDimensions(width, height);
++    float lod = max(log2(max(pixel * float(height) / kPi, 1e-4f)), 0.0f);
++    layers += AtmosphereStarMapNebula.SampleLevel(AtmosphereSkyViewSampler, uv, lod).rgb;
++  }
++
++  return pow(min(layers, vec3(1.0f)), vec3(2.2f)) * args.starMapBrightness;
++}
++
+ // Compute night sky contribution split into two layers:
+ //   - starsOut: discrete star field + shooting stars (HDR point-source content
+ //     that needs steeper extinction through clouds, applied by the caller via
+@@ -353,14 +466,24 @@ void evalNightSky(vec3 viewDir, AtmosphereArgs args,
+   // -sunElevation is positive when sun is below horizon
+   float belowHorizon = -sunElevation;
+   float nightFactor = smoothstep(kStarFadeStart, kStarFadeFull, belowHorizon);
++  // The totality of a solar eclipse darkens the day sky enough for the stars
++  // (fork — 2026-10-29). sunEclipseLight is 1 outside an eclipse.
++  nightFactor = max(nightFactor, 1.0f - smoothstep(0.001f, 0.006f, args.sunEclipseLight));
+   if (nightFactor <= 0.0f) return;
+ 
+   // Atmospheric extinction for stars near horizon — gentle fade only
+   float viewElevation = viewDir.y;
+   float horizonExtinction = smoothstep(-0.02f, 0.1f, viewElevation);
+ 
+-  // Star field (includes galactic density band — no separate nebula overlay needed)
+-  vec3 stars = evalStarField(viewDir, args) * horizonExtinction;
++  // Star field: the photographic star map when it is loaded and enabled (fork —
++  // 2026-10-29), otherwise the procedural field (which includes the galactic
++  // density band — no separate nebula overlay needed).
++  vec3 stars;
++  if ((args.skyTextureFlags & (SKY_TEXTURE_STAR_MAP | SKY_TEXTURE_GALAXY | SKY_TEXTURE_NEBULA)) != 0u) {
++    stars = evalStarMap(viewDir, args) * horizonExtinction;
++  } else {
++    stars = evalStarField(viewDir, args) * horizonExtinction;
++  }
+ 
+   // Shooting stars — thin streaks with fading tail
+   {
+@@ -578,6 +701,141 @@ void computeVolcanicSurfaceDetail(float diskX, float diskY, MoonParams m,
+   );
+ }
+ 
++// A moon's angular radius, with evalMoonDisk's 0.5 degree stand-in for an
++// unset size. RtxAtmosphere::applyEclipses uses the same fallback.
++float getMoonDiscRadius(MoonParams m) {
++  return (m.angularRadius >= 0.001f) ? m.angularRadius : 0.5f * kPi / 180.0f;
++}
++
++// Sunlight reaching a point on the Moon `d` radians from the antisolar point
++// (the centre of Earth's shadow), as an RGB fraction of full sunlight (fork —
++// 2026-10-29). The shadow is sized in moon radii so an enlarged Moon still fits
++// it. CPU twin: lunarEclipseLight in rtx_atmosphere.cpp, which averages this
++// over the disc for the moonlight; keep the two in lockstep.
++vec3 evalLunarEclipseLight(float d, float moonRadius, AtmosphereArgs args) {
++  float umbra = args.eclipseUmbraScale * moonRadius;
++  float penumbra = args.eclipsePenumbraScale * moonRadius;
++  float edge = args.eclipseUmbraBrightness;
++  vec3 red = args.eclipseUmbraColor;
++  // The ozone layer passes blue light that grazes Earth's limb: a turquoise
++  // band along the umbra's edge.
++  const vec3 turquoise = vec3(0.35f, 0.75f, 1.0f);
++  if (d >= penumbra) {
++    return vec3(1.0f);
++  }
++  if (d >= umbra) {
++    // Fraction of the sun's disc still visible from here past Earth's limb.
++    float t = (d - umbra) / (penumbra - umbra);
++    float direct = t * t * (3.0f - 2.0f * t);
++    float band = 1.5f * edge * exp(-t * t * 150.0f);
++    return vec3(direct) + (red * edge + turquoise * band) * (1.0f - direct);
++  }
++  // Inside the umbra only refracted light arrives; deeper in it has crossed
++  // more air, so it is dimmer and redder.
++  float x = (umbra > 0.0f) ? d / umbra : 0.0f;
++  vec3 tint = mix(red * red, red, x);
++  float band = 1.5f * edge * exp(-(1.0f - x) * (1.0f - x) * 150.0f);
++  return tint * (edge * (0.35f + 0.65f * x * x)) + turquoise * band;
++}
++
++// Moon 0 as the real Moon (fork — 2026-10-29). The point of the sphere under
++// viewDir is found on the disc, turned into selenographic latitude and
++// longitude for the albedo and relief maps, and lit by a sun the phase option
++// places: the phase sets the angle between sunlight and the view, the real
++// sun's place on the sky sets which limb is bright, so a waxing Moon after
++// sunset is lit from the west. The Moon's north points at the ecliptic pole,
++// which its spin axis nearly shares, so it tilts across the sky the way the
++// real one does. Returns radiance before the caller's edge coverage.
++vec3 evalTexturedMoon(vec3 viewDir, MoonParams m, vec3 moonDir, float moonRadius, AtmosphereArgs args) {
++  // Disc frame: north towards the ecliptic pole (RA 18h, dec +66.56 deg),
++  // east to the viewer's right (lunar east for an upright Moon).
++  vec3 P, M, W;
++  getCelestialFrame(args, P, M, W);
++  const float kEclipticPoleDec = 66.56f * kPi / 180.0f;
++  float poleHourAngle = getLocalSiderealTime(args) - 1.5f * kPi;
++  vec3 eclipticPole = sin(kEclipticPoleDec) * P
++                    + cos(kEclipticPoleDec) * (cos(poleHourAngle) * M + sin(poleHourAngle) * W);
++  vec3 north = eclipticPole - moonDir * dot(eclipticPole, moonDir);
++  if (dot(north, north) < 1e-6f) {
++    north = (abs(moonDir.y) < 0.999f) ? vec3(0.0f, 1.0f, 0.0f) - moonDir * moonDir.y : vec3(1.0f, 0.0f, 0.0f);
++  }
++  north = normalize(north);
++  vec3 east = cross(north, moonDir);
++
++  // Visible point of the unit sphere in (east, north, towards the viewer).
++  vec3 offset = viewDir - moonDir * dot(viewDir, moonDir);
++  vec2 disc = vec2(dot(offset, east), dot(offset, north)) / sin(moonRadius);
++  float r2 = dot(disc, disc);
++  if (r2 > 0.9999f) {
++    disc *= sqrt(0.9999f / r2);
++    r2 = 0.9999f;
++  }
++  float z = sqrt(1.0f - r2);
++  float lat = asin(clamp(disc.y, -1.0f, 1.0f));
++  float lon = atan2(disc.x, z);
++  vec2 uv = vec2(0.5f + lon / (2.0f * kPi), 0.5f - lat / kPi);
++
++  // Mip: one traced pixel spans skyPixelAngle / moonRadius of the disc, i.e.
++  // that many radians of longitude at the centre (this fraction of the map's
++  // width); foreshortening widens it towards the limb.
++  uint width, height;
++  AtmosphereMoonAlbedo.GetDimensions(width, height);
++  float limbLod = 0.5f * log2(1.0f / max(z, 0.05f));
++  float mapWidthPerPixel = args.skyPixelAngle / moonRadius / (2.0f * kPi);
++  float lod = max(log2(max(mapWidthPerPixel * float(width), 1e-4f)) + limbLod, 0.0f);
++  // The map is stored with its near-side mean linear luminance at 0.25.
++  const float kMoonMapNearSideMean = 0.25f;
++  vec3 albedo = AtmosphereMoonAlbedo.SampleLevel(AtmosphereSkyViewSampler, uv, lod).rgb
++              * (args.moonTextureAlbedo / kMoonMapNearSideMean);
++
++  vec3 n = vec3(disc, z);
++  if ((args.skyTextureFlags & SKY_TEXTURE_MOON_NORMAL) != 0u && args.moonReliefStrength > 0.0f) {
++    uint normalWidth, normalHeight;
++    AtmosphereMoonNormal.GetDimensions(normalWidth, normalHeight);
++    float normalLod = max(log2(max(mapWidthPerPixel * float(normalWidth), 1e-4f)) + limbLod, 0.0f);
++    vec2 slope = AtmosphereMoonNormal.SampleLevel(AtmosphereSkyViewSampler, uv, normalLod).rg * 2.0f - 1.0f;
++    vec3 tangentEast = vec3(cos(lon), 0.0f, -sin(lon));
++    vec3 tangentNorth = vec3(-sin(lat) * sin(lon), cos(lat), -sin(lat) * cos(lon));
++    n = normalize(n + (tangentEast * slope.x + tangentNorth * slope.y) * args.moonReliefStrength);
++  }
++
++  // Sunlight as seen from the Moon: phase angle 0 at full (from behind the
++  // viewer), pi at new; tilted towards where the sun is on the sky.
++  vec3 sunDir = normalize(args.sunDirection);
++  vec2 towardSun = vec2(dot(sunDir, east), dot(sunDir, north));
++  towardSun = (dot(towardSun, towardSun) > 1e-10f) ? normalize(towardSun) : vec2(1.0f, 0.0f);
++  float phaseAngle = abs(kPi - 2.0f * kPi * frac(m.phase));
++  vec3 toLight = vec3(towardSun * sin(phaseAngle), cos(phaseAngle));
++
++  // Lunar-Lambert: mostly Lommel-Seeliger, which gives the full Moon its flat,
++  // limb-bright face and hides relief at full, plus a little Lambert. The
++  // shadow line follows the smooth sphere, softened over about two pixels so it
++  // does not break into steps; the relief shades the lit side and darkens the
++  // slopes turned from the sun smoothly (softplus) instead of cutting single
++  // texels to black.
++  float pixelOnDisc = args.skyPixelAngle / moonRadius;
++  float terminatorWidth = clamp(2.0f * pixelOnDisc, 0.004f, 0.08f);
++  float terminator = smoothstep(-terminatorWidth, terminatorWidth, dot(vec3(disc, z), toLight));
++  float slopeSoftness = max(terminatorWidth, 0.02f);
++  float cosI = slopeSoftness * log(1.0f + exp(min(dot(n, toLight) / slopeSoftness, 30.0f)));
++  float cosE = max(n.z, 1e-3f);
++  float lit = terminator * (0.75f * 2.0f * cosI / (cosI + cosE) + 0.25f * cosI);
++
++  vec3 eclipse = vec3(1.0f);
++  if ((args.skyTextureFlags & SKY_TEXTURE_ECLIPSES) != 0u) {
++    eclipse = evalLunarEclipseLight(skyAngleBetween(viewDir, -sunDir), moonRadius, args);
++  }
++
++  // Earthshine lights the night side from the viewer's direction (flat under
++  // Lommel-Seeliger), strongest when the Moon is thinnest and Earth seen from
++  // it fullest.
++  float earthshine = m.darkSideBrightness * (0.5f - 0.5f * cos(phaseAngle));
++
++  vec3 moonAirTrans = getAtmosphericTransmittanceForDir(moonDir, args);
++  vec3 sunlit = args.sunIlluminance * moonAirTrans * (m.brightness / kPi);
++  return max(sunlit * albedo * (lit * eclipse + earthshine), vec3(0.0f));
++}
++
+ // Render moon disk for moonIdx in args.moons[]. Returns radiance contribution
+ // for this pixel and writes diskCoverage in [0,1] indicating disk opacity at
+ // this view direction. Caller composites moons over the night sky using
+@@ -611,6 +869,11 @@ vec3 evalMoonDisk(vec3 viewDir, uint moonIdx, AtmosphereArgs args, out float dis
+   float edgeSoftness = smoothstep(1.0f, 0.97f, normalizedAngle);
+   diskCoverage *= edgeSoftness;
+ 
++  // Moon 0 as the real Moon when its albedo map is resident (fork — 2026-10-29).
++  if (moonIdx == 0u && (args.skyTextureFlags & SKY_TEXTURE_MOON_ALBEDO) != 0u) {
++    return evalTexturedMoon(viewDir, m, moonDir, getMoonDiscRadius(m), args);
++  }
++
+   float limbDarkening = 1.0f - 0.3f * normalizedAngle * normalizedAngle;
+   limbDarkening = max(limbDarkening, 0.0f);
+ 
+@@ -664,6 +927,11 @@ vec3 evalMoonDisk(vec3 viewDir, uint moonIdx, AtmosphereArgs args, out float dis
+ 
+   // Lit side: full surface detail × per-pixel diffuse × limb darkening.
+   vec3 litRadiance = sharedFactor * surfaceDetail * diffuse * limbDarkening;
++  // Earth's shadow falls on moon 0 only (fork — 2026-10-29).
++  if (moonIdx == 0u && (args.skyTextureFlags & SKY_TEXTURE_ECLIPSES) != 0u) {
++    litRadiance *= evalLunarEclipseLight(skyAngleBetween(viewDir, -normalize(args.sunDirection)),
++                                         getMoonDiscRadius(m), args);
++  }
+ 
+   // Dark side: stylistic earthshine-fill, anchored to the same sharedFactor
+   // so it tracks sun changes proportionally. m.darkSideBrightness retains
+@@ -675,6 +943,103 @@ vec3 evalMoonDisk(vec3 viewDir, uint moonIdx, AtmosphereArgs args, out float dis
+   return max(moonRadiance, vec3(0.0f));
+ }
+ 
++// ============================================================================
++// Solar eclipse (fork — 2026-10-29)
++// ============================================================================
++// The sky has no sun disc of its own (the sun reads as the Mie aureole baked in
++// the sky-view LUT). While moon 0 nears the sun this draws one, sized from the
++// Moon by eclipseSunScale, plus the chromosphere and corona, all behind the
++// Moon's silhouette. Daylight itself (sky bakes, clouds, the sun light) is
++// already dimmed by the covered fraction through sunIlluminance; the disc
++// undoes that factor, because what is left of it keeps its full surface
++// brightness. Returns radiance to add over the sky, and moonMask = the Moon's
++// silhouette for hiding the stars that come out at totality.
++vec3 evalSolarEclipse(vec3 viewDir, AtmosphereArgs args, out float moonMask) {
++  moonMask = 0.0f;
++  MoonParams m = args.moons[0];
++  vec3 sunDir = normalize(args.sunDirection);
++  if (m.enabled < 0.5f || sunDir.y < -0.02f) {
++    return vec3(0.0f);
++  }
++  vec3 moonDir = normalize(m.direction);
++  float moonRadius = getMoonDiscRadius(m);
++  float sunRadius = moonRadius * args.eclipseSunScale;
++
++  // The disc fades in over the Moon's last two sun radii of approach.
++  float approach = 1.0f - smoothstep(sunRadius + moonRadius, 3.0f * sunRadius + moonRadius,
++                                     skyAngleBetween(sunDir, moonDir));
++  if (approach <= 0.0f) {
++    return vec3(0.0f);
++  }
++  const float kCoronaReach = 8.0f;  // sun radii
++  float fromSun = skyAngleBetween(viewDir, sunDir);
++  // Edges about two pixels wide: a one-pixel step from the disc to the dark
++  // Moon is the strongest contrast in any frame, and the upscaler rang on it
++  // into black pixels along the Moon's limb.
++  float edge = 2.0f * max(args.skyPixelAngle, 1e-5f);
++  moonMask = saturate((moonRadius - skyAngleBetween(viewDir, moonDir)) / edge + 0.5f);
++  if (fromSun > kCoronaReach * sunRadius) {
++    return vec3(0.0f);
++  }
++
++  // Centre radiance of a limb-darkened disc that integrates to the full
++  // (uneclipsed) illuminance, reddened by the air it shines through.
++  const float kLimbDarkening = 0.6f;
++  vec3 fullIlluminance = args.sunIlluminance / max(args.sunEclipseLight, 1e-6f);
++  vec3 discRadiance = fullIlluminance * getAtmosphericTransmittanceForDir(sunDir, args)
++                    / (kPi * sunRadius * sunRadius * (1.0f - kLimbDarkening / 3.0f));
++
++  float rho = fromSun / sunRadius;
++  float inDisc = saturate((sunRadius - fromSun) / edge + 0.5f);
++  float mu = sqrt(max(1.0f - min(rho * rho, 1.0f), 0.0f));
++  vec3 light = discRadiance * (inDisc * (1.0f - kLimbDarkening * (1.0f - mu)));
++
++  // Position angle about the sun, from celestial north.
++  vec3 P, M, W;
++  getCelestialFrame(args, P, M, W);
++  vec3 north = P - sunDir * dot(P, sunDir);
++  north = (dot(north, north) > 1e-6f) ? normalize(north) : vec3(0.0f, 0.0f, 1.0f);
++  vec3 east = cross(north, sunDir);
++  vec3 offset = viewDir - sunDir * dot(viewDir, sunDir);
++  float positionAngle = atan2(dot(offset, east), dot(offset, north));
++  vec2 around = vec2(cos(positionAngle), sin(positionAngle));
++  float outside = 1.0f - inDisc;
++
++  // Corona: the steep K-corona plus a longer F-corona tail, combed into
++  // streamers along the position angle and longest about the solar equator.
++  {
++    float r = max(rho, 1.0f);
++    float profile = 0.75f * pow(r, -5.0f) + 0.25f * pow(r, -2.2f);
++    float streamers = saturate(0.6f + 1.2f * fbmNoise3D(vec3(around * 3.0f, 0.15f * r), 3, 517.0f));
++    float equator = 0.55f + 0.45f * around.y * around.y;
++    float comb = mix(1.0f, 1.6f * streamers * equator, saturate((r - 1.0f) * 0.9f));
++    float reach = 1.0f - smoothstep(0.6f * kCoronaReach, kCoronaReach, r);
++    light += vec3(1.0f, 0.97f, 0.92f) * discRadiance
++           * (args.eclipseCoronaBrightness * profile * comb * reach * outside);
++  }
++
++  // Chromosphere and prominences: a thin rose rim flaring into small arcs,
++  // seen in the moments the Moon's edge runs just inside the sun's.
++  {
++    float rim = exp(-((rho - 1.0f) * (rho - 1.0f)) / (0.012f * 0.012f));
++    float flares = smoothstep(0.1f, 0.35f, fbmNoise3D(vec3(around * 14.0f, 0.0f), 2, 731.0f));
++    float arcs = flares * exp(-max(rho - 1.0f, 0.0f) / 0.035f) * step(1.0f, rho);
++    light += vec3(1.0f, 0.28f, 0.38f) * discRadiance
++           * (args.eclipseCoronaBrightness * 40.0f * (rim + 1.5f * arcs) * outside);
++  }
++
++  // Under the weather presets' sun (illuminance 20) the disc's centre is about
++  // 4e4, and near totality the sky around it has dimmed to a few per cent.
++  // From the dark Moon to that the upscaler rang into black and red pixels
++  // along the Moon's limb (the composite before it is clean), so the brightest
++  // channel is held to 64 times the daylight that is left, keeping the hue:
++  // still white on screen, the chromosphere still rose.
++  float daylight = max(max(args.sunIlluminance.x, args.sunIlluminance.y), args.sunIlluminance.z);
++  float peak = max(max(light.x, light.y), light.z);
++  light *= min(1.0f, 64.0f * max(daylight, 1e-4f) / max(peak, 1e-6f));
++  return light * (approach * (1.0f - moonMask));
++}
++
+ // ============================================================================
+ // Sky entry point
+ // ============================================================================
+@@ -839,6 +1204,16 @@ vec3 evalSkyRadiance(
+     }
+   }
+ 
++  // Solar eclipse: sun disc, chromosphere and corona behind moon 0 (fork —
++  // 2026-10-29). Primary view only: every other path already gets the sun
++  // from its distant light, and a disc this bright in their misses would count
++  // it twice. Behind the clouds like the rest of the sky.
++  if (isPrimaryRay && (args.skyTextureFlags & SKY_TEXTURE_ECLIPSES) != 0u) {
++    float eclipseMoonMask = 0.0f;
++    radiance += evalSolarEclipse(viewDirYUp, args, eclipseMoonMask);
++    starThroughMoons *= 1.0f - eclipseMoonMask;
++  }
++
+   // Clouds render on top of everything (atmosphere + stars + moons). They
+   // occlude whatever is behind them based on their alpha.
+   //
+diff --git a/src/dxvk/shaders/rtx/pass/common_binding_indices.h b/src/dxvk/shaders/rtx/pass/common_binding_indices.h
+index fe730844..7f668326 100644
+--- a/src/dxvk/shaders/rtx/pass/common_binding_indices.h
++++ b/src/dxvk/shaders/rtx/pass/common_binding_indices.h
+@@ -126,15 +126,26 @@
+ // sky-view sampler (REPEAT-U handles the azimuth seam).
+ #define BINDING_ATMOSPHERE_CLOUD_SECONDARY_LUT 215
+ 
+-// 216: retired (legacy view-pass placement-map slot, removed 2026-07-16 — the
+-// placement map itself lives on as an NVDF-occupancy bake input, bound at the
+-// bake passes' own slots; do not reuse without a collision audit)
++// Sky textures (fork — 2026-10-29): the Moon's albedo and relief maps and the
++// night sky image's three layers (stars, galaxy, nebula), loaded from DDS files
++// beside the runtime by RtxAtmosphere::loadSkyTextures. A 1x1 stand-in is
++// bound while a file is missing; AtmosphereArgs::skyTextureFlags says which are
++// real. Sampled with the sky-view sampler (REPEAT-U wraps the longitude seam).
++// Collision audit 2026-10-29: no pass binds 216-219 or 221. 216 was retired
++// (the legacy view-pass placement-map slot, removed 2026-07-16; the placement
++// map lives on at the bake passes' own slots) and is reused here; 220 is
++// INTEGRATE_INSTRUMENTATION, which the common bindings leave alone.
++#define BINDING_ATMOSPHERE_STAR_MAP_GALAXY 216
++#define BINDING_ATMOSPHERE_MOON_ALBEDO     217
++#define BINDING_ATMOSPHERE_MOON_NORMAL     218
++#define BINDING_ATMOSPHERE_STAR_MAP        219
++#define BINDING_ATMOSPHERE_STAR_MAP_NEBULA 221
+ 
+ // Fork atmosphere/cloud bindings occupy a contiguous range ABOVE COMMON_MAX_BINDING
+ // (which only covers the base common bindings). Expose the range so passes that
+ // also bind their own resources (e.g. sparse rendering) can assert no overlap.
+ #define BINDING_ATMOSPHERE_MIN                   BINDING_ATMOSPHERE_TRANSMITTANCE_LUT
+-#define BINDING_ATMOSPHERE_MAX                   BINDING_ATMOSPHERE_CLOUD_SECONDARY_LUT
++#define BINDING_ATMOSPHERE_MAX                   BINDING_ATMOSPHERE_STAR_MAP_NEBULA
+ 
+ #define COMMON_MAX_BINDING                       BINDING_LIGHT_IDENTITY_BUFFER
+ #define COMMON_NUM_BINDINGS                      (COMMON_MAX_BINDING + 1)
+@@ -193,6 +204,11 @@
+   TEXTURE3D(BINDING_ATMOSPHERE_CLOUD_D_SUN)                         \
+   TEXTURE3D(BINDING_ATMOSPHERE_CLOUD_D_AMBIENT)                     \
+   SAMPLER(BINDING_ATMOSPHERE_SKY_VIEW_SAMPLER)                      \
+-  TEXTURE2D(BINDING_ATMOSPHERE_CLOUD_SECONDARY_LUT)
++  TEXTURE2D(BINDING_ATMOSPHERE_CLOUD_SECONDARY_LUT)                 \
++  TEXTURE2D(BINDING_ATMOSPHERE_MOON_ALBEDO)                         \
++  TEXTURE2D(BINDING_ATMOSPHERE_MOON_NORMAL)                         \
++  TEXTURE2D(BINDING_ATMOSPHERE_STAR_MAP)                            \
++  TEXTURE2D(BINDING_ATMOSPHERE_STAR_MAP_GALAXY)                     \
++  TEXTURE2D(BINDING_ATMOSPHERE_STAR_MAP_NEBULA)
+ 
+ #endif
+diff --git a/src/dxvk/shaders/rtx/pass/common_bindings.slangh b/src/dxvk/shaders/rtx/pass/common_bindings.slangh
+index 460ef098..d2f9f144 100644
+--- a/src/dxvk/shaders/rtx/pass/common_bindings.slangh
++++ b/src/dxvk/shaders/rtx/pass/common_bindings.slangh
+@@ -200,3 +200,25 @@ SamplerState AtmosphereSkyViewSampler;
+ // (REPEAT-U wraps the azimuth seam, CLAMP-V pins the horizon/zenith rows).
+ layout(binding = BINDING_ATMOSPHERE_CLOUD_SECONDARY_LUT)
+ Texture2D<float4> AtmosphereCloudSecondaryLut;
++
++// Sky textures (fork — 2026-10-29). Moon albedo (sRGB, equirectangular in
++// selenographic longitude / latitude, 0 deg longitude at u = 0.5), Moon relief
++// (two-channel tangent-space normal, same projection), and the night sky
++// image's layers in NightSky HD's layouts (gamma-space colour and alpha; see
++// evalStarMap): the tiled star sphere, the galaxy band and the nebula.
++// 1x1 stand-ins when not loaded; AtmosphereArgs::skyTextureFlags gates every
++// read. Sampled with AtmosphereSkyViewSampler.
++layout(binding = BINDING_ATMOSPHERE_MOON_ALBEDO)
++Texture2D<float4> AtmosphereMoonAlbedo;
++
++layout(binding = BINDING_ATMOSPHERE_MOON_NORMAL)
++Texture2D<float4> AtmosphereMoonNormal;
++
++layout(binding = BINDING_ATMOSPHERE_STAR_MAP)
++Texture2D<float4> AtmosphereStarMap;
++
++layout(binding = BINDING_ATMOSPHERE_STAR_MAP_GALAXY)
++Texture2D<float4> AtmosphereStarMapGalaxy;
++
++layout(binding = BINDING_ATMOSPHERE_STAR_MAP_NEBULA)
++Texture2D<float4> AtmosphereStarMapNebula;

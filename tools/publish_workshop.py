@@ -1,10 +1,12 @@
 """Keeps the project's Workshop item up to date (ADR 0016): builds the combined RTX package from the
 inputs in tools/workshop.json, and uploads it with GMod's gmpublish when its content changed.
 
-The git hooks this script installs (--install-hooks) run it in the background after every commit
-or merge on main and before every push of main, so a commit updates the item and a push updates
-GitHub and the item. A run that finds its inputs unchanged since the last upload stops at once; a run whose
-build matches the uploaded content (same digest) uploads nothing. See publish_workshop.py.md.
+The parts are built from this repository alone: packages/ holds their inputs (ADR 0033), unpacked
+into out/inputs/ before every build (tools/inputs.py). The git hooks this script installs
+(--install-hooks) run it in the background after every commit or merge on main and before every push
+of main, so a commit updates the item and a push updates GitHub and the item; they also run Git
+LFS's own hook steps. A run that finds its inputs unchanged since the last upload stops at once; a
+run whose build matches the uploaded content (same digest) uploads nothing. See publish_workshop.py.md.
 """
 from __future__ import annotations
 
@@ -46,10 +48,11 @@ def shared_state() -> Path:
 
 STATE = shared_state()
 HOOK_MARKER = '# nl-workshop-hook'
-# What goes into the item from this repository: a change here can change the package.
-REPO_INPUTS = ('companion', 'tools/package_fixes.py', 'tools/package_runtime.py', 'tools/package_workshop.py',
-               'tools/package_content.py', 'tools/package_reshade.py', 'third_party/reshade', 'tools/gmapack/gmapack.py',
-               'tools/workshop.json')
+# What goes into the item from this repository: a change here can change the package. packages/ holds
+# every part's inputs (its LFS files are pointers in git, so the tree hash covers their content).
+REPO_INPUTS = ('companion', 'packages', 'tools/inputs.py', 'tools/package_fixes.py', 'tools/package_runtime.py',
+               'tools/package_workshop.py', 'tools/package_content.py', 'tools/package_reshade.py', 'third_party/reshade',
+               'tools/gmapack/gmapack.py', 'tools/workshop.json')
 BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
             'package_content': 'tools/package_content.py', 'package_reshade': 'tools/package_reshade.py'}
 LOCK_WAIT = 2 * 60 * 60
@@ -170,12 +173,32 @@ def read_json(path: Path) -> dict | None:
         return None
 
 
-def build(config: dict, version: str, work: Path, log) -> dict:
-    """Builds the parts (runs the packagers for "build" parts) and combines them into one .gma."""
+def input_parts(config: dict) -> list[str]:
+    """The packages/ parts the config reads: every out/inputs/<part>/... path a part names."""
+    names = set()
+    for part in config['parts']:
+        for text in [part.get('package', ''), *part.get('args', [])]:
+            segments = str(text).replace('\\', '/').split('/')
+            if len(segments) > 2 and segments[0] == 'out' and segments[1] == 'inputs':
+                names.add(segments[2])
+    return sorted(names)
+
+
+def build(config: dict, version: str, work: Path, log, dest: Path | None = None) -> dict:
+    """Unpacks the packages/ parts the config reads into out/inputs/, builds the parts (runs the
+    packagers for "build" parts) and combines them into one .gma in `dest` (default: this checkout's
+    shared out/workshop). Relative paths in the config are relative to this repository."""
+    import inputs  # tools/inputs.py, beside this script
+    names = input_parts(config)
+    if names:
+        try:
+            inputs.unpack(names, log=log)
+        except inputs.InputsError as error:
+            raise PublishError(f'unpacking packages/: {error}') from None
     parts = []
     for part in config['parts']:
         if 'package' in part:
-            source = Path(part['package'])
+            source = REPO / part['package']
             if not source.exists():
                 raise PublishError(f'part {part.get("name")}: {source} does not exist')
             parts.append(source)
@@ -188,7 +211,8 @@ def build(config: dict, version: str, work: Path, log) -> dict:
             raise PublishError(f'part {part.get("name")}: {(done.stdout + done.stderr).strip()[-2000:]}')
         parts.append(folder)
     package = config['package']
-    gma = STATE / f'{package["id"]}-{version.replace("+", "_")}.gma'
+    gma = (dest or STATE) / f'{package["id"]}-{version.replace("+", "_")}.gma'
+    gma.parent.mkdir(parents=True, exist_ok=True)
     command = [sys.executable, str(REPO / 'tools' / 'package_workshop.py'), *[a for p in parts for a in ('--part', str(p))],
                '--id', package['id'], '--version', version, '--title', package['title'], '--type', package.get('type', 'tool'),
                '--description', package.get('description', ''), '--gma', str(gma), '--force', '--json']
@@ -273,8 +297,15 @@ def publish(config: dict, args, log) -> dict:
 
 # ---------------------------------------------------------------- hooks
 
+# packages/ keeps its binaries in Git LFS (ADR 0033). These hooks replace the ones `git lfs install`
+# would write, so each runs Git LFS's step first: above all pre-push, which uploads the LFS files a
+# push needs (without it GitHub would get pointers to content it does not have).
+LFS_MISSING = ('printf >&2 "\\nThis repository keeps packages/ in Git LFS, and git-lfs is not on the path.\\n'
+               'Install Git LFS (https://git-lfs.com) and run: python tools/publish_workshop.py --install-hooks\\n"')
+
 POST_COMMIT = f"""#!/bin/sh
 {HOOK_MARKER}: a commit on main updates the Workshop item in the background (tools/publish_workshop.py).
+command -v git-lfs >/dev/null 2>&1 && git lfs post-commit "$@"
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
 python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --reason "commit $(git rev-parse --short HEAD)" || true
 exit 0
@@ -282,14 +313,27 @@ exit 0
 
 POST_MERGE = f"""#!/bin/sh
 {HOOK_MARKER}: a merge into main (how milestone branches land) updates the Workshop item too.
+command -v git-lfs >/dev/null 2>&1 && git lfs post-merge "$@"
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
 python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --reason "merge $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
+POST_CHECKOUT = f"""#!/bin/sh
+{HOOK_MARKER}: Git LFS's post-checkout step (packages/ keeps its binaries in Git LFS).
+command -v git-lfs >/dev/null 2>&1 || exit 0
+git lfs post-checkout "$@"
+"""
+
 PRE_PUSH = f"""#!/bin/sh
 {HOOK_MARKER}: a push of main also brings the Workshop item up to date, in the background.
-while read local_ref local_sha remote_ref remote_sha; do
+# Git LFS uploads the large files of packages/ first; without git-lfs the push stops.
+command -v git-lfs >/dev/null 2>&1 || {{ {LFS_MISSING}; exit 2; }}
+refs=$(cat)
+if [ -n "$refs" ]; then
+  printf '%s\\n' "$refs" | git lfs pre-push "$@" || exit $?
+fi
+printf '%s\\n' "$refs" | while read local_ref local_sha remote_ref remote_sha; do
   if [ "$remote_ref" = "refs/heads/main" ]; then
     python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --reason "push $(git rev-parse --short "$local_sha")" || true
   fi
@@ -298,7 +342,7 @@ exit 0
 """
 
 
-HOOKS = (('post-commit', POST_COMMIT), ('post-merge', POST_MERGE), ('pre-push', PRE_PUSH))
+HOOKS = (('post-commit', POST_COMMIT), ('post-merge', POST_MERGE), ('post-checkout', POST_CHECKOUT), ('pre-push', PRE_PUSH))
 
 
 def hooks_folder(repo: Path = REPO) -> Path:
@@ -329,41 +373,10 @@ def uninstall_hooks(repo: Path = REPO, hooks=HOOKS) -> list[str]:
     return removed
 
 
-def main_checkout(repo: Path = REPO) -> Path:
-    """The main checkout of this repository: the folder of its common .git, whichever worktree runs this."""
-    common = Path(git('rev-parse', '--git-common-dir', cwd=repo))
-    return (common if common.is_absolute() else repo / common).resolve().parent
-
-
-def source_hooks(source: Path, script: Path, any_branch: bool = False) -> tuple:
-    """Hooks for the git repository of an add-on that a part is built from (ADR 0024): a commit or a
-    merge on its main branch (or, with any_branch, on any branch: for repositories whose builds reach
-    the classic install from feature-branch worktrees) runs this repository's publish script, which
-    rebuilds the parts and uploads only if the item's content changed."""
-    def text(what: str) -> str:
-        where = 'any branch' if any_branch else 'main'
-        return (f'#!/bin/sh\n{HOOK_MARKER}: a {what} on {where} of this repository also updates the RTX package\'s Workshop item,\n'
-                f'# whose parts are rebuilt from what it delivers ({script.as_posix()}).\n' +
-                ('' if any_branch else '[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0\n') +
-                f'python "{script.as_posix()}" --background --reason "{source.name} {what} $(git rev-parse --short HEAD)" || true\n'
-                'exit 0\n')
-    return (('post-commit', text('commit')), ('post-merge', text('merge')))
-
-
-def install_source_hooks(source: Path, force: bool, repo: Path = REPO, any_branch: bool = False) -> list[str]:
-    script = main_checkout(repo) / 'tools' / 'publish_workshop.py'
-    folder = hooks_folder(source)
-    folder.mkdir(parents=True, exist_ok=True)
-    hooks = source_hooks(source.resolve(), script, any_branch)
-    for name, _ in hooks:  # check every hook before writing any
-        target = folder / name
-        if target.exists() and HOOK_MARKER not in target.read_text(encoding='utf-8', errors='replace') and not force:
-            raise PublishError(f'{target} exists and is not ours; --force-hooks replaces it')
-    written = []
-    for name, text in hooks:
-        (folder / name).write_bytes(text.encode('utf-8'))  # LF line endings: git runs hooks with sh
-        written.append(str(folder / name))
-    return written
+# Until ADR 0033 the parts were built from the add-ons' own repositories, and these hooks in them
+# (ADR 0024) republished the item after their commits. The parts now live in packages/; only the
+# removal remains (--uninstall-source-hooks), and it removes only hooks with HOOK_MARKER.
+SOURCE_HOOK_NAMES = ('post-commit', 'post-merge')
 
 
 # ---------------------------------------------------------------- main
@@ -379,13 +392,8 @@ def main(argv=None) -> int:
     parser.add_argument('--install-hooks', action='store_true', help='install the post-commit and pre-push hooks, then stop')
     parser.add_argument('--uninstall-hooks', action='store_true', help='remove this script\'s hooks, then stop')
     parser.add_argument('--force-hooks', action='store_true', help='with --install-hooks: replace hooks that are not ours')
-    parser.add_argument('--install-source-hooks', action='append', default=[], type=Path, metavar='REPO',
-                        help='install hooks in the git repository of an add-on a part is built from: a commit or merge on its '
-                             'main runs this script (repeatable), then stop')
     parser.add_argument('--uninstall-source-hooks', action='append', default=[], type=Path, metavar='REPO',
-                        help='remove this script\'s hooks from such a repository (repeatable), then stop')
-    parser.add_argument('--any-branch', action='store_true',
-                        help='with --install-source-hooks: publish after commits on any branch, not only main')
+                        help='remove the hooks ADR 0024 put in an add-on\'s git repository (repeatable), then stop')
     args = parser.parse_args(argv)
     try:
         if args.install_hooks:
@@ -394,11 +402,10 @@ def main(argv=None) -> int:
         if args.uninstall_hooks:
             print('\n'.join(uninstall_hooks()) or 'no hooks of ours')
             return 0
-        if args.install_source_hooks or args.uninstall_source_hooks:
-            for source in args.install_source_hooks:
-                print('\n'.join(install_source_hooks(source, args.force_hooks, any_branch=args.any_branch)))
+        if args.uninstall_source_hooks:
             for source in args.uninstall_source_hooks:
-                print('\n'.join(uninstall_hooks(source, source_hooks(source, Path('x')))) or f'no hooks of ours in {source}')
+                removed = uninstall_hooks(source, [(name, None) for name in SOURCE_HOOK_NAMES])
+                print('\n'.join(removed) or f'no hooks of ours in {source}')
             return 0
         logs = STATE / 'logs'
         logs.mkdir(parents=True, exist_ok=True)

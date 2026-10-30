@@ -28,14 +28,19 @@ Facts about the machine this project is developed on, as of 2026-10-27. Update t
 | VS 2022 Build Tools | `C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools`, MSVC 14.44 (cl 19.44), Windows SDK 10.0.26100.0. `vswhere` lists no instance, so [`tools/lib/VsDevEnv.psm1`](../tools/lib/VsDevEnv.psm1.md) probes the folder |
 | CMake / Ninja | Bundled with Build Tools: CMake 3.31.6, Ninja 1.12.1 (not on `PATH` outside the dev environment) |
 | Python | 3.12 with `pefile`; tests need only the standard library |
-| Other | git 2.56, GitHub CLI, .NET SDK, meson. Not installed: 7-Zip, Node, SteamCMD, DepotDownloader |
+| Other | git 2.56 with Git LFS 3.8 (its filters set in the system and user git config), GitHub CLI, .NET SDK, meson. Not installed: 7-Zip, Node, SteamCMD, DepotDownloader |
 | Windows Defender | During M1 it blocked proxy builds and test hosts placed outside this repo folder (a sibling worktree, the system temp folder). Inside the repo's `out\` they run, so every build, worktree and test scratch file lives there (AGENTS.md rule 9) |
 
 ## Related local checkouts (`H:\BACKUP_20260815\Modding\`)
 
+None of these is needed to build the loader or the RTX package: what ships from them is in
+`packages/` ([ADR 0033](decisions/0033-one-repository-package-inputs-in-git-lfs.md)). A part's new
+version is imported from them by hand ([packages/README.md](../packages/README.md)).
+
 | Folder | What |
 |---|---|
-| `dxvk-remix-gmod` | The user's Remix runtime fork (branch `gmod-1.6.1`) |
-| `garrys-mod-rtx-remixed` | The user's fork of the RTX fixes (GPL-2.0) |
+| `dxvk-remix-gmod` | The Remix runtime fork (`sambow23/dxvk-remix-gmod`; its own checkout is on `gmod-1.6.1` with someone's uncommitted work: leave it alone). This project's changes are [runtime/patches](../runtime/README.md) on `gmod-numos3` `c6b48ed1`; its worktree `.claude\worktrees\remix-i18n` (branch `claude/sky-night`) is them applied, with the Release build in `_CompRelease_x64` |
+| `garrys-mod-rtx-remixed` | The user's fork of the RTX fixes (GPL-2.0), the source of `packages/fixes` |
+| `ipg\` | The user's add-ons, sources of six parts: `!GMHLVK\Gmod-Model-Hotloader-with-Vulkan`, `!advanced_material_editor`, `!advanced_bodygroup_tool`, `!gmod_bullet_break_simulator`, `Gmod-Mmd-Motion-Importer`, `Remove_halo` |
 | `RTXLauncher` | The user's fork of the launcher this project replaces |
 | `!Gmod-Workshop-RTX-Remix` | Plain clone of this repo's `origin` (only the initial commit) |

@@ -1,0 +1,381 @@
+{
+ "schema": 1,
+ "part": "advanced-material-editor",
+ "origins": {
+  "!advanced_material_editor": {
+   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_material_editor",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/ipg/!advanced_material_editor",
+    "remote": "https://github.com/SheepyLord/-advanced_material_editor.git",
+    "commit": "05435bd397b3ff8c1a76517eb6c6f3fa8b9da4d1",
+    "dirty": false
+   },
+   "imported": "2026-10-30T00:42:45+00:00"
+  },
+  "bin": {
+   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin",
+   "git": null,
+   "imported": "2026-10-30T00:42:45+00:00"
+  }
+ },
+ "files": {
+  "!advanced_material_editor/addon.json": {
+   "size": 301,
+   "sha256": "9dd949a7700f0abc6cf6a391bc03c51ae41fede60a7dab05761f125532aeaa69",
+   "mtime_ns": 1788052150647572700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_05_i18n.lua": {
+   "size": 408722,
+   "sha256": "4dd1fcf4ea43f8fdc30828872f9459ce82bfb4fd585c6d88845fe49c2e388f86",
+   "mtime_ns": 1793058788412535600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_19_help_i18n.lua": {
+   "size": 110563,
+   "sha256": "18d8a8c2573ce55dd65badc5d753e97c8b18eebf0b4eaf24e03106e12026f23c",
+   "mtime_ns": 1788132025735100700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_20_help.lua": {
+   "size": 25252,
+   "sha256": "591aca535fed468de4080aa8d6d5a9a3f4f6f9b7dc51d44ab4a8345f90472592",
+   "mtime_ns": 1788131473189124600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_23_backend.lua": {
+   "size": 7598,
+   "sha256": "9fb5e6092ebfa7e607e0f1a67037cb48d94bb40a4935e226677dcc3a1afabee5",
+   "mtime_ns": 1788044231985969400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_27_rtx_bridge.lua": {
+   "size": 53163,
+   "sha256": "846c2044c5078649622932da76968df5843951c762b27489840d17440704351a",
+   "mtime_ns": 1793058788413535700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_28_rtx_enhance.lua": {
+   "size": 86413,
+   "sha256": "258c322eaa35d75b61b86b9aed80e2b09bb8098028680c6a5cefc4fd6e31f3f4",
+   "mtime_ns": 1793058788413535700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_29_rtx_normals.lua": {
+   "size": 45472,
+   "sha256": "002ccd5d0d3079d217f6fa45f2ed5c36c49addbe4094d34070659d9ef60e6b7c",
+   "mtime_ns": 1793058788414535400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_30_theme.lua": {
+   "size": 14767,
+   "sha256": "72f994420ab82c722d7f4bb05df68a48802618b60aabf8607f0814c79e77dbd7",
+   "mtime_ns": 1788512364778789000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_31_windowux.lua": {
+   "size": 46919,
+   "sha256": "0066f640c30cdb3ad94af58250f420cb09ca5b094a8a21034c72ad0d37381751",
+   "mtime_ns": 1791849141890082700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_40_store.lua": {
+   "size": 25424,
+   "sha256": "643cc93c09e023762d531fb09e90d1286235c493c303659fc715a5b73049fb20",
+   "mtime_ns": 1791849141890082700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_41_rtx_store.lua": {
+   "size": 56029,
+   "sha256": "d7a4606c335c9cea637ab1016629d0e90dfc023df81609acfadce66637bd57c4",
+   "mtime_ns": 1789869213658859300,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_50_apply.lua": {
+   "size": 34917,
+   "sha256": "960bc5fc6eb89c245111955272ffc87eb7228091a68e67cd2584323a15781fd2",
+   "mtime_ns": 1791849141890082700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_55_normalgen.lua": {
+   "size": 67829,
+   "sha256": "1283cba5f48893c0ed8de120da6dd9dca372f2bbaaafe63cce7e3d35478c4cf6",
+   "mtime_ns": 1792894409704722400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_56_texops.lua": {
+   "size": 94285,
+   "sha256": "4ede0c789237f308f1805ec660a0b30a3dc491f2c56487e1d092e70f416a2e3e",
+   "mtime_ns": 1791849141891082400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_57_surfacegen.lua": {
+   "size": 11335,
+   "sha256": "153dfa94f0e78604543588dd2788eebd23d0a9544958d2b9ec6b462801623e22",
+   "mtime_ns": 1791849141892082600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_58_meshuv.lua": {
+   "size": 31438,
+   "sha256": "8ac4dbfa77cafc7c5b9891cc51b9fd45b0bce32cde0dcf04e469de8c1e7ba38b",
+   "mtime_ns": 1789964738177882800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_59_assets.lua": {
+   "size": 31595,
+   "sha256": "06a2cefeb5d582fbb35c78b1608759099397605860f6a91ad59f15952f9f8594",
+   "mtime_ns": 1793058788414535400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_60_texpicker.lua": {
+   "size": 18800,
+   "sha256": "e489c3c9a63ba2629fb4930a90be8482e574dcb4b62dde5dc27f28de3843e6ac",
+   "mtime_ns": 1788512258103240200,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_61_import.lua": {
+   "size": 36159,
+   "sha256": "d81b4d814958dc98d71d9a532269ad39a34279da86b951e3dcd3c132fcc9bfc9",
+   "mtime_ns": 1793058788414535400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_65_rows.lua": {
+   "size": 37252,
+   "sha256": "566cbe65e5ce0e0d6f150d784dfeec42305a89492d40dbe793c992c87e988f2f",
+   "mtime_ns": 1792894410398167800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_67_gendialog.lua": {
+   "size": 21741,
+   "sha256": "532d63011ed8922f2959a4bd0bfffdb28e99481800869de870cb51c873319c5b",
+   "mtime_ns": 1788512258104241000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_68_surfacedialog.lua": {
+   "size": 24169,
+   "sha256": "07d38787c61195ead33fa51a7a21ac34d04203afe96ababca1f0a89a31600f5e",
+   "mtime_ns": 1788512258104241000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_70_ui.lua": {
+   "size": 72681,
+   "sha256": "133cd057881f3a8a14e541a39f685f8294678b42ea6b383b7531507a47c818b2",
+   "mtime_ns": 1792819802265826200,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_71_rtx_source.lua": {
+   "size": 65794,
+   "sha256": "a04ddd947230964575dd9be0f98056c6f9312b0b806e29896aeca6aab98daffa",
+   "mtime_ns": 1792819808776013800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_72_canvas.lua": {
+   "size": 76376,
+   "sha256": "4ffa84b4e0d67a6cd1139e5309cc6ae5a7cdb61044caa9c63372095c49e41fad",
+   "mtime_ns": 1791395271979153400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_73_modelview.lua": {
+   "size": 28138,
+   "sha256": "2952079e2954b20c042f7265147c6cc4eb4c81b6e055c690dd68dc3aab614f00",
+   "mtime_ns": 1791849141940773800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_74_texeditor.lua": {
+   "size": 216661,
+   "sha256": "d544c9e216c8512f2d2bf41194c8d30d1ce7161790520d37429ab927e39c887b",
+   "mtime_ns": 1792894411627629300,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_75_rtx_nodes.lua": {
+   "size": 27039,
+   "sha256": "a7f9182af8a7e96afc32cb90ce05431fd51f6ca4ab877e38cf3be4087c3e33cd",
+   "mtime_ns": 1791849141894084300,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_76_rtx_editor.lua": {
+   "size": 125666,
+   "sha256": "54c0bcb57eaf371f3e3ed1c5acb35bb1dae48f814f11b4199ab5c4782110b043",
+   "mtime_ns": 1793058788415535900,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_78_vmtexport.lua": {
+   "size": 15773,
+   "sha256": "40089ef42da80a57366f071cf6dcfab8b72c9332e2d3304ce10b27047a755fa5",
+   "mtime_ns": 1788512258105348000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_80_browser.lua": {
+   "size": 8740,
+   "sha256": "31b853637deebd58c5b6c11fd8e4fe9b8c316df40979394f947a5ba8d40e0115",
+   "mtime_ns": 1788512258105348000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_88_dispatch.lua": {
+   "size": 3386,
+   "sha256": "756177859d062ad88601b793e24b8f0f1481c88ad6cf85f6d8e07db1a6e12b8f",
+   "mtime_ns": 1788511444011671000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/cl_90_probe.lua": {
+   "size": 47520,
+   "sha256": "62ffa04c212283ae98de565f834660a36107ed00c54cfd013d959bd28e26f970",
+   "mtime_ns": 1788506616453224500,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_00_config.lua": {
+   "size": 5859,
+   "sha256": "ae5f0858639d6fc1c138224266d6f416b579a2768dc9ef5f2df6f2d077b144ec",
+   "mtime_ns": 1787675062194560500,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_10_util.lua": {
+   "size": 14972,
+   "sha256": "f89977f7142fe57629dd36a5d5e716766dcef3d4908c2162b5dab615d45f4035",
+   "mtime_ns": 1791849141895082700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_15_mmd.lua": {
+   "size": 1619,
+   "sha256": "0030a15cfdfb9450f52b9e5bf58e4426b0402aa63d6dcc8b1d2b673045580fc4",
+   "mtime_ns": 1791235660688501900,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_20_net.lua": {
+   "size": 9479,
+   "sha256": "112211e878215df43d1dc78e018c748e80d7df80c87fa8d8271c763f9db6352f",
+   "mtime_ns": 1791849141895082700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_25_vmt.lua": {
+   "size": 6794,
+   "sha256": "9f89220f611c6cefc021079c5fe1e082193d17a7c14c38b9824c453d3f1d50df",
+   "mtime_ns": 1788506369301897000,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_30_shaderdb.lua": {
+   "size": 33095,
+   "sha256": "d14bda5f9f25085e8cc078f74fd239c9e9f4aa12b55b91b85016beefcaa2b36e",
+   "mtime_ns": 1787505824341016600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_31_shaderdb_ext.lua": {
+   "size": 53853,
+   "sha256": "407a7a2a1ac8cff2b27172219cce13c1f3650ed73ca5d53c471bbaaac1320a1a",
+   "mtime_ns": 1787430332282716900,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_35_matname.lua": {
+   "size": 10993,
+   "sha256": "74e38e49570e32aa819431035dd7c3d92aab3ed98f78e63d1a4e2911d2b08e72",
+   "mtime_ns": 1791849141895082700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_36_rtx_schema.lua": {
+   "size": 80948,
+   "sha256": "3a5c2275a7fb386c23786d320ae9f2c07dd9105b63a39cc9fb4e5c6f3e52b74b",
+   "mtime_ns": 1793058788416536200,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_40_gen.lua": {
+   "size": 21018,
+   "sha256": "580415da4a0c304138413c00fa772adea2d78429d3574155025ba849ce0c6ae8",
+   "mtime_ns": 1791849141896299600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_41_sel.lua": {
+   "size": 17785,
+   "sha256": "3e83ff14c740c35514c0968fc2e3a00116599ca27826a38d682d07ecf2b0a83b",
+   "mtime_ns": 1791395271980152900,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_42_gen_normal.lua": {
+   "size": 8296,
+   "sha256": "0107deb31aee526821b91f6979560dd391d9731e36d58f402dac98bcb80fdea7",
+   "mtime_ns": 1788064063886528400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_43_texedit.lua": {
+   "size": 28535,
+   "sha256": "4880bb137677b07505ae4ac4dd23be80537175825c79bdba86c161b498095d3e",
+   "mtime_ns": 1791395271980652800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_44_gen_surface.lua": {
+   "size": 11953,
+   "sha256": "db393d57c261392b796bb785f91b6323c8a791f6b4b5db3e76d7faa653ec5f37",
+   "mtime_ns": 1788033390821616400,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_45_assets.lua": {
+   "size": 8181,
+   "sha256": "97ea39f128edfb81963bf46ba659b39bbdaf601c2b80392bfe3d5ae20c98b18c",
+   "mtime_ns": 1788312256578577300,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sh_50_finalise.lua": {
+   "size": 1277,
+   "sha256": "7c9b831bc924e62c1167adf6309f8826f3a939d07620ebbf45ba00a8a73ae991",
+   "mtime_ns": 1787455399135521700,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sv_29_assets.lua": {
+   "size": 24725,
+   "sha256": "5814d845c2bb7a13afc0e0c04b52dcf7745a9e694eef16065235732010c71cd0",
+   "mtime_ns": 1791849141896299600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sv_30_store.lua": {
+   "size": 39114,
+   "sha256": "c08baf75da9c1ebe8378887c65996168ee2811696f344ff19db0d57898ae050d",
+   "mtime_ns": 1791849141896299600,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sv_31_rtx_store.lua": {
+   "size": 50714,
+   "sha256": "b23bb250d0a24f84ffb1b5465e0ad9f0de3805cf1ed5afe9b95c3e983c14c399",
+   "mtime_ns": 1791849141897300100,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sv_32_rtx_tool.lua": {
+   "size": 3905,
+   "sha256": "4229e48d52924be076ef264840d9bb13dce5361e205a96a26de2983e5420641c",
+   "mtime_ns": 1789964738175882800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/advmat/sv_40_apply.lua": {
+   "size": 6497,
+   "sha256": "e04e7cf52dc045e9a92da901687d692ebdd82f6d7d5b28f30af9c9d64ba10169",
+   "mtime_ns": 1789964738175882800,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/autorun/advmat_loader.lua": {
+   "size": 1410,
+   "sha256": "79173f70f7633cd205cc0da7211f728a34a155cde1bbc95cf67bc0816f848531",
+   "mtime_ns": 1787426173661522300,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/lua/weapons/gmod_tool/stools/advmateditor.lua": {
+   "size": 12381,
+   "sha256": "ba75816c5fa13dbd39d482cc1c6f294666be97cceb160c2c293169d0640c70fc",
+   "mtime_ns": 1789964738174882500,
+   "stored": "plain"
+  },
+  "!advanced_material_editor/materials/advmat/shift.png": {
+   "size": 591,
+   "sha256": "d5531d47795cfb5cd46db6fb05e7a569751d6d00cc7f3bff4453d1349d8312ac",
+   "mtime_ns": 1787455508606783500,
+   "stored": "xz",
+   "stored_size": 652,
+   "stored_sha256": "867690980294c9e121e91af761ba0c46137631be377a22b48ea4b09c4e7e33e8"
+  },
+  "bin/gmcl_advmat_rtx_bridge_win64.dll": {
+   "size": 316416,
+   "sha256": "aeb5de42edcf537e517d713100f455eeaa3916f8f148e41ce5266732d3cf87ff",
+   "mtime_ns": 1793047180072642900,
+   "stored": "xz",
+   "stored_size": 114424,
+   "stored_sha256": "3f32ff370e566c41bb20e8ab80e672d62c71f2b418686cfd78f3306800ac6696"
+  }
+ }
+}

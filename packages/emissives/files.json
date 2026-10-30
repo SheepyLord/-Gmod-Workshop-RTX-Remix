@@ -1,0 +1,26 @@
+{
+ "schema": 1,
+ "part": "emissives",
+ "origins": {
+  "emissives.gma": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\round3\\emissives.gma",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "bbab69e83f237a1a1387c58a3169f90680cc7a15",
+    "dirty": false
+   },
+   "imported": "2026-10-30T00:42:52+00:00"
+  }
+ },
+ "files": {
+  "emissives.gma": {
+   "size": 3808833,
+   "sha256": "9e72ff943e6fd72c51060227af4de59bfd828d97c1c1e75cf9dc982ee9b4f6fa",
+   "mtime_ns": 1793244472442657300,
+   "stored": "xz",
+   "stored_size": 122760,
+   "stored_sha256": "74005c90ea3cbcee7d5952b3466e4fb0b7842c8427212a5504c7169fd9b8f235"
+  }
+ }
+}

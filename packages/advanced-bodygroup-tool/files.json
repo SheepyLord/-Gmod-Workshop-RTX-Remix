@@ -1,0 +1,49 @@
+{
+ "schema": 1,
+ "part": "advanced-bodygroup-tool",
+ "origins": {
+  "!advanced_bodygroup_tool": {
+   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_bodygroup_tool",
+   "git": null,
+   "imported": "2026-10-30T00:42:45+00:00"
+  }
+ },
+ "files": {
+  "!advanced_bodygroup_tool/addon.json": {
+   "size": 150,
+   "sha256": "686e50dd9667b30f161a44ad8126980e6379edfe0fcf3ce538a74c875e0d0b15",
+   "mtime_ns": 1787676556574680000,
+   "stored": "plain"
+  },
+  "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_i18n.lua": {
+   "size": 54586,
+   "sha256": "b87b06d70fcb68f75c296954f2c60d8d16c2597c5a41252ddbf4af49ac9c2d01",
+   "mtime_ns": 1788378168046537000,
+   "stored": "plain"
+  },
+  "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_uv_hide.lua": {
+   "size": 56361,
+   "sha256": "9cf8c4ede2c58eaebc93d0c02342701d5c1097b4f6a9093e7c95498689b325bc",
+   "mtime_ns": 1788378312409885200,
+   "stored": "plain"
+  },
+  "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_vertex_keep_editor.lua": {
+   "size": 47332,
+   "sha256": "606b9ddeb984edf6c3f4f29babb22dcc00f409eb9aa91a7c23ab7a1e43069672",
+   "mtime_ns": 1788392358877568400,
+   "stored": "plain"
+  },
+  "!advanced_bodygroup_tool/lua/autorun/advanced_bodygroup_tool.lua": {
+   "size": 33400,
+   "sha256": "7e2ff2ec53751d5eec8896479cfd751c82af82c68dfbbc14e11d44ca8801c7a0",
+   "mtime_ns": 1788378083378147900,
+   "stored": "plain"
+  },
+  "!advanced_bodygroup_tool/lua/weapons/gmod_tool/stools/advanced_bodygroup.lua": {
+   "size": 20295,
+   "sha256": "6b74d296013664f1c5ef99150f4563e4ef3c738116eb1ae23d327359939d5b66",
+   "mtime_ns": 1787977004896242900,
+   "stored": "plain"
+  }
+ }
+}

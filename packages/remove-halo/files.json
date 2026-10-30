@@ -1,0 +1,19 @@
+{
+ "schema": 1,
+ "part": "remove-halo",
+ "origins": {
+  "Remove_halo": {
+   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\Remove_halo",
+   "git": null,
+   "imported": "2026-10-30T00:42:42+00:00"
+  }
+ },
+ "files": {
+  "Remove_halo/lua/autorun/client/removehalo.lua": {
+   "size": 27,
+   "sha256": "ce6b80ab70119c3fef1e9664dd4d989e155dcddce226d39ec145348f0ada69e2",
+   "mtime_ns": 1793244516252390200,
+   "stored": "plain"
+  }
+ }
+}

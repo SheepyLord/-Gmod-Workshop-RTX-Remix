@@ -1,0 +1,97 @@
+# Builds the combined RTX package (what Workshop item 3829070317 carries) from this repository alone
+# (ADR 0033): packages/ from Git LFS, unpacked and checked, every part built, combined and checked with
+# the nlctl.exe built here. It uploads nothing to the Workshop (tools/publish_workshop.py does that on
+# the developer's machine, which has Steam).
+#
+# Git LFS downloads count against the owner's monthly LFS bandwidth (10 GiB on GitHub Free and Pro):
+# the LFS objects are cached between runs, so a run downloads only objects it has not seen. The
+# 1.8 GB .gma is kept as an artifact only when asked for (artifact storage counts against Actions
+# storage); the package's summary always is.
+name: Build the RTX package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'companion/**'
+      - 'third_party/reshade/**'
+      - 'tools/inputs.py'
+      - 'tools/build_package.py'
+      - 'tools/publish_workshop.py'
+      - 'tools/package_*.py'
+      - 'tools/companion_i18n.py'
+      - 'tools/gmapack/**'
+      - 'tools/workshop.json'
+      - '.github/workflows/package.yml'
+  workflow_dispatch:
+    inputs:
+      keep_package:
+        description: 'Keep the .gma as an artifact (about 1.8 GB of Actions storage, 3 days)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: false
+
+      - name: Git LFS objects this commit needs
+        shell: pwsh
+        run: git lfs ls-files --long | Sort-Object | Set-Content -Encoding utf8 .lfs-objects.txt
+
+      - name: Cached Git LFS objects
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs/objects
+          key: lfs-${{ hashFiles('.lfs-objects.txt') }}
+          restore-keys: lfs-
+
+      - name: Git LFS content (only objects the cache lacks are downloaded)
+        run: git lfs pull
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: packages/ against its indexes
+        run: python tools/inputs.py verify
+
+      - name: Release build of the loader (nlctl.exe checks the parts)
+        shell: pwsh
+        run: ./tools/build.ps1 -Config Release -NoTests
+
+      - name: The RTX package (tools/build_package.py)
+        shell: pwsh
+        run: |
+          python tools/build_package.py --require-nlctl --out out/dist --json | Set-Content -Encoding utf8 out/package-summary.json
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Get-Content out/package-summary.json
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: rtx-package-summary
+          path: |
+            out/package-summary.json
+            out/dist/*.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v6
+        if: ${{ inputs.keep_package }}
+        with:
+          name: rtx-package
+          path: out/dist/*.gma
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: error

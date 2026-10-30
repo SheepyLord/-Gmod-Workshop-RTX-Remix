@@ -6,6 +6,33 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Changed (one repository builds everything: the package's inputs in Git LFS)
+
+- **This repository alone builds the RTX package**
+  ([ADR 0033](docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)). Every input of its ten
+  parts now lives in [`packages/`](packages/README.md): text as it is, binaries xz-compressed in Git LFS
+  (1.8 GB stored in 0.6 GB), each part indexed with sizes, SHA-256s, times and where it came from.
+  `tools/workshop.json` names only paths in this repository. The first build from `packages/` gave the
+  published package byte for byte, so the item did not change.
+  - **New tools:** [`tools/inputs.py`](tools/inputs.py.md) (import from a packager's inventory,
+    unpack into `out\inputs`, verify, also against LFS pointers) and
+    [`tools/build_package.py`](tools/build_package.py.md) (the package into `out\dist`, optionally
+    compared with the item's upload). `tools\workflow.ps1 -Package` runs it after the Release checks.
+  - **CI:** [`.github/workflows/package.yml`](.github/workflows/package.yml) builds the package from
+    `packages/` on changes to its inputs and by hand, with the LFS objects cached between runs.
+  - **The runtime fork's changes are [`runtime/patches`](runtime/README.md)**, four `format-patch` files
+    against the fork commit in `runtime/base.json` (the snapshot, the translated menus, the glossaries,
+    the sky). [`runtime/build_runtime.ps1`](runtime/build_runtime.ps1.md) applies them in a fork
+    worktree, builds twice and imports `d3d9.dll`; nothing is pushed to the fork any more.
+  - **The sky texture tools** moved from scratch into [`tools/sky`](tools/sky/make_moon_textures.py.md).
+  - **No more hooks in other repositories:** the ones ADR 0024 put in the five add-ons' repositories
+    were removed and `--install-source-hooks` is gone. An add-on's new version reaches the item by an
+    import here.
+  - **The hooks run Git LFS's steps** (`pre-push` uploads the LFS files first and refuses a push
+    without git-lfs). Reinstall them in every clone: `python tools\publish_workshop.py --install-hooks`.
+  - AGENTS.md rules 6 and 7 changed with it: binaries only in `packages/`, through the import; the RTX
+    fixes vendored unmodified with their GPL-2.0 licence.
+
 ### Added (the real Moon and night sky, eclipses, fog presets; runtime-b6)
 
 - **The real Moon, the real night sky, and lunar and solar eclipses**

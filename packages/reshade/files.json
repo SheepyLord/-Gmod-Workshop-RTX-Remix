@@ -1,0 +1,26 @@
+{
+ "schema": 1,
+ "part": "reshade",
+ "origins": {
+  "ReShade_Setup_6.8.0.exe": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\reshade\\ReShade_Setup_6.8.0.exe",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "bbab69e83f237a1a1387c58a3169f90680cc7a15",
+    "dirty": false
+   },
+   "imported": "2026-10-30T00:42:51+00:00"
+  }
+ },
+ "files": {
+  "ReShade_Setup_6.8.0.exe": {
+   "size": 4075064,
+   "sha256": "207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4",
+   "mtime_ns": 1793266796556707600,
+   "stored": "xz",
+   "stored_size": 3972392,
+   "stored_sha256": "a859f900a0bba619dc415aa348a574d6005b74101cef8368fad589b80f20c178"
+  }
+ }
+}

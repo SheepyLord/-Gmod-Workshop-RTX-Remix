@@ -1,0 +1,763 @@
+{
+ "schema": 1,
+ "part": "model-hotloader",
+ "origins": {
+  "mmd_hotloader": {
+   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\addons\\mmd_hotloader",
+   "git": null,
+   "imported": "2026-10-30T00:42:44+00:00"
+  },
+  "overrides": {
+   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!GMHLVK\\Gmod-Model-Hotloader-with-Vulkan\\addon\\lua\\mmdhl",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/ipg/!GMHLVK/Gmod-Model-Hotloader-with-Vulkan",
+    "remote": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan.git",
+    "commit": "bed458295f6e9a88048a5466e2b84d5cd10b7c78",
+    "dirty": true
+   },
+   "imported": "2026-10-30T00:42:44+00:00"
+  },
+  "bin": {
+   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin",
+   "git": null,
+   "imported": "2026-10-30T00:42:44+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/installation.lua": {
+   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\addons\\mmd_hotloader\\lua\\mmdhl\\installation.lua",
+   "git": null,
+   "imported": "2026-10-30T00:42:44+00:00"
+  }
+ },
+ "files": {
+  "bin/gmcl_mmdhl_win64.dll": {
+   "size": 2843648,
+   "sha256": "c1a681384be7062eb98e439d08882e55d7cb84b10ecd17e6d1dcdcfc05af49d8",
+   "mtime_ns": 1793056870697198200,
+   "stored": "xz",
+   "stored_size": 911672,
+   "stored_sha256": "aa99c6c8b2c21b35c7ff94e03add4733b97ce0f1de67b83afb3ccc9d3427aea5"
+  },
+  "bin/gmsv_mmdhl_win64.dll": {
+   "size": 1862144,
+   "sha256": "2b1f92cfd3f5b6251050698ddc1c9416c83621325fece57a99dca8b74aa281c0",
+   "mtime_ns": 1793056870202538900,
+   "stored": "xz",
+   "stored_size": 604596,
+   "stored_sha256": "cbf28e4b3e55b1947e44dac170010879626dffe20548ba445b5614d1bd298dcb"
+  },
+  "bin/lib_coacd.dll": {
+   "size": 6169600,
+   "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806",
+   "mtime_ns": 1792921436665947000,
+   "stored": "xz",
+   "stored_size": 983276,
+   "stored_sha256": "56558f75909cc82ccfcb4c34fda2dde1d8a371048d6a65c49e9a5b77ae09955a"
+  },
+  "bin/mmdhl-native-release.json": {
+   "size": 1085,
+   "sha256": "11f2c741c367e0a62c4d3acfdb22409392c70337d4f4740a00f2506226090245",
+   "mtime_ns": 1793057042172238100,
+   "stored": "plain"
+  },
+  "bin/mmdhl_runtime_win64.dll": {
+   "size": 10736128,
+   "sha256": "351a70687abaace51cf5ca60b3bb8f48cad6cb1e2d5b9def74a9d624a06a0bed",
+   "mtime_ns": 1793055605888898400,
+   "stored": "xz",
+   "stored_size": 3376136,
+   "stored_sha256": "f350b6443218befa447150d03a3f722c09b1bd4d4497b6d6d5e431f893f4a1ea"
+  },
+  "bin/mmdhl_worker.exe": {
+   "size": 4148224,
+   "sha256": "808a5c109b379ff2b519eef79f986e69b296e09771ca28279f342f29558f222e",
+   "mtime_ns": 1793056876583968800,
+   "stored": "xz",
+   "stored_size": 1270052,
+   "stored_sha256": "b73a2086f5862731a69d1312b885503acaaa9533ee249f12f2a74c661f68d2f5"
+  },
+  "mmd_hotloader/addon.json": {
+   "size": 94,
+   "sha256": "b3a2b79978199c26ba560e77a3366c49f820458c69e2ce3b132a2ab477046695",
+   "mtime_ns": 1792920438478102400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/09c5316261c2c5f94682e6c5cebb08f58c6e32ce59f673d18696eb49c40ab8e2.dat": {
+   "size": 5409864,
+   "sha256": "f5aaa0feb47720d13af8931a0f0c8ed1b42137eb70f99163807824a75d828818",
+   "mtime_ns": 1792920438495029200,
+   "stored": "xz",
+   "stored_size": 5410192,
+   "stored_sha256": "df7de29d9b88475f0c50de5869b88493b5f2d0fb77767ab9d3b55cc67df83d8b"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/15cea4f22d15703ab1b84a1115423680f659a803630a4981bd11cf6c7c37a884.dat": {
+   "size": 35834,
+   "sha256": "3299e0e67329e0187137e42903309203075706a455bbc678cd3db4790f38e69c",
+   "mtime_ns": 1792920438496029200,
+   "stored": "xz",
+   "stored_size": 35892,
+   "stored_sha256": "a2047d6f285fada446c279e18b7249739a1b423c2cdbe6a6c1ad178ec6de8396"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/1c36828ba5f18dda97679eeb3650821bee7a9a7d89574b2c3f60b5778905eae5.dat": {
+   "size": 2879465,
+   "sha256": "cd97124adcbeada4b670554a5e52d470c778979e2cea6db2a5e6efcad5805077",
+   "mtime_ns": 1792920438506537400,
+   "stored": "xz",
+   "stored_size": 2879672,
+   "stored_sha256": "e2505a6ab6410f1b800bf89ad7bc63d07dbedc88875a88378b54b822658255f1"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/23d119f52053d93d689c36383941d29122e93decf314556a6bcba9053c517ad1.dat": {
+   "size": 2448835,
+   "sha256": "78dcd8da570b983f9e644796374160993d92fd1e48123fba18f93f0c7e851bdb",
+   "mtime_ns": 1792920438515042100,
+   "stored": "xz",
+   "stored_size": 2449020,
+   "stored_sha256": "cba76b3b9dd8dd797a05da8eaa806b896147b009ca6134557acbf8444c4c5222"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/2a1f7c1117aafcdb9f975c1f5b309910d776cdd300a64c008269e4caf6793f4f.dat": {
+   "size": 184,
+   "sha256": "4bcfac5ef0ab9b307063b7f6e59217a14367d8cc7fc817b7e10660ee28059503",
+   "mtime_ns": 1792920438515042100,
+   "stored": "xz",
+   "stored_size": 236,
+   "stored_sha256": "f10ee60b21aa1edf655a9b23b63590debcc28fe5fddf7ba5f0009adf0bb195d7"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/419c39f47edea04699ab912c2b4031108c172854f7c7c63ba5bbfb6ec751cfdb.dat": {
+   "size": 3470087,
+   "sha256": "7cbd9194907fee718b7a97999d7c839b0831146c8353108f6fcc3a24f640d074",
+   "mtime_ns": 1792920438527616600,
+   "stored": "xz",
+   "stored_size": 3470324,
+   "stored_sha256": "af32122ffb10389be707f9a310f60527e05f488a68d01ff8233c9197353e9fa5"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/533f1470a4f11b94c90e3c4460c442ca867a0f05333127ff9641f7f8805d3a42.dat": {
+   "size": 5094855,
+   "sha256": "a441feb83e7a289f48299ecfe9e4cb554896d4babfa98eddb253170ce2ce6419",
+   "mtime_ns": 1792920438544618900,
+   "stored": "xz",
+   "stored_size": 5091632,
+   "stored_sha256": "69a65a8898bcf55b0f6c0c73166ba71886890af1fb2283000139a4ebb76cf6d5"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/567ece533e88c62217631283eb4df228eec49fa8d96096240808bcdccaad80f6.dat": {
+   "size": 207,
+   "sha256": "61134fa4d9424965278c16e59514d3fee003321942bd9de512dd996dbaddf802",
+   "mtime_ns": 1792920438545617700,
+   "stored": "xz",
+   "stored_size": 240,
+   "stored_sha256": "cd02342212feb8714cc67b516629646595f1492d5720ad515353a6201da70341"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/61b6d18930ef89328235a6a0c6299425ffcb7299633502e5c8035d5f4dcb1dec.dat": {
+   "size": 799,
+   "sha256": "6503670d62d05fc8a0b08f5cfb0762743d41ef020eeec9063af0ae883478d90c",
+   "mtime_ns": 1792920438546618400,
+   "stored": "xz",
+   "stored_size": 468,
+   "stored_sha256": "bd6de703271509a14fb56b649f59531e6e982cb7fdc2a4a4e6a298d872dfb57b"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/735c7b9eec74bad952e5c5fc47568a29af8704f8daa5b2b6c21710814fa753d4.dat": {
+   "size": 4058682,
+   "sha256": "635fbb74e47d513caeabce8ae7770a4c689e0e68fc18ada2a8fbfb88e0c9cc26",
+   "mtime_ns": 1792920438563141500,
+   "stored": "xz",
+   "stored_size": 4030424,
+   "stored_sha256": "1c07980ad33cbf26b79893321c2d259c95d8c4ac9d7f91843a639b4bcba87358"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/78386baae7761ba7e9861980238d87e55cd6168a46bfca5d16c67ff4c050bd91.dat": {
+   "size": 7367590,
+   "sha256": "060c5465f4a772df4f63411854017e94d6d4e4095599485fceb6827a1c5fd939",
+   "mtime_ns": 1792920438587157200,
+   "stored": "xz",
+   "stored_size": 7368020,
+   "stored_sha256": "da1a27523b4f47296acec3d250efa70ab2b012cb5231767c6d22fa4c8a5c4ca1"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/8236dbc8bd29ac2453a6986d3ee2f11c8242259c2be311615aed4684e6c65824.dat": {
+   "size": 2779683,
+   "sha256": "20a2077af68826b6e537991b179382512a9806b828a9204a912d3bb65606044b",
+   "mtime_ns": 1792920438597123600,
+   "stored": "xz",
+   "stored_size": 2779884,
+   "stored_sha256": "17d4d47eb9f70ebc678ea7760a54aca3323863e4bbbeec6c03b8e346f818f3be"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/86d2beca0355e7855ba559bcdc78b9fa1f34538d3ead9c64cc8923ffad01d5de.dat": {
+   "size": 17416,
+   "sha256": "4fab5adf0938b1030a2f67205324a32527f9f8dfe37a53079d591356f9b9c19a",
+   "mtime_ns": 1792920438598122900,
+   "stored": "xz",
+   "stored_size": 17476,
+   "stored_sha256": "4390107408b239460c1236d45fa897e98658d3f008e1b29f9f2f32a2916ff087"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/94555f48bd717523c71a1e96dc248bcfde7be49b0108827e5f6c811842ae2791.dat": {
+   "size": 24598,
+   "sha256": "35f847bc656422ef4e2fddb8a3516b10f2372a90db9a99bf5c0833ea15af0dba",
+   "mtime_ns": 1792920438599122800,
+   "stored": "xz",
+   "stored_size": 24660,
+   "stored_sha256": "44f2365391f8f2c8b3e8ff5086a440357db9c81d1952a3d92adedca16e93f9f0"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/9cfebe32733d83e94cb5c69ff4afadbbafb107af6872efedcf3bdbe30c786c36.dat": {
+   "size": 413,
+   "sha256": "0afcf4c79e2a7d4de276382b521c09b07c5e1dc45dfade59f38afb3972cc2d67",
+   "mtime_ns": 1792920438599122800,
+   "stored": "xz",
+   "stored_size": 456,
+   "stored_sha256": "061a779412c1a79dd6a894f4d396609bfb5fbdfbc0bea9858d50150201d070c1"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/af1af1e11b22d4536ec4eab8d3c78f70e4fc78c5b633e2a04684a69aa20820e4.dat": {
+   "size": 7472438,
+   "sha256": "9b26fd8342205c39a20d546e115974c121f67805738eb3ac88e9f32a313b449a",
+   "mtime_ns": 1792920438622620400,
+   "stored": "xz",
+   "stored_size": 7472868,
+   "stored_sha256": "e0cdfa29b597aa2d7c8909e5f74622705a893bda66087ea22cc9f77a8a20c272"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/b08ed1a0258ad868a302a9a59d912c819433a8d85da13cabae37945212f5b91b.dat": {
+   "size": 801,
+   "sha256": "7b664ed9f2838860cd0b49a9fcccc09d8bb7089e12dab391c0f7d1c01ef3136f",
+   "mtime_ns": 1792920438623619400,
+   "stored": "xz",
+   "stored_size": 468,
+   "stored_sha256": "ebe5e88495dfffb278e8cbb0e0d4310f8a75d47a279a9029480d87074d9e51e1"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/bf21464dff9a9e067989723b52a51e6b5665dea169d10a2df6ba1af7170dca7a.dat": {
+   "size": 2556046,
+   "sha256": "e794a357595f4d60b8b2c2087edfa3e32081dbd2e7557a02bf21134df5ecd67a",
+   "mtime_ns": 1792920438633252300,
+   "stored": "xz",
+   "stored_size": 2556236,
+   "stored_sha256": "8ff3c6c82528e8cbe207c5ca670e349b3fc00e88bfb8f3e3ed1f2b91c6c37bb3"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/cfc4cd03f26360d2bee7c1bd0c9d0fd3ca733436d2b36df7be1969e6fcbf6325.dat": {
+   "size": 4090018,
+   "sha256": "12c41d7432d4da114f5a1e05e34d6c18e3ec67d72858f92dab198f6ff904e3ec",
+   "mtime_ns": 1792920438646760400,
+   "stored": "xz",
+   "stored_size": 4090284,
+   "stored_sha256": "430cb1bc986cb265b7131387d898cf30aa897069a63586227b317afeca971a8a"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/f8337dceab17ce3673cf0a5109df7888dcaef4a18904a467a45383cbe37824bb.dat": {
+   "size": 1650261,
+   "sha256": "26495043298db749f64700fb1882fa8eba6c2bed557ec4b8f5c5f9730225f9ec",
+   "mtime_ns": 1792920438653265400,
+   "stored": "xz",
+   "stored_size": 1650404,
+   "stored_sha256": "45d6121ab1f6e1ac8712a882b54718861a7a9db693ab09998cbdca2a245f2666"
+  },
+  "mmd_hotloader/data_static/mmdhl/files/ff75fb5ae563d643daa225a7a5626d71212511026bee1c95a2d3e609a0361fde.dat": {
+   "size": 8295335,
+   "sha256": "5966037faaf7f825ca9b20e1f2943dc51731be907a0cabdefb164653d1e11aa3",
+   "mtime_ns": 1792920438678893000,
+   "stored": "xz",
+   "stored_size": 8295808,
+   "stored_sha256": "f66cb7d1655a5cc04ec2f19d552eee5e1821eb6c98c57ae0030422bcd82a9f2c"
+  },
+  "mmd_hotloader/data_static/mmdhl/packages/0180c77f989fbeb750f7dcc53521d0ad.json": {
+   "size": 1604,
+   "sha256": "11a8720a4805b1e38b09f7e0fb9fe0a6ac54c343ef6bd486df60bb0cf01ae97c",
+   "mtime_ns": 1792920438680030000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/data_static/mmdhl/packages/84c3039b19014f11d8c83c13ab24c4d9.json": {
+   "size": 5817,
+   "sha256": "b2a8c2b2b0d477fffdd88069da62b6bd079e1c80e645648ba00c9a835e26dbff",
+   "mtime_ns": 1792920438681030000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/autorun/mmdhl.lua": {
+   "size": 6459,
+   "sha256": "eb063319da9e1a0fa21d1bacb3b561db0e589c625d525f0420ec9c411740a8ea",
+   "mtime_ns": 1793055809766785900,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_attach_link.lua": {
+   "size": 325,
+   "sha256": "dc592277e0db2174409848f1725eafdda95272a21c15b2a43ca5e18b10a7d0a9",
+   "mtime_ns": 1792920438682030300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_prop/cl_init.lua": {
+   "size": 2506,
+   "sha256": "e0216123e3012118988eea48e720b228de779f2f45238afd7b3a3ddcca7a95e7",
+   "mtime_ns": 1792920438682030300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_prop/init.lua": {
+   "size": 889,
+   "sha256": "60fa6ee85c1b1be2cf1a2ce6798685dd822a144ca5a2762e62f628bb1182b7cb",
+   "mtime_ns": 1792920438682030300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_prop/shared.lua": {
+   "size": 270,
+   "sha256": "c93332c9f86f72af3e177cf6191f839d020eb368ef3dc5fea4019dcd7f7fe936",
+   "mtime_ns": 1792920438682030300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_ragdoll/cl_init.lua": {
+   "size": 105,
+   "sha256": "b0998cfd58d67b1e39798e151e8acb34444a50076dce2c244887fa944218a3f0",
+   "mtime_ns": 1792920438683029200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_ragdoll/init.lua": {
+   "size": 1656,
+   "sha256": "9d378349f33d3b90bccf7fbde05806d658cb58e9cef64b4e35976baea7e5b47d",
+   "mtime_ns": 1792920438683029200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_ragdoll/shared.lua": {
+   "size": 324,
+   "sha256": "ea1a251c7bd65f5099447920c654dbd7fc8a21dc8ceb1a8ec1c4af451b0db6d8",
+   "mtime_ns": 1792920438683029200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/entities/mmdhl_ragdoll/tool_api.lua": {
+   "size": 8908,
+   "sha256": "306739b7a4afb37ac3227010c72023c7ed26adea058bf6fca76b074993291911",
+   "mtime_ns": 1792920438683029200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/actors.lua": {
+   "size": 28963,
+   "sha256": "bcd271148be8846a7203d1be3cddc17c8a77a955dfcebb8718f2275381b52dd1",
+   "mtime_ns": 1792920438684032000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/bodygroups.lua": {
+   "size": 10768,
+   "sha256": "f807aeb28c0525f8b17ca58e55775954ddfce293a70bedf76026571d1530686e",
+   "mtime_ns": 1792920438684032000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/bone_mapper.lua": {
+   "size": 7628,
+   "sha256": "216d59aa1eb7fdddd11c003066f4e37871869e73752d830f87eee3b26b207b62",
+   "mtime_ns": 1792920438685030300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/bone_mapper_rules.lua": {
+   "size": 55110,
+   "sha256": "30b67a21776b34d883f302f8676033ac63a7f0e91b0775f43228489a4e02cce8",
+   "mtime_ns": 1792920438685030300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/bone_mapper_ui.lua": {
+   "size": 105000,
+   "sha256": "272efa73da7266c3591de5e2f7e6b006f1f030e64e766cded19a744caf59ad97",
+   "mtime_ns": 1792920438686031600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/carrier.lua": {
+   "size": 21578,
+   "sha256": "57857e75aff185962a7934ce118f671c46088749a37ce09eb2eab18e808349b3",
+   "mtime_ns": 1792920438687029400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/client.lua": {
+   "size": 10993,
+   "sha256": "bff82d0f5734daaf5cd0bc2e1863395db053ea8804895609519853730d17d7cb",
+   "mtime_ns": 1792920438687029400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/client_ragdolls.lua": {
+   "size": 2733,
+   "sha256": "bd06e67a176ef6088827b1173fc424a5a704a983a330c8289702315ffc0a3f60",
+   "mtime_ns": 1792920438687029400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/collision_editor.lua": {
+   "size": 12133,
+   "sha256": "2b2bde4d9876a3f3818ed3efc7ecad34222e648671370106bc74c0fe956e83eb",
+   "mtime_ns": 1792920438688030000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/compat.lua": {
+   "size": 1930,
+   "sha256": "edc44ffee381b702638165aaa9d0c95da12ef0000f6f35f76a3e7558a95bcc0f",
+   "mtime_ns": 1792920438688030000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/compatibility_policy.lua": {
+   "size": 16518,
+   "sha256": "3ad08c963f4a4c24d1cacdc5fb8431e59a90615384f39fe02bd12fe188750ea5",
+   "mtime_ns": 1792920438688030000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/debug.lua": {
+   "size": 2441,
+   "sha256": "cc6d24c5bc869f6341aac97000832a4ced50cbae584587928a14ff0f478c0fbe",
+   "mtime_ns": 1792920438688030000,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/entity_editor.lua": {
+   "size": 6179,
+   "sha256": "3a438bd3fa2e48d35be9af46e85742ad03527daa4d3b13080e81c5ec2f317cda",
+   "mtime_ns": 1792920438689030200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/faceposer.lua": {
+   "size": 5643,
+   "sha256": "751882dd84835c89a9417751a2c4aad36b545620f8286a2e588f519dcb6d63ad",
+   "mtime_ns": 1792920438689030200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/file_access.lua": {
+   "size": 22635,
+   "sha256": "1cd8b0ee6d0b95c24c04855e96da44e6778389ad9d8301ffe68eaa2d7534c267",
+   "mtime_ns": 1792920438690232100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/first_person.lua": {
+   "size": 6919,
+   "sha256": "17edc78af6348c5161e8db831d54edfca871c3222692b59199d1960b12c303e3",
+   "mtime_ns": 1792920438690232100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/i18n.lua": {
+   "size": 12559,
+   "sha256": "dc9b37a7372ebbe5ff845626098692ef28cd7222add6aead5a4b3921a71146fd",
+   "mtime_ns": 1792920438690232100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/installation.lua": {
+   "size": 43440,
+   "sha256": "dd7505abc373eb950463b4233bd5b9ef59511b226c35f282a52f7df9d428f7e6",
+   "mtime_ns": 1793055809767785700,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/installation_ui.lua": {
+   "size": 28716,
+   "sha256": "2f3404bbb788a0bf347c3464be186df4aaa3e7fc4ccf2fba2645b0a28790b4df",
+   "mtime_ns": 1792920438691231400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/instances.lua": {
+   "size": 11491,
+   "sha256": "baad9b30f6b34a1b848a25dbefe077c363d725d56e9d7fe3cd1648fa21a58a6f",
+   "mtime_ns": 1792920438692230900,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/library.lua": {
+   "size": 65863,
+   "sha256": "5ba448b77c72edf00484ae65cf58ce5f2171bd3ef8068f1f533b5e9e5eb49e19",
+   "mtime_ns": 1792920923341382300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/materials.lua": {
+   "size": 16755,
+   "sha256": "6876408b6b4cdbf9d080cb5b72351ebf85ca9bd0f64abbd6b61582b5cd63b6ba",
+   "mtime_ns": 1792920438693233400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/menu.lua": {
+   "size": 2394,
+   "sha256": "afbc464971effc9e236e4c7ea975665d8a9ac016c6c9bb2b2cbe967db25d0b36",
+   "mtime_ns": 1792920438693233400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/names.lua": {
+   "size": 15916,
+   "sha256": "87073ece40677c8b2acf1e8ab80440ed439c815276745e847a6fd12fc71ce293",
+   "mtime_ns": 1792920438694230200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/native_policy.lua": {
+   "size": 26584,
+   "sha256": "11f555af128f15afabbd8a7e6d0083f551e5c7cd96c58027a424c69fa7b88c36",
+   "mtime_ns": 1793057903182942200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/native_render.lua": {
+   "size": 33573,
+   "sha256": "577405414108f824d69533eaaddb2b882ea7c20ac44d3fbc21e16ac1636fbb5b",
+   "mtime_ns": 1793055809767785700,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/native_tools.lua": {
+   "size": 4828,
+   "sha256": "1a3a99956659a257cb960661cf6225a2a493ab6119ca9b264fc184671c1ae867",
+   "mtime_ns": 1792920438695230100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/performance.lua": {
+   "size": 9880,
+   "sha256": "fb8ffb08d863bbf1d2bff6e8bc982babf54ecaf9aca61277c2725c962e0ebd8d",
+   "mtime_ns": 1792920438695230100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/persistence.lua": {
+   "size": 16299,
+   "sha256": "0953eeaacd725c51e6a9104b32b718e823df011eebe86bbe18999668eb580d6f",
+   "mtime_ns": 1792920438695230100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/physics_editor.lua": {
+   "size": 41101,
+   "sha256": "2611a9436c2bebeac7a0b25069525a1a3038b804cba5f9f899a206b2aa669ecd",
+   "mtime_ns": 1792920438696230400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/physics_editor_ui.lua": {
+   "size": 106782,
+   "sha256": "f33425b7efe8f63d84554481c04f7ac095eb027ff3fd9d89e849fe104e38ba17",
+   "mtime_ns": 1792920438697231500,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/physics_lod.lua": {
+   "size": 7148,
+   "sha256": "f97b3641da22dd5fbb052dddf2f20c55fdd9592b7584d9a289805bece7bfe08e",
+   "mtime_ns": 1792920438698230400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/physics_profile.lua": {
+   "size": 69378,
+   "sha256": "f8bd520dc604a184ff369f01e54ea102f6cda685d5286e964d52f7ca8182951f",
+   "mtime_ns": 1792920438698230400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/physics_reset.lua": {
+   "size": 4916,
+   "sha256": "d43388cd18c5a268d56190e5ca0ca0e42c2514526566a6d4fafd7b2c196a1cb5",
+   "mtime_ns": 1792920438699231500,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/physics_settings.lua": {
+   "size": 22450,
+   "sha256": "ce2a8b1f5abbbbd66f187ae5910745edc2870485ff9759c4c94cd4e485798985",
+   "mtime_ns": 1793057963533185100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/player_copies.lua": {
+   "size": 5092,
+   "sha256": "20fd0519ae46fc0290c55692b803117cd3585d6d7295258004ce04e0fa38b4ee",
+   "mtime_ns": 1792920438699231500,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/collision.lua": {
+   "size": 8233,
+   "sha256": "c16a8124c73edce690975caecd79c205934cabdb66e8ae40395fcfdff4c245fc",
+   "mtime_ns": 1792920438700620900,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/editor.lua": {
+   "size": 13506,
+   "sha256": "666dc53a9738e5fb642b01c327c6874a21da15f9c395cea1995ec773c8493b81",
+   "mtime_ns": 1792920438700620900,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/library.lua": {
+   "size": 19547,
+   "sha256": "effeeb9b4eb04a726d010f72c4bddd4290a407ee6072569e82a33d19b2781167",
+   "mtime_ns": 1792920923332873800,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/render.lua": {
+   "size": 18271,
+   "sha256": "684dce8cbcbf3e3cff41cb74aca13293858b6add53ff461ac268495accb4678b",
+   "mtime_ns": 1792920438701618800,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/server.lua": {
+   "size": 24259,
+   "sha256": "2a8205a4af759f44b0bb99d61f7802f8935f74c265f2d62f56f9fd65cc61f4a7",
+   "mtime_ns": 1793055803547201200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/shared.lua": {
+   "size": 5006,
+   "sha256": "474579b50f348992f18b2eb4009085bf7c51d0b07d0543796ba0e7f5492a755a",
+   "mtime_ns": 1792920438702621200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/props/tool.lua": {
+   "size": 9677,
+   "sha256": "01d3b3d17a345323f2ceed3798320bfd434e42693484d2015f04d64b747ed15c",
+   "mtime_ns": 1792920438702621200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/scene_sharing.lua": {
+   "size": 11096,
+   "sha256": "961244f5607048b5c59de4417af6b33441a756eb176322855981cf41c4ba473e",
+   "mtime_ns": 1792920438702621200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/secondary_backend.lua": {
+   "size": 4202,
+   "sha256": "f7a35811b7cfd04be29c3976b06f8433287de556278ba5bf853a5f689fffa4a3",
+   "mtime_ns": 1792920438703620500,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/secondary_collision.lua": {
+   "size": 9085,
+   "sha256": "8260af718f4fbf41afcf376ba7dbb7732f0ee0365f8cdddfbae31d2c848a1fe4",
+   "mtime_ns": 1792920438703620500,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/secondary_water.lua": {
+   "size": 2662,
+   "sha256": "848edf11d3ae3cce567fbdaa7b47554e21385c21f960dd376902c1c98e9b3e70",
+   "mtime_ns": 1793057963550704300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/server.lua": {
+   "size": 17907,
+   "sha256": "69b8dd7b7984c6acb819a7ff23bc6ed7ea4c26ba23a9984dc4d1e72e338c77b6",
+   "mtime_ns": 1792920438703620500,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/server_settings.lua": {
+   "size": 6867,
+   "sha256": "81086a2b5821c0ffaf1c6ee5a691fba8dd6b047730fecea6120232dbc26877f6",
+   "mtime_ns": 1793057963567246600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/settings.lua": {
+   "size": 4760,
+   "sha256": "d8e2a1a100f22290f7383048b26e893fc96e9322cf74d9ae691ac3fd8c955324",
+   "mtime_ns": 1792920438704618600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/sharing.lua": {
+   "size": 32248,
+   "sha256": "7d92998b97cc3500d44cc4f1e9abf34cc8ab7a54f76fec4f8384570d5a7ee09c",
+   "mtime_ns": 1792920861437261800,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/terms.lua": {
+   "size": 27788,
+   "sha256": "6a0064d5b88aaec5b51c93cafa07e0d5c712b3ad0a10b52dafea105b0aa6149a",
+   "mtime_ns": 1792920438705621200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/ui.lua": {
+   "size": 82105,
+   "sha256": "a27edc811ee345bddaf228aeaa2dacf8fb76b04af333ff02e384c5496dc7af8f",
+   "mtime_ns": 1793055836810431100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/workshop.lua": {
+   "size": 35555,
+   "sha256": "b96908240c6cda9a2255731122288f924aff22c8d0639eaefc5082f3df745f7f",
+   "mtime_ns": 1792920840989927100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/mmdhl/workshop_export.lua": {
+   "size": 14518,
+   "sha256": "ebf848db808bb1e7ea8bedba51b26c0239521949bcafde98c6efcdb0ccd0252d",
+   "mtime_ns": 1792920438707618600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/weapons/gmod_tool/stools/mmdhl_prop.lua": {
+   "size": 5842,
+   "sha256": "005ed0736c544c4cd8b5217db03d30d71815fe84f2cd2e32202bf30b9c95c847",
+   "mtime_ns": 1792920438707618600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/lua/weapons/weapon_mmdhl.lua": {
+   "size": 3401,
+   "sha256": "c30c4d1ad3566132ddcb6c7802645d7ed7572242d59cc452fe3ffc35557708c5",
+   "mtime_ns": 1792920438707618600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/materials/mmdhl/scmi/lightwarptexture.vtf": {
+   "size": 16525,
+   "sha256": "53d3d28e87a3ea40454557d54f0e9a03d40b81f438287b42f465ba83531e1491",
+   "mtime_ns": 1792920438709123000,
+   "stored": "xz",
+   "stored_size": 3380,
+   "stored_sha256": "a9ed5b9d1ef6614942362f9832e5edb4ce9ac8d9271e3c3bb248b22f51633722"
+  },
+  "mmd_hotloader/materials/mmdhl/scmi/normal.vtf": {
+   "size": 576,
+   "sha256": "856c88d845d96b51dff2a39906a0a533c551a0f19e26e55da692057ebff84b42",
+   "mtime_ns": 1792920438709123000,
+   "stored": "xz",
+   "stored_size": 144,
+   "stored_sha256": "8a3106f9e5480a31609a4212d7b2c5386c1a7de22acddf1a903f0be59e622f94"
+  },
+  "mmd_hotloader/materials/mmdhl/scmi/phong_exp.vtf": {
+   "size": 65743,
+   "sha256": "8da92b304b5d97c72338fbde8079da59338ec0d3ac22fd4cf1609375688f8c78",
+   "mtime_ns": 1792920438710128400,
+   "stored": "xz",
+   "stored_size": 200,
+   "stored_sha256": "4067a03db914b00f279fefca34eda63ab7cc408ef41b2b86bc8376a9e3aaec55"
+  },
+  "mmd_hotloader/materials/mmdhl/toon.png": {
+   "size": 155,
+   "sha256": "3434ad7e4ce94a708765ac08572ec76a6bc312a628b8f9ee3774587e5fbac114",
+   "mtime_ns": 1792920438710128400,
+   "stored": "xz",
+   "stored_size": 180,
+   "stored_sha256": "881b996e37979437cf3192c8ca381220511b2e10795af62b6d1d2d5110b41481"
+  },
+  "mmd_hotloader/materials/mmdhl/toon.vmt": {
+   "size": 50,
+   "sha256": "db35652937a82ab71cfc0e68c361ed06e97c949abeddfecff76905cb7f57a233",
+   "mtime_ns": 1792920438710128400,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/en/mmdhl.properties": {
+   "size": 351414,
+   "sha256": "465cb4f7443d00850558ea57de3902d33a14c4414eb8f9354718eebd7eb7c95c",
+   "mtime_ns": 1793056143162520100,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/fr/mmdhl.properties": {
+   "size": 296807,
+   "sha256": "53b46a27038f1777a04c569413686ae44d5044e5a05615a90583a77a17c83e03",
+   "mtime_ns": 1793056143180645300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/ja/mmdhl.properties": {
+   "size": 324593,
+   "sha256": "46100a2369f548bc6f49bf358123193a52e46b00cca5e3be1759e1b1ea637148",
+   "mtime_ns": 1793056143208066800,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/ko/mmdhl.properties": {
+   "size": 299670,
+   "sha256": "b115cedacadf255eaa6b3f15cd37e0940feba03fde295c13f1596756b212a1e4",
+   "mtime_ns": 1793056143227082600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/ru/mmdhl.properties": {
+   "size": 360482,
+   "sha256": "f44d16c24890b60892fd6535be69aa63f997ff9d92864a0df440a34222dcc91c",
+   "mtime_ns": 1793056143245305300,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/zh-cn/mmdhl.properties": {
+   "size": 272677,
+   "sha256": "c2cbfe0dba0ecf6d108e5b9fd2c740a945e3febfce6af05dafe278218c131d4f",
+   "mtime_ns": 1793056143264896200,
+   "stored": "plain"
+  },
+  "mmd_hotloader/resource/localization/zh-tw/mmdhl.properties": {
+   "size": 272399,
+   "sha256": "b3bd87c4bfa3f95f281e11b98cf8f2f28247301b356622c788b61dc9cbfd2920",
+   "mtime_ns": 1793056143283489600,
+   "stored": "plain"
+  },
+  "mmd_hotloader/shaders/fxc/mmdhl_ps20b.vcs": {
+   "size": 930,
+   "sha256": "a80c39e048120a926ce1620fb128478eaa382d23ef5ef27a2dca83835b931a5a",
+   "mtime_ns": 1792920438719127000,
+   "stored": "xz",
+   "stored_size": 988,
+   "stored_sha256": "aa04e4beb2d45741a2d09aa73ff52c0463f76ecb88cb6c77adae6b4414313cfc"
+  },
+  "mmd_hotloader/shaders/fxc/mmdhl_vs20.vcs": {
+   "size": 305,
+   "sha256": "eb1a0768adf3ec3fb2ea71907b98a99df4d21840baebc5244a2a1f188f184ee2",
+   "mtime_ns": 1792920438720623800,
+   "stored": "xz",
+   "stored_size": 352,
+   "stored_sha256": "776efdbd2bbaf1e4caf44c7c573ae28b8b39270e5bd1dbeacb42c758b4b83fd2"
+  },
+  "overrides/installation.lua": {
+   "size": 45221,
+   "sha256": "1c415bd79d23aa7505cb17dd3b4d18fa5e3d13fe310cbeeb01fcc620ba5f2711",
+   "mtime_ns": 1793255049449096100,
+   "stored": "plain"
+  }
+ }
+}
