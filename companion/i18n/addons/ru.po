@@ -290,24 +290,24 @@ msgstr "Создайте и повредите объект"
 msgid "Glass damage: %d / %d"
 msgstr "Урон стеклу: %d / %d"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:709
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:710
 msgid "Glass Shard"
 msgstr "Осколок стекла"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:771
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:772
 #, c-format
 msgid "Reset glass damage from %d to 0"
 msgstr "Урон стеклу сброшен с %d до 0"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:773
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:774
 msgid "Look at a glass shard to reset its damage"
 msgstr "Посмотрите на осколок стекла, чтобы сбросить его урон"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:778
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
 msgid "Opening Glass Settings Panel..."
 msgstr "Открытие настроек стекла..."
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:780
 msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
 msgstr "Выполните glass_open_panel в консоли или откройте RTX Remix > Вода и стекло > Настройки в меню создания."
 
@@ -391,11 +391,11 @@ msgstr "Лампа"
 msgid "Light"
 msgstr "Источник света"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:16
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:7
 msgid "Pseudoplayer"
 msgstr "Копия модели игрока"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:18
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:9
 msgid "For firstperson self shadows and body reflections with RTX"
 msgstr "Показывает вашу тень и отражение тела с RTX от первого лица"
 

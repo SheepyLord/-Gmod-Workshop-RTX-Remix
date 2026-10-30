@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 13:01:33 -0700
+Subject: [PATCH] Keep view models visible with primary-space player bodies
+
+---
+ src/dxvk/rtx_render/rtx_instance_manager.cpp | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/src/dxvk/rtx_render/rtx_instance_manager.cpp b/src/dxvk/rtx_render/rtx_instance_manager.cpp
+index 3c89e540..471f3f01 100644
+--- a/src/dxvk/rtx_render/rtx_instance_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_instance_manager.cpp
+@@ -1752,15 +1752,6 @@ namespace dxvk {
+       return;
+     }
+ 
+-    // If the first person player model is enabled, hide the view model.
+-    if (RtxOptions::PlayerModel::enableInPrimarySpace()) {
+-      for (auto* candidateInstance : m_viewModelCandidates) {
+-        candidateInstance->m_vkInstance.mask = 0;
+-      }
+-      cleanupAllPersistentViewModelInstances();
+-      return;
+-    }
+-
+     const RtCamera& camera = cameraManager.getMainCamera();
+     const RtCamera& viewModelCamera = cameraManager.getCamera(CameraType::ViewModel);
+ 

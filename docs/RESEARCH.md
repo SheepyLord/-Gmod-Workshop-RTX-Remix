@@ -1,5 +1,32 @@
 # Research notes
 
+## Player bodies and first-person arms (2026-10-30)
+
+- The shipped runtime's InstanceManager::createViewModelInstances explicitly zeroed every candidate
+  mask and returned when PlayerModel::enableInPrimarySpace was true (rtx_instance_manager.cpp,
+  previous lines 1755-1763). GMod continued issuing view-model/hand draws, but screenshots lost the
+  entire view model. Removing that branch retains ViewModel::enable and normal camera correction.
+- The classic defaults had 549 player texture hashes and three body hashes. The Lua categorizer
+  also tagged original player textures with unique_hashes=0, which the classic client defaults use.
+  Texture categories apply to all matching geometry, including other players, NPCs and ragdolls.
+- Existing RTX_c configuration also contains 529 player texture hashes in rtx.conf and four in
+  user.conf. Clean defaults alone do not remove those stronger saved tags. The integration clears
+  only player bits for observed original player/hand/ragdoll hashes in memory, preserving files and
+  unrelated flags. Native RemoveHashCategory only removes categories in its own cache, so file-only
+  tags need temporary local bookkeeping before their targeted removal.
+- The former body proxy changed LocalPlayer's bone 0, ignored Z in the default angle mode, and
+  created nested body models plus an independently duplicated weapon proxy. The new proxy only
+  adjusts its own final render bone matrices, in world Z for either offset mode.
+- [render.ReadPixel](https://wiki.facepunch.com/gmod/render.ReadPixel) reads the current captured
+  target. One sampled blue channel is inverted for a guaranteed private texture, while
+  [OverrideAlphaWriteEnable](https://wiki.facepunch.com/gmod/render.OverrideAlphaWriteEnable)
+  preserves the copied alpha. Merely blending a white pixel did not change an already-white texel.
+- The runtime recipe verified the seven-patch tree, NVAPI/RTXDI settings and DLSS/SHARC clones.
+  Only rtx_instance_manager.cpp changed; an incremental meson compile -j 2 reused the verified shader
+  stamp. The resulting DLL SHA-256 is ca3ce8dc21f052bf6026c74b776c8d2e4186c33e42023e29f2776852e865cefc.
+  Use Windows PowerShell 5.1 for build_runtime.ps1 -Verify: restoring absent Git environment values
+  as empty strings under the current PowerShell/.NET host makes later Git worktree commands fail.
+
 ## Prior RTXLauncher installations (2026-10-30)
 
 - [Xenthio fixes](https://github.com/Xenthio/garrys-mod-rtx-remixed) nightly aaefa35c5da3156e3f7352fbb4ac734361affed8

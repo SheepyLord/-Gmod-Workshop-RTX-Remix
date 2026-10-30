@@ -67,6 +67,17 @@ class RemixDefaultsTest(unittest.TestCase):
             self.assertIn(line, lines)
         self.assertNotIn('rtx.frameGenerationType = 1', lines)
 
+    def test_captured_player_categories_do_not_hide_shared_world_models(self):
+        classic = self.write('classic.conf', 'rtx.playerModelTextures = 0xAA, 0xBB\n'
+                             'rtx.playerModelBodyTextures = 0xCC\nrtx.decalTextures = 0xDD\n')
+        out = self.root / 'defaults.conf'
+        self.assertEqual(rd.main([str(classic), '--out', str(out)]), 0)
+        values = rd.read_conf(out)
+        self.assertEqual(values['rtx.playerModelTextures'], '')
+        self.assertEqual(values['rtx.playerModelBodyTextures'], '')
+        self.assertEqual(values['rtx.playerModel.enableInPrimarySpace'], 'False')
+        self.assertEqual(values['rtx.decalTextures'], '0xDD')
+
 
 if __name__ == '__main__':
     unittest.main()

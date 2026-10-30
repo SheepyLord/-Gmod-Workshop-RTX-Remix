@@ -150,7 +150,8 @@ local function DrawFix(self, flags)
 end
 
 local function FixupEntity(ent)
-    if IsValid(ent) and ent:GetClass() ~= "procedural_shard" then
+    if IsValid(ent) and not ent.RTXCustomDraw and ent:GetClass() ~= "procedural_shard"
+        and ent:GetClass() ~= "rtx_pseudoplayer" then
         ent.RenderOverride = DrawFix
     end
 end

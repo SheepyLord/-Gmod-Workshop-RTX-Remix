@@ -290,24 +290,24 @@ msgstr "生成後對它造成傷害"
 msgid "Glass damage: %d / %d"
 msgstr "玻璃損傷：%d / %d"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:709
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:710
 msgid "Glass Shard"
 msgstr "玻璃碎片"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:771
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:772
 #, c-format
 msgid "Reset glass damage from %d to 0"
 msgstr "已將玻璃損傷從 %d 重置為 0"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:773
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:774
 msgid "Look at a glass shard to reset its damage"
 msgstr "看向玻璃碎片即可重置其損傷"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:778
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
 msgid "Opening Glass Settings Panel..."
 msgstr "正在開啟玻璃設定面板…"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:780
 msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
 msgstr "在主控台執行 glass_open_panel，或在物件清單中開啟 RTX Remix > 水與玻璃 > 設定。"
 
@@ -391,11 +391,11 @@ msgstr "燈具"
 msgid "Light"
 msgstr "光源"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:16
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:7
 msgid "Pseudoplayer"
 msgstr "玩家模型替身"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:18
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:9
 msgid "For firstperson self shadows and body reflections with RTX"
 msgstr "在第一人稱下顯示自身的 RTX 陰影和身體倒影"
 

@@ -1,5 +1,12 @@
 # Testing
 
+Player body regression: test_player_body.py executes the real entity, category registrar and menu
+using LuaJIT. It checks proxy-only offsets, white-texture isolation, legacy settings, model state,
+render cleanup and shared-material rejection. test_remix_defaults.py rejects captured player hash
+lists in the shipped layer. Real acceptance compares the old/new runtime with primary-space off/on,
+shared-texture world models and ragdolls, shadow enable/disable and a 16-unit height change. Do not
+use poc_session --hide-hud for this test, because that intentionally disables first-person arms.
+
 Legacy migration (loader 0.8.0): generated PE fixtures cover detection, malformed bounds and links;
 planner tests cover protected paths and unknown edits. The dedicated nl_tests_faults_legacy CTest
 interrupts and fails every deployment filesystem operation, including interrupted recovery.

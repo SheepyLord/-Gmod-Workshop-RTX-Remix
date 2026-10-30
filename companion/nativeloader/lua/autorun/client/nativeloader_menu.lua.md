@@ -1,5 +1,10 @@
 # nativeloader_menu.lua
 
+Player models under RTX Remix / Rendering adds the archived rtx_pseudoplayer shadow toggle and
+rtx_pseudoplayer_offset_z height slider (-32 to 64 units). Enabling the proxy requests primary
+player shadows through RemixConfig, including at startup. Height affects only the proxy's render
+bones. Labels/help are in all six companion catalogs; user.conf is never written.
+
 The companion's "RTX Remix" spawn-menu tab ([ADR 0022](../../../../../docs/decisions/0022-companion-rtx-session-guard.md)).
 Client only; it runs in RTX sessions (the companion ships in the RTX-only package). Its text is
 translated ([`../../nativeloader/i18n.lua`](../../nativeloader/i18n.lua.md), [ADR 0029](../../../../../docs/decisions/0029-companion-translations.md)):

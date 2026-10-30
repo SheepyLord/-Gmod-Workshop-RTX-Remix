@@ -290,24 +290,24 @@ msgstr "生成してダメージを与えてください"
 msgid "Glass damage: %d / %d"
 msgstr "ガラスのダメージ: %d / %d"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:709
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:710
 msgid "Glass Shard"
 msgstr "ガラスの破片"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:771
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:772
 #, c-format
 msgid "Reset glass damage from %d to 0"
 msgstr "ガラスのダメージを %d から 0 に戻しました"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:773
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:774
 msgid "Look at a glass shard to reset its damage"
 msgstr "ガラスの破片に視線を合わせてダメージをリセットしてください"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:778
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
 msgid "Opening Glass Settings Panel..."
 msgstr "ガラスの設定パネルを開いています..."
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:780
 msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
 msgstr "コンソールで glass_open_panel を実行するか、スポーンメニューの RTX Remix > 水とガラス > 設定を開いてください。"
 
@@ -391,11 +391,11 @@ msgstr "ランプ"
 msgid "Light"
 msgstr "ライト"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:16
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:7
 msgid "Pseudoplayer"
 msgstr "プレイヤーモデルの複製"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:18
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:9
 msgid "For firstperson self shadows and body reflections with RTX"
 msgstr "一人称視点で自分の体の RTX シャドウと反射を表示します"
 

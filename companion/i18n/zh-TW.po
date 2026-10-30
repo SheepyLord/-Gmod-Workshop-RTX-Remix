@@ -145,7 +145,7 @@ msgid "Night"
 msgstr "夜晚"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:662
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:150
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:160
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "本次遊戲中無法使用 Remix API，因此無法套用這些設定。請執行 nativeloader_status 以查看詳細資訊。"
 
@@ -248,8 +248,8 @@ msgid "Weather"
 msgstr "天氣"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:711
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:157
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:161
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:167
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:171
 msgid "(leave to Remix)"
 msgstr "（由 Remix 決定）"
 
@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "「RTX Remix」分頁 >「從這裡開始」>「使用經典 RTX 設定」（主控台指令：nativeloader_rtx_defaults）會再次套用上述所有值，也會覆寫您變更過的值。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
 msgid "Common Remix settings"
 msgstr "常用 Remix 設定"
 
@@ -474,6 +474,7 @@ msgstr "RTX Remix 指南"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
 msgid "Rendering"
 msgstr "渲染"
 
@@ -484,221 +485,241 @@ msgid "Water and glass"
 msgstr "水與玻璃"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:180
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:180
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
 msgid "Start here"
 msgstr "從這裡開始"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
 msgid "Remix settings"
 msgstr "Remix 設定"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:57
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:67
 msgid "Graphics preset"
 msgstr "圖形預設"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "Ultra"
 msgstr "極高"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "High"
 msgstr "高"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "Medium"
 msgstr "中"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "Low"
 msgstr "低"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:59
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
 msgid "Custom (keeps your own settings)"
 msgstr "自訂（保留您的設定）"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:59
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
 msgid "Automatic (by GPU)"
 msgstr "自動（依顯示卡）"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:60
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
 msgid "Upscaler"
 msgstr "升頻器"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:61
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
 msgid "None"
 msgstr "無"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:62
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
 msgid "DLSS quality"
 msgstr "DLSS 品質"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Ultra performance"
 msgstr "極致效能"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Performance"
 msgstr "效能"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Balanced"
 msgstr "平衡"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Quality"
 msgstr "品質"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:64
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Auto"
 msgstr "自動"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:64
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Full resolution (DLAA)"
 msgstr "完整解析度 (DLAA)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:65
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
 msgid "Frame generation"
 msgstr "畫格生成"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:66
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:163
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:173
 msgid "Off"
 msgstr "關閉"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:67
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
 msgid "Indirect lighting"
 msgstr "間接照明"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
 msgid "Importance sampled"
 msgstr "重要性取樣"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
 msgid "Neural Radiance Cache"
 msgstr "神經輻射快取"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
 msgid "Hashed radiance cache"
 msgstr "雜湊輻射快取"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
 msgid "Max light bounces"
 msgstr "光線反彈上限"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:83
 msgid "Sky brightness"
 msgstr "天空亮度"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:84
 msgid "The map's own skybox only."
 msgstr "僅用於地圖內建的天空盒。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:85
 msgid "Fog"
 msgstr "霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Remix default"
 msgstr "Remix 預設"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Heavy fog"
 msgstr "濃霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Light fog"
 msgstr "淡霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Mist"
 msgstr "輕霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Haze"
 msgstr "霾"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Dust"
 msgstr "沙塵"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Smoke"
 msgstr "煙霧"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:88
 msgid "Remix's volumetric fog presets. One chosen here replaces the weather's fog. Dense fog stays dark where no light reaches it."
 msgstr "Remix 的體積霧預設。在這裡選擇的預設會取代天氣的霧。濃霧在光照不到的地方會保持昏暗。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Post effects"
 msgstr "後製效果"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Bloom, motion blur and film grain."
 msgstr "光暈、動態模糊和底片顆粒。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:91
 msgid "Tone map colour purity"
 msgstr "色調映射色彩純度"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:133
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:143
 msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
 msgstr "本次遊戲透過原生載入器執行 RTX Remix。與 RTX 相關的一切都在此分頁中。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:134
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
 msgid "Open the RTX Remix guide"
 msgstr "開啟 RTX Remix 指南"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:135
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
 msgid "Print the loader's status to the console"
 msgstr "將載入器狀態輸出至主控台"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:136
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:146
 msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
 msgstr "經典設定：原始 RTX 安裝中的值。這些值已套用過一次，且只套用於當時仍為預設值的設定。此按鈕會再次套用所有這些值。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:137
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:147
 msgid "Use the classic RTX settings"
 msgstr "使用經典 RTX 設定"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:138
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:148
 msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
 msgstr "防止附加元件還原 RTX 設定，或在畫面上疊加後製效果"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:139
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:149
 msgid "RTX session guard"
 msgstr "RTX 工作階段保護"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:140
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:150
 msgid "Turn this off only to test an add-on that misbehaves."
 msgstr "僅在測試行為異常的附加元件時才關閉此項。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:141
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:151
 msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
 msgstr "Remix 內建選單：按 Alt+X。變更個別設定前，請先將圖形預設設為「自訂」(Custom)，改完後使用「儲存」(Save)，否則下次啟動時這些設定會恢復原狀。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:142
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:152
 msgid "Language"
 msgstr "語言"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:143
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:153
 msgid "Same as Garry's Mod"
 msgstr "與 Garry's Mod 相同"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:155
 msgid "Language of this tab and the guide"
 msgstr "此分頁與指南的語言"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:152
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:162
 msgid "A setting chosen here is kept and applied at every start. Clear it (the empty choice, or the reset button) to leave it to Remix's own files."
 msgstr "在此選擇的設定會被保留，並在每次啟動時套用。清除設定（選擇「（由 Remix 決定）」或按下重設按鈕）即可交由 Remix 本身的檔案決定。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:162
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:172
 msgid "On"
 msgstr "開啟"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:171
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
 msgid "Reset these to Remix's own values"
 msgstr "將這些設定重設為 Remix 本身的值"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:185
+msgid "Local player shadow"
+msgstr "本機玩家陰影"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:186
+msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
+msgstr "在第一人稱視角下產生自身身體的陰影與反射，不影響其他玩家和布娃娃。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:187
+msgid "Body height offset (units)"
+msgstr "身體高度偏移（單位）"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:188
+msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
+msgstr "正值只會抬高算繪出的身體，攝影機與碰撞位置維持不變。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
+msgid "Player models"
+msgstr "玩家模型"

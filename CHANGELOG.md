@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Keep first-person arms visible independently of primary-space player bodies. Isolate local-body
+  texture categories so shared-texture players and ragdolls stay visible, and add translated RTX-tab
+  controls for local-player shadows and body height ([ADR 0043](docs/decisions/0043-player-body-viewmodel-and-shadows.md)).
+
 - Loader 0.8.0 automatically archives a recognized prior RTXLauncher/Remix installation before
   deploying the shipment. Restore ten known legacy-modified Steam files from verified vanilla
   copies, archive obsolete runtime/addon files and factory configs, and preserve user.conf,

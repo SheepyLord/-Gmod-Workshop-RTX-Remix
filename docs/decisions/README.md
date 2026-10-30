@@ -48,6 +48,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0040](0040-native-map-glass-debris.md) | Native glass brushes keep map behavior and leave persistent convex physics shards; bounded debris and late-join mesh updates | Accepted 2026-10-30 (the user) |
 | [0041](0041-hotloader-remix-depth-materials.md) | Hotloader avoids unavailable DepthWrite materials and Source depth passes on fixed-function Remix; programmable Source keeps its depth shader and cutouts | Accepted 2026-10-30 (the user) |
 | [0042](0042-legacy-remix-migration.md) | Archive recognized legacy Remix installs and restore known modified depot files transactionally | Accepted 2026-10-30 |
+| [0043](0043-player-body-viewmodel-and-shadows.md) | Independent first-person arms, private local-body categories and RTX-tab shadow/height controls | Accepted 2026-10-30 |
 
 ## Template
 

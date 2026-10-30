@@ -54,3 +54,9 @@ family ([ADR 0041](decisions/0041-hotloader-remix-depth-materials.md)). See the
 Loader 0.8.0 archives recognized RTXLauncher leftovers and restores known edited depot files from
 verified stock sources in the same transaction as deployment ([ADR 0042](decisions/0042-legacy-remix-migration.md)).
 Validation uses a fresh pinned Xenthio install under out; RTX_c is now our implementation.
+
+## Player body, arms and shadows (2026-10-30)
+
+Separate first-person view models from primary-space player bodies, remove captured shared-player
+categories from the defaults, and scope self-shadow materials to a private body proxy. The RTX tab
+adds translated shadow and render-height controls ([ADR 0043](decisions/0043-player-body-viewmodel-and-shadows.md)).

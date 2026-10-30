@@ -145,7 +145,7 @@ msgid "Night"
 msgstr "Nuit"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:662
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:150
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:160
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "L'API Remix n'est pas disponible dans cette session : ces paramètres ne peuvent donc pas être appliqués. Exécutez nativeloader_status pour plus de détails."
 
@@ -248,8 +248,8 @@ msgid "Weather"
 msgstr "Météo"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:711
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:157
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:161
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:167
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:171
 msgid "(leave to Remix)"
 msgstr "(laisser à Remix)"
 
@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "Onglet RTX Remix > Pour commencer > « Utiliser les paramètres RTX classiques » (console : nativeloader_rtx_defaults) les applique tous de nouveau, en écrasant aussi les valeurs que vous avez modifiées."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
 msgid "Common Remix settings"
 msgstr "Réglages Remix usuels"
 
@@ -474,6 +474,7 @@ msgstr "Guide RTX Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
 msgid "Rendering"
 msgstr "Rendu"
 
@@ -484,221 +485,241 @@ msgid "Water and glass"
 msgstr "Eau et verre"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:180
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:180
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
 msgid "Start here"
 msgstr "Pour commencer"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
 msgid "Remix settings"
 msgstr "Paramètres Remix"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:57
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:67
 msgid "Graphics preset"
 msgstr "Préréglage"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "Ultra"
 msgstr "Ultra"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "High"
 msgstr "Élevé"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "Medium"
 msgstr "Moyen"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
 msgid "Low"
 msgstr "Faible"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:59
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
 msgid "Custom (keeps your own settings)"
 msgstr "Personnalisé (vos réglages)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:59
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
 msgid "Automatic (by GPU)"
 msgstr "Auto (selon le GPU)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:60
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
 msgid "Upscaler"
 msgstr "Mise à l'échelle"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:61
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
 msgid "None"
 msgstr "Aucune"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:62
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
 msgid "DLSS quality"
 msgstr "Qualité DLSS"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Ultra performance"
 msgstr "Ultra performances"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Performance"
 msgstr "Performances"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Balanced"
 msgstr "Équilibré"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Quality"
 msgstr "Qualité"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:64
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Auto"
 msgstr "Auto"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:64
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Full resolution (DLAA)"
 msgstr "Pleine résolution (DLAA)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:65
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
 msgid "Frame generation"
 msgstr "Génération d'images"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:66
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:163
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:173
 msgid "Off"
 msgstr "Désactivé"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:67
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
 msgid "Indirect lighting"
 msgstr "Éclairage indirect"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
 msgid "Importance sampled"
 msgstr "Échantillonnage préférentiel"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
 msgid "Neural Radiance Cache"
 msgstr "Cache de radiance neuronal (NRC)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:69
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
 msgid "Hashed radiance cache"
 msgstr "Cache de radiance par hachage"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
 msgid "Max light bounces"
 msgstr "Rebonds max."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:83
 msgid "Sky brightness"
 msgstr "Luminosité du ciel"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:84
 msgid "The map's own skybox only."
 msgstr "Pour la skybox de la carte seulement."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:85
 msgid "Fog"
 msgstr "Brouillard"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Remix default"
 msgstr "Par défaut (Remix)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Heavy fog"
 msgstr "Brouillard épais"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Light fog"
 msgstr "Brouillard léger"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Mist"
 msgstr "Brume"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Haze"
 msgstr "Brume sèche"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Dust"
 msgstr "Poussière"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
 msgid "Smoke"
 msgstr "Fumée"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:88
 msgid "Remix's volumetric fog presets. One chosen here replaces the weather's fog. Dense fog stays dark where no light reaches it."
 msgstr "Les préréglages de brouillard volumétrique de Remix. Celui choisi ici remplace le brouillard de la météo. Un brouillard dense reste sombre là où aucune lumière ne l'atteint."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Post effects"
 msgstr "Post-traitement"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "Bloom, motion blur and film grain."
 msgstr "Halo lumineux, flou de mouvement et grain de pellicule."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:91
 msgid "Tone map colour purity"
 msgstr "Pureté des couleurs"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:133
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:143
 msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
 msgstr "RTX Remix fonctionne dans cette session grâce au chargeur natif. Tout ce qui concerne RTX se trouve dans cet onglet."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:134
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:144
 msgid "Open the RTX Remix guide"
 msgstr "Ouvrir le guide RTX Remix"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:135
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
 msgid "Print the loader's status to the console"
 msgstr "Afficher l'état du chargeur dans la console"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:136
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:146
 msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
 msgstr "Paramètres classiques : les valeurs de l'installation RTX d'origine. Elles ont été appliquées une fois, seulement là où un paramètre était encore à sa valeur par défaut. Ce bouton les applique toutes de nouveau."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:137
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:147
 msgid "Use the classic RTX settings"
 msgstr "Utiliser les paramètres RTX classiques"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:138
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:148
 msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
 msgstr "Empêcher les addons d'annuler les paramètres RTX ou d'ajouter du post-traitement à l'image"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:139
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:149
 msgid "RTX session guard"
 msgstr "Protection de la session RTX"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:140
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:150
 msgid "Turn this off only to test an add-on that misbehaves."
 msgstr "Ne désactivez cette option que pour tester un addon qui fonctionne mal."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:141
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:151
 msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
 msgstr "Menu propre à Remix : appuyez sur Alt+X. Choisissez « Personnalisé » (Custom) comme préréglage graphique avant de modifier des paramètres un par un, puis enregistrez, sinon ils reviennent au prochain démarrage."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:142
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:152
 msgid "Language"
 msgstr "Langue"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:143
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:153
 msgid "Same as Garry's Mod"
 msgstr "Comme Garry's Mod"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:145
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:155
 msgid "Language of this tab and the guide"
 msgstr "Langue (onglet et guide)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:152
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:162
 msgid "A setting chosen here is kept and applied at every start. Clear it (the empty choice, or the reset button) to leave it to Remix's own files."
 msgstr "Un paramètre choisi ici est conservé et appliqué à chaque démarrage. Effacez-le (le choix vide ou le bouton de réinitialisation) pour le laisser aux fichiers de Remix."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:162
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:172
 msgid "On"
 msgstr "Activé"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:171
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:181
 msgid "Reset these to Remix's own values"
 msgstr "Rétablir les valeurs de Remix"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:185
+msgid "Local player shadow"
+msgstr "Ombre du joueur local"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:186
+msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
+msgstr "Affiche l’ombre et le reflet de votre corps à la première personne. Les autres joueurs et les ragdolls ne sont pas affectés."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:187
+msgid "Body height offset (units)"
+msgstr "Décalage vertical du corps (unités)"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:188
+msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
+msgstr "Une valeur positive relève uniquement le corps affiché. La caméra et les collisions restent en place."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
+msgid "Player models"
+msgstr "Modèles de joueurs"
