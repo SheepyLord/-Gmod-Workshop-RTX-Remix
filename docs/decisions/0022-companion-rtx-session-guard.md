@@ -1,6 +1,6 @@
 # 0022: The companion guards RTX sessions, gathers the RTX menus and carries the guide
 
-- Status: Accepted 2026-10-29
+- Status: Accepted 2026-10-29; startup-replay behavior superseded by [0044](0044-remix-settings-persistence.md)
 - Decided by: the user (asked to organise the RTX menus, expose more settings, add an illustrated
   guide, and harden Remix against conflicting add-ons), Claude choosing how
 - Builds on: [0013](0013-rtx-only-addons-hidden-without-rtx.md) (the companion is in the RTX-only
