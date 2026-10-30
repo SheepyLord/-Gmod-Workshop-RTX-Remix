@@ -18,7 +18,15 @@ GarrysMod\
 │  ├─ backup\<gen>\<path>                  root files generation <gen> replaced or removed: the
 │  │                                         previous generation's copies, kept for rollback (none for a
 │  │                                         package whose Workshop item was unsubscribed, ADR 0025)
-│  ├─ bootstrap-install.json               the bootstrap's install receipt (install-loader.ps1)
+│  ├─ backup\originals\<path>              loader 0.6.0: what was at a package's path before the loader
+│  │                                         took it over; put back once no generation names the path,
+│  │                                         and at uninstall (journal `originals`, ADR 0035)
+│  ├─ backup\edits\<transaction>\<path>    loader 0.6.0: changed copies of the loader's files that the
+│  │                                         package's copy replaced; never deleted by the loader (ADR 0035)
+│  ├─ bootstrap-install.json               the bootstrap's install receipt (install-loader.ps1); its
+│  │                                         `original` holds the SHA-256 of a kept foreign winmm.dll/.pdb
+│  ├─ original\winmm.dll, winmm.pdb        a winmm.dll that was there before install-loader.ps1 (another
+│  │                                         mod's), put back by its -Uninstall (ADR 0035)
 │  ├─ session_cvars.json                   M5: the user's archived values of the RTX session variables,
 │  │                                         kept until a start without RTX has put them back
 │  ├─ remix\non-nvidia.conf                loader 0.5.0: written at each RTX start on a computer without an
@@ -42,7 +50,8 @@ GarrysMod\
 ```
 
 `nlctl uninstall` (or [`uninstall-loader.ps1`](../tools/uninstall-loader.ps1.md)) removes everything
-the journal lists, then the journal and the lock. `config.json`, the receipt and the logs stay
+the journal lists, puts back the originals it kept (one whose place is taken stays, with a note), then
+removes the journal and the lock. `backup\edits` stays: the player's changed copies. `config.json`, the receipt and the logs stay
 unless `uninstall-loader.ps1 -RemoveConfig` removes them too. `native-loader\reshade` holds the
 user's ReShade settings for RTX sessions: both keep it, and `-RemoveConfig` lists it as kept.
 
@@ -117,6 +126,7 @@ because the loader puts its own folders in front of package paths.
 | `previous` | the generation `rollback` returns to, or `null`; same shape |
 | `previous_backup` | `native-loader/backup/<gen>`: where the previous generation's root files are that `current` replaced or removed; empty if none |
 | `retired` | files waiting to be deleted, each only while it still matches its record; one that cannot be deleted yet (read-only, open elsewhere) stays for the next run |
+| `originals` | loader 0.6.0, only when there are some: file records (`path` is where the file goes back; it is kept at `native-loader/backup/originals/<path>`) of what was at a package's path before the loader took it over; each goes back once no generation names its path and the path is free ([ADR 0035](decisions/0035-restore-automatically.md)) |
 | `dirs` | folders the loader created; each is removed once empty |
 | `hold` | after a rollback, the packages it rolled back from (`id@manifest_sha256`). While the plan (before any package is re-planned as broken) names exactly these, apply deploys nothing; the hold ends when it names anything else. `null`: no hold |
 | `pending` | a transaction that has not committed, or `null`: `transaction`, `action` (`apply`, `rollback`), `steps` (`make_dir` / `move`, each with its hash); the next run undoes it |
@@ -127,7 +137,8 @@ and `remix` (the manifest's `remix` section for the runtime, which M4 activates;
 
 A file record: `path` (relative to the game root, `/`-separated), `package`, `sha256`, `size`,
 `mtime` (last write time when placed, FILETIME units) and `adopted` (`true`: the file was there
-before the loader with the right content; the loader never moves or deletes it).
+before the loader with the right content; the loader never deletes it, and takes it over as an
+original once it changes or a new version differs, ADR 0035).
 
 ## Off switches (any one)
 

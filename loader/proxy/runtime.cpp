@@ -323,7 +323,9 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     }
     for (const auto& item : plan.module_dependencies) {
       std::vector<std::filesystem::path> files;
-      for (const auto& file : item.load_first) files.push_back(std::filesystem::absolute(fs::join(root, file)).lexically_normal());
+      for (const auto& file : session::deployed_files(generation, root, item.load_first, session.notes)) {
+        files.push_back(std::filesystem::absolute(fs::join(root, file)).lexically_normal());
+      }
       setup.dependencies.emplace_back(std::filesystem::absolute(fs::join(root, item.module)).lexically_normal(), std::move(files));
       session.module_dependencies.push_back(item.module);
     }

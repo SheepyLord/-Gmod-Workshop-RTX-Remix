@@ -216,4 +216,32 @@ std::vector<manifest::ModuleDependency> module_dependencies(const journal::Gener
   return out;
 }
 
+std::vector<std::string> deployed_files(const journal::Generation& generation, const std::filesystem::path& root,
+                                        const std::vector<std::string>& files, std::vector<std::string>& notes) {
+  std::vector<std::string> out;
+  for (const std::string& file : files) {
+    const std::string key = paths::fold(file);
+    const auto record = std::find_if(generation.files.begin(), generation.files.end(),
+                                     [&](const journal::File& f) { return paths::fold(f.path) == key; });
+    bool as_deployed = false;
+    if (record != generation.files.end()) {
+      try {
+        fs::refuse_links(root, record->path);
+        const fs::Stat s = fs::stat(fs::join(root, record->path));
+        as_deployed = s.exists && !s.directory && !s.link && s.size == record->size && s.mtime == record->mtime;
+      } catch (const fs::Error&) {
+        as_deployed = false;
+      }
+    }
+    if (as_deployed) {
+      out.push_back(file);
+    } else {
+      notes.push_back(file + ": not loaded before its module, because " +
+                      (record == generation.files.end() ? std::string("the loader did not deploy it")
+                                                        : std::string("it is missing or changed since the loader deployed it")));
+    }
+  }
+  return out;
+}
+
 }  // namespace nl::session

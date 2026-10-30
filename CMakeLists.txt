@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(native_loader
-  VERSION 0.5.0
+  VERSION 0.6.0
   DESCRIPTION "Bootstrap that deploys and loads native packages (RTX Remix) for 64-bit Garry's Mod"
   LANGUAGES C CXX)
 

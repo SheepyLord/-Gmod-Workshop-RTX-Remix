@@ -79,6 +79,25 @@ TEST_CASE("journal: serialize and parse round-trip every field") {
   CHECK(nl::journal::parse(nl::journal::serialize(none)).hold.has_value());
 }
 
+TEST_CASE("journal: originals round-trip, are written only when there are some, and stay outside the loader's folders") {
+  nl::journal::Journal j = sample();
+  CHECK(nl::journal::serialize(j).find("\"originals\"") == std::string::npos);  // older loaders read it unchanged
+  j.originals.push_back({"garrysmod/lua/bin/gmcl_x_win64.dll", "test-lua", kSha, 9, 7, false});
+  const std::string text = nl::journal::serialize(j);
+  const auto back = nl::journal::parse(text);
+  REQUIRE(back.originals.size() == 1);
+  CHECK(back.originals[0].path == "garrysmod/lua/bin/gmcl_x_win64.dll");
+  CHECK(back.originals[0].mtime == 7);
+  CHECK(nl::journal::serialize(back) == text);
+
+  nl::journal::Journal twice = j;
+  twice.originals.push_back({"GARRYSMOD/lua/bin/gmcl_x_win64.dll", "test-lua", kSha, 9, 7, false});
+  CHECK_THROWS_AS(nl::journal::parse(nl::journal::serialize(twice)), nl::journal::Error);
+  nl::journal::Journal inside = j;
+  inside.originals[0].path = "native-loader/backup/originals/garrysmod/lua/bin/gmcl_x_win64.dll";
+  CHECK_THROWS_AS(nl::journal::parse(nl::journal::serialize(inside)), nl::journal::Error);
+}
+
 TEST_CASE("journal: invalid, unsafe or out-of-bounds journals are refused") {
   const std::string good = nl::journal::serialize(sample());
   const auto replaced = [&](const std::string& from, const std::string& to) {

@@ -375,7 +375,8 @@ Journal parse(std::string_view text) {
     limits.max_values = 4'000'000;
     const Value root = json::parse(text, limits);
     only_keys(root, "the journal",
-              {"schema", "loader", "next", "current", "previous", "previous_backup", "retired", "dirs", "hold", "pending"});
+              {"schema", "loader", "next", "current", "previous", "previous_backup", "retired", "originals", "dirs", "hold",
+               "pending"});
     if (required(root, "schema", "the journal").as_int("schema") != kSchema) fail("schema must be 1");
     Journal j;
     j.loader = required(root, "loader", "the journal").as_string("loader");
@@ -390,6 +391,17 @@ Journal parse(std::string_view text) {
       });
     }
     j.retired = files_of(required(root, "retired", "the journal"), "retired file");
+    // Written only when there are some, so a journal without them stays readable by older loaders.
+    if (const Value* v = root.find("originals")) {
+      j.originals = files_of(*v, "original");
+      std::vector<std::string> seen;
+      for (const File& f : j.originals) {
+        if (loader_folders(f.path)) fail("original \"" + f.path + "\" is inside the loader's own folders");
+        const std::string key = paths::fold(f.path);
+        if (std::find(seen.begin(), seen.end(), key) != seen.end()) fail("original \"" + f.path + "\" is listed twice");
+        seen.push_back(key);
+      }
+    }
     for (const Value& item : required(root, "dirs", "the journal").as_array("dirs")) {
       j.dirs.push_back(checked_path(item, "dirs entry", folder_area));
     }
@@ -408,6 +420,7 @@ std::string serialize(const Journal& j) {
   out += ",\n  \"previous\": " + generation_json(j.previous);
   out += ",\n  \"previous_backup\": " + q(j.previous_backup);
   out += ",\n  \"retired\": " + files_json(j.retired, "  ");
+  if (!j.originals.empty()) out += ",\n  \"originals\": " + files_json(j.originals, "  ");
   out += ",\n  \"dirs\": " + strings_json(j.dirs);
   out += ",\n  \"hold\": " + (j.hold ? strings_json(*j.hold) : std::string("null"));
   out += ",\n  \"pending\": " + pending_json(j.pending);

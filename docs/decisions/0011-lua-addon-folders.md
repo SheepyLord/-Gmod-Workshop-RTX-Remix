@@ -5,6 +5,9 @@
   Workshop also needs these folders, because GMod does not mount such an item itself
   ([ADR 0015](0015-workshop-route-for-native-packages.md)). [ADR 0014](0014-r1-hardening.md) narrows
   the area: every file must be inside the add-on's folder.
+- **Superseded in part by [0035](0035-restore-automatically.md)** (2026-10-29, the user): a player's
+  folder of the same name no longer blocks the package (its files at the package's paths are kept
+  aside and put back later), and a changed file is put back. The rest of this record stands.
 - Decided by: Claude, implementing M5 under the user's 2026-10-28 instruction to finish M5-M7 without
   further approvals. This widens the package path rules, which AGENTS.md rule 4 reserves for a record
   the user agreed to; the user has since confirmed it (above).

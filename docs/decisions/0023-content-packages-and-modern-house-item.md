@@ -1,6 +1,8 @@
 # 0023: Content packages carry Remix mods and their Lua; Modern House RTX is its own Workshop item
 
-- Status: Accepted 2026-10-29
+- Status: Accepted 2026-10-29. **Superseded in part by [0035](0035-restore-automatically.md)**
+  (2026-10-29, the user): a player's different `Emissives` folder no longer blocks the package; its
+  files are kept aside and put back later. The rest of this record stands.
 - Decided by: the user ("Please package and upload modern_house for testing. Poolday don't need to be
   shipped. Water and Emissives are from remix repo years ago, please ship if they actually affect the
   game."), Claude choosing how and measuring which mods affect the game

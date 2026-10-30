@@ -37,12 +37,15 @@ nlctl version
 - `planned`: a `--dry-run`;
 - `refused` or `failed`.
 
-It also reports each change (`add`, `replace`, `remove`, `adopt`, `payload`, `delete`), the
-packages it did not deploy and why, notes about files it left alone (changed by the user, not
-placed by the loader), and `operations`, the number of file-system changes it made. `rollback`
+It also reports each change (`add`, `replace`, `remove`, `adopt`, `payload`, `delete`, and from loader
+0.6.0 `put-back`, `take-over`, `restore-original`:
+[ADR 0035](../../docs/decisions/0035-restore-automatically.md)), the packages it did not deploy and
+why, notes about files it left alone or kept aside (and where), and `operations`, the number of
+file-system changes it made. `rollback`
 returns to the previous generation (the generation before that is not kept); the next `apply`
 leaves it in place until the planned packages differ from the ones it rolled back from. `uninstall`
-removes what the journal lists, then the journal and `native-loader\lock`. M4 also removes generated
+removes what the journal lists, puts back the originals it kept, then removes the journal and
+`native-loader\lock`. M4 also removes generated
 status files and the empty `garrysmod/data/native-loader` folder, preserving unrelated files there.
 It leaves `config.json`
 and the bootstrap; [`uninstall-loader.ps1`](../../tools/uninstall-loader.ps1.md) does both steps.

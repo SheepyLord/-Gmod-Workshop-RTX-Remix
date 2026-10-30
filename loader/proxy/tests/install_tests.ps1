@@ -56,11 +56,48 @@ try {
     Remove-Item -LiteralPath (Join-Path $state 'keep.txt')
     & $installer -GameRoot $game -Config $Config -Uninstall -RemoveState
     Check (-not (Test-Path -LiteralPath $state)) 'RemoveState left an empty state folder.'
+    # A foreign winmm.dll (another mod's DLL loader) is kept with its .pdb and put back by -Uninstall (ADR 0035).
     [IO.File]::WriteAllText($dll, 'foreign DLL')
-    Refuses { & $installer -GameRoot $game -Config $Config -AllowSteamManaged } 'foreign winmm.dll'
+    [IO.File]::WriteAllText($pdb, 'foreign PDB')
     Refuses { & $installer -GameRoot $game -Config $Config -Uninstall } 'foreign winmm.dll'
-    Check ([IO.File]::ReadAllText($dll) -ceq 'foreign DLL') 'Foreign DLL changed.'
+    Check ([IO.File]::ReadAllText($dll) -ceq 'foreign DLL') 'A refused uninstall changed the foreign DLL.'
+    & $installer -GameRoot $game -Config $Config
+    Check ((Get-FileHash -LiteralPath $dll).Hash -ceq (Get-FileHash -LiteralPath $sourceDll).Hash) 'Not installed over a foreign DLL.'
+    Check ([IO.File]::ReadAllText((Join-Path $state 'original\winmm.dll')) -ceq 'foreign DLL') 'The foreign DLL was not kept.'
+    Check ([IO.File]::ReadAllText((Join-Path $state 'original\winmm.pdb')) -ceq 'foreign PDB') 'The foreign PDB was not kept.'
+    & $installer -GameRoot $game -Config $Config  # an update keeps the original and its record
+    $kept = ([IO.File]::ReadAllText((Join-Path $state 'bootstrap-install.json')) | ConvertFrom-Json).original
+    Check ($kept -and $kept.dll_sha256 -and $kept.pdb_sha256) 'An update dropped the record of the kept original.'
+    & $installer -GameRoot $game -Config $Config -Uninstall -RemoveState
+    Check ([IO.File]::ReadAllText($dll) -ceq 'foreign DLL') 'Uninstall did not put the foreign DLL back.'
+    Check ([IO.File]::ReadAllText($pdb) -ceq 'foreign PDB') 'Uninstall did not put the foreign PDB back.'
+    Check (-not (Test-Path -LiteralPath $state)) 'RemoveState left state after putting the original back.'
     Remove-Item -LiteralPath $dll
+    Remove-Item -LiteralPath $pdb
+    # Only the first one is kept: another foreign DLL in the loader's place is refused, nothing moved.
+    $twice = Make-Game (Join-Path $scratch 'twice')
+    $twiceDll = Join-Path $twice 'bin\win64\winmm.dll'
+    [IO.File]::WriteAllText($twiceDll, 'first loader')
+    & $installer -GameRoot $twice -Config $Config
+    [IO.File]::WriteAllText($twiceDll, 'second loader')
+    Refuses { & $installer -GameRoot $twice -Config $Config } 'already keeps'
+    Check ([IO.File]::ReadAllText($twiceDll) -ceq 'second loader') 'A refused install changed the DLL.'
+    Check ([IO.File]::ReadAllText((Join-Path $twice 'native-loader\original\winmm.dll')) -ceq 'first loader') 'The kept original changed.'
+    # A DLL put over the installed loader is kept by the next install; the loader's own .pdb left beside
+    # it is not part of it.
+    $over = Make-Game (Join-Path $scratch 'over')
+    $overDll = Join-Path $over 'bin\win64\winmm.dll'
+    & $installer -GameRoot $over -Config $Config
+    [IO.File]::WriteAllText($overDll, 'later loader')
+    & $installer -GameRoot $over -Config $Config
+    Check ([IO.File]::ReadAllText((Join-Path $over 'native-loader\original\winmm.dll')) -ceq 'later loader') 'A DLL put over the loader was not kept.'
+    Check (-not (Test-Path -LiteralPath (Join-Path $over 'native-loader\original\winmm.pdb'))) 'The loader''s own PDB was kept as the original''s.'
+    & $installer -GameRoot $over -Config $Config -Uninstall
+    Check ([IO.File]::ReadAllText($overDll) -ceq 'later loader') 'Uninstall did not put the later DLL back.'
+    Check (-not (Test-Path -LiteralPath (Join-Path $over 'bin\win64\winmm.pdb'))) 'Uninstall left the loader''s PDB.'
+    & $installer -GameRoot $over -Config $Config  # kept again, and recorded again: the receipt kept by -Uninstall is stale
+    $again = ([IO.File]::ReadAllText((Join-Path $over 'native-loader\bootstrap-install.json')) | ConvertFrom-Json).original
+    Check ($again.dll_sha256 -and -not $again.pdb_sha256) 'A second install over a restored original recorded it wrongly.'
     [IO.File]::WriteAllText($pdb, 'foreign PDB')
     Refuses { & $installer -GameRoot $game -Config $Config } 'changed or untracked'
     Check ([IO.File]::ReadAllText($pdb) -ceq 'foreign PDB') 'Foreign PDB changed.'
@@ -99,8 +136,9 @@ try {
     Refuses { & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked } 'changed or untracked'
     Check ((Get-Item -LiteralPath $handDll).Length -eq $changed.Length) 'ReplaceUntracked overwrote a changed tracked DLL.'
     Refuses { & $installer -GameRoot $byHand -Config $Config -Uninstall -ReplaceUntracked } 'does not go with -Uninstall'
-    [IO.File]::WriteAllText($handDll, 'foreign DLL')
-    Refuses { & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked } 'foreign winmm.dll'
+    [IO.File]::WriteAllText($handDll, 'foreign DLL')  # foreign is foreign, whatever the switch: kept as the original
+    & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked
+    Check ([IO.File]::ReadAllText((Join-Path $byHand 'native-loader\original\winmm.dll')) -ceq 'foreign DLL') 'ReplaceUntracked did not keep a foreign DLL.'
     Write-Host "Installer OK: $script:checks checks (synthetic roots only)."
 } finally {
     $deleteTarget = [IO.Path]::GetFullPath($scratch)

@@ -512,7 +512,27 @@ TEST_CASE("deploy: a package whose Workshop item was unsubscribed is deleted, wi
   CHECK(g.read("native-loader/packages/test-runtime/1.1.0_5/runtime/d3d9.dll") == "MZ-two");
 }
 
-TEST_CASE("deploy: a foreign file at a target blocks its package; an identical one is adopted and kept") {
+TEST_CASE("deploy: unsubscribing puts back at once what the package had taken over (ADR 0025, ADR 0035)") {
+  Game g("deploy_unsubscribed_original");
+  const Workshop w(g);
+  write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "someone else's");
+  write_file(g.root / "native-loader" / "config.json", R"({"schema": 1, "allow": {"workshop": ["124"]}})");
+  w.record({"124"});
+  write_gma(w.content / "124" / "mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  const auto first = w.apply(g.root);
+  REQUIRE(first.outcome == "deployed");
+  REQUIRE(has_change(first, "take-over", kModDir + "mod.usda"));
+
+  unsubscribe(w, "124", {});  // no rollback copy is kept (ADR 0025), so no generation names the path
+  const auto gone = w.apply(g.root);
+  CHECK(gone.outcome == "deployed");
+  CHECK(has_change(gone, "restore-original", kModDir + "mod.usda"));
+  CHECK(g.read(kModDir + "mod.usda") == "someone else's");
+  CHECK(g.journal().originals.empty());
+  CHECK(!g.has("native-loader/backup"));
+}
+
+TEST_CASE("deploy: a foreign file at a target is kept and put back at uninstall; an identical one is adopted (ADR 0035)") {
   Game g("deploy_foreign");
   write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "someone else's");
   write_file(g.root / "garrysmod" / "lua" / "bin" / "gmcl_test_win64.dll", "MZ-module");
@@ -521,47 +541,75 @@ TEST_CASE("deploy: a foreign file at a target blocks its package; an identical o
                     ", \"root_files\": [{\"path\": \"garrysmod/lua/bin/gmcl_test_win64.dll\"}]",
                     {{"native/root/garrysmod/lua/bin/gmcl_test_win64.dll", "MZ-module"}}});
   g.allow({"garrysmod/addons/mods.gma", "garrysmod/addons/lua.gma"});
+  const State with_files = snapshot(g.root);
   const auto r = apply_at(g.root);
   CHECK(r.outcome == "deployed");
-  CHECK(r.packages.size() == 1);
-  CHECK(skipped_because(r, "not placed by the loader"));
+  CHECK(r.packages.size() == 2);
+  CHECK(has_change(r, "take-over", kModDir + "mod.usda"));
   CHECK(has_change(r, "adopt", "garrysmod/lua/bin/gmcl_test_win64.dll"));
-  CHECK(g.read(kModDir + "mod.usda") == "someone else's");
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");  // the package's copy is in place
+  CHECK(g.read("native-loader/backup/originals/" + kModDir + "mod.usda") == "someone else's");
+  CHECK(mentions(r.notes, "was there before the loader"));
   const auto j = g.journal();
-  REQUIRE(j.current.has_value() && j.current->files.size() == 1);
-  CHECK(j.current->files[0].adopted);
+  REQUIRE(j.originals.size() == 1);
+  CHECK(j.originals[0].path == kModDir + "mod.usda");
+  CHECK(j.originals[0].sha256 == nl::sha256::of("someone else's"));
+  CHECK(apply_at(g.root).outcome == "unchanged");  // kept while the loader manages the path
+  CHECK(g.journal().originals.size() == 1);
 
   const auto removed = nl::deploy::uninstall(g.root);
   CHECK(removed.outcome == "removed");
+  CHECK(has_change(removed, "restore-original", kModDir + "mod.usda"));
   CHECK(g.read("garrysmod/lua/bin/gmcl_test_win64.dll") == "MZ-module");  // was there before: stays
-  CHECK(g.read(kModDir + "mod.usda") == "someone else's");
+  CHECK(g.read(kModDir + "mod.usda") == "someone else's");                // put back
   CHECK(!g.has("native-loader/state.json"));
   CHECK(!g.has("native-loader/lock"));
+  CHECK(!g.has("native-loader/backup"));
+  CHECK(snapshot(g.root) == with_files);  // as it was before the first deployment
 }
 
-TEST_CASE("deploy: files the user changed are never replaced or removed") {
+TEST_CASE("deploy: a changed file of the loader's is put back at the next start; the change is kept (ADR 0035)") {
   Game g("deploy_edited");
   g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}, {kMod + "a.dds", "A"}}));
   g.allow({"garrysmod/addons/mods.gma"});
   REQUIRE(apply_at(g.root).ok());
   write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "#usda mine\n");
   write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "a.dds", "mine too");
-  const auto drift = nl::deploy::status(g.root, false);
-  CHECK(drift.drift.size() == 2);
+  CHECK(nl::deploy::status(g.root, false).drift.size() == 2);
 
+  // The same version: both are put back, the changed copies kept where the note says.
+  const auto same = apply_at(g.root);
+  CHECK(same.outcome == "deployed");
+  CHECK(has_change(same, "put-back", kModDir + "mod.usda"));
+  CHECK(has_change(same, "put-back", kModDir + "a.dds"));
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");
+  CHECK(g.read(kModDir + "a.dds") == "A");
+  const std::string edits = "native-loader/backup/edits/" + std::to_string(same.generation) + "/";
+  CHECK(g.read(edits + kModDir + "mod.usda") == "#usda mine\n");
+  CHECK(g.read(edits + kModDir + "a.dds") == "mine too");
+  CHECK(mentions(same.notes, "the package's copy is back"));
+  CHECK(nl::deploy::status(g.root, true).drift.empty());
+  CHECK(g.journal().originals.empty());  // a changed copy is no original: it is not put back later
+
+  // A new version over a changed file: the new version goes in, the change is kept too.
+  write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "#usda mine again\n");
   g.add("mods.gma", mods("1.1.0", {{kMod + "mod.usda", "#usda v2\n"}}));
   const auto r = apply_at(g.root);
   CHECK(r.outcome == "deployed");
-  CHECK(g.read(kModDir + "mod.usda") == "#usda mine\n");
-  CHECK(g.read(kModDir + "a.dds") == "mine too");
-  CHECK(mentions(r.notes, "not updated to the package's new version"));
-  CHECK(mentions(r.notes, "left in place"));
+  CHECK(has_change(r, "put-back", kModDir + "mod.usda"));
+  CHECK(has_change(r, "remove", kModDir + "a.dds"));
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v2\n");
+  CHECK(g.read("native-loader/backup/edits/" + std::to_string(r.generation) + "/" + kModDir + "mod.usda") ==
+        "#usda mine again\n");
+  REQUIRE(nl::deploy::rollback(g.root).ok());  // the rollback target never claims the changed copy
+  CHECK(g.read(kModDir + "a.dds") == "A");
 
+  // Uninstall deletes the loader's files; the kept copies stay, they are the user's.
   const auto removed = nl::deploy::uninstall(g.root);
   CHECK(removed.outcome == "removed");
-  CHECK(g.read(kModDir + "mod.usda") == "#usda mine\n");
-  CHECK(g.read(kModDir + "a.dds") == "mine too");
-  CHECK(mentions(removed.notes, "not deleted"));
+  CHECK(!g.has(kModDir + "mod.usda"));
+  CHECK(g.read(edits + kModDir + "mod.usda") == "#usda mine\n");
+  CHECK(mentions(removed.notes, "folder kept"));
 }
 
 TEST_CASE("deploy: create-only files are created once and never replaced") {
@@ -723,6 +771,74 @@ TEST_CASE("deploy: a file the loader adopted and later put back itself is the lo
   REQUIRE(apply_at(g.root).outcome == "deployed");
   CHECK(g.read(module) == "MZ-module");
   CHECK(nl::deploy::status(g.root, true).drift.empty());
+}
+
+TEST_CASE("deploy: a new version takes over a file the loader adopted, which goes back at uninstall (ADR 0035)") {
+  Game g("deploy_adopted_upgrade");
+  const std::string module = "garrysmod/lua/bin/gmcl_test_win64.dll";
+  write_file(g.root / "garrysmod" / "lua" / "bin" / "gmcl_test_win64.dll", "MZ-module");  // the user's own copy
+  g.add("lua.gma", kLua);
+  g.allow({"garrysmod/addons/lua.gma"});
+  REQUIRE(apply_at(g.root).ok());
+  REQUIRE(record_of(*g.journal().current, module)->adopted);
+  Pkg newer = kLua;
+  newer.version = "1.1.0";
+  newer.files = {{"native/root/" + module, "MZ-module two"}};
+  g.add("lua.gma", newer);
+  const auto r = apply_at(g.root);
+  CHECK(r.outcome == "deployed");
+  CHECK(has_change(r, "take-over", module));
+  CHECK(g.read(module) == "MZ-module two");
+  CHECK(g.read("native-loader/backup/originals/" + module) == "MZ-module");
+  CHECK(!record_of(*g.journal().current, module)->adopted);  // the loader's own copy now
+
+  // The user changes it: the next start puts the package's copy back, and the original stays the one put back later.
+  write_file(g.root / "garrysmod" / "lua" / "bin" / "gmcl_test_win64.dll", "MZ-changed");
+  const auto back = apply_at(g.root);
+  CHECK(has_change(back, "put-back", module));
+  CHECK(g.read(module) == "MZ-module two");
+  CHECK(g.journal().originals.size() == 1);
+
+  REQUIRE(nl::deploy::uninstall(g.root).outcome == "removed");
+  CHECK(g.read(module) == "MZ-module");
+}
+
+TEST_CASE("deploy: an original goes back once no generation refers to its path (ADR 0035)") {
+  Game g("deploy_original_dropped");
+  write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "someone else's");
+  g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}, {kMod + "a.dds", "A"}}));
+  g.allow({"garrysmod/addons/mods.gma"});
+  REQUIRE(apply_at(g.root).outcome == "deployed");  // takes mod.usda over
+  REQUIRE(g.journal().originals.size() == 1);
+
+  // A version without the file: its copy is kept for a rollback, so the original waits.
+  g.add("mods.gma", mods("1.1.0", {{kMod + "a.dds", "A2"}}));
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  CHECK(!g.has(kModDir + "mod.usda"));
+  CHECK(g.journal().originals.size() == 1);
+
+  // The next one leaves no generation naming it: the original goes back.
+  g.add("mods.gma", mods("1.2.0", {{kMod + "a.dds", "A3"}}));
+  const auto r = apply_at(g.root);
+  CHECK(r.outcome == "deployed");
+  CHECK(has_change(r, "restore-original", kModDir + "mod.usda"));
+  CHECK(g.read(kModDir + "mod.usda") == "someone else's");
+  CHECK(g.journal().originals.empty());
+  CHECK(!g.has("native-loader/backup/originals"));
+}
+
+TEST_CASE("deploy: an original stays kept while another file is at its path (ADR 0035)") {
+  Game g("deploy_original_blocked");
+  write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "someone else's");
+  g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  g.allow({"garrysmod/addons/mods.gma"});
+  REQUIRE(apply_at(g.root).outcome == "deployed");  // takes it over
+  write_file(g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "#usda mine\n");  // then the loader's copy changes
+  const auto removed = nl::deploy::uninstall(g.root);
+  CHECK(removed.outcome == "removed");
+  CHECK(g.read(kModDir + "mod.usda") == "#usda mine\n");  // a changed file is not the loader's to delete
+  CHECK(mentions(removed.notes, "put it back by hand"));
+  CHECK(g.read("native-loader/backup/originals/" + kModDir + "mod.usda") == "someone else's");
 }
 
 TEST_CASE("deploy: a retired file that cannot be deleted does not stop later commands") {

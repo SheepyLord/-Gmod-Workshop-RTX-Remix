@@ -2,9 +2,19 @@
 
 Copies the built, identified bootstrap and its PDB to an x64 GMod install. Defaults to the PoC,
 Release. Does not build. Uses the version resource (`OriginalFilename` and `InternalName` =
-`nl_winmm.dll`, `ProductName` = `GMod Native Loader`) to reject foreign DLLs. Records SHA-256 in
-`native-loader/bootstrap-install.json`; replacement/removal requires the installed files to match
-that receipt, or the selected build if manually installed. User-edited files are refused.
+`nl_winmm.dll`, `ProductName` = `GMod Native Loader`) to tell the loader's DLL from a foreign one.
+Records SHA-256 in `native-loader/bootstrap-install.json`; replacement/removal requires the installed
+files to match that receipt, or the selected build if manually installed. User-edited files are
+refused.
+
+A foreign `winmm.dll` (another mod's DLL loader, say) is not overwritten: the install moves it to
+`native-loader\original\`, with the `winmm.pdb` beside it unless that is the loader's own, and records
+their SHA-256 in the receipt's `original`; later installs keep that record while the files are kept.
+`-Uninstall` removes the loader's files, then puts the kept ones back when they still match the record
+and their place is free; otherwise it warns and leaves them in `original\`. Only one is kept, the one
+that was there first: a different foreign DLL found while one is kept is refused, and so is
+`-Uninstall` when the DLL in place is foreign (the loader is not installed there)
+([ADR 0035](../docs/decisions/0035-restore-automatically.md)).
 
 ```powershell
 tools\build.ps1 -Config Release
@@ -29,7 +39,8 @@ install: a failed copy rolls back the DLL, PDB and receipt with it and removes t
 `-ReplaceUntracked` (install only) replaces a `winmm.dll` and `winmm.pdb` that no receipt records,
 such as a release bundle extracted by hand, when the DLL identifies as the loader. Their bytes are
 copied to `native-loader\replaced\` first. Files a receipt records are still refused when they changed,
-and a foreign DLL is always refused. [`workflow.ps1`](workflow.ps1.md) `-Install` passes it on.
+and a foreign DLL is kept as the original, as without the switch. [`workflow.ps1`](workflow.ps1.md)
+`-Install` passes it on.
 
 `-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` (requires
 `-Uninstall`) deletes the loader's own control and log files in `native-loader` (`config.json`,
@@ -37,13 +48,14 @@ and a foreign DLL is always refused. [`workflow.ps1`](workflow.ps1.md) `-Install
 `remix\non-nvidia.conf` (ADR 0030), `logs\loader.log` and its rotations),
 then every folder left empty, then `native-loader` itself if empty. Any other file stays and is
 listed in a warning: a payload file the user changed (`nlctl uninstall` leaves those in place), a
-journal `nlctl uninstall` had to keep, or the RTX sessions' ReShade settings in `reshade\` (ADR 0028). Reparse points in affected paths or the removal tree are
+journal `nlctl uninstall` had to keep, an original in `original\` that could not be put back, or the
+RTX sessions' ReShade settings in `reshade\` (ADR 0028). Reparse points in affected paths or the removal tree are
 refused, and the absolute target must equal the game's own `native-loader` directory.
 
 A game whose folder matches `installdir` in an `appmanifest_*.acf` in its library's `steamapps`
 requires `-AllowSteamManaged` for either install or uninstall. That flag is explicit authorization
 for this script; repository agents still follow AGENTS.md concerning the field install. Steam
-manifests/settings are never written. A foreign `winmm.dll` is refused even with that flag.
+manifests/settings are never written. A foreign `winmm.dll` is kept and put back the same way there.
 
 Outputs: DLL/PDB and install receipt. Copy/receipt failures attempt restoration of their original
 bytes. No game depot files are replaced. Console reports the result. Exit 0 on success; a

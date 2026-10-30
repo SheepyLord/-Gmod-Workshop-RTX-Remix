@@ -188,7 +188,9 @@ void hide_rtx_addons(StartupContext& context) noexcept {
     std::vector<std::string> modules;
     for (const auto& item : dependencies) {
       std::vector<std::filesystem::path> files;
-      for (const auto& file : item.load_first) files.push_back(std::filesystem::absolute(fs::join(context.root, file)).lexically_normal());
+      for (const auto& file : session::deployed_files(*context.prepared.journal->current, context.root, item.load_first, report.notes)) {
+        files.push_back(std::filesystem::absolute(fs::join(context.root, file)).lexically_normal());
+      }
       setup.dependencies.emplace_back(std::filesystem::absolute(fs::join(context.root, item.module)).lexically_normal(), std::move(files));
       modules.push_back(item.module);
     }

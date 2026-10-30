@@ -76,4 +76,10 @@ std::vector<std::string> hidden_addons(const journal::Generation& generation);
 // order without repeats. Applied in every session, RTX or not.
 std::vector<manifest::ModuleDependency> module_dependencies(const journal::Generation& generation);
 
+// Those of `files` (game-relative) that are as `generation` recorded them: the size and time the
+// deployer wrote. The loader loads no dependency it did not deploy or that changed since (R3-001);
+// each such file is left out, with a note in `notes`.
+std::vector<std::string> deployed_files(const journal::Generation& generation, const std::filesystem::path& root,
+                                        const std::vector<std::string>& files, std::vector<std::string>& notes);
+
 }  // namespace nl::session
