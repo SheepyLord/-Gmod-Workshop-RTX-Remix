@@ -27,8 +27,18 @@ python tools\weather_presets.py --check    # exit 1 when the table is out of dat
   runtime takes such a field over only if the presets disagree on it. The other fields it always takes
   over.
 - `rtx_atmosphere.h`, `rtx_global_volumetrics.h`, `rtx_precipitation.h`: the `RTX_OPTION`
-  declarations. Every field's option must be declared there. The declared type says whether the option
-  takes a whole number.
+  declarations (`RTX_OPTION`, `_ARGS`, `_FLAG`, `_ENV`). Every field's option must be declared there.
+  The declared type says whether the option takes a whole number, and the fourth argument is its
+  default.
+
+`--layer` (default the package's `packages\runtime\layers\classic_remix_defaults.conf`, ADR 0021): the
+values it sets win over the runtime's defaults.
+
+The table's `defaults` hold, for every option the weather sets (each preset field it owns, and every
+`rtx.weather.precipitation.*` option, which covers the companion's own rain settings), what Remix has
+when rtx.conf does not set it: the layer's value, else the runtime's default, as option text (`True`,
+`0.5`, `1, 0.9, 0.8`). Leaving the weather to Remix again puts these back (R3-009). A default that is
+not a literal (an expression or a constant) stops the run.
 
 ## What each field sets
 

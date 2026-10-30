@@ -1947,3 +1947,47 @@ replace" otherwise).
   c6b48ed1..claude/sky-night`: 0001 the snapshot 2,852,185 bytes, 0002 the translated menus
   11,434,313 (generated tables), 0003 the glossaries 70,971, 0004 the sky 63,303. The snapshot adds
   six lines to `.gitmodules`.
+
+## 31. Review R3: what the runtime was really built from, and other facts (2026-10-29, Claude)
+
+**The packaged `d3d9.dll` (`d9cf79e6...`, 362,791,936 bytes) was built from more than
+`runtime/patches`.** `runtime/build_runtime.ps1 -Verify` against the worktree it was built in
+(`<fork>\.claude\worktrees\remix-i18n`, `claude/sky-night` at `f9937026`):
+- The worktree's commit tree is exactly `c6b48ed1` with the four patches (tree `815f0dca`).
+- `submodules/nvapi` is checked out at `87dca62` ("R615-Developer SDK"), where `c6b48ed1` and the
+  patched tree record `d08488f` (R570). The fork's own checkout (`gmod-1.6.1`) has R615 too.
+- `submodules/rtxdi` (at its recorded `3b39a7c`) has three staged, uncommitted changes:
+  `rtxdi-sdk/include/rtxdi/ResamplingFunctions.slangh` (100 lines), `Reservoir.slangh` (6) and
+  `shaders/ResamplingCompileTest.comp.slang` (20); `git diff HEAD --binary --full-index` 10,604
+  bytes, byte-identical in the fork's checkout. Patch 0001 (the snapshot) covered the superproject
+  only. Now `runtime/submodules/rtxdi.patch`.
+- `submodules/dlss` (`https://github.com/NVIDIA/DLSS.git`, `3749594`, "DLSS 310.9.1 SDK") and
+  `submodules/sharc` (`https://github.com/NVIDIAGameWorks/Spatial-Hash-Radiance-Cache.git`, `4e21b58`,
+  v1.8.3) are untracked git clones, in the fork's checkout as well: its tree records neither.
+  `external-build/meson.build:151` sets `dlss_root_path = 'submodules/dlss'`.
+- In the worktree, `include/MathLib/External/sse2neon/.git` (inside a submodule) points to no
+  repository, so `git status --ignore-submodules=untracked` and `git submodule status` both stop
+  with "gitfile does not point to a valid repository". The script reads each submodule's recorded
+  commit from `git ls-tree -r HEAD` (mode 160000) and its own `HEAD` instead.
+
+**RemixConfig.GetConfigVariable** (the RTX fixes' Lua binding,
+`garrys-mod-rtx-remixed/source/remixapi/remixapi.cpp`, `ConfigManager::GetConfigVariable`): it parses
+the rtx.conf it finds and returns that file's value, else `""` ("no default fallback"; the Remix API
+cannot read options back). So a Lua add-on cannot read a live option; to put one back it needs
+rtx.conf's value or the defaults itself. The fixes' `rtx_water` and `gm_poolrooms_rtx` restore from it
+the same way.
+
+**The runtime's defaults the weather touches** (`RTX_OPTION` fourth argument; 61 options, now in
+`weather_presets.lua` `defaults`), for example `rtx.atmosphere.cloudDensity 4`,
+`rtx.weather.precipitation.intensity 0`, `spawnRadiusMeters 20`, `spawnHeightMeters 14`,
+`fallMarginMeters 8`, `occludeUnderCover True`. The package's classic layer sets nine of them
+(`cloudCoverageMean 0.27`, `cloudCoverageSpread 0.8`, `cloudTypeMean 0.9`, `cloudShadowStrength 0`,
+`volumetrics.anisotropy 0.55`, `singleScatteringAlbedo 0.98`, `transmittanceColor 0.975, 0.985, 0.995`,
+`transmittanceMeasurementDistanceMeters 420`, among them). The fork's checkout and the build worktree
+give the same table.
+
+**The loader's in-memory patches after a GMod update** (for R3-001): each of the seven patterns
+(`tools/package_fixes.py` `PATCH_SETS`) must occur exactly once in its module, or that patch is
+skipped and reported, "the pattern does not occur (another build?)" or "the pattern occurs more than
+once" (`loader/core/src/patch.cpp:69`). No game DLL is pinned by hash. The `stdshader_dx6.dll`
+override (the fixes' build) is loaded in place of the game's whatever the game's build.

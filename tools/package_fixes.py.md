@@ -98,6 +98,11 @@ left out of the fixes repo.
   `require("rtxdebug")`), from the fixes' debug submodule `source/debug/addon`, as the classic install has them.
 - `--exclude-addon <name>` (repeatable): leave an add-on out, compared without case;
   `nativeloader` leaves out the companion. An unknown name is refused.
+- `--add-to-addon <PATH> <SOURCE>` (repeatable): add SOURCE, a file or a folder (its files, junk left
+  out), to an add-on as PATH (`<add-on name>/<path in it>`): a licence text the add-on folder does not
+  have. Only new paths; a file the package has already is refused. The RTX package ships the fixes'
+  GPL-2.0 text this way, as `garrysmod/addons/remixbinary/LICENSE` from `packages/fixes/LICENSE`
+  (R3-011).
 - `--no-patch-sets`: no `patch_sets` (and no kind `patch-set`).
 - `--cvars-from <file>`: take the session variables from this `.cfg` instead (same rules);
   `--no-session-cvars`: none.

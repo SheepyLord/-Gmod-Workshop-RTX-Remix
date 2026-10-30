@@ -30,7 +30,7 @@ patched copy of GMod managed by RTXLauncher.
 | `tools/gmapack/` | Vendored `.gma` reader and writer (Python) |
 | `tools/sky/` | Tools that make the runtime's sky textures (the Moon, the night sky image) |
 | `packages/` | Every input of the RTX package's ten parts, so this repo alone builds it: text as it is, binaries xz-compressed in Git LFS, each part indexed in `files.json` ([packages/README.md](packages/README.md), [ADR 0033](docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)) |
-| `runtime/` | This project's changes to the Remix runtime fork, as patches against the fork commit in `base.json`, and the script that rebuilds `d3d9.dll` from them ([runtime/README.md](runtime/README.md)) |
+| `runtime/` | This project's changes to the Remix runtime fork, as patches against the fork commit in `base.json`, with what else the build has (submodule settings, clones; [ADR 0034](docs/decisions/0034-the-runtimes-build-inputs-recorded.md)), and the script that rebuilds `d3d9.dll` from them ([runtime/README.md](runtime/README.md)) |
 | `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder); `reshade/` holds only ReShade's licence, for the unchanged ReShade binary the RTX package carries |
 | `dist/` | What the end-user bundle ships besides `winmm.dll`: the default `native-loader/config.json` and the player README ([ADR 0017](docs/decisions/0017-release-bundle-and-ci.md)) |
 | `.github/workflows/` | CI: `build.yml` runs `tools\test.ps1 -Config Release` on every push and pull request and keeps the bundle as an artifact; a `v*` tag releases it. `package.yml` builds the RTX package from `packages/` (Git LFS, cached) |

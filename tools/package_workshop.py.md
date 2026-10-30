@@ -40,7 +40,11 @@ python tools\package_workshop.py --part out\packages\m5\runtime-b.gma --part out
 | any other key | Refused: the tool does not know how to merge it |
 
 Every file is copied from its part and checked against that part's manifest (size and SHA-256). A
-mismatch stops the run before anything is written to `--out` or `--gma`.
+mismatch stops the run before anything is written to `--out` or `--gma`. Before the first copy, every
+part's file paths are checked as the loader takes them: under `native/payload/` or `native/root/`,
+forward slashes, no empty, `.` or `..` segment, no drive, colon or control character, and inside the
+staging folder once resolved (R3-008: an absolute path in a part's manifest had opened, and emptied,
+that file outside the package).
 
 ## Outputs
 

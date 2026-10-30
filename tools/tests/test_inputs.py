@@ -92,6 +92,48 @@ class InputsTests(unittest.TestCase):
             inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1)
         self.assertFalse((self.dest / 'p' / 'addon/lua/a.lua').exists())  # nothing half-written
 
+    def test_unpack_rewrites_a_change_that_kept_the_size_and_time(self):
+        # R3-003: an unpacked file is kept only with the indexed content, whatever its size and time say.
+        self.store_all()
+        inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=2)
+        target = self.dest / 'p' / 'addon/lua/a.lua'
+        target.write_bytes(b'print("HI")\r\n')  # the same length
+        os.utime(target, ns=(OLD_TIME, OLD_TIME))
+        again = inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=2)
+        self.assertEqual(again['p']['written'], 1)
+        self.assertEqual(target.read_bytes(), self.files['addon/lua/a.lua'])
+
+    def test_unpack_refuses_links_and_junctions(self):
+        # R3-006: a junction would take the writes, and the removal of stale files, out of the tree.
+        import _winapi
+        self.store_all()
+        victim = self.root / 'victim'
+        victim.mkdir()
+        (victim / 'unrelated.txt').write_bytes(b'keep me')
+        self.dest.mkdir()
+        _winapi.CreateJunction(str(victim), str(self.dest / 'p'))
+        with self.assertRaisesRegex(inputs.InputsError, 'link or junction'):
+            inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1)
+        self.assertEqual(os.listdir(victim), ['unrelated.txt'])
+        os.rmdir(self.dest / 'p')  # the junction, not its target
+        inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1)
+        inner = self.dest / 'p' / 'addon' / 'lua'
+        shutil.rmtree(inner)
+        _winapi.CreateJunction(str(victim), str(inner))
+        with self.assertRaisesRegex(inputs.InputsError, 'link or junction'):
+            inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1)
+        self.assertEqual(os.listdir(victim), ['unrelated.txt'])
+        os.rmdir(inner)
+
+    def test_import_stores_a_change_that_kept_the_size_and_time(self):
+        # R3-007: the bytes decide whether a source changed, not its size and time.
+        self.store_all()
+        source = self.src / 'addon/lua/a.lua'
+        source.write_bytes(b'print("HI")\r\n')
+        os.utime(source, ns=(OLD_TIME, OLD_TIME))
+        self.assertEqual(self.store_all()['stored'], 1)
+        self.assertEqual((self.packages / 'p' / 'addon/lua/a.lua').read_bytes(), b'print("HI")\r\n')
+
     def test_verify_finds_missing_extra_and_changed_files(self):
         self.store_all()
         base = self.packages / 'p'
@@ -127,13 +169,19 @@ class InputsTests(unittest.TestCase):
                          ('native/root/garrysmod/lua/bin/gmcl_y_win64.dll', other / 'gmcl_y_win64.dll'),
                          ('native/manifest.json', '(written by the packager)'),
                          ('native/root/garrysmod/addons/nativeloader/x.lua', REPO / 'companion' / 'README.md')):
-            lines.append(f'1\t0\t{pkg}\t{src}\t')
+            digest = inputs.sha256_file(src) if isinstance(src, Path) else '0'
+            lines.append(f'1\t{digest}\t{pkg}\t{src}\t')
         inventory = self.root / 'part.inventory.txt'
         inventory.write_text('\n'.join(lines) + '\n', encoding='utf-8')
         roots = [(self.src, 'repo'), (other, 'modules')]
         inputs.import_files('q', roots, [], inventory, prune=True, packages=self.packages, log=quiet, workers=1)
         files = set(inputs.read_index('q', self.packages)['files'])
         self.assertEqual(files, {'repo/addon/lua/a.lua', 'modules/gmcl_y_win64.dll'})  # the repo's own source skipped
+        # A source that changed after the packager read it no longer matches the part: refused.
+        (other / 'gmcl_y_win64.dll').write_bytes(b'MZ z')
+        with self.assertRaisesRegex(inputs.InputsError, 'changed since the packager read it'):
+            inputs.import_files('q', roots, [], inventory, prune=True, packages=self.packages, log=quiet, workers=1)
+        (other / 'gmcl_y_win64.dll').write_bytes(b'MZ y')
         # A source in no root is an error, not a silent omission.
         with self.assertRaisesRegex(inputs.InputsError, 'in no --root'):
             inputs.import_files('q', [(other, 'modules')], [], inventory, prune=True, packages=self.packages, log=quiet)

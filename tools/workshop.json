@@ -42,7 +42,10 @@
         "out/inputs/fixes",
         "--modules-from",
         "out/inputs/fixes/modules",
-        "--with-debug-module"
+        "--with-debug-module",
+        "--add-to-addon",
+        "remixbinary/LICENSE",
+        "packages/fixes/LICENSE"
       ]
     },
     {
@@ -74,6 +77,12 @@
         "--addon-file",
         "mmd_hotloader/lua/mmdhl/installation.lua",
         "out/inputs/model-hotloader/overrides/installation.lua",
+        "--add-to-addon",
+        "mmd_hotloader/LICENSE",
+        "packages/model-hotloader/LICENSE",
+        "--add-to-addon",
+        "mmd_hotloader/licenses",
+        "packages/model-hotloader/licenses",
         "--lua-bin",
         "out/inputs/model-hotloader/bin/gmcl_mmdhl_win64.dll",
         "--lua-bin",
@@ -138,7 +147,10 @@
         "character-motion-importer",
         "--requires-remix",
         "--addon",
-        "out/inputs/character-motion-importer/mmd_vmd_npc"
+        "out/inputs/character-motion-importer/mmd_vmd_npc",
+        "--add-to-addon",
+        "mmd_vmd_npc/LICENSE",
+        "packages/character-motion-importer/LICENSE"
       ]
     }
   ],

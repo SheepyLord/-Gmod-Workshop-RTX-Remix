@@ -1,8 +1,10 @@
 """Writes the companion's table of weather presets: the 12 weather archetypes of the user's Remix fork
-(dxvk-remix-gmod), with the Remix option each of their fields sets, read from the fork's sources.
-The companion's sky (nativeloader_sky.lua) blends between them through RemixConfig.SetConfigVariable,
-because the RTX fixes give Lua no way to the runtime's own blender (remixapi_SetGameValue). Reads
-only; writes the one Lua file."""
+(dxvk-remix-gmod), with the Remix option each of their fields sets, read from the fork's sources,
+and what Remix has for each such option when nothing sets it (the package's classic layer, else the
+runtime's default), which the weather goes back to when it is left to Remix again. The companion's
+sky (nativeloader_sky.lua) blends between the presets through RemixConfig.SetConfigVariable, because
+the RTX fixes give Lua no way to the runtime's own blender (remixapi_SetGameValue). Reads only;
+writes the one Lua file."""
 import argparse
 import hashlib
 import re
@@ -18,6 +20,11 @@ HEADER = RENDER / 'rtx_weather.h'
 BLENDER = RENDER / 'rtx_weather.cpp'
 # Where the options a preset field drives are declared (category, type and name of each RTX_OPTION).
 OPTION_HEADERS = [RENDER / 'rtx_atmosphere.h', RENDER / 'rtx_global_volumetrics.h', RENDER / 'rtx_precipitation.h']
+OPTION_MACROS = ('RTX_OPTION', 'RTX_OPTION_ARGS', 'RTX_OPTION_FLAG', 'RTX_OPTION_ENV')  # the default is the 4th argument of each
+# The package's low Remix layer (ADR 0021): what it sets is Remix's own value in an RTX session.
+LAYER = REPO / 'packages' / 'runtime' / 'layers' / 'classic_remix_defaults.conf'
+# Options the companion's weather sets beside the preset fields (its WEATHER_LOOK): every one of these.
+PRECIPITATION = 'rtx.weather.precipitation.'
 # The blender's field kinds, as the companion interpolates them. The two display kinds (km/s shown as
 # m/s, 1/km shown as km) blend linearly on the stored value, as in the runtime.
 KINDS = {'WK_Scalar': 'scalar', 'WK_Angle': 'angle', 'WK_Extinction': 'extinction', 'WK_Color': 'color',
@@ -109,7 +116,52 @@ def declared_options(fork: Path) -> dict[str, str]:
     return options
 
 
-def read_presets(fork: Path) -> dict:
+def option_text(literal: str, type_: str) -> str | None:
+    """An RTX_OPTION's C++ default as Remix's option text (as rtx.conf and SetConfigVariable take it),
+    or None for an expression this does not read."""
+    text = literal.strip()
+    try:
+        if type_ == 'bool':
+            return {'true': 'True', 'false': 'False'}[text]
+        if type_ == 'Vector3':
+            return ', '.join(lua_value(v) for v in value(text, 'Vector3'))
+        if type_ in ('int', 'uint32_t', 'uint16_t', 'uint8_t'):
+            return str(int(text.rstrip('uU')))
+        if type_ == 'float':
+            return lua_value(float(text.rstrip('f')))
+    except (KeyError, ValueError, SourceError):
+        return None
+    return None
+
+
+def option_defaults(fork: Path) -> dict[str, str]:
+    """Full option name -> its default as option text, for every RTX_OPTION of the option headers whose
+    category is a plain string and whose default is a literal."""
+    defaults = {}
+    for header in OPTION_HEADERS:
+        text = (fork / header).read_text(encoding='utf-8')
+        for macro in OPTION_MACROS:
+            for args in calls(text, macro):
+                if len(args) < 4 or not re.fullmatch(r'"[^"]+"', args[0]) or not re.fullmatch(r'\w+', args[2]):
+                    continue  # a category made in a macro (the moons' "rtx.atmosphere.moon" #N)
+                converted = option_text(args[3], args[1])
+                if converted is not None:
+                    defaults[f'{args[0][1:-1]}.{args[2]}'] = converted
+    return defaults
+
+
+def read_layer(path: Path) -> dict[str, str]:
+    """option -> value text of a Remix .conf file (name = value lines; # comments)."""
+    found = {}
+    for line in path.read_text(encoding='utf-8').splitlines():
+        line = line.split('#', 1)[0].strip()
+        if '=' in line:
+            name, text = (part.strip() for part in line.split('=', 1))
+            found[name] = text
+    return found
+
+
+def read_presets(fork: Path, layer: Path | None = LAYER) -> dict:
     header = (fork / HEADER).read_text(encoding='utf-8')
     fields = []
     for args in calls(macro_body(header, 'WEATHER_PRESET_FIELD_LIST'), 'X'):
@@ -151,7 +203,16 @@ def read_presets(fork: Path) -> dict:
         f['integer'] = option_type in ('int', 'uint32_t', 'uint16_t', 'uint8_t')
         same = all(presets[p][f['name']] == presets[order[0]][f['name']] for p in order)
         f['owned'] = f['name'] not in conditional or not same
-    return {'fields': fields, 'order': order, 'presets': presets,
+    # What the weather puts back when it is left to Remix again: every option it sets.
+    known = option_defaults(fork)
+    wanted = {f['option'] for f in fields if f['owned']} | {o for o in declared if o.startswith(PRECIPITATION)}
+    missing = sorted(o for o in wanted if o not in known)
+    if missing:
+        raise SourceError(f'the defaults of {missing} cannot be read from the fork')
+    defaults = {o: known[o] for o in wanted}
+    if layer is not None and layer.is_file():
+        defaults.update({o: text for o, text in read_layer(layer).items() if o in wanted})
+    return {'fields': fields, 'order': order, 'presets': presets, 'defaults': defaults,
             'header_sha256': hashlib.sha256((fork / HEADER).read_bytes()).hexdigest()}
 
 
@@ -186,6 +247,13 @@ def generate(data: dict, commit: str) -> str:
     for f in owned:
         extra = ', integer = true' if f['integer'] else ''
         lines.append(f'    {{ name = "{f["name"]}", option = "{f["option"]}", kind = "{f["kind"]}"{extra} }},')
+    lines += ['  },',
+              "  -- What Remix has for each option the weather sets, when rtx.conf does not set it: the package's",
+              "  -- classic layer, else the runtime's default. Leaving the weather to Remix puts these back.",
+              '  defaults = {']
+    for option in sorted(data.get('defaults', {})):
+        text = data['defaults'][option].replace('\\', '\\\\').replace('"', '\\"')
+        lines.append(f'    ["{option}"] = "{text}",')
     lines += ['  },', '  presets = {']
     for preset in data['order']:
         lines.append(f'    {preset} = {{')
@@ -199,10 +267,11 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fork', type=Path, default=FORK, help='the Remix fork checkout (read only)')
     parser.add_argument('--out', type=Path, default=OUT, help='the Lua table to write')
+    parser.add_argument('--layer', type=Path, default=LAYER, help="the package's classic Remix layer (its values win over the runtime's defaults)")
     parser.add_argument('--check', action='store_true', help='exit 1 when --out differs from what would be written')
     args = parser.parse_args(argv)
     try:
-        data = read_presets(args.fork)
+        data = read_presets(args.fork, args.layer)
     except (OSError, SourceError, ValueError) as error:
         print(f'error: {error}', file=sys.stderr)
         return 1

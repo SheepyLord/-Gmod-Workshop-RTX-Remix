@@ -8,9 +8,13 @@ Rules (AGENTS.md explains why):
 4. CHANGELOG.md has an '## [Unreleased]' section.
 5. docs/COMPONENTS.md mentions every folder directly under loader/ and tools/.
 6. CLAUDE.md imports AGENTS.md.
+7. runtime/base.json "packaged" matches runtime/ and packages/runtime: the stored d3d9.dll is what
+   runtime/build_runtime.ps1 builds from this repository.
 """
 
 import argparse
+import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -117,11 +121,40 @@ def check_claude_md(root):
     return []
 
 
+def check_runtime_record(root):
+    """runtime/base.json "packaged" names the d3d9.dll packages/runtime holds and what it was built from:
+    the fork's commit, the submodule settings, the clones and every patch file's SHA-256. While runtime/
+    differs from that record, the stored DLL is not what runtime/ builds (R3-014)."""
+    base_path = root / 'runtime' / 'base.json'
+    if not base_path.is_file():
+        return []
+    base = json.loads(base_path.read_text(encoding='utf-8'))
+    record = base.get('packaged') or {}
+
+    def settings(table):  # what builds: everything but the explanations
+        return {k: {kk: vv for kk, vv in v.items() if kk != 'why'} for k, v in (table or {}).items()}
+
+    files = {p.relative_to(root / 'runtime').as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+             for folder in ('patches', 'submodules') for p in sorted((root / 'runtime' / folder).glob('*.patch'))}
+    now = {'commit': base.get('commit'), 'submodules': settings(base.get('submodules')), 'clones': settings(base.get('clones')),
+           'files': files}
+    built = {'commit': record.get('commit'), 'submodules': settings(record.get('submodules')),
+             'clones': settings(record.get('clones')), 'files': record.get('files')}
+    problems = [f'runtime/: the {key} differ from what the stored d3d9.dll was built from (runtime/base.json "packaged"); '
+                'run runtime/build_runtime.ps1 to build and store it again' for key in now if now[key] != built[key]]
+    index = root / 'packages' / 'runtime' / 'files.json'
+    if index.is_file():
+        entry = json.loads(index.read_text(encoding='utf-8'))['files'].get('files/d3d9.dll') or {}
+        if entry.get('sha256') != record.get('d3d9.dll'):
+            problems.append('packages/runtime/files/d3d9.dll is not the d3d9.dll runtime/base.json "packaged" records')
+    return problems
+
+
 def check(root):
     root = Path(root).resolve()
     files = list(_files(root))
     return (check_script_docs(root, files) + check_module_readmes(root, files) + check_markdown_links(root, files)
-            + check_changelog(root) + check_components(root) + check_claude_md(root))
+            + check_changelog(root) + check_components(root) + check_claude_md(root) + check_runtime_record(root))
 
 
 def main(argv=None):

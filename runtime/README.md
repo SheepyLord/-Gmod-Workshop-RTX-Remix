@@ -4,8 +4,14 @@ This repository's changes to the RTX Remix runtime ([ADR 0033](../docs/decisions
 The runtime is the GMod fork of NVIDIA's DXVK-Remix, `sambow23/dxvk-remix-gmod`. Its source, with
 NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository holds:
 
-- [`base.json`](base.json): the fork's commit the patches apply to (`gmod-numos3` at `c6b48ed1`), and
-  the SHA-256 of the `d3d9.dll` the RTX package ships;
+- [`base.json`](base.json): the fork's commit the patches apply to (`gmod-numos3` at `c6b48ed1`); what
+  else the build has that the fork's tree does not record ([ADR 0034](../docs/decisions/0034-the-runtimes-build-inputs-recorded.md),
+  [RESEARCH.md](../docs/RESEARCH.md) section 31): `submodules` built at another commit or with a patch
+  (NVAPI R615; RTXDI with the fork's uncommitted changes) and `clones` the build reads (the DLSS SDK,
+  SHARC); and `packaged`, the SHA-256 of the `d3d9.dll` the RTX package ships with what it was built
+  from, which [`tools/check_repo.py`](../tools/check_repo.py.md) holds `runtime/` to;
+- [`submodules/`](submodules): patches of submodules (`git diff HEAD --binary --full-index` in the
+  submodule), named by `base.json`;
 - [`patches/`](patches): this project's commits on top of it, as `git format-patch` files, applied in
   name order:
 
@@ -28,9 +34,10 @@ building the RTX package needs neither the fork nor its SDKs. Only a change to t
    with the patches applied), and commit it there.
 2. Export the series again into `patches\`, replacing the old files:
    `git -C <worktree> format-patch --binary --no-signature --zero-commit -o <this repo>\runtime\patches <base commit>..HEAD`
-3. `runtime\build_runtime.ps1 -Fork <clone>`: it checks that the worktree is the base plus exactly
-   these patches, builds, and imports `d3d9.dll`. Then update `packaged` in `base.json`, build the
-   package (`tools\build_package.py`), test it in the PoC, and commit on a branch.
+3. `runtime\build_runtime.ps1 -Fork <clone>`: it checks that the worktree is exactly what `base.json`
+   and these patches describe, builds, imports `d3d9.dll` and writes `packaged` in `base.json`. Then
+   build the package (`tools\build_package.py`), test it in the PoC, and commit on a branch. Until the
+   DLL is built and stored again, `tools\test.ps1` fails on a changed patch.
 
 A new base (the fork moved on): rebase the series there, export it again, set `commit` in
 `base.json`, and rebuild. NVIDIA's DLLs change only with the fork's SDKs; import those from the fork

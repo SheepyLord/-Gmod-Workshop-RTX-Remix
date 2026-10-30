@@ -8,261 +8,269 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:577
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Clear"
 msgstr "快晴"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:577
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Partly cloudy"
 msgstr "晴れ時々曇り"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:577
+#: nativeloader/lua/autorun/nativeloader_sky.lua:638
 msgid "Overcast"
 msgstr "曇り"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Hazy"
 msgstr "もや"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Foggy"
 msgstr "霧"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Drizzle"
 msgstr "霧雨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:578
+#: nativeloader/lua/autorun/nativeloader_sky.lua:639
 msgid "Rain"
 msgstr "雨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:579
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Thunderstorm"
 msgstr "雷雨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:579
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Snow"
 msgstr "雪"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:579
+#: nativeloader/lua/autorun/nativeloader_sky.lua:640
 msgid "Blizzard"
 msgstr "吹雪"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:580
+#: nativeloader/lua/autorun/nativeloader_sky.lua:641
 msgid "Sandstorm"
 msgstr "砂嵐"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:580
+#: nativeloader/lua/autorun/nativeloader_sky.lua:641
 msgid "Smog"
 msgstr "スモッグ"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Spring"
 msgstr "春"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Summer"
 msgstr "夏"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Autumn"
 msgstr "秋"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:582
+#: nativeloader/lua/autorun/nativeloader_sky.lua:643
 msgid "Winter"
 msgstr "冬"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:583
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "New moon"
 msgstr "新月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:583
+#: nativeloader/lua/autorun/nativeloader_sky.lua:644
 msgid "Waxing crescent"
 msgstr "三日月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:584
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "First quarter"
 msgstr "上弦の月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:584
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "Waxing gibbous"
 msgstr "十三夜月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:584
+#: nativeloader/lua/autorun/nativeloader_sky.lua:645
 msgid "Full moon"
 msgstr "満月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:585
+#: nativeloader/lua/autorun/nativeloader_sky.lua:646
 msgid "Waning gibbous"
 msgstr "寝待月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:585
+#: nativeloader/lua/autorun/nativeloader_sky.lua:646
 msgid "Last quarter"
 msgstr "下弦の月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:586
+#: nativeloader/lua/autorun/nativeloader_sky.lua:647
 msgid "Waning crescent"
 msgstr "有明月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:587
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "No eclipse"
 msgstr "食なし"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:587
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "Lunar eclipse"
 msgstr "月食"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:587
+#: nativeloader/lua/autorun/nativeloader_sky.lua:648
 msgid "Solar eclipse"
 msgstr "日食"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:588
+#: nativeloader/lua/autorun/nativeloader_sky.lua:649
 msgid "Night sky image"
 msgstr "夜空の画像"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:588
+#: nativeloader/lua/autorun/nativeloader_sky.lua:649
 msgid "Simulated stars"
 msgstr "シミュレートした星"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:590
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Sunrise"
 msgstr "日の出"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:590
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Morning"
 msgstr "朝"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:590
+#: nativeloader/lua/autorun/nativeloader_sky.lua:651
 msgid "Noon"
 msgstr "正午"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:591
+#: nativeloader/lua/autorun/nativeloader_sky.lua:652
 msgid "Sunset"
 msgstr "日の入り"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:591
+#: nativeloader/lua/autorun/nativeloader_sky.lua:652
 msgid "Night"
 msgstr "夜"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:601
+#: nativeloader/lua/autorun/nativeloader_sky.lua:662
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:142
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "このセッションでは Remix API を使用できないため、これらの設定を適用できません。詳しくは nativeloader_status を実行してください。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:605
+#: nativeloader/lua/autorun/nativeloader_sky.lua:666
 #, c-format
 msgid "On this map the sky is set by %s. Changing a setting here takes it over for this session."
 msgstr "このマップの空は %s が設定しています。ここで設定を変えると、このセッションの間はこちらが引き継ぎます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:607
+#: nativeloader/lua/autorun/nativeloader_sky.lua:668
 msgid "Sky"
 msgstr "空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:608
+#: nativeloader/lua/autorun/nativeloader_sky.lua:669
 msgid "Physical sky"
 msgstr "物理ベースの空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:609
+#: nativeloader/lua/autorun/nativeloader_sky.lua:670
 msgid "The map's skybox"
 msgstr "マップのスカイボックス"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:610
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "The physical sky has a sun, clouds, stars and a moon, and lights the map from them."
 msgstr "物理ベースの空には太陽、雲、星、月があり、それらがマップを照らします。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:611
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Follow the map's sun"
 msgstr "マップの太陽に合わせる"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:612
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "The time and direction of the map's own sun. Moving the time or the direction turns this off."
 msgstr "マップ自体の太陽の時刻と方角を使います。時刻か方角を動かすとオフになります。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:613
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Time of day"
 msgstr "時刻"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:617
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 #, c-format
 msgid "Now %s"
 msgstr "現在 %s"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:635
+#: nativeloader/lua/autorun/nativeloader_sky.lua:696
 msgid "Sun direction"
 msgstr "太陽の方角"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:636
+#: nativeloader/lua/autorun/nativeloader_sky.lua:697
 msgid "Turns the sun's path around the sky."
 msgstr "太陽の通り道を空の周りで回転させます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:637
+#: nativeloader/lua/autorun/nativeloader_sky.lua:698
 msgid "Time passes"
 msgstr "時間が進む"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:699
 msgid "Day length (min)"
 msgstr "1日の長さ(分)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:700
 msgid "Real minutes for a whole day while the time passes."
 msgstr "時間が進むとき、丸一日にかかる実際の分数。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:701
+msgid "Sky update interval (s)"
+msgstr "空の更新間隔(秒)"
+
+#: nativeloader/lua/autorun/nativeloader_sky.lua:702
+msgid "How often the sun, moon, stars and weather move on: 0.02 is 50 times a second, 0 every frame. Longer saves a little time but the sky moves in steps."
+msgstr "太陽・月・星・天気を進める間隔です。0.02 で毎秒 50 回、0 で毎フレーム。長くすると少し軽くなりますが、空がコマ送りのように動きます。"
+
+#: nativeloader/lua/autorun/nativeloader_sky.lua:703
 msgid "Season"
 msgstr "季節"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:641
+#: nativeloader/lua/autorun/nativeloader_sky.lua:704
 msgid "Moon"
 msgstr "月"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:642
+#: nativeloader/lua/autorun/nativeloader_sky.lua:705
 msgid "Eclipse"
 msgstr "日食・月食"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:706
 msgid "Eclipse progress"
 msgstr "食の進み具合"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:707
 msgid "From first contact (0) to the middle (100): a lunar eclipse is total from 70, a solar one from 90. An eclipse sets the moon's phase, and the time if the sun is on the wrong side of the horizon for it."
 msgstr "欠け始め（0）から食の最大（100）まで。月食は 70 から、日食は 90 から皆既になります。食を選ぶと月の満ち欠けが決まり、太陽が地平線の反対側にあれば時刻も合わせます。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:708
 msgid "Night sky"
 msgstr "夜空"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:646
+#: nativeloader/lua/autorun/nativeloader_sky.lua:709
 msgid "Night sky image: sharp stars, a galaxy and nebulae, turning with the time and the season."
 msgstr "夜空の画像: くっきりした星、銀河、星雲が時刻と季節に合わせて回ります。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:647
+#: nativeloader/lua/autorun/nativeloader_sky.lua:710
 msgid "Weather"
 msgstr "天気"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:711
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:149
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:153
 msgid "(leave to Remix)"
 msgstr "(Remix に任せる)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:650
+#: nativeloader/lua/autorun/nativeloader_sky.lua:713
 msgid "Clouds, haze, fog, rain and snow. The runtime's own weather presets."
 msgstr "雲、もや、霧、雨、雪。Remix ランタイム自体の天気プリセットです。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:714
 msgid "Weather change (s)"
 msgstr "天気の変化(秒)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:652
+#: nativeloader/lua/autorun/nativeloader_sky.lua:715
 msgid "How long a change of weather takes."
 msgstr "天気が変わるのにかかる時間。"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:653
+#: nativeloader/lua/autorun/nativeloader_sky.lua:716
 msgid "Reset the sky and weather"
 msgstr "空と天気をリセット"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:659
-#: nativeloader/lua/autorun/nativeloader_sky.lua:659
+#: nativeloader/lua/autorun/nativeloader_sky.lua:722
+#: nativeloader/lua/autorun/nativeloader_sky.lua:722
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Sky and weather"

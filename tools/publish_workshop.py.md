@@ -16,6 +16,7 @@ python tools\publish_workshop.py --install-hooks     # once per clone: the hooks
 python tools\publish_workshop.py                     # publish now (skips if nothing changed)
 python tools\publish_workshop.py --dry-run           # build and compare, upload nothing
 python tools\publish_workshop.py --force             # build and upload even if unchanged
+python tools\publish_workshop.py --commit <sha>      # publish that commit, from the checkout that has it out
 python tools\publish_workshop.py --uninstall-hooks   # remove this script's hooks
 python tools\publish_workshop.py --uninstall-source-hooks <add-on repo>  # remove ADR 0024's hooks there
 ```
@@ -57,14 +58,22 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
 
 ## What a run does
 
+0. **Which checkout** (`--commit SHA`, what the hooks pass). The run belongs to the checkout that has
+   that commit checked out: this one if its `HEAD` is the commit, else the first `git worktree list`
+   names, whose own script it then runs (R3-004: a push of `main` from a worktree on another branch had
+   built that worktree's package). If no checkout has the commit checked out, nothing is published
+   (exit 1, with the reason in the log). The build then checks again that `HEAD` is that commit.
 1. **Uncommitted changes.** It refuses when the packaging inputs in this repository have uncommitted
    changes, which would otherwise go into the item: `companion/`, `packages/`, `tools/inputs.py`, the
    four packagers, `package_workshop.py`, `gmapack.py`, `third_party/reshade` and `workshop.json`.
    `--dry-run` and `--allow-dirty` skip this check.
 2. **Lock.** Its state lives in the **main checkout's** `out\workshop`, whichever worktree runs it, so
-   every worktree shares one record of what the item holds. It takes `out\workshop\publish.lock`
-   there, so only one publish runs at a time. It waits up to
-   two hours for a running publish, and takes over a lock whose owner is gone.
+   every worktree shares one record of what the item holds. Only one publish runs at a time: it holds
+   an exclusive Windows lock on the first byte of `out\workshop\publish.lock` through an open handle for
+   the whole run. Windows lets go of it when the process ends, however it ends, so no lock is left
+   behind and none is ever taken over (R3-005: a lock file holding a PID could be taken for stale in
+   the moment between its creation and the PID's write). It waits up to two hours for a running
+   publish. The file itself stays.
 3. **Fingerprint.** It computes a fingerprint of everything that can change the item:
    - those packaging inputs in `HEAD` (their git tree, which for an LFS file is its pointer and so
      its content's oid) and any uncommitted change to them;
@@ -111,9 +120,10 @@ install` writes, so each runs Git LFS's step first.
 | `pre-push` | `git lfs pre-push`, which uploads the LFS files the push needs; without git-lfs on the path the push stops (exit 2) | when `refs/heads/main` is pushed |
 
 `pre-push` reads the refs git gives it once and hands the same lines to Git LFS and to its own loop.
-Without git-lfs the other hooks skip its step and go on.
+Without git-lfs the other hooks skip its step and go on. A push that deletes `main` publishes nothing.
 
-Each hook runs `publish_workshop.py --background --reason "<what> <commit>"`.
+Each hook runs `publish_workshop.py --background --commit <commit> --reason "<what> <commit>"`: for
+`pre-push` the commit sent to `main`, which step 0 builds in the checkout that has it checked out.
 - The background run is detached, so the commit, merge or push returns at once.
 - Its output goes to `out\workshop\logs\publish-<time>-<pid>.log`.
 - A run that fails, for example because Steam is not running, changes nothing. The next commit,

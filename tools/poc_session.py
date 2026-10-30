@@ -34,6 +34,10 @@ LUA_MARKER = re.compile(r"(?m)^NL_SESSION_LUA (\d+)\s*$")
 SHOT_MARKER = re.compile(r"(?m)^NL_SHOT ([A-Za-z0-9_.-]{1,48})\s*$")
 SHOTS_DONE_MARKER = re.compile(r"(?m)^NL_SHOT_DONE\s*$")
 WORKSHOP_MOUNTED = re.compile(r"(?m)^Mounted (\d+) of (\d+) workshop addons!")
+WORKSHOP_REMOUNTING = re.compile(r"(?m)^Addons have changes - remounting")
+# How long a first mount of some but not all subscriptions waits for GMod's remount before it counts as
+# the last: with Steam's list already in hand there may be no remount (R3-013).
+PARTIAL_MOUNT_GRACE = 20.0
 LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 
@@ -692,18 +696,36 @@ def step_run(args) -> dict:
 
     def wait_workshop(deadline: float) -> dict:
         """Waits for the Workshop mount that follows Steam's list of subscriptions (see menu_first): a
-        second "Mounted N of M workshop addons!", or a first that mounted some or had none to mount,
-        then for the log to be quiet for 5 s."""
+        second "Mounted N of M workshop addons!"; a first that mounted all M or had none to mount; or a
+        first that mounted some but not all, once PARTIAL_MOUNT_GRACE seconds pass without GMod starting
+        a remount. Then waits for the log to be quiet for 5 s."""
         found: list[tuple[str, str]] = []
+        first_seen = None
 
-        def done() -> bool:
-            return len(found) >= 2 or any(int(n) or not int(m) for n, m in found)
+        def ready_by(text: str) -> str | None:
+            if len(found) >= 2:
+                return "the remount"
+            if not found:
+                return None
+            mounted, total = int(found[0][0]), int(found[0][1])
+            if not total or mounted >= total:
+                return "a complete first mount"
+            if mounted and not WORKSHOP_REMOUNTING.search(text) and time.monotonic() - first_seen >= PARTIAL_MOUNT_GRACE:
+                return f"a partial first mount, and no remount within {PARTIAL_MOUNT_GRACE:.0f} s"
+            return None  # 0 of M: Steam has not listed the subscriptions yet, a remount follows
 
-        while time.monotonic() < deadline and process.poll() is None and not done():
+        rule = None
+        while time.monotonic() < deadline and process.poll() is None:
             time.sleep(0.5)
-            found = WORKSHOP_MOUNTED.findall(log_text())
-        ready = done()
-        return {"workshop_mounted": [f"{n} of {m}" for n, m in found], "workshop_ready": ready,
+            text = log_text()
+            found = WORKSHOP_MOUNTED.findall(text)
+            if found and first_seen is None:
+                first_seen = time.monotonic()
+            rule = ready_by(text)
+            if rule:
+                break
+        ready = rule is not None
+        return {"workshop_mounted": [f"{n} of {m}" for n, m in found], "workshop_ready": ready, "workshop_ready_by": rule,
                 "quiet_before_map": ready and wait_quiet(5, 60), "seconds_to_workshop": round(time.monotonic() - began, 1)}
 
     not_ours: set[int] = set()

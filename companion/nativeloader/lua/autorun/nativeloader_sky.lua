@@ -24,7 +24,7 @@ local DEFAULTS = {
     nativeloader_sky_direction = "0", nativeloader_sky_time_passes = "0", nativeloader_sky_day_minutes = "30",
     nativeloader_sky_season = "summer", nativeloader_sky_moon = "full",
     nativeloader_sky_eclipse = "", nativeloader_sky_eclipse_amount = "100", nativeloader_sky_stars = "map",
-    nativeloader_weather = "partlyCloudy", nativeloader_weather_seconds = "30",
+    nativeloader_weather = "partlyCloudy", nativeloader_weather_seconds = "30", nativeloader_sky_interval = "0.02",
 }
 local HELP = {
     nativeloader_sky = "Sky in RTX sessions: 1 the physical sky (sun, clouds, stars, moon), 0 the map's own skybox",
@@ -42,9 +42,17 @@ local HELP = {
     nativeloader_weather = "Weather: clear, partlyCloudy, overcast, hazy, foggy, drizzle, rainstorm, thunderstorm, "
         .. "snow, blizzard, sandstorm, smoggy; empty leaves clouds, fog and rain to Remix's own settings",
     nativeloader_weather_seconds = "Seconds a change of weather takes",
+    nativeloader_sky_interval = "Seconds between updates of the sun, moon, stars and weather, 0-1: 0.02 is 50 a second, "
+        .. "0 every frame",
 }
 local cv = {}
 for name, value in pairs(DEFAULTS) do cv[name] = CreateClientConVar(name, value, true, false, HELP[name]) end
+
+-- How often the sky moves on (R3-015): every frame, as games move their sky, would be 0; 0.02 keeps a
+-- running clock smooth at a fraction of the calls.
+local function interval()
+    return math.Clamp(cv.nativeloader_sky_interval:GetFloat(), 0, 1)
+end
 
 -- How the look of the physical sky differs from the runtime's defaults, whatever the weather
 -- (tuned in the PoC, RESEARCH.md section 28).
@@ -323,8 +331,14 @@ local function nightSkyImage()
     return cv.nativeloader_sky_stars:GetString() ~= "procedural"
 end
 
+-- The options this session's weather has set, which leaving the weather to Remix puts back.
+local weatherSet = {}
+
 local function pushWeather(values)
-    for option, text in pairs(WEATHER_LOOK) do set(option, text) end
+    for option, text in pairs(WEATHER_LOOK) do
+        set(option, text)
+        weatherSet[option] = true
+    end
     local ownFog = fogPresetChosen()
     for _, field in ipairs(presets.fields) do
         local v = values[field.name]
@@ -335,8 +349,32 @@ local function pushWeather(values)
             sent[field.option] = nil
         elseif v ~= nil then
             set(field.option, model.optionText(v, field.integer))
+            weatherSet[field.option] = true
         end
     end
+end
+
+-- What an option goes back to when the weather is left to Remix again (R3-009): rtx.conf's value
+-- (GetConfigVariable reads only that file), else what Remix has without it (weather_presets.lua: the
+-- package's classic layer, else the runtime's default). The RTX fixes' per-map settings are not
+-- known here and are not put back.
+local function remixValue(option)
+    local ok, configured = pcall(RemixConfig.GetConfigVariable or function() end, option)
+    if ok and isstring(configured) and configured ~= "" then return configured end
+    return presets.defaults[option]
+end
+
+local function releaseWeather()
+    if not ready() then return end
+    local ownFog = fogPresetChosen()
+    for option in pairs(weatherSet) do
+        -- A fog preset chosen under Remix settings keeps the fog it set.
+        if not (ownFog and string.find(option, "rtx.volumetrics.", 1, true) == 1) then
+            local text = remixValue(option)
+            if text then set(option, text) end
+        end
+    end
+    weatherSet = {}
 end
 
 -- The values now: the blend between two presets, plus the slow variation of the cover and the wind.
@@ -360,7 +398,12 @@ end
 
 local function setWeather(instantly)
     local name = weatherName()
-    if not name then weather.name = nil return end
+    if not name then
+        -- Left to Remix: what the weather set goes back to Remix's own values, not the last preset's.
+        if weather.name then releaseWeather() end
+        weather.name = nil
+        return
+    end
     local target = presetValues(name)
     local t = CurTime()
     weather.from = (not instantly and weather.values) or target
@@ -436,24 +479,26 @@ local function applyAll()
     apply()
 end
 
--- The clock and the weather, a few times a second; the sun only when it has moved.
+-- The clock and the weather, every nativeloader_sky_interval seconds; what has not changed is not
+-- sent again (set).
 local lastTick
-timer.Create("nativeloader_sky", 0.25, 0, function()
+timer.Create("nativeloader_sky", interval(), 0, function()
     if not clock or not inCharge() then return end
     local t = RealTime()
-    if cv.nativeloader_sky_time_passes:GetBool() and lastTick then
-        local minutes = math.max(cv.nativeloader_sky_day_minutes:GetFloat(), 0.1)
-        clock = (clock + (t - lastTick) / (minutes * 60) * 24) % 24
-    end
+    local dt = lastTick and math.max(t - lastTick, 0) or 0
     lastTick = t
+    if cv.nativeloader_sky_time_passes:GetBool() then
+        local minutes = math.max(cv.nativeloader_sky_day_minutes:GetFloat(), 0.1)
+        clock = (clock + dt / (minutes * 60) * 24) % 24
+    end
     if physical then pushCelestial() end
     if weather.name then
         local values = weatherNow(CurTime())
         weather.values = values
         if (values.precipitationIntensity or 0) > 0 then
-            -- Half a second to fade, either way.
-            local target = sheltered() and 0 or 1
-            outdoors = target > outdoors and math.min(outdoors + 0.5, 1) or math.max(outdoors - 0.5, target)
+            -- Half a second to fade, either way, however often this runs.
+            local target, step = sheltered() and 0 or 1, math.min(dt * 2, 1)
+            outdoors = target > outdoors and math.min(outdoors + step, target) or math.max(outdoors - step, target)
         end
         pushWeather(values)
     end
@@ -467,6 +512,11 @@ end)
 ---------------------------------------------------------------- settings changing
 
 local function changed(name, _, value)
+    if name == "nativeloader_sky_interval" then
+        -- How often, not what: it does not take a map's sky over.
+        timer.Adjust("nativeloader_sky", interval())
+        return
+    end
     if ours(name, value) or not clock then return end
     takenOver = true
     if name == "nativeloader_sky_hour" or name == "nativeloader_sky_direction" then
@@ -648,6 +698,8 @@ local function buildPanel(panel)
     panel:CheckBox(L("Time passes"), "nativeloader_sky_time_passes")
     panel:NumSlider(L("Day length (min)"), "nativeloader_sky_day_minutes", 2, 240, 0)
     panel:ControlHelp(L("Real minutes for a whole day while the time passes."))
+    panel:NumSlider(L("Sky update interval (s)"), "nativeloader_sky_interval", 0, 0.25, 3)
+    panel:ControlHelp(L("How often the sun, moon, stars and weather move on: 0.02 is 50 times a second, 0 every frame. Longer saves a little time but the sky moves in steps."))
     combo(panel, N("Season"), "nativeloader_sky_season", SEASONS)
     combo(panel, N("Moon"), "nativeloader_sky_moon", MOONS)
     combo(panel, N("Eclipse"), "nativeloader_sky_eclipse", ECLIPSES)

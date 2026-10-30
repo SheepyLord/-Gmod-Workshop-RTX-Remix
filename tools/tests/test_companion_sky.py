@@ -128,9 +128,10 @@ function RunConsoleCommand(name, ...)
   end
 end
 concommand = { Add = function(name, fn) commands[name] = fn end }
-local simple = {}
+local simple, delays = {}, {}
 timer = {
-  Create = function(name, delay, reps, fn) timers[name] = fn end,
+  Create = function(name, delay, reps, fn) timers[name] = fn delays[name] = delay end,
+  Adjust = function(name, delay) delays[name] = delay return timers[name] ~= nil end,
   Simple = function(delay, fn) simple[#simple + 1] = fn end,
   Remove = function(name) timers[name] = nil end,
 }
@@ -211,9 +212,31 @@ print("convars " .. convars.nativeloader_sky_hour.value .. " " .. convars.native
 if SCRIPT == "ownership" then
   tick(1)
   report("owned")
+  print("interval " .. tostring(delays.nativeloader_sky))
+  cmd("nativeloader_sky_interval", "0.1")  -- how often, not what: the map's sky stays its own
+  tick(1)
+  report("adjusted")
+  print("interval_now " .. tostring(delays.nativeloader_sky))
   cmd("nativeloader_weather", "overcast")
   tick(31)
   report("taken", "rtx.skyMode", "rtx.atmosphere.cloudDensity")
+  return
+end
+if SCRIPT == "release" then
+  cmd("nativeloader_weather_seconds", "0")
+  cmd("nativeloader_weather", "rainstorm")
+  tick(0.25)
+  report("rain", "rtx.atmosphere.cloudDensity", "rtx.weather.precipitation.intensity",
+    "rtx.weather.precipitation.spawnRadiusMeters", "rtx.atmosphere.lightningStrikesPerMinute")
+  cmd("nativeloader_weather", "")
+  report("released", "rtx.atmosphere.cloudDensity", "rtx.weather.precipitation.intensity",
+    "rtx.weather.precipitation.spawnRadiusMeters", "rtx.atmosphere.lightningStrikesPerMinute")
+  local P = include("nativeloader/weather_presets.lua")
+  print("defaults " .. P.defaults["rtx.weather.precipitation.spawnRadiusMeters"] .. " "
+    .. P.defaults["rtx.atmosphere.lightningStrikesPerMinute"] .. " " .. P.defaults["rtx.weather.precipitation.intensity"])
+  local before = #calls
+  tick(10)
+  print("quiet " .. (#calls - before))
   return
 end
 if SCRIPT == "skybox" then
@@ -443,14 +466,32 @@ class SkyTests(unittest.TestCase):
         self.assertAlmostEqual(float(hour['rtx.atmosphere.sunRotation']), bearing, delta=0.002)
         # 60 s of a 24-minute day: an hour; stopping the clock keeps the time it got to.
         self.assertAlmostEqual(float(out['clock']), 19.0, delta=0.02)
-        # Weather left to Remix: nothing more is sent for it.
+        # Weather left to Remix: nothing more is sent for it (what it set went back at once, below).
         self.assertEqual(out['left'], '0')
         self.assertTrue(out['[nativeloader]'].startswith('sky: physical; Remix API ready'), out['[nativeloader]'])
+
+    def test_weather_left_to_remix_puts_back_remixs_own_values(self):
+        # R3-009: clearing the weather after Rain gave the options back their rtx.conf value, or what
+        # Remix has without one (the package's layer, else the runtime's default); not the rain's.
+        out = self.run_lua('CONF = { ["rtx.atmosphere.cloudDensity"] = "1.7" }\n' + SESSION, MAP='gm_construct',
+                           BSP=bsp(CONSTRUCT), SCRIPT='release')
+        rain, released = self.settings(out['rain']), self.settings(out['released'])
+        self.assertEqual((rain['rtx.atmosphere.cloudDensity'], rain['rtx.weather.precipitation.intensity'],
+                          rain['rtx.weather.precipitation.spawnRadiusMeters']), ('2.5', '0.8', '8'))
+        radius, lightning, intensity = out['defaults'].split()
+        self.assertEqual(released['rtx.atmosphere.cloudDensity'], '1.7')  # rtx.conf's
+        self.assertEqual((released['rtx.weather.precipitation.intensity'], released['rtx.weather.precipitation.spawnRadiusMeters'],
+                          released['rtx.atmosphere.lightningStrikesPerMinute']), (intensity, radius, lightning))
+        self.assertEqual((intensity, lightning), ('0', '0'))
+        self.assertEqual(out['quiet'], '0')
 
     def test_a_maps_own_sky_add_on_keeps_its_sky_until_the_player_changes_it(self):
         out = self.run_lua('MHRTX_Config = {}\n' + SESSION, MAP='modern_house', BSP=bsp(CONSTRUCT), SCRIPT='ownership')
         self.assertEqual(out['start'].split()[0], '0')
         self.assertEqual(out['owned'].split()[0], '0')
+        # R3-015: 50 updates a second by default; changing how often does not take the map's sky over.
+        self.assertEqual(out['interval'], '0.02')
+        self.assertEqual((out['adjusted'].split()[0], out['interval_now']), ('0', '0.1'))
         taken = self.settings(out['taken'])
         self.assertEqual((taken['rtx.skyMode'], taken['rtx.atmosphere.cloudDensity']), ('1', '1.8'))
 

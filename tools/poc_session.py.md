@@ -70,10 +70,12 @@ dropped, so before a save or the camera the script waits until `console.log` has
     then once it has (`Addons have changes - remounting`, `Mounted 752 of 755 workshop addons!`).
   - A map asked for in between waits on that fetch ("Waiting for Steam Workshop to finish...") and
     the window stops answering.
-  - So the run starts at the menu, waits for the second mount line (or a first one that mounted
-    something, or had nothing to mount) and 5 s of quiet log, then sends `map <name>`.
-  - The record has `workshop_mounted`, `workshop_ready`, `quiet_before_map`, `seconds_to_workshop`
-    and `map_command`.
+  - So the run starts at the menu, waits for the second mount line (or a first one that mounted all
+    of them, or had nothing to mount; or a first that mounted some but not all, once 20 s pass without
+    `Addons have changes - remounting`, `PARTIAL_MOUNT_GRACE`: a remount may follow it, R3-013) and 5 s
+    of quiet log, then sends `map <name>`.
+  - The record has `workshop_mounted`, `workshop_ready`, `workshop_ready_by` (which of those rules),
+    `quiet_before_map`, `seconds_to_workshop` and `map_command`.
 
   It waits for `Clientside Lua startup!` in `console.log` (`--timeout`, 300 s), then:
   `--load-save <name>` sends `gm_load` and waits for the next map (`save_command` and `save_loaded`

@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import sys
 
-from package_fixes import collect, regular_file
+from package_fixes import add_to_addons, collect, regular_file
 from package_runtime import (GMAPACK, ID, SEMVER, PackageError, check_private, copy_hashed, inside, inventory_paths,
                              is_link, path_problem, replace_folder, sha256_of, write_inventories)
 from package_workshop import ADDON_TAGS, ADDON_TYPES, find_nlctl
@@ -129,6 +129,8 @@ def sources(args):
         regular_file(source)
         files[rel] = source
         replaced[rel] = given
+    # Files the add-on folder does not have, such as the licences its part keeps beside it (R3-011).
+    add_to_addons(args.add_to_addon, addons, files, junk)
     lua_bin = {}
     for given in args.lua_bin:
         source = os.path.abspath(given)
@@ -366,6 +368,9 @@ def main(argv=None):
     ap.add_argument('--addon-file', action='append', default=[], nargs=2, metavar=('PATH', 'FILE'),
                     help='take PATH, an add-on folder name and a file the add-on has (name/lua/file.lua), from FILE '
                          'instead (repeatable; ADR 0026)')
+    ap.add_argument('--add-to-addon', action='append', default=[], nargs=2, metavar=('PATH', 'SOURCE'),
+                    help='add SOURCE, a file or a folder, to an add-on as PATH (name/LICENSE), such as a licence text '
+                         'the add-on folder does not have; never over a file it has (repeatable)')
     ap.add_argument('--mod', action='append', default=[], metavar='FOLDER',
                     help='a Remix mod folder, deployed to rtx-remix/mods/<its name> (repeatable)')
     ap.add_argument('--lua-bin', action='append', default=[], metavar='FILE',

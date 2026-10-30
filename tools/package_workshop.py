@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -35,6 +36,17 @@ CHUNK = 1 << 20
 
 class CombineError(Exception):
     pass
+
+
+def check_file_path(rel) -> str:
+    """A package path as the loader takes it (manifest.cpp): under native/payload/ or native/root/, forward
+    slashes, no empty, . or .. segment, no drive, colon or control character. Checked for every file of
+    every part before anything is written: pathlib drops the staging folder before an absolute path, and
+    a copy would then open, and empty, that file."""
+    if (not isinstance(rel, str) or not rel.startswith(('native/payload/', 'native/root/')) or '\\' in rel or ':' in rel
+            or any(ord(c) < 32 or ord(c) == 127 for c in rel) or any(s in ('', '.', '..') for s in rel.split('/'))):
+        raise CombineError(f'{rel!r}: not a package path under native/payload/ or native/root/')
+    return rel
 
 
 class Part:
@@ -68,6 +80,15 @@ class Part:
         unknown = sorted(set(self.manifest) - KNOWN_KEYS)
         if unknown:
             raise CombineError(f'{path}: manifest keys this tool does not know how to merge: {", ".join(unknown)}')
+        files = self.manifest.get('files', {})
+        if not isinstance(files, dict):
+            raise CombineError(f'{path}: "files" must be an object')
+        for rel in files:
+            if rel != MANIFEST:
+                try:
+                    check_file_path(rel)
+                except CombineError as error:
+                    raise CombineError(f'{path}: {error}') from None
 
     def _read(self, entry: dict) -> bytes:
         self.gma.fh.seek(entry['offset'])
@@ -211,10 +232,14 @@ def combine(parts: list[Path], ident: str, version: str, name: str | None, addon
         work = Path(tempfile.mkdtemp(prefix='package-workshop-', dir=scratch_root))
         try:
             folder = work / 'package'
+            inside = os.path.normcase(str(folder.resolve())) + os.sep
             for part in opened:
                 for rel, info in part.manifest.get('files', {}).items():
                     if rel != MANIFEST:
-                        part.copy(rel, folder / rel, info)
+                        target = folder / check_file_path(rel)
+                        if not os.path.normcase(str(target.resolve())).startswith(inside):
+                            raise CombineError(f'{part.path}: {rel} would be written outside the package folder')
+                        part.copy(rel, target, info)
             (folder / 'native').mkdir(parents=True, exist_ok=True)
             (folder / 'native' / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
             (folder / 'addon.json').write_text(json.dumps(addon, indent=2) + '\n', encoding='utf-8')

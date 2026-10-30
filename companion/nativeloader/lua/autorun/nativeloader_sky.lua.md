@@ -34,8 +34,9 @@ Saved client settings, shown in the RTX Remix tab under "Sky and weather":
 | `nativeloader_sky_eclipse` | (empty) | `lunar` or `solar`; empty for none. An eclipse sets the moon's phase (full, new) |
 | `nativeloader_sky_eclipse_amount` | `100` | How far through the eclipse, 0-100: first contact to the middle; lunar total from 70, solar from 90 |
 | `nativeloader_sky_stars` | `map` | Night sky: `map` (the night sky image: stars, galaxy and nebulae) or `procedural` |
-| `nativeloader_weather` | `partlyCloudy` | One of the twelve presets (`clear`, `partlyCloudy`, `overcast`, `hazy`, `foggy`, `drizzle`, `rainstorm`, `thunderstorm`, `snow`, `blizzard`, `sandstorm`, `smoggy`); empty leaves clouds, fog and rain to Remix's files |
+| `nativeloader_weather` | `partlyCloudy` | One of the twelve presets (`clear`, `partlyCloudy`, `overcast`, `hazy`, `foggy`, `drizzle`, `rainstorm`, `thunderstorm`, `snow`, `blizzard`, `sandstorm`, `smoggy`); empty leaves clouds, fog and rain to Remix's files (see "Weather left to Remix") |
 | `nativeloader_weather_seconds` | `30` | How long a change of weather takes |
+| `nativeloader_sky_interval` | `0.02` | Seconds between updates of the sun, moon, stars and weather, 0-1: 0.02 is 50 a second, 0 every frame. Changing it does not take a map's sky over (R3-015) |
 
 Moving the time or the direction turns `nativeloader_sky_follow_map` off. The other one keeps the
 map's value, which the panel shows.
@@ -86,7 +87,8 @@ From the model, at latitude 40, for the clock, the season, the moon phase and th
 - `moon0.elevation`, `moon0.rotation`, `moon0.phase`;
 - `starRotation`, `starAxisElevation`, `starAxisRotation`.
 
-They are sent at the start of a map, on every change, and four times a second while the clock runs.
+They are sent at the start of a map, on every change, and every `nativeloader_sky_interval` seconds
+(0.02 by default; it was 0.25 until R3-015, and a running clock then moved the sky in visible steps).
 An unchanged value is not sent again.
 
 **The moon off the ecliptic.** The runtime draws an eclipse wherever the geometry has one, so the
@@ -138,7 +140,21 @@ whole map is a few dozen Remix metres across:
 - **Cover.** The runtime's own test for cover (`occludeUnderCover`) traces up to 100 000 units. A
   map's 3D skybox room hangs above most maps within that and counted as cover everywhere, so no drop
   was ever born. The test is off; instead the game's trace straight up from the view decides, and
-  under a roof the rain and snow fade out in half a second.
+  under a roof the rain and snow fade out in half a second (by the time passed, whatever
+  `nativeloader_sky_interval` is).
+
+**Weather left to Remix** (`nativeloader_weather` empty, "(leave to Remix)" in the panel). At the
+start of a map the companion then sends nothing for the weather. Cleared during a session, every
+option the weather had set goes back to Remix's own value (R3-009): `rtx.conf`'s (RemixConfig's
+`GetConfigVariable` reads only that file), else what Remix has without it, the package's classic layer
+or the runtime's default, from [`weather_presets.lua`](../nativeloader/weather_presets.lua.md)
+`defaults`. What the RTX fixes set for the map is not known here, and is not put back. A fog preset
+chosen under "Remix settings" keeps its fog.
+
+**Another add-on's later change** of an option the weather sets (or one made in the Remix menu, Alt+X)
+stays until the weather's own value for it changes, or the map starts again: the companion sends a
+value when its own changes, and does not take back what others set (R3-010, rejected). Only on a map
+whose add-on sets the sky, once the player has taken it over, is everything put back every 10 s.
 
 **Under the night sky image** the weather's airglow (`rtx.atmosphere.nightSkyBrightness`, 0.008 to
 0.012 in the presets) goes out at 5 % of the preset's value. In Skyrim, where the image comes from,
@@ -174,7 +190,8 @@ it back 3, 23, 43 and 63 s after the map starts.
 
 - **When.** At `InitPostEntity`, then everything again 5 s later, after the RTX fixes' per-map Remix
   settings.
-- **Ticks.** A 0.25 s timer runs the clock, the weather blend, the variation and the cover check.
+- **Ticks.** A timer every `nativeloader_sky_interval` seconds (0.02 by default; `timer.Adjust` when the
+  setting changes) runs the clock, the weather blend, the variation and the cover check.
 - **The panel.** `NATIVELOADER_SKY` holds the panel builder and the clock for the panel (and
   tests).
 

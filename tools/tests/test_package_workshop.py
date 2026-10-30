@@ -130,6 +130,22 @@ class CombineTests(unittest.TestCase):
             self.combine([self.runtime, self.fixes])
         self.assertFalse((self.root / 'out').exists())
 
+    def test_a_path_outside_the_package_is_refused_before_anything_is_written(self):
+        # R3-008: an absolute key named a file outside the staging folder, and the copy emptied it.
+        sentinel = self.root / 'sentinel.txt'
+        sentinel.write_bytes(b'twenty bytes of data')
+        for bad in (str(sentinel), str(sentinel).replace('\\', '/'), 'native/root/../../sentinel.txt', 'native/root//x',
+                    'native/root/a\\b', 'other/x', 'native/root/c:x'):
+            manifest = json.loads((self.fixes / 'native' / 'manifest.json').read_text(encoding='utf-8'))
+            manifest['files'][bad] = {'size': 20, 'sha256': hashlib.sha256(b'twenty bytes of data').hexdigest()}
+            odd = self.root / 'odd'
+            shutil.rmtree(odd, ignore_errors=True)
+            write_package(odd, FIXES[0], FIXES[1])
+            (odd / 'native' / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+            with self.assertRaisesRegex(pw.CombineError, 'not a package path', msg=bad):
+                self.combine([self.runtime, odd])
+            self.assertEqual(sentinel.read_bytes(), b'twenty bytes of data', bad)
+
     def test_conflicting_session_values_and_unknown_keys_are_refused(self):
         other = write_package(self.root / 'other', {'schema': 1, 'id': 'o', 'version': '1.0.0', 'kinds': [],
                                                     'session_cvars': {'R_3DSKY': '1'}}, {})

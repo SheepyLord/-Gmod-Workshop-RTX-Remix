@@ -324,6 +324,54 @@ class StepRunTests(unittest.TestCase):
         self.assertEqual(sent, ps.client_lua_lines('lua1', code) + ['nl_shot_taken 1', 'nl_shot_taken 2', 'quit'])
         self.assertFalse((self.root / 'garrysmod' / 'data').exists())
 
+    def test_a_partial_first_mount_waits_for_a_remount_for_a_while(self):
+        # R3-013: "Mounted 3 of 755" first, then the remount: the map waits for the second mount. A
+        # partial first mount that no remount follows counts once PARTIAL_MOUNT_GRACE has passed.
+        log = self.root / 'garrysmod' / 'console.log'
+
+        def run(remount_at):
+            clock, game, sent = Clock(), FakeGame(), []
+
+            def launch(arguments, **_):
+                log.write_text('Mounted 3 of 755 workshop addons!\n', encoding='utf-8')
+                return game
+
+            def sleep(seconds):
+                clock.sleep(seconds)
+                if remount_at and clock.now > remount_at and 'remounting' not in log.read_text(encoding='utf-8'):
+                    with open(log, 'a', encoding='utf-8') as handle:
+                        handle.write('Addons have changes - remounting\nMounted 752 of 755 workshop addons!\n')
+
+            def console(hwnd, command, attempts=6):
+                sent.append((clock.now, command))
+                if command.startswith('map '):
+                    with open(log, 'a', encoding='utf-8') as handle:
+                        handle.write('Clientside Lua startup!\n')
+                elif command == 'quit':
+                    game.quit()
+                return True
+
+            with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                    mock.patch.object(ps, 'terminate', return_value=[]), \
+                    mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                    mock.patch.object(ps.time, 'sleep', sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                    mock.patch.object(ps, 'console', side_effect=console), \
+                    mock.patch.object(ps, 'console_window', return_value=7), \
+                    mock.patch.object(ps, 'game_window', return_value=None), \
+                    mock.patch.object(ps, 'modules_of', return_value=[]):
+                record = ps.step_run(run_args(self.root, self.evidence, workshop=True))
+            return clock, record, sent
+
+        clock, record, sent = run(remount_at=1012)
+        self.assertEqual(record['workshop_mounted'], ['3 of 755', '752 of 755'])
+        self.assertEqual(record['workshop_ready_by'], 'the remount')
+        self.assertGreater(sent[0][0], 1012)
+        clock, record, sent = run(remount_at=None)
+        self.assertEqual(record['workshop_mounted'], ['3 of 755'])
+        self.assertTrue(record['workshop_ready_by'].startswith('a partial first mount'))
+        self.assertGreater(sent[0][0], 1000 + ps.PARTIAL_MOUNT_GRACE)
+        self.assertTrue(record['map_loaded'])
+
     def test_with_workshop_add_ons_the_map_waits_for_the_workshop_mount(self):
         # A map on the command line, or sent while Steam still lists the subscriptions, waits on that
         # fetch and the game stops answering: the run starts at the menu and asks for the map once the

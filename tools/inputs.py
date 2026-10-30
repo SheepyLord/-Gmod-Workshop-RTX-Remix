@@ -20,6 +20,7 @@ import json
 import lzma
 import os
 import shutil
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -66,10 +67,13 @@ def read_index(part: str, packages: Path = PACKAGES) -> dict:
 
 
 def write_index(index: dict, packages: Path = PACKAGES) -> None:
+    """Writes the index whole or not at all (a new file, then renamed over the old one)."""
     path = part_dir(index['part'], packages) / INDEX
     path.parent.mkdir(parents=True, exist_ok=True)
     index['files'] = dict(sorted(index['files'].items(), key=lambda kv: kv[0].lower()))
-    path.write_bytes((json.dumps(index, indent=1, sort_keys=False) + '\n').encode('utf-8'))
+    tmp = path.with_name(path.name + '.tmp')
+    tmp.write_bytes((json.dumps(index, indent=1, sort_keys=False) + '\n').encode('utf-8'))
+    os.replace(tmp, path)
 
 
 def parts(packages: Path = PACKAGES) -> list[str]:
@@ -99,6 +103,36 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(CHUNK), b''):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def hash_all(paths: list[Path], workers: int | None = None) -> list[str]:
+    """The SHA-256 of each file, in order, a few at a time (hashlib lets the threads run together)."""
+    if not paths:
+        return []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers or max(1, (os.cpu_count() or 2) - 2)) as pool:
+        return list(pool.map(sha256_file, paths))
+
+
+def is_link(path) -> bool:
+    """A symbolic link or a junction: any path whose last part is a reparse point."""
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        return False
+    return stat.S_ISLNK(info.st_mode) or bool(getattr(info, 'st_file_attributes', 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def refuse_links(top: Path) -> None:
+    """Unpacking writes and deletes only in real folders: neither `top` nor anything below it may be a
+    link or a junction, which would take the writes, and the removal of stale files, somewhere else."""
+    found = [str(top)] if is_link(top) else []
+    if not found and top.is_dir():
+        for folder, dirs, names in os.walk(top):
+            found += [os.path.join(folder, n) for n in dirs + names if is_link(os.path.join(folder, n))]
+            dirs[:] = [d for d in dirs if not is_link(os.path.join(folder, d))]
+    if found:
+        raise InputsError(f'{found[0]} is a link or junction; unpacking writes and deletes only in real folders, so '
+                          'remove it (the unpacked tree is rebuilt from packages/)')
 
 
 def is_plain(path: Path, size: int) -> bool:
@@ -160,15 +194,15 @@ def git_origin(path: Path) -> dict | None:
             'dirty': bool(run('status', '--porcelain', '--', str(path)))}
 
 
-def read_inventory(path: Path) -> list[tuple[str, str]]:
-    """(package path, source) rows of a packager's .inventory.txt (size, sha256, path, source, note)."""
+def read_inventory(path: Path) -> list[tuple[str, str, str]]:
+    """(package path, source, SHA-256) rows of a packager's .inventory.txt (size, sha256, path, source, note)."""
     rows = []
     for line in path.read_text(encoding='utf-8').splitlines():
         if not line or line.startswith('#') or line.startswith('size\t'):
             continue
         cols = line.split('\t')
         if len(cols) >= 4:
-            rows.append((cols[2], cols[3]))
+            rows.append((cols[2], cols[3], cols[1]))
     return rows
 
 
@@ -188,6 +222,7 @@ def import_files(part: str, roots: list[tuple[Path, str]], files: list[tuple[Pat
     except InputsError:
         index = {'schema': 1, 'part': part, 'origins': {}, 'files': {}}
     wanted: dict[str, Path] = {}
+    listed: dict[str, str] = {}  # inventory source (normcase) -> the SHA-256 the packager read
     roots = [(Path(os.path.abspath(src)), dst.strip('/')) for src, dst in roots]
 
     def add(rel: str, source: Path) -> None:
@@ -202,7 +237,7 @@ def import_files(part: str, roots: list[tuple[Path, str]], files: list[tuple[Pat
     if inventory is not None:
         skipped = [os.path.normcase(os.path.abspath(p)) + os.sep for p in (skip or [])]
         repo, scratch = os.path.normcase(str(REPO)) + os.sep, os.path.normcase(str(REPO / 'out')) + os.sep
-        for _, source in read_inventory(inventory):
+        for _, source, digest in read_inventory(inventory):
             src = Path(source)
             if not src.is_absolute() or not src.is_file():
                 continue  # written by the packager, or built from this repository (companion\i18n)
@@ -215,6 +250,7 @@ def import_files(part: str, roots: list[tuple[Path, str]], files: list[tuple[Pat
                 raise InputsError(f'{src}: in no --root of this import')
             rel = Path(os.path.relpath(src, match[0])).as_posix()
             add(f'{match[1]}/{rel}' if match[1] else rel, src)
+            listed[os.path.normcase(str(src))] = digest
     else:
         for src, dst in roots:
             if not src.is_dir():
@@ -241,12 +277,18 @@ def import_files(part: str, roots: list[tuple[Path, str]], files: list[tuple[Pat
     prefixes = {dst for _, dst in roots} | {dst for _, dst in files}
     old = index['files']
     todo = []
-    for rel, src in wanted.items():
-        info = src.stat()
+    # Every source is hashed: a tool that keeps a file's size and time while changing its bytes must not
+    # leave the old content in packages/. A source that differs from what the packager's inventory
+    # says it read changed after the build, so the inventory no longer describes the part.
+    for (rel, src), digest in zip(wanted.items(), hash_all(list(wanted.values()), workers)):
+        known = listed.get(os.path.normcase(str(src)))
+        if known and known != digest:
+            raise InputsError(f'{src} changed since the packager read it (its SHA-256 is not the inventory\'s): '
+                              'build the part again, then import its new inventory')
         entry = old.get(rel)
         stored = base / stored_name(rel, entry) if entry else None
-        if entry and entry['size'] == info.st_size and entry['mtime_ns'] == info.st_mtime_ns and stored.is_file():
-            continue  # unchanged since the last import
+        if entry and entry['sha256'] == digest and stored.is_file():
+            continue  # the same content as the last import
         todo.append((rel, src))
     log(f'{part}: {len(wanted)} files, {len(todo)} to store')
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers or max(1, (os.cpu_count() or 2) - 2)) as pool:
@@ -316,23 +358,32 @@ def unpack_file(stored: Path, target: Path, entry: dict) -> None:
 
 def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path = INPUTS, log=print,
            workers: int | None = None) -> dict:
-    """Builds dest/<part>/ from packages/<part>/ for every part (or the named ones): files whose size
-    and time already match are kept, others are written and checked against the index, and files the
-    index does not list are removed."""
+    """Builds dest/<part>/ from packages/<part>/ for every part (or the named ones): files whose size,
+    time and SHA-256 already match are kept, others are written and checked against the index, and
+    files the index does not list are removed. Refuses links and junctions in dest (refuse_links)."""
     result = {}
+    if is_link(dest):
+        raise InputsError(f'{dest} is a link or junction; unpacking writes and deletes only in real folders')
     for part in names or parts(packages):
         index = read_index(part, packages)
         base, out = part_dir(part, packages), dest / part
-        todo = []
+        refuse_links(out)
+        todo, kept = [], []
         for rel, entry in index['files'].items():
-            target = out / rel
+            target = out / check_rel(rel)
             try:
                 info = target.stat()
                 if info.st_size == entry['size'] and info.st_mtime_ns == entry['mtime_ns']:
+                    kept.append((rel, target, entry))
                     continue
             except FileNotFoundError:
                 pass
             todo.append((base / stored_name(rel, entry), target, entry))
+        # A file of the right size and time is kept only with the indexed content: a stale or edited
+        # one would otherwise go into the package, while the fingerprint describes packages/.
+        for (rel, target, entry), digest in zip(kept, hash_all([job[1] for job in kept], workers)):
+            if digest != entry['sha256']:
+                todo.append((base / stored_name(rel, entry), target, entry))
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers or max(1, (os.cpu_count() or 2) - 2)) as pool:
             for future in [pool.submit(unpack_file, *job) for job in todo]:
                 future.result()
@@ -347,7 +398,7 @@ def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path
                         stale += 1
                 if folder != str(out) and not os.listdir(folder):
                     os.rmdir(folder)
-        log(f'{part}: {len(index["files"])} files, {len(todo)} written, {stale} stale removed')
+        log(f'{part}: {len(index["files"])} files, {len(todo)} written, {len(kept)} checked, {stale} stale removed')
         result[part] = {'files': len(index['files']), 'written': len(todo), 'removed': stale}
     return result
 
