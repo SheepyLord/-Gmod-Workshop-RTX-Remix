@@ -6,6 +6,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Update the in-game Common Remix guide and its six translations to explain explicit startup
+  overrides and saving through Alt+X.
+
 - Fix Common Remix sliders turning unset settings into archived zeros. Remix's saved settings now
   win at launch unless startup overrides are explicitly enabled; numeric overrides require a
   selection. Runtime saves replace files atomically, retain unsaved state on failure, and failed

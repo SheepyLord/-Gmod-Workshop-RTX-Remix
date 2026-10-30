@@ -1,5 +1,9 @@
 # nativeloader_guide.lua
 
+The Common Remix paragraph follows ADR 0044: edits apply to the current session, Remix's Save keeps
+them, startup replay is opt-in, and numeric overrides must be selected explicitly. It does not
+describe the former automatic replay behavior.
+
 The in-game RTX Remix guide. Client only, in RTX sessions (the companion ships in the RTX-only
 package). The console command `nativeloader_guide`, or RTX Remix tab > Start here, opens a window with
 five pages, in the player's language ([`../../nativeloader/i18n.lua`](../../nativeloader/i18n.lua.md): the page

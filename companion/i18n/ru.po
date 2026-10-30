@@ -363,8 +363,8 @@ msgid "Common Remix settings"
 msgstr "Основные опции Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:34
-msgid "RTX Remix tab > Remix settings: preset, upscaler, DLSS quality, frame generation, indirect lighting, bounces, skybox brightness, fog, post effects and tone mapping. A value set there is kept and applied at every start; '(leave to Remix)' hands it back to Remix's files."
-msgstr "Вкладка RTX Remix > Настройки Remix: пресет, апскейлер, качество DLSS, генерация кадров, непрямой свет, отскоки света, яркость скайбокса, туман, постэффекты и тональная компрессия. Заданное там значение сохраняется и применяется при каждом запуске; «(на усмотрение Remix)» возвращает его файлам Remix."
+msgid "RTX Remix tab > Remix settings changes common settings for this session. Save them in Alt+X to keep them. Reapplying this panel's choices at launch is off by default; enable it only to override Remix's saved settings. Select a numeric override before editing it."
+msgstr "Вкладка RTX Remix > Настройки Remix позволяет менять общие параметры для текущего сеанса. Чтобы сохранить их, используйте сохранение в Alt+X. Повторное применение значений с этой панели при запуске по умолчанию выключено. Включайте его, только если хотите заменять сохранённые настройки Remix. Перед изменением числа включите переопределение для этого параметра."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:35
 msgid "Fog: Remix's own volumetric presets, from light mist to heavy fog, dust and smoke. A preset replaces the weather's fog until you set it back to '(leave to Remix)'."

@@ -409,3 +409,6 @@ sky-brightness update was identified separately from menu writes.
 Both test installs' bootstrap, config, client/server VDF and video preferences were restored and
 hash-verified. Native user config files remained unchanged; the test addon and marker were removed.
 Evidence and delivery receipts are under out/settings-evidence and out/settings-*.log.
+
+The in-game guide's Common Remix paragraph also describes opt-in replay, native saving and numeric
+selection in all six languages. ADR 0022's status records the superseded startup-replay behavior.
