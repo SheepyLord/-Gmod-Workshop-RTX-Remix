@@ -1,5 +1,7 @@
 # QoL report: complete interface translations
 
+Latest batch: [legacy Remix migration, loader 0.8.0](#legacy-remix-migration-2026-10-30).
+
 2026-10-30. Implemented on `codex/translation-review`, from `main` at `7d79c12`.
 The user expanded the audit to every bundled add-on interface. The implementation is recorded in
 [ADR 0038](../decisions/0038-complete-bundled-interface-translations.md).
@@ -235,3 +237,63 @@ native_render.lua and the manifest change, and four Lua documentation sidecars a
 deployment. Their indexed source copies remain. PoC config.json and config.cfg were restored to
 their saved hashes; video settings matched the before snapshot. User.conf and the field install
 were not manually edited. No real model data is included in the package or source commit.
+
+
+## Legacy Remix migration (2026-10-30)
+
+Implemented on codex/legacy-remix-migration, based on e3c5a48. Loader 0.8.0 recognizes an
+independently installed Remix by its bounded, statically parsed PE exports. It archives the old
+runtime, known addon/mod roots, loose fixes and factory configs; stages and verifies our shipment
+and clean stock recovery before replacing anything. Archive, stock restoration and package
+installation use one durable deployment transaction. No old DLL is loaded for identification.
+[ADR 0042](../decisions/0042-legacy-remix-migration.md) records the narrow depot-restoration
+exception authorized by this request, exact hash/build guards, protected files and recovery limits.
+
+The user replaced GarrysMod_RTX_c with this implementation. It and its backups were not touched;
+AGENTS, ENVIRONMENT and the handover now identify it correctly. The field install was only read
+for verified stock recovery; its bootstrap receipt remains 0.7.0. No Steam launch options changed.
+
+The isolated out/legacy-game fixture starts from 2,877 Steam-verified files and the actual pinned
+Xenthio nightly aaefa35 / runtime ZIPs, with all seven x64 launcher patches. The launcher's optional
+fallback guard was independently probed and skipped as Unsupported, without changing bytes.
+The fixture's original state, upstream hashes and recovery sources are in out/legacy-research.
+
+Acceptance evidence in this worktree's out/legacy-acceptance:
+
+- plan.json: zero writes; archive 496 old files and restore ten known modified depot files.
+- 01-automatic-migration: first launch migrates and activates the packaged runtime/shader,
+  reaches gm_construct in 20 s, zero Lua errors, normal quit/exit 0. Startup completes in 12.1 s.
+- backup-audit.json: all 496 backup sizes/hashes match. Independent depot verification reports
+  2,877 stock files, zero missing/changed/unverified/linked, with the intentional autoexec userconfig
+  exception. The obsolete legacy Lua sentinel is gone; six protected user-file sentinels match.
+- 02-rtx-off removes the source; 03-rtx-disabled-package-present retains it with remix.enabled=false.
+  Both load system Direct3D at DX95, report zero patches/overrides, zero Lua errors and normal exit 0.
+- Real uninstall retains the archive and leaves all 2,877 depot files stock. Old runtime/addons do
+  not reactivate. Reconstructing the fixture from verified backup bytes then tests missing stock
+  and an incorrect executable/client/server build: both fail with zero writes and all 496 originals
+  intact. No field files are changed for these negative checks.
+- 04-final-reinstall-migration validates the final build guard and a new permanent archive 1-2;
+  archive 1 remains intact. It loads our runtime/shader, reaches the map, and exits normally with
+  zero Lua errors. Ray tracing is True in the runtime log. final-audit.json verifies both archives,
+  all protected sentinels and restored video-registry values. user.conf retains its original hash.
+- After the game's generated create-only PBR file settles, a repeat apply is unchanged with zero
+  operations. Generated regression tests also cover an RTX-off first deployment: old uninstall
+  originals are transferred to the permanent archive, so a later uninstall cannot revive old Lua.
+
+The complete Release suite passes 18 CTest groups and 258 Python tests. The migration CTest
+interrupts and fails every filesystem operation and interrupts recovery too, requiring the complete
+old or new state. PE tests include sparse distant/page-crossing tables, malformed RVAs, aliases,
+forwarders, x86/x64 and reparse points. The bootstrap still imports only KERNEL32.dll.
+
+The 919 payload hashes in the complete package are unchanged. Its manifest version and archive
+description change to explain loader 0.8.0 migration; the branch build was validated by nlctl and
+compared against the current Workshop archive (new metadata digest b71d8797b9c272ed). Its temporary
+combiner folder was placed under the main out directory because nested worktree paths exceed the
+existing package-reader path limit; source and validation still use this branch. No game binaries
+or evidence logs are committed.
+
+Known boundary: only the recorded GMod build/legacy depot edits are automatically restored. An
+offline legacy install may lack six stock originals that RTXLauncher overwrote without backups.
+Missing sources, unknown edits and other builds stop safely, with the missing file in the report;
+--legacy-source supplies an explicit verified vanilla root. Custom configs remain with a note
+about any RTX commands they still contain. No human assistance was needed for this task.

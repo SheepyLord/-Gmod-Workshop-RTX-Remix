@@ -48,3 +48,9 @@ See the [QoL report](handover/QoL-report.md#modern-house-map-glass-2026-10-30) f
 The DepthWrite batch routes material registration and depth views according to the active shader
 family ([ADR 0041](decisions/0041-hotloader-remix-depth-materials.md)). See the
 [QoL report](handover/QoL-report.md#hotloader-depthwrite-shader-errors-2026-10-30).
+
+## Existing Remix installation migration (2026-10-30)
+
+Loader 0.8.0 archives recognized RTXLauncher leftovers and restores known edited depot files from
+verified stock sources in the same transaction as deployment ([ADR 0042](decisions/0042-legacy-remix-migration.md)).
+Validation uses a fresh pinned Xenthio install under out; RTX_c is now our implementation.

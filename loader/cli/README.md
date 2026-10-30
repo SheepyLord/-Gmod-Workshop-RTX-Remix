@@ -20,7 +20,7 @@ nlctl verify  <file.gma> [--json]   # one pass: every nonzero file CRC, the arch
 nlctl scan    <folder>   [--json]   # read-only parse of every .gma / .bin archive below the folder
 nlctl manifest <file.gma|folder> [--json]  # validate a native package; summarise its manifest
 nlctl plan <game root> [--steam-dir <dir>] [--json]  # what the loader would deploy, read-only
-nlctl apply <game root> [--steam-dir <dir>] [--dry-run] [--json]  # deploy the plan
+nlctl apply <game root> [--steam-dir <dir>] [--legacy-source <vanilla root>] [--dry-run] [--json]
 nlctl activation <game root> [--json]  # what start-up would load, set and add from the runtime (read-only)
 nlctl status <game root> [--verify] [--json]   # the journal; are the deployed files as placed (read-only)
 nlctl rollback <game root> [--dry-run] [--json]   # return to the previous generation, and hold it
@@ -41,7 +41,12 @@ It also reports each change (`add`, `replace`, `remove`, `adopt`, `payload`, `de
 0.6.0 `put-back`, `take-over`, `restore-original`:
 [ADR 0035](../../docs/decisions/0035-restore-automatically.md)), the packages it did not deploy and
 why, notes about files it left alone or kept aside (and where), and `operations`, the number of
-file-system changes it made. `rollback`
+file-system changes it made. Loader 0.8.0 adds `archive-legacy` and `restore-stock` for a recognized
+earlier Remix installation ([ADR 0042](../../docs/decisions/0042-legacy-remix-migration.md)). The
+complete package and stock recovery bytes are staged and checked before any migration move.
+`--legacy-source` supplies an optional offline vanilla root; every accepted file still needs the
+known stock SHA-256. Without it, recovery checks Steam's registered game and launcher backups.
+The archive stays under native-loader/backup/legacy after uninstall. `rollback`
 returns to the previous generation (the generation before that is not kept); the next `apply`
 leaves it in place until the planned packages differ from the ones it rolled back from. `uninstall`
 removes what the journal lists, puts back the originals it kept, then removes the journal and

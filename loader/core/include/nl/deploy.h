@@ -26,6 +26,7 @@ struct Options {
   bool allow_running_game = false;       // test/explicit caller override; skips every process check
   std::uint32_t exclude_process_id = 0;  // M4 ignores only itself, preserving the second-instance check
   bool keep_last_good = false;           // M4 only: an unusable still-allowlisted source cannot remove/replace current
+  std::optional<std::filesystem::path> legacy_source;  // optional hash-verified stock recovery root
 };
 
 struct Change {

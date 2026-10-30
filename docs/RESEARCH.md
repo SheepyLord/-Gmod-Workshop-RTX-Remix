@@ -1,5 +1,27 @@
 # Research notes
 
+## Prior RTXLauncher installations (2026-10-30)
+
+- [Xenthio fixes](https://github.com/Xenthio/garrys-mod-rtx-remixed) nightly aaefa35c5da3156e3f7352fbb4ac734361affed8
+  and [RTXLauncher](https://github.com/Xenthio/RTXLauncher) 7779fc474d2cc4c73c8b02f031cc239159e9e8e4
+  identify the tested layout. QuickInstall flattens the runtime ZIP's .trex contents into bin/win64,
+  applies seven x64 SourceRTXTweaks edits across four DLLs, then extracts the fixes.
+- Runtime ZIP SHA-256: 997747227bfd809434d3b264c2fa9fa0da3cd63773a2dfadabe90e5b1eceb12c;
+  fixes ZIP: 2f32286bde9af91d748b44fefaa09408c0e4c1bf9690667b4c1d4eb95f0913f4.
+  The 265,998,848-byte old runtime exports remixapi_InitializeLibrary; plain DXVK is not a match.
+  Sparse detection reads at most 32 MiB, caches 128 KiB and never executes that DLL.
+- The fixes overwrite stdshader_dx6.dll and five stock Lua/image files without preserving originals.
+  Four native patches have backup_patches_<timestamp>/bin/win64 originals. steam.inf is not a safe
+  binary build identity. Recovery uses exact old/stock hashes, recorded in legacy_stock_data.h from
+  Steam depots 4001/7488132547021413298 and 4002/7341198560151933050, build 26229091.
+- Fresh fixture: 2,877 verified stock files, then 192 runtime files, 387 fixes entries and four
+  patched DLLs. Independent depot verification finds exactly ten altered files, zero missing or
+  unverified files. Seven sentinels cover protected user files and an obsolete addon Lua file.
+  Full local evidence is out/legacy-research/FIXTURE-HANDOFF.md and fixture-state.json.
+- The launcher's optional MaterialSystemFallbackPatch guard was run in an isolated .NET probe:
+  Unsupported, InitializeShader counter initialization site not found. It leaves these bytes
+  unchanged, matching its normal warning/skip behavior. No downloaded Python code was executed.
+
 Facts the design rests on, with where they came from, so nobody has to dig them up again. Gathered
 2026-10-27 unless a section says otherwise. "Verified" = checked directly (file read, PE parse,
 hash); "reported" = from a code-reading pass over the named repo, not re-checked line by line.

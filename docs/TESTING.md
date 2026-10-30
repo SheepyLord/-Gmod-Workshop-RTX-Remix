@@ -1,5 +1,13 @@
 # Testing
 
+Legacy migration (loader 0.8.0): generated PE fixtures cover detection, malformed bounds and links;
+planner tests cover protected paths and unknown edits. The dedicated nl_tests_faults_legacy CTest
+interrupts and fails every deployment filesystem operation, including interrupted recovery.
+Real acceptance uses a fresh depot-verified Xenthio installation under out/legacy-game, never the
+user's now-migrated RTX_c. Compare every legacy backup hash, all ten restored depot files and
+preservation sentinels; run RTX on/off with poc_session.py, then verify uninstall keeps the archive.
+See [ADR 0042](decisions/0042-legacy-remix-migration.md) for recovery-source limits.
+
 ## Levels
 
 | Level | What | How | Since |

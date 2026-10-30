@@ -1,5 +1,8 @@
 # Handovers
 
+The latest QoL batch adds [legacy Remix migration](../decisions/0042-legacy-remix-migration.md),
+loader 0.8.0. GarrysMod_RTX_c now runs our implementation and is no longer the classic baseline.
+
 When a milestone moves to another agent (or person), the giver writes a **brief** here and the
 receiver writes a **report** here when done or blocked. Both are committed on the milestone branch,
 so the next agent has the full story without the chat transcripts.

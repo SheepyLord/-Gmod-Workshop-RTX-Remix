@@ -544,11 +544,13 @@ int print_report(const nl::deploy::Report& r, bool json) {
 }
 
 // Deploys what `plan` shows: the same config, discovery and package loading, then nl::deploy.
-int cmd_apply(const fs::path& game_root, const std::optional<fs::path>& steam_dir, bool json, bool dry_run) {
+int cmd_apply(const fs::path& game_root, const std::optional<fs::path>& steam_dir, bool json, bool dry_run,
+              const std::optional<fs::path>& legacy_source) {
   const nl::config::Config config = nl::config::load(game_root);
   const auto env = environment(game_root, steam_dir, config);
   nl::deploy::Options options;
   options.dry_run = dry_run;
+  options.legacy_source = legacy_source;
   return print_report(nl::deploy::apply(game_root, nl::planner::consider(nl::discovery::discover(config, env)), config,
                                         *nl::manifest::parse_version(nl::version()), options),
                       json);
@@ -615,7 +617,7 @@ int usage() {
       "  scan    <folder>     read-only parse of every .gma / .bin archive below the folder\n"
       "  manifest <file.gma|folder>  validate a native package and summarise its manifest\n"
       "  plan    <game root> [--steam-dir <dir>]  what the loader would deploy (read-only)\n"
-      "  apply   <game root> [--steam-dir <dir>] [--dry-run]  deploy the plan\n"
+      "  apply   <game root> [--steam-dir <dir>] [--legacy-source <vanilla root>] [--dry-run]  deploy the plan\n"
       "  activation <game root>  what start-up would load, set and add from the deployed runtime (read-only)\n"
       "  status  <game root> [--verify]  the journal; are the deployed files as placed (read-only)\n"
       "  rollback <game root> [--dry-run]  return to the previous generation\n"
@@ -640,6 +642,13 @@ int wmain(int argc, wchar_t** argv) {
     const bool json = flag(L"--json");
     const bool dry_run = flag(L"--dry-run");
     const bool verify_hashes = flag(L"--verify");
+    std::optional<fs::path> legacy_source;
+    if (const auto it = std::find(args.begin(), args.end(), L"--legacy-source"); it != args.end()) {
+      if (it + 1 == args.end()) return usage();
+      legacy_source = fs::path(*(it + 1));
+      args.erase(it, it + 2);
+      if (args.empty() || args[0] != L"apply") return usage();
+    }
     std::optional<fs::path> steam_dir;
     if (const auto it = std::find(args.begin(), args.end(), L"--steam-dir"); it != args.end()) {
       if (it + 1 == args.end()) return usage();
@@ -656,7 +665,7 @@ int wmain(int argc, wchar_t** argv) {
     if (args.size() == 2 && args[0] == L"manifest") return cmd_manifest(args[1], json);
     if (args.size() == 2 && args[0] == L"plan") return cmd_plan(args[1], steam_dir, json);
     if (args.size() == 2 && args[0] == L"activation") return cmd_activation(args[1], json);
-    if (args.size() == 2 && args[0] == L"apply") return cmd_apply(args[1], steam_dir, json, dry_run);
+    if (args.size() == 2 && args[0] == L"apply") return cmd_apply(args[1], steam_dir, json, dry_run, legacy_source);
     if (args.size() == 2 && args[0] == L"status") return cmd_status(args[1], json, verify_hashes);
     if (args.size() == 2 && args[0] == L"rollback") return cmd_rollback(args[1], json, dry_run);
     if (args.size() == 2 && args[0] == L"uninstall") return cmd_uninstall(args[1], json, dry_run);

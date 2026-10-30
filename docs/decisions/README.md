@@ -47,6 +47,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0039](0039-native-package-addon-presentation.md) | Inert display archives suppress native-container mount warnings; exact read redirects provide blue addon cards and normal Workshop descriptions; guarded publisher retry for a stale Steam presence check | Accepted 2026-10-30 (the user) |
 | [0040](0040-native-map-glass-debris.md) | Native glass brushes keep map behavior and leave persistent convex physics shards; bounded debris and late-join mesh updates | Accepted 2026-10-30 (the user) |
 | [0041](0041-hotloader-remix-depth-materials.md) | Hotloader avoids unavailable DepthWrite materials and Source depth passes on fixed-function Remix; programmable Source keeps its depth shader and cutouts | Accepted 2026-10-30 (the user) |
+| [0042](0042-legacy-remix-migration.md) | Archive recognized legacy Remix installs and restore known modified depot files transactionally | Accepted 2026-10-30 |
 
 ## Template
 

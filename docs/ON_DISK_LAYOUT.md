@@ -1,5 +1,10 @@
 # On-disk layout (game side)
 
+The old-install migration is the narrow exception to the untouched-depot rule: recognized legacy
+edits are archived and restored to verified stock bytes before the shipment is activated
+([ADR 0042](decisions/0042-legacy-remix-migration.md)). Root rtx.conf/dxvk.conf from that installation
+are archived too. user.conf and custom configs stay; unrelated D3D proxies do not trigger migration.
+
 What the loader adds to a Garry's Mod install. Everything except `bin\win64\winmm.dll` is created
 by the loader. Package files are journaled; the receipt, config, logs and status are explicit control
 and reporting files with their own cleanup rules.
@@ -23,6 +28,8 @@ GarrysMod\
 │  │                                         and at uninstall (journal `originals`, ADR 0035)
 │  ├─ backup\edits\<transaction>\<path>    loader 0.6.0: changed copies of the loader's files that the
 │  │                                         package's copy replaced; never deleted by the loader (ADR 0035)
+│  ├─ backup\legacy\<transaction>\...    loader 0.8.0: archived prior Remix files plus manifest.json
+│  │                                         with original paths, sizes and SHA-256; kept after uninstall
 │  ├─ bootstrap-install.json               the bootstrap's install receipt (install-loader.ps1); its
 │  │                                         `original` holds the SHA-256 of a kept foreign winmm.dll/.pdb
 │  ├─ original\winmm.dll, winmm.pdb        a winmm.dll that was there before install-loader.ps1 (another

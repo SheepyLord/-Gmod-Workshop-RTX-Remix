@@ -13,6 +13,8 @@ manifests, discovery and planning; M3 added deployment; M4 added activation.
 | `include/nl/gma.h`, `src/gma.cpp` | GMA reader: `Source` streams (`MemorySource`, `FileSource` opened with full sharing so Steam can still update the file; `skip` seeks), `detect_container`, `read_index`, `verify` (one pass over all contents: file CRCs, optional archive CRC, trailing data), `open_archive` (plain or LZMA-wrapped), `read_entry` (one file, CRC-checked), `extract` (the wanted files of an archive in one pass to an `EntrySink`, CRC-checked, skipping the rest), `path_key` |
 | `include/nl/lzma.h`, `src/lzma.cpp` | `lzma::Source`: streaming LZMA-alone decoder over the LZMA SDK, with GMod's optional 8-byte footer |
 | `include/nl/json.h`, `src/json.cpp` | Strict JSON parser (`json::parse`, `json::Value`) and `json::quote` |
+| `include/nl/legacy_detect.h`, `src/legacy_detect.cpp` | Bounded sparse PE export detection of an independently installed Remix runtime, without loading it |
+| `include/nl/legacy_migrate.h`, `src/legacy_migrate.cpp`, `src/legacy_stock_data.h` | Read-only legacy archive/recovery planning and hash-only upstream/Steam catalogs; deploy executes it in the normal transaction ([ADR 0042](../../docs/decisions/0042-legacy-remix-migration.md)) |
 | `include/nl/utf8.h`, `src/utf8.cpp` | UTF-8 validation shared by the JSON parser and the path rules |
 | `include/nl/paths.h`, `src/paths.cpp` | Path rules for anything a package names, and the game-root areas packages may write to |
 | `include/nl/manifest.h`, `src/manifest.cpp` | Manifest schema 1: strict `parse` (paths the loader deploys must also be ASCII), `check_contents`, SemVer `parse_version` / `compare` ([docs/PACKAGE_FORMAT.md](../../docs/PACKAGE_FORMAT.md)) |

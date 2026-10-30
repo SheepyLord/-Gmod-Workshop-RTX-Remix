@@ -17,8 +17,12 @@ python tools\poc_session.py --evidence $e config --allow-local out\packages\runt
 python tools\poc_session.py --evidence $e run --name 03-off
 python tools\poc_session.py --evidence $e uninstall
 # A reference install (only launched and read; nothing of the loader there):
-python tools\poc_session.py --root H:\SteamLibrary\steamapps\common\GarrysMod_RTX_c --evidence $e run --name ref --reference --addons
+python tools\poc_session.py --root H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\legacy-reference --evidence $e run --name ref --reference --addons
 ```
+
+Prepare legacy-reference as a separate pinned legacy copy before that example. The user replaced
+GarrysMod_RTX_c with this project's implementation on 2026-10-30; never use it as a classic baseline
+or write there. The migration acceptance fixture is out/legacy-game (see ADR 0042).
 
 ## How it talks to the game
 
