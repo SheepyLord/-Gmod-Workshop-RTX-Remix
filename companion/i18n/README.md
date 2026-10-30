@@ -66,3 +66,10 @@ python tools\companion_i18n.py update
 It rewrites `nativeloader.pot` and merges it into every `.po`: translations of unchanged text stay,
 new text comes in untranslated, and text no longer used is dropped (the command says how many
 translations that dropped).
+
+## Release checks
+
+`check` and package `build` now require complete catalogs: missing, blank, fuzzy, duplicate or
+unreviewed English entries fail. Use `--allow-incomplete` only for local translation drafts.
+The [bundled interface catalogs](addons/README.md) are a separate namespace and are embedded in the
+same generated Lua file. Long RTX slider and combo labels receive a full-width line above the control.

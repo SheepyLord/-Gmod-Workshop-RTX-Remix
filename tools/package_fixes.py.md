@@ -151,3 +151,9 @@ left out of the fixes repo.
 0 success; 1 refused or failed (the reason on stderr); 2 bad command line (argparse).
 
 Tests: [tests/test_package_fixes.py](tests/test_package_fixes.py.md).
+
+The generated companion table includes the bundled-interface catalogs in `companion/i18n/addons`.
+The newest `.po` timestamp is found recursively, so an add-on translation update participates in
+the generated file's version. Both namespaces must pass strict completeness checks.
+
+`companion_catalog_sources()` adds the bundled-interface PO files, template, reviewed exceptions, README and GPL `COPYING` under `nativeloader/resource/bundled-translations/`, alongside the generated runtime table. These are editable source copies, not a second translation input.

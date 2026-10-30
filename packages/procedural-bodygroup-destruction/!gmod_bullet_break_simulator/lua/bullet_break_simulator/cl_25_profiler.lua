@@ -1,3 +1,11 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local function NL(text)
+    return bundle_i18n and bundle_i18n.A(text, BBS.I18N and BBS.I18N.language or "en") or text
+end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 -- Opt-in per-stage client CPU profiler for the hit-to-material pipeline.
 
 BBS = BBS or {}
@@ -153,7 +161,7 @@ local function PrintRecord( record )
 	BBS.Log( "PERF hit #%s ent=%s status=%s measuredCPU=%.2f ms wall=%.2f ms stages=%d hottest=%s %.2f ms",
 		tostring( record.serial ), tostring( record.entityIndex ), tostring( record.status ),
 		record.measuredMilliseconds or 0, record.wallMilliseconds or 0,
-		#( record.ranking or {} ), hottest and hottest.name or "<none>",
+		#( record.ranking or {} ), hottest and NL(hottest.name) or "<none>",
 		hottest and hottest.milliseconds or 0 )
 	for index, stage in ipairs( record.ranking or {} ) do
 		local percentage = ( record.measuredMilliseconds or 0 ) > 0
@@ -222,9 +230,9 @@ hook.Add( "HUDPaint", "BBS.DrawPerformanceHUD", function()
 	local height = 61 + visible * 18 + 40
 	local x, y = 20, 20
 	draw.RoundedBox( 6, x, y, width, height, Color( 10, 12, 16, 225 ) )
-	draw.SimpleText( "Procedural Bodygroup Destruction — performance", "DermaDefaultBold",
+	draw.SimpleText( NL("Procedural Bodygroup Destruction — performance"), "DermaDefaultBold",
 		x + 10, y + 8, Color( 255, 175, 75 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	draw.SimpleText( string.format( "hit #%s | CPU %.2f ms | wall %.2f ms | %s",
+	draw.SimpleText( string.format( NL("hit #%s | CPU %.2f ms | wall %.2f ms | %s"),
 		tostring( record.serial ), record.measuredMilliseconds or 0,
 		record.wallMilliseconds or 0, tostring( record.status ) ), "DermaDefault",
 		x + 10, y + 28, Color( 225, 230, 238 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
@@ -232,7 +240,7 @@ hook.Add( "HUDPaint", "BBS.DrawPerformanceHUD", function()
 		local stage = record.ranking[ index ]
 		local percentage = ( record.measuredMilliseconds or 0 ) > 0
 			and stage.milliseconds / record.measuredMilliseconds * 100 or 0
-		draw.SimpleText( string.format( "%d. %s", index, stage.name ), "DermaDefault",
+		draw.SimpleText( string.format( "%d. %s", index, NL(stage.name) ), "DermaDefault",
 			x + 10, y + 50 + ( index - 1 ) * 18,
 			index == 1 and Color( 255, 205, 90 ) or Color( 205, 215, 228 ),
 			TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
@@ -243,17 +251,17 @@ hook.Add( "HUDPaint", "BBS.DrawPerformanceHUD", function()
 	end
 	local aggregate = AggregateHistory()
 	local hottest = aggregate.ranking[ 1 ]
-	draw.SimpleText( string.format( "rolling %d hit%s | aggregate hottest: %s",
-		aggregate.hitCount, aggregate.hitCount == 1 and "" or "s",
-		hottest and hottest.name or "<none>" ), "DermaDefault",
+	draw.SimpleText( string.format( NL("Recent hits: %d%s | slowest stage overall: %s"),
+		aggregate.hitCount, "",
+		hottest and NL(hottest.name) or NL("<none>") ), "DermaDefault",
 		x + 10, y + height - 38, Color( 160, 175, 195 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	local background = SortedStages( BBS.PerformanceBackground )
 	local backgroundHottest = background[ 1 ]
 	local backgroundSource = backgroundHottest
 		and BBS.PerformanceBackground[ backgroundHottest.name ] or nil
-	draw.SimpleText( string.format( "continuous hottest: %s%s",
-		backgroundHottest and backgroundHottest.name or "<none>",
-		backgroundSource and string.format( " (avg %.3f ms, max %.3f ms)",
+	draw.SimpleText( string.format( NL("continuous hottest: %s%s"),
+		backgroundHottest and NL(backgroundHottest.name) or NL("<none>"),
+		backgroundSource and string.format( NL(" (avg %.3f ms, max %.3f ms)"),
 			backgroundSource.milliseconds / math.max( backgroundSource.calls, 1 ),
 			backgroundSource.maximumMilliseconds or 0 ) or "" ), "DermaDefault",
 		x + 10, y + height - 20, Color( 160, 175, 195 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
@@ -275,3 +283,5 @@ concommand.Add( "bbs_perf_clear", function()
 	BBS.LastPerformance = nil
 	BBS.Log( "cleared Procedural Bodygroup Destruction performance history" )
 end, nil, "Clear Procedural Bodygroup Destruction performance history." )
+
+local stageLabels = { NN("Affected UV selection"), NN("Bodygroup eligibility"), NN("Debug capture + bundle I/O"), NN("Debug console output"), NN("Frame: 3D hit overlay"), NN("Frame: last-hit HUD"), NN("Frame: texture inspector"), NN("Impact trace + hit setup"), NN("Material apply overhead"), NN("Material queue dispatch"), NN("Mesh cache lookup/build"), NN("Pose snapshot"), NN("Prewarm: RTX memory cleanup"), NN("Prewarm: bodygroup eligibility"), NN("Prewarm: mesh cache"), NN("Prewarm: persistent cache hydrate"), NN("Removal-hull mesh query"), NN("Skin transform setup"), NN("UV result bookkeeping") }

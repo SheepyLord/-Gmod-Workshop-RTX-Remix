@@ -568,7 +568,7 @@ function PANEL:ToggleCameraAuto()
     local turnOn = not camera_auto_on()
     RunConsoleCommand("mmd_vmd_npc_camera_auto", turnOn and "1" or "0")
     notification.AddLegacy(WL("mmd_vmd_npc.camera.auto_option", "Enter camera animation automatically")
-        .. ": " .. (turnOn and "ON" or "OFF"), NOTIFY_HINT, 3)
+        .. ": " .. (turnOn and WL("mmd_vmd_npc.camera.state_on", "ON") or WL("mmd_vmd_npc.camera.state_off", "OFF")), NOTIFY_HINT, 3)
     surface.PlaySound("buttons/lightswitch2.wav")
 end
 
@@ -576,14 +576,14 @@ function PANEL:ToggleCameraFollow()
     local turnOn = not camera_follow_on()
     RunConsoleCommand("mmd_vmd_npc_cam_follow", turnOn and "1" or "0")
     notification.AddLegacy(WL("mmd_vmd_npc.camera.follow", "Force camera to follow character (experimental)")
-        .. ": " .. (turnOn and "ON" or "OFF"), NOTIFY_HINT, 3)
+        .. ": " .. (turnOn and WL("mmd_vmd_npc.camera.state_on", "ON") or WL("mmd_vmd_npc.camera.state_off", "OFF")), NOTIFY_HINT, 3)
     surface.PlaySound("buttons/lightswitch2.wav")
 end
 
 function PANEL:ToggleCameraMode()
     MMDVMDNPC.CameraTrackMode = not MMDVMDNPC.CameraTrackMode
-    local modeName = MMDVMDNPC.CameraTrackMode and "Dynamic" or "Static"
-    notification.AddLegacy("Camera: " .. modeName, NOTIFY_HINT, 3)
+    local modeName = MMDVMDNPC.CameraTrackMode and WL("mmd_vmd_npc.camera.mode_dynamic", "Dynamic") or WL("mmd_vmd_npc.camera.mode_static", "Static")
+    notification.AddLegacy(string.format(WL("mmd_vmd_npc.camera.mode_notice", "Camera: %s"), modeName), NOTIFY_HINT, 3)
     surface.PlaySound("buttons/lightswitch2.wav")
 
     if not MMDVMDNPC.CameraTrackMode and IsValid(MMDVMDNPC.SelfPlaybackCameraEnt) then

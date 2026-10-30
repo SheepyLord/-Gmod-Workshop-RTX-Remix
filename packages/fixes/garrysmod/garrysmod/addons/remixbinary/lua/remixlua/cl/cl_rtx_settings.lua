@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not CLIENT then return end
 
 -- ConVars
@@ -18,37 +24,37 @@ if is32Bit then
 end
 
 hook.Add( "PopulateToolMenu", "RTXOptionsClient_BaseOptions", function()
-    spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_BaseOptions", "#Base Options", "", "", function( panel )
+    spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_BaseOptions", NL("Base Options"), "", "", function( panel )
         panel:ClearControls()
 
-        panel:CheckBox( "Pseudoplayer Enabled", "rtx_pseudoplayer" )
-        panel:ControlHelp( "Pseudoplayer allows you to see your own playermodel, this when marked as a 'Playermodel Texture' in remix allows you to see your own shadow and reflection." )
-        panel:CheckBox( "Pseudoweapon Enabled", "rtx_pseudoweapon" )
-        panel:ControlHelp( "Similar to above, but for the weapon you're holding." )
+        panel:CheckBox( NL("Pseudoplayer Enabled"), "rtx_pseudoplayer" )
+        panel:ControlHelp( NL("Pseudoplayer allows you to see your own playermodel, this when marked as a 'Playermodel Texture' in remix allows you to see your own shadow and reflection.") )
+        panel:CheckBox( NL("Pseudoweapon Enabled"), "rtx_pseudoweapon" )
+        panel:ControlHelp( NL("Similar to above, but for the weapon you're holding.") )
 
-        local hardwareSkinningCheckbox = panel:CheckBox( "Hardware Skinning", "r_forcehwskin" )
-        panel:ControlHelp( "Enables hardware skinning, allows for dynamic mesh replacements for Remix to work." )
+        local hardwareSkinningCheckbox = panel:CheckBox( NL("Hardware Skinning"), "r_forcehwskin" )
+        panel:ControlHelp( NL("Enables hardware skinning so dynamic mesh replacements can work in Remix.") )
         if IsHL2RTXMounted() then
             hardwareSkinningCheckbox:SetEnabled( false )
-            panel:ControlHelp( "Required and forced on while Half-Life 2 RTX is mounted." )
+            panel:ControlHelp( NL("Required and forced on while Half-Life 2 RTX is mounted.") )
         else
-            panel:ControlHelp( "Highly experimental, may cause issues with some models or not work at all." )
+            panel:ControlHelp( NL("Highly experimental, may cause issues with some models or not work at all.") )
         end
 
-        panel:CheckBox( "Fix Skybox Leaking", "rtx_sbr_enable" )
-        panel:ControlHelp( "Hides geometry behind the skybox to prevent it from leaking through, doesn't allow light_enviornment entities to pass through though." )
-        panel:ControlHelp( "Also breaks HDRIs.")
+        panel:CheckBox( NL("Fix Skybox Leaking"), "rtx_sbr_enable" )
+        panel:ControlHelp( NL("Hides geometry behind the skybox to prevent it from leaking through, doesn't allow light_enviornment entities to pass through though.") )
+        panel:ControlHelp( NL("Also breaks HDRIs."))
 
         -- Only show lightupdater option on 64-bit (32-bit must use lightupdaters)
         local is64Bit = (BRANCH == "x86-64" or BRANCH == "chromium")
         if is64Bit then
-            panel:CheckBox( "Disable Remix API Lights", "rtx_lightupdater" )
-            panel:ControlHelp( "Enables lightupdaters, which will make Remix use the detected d3d9 lights from the game instead of API lights." )
+            panel:CheckBox( NL("Disable Remix API Lights"), "rtx_lightupdater" )
+            panel:ControlHelp( NL("Enables lightupdaters, which will make Remix use the detected d3d9 lights from the game instead of API lights.") )
         else
         end
 
         local mapFixCategory = vgui.Create("DCollapsibleCategory", panel)
-        mapFixCategory:SetLabel("Map Fixes")
+        mapFixCategory:SetLabel(NL("Map Fixes"))
         mapFixCategory:SetExpanded(true)
         mapFixCategory:Dock(TOP)
         mapFixCategory:DockMargin(0, 8, 0, 0)
@@ -60,26 +66,26 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_BaseOptions", function()
         mapFixCategory:SetContents(mapFixList)
 
         local mapFixHelp1 = vgui.Create("DLabel")
-        mapFixHelp1:SetText("Fixes broken geometry rendering for the current map, can lower FPS.")
+        mapFixHelp1:SetText(NL("Fixes broken geometry rendering for the current map, can lower FPS."))
         mapFixHelp1:SetWrap(true)
         mapFixHelp1:SetAutoStretchVertical(true)
         mapFixHelp1:SetTextColor(Color(0, 0, 0))
         mapFixList:AddItem(mapFixHelp1)
 
         local mapFixHelp2 = vgui.Create("DLabel")
-        mapFixHelp2:SetText("This is only used for engine rendered world geometry.")
+        mapFixHelp2:SetText(NL("This is only used for engine rendered world geometry."))
         mapFixHelp2:SetWrap(true)
         mapFixHelp2:SetAutoStretchVertical(true)
         mapFixHelp2:SetTextColor(Color(0, 0, 0))
         mapFixList:AddItem(mapFixHelp2)
 
         local enableBtn = vgui.Create("DButton")
-        enableBtn:SetText("Enable Map Fixes")
+        enableBtn:SetText(NL("Enable Map Fixes"))
         enableBtn.DoClick = function() RunConsoleCommand("rtx_mf_enable_current_map") end
         mapFixList:AddItem(enableBtn)
 
         local disableBtn = vgui.Create("DButton")
-        disableBtn:SetText("Disable Map Fixes")
+        disableBtn:SetText(NL("Disable Map Fixes"))
         disableBtn.DoClick = function() RunConsoleCommand("rtx_mf_disable_current_map") end
         mapFixList:AddItem(disableBtn)
 
@@ -101,15 +107,15 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_BaseOptions", function()
 end )
 
 hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
-    spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_Performance", "#Performance", "", "", function( panel )
+    spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_Performance", NL("Performance"), "", "", function( panel )
         panel:ClearControls()   
         
-        panel:CheckBox("Performance Mode", "rtx_custom_render")
-        panel:ControlHelp("Enables custom renderers to replace engine rendered world geometry and static props. Also controls engine culling patches. This will break mesh replacements in Remix when enabled.")
+        panel:CheckBox(NL("Performance Mode"), "rtx_custom_render")
+        panel:ControlHelp(NL("Enables custom renderers to replace engine rendered world geometry and static props. Also controls engine culling patches. This will break mesh replacements in Remix when enabled."))
 
         -- PVS Culling settings (only relevant when custom rendering is enabled)
         local cullingCategory = vgui.Create("DCollapsibleCategory", panel)
-        cullingCategory:SetLabel("Culling")
+        cullingCategory:SetLabel(NL("Culling"))
         cullingCategory:SetExpanded(false)
         cullingCategory:Dock(TOP)
         cullingCategory:DockMargin(0, 8, 0, 0)
@@ -121,21 +127,21 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
         cullingCategory:SetContents(pvsList)
 
         local pvsCb = vgui.Create("DCheckBoxLabel")
-        pvsCb:SetText("Static Props")
+        pvsCb:SetText(NL("Static Props"))
         pvsCb:SetConVar("rtx_spr_use_pvs")
         pvsCb:SetTextColor(Color(0, 0, 0))
         pvsCb:SizeToContents()
         pvsList:AddItem(pvsCb)
 
         local pvsHelp = vgui.Create("DLabel")
-        pvsHelp:SetText("Enables PVS culling for static props. May cause some props to cull incorrectly.")
+        pvsHelp:SetText(NL("Enables PVS culling for static props. May cause some props to cull incorrectly."))
         pvsHelp:SetWrap(true)
         pvsHelp:SetAutoStretchVertical(true)
         pvsHelp:SetTextColor(Color(0, 0, 0))
         pvsList:AddItem(pvsHelp)
 
         local pvsSlider = vgui.Create("DNumSlider")
-        pvsSlider:SetText("PVS Safety Distance")
+        pvsSlider:SetText(NL("PVS Safety Distance"))
         pvsSlider:SetConVar("rtx_spr_pvs_safety_distance")
         pvsSlider:SetMin(0)
         pvsSlider:SetMax(8192)
@@ -144,14 +150,14 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
         pvsList:AddItem(pvsSlider)
 
         local pvsSliderHelp = vgui.Create("DLabel")
-        pvsSliderHelp:SetText("Props within this distance always render, bypassing PVS. (0 = disabled)")
+        pvsSliderHelp:SetText(NL("Props within this distance always render, bypassing PVS. (0 = disabled)"))
         pvsSliderHelp:SetWrap(true)
         pvsSliderHelp:SetAutoStretchVertical(true)
         pvsSliderHelp:SetTextColor(Color(0, 0, 0))
         pvsList:AddItem(pvsSliderHelp)
 
         local distSlider = vgui.Create("DNumSlider")
-        distSlider:SetText("Distance Culling")
+        distSlider:SetText(NL("Distance Culling"))
         distSlider:SetConVar("rtx_spr_cull_distance")
         distSlider:SetMin(0)
         distSlider:SetMax(32768)
@@ -160,7 +166,7 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
         pvsList:AddItem(distSlider)
 
         local distSliderHelp = vgui.Create("DLabel")
-        distSliderHelp:SetText("Sphere-based culling for static props. With PVS on: applied after PVS as an extra filter. With PVS off: sole culling method. (0 = disabled)")
+        distSliderHelp:SetText(NL("Sphere-based culling for static props. With PVS on: applied after PVS as an extra filter. With PVS off: sole culling method. (0 = disabled)"))
         distSliderHelp:SetWrap(true)
         distSliderHelp:SetAutoStretchVertical(true)
         distSliderHelp:SetTextColor(Color(0, 0, 0))
@@ -184,7 +190,7 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
 
         -- 3D Skybox toggle
         local skyCategory = vgui.Create("DCollapsibleCategory", panel)
-        skyCategory:SetLabel("3D Sky")
+        skyCategory:SetLabel(NL("3D Sky"))
         skyCategory:SetExpanded(true)
         skyCategory:Dock(TOP)
         skyCategory:DockMargin(0, 8, 0, 0)
@@ -196,14 +202,14 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
         skyCategory:SetContents(skyList)
 
         local skyCb = vgui.Create("DCheckBoxLabel")
-        skyCb:SetText("Enable 3D Sky")
+        skyCb:SetText(NL("Enable 3D Sky"))
         skyCb:SetConVar("rtx_3dsky")
         skyCb:SetTextColor(Color(0, 0, 0))
         skyCb:SizeToContents()
         skyList:AddItem(skyCb)
 
         local skyHelp = vgui.Create("DLabel")
-        skyHelp:SetText("Renders 3D skybox map faces, displacements, and static props projected into world space. This does not include anything dynamic like particles, entities, etc. This is still WIP so there might be rendering issues on some maps.")
+        skyHelp:SetText(NL("Renders 3D skybox map faces, displacements, and static props projected into world space. This does not include anything dynamic like particles, entities, etc. This is still WIP so there might be rendering issues on some maps."))
         skyHelp:SetWrap(true)
         skyHelp:SetAutoStretchVertical(true)
         skyHelp:SetTextColor(Color(0, 0, 0))
@@ -219,7 +225,7 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
         panel:AddItem(skyCategory)
 
         local patchCategory = vgui.Create("DCollapsibleCategory", panel)
-        patchCategory:SetLabel("Advanced: Engine Patches")
+        patchCategory:SetLabel(NL("Advanced: Engine Patches"))
         patchCategory:SetExpanded(false)
         patchCategory:Dock(TOP)
         patchCategory:DockMargin(0, 8, 0, 0)
@@ -239,13 +245,13 @@ hook.Add( "PopulateToolMenu", "RTXOptionsClient_Performance", function()
             patchList:AddItem(cb)
         end
 
-        AddPatchCheckBox("Disable Engine Frustum Culling", "rtx_patch_frustumcull_engine")
-        AddPatchCheckBox("Force Brush Entity Backfaces", "rtx_patch_brush_backfaces")
-        AddPatchCheckBox("Force World Backfaces #1", "rtx_patch_world_backfaces1")
-        AddPatchCheckBox("Force World Backfaces #2", "rtx_patch_world_backfaces2")
-        AddPatchCheckBox("Disable BSP Culling", "rtx_patch_cullnode")
-        AddPatchCheckBox("Disable Client Frustum Culling", "rtx_patch_frustumcull_client")
-        AddPatchCheckBox("Force NoVis (Disable Engine PVS)", "rtx_patch_forcenovis")
+        AddPatchCheckBox(NL("Disable Engine Frustum Culling"), "rtx_patch_frustumcull_engine")
+        AddPatchCheckBox(NL("Force Brush Entity Backfaces"), "rtx_patch_brush_backfaces")
+        AddPatchCheckBox(NL("Force World Backfaces #1"), "rtx_patch_world_backfaces1")
+        AddPatchCheckBox(NL("Force World Backfaces #2"), "rtx_patch_world_backfaces2")
+        AddPatchCheckBox(NL("Disable BSP Culling"), "rtx_patch_cullnode")
+        AddPatchCheckBox(NL("Disable Client Frustum Culling"), "rtx_patch_frustumcull_client")
+        AddPatchCheckBox(NL("Force NoVis (Disable Engine PVS)"), "rtx_patch_forcenovis")
 
         panel:AddItem(patchCategory)
 
@@ -266,12 +272,12 @@ local function Show3DSkyWarning()
     local warningText = vgui.Create("DLabel", frame)
     warningText:SetPos(20, 40)
     warningText:SetSize(360, 80)
-    warningText:SetText("You have enabled r_3dsky which may cause rendering issues with RTX Remix due how the engine culls the skybox. It's recommended to keep r_3dsky disabled for best results.")
+    warningText:SetText(NL("You have enabled r_3dsky which may cause rendering issues with RTX Remix due how the engine culls the skybox. It's recommended to keep r_3dsky disabled for best results."))
     warningText:SetWrap(true)
     
     local dontShowAgain = vgui.Create("DCheckBoxLabel", frame)
     dontShowAgain:SetPos(20, 130)
-    dontShowAgain:SetText("Don't show this warning again")
+    dontShowAgain:SetText(NL("Don't show this warning again"))
     dontShowAgain:SetValue(false)
     dontShowAgain.OnChange = function(self, val)
         if val then
@@ -348,31 +354,31 @@ end)
 -- ToPBR Conversion Settings (Only show for 64-bit client)
 if BRANCH == "x86-64" or BRANCH == "chromium" then
     hook.Add( "PopulateToolMenu", "RTXOptionsClient_ToPBR", function()
-        spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_ToPBR", "#ToPBR", "", "", function( panel )
+        spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_ToPBR", NL("ToPBR"), "", "", function( panel )
             panel:ClearControls()
             -- Master toggle
-            local enabledCheckbox = panel:CheckBox("Enable ToPBR", "rtx_topbr_enabled")
-            panel:ControlHelp("Converts source material maps (normal, bump, ssbump, etc) to a pseudo-pbr format for RTX Remix.")
-            panel:ControlHelp("This is a work in progress, conversion will never be 100% accurate.")
-            panel:ControlHelp("This will use a significant amount of VRAM, disk space, and may cause stability issues.")
+            local enabledCheckbox = panel:CheckBox(NL("Enable ToPBR"), "rtx_topbr_enabled")
+            panel:ControlHelp(NL("Converts source material maps (normal, bump, ssbump, etc) to a pseudo-pbr format for RTX Remix."))
+            panel:ControlHelp(NL("Conversion is experimental and cannot reproduce every material exactly."))
+            panel:ControlHelp(NL("This will use a significant amount of VRAM, disk space, and may cause stability issues."))
             panel:ControlHelp("")
-            panel:ControlHelp("Requires a map reload to enable.")
+            panel:ControlHelp(NL("Requires a map reload to enable."))
             
             -- Experimental metallic generation
-            local metallicCheckbox = panel:CheckBox("Experimental Metallic Detection", "rtx_topbr_metallic")
-            panel:ControlHelp("Generate metallic maps from base texture brightness.")
-            panel:ControlHelp("WARNING: May cause dark materials to appear completely black!")
+            local metallicCheckbox = panel:CheckBox(NL("Experimental Metallic Detection"), "rtx_topbr_metallic")
+            panel:ControlHelp(NL("Generate metallic maps from base texture brightness."))
+            panel:ControlHelp(NL("WARNING: May cause dark materials to appear completely black!"))
             
             -- Debug output toggle
-            local debugCheckbox = panel:CheckBox("Debug Output", "rtx_topbr_debug")
-            panel:ControlHelp("Shows debug messages in console for troubleshooting.")
+            local debugCheckbox = panel:CheckBox(NL("Debug Output"), "rtx_topbr_debug")
+            panel:ControlHelp(NL("Shows debug messages in console for troubleshooting."))
             
             -- Clear cache button
-            local clearButton = panel:Button("Clear Cache")
+            local clearButton = panel:Button(NL("Clear Cache"))
             clearButton.DoClick = function()
                 RunConsoleCommand("rtx_topbr_clear")
             end
-            panel:ControlHelp("Clear the conversion cache (useful after changing settings).")
+            panel:ControlHelp(NL("Clear the conversion cache (useful after changing settings)."))
             
             -- Update controls based on enabled state
             local function UpdateControls()
@@ -402,46 +408,46 @@ end
 -- Auto-Categorization Settings (Only show for 64-bit client)
 if BRANCH == "x86-64" or BRANCH == "chromium" then
     hook.Add( "PopulateToolMenu", "RTXOptionsClient_AutoCategorization", function()
-        spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_AutoCategorization", "#Auto-Categorization", "", "", function( panel )
+        spawnmenu.AddToolMenuOption( "Utilities", "RTX Remix", "RTX_Client_AutoCategorization", NL("Auto-Categorization"), "", "", function( panel )
             panel:ClearControls()
 
             -- Master toggle
-            local masterCheckbox = panel:CheckBox("Enable Auto-Categorization", "rtx_auto_categorize")
-            panel:ControlHelp("Automatically categorizes textures for RTX Remix.")
+            local masterCheckbox = panel:CheckBox(NL("Enable Auto-Categorization"), "rtx_auto_categorize")
+            panel:ControlHelp(NL("Automatically categorizes textures for RTX Remix."))
             
             -- Delay slider
-            local delaySlider = panel:NumSlider("Delay (seconds)", "rtx_auto_categorize_delay", 0, 10, 1)
-            panel:ControlHelp("How long to wait after map load before scanning (allows BSP data to load).")
+            local delaySlider = panel:NumSlider(NL("Delay (seconds)"), "rtx_auto_categorize_delay", 0, 10, 1)
+            panel:ControlHelp(NL("How long to wait after map load before scanning (allows BSP data to load)."))
 
             -- World geometry toggle
-            local worldCheckbox = panel:CheckBox("World Geometry", "rtx_auto_categorize_world")
-            panel:ControlHelp("Categorizes walls, floors, and ceilings from BSP as Decals for proper blending.")
+            local worldCheckbox = panel:CheckBox(NL("World Geometry"), "rtx_auto_categorize_world")
+            panel:ControlHelp(NL("Categorizes walls, floors, and ceilings from BSP as Decals for proper blending."))
             
             -- Particles toggle
-            local particlesCheckbox = panel:CheckBox("Particles", "rtx_auto_categorize_particles")
-            panel:ControlHelp("Categorizes particle effects (smoke, fire, sparks, etc) as Particles.")
+            local particlesCheckbox = panel:CheckBox(NL("Particles"), "rtx_auto_categorize_particles")
+            panel:ControlHelp(NL("Categorizes particle effects (smoke, fire, sparks, etc) as Particles."))
             
             -- Decals toggle
-            local decalsCheckbox = panel:CheckBox("Overlay Decals", "rtx_auto_categorize_decals")
-            panel:ControlHelp("Categorizes materials with $decal parameter (posters, graffiti, bullet holes, etc) as Decals.")
+            local decalsCheckbox = panel:CheckBox(NL("Overlay Decals"), "rtx_auto_categorize_decals")
+            panel:ControlHelp(NL("Categorizes materials with $decal parameter (posters, graffiti, bullet holes, etc) as Decals."))
             
             -- Emissive toggle
-            local emissiveCheckbox = panel:CheckBox("Legacy Emissive", "rtx_auto_categorize_emissive")
-            panel:ControlHelp("Categorizes materials with $selfillum parameter as Legacy Emissive.")
-            panel:ControlHelp("This can incorrectly categorized some materials due to them using the $selfillum parameter incorrectly.")
+            local emissiveCheckbox = panel:CheckBox(NL("Legacy Emissive"), "rtx_auto_categorize_emissive")
+            panel:ControlHelp(NL("Categorizes materials with $selfillum parameter as Legacy Emissive."))
+            panel:ControlHelp(NL("Materials that use $selfillum incorrectly may be misclassified."))
             
-            panel:Help("Debug Options")
+            panel:Help(NL("Debug Options"))
             -- Debug output toggle
-            panel:CheckBox("Debug Output", "rtx_debug_categorization")
-            panel:ControlHelp("Shows debug messages in console for categorization activity (useful for troubleshooting).")
+            panel:CheckBox(NL("Debug Output"), "rtx_debug_categorization")
+            panel:ControlHelp(NL("Shows debug messages in console for categorization activity (useful for troubleshooting)."))
             
-            panel:Help("Manual Controls")
+            panel:Help(NL("Manual Controls"))
             -- Manual trigger button
-            local scanButton = panel:Button("Scan Now")
+            local scanButton = panel:Button(NL("Scan Now"))
             scanButton.DoClick = function()
                 RunConsoleCommand("rtx_smart_mark_world", "force")
             end
-            panel:ControlHelp("Manually parse BSP and categorize world textures, decals, and emissive materials.")
+            panel:ControlHelp(NL("Manually parse BSP and categorize world textures, decals, and emissive materials."))
             
             -- Update sub-controls based on master toggle
             local function UpdateControls()

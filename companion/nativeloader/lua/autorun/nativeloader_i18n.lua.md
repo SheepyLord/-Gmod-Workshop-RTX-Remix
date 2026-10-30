@@ -8,3 +8,8 @@ without this a client joining a server would run the tab and guide without their
 
 On the client it does nothing. See [`../nativeloader/i18n.lua.md`](../nativeloader/i18n.lua.md) and
 [ADR 0029](../../../../docs/decisions/0029-companion-translations.md).
+
+The server registers `nativeloader_localized_chat` and exposes `NATIVELOADER_LOCALIZED_CHAT(player,
+format, arguments)` for bundled glass notices. It sends only a format string and argument table to
+that player. The client translates and formats the notice with `pcall` before showing local chat
+text. It never executes received text, writes a file, or sends a message from the client.

@@ -3,4 +3,18 @@
 if SERVER then
     AddCSLuaFile("nativeloader/i18n.lua")
     if file.Exists("nativeloader/i18n_data.lua", "LUA") then AddCSLuaFile("nativeloader/i18n_data.lua") end
+    util.AddNetworkString("nativeloader_localized_chat")
+    function NATIVELOADER_LOCALIZED_CHAT(player, text, arguments)
+        net.Start("nativeloader_localized_chat")
+        net.WriteString(text)
+        net.WriteTable(arguments or {})
+        net.Send(player)
+    end
+else
+    local i18n = include("nativeloader/i18n.lua")
+    net.Receive("nativeloader_localized_chat", function()
+        local text, arguments = net.ReadString(), net.ReadTable()
+        local ok, message = pcall(string.format, i18n.A(text), unpack(arguments))
+        if ok then chat.AddText(message) end
+    end)
 end

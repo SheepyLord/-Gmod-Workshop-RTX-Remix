@@ -25,3 +25,7 @@ Covers:
   Skipped when LuaJIT is not installed (on `PATH` or in `%LOCALAPPDATA%\Programs\LuaJIT\bin`).
 
 Side effects: the scratch folder, removed afterwards. Exit code: unittest's (0 when all pass).
+
+Also checks strict completeness, duplicate messages, whitespace-only entries, stray format percent
+signs, and equality of the shipping template and source keys. The draft fallback test explicitly
+opts out of complete catalogs; package builds do not.

@@ -127,8 +127,10 @@ EXPECTED_JUNK = [
 
 def companion_files():
     """{package path: source} of the real companion add-on, .md files left out."""
-    return {'native/root/garrysmod/addons/nativeloader/' + p.relative_to(COMPANION).as_posix(): p
-            for p in sorted(COMPANION.rglob('*')) if p.is_file() and p.suffix.lower() != '.md'}
+    files = {'native/root/garrysmod/addons/nativeloader/' + p.relative_to(COMPANION).as_posix(): p
+             for p in sorted(COMPANION.rglob('*')) if p.is_file() and p.suffix.lower() != '.md'}
+    files.update({name: Path(source) for name, source in package_fixes.companion_catalog_sources().items()})
+    return files
 
 
 def built_nlctl():
@@ -199,8 +201,7 @@ class PackageFixesTests(unittest.TestCase):
         out.update(companion_files())
         # The companion's translations, built from companion/i18n/*.po (companion_i18n.py).
         built = self.root / 'expected-i18n_data.lua'
-        text = package_fixes.companion_i18n.build_text(package_fixes.companion_i18n.check())
-        built.write_bytes(text.encode('utf-8'))
+        package_fixes.companion_i18n.build(str(built))
         out[package_fixes.COMPANION_I18N] = built
         return out
 

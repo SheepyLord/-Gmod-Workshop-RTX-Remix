@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
 include("shared.lua")
 
@@ -237,7 +243,7 @@ hook.Add("HUDPaint", "RemixRTLight_Visualize", function()
                     DrawThickLine(x, y, parentScreen.x, parentScreen.y, lineThickness * 0.8, 100, 255, 100, alpha * 0.4)
                 end
             else
-                draw.SimpleTextOutlined("🔗 DETACHED", "DermaDefault", x, y + 50, Color(255, 100, 100, alpha * 0.9), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, bonemergeOutline)
+                draw.SimpleTextOutlined(NL("🔗 DETACHED"), "DermaDefault", x, y + 50, Color(255, 100, 100, alpha * 0.9), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, bonemergeOutline)
             end
         end
         
@@ -324,7 +330,7 @@ hook.Add("HUDPaint", "RemixRTLight_Visualize", function()
             -- Draw cone angle text with subtle outline
             local coneTextCol = Color(col.r, col.g, col.b, alpha * 0.8)
             local subtleOutline = Color(outlineR, outlineG, outlineB, alpha * 0.3)
-            draw.SimpleTextOutlined(string.format("∠%.0f° (softness: %.2f)", coneAngle, coneSoftness), 
+            draw.SimpleTextOutlined(string.format(NL("∠%.0f° (softness: %.2f)"), coneAngle, coneSoftness),
                                    "DermaDefault", x, y + 50, coneTextCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, subtleOutline)
         end
         
@@ -779,7 +785,7 @@ local function updateLight(self)
     
     -- Debug output
     if cv_debug_updates:GetBool() then
-        local movingStr = isMoving and " [MOVING]" or ""
+        local movingStr = isMoving and NL(" [MOVING]") or ""
         local brightness = self:GetNWFloat("rtx_light_brightness", 1)
         print(string.format("[RTX Light #%d] Updating (type=%s)%s Brightness=%.2f Radiance=(%.2f,%.2f,%.2f)",
             self:EntIndex(), lt, movingStr, brightness, col.x, col.y, col.z))
@@ -979,7 +985,7 @@ end
 local function OpenLightEditor(ent)
         if not IsValid(ent) then return end
         local frame = vgui.Create("DFrame")
-        frame:SetTitle("Remix Light")
+        frame:SetTitle(NL("Remix Light"))
         frame:SetSize(math.min(ScrW()*0.35, 420), math.min(ScrH()*0.7, 520))
         frame:SetSizable(true)
         frame:Center()
@@ -993,11 +999,11 @@ local function OpenLightEditor(ent)
         typeCombo:Dock(TOP)
         typeCombo:DockMargin(10, 10, 10, 5)
         local lt_init = ent:GetNWString("rtx_light_type", "sphere")
-        typeCombo:AddChoice("Sphere", "sphere")
-        typeCombo:AddChoice("Rect", "rect")
-        typeCombo:AddChoice("Disk", "disk")
-        typeCombo:AddChoice("Cylinder", "cylinder")
-        typeCombo:AddChoice("Distant", "distant")
+        typeCombo:AddChoice(NL("Sphere"), "sphere")
+        typeCombo:AddChoice(NL("Rect"), "rect")
+        typeCombo:AddChoice(NL("Disk"), "disk")
+        typeCombo:AddChoice(NL("Cylinder"), "cylinder")
+        typeCombo:AddChoice(NL("Distant"), "distant")
         -- Ensure internal selected ID/data is set so refreshVisibility reads the correct type
         if typeCombo.ChooseOption then
             typeCombo:ChooseOption(string.upper(lt_init))
@@ -1008,7 +1014,7 @@ local function OpenLightEditor(ent)
         local radius = vgui.Create("DNumSlider", body)
         radius:Dock(TOP)
         radius:DockMargin(10, 5, 10, 5)
-        radius:SetText("Radius")
+        radius:SetText(NL("Radius"))
         radius:SetMin(1)
         radius:SetMax(2000)
         radius:SetDecimals(0)
@@ -1017,7 +1023,7 @@ local function OpenLightEditor(ent)
         local vol = vgui.Create("DNumSlider", body)
         vol:Dock(TOP)
         vol:DockMargin(10, 5, 10, 5)
-        vol:SetText("Volumetrics Scale")
+        vol:SetText(NL("Volumetrics Scale"))
         vol:SetMin(0)
         vol:SetMax(5)
         vol:SetDecimals(2)
@@ -1038,7 +1044,7 @@ local function OpenLightEditor(ent)
         local brightness = vgui.Create("DNumSlider", body)
         brightness:Dock(TOP)
         brightness:DockMargin(10, 5, 10, 5)
-        brightness:SetText("Brightness")
+        brightness:SetText(NL("Brightness"))
         brightness:SetMin(0)
         brightness:SetMax(10000)
         brightness:SetDecimals(2)
@@ -1048,13 +1054,13 @@ local function OpenLightEditor(ent)
         local shapeToggle = vgui.Create("DCheckBoxLabel", body)
         shapeToggle:Dock(TOP)
         shapeToggle:DockMargin(10, 5, 10, 5)
-        shapeToggle:SetText("Enable Light Shaping")
+        shapeToggle:SetText(NL("Enable Light Shaping"))
         shapeToggle:SetValue(ent:GetNWBool("rtx_light_shape_enabled", false) and 1 or 0)
 
         local cone = vgui.Create("DNumSlider", body)
         cone:Dock(TOP)
         cone:DockMargin(10, 5, 10, 5)
-        cone:SetText("Cone Angle (deg)")
+        cone:SetText(NL("Cone Angle (deg)"))
         cone:SetMin(0)
         cone:SetMax(180)
         cone:SetDecimals(0)
@@ -1063,7 +1069,7 @@ local function OpenLightEditor(ent)
         local soft = vgui.Create("DNumSlider", body)
         soft:Dock(TOP)
         soft:DockMargin(10, 5, 10, 5)
-        soft:SetText("Cone Softness")
+        soft:SetText(NL("Cone Softness"))
         soft:SetMin(0)
         soft:SetMax(1)
         soft:SetDecimals(2)
@@ -1072,7 +1078,7 @@ local function OpenLightEditor(ent)
         local focus = vgui.Create("DNumSlider", body)
         focus:Dock(TOP)
         focus:DockMargin(10, 5, 10, 5)
-        focus:SetText("Focus Exponent")
+        focus:SetText(NL("Focus Exponent"))
         focus:SetMin(0)
         focus:SetMax(10)
         focus:SetDecimals(2)
@@ -1084,7 +1090,7 @@ local function OpenLightEditor(ent)
         local xsize = vgui.Create("DNumSlider", body)
         xsize:Dock(TOP)
         xsize:DockMargin(10, 5, 10, 5)
-        xsize:SetText("Rect X Size")
+        xsize:SetText(NL("Rect X Size"))
         xsize:SetMin(1)
         xsize:SetMax(2000)
         xsize:SetDecimals(0)
@@ -1093,7 +1099,7 @@ local function OpenLightEditor(ent)
         local ysize = vgui.Create("DNumSlider", body)
         ysize:Dock(TOP)
         ysize:DockMargin(10, 5, 10, 5)
-        ysize:SetText("Rect Y Size")
+        ysize:SetText(NL("Rect Y Size"))
         ysize:SetMin(1)
         ysize:SetMax(2000)
         ysize:SetDecimals(0)
@@ -1102,7 +1108,7 @@ local function OpenLightEditor(ent)
         local xradius = vgui.Create("DNumSlider", body)
         xradius:Dock(TOP)
         xradius:DockMargin(10, 5, 10, 5)
-        xradius:SetText("Disk X Radius")
+        xradius:SetText(NL("Disk X Radius"))
         xradius:SetMin(1)
         xradius:SetMax(2000)
         xradius:SetDecimals(0)
@@ -1111,7 +1117,7 @@ local function OpenLightEditor(ent)
         local yradius = vgui.Create("DNumSlider", body)
         yradius:Dock(TOP)
         yradius:DockMargin(10, 5, 10, 5)
-        yradius:SetText("Disk Y Radius")
+        yradius:SetText(NL("Disk Y Radius"))
         yradius:SetMin(1)
         yradius:SetMax(2000)
         yradius:SetDecimals(0)
@@ -1120,7 +1126,7 @@ local function OpenLightEditor(ent)
         local axislen = vgui.Create("DNumSlider", body)
         axislen:Dock(TOP)
         axislen:DockMargin(10, 5, 10, 5)
-        axislen:SetText("Cylinder Axis Length")
+        axislen:SetText(NL("Cylinder Axis Length"))
         axislen:SetMin(1)
         axislen:SetMax(2000)
         axislen:SetDecimals(0)
@@ -1129,7 +1135,7 @@ local function OpenLightEditor(ent)
         local distantang = vgui.Create("DNumSlider", body)
         distantang:Dock(TOP)
         distantang:DockMargin(10, 5, 10, 5)
-        distantang:SetText("Distant Angular Diameter")
+        distantang:SetText(NL("Distant Angular Diameter"))
         distantang:SetMin(0)
         distantang:SetMax(10)
         distantang:SetDecimals(2)
@@ -1139,14 +1145,14 @@ local function OpenLightEditor(ent)
         local offsetLabel = vgui.Create("DLabel", body)
         offsetLabel:Dock(TOP)
         offsetLabel:DockMargin(10, 10, 10, 0)
-        offsetLabel:SetText("-- Bonemerge Offsets --")
+        offsetLabel:SetText(NL("-- Bonemerge Offsets --"))
         offsetLabel:SetTextColor(Color(100, 255, 100))
         offsetLabel:SetFont("DermaDefaultBold")
         
         local offsetX = vgui.Create("DNumSlider", body)
         offsetX:Dock(TOP)
         offsetX:DockMargin(10, 5, 10, 5)
-        offsetX:SetText("Position X (Forward)")
+        offsetX:SetText(NL("Position X (Forward)"))
         offsetX:SetMin(-500)
         offsetX:SetMax(500)
         offsetX:SetDecimals(1)
@@ -1155,7 +1161,7 @@ local function OpenLightEditor(ent)
         local offsetY = vgui.Create("DNumSlider", body)
         offsetY:Dock(TOP)
         offsetY:DockMargin(10, 5, 10, 5)
-        offsetY:SetText("Position Y (Right)")
+        offsetY:SetText(NL("Position Y (Right)"))
         offsetY:SetMin(-500)
         offsetY:SetMax(500)
         offsetY:SetDecimals(1)
@@ -1164,7 +1170,7 @@ local function OpenLightEditor(ent)
         local offsetZ = vgui.Create("DNumSlider", body)
         offsetZ:Dock(TOP)
         offsetZ:DockMargin(10, 5, 10, 5)
-        offsetZ:SetText("Position Z (Up)")
+        offsetZ:SetText(NL("Position Z (Up)"))
         offsetZ:SetMin(-500)
         offsetZ:SetMax(500)
         offsetZ:SetDecimals(1)
@@ -1173,7 +1179,7 @@ local function OpenLightEditor(ent)
         local angleP = vgui.Create("DNumSlider", body)
         angleP:Dock(TOP)
         angleP:DockMargin(10, 5, 10, 5)
-        angleP:SetText("Angle Pitch")
+        angleP:SetText(NL("Angle Pitch"))
         angleP:SetMin(-180)
         angleP:SetMax(180)
         angleP:SetDecimals(1)
@@ -1182,7 +1188,7 @@ local function OpenLightEditor(ent)
         local angleY = vgui.Create("DNumSlider", body)
         angleY:Dock(TOP)
         angleY:DockMargin(10, 5, 10, 5)
-        angleY:SetText("Angle Yaw")
+        angleY:SetText(NL("Angle Yaw"))
         angleY:SetMin(-180)
         angleY:SetMax(180)
         angleY:SetDecimals(1)
@@ -1191,7 +1197,7 @@ local function OpenLightEditor(ent)
         local angleR = vgui.Create("DNumSlider", body)
         angleR:Dock(TOP)
         angleR:DockMargin(10, 5, 10, 5)
-        angleR:SetText("Angle Roll")
+        angleR:SetText(NL("Angle Roll"))
         angleR:SetMin(-180)
         angleR:SetMax(180)
         angleR:SetDecimals(1)
@@ -1397,7 +1403,7 @@ local function OpenLightEditor(ent)
         local close = vgui.Create("DButton", frame)
         close:Dock(BOTTOM)
         close:DockMargin(10, 5, 10, 10)
-        close:SetText("Close")
+        close:SetText(NL("Close"))
         close.DoClick = function()
             frame:Close()
         end
@@ -1405,7 +1411,7 @@ end
 
 -- Add property menu for editing remix lights
 properties.Add("remix_rt_light_edit", {
-    MenuLabel = "Edit Remix Light", Order = 0, MenuIcon = "icon16/lightbulb.png",
+    MenuLabel = NP("Edit Remix Light"), Order = 0, MenuIcon = "icon16/lightbulb.png",
     Filter = function(self, ent, ply)
         return IsValid(ent) and ent:GetClass() == "remix_rt_light" and ply:IsAdmin() ~= false
     end,
@@ -1416,7 +1422,7 @@ properties.Add("remix_rt_light_edit", {
 
 -- Property menu for entities with attached bonemerged lights
 properties.Add("remix_rt_light_edit_attached", {
-    MenuLabel = "Edit Attached Lights", Order = 1, MenuIcon = "icon16/attach.png",
+    MenuLabel = NP("Edit Attached Lights"), Order = 1, MenuIcon = "icon16/attach.png",
     Filter = function(self, ent, ply)
         if not IsValid(ent) then return false end
         if ent:GetClass() == "remix_rt_light" then return false end -- Don't show for lights themselves
@@ -1454,13 +1460,13 @@ properties.Add("remix_rt_light_edit_attached", {
         for i, light in ipairs(attachedLights) do
             local lightType = light:GetNWString("rtx_light_type", "sphere")
             local boneID = light:GetNWInt("rtx_light_bone_id", -1)
-            local boneName = "origin"
+            local boneName = NL("origin")
             
             if boneID >= 0 and ent:GetBoneCount() > 0 and boneID < ent:GetBoneCount() then
-                boneName = ent:GetBoneName(boneID) or ("Bone " .. boneID)
+                boneName = ent:GetBoneName(boneID) or (NL("Bone ") .. boneID)
             end
             
-            local label = string.format("Light #%d: %s [%s]", i, lightType, boneName)
+            local label = string.format(NL("Light #%d: %s [%s]"), i, NL(lightType), boneName)
             menu:AddOption(label, function()
                 OpenLightEditor(light)
             end):SetIcon("icon16/lightbulb.png")
@@ -1529,14 +1535,14 @@ end, nil, "Set fill opacity for RTX light visualization (0-255)")
 
 -- Add to tool menu if available
 hook.Add("PopulateToolMenu", "RemixRTLight_ToolMenu", function()
-    spawnmenu.AddToolMenuOption("Utilities", "RTX Remix - API Lights", "RTX_Remix_Light_Viz", "Entity Light HUD", "", "", function(panel)
+    spawnmenu.AddToolMenuOption("Utilities", "RTX Remix - API Lights", "RTX_Remix_Light_Viz", NL("Entity Light HUD"), "", "", function(panel)
         panel:ClearControls()
 
-        panel:CheckBox("Enable HUD", "remix_rt_light_visualize")
-        panel:NumSlider("HUD Range", "remix_rt_light_visualize_range", 512, 8192, 0)
-        panel:NumSlider("Fill Opacity", "remix_rt_light_visualize_fill_opacity", 0, 255, 0)
+        panel:CheckBox(NL("Enable HUD"), "remix_rt_light_visualize")
+        panel:NumSlider(NL("HUD Range"), "remix_rt_light_visualize_range", 512, 8192, 0)
+        panel:NumSlider(NL("Fill Opacity"), "remix_rt_light_visualize_fill_opacity", 0, 255, 0)
         
-        local btnReset = panel:Button("Reset to Defaults")
+        local btnReset = panel:Button(NL("Reset to Defaults"))
         btnReset.DoClick = function()
             RunConsoleCommand("remix_rt_light_visualize", "1")
             RunConsoleCommand("remix_rt_light_visualize_range", "2048")
@@ -1548,3 +1554,6 @@ hook.Add("PopulateToolMenu", "RemixRTLight_ToolMenu", function()
 end)
 
 
+
+-- Display names of networked light-type identifiers; the values sent over the network stay unchanged.
+local lightTypeLabels = { NN("sphere"), NN("rect"), NN("disk"), NN("distant"), NN("cylinder") }

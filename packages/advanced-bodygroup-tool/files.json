@@ -6,6 +6,26 @@
    "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_bodygroup_tool",
    "git": null,
    "imported": "2026-10-30T00:42:45+00:00"
+  },
+  "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_i18n.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-bodygroup-tool\\!advanced_bodygroup_tool\\lua\\advanced_bodygroup_tool\\cl_i18n.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:21+00:00"
+  },
+  "!advanced_bodygroup_tool/lua/weapons/gmod_tool/stools/advanced_bodygroup.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-bodygroup-tool\\!advanced_bodygroup_tool\\lua\\weapons\\gmod_tool\\stools\\advanced_bodygroup.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:21+00:00"
   }
  },
  "files": {
@@ -16,9 +36,9 @@
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_i18n.lua": {
-   "size": 54586,
-   "sha256": "b87b06d70fcb68f75c296954f2c60d8d16c2597c5a41252ddbf4af49ac9c2d01",
-   "mtime_ns": 1788378168046537000,
+   "size": 61265,
+   "sha256": "e0146e06db3f376643e286359ce45d86b4b862093318a59537a339819883a6cb",
+   "mtime_ns": 1793353238059008900,
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_uv_hide.lua": {
@@ -40,9 +60,9 @@
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/weapons/gmod_tool/stools/advanced_bodygroup.lua": {
-   "size": 20295,
-   "sha256": "6b74d296013664f1c5ef99150f4563e4ef3c738116eb1ae23d327359939d5b66",
-   "mtime_ns": 1787977004896242900,
+   "size": 20367,
+   "sha256": "508dd91eac7cc4d000624f9b60771c3060dbb5e3c060d183aa3843d1b1ba1936",
+   "mtime_ns": 1793354212699871600,
    "stored": "plain"
   }
  }

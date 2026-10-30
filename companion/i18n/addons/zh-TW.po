@@ -1,0 +1,2031 @@
+# Translations of the GMod native loader companion (the RTX Remix tab, the guide).
+# Edit msgstr only; see companion/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader companion\n"
+"Language: zh-TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:10
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua:21
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:11
+msgid "Seamless Portals"
+msgstr "無縫傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:232
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:215
+msgid "Seamless Portal"
+msgstr "無縫傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:13
+msgid "Seamlessly connects two locations"
+msgstr "無縫連線兩個位置"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua:8
+msgid "Portal Gun"
+msgstr "傳送門槍"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:82
+msgid "Portal Creator"
+msgstr "傳送門建立器"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:83
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:97
+msgid "Creates and links portals"
+msgstr "建立並連線傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:84
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:82
+msgid "Left Click: Create portal"
+msgstr "左鍵：建立傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:85
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:83
+msgid "Right Click: Start linking a portal"
+msgstr "右鍵：選擇要連線的傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:86
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:84
+msgid "Right Click: Create link to another portal"
+msgstr "右鍵：連線到另一個傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:98
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:34
+msgid "Portal Size X"
+msgstr "傳送門 X 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:99
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:35
+msgid "Portal Size Y"
+msgstr "傳送門 Y 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:100
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:93
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:36
+msgid "Portal Size Z"
+msgstr "傳送門 Z 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:101
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:37
+msgid "Portal Sides"
+msgstr "傳送門邊數"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:102
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:94
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:38
+msgid "Has Backface (Invisible until linked!)"
+msgstr "啟用背面（連線前不可見！）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:103
+msgid "Offset portals from walls"
+msgstr "將傳送門略微移離牆面"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:80
+msgid "Portal Fitter"
+msgstr "貼牆傳送門工具"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:81
+msgid "Creates a portal, fitted to each wall"
+msgstr "建立貼合各牆面的傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:91
+msgid "Creates a fitted portal"
+msgstr "建立貼合牆面的傳送門"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:92
+msgid "Portal Snap Angle"
+msgstr "傳送門角度吸附步長"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:132
+#, c-format
+msgid ""
+"Size X: %.2f\n"
+msgstr ""
+"X 尺寸：%.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:133
+#, c-format
+msgid ""
+"Size Y: %.2f\n"
+msgstr ""
+"Y 尺寸：%.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:134
+#, c-format
+msgid ""
+"Ratio: %.2f\n"
+msgstr ""
+"比例：%.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:15
+msgid "Portal Resizer"
+msgstr "傳送門尺寸工具"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:16
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:32
+msgid "Sets the size of portals"
+msgstr "設定傳送門的尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:14
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:27
+msgid "Glass Rewrite Remixed Settings"
+msgstr "Glass Rewrite Remixed 設定"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:48
+msgid "Visual Effects"
+msgstr "視覺效果"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:59
+msgid "Show Cracks Before Breaking"
+msgstr "破碎前顯示裂紋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:66
+msgid "Crack Delay"
+msgstr "裂紋持續時間"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:66
+msgid "Time between cracks appearing and glass breaking"
+msgstr "從裂紋出現到玻璃破碎的時間"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:244
+msgid "Shard Count"
+msgstr "碎片數量"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
+msgid "Number of pieces glass breaks into"
+msgstr "玻璃破碎後產生的碎片數量"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:252
+msgid "Velocity Transfer"
+msgstr "速度傳遞倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
+msgid "How forcefully glass fragments scatter"
+msgstr "控制玻璃碎片飛散的猛烈程度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:77
+msgid "Physics Settings"
+msgstr "物理設定"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:236
+msgid "Glass strength"
+msgstr "玻璃抗衝擊強度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+msgid "How much damage glass can take before breaking"
+msgstr "玻璃破碎前能承受的傷害量"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+msgid "Mass Factor"
+msgstr "質量影響倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+msgid "How much object mass affects impact force"
+msgstr "物體質量對撞擊力的影響程度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:95
+msgid "Player Collision"
+msgstr "玩家碰撞"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+msgid "Player Mass (kg)"
+msgstr "玩家質量 (kg)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+msgid "Player mass for glass breaking calculations"
+msgstr "計算玻璃破碎時使用的玩家質量"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+msgid "Min Break Speed"
+msgstr "最低撞碎速度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+msgid "Minimum player speed to break glass"
+msgstr "玩家撞碎玻璃所需的最低速度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:113
+msgid "Advanced"
+msgstr "進階"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:124
+msgid "Detailed collisions for small glass shards (higher cost)"
+msgstr "小玻璃碎片使用完整碰撞（運算負擔較高）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:139
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1545
+msgid "Reset to Defaults"
+msgstr "恢復預設值"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:148
+msgid "Test Settings"
+msgstr "測試設定"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:157
+msgid "Player Debug"
+msgstr "玩家除錯"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:196
+msgid "Settings reset to defaults!"
+msgstr "設定已恢復預設值！"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:203
+msgid "Settings"
+msgstr "設定"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:206
+msgid ""
+"Glass Rewrite Remixed\n"
+"Realistic glass destruction system"
+msgstr ""
+"Glass Rewrite Remixed\n"
+"真實玻璃破碎系統"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:210
+msgid "Open Settings Panel"
+msgstr "開啟設定面板"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:215
+msgid "Debug Tools:"
+msgstr "除錯工具："
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:218
+msgid "Show Current Settings"
+msgstr "顯示當前設定"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:223
+msgid "Player Impact Analysis"
+msgstr "玩家撞擊分析"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:228
+msgid "Manual Controls:"
+msgstr "手動控制："
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:231
+msgid "Show Cracks"
+msgstr "顯示裂紋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:23
+msgid "Glass: Rewrite Remixed"
+msgstr "Glass: Rewrite Remixed"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:25
+msgid "Destructable Fun"
+msgstr "可破壞的樂趣"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:26
+msgid "Spawn and damage it"
+msgstr "生成後對它造成傷害"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:451
+#, c-format
+msgid "Glass damage: %d / %d"
+msgstr "玻璃損傷：%d / %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:709
+msgid "Glass Shard"
+msgstr "玻璃碎片"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:771
+#, c-format
+msgid "Reset glass damage from %d to 0"
+msgstr "已將玻璃損傷從 %d 重置為 0"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:773
+msgid "Look at a glass shard to reset its damage"
+msgstr "看向玻璃碎片即可重置其損傷"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:778
+msgid "Opening Glass Settings Panel..."
+msgstr "正在開啟玻璃設定面板…"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
+msgstr "在主控台執行 glass_open_panel，或在物件清單中開啟 RTX Remix > 水與玻璃 > 設定。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:27
+msgid "Glass Thin 1"
+msgstr "薄玻璃 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:28
+msgid "Glass Thin 2"
+msgstr "薄玻璃 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:29
+msgid "Glass Thin 4"
+msgstr "薄玻璃 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:30
+msgid "Glass Thick 1"
+msgstr "厚玻璃 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:31
+msgid "Glass Thick 2"
+msgstr "厚玻璃 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:32
+msgid "Glass Thick 4"
+msgstr "厚玻璃 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:33
+msgid "Glass Block 1"
+msgstr "玻璃塊 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:34
+msgid "Glass Block 2"
+msgstr "玻璃塊 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:35
+msgid "Glass Block 4"
+msgstr "玻璃塊 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:65
+msgid "​100% Fragile"
+msgstr "極易破碎"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:18
+msgid "Glass Rewrite"
+msgstr "Glass Rewrite"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:22
+msgid "Glass tool"
+msgstr "玻璃工具"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:23
+msgid "Turn props into glass by wrapping the model in a glass mesh"
+msgstr "將物體變成玻璃（在模型外包裹玻璃網格）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:27
+msgid "Left click on a prop to turn it into destructable glass"
+msgstr "左鍵點選物體，將其變成可破碎的玻璃"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:31
+msgid "Turns props into glass upon left click"
+msgstr "左鍵點選即可將物體變成玻璃"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:44
+msgid "Invalid Model"
+msgstr "無效模型"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:59
+msgid "Unable to generate physics object"
+msgstr "無法生成物理物件"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:83
+msgid "Glass"
+msgstr "玻璃"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_lamp.lua:11
+msgid "Lamp"
+msgstr "燈具"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_light.lua:11
+msgid "Light"
+msgstr "光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:16
+msgid "Pseudoplayer"
+msgstr "玩家模型替身"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:18
+msgid "For firstperson self shadows and body reflections with RTX"
+msgstr "在第一人稱下顯示自身的 RTX 陰影和身體倒影"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua:14
+msgid "Pseudoweapon"
+msgstr "武器模型替身"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua:16
+msgid "For firstperson self shadows and reflections with RTX"
+msgstr "在第一人稱下顯示自身的 RTX 陰影和倒影"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:246
+msgid "🔗 DETACHED"
+msgstr "🔗 已解除繫結"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:333
+#, c-format
+msgid "∠%.0f° (softness: %.2f)"
+msgstr "∠%.0f°（柔和度：%.2f）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:788
+msgid " [MOVING]"
+msgstr " [移動中]"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:988
+msgid "Remix Light"
+msgstr "Remix 光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1002
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:318
+msgid "Sphere"
+msgstr "球形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1003
+msgid "Rect"
+msgstr "矩形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1004
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:320
+msgid "Disk"
+msgstr "圓盤"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1005
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:321
+msgid "Cylinder"
+msgstr "圓柱"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1006
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:322
+msgid "Distant"
+msgstr "遠距"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1017
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:456
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:382
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:111
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:126
+msgid "Radius"
+msgstr "半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1026
+msgid "Volumetrics Scale"
+msgstr "體積光倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1047
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:455
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:53
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:383
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:112
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:119
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:116
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:127
+msgid "Brightness"
+msgstr "亮度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1057
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:399
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:130
+msgid "Enable Light Shaping"
+msgstr "啟用光束塑形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1063
+msgid "Cone Angle (deg)"
+msgstr "光錐角度（度）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1072
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:458
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:401
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:132
+msgid "Cone Softness"
+msgstr "光錐邊緣柔和度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1081
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:402
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:133
+msgid "Focus Exponent"
+msgstr "聚焦指數"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1093
+msgid "Rect X Size"
+msgstr "矩形 X 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1102
+msgid "Rect Y Size"
+msgstr "矩形 Y 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1111
+msgid "Disk X Radius"
+msgstr "圓盤 X 半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1120
+msgid "Disk Y Radius"
+msgstr "圓盤 Y 半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1129
+msgid "Cylinder Axis Length"
+msgstr "圓柱軸長"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1138
+msgid "Distant Angular Diameter"
+msgstr "遠光源角直徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1148
+msgid "-- Bonemerge Offsets --"
+msgstr "-- 骨骼繫結偏移 --"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1155
+msgid "Position X (Forward)"
+msgstr "位置 X（前）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1164
+msgid "Position Y (Right)"
+msgstr "位置 Y（右）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1173
+msgid "Position Z (Up)"
+msgstr "位置 Z（上）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1182
+msgid "Angle Pitch"
+msgstr "俯仰角"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1191
+msgid "Angle Yaw"
+msgstr "偏航角"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1200
+msgid "Angle Roll"
+msgstr "翻滾角"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1406
+msgid "Close"
+msgstr "關閉"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1414
+msgid "Edit Remix Light"
+msgstr "編輯 Remix 光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1425
+msgid "Edit Attached Lights"
+msgstr "編輯已繫結的光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1463
+msgid "origin"
+msgstr "原點"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1466
+msgid "Bone "
+msgstr "骨骼 "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1469
+#, c-format
+msgid "Light #%d: %s [%s]"
+msgstr "光源 #%d：%s [%s]"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1538
+msgid "Entity Light HUD"
+msgstr "實體光源 HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1541
+msgid "Enable HUD"
+msgstr "啟用 HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1542
+msgid "HUD Range"
+msgstr "HUD 顯示距離"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1543
+msgid "Fill Opacity"
+msgstr "填充不透明度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "sphere"
+msgstr "球形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "rect"
+msgstr "矩形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "disk"
+msgstr "圓盤"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "distant"
+msgstr "遠光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "cylinder"
+msgstr "圓柱"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/shared.lua:9
+msgid "Remix RT Light (Sphere)"
+msgstr "Remix 光線追蹤光源（球形）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:217
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/shared.lua:9
+msgid "Sky Editor"
+msgstr "天空編輯器"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:349
+msgid "Presets"
+msgstr "預設"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Earth"
+msgstr "地球"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Mars"
+msgstr "火星"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Clear Sky"
+msgstr "晴空"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Hazy"
+msgstr "薄霧"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Alien"
+msgstr "異星"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Desert"
+msgstr "沙漠"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:369
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2485
+msgid "Sun"
+msgstr "太陽"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:370
+msgid "Intensity"
+msgstr "強度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:373
+msgid "Density"
+msgstr "密度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:374
+msgid "Air"
+msgstr "空氣"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:375
+msgid "Dust"
+msgstr "塵埃"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:376
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:386
+msgid "Ozone"
+msgstr "臭氧"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:379
+msgid "Scattering"
+msgstr "散射"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:380
+msgid "Mie Anisotropy"
+msgstr "米氏散射各向異性"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:381
+msgid "Illuminance"
+msgstr "照度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:382
+msgid "Rayleigh"
+msgstr "瑞利散射"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:383
+msgid "Mie"
+msgstr "米氏散射"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:387
+msgid "Absorption"
+msgstr "吸收"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:443
+msgid "Edit Sky"
+msgstr "編輯天空"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:47
+msgid "[GMRTX - Map Fixes] Enabled and saved for map: "
+msgstr "[GMRTX - 地圖修復] 已為以下地圖啟用並儲存： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:51
+msgid "[GMRTX - Map Fixes] Already enabled for map: "
+msgstr "[GMRTX - 地圖修復] 已為以下地圖啟用： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:66
+msgid "[GMRTX - Map Fixes] Disabled map fixes for map: "
+msgstr "[GMRTX - 地圖修復] 已為以下地圖禁用： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:69
+msgid "[GMRTX - Map Fixes] Map fixes was not enabled for map: "
+msgstr "[GMRTX - 地圖修復] 以下地圖尚未啟用修復： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:83
+msgid "[GMRTX - Map Fixes] Auto-enabled for map: "
+msgstr "[GMRTX - 地圖修復] 已為以下地圖自動啟用： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1129
+msgid " (EMERGENCY)"
+msgstr "（應急調整）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1131
+msgid " (MOVED)"
+msgstr "（已移動）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1139
+msgid " (OUT OF BOUNDS)"
+msgstr "（超出邊界）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1176
+msgid "BOUNDS CHECK FAILED"
+msgstr "邊界檢查失敗"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1207
+msgid " (NO UPDATER)"
+msgstr "（無光源更新器）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:27
+msgid "Base Options"
+msgstr "基本選項"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:30
+msgid "Pseudoplayer Enabled"
+msgstr "啟用玩家模型替身"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:31
+msgid "Pseudoplayer allows you to see your own playermodel, this when marked as a 'Playermodel Texture' in remix allows you to see your own shadow and reflection."
+msgstr "玩家模型替身會繪製您自己的角色模型。在 Remix 中將其標記為“Playermodel Texture”後，就能顯示自身的陰影和倒影。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:32
+msgid "Pseudoweapon Enabled"
+msgstr "啟用武器模型替身"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:33
+msgid "Similar to above, but for the weapon you're holding."
+msgstr "與上面的功能類似，但作用於您手持的武器。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:35
+msgid "Hardware Skinning"
+msgstr "硬體蒙皮"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:36
+msgid "Enables hardware skinning so dynamic mesh replacements can work in Remix."
+msgstr "啟用硬體蒙皮，讓 Remix 的動態網格替換正常工作。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:39
+msgid "Required and forced on while Half-Life 2 RTX is mounted."
+msgstr "掛載 Half-Life 2 RTX 時必須啟用，此時會強制開啟。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:41
+msgid "Highly experimental, may cause issues with some models or not work at all."
+msgstr "高度實驗性功能，可能導致部分模型出現問題，或完全無法生效。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:44
+msgid "Fix Skybox Leaking"
+msgstr "修復天空盒穿透"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:45
+msgid "Hides geometry behind the skybox to prevent it from leaking through, doesn't allow light_enviornment entities to pass through though."
+msgstr "隱藏天空盒後方的幾何體，防止其透出；但這也會阻擋 light_environment 實體的光照。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:46
+msgid "Also breaks HDRIs."
+msgstr "也會導致 HDRI 無法正常工作。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:51
+msgid "Disable Remix API Lights"
+msgstr "禁用 Remix API 光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:52
+msgid "Enables lightupdaters, which will make Remix use the detected d3d9 lights from the game instead of API lights."
+msgstr "啟用光源更新器，讓 Remix 使用從遊戲中檢測到的 D3D9 光源，而不是 API 光源。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:57
+msgid "Map Fixes"
+msgstr "地圖修復"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:69
+msgid "Fixes broken geometry rendering for the current map, can lower FPS."
+msgstr "修復當前地圖的幾何體算繪問題，可能降低畫格率。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:76
+msgid "This is only used for engine rendered world geometry."
+msgstr "僅用於由引擎算繪的世界幾何體。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:83
+msgid "Enable Map Fixes"
+msgstr "啟用地圖修復"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:88
+msgid "Disable Map Fixes"
+msgstr "禁用地圖修復"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:110
+msgid "Performance"
+msgstr "效能"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:113
+msgid "Performance Mode"
+msgstr "效能模式"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:114
+msgid "Enables custom renderers to replace engine rendered world geometry and static props. Also controls engine culling patches. This will break mesh replacements in Remix when enabled."
+msgstr "使用自定義算繪器代替引擎來繪製世界幾何體和靜態物體，並控制引擎的剔除補丁。啟用後會使 Remix 的網格替換失效。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:118
+msgid "Culling"
+msgstr "不可見物體剔除"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:130
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:71
+msgid "Static Props"
+msgstr "靜態道具"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:137
+msgid "Enables PVS culling for static props. May cause some props to cull incorrectly."
+msgstr "對靜態物體啟用潛在可見集 (PVS) 剔除。部分物體可能被錯誤地剔除。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:144
+msgid "PVS Safety Distance"
+msgstr "PVS 安全距離"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:153
+msgid "Props within this distance always render, bypassing PVS. (0 = disabled)"
+msgstr "此距離內的物體始終算繪，不受 PVS 限制。（0 = 禁用）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:160
+msgid "Distance Culling"
+msgstr "距離剔除"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:169
+msgid "Sphere-based culling for static props. With PVS on: applied after PVS as an extra filter. With PVS off: sole culling method. (0 = disabled)"
+msgstr "按球形範圍剔除靜態物體。啟用 PVS 時，在 PVS 之後再進行此項篩選；禁用 PVS 時，僅使用此剔除方式。（0 = 禁用）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:193
+msgid "3D Sky"
+msgstr "3D 天空盒"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:205
+msgid "Enable 3D Sky"
+msgstr "啟用 3D 天空盒"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:212
+msgid "Renders 3D skybox map faces, displacements, and static props projected into world space. This does not include anything dynamic like particles, entities, etc. This is still WIP so there might be rendering issues on some maps."
+msgstr "將 3D 天空盒中的地圖表面、置換地形和靜態物體投影到世界空間進行算繪。不包括粒子、實體等動態內容。此功能仍在開發中，部分地圖可能出現算繪問題。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:228
+msgid "Advanced: Engine Patches"
+msgstr "高階：引擎補丁"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:248
+msgid "Disable Engine Frustum Culling"
+msgstr "禁用引擎視錐剔除"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:249
+msgid "Force Brush Entity Backfaces"
+msgstr "強制繪製筆刷實體背面"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:250
+msgid "Force World Backfaces #1"
+msgstr "強制繪製世界背面 #1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:251
+msgid "Force World Backfaces #2"
+msgstr "強制繪製世界背面 #2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:252
+msgid "Disable BSP Culling"
+msgstr "禁用 BSP 剔除"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:253
+msgid "Disable Client Frustum Culling"
+msgstr "禁用客戶端視錐剔除"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:254
+msgid "Force NoVis (Disable Engine PVS)"
+msgstr "強制 NoVis（禁用引擎 PVS）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:275
+msgid "You have enabled r_3dsky which may cause rendering issues with RTX Remix due how the engine culls the skybox. It's recommended to keep r_3dsky disabled for best results."
+msgstr "您已啟用 r_3dsky。由於引擎剔除天空盒的方式，這可能導致 RTX Remix 出現算繪問題。建議保持 r_3dsky 關閉，以獲得較好的效果。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:280
+msgid "Don't show this warning again"
+msgstr "不再顯示此警告"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:357
+msgid "ToPBR"
+msgstr "ToPBR"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:360
+msgid "Enable ToPBR"
+msgstr "啟用 ToPBR"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:361
+msgid "Converts source material maps (normal, bump, ssbump, etc) to a pseudo-pbr format for RTX Remix."
+msgstr "將 Source 材質的法線、凹凸、ssbump 等貼圖轉換為供 RTX Remix 使用的近似 PBR 格式。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:362
+msgid "Conversion is experimental and cannot reproduce every material exactly."
+msgstr "此功能仍在開發中，轉換結果無法完全準確。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:363
+msgid "This will use a significant amount of VRAM, disk space, and may cause stability issues."
+msgstr "會佔用大量視訊記憶體和磁碟空間，也可能導致穩定性問題。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:365
+msgid "Requires a map reload to enable."
+msgstr "需要重新載入地圖才能啟用。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:368
+msgid "Experimental Metallic Detection"
+msgstr "金屬度檢測（實驗性）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:369
+msgid "Generate metallic maps from base texture brightness."
+msgstr "根據基礎貼圖的亮度生成金屬度貼圖。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:370
+msgid "WARNING: May cause dark materials to appear completely black!"
+msgstr "警告：可能讓深色材質變成全黑！"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:373
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:441
+msgid "Debug Output"
+msgstr "除錯輸出"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:374
+msgid "Shows debug messages in console for troubleshooting."
+msgstr "在控制檯顯示除錯資訊，便於排查問題。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:377
+msgid "Clear Cache"
+msgstr "清空快取"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:381
+msgid "Clear the conversion cache (useful after changing settings)."
+msgstr "清空轉換快取，修改設定後可使用此操作。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:411
+msgid "Auto-Categorization"
+msgstr "自動分類"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:415
+msgid "Enable Auto-Categorization"
+msgstr "啟用自動分類"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:416
+msgid "Automatically categorizes textures for RTX Remix."
+msgstr "為 RTX Remix 自動對貼圖進行分類。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:419
+msgid "Delay (seconds)"
+msgstr "延遲（秒）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:420
+msgid "How long to wait after map load before scanning (allows BSP data to load)."
+msgstr "地圖載入後開始掃描前的等待時間，用於讓 BSP 資料載入完成。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:423
+msgid "World Geometry"
+msgstr "世界幾何體"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:424
+msgid "Categorizes walls, floors, and ceilings from BSP as Decals for proper blending."
+msgstr "將 BSP 中的牆面、地板和天花板歸為貼花，以正確混合顯示。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:427
+msgid "Particles"
+msgstr "粒子"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:428
+msgid "Categorizes particle effects (smoke, fire, sparks, etc) as Particles."
+msgstr "將煙霧、火焰、火花等粒子特效歸為粒子。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:431
+msgid "Overlay Decals"
+msgstr "疊加貼花"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:432
+msgid "Categorizes materials with $decal parameter (posters, graffiti, bullet holes, etc) as Decals."
+msgstr "將帶有 $decal 引數的材質（海報、塗鴉、彈孔等）歸為貼花。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:435
+msgid "Legacy Emissive"
+msgstr "原版自發光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:436
+msgid "Categorizes materials with $selfillum parameter as Legacy Emissive."
+msgstr "將帶有 $selfillum 引數的材質歸為原版自發光材質。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:437
+msgid "Materials that use $selfillum incorrectly may be misclassified."
+msgstr "部分材質未正確使用 $selfillum 引數，因此可能被錯誤分類。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:439
+msgid "Debug Options"
+msgstr "除錯選項"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:442
+msgid "Shows debug messages in console for categorization activity (useful for troubleshooting)."
+msgstr "在控制檯顯示分類過程的除錯資訊，便於排查問題。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:444
+msgid "Manual Controls"
+msgstr "手動控制"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:446
+msgid "Scan Now"
+msgstr "立即掃描"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:450
+msgid "Manually parse BSP and categorize world textures, decals, and emissive materials."
+msgstr "手動解析 BSP，對世界貼圖、貼花和自發光材質進行分類。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:200
+msgid "Building Map Geometry"
+msgstr "正在構建地圖幾何體"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:49
+msgid "Map Faces"
+msgstr "地圖表面"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:60
+msgid "Map Displacements"
+msgstr "地圖置換地形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:81
+msgid "Please wait..."
+msgstr "請稍候…"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:90
+msgid "Force Close (Build appears stuck)"
+msgstr "強制關閉（構建似乎已卡住）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:163
+#, c-format
+msgid "Processing... %d items"
+msgstr "處理中… %d 個專案"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:176
+msgid "Initializing..."
+msgstr "正在初始化…"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:181
+msgid "Waiting..."
+msgstr "等待中…"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:259
+#, c-format
+msgid "Elapsed time: %.1f seconds"
+msgstr "已用時間：%.1f 秒"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:261
+msgid " - Complete!"
+msgstr " - 已完成！"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:263
+#, c-format
+msgid " - Build appears stuck! (no progress for %d s)"
+msgstr " - 構建似乎已卡住！（%d 秒內無進展）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/render_core.lua:1099
+msgid "Remix Render Debug"
+msgstr "Remix 算繪除錯"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:887
+msgid "EMISSIVE"
+msgstr "自發光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:892
+msgid "PARTICLE | EMISSIVE"
+msgstr "粒子 | 自發光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:896
+msgid "DECAL | EMISSIVE"
+msgstr "貼花 | 自發光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:451
+msgid "Flashlight"
+msgstr "手電筒"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:454
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:381
+msgid "Light Properties"
+msgstr "光源屬性"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:457
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:400
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:131
+msgid "Cone Angle"
+msgstr "光錐角度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:459
+msgid "Volumetric Scale"
+msgstr "體積光倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:461
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:388
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:117
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:126
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:118
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:123
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:136
+msgid "Color"
+msgstr "色彩"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:483
+msgid "Position Offset"
+msgstr "位置偏移"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:484
+msgid "Forward Offset"
+msgstr "前向偏移"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:485
+msgid "Right Offset"
+msgstr "右向偏移"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:486
+msgid "Up Offset"
+msgstr "向上偏移"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:488
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:29
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:43
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:58
+msgid "Reset"
+msgstr "重設"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2284
+msgid "Edit RTX Light"
+msgstr "編輯 RTX 光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2478
+msgid "Map Lights HUD"
+msgstr "地圖光源 HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2479
+#, c-format
+msgid "Visible: %d / %d"
+msgstr "可見：%d / %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2480
+#, c-format
+msgid "Max Dist: %dm"
+msgstr "最遠距離：%d 米"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2483
+msgid "Point"
+msgstr "點光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2484
+msgid "Spot"
+msgstr "聚光燈"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2486
+msgid "Proj"
+msgstr "投射光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:14
+msgid "Map"
+msgstr "地圖"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:18
+msgid "Actions"
+msgstr "操作"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:19
+msgid "Process Map Lights"
+msgstr "處理地圖光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:20
+msgid "Clear All Map Lights"
+msgstr "清除所有地圖光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:24
+msgid "Point Lights (light)"
+msgstr "點光源 (light)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:25
+msgid "Point Brightness"
+msgstr "點光源亮度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:26
+msgid "Point Radius"
+msgstr "點光源半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:27
+msgid "Point Size"
+msgstr "點光源尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:28
+msgid "Point Volumetrics"
+msgstr "點光源體積光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:38
+msgid "Spot Lights (light_spot)"
+msgstr "聚光燈 (light_spot)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:39
+msgid "Spot Brightness"
+msgstr "聚光燈亮度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:40
+msgid "Spot Radius"
+msgstr "聚光燈半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:41
+msgid "Spot Size"
+msgstr "聚光燈尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:42
+msgid "Spot Volumetrics"
+msgstr "聚光燈體積光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:52
+msgid "Directional (light_environment)"
+msgstr "平行光 (light_environment)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:54
+msgid "VRAD Scale"
+msgstr "VRAD 倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:55
+msgid "Angular Multiplier"
+msgstr "角度倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:56
+msgid "Env Size"
+msgstr "環境光源尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:57
+msgid "Env Volumetrics"
+msgstr "環境體積光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:72
+msgid "Debug"
+msgstr "偵錯"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:73
+msgid "Draw Debug Directions"
+msgstr "繪製除錯方向"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:74
+msgid "Show HUD Overlay"
+msgstr "顯示 HUD 疊加層"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:75
+msgid "Show Disabled Lights"
+msgstr "顯示已禁用的光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:76
+msgid "HUD Max Distance"
+msgstr "HUD 最遠顯示距離"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:12
+msgid "Wrapper - Dynamic"
+msgstr "動態光源轉換"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:15
+msgid "Convert DynamicLight() calls to Remix API lights"
+msgstr "將 DynamicLight() 呼叫轉換為 Remix API 光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:16
+msgid "Works with SWEPs like lanterns, and other addons that use dynamic lights"
+msgstr "支援燈籠等指令碼武器 (SWEP)，以及其他使用動態光源的外掛"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:19
+msgid "Enable Dynamic Light Wrapper"
+msgstr "啟用動態光源轉換"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:21
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:20
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:21
+msgid "Brightness Scale"
+msgstr "亮度倍率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:12
+msgid "Wrapper - Basic"
+msgstr "基礎光源轉換"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:15
+msgid "Automatically converts Garry's Mod point and spot lights into Remix API Lights"
+msgstr "自動將 Garry's Mod 的點光源和聚光燈轉換為 Remix API 光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:18
+msgid "Enable Light Wrapper"
+msgstr "啟用基礎光源轉換"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:12
+msgid "Wrapper - Projected Texture"
+msgstr "投射貼圖光源轉換"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:15
+msgid "Automatically convert ProjectedTexture() calls into Remix API spotlights"
+msgstr "自動將 ProjectedTexture() 呼叫轉換為 Remix API 聚光燈"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:16
+msgid "Works with Glide base headlights, spotlight entities, and other addons that use ProjectedTexture()"
+msgstr "支援 Glide 載具框架的車燈、聚光燈實體，以及其他使用 ProjectedTexture() 的外掛"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:19
+msgid "Enable Projected Texture Wrapper"
+msgstr "啟用投射貼圖光源轉換"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:24
+msgid "Position Offsets"
+msgstr "位置偏移"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:25
+msgid "Offset X (Forward/Back)"
+msgstr "X 偏移（前後）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:28
+msgid "Offset Y (Left/Right)"
+msgstr "Y 偏移（左右）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:31
+msgid "Offset Z (Up/Down)"
+msgstr "Z 偏移（上下）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:18
+msgid "API Light - Bonemerged"
+msgstr "API 光源 - 骨骼繫結"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:19
+msgid "Attach RTX lights to entity bones"
+msgstr "將 RTX 光源繫結到實體的骨骼上"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:20
+msgid "Left-click to attach light, Right-click entity to grab bones, Reload to detach"
+msgstr "左鍵繫結光源，右鍵點選實體獲取骨骼，裝填鍵解除繫結"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:237
+#, c-format
+msgid "Grabbed %d bones. Check tool menu to select."
+msgstr "已獲取 %d 根骨骼。請在工具選單中選擇。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:239
+msgid "Entity has no bones (will attach to origin)"
+msgstr "實體沒有骨骼，將繫結到模型原點"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:266
+msgid "Right-Click to grab bones"
+msgstr "右鍵獲取骨骼"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:270
+msgid "Entity: "
+msgstr "實體： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:271
+msgid "(No bones - will attach to origin)"
+msgstr "（無骨骼，將繫結到模型原點）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:274
+#, c-format
+msgid "Entity: %s (%d bones)"
+msgstr "實體：%s（%d 根骨骼）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:294
+#, c-format
+msgid "Selected: %s (#%d)"
+msgstr "已選擇：%s (#%d)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:309
+#, c-format
+msgid "🔗 %d light(s) attached"
+msgstr "🔗 已繫結 %d 個光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:317
+msgid "Light Type"
+msgstr "光源型別"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:319
+msgid "Rectangle"
+msgstr "矩形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:325
+msgid "Bone Selection"
+msgstr "選擇骨骼"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:326
+msgid "Right-click an entity to grab its bones:"
+msgstr "右鍵點選實體，獲取其骨骼："
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:341
+msgid "Bone Name"
+msgstr "骨骼名稱"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:351
+msgid "No bones grabbed yet"
+msgstr "尚未獲取骨骼"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:369
+msgid "Position Offset (Local Space)"
+msgstr "位置偏移（區域性空間）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:370
+msgid "X (Forward/Back)"
+msgstr "X（前後）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:371
+msgid "Y (Left/Right)"
+msgstr "Y（左右）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:372
+msgid "Z (Up/Down)"
+msgstr "Z（上下）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:375
+msgid "Angle Offset"
+msgstr "角度偏移"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:376
+msgid "Pitch"
+msgstr "俯仰"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:377
+msgid "Yaw"
+msgstr "偏航"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:378
+msgid "Roll"
+msgstr "翻滾"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:384
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:120
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:114
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:117
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:128
+msgid "Volumetrics"
+msgstr "體積光"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:405
+msgid "Shape-Specific Parameters"
+msgstr "形狀專屬引數"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:406
+msgid "X Size/Radius"
+msgstr "X 尺寸/半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:407
+msgid "Y Size/Radius"
+msgstr "Y 尺寸/半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:408
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:114
+msgid "Axis Length"
+msgstr "軸長"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:409
+msgid "Angular Diameter"
+msgstr "角直徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:413
+msgid "Remix Bonemerged Light"
+msgstr "Remix 骨骼繫結光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:27
+msgid "API Light - Cylinder"
+msgstr "API 光源 - 圓柱"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:109
+msgid "Spawn and edit Cylindrical Lights"
+msgstr "生成並編輯圓柱形光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:29
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:32
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:32
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:34
+msgid "Left-click: Spawn | Right-click: Update"
+msgstr "左鍵：生成 | 右鍵：更新"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:127
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:136
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:128
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:134
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:146
+msgid "Freeze on Spawn"
+msgstr "生成時凍結"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:132
+msgid "Remix Cylinder Light"
+msgstr "Remix 圓柱光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:30
+msgid "API Light - Disk"
+msgstr "API 光源 - 圓盤"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:116
+msgid "Spawn and edit Disk/Ellipse Area Lights"
+msgstr "生成並編輯圓盤或橢圓形面光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:122
+msgid "X Radius"
+msgstr "X 半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:123
+msgid "Y Radius"
+msgstr "Y 半徑"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:141
+msgid "Remix Disk Light"
+msgstr "Remix 圓盤光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:29
+msgid "API Light - Distant"
+msgstr "API 光源 - 遠光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:30
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:111
+msgid "Spawn and edit Distant/Directional Lights"
+msgstr "生成並編輯遠光源或平行光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:115
+msgid "Angular Diameter (degrees)"
+msgstr "角直徑（度）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:133
+msgid "Remix Distant Light"
+msgstr "Remix 遠光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:30
+msgid "API Light - Rect"
+msgstr "API 光源 - 矩形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:114
+msgid "Spawn and edit Rectangular Area Lights"
+msgstr "生成並編輯矩形面光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:119
+msgid "X Size"
+msgstr "X 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:120
+msgid "Y Size"
+msgstr "Y 尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:139
+msgid "Remix Rect Light"
+msgstr "Remix 矩形光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:32
+msgid "API Light - Sphere"
+msgstr "API 光源 - 球形"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:33
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:124
+msgid "Spawn and edit Sphere Lights"
+msgstr "生成並編輯球形光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:151
+msgid "Remix Sphere Light"
+msgstr "Remix 球形光源"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:10
+msgid "Swimming pool"
+msgstr "游泳池"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:33
+msgid "Clear spring"
+msgstr "清澈泉水"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:56
+msgid "Lake"
+msgstr "湖水"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:79
+msgid "Ocean"
+msgstr "海水"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:102
+msgid "Murky pond"
+msgstr "渾濁池塘"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:126
+msgid "Muddy / sewer"
+msgstr "泥水/汙水"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:152
+msgid "Calm (mirror flat)"
+msgstr "平靜（鏡面般平坦）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:155
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:82
+msgid "Ripples"
+msgstr "漣漪"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:161
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:33
+msgid "Waves"
+msgstr "波浪"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:24
+msgid "Path-traced water for RTX Remix on any map: water type, waves, and the waves players, objects and bullets make in it."
+msgstr "為任意地圖提供 RTX Remix 路徑追蹤水面：可調節水質和波浪，並模擬玩家、物體和子彈產生的水波。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:25
+msgid "Enable RTX Water"
+msgstr "啟用 RTX Water"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:27
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:31
+msgid "Auto (map default)"
+msgstr "自動（地圖預設值）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:29
+msgid "Water type"
+msgstr "水體型別"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:34
+msgid "Wave strength"
+msgstr "波浪強度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:35
+msgid "Wave speed"
+msgstr "波浪速度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:36
+msgid "Wave direction"
+msgstr "波浪方向"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:37
+msgid "Wave size"
+msgstr "波浪尺寸"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:39
+msgid "Waves from players, NPCs and objects"
+msgstr "玩家、NPC 和物體產生水波"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:40
+msgid "Bullet impacts make waves"
+msgstr "子彈撞擊產生水波"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:41
+msgid "How hard bodies push the water"
+msgstr "物體推動水面的力度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:42
+msgid "Wave reach (how far waves travel before they die out)"
+msgstr "波浪傳播距離（消散前能傳播多遠）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:43
+msgid "Splashes: drops, sheets and jets thrown up by bodies and bullets"
+msgstr "飛濺：物體和子彈激起水滴、水幕和水柱"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:44
+msgid "Splash strength"
+msgstr "飛濺強度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:45
+msgid "Splash randomness (0 = the same every time)"
+msgstr "飛濺隨機性（0 = 每次相同）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:46
+msgid "Maximum airborne droplets"
+msgstr "空中水滴數量上限"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:47
+msgid "Wave detail"
+msgstr "波浪細節"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "Low"
+msgstr "低"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "Medium"
+msgstr "中"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "High"
+msgstr "高"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:50
+msgid "Wave mesh updates per second (0 = every frame)"
+msgstr "每秒更新水波網格的次數（0 = 每畫格）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:51
+msgid "Draw the surface with RTX Water (off: the map's own faces, no waves from interaction)"
+msgstr "使用 RTX Water 繪製水面（關閉後使用地圖原有水面，不產生互動水波）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:52
+msgid "Use the native core when installed (fastest)"
+msgstr "安裝原生核心後使用它（最快）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:54
+msgid "Custom water look (native core only):"
+msgstr "自定義水面外觀（僅限原生核心）："
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:55
+msgid "Use a custom colour and clarity"
+msgstr "自定義顏色和清澈度"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:68
+msgid "Clarity (units for that colour)"
+msgstr "清澈度（光衰減到所選顏色的距離）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:69
+msgid "Refraction index"
+msgstr "折射率"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:76
+msgid "Not active on this map."
+msgstr "當前地圖上未啟用。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:76
+msgid "RTX Remix API not available."
+msgstr "RTX Remix API 不可用。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid "native core"
+msgstr "原生核心"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid "Lua meshes"
+msgstr "Lua 網格"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid " (native core: "
+msgstr "（原生核心： "
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:80
+#, c-format
+msgid "%s, %s; %s. %s: %d, %d tiles, %d vertices, %.2f ms per update%s. Splash drops: %d."
+msgstr "%s，%s；%s。%s：%d，%d 個網格塊，%d 個頂點，每次更新 %.2f ms%s。飛濺水滴：%d。"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:82
+msgid "Bodies in the water"
+msgstr "水中物體"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:83
+msgid " (worker thread)"
+msgstr "（工作執行緒）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:92
+msgid "Reset settings"
+msgstr "重置設定"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:93
+msgid "Rebuild water for this map"
+msgstr "重新構建此地圖的水面"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:97
+msgid "RTX Water"
+msgstr "RTX Water"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:233
+msgid "Procedural Bodygroup Destruction — performance"
+msgstr "程式化身體群組破壞 — 效能"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:235
+#, c-format
+msgid "hit #%s | CPU %.2f ms | wall %.2f ms | %s"
+msgstr "命中 #%s | CPU %.2f ms | 總耗時 %.2f ms | %s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:254
+#, c-format
+msgid "Recent hits: %d%s | slowest stage overall: %s"
+msgstr "最近命中：%d%s | 總計最耗時階段：%s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:256
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:263
+msgid "<none>"
+msgstr "<無>"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:262
+#, c-format
+msgid "continuous hottest: %s%s"
+msgstr "持續執行中最耗時階段：%s%s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:264
+#, c-format
+msgid " (avg %.3f ms, max %.3f ms)"
+msgstr "（平均 %.3f ms，最大 %.3f ms）"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Affected UV selection"
+msgstr "選擇受影響的 UV"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Bodygroup eligibility"
+msgstr "檢查身體群組是否可損壞"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Debug capture + bundle I/O"
+msgstr "除錯捕獲與資料包讀寫"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Debug console output"
+msgstr "除錯控制檯輸出"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: 3D hit overlay"
+msgstr "每畫格：3D 命中疊加層"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: last-hit HUD"
+msgstr "每畫格：最近命中 HUD"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: texture inspector"
+msgstr "每畫格：貼圖檢查器"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Impact trace + hit setup"
+msgstr "彈道追蹤與命中初始化"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Material apply overhead"
+msgstr "材質應用開銷"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Material queue dispatch"
+msgstr "材質佇列排程"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Mesh cache lookup/build"
+msgstr "查詢或構建網格快取"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Pose snapshot"
+msgstr "姿態快照"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: RTX memory cleanup"
+msgstr "預熱：清理 RTX 記憶體"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: bodygroup eligibility"
+msgstr "預熱：檢查身體群組"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: mesh cache"
+msgstr "預熱：網格快取"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: persistent cache hydrate"
+msgstr "預熱：載入持久快取"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Removal-hull mesh query"
+msgstr "查詢移除區域內的網格"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Skin transform setup"
+msgstr "初始化蒙皮變換"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "UV result bookkeeping"
+msgstr "記錄 UV 處理結果"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:3362
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4296
+msgid "hit"
+msgstr "命中"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:3362
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4296
+msgid "miss"
+msgstr "未命中"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4254
+msgid "Procedural Bodygroup Destruction — hit debugger"
+msgstr "程式化身體群組破壞 — 命中除錯"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4256
+#, c-format
+msgid "#%d  ent %d  %s  damage %.1f"
+msgstr "#%d  實體 %d  %s  傷害 %.1f"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4257
+msgid "TRACE MISS"
+msgstr "追蹤未命中"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4257
+msgid "surface: "
+msgstr "表面： "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4259
+#, c-format
+msgid "hitbox %d | physbone %d | model bone %d (%s)"
+msgstr "命中箱 %d | 物理骨骼 %d | 模型骨骼 %d (%s)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4263
+msgid "removal hull mesh query unavailable"
+msgstr "移除區域的網格查詢不可用"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4269
+msgid "loading persistent mesh"
+msgstr "正在載入持久網格快取"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4270
+msgid "packing native mesh"
+msgstr "正在構建原生網格"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4271
+msgid "checking bodygroups"
+msgstr "正在檢查身體群組"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4272
+msgid "releasing native mesh memory"
+msgstr "正在釋放原生網格記憶體"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4273
+msgid "opening model cache"
+msgstr "正在開啟模型快取"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4286
+#, c-format
+msgid "cache: %s… %.2f s | %s chunks | %.1f ms/frame"
+msgstr "快取：%s… %.2f 秒 | %s 個資料塊 | %.1f ms/畫格"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4290
+#, c-format
+msgid "hull: analyzing impact snapshot… queue %d | budget %.1f ms/frame"
+msgstr "移除區域：正在分析命中快照… 佇列 %d | 每畫格限時 %.1f ms"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4294
+#, c-format
+msgid "hull envelope: %d verts (%d inside) | %d tris / %d meshes | cache %s | %.2f ms"
+msgstr "包圍區域：%d 個頂點（內部 %d 個）| %d 個三角形 / %d 個網格 | 快取 %s | %.2f ms"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4299
+msgid "removal hull query failed: "
+msgstr "移除區域查詢失敗： "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4308
+#, c-format
+msgid "retained %d / received %d"
+msgstr "保留 %d / 收到 %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6635
+msgid "UV damage: waiting for mesh analysis"
+msgstr "UV 損傷：等待網格分析"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6636
+msgid "UV damage: "
+msgstr "UV 損傷： "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6638
+#, c-format
+msgid "UV damage: %d meshes / %d materials / %d UVs | paint queue %d"
+msgstr "UV 損傷：%d 個網格 / %d 個材質 / %d 個 UV | 繪製佇列 %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6643
+#, c-format
+msgid "UV damage: %d material override(s) applied from %d triangles"
+msgstr "UV 損傷：已套用 %d 個材質覆寫，源自 %d 個三角形"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6649
+#, c-format
+msgid "UV damage: no eligible bodygroup touch; nearest %s mesh is %.3f units away"
+msgstr "UV 損傷：未接觸可損壞的身體群組；最近的 %s 網格距離為 %.3f 單位"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6652
+msgid "UV damage: removal hull did not touch a proven eligible-bodygroup mesh"
+msgstr "UV 損傷：移除區域未接觸已確認可損壞的身體群組網格"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6655
+msgid "UV damage: broad-phase mesh candidates had no exact irregular-hole coverage"
+msgstr "UV 損傷：初步篩選的候選網格未與實際不規則孔洞區域重疊"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6659
+msgid "UV damage: affected materials could not be mapped to submaterial slots"
+msgstr "UV 損傷：無法將受影響的材質對映到子材質槽"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6661
+msgid "UV damage: material application failed"
+msgstr "UV 損傷：應用材質失敗"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6662
+#, c-format
+msgid "UV damage: %d meshes / %d materials / %d unique UVs (%s)"
+msgstr "UV 損傷：%d 個網格 / %d 個材質 / %d 個不同 UV (%s)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6773
+msgid "Original RGB"
+msgstr "原始 RGB"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6774
+msgid "Edited + alpha"
+msgstr "編輯後（含透明度）"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6775
+msgid "Edited RGB only"
+msgstr "編輯後（僅 RGB）"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6776
+msgid "Last hit coverage"
+msgstr "最近命中的覆蓋範圍"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6797
+#, c-format
+msgid "%s | %d source / %d projected tris | %d UVs | expand=%.1f feather=%.1f passes=%d seams=%d"
+msgstr "%s | 原始 %d / 投影 %d 個三角形 | %d 個 UV | 擴充套件=%.1f 羽化=%.1f 遍數=%d 接縫=%d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6805
+msgid "dump: data/"
+msgstr "轉儲：data/"

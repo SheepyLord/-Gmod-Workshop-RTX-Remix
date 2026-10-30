@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 -- Shitty solution to have a shadow for the player
 CreateConVar( "rtx_debug_pseudoplayer", 0,  FCVAR_ARCHIVE ) 
 CreateClientConVar(	"rtx_pseudoplayer_unique_hashes", 1,  true, false)
@@ -7,9 +13,9 @@ CreateClientConVar(	"rtx_pseudoplayer_offset_z", 0,  true, false)
 AddCSLuaFile()
 
 ENT.Type 			= "anim"
-ENT.PrintName		= "Pseudoplayer"
+ENT.PrintName		= NP("Pseudoplayer")
 ENT.Author			= "Xenthio"
-ENT.Information		= "For firstperson self shadows and body reflections with RTX"
+ENT.Information		= NL("For firstperson self shadows and body reflections with RTX")
 ENT.Category		= "RTX"
 
 ENT.Spawnable		= false

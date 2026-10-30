@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
 include("shared.lua")
 
@@ -208,7 +214,7 @@ local function OpenSkyEditor(ent)
     local presetButtons = {}
 
     local frame = vgui.Create("DFrame")
-    frame:SetTitle("Sky Editor")
+    frame:SetTitle(NL("Sky Editor"))
     frame:SetSize(440, math.min(ScrH() * 0.75, 460))
     frame:SetSizable(true)
     frame:Center()
@@ -340,44 +346,45 @@ local function OpenSkyEditor(ent)
     -- Layout -----------------------------------------------------------------
 
     -- Presets
-    Section("Presets")
-    local presetNames = {"Earth", "Mars", "Clear Sky", "Hazy", "Alien", "Desert"}
+    Section(NL("Presets"))
+    local presetNames = {NN("Earth"), NN("Mars"), NN("Clear Sky"), NN("Hazy"), NN("Alien"), NN("Desert")}
     local presetKeys  = {"earth", "mars", "clearsky", "hazy", "alien", "desert"}
 
-    local presetRow = vgui.Create("DPanel", scroll)
+    local presetRow = vgui.Create("DIconLayout", scroll)
+    presetRow:SetSpaceX(3)
+    presetRow:SetSpaceY(3)
     presetRow:Dock(TOP)
     presetRow:DockMargin(8, 2, 8, 2)
     presetRow:SetTall(24)
     presetRow.Paint = function() end
     for i, name in ipairs(presetNames) do
         local btn = vgui.Create("DButton", presetRow)
-        btn:Dock(LEFT)
-        btn:DockMargin(0, 0, 3, 0)
-        btn:SetWide(60)
-        btn:SetText(name)
+        btn:SetTall(24)
+        btn:SetText(NL(name))
+        btn:SizeToContentsX(18)
         presetButtons[i] = btn
     end
 
     -- Sun
-    Section("Sun")
-    Slider("Intensity", "sky_sun_intensity", 0, 100, 2)
+    Section(NL("Sun"))
+    Slider(NL("Intensity"), "sky_sun_intensity", 0, 100, 2)
 
     -- Density
-    Section("Density")
-    Slider("Air", "sky_air_density", 0, 100, 2)
-    Slider("Dust", "sky_dust_density", 0, 100, 2)
-    Slider("Ozone", "sky_ozone_density", 0, 100, 2)
+    Section(NL("Density"))
+    Slider(NL("Air"), "sky_air_density", 0, 100, 2)
+    Slider(NL("Dust"), "sky_dust_density", 0, 100, 2)
+    Slider(NL("Ozone"), "sky_ozone_density", 0, 100, 2)
 
     -- Scattering
-    Section("Scattering")
-    Slider("Mie Anisotropy", "sky_mie_anisotropy", 0, 1, 3)
-    ColorRow("Illuminance", "sky_illum_r", "sky_illum_g", "sky_illum_b", 0, 100, 1)
-    ColorRow("Rayleigh", "sky_rayleigh_r", "sky_rayleigh_g", "sky_rayleigh_b", 0, 0.1, 6)
-    ColorRow("Mie", "sky_mie_r", "sky_mie_g", "sky_mie_b", 0, 0.1, 6)
+    Section(NL("Scattering"))
+    Slider(NL("Mie Anisotropy"), "sky_mie_anisotropy", 0, 1, 3)
+    ColorRow(NL("Illuminance"), "sky_illum_r", "sky_illum_g", "sky_illum_b", 0, 100, 1)
+    ColorRow(NL("Rayleigh"), "sky_rayleigh_r", "sky_rayleigh_g", "sky_rayleigh_b", 0, 0.1, 6)
+    ColorRow(NL("Mie"), "sky_mie_r", "sky_mie_g", "sky_mie_b", 0, 0.1, 6)
 
     -- Ozone
-    Section("Ozone")
-    ColorRow("Absorption", "sky_ozone_r", "sky_ozone_g", "sky_ozone_b", 0, 0.01, 6)
+    Section(NL("Ozone"))
+    ColorRow(NL("Absorption"), "sky_ozone_r", "sky_ozone_g", "sky_ozone_b", 0, 0.01, 6)
 
     -- Realtime apply ---------------------------------------------------------
 
@@ -433,7 +440,7 @@ end
 
 -- Right-click context menu
 properties.Add("remix_sky_editor_edit", {
-    MenuLabel = "Edit Sky",
+    MenuLabel = NP("Edit Sky"),
     Order = 0,
     MenuIcon = "icon16/weather_sun.png",
     Filter = function(self, ent, ply)

@@ -26,6 +26,376 @@
     "dirty": false
    },
    "imported": "2026-10-30T00:42:41+00:00"
+  },
+  "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\GMod-Seamless-Portals-Remix\\lua\\entities\\seamless_portal\\sh_init.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\GMod-Seamless-Portals-Remix\\lua\\weapons\\gmod_tool\\stools\\portal_creator_tool.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\GMod-Seamless-Portals-Remix\\lua\\weapons\\gmod_tool\\stools\\portal_fitter_tool.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\GMod-Seamless-Portals-Remix\\lua\\weapons\\gmod_tool\\stools\\portal_resizer_tool.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\GMod-Seamless-Portals-Remix\\lua\\weapons\\portal_gun.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\autorun\\client\\glass_spawnmenu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard_init.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\weapons\\gmod_tool\\stools\\procedural_glass_tool.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_lamp.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\gmod_lamp.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_light.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\gmod_light.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\remix_rt_light\\cl_init.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/shared.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\remix_rt_light\\shared.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\remix_sky_editor\\cl_init.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/shared.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\remix_sky_editor\\shared.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\rtx_pseudoplayer.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\rtx_pseudoweapon.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\cl_map_fixes.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\cl_rtx_light_updater.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\cl_rtx_settings.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\customrender\\cl_build_progress.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/render_core.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\customrender\\render_core.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\cl_remix_category_0_manager.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\cl_remix_flashlight.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\wrappers\\cl_remix_api_map_lights.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\wrappers\\cl_remix_api_map_lights_menu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\wrappers\\cl_remix_dynamiclight_wrapper_menu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\wrappers\\cl_remix_light_wrapper_menu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\wrappers\\cl_remix_projectedtexture_wrapper_menu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\weapons\\gmod_tool\\stools\\remix_rt_light_bonemerge.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\weapons\\gmod_tool\\stools\\remix_rt_light_cylinder.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\weapons\\gmod_tool\\stools\\remix_rt_light_disk.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\weapons\\gmod_tool\\stools\\remix_rt_light_distant.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\weapons\\gmod_tool\\stools\\remix_rt_light_rect.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\weapons\\gmod_tool\\stools\\remix_rt_light_sphere.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\rtx_water\\lua\\rtx_water\\cl_data.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
+  },
+  "garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\rtx_water\\lua\\rtx_water\\cl_menu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:22+00:00"
   }
  },
  "files": {
@@ -38,9 +408,9 @@
    "stored_sha256": "89b1c250119983f94ca53f9a30c965f05dd331326ad6c176d1c71043b6344b6f"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua": {
-   "size": 8901,
-   "sha256": "5b423aab353cbf97aba954f02300f8592547ff9c2efe03dd37e9f8b8c48303f2",
-   "mtime_ns": 1792912216727737300,
+   "size": 9484,
+   "sha256": "2bfac605ef16a71afa93740f49cd92088d4dffbe7639c9f390eb02584130d3b6",
+   "mtime_ns": 1793354780879227200,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/networking.lua": {
@@ -50,21 +420,21 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua": {
-   "size": 41772,
-   "sha256": "cd32600a5812666a6f8fd6a52bae92eb443ad27748c34788a523c0fadc1da467",
-   "mtime_ns": 1792912216728737200,
+   "size": 42545,
+   "sha256": "9ebdd5b1e43c78a12c9cca1d7318ce03813c473accf7da3470826544d8bf4a8f",
+   "mtime_ns": 1793349769325474400,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua": {
-   "size": 2485,
-   "sha256": "b29d6fdddccbc37b8514eadc7b59e0f98bc2468e92d68d4989695ea73a92c9c4",
-   "mtime_ns": 1792912216728737200,
+   "size": 2936,
+   "sha256": "ce7e400e45366b9ef6221e6a1e6f14ba9b136e8be790985b09b9a350abdd345c",
+   "mtime_ns": 1793350693509201000,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua": {
-   "size": 1810,
-   "sha256": "1fbee5904717999382b13ac6993f63b9aa1dc7d552b5e6ad2e1187ed8d1cc0c8",
-   "mtime_ns": 1792912216728737200,
+   "size": 2675,
+   "sha256": "d1567215e3539e0df5ebbccc9c27215a38b4a23fe29fd18d1e47e60ddbaf5d72",
+   "mtime_ns": 1793358620090817800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/world_functions.lua": {
@@ -270,33 +640,33 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua": {
-   "size": 3898,
-   "sha256": "fd585afd1811041d3eed76367ab9be36a22244871aeb0f141c37903e5e4942ee",
-   "mtime_ns": 1792912216623325900,
+   "size": 4321,
+   "sha256": "db61d1c835a1b418579912a6732e7999e0b1d8ff4d68a987f718e50491cabd19",
+   "mtime_ns": 1793349768877511400,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua": {
-   "size": 7355,
-   "sha256": "a6c2ff26106d8e1ec1885b236a8f26c3688478ae54c247938d8219eae5c98df5",
-   "mtime_ns": 1792912216623325900,
+   "size": 8027,
+   "sha256": "b1c6e022dff1e01488d0615fdf7b0c39db06343b5871534988d9284b56d228e8",
+   "mtime_ns": 1793354780578582800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua": {
-   "size": 6409,
-   "sha256": "1b5070868f1eb9212a4e3cfd66b289f44bfb26ba646537f9a963b8fc7237c309",
-   "mtime_ns": 1792912216623325900,
+   "size": 7080,
+   "sha256": "0bd5040d18f6eea708a6895802cc99757c96d4e933c9764919160f8923ca73e4",
+   "mtime_ns": 1793349769046402700,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua": {
-   "size": 3488,
-   "sha256": "4bec48b7322e07719ff77b79842a29f55c62251fbd5ef78d362a8c1325f7fc5f",
-   "mtime_ns": 1792912216624328600,
+   "size": 4062,
+   "sha256": "391db8673dc5d614ac8a91c9d8149cb0dee7ccd2a1bdc9b5e04f82e0c8cba958",
+   "mtime_ns": 1793349769120337800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua": {
-   "size": 4856,
-   "sha256": "21693e3e20d6eee5f925895ff33a46d48e3238ab33061e7b68c5b63a3b9ca2ea",
-   "mtime_ns": 1792912216624328600,
+   "size": 5275,
+   "sha256": "0b1de5eb285861a951384810a7b5832ab653919c11b4bd7c134fdacc2b4b13ef",
+   "mtime_ns": 1793349769189497500,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/materials/Entities/portal_gun.png": {
@@ -636,21 +1006,21 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_lamp.lua": {
-   "size": 7792,
-   "sha256": "025b0b8507f7d034dc5bf3afeb037f1d0697b4a41a1390667cc60b132447b54f",
-   "mtime_ns": 1792912213846876700,
+   "size": 8207,
+   "sha256": "83827af4c5407f6a594cbfec9cb0f9d7fbcbd633838ba17aa77ee026c29ca020",
+   "mtime_ns": 1793349769512540800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_light.lua": {
-   "size": 4725,
-   "sha256": "432fe92f70803902b4d7ffb1d14443af176d58f7c9ab84dc715a8bb874b7e63e",
-   "mtime_ns": 1792912213846876700,
+   "size": 5140,
+   "sha256": "bc215a9cfef89c0a1ff7a82ec9429cd77ae0f72962e26d3456260cedbe40a4ef",
+   "mtime_ns": 1793349769568099500,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua": {
-   "size": 69836,
-   "sha256": "da06f82bdcb7aba3faf8f26b6cb9cd25f01646082fdffa355d3533e98dd0ec3c",
-   "mtime_ns": 1792917561129758600,
+   "size": 70613,
+   "sha256": "7a84d4e8551335f6139b75bac685b100c26c92bebdc53097d0f0efb0e14ce12b",
+   "mtime_ns": 1793358620090817800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/init.lua": {
@@ -660,15 +1030,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/shared.lua": {
-   "size": 347,
-   "sha256": "8b423bee34f3e668929da95dc25ac7b99c66fe8b5364584da119d4d692f7cad3",
-   "mtime_ns": 1792912213847876700,
+   "size": 762,
+   "sha256": "6509c77905c1db85ef32f363c8549a7a760647e9a40f20c4eb6cab9b8ec92354",
+   "mtime_ns": 1793349769698582400,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua": {
-   "size": 15858,
-   "sha256": "152fd734f6d2415b9bb9c63ffc39b95819e29f5104c97c9bd9e08e8565e784a7",
-   "mtime_ns": 1792912213848876600,
+   "size": 16395,
+   "sha256": "12c568a855ce50c526cc8496159ecebb872c5d48278cd5fa46f08edd1901f9b2",
+   "mtime_ns": 1793350693756718800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/init.lua": {
@@ -678,21 +1048,21 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/shared.lua": {
-   "size": 221,
-   "sha256": "ef5417583efce8b39cf03b5a6515c2d38a354cf33afe5738694fb52972b76b9d",
-   "mtime_ns": 1792912213848876600,
+   "size": 636,
+   "sha256": "f9209b27593d0d87770f795190bd3f379a21489cabe211d77116207875be82c8",
+   "mtime_ns": 1793349769849507300,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua": {
-   "size": 10063,
-   "sha256": "808a6e5130514cdb054c140066dd31d508cdfb2937374007a3523d28c59d8100",
-   "mtime_ns": 1792912213848876600,
+   "size": 10482,
+   "sha256": "a3fea3fb633416e344e8a59641f5516e1db9d5ddefba4d5f3a0aea54e4a684b5",
+   "mtime_ns": 1793349769948300300,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua": {
-   "size": 10193,
-   "sha256": "1c0dde53159538a24308617bafbf88a139082775ddc1e6295f822a55df9fd245",
-   "mtime_ns": 1792912213848876600,
+   "size": 10612,
+   "sha256": "b449b79fcba69612c37eb13916226fd4d52d205b6b95cc4b136d48faa21bdb16",
+   "mtime_ns": 1793349770009317600,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/patcher/addons/cl_mwbase.lua": {
@@ -768,9 +1138,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua": {
-   "size": 4470,
-   "sha256": "585236f9e6ba867f01b7d7dc85c7f08a5d22d2634f85da97987d498988a79fdd",
-   "mtime_ns": 1792912213853384100,
+   "size": 4901,
+   "sha256": "9d8677ec1c1cae000febfec818dfa6f7e04d2a770f5fb237e47e9599e0d68208",
+   "mtime_ns": 1793349770069227000,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_markers.lua": {
@@ -804,9 +1174,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua": {
-   "size": 47117,
-   "sha256": "03cd2ae0384b13f146fab673fb74701ed1b1685898bff7489e92b51c77c11184",
-   "mtime_ns": 1792948310184628000,
+   "size": 47548,
+   "sha256": "c6e0cf8b0a89e7c0c185e28a5e282bd8a8b7b1e9db8c43dd87f581c319db4504",
+   "mtime_ns": 1793349770128291900,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_material_fixer.lua": {
@@ -822,9 +1192,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua": {
-   "size": 21975,
-   "sha256": "48cac999fb39fd2f166de66365e1e300487e9e4a716909192f5a138a682e3163",
-   "mtime_ns": 1792912213855383700,
+   "size": 22637,
+   "sha256": "fc8efbbd37b6aca095da6ac3cb465c65c29ba110d825aefc3521bb53810f90a4",
+   "mtime_ns": 1793354781680987100,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua": {
@@ -840,9 +1210,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua": {
-   "size": 14359,
-   "sha256": "2edb904141adea21da5cd9dcae18f0d3f9998ab9877a5589286bddd573dd87e8",
-   "mtime_ns": 1792912213856383700,
+   "size": 14830,
+   "sha256": "8e0464e74b7b822a560a4e0f82221647cec2cedd018be342c3d71088bc792d7f",
+   "mtime_ns": 1793358620091817800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_displacement_renderer.lua": {
@@ -870,9 +1240,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/render_core.lua": {
-   "size": 59584,
-   "sha256": "e57557ce9b2fa3d529954eb11487bb55b48e58ac8977763974da2654bfb1b1c7",
-   "mtime_ns": 1792948645847167900,
+   "size": 59999,
+   "sha256": "01225d5d4382d27ba5e9b8f5d3d449d2d8b5acefbb03ca365acee09c4601a9ae",
+   "mtime_ns": 1793349770293487200,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_physgun_color_sync.lua": {
@@ -882,9 +1252,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua": {
-   "size": 145297,
-   "sha256": "bfca5c0a120966951b86aa24cb047907bf0105317b695d06b92eeb3d210ebb3d",
-   "mtime_ns": 1792937667751774100,
+   "size": 145720,
+   "sha256": "fd45e276d1cf7baabe769fbd661d98f8a7fb15870ec9702a43d270ea09167bdb",
+   "mtime_ns": 1793349770347535500,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua": {
@@ -900,9 +1270,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua": {
-   "size": 19891,
-   "sha256": "1dff7cd588192293687dab19f09cda8fac02496375cb877eabbd583f80032f7c",
-   "mtime_ns": 1792912213860385000,
+   "size": 20354,
+   "sha256": "1d6aae80cde06f6103f211d55004f36703ca8475b79771ccdf8e49fbe78da8a7",
+   "mtime_ns": 1793349770400183000,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_light_cmd.lua": {
@@ -930,15 +1300,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua": {
-   "size": 123054,
-   "sha256": "a3f012ca0b68bcfbc5361d4756a0f3089c2ca9486bdbf4066111f34e58fb5b1e",
-   "mtime_ns": 1792912213862891300,
+   "size": 123497,
+   "sha256": "29bac93e12f86a9fed15d1e93d97031a724fd275a37c2e47a1addb6d7e28c40c",
+   "mtime_ns": 1793349770456656800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua": {
-   "size": 4230,
-   "sha256": "4214ea380692fc25c1af1dc329043c99589a3d9ace958c50c328a3694a50a621",
-   "mtime_ns": 1792912213862891300,
+   "size": 4753,
+   "sha256": "d8bfce9eb3e9f2b23dcee1b428cbdf10b0af8990b9a7ddb957b813478e8cc78c",
+   "mtime_ns": 1793349770510332000,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper.lua": {
@@ -948,9 +1318,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua": {
-   "size": 1389,
-   "sha256": "46933f73664f50a95420b0dfcde2652d6f99963a84cd4dcbb271e46e181788ee",
-   "mtime_ns": 1792912213863891300,
+   "size": 1820,
+   "sha256": "4253b456d6cccd17bd80414df576d270f02055d7be1ad39171c7f7dd4ba986c4",
+   "mtime_ns": 1793349770564432100,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper.lua": {
@@ -960,9 +1330,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua": {
-   "size": 1270,
-   "sha256": "9efd6f78fc9c9ffeb9295c9b61eb1533137ee6922b879212d94d45f01d964c79",
-   "mtime_ns": 1792912213864891900,
+   "size": 1697,
+   "sha256": "da3b44c15c18a77189ee91b97b15874c8b4871e92bb0cc04b519fd8fd4c1ba90",
+   "mtime_ns": 1793349770621636800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_maplight_animator.lua": {
@@ -978,9 +1348,9 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua": {
-   "size": 2328,
-   "sha256": "9324da0e0cec1d94e8b26f89e8cb3f35adc5767e3fd96601f98de580fa0743c0",
-   "mtime_ns": 1792912213865891600,
+   "size": 2775,
+   "sha256": "351dddedf21c64c9ef2d5d636c93427ca57f63895adf565416bbbe248f8c351f",
+   "mtime_ns": 1793349770676599300,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/sh/sh_flashlight_override.lua": {
@@ -1032,39 +1402,39 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua": {
-   "size": 16082,
-   "sha256": "6a09902c0e7fae6ad8a57a1379a4014f20073873ebfe42d7a2d03289b758bf18",
-   "mtime_ns": 1792912213867891100,
+   "size": 16905,
+   "sha256": "2debff8c648795ed0fa1838381c8b6646cf0597dd8b52cb8d3975fd4eac2f04a",
+   "mtime_ns": 1793349770730563800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua": {
-   "size": 4223,
-   "sha256": "bddabfa2997ec831fe7af4b31da90493d6cf940fa1668e9d169642ee528fe0bc",
-   "mtime_ns": 1792912213867891100,
+   "size": 4924,
+   "sha256": "0696fc0b068d7ba707f6e64866b6988ae94a8294d2886b4caae0e3d5286893f0",
+   "mtime_ns": 1793349770783236300,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua": {
-   "size": 4603,
-   "sha256": "6754ba067f9578e59eff2db4ba22604a6c4a81d50e12dadaaa810f8be401ad64",
-   "mtime_ns": 1792912213867891100,
+   "size": 5296,
+   "sha256": "9f3e776665e15f39b1b53bc2fd2ba480147fe514a49e3b32ba94a9f00fed4232",
+   "mtime_ns": 1793349770834586700,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua": {
-   "size": 4257,
-   "sha256": "80dd7faff187b4f0c721b03380e1c0737f562ec28afae394434d9b1e82cecc47",
-   "mtime_ns": 1792912213868893900,
+   "size": 4952,
+   "sha256": "c3eb8ad511fd17ca73f874c0ef7e91de5a329e4ac954d9ae5611a41ea96ccf11",
+   "mtime_ns": 1793349770886656800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua": {
-   "size": 4429,
-   "sha256": "429fbc1542419088fd85cfcd052ca0f5e7b8a714a4b6253f655dbfbf325d68ec",
-   "mtime_ns": 1792912213868893900,
+   "size": 5122,
+   "sha256": "d565a77155e18065ea014da772c040099c286dc5826f97381d9ebdc7bcd12c20",
+   "mtime_ns": 1793349770936480900,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua": {
-   "size": 5460,
-   "sha256": "a2900f5b34f5018248591b7164fb882bf8e25749fb7df39382671bb02ad99c8d",
-   "mtime_ns": 1792912213868893900,
+   "size": 6169,
+   "sha256": "ae09457db568774c49ae34e55b0a6f0eb2cc85b6c780ccad78842bdbbe07af47",
+   "mtime_ns": 1793349770990667200,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/maps/gm_construct_in_flatgrass_rtx.bsp": {
@@ -1538,15 +1908,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua": {
-   "size": 3795,
-   "sha256": "8d64cc1e6a07254075193974c3f896b362f6a3ae5d0980e7f4f6b577a22e1f35",
-   "mtime_ns": 1793038174134703700,
+   "size": 3871,
+   "sha256": "50114a1187ed010eff12d6f9a0de0f9e7daabdaa7e0296feccb055ed187bbbe6",
+   "mtime_ns": 1793347075657986700,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua": {
-   "size": 4621,
-   "sha256": "1e59d34c7f99d15f0d54bf5fdac58f9996ab8621ab0a73b3601c1accbcf8e5e7",
-   "mtime_ns": 1793070857859542000,
+   "size": 5188,
+   "sha256": "6c9bdacae58a23a951d1f3328c867581dfeaec2e8acc4df95f87338003a39420",
+   "mtime_ns": 1793354782789361000,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_native.lua": {

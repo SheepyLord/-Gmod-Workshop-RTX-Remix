@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 -- forcedynamic_enabler.lua
 -- Manages mat_forcedynamic persistence per map
 
@@ -38,11 +44,11 @@ local function EnableForCurrentMap()
         SaveEnabledMaps()
         MsgC(Color(100, 255, 100), "[GMRTX - Map Fixes] Enabled map fixes for map: ", currentMap, "\n")
         -- Add notification
-        notification.AddLegacy("[GMRTX - Map Fixes] Enabled and saved for map: " .. currentMap, NOTIFY_GENERIC, 5)
+        notification.AddLegacy(NL("[GMRTX - Map Fixes] Enabled and saved for map: ") .. currentMap, NOTIFY_GENERIC, 5)
     else
         MsgC(Color(255, 255, 100), "[GMRTX - Map Fixes] Map fixes already enabled for map: ", currentMap, "\n")
         -- Optional: Notify that it was already enabled
-        notification.AddLegacy("[GMRTX - Map Fixes] Already enabled for map: " .. currentMap, NOTIFY_HINT, 3)
+        notification.AddLegacy(NL("[GMRTX - Map Fixes] Already enabled for map: ") .. currentMap, NOTIFY_HINT, 3)
     end
 
     -- Attempt to set the CVar
@@ -57,10 +63,10 @@ local function DisableForCurrentMap()
         enabledMaps[currentMap] = nil -- Remove from the table
         SaveEnabledMaps()
         MsgC(Color(100, 255, 100), "[GMRTX - Map Fixes] Disabled map fixes for map: ", currentMap, "\n")
-        notification.AddLegacy("[GMRTX - Map Fixes] Disabled map fixes for map: " .. currentMap, NOTIFY_GENERIC, 5) -- Added notification
+        notification.AddLegacy(NL("[GMRTX - Map Fixes] Disabled map fixes for map: ") .. currentMap, NOTIFY_GENERIC, 5) -- Added notification
     else
         MsgC(Color(255, 255, 100), "[GMRTX - Map Fixes] Map fixes was not enabled for map: ", currentMap, "\n")
-        notification.AddLegacy("[GMRTX - Map Fixes] Map fixes was not enabled for map: " .. currentMap, NOTIFY_HINT, 3) -- Added notification
+        notification.AddLegacy(NL("[GMRTX - Map Fixes] Map fixes was not enabled for map: ") .. currentMap, NOTIFY_HINT, 3) -- Added notification
     end
     -- Attempt to disable the CVar
     RunConsoleCommand("mat_forcedynamic", "0")
@@ -74,7 +80,7 @@ local function CheckMapOnLoad()
         MsgC(Color(100, 255, 100), "[GMRTX - Map Fixes] Map ", currentMap, " found in list. Enabling mat_forcedynamic.\n")
         RunConsoleCommand("mat_forcedynamic", "1")
          -- Optional notification on auto-enable
-         notification.AddLegacy("[GMRTX - Map Fixes] Auto-enabled for map: " .. currentMap, NOTIFY_GENERIC, 3)
+         notification.AddLegacy(NL("[GMRTX - Map Fixes] Auto-enabled for map: ") .. currentMap, NOTIFY_GENERIC, 3)
     else
         -- Ensure it's off if not explicitly enabled for this map by the script
         -- Only do this if the CVar actually exists to avoid errors

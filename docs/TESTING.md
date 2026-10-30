@@ -242,3 +242,22 @@ legacy Workshop item into the PoC's own `garrysmod\cache\workshop` (several GB, 
 
 For a quick round, `tools\workflow.ps1 -SkipTests -Install <game root>` builds the Release loader,
 makes the bundle CI would make, and installs the build into the game ([workflow.ps1](../tools/workflow.ps1.md)).
+
+## Translation completeness and interface behavior
+
+`python tools/companion_i18n.py check` checks both gettext namespaces. Shipping catalogs must contain
+every extracted message, with no blank, fuzzy, duplicate, stale, or unreviewed English entries.
+`package_fixes.py` uses the same strict build. `--allow-incomplete` is only for translation drafts.
+
+`python tools/check_addon_i18n.py` exercises the native add-on catalogs under LuaJIT: required
+languages, key coverage, placeholders, intended unchanged names, Traditional Chinese routing,
+Korean Destruction, ambiguous material-label lookup and context-bound language changes.
+`test_companion_ui_i18n.py` checks the generated table, metadata phrases, long labels and
+server-to-client localized notices. These are in `tools/test.ps1`; LuaJIT tests explicitly skip on
+a machine without LuaJIT. The catalog validator's synthetic regression needs only Python.
+
+The runtime's patched `i18n/tools/embed.py` rejects incomplete release catalogs, checks printf
+conversions and font coverage, and has `i18n/tools/test_embed.py` regressions. Run its extractor
+with `--check` after a source change. Use the PoC for final menu, font and layout checks.
+
+For UI tours, use the project Python 3.12 environment with Pillow and absolute `--allow-local` paths. Protected commands such as `gmod_language` must go through the test console transport, not `RunConsoleCommand` from Lua. Inspect Remix with its window in the foreground; background captures can retain old overlay pixels. A native crash-report prompt may block startup indefinitely; follow the applicable user-consent flow and never enable the automation flag that grants upload permission.

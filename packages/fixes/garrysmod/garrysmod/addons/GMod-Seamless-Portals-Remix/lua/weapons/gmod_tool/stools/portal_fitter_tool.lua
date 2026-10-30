@@ -1,4 +1,14 @@
-TOOL.Category = "Seamless Portals"
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
+TOOL.Category = NL("Seamless Portals")
 TOOL.Name = "#Tool.portal_fitter_tool.name"
 
 TOOL.Information = {
@@ -67,21 +77,21 @@ if ( CLIENT ) then
 
 	local green = Color(0, 255, 0, 50)
 
-	language.Add("Tool.portal_fitter_tool.name", "Portal Fitter")
-	language.Add("Tool.portal_fitter_tool.desc", "Creates a portal, fitted to each wall")
-    language.Add("Tool.portal_fitter_tool.left", "Left Click: Create portal")
-    language.Add("Tool.portal_fitter_tool.right1", "Right Click: Start linking a portal")
-	language.Add("Tool.portal_fitter_tool.right2", "Right Click: Create link to another portal")
+	NLP("Tool.portal_fitter_tool.name", NN("Portal Fitter"))
+	NLP("Tool.portal_fitter_tool.desc", NN("Creates a portal, fitted to each wall"))
+    NLP("Tool.portal_fitter_tool.left", NN("Left Click: Create portal"))
+    NLP("Tool.portal_fitter_tool.right1", NN("Right Click: Start linking a portal"))
+	NLP("Tool.portal_fitter_tool.right2", NN("Right Click: Create link to another portal"))
 
     local snap_angle = CreateClientConVar("seamless_portals_snap_angle", "90", false, true, "Portal Snap Angle, in Degrees", 0, 90)
 	local zVar = CreateClientConVar("seamless_portals_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
 	local backVar = CreateClientConVar("seamless_portals_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
-		panel:AddControl("label", {text = "Creates a fitted portal"})
-		panel:NumSlider("Portal Snap Angle", "seamless_portals_snap_angle", 0, 90, 0)
-		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
-		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
+		panel:AddControl("label", {text = NL("Creates a fitted portal")})
+		panel:NumSlider(NL("Portal Snap Angle"), "seamless_portals_snap_angle", 0, 90, 0)
+		panel:NumSlider(NL("Portal Size Z"), "seamless_portals_size_z", 1, 100, 1)
+		panel:CheckBox(NL("Has Backface (Invisible until linked!)"), "seamless_portals_backface")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -119,9 +129,9 @@ if ( CLIENT ) then
 	         end
         cam.End3D()
 
-        draw.DrawText(string.format("Size X: %.2f\n", scl[1]), "HudDefault", 50, 210, color_white)
-        draw.DrawText(string.format("Size Y: %.2f\n", scl[2]), "HudDefault", 50, 230, color_white)
-        draw.DrawText(string.format("Ratio: %.2f\n", scl[2] / scl[1]), "HudDefault", 50, 250, color_white)
+        draw.DrawText(string.format(NL("Size X: %.2f\n"), scl[1]), "HudDefault", 50, 210, color_white)
+        draw.DrawText(string.format(NL("Size Y: %.2f\n"), scl[2]), "HudDefault", 50, 230, color_white)
+        draw.DrawText(string.format(NL("Ratio: %.2f\n"), scl[2] / scl[1]), "HudDefault", 50, 250, color_white)
 	end
 
 	function TOOL:LeftClick()
@@ -199,4 +209,8 @@ elseif ( SERVER ) then
 		end
 		return true
 	end
+end
+
+if bundle_i18n then
+    bundle_i18n.RegisterPhrase("Seamless Portal", NN("Seamless Portal"))
 end

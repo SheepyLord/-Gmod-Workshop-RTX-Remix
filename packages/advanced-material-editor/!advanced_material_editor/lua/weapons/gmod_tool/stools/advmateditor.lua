@@ -277,6 +277,7 @@ end
 -- Tool menu panel
 ---------------------------------------------------------------------------
 function TOOL.BuildCPanel( panel )
+    if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
 	local L = AdvMat.L
 	local languageBox = panel:ComboBox( L( "language.title" ) )
 	local languageConVar = GetConVar( "advmat_language" )

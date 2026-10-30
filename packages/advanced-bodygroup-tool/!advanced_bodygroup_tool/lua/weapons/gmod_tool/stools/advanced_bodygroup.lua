@@ -472,6 +472,7 @@ local function AddBodygroupRow( panel, entity, entry, hidden, hiddenRegions,
 end
 
 function TOOL.BuildCPanel( panel )
+    if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
 	panel:ClearControls()
 	local language = panel:ComboBox( L( "language.title" ) )
 	local languageConVar = GetConVar( "abt_language" )

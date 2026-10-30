@@ -1,10 +1,16 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 ENT.Type = "anim"
 ENT.Base = "base_anim"
 
-ENT.Category     = "Seamless Portals"
-ENT.PrintName    = "Seamless Portal"
+ENT.Category     = NL("Seamless Portals")
+ENT.PrintName    = NP("Seamless Portal")
 ENT.Author       = "Mee"
-ENT.Purpose      = "Seamlessly connects two locations"
+ENT.Purpose      = NL("Seamlessly connects two locations")
 ENT.Instructions = ""
 ENT.Spawnable    = true
 ENT.RenderGroup  = RENDERGROUP_OPAQUE

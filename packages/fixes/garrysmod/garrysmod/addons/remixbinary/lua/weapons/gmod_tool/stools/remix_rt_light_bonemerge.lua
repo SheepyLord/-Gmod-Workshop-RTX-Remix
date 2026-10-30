@@ -1,3 +1,13 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
 TOOL.Category = "RTX Remix"
 TOOL.Name = "#tool.remix_rt_light_bonemerge.name"
 TOOL.Command = nil
@@ -5,9 +15,9 @@ TOOL.ConfigName = ""
 
 -- Add language strings
 if CLIENT then
-    language.Add("tool.remix_rt_light_bonemerge.name", "API Light - Bonemerged")
-    language.Add("tool.remix_rt_light_bonemerge.desc", "Attach RTX lights to entity bones")
-    language.Add("tool.remix_rt_light_bonemerge.0", "Left-click to attach light, Right-click entity to grab bones, Reload to detach")
+    NLP("tool.remix_rt_light_bonemerge.name", NN("API Light - Bonemerged"))
+    NLP("tool.remix_rt_light_bonemerge.desc", NN("Attach RTX lights to entity bones"))
+    NLP("tool.remix_rt_light_bonemerge.0", NN("Left-click to attach light, Right-click entity to grab bones, Reload to detach"))
 end
 
 -- Client ConVars for bonemerge settings
@@ -224,9 +234,9 @@ if CLIENT then
             end
             
             -- Notify user
-            chat.AddText(Color(100, 255, 100), "[Bonemerge] ", Color(255, 255, 255), string.format("Grabbed %d bones. Check tool menu to select.", boneCount))
+            chat.AddText(Color(100, 255, 100), "[Bonemerge] ", Color(255, 255, 255), string.format(NL("Grabbed %d bones. Check tool menu to select."), boneCount))
         else
-            chat.AddText(Color(255, 200, 100), "[Bonemerge] ", Color(255, 255, 255), "Entity has no bones (will attach to origin)")
+            chat.AddText(Color(255, 200, 100), "[Bonemerge] ", Color(255, 255, 255), NL("Entity has no bones (will attach to origin)"))
         end
         
         -- Refresh the tool panel
@@ -253,15 +263,15 @@ if CLIENT then
         local boneCount = ent:GetBoneCount()
         
         -- Show right-click prompt
-        draw.SimpleText("Right-Click to grab bones", "DermaDefaultBold", screenPos.x, screenPos.y - 30, Color(255, 255, 100, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
+        draw.SimpleText(NL("Right-Click to grab bones"), "DermaDefaultBold", screenPos.x, screenPos.y - 30, Color(255, 255, 100, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
         
         if boneCount == 0 then
             -- No bones, show entity info
-            draw.SimpleText("Entity: " .. ent:GetClass(), "DermaDefault", screenPos.x, screenPos.y - 15, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
-            draw.SimpleText("(No bones - will attach to origin)", "DermaDefault", screenPos.x, screenPos.y, Color(200, 200, 200, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText(NL("Entity: ") .. ent:GetClass(), "DermaDefault", screenPos.x, screenPos.y - 15, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
+            draw.SimpleText(NL("(No bones - will attach to origin)"), "DermaDefault", screenPos.x, screenPos.y, Color(200, 200, 200, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         else
             -- Has bones
-            draw.SimpleText(string.format("Entity: %s (%d bones)", ent:GetClass(), boneCount), "DermaDefault", screenPos.x, screenPos.y - 15, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
+            draw.SimpleText(string.format(NL("Entity: %s (%d bones)"), ent:GetClass(), boneCount), "DermaDefault", screenPos.x, screenPos.y - 15, Color(255, 255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
             
             -- Show selected bone preview if valid
             local selectedBoneID = self:GetClientNumber("bone_id") or 0
@@ -281,7 +291,7 @@ if CLIENT then
                         surface.DrawLine(boneScreen.x, boneScreen.y - size, boneScreen.x, boneScreen.y + size)
                         
                         -- Show selected bone name
-                        draw.SimpleText(string.format("Selected: %s (#%d)", boneName, selectedBoneID), "DermaDefault", screenPos.x, screenPos.y, Color(100, 255, 100, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                        draw.SimpleText(string.format(NL("Selected: %s (#%d)"), boneName, selectedBoneID), "DermaDefault", screenPos.x, screenPos.y, Color(100, 255, 100, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                     end
                 end
             end
@@ -296,7 +306,7 @@ if CLIENT then
         end
         
         if attachedLights > 0 then
-            draw.SimpleText(string.format("🔗 %d light(s) attached", attachedLights), "DermaDefault", screenPos.x, screenPos.y + 20, Color(100, 255, 100, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+            draw.SimpleText(string.format(NL("🔗 %d light(s) attached"), attachedLights), "DermaDefault", screenPos.x, screenPos.y + 20, Color(100, 255, 100, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
         end
     end
 end
@@ -304,16 +314,16 @@ end
 -- Build the tool panel
 function TOOL.BuildCPanel(panel)
     -- Light type selection
-    local typeCombo = panel:ComboBox("Light Type", "remix_rt_light_bonemerge_light_type")
-    typeCombo:AddChoice("Sphere", "sphere")
-    typeCombo:AddChoice("Rectangle", "rect")
-    typeCombo:AddChoice("Disk", "disk")
-    typeCombo:AddChoice("Cylinder", "cylinder")
-    typeCombo:AddChoice("Distant", "distant")
+    local typeCombo = panel:ComboBox(NL("Light Type"), "remix_rt_light_bonemerge_light_type")
+    typeCombo:AddChoice(NL("Sphere"), "sphere")
+    typeCombo:AddChoice(NL("Rectangle"), "rect")
+    typeCombo:AddChoice(NL("Disk"), "disk")
+    typeCombo:AddChoice(NL("Cylinder"), "cylinder")
+    typeCombo:AddChoice(NL("Distant"), "distant")
     
     -- Bone selection section
-    panel:Help("Bone Selection")
-    panel:Help("Right-click an entity to grab its bones:")
+    panel:Help(NL("Bone Selection"))
+    panel:Help(NL("Right-click an entity to grab its bones:"))
     
     -- Create bone list panel
     local boneListContainer = vgui.Create("DPanel", panel)
@@ -328,7 +338,7 @@ function TOOL.BuildCPanel(panel)
     boneList:Dock(FILL)
     boneList:SetMultiSelect(false)
     boneList:AddColumn("ID"):SetFixedWidth(40)
-    boneList:AddColumn("Bone Name")
+    boneList:AddColumn(NL("Bone Name"))
     
     -- Store reference for updating
     local tool = LocalPlayer():GetTool("remix_rt_light_bonemerge")
@@ -338,7 +348,7 @@ function TOOL.BuildCPanel(panel)
         -- Function to populate bone list
         function tool:PopulateBoneList(listPanel)
             if not self.BoneList or #self.BoneList == 0 then
-                local line = listPanel:AddLine("--", "No bones grabbed yet")
+                local line = listPanel:AddLine("--", NL("No bones grabbed yet"))
                 line:SetSelectable(false)
                 return
             end
@@ -356,26 +366,26 @@ function TOOL.BuildCPanel(panel)
     end
     
     -- Position offset
-    panel:Help("Position Offset (Local Space)")
-    panel:NumSlider("X (Forward/Back)", "remix_rt_light_bonemerge_offset_x", -100, 100, 1)
-    panel:NumSlider("Y (Left/Right)", "remix_rt_light_bonemerge_offset_y", -100, 100, 1)
-    panel:NumSlider("Z (Up/Down)", "remix_rt_light_bonemerge_offset_z", -100, 100, 1)
+    panel:Help(NL("Position Offset (Local Space)"))
+    panel:NumSlider(NL("X (Forward/Back)"), "remix_rt_light_bonemerge_offset_x", -100, 100, 1)
+    panel:NumSlider(NL("Y (Left/Right)"), "remix_rt_light_bonemerge_offset_y", -100, 100, 1)
+    panel:NumSlider(NL("Z (Up/Down)"), "remix_rt_light_bonemerge_offset_z", -100, 100, 1)
     
     -- Angle offset
-    panel:Help("Angle Offset")
-    panel:NumSlider("Pitch", "remix_rt_light_bonemerge_angle_p", -180, 180, 0)
-    panel:NumSlider("Yaw", "remix_rt_light_bonemerge_angle_y", -180, 180, 0)
-    panel:NumSlider("Roll", "remix_rt_light_bonemerge_angle_r", -180, 180, 0)
+    panel:Help(NL("Angle Offset"))
+    panel:NumSlider(NL("Pitch"), "remix_rt_light_bonemerge_angle_p", -180, 180, 0)
+    panel:NumSlider(NL("Yaw"), "remix_rt_light_bonemerge_angle_y", -180, 180, 0)
+    panel:NumSlider(NL("Roll"), "remix_rt_light_bonemerge_angle_r", -180, 180, 0)
     
     -- Standard light properties
-    panel:Help("Light Properties")
-    panel:NumSlider("Radius", "remix_rt_light_bonemerge_radius", 1, 2000, 0)
-    panel:NumSlider("Brightness", "remix_rt_light_bonemerge_brightness", 0, 10000, 2)
-    panel:NumSlider("Volumetrics", "remix_rt_light_bonemerge_volumetric", 0, 5, 2)
+    panel:Help(NL("Light Properties"))
+    panel:NumSlider(NL("Radius"), "remix_rt_light_bonemerge_radius", 1, 2000, 0)
+    panel:NumSlider(NL("Brightness"), "remix_rt_light_bonemerge_brightness", 0, 10000, 2)
+    panel:NumSlider(NL("Volumetrics"), "remix_rt_light_bonemerge_volumetric", 0, 5, 2)
     
     -- Color picker
     panel:AddControl("Color", {
-        Label = "Color",
+        Label = NL("Color"),
         Red = "remix_rt_light_bonemerge_color_r",
         Green = "remix_rt_light_bonemerge_color_g",
         Blue = "remix_rt_light_bonemerge_color_b",
@@ -386,15 +396,19 @@ function TOOL.BuildCPanel(panel)
     })
     
     -- Shaping (for sphere lights)
-    panel:CheckBox("Enable Light Shaping", "remix_rt_light_bonemerge_shape_enabled")
-    panel:NumSlider("Cone Angle", "remix_rt_light_bonemerge_cone", 0, 180, 0)
-    panel:NumSlider("Cone Softness", "remix_rt_light_bonemerge_softness", 0, 1, 2)
-    panel:NumSlider("Focus Exponent", "remix_rt_light_bonemerge_focus", 0, 10, 2)
+    panel:CheckBox(NL("Enable Light Shaping"), "remix_rt_light_bonemerge_shape_enabled")
+    panel:NumSlider(NL("Cone Angle"), "remix_rt_light_bonemerge_cone", 0, 180, 0)
+    panel:NumSlider(NL("Cone Softness"), "remix_rt_light_bonemerge_softness", 0, 1, 2)
+    panel:NumSlider(NL("Focus Exponent"), "remix_rt_light_bonemerge_focus", 0, 10, 2)
     
     -- Shape-specific parameters
-    panel:Help("Shape-Specific Parameters")
-    panel:NumSlider("X Size/Radius", "remix_rt_light_bonemerge_xsize", 1, 2000, 0)
-    panel:NumSlider("Y Size/Radius", "remix_rt_light_bonemerge_ysize", 1, 2000, 0)
-    panel:NumSlider("Axis Length", "remix_rt_light_bonemerge_axislen", 1, 2000, 0)
-    panel:NumSlider("Angular Diameter", "remix_rt_light_bonemerge_distantang", 0, 10, 2)
+    panel:Help(NL("Shape-Specific Parameters"))
+    panel:NumSlider(NL("X Size/Radius"), "remix_rt_light_bonemerge_xsize", 1, 2000, 0)
+    panel:NumSlider(NL("Y Size/Radius"), "remix_rt_light_bonemerge_ysize", 1, 2000, 0)
+    panel:NumSlider(NL("Axis Length"), "remix_rt_light_bonemerge_axislen", 1, 2000, 0)
+    panel:NumSlider(NL("Angular Diameter"), "remix_rt_light_bonemerge_distantang", 0, 10, 2)
+end
+
+if bundle_i18n then
+    bundle_i18n.RegisterPhrase("Remix Bonemerged Light", NN("Remix Bonemerged Light"))
 end

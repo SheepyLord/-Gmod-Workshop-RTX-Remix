@@ -1,12 +1,29 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLC(player, text, ...)
+    if NATIVELOADER_LOCALIZED_CHAT then
+        NATIVELOADER_LOCALIZED_CHAT(player, text, {...})
+    else
+        player:ChatPrint(string.format(text, ...))
+    end
+end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
 AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.Base = "base_gmodentity"
 
-ENT.Category		= "Glass: Rewrite Remixed"
+ENT.Category		= NL("Glass: Rewrite Remixed")
 ENT.Author			= "CR (original by Mee)"
-ENT.Purpose			= "Destructable Fun"
-ENT.Instructions	= "Spawn and damage it"
+ENT.Purpose			= NL("Destructable Fun")
+ENT.Instructions	= NL("Spawn and damage it")
 ENT.Spawnable		= false
 
 local generateUV, generateNormals, simplify_vertices, split_convex, are_verts_valid_for_phys = include("world_functions.lua")
@@ -431,7 +448,7 @@ else
                 
                 -- Visual feedback for damage accumulation
                 if attacker and attacker:IsPlayer() then
-                    attacker:ChatPrint("Glass damage: " .. math.Round(self.accumulated_damage) .. "/" .. math.Round(rigidity_threshold))
+                    NLC(attacker, NN("Glass damage: %d / %d"), math.Round(self.accumulated_damage), math.Round(rigidity_threshold))
                 end
                 
                 return -- Don't break yet
@@ -689,7 +706,7 @@ function ENT:UpdateTransmitState()
 end
 
 if CLIENT then 
-    language.Add("procedural_shard", "Glass Shard")
+    NLP("procedural_shard", NN("Glass Shard"))
     return 
 end
 
@@ -751,15 +768,15 @@ if SERVER then
             local shard = tr.Entity
             local old_damage = shard.accumulated_damage or 0
             shard.accumulated_damage = 0
-            ply:ChatPrint("Reset glass damage from " .. math.Round(old_damage) .. " to 0")
+            NLC(ply, NN("Reset glass damage from %d to 0"), math.Round(old_damage))
         else
-            ply:ChatPrint("Look at a glass shard to reset its damage")
+            NLC(ply, NN("Look at a glass shard to reset its damage"))
         end
     end, nil, "Reset accumulated damage on looked-at glass (Admin only)")
     
     concommand.Add("rtx_glass_panel", function(ply, cmd, args)
-        ply:ChatPrint("Opening Glass Settings Panel...")
-        ply:ChatPrint("Run 'glass_open_panel' in console or check the Utilities > Glass Rewrite menu in your spawnmenu!")
+        NLC(ply, NN("Opening Glass Settings Panel..."))
+        NLC(ply, NN("Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."))
     end, nil, "Instructions to open the glass settings panel")
 end
 

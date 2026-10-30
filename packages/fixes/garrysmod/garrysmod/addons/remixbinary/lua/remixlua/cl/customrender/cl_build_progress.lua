@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not CLIENT then return end
 
 -- Wait for RemixRenderCore to be available
@@ -19,7 +25,7 @@ local PANEL = {}
 function PANEL:Init()
     self:SetSize(600, 450)
     self:Center()
-    self:SetTitle("Building Map Geometry")
+    self:SetTitle(NL("Building Map Geometry"))
     self:SetDraggable(false)
     self:ShowCloseButton(false)
     self:SetDeleteOnClose(false)
@@ -40,7 +46,7 @@ function PANEL:Init()
     self.progressBars.world = vgui.Create("DPanel", self)
     self.progressBars.world:SetPos(20, yPos)
     self.progressBars.world:SetSize(560, 80)
-    self.progressBars.world.label = "Map Faces"
+    self.progressBars.world.label = NL("Map Faces")
     self.progressBars.world.progress = 0
     self.progressBars.world.total = 0
     self.progressBars.world.active = false
@@ -51,7 +57,7 @@ function PANEL:Init()
     self.progressBars.displacement = vgui.Create("DPanel", self)
     self.progressBars.displacement:SetPos(20, yPos)
     self.progressBars.displacement:SetSize(560, 80)
-    self.progressBars.displacement.label = "Map Displacements"
+    self.progressBars.displacement.label = NL("Map Displacements")
     self.progressBars.displacement.progress = 0
     self.progressBars.displacement.total = 0
     self.progressBars.displacement.active = false
@@ -62,7 +68,7 @@ function PANEL:Init()
     self.progressBars.staticprops = vgui.Create("DPanel", self)
     self.progressBars.staticprops:SetPos(20, yPos)
     self.progressBars.staticprops:SetSize(560, 80)
-    self.progressBars.staticprops.label = "Static Props"
+    self.progressBars.staticprops.label = NL("Static Props")
     self.progressBars.staticprops.progress = 0
     self.progressBars.staticprops.total = 0
     self.progressBars.staticprops.active = false
@@ -72,7 +78,7 @@ function PANEL:Init()
     self.statusLabel = vgui.Create("DLabel", self)
     self.statusLabel:SetPos(20, yPos)
     self.statusLabel:SetSize(560, 20)
-    self.statusLabel:SetText("Please wait...")
+    self.statusLabel:SetText(NL("Please wait..."))
     self.statusLabel:SetTextColor(Color(255, 255, 255))
     self.statusLabel:SetFont("DermaDefault")
     
@@ -81,7 +87,7 @@ function PANEL:Init()
     self.forceCloseButton = vgui.Create("DButton", self)
     self.forceCloseButton:SetPos(20, yPos)
     self.forceCloseButton:SetSize(560, 30)
-    self.forceCloseButton:SetText("Force Close (Build appears stuck)")
+    self.forceCloseButton:SetText(NL("Force Close (Build appears stuck)"))
     self.forceCloseButton:SetVisible(false)
     self.forceCloseButton.DoClick = function()
         self:Close()
@@ -154,7 +160,7 @@ function PANEL:Init()
                     end
                     
                     -- Just show count
-                    local progressText = string.format("Processing... %d items", pnl.progress or 0)
+                    local progressText = string.format(NL("Processing... %d items"), pnl.progress or 0)
                     draw.SimpleText(progressText, "DermaDefault", barX + barW / 2, barY + barH / 2, 
                         Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                 else
@@ -167,12 +173,12 @@ function PANEL:Init()
                         surface.DrawRect(barX, barY, fillW, barH)
                     end
                     
-                    draw.SimpleText("Initializing...", "DermaDefault", barX + barW / 2, barY + barH / 2, 
+                    draw.SimpleText(NL("Initializing..."), "DermaDefault", barX + barW / 2, barY + barH / 2,
                         Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                 end
             else
                 -- Not active indicator
-                draw.SimpleText("Waiting...", "DermaDefault", 10, 35, Color(150, 150, 150))
+                draw.SimpleText(NL("Waiting..."), "DermaDefault", 10, 35, Color(150, 150, 150))
             end
         end
     end
@@ -191,7 +197,7 @@ function PANEL:Paint(w, h)
     surface.SetDrawColor(30, 30, 30, 255)
     surface.DrawRect(0, 0, w, 24)
     
-    draw.SimpleText("Building Map Geometry", "DermaDefaultBold", 
+    draw.SimpleText(NL("Building Map Geometry"), "DermaDefaultBold",
         w / 2, 12, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end
 
@@ -250,11 +256,11 @@ function PANEL:UpdateProgress()
     
     -- Update status text with elapsed time
     local elapsed = SysTime() - self.startTime
-    local statusText = string.format("Elapsed time: %.1f seconds", elapsed)
+    local statusText = string.format(NL("Elapsed time: %.1f seconds"), elapsed)
     if not anyActive then
-        statusText = statusText .. " - Complete!"
+        statusText = statusText .. NL(" - Complete!")
     elseif self.isStuck then
-        statusText = statusText .. " - Build appears stuck! (no progress for " .. math.floor(timeSinceProgress) .. "s)"
+        statusText = statusText .. string.format(NL(" - Build appears stuck! (no progress for %d s)"), math.floor(timeSinceProgress))
         self.statusLabel:SetTextColor(Color(255, 100, 100))
     else
         self.statusLabel:SetTextColor(Color(255, 255, 255))

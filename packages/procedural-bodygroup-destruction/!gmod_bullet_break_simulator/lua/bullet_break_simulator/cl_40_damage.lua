@@ -1,3 +1,11 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local function NL(text)
+    return bundle_i18n and bundle_i18n.A(text, BBS.I18N and BBS.I18N.language or "en") or text
+end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 -- Hideable-bodygroup UV retrieval and per-entity transparency masks.
 
 BBS = BBS or {}
@@ -6624,34 +6632,34 @@ end )
 
 function BBS.GetDamageHUDStatus( hit )
 	local damage = hit and hit.damageUV
-	if not damage then return "UV damage: waiting for mesh analysis", COLOR_PENDING end
-	if not damage.ok then return "UV damage: " .. tostring( damage.error or damage.status ), COLOR_SKIP end
+	if not damage then return NL("UV damage: waiting for mesh analysis"), COLOR_PENDING end
+	if not damage.ok then return NL("UV damage: ") .. tostring( damage.error or damage.status ), COLOR_SKIP end
 	if damage.status == "paint_queued" then
-		return string.format( "UV damage: %d meshes / %d materials / %d UVs | paint queue %d",
+		return string.format( NL("UV damage: %d meshes / %d materials / %d UVs | paint queue %d"),
 			damage.affectedMeshCount, damage.affectedMaterialCount,
 			damage.uvCount, #BBS.DamagePaintQueue ), COLOR_PENDING
 	end
 	if damage.status == "applied" then
-		return string.format( "UV damage: %d material override(s) applied from %d triangles",
+		return string.format( NL("UV damage: %d material override(s) applied from %d triangles"),
 			damage.appliedMaterialCount, damage.triangleCount ), COLOR_OK
 	end
 	if damage.status == "no_hideable_mesh_hit" then
 		local nearest = damage.nearestHideableMesh
 		if nearest then
-			return string.format( "UV damage: no eligible bodygroup touch; nearest %s mesh is %.3f units away",
+			return string.format( NL("UV damage: no eligible bodygroup touch; nearest %s mesh is %.3f units away"),
 				nearest.material, nearest.distance ), COLOR_SKIP
 		end
-		return "UV damage: removal hull did not touch a proven eligible-bodygroup mesh", COLOR_SKIP
+		return NL("UV damage: removal hull did not touch a proven eligible-bodygroup mesh"), COLOR_SKIP
 	end
 	if damage.status == "no_projected_coverage" then
-		return "UV damage: broad-phase mesh candidates had no exact irregular-hole coverage",
+		return NL("UV damage: broad-phase mesh candidates had no exact irregular-hole coverage"),
 			COLOR_SKIP
 	end
 	if damage.status == "apply_unavailable" then
-		return "UV damage: affected materials could not be mapped to submaterial slots", COLOR_ERROR
+		return NL("UV damage: affected materials could not be mapped to submaterial slots"), COLOR_ERROR
 	end
-	if damage.status == "apply_failed" then return "UV damage: material application failed", COLOR_ERROR end
-	return string.format( "UV damage: %d meshes / %d materials / %d unique UVs (%s)",
+	if damage.status == "apply_failed" then return NL("UV damage: material application failed"), COLOR_ERROR end
+	return string.format( NL("UV damage: %d meshes / %d materials / %d unique UVs (%s)"),
 		damage.affectedMeshCount, damage.affectedMaterialCount,
 		damage.uvCount, damage.status ), COLOR_OK
 end
@@ -6762,10 +6770,10 @@ hook.Add( "HUDPaint", "BBS.DrawAffectedUVPreview", function()
 	local mask = materialRecord.mask
 	if mask then EnsureDamagePreviewMaterials( mask ) end
 	local panels = {
-		{ label = "Original RGB", material = mask and mask.originalPreviewMaterial },
-		{ label = "Edited + alpha", material = mask and mask.previewMaterial, uv = true },
-		{ label = "Edited RGB only", material = mask and mask.rgbPreviewMaterial, uv = true },
-		{ label = "Last hit coverage", material = mask and mask.coveragePreviewMaterial },
+		{ label = NL("Original RGB"), material = mask and mask.originalPreviewMaterial },
+		{ label = NL("Edited + alpha"), material = mask and mask.previewMaterial, uv = true },
+		{ label = NL("Edited RGB only"), material = mask and mask.rgbPreviewMaterial, uv = true },
+		{ label = NL("Last hit coverage"), material = mask and mask.coveragePreviewMaterial },
 	}
 	for panelIndex, panel in ipairs( panels ) do
 		local panelX = x + ( panelIndex - 1 ) * ( size + gap )
@@ -6786,7 +6794,7 @@ hook.Add( "HUDPaint", "BBS.DrawAffectedUVPreview", function()
 	end
 
 	local paint = mask and mask.lastPaintDiagnostics or {}
-	draw.SimpleText( string.format( "%s | %d source / %d projected tris | %d UVs | expand=%.1f feather=%.1f passes=%d seams=%d",
+	draw.SimpleText( string.format( NL("%s | %d source / %d projected tris | %d UVs | expand=%.1f feather=%.1f passes=%d seams=%d"),
 		materialRecord.material, #materialRecord.triangles,
 		materialRecord.projectedTriangleCount or 0, #materialRecord.uvs,
 		paint.expansion or 0, paint.feather or 0, paint.blurPasses or 0,
@@ -6794,7 +6802,7 @@ hook.Add( "HUDPaint", "BBS.DrawAffectedUVPreview", function()
 		"DermaDefaultBold", x, textureY + size + 7, Color( 225, 230, 238 ),
 		TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	if mask and mask.lastDebugFolder then
-		draw.SimpleText( "dump: data/" .. mask.lastDebugFolder,
+		draw.SimpleText( NL("dump: data/") .. mask.lastDebugFolder,
 			"DermaDefault", x, textureY + size + 24, Color( 170, 185, 205 ),
 			TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	end

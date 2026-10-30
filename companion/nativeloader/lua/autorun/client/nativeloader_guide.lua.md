@@ -18,3 +18,7 @@ with [`tools/poc_session.py`](../../../../../tools/poc_session.py.md). A missing
 
 On the first RTX session it opens by itself, 8 s after the player spawns, once. The marker is
 `garrysmod/data/nativeloader_companion/guide_shown.txt`.
+
+The performance paragraph reflects the package default: frame generation is off for stability. It no longer describes every frame-generation method as requiring an RTX 40 GPU.
+
+The guide names the runtime’s new static migration button; the count is now on the line above it. The warning against migrating map-specific settings is unchanged.
