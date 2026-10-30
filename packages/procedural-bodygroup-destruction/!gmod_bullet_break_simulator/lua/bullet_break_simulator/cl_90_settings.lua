@@ -465,6 +465,7 @@ end )
 hook.Add( "PopulateToolMenu", "BBS.AddSettingsMenu", function()
 	spawnmenu.AddToolMenuOption( TAB_ID, CATEGORY_ID, "BBSMainSettings",
 		L( "menu.damage" ), "", "", function( panel )
+            if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
 			panel:ClearControls()
 			AddLanguageSelector( panel )
 			panel:Help( L( "main.intro" ) )
@@ -510,6 +511,7 @@ hook.Add( "PopulateToolMenu", "BBS.AddSettingsMenu", function()
 
 	spawnmenu.AddToolMenuOption( TAB_ID, CATEGORY_ID, "BBSFilterSettings",
 		L( "menu.filters" ), "", "", function( panel )
+            if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
 			panel:ClearControls()
 			panel:Help( L( "filter.page_intro" ) )
 
@@ -535,6 +537,7 @@ hook.Add( "PopulateToolMenu", "BBS.AddSettingsMenu", function()
 
 	spawnmenu.AddToolMenuOption( TAB_ID, CATEGORY_ID, "BBSPerformanceSettings",
 		L( "menu.performance" ), "", "", function( panel )
+            if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
 			panel:ClearControls()
 			panel:Help( L( "performance.intro" ) )
 			AddPerformanceRuntimeStatus( panel )
@@ -582,6 +585,7 @@ hook.Add( "PopulateToolMenu", "BBS.AddSettingsMenu", function()
 
 	spawnmenu.AddToolMenuOption( TAB_ID, CATEGORY_ID, "BBSDebugSettings",
 		L( "menu.debug" ), "", "", function( panel )
+            if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
 			panel:ClearControls()
 			panel:Help( L( "debug.intro" ) )
 			panel:Button( L( "debug.preset" ), "bbs_debug_preset" )

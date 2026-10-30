@@ -26,6 +26,46 @@
    "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\addons\\mmd_hotloader\\lua\\mmdhl\\installation.lua",
    "git": null,
    "imported": "2026-10-30T00:42:44+00:00"
+  },
+  "mmd_hotloader/resource/localization/fr/mmdhl.properties": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\model-hotloader\\mmd_hotloader\\resource\\localization\\fr\\mmdhl.properties",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:28+00:00"
+  },
+  "mmd_hotloader/resource/localization/ja/mmdhl.properties": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\model-hotloader\\mmd_hotloader\\resource\\localization\\ja\\mmdhl.properties",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:28+00:00"
+  },
+  "mmd_hotloader/lua/weapons/gmod_tool/stools/mmdhl_prop.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\model-hotloader\\mmd_hotloader\\lua\\weapons\\gmod_tool\\stools\\mmdhl_prop.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:28+00:00"
+  },
+  "mmd_hotloader/resource/localization/ru/mmdhl.properties": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\model-hotloader\\mmd_hotloader\\resource\\localization\\ru\\mmdhl.properties",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:28+00:00"
   }
  },
  "files": {
@@ -646,9 +686,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/weapons/gmod_tool/stools/mmdhl_prop.lua": {
-   "size": 5842,
-   "sha256": "005ed0736c544c4cd8b5217db03d30d71815fe84f2cd2e32202bf30b9c95c847",
-   "mtime_ns": 1792920438707618600,
+   "size": 5915,
+   "sha256": "a2775ce04a35db43eef4971185517645190a73722efa9fbb7bd6fcf4a618bd0a",
+   "mtime_ns": 1793354782868792800,
    "stored": "plain"
   },
   "mmd_hotloader/lua/weapons/weapon_mmdhl.lua": {
@@ -702,15 +742,15 @@
    "stored": "plain"
   },
   "mmd_hotloader/resource/localization/fr/mmdhl.properties": {
-   "size": 296807,
-   "sha256": "53b46a27038f1777a04c569413686ae44d5044e5a05615a90583a77a17c83e03",
-   "mtime_ns": 1793056143180645300,
+   "size": 296828,
+   "sha256": "a4342b85efb9a7cb0be5a00baf2fff3be84222f6f2323b80d9fc4ba5a15920ec",
+   "mtime_ns": 1793349771185346700,
    "stored": "plain"
   },
   "mmd_hotloader/resource/localization/ja/mmdhl.properties": {
-   "size": 324593,
-   "sha256": "46100a2369f548bc6f49bf358123193a52e46b00cca5e3be1759e1b1ea637148",
-   "mtime_ns": 1793056143208066800,
+   "size": 324602,
+   "sha256": "30a214839ee981b121c79e030e80d4e79387d1a9f4609bc7758a540d752badba",
+   "mtime_ns": 1793349771250679900,
    "stored": "plain"
   },
   "mmd_hotloader/resource/localization/ko/mmdhl.properties": {
@@ -720,9 +760,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/resource/localization/ru/mmdhl.properties": {
-   "size": 360482,
-   "sha256": "f44d16c24890b60892fd6535be69aa63f997ff9d92864a0df440a34222dcc91c",
-   "mtime_ns": 1793056143245305300,
+   "size": 360477,
+   "sha256": "3d8c7c461c571ff52a6062521a367bd5ec7904b9dc47c8f76bc9584da3f418b2",
+   "mtime_ns": 1793354783104312000,
    "stored": "plain"
   },
   "mmd_hotloader/resource/localization/zh-cn/mmdhl.properties": {

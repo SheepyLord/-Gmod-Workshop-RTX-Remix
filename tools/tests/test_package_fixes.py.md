@@ -32,3 +32,7 @@ manifest's size and SHA-256 and its exact source, `native/manifest.json` last. W
 must accept both the folder and the archive (`nlctl manifest`); otherwise that case is skipped.
 
 Side effects: only the temporary folder, removed afterwards. Exit code: unittest's (0 when all pass).
+
+The expected companion payload includes both the companion and bundled-interface translation namespaces, generated with the strict builder.
+
+The expected payload also includes the bundled-interface catalog sources and their GPL license; all normal manifest and file-content checks cover them.

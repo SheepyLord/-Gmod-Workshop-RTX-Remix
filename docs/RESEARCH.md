@@ -2067,3 +2067,30 @@ header, the time stamp's three copies in the debug directory, and one byte of th
   so on RTX 40 the inherited 3x could not be lowered there.
 - Fixed in the package's layer and in `tools/remix_defaults.py` ([ADR 0037](decisions/0037-frame-generation-off-by-default.md)):
   off by default, one generated frame when turned on.
+
+## 34. Translation coverage audit (2026-10-30)
+
+- The original companion checker accepted missing, empty and fuzzy entries, so its success did not
+  establish completeness. The release builder now rejects them; draft fallback is explicit.
+- Runtime extraction found 3,293 existing messages and no missing source keys. Its template had
+  stale references. Translating the initial weather state adds one: 3,294 messages per language.
+  The weather status formatted raw preset names through `%s`; translating the outer format alone
+  could not translate those values (`rtx_weather.cpp`, `showImguiSettings`).
+- Native add-on coverage after this pass: Bodygroup Tool 104, Destruction 204, Material Editor 1,141,
+  material help 83, Motion Importer 364 and Model Hotloader 2,030 English keys. All six translations
+  have matching keys; Motion also retains complete Arabic and Spanish catalogs.
+- Material Editor's reverse lookup deliberately refuses ambiguous strings. Different Japanese words
+  for the same generic Colour/Strength labels, and inconsistent Texture path wording, caused English
+  fallback across every locale. Those terms now agree; Edit buttons carry an explicit context key.
+- The six apparent missing Destruction entries were autonyms and a model-path example, not missing
+  prose. They are explicit invariants now. Korean was absent, and four add-ons mapped Traditional
+  Chinese to Simplified Chinese; both gaps are corrected.
+- Runtime setup under this repository exposed delayed expansion consuming `!` in `update-deps.cmd`.
+  Quoted paths and disabled delayed expansion fix it. Windows PowerShell 5.1 and Python 3.12 were used
+  for the verified runtime rebuild. The fresh runtime tree also needed seven ignored unit/app test
+  sources from the existing verified tree to finish Meson setup; these do not enter the runtime DLL.
+
+Evidence is under `out/translation-audit`; final commands and PoC results are in the
+[QoL report](handover/QoL-report.md).
+
+The final UI tour inspected 6,850 text elements across English and the six requested languages, with no builder or Lua errors and a normal exit. Six matches for `Hair` were stored bodygroup identifiers (`cl_20_filters.lua:7`, displayed verbatim by `cl_90_settings.lua:307`), not missing UI translations. Runtime logging exposed concatenated migration buttons in `dxvk_imgui.cpp`; patch 0006 replaces them with static translated labels and formatted count lines. The runtime now has 3,298 messages per language. The user explicitly accepts resizing the Remix settings window to reveal long labels.

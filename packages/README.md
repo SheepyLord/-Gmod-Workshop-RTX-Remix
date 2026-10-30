@@ -85,3 +85,10 @@ The parts hold 1.8 GB and are stored in 0.6 GB (the runtime 1.23 GB in 0.41 GB: 
 month, and GitHub Actions' downloads count too. An LFS object stays stored once pushed, so a new
 `d3d9.dll` costs about 62 MB of the storage for good; the package workflow caches the LFS objects, so a
 run downloads only those it has not seen.
+
+## Localized interfaces
+
+[ADR 0038](../docs/decisions/0038-complete-bundled-interface-translations.md) records local translation
+changes to the shipped inputs. Existing keyed catalogs stay with their add-ons; newly localized RTX
+interfaces call the companion's separate bundled-interface catalog. Changes to the GPL fixes remain
+in that part under its existing license. Source repositories outside this checkout are not changed.

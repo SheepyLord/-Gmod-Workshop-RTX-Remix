@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "d9cf79e604e5b2befafe39f5982f9b60ac43eba48072af1c4a2c5199e422ab5a",
-  "built_from": "claude/sky-night f9937026 (with what the rest of this record names; checked with build_runtime.ps1 -Verify on 2026-10-29)",
+  "d3d9.dll": "7077609e831899082c861c511e75aa3f65ccbb4624bb1212deb07f224c6c133e",
+  "built_from": "d63dd1d9; verified before a translation-only meson compile -j 2 (no shader sources changed)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -58,6 +58,8 @@
    "patches/0002-Translate-the-Remix-menus-zh-CN-zh-TW-ja-ko-fr-ru.patch": "158f3c0f0444af422216b7de383f90b963f536c329613ae45154338712f2bb33",
    "patches/0003-i18n-the-translators-glossaries.patch": "6fe9c9bf4f0e4f5b01f361d91156ed900f61a694cd44bd6104ef14101850eab2",
    "patches/0004-Atmosphere-the-real-Moon-a-night-sky-image-lunar-and.patch": "95f39f3161f04b0b0f59e35e0b222dc3e4eb394a70ab48fd9c263f2636f966be",
+   "patches/0005-i18n-complete-weather-display-and-catalog-validation.patch": "4a47c6e7bd46b54d5795fe27efbb65f0283fec2401d3a2e600d300ed2f789f38",
+   "patches/0006-i18n-translate-migration-controls.patch": "9ae267bef46b11ebcae23e3f1fc3ffdd29f3b07dff895c4d1499ba88c3ce1a92",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

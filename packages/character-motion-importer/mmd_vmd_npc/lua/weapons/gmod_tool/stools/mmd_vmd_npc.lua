@@ -309,6 +309,7 @@ function TOOL:Reload()
 end
 
 function TOOL.BuildCPanel(panel)
+    if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
     panel:ClearControls()
     panel:Help(L("mmd_vmd_npc.ui.tool_help"))
 

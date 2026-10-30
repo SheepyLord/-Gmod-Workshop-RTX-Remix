@@ -396,6 +396,7 @@ def build(args):
         if folder == COMPANION:
             generated = companion_translations()
             files[COMPANION_I18N] = generated
+            files.update(companion_catalog_sources())
         roots.append(('garrysmod/addons/' + name, 'lua-addon'))
     add_to_addons(args.add_to_addon, {name.lower(): name for name, _ in sources}, files, junk)
     mods_dir = os.path.join(tree, 'rtx-remix', 'mods')
@@ -534,6 +535,14 @@ def build(args):
             os.remove(generated)
 
 
+def companion_catalog_sources():
+    """Keep the GPL-derived interface text's editable sources and license with the generated table."""
+    prefix = 'native/root/garrysmod/addons/nativeloader/resource/bundled-translations/'
+    names = ['COPYING', 'README.md', 'unchanged.json', companion_i18n.POT]
+    names += [language + '.po' for language in companion_i18n.LANGUAGES]
+    return {prefix + name: os.path.join(companion_i18n.ADDON_I18N, name) for name in names}
+
+
 def companion_translations():
     """The companion's translations as the Lua table it reads (companion_i18n.py build), in a scratch
     file under out\\tmp that the caller removes. Its time is the newest translation file's, so the same
@@ -545,7 +554,8 @@ def companion_translations():
         companion_i18n.build(path)
     except companion_i18n.I18nError as error:
         raise PackageError('the companion translations (companion/i18n) do not check: %s' % error)
-    sources = [os.path.join(companion_i18n.I18N, name) for name in os.listdir(companion_i18n.I18N) if name.endswith('.po')]
+    sources = [os.path.join(folder, name) for folder, _, names in os.walk(companion_i18n.I18N)
+               for name in names if name.endswith('.po')]
     newest = max(os.stat(source).st_mtime for source in sources)
     os.utime(path, (newest, newest))
     return path

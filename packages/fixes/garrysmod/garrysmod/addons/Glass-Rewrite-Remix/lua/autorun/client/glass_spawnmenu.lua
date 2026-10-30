@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if SERVER then return end
 
 -- Glass Rewrite Settings Panel
@@ -5,7 +11,7 @@ local PANEL = {}
 
 function PANEL:Init()
     self:SetSize(400, 600)
-    self:SetTitle("Glass Rewrite Remixed Settings")
+    self:SetTitle(NL("Glass Rewrite Remixed Settings"))
     self:SetDeleteOnClose(false)
     self:SetDraggable(true)
     self:ShowCloseButton(true)
@@ -18,7 +24,7 @@ function PANEL:Init()
     
     -- Title
     local title = vgui.Create("DLabel", scroll)
-    title:SetText("Glass Rewrite Remixed Settings")
+    title:SetText(NL("Glass Rewrite Remixed Settings"))
     title:SetFont("DermaDefaultBold")
     title:SetTextColor(Color(255, 255, 255))
     title:SizeToContents()
@@ -39,7 +45,7 @@ end
 
 function PANEL:CreateVisualSection(parent)
     local visual = vgui.Create("DCollapsibleCategory", parent)
-    visual:SetLabel("Visual Effects")
+    visual:SetLabel(NL("Visual Effects"))
     visual:SetExpanded(true)
     visual:Dock(TOP)
     visual:DockMargin(0, 0, 0, 5)
@@ -50,25 +56,25 @@ function PANEL:CreateVisualSection(parent)
     
     -- Show Cracks
     local cracks_check = vgui.Create("DCheckBoxLabel", visual_panel)
-    cracks_check:SetText("Show Cracks Before Breaking")
+    cracks_check:SetText(NL("Show Cracks Before Breaking"))
     cracks_check:SetConVar("rtx_glass_show_cracks")
     cracks_check:SizeToContents()
     cracks_check:Dock(TOP)
     cracks_check:DockMargin(5, 2, 5, 2)
     
     -- Crack Delay
-    self:CreateSlider(visual_panel, "Crack Delay", "rtx_glass_crack_delay", 0.05, 1.0, 2, "Time between cracks appearing and glass breaking")
+    self:CreateSlider(visual_panel, NL("Crack Delay"), "rtx_glass_crack_delay", 0.05, 1.0, 2, NL("Time between cracks appearing and glass breaking"))
     
     -- Shard Count
-    self:CreateSlider(visual_panel, "Shard Count", "rtx_glass_shard_count", 1, 12, 0, "Number of pieces glass breaks into")
+    self:CreateSlider(visual_panel, NL("Shard Count"), "rtx_glass_shard_count", 1, 12, 0, NL("Number of pieces glass breaks into"))
     
     -- Velocity Transfer
-    self:CreateSlider(visual_panel, "Velocity Transfer", "rtx_glass_velocity_transfer", 0.1, 3.0, 2, "How dramatic the glass explosion is")
+    self:CreateSlider(visual_panel, NL("Velocity Transfer"), "rtx_glass_velocity_transfer", 0.1, 3.0, 2, NL("How forcefully glass fragments scatter"))
 end
 
 function PANEL:CreatePhysicsSection(parent)
     local physics = vgui.Create("DCollapsibleCategory", parent)
-    physics:SetLabel("Physics Settings")
+    physics:SetLabel(NL("Physics Settings"))
     physics:SetExpanded(true)
     physics:Dock(TOP)
     physics:DockMargin(0, 0, 0, 5)
@@ -78,15 +84,15 @@ function PANEL:CreatePhysicsSection(parent)
     physics:SetContents(physics_panel)
     
     -- Glass Rigidity
-    self:CreateSlider(physics_panel, "Glass Rigidity", "rtx_glass_rigidity", 0, 200, 0, "How much damage glass can take before breaking")
+    self:CreateSlider(physics_panel, NL("Glass strength"), "rtx_glass_rigidity", 0, 200, 0, NL("How much damage glass can take before breaking"))
     
     -- Mass Factor
-    self:CreateSlider(physics_panel, "Mass Factor", "rtx_glass_mass_factor", 0.1, 3.0, 1, "How much object mass affects impact force")
+    self:CreateSlider(physics_panel, NL("Mass Factor"), "rtx_glass_mass_factor", 0.1, 3.0, 1, NL("How much object mass affects impact force"))
 end
 
 function PANEL:CreatePlayerSection(parent)
     local player = vgui.Create("DCollapsibleCategory", parent)
-    player:SetLabel("Player Collision")
+    player:SetLabel(NL("Player Collision"))
     player:SetExpanded(true)
     player:Dock(TOP)
     player:DockMargin(0, 0, 0, 5)
@@ -96,15 +102,15 @@ function PANEL:CreatePlayerSection(parent)
     player:SetContents(player_panel)
     
     -- Player Mass
-    self:CreateSlider(player_panel, "Player Mass (kg)", "rtx_glass_player_mass", 30, 150, 0, "Player mass for glass breaking calculations")
+    self:CreateSlider(player_panel, NL("Player Mass (kg)"), "rtx_glass_player_mass", 30, 150, 0, NL("Player mass for glass breaking calculations"))
     
     -- Player Break Speed
-    self:CreateSlider(player_panel, "Min Break Speed", "rtx_glass_player_break_speed", 50, 400, 0, "Minimum player speed to break glass")
+    self:CreateSlider(player_panel, NL("Min Break Speed"), "rtx_glass_player_break_speed", 50, 400, 0, NL("Minimum player speed to break glass"))
 end
 
 function PANEL:CreateAdvancedSection(parent)
     local advanced = vgui.Create("DCollapsibleCategory", parent)
-    advanced:SetLabel("Advanced")
+    advanced:SetLabel(NL("Advanced"))
     advanced:SetExpanded(false)
     advanced:Dock(TOP)
     advanced:DockMargin(0, 0, 0, 5)
@@ -115,7 +121,7 @@ function PANEL:CreateAdvancedSection(parent)
     
     -- Expensive Shards
     local expensive_check = vgui.Create("DCheckBoxLabel", advanced_panel)
-    expensive_check:SetText("Expensive Shards (Full collision for small shards)")
+    expensive_check:SetText(NL("Detailed collisions for small glass shards (higher cost)"))
     expensive_check:SetConVar("rtx_glass_expensive_shards")
     expensive_check:SizeToContents()
     expensive_check:Dock(TOP)
@@ -130,7 +136,7 @@ function PANEL:CreateButtonSection(parent)
     button_panel:DockMargin(0, 10, 0, 0)
     
     local reset_btn = vgui.Create("DButton", button_panel)
-    reset_btn:SetText("Reset to Defaults")
+    reset_btn:SetText(NL("Reset to Defaults"))
     reset_btn:SetSize(120, 30)
     reset_btn:SetPos(5, 5)
     reset_btn.DoClick = function()
@@ -139,7 +145,7 @@ function PANEL:CreateButtonSection(parent)
     end
     
     local test_btn = vgui.Create("DButton", button_panel)
-    test_btn:SetText("Test Settings")
+    test_btn:SetText(NL("Test Settings"))
     test_btn:SetSize(120, 30)
     test_btn:SetPos(135, 5)
     test_btn.DoClick = function()
@@ -148,7 +154,7 @@ function PANEL:CreateButtonSection(parent)
     end
     
     local debug_btn = vgui.Create("DButton", button_panel)
-    debug_btn:SetText("Player Debug")
+    debug_btn:SetText(NL("Player Debug"))
     debug_btn:SetSize(120, 30)
     debug_btn:SetPos(265, 5)
     debug_btn.DoClick = function()
@@ -187,47 +193,47 @@ function PANEL:ResetToDefaults()
     for convar, value in pairs(defaults) do
         RunConsoleCommand(convar, tostring(value))
     end
-    chat.AddText(Color(100, 255, 100), "[Glass] Reset to defaults!")
+    chat.AddText(Color(100, 255, 100), "[Glass] " .. NL("Settings reset to defaults!"))
 end
 
 vgui.Register("GlassSettingsPanel", PANEL, "DFrame")
 
 -- Add to spawnmenu
 hook.Add("PopulateToolMenu", "GlassRewriteSettings", function()
-    spawnmenu.AddToolMenuOption("Utilities", "Glass Rewrite Remixed", "GlassSettings", "Settings", "", "", function(panel)
+    spawnmenu.AddToolMenuOption("Utilities", "Glass Rewrite Remixed", "GlassSettings", NL("Settings"), "", "", function(panel)
         panel:ClearControls()
         
-        panel:AddControl("Header", {Description = "Glass Rewrite Remixed\nRealistic glass destruction system"})
+        panel:AddControl("Header", {Description = NL("Glass Rewrite Remixed\nRealistic glass destruction system")})
         
         -- Quick Settings Button
         panel:AddControl("Button", {
-            Label = "Open Settings Panel",
+            Label = NL("Open Settings Panel"),
             Command = "glass_open_panel"
         })
         
         -- Debug Tools
-        panel:AddControl("Header", {Description = "Debug Tools:"})
+        panel:AddControl("Header", {Description = NL("Debug Tools:")})
         
         panel:AddControl("Button", {
-            Label = "Show Current Settings",
+            Label = NL("Show Current Settings"),
             Command = "glass_settings"
         })
         
         panel:AddControl("Button", {
-            Label = "Player Impact Analysis",
+            Label = NL("Player Impact Analysis"),
             Command = "glass_player_debug"
         })
         
         -- Manual Controls
-        panel:AddControl("Header", {Description = "Manual Controls:"})
+        panel:AddControl("Header", {Description = NL("Manual Controls:")})
         
         panel:AddControl("CheckBox", {
-            Label = "Show Cracks",
+            Label = NL("Show Cracks"),
             Command = "rtx_glass_show_cracks"
         })
         
         panel:AddControl("Slider", {
-            Label = "Glass Rigidity",
+            Label = NL("Glass strength"),
             Command = "rtx_glass_rigidity",
             Type = "Integer",
             Min = "0",
@@ -235,7 +241,7 @@ hook.Add("PopulateToolMenu", "GlassRewriteSettings", function()
         })
         
         panel:AddControl("Slider", {
-            Label = "Shard Count",
+            Label = NL("Shard Count"),
             Command = "rtx_glass_shard_count",
             Type = "Integer", 
             Min = "1",
@@ -243,7 +249,7 @@ hook.Add("PopulateToolMenu", "GlassRewriteSettings", function()
         })
         
         panel:AddControl("Slider", {
-            Label = "Velocity Transfer",
+            Label = NL("Velocity Transfer"),
             Command = "rtx_glass_velocity_transfer",
             Type = "Float",
             Min = "0.1",

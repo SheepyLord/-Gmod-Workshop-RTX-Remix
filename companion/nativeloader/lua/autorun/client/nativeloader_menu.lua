@@ -67,7 +67,7 @@ local OPTIONS = {
     { "indirect_mode", "rtx.integrateIndirectMode", N("Indirect lighting"), "choice",
         { { N("Importance sampled"), "0" }, { "ReSTIR GI", "1" }, { N("Neural Radiance Cache"), "2" },
           { N("Hashed radiance cache"), "3" } } },
-    { "max_bounces", "rtx.pathMaxBounces", N("Most light bounces"), "number", { 1, 16, 0 } },
+    { "max_bounces", "rtx.pathMaxBounces", N("Max light bounces"), "number", { 1, 16, 0 } },
     -- The sun and the clouds are the "Sky and weather" panel's (nativeloader_sky.lua), and so is the
     -- fog, unless a fog preset is chosen here.
     { "sky_brightness", "rtx.skyBrightness", N("Sky brightness"), "number", { 0, 10, 2 },
@@ -104,11 +104,19 @@ end)
 
 -- Move the RTX add-ons' panels into the tab as they register (they do so in PopulateToolMenu).
 local add_tool_menu_option = spawnmenu.AddToolMenuOption
-function spawnmenu.AddToolMenuOption(tab, category, ...)
-    if tab == "Utilities" and MOVED[category] then
-        return add_tool_menu_option(TAB, MOVED[category], ...)
+local function readable_panel(build)
+    if not isfunction(build) then return build end
+    return function(panel)
+        i18n.PreparePanel(panel)
+        return build(panel)
     end
-    return add_tool_menu_option(tab, category, ...)
+end
+function spawnmenu.AddToolMenuOption(tab, category, id, label, command, config, build, ...)
+    if tab == "Utilities" and MOVED[category] then
+        return add_tool_menu_option(TAB, MOVED[category], id, label, command, config, readable_panel(build), ...)
+    end
+    if tab == TAB then build = readable_panel(build) end
+    return add_tool_menu_option(tab, category, id, label, command, config, build, ...)
 end
 
 hook.Add("AddToolMenuTabs", "nativeloader_menu", function()
@@ -169,6 +177,6 @@ concommand.Add("nativeloader_remix_reset", function()
 end)
 
 hook.Add("PopulateToolMenu", "nativeloader_menu", function()
-    add_tool_menu_option(TAB, N("Start here"), "nativeloader_start", L("Start here"), "", "", start_here)
-    add_tool_menu_option(TAB, N("Remix settings"), "nativeloader_remix", L("Common Remix settings"), "", "", remix_settings)
+    add_tool_menu_option(TAB, N("Start here"), "nativeloader_start", L("Start here"), "", "", readable_panel(start_here))
+    add_tool_menu_option(TAB, N("Remix settings"), "nativeloader_remix", L("Common Remix settings"), "", "", readable_panel(remix_settings))
 end)

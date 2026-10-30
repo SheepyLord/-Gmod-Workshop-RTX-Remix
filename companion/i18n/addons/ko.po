@@ -1,0 +1,2031 @@
+# Translations of the GMod native loader companion (the RTX Remix tab, the guide).
+# Edit msgstr only; see companion/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader companion\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:10
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua:21
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:11
+msgid "Seamless Portals"
+msgstr "매끄러운 포털"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:232
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:215
+msgid "Seamless Portal"
+msgstr "매끄러운 포털"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:13
+msgid "Seamlessly connects two locations"
+msgstr "두 위치를 매끄럽게 연결합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua:8
+msgid "Portal Gun"
+msgstr "포털 건"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:82
+msgid "Portal Creator"
+msgstr "포털 생성기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:83
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:97
+msgid "Creates and links portals"
+msgstr "포털을 만들고 연결합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:84
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:82
+msgid "Left Click: Create portal"
+msgstr "왼쪽 클릭: 포털 생성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:85
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:83
+msgid "Right Click: Start linking a portal"
+msgstr "오른쪽 클릭: 연결할 첫 포털 선택"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:86
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:84
+msgid "Right Click: Create link to another portal"
+msgstr "오른쪽 클릭: 다른 포털에 연결"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:98
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:34
+msgid "Portal Size X"
+msgstr "포털 X 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:99
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:35
+msgid "Portal Size Y"
+msgstr "포털 Y 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:100
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:93
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:36
+msgid "Portal Size Z"
+msgstr "포털 Z 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:101
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:37
+msgid "Portal Sides"
+msgstr "포털 변의 수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:102
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:94
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:38
+msgid "Has Backface (Invisible until linked!)"
+msgstr "뒷면 활성화(연결 전에는 보이지 않음)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:103
+msgid "Offset portals from walls"
+msgstr "포털을 벽에서 약간 띄우기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:80
+msgid "Portal Fitter"
+msgstr "벽 맞춤 포털 도구"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:81
+msgid "Creates a portal, fitted to each wall"
+msgstr "각 벽에 맞는 포털을 만듭니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:91
+msgid "Creates a fitted portal"
+msgstr "벽에 맞는 포털을 만듭니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:92
+msgid "Portal Snap Angle"
+msgstr "포털 각도 스냅 간격"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:132
+#, c-format
+msgid ""
+"Size X: %.2f\n"
+msgstr ""
+"X 크기: %.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:133
+#, c-format
+msgid ""
+"Size Y: %.2f\n"
+msgstr ""
+"Y 크기: %.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:134
+#, c-format
+msgid ""
+"Ratio: %.2f\n"
+msgstr ""
+"비율: %.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:15
+msgid "Portal Resizer"
+msgstr "포털 크기 조절 도구"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:16
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:32
+msgid "Sets the size of portals"
+msgstr "포털 크기를 설정합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:14
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:27
+msgid "Glass Rewrite Remixed Settings"
+msgstr "Glass Rewrite Remixed 설정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:48
+msgid "Visual Effects"
+msgstr "시각 효과"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:59
+msgid "Show Cracks Before Breaking"
+msgstr "깨지기 전에 균열 표시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:66
+msgid "Crack Delay"
+msgstr "균열 지속 시간"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:66
+msgid "Time between cracks appearing and glass breaking"
+msgstr "균열이 나타난 뒤 유리가 깨지기까지의 시간"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:244
+msgid "Shard Count"
+msgstr "파편 수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
+msgid "Number of pieces glass breaks into"
+msgstr "유리가 깨질 때 생기는 파편의 수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:252
+msgid "Velocity Transfer"
+msgstr "속도 전달 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
+msgid "How forcefully glass fragments scatter"
+msgstr "유리 파편이 흩어지는 세기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:77
+msgid "Physics Settings"
+msgstr "물리 설정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:236
+msgid "Glass strength"
+msgstr "유리 내구도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+msgid "How much damage glass can take before breaking"
+msgstr "유리가 깨지기 전까지 견디는 피해량"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+msgid "Mass Factor"
+msgstr "질량 영향 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+msgid "How much object mass affects impact force"
+msgstr "물체의 질량이 충격력에 미치는 영향"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:95
+msgid "Player Collision"
+msgstr "플레이어 충돌"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+msgid "Player Mass (kg)"
+msgstr "플레이어 질량(kg)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+msgid "Player mass for glass breaking calculations"
+msgstr "유리 파괴 계산에 사용하는 플레이어 질량"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+msgid "Min Break Speed"
+msgstr "파괴 최소 속도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+msgid "Minimum player speed to break glass"
+msgstr "유리를 깨뜨리는 데 필요한 플레이어의 최소 속도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:113
+msgid "Advanced"
+msgstr "고급"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:124
+msgid "Detailed collisions for small glass shards (higher cost)"
+msgstr "작은 유리 파편의 정밀 충돌 판정(높은 처리 비용)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:139
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1545
+msgid "Reset to Defaults"
+msgstr "기본값 복원"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:148
+msgid "Test Settings"
+msgstr "설정 테스트"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:157
+msgid "Player Debug"
+msgstr "플레이어 디버그"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:196
+msgid "Settings reset to defaults!"
+msgstr "설정을 기본값으로 복원했습니다!"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:203
+msgid "Settings"
+msgstr "설정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:206
+msgid ""
+"Glass Rewrite Remixed\n"
+"Realistic glass destruction system"
+msgstr ""
+"Glass Rewrite Remixed\n"
+"사실적인 유리 파괴 시스템"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:210
+msgid "Open Settings Panel"
+msgstr "설정 패널 열기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:215
+msgid "Debug Tools:"
+msgstr "디버그 도구:"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:218
+msgid "Show Current Settings"
+msgstr "현재 설정 표시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:223
+msgid "Player Impact Analysis"
+msgstr "플레이어 충격 분석"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:228
+msgid "Manual Controls:"
+msgstr "수동 제어:"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:231
+msgid "Show Cracks"
+msgstr "균열 표시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:23
+msgid "Glass: Rewrite Remixed"
+msgstr "Glass: Rewrite Remixed"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:25
+msgid "Destructable Fun"
+msgstr "부수는 재미"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:26
+msgid "Spawn and damage it"
+msgstr "생성한 뒤 피해를 주세요"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:451
+#, c-format
+msgid "Glass damage: %d / %d"
+msgstr "유리 피해량: %d / %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:709
+msgid "Glass Shard"
+msgstr "유리 파편"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:771
+#, c-format
+msgid "Reset glass damage from %d to 0"
+msgstr "유리 피해량을 %d에서 0으로 초기화했습니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:773
+msgid "Look at a glass shard to reset its damage"
+msgstr "유리 파편을 바라보면 피해량을 초기화할 수 있습니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:778
+msgid "Opening Glass Settings Panel..."
+msgstr "유리 설정 패널을 여는 중..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
+msgstr "콘솔에서 glass_open_panel을 실행하거나 스폰 메뉴에서 RTX Remix > 물과 유리 > 설정을 여세요."
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:27
+msgid "Glass Thin 1"
+msgstr "얇은 유리 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:28
+msgid "Glass Thin 2"
+msgstr "얇은 유리 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:29
+msgid "Glass Thin 4"
+msgstr "얇은 유리 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:30
+msgid "Glass Thick 1"
+msgstr "두꺼운 유리 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:31
+msgid "Glass Thick 2"
+msgstr "두꺼운 유리 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:32
+msgid "Glass Thick 4"
+msgstr "두꺼운 유리 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:33
+msgid "Glass Block 1"
+msgstr "유리 블록 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:34
+msgid "Glass Block 2"
+msgstr "유리 블록 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:35
+msgid "Glass Block 4"
+msgstr "유리 블록 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:65
+msgid "​100% Fragile"
+msgstr "매우 잘 깨짐"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:18
+msgid "Glass Rewrite"
+msgstr "Glass Rewrite"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:22
+msgid "Glass tool"
+msgstr "유리 도구"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:23
+msgid "Turn props into glass by wrapping the model in a glass mesh"
+msgstr "프롭을 유리로 변환(모델을 유리 메시로 감쌉니다)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:27
+msgid "Left click on a prop to turn it into destructable glass"
+msgstr "프롭을 왼쪽 클릭하여 깨지는 유리로 바꿉니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:31
+msgid "Turns props into glass upon left click"
+msgstr "왼쪽 클릭으로 프롭을 유리로 바꿉니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:44
+msgid "Invalid Model"
+msgstr "잘못된 모델"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:59
+msgid "Unable to generate physics object"
+msgstr "물리 객체를 생성할 수 없습니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:83
+msgid "Glass"
+msgstr "유리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_lamp.lua:11
+msgid "Lamp"
+msgstr "램프"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_light.lua:11
+msgid "Light"
+msgstr "조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:16
+msgid "Pseudoplayer"
+msgstr "플레이어 모델 복제본"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:18
+msgid "For firstperson self shadows and body reflections with RTX"
+msgstr "1인칭에서 자신의 RTX 그림자와 몸의 반사상을 표시합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua:14
+msgid "Pseudoweapon"
+msgstr "무기 모델 복제본"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua:16
+msgid "For firstperson self shadows and reflections with RTX"
+msgstr "1인칭에서 자신의 RTX 그림자와 반사상을 표시합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:246
+msgid "🔗 DETACHED"
+msgstr "🔗 연결 해제됨"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:333
+#, c-format
+msgid "∠%.0f° (softness: %.2f)"
+msgstr "∠%.0f°(부드러움: %.2f)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:788
+msgid " [MOVING]"
+msgstr " [이동 중]"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:988
+msgid "Remix Light"
+msgstr "Remix 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1002
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:318
+msgid "Sphere"
+msgstr "구체"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1003
+msgid "Rect"
+msgstr "사각형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1004
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:320
+msgid "Disk"
+msgstr "원판"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1005
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:321
+msgid "Cylinder"
+msgstr "원통"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1006
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:322
+msgid "Distant"
+msgstr "원거리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1017
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:456
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:382
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:111
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:126
+msgid "Radius"
+msgstr "반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1026
+msgid "Volumetrics Scale"
+msgstr "볼류메트릭 조명 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1047
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:455
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:53
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:383
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:112
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:119
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:116
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:127
+msgid "Brightness"
+msgstr "밝기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1057
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:399
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:130
+msgid "Enable Light Shaping"
+msgstr "광원 형태 조절 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1063
+msgid "Cone Angle (deg)"
+msgstr "광원 원뿔 각도(도)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1072
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:458
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:401
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:132
+msgid "Cone Softness"
+msgstr "원뿔 가장자리 부드러움"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1081
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:402
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:133
+msgid "Focus Exponent"
+msgstr "집중 지수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1093
+msgid "Rect X Size"
+msgstr "사각형 X 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1102
+msgid "Rect Y Size"
+msgstr "사각형 Y 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1111
+msgid "Disk X Radius"
+msgstr "원판 X 반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1120
+msgid "Disk Y Radius"
+msgstr "원판 Y 반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1129
+msgid "Cylinder Axis Length"
+msgstr "원기둥 축 길이"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1138
+msgid "Distant Angular Diameter"
+msgstr "원거리 광원의 각지름"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1148
+msgid "-- Bonemerge Offsets --"
+msgstr "-- 본 연결 오프셋 --"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1155
+msgid "Position X (Forward)"
+msgstr "위치 X(앞)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1164
+msgid "Position Y (Right)"
+msgstr "위치 Y(오른쪽)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1173
+msgid "Position Z (Up)"
+msgstr "위치 Z(위)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1182
+msgid "Angle Pitch"
+msgstr "피치 각도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1191
+msgid "Angle Yaw"
+msgstr "요 각도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1200
+msgid "Angle Roll"
+msgstr "롤 각도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1406
+msgid "Close"
+msgstr "닫기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1414
+msgid "Edit Remix Light"
+msgstr "Remix 조명 편집"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1425
+msgid "Edit Attached Lights"
+msgstr "연결된 조명 편집"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1463
+msgid "origin"
+msgstr "원점"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1466
+msgid "Bone "
+msgstr "본 "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1469
+#, c-format
+msgid "Light #%d: %s [%s]"
+msgstr "조명 #%d: %s [%s]"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1538
+msgid "Entity Light HUD"
+msgstr "엔티티 조명 HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1541
+msgid "Enable HUD"
+msgstr "HUD 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1542
+msgid "HUD Range"
+msgstr "HUD 표시 거리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1543
+msgid "Fill Opacity"
+msgstr "채우기 불투명도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "sphere"
+msgstr "구형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "rect"
+msgstr "사각형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "disk"
+msgstr "원판"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "distant"
+msgstr "원거리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "cylinder"
+msgstr "원기둥"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/shared.lua:9
+msgid "Remix RT Light (Sphere)"
+msgstr "Remix 레이 트레이싱 조명(구형)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:217
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/shared.lua:9
+msgid "Sky Editor"
+msgstr "하늘 편집기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:349
+msgid "Presets"
+msgstr "프리셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Earth"
+msgstr "지구"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Mars"
+msgstr "화성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Clear Sky"
+msgstr "맑은 하늘"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Hazy"
+msgstr "연무"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Alien"
+msgstr "외계 행성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Desert"
+msgstr "사막"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:369
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2485
+msgid "Sun"
+msgstr "태양"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:370
+msgid "Intensity"
+msgstr "강도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:373
+msgid "Density"
+msgstr "밀도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:374
+msgid "Air"
+msgstr "공기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:375
+msgid "Dust"
+msgstr "먼지"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:376
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:386
+msgid "Ozone"
+msgstr "오존"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:379
+msgid "Scattering"
+msgstr "산란"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:380
+msgid "Mie Anisotropy"
+msgstr "미 산란 비등방성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:381
+msgid "Illuminance"
+msgstr "조도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:382
+msgid "Rayleigh"
+msgstr "레일리 산란"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:383
+msgid "Mie"
+msgstr "미 산란"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:387
+msgid "Absorption"
+msgstr "흡수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:443
+msgid "Edit Sky"
+msgstr "하늘 편집"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:47
+msgid "[GMRTX - Map Fixes] Enabled and saved for map: "
+msgstr "[GMRTX - 맵 수정] 활성화하고 저장한 맵: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:51
+msgid "[GMRTX - Map Fixes] Already enabled for map: "
+msgstr "[GMRTX - 맵 수정] 이미 활성화된 맵: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:66
+msgid "[GMRTX - Map Fixes] Disabled map fixes for map: "
+msgstr "[GMRTX - 맵 수정] 비활성화한 맵: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:69
+msgid "[GMRTX - Map Fixes] Map fixes was not enabled for map: "
+msgstr "[GMRTX - 맵 수정] 수정 기능이 꺼져 있던 맵: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:83
+msgid "[GMRTX - Map Fixes] Auto-enabled for map: "
+msgstr "[GMRTX - 맵 수정] 자동으로 활성화한 맵: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1129
+msgid " (EMERGENCY)"
+msgstr "(긴급 조정)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1131
+msgid " (MOVED)"
+msgstr "(이동됨)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1139
+msgid " (OUT OF BOUNDS)"
+msgstr "(범위 밖)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1176
+msgid "BOUNDS CHECK FAILED"
+msgstr "경계 검사 실패"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1207
+msgid " (NO UPDATER)"
+msgstr "(광원 갱신기 없음)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:27
+msgid "Base Options"
+msgstr "기본 옵션"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:30
+msgid "Pseudoplayer Enabled"
+msgstr "플레이어 모델 복제본 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:31
+msgid "Pseudoplayer allows you to see your own playermodel, this when marked as a 'Playermodel Texture' in remix allows you to see your own shadow and reflection."
+msgstr "자신의 플레이어 모델 복제본을 그립니다. Remix에서 해당 텍스처를 'Playermodel Texture'로 분류하면 자신의 그림자와 반사상을 볼 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:32
+msgid "Pseudoweapon Enabled"
+msgstr "무기 모델 복제본 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:33
+msgid "Similar to above, but for the weapon you're holding."
+msgstr "위와 같은 기능을 손에 든 무기에 적용합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:35
+msgid "Hardware Skinning"
+msgstr "하드웨어 스키닝"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:36
+msgid "Enables hardware skinning so dynamic mesh replacements can work in Remix."
+msgstr "하드웨어 스키닝을 활성화하여 Remix의 동적 메시 교체가 작동하도록 합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:39
+msgid "Required and forced on while Half-Life 2 RTX is mounted."
+msgstr "Half-Life 2 RTX가 마운트되어 있으면 필수이므로 강제로 켜집니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:41
+msgid "Highly experimental, may cause issues with some models or not work at all."
+msgstr "실험적인 기능입니다. 일부 모델에서 문제가 생기거나 전혀 작동하지 않을 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:44
+msgid "Fix Skybox Leaking"
+msgstr "스카이박스 너머의 도형 노출 수정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:45
+msgid "Hides geometry behind the skybox to prevent it from leaking through, doesn't allow light_enviornment entities to pass through though."
+msgstr "스카이박스 뒤의 도형을 숨겨 비쳐 보이지 않게 합니다. 단, light_environment 엔티티의 빛도 통과하지 못합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:46
+msgid "Also breaks HDRIs."
+msgstr "HDRI도 제대로 작동하지 않게 됩니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:51
+msgid "Disable Remix API Lights"
+msgstr "Remix API 조명 비활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:52
+msgid "Enables lightupdaters, which will make Remix use the detected d3d9 lights from the game instead of API lights."
+msgstr "광원 갱신 기능을 켜서 Remix가 API 조명 대신 게임에서 감지한 D3D9 조명을 사용하게 합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:57
+msgid "Map Fixes"
+msgstr "맵 수정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:69
+msgid "Fixes broken geometry rendering for the current map, can lower FPS."
+msgstr "현재 맵의 도형 렌더링 문제를 수정합니다. 프레임 속도가 낮아질 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:76
+msgid "This is only used for engine rendered world geometry."
+msgstr "엔진이 렌더링하는 월드 도형에만 적용됩니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:83
+msgid "Enable Map Fixes"
+msgstr "맵 수정 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:88
+msgid "Disable Map Fixes"
+msgstr "맵 수정 비활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:110
+msgid "Performance"
+msgstr "성능"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:113
+msgid "Performance Mode"
+msgstr "성능 모드"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:114
+msgid "Enables custom renderers to replace engine rendered world geometry and static props. Also controls engine culling patches. This will break mesh replacements in Remix when enabled."
+msgstr "월드 도형과 정적 프롭의 엔진 렌더링을 사용자 정의 렌더러로 대체하며, 엔진 컬링 패치도 제어합니다. 활성화하면 Remix의 메시 교체가 작동하지 않습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:118
+msgid "Culling"
+msgstr "컬링"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:130
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:71
+msgid "Static Props"
+msgstr "정적 프롭"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:137
+msgid "Enables PVS culling for static props. May cause some props to cull incorrectly."
+msgstr "정적 프롭에 잠재적 가시 집합(PVS) 컬링을 적용합니다. 일부 프롭이 잘못 숨겨질 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:144
+msgid "PVS Safety Distance"
+msgstr "PVS 보호 거리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:153
+msgid "Props within this distance always render, bypassing PVS. (0 = disabled)"
+msgstr "이 거리 안의 프롭은 PVS를 무시하고 항상 렌더링합니다. (0 = 비활성화)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:160
+msgid "Distance Culling"
+msgstr "거리 컬링"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:169
+msgid "Sphere-based culling for static props. With PVS on: applied after PVS as an extra filter. With PVS off: sole culling method. (0 = disabled)"
+msgstr "구형 범위로 정적 프롭을 컬링합니다. PVS가 켜져 있으면 PVS 결과에 추가로 적용하고, 꺼져 있으면 이 방식만 사용합니다. (0 = 비활성화)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:193
+msgid "3D Sky"
+msgstr "3D 스카이박스"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:205
+msgid "Enable 3D Sky"
+msgstr "3D 스카이박스 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:212
+msgid "Renders 3D skybox map faces, displacements, and static props projected into world space. This does not include anything dynamic like particles, entities, etc. This is still WIP so there might be rendering issues on some maps."
+msgstr "3D 스카이박스의 맵 표면, 변위 지형, 정적 프롭을 월드 공간에 투영해 렌더링합니다. 파티클이나 엔티티 같은 동적 요소는 포함하지 않습니다. 개발 중인 기능이므로 일부 맵에서 렌더링 문제가 생길 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:228
+msgid "Advanced: Engine Patches"
+msgstr "고급: 엔진 패치"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:248
+msgid "Disable Engine Frustum Culling"
+msgstr "엔진 시야 절두체 컬링 비활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:249
+msgid "Force Brush Entity Backfaces"
+msgstr "브러시 엔티티 뒷면 강제 렌더링"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:250
+msgid "Force World Backfaces #1"
+msgstr "월드 뒷면 강제 렌더링 #1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:251
+msgid "Force World Backfaces #2"
+msgstr "월드 뒷면 강제 렌더링 #2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:252
+msgid "Disable BSP Culling"
+msgstr "BSP 컬링 비활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:253
+msgid "Disable Client Frustum Culling"
+msgstr "클라이언트 시야 절두체 컬링 비활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:254
+msgid "Force NoVis (Disable Engine PVS)"
+msgstr "NoVis 강제 적용(엔진 PVS 비활성화)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:275
+msgid "You have enabled r_3dsky which may cause rendering issues with RTX Remix due how the engine culls the skybox. It's recommended to keep r_3dsky disabled for best results."
+msgstr "r_3dsky를 활성화했습니다. 엔진의 스카이박스 컬링 방식 때문에 RTX Remix에서 렌더링 문제가 발생할 수 있습니다. 최상의 결과를 위해 r_3dsky를 꺼 두는 것을 권장합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:280
+msgid "Don't show this warning again"
+msgstr "이 경고를 다시 표시하지 않음"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:357
+msgid "ToPBR"
+msgstr "ToPBR"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:360
+msgid "Enable ToPBR"
+msgstr "ToPBR 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:361
+msgid "Converts source material maps (normal, bump, ssbump, etc) to a pseudo-pbr format for RTX Remix."
+msgstr "Source 머티리얼의 노멀, 범프, ssbump 등의 맵을 RTX Remix용 유사 PBR 형식으로 변환합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:362
+msgid "Conversion is experimental and cannot reproduce every material exactly."
+msgstr "개발 중인 기능이며 변환 결과가 완전히 정확할 수는 없습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:363
+msgid "This will use a significant amount of VRAM, disk space, and may cause stability issues."
+msgstr "많은 VRAM과 디스크 공간을 사용하며 안정성 문제가 발생할 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:365
+msgid "Requires a map reload to enable."
+msgstr "활성화하려면 맵을 다시 불러와야 합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:368
+msgid "Experimental Metallic Detection"
+msgstr "금속성 감지(실험적)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:369
+msgid "Generate metallic maps from base texture brightness."
+msgstr "기본 텍스처의 밝기로 금속성 맵을 생성합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:370
+msgid "WARNING: May cause dark materials to appear completely black!"
+msgstr "경고: 어두운 머티리얼이 완전히 검게 보일 수 있습니다!"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:373
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:441
+msgid "Debug Output"
+msgstr "디버그 출력"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:374
+msgid "Shows debug messages in console for troubleshooting."
+msgstr "문제 해결을 위한 디버그 메시지를 콘솔에 표시합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:377
+msgid "Clear Cache"
+msgstr "캐시 삭제"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:381
+msgid "Clear the conversion cache (useful after changing settings)."
+msgstr "변환 캐시를 삭제합니다. 설정을 변경한 뒤 사용하면 좋습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:411
+msgid "Auto-Categorization"
+msgstr "자동 분류"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:415
+msgid "Enable Auto-Categorization"
+msgstr "자동 분류 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:416
+msgid "Automatically categorizes textures for RTX Remix."
+msgstr "RTX Remix용으로 텍스처를 자동 분류합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:419
+msgid "Delay (seconds)"
+msgstr "대기 시간(초)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:420
+msgid "How long to wait after map load before scanning (allows BSP data to load)."
+msgstr "맵을 불러온 뒤 스캔 전까지 기다리는 시간입니다. BSP 데이터가 로드될 시간을 확보합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:423
+msgid "World Geometry"
+msgstr "월드 도형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:424
+msgid "Categorizes walls, floors, and ceilings from BSP as Decals for proper blending."
+msgstr "올바르게 혼합되도록 BSP의 벽, 바닥, 천장을 데칼로 분류합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:427
+msgid "Particles"
+msgstr "파티클"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:428
+msgid "Categorizes particle effects (smoke, fire, sparks, etc) as Particles."
+msgstr "연기, 불, 불꽃 등의 파티클 효과를 파티클로 분류합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:431
+msgid "Overlay Decals"
+msgstr "오버레이 데칼"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:432
+msgid "Categorizes materials with $decal parameter (posters, graffiti, bullet holes, etc) as Decals."
+msgstr "$decal 매개변수가 있는 머티리얼(포스터, 낙서, 탄흔 등)을 데칼로 분류합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:435
+msgid "Legacy Emissive"
+msgstr "기존 발광 머티리얼"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:436
+msgid "Categorizes materials with $selfillum parameter as Legacy Emissive."
+msgstr "$selfillum 매개변수가 있는 머티리얼을 기존 발광 머티리얼로 분류합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:437
+msgid "Materials that use $selfillum incorrectly may be misclassified."
+msgstr "$selfillum을 잘못 사용한 머티리얼은 잘못 분류될 수 있습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:439
+msgid "Debug Options"
+msgstr "디버그 옵션"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:442
+msgid "Shows debug messages in console for categorization activity (useful for troubleshooting)."
+msgstr "문제 해결을 위해 분류 과정의 디버그 정보를 콘솔에 표시합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:444
+msgid "Manual Controls"
+msgstr "수동 제어"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:446
+msgid "Scan Now"
+msgstr "지금 스캔"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:450
+msgid "Manually parse BSP and categorize world textures, decals, and emissive materials."
+msgstr "BSP를 수동으로 분석하여 월드 텍스처, 데칼, 발광 머티리얼을 분류합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:200
+msgid "Building Map Geometry"
+msgstr "맵 도형 구성 중"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:49
+msgid "Map Faces"
+msgstr "맵 표면"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:60
+msgid "Map Displacements"
+msgstr "맵 변위 지형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:81
+msgid "Please wait..."
+msgstr "잠시 기다려 주세요..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:90
+msgid "Force Close (Build appears stuck)"
+msgstr "강제로 닫기(구성이 멈춘 경우)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:163
+#, c-format
+msgid "Processing... %d items"
+msgstr "처리 중... %d개 항목"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:176
+msgid "Initializing..."
+msgstr "초기화 중..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:181
+msgid "Waiting..."
+msgstr "대기 중..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:259
+#, c-format
+msgid "Elapsed time: %.1f seconds"
+msgstr "경과 시간: %.1f초"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:261
+msgid " - Complete!"
+msgstr " - 완료!"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:263
+#, c-format
+msgid " - Build appears stuck! (no progress for %d s)"
+msgstr " - 구성이 멈춘 것 같습니다!(%d초간 진행 없음)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/render_core.lua:1099
+msgid "Remix Render Debug"
+msgstr "Remix 렌더링 디버그"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:887
+msgid "EMISSIVE"
+msgstr "발광"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:892
+msgid "PARTICLE | EMISSIVE"
+msgstr "파티클 | 발광"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:896
+msgid "DECAL | EMISSIVE"
+msgstr "데칼 | 발광"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:451
+msgid "Flashlight"
+msgstr "손전등"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:454
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:381
+msgid "Light Properties"
+msgstr "광원 속성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:457
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:400
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:131
+msgid "Cone Angle"
+msgstr "광원 원뿔 각도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:459
+msgid "Volumetric Scale"
+msgstr "볼류메트릭 조명 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:461
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:388
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:117
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:126
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:118
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:123
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:136
+msgid "Color"
+msgstr "색상"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:483
+msgid "Position Offset"
+msgstr "위치 오프셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:484
+msgid "Forward Offset"
+msgstr "앞쪽 오프셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:485
+msgid "Right Offset"
+msgstr "오른쪽 오프셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:486
+msgid "Up Offset"
+msgstr "위쪽 오프셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:488
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:29
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:43
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:58
+msgid "Reset"
+msgstr "초기화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2284
+msgid "Edit RTX Light"
+msgstr "RTX 조명 편집"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2478
+msgid "Map Lights HUD"
+msgstr "맵 조명 HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2479
+#, c-format
+msgid "Visible: %d / %d"
+msgstr "표시 중: %d / %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2480
+#, c-format
+msgid "Max Dist: %dm"
+msgstr "최대 거리: %d m"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2483
+msgid "Point"
+msgstr "포인트"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2484
+msgid "Spot"
+msgstr "스폿"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2486
+msgid "Proj"
+msgstr "투영 광원"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:14
+msgid "Map"
+msgstr "맵"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:18
+msgid "Actions"
+msgstr "작업"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:19
+msgid "Process Map Lights"
+msgstr "맵 조명 처리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:20
+msgid "Clear All Map Lights"
+msgstr "맵 조명 모두 제거"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:24
+msgid "Point Lights (light)"
+msgstr "점 광원(light)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:25
+msgid "Point Brightness"
+msgstr "점 광원 밝기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:26
+msgid "Point Radius"
+msgstr "점 광원 반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:27
+msgid "Point Size"
+msgstr "점 광원 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:28
+msgid "Point Volumetrics"
+msgstr "점 광원의 볼류메트릭 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:38
+msgid "Spot Lights (light_spot)"
+msgstr "스포트라이트(light_spot)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:39
+msgid "Spot Brightness"
+msgstr "스포트라이트 밝기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:40
+msgid "Spot Radius"
+msgstr "스포트라이트 반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:41
+msgid "Spot Size"
+msgstr "스포트라이트 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:42
+msgid "Spot Volumetrics"
+msgstr "스포트라이트의 볼류메트릭 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:52
+msgid "Directional (light_environment)"
+msgstr "방향성 광원(light_environment)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:54
+msgid "VRAD Scale"
+msgstr "VRAD 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:55
+msgid "Angular Multiplier"
+msgstr "각도 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:56
+msgid "Env Size"
+msgstr "환경 광원 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:57
+msgid "Env Volumetrics"
+msgstr "환경 광원의 볼류메트릭 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:72
+msgid "Debug"
+msgstr "디버그"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:73
+msgid "Draw Debug Directions"
+msgstr "디버그 방향 표시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:74
+msgid "Show HUD Overlay"
+msgstr "HUD 오버레이 표시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:75
+msgid "Show Disabled Lights"
+msgstr "비활성 광원 표시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:76
+msgid "HUD Max Distance"
+msgstr "HUD 최대 표시 거리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:12
+msgid "Wrapper - Dynamic"
+msgstr "동적 광원 변환"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:15
+msgid "Convert DynamicLight() calls to Remix API lights"
+msgstr "DynamicLight() 호출을 Remix API 조명으로 변환합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:16
+msgid "Works with SWEPs like lanterns, and other addons that use dynamic lights"
+msgstr "랜턴 같은 SWEP과 동적 광원을 사용하는 다른 애드온을 지원합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:19
+msgid "Enable Dynamic Light Wrapper"
+msgstr "동적 광원 변환 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:21
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:20
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:21
+msgid "Brightness Scale"
+msgstr "밝기 배율"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:12
+msgid "Wrapper - Basic"
+msgstr "기본 광원 변환"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:15
+msgid "Automatically converts Garry's Mod point and spot lights into Remix API Lights"
+msgstr "Garry's Mod의 점 광원과 스포트라이트를 Remix API 조명으로 자동 변환합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:18
+msgid "Enable Light Wrapper"
+msgstr "기본 광원 변환 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:12
+msgid "Wrapper - Projected Texture"
+msgstr "투영 텍스처 광원 변환"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:15
+msgid "Automatically convert ProjectedTexture() calls into Remix API spotlights"
+msgstr "ProjectedTexture() 호출을 Remix API 스포트라이트로 자동 변환합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:16
+msgid "Works with Glide base headlights, spotlight entities, and other addons that use ProjectedTexture()"
+msgstr "Glide 기반 전조등, 스포트라이트 엔티티, ProjectedTexture()를 사용하는 다른 애드온을 지원합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:19
+msgid "Enable Projected Texture Wrapper"
+msgstr "투영 텍스처 광원 변환 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:24
+msgid "Position Offsets"
+msgstr "위치 오프셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:25
+msgid "Offset X (Forward/Back)"
+msgstr "X 오프셋(앞뒤)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:28
+msgid "Offset Y (Left/Right)"
+msgstr "Y 오프셋(좌우)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:31
+msgid "Offset Z (Up/Down)"
+msgstr "Z 오프셋(위아래)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:18
+msgid "API Light - Bonemerged"
+msgstr "API 조명 - 본 연결"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:19
+msgid "Attach RTX lights to entity bones"
+msgstr "RTX 조명을 엔티티의 본에 연결합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:20
+msgid "Left-click to attach light, Right-click entity to grab bones, Reload to detach"
+msgstr "왼쪽 클릭: 조명 연결, 엔티티 오른쪽 클릭: 본 가져오기, 재장전: 연결 해제"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:237
+#, c-format
+msgid "Grabbed %d bones. Check tool menu to select."
+msgstr "본 %d개를 가져왔습니다. 도구 메뉴에서 선택하세요."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:239
+msgid "Entity has no bones (will attach to origin)"
+msgstr "엔티티에 본이 없어 모델 원점에 연결합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:266
+msgid "Right-Click to grab bones"
+msgstr "오른쪽 클릭으로 본 가져오기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:270
+msgid "Entity: "
+msgstr "엔티티: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:271
+msgid "(No bones - will attach to origin)"
+msgstr "(본 없음: 모델 원점에 연결)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:274
+#, c-format
+msgid "Entity: %s (%d bones)"
+msgstr "엔티티: %s(본 %d개)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:294
+#, c-format
+msgid "Selected: %s (#%d)"
+msgstr "선택: %s (#%d)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:309
+#, c-format
+msgid "🔗 %d light(s) attached"
+msgstr "🔗 연결된 조명: %d개"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:317
+msgid "Light Type"
+msgstr "광원 종류"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:319
+msgid "Rectangle"
+msgstr "사각형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:325
+msgid "Bone Selection"
+msgstr "본 선택"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:326
+msgid "Right-click an entity to grab its bones:"
+msgstr "엔티티를 오른쪽 클릭하여 본 가져오기:"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:341
+msgid "Bone Name"
+msgstr "본 이름"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:351
+msgid "No bones grabbed yet"
+msgstr "아직 본을 가져오지 않았습니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:369
+msgid "Position Offset (Local Space)"
+msgstr "위치 오프셋(로컬 공간)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:370
+msgid "X (Forward/Back)"
+msgstr "X(앞뒤)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:371
+msgid "Y (Left/Right)"
+msgstr "Y(좌우)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:372
+msgid "Z (Up/Down)"
+msgstr "Z(위아래)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:375
+msgid "Angle Offset"
+msgstr "각도 오프셋"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:376
+msgid "Pitch"
+msgstr "피치"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:377
+msgid "Yaw"
+msgstr "요"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:378
+msgid "Roll"
+msgstr "롤"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:384
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:120
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:114
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:117
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:128
+msgid "Volumetrics"
+msgstr "볼류메트릭 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:405
+msgid "Shape-Specific Parameters"
+msgstr "형상별 매개변수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:406
+msgid "X Size/Radius"
+msgstr "X 크기/반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:407
+msgid "Y Size/Radius"
+msgstr "Y 크기/반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:408
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:114
+msgid "Axis Length"
+msgstr "축 길이"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:409
+msgid "Angular Diameter"
+msgstr "각지름"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:413
+msgid "Remix Bonemerged Light"
+msgstr "Remix 본 연결 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:27
+msgid "API Light - Cylinder"
+msgstr "API 조명 - 원기둥"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:109
+msgid "Spawn and edit Cylindrical Lights"
+msgstr "원기둥 광원을 생성하고 편집합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:29
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:32
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:32
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:34
+msgid "Left-click: Spawn | Right-click: Update"
+msgstr "왼쪽 클릭: 생성 | 오른쪽 클릭: 갱신"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:127
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:136
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:128
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:134
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:146
+msgid "Freeze on Spawn"
+msgstr "생성 시 고정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:132
+msgid "Remix Cylinder Light"
+msgstr "Remix 원기둥 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:30
+msgid "API Light - Disk"
+msgstr "API 조명 - 원판"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:116
+msgid "Spawn and edit Disk/Ellipse Area Lights"
+msgstr "원판 또는 타원형 면 광원을 생성하고 편집합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:122
+msgid "X Radius"
+msgstr "X 반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:123
+msgid "Y Radius"
+msgstr "Y 반경"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:141
+msgid "Remix Disk Light"
+msgstr "Remix 원판 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:29
+msgid "API Light - Distant"
+msgstr "API 조명 - 원거리"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:30
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:111
+msgid "Spawn and edit Distant/Directional Lights"
+msgstr "원거리 또는 방향성 광원을 생성하고 편집합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:115
+msgid "Angular Diameter (degrees)"
+msgstr "각지름(도)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:133
+msgid "Remix Distant Light"
+msgstr "Remix 원거리 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:30
+msgid "API Light - Rect"
+msgstr "API 조명 - 사각형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:114
+msgid "Spawn and edit Rectangular Area Lights"
+msgstr "사각형 면 광원을 생성하고 편집합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:119
+msgid "X Size"
+msgstr "X 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:120
+msgid "Y Size"
+msgstr "Y 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:139
+msgid "Remix Rect Light"
+msgstr "Remix 사각형 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:32
+msgid "API Light - Sphere"
+msgstr "API 조명 - 구형"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:33
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:124
+msgid "Spawn and edit Sphere Lights"
+msgstr "구형 광원을 생성하고 편집합니다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:151
+msgid "Remix Sphere Light"
+msgstr "Remix 구형 조명"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:10
+msgid "Swimming pool"
+msgstr "수영장"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:33
+msgid "Clear spring"
+msgstr "맑은 샘물"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:56
+msgid "Lake"
+msgstr "호수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:79
+msgid "Ocean"
+msgstr "바다"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:102
+msgid "Murky pond"
+msgstr "탁한 연못"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:126
+msgid "Muddy / sewer"
+msgstr "흙탕물/하수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:152
+msgid "Calm (mirror flat)"
+msgstr "잔잔함(거울 같은 수면)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:155
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:82
+msgid "Ripples"
+msgstr "잔물결"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:161
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:33
+msgid "Waves"
+msgstr "파도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:24
+msgid "Path-traced water for RTX Remix on any map: water type, waves, and the waves players, objects and bullets make in it."
+msgstr "모든 맵에 RTX Remix 패스 트레이싱 수면을 제공합니다. 물의 종류와 파도를 설정하고 플레이어, 물체, 탄환이 만드는 물결을 재현합니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:25
+msgid "Enable RTX Water"
+msgstr "RTX Water 활성화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:27
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:31
+msgid "Auto (map default)"
+msgstr "자동(맵 기본값)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:29
+msgid "Water type"
+msgstr "물 종류"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:34
+msgid "Wave strength"
+msgstr "파도 세기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:35
+msgid "Wave speed"
+msgstr "파도 속도"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:36
+msgid "Wave direction"
+msgstr "파도 방향"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:37
+msgid "Wave size"
+msgstr "파도 크기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:39
+msgid "Waves from players, NPCs and objects"
+msgstr "플레이어, NPC, 물체가 만드는 물결"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:40
+msgid "Bullet impacts make waves"
+msgstr "탄환 충돌로 물결 생성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:41
+msgid "How hard bodies push the water"
+msgstr "물체가 물을 미는 세기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:42
+msgid "Wave reach (how far waves travel before they die out)"
+msgstr "파도 도달 거리(사라지기 전까지 이동하는 거리)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:43
+msgid "Splashes: drops, sheets and jets thrown up by bodies and bullets"
+msgstr "물보라: 물체와 탄환이 만드는 물방울, 물막, 물기둥"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:44
+msgid "Splash strength"
+msgstr "물보라 세기"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:45
+msgid "Splash randomness (0 = the same every time)"
+msgstr "물보라 무작위성(0 = 매번 동일)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:46
+msgid "Maximum airborne droplets"
+msgstr "공중 물방울 최대 수"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:47
+msgid "Wave detail"
+msgstr "파도 세부 수준"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "Low"
+msgstr "낮음"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "Medium"
+msgstr "중간"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "High"
+msgstr "높음"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:50
+msgid "Wave mesh updates per second (0 = every frame)"
+msgstr "초당 물결 메시 갱신 횟수(0 = 매 프레임)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:51
+msgid "Draw the surface with RTX Water (off: the map's own faces, no waves from interaction)"
+msgstr "RTX Water로 수면 렌더링(끄면 맵의 원래 수면을 사용하며 상호작용 물결이 사라집니다)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:52
+msgid "Use the native core when installed (fastest)"
+msgstr "설치된 경우 네이티브 코어 사용(가장 빠름)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:54
+msgid "Custom water look (native core only):"
+msgstr "물 외형 사용자 지정(네이티브 코어 전용):"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:55
+msgid "Use a custom colour and clarity"
+msgstr "색상과 투명도 사용자 지정"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:68
+msgid "Clarity (units for that colour)"
+msgstr "투명도(지정한 색으로 감쇠하는 거리)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:69
+msgid "Refraction index"
+msgstr "굴절률"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:76
+msgid "Not active on this map."
+msgstr "이 맵에서는 활성화되지 않았습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:76
+msgid "RTX Remix API not available."
+msgstr "RTX Remix API를 사용할 수 없습니다."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid "native core"
+msgstr "네이티브 코어"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid "Lua meshes"
+msgstr "Lua 메시"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid " (native core: "
+msgstr "(네이티브 코어: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:80
+#, c-format
+msgid "%s, %s; %s. %s: %d, %d tiles, %d vertices, %.2f ms per update%s. Splash drops: %d."
+msgstr "%s, %s; %s. %s: %d, 타일 %d개, 정점 %d개, 갱신당 %.2f ms%s. 물보라 방울: %d개."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:82
+msgid "Bodies in the water"
+msgstr "물속 물체"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:83
+msgid " (worker thread)"
+msgstr "(작업 스레드)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:92
+msgid "Reset settings"
+msgstr "설정 초기화"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:93
+msgid "Rebuild water for this map"
+msgstr "이 맵의 수면 다시 구성"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:97
+msgid "RTX Water"
+msgstr "RTX Water"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:233
+msgid "Procedural Bodygroup Destruction — performance"
+msgstr "절차적 바디그룹 파괴 — 성능"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:235
+#, c-format
+msgid "hit #%s | CPU %.2f ms | wall %.2f ms | %s"
+msgstr "명중 #%s | CPU %.2f ms | 총 경과 %.2f ms | %s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:254
+#, c-format
+msgid "Recent hits: %d%s | slowest stage overall: %s"
+msgstr "최근 명중: %d%s | 전체 최장 처리 단계: %s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:256
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:263
+msgid "<none>"
+msgstr "<없음>"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:262
+#, c-format
+msgid "continuous hottest: %s%s"
+msgstr "지속 작업 중 최장 처리 단계: %s%s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:264
+#, c-format
+msgid " (avg %.3f ms, max %.3f ms)"
+msgstr "(평균 %.3f ms, 최대 %.3f ms)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Affected UV selection"
+msgstr "영향받는 UV 선택"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Bodygroup eligibility"
+msgstr "바디그룹 손상 가능 여부 확인"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Debug capture + bundle I/O"
+msgstr "디버그 캡처 및 자료 입출력"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Debug console output"
+msgstr "디버그 콘솔 출력"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: 3D hit overlay"
+msgstr "프레임: 3D 명중 오버레이"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: last-hit HUD"
+msgstr "프레임: 최근 명중 HUD"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: texture inspector"
+msgstr "프레임: 텍스처 검사 도구"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Impact trace + hit setup"
+msgstr "탄도 추적 및 명중 초기화"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Material apply overhead"
+msgstr "머티리얼 적용 부가 비용"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Material queue dispatch"
+msgstr "머티리얼 대기열 분배"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Mesh cache lookup/build"
+msgstr "메시 캐시 조회/구성"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Pose snapshot"
+msgstr "포즈 스냅샷"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: RTX memory cleanup"
+msgstr "사전 준비: RTX 메모리 정리"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: bodygroup eligibility"
+msgstr "사전 준비: 바디그룹 확인"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: mesh cache"
+msgstr "사전 준비: 메시 캐시"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: persistent cache hydrate"
+msgstr "사전 준비: 영구 캐시 불러오기"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Removal-hull mesh query"
+msgstr "제거 영역 메시 검색"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Skin transform setup"
+msgstr "스키닝 변환 초기화"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "UV result bookkeeping"
+msgstr "UV 처리 결과 기록"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:3362
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4296
+msgid "hit"
+msgstr "적중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:3362
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4296
+msgid "miss"
+msgstr "빗나감"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4254
+msgid "Procedural Bodygroup Destruction — hit debugger"
+msgstr "절차적 바디그룹 파괴 — 명중 디버그"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4256
+#, c-format
+msgid "#%d  ent %d  %s  damage %.1f"
+msgstr "#%d  엔티티 %d  %s  피해량 %.1f"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4257
+msgid "TRACE MISS"
+msgstr "추적 적중 없음"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4257
+msgid "surface: "
+msgstr "표면: "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4259
+#, c-format
+msgid "hitbox %d | physbone %d | model bone %d (%s)"
+msgstr "히트박스 %d | 물리 본 %d | 모델 본 %d (%s)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4263
+msgid "removal hull mesh query unavailable"
+msgstr "제거 영역 메시 검색을 사용할 수 없습니다"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4269
+msgid "loading persistent mesh"
+msgstr "영구 메시 캐시 불러오는 중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4270
+msgid "packing native mesh"
+msgstr "네이티브 메시 구성 중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4271
+msgid "checking bodygroups"
+msgstr "바디그룹 확인 중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4272
+msgid "releasing native mesh memory"
+msgstr "네이티브 메시 메모리 해제 중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4273
+msgid "opening model cache"
+msgstr "모델 캐시 여는 중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4286
+#, c-format
+msgid "cache: %s… %.2f s | %s chunks | %.1f ms/frame"
+msgstr "캐시: %s… %.2f초 | 청크 %s개 | %.1f ms/프레임"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4290
+#, c-format
+msgid "hull: analyzing impact snapshot… queue %d | budget %.1f ms/frame"
+msgstr "제거 영역: 명중 스냅샷 분석 중… 대기열 %d | 한도 %.1f ms/프레임"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4294
+#, c-format
+msgid "hull envelope: %d verts (%d inside) | %d tris / %d meshes | cache %s | %.2f ms"
+msgstr "영역 경계: 정점 %d개(내부 %d개) | 삼각형 %d개 / 메시 %d개 | 캐시 %s | %.2f ms"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4299
+msgid "removal hull query failed: "
+msgstr "제거 영역 검색 실패: "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4308
+#, c-format
+msgid "retained %d / received %d"
+msgstr "보관 %d / 수신 %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6635
+msgid "UV damage: waiting for mesh analysis"
+msgstr "UV 손상: 메시 분석 대기 중"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6636
+msgid "UV damage: "
+msgstr "UV 손상: "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6638
+#, c-format
+msgid "UV damage: %d meshes / %d materials / %d UVs | paint queue %d"
+msgstr "UV 손상: 메시 %d개 / 머티리얼 %d개 / UV %d개 | 그리기 대기열 %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6643
+#, c-format
+msgid "UV damage: %d material override(s) applied from %d triangles"
+msgstr "UV 손상: 머티리얼 재정의 %d개 적용(삼각형 %d개에서 생성)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6649
+#, c-format
+msgid "UV damage: no eligible bodygroup touch; nearest %s mesh is %.3f units away"
+msgstr "UV 손상: 손상 가능한 바디그룹과 접촉하지 않음. 가장 가까운 %s 메시까지 %.3f 단위"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6652
+msgid "UV damage: removal hull did not touch a proven eligible-bodygroup mesh"
+msgstr "UV 손상: 제거 영역이 손상 가능하다고 확인된 바디그룹 메시와 접촉하지 않았습니다"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6655
+msgid "UV damage: broad-phase mesh candidates had no exact irregular-hole coverage"
+msgstr "UV 손상: 1차 후보 메시가 실제 불규칙 구멍 영역과 겹치지 않았습니다"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6659
+msgid "UV damage: affected materials could not be mapped to submaterial slots"
+msgstr "UV 손상: 해당 머티리얼을 하위 머티리얼 슬롯에 연결할 수 없습니다"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6661
+msgid "UV damage: material application failed"
+msgstr "UV 손상: 머티리얼 적용 실패"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6662
+#, c-format
+msgid "UV damage: %d meshes / %d materials / %d unique UVs (%s)"
+msgstr "UV 손상: 메시 %d개 / 머티리얼 %d개 / 고유 UV %d개 (%s)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6773
+msgid "Original RGB"
+msgstr "원본 RGB"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6774
+msgid "Edited + alpha"
+msgstr "편집 후(알파 포함)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6775
+msgid "Edited RGB only"
+msgstr "편집 후 RGB만"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6776
+msgid "Last hit coverage"
+msgstr "최근 명중 영역"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6797
+#, c-format
+msgid "%s | %d source / %d projected tris | %d UVs | expand=%.1f feather=%.1f passes=%d seams=%d"
+msgstr "%s | 원본 %d / 투영 %d 삼각형 | UV %d개 | 확장=%.1f 페더=%.1f 반복=%d 경계=%d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6805
+msgid "dump: data/"
+msgstr "덤프: data/"

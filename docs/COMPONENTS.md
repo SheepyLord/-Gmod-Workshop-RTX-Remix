@@ -102,3 +102,5 @@ what ships from them is in `packages/`. They are where a part's new version come
 | RTX fixes | `SheepyLord/garrys-mod-rtx-remixed` (GPL-2.0), local clone beside this repo | `gmcl_RTXFixesBinary`, Lua add-ons, `rtx-remix/mods`: vendored unmodified as `packages/fixes` with their licence; code not copied into this repo's MIT code |
 | The user's add-ons | `SheepyLord/Gmod-Model-Hotloader-with-Vulkan`, `-advanced_material_editor`, `-gmod_bullet_break_simulator`, `Gmod-Mmd-Motion-Importer`; `ipg\Remove_halo`, `ipg\!advanced_bodygroup_tool` | The sources of six parts in `packages/` |
 | RTXLauncher | `SheepyLord/RTXLauncher` | The old separate-copy workflow this project replaces |
+
+The translation checks are [`tools/companion_i18n.py`](../tools/companion_i18n.py.md) for the companion and new bundled interfaces, and [`tools/check_addon_i18n.py`](../tools/check_addon_i18n.py.md) for the add-ons’ existing catalogs and real language selectors.

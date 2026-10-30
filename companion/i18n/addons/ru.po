@@ -1,0 +1,2031 @@
+# Translations of the GMod native loader companion (the RTX Remix tab, the guide).
+# Edit msgstr only; see companion/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader companion\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:10
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua:21
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:11
+msgid "Seamless Portals"
+msgstr "Бесшовные порталы"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:11
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:232
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:215
+msgid "Seamless Portal"
+msgstr "Бесшовный портал"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/entities/seamless_portal/sh_init.lua:13
+msgid "Seamlessly connects two locations"
+msgstr "Бесшовно соединяет два места"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/portal_gun.lua:8
+msgid "Portal Gun"
+msgstr "Портальная пушка"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:82
+msgid "Portal Creator"
+msgstr "Создание порталов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:83
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:97
+msgid "Creates and links portals"
+msgstr "Создаёт и соединяет порталы"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:84
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:82
+msgid "Left Click: Create portal"
+msgstr "ЛКМ: создать портал"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:85
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:83
+msgid "Right Click: Start linking a portal"
+msgstr "ПКМ: выбрать первый портал для соединения"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:86
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:84
+msgid "Right Click: Create link to another portal"
+msgstr "ПКМ: соединить с другим порталом"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:98
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:34
+msgid "Portal Size X"
+msgstr "Размер портала по X"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:99
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:35
+msgid "Portal Size Y"
+msgstr "Размер портала по Y"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:100
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:93
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:36
+msgid "Portal Size Z"
+msgstr "Размер портала по Z"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:101
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:37
+msgid "Portal Sides"
+msgstr "Число сторон портала"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:102
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:94
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:38
+msgid "Has Backface (Invisible until linked!)"
+msgstr "Включить обратную сторону (не видна до соединения)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_creator_tool.lua:103
+msgid "Offset portals from walls"
+msgstr "Немного отодвинуть порталы от стен"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:80
+msgid "Portal Fitter"
+msgstr "Подгонка порталов к стенам"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:81
+msgid "Creates a portal, fitted to each wall"
+msgstr "Создаёт портал, подогнанный к каждой стене"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:91
+msgid "Creates a fitted portal"
+msgstr "Создаёт портал, подогнанный к стене"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:92
+msgid "Portal Snap Angle"
+msgstr "Шаг привязки угла портала"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:132
+#, c-format
+msgid ""
+"Size X: %.2f\n"
+msgstr ""
+"Размер по X: %.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:133
+#, c-format
+msgid ""
+"Size Y: %.2f\n"
+msgstr ""
+"Размер по Y: %.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_fitter_tool.lua:134
+#, c-format
+msgid ""
+"Ratio: %.2f\n"
+msgstr ""
+"Соотношение: %.2f\n"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:15
+msgid "Portal Resizer"
+msgstr "Изменение размера порталов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:16
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/GMod-Seamless-Portals-Remix/lua/weapons/gmod_tool/stools/portal_resizer_tool.lua:32
+msgid "Sets the size of portals"
+msgstr "Задаёт размер порталов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:14
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:27
+msgid "Glass Rewrite Remixed Settings"
+msgstr "Настройки Glass Rewrite Remixed"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:48
+msgid "Visual Effects"
+msgstr "Визуальные эффекты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:59
+msgid "Show Cracks Before Breaking"
+msgstr "Показывать трещины перед разрушением"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:66
+msgid "Crack Delay"
+msgstr "Время от трещин до разрушения"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:66
+msgid "Time between cracks appearing and glass breaking"
+msgstr "Время между появлением трещин и разрушением стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:244
+msgid "Shard Count"
+msgstr "Количество осколков"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
+msgid "Number of pieces glass breaks into"
+msgstr "Количество осколков при разрушении стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:252
+msgid "Velocity Transfer"
+msgstr "Множитель передаваемой скорости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
+msgid "How forcefully glass fragments scatter"
+msgstr "Насколько сильно разлетаются осколки стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:77
+msgid "Physics Settings"
+msgstr "Настройки физики"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:236
+msgid "Glass strength"
+msgstr "Прочность стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+msgid "How much damage glass can take before breaking"
+msgstr "Сколько урона выдерживает стекло до разрушения"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+msgid "Mass Factor"
+msgstr "Влияние массы"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+msgid "How much object mass affects impact force"
+msgstr "Насколько масса объекта влияет на силу удара"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:95
+msgid "Player Collision"
+msgstr "Столкновения с игроком"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+msgid "Player Mass (kg)"
+msgstr "Масса игрока (кг)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+msgid "Player mass for glass breaking calculations"
+msgstr "Масса игрока для расчёта разрушения стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+msgid "Min Break Speed"
+msgstr "Минимальная скорость разрушения"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+msgid "Minimum player speed to break glass"
+msgstr "Минимальная скорость игрока для разрушения стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:113
+msgid "Advanced"
+msgstr "Дополнительно"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:124
+msgid "Detailed collisions for small glass shards (higher cost)"
+msgstr "Точные столкновения мелких осколков (выше нагрузка)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:139
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1545
+msgid "Reset to Defaults"
+msgstr "Восстановить значения по умолчанию"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:148
+msgid "Test Settings"
+msgstr "Проверить настройки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:157
+msgid "Player Debug"
+msgstr "Отладка игрока"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:196
+msgid "Settings reset to defaults!"
+msgstr "Настройки восстановлены по умолчанию!"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:203
+msgid "Settings"
+msgstr "Настройки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:206
+msgid ""
+"Glass Rewrite Remixed\n"
+"Realistic glass destruction system"
+msgstr ""
+"Glass Rewrite Remixed\n"
+"Реалистичное разрушение стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:210
+msgid "Open Settings Panel"
+msgstr "Открыть панель настроек"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:215
+msgid "Debug Tools:"
+msgstr "Инструменты отладки:"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:218
+msgid "Show Current Settings"
+msgstr "Показать текущие настройки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:223
+msgid "Player Impact Analysis"
+msgstr "Анализ ударов игрока"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:228
+msgid "Manual Controls:"
+msgstr "Ручное управление:"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:231
+msgid "Show Cracks"
+msgstr "Показывать трещины"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:23
+msgid "Glass: Rewrite Remixed"
+msgstr "Glass: Rewrite Remixed"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:25
+msgid "Destructable Fun"
+msgstr "Разрушение ради веселья"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:26
+msgid "Spawn and damage it"
+msgstr "Создайте и повредите объект"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:451
+#, c-format
+msgid "Glass damage: %d / %d"
+msgstr "Урон стеклу: %d / %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:709
+msgid "Glass Shard"
+msgstr "Осколок стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:771
+#, c-format
+msgid "Reset glass damage from %d to 0"
+msgstr "Урон стеклу сброшен с %d до 0"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:773
+msgid "Look at a glass shard to reset its damage"
+msgstr "Посмотрите на осколок стекла, чтобы сбросить его урон"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:778
+msgid "Opening Glass Settings Panel..."
+msgstr "Открытие настроек стекла..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
+msgstr "Выполните glass_open_panel в консоли или откройте RTX Remix > Вода и стекло > Настройки в меню создания."
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:27
+msgid "Glass Thin 1"
+msgstr "Тонкое стекло 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:28
+msgid "Glass Thin 2"
+msgstr "Тонкое стекло 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:29
+msgid "Glass Thin 4"
+msgstr "Тонкое стекло 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:30
+msgid "Glass Thick 1"
+msgstr "Толстое стекло 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:31
+msgid "Glass Thick 2"
+msgstr "Толстое стекло 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:32
+msgid "Glass Thick 4"
+msgstr "Толстое стекло 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:33
+msgid "Glass Block 1"
+msgstr "Стеклянный блок 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:34
+msgid "Glass Block 2"
+msgstr "Стеклянный блок 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:35
+msgid "Glass Block 4"
+msgstr "Стеклянный блок 4"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua:65
+msgid "​100% Fragile"
+msgstr "Крайне хрупкое"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:18
+msgid "Glass Rewrite"
+msgstr "Glass Rewrite"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:22
+msgid "Glass tool"
+msgstr "Инструмент стекла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:23
+msgid "Turn props into glass by wrapping the model in a glass mesh"
+msgstr "Превращает объект в стекло, оборачивая модель сеткой"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:27
+msgid "Left click on a prop to turn it into destructable glass"
+msgstr "Щёлкните по объекту ЛКМ, чтобы превратить его в разрушаемое стекло"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:31
+msgid "Turns props into glass upon left click"
+msgstr "Превращает объект в стекло по щелчку ЛКМ"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:44
+msgid "Invalid Model"
+msgstr "Недопустимая модель"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:59
+msgid "Unable to generate physics object"
+msgstr "Не удалось создать физический объект"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:83
+msgid "Glass"
+msgstr "Стекло"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_lamp.lua:11
+msgid "Lamp"
+msgstr "Лампа"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/gmod_light.lua:11
+msgid "Light"
+msgstr "Источник света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:16
+msgid "Pseudoplayer"
+msgstr "Копия модели игрока"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua:18
+msgid "For firstperson self shadows and body reflections with RTX"
+msgstr "Показывает вашу тень и отражение тела с RTX от первого лица"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua:14
+msgid "Pseudoweapon"
+msgstr "Копия модели оружия"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua:16
+msgid "For firstperson self shadows and reflections with RTX"
+msgstr "Показывает вашу тень и отражение с RTX от первого лица"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:246
+msgid "🔗 DETACHED"
+msgstr "🔗 ОТКРЕПЛЕНО"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:333
+#, c-format
+msgid "∠%.0f° (softness: %.2f)"
+msgstr "∠%.0f° (мягкость: %.2f)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:788
+msgid " [MOVING]"
+msgstr " [ДВИЖЕТСЯ]"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:988
+msgid "Remix Light"
+msgstr "Источник света Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1002
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:318
+msgid "Sphere"
+msgstr "Сферический"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1003
+msgid "Rect"
+msgstr "Прямоугольный"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1004
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:320
+msgid "Disk"
+msgstr "Дисковый"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1005
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:321
+msgid "Cylinder"
+msgstr "Цилиндрический"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1006
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:322
+msgid "Distant"
+msgstr "Удалённый"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1017
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:456
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:382
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:111
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:126
+msgid "Radius"
+msgstr "Радиус"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1026
+msgid "Volumetrics Scale"
+msgstr "Множитель объёмного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1047
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:455
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:53
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:383
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:112
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:119
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:116
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:127
+msgid "Brightness"
+msgstr "Яркость"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1057
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:399
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:130
+msgid "Enable Light Shaping"
+msgstr "Включить настройку формы света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1063
+msgid "Cone Angle (deg)"
+msgstr "Угол конуса (градусы)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1072
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:458
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:401
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:132
+msgid "Cone Softness"
+msgstr "Мягкость краёв конуса"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1081
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:402
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:133
+msgid "Focus Exponent"
+msgstr "Показатель фокусировки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1093
+msgid "Rect X Size"
+msgstr "Размер прямоугольника по X"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1102
+msgid "Rect Y Size"
+msgstr "Размер прямоугольника по Y"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1111
+msgid "Disk X Radius"
+msgstr "Радиус диска по X"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1120
+msgid "Disk Y Radius"
+msgstr "Радиус диска по Y"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1129
+msgid "Cylinder Axis Length"
+msgstr "Длина оси цилиндра"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1138
+msgid "Distant Angular Diameter"
+msgstr "Угловой диаметр удалённого света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1148
+msgid "-- Bonemerge Offsets --"
+msgstr "-- Смещения привязки к кости --"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1155
+msgid "Position X (Forward)"
+msgstr "Позиция X (вперёд)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1164
+msgid "Position Y (Right)"
+msgstr "Позиция Y (вправо)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1173
+msgid "Position Z (Up)"
+msgstr "Позиция Z (вверх)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1182
+msgid "Angle Pitch"
+msgstr "Угол тангажа"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1191
+msgid "Angle Yaw"
+msgstr "Угол рыскания"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1200
+msgid "Angle Roll"
+msgstr "Угол крена"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1406
+msgid "Close"
+msgstr "Закрыть"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1414
+msgid "Edit Remix Light"
+msgstr "Изменить источник света Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1425
+msgid "Edit Attached Lights"
+msgstr "Изменить привязанные источники света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1463
+msgid "origin"
+msgstr "начало координат"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1466
+msgid "Bone "
+msgstr "Кость "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1469
+#, c-format
+msgid "Light #%d: %s [%s]"
+msgstr "Свет № %d: %s [%s]"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1538
+msgid "Entity Light HUD"
+msgstr "HUD источников света сущностей"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1541
+msgid "Enable HUD"
+msgstr "Включить HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1542
+msgid "HUD Range"
+msgstr "Дальность HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1543
+msgid "Fill Opacity"
+msgstr "Непрозрачность заливки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "sphere"
+msgstr "сфера"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "rect"
+msgstr "прямоугольник"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "disk"
+msgstr "диск"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "distant"
+msgstr "удалённый"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1559
+msgid "cylinder"
+msgstr "цилиндр"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/shared.lua:9
+msgid "Remix RT Light (Sphere)"
+msgstr "Трассируемый свет Remix (сфера)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:217
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/shared.lua:9
+msgid "Sky Editor"
+msgstr "Редактор неба"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:349
+msgid "Presets"
+msgstr "Пресеты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Earth"
+msgstr "Земля"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Mars"
+msgstr "Марс"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Clear Sky"
+msgstr "Ясное небо"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Hazy"
+msgstr "Дымка"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Alien"
+msgstr "Иной мир"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:350
+msgid "Desert"
+msgstr "Пустыня"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:369
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2485
+msgid "Sun"
+msgstr "Солнце"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:370
+msgid "Intensity"
+msgstr "Интенсивность"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:373
+msgid "Density"
+msgstr "Плотность"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:374
+msgid "Air"
+msgstr "Воздух"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:375
+msgid "Dust"
+msgstr "Пыль"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:376
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:386
+msgid "Ozone"
+msgstr "Озон"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:379
+msgid "Scattering"
+msgstr "Рассеяние"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:380
+msgid "Mie Anisotropy"
+msgstr "Анизотропия рассеяния Ми"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:381
+msgid "Illuminance"
+msgstr "Освещённость"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:382
+msgid "Rayleigh"
+msgstr "Рэлея"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:383
+msgid "Mie"
+msgstr "Ми"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:387
+msgid "Absorption"
+msgstr "Поглощение"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_sky_editor/cl_init.lua:443
+msgid "Edit Sky"
+msgstr "Изменить небо"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:47
+msgid "[GMRTX - Map Fixes] Enabled and saved for map: "
+msgstr "[GMRTX - Исправления карт] Включены и сохранены для карты: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:51
+msgid "[GMRTX - Map Fixes] Already enabled for map: "
+msgstr "[GMRTX - Исправления карт] Уже включены для карты: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:66
+msgid "[GMRTX - Map Fixes] Disabled map fixes for map: "
+msgstr "[GMRTX - Исправления карт] Отключены для карты: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:69
+msgid "[GMRTX - Map Fixes] Map fixes was not enabled for map: "
+msgstr "[GMRTX - Исправления карт] Не были включены для карты: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_map_fixes.lua:83
+msgid "[GMRTX - Map Fixes] Auto-enabled for map: "
+msgstr "[GMRTX - Исправления карт] Автоматически включены для карты: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1129
+msgid " (EMERGENCY)"
+msgstr " (ЭКСТРЕННОЕ СМЕЩЕНИЕ)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1131
+msgid " (MOVED)"
+msgstr " (ПЕРЕМЕЩЁН)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1139
+msgid " (OUT OF BOUNDS)"
+msgstr " (ЗА ГРАНИЦАМИ)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1176
+msgid "BOUNDS CHECK FAILED"
+msgstr "ОШИБКА ПРОВЕРКИ ГРАНИЦ"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_light_updater.lua:1207
+msgid " (NO UPDATER)"
+msgstr " (НЕТ ОБНОВЛЕНИЯ СВЕТА)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:27
+msgid "Base Options"
+msgstr "Основные параметры"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:30
+msgid "Pseudoplayer Enabled"
+msgstr "Включить копию модели игрока"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:31
+msgid "Pseudoplayer allows you to see your own playermodel, this when marked as a 'Playermodel Texture' in remix allows you to see your own shadow and reflection."
+msgstr "Рисует копию вашей модели игрока. Если пометить её текстуру в Remix как «Playermodel Texture», будут видны ваша тень и отражение."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:32
+msgid "Pseudoweapon Enabled"
+msgstr "Включить копию модели оружия"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:33
+msgid "Similar to above, but for the weapon you're holding."
+msgstr "То же самое, но для оружия в руках."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:35
+msgid "Hardware Skinning"
+msgstr "Аппаратный скиннинг"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:36
+msgid "Enables hardware skinning so dynamic mesh replacements can work in Remix."
+msgstr "Включает аппаратный скиннинг, необходимый для динамических замен сеток в Remix."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:39
+msgid "Required and forced on while Half-Life 2 RTX is mounted."
+msgstr "Обязательно и принудительно включено при подключённом Half-Life 2 RTX."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:41
+msgid "Highly experimental, may cause issues with some models or not work at all."
+msgstr "Экспериментальная функция: возможны проблемы с некоторыми моделями или полное отсутствие эффекта."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:44
+msgid "Fix Skybox Leaking"
+msgstr "Исправить просвечивание скайбокса"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:45
+msgid "Hides geometry behind the skybox to prevent it from leaking through, doesn't allow light_enviornment entities to pass through though."
+msgstr "Скрывает геометрию за скайбоксом, чтобы она не просвечивала. При этом также блокируется свет от сущностей light_environment."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:46
+msgid "Also breaks HDRIs."
+msgstr "Также нарушает работу HDRI."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:51
+msgid "Disable Remix API Lights"
+msgstr "Отключить свет через Remix API"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:52
+msgid "Enables lightupdaters, which will make Remix use the detected d3d9 lights from the game instead of API lights."
+msgstr "Включает обновление источников света: Remix использует обнаруженный в игре свет D3D9 вместо источников, созданных через API."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:57
+msgid "Map Fixes"
+msgstr "Исправления карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:69
+msgid "Fixes broken geometry rendering for the current map, can lower FPS."
+msgstr "Исправляет ошибки отображения геометрии текущей карты. Может снизить частоту кадров."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:76
+msgid "This is only used for engine rendered world geometry."
+msgstr "Применяется только к геометрии мира, которую рисует движок."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:83
+msgid "Enable Map Fixes"
+msgstr "Включить исправления карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:88
+msgid "Disable Map Fixes"
+msgstr "Отключить исправления карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:110
+msgid "Performance"
+msgstr "Производительность"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:113
+msgid "Performance Mode"
+msgstr "Режим производительности"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:114
+msgid "Enables custom renderers to replace engine rendered world geometry and static props. Also controls engine culling patches. This will break mesh replacements in Remix when enabled."
+msgstr "Заменяет отрисовку геометрии мира и статических объектов движком на собственные рендереры. Также управляет патчами отсечения. При включении нарушает замену сеток в Remix."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:118
+msgid "Culling"
+msgstr "Отсечение невидимых объектов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:130
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:71
+msgid "Static Props"
+msgstr "Статичные объекты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:137
+msgid "Enables PVS culling for static props. May cause some props to cull incorrectly."
+msgstr "Включает отсечение статических объектов по потенциально видимому набору (PVS). Некоторые объекты могут исчезать ошибочно."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:144
+msgid "PVS Safety Distance"
+msgstr "Защитное расстояние PVS"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:153
+msgid "Props within this distance always render, bypassing PVS. (0 = disabled)"
+msgstr "Объекты в пределах этого расстояния всегда рисуются, независимо от PVS. (0 = отключено)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:160
+msgid "Distance Culling"
+msgstr "Отсечение по расстоянию"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:169
+msgid "Sphere-based culling for static props. With PVS on: applied after PVS as an extra filter. With PVS off: sole culling method. (0 = disabled)"
+msgstr "Отсекает статические объекты за пределами сферы. При включённом PVS применяется после него как дополнительный фильтр, иначе используется как единственный метод. (0 = отключено)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:193
+msgid "3D Sky"
+msgstr "3D-скайбокс"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:205
+msgid "Enable 3D Sky"
+msgstr "Включить 3D-скайбокс"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:212
+msgid "Renders 3D skybox map faces, displacements, and static props projected into world space. This does not include anything dynamic like particles, entities, etc. This is still WIP so there might be rendering issues on some maps."
+msgstr "Проецирует в пространство мира и рисует поверхности карты, ландшафт и статические объекты 3D-скайбокса. Динамические элементы, такие как частицы и сущности, не включаются. Функция ещё в разработке; на некоторых картах возможны ошибки отображения."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:228
+msgid "Advanced: Engine Patches"
+msgstr "Дополнительно: патчи движка"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:248
+msgid "Disable Engine Frustum Culling"
+msgstr "Отключить отсечение по пирамиде видимости движка"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:249
+msgid "Force Brush Entity Backfaces"
+msgstr "Принудительно рисовать обратные стороны браш-сущностей"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:250
+msgid "Force World Backfaces #1"
+msgstr "Принудительно рисовать обратные стороны мира № 1"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:251
+msgid "Force World Backfaces #2"
+msgstr "Принудительно рисовать обратные стороны мира № 2"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:252
+msgid "Disable BSP Culling"
+msgstr "Отключить отсечение BSP"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:253
+msgid "Disable Client Frustum Culling"
+msgstr "Отключить отсечение по пирамиде видимости клиента"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:254
+msgid "Force NoVis (Disable Engine PVS)"
+msgstr "Принудительно включить NoVis (отключить PVS движка)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:275
+msgid "You have enabled r_3dsky which may cause rendering issues with RTX Remix due how the engine culls the skybox. It's recommended to keep r_3dsky disabled for best results."
+msgstr "Вы включили r_3dsky. Из-за того, как движок отсекает скайбокс, в RTX Remix могут возникнуть проблемы отображения. Рекомендуется оставлять r_3dsky выключенным."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:280
+msgid "Don't show this warning again"
+msgstr "Больше не показывать это предупреждение"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:357
+msgid "ToPBR"
+msgstr "ToPBR"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:360
+msgid "Enable ToPBR"
+msgstr "Включить ToPBR"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:361
+msgid "Converts source material maps (normal, bump, ssbump, etc) to a pseudo-pbr format for RTX Remix."
+msgstr "Преобразует карты материалов Source (нормали, рельеф, ssbump и другие) в приближённый формат PBR для RTX Remix."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:362
+msgid "Conversion is experimental and cannot reproduce every material exactly."
+msgstr "Функция ещё в разработке. Преобразование никогда не будет полностью точным."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:363
+msgid "This will use a significant amount of VRAM, disk space, and may cause stability issues."
+msgstr "Требует много видеопамяти и места на диске и может снизить стабильность."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:365
+msgid "Requires a map reload to enable."
+msgstr "Для включения нужно перезагрузить карту."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:368
+msgid "Experimental Metallic Detection"
+msgstr "Экспериментальное определение металла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:369
+msgid "Generate metallic maps from base texture brightness."
+msgstr "Создаёт карты металличности по яркости базовой текстуры."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:370
+msgid "WARNING: May cause dark materials to appear completely black!"
+msgstr "ВНИМАНИЕ: тёмные материалы могут стать полностью чёрными!"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:373
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:441
+msgid "Debug Output"
+msgstr "Отладочный вывод"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:374
+msgid "Shows debug messages in console for troubleshooting."
+msgstr "Выводит отладочные сообщения в консоль для поиска проблем."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:377
+msgid "Clear Cache"
+msgstr "Очистить кэш"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:381
+msgid "Clear the conversion cache (useful after changing settings)."
+msgstr "Очищает кэш преобразования; полезно после изменения настроек."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:411
+msgid "Auto-Categorization"
+msgstr "Автоматическая классификация"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:415
+msgid "Enable Auto-Categorization"
+msgstr "Включить автоматическую классификацию"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:416
+msgid "Automatically categorizes textures for RTX Remix."
+msgstr "Автоматически классифицирует текстуры для RTX Remix."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:419
+msgid "Delay (seconds)"
+msgstr "Задержка (секунды)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:420
+msgid "How long to wait after map load before scanning (allows BSP data to load)."
+msgstr "Время ожидания после загрузки карты перед сканированием, чтобы успели загрузиться данные BSP."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:423
+msgid "World Geometry"
+msgstr "Геометрия мира"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:424
+msgid "Categorizes walls, floors, and ceilings from BSP as Decals for proper blending."
+msgstr "Относит стены, полы и потолки BSP к декалям для правильного смешивания."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:427
+msgid "Particles"
+msgstr "Частицы"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:428
+msgid "Categorizes particle effects (smoke, fire, sparks, etc) as Particles."
+msgstr "Относит эффекты дыма, огня, искр и другие подобные эффекты к частицам."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:431
+msgid "Overlay Decals"
+msgstr "Наложенные декали"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:432
+msgid "Categorizes materials with $decal parameter (posters, graffiti, bullet holes, etc) as Decals."
+msgstr "Относит материалы с параметром $decal (плакаты, граффити, следы пуль и другие) к декалям."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:435
+msgid "Legacy Emissive"
+msgstr "Исходное свечение"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:436
+msgid "Categorizes materials with $selfillum parameter as Legacy Emissive."
+msgstr "Относит материалы с параметром $selfillum к категории исходного свечения."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:437
+msgid "Materials that use $selfillum incorrectly may be misclassified."
+msgstr "Материалы с некорректным использованием $selfillum могут быть классифицированы ошибочно."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:439
+msgid "Debug Options"
+msgstr "Параметры отладки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:442
+msgid "Shows debug messages in console for categorization activity (useful for troubleshooting)."
+msgstr "Выводит в консоль отладочную информацию о классификации для поиска проблем."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:444
+msgid "Manual Controls"
+msgstr "Ручное управление"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:446
+msgid "Scan Now"
+msgstr "Сканировать сейчас"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_settings.lua:450
+msgid "Manually parse BSP and categorize world textures, decals, and emissive materials."
+msgstr "Вручную разбирает BSP и классифицирует текстуры мира, декали и светящиеся материалы."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:200
+msgid "Building Map Geometry"
+msgstr "Построение геометрии карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:49
+msgid "Map Faces"
+msgstr "Поверхности карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:60
+msgid "Map Displacements"
+msgstr "Ландшафт карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:81
+msgid "Please wait..."
+msgstr "Подождите..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:90
+msgid "Force Close (Build appears stuck)"
+msgstr "Принудительно закрыть (построение, похоже, зависло)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:163
+#, c-format
+msgid "Processing... %d items"
+msgstr "Обработка... элементов: %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:176
+msgid "Initializing..."
+msgstr "Инициализация..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:181
+msgid "Waiting..."
+msgstr "Ожидание..."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:259
+#, c-format
+msgid "Elapsed time: %.1f seconds"
+msgstr "Прошло времени: %.1f с"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:261
+msgid " - Complete!"
+msgstr " — Готово!"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/cl_build_progress.lua:263
+#, c-format
+msgid " - Build appears stuck! (no progress for %d s)"
+msgstr " — Построение, похоже, зависло! (Нет продвижения %d с)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/customrender/render_core.lua:1099
+msgid "Remix Render Debug"
+msgstr "Отладка рендеринга Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:887
+msgid "EMISSIVE"
+msgstr "СВЕЧЕНИЕ"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:892
+msgid "PARTICLE | EMISSIVE"
+msgstr "ЧАСТИЦА | СВЕЧЕНИЕ"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua:896
+msgid "DECAL | EMISSIVE"
+msgstr "ДЕКАЛЬ | СВЕЧЕНИЕ"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:451
+msgid "Flashlight"
+msgstr "Фонарик"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:454
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:381
+msgid "Light Properties"
+msgstr "Свойства источника света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:457
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:400
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:131
+msgid "Cone Angle"
+msgstr "Угол конуса"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:459
+msgid "Volumetric Scale"
+msgstr "Множитель объёмного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:461
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:388
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:117
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:126
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:118
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:123
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:136
+msgid "Color"
+msgstr "Цвет"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:483
+msgid "Position Offset"
+msgstr "Смещение позиции"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:484
+msgid "Forward Offset"
+msgstr "Смещение вперёд"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:485
+msgid "Right Offset"
+msgstr "Смещение вправо"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:486
+msgid "Up Offset"
+msgstr "Смещение вверх"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:488
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:29
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:43
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:58
+msgid "Reset"
+msgstr "Сбросить"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2284
+msgid "Edit RTX Light"
+msgstr "Изменить источник света RTX"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2478
+msgid "Map Lights HUD"
+msgstr "HUD источников света карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2479
+#, c-format
+msgid "Visible: %d / %d"
+msgstr "Видимые: %d / %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2480
+#, c-format
+msgid "Max Dist: %dm"
+msgstr "Макс. расстояние: %d м"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2483
+msgid "Point"
+msgstr "Точечные"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2484
+msgid "Spot"
+msgstr "Прожекторные"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua:2486
+msgid "Proj"
+msgstr "Проекционный свет"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:14
+msgid "Map"
+msgstr "Карта"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:18
+msgid "Actions"
+msgstr "Действия"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:19
+msgid "Process Map Lights"
+msgstr "Обработать источники света карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:20
+msgid "Clear All Map Lights"
+msgstr "Удалить все источники света карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:24
+msgid "Point Lights (light)"
+msgstr "Точечные источники (light)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:25
+msgid "Point Brightness"
+msgstr "Яркость точечного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:26
+msgid "Point Radius"
+msgstr "Радиус точечного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:27
+msgid "Point Size"
+msgstr "Размер точечного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:28
+msgid "Point Volumetrics"
+msgstr "Объёмный точечный свет"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:38
+msgid "Spot Lights (light_spot)"
+msgstr "Прожекторы (light_spot)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:39
+msgid "Spot Brightness"
+msgstr "Яркость прожекторов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:40
+msgid "Spot Radius"
+msgstr "Радиус прожекторов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:41
+msgid "Spot Size"
+msgstr "Размер прожекторов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:42
+msgid "Spot Volumetrics"
+msgstr "Объёмный свет прожекторов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:52
+msgid "Directional (light_environment)"
+msgstr "Направленный свет (light_environment)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:54
+msgid "VRAD Scale"
+msgstr "Множитель VRAD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:55
+msgid "Angular Multiplier"
+msgstr "Множитель угла"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:56
+msgid "Env Size"
+msgstr "Размер света окружения"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:57
+msgid "Env Volumetrics"
+msgstr "Объёмный свет окружения"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:72
+msgid "Debug"
+msgstr "Отладка"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:73
+msgid "Draw Debug Directions"
+msgstr "Показывать направления для отладки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:74
+msgid "Show HUD Overlay"
+msgstr "Показывать наложение HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:75
+msgid "Show Disabled Lights"
+msgstr "Показывать отключённые источники света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:76
+msgid "HUD Max Distance"
+msgstr "Максимальная дальность HUD"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:12
+msgid "Wrapper - Dynamic"
+msgstr "Преобразование динамического света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:15
+msgid "Convert DynamicLight() calls to Remix API lights"
+msgstr "Преобразует вызовы DynamicLight() в источники света Remix API"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:16
+msgid "Works with SWEPs like lanterns, and other addons that use dynamic lights"
+msgstr "Работает со скриптовым оружием (SWEP), например фонарями, и другими дополнениями с динамическим светом"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:19
+msgid "Enable Dynamic Light Wrapper"
+msgstr "Включить преобразование динамического света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua:21
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:20
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:21
+msgid "Brightness Scale"
+msgstr "Множитель яркости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:12
+msgid "Wrapper - Basic"
+msgstr "Преобразование обычного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:15
+msgid "Automatically converts Garry's Mod point and spot lights into Remix API Lights"
+msgstr "Автоматически преобразует точечный свет и прожекторы Garry's Mod в источники света Remix API"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua:18
+msgid "Enable Light Wrapper"
+msgstr "Включить преобразование обычного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:12
+msgid "Wrapper - Projected Texture"
+msgstr "Преобразование проекционного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:15
+msgid "Automatically convert ProjectedTexture() calls into Remix API spotlights"
+msgstr "Автоматически преобразует вызовы ProjectedTexture() в прожекторы Remix API"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:16
+msgid "Works with Glide base headlights, spotlight entities, and other addons that use ProjectedTexture()"
+msgstr "Работает с фарами транспорта на базе Glide, сущностями прожекторов и другими дополнениями, использующими ProjectedTexture()"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:19
+msgid "Enable Projected Texture Wrapper"
+msgstr "Включить преобразование проекционного света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:24
+msgid "Position Offsets"
+msgstr "Смещения позиции"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:25
+msgid "Offset X (Forward/Back)"
+msgstr "Смещение X (вперёд/назад)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:28
+msgid "Offset Y (Left/Right)"
+msgstr "Смещение Y (влево/вправо)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua:31
+msgid "Offset Z (Up/Down)"
+msgstr "Смещение Z (вверх/вниз)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:18
+msgid "API Light - Bonemerged"
+msgstr "Свет API — привязка к кости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:19
+msgid "Attach RTX lights to entity bones"
+msgstr "Привязывает источники света RTX к костям сущности"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:20
+msgid "Left-click to attach light, Right-click entity to grab bones, Reload to detach"
+msgstr "ЛКМ: привязать свет; ПКМ по сущности: получить кости; перезарядка: отвязать"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:237
+#, c-format
+msgid "Grabbed %d bones. Check tool menu to select."
+msgstr "Получено костей: %d. Выберите нужную в меню инструмента."
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:239
+msgid "Entity has no bones (will attach to origin)"
+msgstr "У сущности нет костей: привязка к началу координат модели"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:266
+msgid "Right-Click to grab bones"
+msgstr "ПКМ: получить кости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:270
+msgid "Entity: "
+msgstr "Сущность: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:271
+msgid "(No bones - will attach to origin)"
+msgstr "(Нет костей: привязка к началу координат модели)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:274
+#, c-format
+msgid "Entity: %s (%d bones)"
+msgstr "Сущность: %s (костей: %d)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:294
+#, c-format
+msgid "Selected: %s (#%d)"
+msgstr "Выбрано: %s (№ %d)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:309
+#, c-format
+msgid "🔗 %d light(s) attached"
+msgstr "🔗 Привязано источников света: %d"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:317
+msgid "Light Type"
+msgstr "Тип источника света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:319
+msgid "Rectangle"
+msgstr "Прямоугольник"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:325
+msgid "Bone Selection"
+msgstr "Выбор кости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:326
+msgid "Right-click an entity to grab its bones:"
+msgstr "Щёлкните ПКМ по сущности, чтобы получить её кости:"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:341
+msgid "Bone Name"
+msgstr "Имя кости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:351
+msgid "No bones grabbed yet"
+msgstr "Кости ещё не получены"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:369
+msgid "Position Offset (Local Space)"
+msgstr "Смещение позиции (локальное пространство)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:370
+msgid "X (Forward/Back)"
+msgstr "X (вперёд/назад)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:371
+msgid "Y (Left/Right)"
+msgstr "Y (влево/вправо)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:372
+msgid "Z (Up/Down)"
+msgstr "Z (вверх/вниз)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:375
+msgid "Angle Offset"
+msgstr "Угловое смещение"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:376
+msgid "Pitch"
+msgstr "Тангаж"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:377
+msgid "Yaw"
+msgstr "Рыскание"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:378
+msgid "Roll"
+msgstr "Крен"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:384
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:120
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:114
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:117
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:128
+msgid "Volumetrics"
+msgstr "Объёмный свет"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:405
+msgid "Shape-Specific Parameters"
+msgstr "Параметры формы"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:406
+msgid "X Size/Radius"
+msgstr "Размер/радиус по X"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:407
+msgid "Y Size/Radius"
+msgstr "Размер/радиус по Y"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:408
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:114
+msgid "Axis Length"
+msgstr "Длина оси"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:409
+msgid "Angular Diameter"
+msgstr "Угловой диаметр"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:413
+msgid "Remix Bonemerged Light"
+msgstr "Свет Remix, привязанный к кости"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:27
+msgid "API Light - Cylinder"
+msgstr "Свет API — цилиндр"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:28
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:109
+msgid "Spawn and edit Cylindrical Lights"
+msgstr "Создаёт и редактирует цилиндрические источники света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:29
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:32
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:32
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:34
+msgid "Left-click: Spawn | Right-click: Update"
+msgstr "ЛКМ: создать | ПКМ: обновить"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:127
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:136
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:128
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:134
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:146
+msgid "Freeze on Spawn"
+msgstr "Заморозить при создании"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:132
+msgid "Remix Cylinder Light"
+msgstr "Цилиндрический свет Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:30
+msgid "API Light - Disk"
+msgstr "Свет API — диск"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:116
+msgid "Spawn and edit Disk/Ellipse Area Lights"
+msgstr "Создаёт и редактирует площадные источники света в форме диска или эллипса"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:122
+msgid "X Radius"
+msgstr "Радиус по X"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:123
+msgid "Y Radius"
+msgstr "Радиус по Y"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:141
+msgid "Remix Disk Light"
+msgstr "Дисковый свет Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:29
+msgid "API Light - Distant"
+msgstr "Свет API — удалённый"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:30
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:111
+msgid "Spawn and edit Distant/Directional Lights"
+msgstr "Создаёт и редактирует удалённые или направленные источники света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:115
+msgid "Angular Diameter (degrees)"
+msgstr "Угловой диаметр (градусы)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua:133
+msgid "Remix Distant Light"
+msgstr "Удалённый свет Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:30
+msgid "API Light - Rect"
+msgstr "Свет API — прямоугольник"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:31
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:114
+msgid "Spawn and edit Rectangular Area Lights"
+msgstr "Создаёт и редактирует прямоугольные площадные источники света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:119
+msgid "X Size"
+msgstr "Размер по X"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:120
+msgid "Y Size"
+msgstr "Размер по Y"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua:139
+msgid "Remix Rect Light"
+msgstr "Прямоугольный свет Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:32
+msgid "API Light - Sphere"
+msgstr "Свет API — сфера"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:33
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:124
+msgid "Spawn and edit Sphere Lights"
+msgstr "Создаёт и редактирует сферические источники света"
+
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:151
+msgid "Remix Sphere Light"
+msgstr "Сферический свет Remix"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:10
+msgid "Swimming pool"
+msgstr "Бассейн"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:33
+msgid "Clear spring"
+msgstr "Чистый родник"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:56
+msgid "Lake"
+msgstr "Озеро"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:79
+msgid "Ocean"
+msgstr "Океан"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:102
+msgid "Murky pond"
+msgstr "Мутный пруд"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:126
+msgid "Muddy / sewer"
+msgstr "Грязная вода / канализация"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:152
+msgid "Calm (mirror flat)"
+msgstr "Штиль (зеркальная поверхность)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:155
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:82
+msgid "Ripples"
+msgstr "Рябь"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_data.lua:161
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:33
+msgid "Waves"
+msgstr "Волны"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:24
+msgid "Path-traced water for RTX Remix on any map: water type, waves, and the waves players, objects and bullets make in it."
+msgstr "Вода с трассировкой путей RTX Remix на любой карте: тип воды, волны и рябь от игроков, объектов и пуль."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:25
+msgid "Enable RTX Water"
+msgstr "Включить RTX Water"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:27
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:31
+msgid "Auto (map default)"
+msgstr "Авто (настройка карты)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:29
+msgid "Water type"
+msgstr "Тип воды"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:34
+msgid "Wave strength"
+msgstr "Сила волн"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:35
+msgid "Wave speed"
+msgstr "Скорость волн"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:36
+msgid "Wave direction"
+msgstr "Направление волн"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:37
+msgid "Wave size"
+msgstr "Размер волн"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:39
+msgid "Waves from players, NPCs and objects"
+msgstr "Волны от игроков, NPC и объектов"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:40
+msgid "Bullet impacts make waves"
+msgstr "Волны от попаданий пуль"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:41
+msgid "How hard bodies push the water"
+msgstr "Сила воздействия тел на воду"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:42
+msgid "Wave reach (how far waves travel before they die out)"
+msgstr "Дальность распространения волн до затухания"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:43
+msgid "Splashes: drops, sheets and jets thrown up by bodies and bullets"
+msgstr "Брызги: капли, водяные плёнки и струи от тел и пуль"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:44
+msgid "Splash strength"
+msgstr "Сила брызг"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:45
+msgid "Splash randomness (0 = the same every time)"
+msgstr "Случайность брызг (0 = каждый раз одинаковые)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:46
+msgid "Maximum airborne droplets"
+msgstr "Максимум капель в воздухе"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:47
+msgid "Wave detail"
+msgstr "Детализация волн"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "Low"
+msgstr "Низкое"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "Medium"
+msgstr "Среднее"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:48
+msgid "High"
+msgstr "Высокое"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:50
+msgid "Wave mesh updates per second (0 = every frame)"
+msgstr "Обновлений сетки волн в секунду (0 = каждый кадр)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:51
+msgid "Draw the surface with RTX Water (off: the map's own faces, no waves from interaction)"
+msgstr "Рисовать поверхность через RTX Water (выкл.: исходные поверхности карты без волн от взаимодействий)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:52
+msgid "Use the native core when installed (fastest)"
+msgstr "Использовать нативное ядро, если установлено (быстрее всего)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:54
+msgid "Custom water look (native core only):"
+msgstr "Собственный вид воды (только нативное ядро):"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:55
+msgid "Use a custom colour and clarity"
+msgstr "Свои цвет и прозрачность"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:68
+msgid "Clarity (units for that colour)"
+msgstr "Прозрачность (расстояние для выбранного цвета)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:69
+msgid "Refraction index"
+msgstr "Показатель преломления"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:76
+msgid "Not active on this map."
+msgstr "Не активно на этой карте."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:76
+msgid "RTX Remix API not available."
+msgstr "RTX Remix API недоступен."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid "native core"
+msgstr "нативное ядро"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid "Lua meshes"
+msgstr "сетки Lua"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:79
+msgid " (native core: "
+msgstr " (нативное ядро: "
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:80
+#, c-format
+msgid "%s, %s; %s. %s: %d, %d tiles, %d vertices, %.2f ms per update%s. Splash drops: %d."
+msgstr "%s, %s; %s. %s: %d, плиток: %d, вершин: %d, %.2f мс на обновление%s. Капель: %d."
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:82
+msgid "Bodies in the water"
+msgstr "Тела в воде"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:83
+msgid " (worker thread)"
+msgstr " (рабочий поток)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:92
+msgid "Reset settings"
+msgstr "Сбросить настройки"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:93
+msgid "Rebuild water for this map"
+msgstr "Перестроить воду для этой карты"
+
+#: packages/fixes/garrysmod/garrysmod/addons/rtx_water/lua/rtx_water/cl_menu.lua:97
+msgid "RTX Water"
+msgstr "RTX Water"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:233
+msgid "Procedural Bodygroup Destruction — performance"
+msgstr "Процедурное разрушение бодигрупп — производительность"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:235
+#, c-format
+msgid "hit #%s | CPU %.2f ms | wall %.2f ms | %s"
+msgstr "Попадание № %s | ЦП %.2f мс | всего %.2f мс | %s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:254
+#, c-format
+msgid "Recent hits: %d%s | slowest stage overall: %s"
+msgstr "Последних попаданий: %d%s | самый затратный этап в целом: %s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:256
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:263
+msgid "<none>"
+msgstr "<нет>"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:262
+#, c-format
+msgid "continuous hottest: %s%s"
+msgstr "Самый затратный постоянный этап: %s%s"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:264
+#, c-format
+msgid " (avg %.3f ms, max %.3f ms)"
+msgstr " (среднее %.3f мс, максимум %.3f мс)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Affected UV selection"
+msgstr "Выбор затронутых UV"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Bodygroup eligibility"
+msgstr "Проверка повреждаемости бодигрупп"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Debug capture + bundle I/O"
+msgstr "Отладочный захват и ввод-вывод данных"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Debug console output"
+msgstr "Отладочный вывод в консоль"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: 3D hit overlay"
+msgstr "Каждый кадр: 3D-отображение попаданий"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: last-hit HUD"
+msgstr "Каждый кадр: HUD последнего попадания"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Frame: texture inspector"
+msgstr "Каждый кадр: инспектор текстур"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Impact trace + hit setup"
+msgstr "Трассировка и подготовка попадания"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Material apply overhead"
+msgstr "Затраты на применение материалов"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Material queue dispatch"
+msgstr "Распределение очереди материалов"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Mesh cache lookup/build"
+msgstr "Поиск и создание кэша сеток"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Pose snapshot"
+msgstr "Снимок позы"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: RTX memory cleanup"
+msgstr "Подготовка: очистка памяти RTX"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: bodygroup eligibility"
+msgstr "Подготовка: проверка бодигрупп"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: mesh cache"
+msgstr "Подготовка: кэш сеток"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Prewarm: persistent cache hydrate"
+msgstr "Подготовка: загрузка постоянного кэша"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Removal-hull mesh query"
+msgstr "Поиск сеток в удаляемом объёме"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "Skin transform setup"
+msgstr "Подготовка преобразований скиннинга"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+msgid "UV result bookkeeping"
+msgstr "Учёт результатов UV"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:3362
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4296
+msgid "hit"
+msgstr "найдено"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:3362
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4296
+msgid "miss"
+msgstr "не найдено"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4254
+msgid "Procedural Bodygroup Destruction — hit debugger"
+msgstr "Процедурное разрушение бодигрупп — отладка попаданий"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4256
+#, c-format
+msgid "#%d  ent %d  %s  damage %.1f"
+msgstr "№ %d  сущность %d  %s  урон %.1f"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4257
+msgid "TRACE MISS"
+msgstr "ТРАССИРОВКА НЕ ПОПАЛА"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4257
+msgid "surface: "
+msgstr "поверхность: "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4259
+#, c-format
+msgid "hitbox %d | physbone %d | model bone %d (%s)"
+msgstr "Хитбокс %d | физическая кость %d | кость модели %d (%s)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4263
+msgid "removal hull mesh query unavailable"
+msgstr "Поиск сеток удаляемого объёма недоступен"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4269
+msgid "loading persistent mesh"
+msgstr "загрузка сохранённой сетки"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4270
+msgid "packing native mesh"
+msgstr "подготовка нативной сетки"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4271
+msgid "checking bodygroups"
+msgstr "проверка бодигрупп"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4272
+msgid "releasing native mesh memory"
+msgstr "освобождение памяти нативной сетки"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4273
+msgid "opening model cache"
+msgstr "открытие кэша модели"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4286
+#, c-format
+msgid "cache: %s… %.2f s | %s chunks | %.1f ms/frame"
+msgstr "Кэш: %s… %.2f с | блоков: %s | %.1f мс/кадр"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4290
+#, c-format
+msgid "hull: analyzing impact snapshot… queue %d | budget %.1f ms/frame"
+msgstr "Объём: анализ снимка попадания… очередь %d | лимит %.1f мс/кадр"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4294
+#, c-format
+msgid "hull envelope: %d verts (%d inside) | %d tris / %d meshes | cache %s | %.2f ms"
+msgstr "Оболочка: вершин %d (внутри %d) | треугольников %d / сеток %d | кэш %s | %.2f мс"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4299
+msgid "removal hull query failed: "
+msgstr "Не удалось найти удаляемый объём: "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_30_overlay.lua:4308
+#, c-format
+msgid "retained %d / received %d"
+msgstr "Сохранено %d / получено %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6635
+msgid "UV damage: waiting for mesh analysis"
+msgstr "Повреждение UV: ожидание анализа сетки"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6636
+msgid "UV damage: "
+msgstr "Повреждение UV: "
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6638
+#, c-format
+msgid "UV damage: %d meshes / %d materials / %d UVs | paint queue %d"
+msgstr "Повреждение UV: сеток %d / материалов %d / UV %d | очередь отрисовки %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6643
+#, c-format
+msgid "UV damage: %d material override(s) applied from %d triangles"
+msgstr "Повреждение UV: применено замен материалов %d, из треугольников %d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6649
+#, c-format
+msgid "UV damage: no eligible bodygroup touch; nearest %s mesh is %.3f units away"
+msgstr "Повреждение UV: нет контакта с повреждаемой бодигруппой; ближайшая сетка %s на расстоянии %.3f единиц"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6652
+msgid "UV damage: removal hull did not touch a proven eligible-bodygroup mesh"
+msgstr "Повреждение UV: удаляемый объём не коснулся сетки подтверждённо повреждаемой бодигруппы"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6655
+msgid "UV damage: broad-phase mesh candidates had no exact irregular-hole coverage"
+msgstr "Повреждение UV: предварительно отобранные сетки не перекрывают точную область неровного отверстия"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6659
+msgid "UV damage: affected materials could not be mapped to submaterial slots"
+msgstr "Повреждение UV: не удалось сопоставить затронутые материалы со слотами подматериалов"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6661
+msgid "UV damage: material application failed"
+msgstr "Повреждение UV: не удалось применить материалы"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6662
+#, c-format
+msgid "UV damage: %d meshes / %d materials / %d unique UVs (%s)"
+msgstr "Повреждение UV: сеток %d / материалов %d / уникальных UV %d (%s)"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6773
+msgid "Original RGB"
+msgstr "Исходный RGB"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6774
+msgid "Edited + alpha"
+msgstr "После правки с альфа-каналом"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6775
+msgid "Edited RGB only"
+msgstr "Только RGB после правки"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6776
+msgid "Last hit coverage"
+msgstr "Область последнего попадания"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6797
+#, c-format
+msgid "%s | %d source / %d projected tris | %d UVs | expand=%.1f feather=%.1f passes=%d seams=%d"
+msgstr "%s | исходных треугольников %d / проекций %d | UV %d | расширение=%.1f сглаживание=%.1f проходы=%d швы=%d"
+
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6805
+msgid "dump: data/"
+msgstr "Дамп: data/"

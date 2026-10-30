@@ -59,6 +59,7 @@ function TOOL:Reload(trace)
 end
 if CLIENT then
  function TOOL.BuildCPanel(panel)
+    if NATIVELOADER_I18N then NATIVELOADER_I18N.PreparePanel(panel) end
   local P=mmdhl and mmdhl.props
   panel:Help(L'tool.prop.help')
   panel:Button(L'tool.prop.open_library','mmdhl_open_props')

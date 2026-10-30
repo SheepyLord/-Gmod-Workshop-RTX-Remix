@@ -1,9 +1,19 @@
-TOOL.Category = "Seamless Portals"
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
+TOOL.Category = NL("Seamless Portals")
 TOOL.Name = "#Tool.portal_resizer_tool.name"
 
 if CLIENT then
-	language.Add("Tool.portal_resizer_tool.name", "Portal Resizer")
-	language.Add("Tool.portal_resizer_tool.desc", "Sets the size of portals")
+	NLP("Tool.portal_resizer_tool.name", NN("Portal Resizer"))
+	NLP("Tool.portal_resizer_tool.desc", NN("Sets the size of portals"))
 
 	TOOL.ConvarX = CreateClientConVar("seamless_portals_size_x", "100", false, true, "Sets the size of the portal along the X axis", 10, 1000)
 	TOOL.ConvarY = CreateClientConVar("seamless_portals_size_y", "100", false, true, "Sets the size of the portal along the Y axis", 10, 1000)
@@ -15,17 +25,17 @@ if CLIENT then
 		{name = "left"},
 	}
 
-	language.Add( "Tool.portal_resizer_tool.left", "Sets the size of portals" )
+	NLP( "Tool.portal_resizer_tool.left", NN("Sets the size of portals"))
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {
-			text = "Sets the size of portals",
+			text = NL("Sets the size of portals"),
 		})
-		panel:NumSlider("Portal Size X", "seamless_portals_size_x", 10, 1000, 1)
-		panel:NumSlider("Portal Size Y", "seamless_portals_size_y", 10, 1000, 1)
-		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
-		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
-		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
+		panel:NumSlider(NL("Portal Size X"), "seamless_portals_size_x", 10, 1000, 1)
+		panel:NumSlider(NL("Portal Size Y"), "seamless_portals_size_y", 10, 1000, 1)
+		panel:NumSlider(NL("Portal Size Z"), "seamless_portals_size_z", 1, 100, 1)
+		panel:NumSlider(NL("Portal Sides"), "seamless_portals_sides", 3, 100, 0)
+		panel:CheckBox(NL("Has Backface (Invisible until linked!)"), "seamless_portals_backface")
 	end
 
 	local COLOR_GREEN = Color(0, 255, 0, 50)

@@ -16,6 +16,46 @@
    "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin",
    "git": null,
    "imported": "2026-10-30T00:42:45+00:00"
+  },
+  "!advanced_material_editor/lua/advmat/cl_05_i18n.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_05_i18n.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:21+00:00"
+  },
+  "!advanced_material_editor/lua/advmat/cl_19_help_i18n.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_19_help_i18n.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:21+00:00"
+  },
+  "!advanced_material_editor/lua/advmat/cl_65_rows.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_65_rows.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:21+00:00"
+  },
+  "!advanced_material_editor/lua/weapons/gmod_tool/stools/advmateditor.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-material-editor\\!advanced_material_editor\\lua\\weapons\\gmod_tool\\stools\\advmateditor.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
+    "dirty": true
+   },
+   "imported": "2026-10-30T11:10:21+00:00"
   }
  },
  "files": {
@@ -26,15 +66,15 @@
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_05_i18n.lua": {
-   "size": 408722,
-   "sha256": "4dd1fcf4ea43f8fdc30828872f9459ce82bfb4fd585c6d88845fe49c2e388f86",
-   "mtime_ns": 1793058788412535600,
+   "size": 488320,
+   "sha256": "3274e9dbe98d3d3d37c94ac6f49f9fd9873455d28c393070cbc8c2a6cb207b51",
+   "mtime_ns": 1793354780019336800,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_19_help_i18n.lua": {
-   "size": 110563,
-   "sha256": "18d8a8c2573ce55dd65badc5d753e97c8b18eebf0b4eaf24e03106e12026f23c",
-   "mtime_ns": 1788132025735100700,
+   "size": 126673,
+   "sha256": "ba921d883def30864c9e153ec3f006a669eb61d151baab0a93cf5fd2c0f4deca",
+   "mtime_ns": 1793346780629695600,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_20_help.lua": {
@@ -140,9 +180,9 @@
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_65_rows.lua": {
-   "size": 37252,
-   "sha256": "566cbe65e5ce0e0d6f150d784dfeec42305a89492d40dbe793c992c87e988f2f",
-   "mtime_ns": 1792894410398167800,
+   "size": 37370,
+   "sha256": "4e4c9b2228f19ee5624cede82b2bc4024be9a01dc362d35a67a887c465711f32",
+   "mtime_ns": 1793349269546828200,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_67_gendialog.lua": {
@@ -356,9 +396,9 @@
    "stored": "plain"
   },
   "!advanced_material_editor/lua/weapons/gmod_tool/stools/advmateditor.lua": {
-   "size": 12381,
-   "sha256": "ba75816c5fa13dbd39d482cc1c6f294666be97cceb160c2c293169d0640c70fc",
-   "mtime_ns": 1789964738174882500,
+   "size": 12454,
+   "sha256": "c9e6ba7775367e8dd89349adbed85727df3ec55f5c683eb8c9abc89484923619",
+   "mtime_ns": 1793354780229199000,
    "stored": "plain"
   },
   "!advanced_material_editor/materials/advmat/shift.png": {

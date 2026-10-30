@@ -87,10 +87,14 @@ patched copy of GMod managed by RTXLauncher.
    the LFS quota (10 GiB of storage and of downloads a month; a pushed object is never freed): import
    only what a part ships.
 7. **Licences.** This repo is MIT. `garrys-mod-rtx-remixed` is GPL-2.0: read it for behaviour, do not
-   copy its code into this repo's code. Its released files are vendored unmodified as `packages/fixes`
-   with its licence, a separate part the package aggregates. Third-party code goes in
-   `third_party/<name>/` with its licence file; a part in `packages/` keeps its source's licence beside
-   it. The repository is private: making it public needs a licence review of `packages/` first.
+   copy its code into this repo's code. Its shipped files and local interface changes remain in
+   `packages/fixes` under that licence, a separate part the package aggregates. The translated
+   interface data in `companion/i18n/addons` is also GPL-2.0; the package carries its editable catalogs
+   and `COPYING` ([ADR 0038](docs/decisions/0038-complete-bundled-interface-translations.md)).
+   Third-party code goes in `third_party/<name>/` with its licence file; a part in `packages/` keeps
+   its source's licence beside it. The repository is private: making it public needs a licence
+   review of `packages/` first.
+
 8. **Parallel milestones stay apart.** Each runs on its own branch in its own git worktree, and only
    touches the paths its brief in [docs/handover/](docs/handover/README.md) assigns. Shared docs
    (CHANGELOG, ROADMAP, COMPONENTS, RESEARCH, TESTING) get additive edits only, so merges stay trivial.

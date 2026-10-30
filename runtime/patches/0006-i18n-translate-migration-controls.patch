@@ -1,0 +1,343 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 03:47:29 -0700
+Subject: [PATCH] i18n: translate migration buttons before inserting their
+ counts
+
+Use stable translatable button labels with a separate formatted count line. The old concatenated labels fell back to English for every count. Preserve migration behavior and require all four messages in every catalog.
+---
+ i18n/fr.po                    | 18 ++++++++++++++++++
+ i18n/ja.po                    | 18 ++++++++++++++++++
+ i18n/ko.po                    | 18 ++++++++++++++++++
+ i18n/remix.pot                | 18 ++++++++++++++++++
+ i18n/ru.po                    | 18 ++++++++++++++++++
+ i18n/tools/test_embed.py      | 18 ++++++++++++++++++
+ i18n/zh-CN.po                 | 18 ++++++++++++++++++
+ i18n/zh-TW.po                 | 18 ++++++++++++++++++
+ src/dxvk/imgui/dxvk_imgui.cpp |  8 ++++----
+ 9 files changed, 148 insertions(+), 4 deletions(-)
+
+diff --git a/i18n/fr.po b/i18n/fr.po
+index f294a172..539fa9e9 100644
+--- a/i18n/fr.po
++++ b/i18n/fr.po
+@@ -1069,6 +1069,15 @@ msgstr "Voir les modifications"
+ msgid "User"
+ msgstr "User"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr "Paramètres développeur à migrer : %u"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr "Migrer les paramètres développeur vers rtx.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1103,6 +1112,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr "Des modifications ont été apportées depuis le dernier enregistrement du fichier rtx.conf."
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr "Paramètres utilisateur à migrer : %u"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr "Migrer les paramètres utilisateur vers user.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/i18n/ja.po b/i18n/ja.po
+index de62ea52..c03a62fd 100644
+--- a/i18n/ja.po
++++ b/i18n/ja.po
+@@ -1069,6 +1069,15 @@ msgstr "変更を表示"
+ msgid "User"
+ msgstr "ユーザー"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr "移行する開発者設定: %u 件"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr "開発者設定を rtx.conf に移行"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1103,6 +1112,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr "rtx.conf ファイルを最後に保存してから変更が加えられています。"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr "移行するユーザー設定: %u 件"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr "ユーザー設定を user.conf に移行"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/i18n/ko.po b/i18n/ko.po
+index d6f0937e..f18e1ae6 100644
+--- a/i18n/ko.po
++++ b/i18n/ko.po
+@@ -1069,6 +1069,15 @@ msgstr "변경 사항 보기"
+ msgid "User"
+ msgstr "사용자"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr "이전할 개발자 설정: %u개"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr "개발자 설정을 rtx.conf로 이전"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1103,6 +1112,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr "rtx.conf 파일을 마지막으로 저장한 후 변경 사항이 있습니다."
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr "이전할 사용자 설정: %u개"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr "사용자 설정을 user.conf로 이전"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/i18n/remix.pot b/i18n/remix.pot
+index 33763412..8de2e378 100644
+--- a/i18n/remix.pot
++++ b/i18n/remix.pot
+@@ -1056,6 +1056,15 @@ msgstr ""
+ msgid "User"
+ msgstr ""
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr ""
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr ""
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1083,6 +1092,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr ""
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr ""
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr ""
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/i18n/ru.po b/i18n/ru.po
+index b93876c6..672f7b4c 100644
+--- a/i18n/ru.po
++++ b/i18n/ru.po
+@@ -1069,6 +1069,15 @@ msgstr "Показать изменения"
+ msgid "User"
+ msgstr "Пользователь"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr "Настроек разработчика для переноса: %u"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr "Перенести настройки разработчика в rtx.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1103,6 +1112,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr "С момента последнего сохранения файла rtx.conf были внесены изменения."
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr "Пользовательских настроек для переноса: %u"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr "Перенести пользовательские настройки в user.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/i18n/tools/test_embed.py b/i18n/tools/test_embed.py
+index 6aebcbc7..4da9b055 100644
+--- a/i18n/tools/test_embed.py
++++ b/i18n/tools/test_embed.py
+@@ -9,6 +9,7 @@ from unittest.mock import patch
+ 
+ import embed
+ import po
++import update_strings
+ 
+ 
+ class CatalogBuildTests(unittest.TestCase):
+@@ -61,6 +62,23 @@ class CatalogBuildTests(unittest.TestCase):
+         result, log = self.run_build([po.Entry('Hello', 'Bonjour')], '--allow-incomplete')
+         self.assertEqual(result, 0, log)
+ 
++    def test_dynamic_migration_counts_have_catalog_messages_and_stable_labels(self):
++        root = Path(__file__).resolve().parents[2]
++        extractor = update_strings.Extractor()
++        extractor.scan_file(str(root / 'src/dxvk/imgui/dxvk_imgui.cpp'), 'src/dxvk/imgui/dxvk_imgui.cpp')
++        labels = ['Migrate developer settings to rtx.conf', 'Migrate user settings to user.conf']
++        counts = ['Developer settings to migrate: %u', 'User settings to migrate: %u']
++        for label in labels + counts:
++            self.assertIn(label, extractor.messages)
++        for count in counts:
++            self.assertIn('c-format', extractor.messages[count]['flags'])
++        for language in ('zh-CN', 'zh-TW', 'ja', 'ko', 'fr', 'ru'):
++            _, entries = po.parse(root / 'i18n' / (language + '.po'))
++            translations = {entry.msgid: entry.msgstr for entry in entries if not entry.obsolete}
++            for text in labels + counts:
++                self.assertTrue(translations.get(text), (language, text))
++                self.assertNotEqual(translations[text], text)
++
+ 
+ if __name__ == '__main__':
+     unittest.main()
+diff --git a/i18n/zh-CN.po b/i18n/zh-CN.po
+index 3bad9a23..b4c65c4a 100644
+--- a/i18n/zh-CN.po
++++ b/i18n/zh-CN.po
+@@ -1069,6 +1069,15 @@ msgstr "查看更改"
+ msgid "User"
+ msgstr "User"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr "待迁移的开发者设置：%u 项"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr "将开发者设置迁移到 rtx.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1103,6 +1112,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr "自上次保存 rtx.conf 文件以来已有更改。"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr "待迁移的用户设置：%u 项"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr "将用户设置迁移到 user.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/i18n/zh-TW.po b/i18n/zh-TW.po
+index 93379588..c2407746 100644
+--- a/i18n/zh-TW.po
++++ b/i18n/zh-TW.po
+@@ -1069,6 +1069,15 @@ msgstr "檢視變更"
+ msgid "User"
+ msgstr "使用者"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1205
++#, c-format
++msgid "Developer settings to migrate: %u"
++msgstr "待移轉的開發者設定：%u 項"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1211
++msgid "Migrate developer settings to rtx.conf"
++msgstr "將開發者設定移至 rtx.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1220
+ #, c-format
+ msgid ""
+@@ -1103,6 +1112,15 @@ msgstr ""
+ msgid "Changes have been made since the rtx.conf file was last saved."
+ msgstr "自上次儲存 rtx.conf 檔案以來已有變更。"
+ 
++#: src/dxvk/imgui/dxvk_imgui.cpp:1262
++#, c-format
++msgid "User settings to migrate: %u"
++msgstr "待移轉的使用者設定：%u 項"
++
++#: src/dxvk/imgui/dxvk_imgui.cpp:1268
++msgid "Migrate user settings to user.conf"
++msgstr "將使用者設定移至 user.conf"
++
+ #: src/dxvk/imgui/dxvk_imgui.cpp:1277
+ #, c-format
+ msgid ""
+diff --git a/src/dxvk/imgui/dxvk_imgui.cpp b/src/dxvk/imgui/dxvk_imgui.cpp
+index 471381fa..0b7ac4a1 100644
+--- a/src/dxvk/imgui/dxvk_imgui.cpp
++++ b/src/dxvk/imgui/dxvk_imgui.cpp
+@@ -1202,13 +1202,13 @@ namespace dxvk {
+ 
+       if (userMiscategorizedCount > 0) {
+         ImGui::Spacing();
++        ImGui::Text("Developer settings to migrate: %u", userMiscategorizedCount);
+         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.65f, 0.0f, 1.0f));
+         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.75f, 0.1f, 1.0f));
+         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.55f, 0.0f, 1.0f));
+         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+         
+-        std::string buttonLabel = str::format("Migrate ", userMiscategorizedCount, " Developer Setting", (userMiscategorizedCount > 1 ? "s" : ""), " to rtx.conf");
+-        if (ImGui::Button(buttonLabel.c_str(), ImVec2(-1, 0))) {
++        if (ImGui::Button("Migrate developer settings to rtx.conf", ImVec2(-1, 0))) {
+           const uint32_t migratedCount = userLayer->migrateMiscategorizedOptions();
+           Logger::info(str::format("[RTX Option]: Migrated ", migratedCount, " developer settings from user.conf to rtx.conf"));
+         }
+@@ -1259,13 +1259,13 @@ namespace dxvk {
+       const uint32_t rtxMiscategorizedCount = rtxConfLayer ? rtxConfLayer->countMiscategorizedOptions() : 0;
+       if (rtxMiscategorizedCount > 0) {
+         ImGui::Spacing();
++        ImGui::Text("User settings to migrate: %u", rtxMiscategorizedCount);
+         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.65f, 0.0f, 1.0f));
+         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.95f, 0.75f, 0.1f, 1.0f));
+         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.55f, 0.0f, 1.0f));
+         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+         
+-        std::string buttonLabel = str::format("Migrate ", rtxMiscategorizedCount, " User Setting", (rtxMiscategorizedCount > 1 ? "s" : ""), " to user.conf");
+-        if (ImGui::Button(buttonLabel.c_str(), ImVec2(-1, 0))) {
++        if (ImGui::Button("Migrate user settings to user.conf", ImVec2(-1, 0))) {
+           const uint32_t migratedCount = rtxConfLayer->migrateMiscategorizedOptions();
+           Logger::info(str::format("[RTX Option]: Migrated ", migratedCount, " user settings from rtx.conf to user.conf"));
+         }

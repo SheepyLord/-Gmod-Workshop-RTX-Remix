@@ -1,3 +1,11 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local function NL(text)
+    return bundle_i18n and bundle_i18n.A(text, BBS.I18N and BBS.I18N.language or "en") or text
+end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 -- Client hit retrace, 3D overlay, HUD summary, and debug console commands.
 
 BBS = BBS or {}
@@ -3351,7 +3359,7 @@ local function PrintHit( hit, meshOnly )
 			query.totalTriangleCount or 0, query.scannedVertexCount,
 			query.uniqueSkinnedVertexCount or 0,
 			query.reusedSkinnedVertexCount or 0,
-			query.skippedVertexCount, query.cacheHit and "hit" or "miss",
+			query.skippedVertexCount, query.cacheHit and NL("hit") or NL("miss"),
 			query.queryMilliseconds, query.wallMilliseconds or query.queryMilliseconds )
 		if query.boneCandidateRejected then
 			BBS.Log( "  bone-local candidates were insufficient; result uses full-model fallback" )
@@ -4243,26 +4251,26 @@ hook.Add( "HUDPaint", "BBS.DrawLastHitHUD", function()
 	local x, y = 20, ScrH() - height - 20
 
 	draw.RoundedBox( 6, x, y, width, height, Color( 10, 12, 16, 215 ) )
-	draw.SimpleText( "Procedural Bodygroup Destruction — hit debugger", "DermaDefaultBold",
+	draw.SimpleText( NL("Procedural Bodygroup Destruction — hit debugger"), "DermaDefaultBold",
 		x + 10, y + 9, Color( 255, 175, 75 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	draw.SimpleText( string.format( "#%d  ent %d  %s  damage %.1f", hit.serial,
-		hit.entityIndex, hit.traceName == "miss" and "TRACE MISS" or "surface: " .. hit.traceName,
+	draw.SimpleText( string.format( NL("#%d  ent %d  %s  damage %.1f"), hit.serial,
+		hit.entityIndex, hit.traceName == "miss" and NL("TRACE MISS") or NL("surface: ") .. hit.traceName,
 		hit.damage ), "DermaDefault", x + 10, y + 31, COLOR_TEXT, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	draw.SimpleText( string.format( "hitbox %d | physbone %d | model bone %d (%s)",
+	draw.SimpleText( string.format( NL("hitbox %d | physbone %d | model bone %d (%s)"),
 		hit.hitBox, hit.physicsBone, hit.modelBone, hit.boneName ), "DermaDefault",
 		x + 10, y + 49, COLOR_TEXT, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	local query = hit.meshQuery
-	local queryText = "removal hull mesh query unavailable"
+	local queryText = NL("removal hull mesh query unavailable")
 	local queryColor = COLOR_MISS
 	if query and query.pending and query.cachePending then
 		local preparation = BBS.MeshPrewarmByKey
 			and BBS.MeshPrewarmByKey[ query.cacheKey ] or nil
 		local phase = preparation and preparation.phase or "queued"
-		if phase == "disk" then phase = "loading persistent mesh"
-		elseif phase == "mesh" then phase = "packing native mesh"
-		elseif phase == "eligibility" then phase = "checking bodygroups"
-		elseif phase == "rtx_cleanup" then phase = "releasing native mesh memory"
-		elseif phase == "resolve" then phase = "opening model cache" end
+		if phase == "disk" then phase = NL("loading persistent mesh")
+		elseif phase == "mesh" then phase = NL("packing native mesh")
+		elseif phase == "eligibility" then phase = NL("checking bodygroups")
+		elseif phase == "rtx_cleanup" then phase = NL("releasing native mesh memory")
+		elseif phase == "resolve" then phase = NL("opening model cache") end
 		local waited = hit.meshCacheWaitStarted
 			and math.max( SysTime() - hit.meshCacheWaitStarted, 0 ) or 0
 		local budget, remainingChunks = 0, nil
@@ -4275,20 +4283,20 @@ hook.Add( "HUDPaint", "BBS.DrawLastHitHUD", function()
 					preparation.phase == "mesh" and 15 or 10,
 					preparation.phase == "mesh" and 0.25 or 0.1 )
 		end
-		queryText = string.format( "cache: %s… %.2f s | %s chunks | %.1f ms/frame",
+		queryText = string.format( NL("cache: %s… %.2f s | %s chunks | %.1f ms/frame"),
 			phase, waited, tostring( remainingChunks or "?" ), budget )
 		queryColor = Color( 255, 205, 90 )
 	elseif query and query.pending then
-		queryText = string.format( "hull: analyzing impact snapshot… queue %d | budget %.1f ms/frame",
+		queryText = string.format( NL("hull: analyzing impact snapshot… queue %d | budget %.1f ms/frame"),
 			#BBS.MeshQueryQueue, GetFloat( "bbs_mesh_query_budget_ms", 10 ) )
 		queryColor = Color( 255, 205, 90 )
 	elseif query and query.ok then
-		queryText = string.format( "hull envelope: %d verts (%d inside) | %d tris / %d meshes | cache %s | %.2f ms",
+		queryText = string.format( NL("hull envelope: %d verts (%d inside) | %d tris / %d meshes | cache %s | %.2f ms"),
 			query.vertexCount, query.insideVertexCount, query.triangleCount,
-			query.meshCount, query.cacheHit and "hit" or "miss", query.queryMilliseconds )
+			query.meshCount, query.cacheHit and NL("hit") or NL("miss"), query.queryMilliseconds )
 		queryColor = Color( 100, 235, 255 )
 	elseif query then
-		queryText = "removal hull query failed: " .. tostring( query.error )
+		queryText = NL("removal hull query failed: ") .. tostring( query.error )
 	end
 	draw.SimpleText( queryText, "DermaDefaultBold", x + 10, y + 68, queryColor,
 		TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
@@ -4297,7 +4305,7 @@ hook.Add( "HUDPaint", "BBS.DrawLastHitHUD", function()
 		draw.SimpleText( damageText, "DermaDefault", x + 10, y + 87,
 			damageColor or Color( 175, 185, 200 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	end
-	draw.SimpleText( string.format( "retained %d / received %d", #BBS.DebugHits, BBS.ClientHitCount ),
+	draw.SimpleText( string.format( NL("retained %d / received %d"), #BBS.DebugHits, BBS.ClientHitCount ),
 		"DermaDefault", x + width - 10, y + 9, Color( 170, 180, 195 ), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP )
 	if BBS.PerfEndBackground then
 		BBS.PerfEndBackground( "Frame: last-hit HUD", performanceStarted )

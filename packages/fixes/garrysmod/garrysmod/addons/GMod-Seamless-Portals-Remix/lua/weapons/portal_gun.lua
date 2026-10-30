@@ -1,5 +1,11 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 SWEP.Base = "weapon_base"
-SWEP.PrintName = "Portal Gun"
+SWEP.PrintName = NP("Portal Gun")
 
 SWEP.ViewModel = "models/weapons/c_irifle.mdl"
 SWEP.ViewModelFlip = false
@@ -12,7 +18,7 @@ SWEP.Weight = 5
 SWEP.AutoSwichTo = true
 SWEP.AutoSwichFrom = false
 
-SWEP.Category = "Seamless Portals"
+SWEP.Category = NL("Seamless Portals")
 SWEP.Slot = 0
 SWEP.SlotPos = 1
 

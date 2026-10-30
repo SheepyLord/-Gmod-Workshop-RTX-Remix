@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not CLIENT then return end
 require("niknaks")
 
@@ -1120,9 +1126,9 @@ local function DrawDebugText()
 		if screen_pos.visible then
 			local class_text = light_data.classname or "light"
 			if light_data.emergency then
-				class_text = class_text .. " (EMERGENCY)"
+				class_text = class_text .. NL(" (EMERGENCY)")
 			elseif light_data.was_moved then
-				class_text = class_text .. " (MOVED)"
+				class_text = class_text .. NL(" (MOVED)")
 			end
 			
 			-- Add out of bounds warning
@@ -1130,7 +1136,7 @@ local function DrawDebugText()
 			local is_reasonable = IsPositionReasonable(light_data.pos, light_data.light.origin)
 			
 			if not is_in_world or not is_reasonable then
-				class_text = class_text .. " (OUT OF BOUNDS)"
+				class_text = class_text .. NL(" (OUT OF BOUNDS)")
 			end
 			
 			local text_color
@@ -1167,7 +1173,7 @@ local function DrawDebugText()
 			-- Additional debug info if out of bounds
 			if not is_in_world or not is_reasonable then
 				draw.SimpleText(
-					"BOUNDS CHECK FAILED",
+					NL("BOUNDS CHECK FAILED"),
 					"DermaDefault",
 					screen_pos.x,
 					screen_pos.y + 30,
@@ -1198,7 +1204,7 @@ local function DrawMissingLightsDebug()
 				DrawScreenCircle(screen_pos.x, screen_pos.y, 12, {255, 0, 0, 200}, 20)
 				
 				-- Text showing it's missing
-				local class_text = (light.classname or "light") .. " (NO UPDATER)"
+				local class_text = (light.classname or "light") .. NL(" (NO UPDATER)")
 				draw.SimpleText(
 					class_text,
 					"DermaDefault",

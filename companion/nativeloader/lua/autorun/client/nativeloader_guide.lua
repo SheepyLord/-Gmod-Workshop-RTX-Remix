@@ -24,7 +24,7 @@ local PAGES = {
         { "p", N("1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed.") },
         { "p", N("2. Change what you want.") },
         { "p", N("3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults.") },
-        { "p", N("Do not press 'Migrate N Developer Settings to rtx.conf' and check 'View Changes' before saving: the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map.") },
+        { "p", N("Do not press 'Migrate developer settings to rtx.conf'. Before saving, check 'View Changes': the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map.") },
     } },
     { N("Settings"), "icon16/cog.png", {
         { "h", N("Defaults from the original RTX install") },
@@ -57,7 +57,7 @@ local PAGES = {
         { "h", N("Common problems") },
         { "p", N("The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default).") },
         { "p", N("An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare.") },
-        { "p", N("Low frame rate: choose a lower preset or DLSS quality. Frame generation needs an RTX 40 or newer GPU.") },
+        { "p", N("Low frame rate: choose a lower graphics preset or DLSS quality. Frame generation is off by default for stability.") },
         { "p", N("'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game.") },
         { "p", N("Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu').") },
     } },

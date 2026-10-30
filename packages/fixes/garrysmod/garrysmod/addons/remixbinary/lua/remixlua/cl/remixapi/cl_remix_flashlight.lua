@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
 if not CLIENT then return end
 
@@ -442,17 +448,17 @@ end)
 
 -- Tool menu integration
 hook.Add("PopulateToolMenu", "RTXFlashlight_Menu", function()
-    spawnmenu.AddToolMenuOption("Utilities", "RTX Remix - API Lights", "Flashlight", "Flashlight", "", "", function(panel)
+    spawnmenu.AddToolMenuOption("Utilities", "RTX Remix - API Lights", "Flashlight", NL("Flashlight"), "", "", function(panel)
         panel:ClearControls()
         
-        panel:Help("Light Properties")
-        panel:NumSlider("Brightness", "rtx_flashlight_brightness", 0, 100000, 1)
-        panel:NumSlider("Radius", "rtx_flashlight_radius", 1, 200, 0)
-        panel:NumSlider("Cone Angle", "rtx_flashlight_cone_angle", 5, 90, 0)
-        panel:NumSlider("Cone Softness", "rtx_flashlight_cone_softness", 0, 1, 2)
-        panel:NumSlider("Volumetric Scale", "rtx_flashlight_volumetric", 0, 5, 1)
+        panel:Help(NL("Light Properties"))
+        panel:NumSlider(NL("Brightness"), "rtx_flashlight_brightness", 0, 100000, 1)
+        panel:NumSlider(NL("Radius"), "rtx_flashlight_radius", 1, 200, 0)
+        panel:NumSlider(NL("Cone Angle"), "rtx_flashlight_cone_angle", 5, 90, 0)
+        panel:NumSlider(NL("Cone Softness"), "rtx_flashlight_cone_softness", 0, 1, 2)
+        panel:NumSlider(NL("Volumetric Scale"), "rtx_flashlight_volumetric", 0, 5, 1)
         
-        panel:Help("Color")
+        panel:Help(NL("Color"))
         
         -- Color picker
         local colorPicker = vgui.Create("DColorMixer", panel)
@@ -474,12 +480,12 @@ hook.Add("PopulateToolMenu", "RTXFlashlight_Menu", function()
         
         panel:AddItem(colorPicker)
 
-        panel:Help("Position Offset")
-        panel:NumSlider("Forward Offset", "rtx_flashlight_offset_forward", -100, 100, 0)
-        panel:NumSlider("Right Offset", "rtx_flashlight_offset_right", -100, 100, 0)
-        panel:NumSlider("Up Offset", "rtx_flashlight_offset_up", -100, 100, 0)
+        panel:Help(NL("Position Offset"))
+        panel:NumSlider(NL("Forward Offset"), "rtx_flashlight_offset_forward", -100, 100, 0)
+        panel:NumSlider(NL("Right Offset"), "rtx_flashlight_offset_right", -100, 100, 0)
+        panel:NumSlider(NL("Up Offset"), "rtx_flashlight_offset_up", -100, 100, 0)
 
-        local btnReset = panel:Button("Reset", "")
+        local btnReset = panel:Button(NL("Reset"), "")
         btnReset.DoClick = function()
             RunConsoleCommand("rtx_flashlight_brightness", "1000")
             RunConsoleCommand("rtx_flashlight_radius", "20")

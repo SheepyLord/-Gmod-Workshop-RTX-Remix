@@ -1,5 +1,15 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
 TOOL.Category		= "RTX Remix"
-TOOL.Name			= "API Light - Rect"
+TOOL.Name			= "#tool.remix_rt_light_rect.name"
 TOOL.Command		= nil
 TOOL.ConfigName		= ""
 
@@ -17,9 +27,9 @@ TOOL.ClientConVar["yaw"]			= "0"
 TOOL.ClientConVar["pitch"]			= "-90"
 
 if CLIENT then
-    language.Add("tool.remix_rt_light_rect.name", "API Light - Rect")
-    language.Add("tool.remix_rt_light_rect.desc", "Spawn and edit Rectangular Area Lights")
-    language.Add("tool.remix_rt_light_rect.0", "Left-click: Spawn | Right-click: Update")
+    NLP("tool.remix_rt_light_rect.name", NN("API Light - Rect"))
+    NLP("tool.remix_rt_light_rect.desc", NN("Spawn and edit Rectangular Area Lights"))
+    NLP("tool.remix_rt_light_rect.0", NN("Left-click: Spawn | Right-click: Update"))
 end
 
 local function computeRadianceVector(r, g, b, brightness)
@@ -101,16 +111,16 @@ function TOOL:Think()
 end
 
 function TOOL.BuildCPanel(panel)
-    panel:Help("Spawn and edit Rectangular Area Lights")
+    panel:Help(NL("Spawn and edit Rectangular Area Lights"))
 
-    panel:NumSlider("Brightness", "remix_rt_light_rect_brightness", 0, 10000, 2)
-    panel:NumSlider("Volumetrics", "remix_rt_light_rect_volumetric", 0, 5, 2)
+    panel:NumSlider(NL("Brightness"), "remix_rt_light_rect_brightness", 0, 10000, 2)
+    panel:NumSlider(NL("Volumetrics"), "remix_rt_light_rect_volumetric", 0, 5, 2)
 
-    panel:NumSlider("X Size", "remix_rt_light_rect_xsize", 1, 2000, 0)
-    panel:NumSlider("Y Size", "remix_rt_light_rect_ysize", 1, 2000, 0)
+    panel:NumSlider(NL("X Size"), "remix_rt_light_rect_xsize", 1, 2000, 0)
+    panel:NumSlider(NL("Y Size"), "remix_rt_light_rect_ysize", 1, 2000, 0)
 
     panel:AddControl("Color", {
-        Label = "Color",
+        Label = NL("Color"),
         Red = "remix_rt_light_rect_color_r",
         Green = "remix_rt_light_rect_color_g",
         Blue = "remix_rt_light_rect_color_b",
@@ -121,6 +131,10 @@ function TOOL.BuildCPanel(panel)
     })
     
     panel:Help("")
-    panel:CheckBox("Freeze on Spawn", "remix_rt_light_rect_freeze")
+    panel:CheckBox(NL("Freeze on Spawn"), "remix_rt_light_rect_freeze")
 end
 
+
+if bundle_i18n then
+    bundle_i18n.RegisterPhrase("Remix Rect Light", NN("Remix Rect Light"))
+end

@@ -1,4 +1,14 @@
-TOOL.Category = "Seamless Portals"
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
+TOOL.Category = NL("Seamless Portals")
 TOOL.Name = "#Tool.portal_creator_tool.name"
 
 TOOL.Information = {
@@ -69,11 +79,11 @@ if ( CLIENT ) then
 
 	local green = Color(0, 255, 0, 50)
 
-	language.Add("Tool.portal_creator_tool.name", "Portal Creator")
-	language.Add("Tool.portal_creator_tool.desc", "Creates and links portals")
-	language.Add("Tool.portal_creator_tool.left", "Left Click: Create portal")
-	language.Add("Tool.portal_creator_tool.right1", "Right Click: Start linking a portal")
-	language.Add("Tool.portal_creator_tool.right2", "Right Click: Create link to another portal")
+	NLP("Tool.portal_creator_tool.name", NN("Portal Creator"))
+	NLP("Tool.portal_creator_tool.desc", NN("Creates and links portals"))
+	NLP("Tool.portal_creator_tool.left", NN("Left Click: Create portal"))
+	NLP("Tool.portal_creator_tool.right1", NN("Right Click: Start linking a portal"))
+	NLP("Tool.portal_creator_tool.right2", NN("Right Click: Create link to another portal"))
 
 	-- yoink! smiley :)
 	local xVar = CreateClientConVar("seamless_portals_size_x", "100", false, true, "Sets the size of the portal along the X axis", 1, 1000)
@@ -84,13 +94,13 @@ if ( CLIENT ) then
 	local alignVar = CreateClientConVar("seamless_portals_align", "1", false, true, "Enable/Disable Portal creator alignment helper", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
-		panel:AddControl("label", {text = "Creates and links portals"})
-		panel:NumSlider("Portal Size X", "seamless_portals_size_x", 1, 1000, 1)
-		panel:NumSlider("Portal Size Y", "seamless_portals_size_y", 1, 1000, 1)
-		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
-		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
-        panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
-        panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
+		panel:AddControl("label", {text = NL("Creates and links portals")})
+		panel:NumSlider(NL("Portal Size X"), "seamless_portals_size_x", 1, 1000, 1)
+		panel:NumSlider(NL("Portal Size Y"), "seamless_portals_size_y", 1, 1000, 1)
+		panel:NumSlider(NL("Portal Size Z"), "seamless_portals_size_z", 1, 100, 1)
+		panel:NumSlider(NL("Portal Sides"), "seamless_portals_sides", 3, 100, 0)
+        panel:CheckBox(NL("Has Backface (Invisible until linked!)"), "seamless_portals_backface")
+        panel:CheckBox(NL("Offset portals from walls"), "seamless_portals_align")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -216,4 +226,8 @@ elseif ( SERVER ) then
 		return true
 	end
 
+end
+
+if bundle_i18n then
+    bundle_i18n.RegisterPhrase("Seamless Portal", NN("Seamless Portal"))
 end

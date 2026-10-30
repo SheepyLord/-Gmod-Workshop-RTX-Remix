@@ -6,6 +6,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Complete the six-language companion and bundled RTX interfaces; add Korean to Destruction and
+  separate Traditional Chinese to the remaining add-ons. Fix ambiguous material labels, untranslated
+  motion-wheel states, weather status and migration buttons, and unclear terminology. Package/runtime builds now reject
+  incomplete catalogs; new checks exercise language selection, placeholders and metadata updates.
+
+
 ### Fixed (emergency: frame generation off by default)
 
 - **The RTX package no longer turns DLSS frame generation on at 3x**

@@ -59,3 +59,5 @@ slider); what does not fit is a help line below the control (an option's sixth f
   - `nativeloader_remix_reset` clears them all.
   - The option names and their numbers are the runtime's own: `rtx_options.h` and
     `rtx_graphics_preset.h` of the fork.
+
+Moved RTX panels and the companion panels use `i18n.PreparePanel` so long translated slider/combo labels are shown above their controls. Other tabs retain their original builders.

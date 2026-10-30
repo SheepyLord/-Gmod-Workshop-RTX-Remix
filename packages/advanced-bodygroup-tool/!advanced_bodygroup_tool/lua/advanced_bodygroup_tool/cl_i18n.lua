@@ -9,6 +9,7 @@ ABT.I18N = ABT.I18N or {}
 local I = ABT.I18N
 local DEFAULT_LANGUAGE = "en"
 local SUPPORTED = {
+    ["zh-tw"] = true,
 	en = true, zh = true, ja = true, ko = true, fr = true, ru = true,
 }
 
@@ -255,7 +256,7 @@ local FR = {
 	[ "vertex.editor_title" ] = "{{name}} — plage de sommets conservée",
 	[ "vertex.help" ] = "Activez des limites minimales ou maximales dans l’espace modèle. Un triangle est conservé seulement si ses trois sommets respectent toutes les limites actives.",
 	[ "vertex.preview_help" ] = "Glisser : orbite · molette : zoom · cyan : conservé · rouge : retiré",
-	[ "vertex.preview_count" ] = "{{kept}} / {{total}} triangles conservés",
+	[ "vertex.preview_count" ] = "Triangles conservés : {{kept}} / {{total}}",
 	[ "vertex.bound_min" ] = "Limite minimale {{axis}}",
 	[ "vertex.bound_max" ] = "Limite maximale {{axis}}",
 	[ "vertex.apply" ] = "Appliquer la plage conservée",
@@ -263,11 +264,11 @@ local FR = {
 	[ "vertex.failure" ] = "Échec de l’éditeur de plage de sommets : {{error}}",
 	[ "vertex.option_changed" ] = "L’option du bodygroup a changé pendant l’édition. Rouvrez l’éditeur pour la géométrie actuelle.",
 	[ "region.title" ] = "Région {{id}}",
-	[ "region.triangle_count" ] = "{{count}} triangles",
+	[ "region.triangle_count" ] = "Triangles : {{count}}",
 	[ "region.card_tooltip" ] = "Survolez pour prévisualiser cette région dans le monde ; cliquez pour basculer le masquage.",
 	[ "region.close" ] = "Fermer le sélecteur de régions",
 	[ "region.choose" ] = "Choisir des régions individuelles…",
-	[ "region.hidden_count" ] = "({{count}} masquées)",
+	[ "region.hidden_count" ] = "(masqués : {{count}})",
 	[ "region.selector_tooltip" ] = "Détecte les régions de maillage séparées dans ce bodygroup.",
 	[ "region.failure" ] = "Échec de la détection des régions : {{error}}",
 	[ "region.empty" ] = "Cette option de bodygroup ne contient aucune région UV dessinable.",
@@ -316,7 +317,7 @@ local RU = {
 	[ "vertex.failure" ] = "Ошибка редактора диапазона вершин: {{error}}",
 	[ "vertex.option_changed" ] = "Вариант бодигруппы изменился во время редактирования. Откройте редактор снова для текущей геометрии.",
 	[ "region.title" ] = "Область {{id}}",
-	[ "region.triangle_count" ] = "{{count}} треугольников",
+	[ "region.triangle_count" ] = "Треугольников: {{count}}",
 	[ "region.card_tooltip" ] = "Наведите для просмотра области в мире; нажмите, чтобы переключить скрытие.",
 	[ "region.close" ] = "Закрыть выбор областей",
 	[ "region.choose" ] = "Выбрать отдельные области…",
@@ -583,8 +584,8 @@ local CUT_EDITOR_TRANSLATIONS = {
 		[ "vertex.help" ] = "Empilez des plans de coupe pour définir la partie qui reste visible. Un triangle n’est conservé que si ses trois sommets restent du côté conservé de chaque plan actif.",
 		[ "vertex.multicut_help" ] = "Sélectionnez une coupe pour la modifier. Plusieurs coupes actives agissent ensemble ; chaque plan supplémentaire peut retirer une autre partie du maillage.",
 		[ "vertex.preview_help" ] = "Orbite : glisser le vide · Zoom : molette\nDéplacer le plan : glisser la flèche orange",
-		[ "vertex.preview_count" ] = "{{kept}} / {{total}} triangles conservés",
-		[ "vertex.cut_count" ] = "{{count}} plans de coupe",
+		[ "vertex.preview_count" ] = "Triangles conservés : {{kept}} / {{total}}",
+		[ "vertex.cut_count" ] = "Plans de coupe : {{count}}",
 		[ "vertex.local_draft" ] = "Les modifications restent dans cet aperçu local jusqu’à leur application.",
 		[ "vertex.triangle_note" ] = "Les coupes agissent sur des triangles entiers ; elles ne scindent pas la géométrie du modèle.",
 		[ "vertex.collection" ] = "Collection de coupes",
@@ -701,6 +702,114 @@ for languageCode, translations in pairs( CUT_EDITOR_TRANSLATIONS ) do
 	end
 end
 
+LOCALES["zh-tw"] = {
+    ["bodygroup.fallback"] = "身體群組 {{id}}",
+    ["bodygroup.hidden_blank"] = "隱藏 / 空白",
+    ["bodygroup.label"] = "{{name}}（組 {{id}}）",
+    ["bodygroup.option"] = "選項 {{value}}",
+    ["bodygroup.skin"] = "皮膚",
+    ["bodygroup.skin_value"] = "皮膚 {{value}}",
+    ["common.cancel"] = "取消",
+    ["common.material"] = "材質",
+    ["common.ok"] = "確定",
+    ["common.unknown_model"] = "未知模型",
+    ["common.unnamed"] = "未命名",
+    ["force.all"] = "強制隱藏此身體群組中的所有部分",
+    ["force.tooltip"] = "此選項會覆蓋下方的單獨區域和頂點範圍選擇。",
+    ["language.auto"] = "自動（跟隨 Garry's Mod 語言）",
+    ["language.en"] = "English",
+    ["language.fr"] = "Français",
+    ["language.ja"] = "日本語",
+    ["language.ko"] = "한국어",
+    ["language.ru"] = "Русский",
+    ["language.title"] = "介面語言",
+    ["language.zh"] = "简体中文",
+    ["language.zh-tw"] = "繁體中文",
+    ["panel.hide_all_hideable"] = "隱藏所有可隱藏的身體群組",
+    ["panel.hide_all_hideable_tooltip"] = "將所有包含空白選項的身體群組切換到其空白選項。",
+    ["panel.mask_help"] = "隱藏整個身體群組會遮罩所有三角形。連通區域和模型空間頂點範圍可隱藏更小的選擇。共享的 UV 區域仍可能一起隱藏。",
+    ["panel.restore"] = "恢復所有隱藏的身體群組、區域和頂點範圍",
+    ["panel.select_help"] = "左鍵或右鍵點選實體進行選擇，或按重新裝填鍵選擇自己。",
+    ["panel.show_all_reset"] = "顯示所有身體群組（重置）",
+    ["panel.show_all_reset_tooltip"] = "將每個身體群組切換到第一個可見選項，並清除強制、區域和頂點範圍隱藏。",
+    ["region.card_tooltip"] = "懸停可在世界模型中預覽此區域；點選可切換隱藏。",
+    ["region.choose"] = "選擇單獨區域…",
+    ["region.close"] = "關閉區域選擇器",
+    ["region.empty"] = "此身體群組選項沒有可繪製的 UV 區域。",
+    ["region.failure"] = "區域識別失敗：{{error}}",
+    ["region.hidden_count"] = "（已隱藏 {{count}} 個）",
+    ["region.note_hover"] = "懸停區域可在世界模型中著色並顯示指向標記；點選可隱藏或恢復。",
+    ["region.note_override"] = "隱藏整個身體群組會覆蓋這些選擇。懸停區域可在世界模型中預覽。",
+    ["region.selector_tooltip"] = "查詢此身體群組內互不相連的網格區域。",
+    ["region.title"] = "區域 {{id}}",
+    ["region.triangle_count"] = "{{count}} 個三角形",
+    ["tool.desc"] = "編輯身體群組，並強制隱藏整個組或連通區域",
+    ["tool.name"] = "高階身體群組工具",
+    ["tool.noglow"] = "禁用選擇輪廓",
+    ["tool.select"] = "選擇要編輯的實體",
+    ["tool.self"] = "選擇自己",
+    ["vertex.add_cut"] = "新增切割",
+    ["vertex.align_view"] = "對齊當前視角",
+    ["vertex.align_view_tooltip"] = "使所選平面的法線朝向當前預覽視角。",
+    ["vertex.angle_snap"] = "角度吸附",
+    ["vertex.apply"] = "應用切割",
+    ["vertex.apply_rejected"] = "伺服器拒絕了此次切割編輯。模型、許可權或切割數量限制可能已更改；草稿仍保留在編輯器中。",
+    ["vertex.applying"] = "正在應用…",
+    ["vertex.axis_presets"] = "軸向預設",
+    ["vertex.bound_max"] = "{{axis}} 最大邊界",
+    ["vertex.bound_min"] = "{{axis}} 最小邊界",
+    ["vertex.button"] = "編輯切割平面…",
+    ["vertex.button_active"] = "編輯切割平面…（已啟用）",
+    ["vertex.button_tooltip"] = "使用一個或多個模型空間切割平面隱藏選定的三角形。",
+    ["vertex.cancel"] = "取消",
+    ["vertex.clear"] = "清除切割",
+    ["vertex.clear_tooltip"] = "移除此身體群組的所有切割平面。",
+    ["vertex.collection"] = "切割集合",
+    ["vertex.cut_count"] = "{{count}} 個切割平面",
+    ["vertex.cut_disabled"] = "已禁用",
+    ["vertex.cut_disabled_short"] = "關",
+    ["vertex.cut_enabled"] = "已啟用",
+    ["vertex.cut_enabled_short"] = "開",
+    ["vertex.cut_name"] = "切割 {{id}}",
+    ["vertex.duplicate_cut"] = "複製",
+    ["vertex.editor_short"] = "多重切割編輯器",
+    ["vertex.editor_title"] = "{{name}} — 切割平面",
+    ["vertex.enabled"] = "啟用",
+    ["vertex.failure"] = "切割平面編輯器失敗：{{error}}",
+    ["vertex.flip_side"] = "翻轉保留側",
+    ["vertex.help"] = "疊加切割平面來塑造需要保留顯示的部分。僅當三角形的三個頂點都位於每個已啟用平面的保留側時，該三角形才會保留。",
+    ["vertex.keep_negative"] = "保留負側",
+    ["vertex.keep_negative_short"] = "− 側",
+    ["vertex.keep_positive"] = "保留正側",
+    ["vertex.keep_positive_short"] = "+ 側",
+    ["vertex.keep_side"] = "保留側",
+    ["vertex.keep_side_short"] = "側",
+    ["vertex.kept"] = "保留",
+    ["vertex.local_draft"] = "更改只會顯示在本地預覽中，應用後才會儲存。",
+    ["vertex.move_down"] = "下移",
+    ["vertex.move_up"] = "上移",
+    ["vertex.multicut_help"] = "選擇一個切割平面進行編輯。多個已啟用平面會共同生效，因此每增加一個平面都可以移除網格的另一部分。",
+    ["vertex.offset"] = "沿法線偏移",
+    ["vertex.offset_short"] = "偏移",
+    ["vertex.offset_tooltip"] = "沿法線方向移動平面。",
+    ["vertex.option_changed"] = "編輯器開啟期間模型或身體群組幾何體已更改。請重新開啟後再應用。",
+    ["vertex.pitch"] = "俯仰角",
+    ["vertex.preview_count"] = "保留 {{kept}} / {{total}} 個三角形",
+    ["vertex.preview_help"] = "拖動空白處：旋轉 · 滾輪：縮放\n拖動橙色箭頭：移動平面",
+    ["vertex.remove_cut"] = "刪除",
+    ["vertex.removed"] = "移除",
+    ["vertex.roll"] = "滾轉角",
+    ["vertex.roll_tooltip"] = "繞法線旋轉平面網格，不會改變切割側。",
+    ["vertex.rotation"] = "旋轉",
+    ["vertex.selected_none"] = "請選擇一個切割平面以編輯其變換。",
+    ["vertex.snap_off"] = "關閉",
+    ["vertex.state"] = "狀態",
+    ["vertex.transform"] = "變換",
+    ["vertex.triangle_note"] = "切割以完整三角形為單位，不會拆分模型幾何體。",
+    ["vertex.yaw"] = "偏航角",
+}
+for _, locale in pairs(LOCALES) do locale["language.zh-tw"] = "繁體中文" end
+
 I.locales = LOCALES
 
 function I.DetectLanguage()
@@ -709,6 +818,8 @@ function I.DetectLanguage()
 	value = string.gsub( value, "[%s%-]+", "_" )
 	local function begins( prefix ) return string.sub( value, 1, #prefix ) == prefix end
 	local function contains( part ) return string.find( value, part, 1, true ) ~= nil end
+	if value == "tchinese" or value == "cht" or value == "zh_tw" or value == "zh_hk"
+	or contains( "hant" ) then return "zh-tw" end
 	if begins( "zh" ) or value == "schinese" or value == "tchinese"
 	or value == "chs" or value == "cht" or contains( "chinese" )
 	or contains( "hans" ) or contains( "hant" ) then return "zh" end
@@ -727,7 +838,7 @@ function I.Reload()
 end
 
 function I.GetLanguageOptions()
-	return { "auto", "en", "zh", "ja", "ko", "fr", "ru" }
+	return { "auto", "en", "zh", "zh-tw", "ja", "ko", "fr", "ru" }
 end
 
 function ABT.L( key, variables )

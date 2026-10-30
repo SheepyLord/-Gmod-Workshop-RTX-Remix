@@ -21,6 +21,8 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0002-Translate-the-Remix-menus-...` | The Remix menus (Alt+X) in zh-CN, zh-TW, ja, ko, fr and ru ([RESEARCH.md](../docs/RESEARCH.md) section 25) |
 | `0003-i18n-the-translators-glossaries` | The translators' glossaries |
 | `0004-Atmosphere-...` | The real Moon, the night sky image, lunar and solar eclipses, and `dxvk.numCompilerThreads < 0` ([ADR 0032](../docs/decisions/0032-real-moon-stars-eclipses-and-fog-presets.md), RESEARCH.md section 29) |
+| `0005-i18n-...` | Complete weather display translations and formatted status, clearer cache names, strict catalog checks and tests; dependency setup tolerates `!` in paths |
+| `0006-i18n-...` | Static translated migration buttons with separately formatted counts; regression coverage for both migration directions |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).

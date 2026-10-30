@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 if not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
 
 local brightness_multiplier = CreateClientConVar("rtx_api_map_lights_brightness", "1.0", true, false, "Brightness multiplier for converted lights")
@@ -2275,7 +2281,7 @@ end)
 
 -- Add context menu for lights
 properties.Add("rtx_light_edit", {
-    MenuLabel = "Edit RTX Light",
+    MenuLabel = NP("Edit RTX Light"),
     Order = 500,
     MenuIcon = "icon16/lightbulb.png",
     
@@ -2469,15 +2475,15 @@ hook.Add("HUDPaint", "rtx_api_map_lights_DebugHUD", function()
     surface.SetDrawColor(legendBg)
     surface.DrawRect(legendX - 5, legendY - 5, 145, 110)
     
-    draw.SimpleText("Map Lights HUD", "DermaDefaultBold", legendX, legendY, Color(255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText(string.format("Visible: %d / %d", visibleLights, #createdLights), "DermaDefault", legendX, legendY + 15, Color(200, 200, 200), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText(string.format("Max Dist: %dm", math.floor(maxDist / 39.37)), "DermaDefault", legendX, legendY + 30, Color(200, 200, 200), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(NL("Map Lights HUD"), "DermaDefaultBold", legendX, legendY, Color(255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(string.format(NL("Visible: %d / %d"), visibleLights, #createdLights), "DermaDefault", legendX, legendY + 15, Color(200, 200, 200), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(string.format(NL("Max Dist: %dm"), math.floor(maxDist / 39.37)), "DermaDefault", legendX, legendY + 30, Color(200, 200, 200), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     
     -- Legend items
-    draw.SimpleText("Point", "DermaDefault", legendX, legendY + 50, Color(255, 255, 0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText("Spot", "DermaDefault", legendX, legendY + 65, Color(255, 100, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText("Sun", "DermaDefault", legendX, legendY + 80, Color(255, 200, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText("Proj", "DermaDefault", legendX, legendY + 95, Color(255, 0, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(NL("Point"), "DermaDefault", legendX, legendY + 50, Color(255, 255, 0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(NL("Spot"), "DermaDefault", legendX, legendY + 65, Color(255, 100, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(NL("Sun"), "DermaDefault", legendX, legendY + 80, Color(255, 200, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText(NL("Proj"), "DermaDefault", legendX, legendY + 95, Color(255, 0, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
 end)
 
 hook.Add("Initialize", "rtx_api_map_lights_Reset", function()

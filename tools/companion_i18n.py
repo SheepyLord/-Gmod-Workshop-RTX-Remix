@@ -21,13 +21,19 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LUA_ROOT = os.path.join(REPO, 'companion', 'nativeloader', 'lua')
 I18N = os.path.join(REPO, 'companion', 'i18n')
+ADDON_I18N = os.path.join(I18N, 'addons')
+PACKAGES = os.path.join(REPO, 'packages')
 POT = 'nativeloader.pot'
 # GMod's language codes (gmod_language), as the companion looks them up.
 LANGUAGES = ('zh-CN', 'zh-TW', 'ja', 'ko', 'fr', 'ru')
 # L("text"), L"text", N("text"), N"text": a Lua string literal in double quotes.
 MARKED = re.compile(r'\b([LN])\s*(?:\(\s*)?"((?:[^"\\\n]|\\.)*)"')
+ADDON_MARKED = re.compile(r'\b(NL|NN|NP)\s*(?:\(\s*)?"((?:[^"\\\n]|\\.)*)"')
 LUA_ESCAPES = {'n': '\n', 't': '\t', 'r': '\r', '\\': '\\', '"': '"', "'": "'", 'a': '\a', 'b': '\b', 'f': '\f', 'v': '\v'}
 CONVERSION = re.compile(r'%[-+ #0]*\d*(?:\.\d+)?[sdifgxXqc%]')
+# Product names and words that are also correct French. Everything else needs a translation.
+UNCHANGED = {language: {'Advanced MMD Animation Player'} for language in LANGUAGES}
+UNCHANGED['fr'] |= {'Auto', 'Ultra', 'Blizzard', 'Smog'}
 
 
 class I18nError(Exception):
@@ -55,7 +61,7 @@ def lua_unescape(text, where):
     return ''.join(out)
 
 
-def extract(root=LUA_ROOT):
+def extract(root=LUA_ROOT, marked=MARKED):
     """Every marked text in the companion's Lua, in file order: [(text, ["file:line", ...])]."""
     found = {}
     for folder, dirs, files in os.walk(root):
@@ -64,12 +70,13 @@ def extract(root=LUA_ROOT):
             if not name.endswith('.lua') or name == 'i18n_data.lua':
                 continue
             path = os.path.join(folder, name)
-            rel = os.path.relpath(path, os.path.dirname(os.path.dirname(root))).replace('\\', '/')
+            reference_root = REPO if marked is ADDON_MARKED else os.path.dirname(os.path.dirname(root))
+            rel = os.path.relpath(path, reference_root).replace('\\', '/')
             with open(path, encoding='utf-8') as fh:
                 for number, line in enumerate(fh, 1):
                     if line.lstrip().startswith('--'):
                         continue  # a comment line (the headers name L and N too)
-                    for match in MARKED.finditer(line):
+                    for match in marked.finditer(line):
                         text = lua_unescape(match.group(2), '%s:%d' % (rel, number))
                         if text:
                             found.setdefault(text, []).append('%s:%d' % (rel, number))
@@ -190,8 +197,8 @@ def write_po(path, language, strings, translations):
         fh.write(text)
 
 
-def update(i18n=I18N, root=LUA_ROOT):
-    strings = extract(root)
+def update(i18n=I18N, root=LUA_ROOT, marked=MARKED):
+    strings = extract(root, marked)
     os.makedirs(i18n, exist_ok=True)
     write_po(os.path.join(i18n, POT), None, strings, {})
     summary = {}
@@ -205,32 +212,46 @@ def update(i18n=I18N, root=LUA_ROOT):
     return strings, summary
 
 
-def check(i18n=I18N, root=LUA_ROOT):
+def check(i18n=I18N, root=LUA_ROOT, complete=False, marked=MARKED, unchanged=None):
     """{language: {msgid: msgstr}} of the usable translations. Raises I18nError naming file and line."""
-    known = {s for s, _ in extract(root)}
+    known = {s for s, _ in extract(root, marked)}
+    unchanged = UNCHANGED if unchanged is None else unchanged
     out, problems = {}, []
     for language in LANGUAGES:
         path = os.path.join(i18n, language + '.po')
         if not os.path.exists(path):
             problems.append('%s is missing (tools/companion_i18n.py update makes it)' % path)
             continue
-        table = {}
+        table, seen = {}, set()
         for entry in read_po(path):
             msgid, msgstr = entry['msgid'], entry['msgstr']
             where = '%s:%d' % (path, entry['line'])
             if not msgid:
                 continue  # the header
+            if msgid in seen:
+                problems.append('%s: duplicate msgid "%s"' % (where, msgid[:60]))
+                continue
+            seen.add(msgid)
             if msgid not in known:
                 problems.append('%s: "%s" is not text the companion has (run update)' % (where, msgid[:60]))
                 continue
-            if not msgstr or entry['fuzzy']:
+            if not msgstr.strip() or entry['fuzzy']:
+                if complete:
+                    problems.append('%s: %s translation for "%s"' %
+                                    (where, 'fuzzy' if entry['fuzzy'] else 'empty', msgid[:60]))
                 continue
+            if complete and msgstr == msgid and msgid not in unchanged.get(language, set()):
+                problems.append('%s: untranslated English "%s"' % (where, msgid[:60]))
             # Only text the companion formats has conversions; elsewhere a "%" is just a percent sign.
-            want, got = CONVERSION.findall(msgid), CONVERSION.findall(msgstr)
-            if want and want != got:
+            want = [spec for spec in CONVERSION.findall(msgid) if spec != '%%']
+            got = [spec for spec in CONVERSION.findall(msgstr) if spec != '%%']
+            if want and (want != got or '%' in CONVERSION.sub('', msgstr)):
                 problems.append('%s: printf conversions %s must match the English %s' % (where, got, want))
                 continue
             table[msgid] = msgstr
+        if complete:
+            for msgid in sorted(known - seen):
+                problems.append('%s: missing translation for "%s" (run update)' % (path, msgid[:60]))
         out[language] = table
     if problems:
         raise I18nError('\n'.join(problems))
@@ -265,18 +286,33 @@ def build_text(tables):
     return '\n'.join(lines) + '\n'
 
 
-def build(out, i18n=I18N, root=LUA_ROOT):
-    tables = check(i18n, root)
+def build(out, i18n=I18N, root=LUA_ROOT, complete=True):
+    tables = check(i18n, root, complete=complete)
     text = build_text(tables)
+    if (os.path.normcase(os.path.abspath(i18n)) == os.path.normcase(I18N)
+            and os.path.normcase(os.path.abspath(root)) == os.path.normcase(LUA_ROOT)):
+        addon_tables = check_addons(complete=complete)
+        # Keep the two namespaces separate: weather "Clear" is not the action "Clear".
+        text = (text.rstrip()[:-1] +
+                '    -- Bundled interface catalog: GPL-2.0; source and COPYING are in resource/bundled-translations/.\n' +
+                '    ["addons"] = ' + build_text(addon_tables).split('return ', 1)[1].rstrip() + ',\n}\n')
     with open(out, 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(text)
     return {language: len(table) for language, table in tables.items()}
+
+
+def check_addons(complete=True):
+    import json
+    with open(os.path.join(ADDON_I18N, 'unchanged.json'), encoding='utf-8') as fh:
+        unchanged = json.load(fh)
+    return check(ADDON_I18N, PACKAGES, complete=complete, marked=ADDON_MARKED, unchanged=unchanged)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Translations of the Lua companion (companion/i18n).')
     ap.add_argument('command', choices=('update', 'check', 'build'))
     ap.add_argument('--out', help='build: the Lua file to write (lua/nativeloader/i18n_data.lua of the add-on)')
+    ap.add_argument('--allow-incomplete', action='store_true', help='check/build drafts with English fallback')
     args = ap.parse_args(argv)
     try:
         if args.command == 'update':
@@ -286,14 +322,19 @@ def main(argv=None):
                 print('  %-6s %d of %d translated%s' % (language, info['translated'], len(strings),
                                                        ', %d translations of text no longer used dropped' % len(info['dropped'])
                                                        if info['dropped'] else ''))
+            addon_strings, addon_summary = update(ADDON_I18N, PACKAGES, ADDON_MARKED)
+            for language, info in addon_summary.items():
+                print('  addons %-6s %d of %d translated' % (language, info['translated'], len(addon_strings)))
         elif args.command == 'check':
-            tables = check()
+            tables = check(complete=not args.allow_incomplete)
             for language, table in tables.items():
                 print('  %-6s %d translations' % (language, len(table)))
+            for language, table in check_addons(complete=not args.allow_incomplete).items():
+                print('  addons %-6s %d translations' % (language, len(table)))
         else:
             if not args.out:
                 ap.error('build needs --out')
-            for language, count in build(args.out).items():
+            for language, count in build(args.out, complete=not args.allow_incomplete).items():
                 print('  %-6s %d translations' % (language, count))
     except (I18nError, OSError) as error:
         print('error: %s' % error, file=sys.stderr)

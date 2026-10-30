@@ -1,5 +1,15 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
+local function NLP(key, text)
+    if bundle_i18n then bundle_i18n.RegisterPhrase(key, text)
+    elseif CLIENT then language.Add(key, text) end
+end
 TOOL.Category		= "RTX Remix"
-TOOL.Name			= "API Light - Sphere"
+TOOL.Name			= "#tool.remix_rt_light_sphere.name"
 TOOL.Command		= nil
 TOOL.ConfigName		= ""
 
@@ -19,9 +29,9 @@ TOOL.ClientConVar["yaw"]			= "0"
 TOOL.ClientConVar["pitch"]			= "-90"
 
 if CLIENT then
-    language.Add("tool.remix_rt_light_sphere.name", "API Light - Sphere")
-    language.Add("tool.remix_rt_light_sphere.desc", "Spawn and edit Sphere Lights")
-    language.Add("tool.remix_rt_light_sphere.0", "Left-click: Spawn | Right-click: Update")
+    NLP("tool.remix_rt_light_sphere.name", NN("API Light - Sphere"))
+    NLP("tool.remix_rt_light_sphere.desc", NN("Spawn and edit Sphere Lights"))
+    NLP("tool.remix_rt_light_sphere.0", NN("Left-click: Spawn | Right-click: Update"))
 end
 
 local function computeRadianceVector(r, g, b, brightness)
@@ -111,19 +121,19 @@ function TOOL:Think()
 end
 
 function TOOL.BuildCPanel(panel)
-    panel:Help("Spawn and edit Sphere Lights")
+    panel:Help(NL("Spawn and edit Sphere Lights"))
 
-    panel:NumSlider("Radius", "remix_rt_light_sphere_radius", 1, 2000, 0)
-    panel:NumSlider("Brightness", "remix_rt_light_sphere_brightness", 0, 10000, 2)
-    panel:NumSlider("Volumetrics", "remix_rt_light_sphere_volumetric", 0, 5, 2)
+    panel:NumSlider(NL("Radius"), "remix_rt_light_sphere_radius", 1, 2000, 0)
+    panel:NumSlider(NL("Brightness"), "remix_rt_light_sphere_brightness", 0, 10000, 2)
+    panel:NumSlider(NL("Volumetrics"), "remix_rt_light_sphere_volumetric", 0, 5, 2)
     
-    panel:CheckBox("Enable Light Shaping", "remix_rt_light_sphere_shape_enabled")
-    panel:NumSlider("Cone Angle", "remix_rt_light_sphere_cone", 0, 180, 0)
-    panel:NumSlider("Cone Softness", "remix_rt_light_sphere_softness", 0, 1, 2)
-    panel:NumSlider("Focus Exponent", "remix_rt_light_sphere_focus", 0, 10, 2)
+    panel:CheckBox(NL("Enable Light Shaping"), "remix_rt_light_sphere_shape_enabled")
+    panel:NumSlider(NL("Cone Angle"), "remix_rt_light_sphere_cone", 0, 180, 0)
+    panel:NumSlider(NL("Cone Softness"), "remix_rt_light_sphere_softness", 0, 1, 2)
+    panel:NumSlider(NL("Focus Exponent"), "remix_rt_light_sphere_focus", 0, 10, 2)
 
     panel:AddControl("Color", {
-        Label = "Color",
+        Label = NL("Color"),
         Red = "remix_rt_light_sphere_color_r",
         Green = "remix_rt_light_sphere_color_g",
         Blue = "remix_rt_light_sphere_color_b",
@@ -133,6 +143,10 @@ function TOOL.BuildCPanel(panel)
         Multiplier = 1
     })
     
-    panel:CheckBox("Freeze on Spawn", "remix_rt_light_sphere_freeze")
+    panel:CheckBox(NL("Freeze on Spawn"), "remix_rt_light_sphere_freeze")
 end
 
+
+if bundle_i18n then
+    bundle_i18n.RegisterPhrase("Remix Sphere Light", NN("Remix Sphere Light"))
+end

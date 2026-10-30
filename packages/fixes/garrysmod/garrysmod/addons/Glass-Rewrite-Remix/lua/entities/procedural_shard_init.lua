@@ -1,3 +1,9 @@
+-- Localized by the native-loader companion when bundled; standalone use keeps the English.
+local bundle_i18n = CLIENT and file.Exists("nativeloader/i18n.lua", "LUA")
+    and include("nativeloader/i18n.lua") or nil
+local NL = bundle_i18n and bundle_i18n.A or function(text) return text end
+local NP = bundle_i18n and bundle_i18n.P or function(text) return text end
+local function NN(text) return text end
 AddCSLuaFile()
 
 // to shut up console
@@ -18,15 +24,15 @@ local models = {
 }
 
 local names = {
-    "Glass Thin 1",
-    "Glass Thin 2",
-    "Glass Thin 4",
-    "Glass Thick 1",
-    "Glass Thick 2",
-    "Glass Thick 4",
-    "Glass Block 1",
-    "Glass Block 2",
-    "Glass Block 4",
+    NP("Glass Thin 1"),
+    NP("Glass Thin 2"),
+    NP("Glass Thin 4"),
+    NP("Glass Thick 1"),
+    NP("Glass Thick 2"),
+    NP("Glass Thick 4"),
+    NP("Glass Block 1"),
+    NP("Glass Block 2"),
+    NP("Glass Block 4"),
 }
 
 local use_expensive = CreateConVar("glass_expensive_material", 0, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Use nicer material", 0, 1)
@@ -56,7 +62,7 @@ end
 
 local ENT = scripted_ents.Get("procedural_shard")
 ENT.Spawnable = true
-ENT.PrintName =  "​100% Fragile"
+ENT.PrintName =  NP("​100% Fragile")
 ENT.AdminOnly = true
 function ENT:SpawnFunction(ply, tr, class)
     local block = ents.Create("procedural_shard")

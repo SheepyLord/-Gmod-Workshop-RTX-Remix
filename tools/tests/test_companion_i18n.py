@@ -109,6 +109,42 @@ class CompanionI18nTests(unittest.TestCase):
         self.po('ja').write_text(text, encoding='utf-8')
         self.assertEqual(ci.check(str(self.i18n), str(self.lua))['ja'], {})
 
+    def test_complete_check_rejects_empty_fuzzy_missing_and_english(self):
+        ci.update(str(self.i18n), str(self.lua))
+        self.set_translation('ja', 'Start here', 'Start here')
+        text = self.po('ja').read_text(encoding='utf-8').replace('msgid "Welcome"\nmsgstr ""',
+                                                                 '#, fuzzy\nmsgid "Welcome"\nmsgstr "ようこそ"')
+        text = text.replace('msgid "Open the guide"\nmsgstr ""', '')
+        self.po('ja').write_text(text, encoding='utf-8')
+        with self.assertRaises(ci.I18nError) as caught:
+            ci.check(str(self.i18n), str(self.lua), complete=True)
+        for problem in ('empty translation', 'fuzzy translation', 'missing translation', 'untranslated English'):
+            self.assertIn(problem, str(caught.exception))
+        output = self.root / 'built.lua'
+        with self.assertRaises(ci.I18nError):
+            ci.build(str(output), str(self.i18n), str(self.lua))
+        self.assertFalse(output.exists())
+
+    def test_duplicate_entries_and_stray_format_percent_are_rejected(self):
+        ci.update(str(self.i18n), str(self.lua))
+        self.set_translation('fr', 'Package %s was updated', 'Paquet %s : 100 %')
+        with self.assertRaisesRegex(ci.I18nError, 'printf conversions'):
+            ci.check(str(self.i18n), str(self.lua))
+        self.set_translation('fr', 'Package %s was updated', 'Paquet %s : 100 %%')
+        ci.check(str(self.i18n), str(self.lua))
+        with self.po('fr').open('a', encoding='utf-8') as fh:
+            fh.write('\nmsgid "Welcome"\nmsgstr "Bienvenue"\n')
+        with self.assertRaisesRegex(ci.I18nError, 'duplicate msgid'):
+            ci.check(str(self.i18n), str(self.lua))
+
+    def test_shipping_catalogs_are_complete_and_template_matches_source(self):
+        tables = ci.check(complete=True)
+        source = {s for s, _ in ci.extract()}
+        template = {e['msgid'] for e in ci.read_po(str(REPO / 'companion' / 'i18n' / ci.POT)) if e['msgid']}
+        self.assertEqual(template, source)
+        for language, table in tables.items():
+            self.assertEqual(set(table), source, language)
+
     def test_broken_po_syntax_is_reported(self):
         ci.update(str(self.i18n), str(self.lua))
         self.po('ko').write_text(self.po('ko').read_text(encoding='utf-8') + '\nmsgid "Welcome"\nmsgstr "bad \\q escape"\n',
@@ -128,7 +164,7 @@ class CompanionI18nTests(unittest.TestCase):
         self.set_translation('zh-CN', 'Path: bin\\win64\\winmm.dll, "quoted"', '路径："bin\\win64"')
         self.set_translation('ru', 'Start here', 'Начните здесь')
         built = self.root / 'i18n_data.lua'
-        counts = ci.build(str(built), str(self.i18n), str(self.lua))
+        counts = ci.build(str(built), str(self.i18n), str(self.lua), complete=False)
         self.assertEqual((counts['zh-CN'], counts['ru'], counts['ja']), (2, 1, 0))
         harness = self.root / 'harness.lua'
         harness.write_text('''
