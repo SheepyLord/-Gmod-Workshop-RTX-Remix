@@ -109,9 +109,17 @@ def path_state(path: Path) -> object:
     return [info.st_size, info.st_mtime_ns]
 
 
+def unpacked_input(text: str, repo: Path = REPO) -> bool:
+    """A path under out/inputs: unpacked from packages/, whose git tree the fingerprint already holds."""
+    path = Path(text) if os.path.isabs(text) else repo / text
+    inputs_dir = os.path.normcase(os.path.abspath(repo / 'out' / 'inputs')) + os.sep
+    return os.path.normcase(os.path.abspath(path)).startswith(inputs_dir)
+
+
 def fingerprint(config: dict, repo: Path = REPO) -> str:
     """Changes whenever an input of the item may have changed: this repository's packaging inputs
-    (their tree in HEAD and any uncommitted change) and every path a part names."""
+    (their tree in HEAD and any uncommitted change) and every other path a part names. Paths under
+    out/inputs are left out: they are derived from packages/, and depend on whether an unpack has run."""
     state: dict = {'config': config, 'repo': {}}
     for rel in REPO_INPUTS:
         tree = subprocess.run(['git', 'rev-parse', f'HEAD:{rel}'], cwd=repo, capture_output=True, text=True).stdout.strip()
@@ -120,7 +128,9 @@ def fingerprint(config: dict, repo: Path = REPO) -> str:
     state['parts'] = []
     for part in config['parts']:
         paths = [part['package']] if 'package' in part else [a for a in part.get('args', []) if os.path.isabs(a)]
-        state['parts'].append({p: path_state(Path(p)) for p in paths})
+        # Relative paths are relative to this repository, wherever the script runs from.
+        state['parts'].append({p: path_state(Path(p) if os.path.isabs(p) else repo / p)
+                               for p in paths if not unpacked_input(p, repo)})
     text = json.dumps(state, sort_keys=True, default=str)
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 

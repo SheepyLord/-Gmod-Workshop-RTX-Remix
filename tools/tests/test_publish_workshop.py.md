@@ -19,6 +19,7 @@ cd tools; python -m unittest tests.test_publish_workshop
 | dry run and force | a dry run uploads and records nothing; `--force` uploads although nothing changed |
 | only the newest archive is kept | |
 | config errors | a bad item id, a part with neither or both sources, an unknown builder |
+| the fingerprint ignores unpacked inputs and the working folder | a part read from `out/inputs` does not change the fingerprint when its file appears there, nor when the script runs from another folder; an absolute path elsewhere still does |
 | the lock takes over a dead owner and waits for a live one | |
 | install, refuse foreign and uninstall | all four hooks (`post-commit`, `post-merge`, `post-checkout`, `pre-push`) carry the marker and LF line endings and run Git LFS's step of the same name; a foreign hook is refused unless forced; uninstall removes only ours |
 | the hooks are valid sh | `sh -n` accepts every hook, with the `sh` git runs hooks with: on the path, or Git for Windows' own beside `git.exe` (`bin\sh.exe`, `usr\bin\sh.exe`); skipped only without either |

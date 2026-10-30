@@ -112,6 +112,37 @@ class PublishTests(unittest.TestCase):
             with self.assertRaisesRegex(pub.PublishError, message):
                 pub.load_config(path)
 
+    def test_the_fingerprint_ignores_unpacked_inputs_and_the_working_folder(self):
+        # A part read from out/inputs is derived from packages/ (fingerprinted by its git tree). Its
+        # state there must not count: the first run after a merge fingerprinted it before unpacking
+        # it, every later run after, and the two never matched (2026-10-30).
+        config = {**self.config, 'parts': [*self.config['parts'],
+                                           {'name': 'u', 'package': 'out/inputs/test-fingerprint/u.gma'}]}
+        unpacked = REPO / 'out' / 'inputs' / 'test-fingerprint'
+        shutil.rmtree(unpacked, ignore_errors=True)
+        before = pub.fingerprint(config)
+        unpacked.mkdir(parents=True)
+        try:
+            (unpacked / 'u.gma').write_bytes(b'GMAD')
+            saved = os.getcwd()
+            os.chdir(TOOLS)
+            try:
+                self.assertEqual(pub.fingerprint(config), before)
+            finally:
+                os.chdir(saved)
+        finally:
+            shutil.rmtree(unpacked, ignore_errors=True)
+        self.assertTrue(pub.unpacked_input('out/inputs/x/y'))
+        self.assertTrue(pub.unpacked_input(str(REPO / 'out' / 'inputs' / 'x')))
+        self.assertFalse(pub.unpacked_input('out/packages/x.gma'))
+        # An absolute path elsewhere still counts.
+        other = self.root / 'other.gma'
+        other.write_bytes(b'one')
+        with_other = {**self.config, 'parts': [{'name': 'o', 'package': str(other)}]}
+        first = pub.fingerprint(with_other)
+        other.write_bytes(b'two!')
+        self.assertNotEqual(pub.fingerprint(with_other), first)
+
     def test_the_lock_takes_over_a_dead_owner_and_waits_for_a_live_one(self):
         lock = self.root / 'publish.lock'
         lock.write_text('999999', encoding='ascii')  # no such process

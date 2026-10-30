@@ -69,8 +69,11 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
    - those packaging inputs in `HEAD` (their git tree, which for an LFS file is its pointer and so
      its content's oid) and any uncommitted change to them;
    - `workshop.json`;
-   - any absolute path a part names (none does today): a git repository by its commit and changed
-     files, a folder by each file's name, size and time, a file by its size and time.
+   - any other path a part names (none does today; relative ones are relative to this repository): a
+     git repository by its commit and changed files, a folder by each file's name, size and time, a
+     file by its size and time. Paths under `out\inputs` are left out: they are derived from
+     `packages/`, and their state depends on whether an unpack has run (counting it made the first run
+     after a merge and every later run disagree, 2026-10-30).
 
    If the fingerprint matches the last upload's, it stops: **unchanged inputs**. This is the usual
    result of a commit that touches only docs or loader code; the item does not contain `winmm.dll`.
