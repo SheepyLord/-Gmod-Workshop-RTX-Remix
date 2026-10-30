@@ -39,6 +39,8 @@ def _files(root):
         current = stack.pop()
         for entry in sorted(current.iterdir()):
             if entry.is_dir():
+                if (entry / '.git').exists():
+                    continue  # another checkout: a worktree (the app keeps them in .claude/worktrees) or a clone
                 if entry.name not in SKIP_DIRS and not (current == root and entry.name in SKIP_TOP):
                     stack.append(entry)
             else:
