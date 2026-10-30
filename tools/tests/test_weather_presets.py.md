@@ -19,3 +19,6 @@ fork has eight fields, one of each blend kind, and twelve presets.
 
 Run with the other tool tests: `python -m unittest discover -s tests` from `tools\` (as
 `tools\test.ps1` does). Exit 0 when the tests pass.
+
+- `test_what_each_option_goes_back_to` (R3-009): the defaults of every option the weather sets, the layer's
+  value winning over the runtime's, as option text; a default that is not a literal stops the run.

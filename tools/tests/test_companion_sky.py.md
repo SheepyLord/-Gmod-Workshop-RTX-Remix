@@ -72,3 +72,9 @@ The harness is written to a scratch folder under `out\tmp`.
 Run with the other tool tests: `python -m unittest discover -s tests` from `tools\` (as
 `tools\test.ps1` does). Skipped when LuaJIT is not installed (on `PATH` or in
 `%LOCALAPPDATA%\Programs\LuaJIT\bin`). Exit 0 when the tests pass or are skipped.
+
+- `test_weather_left_to_remix_puts_back_remixs_own_values` (R3-009): after Rain, clearing the weather gives
+  cloud density rtx.conf's value (the mock's) and the rain's intensity, spawn radius and lightning the
+  table's defaults; nothing more is sent after that.
+- In `test_a_maps_own_sky_add_on_keeps_its_sky_until_the_player_changes_it` (R3-015): the sky timer runs every
+  0.02 s, `nativeloader_sky_interval 0.1` adjusts it, and that change does not take the map's sky over.
