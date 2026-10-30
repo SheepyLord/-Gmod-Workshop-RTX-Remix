@@ -104,3 +104,9 @@ what ships from them is in `packages/`. They are where a part's new version come
 | RTXLauncher | `SheepyLord/RTXLauncher` | The old separate-copy workflow this project replaces |
 
 The translation checks are [`tools/companion_i18n.py`](../tools/companion_i18n.py.md) for the companion and new bundled interfaces, and [`tools/check_addon_i18n.py`](../tools/check_addon_i18n.py.md) for the add-ons’ existing catalogs and real language selectors.
+
+The bootstrap also provides native package presentation (loader 0.7.0,
+[ADR 0039](decisions/0039-native-package-addon-presentation.md)): derived inert GMAs and an addon-menu
+script overlay under `native-loader/presentation`, served through exact read-only filesystem import
+redirects. The payload journal and the actual Workshop archives keep their existing roles. The
+proxy's `presentation.cpp` and fixture tests are listed in its component READMEs.

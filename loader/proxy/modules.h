@@ -25,6 +25,9 @@ struct Setup {
   std::vector<std::string> hidden_addons;         // folder names under garrysmod\addons to leave out (no runtime)
   // Absolute module path -> absolute paths loaded before it, in order, when a game module loads it.
   std::vector<std::pair<std::filesystem::path, std::vector<std::filesystem::path>>> dependencies;
+  // Exact read-only paths presented differently to filesystem_stdio.dll only. Native archives
+  // get inert display GMAs; the addon menu gets the native-package styling overlay (ADR 0039).
+  std::vector<std::pair<std::filesystem::path, std::filesystem::path>> read_redirects;
   std::string session_json_base;                  // fields written ahead of the results in session.json
 };
 

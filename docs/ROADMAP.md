@@ -30,3 +30,9 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | Remix bound to a non-system `vulkan-1.dll` in the field install | `prefer_system_vulkan_loader` preloads System32's; confirmed in the field install (M7) |
 | The Remix runtime crashes on exclusive-fullscreen mode switches | RTX sessions run in a borderless window ([ADR 0018](decisions/0018-rtx-sessions-in-a-borderless-window.md)); the runtime fix belongs in the `dxvk-remix-gmod` fork |
 | Redistributing NVIDIA binaries (DLSS, NRC, ...) publicly | Check licences before any public package |
+
+## Native package addon cards (2026-10-30)
+
+Loader 0.7.0 adds the requested warning suppression and blue addon cards for deployed native
+Workshop packages ([ADR 0039](decisions/0039-native-package-addon-presentation.md)). The implementation
+and PoC evidence are in [the QoL report](handover/QoL-report.md#native-package-addon-cards-2026-10-30).

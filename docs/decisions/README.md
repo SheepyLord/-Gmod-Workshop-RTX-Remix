@@ -44,6 +44,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0036](0036-remix-layers-as-short-copies.md) | The runtime reads the package's Remix layers from short copies (`native-loader/remix/dxvk-<n>.conf`, `rtx-<n>.conf`) the bootstrap writes at each RTX start from the checked payload: the runtime ignores a `DXVK_CONFIG_FILE` of 260 characters or more, which the published package reached without an NVIDIA GPU (R3-017); amends 0008, 0021 and 0030 | Accepted 2026-10-29 (the user, on R3-017) |
 | [0037](0037-frame-generation-off-by-default.md) | Frame generation is off by default, at one generated frame (2x) when a player turns DLSS-G on: the classic install's DLSS-G at 3x crashed RTX 30, RTX 40 and AMD GPUs at start, and Remix's menu hides the multiplier where multi-frame generation is unsupported; `remix_defaults.py` forces the three options; amends 0020 | Accepted 2026-10-29 (the user, emergency fix) |
 | [0038](0038-complete-bundled-interface-translations.md) | Complete bundled interfaces, separate Traditional Chinese, Korean Destruction, strict catalog builds and client-localized notices | Accepted 2026-10-30 (the user) |
+| [0039](0039-native-package-addon-presentation.md) | Inert display archives suppress native-container mount warnings; exact read redirects provide blue addon cards and normal Workshop descriptions; guarded publisher retry for a stale Steam presence check | Accepted 2026-10-30 (the user) |
 
 ## Template
 

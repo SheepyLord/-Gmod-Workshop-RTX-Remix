@@ -261,3 +261,17 @@ conversions and font coverage, and has `i18n/tools/test_embed.py` regressions. R
 with `--check` after a source change. Use the PoC for final menu, font and layout checks.
 
 For UI tours, use the project Python 3.12 environment with Pillow and absolute `--allow-local` paths. Protected commands such as `gmod_language` must go through the test console transport, not `RunConsoleCommand` from Lua. Inspect Remix with its window in the foreground; background captures can retain old overlay pixels. A native crash-report prompt may block startup indefinitely; follow the applicable user-consent flow and never enable the automation flag that grants upload permission.
+
+### Native package presentation (loader 0.7.0)
+
+`nl_proxy_tests` includes display-archive CRC/index/metadata and cache/source identity tests. Its
+real `filesystem_stdio.dll` fixture exercises A/W open and attribute imports, read-only restrictions,
+unrelated files, edited caches, uninstall and traversal refusal. The game-facing acceptance test
+uses the PoC at the main menu with Workshop enabled and RTX disabled: confirm no native manifest or
+mount warnings, normal mount totals, blue native-package cards and the actual Workshop description.
+Inspect `session.json.package_presentation` to prove both archive and menu reads reached the hooks.
+A missing expected source marker must leave the ordinary menu untouched and report a note.
+
+The publisher tests mock upload processes. They verify that only the exact reviewed early Steam
+presence failure can retry, real API initialization is required, unknown hashes/bytes fail closed,
+and a successful ordinary publish does not use the fallback. Tests never upload to Workshop.

@@ -1,5 +1,6 @@
 #include "bootstrap.h"
 #include "modules.h"
+#include "presentation.h"
 #include "runtime.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
@@ -116,6 +117,7 @@ struct StartupContext {
   std::filesystem::path root{g_bootstrap.root};
   status::Report report;
   startup::Prepared prepared;
+  std::vector<std::pair<std::filesystem::path, std::filesystem::path>> read_redirects;
   RuntimeActivation runtime;
   StartupContext() {
     report.loader_version = NL_VERSION_STRING;
@@ -181,9 +183,10 @@ void hide_rtx_addons(StartupContext& context) noexcept {
     if (!context.prepared.journal || !context.prepared.journal->current) return;
     auto names = session::hidden_addons(*context.prepared.journal->current);
     const auto dependencies = session::module_dependencies(*context.prepared.journal->current);
-    if (names.empty() && dependencies.empty()) return;
+    if (names.empty() && dependencies.empty() && context.read_redirects.empty()) return;
     modules::Setup setup;
     setup.root = std::filesystem::absolute(context.root);
+    setup.read_redirects = context.read_redirects;
     setup.hidden_addons = names;
     std::vector<std::string> modules;
     for (const auto& item : dependencies) {
@@ -251,6 +254,16 @@ void startup_cxx(StartupContext& context) noexcept {
     context.report.deployment_ms = context.prepared.elapsed_ms;
     if (context.prepared.journal && context.prepared.journal->current)
       context.report.deployment.generation = context.prepared.journal->current->number;
+    if (context.prepared.config.from_file && context.prepared.config.enabled && context.prepared.journal &&
+        context.prepared.journal->current && !context.prepared.journal->pending) {
+      try {
+        auto display = presentation::prepare(context.root, *context.prepared.journal->current);
+        for (auto& redirect : display.redirects) context.read_redirects.emplace_back(std::move(redirect.source), std::move(redirect.replacement));
+        for (auto& note : display.notes) context.report.session.notes.push_back(std::move(note));
+      } catch (const std::exception& error) {
+        context.report.session.notes.push_back(std::string("native package presentation unavailable: ") + error.what());
+      }
+    }
     if (context.prepared.may_activate) {
       const journal::Generation none;
       const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
@@ -266,7 +279,7 @@ void startup_cxx(StartupContext& context) noexcept {
         }
         shade.reason = shade.plan.reason;
       }
-      context.runtime.apply(context.root, generation, context.report.activation, context.report.session);
+      context.runtime.apply(context.root, generation, context.report.activation, context.report.session, context.read_redirects);
     } else {
       context.report.activation.reason = context.prepared.reason;
     }

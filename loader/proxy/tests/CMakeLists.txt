@@ -1,7 +1,7 @@
 add_executable(nl_proxy_tests
-  ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp)
+  ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp test_presentation.cpp test_presentation_hooks.cpp ../modules.cpp)
 target_include_directories(nl_proxy_tests PRIVATE ../../tests)
-target_link_libraries(nl_proxy_tests PRIVATE nl_proxy_logic nl_build_options)
+target_link_libraries(nl_proxy_tests PRIVATE nl_proxy_logic nl_proxy_presentation nl_build_options)
 target_compile_definitions(nl_proxy_tests PRIVATE
   NL_PROXY_DLL_PATH="$<TARGET_FILE:nl_winmm>"
   NL_PROXY_HOST_PATH="$<TARGET_FILE:nl_proxy_host>"
@@ -52,6 +52,8 @@ endforeach()
 set_target_properties(nl_m5_engine PROPERTIES OUTPUT_NAME engine)
 set_target_properties(nl_m5_shader PROPERTIES OUTPUT_NAME stdshader_dx6)
 set_target_properties(nl_m5_filesystem PROPERTIES OUTPUT_NAME filesystem_stdio)
+target_compile_definitions(nl_proxy_tests PRIVATE NL_PRESENTATION_FIXTURE_PATH="$<TARGET_FILE:nl_m5_filesystem>")
+add_dependencies(nl_proxy_tests nl_m5_filesystem)
 # ADR 0024: a lua_shared.dll that loads binary modules as GMod's does, and a module whose static import
 # (its runtime) lives only in garrysmod\lua\bin.
 add_library(nl_dep_runtime SHARED fixture_dep_runtime.cpp)

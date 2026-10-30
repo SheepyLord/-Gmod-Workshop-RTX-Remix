@@ -2094,3 +2094,29 @@ Evidence is under `out/translation-audit`; final commands and PoC results are in
 [QoL report](handover/QoL-report.md).
 
 The final UI tour inspected 6,850 text elements across English and the six requested languages, with no builder or Lua errors and a normal exit. Six matches for `Hair` were stored bodygroup identifiers (`cl_20_filters.lua:7`, displayed verbatim by `cl_90_settings.lua:307`), not missing UI translations. Runtime logging exposed concatenated migration buttons in `dxvk_imgui.cpp`; patch 0006 replaces them with static translated labels and formatted count lines. The runtime now has 3,298 messages per language. The user explicitly accepts resizing the Remix settings window to reveal long labels.
+
+## Native package cards and Steam publisher preflight (2026-10-30)
+
+- Stock `html/js/menu/control.Addons.js:488` adds `invalid` for `invalid_reason`; lines 498-504 return
+  that reason before `file.info.description`. `html/css/Workshop.css:484` colors invalid cards red.
+  `lua/includes/util/workshop_files.lua:254-291` already obtains and sanitizes the real Workshop
+  description. The generated overlay restores that existing description flow for managed IDs.
+- PoC `filesystem_stdio.dll` SHA-256 `814373ea10b7e4e4f48c1eaf820f35e7fed2a5ef756e77f0fb2d68d1323ce1ad`
+  imports A/W CreateFile and attribute APIs directly; its CRT is linked statically. REA Ghidra
+  evidence `ev_233af55c3f1d0ff2eedebf94964447b1db4bdd18a228cdac909aca0d98dc8ed0` identifies the whitelist
+  failure in the filename validator. This was static evidence; the PoC then demonstrated actual
+  archive and menu-script redirection through those four IAT slots.
+- PoC acceptance mounted **761/761** subscriptions. Four current native packages (RTX runtime,
+  Modern House, Guinaifen and Robin) used inert display GMAs; no `native/manifest.json` whitelist
+  warning or native-package mount warning remained. All four cards were blue; the runtime's
+  normal Workshop description was visible. The game quit normally with exit 0.
+- The reviewed `gmpublish.exe` (SHA-256 in `tools/publish_workshop.py`) calls
+  `SteamAPI_IsSteamRunning` at VA `0x14000818d`, before real initialization. On this machine it
+  returned false while `SteamAPI_InitFlat` and the exact required interface-list initialization
+  returned success. Steam's ActiveProcess PID was stale. The guarded isolated-copy fallback changes
+  only file byte `0x7595`, `75` to `eb`; the same target continues to the original real init.
+  REA evidence `ev_011fc45734d0cb8f00bf67919e04784c234ed717c5d3b32594959e610fb15a06`.
+- Evidence: task worktree `out/native-addon-menu`; screenshots, own-session console, loader reports,
+  REA snapshots and restoration records. PoC config files were restored by hash; its own video
+  changes (ScreenWidth, ScreenHeight, DXLevel_V1) were restored only while they still matched the
+  test's recorded values. No user's running game was operated.
