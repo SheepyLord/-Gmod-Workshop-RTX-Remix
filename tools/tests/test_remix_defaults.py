@@ -55,6 +55,18 @@ class RemixDefaultsTest(unittest.TestCase):
         self.assertTrue(text.startswith('# Remix defaults'))
         self.assertEqual(rd.main([str(self.root / 'missing.conf'), '--out', str(out)]), 1)
 
+    def test_frame_generation_is_left_off_whatever_the_classic_install_had(self):
+        # The classic install's DLSS-G at 3x crashed RTX 30, RTX 40 and AMD GPUs (ADR 0037).
+        classic = self.write('user.conf', 'rtx.frameGenerationType = 1\nrtx.dlfg.enable = True\n'
+                                          'rtx.dlfg.maxInterpolatedFrames = 2\nrtx.qualityDLSS = 1\n')
+        out = self.root / 'out' / 'defaults.conf'
+        self.assertEqual(rd.main([str(classic), '--out', str(out)]), 0)
+        lines = out.read_text(encoding='utf-8').splitlines()
+        for line in ('rtx.frameGenerationType = 0', 'rtx.dlfg.enable = False', 'rtx.dlfg.maxInterpolatedFrames = 1',
+                     'rtx.qualityDLSS = 1'):
+            self.assertIn(line, lines)
+        self.assertNotIn('rtx.frameGenerationType = 1', lines)
+
 
 if __name__ == '__main__':
     unittest.main()

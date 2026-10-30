@@ -56,6 +56,13 @@ def merge(paths: list[Path]) -> tuple[dict, dict]:
     return merged, origin
 
 
+# Options that depend on the player's GPU, which the classic install (an RTX 5090's) cannot decide for
+# everyone (ADR 0037): frame generation stays off, and a player who turns DLSS-G on gets one generated
+# frame (2x), which RTX 40 supports. DLSS-G at 3x crashed RTX 30, RTX 40 and AMD GPUs at start, and Remix's
+# menu hides the multiplier where multi-frame generation is unsupported, so it could not be changed.
+GPU_DEPENDENT = {'rtx.frameGenerationType': '0', 'rtx.dlfg.enable': 'False', 'rtx.dlfg.maxInterpolatedFrames': '1'}
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('inputs', nargs='+', type=Path, help='config files, weakest first')
@@ -66,8 +73,12 @@ def main(argv=None) -> int:
         print('error: missing ' + ', '.join(missing), file=sys.stderr)
         return 1
     merged, origin = merge(args.inputs)
+    for key, value in GPU_DEPENDENT.items():
+        merged[key] = value
+        origin[key] = 'remix_defaults.py'
     header = ['# Remix defaults for the native loader package, merged by tools/remix_defaults.py (ADR 0021).',
               '# Sources, weakest first: ' + ', '.join(p.name for p in args.inputs) + '.',
+              '# Frame generation is left off and at one generated frame: it depends on the GPU (ADR 0037).',
               '# The player\'s own rtx.conf and user.conf in the game folder override every value here.']
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text('\n'.join(header + [f'{k} = {v}' for k, v in merged.items()]) + '\n', encoding='utf-8', newline='\n')

@@ -2052,3 +2052,18 @@ without an NVIDIA GPU.
 the packaged one (`d9cf79e6...`, now `d899908e...`) in 15 bytes: the PE time stamp and checksum in the
 header, the time stamp's three copies in the debug directory, and one byte of the CodeView record
 (`0x1f` against `0x23`, the PDB age).
+
+## 33. Frame generation and the GPU (2026-10-29, Claude, from the user's report)
+
+- **The classic defaults turned DLSS-G on at 3x:** `packages/runtime/layers/classic_remix_defaults.conf`
+  had `rtx.frameGenerationType = 1`, `rtx.dlfg.enable = True` and `rtx.dlfg.maxInterpolatedFrames = 2`
+  (two generated frames per rendered one), from the classic install's files on an RTX 5090. The
+  runtime's own defaults: `rtx.frameGenerationType` 0, `rtx.dlfg.maxInterpolatedFrames` 2 (range 1-6;
+  `runtime/patches/0001`, the options table).
+- **The user's report:** with it, players on RTX 30, RTX 40 and AMD GPUs crashed at start. DLSS-G needs
+  RTX 40 or newer; more than one generated frame needs RTX 50.
+- **Remix's menu shows the multiplier only where multi-frame generation is supported**
+  (`if (supportsMultiFrame) { dlfgMfgModeCombo... }`, `runtime/patches/0001`, line 8518 of the patch),
+  so on RTX 40 the inherited 3x could not be lowered there.
+- Fixed in the package's layer and in `tools/remix_defaults.py` ([ADR 0037](decisions/0037-frame-generation-off-by-default.md)):
+  off by default, one generated frame when turned on.

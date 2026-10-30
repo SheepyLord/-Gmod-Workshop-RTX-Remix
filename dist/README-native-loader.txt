@@ -42,6 +42,9 @@ Graphics cards
 - RTX Remix needs a GPU with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or
   newer, Intel Arc. An older card cannot start an RTX session; turn RTX off ("remix": { "enabled":
   false } below) or start with -nonativeloader.
+- Frame generation is off at first. Turn it on in the "RTX Remix" tab (Remix settings > Frame
+  generation): DLSS-G needs an RTX 40 or newer, and more than one generated frame (3x, 4x) an RTX 50,
+  set in Remix's menu (Alt+X).
 - On AMD and Intel: DLSS, DLSS frame generation and Reflex are NVIDIA-only. FSR (upscaling and frame
   generation) and XeSS are there instead; they have not been tried on a Radeon or Arc card yet.
   Without an NVIDIA GPU, Remix picks its graphics preset for your GPU at the start
