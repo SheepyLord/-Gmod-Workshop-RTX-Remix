@@ -6,6 +6,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (emergency: frame generation off by default)
+
+- **The RTX package no longer turns DLSS frame generation on at 3x**
+  ([ADR 0037](docs/decisions/0037-frame-generation-off-by-default.md)). The classic install's settings,
+  made on an RTX 5090, set DLSS-G with two generated frames, which crashed RTX 30, RTX 40 and AMD GPUs at
+  start; Remix's menu hides the multiplier where multi-frame generation is unsupported, so RTX 40 players
+  could not lower it. The package's Remix layer now has frame generation off and one generated frame (2x)
+  for whoever turns DLSS-G on; RTX 50 players raise it in Remix's menu. `tools/remix_defaults.py` forces
+  these three options whatever the classic install has.
+
 ### Fixed (R3-017: the package's Remix settings on every GPU; loader 0.6.0)
 
 - **The runtime reads the package's Remix layers from short copies**

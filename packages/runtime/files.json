@@ -31,6 +31,16 @@
     "dirty": false
    },
    "imported": "2026-10-30T00:46:07+00:00"
+  },
+  "layers/classic_remix_defaults.conf": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\fg-off\\out\\tmp\\layer\\classic_remix_defaults.conf",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/fg-off",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "2901563bbadb2e5b2d511d5c54d725d5ff205e14",
+    "dirty": false
+   },
+   "imported": "2026-10-30T06:46:45+00:00"
   }
  },
  "files": {
@@ -1303,9 +1313,9 @@
    "stored_sha256": "f3ff3066b9b64cf0d1a2e64914d16a9f41c57f0c75907485ebc60d09d638f320"
   },
   "layers/classic_remix_defaults.conf": {
-   "size": 170187,
-   "sha256": "23ef1bd78e65a97b55f8ed126937151c9c761f7acccc089515ff2f845297d5ac",
-   "mtime_ns": 1793266396646709300,
+   "size": 170281,
+   "sha256": "dc1e1662f8f1c23a16bf842f4612bbaedf7d1fdac995329de62bdb9fed2eba95",
+   "mtime_ns": 1793342801172418700,
    "stored": "plain"
   },
   "layers/compiler_threads.conf": {

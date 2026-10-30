@@ -24,6 +24,10 @@ that install has at start-up.
   runtime's built-in lists.
 - **Legacy option names** are copied as they are; the runtime migrates them as it would from the
   original files.
+- **Options that depend on the GPU** (`GPU_DEPENDENT`) are set whatever the files say:
+  `rtx.frameGenerationType = 0`, `rtx.dlfg.enable = False`, `rtx.dlfg.maxInterpolatedFrames = 1`.
+  The classic install's DLSS-G at 3x crashed RTX 30, RTX 40 and AMD GPUs
+  ([ADR 0037](../docs/decisions/0037-frame-generation-off-by-default.md)); the header says so.
 
 ## Output
 
