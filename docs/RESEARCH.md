@@ -2141,3 +2141,21 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   database. util_sentry.cpp checks crashed-last-run before engine condebug exists. A fresh test-only
   log directory avoids an old report prompt without touching its files or consent. Ray tracing was
   True in the isolated run's Remix log; the game loaded and quit normally with zero Lua errors.
+
+## Hotloader's DepthWrite on Remix (2026-10-30)
+
+- Bundled `mmd_hotloader/lua/mmdhl/native_render.lua` created DepthWrite clones during the first
+  color registration, before it knew whether that shader family was present. The existing
+  UsesRemixPreview query only read RenderStats, whose native flag starts unresolved.
+- Native renderer.cpp initialize selects stdshader_dx9.dll when loaded, otherwise the fixed-function
+  stdshader_dx6.dll, and records fixedFunctionRemix. CheckRenderer performs that initialization;
+  RenderStats alone does not. The Lua predicate now calls the available CheckRenderer first.
+- The reported asset (hash beginning f9c3e4b4) is already in the PoC cache and has 83 slots. A real
+  baseline run recorded 83 MMD depth-material requests and 131 unknown DepthWrite console lines
+  (83 Hotloader materials and 48 separate built-in engine messages).
+  The model's color draws still ran; a console filter would leave the bad material registrations.
+- [DepthWrite's documented role](https://wiki.facepunch.com/gmod/Shaders/DepthWrite) includes hardware
+  depth and alpha cutouts. The programmable Source path remains unchanged. Remix's ordinary scene
+  geometry supplies its ray tracing, so its unsupported Source-only depth draws are skipped.
+- Only bundled Lua and its indexed provenance change. The upstream Hotloader checkout, native
+  release record, cached asset bytes and carrier identities are not edited by this batch.

@@ -43,3 +43,9 @@ The next QoL batch fixes Modern House glass disappearing without shards. Source 
 `codex/map-glass`, worktree `out/worktrees/map-glass`. See
 [QoL-report.md](QoL-report.md#modern-house-map-glass-2026-10-30) and
 [ADR 0040](../decisions/0040-native-map-glass-debris.md).
+
+## Hotloader DepthWrite errors
+
+The QoL shader batch is on codex/hotloader-depth in out/worktrees/hotloader-depth. See
+[QoL-report.md](QoL-report.md#hotloader-depthwrite-shader-errors-2026-10-30) and
+[ADR 0041](../decisions/0041-hotloader-remix-depth-materials.md).

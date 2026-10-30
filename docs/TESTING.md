@@ -289,3 +289,15 @@ check valid independent fragments and client meshes, wait for settled persistent
 scripted breaks, resync a full pile, and clean up/rebreak. Read only that session's console log.
 The RTX run uses a fresh process-only DXVK_LOG_PATH under repository out/ for its logs and crash
 cache; it does not set the flag that grants automatic upload consent or edit Remix user.conf.
+
+### Hotloader shader-family routing
+
+`tools/tests/test_hotloader_depth.py` runs the actual shipped builders and DrawCarrier under LuaJIT,
+with no game/GPU. The Remix fixture rejects DepthWrite creation and Source depth submissions; the
+Source fixture checks delayed texture recovery and the unchanged alpha/cull/depth behavior.
+Both verify native initialization before cached backend detection and preserved draw state.
+
+The PoC acceptance probe loads the specific reported asset from the existing cache, records shader
+requests and actual draws, checks both depth-view flags from a render hook, and inspects its own
+console and screenshots. No user model is copied into the repository or release. Use a fresh
+process-only DXVK_LOG_PATH for the RTX test, leaving upload permissions and user.conf unchanged.

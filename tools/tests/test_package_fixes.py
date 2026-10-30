@@ -449,6 +449,22 @@ class PackageFixesTests(unittest.TestCase):
         for rel in private.values():
             self.assertTrue(notes[rel].startswith('allowed with --allow-private: '), rel)
 
+    def test_lua_sidecar_docs_stay_in_source_and_out_of_deployed_scripts(self):
+        source = self.repo / 'garrysmod/garrysmod/addons/Glass-Rewrite-Remix'
+        lua = self.write(source / 'lua/entities/fixture.lua', b'ENT.Type="anim"')
+        doc = self.write(source / 'lua/entities/fixture.lua.md', b'# Source documentation')
+        readme = self.write(source / 'README.md', b'# Addon license and documentation')
+        folder = self.root / 'pkg'
+        summary = self.build('--out', folder)
+        files = self.manifest(folder)['files']
+        prefix = 'native/root/garrysmod/addons/Glass-Rewrite-Remix/'
+        self.assertIn(prefix + 'lua/entities/fixture.lua', files)
+        self.assertIn(prefix + 'README.md', files)
+        self.assertNotIn(prefix + 'lua/entities/fixture.lua.md', files)
+        self.assertEqual(doc.read_bytes(), b'# Source documentation')
+        self.assertIn('garrysmod/addons/Glass-Rewrite-Remix/lua/entities/fixture.lua.md', summary['junk'])
+        self.assertTrue(lua.is_file() and readme.is_file())
+
     def test_map_compile_logs_stay_out_as_junk(self):
         # The real fixes keep vbsp/vvis/vrad logs beside their maps; they are not a reason to refuse.
         self.write(self.repo / 'garrysmod/garrysmod/addons/remixbinary/maps/gm_construct_rtx.log', b'compile log')

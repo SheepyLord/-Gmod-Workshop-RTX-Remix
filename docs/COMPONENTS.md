@@ -115,3 +115,7 @@ Native map glass is supplied by the indexed Glass-Rewrite-Remix part. Its server
 geometry helper preserve native brush behavior and create persistent networked debris; regression
 coverage lives in tools/tests/test_glass_map.py and glass_map_harness.lua
 ([ADR 0040](decisions/0040-native-map-glass-debris.md)).
+
+The bundled Model Hotloader renderer now routes depth behavior by native shader-family detection.
+Coverage is in tools/tests/test_hotloader_depth.py and hotloader_depth_harness.lua; see
+[ADR 0041](decisions/0041-hotloader-remix-depth-materials.md).

@@ -13,6 +13,7 @@ cd tools; python -m unittest tests.test_package_fixes -v    # or tools\test.ps1
 ```
 
 Covers: the manifest's keys, kinds, `root_files`, `module_overrides` and file list exactly; every
+Lua script's source sidecar excluded from deployment while source, README and license files remain;
 listed file's size and SHA-256, and no unlisted file under `native/`; what stays out (Steam files,
 configs, junk, by-products, the companion's `.md` files) and the summary's `left_out` and `junk`;
 `session_cvars` from the RTX section (later assignments win, every skipped line with its reason) and
