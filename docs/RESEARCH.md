@@ -2023,7 +2023,9 @@ Measured in that live session with the RTXDebug module and a probe in the runtim
   option finds nothing to set and is dropped.
 - **The fix:** Modern House RTX no longer sets it (`garrys-mod-rtx-remixed`, branch
   `claude/modern-house-rtx`, `e96ad7f`); item 3829275998 updated to `0.0.0-dev.202610300425+d7efd636`
-  (`gma_sha256 d90c206b...`).
+  (`gma_sha256 d90c206b...`). In the field install with it: `r_forcehwlight` 0 (flags 0, default 0,
+  "Force LIGHTING_HARDWARE") and `mat_softwareskin` 1 on `modern_house`, and the user saw the models
+  right.
 
 **`DXVK_CONFIG_FILE` (and every variable the runtime reads) holds at most 259 characters (R3-017).**
 `env::getEnvVar` (`src/util/util_env.cpp:47-54` in the fork) reads it with `GetEnvironmentVariableW`

@@ -21,7 +21,7 @@ Claude's verification of every finding in [R3-report.md](R3-report.md) (Codex, `
 | R3-013 | P1 | Plausible (no live repro) | P3 | Fixed: a partial first mount waits up to 20 s for a remount |
 | R3-014 | P1 | Confirmed, and worse: the shipped DLL was not what `runtime/` builds | P1 | Fixed: exact worktree check, `-Verify`, build record and repo gate (ADR 0034) |
 | R3-015 | (user) | The sky's 0.25 s update moved it in visible steps | — | Fixed: `nativeloader_sky_interval`, default 0.02 s, slider, six languages |
-| R3-016 | (user) | Confirmed in the live game: Modern House RTX forced `r_forcehwlight 1`, and Source's hardware skinning then gives Remix no bones | P1 | Fixed in Modern House RTX; item 3829275998 updated |
+| R3-016 | (user) | Confirmed in the live game: Modern House RTX forced `r_forcehwlight 1`, and Source's hardware skinning then gives Remix no bones | P1 | Fixed in Modern House RTX; item 3829275998 updated; the user confirmed it in game |
 | R3-017 | (Claude, while probing R3-016) | A `DXVK_CONFIG_FILE` over 259 characters reads as empty in the runtime and drops every package layer; the published package's is 273-277 without an NVIDIA GPU | P1 | Recorded; the fix needs a choice (below) |
 
 ## The findings
@@ -202,12 +202,16 @@ section 32.
 - R3-016: in the live session, `r_forcehwlight 0` put every model right and 1 broke them again; after
   the R3-016 probe the runtime worktree was put back and `-Verify` passes again (the rebuilt DLL differs
   from the packaged one only in its stamps, RESEARCH.md section 32). Steam has the updated Modern House
-  item (`modern-house-rtx.gma`, SHA-256 `d90c206b...`).
+  item (`modern-house-rtx.gma`, SHA-256 `d90c206b...`). Checked in the field install afterwards: the
+  start deployed it (`modern-house-rtx 0.0.0-dev.202610300425+d7efd636`) with the Workshop RTX package;
+  on `modern_house`, `r_forcehwlight` read 0 and `mat_softwareskin` 1, and the user confirmed the
+  meshes and bones are right. The first load of the map after Steam's update ended in an engine error
+  during loading (a GMod crash dump, `tier0`/`engine.dll`/`GameUI.dll`, no Lua state yet, the runtime's
+  log quiet); the next start loaded it.
 
 ## Left open
 
 - R3-002: a disc tint, if the user wants it (a runtime rebuild).
-- R3-016: a look in game once Steam has the updated Modern House item.
 - R3-017: shorter layer paths for the runtime (a change to activation).
 - R3-011: the licence review before anything goes public.
 - R3-015: a look in game (the default interval's smoothness and cost).
