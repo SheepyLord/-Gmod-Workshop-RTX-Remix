@@ -45,6 +45,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0037](0037-frame-generation-off-by-default.md) | Frame generation is off by default, at one generated frame (2x) when a player turns DLSS-G on: the classic install's DLSS-G at 3x crashed RTX 30, RTX 40 and AMD GPUs at start, and Remix's menu hides the multiplier where multi-frame generation is unsupported; `remix_defaults.py` forces the three options; amends 0020 | Accepted 2026-10-29 (the user, emergency fix) |
 | [0038](0038-complete-bundled-interface-translations.md) | Complete bundled interfaces, separate Traditional Chinese, Korean Destruction, strict catalog builds and client-localized notices | Accepted 2026-10-30 (the user) |
 | [0039](0039-native-package-addon-presentation.md) | Inert display archives suppress native-container mount warnings; exact read redirects provide blue addon cards and normal Workshop descriptions; guarded publisher retry for a stale Steam presence check | Accepted 2026-10-30 (the user) |
+| [0040](0040-native-map-glass-debris.md) | Native glass brushes keep map behavior and leave persistent convex physics shards; bounded debris and late-join mesh updates | Accepted 2026-10-30 (the user) |
 
 ## Template
 

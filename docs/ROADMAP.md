@@ -36,3 +36,9 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 Loader 0.7.0 adds the requested warning suppression and blue addon cards for deployed native
 Workshop packages ([ADR 0039](decisions/0039-native-package-addon-presentation.md)). The implementation
 and PoC evidence are in [the QoL report](handover/QoL-report.md#native-package-addon-cards-2026-10-30).
+
+## Native map glass (2026-10-30)
+
+The Modern House glass batch adds persistent debris for native breakable brush panes, with native
+map behavior preserved and bounded mesh synchronization ([ADR 0040](decisions/0040-native-map-glass-debris.md)).
+See the [QoL report](handover/QoL-report.md#modern-house-map-glass-2026-10-30) for validation and delivery.

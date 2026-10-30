@@ -124,7 +124,7 @@ if CLIENT then
     end
 
     function ENT:OnRemove()
-        if self.RENDER_MESH and self.RENDER_MESH.Mesh:IsValid() then
+        if self.RENDER_MESH and self.RENDER_MESH.Mesh and self.RENDER_MESH.Mesh:IsValid() then
             self.RENDER_MESH.Mesh:Destroy()
         end
         
@@ -640,6 +640,7 @@ else
     end
 
     function ENT:OnRemove()
+        if self.RTX_MAP_DEBRIS then return end
         local orig_shard = self:GetOriginalShard()
         if orig_shard and orig_shard:IsValid() then 
             orig_shard.SHARD_COUNT = orig_shard.SHARD_COUNT - 1
@@ -683,8 +684,8 @@ function ENT:Initialize(first)
 
         -- remove fast & laggy interactions
         timer.Simple(0.25, function()
-            if !self then return end
-            self.CAN_BREAK = true
+            if !IsValid(self) then return end
+            self.CAN_BREAK = not self.RTX_MAP_DEBRIS
         end)
 
         return 

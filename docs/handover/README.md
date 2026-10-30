@@ -36,3 +36,10 @@ The 2026-10-30 continuation of QoL adds loader 0.7.0's native-package warning su
 and Workshop descriptions. See [QoL-report.md](QoL-report.md#native-package-addon-cards-2026-10-30)
 and [ADR 0039](../decisions/0039-native-package-addon-presentation.md). Source branch:
 `codex/native-addon-menu`, worktree `out/worktrees/native-addon-menu`.
+
+## Native map glass
+
+The next QoL batch fixes Modern House glass disappearing without shards. Source branch:
+`codex/map-glass`, worktree `out/worktrees/map-glass`. See
+[QoL-report.md](QoL-report.md#modern-house-map-glass-2026-10-30) and
+[ADR 0040](../decisions/0040-native-map-glass-debris.md).
