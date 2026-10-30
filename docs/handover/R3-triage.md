@@ -221,9 +221,17 @@ build. RESEARCH.md section 32.
   native-loader/remix/dxvk-1.conf was not written (... Windows error 5); the runtime reads
   native-loader/packages/m4-runtime/1.0.0_1/config/dxvk/01_defaults.conf instead`). `nlctl activation`
   on the PoC's RTX package: `DXVK_CONFIG_FILE=native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,dxvk.conf`
-  (73 characters); neither of its layers holds a path. Not run: an RTX session with the new loader
-  (the field game was running and the machine had about 4 GB of memory to spare), or on a GPU that is
-  not NVIDIA's.
+  (73 characters); neither of its layers holds a path.
+- R3-017 and R3-001 in a real RTX session (the user: "Run the session now"): loader 0.6.0 (Release)
+  installed in the PoC, `poc_session.py run --addons` on gm_construct (evidence `out\r3-017-poc`). The
+  start deployed the Workshop package (generation 26, 318 changes; one note, a create-only file kept;
+  nothing put back or taken over) and activated it. `status.json`: `DXVK_CONFIG_FILE` set to
+  `native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,dxvk.conf` (73 characters), both
+  copies byte-identical to their payload files. The Remix log: "Using config paths from
+  DXVK_CONFIG_FILE: native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,dxvk.conf", "Found
+  config file" for both. The map loaded in 17.5 s, the frames are path-traced (no black screen), 7
+  patches, the shader override, Model Hotloader's runtime loaded before its modules (no session notes),
+  no Lua errors, a normal quit. Not run on a GPU that is not NVIDIA's.
 - While a game held most of the memory, the installer's tests failed with `OutOfMemoryException`:
   `install-loader.ps1` kept its rollback copies as arrays of boxed bytes (3.1 GB at the peak). Fixed; 236
   MB.
