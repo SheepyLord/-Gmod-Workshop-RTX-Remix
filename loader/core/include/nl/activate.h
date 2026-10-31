@@ -123,6 +123,7 @@ struct Plan {
   std::vector<manifest::ModuleDependency> module_dependencies;
   std::vector<std::string> notes;  // e.g. a module two packages override (the first wins)
   bool patch_sets_need_insecure = true;  // config patch_sets.require_insecure
+  bool allow_secure_rtx_render_patches = true;
 };
 
 // The runtime package is the deployed package that has a remix section and a payload. With none, or

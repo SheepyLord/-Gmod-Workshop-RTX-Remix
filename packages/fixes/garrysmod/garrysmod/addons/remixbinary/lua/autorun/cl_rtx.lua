@@ -150,6 +150,10 @@ local desiredForceHardwareSkinning = PersistBinaryConVar(
 )
 
 local function ReloadModelsAfterHardwareSkinningSetting(attempt)
+    -- The verified multiplayer initializer runs after the world is active. Discarding
+    -- hardware meshes here invalidates static-prop draw data already held by Source.
+    -- Keep existing meshes alive; the installed VTX hooks handle subsequent loads.
+    if NATIVELOADER_VERIFIED_MULTIPLAYER then return end
     local convar = GetConVar("r_forcehwskin")
     if convar and convar:GetString() == desiredForceHardwareSkinning then
         if RTX_ReloadModelsAfterHardwareSkinningSettings then
@@ -176,6 +180,7 @@ end)
 -- topology after the initial flush. Run one final hardware-data-only flush
 -- once map initialization and its preload batch have completed.
 hook.Add("InitPostEntity", "RTXHardwareSkinning_FinalModelReload", function()
+    if NATIVELOADER_VERIFIED_MULTIPLAYER then return end
     timer.Simple(1, function()
         if RTX_ReloadModelsAfterHardwareSkinningSettings then
             RTX_ReloadModelsAfterHardwareSkinningSettings()

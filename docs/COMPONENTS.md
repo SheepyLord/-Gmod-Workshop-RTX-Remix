@@ -1,5 +1,20 @@
 # Components
 
+Loader 0.9.0 adds [`loader/client`](../loader/client/README.md): an immutable, SHA-256-verified
+catalog of Lua belonging to the allowlisted `gmod-rtx-remix` owner, a menu-realm native helper
+(`gmsv_nlrtxclient_win64.dll`) and its private client initializer. It leaves `sv_allowcslua` and
+global engine include/require/file/net functions unchanged. A shared scoped net adapter drops
+owned messages for absent server channels and records them locally; registered channels keep the
+engine API. The environment-only `NATIVELOADER_VERIFIED_MULTIPLAYER` marker lets packaged GPL
+cl_rtx.lua avoid initial/final model-cache flushes after the world is active. The catalog classifies the exact
+seven rendering recipes eligible for the secure-launch exception; other patches keep the general
+gate. [`loader/client/tests`](../loader/client/tests/README.md) tests ownership, bytes, source
+allowlists and recipe mutations. [test_mp_bootstrap.py](../tools/tests/test_mp_bootstrap.py.md)
+executes the actual initializer and extracted actual cl_rtx.lua reload section in LuaJIT
+(6 tests/14 scenarios). The public Lua SDK headers and BSD-3-Clause licence are
+recorded in [`third_party/gmod`](../third_party/gmod/README.md). See
+[ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md) for scope and completed dedicated-server checks.
+
 Loader 0.8.1's `loader/proxy/diagnostics.cpp` supplies local system/package identity data to the
 read-only main-menu presentation layer. `loader/proxy/ui/` holds the JavaScript, labels and CMake
 embedding template. `companion/presentation/` holds editable, localized startup text copied as

@@ -1,0 +1,192 @@
+{
+  "repository": "https://github.com/SheepyLord/garrys-mod-rtx-debug-module.git",
+  "base_commit": "ff009d71a5c3d22cd5c400941fb09e7e905b8a73",
+  "source_commit": "6105f0b545145dc7781f7ae94af76619c2a6e3d4",
+  "patch": "0001-Support-multiplayer-client-rendering-diagnostics-wit.patch",
+  "patch_sha256": "a6b78abd7355771af9f6051bb666bf777e9075d9362c6ebb4660eeaaf7895f2e",
+  "complete_checkout": {
+    ".gitattributes": {
+      "size": 12,
+      "sha256": "e753774a5c6c845d5b43db5e4e133c8b7308c233f036517be1e2ae01cb068790"
+    },
+    ".gitignore": {
+      "size": 59,
+      "sha256": "8943f2b2e703a817248579d84eb3893d922ce634a5da41f3b4ce0cea994146a8"
+    },
+    "README.md": {
+      "size": 9863,
+      "sha256": "1891ae7a159984ec1cd7903583580edf27bba2acfaa1fdebd5828b5efcbc3332"
+    },
+    "addon/lua/autorun/client/rtx_debug.lua": {
+      "size": 5213,
+      "sha256": "7968cbecd04da834fb1874d87938f87d01aa91c460fd90389cdbc7797e498729"
+    },
+    "addon/lua/autorun/client/rtx_debug.lua.md": {
+      "size": 591,
+      "sha256": "06ec4621b2d1fa8e248537e9f31f09a167743b5d7b2d3a9b0d1d681f1d5f2919"
+    },
+    "premake5.lua": {
+      "size": 629,
+      "sha256": "ea30944be070335f29e97a514ce6cfaec98c0b788d9da86f79d113a9b14ba4ec"
+    },
+    "premake5.lua.md": {
+      "size": 506,
+      "sha256": "f64d6f687cd8961b96bb47c6eed8040fbc1228d1f573dd561a5f00a0720bdfea"
+    },
+    "premake_project.lua": {
+      "size": 1523,
+      "sha256": "7cf126277ae6d6a6107e509e01614f5d19633c39de96dd3ee980a0f181963e2a"
+    },
+    "source/debug_context.h": {
+      "size": 323,
+      "sha256": "467df3b200eec15f0c198eacbaf5347e6afd67dd141a91fe0ea0b2f480d2fe8d"
+    },
+    "source/detours/detours.cpp": {
+      "size": 10333,
+      "sha256": "ad28112a6d064b963fe55aece7e6c64ce9d03fe5325803eaa32af2f7516c8b71"
+    },
+    "source/detours/detours.h": {
+      "size": 567,
+      "sha256": "a005f452f6fe4b72bbaba702fffe4953d6bbf49a2ef916dcd483ad4712857a9a"
+    },
+    "source/engine/engine.cpp": {
+      "size": 26644,
+      "sha256": "e03f551e31a93f2797be4b35808d0abf08319c0be23daa3b00b1447833c9ee47"
+    },
+    "source/engine/engine.h": {
+      "size": 645,
+      "sha256": "d64509810c94d49a35d945d14fcb6ff1af174bccd54d9a95bb01b60d9a6273a6"
+    },
+    "source/lua_bridge/lua_bridge.cpp": {
+      "size": 14723,
+      "sha256": "9b1771201efcd4f026c7bc03721eb397399ecd6b11ec360e5352774d3811eeb0"
+    },
+    "source/lua_bridge/lua_bridge.h": {
+      "size": 809,
+      "sha256": "460b58afcf1a268e09a7c8e5b0fe950fdb270d2ccc282d6bf56641ed252201fe"
+    },
+    "source/lua_util.h": {
+      "size": 1952,
+      "sha256": "cf6b7ee0ddd33124f61ff9913746b96de08995e5c1c1827c68be4cbee5aa4d0d"
+    },
+    "source/memory/memory_debug.cpp": {
+      "size": 39144,
+      "sha256": "296168a6d771b108a97ec316073e083c1b627928cd6318be62d7dd66f0d34920"
+    },
+    "source/memory/memory_debug.h": {
+      "size": 1159,
+      "sha256": "cf08614848faeaf223baa8c24949bc458eafa49c615e1c26421614b51951d2e1"
+    },
+    "source/module.cpp": {
+      "size": 8764,
+      "sha256": "16544b3cec043489ba64aafc978b6d86d797e9698781ddfb27e667573f398994"
+    },
+    "source/remix/remix_debug.cpp": {
+      "size": 12271,
+      "sha256": "5b69a40010d7bbd18ec514d2479bf4dd9a9fb54a2fd0d99a27d0da769bc57ccd"
+    },
+    "source/remix/remix_debug.h": {
+      "size": 760,
+      "sha256": "65487ab0c05769a561ada7096681c002c12c5fb5a4458228d79ec97ab237202e"
+    },
+    "source/render_policy.h": {
+      "size": 919,
+      "sha256": "aea70f362a48d757919e4911ca087304ef33a4c6e8c06f8f74dacd0e504d7d21"
+    },
+    "source/render_policy.h.md": {
+      "size": 402,
+      "sha256": "14eaa1f283d1484043d2c6255c8d294659cdc6bbed2814522a9450af939dead3"
+    },
+    "source/transport/transport.cpp": {
+      "size": 2660,
+      "sha256": "89729ccc9181cd63c3db90f4485b4b99b6beced282650adab5ea8969afa6cfe3"
+    },
+    "source/transport/transport.h": {
+      "size": 151,
+      "sha256": "042409e9c6a90d06935d3bf573bdffdffe79ad88a2a13ccc2b73242062c4054b"
+    },
+    "tests/render_policy_test.cpp": {
+      "size": 930,
+      "sha256": "6380c5c8fc296d7d33069a1d32e99fdc8914b4e15baa86ea0269cf560dd6696f"
+    },
+    "tests/render_policy_test.cpp.md": {
+      "size": 322,
+      "sha256": "05bae9d088ac0b76ba72c2190ab04bab7f71af0d4866c08f9222cc0cd6dacf43"
+    },
+    "tests/test_client.py": {
+      "size": 2157,
+      "sha256": "b1bebd2f50037b4ba47d5c4042f809405e693941fc8f7b35cbb1245217a3333e"
+    },
+    "tests/test_client.py.md": {
+      "size": 399,
+      "sha256": "e6f5ecb59229f26fcbae539cedcd81e23bce2c218a0cf31cb26c0e92f84f7b54"
+    },
+    "tests/test_transport.py": {
+      "size": 8659,
+      "sha256": "31ef286b9f7d221e86a2094b4154e02d8f9b6da6b669ea2f3f1086cd544cf48b"
+    },
+    "tests/test_transport.py.md": {
+      "size": 338,
+      "sha256": "b60d18b02555857838fc1653277b9c0d45204530676fdb58fc0133c72c71a1b4"
+    },
+    "tools/rtxdebug_client.py": {
+      "size": 8487,
+      "sha256": "6f006b0b5ab6aeb5f9055d3c09a17df79e6769347f4dff16bbab94223eaf0da4"
+    },
+    "tools/rtxdebug_client.py.md": {
+      "size": 747,
+      "sha256": "c7c5a77bb6ff67f904a138e539f6363c23c373a37ae7d540aefc30c472f252c8"
+    }
+  },
+  "gmod_common": {
+    "repository": "https://github.com/danielga/garrysmod_common",
+    "commit": "a854f237b79087826aa9a98a05de5e0d2b4502b6",
+    "submodules": {
+      "detouring": "3e0b0388f6d886f6c44038ce537871b5397e9468",
+      "detouring/minhook": "e2a49551a5c8b372cb962720997dc5c43df6b4b9",
+      "premake/premake-export-compile-commands": "d22b7d1c86b0ca453fdde2ac731627f0b947f636",
+      "scanning": "d505081818ebd418af1966be64c09998babc6483",
+      "sourcesdk-minimal": "61bf02ea6eaedcabf66784dfb0e54c9e3feefdcc"
+    }
+  },
+  "remix_headers": {
+    "repository": "https://github.com/SheepyLord/garrys-mod-rtx-remixed.git",
+    "commit": "fc478c06ec5ae0a94f64aec19df8610a46c51c35",
+    "path": "public/include",
+    "api": "0.1000.1"
+  },
+  "premake": {
+    "version": "5.0.0-beta2",
+    "url": "https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-windows.zip",
+    "archive_sha256": "87cfa10ed52fd1f4e835f738ac1033ff302035758671400fec078b700c622c54"
+  },
+  "built_artifact": {
+    "name": "gmcl_rtxdebug_win64.dll",
+    "version": "0.2.0",
+    "size": 427008,
+    "sha256": "5bfdfdc5d0a524a25b8f2d1715d1d741d16706b0c81027241fff1ee07a2916a5"
+  },
+  "license_note": "The recorded RTXDebug commits contain no separate LICENSE file. Existing source notices are retained; this provenance record grants no additional license.",
+  "dependency_notices": {
+    "garrysmod_common.LICENSE.txt": {
+      "source": "license.txt",
+      "sha256": "336d84c11072287e0f0716766407054fdacdde950139517e846dcb597bd24653"
+    },
+    "detouring.LICENSE.txt": {
+      "source": "detouring/license.txt",
+      "sha256": "3a2865e034022bd5305a985604e9da0da7b480b5715c88a4a06ede664956d524"
+    },
+    "minhook.LICENSE.txt": {
+      "source": "detouring/minhook/LICENSE.txt",
+      "sha256": "4f21f857550d7be854da6ea5f2da4e6775ca4e3fbb535e4f3d961c47d0bf3335"
+    },
+    "scanning.LICENSE.txt": {
+      "source": "scanning/license.txt",
+      "sha256": "4d58d2dc66562133a28647997e5a258a1236274d8ffe98af7bfc23aaa5bc4a5d"
+    },
+    "sourcesdk-minimal.LICENSE.txt": {
+      "source": "sourcesdk-minimal/LICENSE",
+      "sha256": "e666c2b0ae2d3095313868d03d1295bc34d3066a1ee3d4824b0e7d899700181d"
+    }
+  }
+}

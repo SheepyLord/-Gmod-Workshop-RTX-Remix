@@ -26,7 +26,7 @@ Install
      and the loader log names the file. Steam verification can restore a modified Steam install;
      offline recovery can use nlctl apply <game root> --legacy-source <verified vanilla root>.
    - The first start after a download deploys the package, about 1.5 GB, which takes a few seconds.
-     It needs this loader (0.5.0 or later); an older loader keeps the version it has.
+     This shipment needs this loader (0.9.0 or later); an older loader keeps the version it has.
    - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
      Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer for
      RTX sessions. If you put copies of them into garrysmod\addons or their files into
@@ -38,6 +38,10 @@ Install
    - With loader 0.7.0 or later, deployed native packages have blue cards in the Addons menu and show
      their Workshop descriptions. Their native-container mount warnings are suppressed. The loader
      still deploys their payloads; other addon errors remain visible.
+   - Loader 0.9.0 initializes this allowlisted RTX bundle's verified client scripts when joining
+     multiplayer servers, including servers with sv_allowcslua 0. The package no longer adds
+     -insecure. Other local add-ons follow the server's normal rules; server-side tools still need
+     the matching server add-on. RTXDebug supports client rendering diagnostics in multiplayer.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.

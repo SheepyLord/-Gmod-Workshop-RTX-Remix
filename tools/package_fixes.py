@@ -38,6 +38,7 @@ MAIN_MODULE = 'gmcl_RTXFixesBinary_win64.dll'
 MODULES = (MAIN_MODULE, 'gmcl_rtxwater_win64.dll')
 DEBUG_MODULE = 'gmcl_rtxdebug_win64.dll'
 DEBUG_ADDON = 'rtx_debug'
+CLIENT_BOOTSTRAP = 'gmsv_nlrtxclient_win64.dll'
 SHADER_DLL = 'stdshader_dx6.dll'
 # Folders the fixes rewrite at run time (the ToPBR converter writes its results and its generation
 # counter into its own Remix mod): create-only, like the seed data, so a reinstall or an update never
@@ -428,8 +429,17 @@ def build(args):
                 seeds.append(name)
                 roots.append(('garrysmod/data/' + name, 'root-files'))
     modules = MODULES + ((DEBUG_MODULE,) if args.with_debug_module else ())
+    bootstrap = getattr(args, 'client_bootstrap', None)
+    if bootstrap:
+        if COMPANION_NAME in excluded:
+            raise PackageError('--client-bootstrap requires the nativeloader companion')
+        bootstrap = os.path.abspath(bootstrap)
+        modules += (CLIENT_BOOTSTRAP,)
+        notices = 'native/root/garrysmod/addons/nativeloader/resource/native-client/'
+        files[notices + 'LICENSE-MIT.txt'] = os.path.join(REPO, 'LICENSE')
+        files[notices + 'LICENSE-GarrysModSDK.txt'] = os.path.join(REPO, 'third_party', 'gmod', 'LICENSE')
     for name in modules:
-        source = os.path.join(modules_from, name)
+        source = bootstrap if name == CLIENT_BOOTSTRAP else os.path.join(modules_from, name)
         if not os.path.isfile(source):
             raise PackageError('%s not found in %s (build the fixes, or give --modules-from)' % (name, modules_from))
         regular_file(source)
@@ -481,7 +491,7 @@ def build(args):
             'name': name,
             'version': version,
             'kinds': kinds,
-            'requires_loader': REQUIRES_LOADER,
+            'requires_loader': '>=0.9.0' if bootstrap else REQUIRES_LOADER,
             # The fixes' Lua runs only with Remix: without a runtime the loader hides the add-ons (ADR 0013).
             'requires_remix': True,
             'files': listed,
@@ -637,6 +647,7 @@ def main(argv=None):
     ap.add_argument('--repo', default=DEFAULT_FIXES, help='the fixes repo, read only (default %s)' % DEFAULT_FIXES)
     ap.add_argument('--modules-from', help='folder with the built gmcl_ modules (default <repo>\\x86_64\\Release)')
     ap.add_argument('--with-debug-module', action='store_true', help='also package %s' % DEBUG_MODULE)
+    ap.add_argument('--client-bootstrap', metavar='DLL', help='also package the verified RTX multiplayer bootstrap as %s' % CLIENT_BOOTSTRAP)
     ap.add_argument('--exclude-addon', action='append', default=[], metavar='NAME', help='leave an add-on out (repeatable)')
     ap.add_argument('--add-to-addon', action='append', default=[], nargs=2, metavar=('PATH', 'SOURCE'),
                     help='add SOURCE, a file or a folder, to an add-on as PATH (name/LICENSE), such as a licence text '

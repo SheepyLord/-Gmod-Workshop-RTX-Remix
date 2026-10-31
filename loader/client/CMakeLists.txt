@@ -1,0 +1,13 @@
+add_library(nl_client_catalog STATIC catalog.cpp)
+target_include_directories(nl_client_catalog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(nl_client_catalog PUBLIC nl_core PRIVATE nl_build_options)
+
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/bootstrap.lua" NL_CLIENT_BOOTSTRAP)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS bootstrap.lua)
+configure_file(bootstrap_data.h.in "${CMAKE_CURRENT_BINARY_DIR}/generated/bootstrap_data.h" @ONLY)
+add_library(nl_rtx_client SHARED module.cpp)
+target_include_directories(nl_rtx_client SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/third_party/gmod/include")
+target_include_directories(nl_rtx_client PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_link_libraries(nl_rtx_client PRIVATE nl_client_catalog nl_build_options)
+set_target_properties(nl_rtx_client PROPERTIES OUTPUT_NAME gmsv_nlrtxclient_win64 PREFIX "")
+add_subdirectory(tests)

@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "../client/catalog.h"
 #include "modules.h"
 #include "nl/fs.h"
 #include "nl/paths.h"
@@ -330,13 +331,16 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     modules::Setup setup;
     setup.root = std::filesystem::absolute(root);
     setup.read_redirects = read_redirects;
-    session.patches_allowed = !plan.patch_sets.empty() &&
-        (!plan.patch_sets_need_insecure || cmdline::has_arg(GetCommandLineW(), L"-insecure"));
-    if (session.patches_allowed) {
-      for (const auto& set : plan.patch_sets) setup.patch_sets.push_back(set.set);
-    } else if (!plan.patch_sets.empty()) {
-      session.notes.push_back("patch sets not applied: they need -insecure (config patch_sets.require_insecure)");
+    const bool general_patches = !plan.patch_sets_need_insecure || cmdline::has_arg(GetCommandLineW(), L"-insecure");
+    std::size_t skipped_patches = 0;
+    for (const auto& set : plan.patch_sets) {
+      if (general_patches || (plan.allow_secure_rtx_render_patches && client::secure_render_patch_set(set.package, set.set))) {
+        setup.patch_sets.push_back(set.set);
+      } else ++skipped_patches;
     }
+    session.patches_allowed = !setup.patch_sets.empty();
+    if (!general_patches && session.patches_allowed) session.notes.push_back("reviewed RTX rendering patches enabled without -insecure");
+    if (skipped_patches) session.notes.push_back("other patch sets not applied: they need -insecure (config patch_sets.require_insecure)");
     for (const auto& item : plan.module_overrides) {
       setup.overrides.emplace_back(item.module, std::filesystem::absolute(fs::join(root, item.file)).lexically_normal());
       session.overrides.push_back(item.module);

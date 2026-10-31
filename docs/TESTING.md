@@ -1,5 +1,61 @@
 # Testing
 
+## Multiplayer bootstrap and RTXDebug
+
+Loader 0.9.0's targeted offline checks require no game or GPU:
+
+```powershell
+cmake --build --preset win64-release --target nl_client_catalog_tests nl_tests
+ctest --test-dir out/build/win64-release -R '^nl_client_catalog_tests$' --output-on-failure
+out/build/win64-release/loader/tests/nl_tests.exe 'config:'
+python -m unittest discover -s tools/tests -p test_mp_bootstrap.py -q
+```
+
+The current result is **16 catalog cases, 7 config cases and 6 Lua tests covering 14 scenarios,
+all passing**. Catalog checks use generated local/dev/Workshop fixtures and enforce exact owner
+and module/script hashes, safe paths, changed/missing/link rejection and excluded automation.
+The independent recipe fixtures cover the seven approved rendering patches, all proper subsets,
+extra/reordered patches and owner/module/name/find/offset/replace mutations. Config checks retain
+the general insecure default, strict booleans and exact opt-out key. The
+[Lua harness](../tools/tests/mp_bootstrap_harness.lua.md) executes the complete production
+initializer, checks scoped includes/requires and cached results, engine-approved fallbacks,
+unmodified global helpers, client entity ordering and replay of only its newly tracked hooks.
+Cross-script absent-channel suppression, registered-channel recovery, genuine engine network
+errors/returns and environment-only markers are covered. The actual cl_rtx.lua reload section
+retains normal early timers/retries and performs no late verified model-cache flush. Two separate
+player-body cases check source-bone snapshots, invalid destinations and non-accumulating offsets.
+Single-player, wrong realms and unavailable readiness/API execute no forced owner scripts.
+
+For live acceptance, use disposable client and genuine dedicated-server fixtures under
+`out`, with the 0.9.0 loader and updated payload, no `-insecure`, server `sv_allowcslua 0` and cheats
+off. Verify a completed RTX catalog, visible rendered gameplay, reconnect/map transitions and
+absence of duplicate initialization. Verify an unrelated community Lua fixture remains rejected,
+while server-approved Lua still works. Check runtime/loader off switches and patch-exception
+opt-out. Exercise RTXDebug's local rendering queries/configuration in multiplayer, and verify
+Lua evaluation, memory writes, detours and gameplay/replicated cheat mutations remain refused;
+their development path requires single-player, `sv_cheats 1` and `-insecure` together.
+
+Prototype 7 **passes** the secure dedicated join, reconnect and gm_construct -> gm_flatgrass ->
+gm_construct round trip in client PID 8544 against genuine 64-bit server PID 78088. The server
+reported VAC secure mode active, `sv_lan 0`, `sv_allowcslua 0` and cheats off; the password-protected
+loopback client had no `-insecure`. The payload completed 44 autoruns with errors empty, six absent
+channels recorded, temporary API absent and the unrelated local Lua fixture blocked. RTXDebug 0.2
+confirmed connected/in-game client/menu states, no server realm, successful rendering SetConfig
+and restore with config-file hashes unchanged, and denial of Lua.Eval and an Engine.SetConVar
+attempt to enable client Lua. Source JPEG confirms rendered world/hands. Records are under
+`out/multiplayer-evidence/probe7*`, with the JPEG at
+`out/mpc/garrysmod/screenshots/nl_mp_construct.jpg`; crash A/B findings are in
+`out/debug-crash-analysis/findings.md`.
+
+Do not count a listen server or mocked Lua as dedicated-server acceptance. This controlled result
+does not establish a universal VAC/server-policy guarantee. Full Release checks pass: 19 CTests
+and 277 Python tests (28 + 25 + 224; seven environment skips). The reviewed 970-file GMA passes
+the dedicated-server debug/boundary probes in PID 80444; single-player PID 39532 loads normally
+without insecure or a forced client payload. Archive readback verifies seven critical files,
+44 changed payload files and no removals. Evidence is under out/multiplayer-evidence/packaged,
+singleplayer and package-review.json. Publication is pending. Policy
+and install requirements are in [ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md).
+
 Requests 15 and 23 use [test_presentation_ui.py](../tools/tests/test_presentation_ui.py.md) for seven
 template/catalog checks and the actual menu JavaScript in a Node DOM fixture. The proxy C++ suite
 checks private-path exclusion, JSON validation, generated read redirection and unchanged stock

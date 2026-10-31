@@ -9,6 +9,7 @@ if not loaded then
 end
 
 local PROTOCOL = 1
+local processId = RTXDebug.Status().process_id
 local requestDir = "rtx_debug/requests"
 local resultDir = "rtx_debug/results"
 file.CreateDir("rtx_debug")
@@ -61,10 +62,11 @@ local function writeResult(id, body)
     body.id = id
     body.protocol = PROTOCOL
     body.time = SysTime()
+    body.process_id = processId
     local encoded = util.TableToJSON(plain(body), true)
     if not encoded or #encoded > 8 * 1024 * 1024 then
         encoded = util.TableToJSON({ id = id, protocol = PROTOCOL, ok = false,
-            error = "result is not JSON serializable or exceeds 8 MiB" }, true)
+            process_id = processId, error = "result is not JSON serializable or exceeds 8 MiB" }, true)
     end
     file.Write(resultDir .. "/" .. id .. ".json", encoded)
     MsgN("[RTXDebug] DONE " .. id)
@@ -88,6 +90,11 @@ function RTXDebug.DispatchRequest(id)
     local request = util.JSONToTable(raw)
     if not istable(request) or (request.id ~= nil and request.id ~= id) then
         writeResult(id, { ok = false, error = "invalid JSON request or mismatched id" })
+        return false
+    end
+    if request.process_id ~= nil and (not isnumber(request.process_id)
+        or request.process_id ~= processId) then
+        writeResult(id, { ok = false, error = "request belongs to another process" })
         return false
     end
     local fn = resolveMethod(request.method)

@@ -283,6 +283,7 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
   p.launch_args = missing_args(remix.launch_args, command_line, p.present_args);
   add_window_args(command_line, display, p.launch_args, p.present_args);
   p.patch_sets_need_insecure = config.patch_sets_require_insecure;
+  p.allow_secure_rtx_render_patches = config.allow_secure_rtx_render_patches;
   p.activate = true;
   p.reason = "runtime " + runtime->id + " " + runtime->version;
 

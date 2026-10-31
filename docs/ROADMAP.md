@@ -1,5 +1,20 @@
 # Roadmap
 
+The requested multiplayer change is **implemented and validated; publication in progress**: loader 0.9.0 implements a verified RTX-owner
+script bootstrap without changing `sv_allowcslua`, removes the shipment's `-insecure` request and
+keeps other community scripts under engine permissions. RTXDebug separates local rendering
+configuration from commands requiring single-player, cheats and insecure mode. Offline validation
+passes 16 catalog cases, 7 config cases, 6 Lua tests covering 14 scenarios and 2 player-body cases.
+Prototype 7 joins a genuine 64-bit dedicated server with VAC secure mode active, `sv_allowcslua 0`,
+cheats off and no `-insecure`; reconnect and a gm_construct/gm_flatgrass round trip pass. RTXDebug
+rendering apply/restore works, unsafe evaluation/cvar changes are denied and unrelated local Lua
+remains blocked. Full Release checks pass (19 CTests, 277 Python tests), and the reviewed GMA passes
+the same dedicated-server probes and a normal single-player launch. Publication is pending; no universal
+VAC/server-policy guarantee follows from this controlled session. The helper-bearing shipment
+requires loader >=0.9.0; a Workshop-only update cannot replace the installed bootstrap. Policy and acceptance
+criteria are in [ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md) and
+[TESTING.md](TESTING.md#multiplayer-bootstrap-and-rtxdebug).
+
 QoL requests 15 and 23 are **done**: project startup text and loader 0.8.1 main-menu diagnostics.
 The source/edit locations and bootstrap requirement are in [ADR 0050](decisions/0050-startup-text-and-main-menu-diagnostics.md).
 The latest bounce-default request uses maximum 12/minimum 1 across all default sources

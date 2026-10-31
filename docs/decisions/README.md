@@ -57,6 +57,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0049](0049-importer-normals-material-labels-and-motion-access.md) | Additive imported-model geometry normals, original AME material labels/current-row handoff, and a dedicated VMD launcher | Accepted 2026-10-30 |
 | [0050](0050-startup-text-and-main-menu-diagnostics.md) | Editable localized project splash and local main-menu system/version/hash diagnostics | Accepted 2026-10-30 |
 | [0051](0051-path-bounce-defaults.md) | Default minimum/maximum path bounces to 1/12 while preserving explicit overrides | Accepted 2026-10-30 |
+| [0052](0052-scoped-rtx-multiplayer-bootstrap.md) | Verified RTX-owner multiplayer scripts and exact rendering recipe exception, preserving community Lua and unsafe debug gates | Accepted |
 
 ## Template
 

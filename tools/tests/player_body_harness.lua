@@ -4,6 +4,7 @@ local values = {rtx_pseudoplayer = "1", rtx_pseudoweapon = "1", rtx_pseudoplayer
 local callbacks, timers, hooks, panels, categories = {}, {}, {}, {}, {}
 local imageWrites, draws, playerBoneWrites = 0, 0, 0
 local lighting, overrideCleared, pixelColor
+local inBoneCallback, drawErrors = false, {}
 local function convar(name)
     return {GetBool = function() return values[name] ~= "0" and values[name] ~= "" end,
         GetFloat = function() return tonumber(values[name]) or 0 end,
@@ -27,7 +28,13 @@ function Vector(x, y, z) return setmetatable({x = x, y = y, z = z}, vector) end
 function Angle(_, yaw)
     return {y = yaw, Forward = function() return Vector(math.cos(math.rad(yaw)), math.sin(math.rad(yaw)), 0) end}
 end
-local player = {model = "player", skin = 0, alive = true, observer = 0, third = false}
+local function boneMatrix()
+    return {position = Vector(10, 20, 30), GetTranslation = function(self)
+        return Vector(self.position.x, self.position.y, self.position.z)
+    end, SetTranslation = function(self, position) self.position = position end}
+end
+local player = {model = "player", skin = 0, alive = true, observer = 0, third = false,
+    boneCount = 2, boneNames = {}, missingBones = {}}
 function player:GetModel() return self.model end
 function player:GetSkin() return self.skin end
 function player:GetPos() return Vector(10, 20, 30) end
@@ -41,16 +48,25 @@ function player:ShouldDrawLocalPlayer() return self.third end
 function player:GetRenderAngles() return Angle(0, 90) end
 function player:EyeAngles() return Angle(0, 0) end
 function player:GetPlayerColor() return Vector(1, 0.5, 0) end
-function player:SetupBones() end
-function player:GetBoneMatrix()
-    return {GetTranslation = function() return Vector(10, 20, 30) end,
-        SetTranslation = function(self, v) self.position = v end}
+function player:SetupBones() assert(not inBoneCallback, "source bone setup inside proxy callback") end
+function player:GetBoneCount()
+    assert(not inBoneCallback, "source bone count read inside proxy callback")
+    return self.boneCount
+end
+function player:GetBoneName(i)
+    assert(not inBoneCallback, "source bone name read inside proxy callback")
+    return self.boneNames[i] or "Bone" .. i
+end
+function player:GetBoneMatrix(i)
+    assert(not inBoneCallback, "source matrix read inside proxy callback")
+    return not self.missingBones[i] and boneMatrix() or nil
 end
 function player:ManipulateBonePosition() playerBoneWrites = playerBoneWrites + 1; error("real player bone edited") end
 function player:ManipulateBoneAngles() playerBoneWrites = playerBoneWrites + 1; error("real player bone edited") end
 LocalPlayer = function() return player end
 CurTime = function() return 1 end
 CLIENT, OBS_MODE_NONE, EF_BONEMERGE = true, 0, 1
+BONE_USED_BY_ANYTHING = 524032
 AddCSLuaFile = function() end
 file = {Exists = function() return false end, CreateDir = function() end,
     Write = function() imageWrites = imageWrites + 1 end}
@@ -89,13 +105,14 @@ render = setmetatable({ReadPixel = function() return 255, 255, 255 end,
     end}, {__index = function() return function() end end})
 cam = {Start2D = function() end, End2D = function() end}
 surface = {SetDrawColor = function(r, g, b, a) pixelColor = {r, g, b, a} end, DrawRect = function() end}
-ErrorNoHalt = function() end
+ErrorNoHalt = function(message) drawErrors[#drawErrors + 1] = message end
 ENT = {}
 dofile(entityPath)
-local proxy = setmetatable({skin = 0, bones = {}}, {__index = ENT})
+local proxy = setmetatable({skin = 0, bones = {}, boneCount = 2, boneNames = {},
+    unusedBones = {}, missingBones = {}, boneWrites = {}}, {__index = ENT})
 function proxy:AddCallback(_, fn) self.boneCallback = fn end
 function proxy:GetModel() return self.model end
-function proxy:SetModel(v) self.model = v end
+function proxy:SetModel(v) self.model = v; self.bones = {} end
 function proxy:SetPos(v) self.pos = v end
 function proxy:SetAngles(v) self.angles = v end
 function proxy:SetParent(v) self.parent = v end
@@ -109,32 +126,101 @@ function proxy:GetNoDraw() return self.hidden end
 function proxy:NextThink() end
 function proxy:Remove() self.removed = true end
 function proxy:GetMaterials() return self.sourceMaterials or {"models/player/shared"} end
+function proxy:GetBoneCount() return self.boneCount end
+function proxy:GetBoneName(i) return self.boneNames[i] or "Bone" .. i end
+function proxy:BoneHasFlag(i, mask)
+    assert(mask == BONE_USED_BY_ANYTHING)
+    return not self.unusedBones[i]
+end
 function proxy:GetBoneMatrix(i) return self.bones[i] end
-function proxy:SetBoneMatrix(i, v) self.bones[i] = v end
+function proxy:SetBoneMatrix(i, v)
+    assert(i < self.boneCount and i < player.boneCount, "bone count exceeded")
+    assert(self:GetBoneName(i) ~= "__INVALIDBONE__" and not self.unusedBones[i],
+        "invalid or unused destination written")
+    assert(not self.missingBones[i], "unavailable destination written")
+    assert(self:GetBoneName(i) == (player.boneNames[i] or "Bone" .. i), "mismatched bone written")
+    self.boneWrites[i] = (self.boneWrites[i] or 0) + 1
+    self.bones[i] = v
+end
+local function buildBones(count)
+    inBoneCallback = true
+    local ok, err = pcall(proxy.boneCallback, proxy, count)
+    inBoneCallback = false
+    if not ok then error(err) end
+end
 function proxy:InvalidateBoneCache() end
-function proxy:DrawModel() draws = draws + 1; if self.failDraw then error("draw failure") end end
+function proxy:DrawModel()
+    draws = draws + 1
+    if self.failDraw then error("draw failure") end
+    self.boneWrites = {}
+    for i = 0, self.boneCount - 1 do
+        self.bones[i] = not self.missingBones[i] and boneMatrix() or nil
+    end
+    buildBones(self.callbackCount or self.boneCount)
+end
 proxy:Initialize()
 assert(proxy.parent == nil and proxy.groups[0] == 1 and not proxy.hidden)
 assert(proxy.RTXCustomDraw and proxy.RenderOverride == proxy.Draw)
 proxy:Draw()
+assert(#drawErrors == 0, table.concat(drawErrors, "\n"))
 assert(draws == 1 and imageWrites == 1 and pixelColor[3] == 0 and pixelColor[4] == 255,
     "even a white texture must receive a different private pixel")
 proxy:Draw()
 -- Reuse the same material cache entry despite the legacy unique_hashes=0 preference.
 assert(draws == 2 and imageWrites == 1)
-for i = 0, 1 do
-    proxy.bones[i] = {GetTranslation = function() return Vector(10, 20, 30) end,
-        SetTranslation = function(self, position) self.position = position end}
-end
-proxy.boneCallback(proxy, 2)
+buildBones(2)
 assert(proxy.bones[0].position.z == 42 and proxy.bones[1].position.z == 42)
+buildBones(2)
+assert(proxy.bones[0].position.z == 42 and proxy.bones[1].position.z == 42,
+    "repeated callbacks accumulated the proxy offset")
 values.rtx_pseudoplayer_offset_x = "10"
-proxy.boneCallback(proxy, 2)
+proxy:Draw()
+buildBones(2)
 assert(math.abs(proxy.bones[0].position.y - 30) < 0.001 and proxy.bones[0].position.z == 42)
 values.rtx_pseudoplayer_offset_localangles = "1"
-proxy.boneCallback(proxy, 2)
+proxy:Draw()
+buildBones(2)
 assert(proxy.bones[0].position.x == 20 and proxy.bones[0].position.z == 42 and playerBoneWrites == 0)
-player.skin = 1; proxy:Think(); proxy:Draw(); assert(imageWrites == 2)
+
+-- Models can have unused bones, invalid names and LOD-specific matrix omissions.
+player.boneCount, proxy.boneCount, proxy.callbackCount = 8, 9, 16
+proxy.boneNames[1], proxy.boneNames[4] = "__INVALIDBONE__", "different"
+proxy.unusedBones[2], proxy.missingBones[3] = true, true
+player.missingBones[6], player.boneNames[7] = true, "__INVALIDBONE__"
+proxy:Draw()
+local written = 0
+for _ in pairs(proxy.boneWrites) do written = written + 1 end
+assert(written == 2 and proxy.boneWrites[0] == 1 and proxy.boneWrites[5] == 1,
+    "unavailable or mismatched bones escaped the snapshot guards")
+proxy.boneWrites = {}
+buildBones(1)
+assert(proxy.boneWrites[0] == 1 and proxy.boneWrites[5] == nil, "callback bone count ignored")
+local flagMethod, flagMask = proxy.BoneHasFlag, BONE_USED_BY_ANYTHING
+proxy.BoneHasFlag, BONE_USED_BY_ANYTHING, proxy.boneNames[2] = nil, nil, "__INVALIDBONE__"
+buildBones(16)
+proxy.BoneHasFlag, BONE_USED_BY_ANYTHING = flagMethod, flagMask
+local beforeModelChange = draws
+player.model = "changed_player"
+proxy:Draw()
+assert(draws == beforeModelChange, "a mismatched player/proxy model was drawn")
+proxy.boneWrites = {}
+buildBones(16)
+assert(next(proxy.boneWrites) == nil, "a mismatched draw reused the previous model's snapshot")
+proxy:Think()
+proxy:Draw()
+assert(draws == beforeModelChange + 1 and proxy.boneWrites[0] == 1,
+    "model change did not rebuild the pose snapshot")
+local savedModel = proxy.model
+proxy.model, proxy.boneWrites = "other_proxy", {}
+buildBones(16)
+assert(next(proxy.boneWrites) == nil, "a snapshot was applied to a different proxy model")
+proxy.model = savedModel
+player.boneCount, proxy.boneCount, proxy.callbackCount = 2, 2, nil
+player.boneNames, player.missingBones = {}, {}
+proxy.boneNames, proxy.unusedBones, proxy.missingBones = {}, {}, {}
+assert(#drawErrors == 0, table.concat(drawErrors, "\n"))
+local copiesBeforeSkin = imageWrites
+player.skin = 1; proxy:Think(); proxy:Draw(); assert(imageWrites == copiesBeforeSkin + 1)
 proxy.sourceMaterials = {"models/player/eyes"}; proxy:Draw()
 assert(createdShaders[proxy.RTXMaterials[1].material:GetName()] == "VertexLitGeneric")
 player.alive = false; proxy:Think(); assert(proxy.hidden)
@@ -144,6 +230,8 @@ player.observer = 0; player.viewEntity = {}; proxy:Think(); assert(proxy.hidden)
 player.viewEntity = nil; proxy:Think(); assert(not proxy.hidden)
 proxy.failDraw = true; overrideCleared = false; proxy:Draw()
 assert(lighting == false and overrideCleared, "a failed body draw leaked render state into arms")
+assert(#drawErrors == 1 and drawErrors[1]:find("draw failure", 1, true),
+    "an unexpected draw error was swallowed")
 values.rtx_pseudoplayer = "0"; proxy:Think(); assert(proxy.removed)
 
 RemixCategoryManager = {CATEGORY = {THIRD_PERSON_PLAYER_MODEL = 0x80000, THIRD_PERSON_PLAYER_BODY = 0x100000},
