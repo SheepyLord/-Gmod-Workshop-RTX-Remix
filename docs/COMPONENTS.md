@@ -45,7 +45,7 @@ are outside this change. [Corresponding source](../packages/fixes/licenses/overs
 COPYING, pins, generated projects and patches ship under the short add-on path `remixbinary/src/hw`
 to stay within Windows staging path limits. Source/build provenance and final-DLL default NPC/arms
 checks are complete. The actual final GMA also passes force1 PM/two-skin and visible-arms checks;
-final multiplayer/CI/publication are pending. Findings are in
+secure dedicated multiplayer, CI and publication also passed for that accepted shipment. Findings are in
 [RESEARCH.md](RESEARCH.md#oversized-airi-skinning-groups-item-24) and
 [ADR 0053](decisions/0053-oversized-hardware-skinning.md).
 

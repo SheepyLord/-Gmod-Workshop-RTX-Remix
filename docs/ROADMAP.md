@@ -1,12 +1,11 @@
 # Roadmap
 
-C13 graphics-add-on/map-load hardening is **implemented and locally validated** in loader 0.10.0.
+C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.
 Release: 22 CTests/294 Python tests (7 skips); 17 guard cases execute 18 LuaJIT scenarios.
 The actual 998-file GMA passes mixed-add-on/fault, toolgun/menu and corrupt-cache controls.
-Steam files, user.conf, launch settings and native trust remain unchanged. Delivery identifiers
-follow the main push in [the QoL report](handover/QoL-report.md#c13-graphics-add-ons-and-map-loading-2026-10-31).
+Steam files, user.conf, launch settings and native trust remain unchanged. Distribution item 3829070317 carries `0.0.0-dev.20261031102150+eb483442`; main includes `6e427e52`. Receipts are in [the QoL report](handover/QoL-report.md#c13-graphics-add-ons-and-map-loading-2026-10-31).
 
 The durable audit covers 17 API families, 43 primary URLs (41 wiki), 25 indexed call-site files
 (12 stock/13 add-on) and a broader 228-file inventory. Eight snapshots are available: three exact

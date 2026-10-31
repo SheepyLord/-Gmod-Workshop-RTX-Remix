@@ -50,8 +50,7 @@ Tested archive: `0.0.0-dev.20261031101734+c1874c95`, SHA-256 `c5cb4f4ec0baf6e8b9
 It requires loader >=0.10.0; a Workshop update cannot replace an older bootstrap.
 The Remix runtime `f9827b35b533caa38c08caa117fb264fb8d18012e3682694e1c92e1faf67a26e` and accepted native fixes `5e626e34` are unchanged.
 Evidence: `out/c13-evidence`, including release-test, package-readback, final-accepted,
-required-guard-fallback-final and dedicated-final-accepted. Delivery receipts/CI identifiers are recorded
-after the main push; no tag or public release is part of this batch.
+required-guard-fallback-final and dedicated-final-accepted. Distribution 3829070317 carries `0.0.0-dev.20261031102150+eb483442` with all 998 published payloads matched. Delivery and CI tracking are in the [QoL report](handover/QoL-report.md#c13-distribution-and-cleanup).
 
 Keep these counterexamples in regressions: full-frame -1 sizing, raw R32F27 without a Lua enum,
 two sequential stereo views, caller-owned RT/camera/matrix layers, deliberate Pre/Post balancing,

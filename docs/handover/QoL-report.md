@@ -1,6 +1,6 @@
 # QoL report
 
-C13 is implemented and locally validated; the actual package, secure multiplayer and
+C13 is implemented, validated and published; the actual package, secure multiplayer and
 required-guard fallback pass. See the [C13 acceptance](#c13-graphics-add-ons-and-map-loading-2026-10-31)
 and [ADR 0054](../decisions/0054-rtx-rendering-startup-boundaries.md). Earlier batch notes below
 retain their dated investigation history; the roadmap records their published state.
@@ -8,11 +8,10 @@ retain their dated investigation history; the roadmap records their published st
 Latest batch: [startup text and menu diagnostics](../decisions/0050-startup-text-and-main-menu-diagnostics.md), plus [1/12 bounce defaults](../decisions/0051-path-bounce-defaults.md).
 
 Item 24 follow-up: [oversized hardware skinning](../decisions/0053-oversized-hardware-skinning.md)
-is implemented and passes final-DLL default NPC/arms, final-GMA force1 PM/two-skin and CPU checks;
-final multiplayer, CI and publication are pending below.
+is completed and published, including final-DLL, actual-package and secure dedicated checks.
 
 Multiplayer follow-up: [ADR 0052](../decisions/0052-scoped-rtx-multiplayer-bootstrap.md), with
-dedicated-server acceptance passed and final release checks pending below.
+dedicated-server and release acceptance completed; the published state is in the roadmap.
 
 2026-10-30. Implemented on `codex/translation-review`, from `main` at `7d79c12`.
 The user expanded the audit to every bundled add-on interface. The implementation is recorded in
@@ -796,11 +795,30 @@ Tested archive: `0.0.0-dev.20261031101734+c1874c95`, SHA-256 `c5cb4f4ec0baf6e8b9
 It requires loader >=0.10.0; a Workshop update cannot replace an older bootstrap.
 The Remix runtime `f9827b35b533caa38c08caa117fb264fb8d18012e3682694e1c92e1faf67a26e` and accepted native fixes `5e626e34` are unchanged.
 Evidence: `out/c13-evidence`, including release-test, package-readback, final-accepted,
-required-guard-fallback-final and dedicated-final-accepted. Delivery receipts/CI identifiers are recorded
-after the main push; no tag or public release is part of this batch.
+required-guard-fallback-final and dedicated-final-accepted. Distribution receipts and CI tracking follow below.
 
 The [durable API audit](../audits/C13-render-api.md) and compact JSON provenance distinguish
 static recommendations from implemented guards and exact archives from author-linked snapshots.
 They cover 17 API families/43 primary URLs (41 wiki), 25 call-site files and 228 inventory files.
 The bounded implementation is [ADR 0054](../decisions/0054-rtx-rendering-startup-boundaries.md).
 No graphics add-on source/assets, game files or new native binary inputs were imported.
+
+
+### C13 distribution and cleanup
+
+Distribution item **3829070317** is updated to `0.0.0-dev.20261031102150+eb483442`.
+Published archive SHA-256: `e18f7c74a2c98ee37668d31039e6ce946ee86da3815eae956814d254aeb72eb0`; content digest:
+`3187ee9c4113fe5d063ea1a26d0fc3b910dc88d0869eb343c99a84c511c713d6`. All **998 published payload files** match the actual tested archive.
+GitHub main contains release merge `6e427e52` (implementation `4b361b89`). No tag/public release
+was created, and this update did not change item visibility or the field installs.
+
+The tested loader bundle is `gmod-native-loader-0.10.0+6e427e52.zip`, SHA-256
+`de16eb5fbe6ebec8a922b77cd1a3c5ab2695c97f8bf9aa94cd87c8e7ea9333dc`, in `out/c13-delivery`.
+Its DLL is the tested `95303c86` build. Existing bootstrap versions need the 0.10.0 update.
+CI tracking: [loader main workflow](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml)
+and [release package run](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/runs/41192435920).
+CI has no NVIDIA GPU; its checks supplement the local rendering sessions.
+
+Owned clients and the dedicated server are closed. The dedicated probe and video registry were
+restored byte-for-byte; all 2,877 depot files (7,279,873,012 bytes) still verify. The main checkout's
+pre-existing uncommitted diff remains byte-identical (SHA-256 `019404657ddfbbda6171a34641dbde09cadffb9372ce4e703f1c258e1d898c36`).

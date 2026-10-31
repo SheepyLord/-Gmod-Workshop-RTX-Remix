@@ -101,7 +101,9 @@ matrix pops remain explicit limits. Multiplayer installation is later than serve
 
 The secure test first exposed an actual gap: a read hit came from menu initialization while
 the remote client guard was absent. Loaded-44/errors-empty was not guard-execution evidence.
-The final private-environment path and global-HUD fault test establish later client installation.
+The final private-environment path and cached-dispatcher HUD fault test establish later client installation.
+The late route wraps render registrations because replacing hook.Call alone left the engine
+invoking an earlier dispatcher. Loading callback identities remain intact for payload replay.
 No runtime/native bridge rebuild was needed; the renderer/native fixes remain unchanged.
 Policy: [ADR 0054](decisions/0054-rtx-rendering-startup-boundaries.md).
 
