@@ -22,6 +22,11 @@ MMDVMDNPC.VMDFPS = 30
 MMDVMDNPC.DefaultFPS = 30
 MMDVMDNPC.MinStartDelay = 2
 MMDVMDNPC.DefaultStartDelay = 2
+-- The last seconds of the start delay blend the dancer from the reference
+-- (T-)pose into the dance's first pose instead of snapping there. Shorter than
+-- the minimum delay: the first play after a map load stalls while the built
+-- animation loads, and that stall should fall on the held T-pose.
+MMDVMDNPC.StartTransitionSeconds = 1.5
 MMDVMDNPC.DefaultPelvisZOffset = -2.5
 MMDVMDNPC.DefaultThirdPersonDistance = 120
 MMDVMDNPC.DefaultThirdPersonHeight = 24
@@ -42,6 +47,302 @@ MMDVMDNPC.MaxPlaybackHz = 480
 MMDVMDNPC.ReferenceFArmAngleThreshold = 20
 MMDVMDNPC.ReferenceProbeRightUpperArm = "ValveBiped.Bip01_R_UpperArm"
 MMDVMDNPC.ReferenceProbeRightForearm = "ValveBiped.Bip01_R_Forearm"
+
+-- Scene cuts: frames where the dancer jumps to another spot within one frame,
+-- as Project Diva and other PV motions move the performer between stage spots
+-- at their camera cuts. Playback holds the frame before a cut instead of
+-- blending across it (a blend slides the dancer across the stage in 1/30 s),
+-- and announces the jump through the networked counter PoseCutNW2 and the
+-- client hook MMDVMDNPCPoseCut(ent, seconds), so hair and cloth physics such
+-- as Model Hotloader's carry their state across instead of being dragged.
+-- The rule is the importer's (tools/vmd_baker.py detect_pose_cuts), applied to
+-- the built frames so motions imported before it get their cuts too: a pelvis
+-- step above CutMinStep Source units and CutRatio times the median step of the
+-- CutNeighbours frames on either side. Change both together.
+MMDVMDNPC.CutMinStep = 8
+MMDVMDNPC.CutRatio = 4
+MMDVMDNPC.CutNeighbours = 3
+MMDVMDNPC.PoseCutNW2 = "MMDVMDNPCPoseCut"
+
+local pelvisCache = setmetatable({}, { __mode = "k" })
+local poseCutCache = setmetatable({}, { __mode = "k" })
+local travelCache = setmetatable({}, { __mode = "k" })
+
+-- Pelvis position per built frame ({x, y, z} arrays like built.frames, Source
+-- units in the dancer's start frame): x and y are the dance's horizontal
+-- travel, z its height. Cached per built table.
+local function built_pelvis(built, pelvisBone)
+    local cached = pelvisCache[built]
+    if cached and cached.bone == pelvisBone then return cached end
+
+    local xs, ys, zs, slot = {}, {}, {}, nil
+    for index, frame in ipairs(built.frames or {}) do
+        local bones = istable(frame) and frame.bones or {}
+        local entry = slot and bones[slot] or nil
+        if not entry or tonumber(entry[1]) ~= pelvisBone then
+            entry = nil
+            for k, candidate in ipairs(bones) do
+                if tonumber(candidate[1]) == pelvisBone then
+                    slot, entry = k, candidate
+                    break
+                end
+            end
+        end
+        xs[index] = tonumber(entry and entry[5]) or 0
+        ys[index] = tonumber(entry and entry[6]) or 0
+        zs[index] = tonumber(entry and entry[7]) or 0
+    end
+    cached = { bone = pelvisBone, x = xs, y = ys, z = zs }
+    pelvisCache[built] = cached
+    return cached
+end
+
+-- Set of the absolute frames that start after a cut, for a built animation
+-- whose pelvis is pelvisBone; cached per built table.
+function MMDVMDNPC.BuiltPoseCuts(built, pelvisBone)
+    if not istable(built) or not isnumber(pelvisBone) or pelvisBone < 0 then return {} end
+    local cached = poseCutCache[built]
+    if cached and cached.bone == pelvisBone then return cached.cuts end
+
+    local pelvis = built_pelvis(built, pelvisBone)
+    local xs, ys, zs, steps = pelvis.x, pelvis.y, pelvis.z, {}
+    for index = 1, #xs do
+        steps[index] = index > 1 and math.sqrt((xs[index] - xs[index - 1]) ^ 2 + (ys[index] - ys[index - 1]) ^ 2 + (zs[index] - zs[index - 1]) ^ 2) or 0
+    end
+
+    local cuts, first, span, around = {}, math.floor(tonumber(built.frame_start) or 0), MMDVMDNPC.CutNeighbours, {}
+    for index = 2, #steps do
+        local step = steps[index]
+        if step > MMDVMDNPC.CutMinStep then
+            -- Frames past either end count as still, as in the importer.
+            for k = 1, span do
+                around[k] = steps[index - k] or 0
+                around[span + k] = steps[index + k] or 0
+            end
+            table.sort(around)
+            local median = (around[span] + around[span + 1]) * 0.5
+            if step > MMDVMDNPC.CutRatio * median then cuts[first + index - 1] = true end
+        end
+    end
+    poseCutCache[built] = { bone = pelvisBone, cuts = cuts }
+    return cuts
+end
+
+-- Playback options that reshape the dancer's horizontal travel (heights stay
+-- as built; the importer's "Unify ground height" cancels stage heights). They
+-- all work around the spot where the character stood when the dance was
+-- started (the origin of the built travel), not the dance's first frame,
+-- which a stage-placed motion can put far across its stage:
+--   stage jumps kept, percent: 100 keeps each jump to another spot as
+--     authored (the one from that spot to the first frame's, then each scene
+--     cut's), 0 removes them so the dance goes on where the character stood,
+--     values between shorten them;
+--   movement range, percent: shrinks the remaining travel around that spot
+--     (0 dances on it);
+--   movement limit, Source units: a soft bound on the distance from that
+--     spot (0 = none), eased in like tanh rather than stopping at a wall.
+-- Range and limit act on the dance's path, a moving average over about a
+-- second (TravelPathHalfWindow frames either side, never across a cut), not
+-- on the hip sway around it: scaling the sway too stiffens the dance and
+-- slides the feet even when the dancer stays in place.
+MMDVMDNPC.DefaultStageJumps = 100
+MMDVMDNPC.DefaultMovementScale = 100
+MMDVMDNPC.DefaultMovementLimit = 0
+MMDVMDNPC.MaxMovementLimit = 2000
+MMDVMDNPC.TravelPathHalfWindow = 15
+
+-- Centred moving average of values[from..to] into out[from..to], the window
+-- shortened at the ends of the stretch.
+local function smooth_stretch(values, from, to, half, out)
+    local prefix = { [from - 1] = 0 }
+    for i = from, to do prefix[i] = prefix[i - 1] + values[i] end
+    for i = from, to do
+        local a, b = math.max(from, i - half), math.min(to, i + half)
+        out[i] = (prefix[b] - prefix[a - 1]) / (b - a + 1)
+    end
+end
+
+function MMDVMDNPC.NormalizeTravelSettings(stageJumps, movementScale, movementLimit)
+    return math.Clamp(tonumber(stageJumps) or MMDVMDNPC.DefaultStageJumps, 0, 100),
+        math.Clamp(tonumber(movementScale) or MMDVMDNPC.DefaultMovementScale, 0, 100),
+        math.Clamp(tonumber(movementLimit) or MMDVMDNPC.DefaultMovementLimit, 0, MMDVMDNPC.MaxMovementLimit)
+end
+
+-- The pelvis horizontal travel per built frame under those options, as
+-- {x = {...}, y = {...}} indexed like built.frames, to use instead of each
+-- frame's own x and y; nil when the options leave the travel as built.
+-- Cached per built table and options.
+function MMDVMDNPC.BuiltTravel(built, pelvisBone, stageJumps, movementScale, movementLimit)
+    if not istable(built) or not isnumber(pelvisBone) or pelvisBone < 0 then return nil end
+    stageJumps, movementScale, movementLimit = MMDVMDNPC.NormalizeTravelSettings(stageJumps, movementScale, movementLimit)
+    if stageJumps >= 100 and movementScale >= 100 and movementLimit <= 0 then return nil end
+    local key = table.concat({ pelvisBone, stageJumps, movementScale, movementLimit }, "|")
+    local cached = travelCache[built]
+    if cached and cached.key == key then return cached.travel end
+
+    local pelvis = built_pelvis(built, pelvisBone)
+    local xs, ys = pelvis.x, pelvis.y
+    local n = #xs
+    if n <= 0 then return nil end
+    local cuts = MMDVMDNPC.BuiltPoseCuts(built, pelvisBone)
+    local first = math.floor(tonumber(built.frame_start) or 0)
+    local dropped, scale, limit = 1 - stageJumps / 100, movementScale / 100, movementLimit
+
+    -- The travel with each jump shortened by `dropped`: the one from where the
+    -- character stood to the first frame's spot, then each cut's.
+    local rx, ry, removedX, removedY = {}, {}, dropped * xs[1], dropped * ys[1]
+    for index = 1, n do
+        if index > 1 and cuts[first + index - 1] then
+            removedX = removedX + dropped * (xs[index] - xs[index - 1])
+            removedY = removedY + dropped * (ys[index] - ys[index - 1])
+        end
+        rx[index], ry[index] = xs[index] - removedX, ys[index] - removedY
+    end
+    -- Its path, smoothed within each stretch between cuts so a jump that is
+    -- kept stays a jump instead of turning into a glide.
+    local px, py = rx, ry
+    if scale < 1 or limit > 0 then
+        px, py = {}, {}
+        local from = 1
+        for index = 2, n + 1 do
+            if index > n or cuts[first + index - 1] then
+                smooth_stretch(rx, from, index - 1, MMDVMDNPC.TravelPathHalfWindow, px)
+                smooth_stretch(ry, from, index - 1, MMDVMDNPC.TravelPathHalfWindow, py)
+                from = index
+            end
+        end
+    end
+
+    -- Range and limit act around where the character stood, the travel's origin.
+    local outX, outY = {}, {}
+    for index = 1, n do
+        local dx = px[index] * scale
+        local dy = py[index] * scale
+        if limit > 0 then
+            local distance = math.sqrt(dx * dx + dy * dy)
+            if distance > 1e-6 then
+                -- tanh, written out: LuaJIT has math.tanh, Lua 5.3+ does not.
+                local e = math.exp(-2 * distance / limit)
+                local bounded = limit * (1 - e) / (1 + e)
+                dx, dy = dx * bounded / distance, dy * bounded / distance
+            end
+        end
+        -- The sway around the path is kept as built.
+        outX[index] = dx + rx[index] - px[index]
+        outY[index] = dy + ry[index] - py[index]
+    end
+    local travel = { x = outX, y = outY }
+    travelCache[built] = { key = key, travel = travel }
+    return travel
+end
+
+-- What those options move the dancer by, per frame: (adjusted - built) travel
+-- in the dance's start frame, as compact keys {frame, dx, dy} (absolute frames)
+-- that linear interpolation reproduces within `tolerance` Source units, with
+-- the two frames around each jump kept so a sampler can hold across it. The
+-- imported camera adds it so it keeps framing the dancer. nil when no travel.
+function MMDVMDNPC.BuiltTravelShiftKeys(built, pelvisBone, travel, tolerance)
+    if not istable(travel) then return nil end
+    local pelvis = built_pelvis(built, pelvisBone)
+    local n = math.min(#pelvis.x, #travel.x)
+    if n <= 0 then return nil end
+    local first = math.floor(tonumber(built.frame_start) or 0)
+    local sx, sy = {}, {}
+    for index = 1, n do
+        sx[index], sy[index] = travel.x[index] - pelvis.x[index], travel.y[index] - pelvis.y[index]
+    end
+    tolerance = math.max(0.01, tonumber(tolerance) or 0.5)
+    local maxSpan = 60
+    local keys = { { first, sx[1], sy[1] } }
+    local anchor = 1
+    for index = 3, n do
+        local fits = index - anchor <= maxSpan
+        if fits then
+            for i = anchor + 1, index - 1 do
+                local t = (i - anchor) / (index - anchor)
+                local ex = sx[anchor] + (sx[index] - sx[anchor]) * t - sx[i]
+                local ey = sy[anchor] + (sy[index] - sy[anchor]) * t - sy[i]
+                if ex * ex + ey * ey > tolerance * tolerance then
+                    fits = false
+                    break
+                end
+            end
+        end
+        if not fits then
+            anchor = index - 1
+            keys[#keys + 1] = { first + anchor - 1, sx[anchor], sy[anchor] }
+        end
+    end
+    if n > 1 then keys[#keys + 1] = { first + n - 1, sx[n], sy[n] } end
+    return keys
+end
+
+-- The bone rotation Angle(p, y, r) cut to `share` (0..1) of its turn about the
+-- same axis, as p, y, r: the shortest way from no rotation (the reference
+-- pose) to it. Lerping the three angles instead swings limbs through detours
+-- on the large turns between a T-pose and a dance pose. The engine converts
+-- both ways, so the result reads like any other bone manipulation angle.
+do
+    local turnMatrix, turnAngle
+
+    function MMDVMDNPC.PartialRotation(p, y, r, share)
+        share = math.Clamp(tonumber(share) or 1, 0, 1)
+        turnMatrix = turnMatrix or Matrix()
+        turnAngle = turnAngle or Angle(0, 0, 0)
+        turnAngle.p, turnAngle.y, turnAngle.r = p, y, r
+        turnMatrix:SetAngles(turnAngle)
+        local m11, m12, m13 = turnMatrix:GetField(1, 1), turnMatrix:GetField(1, 2), turnMatrix:GetField(1, 3)
+        local m21, m22, m23 = turnMatrix:GetField(2, 1), turnMatrix:GetField(2, 2), turnMatrix:GetField(2, 3)
+        local m31, m32, m33 = turnMatrix:GetField(3, 1), turnMatrix:GetField(3, 2), turnMatrix:GetField(3, 3)
+        -- The axis from the antisymmetric part (2 sin(angle) long); near a half
+        -- turn, where that vanishes, from the diagonal, signed by the symmetric
+        -- part and then by whatever the antisymmetric part still says.
+        local ax, ay, az = m32 - m23, m13 - m31, m21 - m12
+        local cosine = math.Clamp((m11 + m22 + m33 - 1) * 0.5, -1, 1)
+        local sine = 0.5 * math.sqrt(ax * ax + ay * ay + az * az)
+        -- atan2 keeps the angle exact near no turn and a half turn, where acos
+        -- of the float matrix's trace is off by thousandths of a radian.
+        local angle = math.atan2(sine, cosine)
+        if angle < 1e-6 then return p * share, y * share, r * share end
+        if sine < 1e-3 then
+            local rx, ry, rz = ax, ay, az
+            local spread = 1 - cosine
+            ax = math.sqrt(math.max(0, (m11 - cosine) / spread))
+            ay = math.sqrt(math.max(0, (m22 - cosine) / spread))
+            az = math.sqrt(math.max(0, (m33 - cosine) / spread))
+            if ax >= ay and ax >= az then
+                if m12 + m21 < 0 then ay = -ay end
+                if m13 + m31 < 0 then az = -az end
+            elseif ay >= az then
+                if m12 + m21 < 0 then ax = -ax end
+                if m23 + m32 < 0 then az = -az end
+            else
+                if m13 + m31 < 0 then ax = -ax end
+                if m23 + m32 < 0 then ay = -ay end
+            end
+            if ax * rx + ay * ry + az * rz < 0 then ax, ay, az = -ax, -ay, -az end
+        end
+        local length = math.sqrt(ax * ax + ay * ay + az * az)
+        if length < 1e-9 then return p * share, y * share, r * share end
+        ax, ay, az = ax / length, ay / length, az / length
+
+        -- Rodrigues' rotation by the shortened turn.
+        local turn = angle * share
+        local c, s = math.cos(turn), math.sin(turn)
+        local t = 1 - c
+        turnMatrix:SetField(1, 1, t * ax * ax + c)
+        turnMatrix:SetField(1, 2, t * ax * ay - s * az)
+        turnMatrix:SetField(1, 3, t * ax * az + s * ay)
+        turnMatrix:SetField(2, 1, t * ax * ay + s * az)
+        turnMatrix:SetField(2, 2, t * ay * ay + c)
+        turnMatrix:SetField(2, 3, t * ay * az - s * ax)
+        turnMatrix:SetField(3, 1, t * ax * az - s * ay)
+        turnMatrix:SetField(3, 2, t * ay * az + s * ax)
+        turnMatrix:SetField(3, 3, t * az * az + c)
+        local result = turnMatrix:GetAngles()
+        return result.p, result.y, result.r
+    end
+end
 
 MMDVMDNPC.ForwardReferenceSequenceNames = {
     "Referencef",
@@ -453,6 +754,13 @@ MMDVMDNPC.I18N.en = {
     ["mmd_vmd_npc.ui.music_range_help"] = "Music plays at full volume within the range (source units), then drops sharply to silence across the fade-out distance.",
     ["mmd_vmd_npc.ui.loop_playback"] = "Loop animation and music",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "When enabled, the animation restarts from the first frame and imported music restarts when the motion ends.",
+    ["mmd_vmd_npc.ui.stage_movement"] = "Stage placement and movement",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "Stage placement jumps kept (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Project Diva and other PV motions move the character to another spot on the stage at the start and at camera cuts. 100 keeps these jumps as authored, 0 removes them so the character dances where it stood when the dance was started, and values in between shorten them. Without the jumps the walking of each shot adds up and the character can drift far, so pair this with the movement limit. An imported camera follows the character.",
+    ["mmd_vmd_npc.ui.movement_scale"] = "Movement range (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "How far the dance moves the character from where it stood when the dance was started: 100 as authored, 50 half as far, 0 dances on the spot.",
+    ["mmd_vmd_npc.ui.movement_limit"] = "Movement limit (units, 0 = none)",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "Keeps the character within this distance of where it stood when the dance was started, slowing down near the edge instead of stopping as if at a wall. A player is about 72 units tall. These options apply when playback starts.",
     ["mmd_vmd_npc.ui.column.motion"] = "Motion",
     ["mmd_vmd_npc.ui.column.duration"] = "Duration",
     ["mmd_vmd_npc.ui.column.addon"] = "From Addon",
@@ -677,6 +985,98 @@ MMDVMDNPC.I18N.en = {
     ["mmd_vmd_npc.meta.language"] = "Language",
     ["mmd_vmd_npc.meta.motion_artist"] = "Motion Artist",
     ["mmd_vmd_npc.radial.category_empty"] = "No wheel dances in this category",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "Import Animation (VMD)...",
+    ["mmd_vmd_npc.import.button_tip"] = "Bake an MMD motion into this addon without leaving the game, like the desktop importer. Model Hotloader reads the files you choose.",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader is not installed: hot motion import is not available.",
+    ["mmd_vmd_npc.import.unavailable_short"] = "Hot motion import is not available right now.",
+    ["mmd_vmd_npc.import.resolve"] = "Resolve",
+    ["mmd_vmd_npc.import.resolve_title"] = "Hot Motion Import",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "Importing motions inside the game needs Model Hotloader. Its binary module lets this tool read the VMD, music and camera files you choose on your computer; Windows asks you to allow every file.\n\n1. Subscribe to Model Hotloader on the Steam Workshop.\n2. Install its binary module from the GitHub page, which explains how.\n3. Restart Garry's Mod.\n\nHot import works in single player and on servers you host.",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader is installed, but its file access cannot be used right now. If it needs a newer binary module, update it from the GitHub page and restart Garry's Mod. File access works only in single player and on servers you host, and it can be turned off in its File Access settings.",
+    ["mmd_vmd_npc.import.resolve_ready"] = "Model Hotloader's file access is available: you can import motions in the game now.",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader reports: %s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "You can always import motions with the desktop importer (GmodMMDMotionImporter.exe) instead.",
+    ["mmd_vmd_npc.import.link_workshop"] = "Model Hotloader on the Steam Workshop",
+    ["mmd_vmd_npc.import.link_github"] = "Binary module and install guide (GitHub)",
+    ["mmd_vmd_npc.import.open_link"] = "Open",
+    ["mmd_vmd_npc.import.file_access_settings"] = "File Access Settings...",
+    ["mmd_vmd_npc.import.open_importer"] = "Open Importer",
+    ["mmd_vmd_npc.import.close"] = "Close",
+    ["mmd_vmd_npc.import.title"] = "Import MMD Motion",
+    ["mmd_vmd_npc.import.help"] = "Bakes an MMD motion on the bundled model's skeleton and installs it in this game, like the desktop importer (GmodMMDMotionImporter.exe). Model Hotloader opens a Windows dialog for each file you choose; in full screen, press Alt+Tab to answer it.",
+    ["mmd_vmd_npc.import.required"] = "Required",
+    ["mmd_vmd_npc.import.optional"] = "Optional",
+    ["mmd_vmd_npc.import.browse"] = "Browse",
+    ["mmd_vmd_npc.import.clear"] = "Clear",
+    ["mmd_vmd_npc.import.none_selected"] = "No file chosen",
+    ["mmd_vmd_npc.import.body_vmd"] = "Body Motion VMD",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "Main body animation",
+    ["mmd_vmd_npc.import.music"] = "Music File",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3, OGG or WAV, used as it is. Convert other audio or a video with the desktop importer.",
+    ["mmd_vmd_npc.import.camera_vmd"] = "Camera VMD",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "MMD camera motion; exports a camera path the GMod addon can play.",
+    ["mmd_vmd_npc.import.audio_offset"] = "Audio offset (seconds)",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "Saved as the motion's default music offset. Positive starts the music later; negative starts it advanced.",
+    ["mmd_vmd_npc.import.motion_meta"] = "Motion Metadata",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "Optional. Display Name is shown in game (CJK supported); the other fields describe the dance and are read by the GMod menus. Category groups the motion when it is shipped in an addon (local imports always appear under \"User Import\").",
+    ["mmd_vmd_npc.import.meta.category"] = "Category",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "Menu category used when this motion is shipped in an addon (e.g. \"Touhou\", \"Vocaloid\"). Local imports always show under \"User Import\".",
+    ["mmd_vmd_npc.import.meta.display_name"] = "Display Name",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "Name shown in game. Auto-filled from the body VMD name; Chinese/Japanese/Korean supported. The saved file uses a safe internal ID.",
+    ["mmd_vmd_npc.import.meta.english_name"] = "English Name",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "Optional romanized/English title, searchable in the Motion Manager.",
+    ["mmd_vmd_npc.import.meta.artist"] = "Artist",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "Song artist / producer.",
+    ["mmd_vmd_npc.import.meta.language"] = "Language",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "Song language (e.g. Japanese, Chinese, English).",
+    ["mmd_vmd_npc.import.meta.link"] = "Link",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "Source URL (original video, motion download page, ...). Opens from the Motion Manager.",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "Motion Artist",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "Creator of the dance motion data.",
+    ["mmd_vmd_npc.import.flex_group"] = "Face/Flex VMDs (if they are stored in separate VMDs from the body motion)",
+    ["mmd_vmd_npc.import.flex_add"] = "Add Face/Flex Motions",
+    ["mmd_vmd_npc.import.flex_remove"] = "Remove Selected Flex",
+    ["mmd_vmd_npc.import.flex_column"] = "File",
+    ["mmd_vmd_npc.import.bake_options"] = "Bake Options",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "Disable foot IK (motion baked without IK)",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "Turn off every IK constraint on the model (feet and toes) before baking. Use for motions authored without foot IK - baking those with IK enabled pins the legs to the rest pose. Leave off for normal motions.",
+    ["mmd_vmd_npc.import.unify_ground"] = "Unify ground height (cancel stage placement)",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "For motions that move the character between stage platforms or heights, such as Project Diva conversions: keeps her feet on one floor level for the whole dance (jumps keep their height) and lowers an imported camera by the same amount every frame. Leave off for normal motions.",
+    ["mmd_vmd_npc.import.bake"] = "Bake Motion and Import",
+    ["mmd_vmd_npc.import.cancel"] = "Cancel Import",
+    ["mmd_vmd_npc.import.progress_idle"] = "No bake running.",
+    ["mmd_vmd_npc.import.log_title"] = "Import Log and Output",
+    ["mmd_vmd_npc.import.output_motion"] = "Motion JSON",
+    ["mmd_vmd_npc.import.output_music"] = "Music sound",
+    ["mmd_vmd_npc.import.copy_log"] = "Copy Log",
+    ["mmd_vmd_npc.import.stage.reading"] = "Reading files",
+    ["mmd_vmd_npc.import.stage.parsing"] = "Importing VMD motion",
+    ["mmd_vmd_npc.import.stage.baking"] = "Baking visual pose keys",
+    ["mmd_vmd_npc.import.stage.flex"] = "Merging flex tracks",
+    ["mmd_vmd_npc.import.stage.camera"] = "Building the camera track",
+    ["mmd_vmd_npc.import.stage.music"] = "Copying music",
+    ["mmd_vmd_npc.import.stage.writing"] = "Writing motion JSON",
+    ["mmd_vmd_npc.import.stage.complete"] = "Import complete",
+    ["mmd_vmd_npc.import.stage.failed"] = "Import failed",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "Import cancelled",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | elapsed %s",
+    ["mmd_vmd_npc.import.select_body"] = "Choose a body motion VMD first.",
+    ["mmd_vmd_npc.import.complete_fmt"] = "Imported \"%s\". It is now the selected motion: build it for your actor, then play it.",
+    ["mmd_vmd_npc.import.failed_fmt"] = "Import failed: %s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "The music file is not MP3, OGG or WAV. Convert it with the desktop importer, or choose another file.",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "Could not read %s: %s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s is larger than 256 MiB, the most Model Hotloader can read.",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "Could not write %s.",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader cannot read %s.",
+    ["mmd_vmd_npc.import.picker_body"] = "Choose the body motion VMD",
+    ["mmd_vmd_npc.import.picker_music"] = "Choose the music file",
+    ["mmd_vmd_npc.import.picker_camera"] = "Choose the camera VMD",
+    ["mmd_vmd_npc.import.picker_flex"] = "Choose face/flex VMDs",
+    ["mmd_vmd_npc.import.purpose"] = "Import MMD motions with their music and camera into the game",
+    ["mmd_vmd_npc.import.filter_vmd"] = "VMD motion",
+    ["mmd_vmd_npc.import.filter_audio"] = "MP3, OGG or WAV audio",
+    ["mmd_vmd_npc.import.busy"] = "An import is already running.",
 }
 
 local function merge_i18n(overrides)
@@ -826,6 +1226,13 @@ MMDVMDNPC.I18N.zh = merge_i18n({
     ["mmd_vmd_npc.ui.music_range_help"] = "在范围（源引擎单位）内音乐保持全音量，超出后在衰减距离内急剧降至静音。",
     ["mmd_vmd_npc.ui.loop_playback"] = "循环动画和音乐",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "启用后，动作结束时会从第一帧重新播放，并重新开始导入的音乐。",
+    ["mmd_vmd_npc.ui.stage_movement"] = "舞台站位与移动",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "保留舞台站位跳跃 (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Project Diva 等 PV 动作会在开始时和镜头切换时把角色移到舞台上的另一个位置。100 按原样保留这些跳跃，0 将其移除，让角色在开始播放时所站的位置跳舞，介于两者之间的值会缩短跳跃。去掉跳跃后，各镜头中的走动会累加，角色可能走得很远，建议同时设置移动限制。导入的镜头会跟随角色。",
+    ["mmd_vmd_npc.ui.movement_scale"] = "移动范围 (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "舞蹈让角色离开开始播放时所站位置的距离：100 为原样，50 为一半，0 为原地跳舞。",
+    ["mmd_vmd_npc.ui.movement_limit"] = "移动限制（单位，0 = 不限制）",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "让角色保持在距开始播放时所站位置这个距离以内，接近边缘时逐渐减速，而不是像撞墙一样突然停下。玩家身高约 72 单位。这些选项在开始播放时生效。",
     ["mmd_vmd_npc.ui.column.motion"] = "动作",
     ["mmd_vmd_npc.ui.column.duration"] = "时长",
     ["mmd_vmd_npc.ui.column.addon"] = "来自插件",
@@ -1052,6 +1459,98 @@ MMDVMDNPC.I18N.zh = merge_i18n({
     ["mmd_vmd_npc.manager.wheel_added"] = "已加入转盘",
     ["mmd_vmd_npc.manager.wheel_removed"] = "已从转盘移除",
     ["mmd_vmd_npc.manager.wheel_select_first"] = "请先从列表中选择一个动作。",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "导入动画（VMD）…",
+    ["mmd_vmd_npc.import.button_tip"] = "无需离开游戏，像桌面导入器一样把 MMD 动作烘焙进本插件。所选文件由 Model Hotloader 读取。",
+    ["mmd_vmd_npc.import.not_installed"] = "未安装 Model Hotloader：无法使用热导入动作。",
+    ["mmd_vmd_npc.import.unavailable_short"] = "热导入动作暂时不可用。",
+    ["mmd_vmd_npc.import.resolve"] = "解决",
+    ["mmd_vmd_npc.import.resolve_title"] = "热导入动作",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "在游戏内导入动作需要 Model Hotloader。它的二进制模块让本工具读取你在电脑上选择的 VMD、音乐和镜头文件；Windows 会让你逐个确认文件。\n\n1. 在 Steam 创意工坊订阅 Model Hotloader。\n2. 按 GitHub 页面上的说明安装它的二进制模块。\n3. 重新启动 Garry's Mod。\n\n热导入可在单人游戏和你自己开设的服务器中使用。",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "已安装 Model Hotloader，但它的文件访问目前无法使用。如果它需要更新的二进制模块，请从 GitHub 页面更新并重启 Garry's Mod。文件访问只在单人游戏和你自己开设的服务器中可用，也可以在它的文件访问设置中关闭。",
+    ["mmd_vmd_npc.import.resolve_ready"] = "Model Hotloader 的文件访问已可用：现在可以在游戏内导入动作。",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader 提示：%s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "你也可以随时改用桌面导入器（GmodMMDMotionImporter.exe）导入动作。",
+    ["mmd_vmd_npc.import.link_workshop"] = "Steam 创意工坊上的 Model Hotloader",
+    ["mmd_vmd_npc.import.link_github"] = "二进制模块与安装说明（GitHub）",
+    ["mmd_vmd_npc.import.open_link"] = "打开",
+    ["mmd_vmd_npc.import.file_access_settings"] = "文件访问设置…",
+    ["mmd_vmd_npc.import.open_importer"] = "打开导入器",
+    ["mmd_vmd_npc.import.close"] = "关闭",
+    ["mmd_vmd_npc.import.title"] = "导入 MMD 动作",
+    ["mmd_vmd_npc.import.help"] = "像桌面导入器（GmodMMDMotionImporter.exe）一样，在内置模型的骨骼上烘焙 MMD 动作并安装到本游戏中。你选择的每个文件都由 Model Hotloader 弹出 Windows 对话框确认；全屏时请按 Alt+Tab 回应。",
+    ["mmd_vmd_npc.import.required"] = "必填",
+    ["mmd_vmd_npc.import.optional"] = "可选",
+    ["mmd_vmd_npc.import.browse"] = "浏览",
+    ["mmd_vmd_npc.import.clear"] = "清除",
+    ["mmd_vmd_npc.import.none_selected"] = "未选择文件",
+    ["mmd_vmd_npc.import.body_vmd"] = "身体动作 VMD",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "主要身体动画",
+    ["mmd_vmd_npc.import.music"] = "音乐文件",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3、OGG 或 WAV，按原样使用。其他音频或视频请用桌面导入器转换。",
+    ["mmd_vmd_npc.import.camera_vmd"] = "镜头 VMD",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "MMD 镜头动作；导出可在 GMod 插件中播放的相机路径。",
+    ["mmd_vmd_npc.import.audio_offset"] = "音频偏移（秒）",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "保存为该动作的默认音乐偏移。正值让音乐更晚开始，负值让音乐提前。",
+    ["mmd_vmd_npc.import.motion_meta"] = "动作元数据",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "可选。显示名称会在游戏中显示（支持中日韩文字）；其余字段用于描述该舞蹈，并由 GMod 菜单读取。类别在动作打包为附加组件时用于分组（本地导入始终归入“用户导入”）。",
+    ["mmd_vmd_npc.import.meta.category"] = "类别",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "动作打包为附加组件时使用的菜单类别（例如“东方”、“术力口”）。本地导入始终显示在“用户导入”下。",
+    ["mmd_vmd_npc.import.meta.display_name"] = "显示名称",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "游戏内显示的名称。自动使用身体 VMD 名称填充；支持中日韩文字。保存文件会使用安全内部 ID。",
+    ["mmd_vmd_npc.import.meta.english_name"] = "英文名称",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "可选的罗马字/英文标题，可在 GMod 动作管理器中搜索。",
+    ["mmd_vmd_npc.import.meta.artist"] = "歌曲作者",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "歌曲的作者 / P 主。",
+    ["mmd_vmd_npc.import.meta.language"] = "语言",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "歌曲语言（例如日语、中文、英语）。",
+    ["mmd_vmd_npc.import.meta.link"] = "链接",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "来源链接（原视频、动作下载页等），可在 GMod 动作管理器中打开。",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "动作作者",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "舞蹈动作数据的作者。",
+    ["mmd_vmd_npc.import.flex_group"] = "脸部/Flex VMD（与身体动作分开存放时）",
+    ["mmd_vmd_npc.import.flex_add"] = "添加脸部/Flex 动作",
+    ["mmd_vmd_npc.import.flex_remove"] = "移除所选 Flex",
+    ["mmd_vmd_npc.import.flex_column"] = "文件",
+    ["mmd_vmd_npc.import.bake_options"] = "烘焙选项",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "禁用足部 IK（无 IK 动作）",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "烘焙前关闭模型上的所有 IK 约束（脚部与脚尖）。用于未使用足部 IK 制作的动作——这类动作若开启 IK 烘焙，双腿会被固定在初始姿势。普通动作请保持关闭。",
+    ["mmd_vmd_npc.import.unify_ground"] = "统一地面高度（抵消舞台位置）",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "适用于把角色移到不同舞台平台或高度的动作（例如 Project Diva 转换动作）：整段舞蹈中让角色双脚保持在同一地面高度（跳跃高度保留），并把导入的镜头每帧下移相同高度。普通动作请保持关闭。",
+    ["mmd_vmd_npc.import.bake"] = "烘焙动作并导入",
+    ["mmd_vmd_npc.import.cancel"] = "取消导入",
+    ["mmd_vmd_npc.import.progress_idle"] = "没有正在进行的烘焙。",
+    ["mmd_vmd_npc.import.log_title"] = "导入日志与输出",
+    ["mmd_vmd_npc.import.output_motion"] = "动作 JSON",
+    ["mmd_vmd_npc.import.output_music"] = "音乐声音",
+    ["mmd_vmd_npc.import.copy_log"] = "复制日志",
+    ["mmd_vmd_npc.import.stage.reading"] = "正在读取文件",
+    ["mmd_vmd_npc.import.stage.parsing"] = "正在导入 VMD 动作",
+    ["mmd_vmd_npc.import.stage.baking"] = "正在烘焙可视姿态关键帧",
+    ["mmd_vmd_npc.import.stage.flex"] = "正在合并 flex 轨道",
+    ["mmd_vmd_npc.import.stage.camera"] = "正在生成镜头轨道",
+    ["mmd_vmd_npc.import.stage.music"] = "正在复制音乐",
+    ["mmd_vmd_npc.import.stage.writing"] = "正在写入动作 JSON",
+    ["mmd_vmd_npc.import.stage.complete"] = "导入完成",
+    ["mmd_vmd_npc.import.stage.failed"] = "导入失败",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "导入已取消",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | 已用时 %s",
+    ["mmd_vmd_npc.import.select_body"] = "请先选择身体动作 VMD。",
+    ["mmd_vmd_npc.import.complete_fmt"] = "已导入“%s”。它现在是所选动作：为你的角色构建后即可播放。",
+    ["mmd_vmd_npc.import.failed_fmt"] = "导入失败：%s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "音乐文件不是 MP3、OGG 或 WAV。请用桌面导入器转换，或选择其他文件。",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "无法读取 %s：%s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s 大于 256 MiB，超出 Model Hotloader 的读取上限。",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "无法写入 %s。",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader 无法读取 %s。",
+    ["mmd_vmd_npc.import.picker_body"] = "选择身体动作 VMD",
+    ["mmd_vmd_npc.import.picker_music"] = "选择音乐文件",
+    ["mmd_vmd_npc.import.picker_camera"] = "选择镜头 VMD",
+    ["mmd_vmd_npc.import.picker_flex"] = "选择脸部/Flex VMD",
+    ["mmd_vmd_npc.import.purpose"] = "将 MMD 动作连同音乐和镜头导入游戏",
+    ["mmd_vmd_npc.import.filter_vmd"] = "VMD 动作",
+    ["mmd_vmd_npc.import.filter_audio"] = "MP3、OGG 或 WAV 音频",
+    ["mmd_vmd_npc.import.busy"] = "已有导入正在进行。",
 })
 
 MMDVMDNPC.I18N.ja = merge_i18n({
@@ -1190,6 +1689,13 @@ MMDVMDNPC.I18N.ja = merge_i18n({
     ["mmd_vmd_npc.ui.music_range_help"] = "範囲（ソースユニット）内では音楽はフル音量で再生され、超えるとフェード距離で急激に無音になります。",
     ["mmd_vmd_npc.ui.loop_playback"] = "アニメーションと音楽をループ",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "有効にすると、モーション終了時に最初のフレームから再開し、インポート音楽も再スタートします。",
+    ["mmd_vmd_npc.ui.stage_movement"] = "ステージの立ち位置と移動",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "立ち位置ジャンプの保持率 (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Project Diva などの PV モーションは、開始時とカメラのカットでキャラクターをステージ上の別の位置へ移動させます。100 はジャンプをそのまま残し、0 は取り除いて再生を始めたときに立っていた場所で踊らせ、中間の値はジャンプを短くします。ジャンプを取り除くと各カットでの移動が積み重なり、キャラクターが遠くまで移動することがあるため、移動制限と併用してください。インポートしたカメラはキャラクターに追従します。",
+    ["mmd_vmd_npc.ui.movement_scale"] = "移動範囲 (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "ダンスがキャラクターを再生を始めたときに立っていた場所からどれだけ移動させるか：100 はそのまま、50 は半分、0 はその場で踊ります。",
+    ["mmd_vmd_npc.ui.movement_limit"] = "移動制限（単位、0 = 無制限）",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "再生を始めたときに立っていた場所からこの距離以内にキャラクターを保ちます。壁に当たったように止まるのではなく、端に近づくにつれて減速します。プレイヤーの身長は約 72 単位です。これらの設定は再生開始時に適用されます。",
     ["mmd_vmd_npc.ui.column.motion"] = "モーション",
     ["mmd_vmd_npc.ui.column.duration"] = "長さ",
     ["mmd_vmd_npc.ui.column.addon"] = "アドオン由来",
@@ -1416,6 +1922,98 @@ MMDVMDNPC.I18N.ja = merge_i18n({
     ["mmd_vmd_npc.manager.wheel_removed"] = "ラジアルホイールから削除しました",
     ["mmd_vmd_npc.manager.wheel_select_first"] = "先に一覧からモーションを選択してください。",
     ["mmd_vmd_npc.manager.details_fmt"] = "%s\nFPS %s | フレーム %s-%s | 長さ %.2fs | ボーン %s | 表情 %s | 音楽 %s | カメラ %s | ソース %s",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "アニメーションをインポート（VMD）…",
+    ["mmd_vmd_npc.import.button_tip"] = "ゲームを離れずに、デスクトップ版インポーターと同じように MMD モーションをこのアドオンへベイクします。選んだファイルは Model Hotloader が読み込みます。",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader がインストールされていません：ホットモーションインポートは使えません。",
+    ["mmd_vmd_npc.import.unavailable_short"] = "ホットモーションインポートは現在使えません。",
+    ["mmd_vmd_npc.import.resolve"] = "解決",
+    ["mmd_vmd_npc.import.resolve_title"] = "ホットモーションインポート",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "ゲーム内でモーションをインポートするには Model Hotloader が必要です。そのバイナリモジュールによって、このツールは PC 上で選んだ VMD・音楽・カメラのファイルを読み込めます。ファイルごとに Windows が許可を求めます。\n\n1. Steam ワークショップで Model Hotloader をサブスクライブします。\n2. GitHub ページの手順に従ってバイナリモジュールをインストールします。\n3. Garry's Mod を再起動します。\n\nホットインポートはシングルプレイと自分がホストするサーバーで使えます。",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader はインストールされていますが、ファイルアクセスを現在使えません。新しいバイナリモジュールが必要な場合は GitHub ページから更新し、Garry's Mod を再起動してください。ファイルアクセスはシングルプレイと自分がホストするサーバーでのみ使え、ファイルアクセス設定でオフにすることもできます。",
+    ["mmd_vmd_npc.import.resolve_ready"] = "Model Hotloader のファイルアクセスが使えます：ゲーム内でモーションをインポートできます。",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader の表示：%s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "デスクトップ版インポーター（GmodMMDMotionImporter.exe）でもいつでもモーションをインポートできます。",
+    ["mmd_vmd_npc.import.link_workshop"] = "Steam ワークショップの Model Hotloader",
+    ["mmd_vmd_npc.import.link_github"] = "バイナリモジュールとインストール手順（GitHub）",
+    ["mmd_vmd_npc.import.open_link"] = "開く",
+    ["mmd_vmd_npc.import.file_access_settings"] = "ファイルアクセス設定…",
+    ["mmd_vmd_npc.import.open_importer"] = "インポーターを開く",
+    ["mmd_vmd_npc.import.close"] = "閉じる",
+    ["mmd_vmd_npc.import.title"] = "MMD モーションをインポート",
+    ["mmd_vmd_npc.import.help"] = "デスクトップ版インポーター（GmodMMDMotionImporter.exe）と同じく、同梱モデルの骨格で MMD モーションをベイクしてこのゲームにインストールします。選んだファイルごとに Model Hotloader が Windows のダイアログを開きます。フルスクリーンでは Alt+Tab で応答してください。",
+    ["mmd_vmd_npc.import.required"] = "必須",
+    ["mmd_vmd_npc.import.optional"] = "任意",
+    ["mmd_vmd_npc.import.browse"] = "参照",
+    ["mmd_vmd_npc.import.clear"] = "クリア",
+    ["mmd_vmd_npc.import.none_selected"] = "ファイル未選択",
+    ["mmd_vmd_npc.import.body_vmd"] = "身体モーション VMD",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "メイン身体アニメーション",
+    ["mmd_vmd_npc.import.music"] = "音楽ファイル",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3・OGG・WAV をそのまま使います。ほかの音声や動画はデスクトップ版インポーターで変換してください。",
+    ["mmd_vmd_npc.import.camera_vmd"] = "カメラ VMD",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "MMDカメラモーション。GModアドオンで再生できるカメラパスを書き出します。",
+    ["mmd_vmd_npc.import.audio_offset"] = "音声オフセット（秒）",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "モーションの既定の音楽オフセットとして保存されます。正値は音楽を遅らせ、負値は先行させます。",
+    ["mmd_vmd_npc.import.motion_meta"] = "モーションのメタデータ",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "任意。表示名はゲーム内に表示されます（CJK 対応）。他の項目はダンスの説明として GMod のメニューに読み込まれます。カテゴリはアドオンとして配布した際の分類に使われます（ローカルのインポートは常に「ユーザーインポート」に表示）。",
+    ["mmd_vmd_npc.import.meta.category"] = "カテゴリ",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "アドオンとして配布した際に使われるメニュー分類（例:「東方」「ボカロ」）。ローカルのインポートは常に「ユーザーインポート」に表示されます。",
+    ["mmd_vmd_npc.import.meta.display_name"] = "表示名",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "ゲーム内の表示名。身体 VMD 名から自動入力。CJK 対応、保存ファイルは安全な内部 ID を使います。",
+    ["mmd_vmd_npc.import.meta.english_name"] = "英語名",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "任意のローマ字/英語タイトル。GMod のモーションマネージャーで検索できます。",
+    ["mmd_vmd_npc.import.meta.artist"] = "アーティスト",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "楽曲のアーティスト / P。",
+    ["mmd_vmd_npc.import.meta.language"] = "言語",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "楽曲の言語（例: 日本語、中国語、英語）。",
+    ["mmd_vmd_npc.import.meta.link"] = "リンク",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "出典 URL（元動画、モーション配布ページなど）。GMod のモーションマネージャーから開けます。",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "モーション作者",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "ダンスモーションデータの作者。",
+    ["mmd_vmd_npc.import.flex_group"] = "顔/Flex VMD（身体モーションと別の VMD にある場合）",
+    ["mmd_vmd_npc.import.flex_add"] = "顔/Flex モーションを追加",
+    ["mmd_vmd_npc.import.flex_remove"] = "選択 Flex を削除",
+    ["mmd_vmd_npc.import.flex_column"] = "ファイル",
+    ["mmd_vmd_npc.import.bake_options"] = "ベイクオプション",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "足IKを無効化（IKなしモーション用）",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "ベイク前にモデルの全IK制約（足・つま先）をオフにします。足IKを使わずに作られたモーション用です——IK有効のままベイクすると脚が初期ポーズに固定されます。通常のモーションではオフのままにしてください。",
+    ["mmd_vmd_npc.import.unify_ground"] = "地面の高さを統一（ステージ配置を打ち消す）",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "キャラクターをステージ上の台や別の高さへ移動させるモーション（Project Diva の変換モーションなど）向け：ダンス全体で足を同じ床の高さに保ち（ジャンプの高さは維持）、読み込んだカメラも毎フレーム同じ量だけ下げます。通常のモーションではオフのままにしてください。",
+    ["mmd_vmd_npc.import.bake"] = "モーションをベイクしてインポート",
+    ["mmd_vmd_npc.import.cancel"] = "インポートをキャンセル",
+    ["mmd_vmd_npc.import.progress_idle"] = "ベイクは実行されていません。",
+    ["mmd_vmd_npc.import.log_title"] = "インポートログと出力",
+    ["mmd_vmd_npc.import.output_motion"] = "モーション JSON",
+    ["mmd_vmd_npc.import.output_music"] = "音楽サウンド",
+    ["mmd_vmd_npc.import.copy_log"] = "ログをコピー",
+    ["mmd_vmd_npc.import.stage.reading"] = "ファイルを読み込み中",
+    ["mmd_vmd_npc.import.stage.parsing"] = "VMD モーションをインポート中",
+    ["mmd_vmd_npc.import.stage.baking"] = "視覚ポーズキーをベイク中",
+    ["mmd_vmd_npc.import.stage.flex"] = "flex トラックを統合中",
+    ["mmd_vmd_npc.import.stage.camera"] = "カメラトラックを作成中",
+    ["mmd_vmd_npc.import.stage.music"] = "音楽をコピー中",
+    ["mmd_vmd_npc.import.stage.writing"] = "モーション JSON を書き込み中",
+    ["mmd_vmd_npc.import.stage.complete"] = "インポート完了",
+    ["mmd_vmd_npc.import.stage.failed"] = "インポート失敗",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "インポートをキャンセルしました",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | 経過 %s",
+    ["mmd_vmd_npc.import.select_body"] = "先に身体モーション VMD を選んでください。",
+    ["mmd_vmd_npc.import.complete_fmt"] = "「%s」をインポートしました。選択中のモーションになっています：キャラクター用にビルドしてから再生してください。",
+    ["mmd_vmd_npc.import.failed_fmt"] = "インポート失敗：%s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "音楽ファイルが MP3・OGG・WAV ではありません。デスクトップ版インポーターで変換するか、別のファイルを選んでください。",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "%s を読み込めませんでした：%s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s は 256 MiB を超えていて、Model Hotloader が読み込める上限を超えています。",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "%s を書き込めませんでした。",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader は %s を読み込めません。",
+    ["mmd_vmd_npc.import.picker_body"] = "身体モーション VMD を選択",
+    ["mmd_vmd_npc.import.picker_music"] = "音楽ファイルを選択",
+    ["mmd_vmd_npc.import.picker_camera"] = "カメラ VMD を選択",
+    ["mmd_vmd_npc.import.picker_flex"] = "顔/Flex VMD を選択",
+    ["mmd_vmd_npc.import.purpose"] = "MMD モーションを音楽・カメラと一緒にゲームへインポート",
+    ["mmd_vmd_npc.import.filter_vmd"] = "VMD モーション",
+    ["mmd_vmd_npc.import.filter_audio"] = "MP3・OGG・WAV 音声",
+    ["mmd_vmd_npc.import.busy"] = "インポートはすでに実行中です。",
 })
 
 MMDVMDNPC.I18N.ko = merge_i18n({
@@ -1496,6 +2094,13 @@ MMDVMDNPC.I18N.ko = merge_i18n({
     ["mmd_vmd_npc.ui.music_volume"] = "음악 음량",
     ["mmd_vmd_npc.ui.loop_playback"] = "애니메이션과 음악 반복",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "켜면 모션이 끝날 때 첫 프레임부터 다시 재생되고 가져온 음악도 다시 시작됩니다.",
+    ["mmd_vmd_npc.ui.stage_movement"] = "무대 위치와 이동",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "무대 위치 점프 유지 (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Project Diva 등 PV 모션은 시작할 때와 카메라 컷마다 캐릭터를 무대의 다른 위치로 옮깁니다. 100은 이 점프를 그대로 두고, 0은 점프를 없애 캐릭터가 재생을 시작할 때 서 있던 자리에서 춤추게 하며, 그 사이 값은 점프를 줄입니다. 점프를 없애면 각 컷의 이동이 누적되어 캐릭터가 멀리 갈 수 있으니 이동 제한과 함께 사용하세요. 가져온 카메라는 캐릭터를 따라갑니다.",
+    ["mmd_vmd_npc.ui.movement_scale"] = "이동 범위 (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "춤이 캐릭터를 재생을 시작할 때 서 있던 위치에서 얼마나 멀리 이동시키는지: 100은 원본 그대로, 50은 절반, 0은 제자리에서 춤춥니다.",
+    ["mmd_vmd_npc.ui.movement_limit"] = "이동 제한 (단위, 0 = 없음)",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "캐릭터를 재생을 시작할 때 서 있던 위치에서 이 거리 안에 머물게 하며, 벽에 부딪힌 듯 멈추지 않고 가장자리에 가까워질수록 느려집니다. 플레이어의 키는 약 72 단위입니다. 이 옵션은 재생을 시작할 때 적용됩니다.",
     ["mmd_vmd_npc.ui.column.motion"] = "모션",
     ["mmd_vmd_npc.ui.column.duration"] = "길이",
     ["mmd_vmd_npc.ui.column.addon"] = "애드온 제공",
@@ -1780,6 +2385,98 @@ MMDVMDNPC.I18N.ko = merge_i18n({
     ["mmd_vmd_npc.meta.language"] = "언어",
     ["mmd_vmd_npc.meta.motion_artist"] = "모션 제작자",
     ["mmd_vmd_npc.radial.category_empty"] = "이 카테고리에는 휠 댄스가 없습니다",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "애니메이션 가져오기 (VMD)…",
+    ["mmd_vmd_npc.import.button_tip"] = "게임을 떠나지 않고 데스크톱 가져오기 도구처럼 MMD 모션을 이 애드온에 베이크합니다. 선택한 파일은 Model Hotloader가 읽습니다.",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader가 설치되지 않았습니다: 핫 모션 가져오기를 사용할 수 없습니다.",
+    ["mmd_vmd_npc.import.unavailable_short"] = "지금은 핫 모션 가져오기를 사용할 수 없습니다.",
+    ["mmd_vmd_npc.import.resolve"] = "해결",
+    ["mmd_vmd_npc.import.resolve_title"] = "핫 모션 가져오기",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "게임 안에서 모션을 가져오려면 Model Hotloader가 필요합니다. 이 도구는 그 바이너리 모듈을 통해 PC에서 선택한 VMD, 음악, 카메라 파일을 읽으며, 파일마다 Windows가 허용 여부를 묻습니다.\n\n1. Steam 창작마당에서 Model Hotloader를 구독합니다.\n2. GitHub 페이지의 안내에 따라 바이너리 모듈을 설치합니다.\n3. Garry's Mod를 다시 시작합니다.\n\n핫 가져오기는 싱글 플레이와 직접 호스트하는 서버에서 사용할 수 있습니다.",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader는 설치되어 있지만 지금은 파일 접근을 사용할 수 없습니다. 새 바이너리 모듈이 필요하면 GitHub 페이지에서 업데이트하고 Garry's Mod를 다시 시작하세요. 파일 접근은 싱글 플레이와 직접 호스트하는 서버에서만 작동하며, 파일 접근 설정에서 끌 수도 있습니다.",
+    ["mmd_vmd_npc.import.resolve_ready"] = "Model Hotloader의 파일 접근을 사용할 수 있습니다: 이제 게임 안에서 모션을 가져올 수 있습니다.",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader 메시지: %s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "언제든지 데스크톱 가져오기 도구(GmodMMDMotionImporter.exe)로 모션을 가져올 수도 있습니다.",
+    ["mmd_vmd_npc.import.link_workshop"] = "Steam 창작마당의 Model Hotloader",
+    ["mmd_vmd_npc.import.link_github"] = "바이너리 모듈과 설치 안내 (GitHub)",
+    ["mmd_vmd_npc.import.open_link"] = "열기",
+    ["mmd_vmd_npc.import.file_access_settings"] = "파일 접근 설정…",
+    ["mmd_vmd_npc.import.open_importer"] = "가져오기 도구 열기",
+    ["mmd_vmd_npc.import.close"] = "닫기",
+    ["mmd_vmd_npc.import.title"] = "MMD 모션 가져오기",
+    ["mmd_vmd_npc.import.help"] = "데스크톱 가져오기 도구(GmodMMDMotionImporter.exe)처럼 내장 모델의 골격에서 MMD 모션을 베이크해 이 게임에 설치합니다. 선택하는 파일마다 Model Hotloader가 Windows 대화상자를 엽니다. 전체 화면에서는 Alt+Tab을 눌러 응답하세요.",
+    ["mmd_vmd_npc.import.required"] = "필수",
+    ["mmd_vmd_npc.import.optional"] = "선택",
+    ["mmd_vmd_npc.import.browse"] = "찾아보기",
+    ["mmd_vmd_npc.import.clear"] = "지우기",
+    ["mmd_vmd_npc.import.none_selected"] = "선택한 파일 없음",
+    ["mmd_vmd_npc.import.body_vmd"] = "몸 모션 VMD",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "주 몸 애니메이션",
+    ["mmd_vmd_npc.import.music"] = "음악 파일",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3, OGG, WAV를 그대로 사용합니다. 다른 오디오나 동영상은 데스크톱 가져오기 도구로 변환하세요.",
+    ["mmd_vmd_npc.import.camera_vmd"] = "카메라 VMD",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "MMD 카메라 모션. GMod 애드온에서 재생할 수 있는 카메라 경로를 내보냅니다.",
+    ["mmd_vmd_npc.import.audio_offset"] = "오디오 오프셋 (초)",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "모션의 기본 음악 오프셋으로 저장됩니다. 양수는 음악을 늦게 시작하고 음수는 앞당깁니다.",
+    ["mmd_vmd_npc.import.motion_meta"] = "모션 메타데이터",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "선택 사항. 표시 이름은 게임에 표시됩니다(한중일 문자 지원). 나머지 항목은 춤을 설명하며 GMod 메뉴가 읽습니다. 카테고리는 모션을 애드온으로 배포할 때 분류에 쓰입니다(로컬 가져오기는 항상 \"사용자 가져오기\"에 표시).",
+    ["mmd_vmd_npc.import.meta.category"] = "카테고리",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "모션을 애드온으로 배포할 때 쓰는 메뉴 카테고리(예: \"동방\", \"보컬로이드\"). 로컬 가져오기는 항상 \"사용자 가져오기\"에 표시됩니다.",
+    ["mmd_vmd_npc.import.meta.display_name"] = "표시 이름",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "게임에 표시되는 이름. 몸 VMD 이름으로 자동 입력되며 한중일 문자를 지원합니다. 저장 파일은 안전한 내부 ID를 사용합니다.",
+    ["mmd_vmd_npc.import.meta.english_name"] = "영어 이름",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "선택 사항인 로마자/영어 제목. 모션 관리자에서 검색할 수 있습니다.",
+    ["mmd_vmd_npc.import.meta.artist"] = "아티스트",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "곡의 아티스트 / 프로듀서.",
+    ["mmd_vmd_npc.import.meta.language"] = "언어",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "곡의 언어(예: 일본어, 중국어, 영어).",
+    ["mmd_vmd_npc.import.meta.link"] = "링크",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "출처 URL(원본 영상, 모션 배포 페이지 등). 모션 관리자에서 열 수 있습니다.",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "모션 제작자",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "춤 모션 데이터의 제작자.",
+    ["mmd_vmd_npc.import.flex_group"] = "얼굴/Flex VMD (몸 모션과 별도의 VMD에 있는 경우)",
+    ["mmd_vmd_npc.import.flex_add"] = "얼굴/Flex 모션 추가",
+    ["mmd_vmd_npc.import.flex_remove"] = "선택 Flex 제거",
+    ["mmd_vmd_npc.import.flex_column"] = "파일",
+    ["mmd_vmd_npc.import.bake_options"] = "베이크 옵션",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "발 IK 비활성화 (IK 없는 모션용)",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "베이크 전에 모델의 모든 IK 제약(발·발끝)을 끕니다. 발 IK 없이 제작된 모션에 사용하세요 — IK를 켠 채 베이크하면 다리가 기본 자세에 고정됩니다. 일반 모션에서는 꺼 두세요.",
+    ["mmd_vmd_npc.import.unify_ground"] = "지면 높이 통일 (무대 배치 상쇄)",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "캐릭터를 무대의 단상이나 다른 높이로 옮기는 모션(예: Project Diva 변환 모션)용: 춤 전체에서 발을 같은 바닥 높이에 유지하고(점프 높이는 유지) 가져온 카메라도 매 프레임 같은 만큼 내립니다. 일반 모션에서는 끈 채로 두세요.",
+    ["mmd_vmd_npc.import.bake"] = "모션 베이크 후 가져오기",
+    ["mmd_vmd_npc.import.cancel"] = "가져오기 취소",
+    ["mmd_vmd_npc.import.progress_idle"] = "진행 중인 베이크가 없습니다.",
+    ["mmd_vmd_npc.import.log_title"] = "가져오기 로그 및 출력",
+    ["mmd_vmd_npc.import.output_motion"] = "모션 JSON",
+    ["mmd_vmd_npc.import.output_music"] = "음악 사운드",
+    ["mmd_vmd_npc.import.copy_log"] = "로그 복사",
+    ["mmd_vmd_npc.import.stage.reading"] = "파일 읽는 중",
+    ["mmd_vmd_npc.import.stage.parsing"] = "VMD 모션 가져오는 중",
+    ["mmd_vmd_npc.import.stage.baking"] = "시각 포즈 키 베이크 중",
+    ["mmd_vmd_npc.import.stage.flex"] = "flex 트랙 병합 중",
+    ["mmd_vmd_npc.import.stage.camera"] = "카메라 트랙 만드는 중",
+    ["mmd_vmd_npc.import.stage.music"] = "음악 복사 중",
+    ["mmd_vmd_npc.import.stage.writing"] = "모션 JSON 쓰는 중",
+    ["mmd_vmd_npc.import.stage.complete"] = "가져오기 완료",
+    ["mmd_vmd_npc.import.stage.failed"] = "가져오기 실패",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "가져오기가 취소됨",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | 경과 %s",
+    ["mmd_vmd_npc.import.select_body"] = "먼저 몸 모션 VMD를 선택하세요.",
+    ["mmd_vmd_npc.import.complete_fmt"] = "\"%s\"을(를) 가져왔습니다. 지금 선택된 모션입니다: 캐릭터용으로 빌드한 다음 재생하세요.",
+    ["mmd_vmd_npc.import.failed_fmt"] = "가져오기 실패: %s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "음악 파일이 MP3, OGG, WAV가 아닙니다. 데스크톱 가져오기 도구로 변환하거나 다른 파일을 선택하세요.",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "%s을(를) 읽을 수 없습니다: %s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s은(는) 256 MiB보다 커서 Model Hotloader가 읽을 수 있는 한도를 넘습니다.",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "%s을(를) 쓸 수 없습니다.",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader가 %s을(를) 읽을 수 없습니다.",
+    ["mmd_vmd_npc.import.picker_body"] = "몸 모션 VMD 선택",
+    ["mmd_vmd_npc.import.picker_music"] = "음악 파일 선택",
+    ["mmd_vmd_npc.import.picker_camera"] = "카메라 VMD 선택",
+    ["mmd_vmd_npc.import.picker_flex"] = "얼굴/Flex VMD 선택",
+    ["mmd_vmd_npc.import.purpose"] = "MMD 모션을 음악·카메라와 함께 게임으로 가져오기",
+    ["mmd_vmd_npc.import.filter_vmd"] = "VMD 모션",
+    ["mmd_vmd_npc.import.filter_audio"] = "MP3, OGG, WAV 오디오",
+    ["mmd_vmd_npc.import.busy"] = "이미 가져오기가 진행 중입니다.",
 })
 
 MMDVMDNPC.I18N.fr = merge_i18n({
@@ -1869,6 +2566,13 @@ MMDVMDNPC.I18N.fr = merge_i18n({
     ["mmd_vmd_npc.ui.music_volume"] = "Volume musique",
     ["mmd_vmd_npc.ui.loop_playback"] = "Boucler animation et musique",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "Si activé, l'animation repart de la première image et la musique importée redémarre à la fin du mouvement.",
+    ["mmd_vmd_npc.ui.stage_movement"] = "Placement sur scène et déplacement",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "Sauts de placement conservés (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Les motions Project Diva et d'autres PV déplacent le personnage vers un autre endroit de la scène au début et à chaque changement de plan. 100 garde ces sauts tels quels, 0 les supprime pour que le personnage danse là où il se trouvait au lancement de la danse, et les valeurs intermédiaires les raccourcissent. Sans les sauts, les déplacements de chaque plan s'additionnent et le personnage peut s'éloigner beaucoup : associez cette option à la limite de déplacement. La caméra importée suit le personnage.",
+    ["mmd_vmd_npc.ui.movement_scale"] = "Amplitude du déplacement (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "Distance à laquelle la danse éloigne le personnage de l'endroit où il se trouvait au lancement de la danse : 100 tel quel, 50 à moitié, 0 danse sur place.",
+    ["mmd_vmd_npc.ui.movement_limit"] = "Limite de déplacement (unités, 0 = aucune)",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "Garde le personnage à cette distance au plus de l'endroit où il se trouvait au lancement de la danse, en ralentissant près du bord au lieu de s'arrêter net comme contre un mur. Un joueur mesure environ 72 unités. Ces options s'appliquent au début de la lecture.",
     ["mmd_vmd_npc.ui.column.motion"] = "Mouvement",
     ["mmd_vmd_npc.ui.column.duration"] = "Durée",
     ["mmd_vmd_npc.ui.column.addon"] = "Depuis l'addon",
@@ -2144,6 +2848,98 @@ MMDVMDNPC.I18N.fr = merge_i18n({
     ["mmd_vmd_npc.meta.language"] = "Langue",
     ["mmd_vmd_npc.meta.motion_artist"] = "Artiste du mouvement",
     ["mmd_vmd_npc.radial.category_empty"] = "Aucune danse de la roue dans cette catégorie",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "Importer une animation (VMD)…",
+    ["mmd_vmd_npc.import.button_tip"] = "Cuit un mouvement MMD dans cet addon sans quitter le jeu, comme l'importateur de bureau. Model Hotloader lit les fichiers que vous choisissez.",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader n'est pas installé : l'import de mouvements à chaud n'est pas disponible.",
+    ["mmd_vmd_npc.import.unavailable_short"] = "L'import de mouvements à chaud n'est pas disponible pour le moment.",
+    ["mmd_vmd_npc.import.resolve"] = "Résoudre",
+    ["mmd_vmd_npc.import.resolve_title"] = "Import de mouvements à chaud",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "Importer des mouvements dans le jeu nécessite Model Hotloader. Son module binaire permet à cet outil de lire les fichiers VMD, musique et caméra que vous choisissez sur votre ordinateur ; Windows vous demande d'autoriser chaque fichier.\n\n1. Abonnez-vous à Model Hotloader sur le Steam Workshop.\n2. Installez son module binaire depuis la page GitHub, qui explique comment faire.\n3. Redémarrez Garry's Mod.\n\nL'import à chaud fonctionne en solo et sur les serveurs que vous hébergez.",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader est installé, mais son accès aux fichiers n'est pas utilisable pour le moment. S'il demande un module binaire plus récent, mettez-le à jour depuis la page GitHub et redémarrez Garry's Mod. L'accès aux fichiers ne fonctionne qu'en solo et sur les serveurs que vous hébergez, et peut être désactivé dans ses réglages d'accès aux fichiers.",
+    ["mmd_vmd_npc.import.resolve_ready"] = "L'accès aux fichiers de Model Hotloader est disponible : vous pouvez maintenant importer des mouvements dans le jeu.",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader indique : %s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "Vous pouvez toujours importer des mouvements avec l'importateur de bureau (GmodMMDMotionImporter.exe).",
+    ["mmd_vmd_npc.import.link_workshop"] = "Model Hotloader sur le Steam Workshop",
+    ["mmd_vmd_npc.import.link_github"] = "Module binaire et guide d'installation (GitHub)",
+    ["mmd_vmd_npc.import.open_link"] = "Ouvrir",
+    ["mmd_vmd_npc.import.file_access_settings"] = "Réglages d'accès aux fichiers…",
+    ["mmd_vmd_npc.import.open_importer"] = "Ouvrir l'importateur",
+    ["mmd_vmd_npc.import.close"] = "Fermer",
+    ["mmd_vmd_npc.import.title"] = "Importer un mouvement MMD",
+    ["mmd_vmd_npc.import.help"] = "Cuit un mouvement MMD sur le squelette du modèle fourni et l'installe dans ce jeu, comme l'importateur de bureau (GmodMMDMotionImporter.exe). Model Hotloader ouvre une boîte de dialogue Windows pour chaque fichier choisi ; en plein écran, appuyez sur Alt+Tab pour y répondre.",
+    ["mmd_vmd_npc.import.required"] = "Obligatoire",
+    ["mmd_vmd_npc.import.optional"] = "Facultatif",
+    ["mmd_vmd_npc.import.browse"] = "Parcourir",
+    ["mmd_vmd_npc.import.clear"] = "Effacer",
+    ["mmd_vmd_npc.import.none_selected"] = "Aucun fichier choisi",
+    ["mmd_vmd_npc.import.body_vmd"] = "VMD de mouvement du corps",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "Animation principale du corps",
+    ["mmd_vmd_npc.import.music"] = "Fichier musique",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3, OGG ou WAV, utilisé tel quel. Convertissez un autre format audio ou une vidéo avec l'importateur de bureau.",
+    ["mmd_vmd_npc.import.camera_vmd"] = "VMD de caméra",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "Mouvement de caméra MMD ; exporte une trajectoire de caméra que l'addon GMod peut lire.",
+    ["mmd_vmd_npc.import.audio_offset"] = "Décalage audio (secondes)",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "Enregistré comme décalage musical par défaut du mouvement. Positif démarre la musique plus tard ; négatif l'avance.",
+    ["mmd_vmd_npc.import.motion_meta"] = "Métadonnées du mouvement",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "Facultatif. Le nom affiché apparaît en jeu (CJK pris en charge) ; les autres champs décrivent la danse et sont lus par les menus GMod. La catégorie regroupe le mouvement quand il est distribué dans un addon (les imports locaux apparaissent toujours sous « Import utilisateur »).",
+    ["mmd_vmd_npc.import.meta.category"] = "Catégorie",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "Catégorie de menu utilisée quand ce mouvement est distribué dans un addon (par ex. « Touhou », « Vocaloid »). Les imports locaux apparaissent toujours sous « Import utilisateur ».",
+    ["mmd_vmd_npc.import.meta.display_name"] = "Nom affiché",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "Nom affiché en jeu. Rempli automatiquement avec le nom du VMD du corps ; CJK pris en charge. Le fichier enregistré utilise un identifiant interne sûr.",
+    ["mmd_vmd_npc.import.meta.english_name"] = "Nom anglais",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "Titre romanisé/anglais facultatif, recherchable dans le gestionnaire de mouvements.",
+    ["mmd_vmd_npc.import.meta.artist"] = "Artiste",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "Artiste / producteur de la chanson.",
+    ["mmd_vmd_npc.import.meta.language"] = "Langue",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "Langue de la chanson (par ex. japonais, chinois, anglais).",
+    ["mmd_vmd_npc.import.meta.link"] = "Lien",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "URL source (vidéo originale, page de téléchargement du mouvement…). S'ouvre depuis le gestionnaire de mouvements.",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "Artiste du mouvement",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "Créateur des données du mouvement de danse.",
+    ["mmd_vmd_npc.import.flex_group"] = "VMD de visage/flex (s'ils sont séparés du mouvement du corps)",
+    ["mmd_vmd_npc.import.flex_add"] = "Ajouter des mouvements visage/flex",
+    ["mmd_vmd_npc.import.flex_remove"] = "Retirer le flex sélectionné",
+    ["mmd_vmd_npc.import.flex_column"] = "Fichier",
+    ["mmd_vmd_npc.import.bake_options"] = "Options de cuisson",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "Désactiver l'IK des pieds (mouvement sans IK)",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "Désactive toutes les contraintes IK du modèle (pieds et orteils) avant la cuisson. À utiliser pour les mouvements créés sans IK des pieds — cuits avec l'IK activé, les jambes restent figées dans la pose de repos. Laissez décoché pour les mouvements normaux.",
+    ["mmd_vmd_npc.import.unify_ground"] = "Unifier la hauteur du sol (annuler le placement sur scène)",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "Pour les mouvements qui déplacent le personnage entre des plateformes ou des hauteurs de scène, comme les conversions Project Diva : garde ses pieds au même niveau de sol pendant toute la danse (les sauts gardent leur hauteur) et abaisse la caméra importée d’autant à chaque image. Laissez désactivé pour les mouvements normaux.",
+    ["mmd_vmd_npc.import.bake"] = "Cuire le mouvement et importer",
+    ["mmd_vmd_npc.import.cancel"] = "Annuler l'importation",
+    ["mmd_vmd_npc.import.progress_idle"] = "Aucune cuisson en cours.",
+    ["mmd_vmd_npc.import.log_title"] = "Journal d'importation et sortie",
+    ["mmd_vmd_npc.import.output_motion"] = "JSON de mouvement",
+    ["mmd_vmd_npc.import.output_music"] = "Son musique",
+    ["mmd_vmd_npc.import.copy_log"] = "Copier le journal",
+    ["mmd_vmd_npc.import.stage.reading"] = "Lecture des fichiers",
+    ["mmd_vmd_npc.import.stage.parsing"] = "Import du mouvement VMD",
+    ["mmd_vmd_npc.import.stage.baking"] = "Cuisson des clés de pose visuelle",
+    ["mmd_vmd_npc.import.stage.flex"] = "Fusion des pistes flex",
+    ["mmd_vmd_npc.import.stage.camera"] = "Création de la piste caméra",
+    ["mmd_vmd_npc.import.stage.music"] = "Copie de la musique",
+    ["mmd_vmd_npc.import.stage.writing"] = "Écriture du JSON de mouvement",
+    ["mmd_vmd_npc.import.stage.complete"] = "Importation terminée",
+    ["mmd_vmd_npc.import.stage.failed"] = "Importation échouée",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "Importation annulée",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | écoulé %s",
+    ["mmd_vmd_npc.import.select_body"] = "Choisissez d'abord un VMD de mouvement du corps.",
+    ["mmd_vmd_npc.import.complete_fmt"] = "« %s » importé. C'est maintenant le mouvement sélectionné : construisez-le pour votre acteur, puis lancez-le.",
+    ["mmd_vmd_npc.import.failed_fmt"] = "Échec de l'importation : %s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "Le fichier musique n'est ni MP3, ni OGG, ni WAV. Convertissez-le avec l'importateur de bureau ou choisissez un autre fichier.",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "Impossible de lire %s : %s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s dépasse 256 Mio, le maximum que Model Hotloader peut lire.",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "Impossible d'écrire %s.",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader ne peut pas lire %s.",
+    ["mmd_vmd_npc.import.picker_body"] = "Choisir le VMD de mouvement du corps",
+    ["mmd_vmd_npc.import.picker_music"] = "Choisir le fichier musique",
+    ["mmd_vmd_npc.import.picker_camera"] = "Choisir le VMD de caméra",
+    ["mmd_vmd_npc.import.picker_flex"] = "Choisir des VMD de visage/flex",
+    ["mmd_vmd_npc.import.purpose"] = "Importer des mouvements MMD avec leur musique et leur caméra dans le jeu",
+    ["mmd_vmd_npc.import.filter_vmd"] = "Mouvement VMD",
+    ["mmd_vmd_npc.import.filter_audio"] = "Audio MP3, OGG ou WAV",
+    ["mmd_vmd_npc.import.busy"] = "Une importation est déjà en cours.",
 })
 
 MMDVMDNPC.I18N.ru = merge_i18n({
@@ -2224,6 +3020,13 @@ MMDVMDNPC.I18N.ru = merge_i18n({
     ["mmd_vmd_npc.ui.music_volume"] = "Громкость музыки",
     ["mmd_vmd_npc.ui.loop_playback"] = "Повторять анимацию и музыку",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "Если включено, анимация начнется с первого кадра, а импортированная музыка перезапустится в конце движения.",
+    ["mmd_vmd_npc.ui.stage_movement"] = "Позиция на сцене и перемещение",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "Сохранение скачков по сцене (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Движения Project Diva и других PV в начале и при смене кадра переносят персонажа в другое место сцены. 100 сохраняет эти скачки как есть, 0 убирает их, и персонаж танцует там, где стоял при запуске танца; промежуточные значения сокращают скачки. Без скачков перемещения каждого кадра складываются, и персонаж может уйти далеко, поэтому используйте эту настройку вместе с пределом перемещения. Импортированная камера следует за персонажем.",
+    ["mmd_vmd_npc.ui.movement_scale"] = "Дальность перемещения (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "Насколько далеко танец уводит персонажа от места, где он стоял при запуске танца: 100 — как задумано, 50 — вдвое ближе, 0 — танец на месте.",
+    ["mmd_vmd_npc.ui.movement_limit"] = "Предел перемещения (единицы, 0 = нет)",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "Удерживает персонажа в пределах этого расстояния от места, где он стоял при запуске танца, плавно замедляя у края, а не останавливая резко, как у стены. Рост игрока — около 72 единиц. Параметры применяются при запуске воспроизведения.",
     ["mmd_vmd_npc.ui.column.motion"] = "Движение",
     ["mmd_vmd_npc.ui.column.duration"] = "Длительность",
     ["mmd_vmd_npc.ui.column.addon"] = "Из аддона",
@@ -2508,6 +3311,98 @@ MMDVMDNPC.I18N.ru = merge_i18n({
     ["mmd_vmd_npc.meta.language"] = "Язык",
     ["mmd_vmd_npc.meta.motion_artist"] = "Автор движения",
     ["mmd_vmd_npc.radial.category_empty"] = "В этой категории нет танцев на колесе",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "Импорт анимации (VMD)…",
+    ["mmd_vmd_npc.import.button_tip"] = "Запекает движение MMD в этот аддон, не выходя из игры, как настольный импортёр. Выбранные файлы читает Model Hotloader.",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader не установлен: горячий импорт движений недоступен.",
+    ["mmd_vmd_npc.import.unavailable_short"] = "Горячий импорт движений сейчас недоступен.",
+    ["mmd_vmd_npc.import.resolve"] = "Решить",
+    ["mmd_vmd_npc.import.resolve_title"] = "Горячий импорт движений",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "Для импорта движений в игре нужен Model Hotloader. Его двоичный модуль позволяет этому инструменту читать выбранные вами на компьютере файлы VMD, музыки и камеры; Windows спрашивает разрешение для каждого файла.\n\n1. Подпишитесь на Model Hotloader в Мастерской Steam.\n2. Установите его двоичный модуль со страницы GitHub — там описано, как это сделать.\n3. Перезапустите Garry's Mod.\n\nГорячий импорт работает в одиночной игре и на серверах, которые вы запускаете сами.",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader установлен, но его доступ к файлам сейчас нельзя использовать. Если нужен более новый двоичный модуль, обновите его со страницы GitHub и перезапустите Garry's Mod. Доступ к файлам работает только в одиночной игре и на серверах, которые вы запускаете сами, и его можно отключить в настройках доступа к файлам.",
+    ["mmd_vmd_npc.import.resolve_ready"] = "Доступ к файлам Model Hotloader доступен: теперь можно импортировать движения в игре.",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader сообщает: %s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "Движения всегда можно импортировать и настольным импортёром (GmodMMDMotionImporter.exe).",
+    ["mmd_vmd_npc.import.link_workshop"] = "Model Hotloader в Мастерской Steam",
+    ["mmd_vmd_npc.import.link_github"] = "Двоичный модуль и инструкция по установке (GitHub)",
+    ["mmd_vmd_npc.import.open_link"] = "Открыть",
+    ["mmd_vmd_npc.import.file_access_settings"] = "Настройки доступа к файлам…",
+    ["mmd_vmd_npc.import.open_importer"] = "Открыть импортёр",
+    ["mmd_vmd_npc.import.close"] = "Закрыть",
+    ["mmd_vmd_npc.import.title"] = "Импорт движения MMD",
+    ["mmd_vmd_npc.import.help"] = "Запекает движение MMD на скелете встроенной модели и устанавливает его в эту игру, как настольный импортёр (GmodMMDMotionImporter.exe). Для каждого выбранного файла Model Hotloader открывает диалог Windows; в полноэкранном режиме нажмите Alt+Tab, чтобы ответить.",
+    ["mmd_vmd_npc.import.required"] = "Обязательно",
+    ["mmd_vmd_npc.import.optional"] = "Необязательно",
+    ["mmd_vmd_npc.import.browse"] = "Обзор",
+    ["mmd_vmd_npc.import.clear"] = "Очистить",
+    ["mmd_vmd_npc.import.none_selected"] = "Файл не выбран",
+    ["mmd_vmd_npc.import.body_vmd"] = "VMD движения тела",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "Основная анимация тела",
+    ["mmd_vmd_npc.import.music"] = "Файл музыки",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3, OGG или WAV, используется как есть. Другие аудиоформаты или видео преобразуйте настольным импортёром.",
+    ["mmd_vmd_npc.import.camera_vmd"] = "VMD камеры",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "Движение камеры MMD; экспортирует путь камеры, который может воспроизвести аддон GMod.",
+    ["mmd_vmd_npc.import.audio_offset"] = "Смещение аудио (секунды)",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "Сохраняется как смещение музыки по умолчанию для движения. Положительное запускает музыку позже, отрицательное — раньше.",
+    ["mmd_vmd_npc.import.motion_meta"] = "Метаданные движения",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "Необязательно. Отображаемое имя видно в игре (поддерживаются CJK); остальные поля описывают танец и читаются меню GMod. Категория группирует движение, когда оно распространяется в аддоне (локальные импорты всегда показываются в «Пользовательский импорт»).",
+    ["mmd_vmd_npc.import.meta.category"] = "Категория",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "Категория меню, когда движение распространяется в аддоне (например, «Touhou», «Vocaloid»). Локальные импорты всегда показываются в «Пользовательский импорт».",
+    ["mmd_vmd_npc.import.meta.display_name"] = "Отображаемое имя",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "Имя в игре. Заполняется по имени VMD тела; поддерживаются CJK. Сохранённый файл использует безопасный внутренний ID.",
+    ["mmd_vmd_npc.import.meta.english_name"] = "Английское название",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "Необязательное латинское/английское название, по нему можно искать в менеджере движений.",
+    ["mmd_vmd_npc.import.meta.artist"] = "Исполнитель",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "Исполнитель / продюсер песни.",
+    ["mmd_vmd_npc.import.meta.language"] = "Язык",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "Язык песни (например, японский, китайский, английский).",
+    ["mmd_vmd_npc.import.meta.link"] = "Ссылка",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "Исходный URL (оригинальное видео, страница загрузки движения…). Открывается из менеджера движений.",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "Автор движения",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "Создатель данных танцевального движения.",
+    ["mmd_vmd_npc.import.flex_group"] = "VMD лица/Flex (если они хранятся отдельно от движения тела)",
+    ["mmd_vmd_npc.import.flex_add"] = "Добавить движения лица/Flex",
+    ["mmd_vmd_npc.import.flex_remove"] = "Удалить выбранный Flex",
+    ["mmd_vmd_npc.import.flex_column"] = "Файл",
+    ["mmd_vmd_npc.import.bake_options"] = "Параметры запекания",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "Отключить IK ног (движение без IK)",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "Отключает все IK-ограничения модели (стопы и носки) перед запеканием. Используйте для движений, созданных без IK ног — при включенном IK их ноги пришпиливаются к исходной позе. Для обычных движений оставьте выключенным.",
+    ["mmd_vmd_npc.import.unify_ground"] = "Выровнять высоту пола (убрать расстановку на сцене)",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "Для движений, которые переносят персонажа между платформами или уровнями сцены (например, конверсии Project Diva): держит ноги на одном уровне пола весь танец (прыжки сохраняют высоту) и опускает импортированную камеру на ту же величину в каждом кадре. Для обычных движений оставьте выключенным.",
+    ["mmd_vmd_npc.import.bake"] = "Запечь движение и импортировать",
+    ["mmd_vmd_npc.import.cancel"] = "Отменить импорт",
+    ["mmd_vmd_npc.import.progress_idle"] = "Запекание не выполняется.",
+    ["mmd_vmd_npc.import.log_title"] = "Журнал импорта и вывод",
+    ["mmd_vmd_npc.import.output_motion"] = "JSON движения",
+    ["mmd_vmd_npc.import.output_music"] = "Звук музыки",
+    ["mmd_vmd_npc.import.copy_log"] = "Копировать журнал",
+    ["mmd_vmd_npc.import.stage.reading"] = "Чтение файлов",
+    ["mmd_vmd_npc.import.stage.parsing"] = "Импорт VMD движения",
+    ["mmd_vmd_npc.import.stage.baking"] = "Запекание визуальных ключей позы",
+    ["mmd_vmd_npc.import.stage.flex"] = "Слияние flex-дорожек",
+    ["mmd_vmd_npc.import.stage.camera"] = "Создание дорожки камеры",
+    ["mmd_vmd_npc.import.stage.music"] = "Копирование музыки",
+    ["mmd_vmd_npc.import.stage.writing"] = "Запись JSON движения",
+    ["mmd_vmd_npc.import.stage.complete"] = "Импорт завершен",
+    ["mmd_vmd_npc.import.stage.failed"] = "Импорт не удался",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "Импорт отменен",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | прошло %s",
+    ["mmd_vmd_npc.import.select_body"] = "Сначала выберите VMD движения тела.",
+    ["mmd_vmd_npc.import.complete_fmt"] = "«%s» импортировано. Теперь это выбранное движение: соберите его для своего актёра, затем запустите.",
+    ["mmd_vmd_npc.import.failed_fmt"] = "Импорт не удался: %s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "Файл музыки не MP3, OGG или WAV. Преобразуйте его настольным импортёром или выберите другой файл.",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "Не удалось прочитать %s: %s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s больше 256 МиБ — это предел, который может прочитать Model Hotloader.",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "Не удалось записать %s.",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader не может прочитать %s.",
+    ["mmd_vmd_npc.import.picker_body"] = "Выберите VMD движения тела",
+    ["mmd_vmd_npc.import.picker_music"] = "Выберите файл музыки",
+    ["mmd_vmd_npc.import.picker_camera"] = "Выберите VMD камеры",
+    ["mmd_vmd_npc.import.picker_flex"] = "Выберите VMD лица/Flex",
+    ["mmd_vmd_npc.import.purpose"] = "Импорт движений MMD с музыкой и камерой в игру",
+    ["mmd_vmd_npc.import.filter_vmd"] = "Движение VMD",
+    ["mmd_vmd_npc.import.filter_audio"] = "Аудио MP3, OGG или WAV",
+    ["mmd_vmd_npc.import.busy"] = "Импорт уже выполняется.",
 })
 
 MMDVMDNPC.I18N.ar = merge_i18n({
@@ -2588,6 +3483,13 @@ MMDVMDNPC.I18N.ar = merge_i18n({
     ["mmd_vmd_npc.ui.music_volume"] = "مستوى الموسيقى",
     ["mmd_vmd_npc.ui.loop_playback"] = "تكرار الحركة والموسيقى",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "عند التفعيل، تبدأ الحركة من الإطار الأول من جديد وتُعاد الموسيقى المستوردة عند انتهاء الحركة.",
+    ["mmd_vmd_npc.ui.stage_movement"] = "موضع المسرح والحركة",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "الاحتفاظ بقفزات موضع المسرح (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "تنقل حركات Project Diva وغيرها من حركات PV الشخصية إلى مكان آخر على المسرح في البداية وعند كل قطع للكاميرا. القيمة 100 تُبقي هذه القفزات كما هي، والقيمة 0 تزيلها فترقص الشخصية حيث كانت واقفة عند بدء الرقصة، والقيم بينهما تقصّرها. من دون القفزات تتراكم حركة كل لقطة وقد تبتعد الشخصية كثيرًا، لذا استخدم هذا الخيار مع حد الحركة. الكاميرا المستوردة تتبع الشخصية.",
+    ["mmd_vmd_npc.ui.movement_scale"] = "مدى الحركة (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "مقدار ابتعاد الشخصية عن المكان الذي كانت تقف فيه عند بدء الرقصة: 100 كما هو، و50 نصف المسافة، و0 رقص في المكان.",
+    ["mmd_vmd_npc.ui.movement_limit"] = "حد الحركة (وحدات، 0 = بلا حد)",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "يُبقي الشخصية ضمن هذه المسافة من المكان الذي كانت تقف فيه عند بدء الرقصة، مع إبطاء تدريجي قرب الحافة بدلًا من التوقف المفاجئ كأنها اصطدمت بجدار. طول اللاعب نحو 72 وحدة. تُطبَّق هذه الخيارات عند بدء التشغيل.",
     ["mmd_vmd_npc.ui.column.motion"] = "الحركة",
     ["mmd_vmd_npc.ui.column.duration"] = "المدة",
     ["mmd_vmd_npc.ui.column.addon"] = "من الإضافة",
@@ -2872,6 +3774,98 @@ MMDVMDNPC.I18N.ar = merge_i18n({
     ["mmd_vmd_npc.meta.language"] = "اللغة",
     ["mmd_vmd_npc.meta.motion_artist"] = "صانع الحركة",
     ["mmd_vmd_npc.radial.category_empty"] = "لا توجد رقصات على العجلة في هذه الفئة",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "استيراد رسوم متحركة (VMD)…",
+    ["mmd_vmd_npc.import.button_tip"] = "اخبز حركة MMD في هذه الإضافة دون مغادرة اللعبة، مثل أداة الاستيراد المكتبية. يقرأ Model Hotloader الملفات التي تختارها.",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader غير مثبت: الاستيراد الفوري للحركات غير متاح.",
+    ["mmd_vmd_npc.import.unavailable_short"] = "الاستيراد الفوري للحركات غير متاح حالياً.",
+    ["mmd_vmd_npc.import.resolve"] = "حل",
+    ["mmd_vmd_npc.import.resolve_title"] = "الاستيراد الفوري للحركات",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "يحتاج استيراد الحركات داخل اللعبة إلى Model Hotloader. تتيح وحدته الثنائية لهذه الأداة قراءة ملفات VMD والموسيقى والكاميرا التي تختارها على جهازك، ويطلب Windows إذنك لكل ملف.\n\n1. اشترك في Model Hotloader على Steam Workshop.\n2. ثبّت وحدته الثنائية من صفحة GitHub التي تشرح الطريقة.\n3. أعد تشغيل Garry's Mod.\n\nيعمل الاستيراد الفوري في اللعب الفردي وعلى الخوادم التي تستضيفها.",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader مثبت، لكن الوصول إلى الملفات غير قابل للاستخدام حالياً. إذا كان يحتاج إلى وحدة ثنائية أحدث، فحدّثها من صفحة GitHub وأعد تشغيل Garry's Mod. يعمل الوصول إلى الملفات فقط في اللعب الفردي وعلى الخوادم التي تستضيفها، ويمكن إيقافه من إعدادات الوصول إلى الملفات.",
+    ["mmd_vmd_npc.import.resolve_ready"] = "الوصول إلى الملفات في Model Hotloader متاح: يمكنك الآن استيراد الحركات داخل اللعبة.",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "يفيد Model Hotloader: %s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "يمكنك دائماً استيراد الحركات بأداة الاستيراد المكتبية (GmodMMDMotionImporter.exe) بدلاً من ذلك.",
+    ["mmd_vmd_npc.import.link_workshop"] = "Model Hotloader على Steam Workshop",
+    ["mmd_vmd_npc.import.link_github"] = "الوحدة الثنائية ودليل التثبيت (GitHub)",
+    ["mmd_vmd_npc.import.open_link"] = "فتح",
+    ["mmd_vmd_npc.import.file_access_settings"] = "إعدادات الوصول إلى الملفات…",
+    ["mmd_vmd_npc.import.open_importer"] = "فتح أداة الاستيراد",
+    ["mmd_vmd_npc.import.close"] = "إغلاق",
+    ["mmd_vmd_npc.import.title"] = "استيراد حركة MMD",
+    ["mmd_vmd_npc.import.help"] = "يخبز حركة MMD على هيكل النموذج المرفق ويثبتها في هذه اللعبة، مثل أداة الاستيراد المكتبية (GmodMMDMotionImporter.exe). يفتح Model Hotloader نافذة Windows لكل ملف تختاره؛ في وضع ملء الشاشة اضغط Alt+Tab للرد عليها.",
+    ["mmd_vmd_npc.import.required"] = "مطلوب",
+    ["mmd_vmd_npc.import.optional"] = "اختياري",
+    ["mmd_vmd_npc.import.browse"] = "استعراض",
+    ["mmd_vmd_npc.import.clear"] = "مسح",
+    ["mmd_vmd_npc.import.none_selected"] = "لم يتم اختيار ملف",
+    ["mmd_vmd_npc.import.body_vmd"] = "VMD حركة الجسم",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "تحريك الجسم الرئيسي",
+    ["mmd_vmd_npc.import.music"] = "ملف الموسيقى",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3 أو OGG أو WAV، يُستخدم كما هو. حوّل صيغ الصوت الأخرى أو الفيديو بأداة الاستيراد المكتبية.",
+    ["mmd_vmd_npc.import.camera_vmd"] = "VMD الكاميرا",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "حركة كاميرا MMD؛ تصدّر مسار كاميرا يمكن لإضافة GMod تشغيله.",
+    ["mmd_vmd_npc.import.audio_offset"] = "إزاحة الصوت (ثوانٍ)",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "تُحفظ كإزاحة الموسيقى الافتراضية للحركة. الموجب يبدأ الموسيقى لاحقاً والسالب يقدّمها.",
+    ["mmd_vmd_npc.import.motion_meta"] = "البيانات الوصفية للحركة",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "اختياري. يظهر الاسم المعروض في اللعبة (يدعم CJK)؛ تصف الحقول الأخرى الرقصة وتقرؤها قوائم GMod. تجمع الفئة الحركة عند توزيعها ضمن إضافة (تظهر الاستيرادات المحلية دائماً ضمن «استيراد المستخدم»).",
+    ["mmd_vmd_npc.import.meta.category"] = "الفئة",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "فئة القائمة المستخدمة عند توزيع الحركة ضمن إضافة (مثل «Touhou» و«Vocaloid»). تظهر الاستيرادات المحلية دائماً ضمن «استيراد المستخدم».",
+    ["mmd_vmd_npc.import.meta.display_name"] = "الاسم المعروض",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "الاسم الظاهر في اللعبة. يُملأ تلقائياً من اسم VMD الجسم؛ يدعم CJK. يستخدم الملف المحفوظ معرّفاً داخلياً آمناً.",
+    ["mmd_vmd_npc.import.meta.english_name"] = "الاسم الإنجليزي",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "عنوان اختياري بالأحرف اللاتينية/الإنجليزية، قابل للبحث في مدير الحركات.",
+    ["mmd_vmd_npc.import.meta.artist"] = "الفنان",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "فنان / منتج الأغنية.",
+    ["mmd_vmd_npc.import.meta.language"] = "اللغة",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "لغة الأغنية (مثل اليابانية والصينية والإنجليزية).",
+    ["mmd_vmd_npc.import.meta.link"] = "الرابط",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "رابط المصدر (الفيديو الأصلي، صفحة تنزيل الحركة…). يُفتح من مدير الحركات.",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "صانع الحركة",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "منشئ بيانات حركة الرقص.",
+    ["mmd_vmd_npc.import.flex_group"] = "ملفات VMD للوجه/Flex (إذا كانت منفصلة عن حركة الجسم)",
+    ["mmd_vmd_npc.import.flex_add"] = "إضافة حركات وجه/Flex",
+    ["mmd_vmd_npc.import.flex_remove"] = "إزالة Flex المحدد",
+    ["mmd_vmd_npc.import.flex_column"] = "الملف",
+    ["mmd_vmd_npc.import.bake_options"] = "خيارات الخبز",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "تعطيل IK للقدمين (حركة بدون IK)",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "يوقف جميع قيود IK في النموذج (القدمان وأصابع القدم) قبل الخبز. استخدمه للحركات المصنوعة بدون IK للقدمين — خبزها مع تفعيل IK يثبّت الساقين على الوضعية الأولية. اتركه معطلاً للحركات العادية.",
+    ["mmd_vmd_npc.import.unify_ground"] = "توحيد ارتفاع الأرض (إلغاء موضع المسرح)",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "للحركات التي تنقل الشخصية بين منصات المسرح أو ارتفاعات مختلفة، مثل تحويلات Project Diva: تُبقي القدمين على مستوى أرض واحد طوال الرقصة (تحتفظ القفزات بارتفاعها) وتخفض الكاميرا المستوردة بالمقدار نفسه في كل إطار. اتركه معطّلًا للحركات العادية.",
+    ["mmd_vmd_npc.import.bake"] = "خبز الحركة واستيرادها",
+    ["mmd_vmd_npc.import.cancel"] = "إلغاء الاستيراد",
+    ["mmd_vmd_npc.import.progress_idle"] = "لا يوجد خبز قيد التشغيل.",
+    ["mmd_vmd_npc.import.log_title"] = "سجل الاستيراد والمخرجات",
+    ["mmd_vmd_npc.import.output_motion"] = "JSON الحركة",
+    ["mmd_vmd_npc.import.output_music"] = "صوت الموسيقى",
+    ["mmd_vmd_npc.import.copy_log"] = "نسخ السجل",
+    ["mmd_vmd_npc.import.stage.reading"] = "قراءة الملفات",
+    ["mmd_vmd_npc.import.stage.parsing"] = "استيراد حركة VMD",
+    ["mmd_vmd_npc.import.stage.baking"] = "خبز مفاتيح الوضع البصري",
+    ["mmd_vmd_npc.import.stage.flex"] = "دمج مسارات flex",
+    ["mmd_vmd_npc.import.stage.camera"] = "إنشاء مسار الكاميرا",
+    ["mmd_vmd_npc.import.stage.music"] = "نسخ الموسيقى",
+    ["mmd_vmd_npc.import.stage.writing"] = "كتابة JSON الحركة",
+    ["mmd_vmd_npc.import.stage.complete"] = "اكتمل الاستيراد",
+    ["mmd_vmd_npc.import.stage.failed"] = "فشل الاستيراد",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "تم إلغاء الاستيراد",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | المنقضي %s",
+    ["mmd_vmd_npc.import.select_body"] = "اختر ملف VMD لحركة الجسم أولاً.",
+    ["mmd_vmd_npc.import.complete_fmt"] = "تم استيراد «%s». إنها الآن الحركة المحددة: ابنها لممثلك ثم شغّلها.",
+    ["mmd_vmd_npc.import.failed_fmt"] = "فشل الاستيراد: %s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "ملف الموسيقى ليس MP3 أو OGG أو WAV. حوّله بأداة الاستيراد المكتبية أو اختر ملفاً آخر.",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "تعذّرت قراءة %s: %s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "حجم %s أكبر من 256 MiB، وهو أقصى ما يستطيع Model Hotloader قراءته.",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "تعذّرت كتابة %s.",
+    ["mmd_vmd_npc.import.refused_fmt"] = "لا يستطيع Model Hotloader قراءة %s.",
+    ["mmd_vmd_npc.import.picker_body"] = "اختر VMD حركة الجسم",
+    ["mmd_vmd_npc.import.picker_music"] = "اختر ملف الموسيقى",
+    ["mmd_vmd_npc.import.picker_camera"] = "اختر VMD الكاميرا",
+    ["mmd_vmd_npc.import.picker_flex"] = "اختر ملفات VMD للوجه/Flex",
+    ["mmd_vmd_npc.import.purpose"] = "استيراد حركات MMD مع موسيقاها وكاميرتها إلى اللعبة",
+    ["mmd_vmd_npc.import.filter_vmd"] = "حركة VMD",
+    ["mmd_vmd_npc.import.filter_audio"] = "صوت MP3 أو OGG أو WAV",
+    ["mmd_vmd_npc.import.busy"] = "هناك استيراد قيد التشغيل بالفعل.",
 })
 
 MMDVMDNPC.I18N.es = merge_i18n({
@@ -2961,6 +3955,13 @@ MMDVMDNPC.I18N.es = merge_i18n({
     ["mmd_vmd_npc.ui.music_volume"] = "Volumen de música",
     ["mmd_vmd_npc.ui.loop_playback"] = "Repetir animación y música",
     ["mmd_vmd_npc.ui.loop_playback_help"] = "Si está activado, la animación vuelve al primer fotograma y la música importada se reinicia cuando termina el movimiento.",
+    ["mmd_vmd_npc.ui.stage_movement"] = "Posición en el escenario y movimiento",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "Saltos de posición conservados (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Las motions de Project Diva y otros PV mueven al personaje a otro punto del escenario al empezar y en cada corte de cámara. 100 conserva esos saltos tal cual, 0 los elimina para que el personaje baile donde estaba al iniciar el baile, y los valores intermedios los acortan. Sin los saltos, el desplazamiento de cada plano se acumula y el personaje puede alejarse mucho, así que combínalo con el límite de movimiento. La cámara importada sigue al personaje.",
+    ["mmd_vmd_npc.ui.movement_scale"] = "Rango de movimiento (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "Cuánto aleja el baile al personaje del sitio donde estaba al iniciar el baile: 100 tal cual, 50 la mitad, 0 baila en el sitio.",
+    ["mmd_vmd_npc.ui.movement_limit"] = "Límite de movimiento (unidades, 0 = sin límite)",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "Mantiene al personaje dentro de esta distancia del sitio donde estaba al iniciar el baile, frenando suavemente cerca del borde en lugar de detenerse en seco como contra una pared. Un jugador mide unas 72 unidades. Estas opciones se aplican al empezar la reproducción.",
     ["mmd_vmd_npc.ui.column.motion"] = "Movimiento",
     ["mmd_vmd_npc.ui.column.duration"] = "Duración",
     ["mmd_vmd_npc.ui.column.addon"] = "Desde addon",
@@ -3236,6 +4237,98 @@ MMDVMDNPC.I18N.es = merge_i18n({
     ["mmd_vmd_npc.meta.language"] = "Idioma",
     ["mmd_vmd_npc.meta.motion_artist"] = "Artista del movimiento",
     ["mmd_vmd_npc.radial.category_empty"] = "No hay bailes en la rueda para esta categoría",
+    -- In-game (hot) motion import: cl_importer.lua
+    ["mmd_vmd_npc.import.button"] = "Importar animación (VMD)…",
+    ["mmd_vmd_npc.import.button_tip"] = "Hornea un movimiento MMD en este addon sin salir del juego, como el importador de escritorio. Model Hotloader lee los archivos que eliges.",
+    ["mmd_vmd_npc.import.not_installed"] = "Model Hotloader no está instalado: la importación de movimientos en caliente no está disponible.",
+    ["mmd_vmd_npc.import.unavailable_short"] = "La importación de movimientos en caliente no está disponible ahora.",
+    ["mmd_vmd_npc.import.resolve"] = "Resolver",
+    ["mmd_vmd_npc.import.resolve_title"] = "Importación de movimientos en caliente",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "Importar movimientos dentro del juego requiere Model Hotloader. Su módulo binario permite a esta herramienta leer los archivos VMD, de música y de cámara que elijas en tu equipo; Windows te pide permitir cada archivo.\n\n1. Suscríbete a Model Hotloader en el Steam Workshop.\n2. Instala su módulo binario desde la página de GitHub, que explica cómo hacerlo.\n3. Reinicia Garry's Mod.\n\nLa importación en caliente funciona en un jugador y en los servidores que alojas.",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "Model Hotloader está instalado, pero su acceso a archivos no se puede usar ahora. Si necesita un módulo binario más reciente, actualízalo desde la página de GitHub y reinicia Garry's Mod. El acceso a archivos solo funciona en un jugador y en los servidores que alojas, y puede desactivarse en sus ajustes de acceso a archivos.",
+    ["mmd_vmd_npc.import.resolve_ready"] = "El acceso a archivos de Model Hotloader está disponible: ya puedes importar movimientos dentro del juego.",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader indica: %s",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "Siempre puedes importar movimientos con el importador de escritorio (GmodMMDMotionImporter.exe).",
+    ["mmd_vmd_npc.import.link_workshop"] = "Model Hotloader en el Steam Workshop",
+    ["mmd_vmd_npc.import.link_github"] = "Módulo binario y guía de instalación (GitHub)",
+    ["mmd_vmd_npc.import.open_link"] = "Abrir",
+    ["mmd_vmd_npc.import.file_access_settings"] = "Ajustes de acceso a archivos…",
+    ["mmd_vmd_npc.import.open_importer"] = "Abrir importador",
+    ["mmd_vmd_npc.import.close"] = "Cerrar",
+    ["mmd_vmd_npc.import.title"] = "Importar movimiento MMD",
+    ["mmd_vmd_npc.import.help"] = "Hornea un movimiento MMD sobre el esqueleto del modelo incluido y lo instala en este juego, como el importador de escritorio (GmodMMDMotionImporter.exe). Model Hotloader abre un diálogo de Windows para cada archivo que elijas; en pantalla completa, pulsa Alt+Tab para responderlo.",
+    ["mmd_vmd_npc.import.required"] = "Obligatorio",
+    ["mmd_vmd_npc.import.optional"] = "Opcional",
+    ["mmd_vmd_npc.import.browse"] = "Examinar",
+    ["mmd_vmd_npc.import.clear"] = "Borrar",
+    ["mmd_vmd_npc.import.none_selected"] = "Ningún archivo elegido",
+    ["mmd_vmd_npc.import.body_vmd"] = "VMD de movimiento corporal",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "Animación corporal principal",
+    ["mmd_vmd_npc.import.music"] = "Archivo de música",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3, OGG o WAV, usado tal cual. Convierte otros formatos de audio o un vídeo con el importador de escritorio.",
+    ["mmd_vmd_npc.import.camera_vmd"] = "VMD de cámara",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "Movimiento de cámara MMD; exporta una trayectoria de cámara que el addon de GMod puede reproducir.",
+    ["mmd_vmd_npc.import.audio_offset"] = "Desfase de audio (segundos)",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "Se guarda como desfase musical predeterminado del movimiento. Positivo inicia la música más tarde; negativo la adelanta.",
+    ["mmd_vmd_npc.import.motion_meta"] = "Metadatos del movimiento",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "Opcional. El nombre visible se muestra en el juego (admite CJK); los demás campos describen el baile y los leen los menús de GMod. La categoría agrupa el movimiento cuando se distribuye en un addon (las importaciones locales siempre aparecen en «Importados por el usuario»).",
+    ["mmd_vmd_npc.import.meta.category"] = "Categoría",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "Categoría de menú usada cuando el movimiento se distribuye en un addon (p. ej. «Touhou», «Vocaloid»). Las importaciones locales siempre aparecen en «Importados por el usuario».",
+    ["mmd_vmd_npc.import.meta.display_name"] = "Nombre visible",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "Nombre mostrado en el juego. Se rellena con el nombre del VMD corporal; admite CJK. El archivo guardado usa un ID interno seguro.",
+    ["mmd_vmd_npc.import.meta.english_name"] = "Nombre en inglés",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "Título romanizado/en inglés opcional; se puede buscar en el gestor de movimientos.",
+    ["mmd_vmd_npc.import.meta.artist"] = "Artista",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "Artista / productor de la canción.",
+    ["mmd_vmd_npc.import.meta.language"] = "Idioma",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "Idioma de la canción (p. ej. japonés, chino, inglés).",
+    ["mmd_vmd_npc.import.meta.link"] = "Enlace",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "URL de origen (vídeo original, página de descarga del movimiento…). Se abre desde el gestor de movimientos.",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "Artista del movimiento",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "Creador de los datos del movimiento de baile.",
+    ["mmd_vmd_npc.import.flex_group"] = "VMDs de cara/flex (si están separados del movimiento corporal)",
+    ["mmd_vmd_npc.import.flex_add"] = "Añadir movimientos de cara/flex",
+    ["mmd_vmd_npc.import.flex_remove"] = "Eliminar flex seleccionado",
+    ["mmd_vmd_npc.import.flex_column"] = "Archivo",
+    ["mmd_vmd_npc.import.bake_options"] = "Opciones de horneado",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "Desactivar IK de pies (movimiento sin IK)",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "Desactiva todas las restricciones IK del modelo (pies y dedos) antes del horneado. Úsalo para movimientos creados sin IK de pies: horneados con IK activado, las piernas quedan fijadas a la pose de reposo. Déjalo desactivado para movimientos normales.",
+    ["mmd_vmd_npc.import.unify_ground"] = "Unificar la altura del suelo (anular la colocación en el escenario)",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "Para movimientos que llevan al personaje entre plataformas o alturas del escenario, como las conversiones de Project Diva: mantiene sus pies al mismo nivel de suelo durante todo el baile (los saltos conservan su altura) y baja la cámara importada la misma cantidad en cada fotograma. Déjalo desactivado para movimientos normales.",
+    ["mmd_vmd_npc.import.bake"] = "Hornear movimiento e importar",
+    ["mmd_vmd_npc.import.cancel"] = "Cancelar importación",
+    ["mmd_vmd_npc.import.progress_idle"] = "No hay horneado en curso.",
+    ["mmd_vmd_npc.import.log_title"] = "Registro de importación y salida",
+    ["mmd_vmd_npc.import.output_motion"] = "JSON de movimiento",
+    ["mmd_vmd_npc.import.output_music"] = "Sonido musical",
+    ["mmd_vmd_npc.import.copy_log"] = "Copiar registro",
+    ["mmd_vmd_npc.import.stage.reading"] = "Leyendo archivos",
+    ["mmd_vmd_npc.import.stage.parsing"] = "Importando movimiento VMD",
+    ["mmd_vmd_npc.import.stage.baking"] = "Horneando claves de pose visual",
+    ["mmd_vmd_npc.import.stage.flex"] = "Fusionando pistas flex",
+    ["mmd_vmd_npc.import.stage.camera"] = "Creando la pista de cámara",
+    ["mmd_vmd_npc.import.stage.music"] = "Copiando la música",
+    ["mmd_vmd_npc.import.stage.writing"] = "Escribiendo el JSON de movimiento",
+    ["mmd_vmd_npc.import.stage.complete"] = "Importación completa",
+    ["mmd_vmd_npc.import.stage.failed"] = "Importación fallida",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "Importación cancelada",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | transcurrido %s",
+    ["mmd_vmd_npc.import.select_body"] = "Elige primero un VMD de movimiento corporal.",
+    ["mmd_vmd_npc.import.complete_fmt"] = "Se importó «%s». Ahora es el movimiento seleccionado: constrúyelo para tu actor y luego reprodúcelo.",
+    ["mmd_vmd_npc.import.failed_fmt"] = "Importación fallida: %s",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "El archivo de música no es MP3, OGG ni WAV. Conviértelo con el importador de escritorio o elige otro archivo.",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "No se pudo leer %s: %s",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s supera los 256 MiB, lo máximo que Model Hotloader puede leer.",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "No se pudo escribir %s.",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader no puede leer %s.",
+    ["mmd_vmd_npc.import.picker_body"] = "Elige el VMD de movimiento corporal",
+    ["mmd_vmd_npc.import.picker_music"] = "Elige el archivo de música",
+    ["mmd_vmd_npc.import.picker_camera"] = "Elige el VMD de cámara",
+    ["mmd_vmd_npc.import.picker_flex"] = "Elige VMDs de cara/flex",
+    ["mmd_vmd_npc.import.purpose"] = "Importar movimientos MMD con su música y su cámara al juego",
+    ["mmd_vmd_npc.import.filter_vmd"] = "Movimiento VMD",
+    ["mmd_vmd_npc.import.filter_audio"] = "Audio MP3, OGG o WAV",
+    ["mmd_vmd_npc.import.busy"] = "Ya hay una importación en curso.",
 })
 
 MMDVMDNPC.I18N["zh-tw"] = {
@@ -3343,6 +4436,97 @@ MMDVMDNPC.I18N["zh-tw"] = {
     ["mmd_vmd_npc.hud.build"] = "正在構建動畫：計算骨骼旋轉四元數張量",
     ["mmd_vmd_npc.hud.build_queued"] = "動畫構建已排隊",
     ["mmd_vmd_npc.hud.countdown"] = "預計剩餘時間",
+    ["mmd_vmd_npc.import.audio_offset"] = "音訊偏移（秒）",
+    ["mmd_vmd_npc.import.audio_offset_hint"] = "儲存為該動作的預設音樂偏移。正值讓音樂更晚開始，負值讓音樂提前。",
+    ["mmd_vmd_npc.import.bake"] = "烘焙動作並匯入",
+    ["mmd_vmd_npc.import.bake_options"] = "烘焙選項",
+    ["mmd_vmd_npc.import.body_vmd"] = "身體動作 VMD",
+    ["mmd_vmd_npc.import.body_vmd_hint"] = "主要身體動畫",
+    ["mmd_vmd_npc.import.browse"] = "瀏覽",
+    ["mmd_vmd_npc.import.busy"] = "已有匯入正在進行。",
+    ["mmd_vmd_npc.import.button"] = "匯入動畫（VMD）…",
+    ["mmd_vmd_npc.import.button_tip"] = "無需離開遊戲，像桌面匯入器一樣把 MMD 動作烘焙進本外掛。所選檔案由 Model Hotloader 讀取。",
+    ["mmd_vmd_npc.import.camera_vmd"] = "鏡頭 VMD",
+    ["mmd_vmd_npc.import.camera_vmd_hint"] = "MMD 鏡頭動作；匯出可在 GMod 外掛中播放的相機路徑。",
+    ["mmd_vmd_npc.import.cancel"] = "取消匯入",
+    ["mmd_vmd_npc.import.clear"] = "清除",
+    ["mmd_vmd_npc.import.close"] = "關閉",
+    ["mmd_vmd_npc.import.complete_fmt"] = "已匯入“%s”。它現在是所選動作：為你的角色構建後即可播放。",
+    ["mmd_vmd_npc.import.copy_log"] = "複製日誌",
+    ["mmd_vmd_npc.import.disable_foot_ik"] = "禁用足部 IK（無 IK 動作）",
+    ["mmd_vmd_npc.import.disable_foot_ik_tip"] = "烘焙前關閉模型上的所有 IK 約束（腳部與腳尖）。用於未使用足部 IK 製作的動作——這類動作若開啟 IK 烘焙，雙腿會被固定在初始姿勢。普通動作請保持關閉。",
+    ["mmd_vmd_npc.import.failed_fmt"] = "匯入失敗：%s",
+    ["mmd_vmd_npc.import.file_access_settings"] = "檔案存取設定…",
+    ["mmd_vmd_npc.import.filter_audio"] = "MP3、OGG 或 WAV 音訊",
+    ["mmd_vmd_npc.import.filter_vmd"] = "VMD 動作",
+    ["mmd_vmd_npc.import.flex_add"] = "新增臉部/Flex 動作",
+    ["mmd_vmd_npc.import.flex_column"] = "檔案",
+    ["mmd_vmd_npc.import.flex_group"] = "臉部/Flex VMD（與身體動作分開存放時）",
+    ["mmd_vmd_npc.import.flex_remove"] = "移除所選 Flex",
+    ["mmd_vmd_npc.import.help"] = "像桌面匯入器（GmodMMDMotionImporter.exe）一樣，在內建模型的骨骼上烘焙 MMD 動作並安裝到本遊戲中。你選擇的每個檔案都由 Model Hotloader 彈出 Windows 對話方塊確認；全螢幕時請按 Alt+Tab 回應。",
+    ["mmd_vmd_npc.import.link_github"] = "二進位模組與安裝說明（GitHub）",
+    ["mmd_vmd_npc.import.link_workshop"] = "Steam 工作坊上的 Model Hotloader",
+    ["mmd_vmd_npc.import.log_title"] = "匯入日誌與輸出",
+    ["mmd_vmd_npc.import.meta.artist"] = "歌曲作者",
+    ["mmd_vmd_npc.import.meta.artist_tip"] = "歌曲的作者 / P 主。",
+    ["mmd_vmd_npc.import.meta.category"] = "類別",
+    ["mmd_vmd_npc.import.meta.category_tip"] = "動作打包為附加元件時使用的選單類別（例如“東方”、“術力口”）。本地匯入始終顯示在“使用者匯入”下。",
+    ["mmd_vmd_npc.import.meta.display_name"] = "顯示名稱",
+    ["mmd_vmd_npc.import.meta.display_name_tip"] = "遊戲內顯示的名稱。自動使用身體 VMD 名稱填入；支援中日韓文字。儲存的檔案會使用安全的內部 ID。",
+    ["mmd_vmd_npc.import.meta.english_name"] = "英文名稱",
+    ["mmd_vmd_npc.import.meta.english_name_tip"] = "可選的羅馬字/英文標題，可在 GMod 動作管理器中搜尋。",
+    ["mmd_vmd_npc.import.meta.language"] = "語言",
+    ["mmd_vmd_npc.import.meta.language_tip"] = "歌曲語言（例如日語、中文、英語）。",
+    ["mmd_vmd_npc.import.meta.link"] = "連結",
+    ["mmd_vmd_npc.import.meta.link_tip"] = "來源連結（原影片、動作下載頁等），可在 GMod 動作管理器中開啟。",
+    ["mmd_vmd_npc.import.meta.motion_artist"] = "動作作者",
+    ["mmd_vmd_npc.import.meta.motion_artist_tip"] = "舞蹈動作資料的作者。",
+    ["mmd_vmd_npc.import.motion_meta"] = "動作後設資料",
+    ["mmd_vmd_npc.import.motion_meta_hint"] = "可選。顯示名稱會在遊戲中顯示（支援中日韓文字）；其餘欄位用於描述該舞蹈，並由 GMod 選單讀取。類別在動作打包為附加元件時用於分組（本地匯入始終歸入“使用者匯入”）。",
+    ["mmd_vmd_npc.import.music"] = "音樂檔案",
+    ["mmd_vmd_npc.import.music_hint"] = "MP3、OGG 或 WAV，按原樣使用。其他音訊或影片請用桌面匯入器轉換。",
+    ["mmd_vmd_npc.import.none_selected"] = "未選擇檔案",
+    ["mmd_vmd_npc.import.not_installed"] = "未安裝 Model Hotloader：無法使用熱匯入動作。",
+    ["mmd_vmd_npc.import.open_importer"] = "開啟匯入器",
+    ["mmd_vmd_npc.import.open_link"] = "開啟",
+    ["mmd_vmd_npc.import.optional"] = "可選",
+    ["mmd_vmd_npc.import.output_motion"] = "動作 JSON",
+    ["mmd_vmd_npc.import.output_music"] = "音樂聲音",
+    ["mmd_vmd_npc.import.picker_body"] = "選擇身體動作 VMD",
+    ["mmd_vmd_npc.import.picker_camera"] = "選擇鏡頭 VMD",
+    ["mmd_vmd_npc.import.picker_flex"] = "選擇臉部/Flex VMD",
+    ["mmd_vmd_npc.import.picker_music"] = "選擇音樂檔案",
+    ["mmd_vmd_npc.import.progress_idle"] = "沒有正在進行的烘焙。",
+    ["mmd_vmd_npc.import.purpose"] = "將 MMD 動作連同音樂和鏡頭匯入遊戲",
+    ["mmd_vmd_npc.import.read_failed_fmt"] = "無法讀取 %s：%s",
+    ["mmd_vmd_npc.import.refused_fmt"] = "Model Hotloader 無法讀取 %s。",
+    ["mmd_vmd_npc.import.required"] = "必填",
+    ["mmd_vmd_npc.import.resolve"] = "解決",
+    ["mmd_vmd_npc.import.resolve_desktop"] = "你也可以隨時改用桌面匯入器（GmodMMDMotionImporter.exe）匯入動作。",
+    ["mmd_vmd_npc.import.resolve_not_installed"] = "在遊戲內匯入動作需要 Model Hotloader。它的二進位模組讓本工具讀取你在電腦上選擇的 VMD、音樂和鏡頭檔案；Windows 會讓你逐一確認檔案。\n\n1. 在 Steam 工作坊訂閱 Model Hotloader。\n2. 按照 GitHub 頁面上的說明安裝它的二進位模組。\n3. 重新啟動 Garry's Mod。\n\n熱匯入可在單人遊戲和你自己架設的伺服器中使用。",
+    ["mmd_vmd_npc.import.resolve_ready"] = "Model Hotloader 的檔案存取已可用：現在可以在遊戲內匯入動作。",
+    ["mmd_vmd_npc.import.resolve_reason_fmt"] = "Model Hotloader 提示：%s",
+    ["mmd_vmd_npc.import.resolve_title"] = "熱匯入動作",
+    ["mmd_vmd_npc.import.resolve_unavailable"] = "已安裝 Model Hotloader，但它的檔案存取目前無法使用。如果它需要更新的二進位模組，請從 GitHub 頁面更新並重新啟動 Garry's Mod。檔案存取只在單人遊戲和你自己架設的伺服器中可用，也可以在它的檔案存取設定中關閉。",
+    ["mmd_vmd_npc.import.select_body"] = "請先選擇身體動作 VMD。",
+    ["mmd_vmd_npc.import.stage.baking"] = "正在烘焙可視姿態關鍵畫格",
+    ["mmd_vmd_npc.import.stage.camera"] = "正在生成鏡頭軌道",
+    ["mmd_vmd_npc.import.stage.cancelled"] = "匯入已取消",
+    ["mmd_vmd_npc.import.stage.complete"] = "匯入完成",
+    ["mmd_vmd_npc.import.stage.failed"] = "匯入失敗",
+    ["mmd_vmd_npc.import.stage.flex"] = "正在合併 flex 軌道",
+    ["mmd_vmd_npc.import.stage.music"] = "正在複製音樂",
+    ["mmd_vmd_npc.import.stage.parsing"] = "正在匯入 VMD 動作",
+    ["mmd_vmd_npc.import.stage.reading"] = "正在讀取檔案",
+    ["mmd_vmd_npc.import.stage.writing"] = "正在寫入動作 JSON",
+    ["mmd_vmd_npc.import.status_fmt"] = "%s - %d%% | 已用時 %s",
+    ["mmd_vmd_npc.import.title"] = "匯入 MMD 動作",
+    ["mmd_vmd_npc.import.too_large_fmt"] = "%s 大於 256 MiB，超出 Model Hotloader 的讀取上限。",
+    ["mmd_vmd_npc.import.unavailable_short"] = "熱匯入動作暫時不可用。",
+    ["mmd_vmd_npc.import.unify_ground"] = "統一地面高度（抵消舞台位置）",
+    ["mmd_vmd_npc.import.unify_ground_tip"] = "適用於把角色移到不同舞台平台或高度的動作（例如 Project Diva 轉換動作）：整段舞蹈中讓角色雙腳保持在同一地面高度（跳躍高度保留），並把匯入的鏡頭每個畫格下移相同高度。普通動作請保持關閉。",
+    ["mmd_vmd_npc.import.unsupported_audio"] = "音樂檔案不是 MP3、OGG 或 WAV。請用桌面匯入器轉換，或選擇其他檔案。",
+    ["mmd_vmd_npc.import.write_failed_fmt"] = "無法寫入 %s。",
     ["mmd_vmd_npc.lighting.beam"] = "光束",
     ["mmd_vmd_npc.lighting.brightness"] = "亮度",
     ["mmd_vmd_npc.lighting.color"] = "顏色",
@@ -3531,6 +4715,10 @@ MMDVMDNPC.I18N["zh-tw"] = {
     ["mmd_vmd_npc.ui.motion_metadata_missing_fmt"] = "動作：%s | 後設資料未載入",
     ["mmd_vmd_npc.ui.motion_no_metadata"] = "動作：未載入後設資料",
     ["mmd_vmd_npc.ui.motion_none"] = "動作：無",
+    ["mmd_vmd_npc.ui.movement_limit"] = "移動限制（單位，0 = 不限制）",
+    ["mmd_vmd_npc.ui.movement_limit_help"] = "讓角色保持在距開始播放時所站位置這個距離以內，接近邊緣時逐漸減速，而不是像撞牆一樣突然停下。玩家身高約 72 單位。這些選項在開始播放時生效。",
+    ["mmd_vmd_npc.ui.movement_scale"] = "移動範圍 (%)",
+    ["mmd_vmd_npc.ui.movement_scale_help"] = "舞蹈讓角色離開開始播放時所站位置的距離：100 為原樣，50 為一半，0 為原地跳舞。",
     ["mmd_vmd_npc.ui.music_fade"] = "音樂衰減距離",
     ["mmd_vmd_npc.ui.music_offset"] = "音樂偏移（秒）",
     ["mmd_vmd_npc.ui.music_omni"] = "全向音樂（無聲道偏移）",
@@ -3563,6 +4751,9 @@ MMDVMDNPC.I18N["zh-tw"] = {
     ["mmd_vmd_npc.ui.selected_motion_fmt"] = "已選動作：%s",
     ["mmd_vmd_npc.ui.selected_motion_none"] = "已選動作：無",
     ["mmd_vmd_npc.ui.self_help"] = "左鍵 NPC/玩家選擇目標。R 選擇自己並分配當前動畫；Shift+R 為自己構建；E+R 透過臨時代理模型播放自己。",
+    ["mmd_vmd_npc.ui.stage_jumps"] = "保留舞台站位跳躍 (%)",
+    ["mmd_vmd_npc.ui.stage_jumps_help"] = "Project Diva 等 PV 動作會在開始時和鏡頭切換時把角色移到舞台上的另一個位置。100 按原樣保留這些跳躍，0 將其移除，讓角色在開始播放時所站的位置跳舞，介於兩者之間的值會縮短跳躍。去掉跳躍後，各鏡頭中的走動會累加，角色可能走得很遠，建議同時設定移動限制。匯入的鏡頭會跟隨角色。",
+    ["mmd_vmd_npc.ui.stage_movement"] = "舞台站位與移動",
     ["mmd_vmd_npc.ui.start_delay"] = "開始延遲（秒，最小 2）",
     ["mmd_vmd_npc.ui.stop_animation"] = "停止動畫",
     ["mmd_vmd_npc.ui.stop_build_tasks"] = "停止所有構建任務",

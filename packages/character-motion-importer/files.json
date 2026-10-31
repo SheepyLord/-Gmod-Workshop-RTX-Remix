@@ -3,44 +3,54 @@
  "part": "character-motion-importer",
  "origins": {
   "mmd_vmd_npc": {
-   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\Gmod-Mmd-Motion-Importer\\mmd_vmd_npc",
+   "source": "C:\\Users\\matt-peng\\Documents\\Codex\\2026-10-17\\please-help-me-connect-claude-on\\Gmod-Mmd-Motion-Importer\\mmd_vmd_npc",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/ipg/Gmod-Mmd-Motion-Importer",
+    "repository": "C:/Users/matt-peng/Documents/Codex/2026-10-17/please-help-me-connect-claude-on/Gmod-Mmd-Motion-Importer",
     "remote": "https://github.com/SheepyLord/Gmod-Mmd-Motion-Importer.git",
-    "commit": "318b05442bc3284065ed49ad70080d1db1106c7d",
+    "commit": "fcd56f4c00f2b858dc7122716fdf0807f3c2c0da",
     "dirty": false
    },
-   "imported": "2026-10-30T00:42:51+00:00"
+   "imported": "2026-10-31T12:53:20+00:00"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_radial.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\character-motion-importer\\mmd_vmd_npc\\lua\\mmd_vmd_npc\\cl_radial.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-upgrade\\keep\\cl_radial.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
-    "dirty": true
+    "commit": "fcc7bb5ef671e3197286283a3c1fc14cef2d5e45",
+    "dirty": false
    },
-   "imported": "2026-10-30T11:10:22+00:00"
+   "imported": "2026-10-31T12:53:27+00:00"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/sh_core.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\character-motion-importer\\mmd_vmd_npc\\lua\\mmd_vmd_npc\\sh_core.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-upgrade\\merged\\lua\\mmd_vmd_npc\\sh_core.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
-    "dirty": true
+    "commit": "fcc7bb5ef671e3197286283a3c1fc14cef2d5e45",
+    "dirty": false
    },
-   "imported": "2026-10-30T11:10:22+00:00"
+   "imported": "2026-10-31T12:53:27+00:00"
   },
   "mmd_vmd_npc/lua/weapons/gmod_tool/stools/mmd_vmd_npc.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\character-motion-importer\\mmd_vmd_npc\\lua\\weapons\\gmod_tool\\stools\\mmd_vmd_npc.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-upgrade\\merged\\lua\\weapons\\gmod_tool\\stools\\mmd_vmd_npc.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
-    "dirty": true
+    "commit": "fcc7bb5ef671e3197286283a3c1fc14cef2d5e45",
+    "dirty": false
    },
-   "imported": "2026-10-30T11:10:22+00:00"
+   "imported": "2026-10-31T12:53:27+00:00"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_camera.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-upgrade\\keep\\cl_camera.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "fcc7bb5ef671e3197286283a3c1fc14cef2d5e45",
+    "dirty": false
+   },
+   "imported": "2026-10-31T12:53:45+00:00"
   }
  },
  "files": {
@@ -65,15 +75,15 @@
    "stored_sha256": "2fb17ce89fb97c505ffc691950b8d9ce16ef4d86ed618ea826eaf0d76bff0690"
   },
   "mmd_vmd_npc/lua/autorun/mmd_vmd_npc.lua": {
-   "size": 3389,
-   "sha256": "f1e65ffdfcff9a8a9020a951f32c5c8993168c9c151faf03e1fb3d8b6bdd33b2",
-   "mtime_ns": 1791011508976089700,
+   "size": 3730,
+   "sha256": "b9ca192e0075139260e8be914741212602792b7606cef355f2598984d69a81cd",
+   "mtime_ns": 1793088241274987400,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_camera.lua": {
-   "size": 39278,
-   "sha256": "ab6102b24d430e7fd602b5bd843df4fbfcdf95c07f887e5759e93a3413d17130",
-   "mtime_ns": 1788505009793632100,
+   "size": 41288,
+   "sha256": "6b819325ca1205ba61e73c0e60cf41ea3d71290801065d4fe0520d68e72e8b21",
+   "mtime_ns": 1792788980683194500,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_flashlight.lua": {
@@ -82,10 +92,28 @@
    "mtime_ns": 1788505009793632100,
    "stored": "plain"
   },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_import_bake.lua": {
+   "size": 79127,
+   "sha256": "ffecef8764fe0082f166c5fbdfec73d0f9f21b239ba1abc78ae97776eeac8d7f",
+   "mtime_ns": 1793088241275989200,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_import_data.lua": {
+   "size": 56007,
+   "sha256": "1a3144e3f145b2f6883fad0e06f711e6ec8a15058b6eafac0901cba202e160eb",
+   "mtime_ns": 1793088241276987500,
+   "stored": "plain"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_importer.lua": {
+   "size": 42468,
+   "sha256": "5bc51de5c5cd4ee981f01125fdaa7e5caeeaf3babc5f79e67f7d6e8ce555a8a1",
+   "mtime_ns": 1793088241276987500,
+   "stored": "plain"
+  },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_menu.lua": {
-   "size": 251644,
-   "sha256": "e3d192488ca0cb3f554b990f1bff193a09c41d1f1c13104829d9104a73108dd6",
-   "mtime_ns": 1791395257793433700,
+   "size": 256891,
+   "sha256": "692e32b0659fd252f6b2144b23cf8d880bd617880186ebe1ce13adff9b9d53f1",
+   "mtime_ns": 1793088241277987200,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_radial.lua": {
@@ -95,9 +123,9 @@
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/sh_core.lua": {
-   "size": 338510,
-   "sha256": "b5744487b90c6404c0256d6012e70a795e3f7915db7caa810fa48c217ff737e0",
-   "mtime_ns": 1793354780358176800,
+   "size": 456610,
+   "sha256": "bbb2bee6f635402cb504f5a7081ce775d03042d5d155e0a5a62a4c78b511e3fe",
+   "mtime_ns": 1793451154595584700,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/sv_cache.lua": {
@@ -107,15 +135,15 @@
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/sv_commands.lua": {
-   "size": 205801,
-   "sha256": "9400074370f9191490fc4042024e851402666c3926afcefb18b097a995a4f60c",
-   "mtime_ns": 1791395257803369100,
+   "size": 215465,
+   "sha256": "a38fe371a5c3a18e896eabe3451fa373ccf057beccf3d41fe474000745a4d47a",
+   "mtime_ns": 1793088241281833800,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/weapons/gmod_tool/stools/mmd_vmd_npc.lua": {
-   "size": 61944,
-   "sha256": "b60088bf0e70d9e77eab44d6cbe683ddcbc9abae2e1f4fcb42b8d26b9f6d57ac",
-   "mtime_ns": 1793354780434692300,
+   "size": 66125,
+   "sha256": "049d804bc2cac839094793acd21eb7774c4726f9db527c083927e18163e87625",
+   "mtime_ns": 1793450957932221200,
    "stored": "plain"
   },
   "mmd_vmd_npc/materials/mmd_vmd_npc/alt.png": {

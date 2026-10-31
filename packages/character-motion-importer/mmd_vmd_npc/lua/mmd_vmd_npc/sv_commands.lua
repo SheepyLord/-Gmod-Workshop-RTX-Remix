@@ -329,6 +329,9 @@ local function playback_settings_from_values(startDelay, pelvisZOffset)
         loopPlayback = MMDVMDNPC.DefaultLoopPlayback == true,
         buildFramesPerBatch = MMDVMDNPC.DefaultBuildFramesPerBatch or BUILD_FRAMES_PER_BATCH,
         playbackHz = MMDVMDNPC.DefaultPlaybackHz or PLAYBACK_HZ,
+        stageJumps = MMDVMDNPC.DefaultStageJumps or 100,
+        movementScale = MMDVMDNPC.DefaultMovementScale or 100,
+        movementLimit = MMDVMDNPC.DefaultMovementLimit or 0,
     }
 end
 
@@ -355,7 +358,7 @@ local function setting_enabled(value, default)
     return default ~= false
 end
 
-local function playback_settings_with_eye_track(startDelay, pelvisZOffset, eyeTrackMode, eyeTrackSmooth, eyeTrackMoveBack, eyeTrackPosUD, eyeTrackPosLR, musicEnabled, musicVolume, buildFramesPerBatch, playbackHz, loopPlayback)
+local function playback_settings_with_eye_track(startDelay, pelvisZOffset, eyeTrackMode, eyeTrackSmooth, eyeTrackMoveBack, eyeTrackPosUD, eyeTrackPosLR, musicEnabled, musicVolume, buildFramesPerBatch, playbackHz, loopPlayback, stageJumps, movementScale, movementLimit)
     local settings = playback_settings_from_values(startDelay, pelvisZOffset)
     settings.eyeTrackMode = MMDVMDNPC.NormalizeEyeTrackMode(eyeTrackMode)
     settings.eyeTrackSmooth = math.Clamp(tonumber(eyeTrackSmooth) or settings.eyeTrackSmooth, 0.1, 120)
@@ -367,7 +370,15 @@ local function playback_settings_with_eye_track(startDelay, pelvisZOffset, eyeTr
     settings.buildFramesPerBatch = clamp_build_frames_per_batch(buildFramesPerBatch)
     settings.playbackHz = clamp_playback_hz(playbackHz)
     settings.loopPlayback = setting_enabled(loopPlayback, settings.loopPlayback)
+    settings.stageJumps, settings.movementScale, settings.movementLimit = MMDVMDNPC.NormalizeTravelSettings(stageJumps, movementScale, movementLimit)
     return settings
+end
+
+-- The stage-placement and movement options follow the older settings in every
+-- play request; a request without them (nothing left to read) keeps the defaults.
+local function read_travel_settings()
+    if (net.BytesLeft and net.BytesLeft() or 12) < 12 then return nil, nil, nil end
+    return net.ReadFloat(), net.ReadFloat(), net.ReadFloat()
 end
 
 local function optional_convar(name)
@@ -517,7 +528,10 @@ function MMDVMDNPC.ToolPlaybackSettings(tool)
         tool:GetClientInfo("music_volume"),
         tool:GetClientInfo("build_frames_per_batch"),
         tool:GetClientInfo("playback_hz"),
-        tool:GetClientInfo("loop_playback")
+        tool:GetClientInfo("loop_playback"),
+        tool:GetClientInfo("stage_jumps"),
+        tool:GetClientInfo("movement_scale"),
+        tool:GetClientInfo("movement_limit")
     )
 end
 
@@ -2584,7 +2598,25 @@ local function safe_music_sound_path(soundPath)
     return soundPath
 end
 
+-- Music of a motion imported in game: data/mmd_vmd_npc/music/<id>.mp3|ogg|wav
+-- (Lua writes only into data/). Returns the path relative to data/.
+local function safe_data_music_path(soundPath)
+    soundPath = string.Trim(string.Replace(tostring(soundPath or ""), "\\", "/"))
+    local relative = string.match(soundPath, "^data/(.+)$")
+    if not relative or string.find(relative, "..", 1, true) then return nil end
+    local extension = string.match(string.lower(relative), "^mmd_vmd_npc/music/[%w_%-%.]+%.(%w+)$")
+    if extension ~= "mp3" and extension ~= "ogg" and extension ~= "wav" then return nil end
+    return relative
+end
+
 local function try_delete_imported_music(soundPath)
+    local dataPath = safe_data_music_path(soundPath)
+    if dataPath then
+        local existed = file.Exists(dataPath, "DATA") == true
+        file.Delete(dataPath)
+        return "data/" .. dataPath, existed and file.Exists(dataPath, "DATA") ~= true, existed
+    end
+
     local safe = safe_music_sound_path(soundPath)
     if not safe then return "", false, false end
 
@@ -2848,7 +2880,37 @@ local function send_camera_track(ply, anchorEnt, motion, opts)
         end)
         index = index + math.min(CAMERA_KEYS_PER_MESSAGE, total - index + 1)
     end
-    return total > 0
+    return total > 0, transferID
+end
+
+-- Where the stage-placement and movement options moved the dancer
+-- (MMDVMDNPC.BuiltTravelShiftKeys), for the imported camera, which adds it to
+-- keep framing the dancer instead of the authored spot. One message, sent
+-- right after camera_begin: keys {frame, dx, dy} in the dance's start frame,
+-- coarser keys when a winding path would not fit.
+local CAMERA_SHIFT_MAX_KEYS = 4500
+
+local function send_camera_shift(ply, anchorEnt, transferID, built, pelvisBone, travel)
+    if not IsValid(ply) or not IsValid(anchorEnt) or not travel or not transferID then return end
+    local tolerance = 0.5
+    local keys = MMDVMDNPC.BuiltTravelShiftKeys(built, pelvisBone, travel, tolerance)
+    while keys and #keys > CAMERA_SHIFT_MAX_KEYS and tolerance < 64 do
+        tolerance = tolerance * 2
+        keys = MMDVMDNPC.BuiltTravelShiftKeys(built, pelvisBone, travel, tolerance)
+    end
+    if not keys or #keys <= 0 then return end
+    local count = math.min(#keys, CAMERA_SHIFT_MAX_KEYS)
+    net.Start("mmdvmd_camera_shift")
+        net.WriteUInt(anchorEnt:EntIndex(), 16)
+        net.WriteUInt(transferID, 32)
+        net.WriteUInt(count, 16)
+        for i = 1, count do
+            local key = keys[i]
+            net.WriteUInt(math.max(0, math.floor(key[1])), 32)
+            net.WriteFloat(key[2])
+            net.WriteFloat(key[3])
+        end
+    net.Send(ply)
 end
 
 local function send_camera_stop(ply, anchorEntIndex)
@@ -2891,6 +2953,36 @@ local cv_root_motion_origin = CreateConVar(
     "Carry the dance's root travel on the entity origin so characters can walk any distance (0 = legacy bone-offset only)"
 )
 
+-- Clients learn that the pose jumps (a scene cut, a loop, the stop; the start
+-- only when the countdown did not blend into the first pose, see
+-- apply_start_transition) from a networked counter; cl_menu.lua turns it into
+-- hook MMDVMDNPCPoseCut for hair and cloth physics. See MMDVMDNPC.BuiltPoseCuts.
+local function bump_pose_cut(ent)
+    if not IsValid(ent) then return end
+    local name = MMDVMDNPC.PoseCutNW2
+    ent:SetNW2Int(name, (ent:GetNW2Int(name, 0) + 1) % 65536)
+end
+
+-- Raised one tick ahead, for every cut up to the frame the next tick shows, so
+-- the counter reaches a client with the jump or before it; told after the jump,
+-- the physics would already have dragged the hair across the stage.
+local function announce_pose_cuts(ent, state, cuts, frame, sourceFrame, endFrame, sourceFPS)
+    local interval = math.max(1 / clamp_playback_hz(state.playbackHz), engine.TickInterval())
+    local ahead = sourceFrame + interval * sourceFPS
+    local through = math.min(endFrame, math.floor(ahead))
+    local jump = state.cutThrough == nil or frame < state.cutFrame or (state.loopPlayback == true and ahead >= endFrame)
+    if not jump then
+        for f = math.max(frame, state.cutThrough) + 1, through do
+            if cuts[f] then
+                jump = true
+                break
+            end
+        end
+    end
+    state.cutFrame, state.cutThrough = frame, math.max(frame, through)
+    if jump then bump_pose_cut(ent) end
+end
+
 -- Reused engine objects for the per-tick pose writes (ManipulateBone* copies
 -- its argument), instead of a fresh Angle and Vector per bone per tick.
 local apply_built_sample
@@ -2900,7 +2992,11 @@ do
     local setVector = vectorMeta and vectorMeta.SetUnpacked or function(v, x, y, z) v.x, v.y, v.z = x, y, z end
     local sampleAngle, sampleVector = Angle(0, 0, 0), Vector(0, 0, 0)
 
-    apply_built_sample = function(ent, frameA, frameB, fraction, pelvisZOffset, state)
+    -- travelX/travelY: the pelvis horizontal travel under the stage-placement
+    -- and movement options (MMDVMDNPC.BuiltTravel), when they change it.
+    -- weight: the start transition's share of the sample, from the reference
+    -- pose (0) to the sample (1), travel and face included; nil is all of it.
+    apply_built_sample = function(ent, frameA, frameB, fraction, pelvisZOffset, state, travelX, travelY, weight)
         if not is_usable_npc(ent) then return end
 
         frameA = frameA or {}
@@ -2909,6 +3005,7 @@ do
         pelvisZOffset = tonumber(pelvisZOffset) or 0
         local pelvisBone = ent.LookupBone and ent:LookupBone(SOURCE_PELVIS) or nil
         local rootMotion = state ~= nil and cv_root_motion_origin:GetBool()
+        local blend = weight ~= nil and weight < 1 and math.max(0, weight) or nil
 
         local manipulatePosition = ent.ManipulateBonePosition
         local bonesB = frameB.bones or {}
@@ -2919,29 +3016,33 @@ do
                 local x = lerp_value(boneA[5], boneB[5], fraction)
                 local y = lerp_value(boneA[6], boneB[6], fraction)
                 local z = lerp_value(boneA[7], boneB[7], fraction)
-                if pelvisBone and bone == pelvisBone then
+                local isPelvis = pelvisBone ~= nil and bone == pelvisBone
+                if isPelvis then
+                    if travelX then x, y = travelX, travelY end
                     z = z + pelvisZOffset
-                    if rootMotion then
-                        -- Anchor once to the dance-start transform (set eagerly at
-                        -- playback start; guarded here for safety), then move the
-                        -- origin by the pelvis's horizontal travel rotated into
-                        -- world space. The manipulation keeps only the vertical
-                        -- component, which stays far inside the networked range.
-                        if not state.rootBase then
-                            state.rootBase = ent:GetPos()
-                            state.rootYaw = Angle(0, ent:GetAngles().y or 0, 0)
-                        end
-                        local travel = Vector(x, y, 0)
-                        travel:Rotate(state.rootYaw)
-                        ent:SetPos(state.rootBase + travel)
-                        x = 0
-                        y = 0
-                    end
                 end
-                setAngle(sampleAngle,
-                    lerp_angle_value(boneA[2], boneB[2], fraction),
-                    lerp_angle_value(boneA[3], boneB[3], fraction),
-                    lerp_angle_value(boneA[4], boneB[4], fraction))
+                if blend then x, y, z = x * blend, y * blend, z * blend end
+                if isPelvis and rootMotion then
+                    -- Anchor once to the dance-start transform (set eagerly at
+                    -- playback start; guarded here for safety), then move the
+                    -- origin by the pelvis's horizontal travel rotated into
+                    -- world space. The manipulation keeps only the vertical
+                    -- component, which stays far inside the networked range.
+                    if not state.rootBase then
+                        state.rootBase = ent:GetPos()
+                        state.rootYaw = Angle(0, ent:GetAngles().y or 0, 0)
+                    end
+                    local travel = Vector(x, y, 0)
+                    travel:Rotate(state.rootYaw)
+                    ent:SetPos(state.rootBase + travel)
+                    x = 0
+                    y = 0
+                end
+                local p = lerp_angle_value(boneA[2], boneB[2], fraction)
+                local yaw = lerp_angle_value(boneA[3], boneB[3], fraction)
+                local r = lerp_angle_value(boneA[4], boneB[4], fraction)
+                if blend then p, yaw, r = MMDVMDNPC.PartialRotation(p, yaw, r, blend) end
+                setAngle(sampleAngle, p, yaw, r)
                 ent:ManipulateBoneAngles(bone, sampleAngle, true)
                 if manipulatePosition then
                     setVector(sampleVector, x, y, z)
@@ -2955,7 +3056,7 @@ do
                 local flexB = (frameB.flexes or {})[index] or flexA
                 local flexID = tonumber(flexA[1]) or -1
                 if flexID >= 0 then
-                    ent:SetFlexWeight(flexID, math.Clamp(lerp_value(flexA[2], flexB[2], fraction), 0, 1))
+                    ent:SetFlexWeight(flexID, math.Clamp(lerp_value(flexA[2], flexB[2], fraction) * (blend or 1), 0, 1))
                 end
             end
         end
@@ -3071,6 +3172,7 @@ function MMDVMDNPC.StopPlayback(ent, clearPose)
         clear_all_bone_manipulations(ent)
         clear_all_flex_weights(ent)
         force_reference_pose(ent)
+        if state then bump_pose_cut(ent) end
     end
 
     if state and IsValid(state.ply) then
@@ -3217,6 +3319,9 @@ local function start_playback_on_entity(ply, ent, motionID, options, playbackSet
         musicVolume = playbackSettings.musicVolume,
         loopPlayback = playbackSettings.loopPlayback == true,
         playbackHz = clamp_playback_hz(playbackSettings.playbackHz),
+        stageJumps = playbackSettings.stageJumps,
+        movementScale = playbackSettings.movementScale,
+        movementLimit = playbackSettings.movementLimit,
         eyeTrackMode = MMDVMDNPC.NormalizeEyeTrackMode(playbackSettings.eyeTrackMode),
         eyeTrackSmooth = playbackSettings.eyeTrackSmooth,
         eyeTrackMoveBack = playbackSettings.eyeTrackMoveBack,
@@ -3233,7 +3338,7 @@ local function start_playback_on_entity(ply, ent, motionID, options, playbackSet
     local state = MMDVMDNPC.Playbacks[playbackEnt]
     if suppressCamera ~= true and istable(motion.camera) then
         state.cameraEntIndex = playbackEnt:EntIndex()
-        state.cameraSent = send_camera_track(ply, playbackEnt, motion, {
+        state.cameraSent, state.cameraTransferID = send_camera_track(ply, playbackEnt, motion, {
             startAt = startAt,
             loop = state.loopPlayback == true,
             loopSeconds = math.max(0, ((built.frame_end or 0) - (built.frame_start or 0)) / math.max(1, built.fps or motion.fps or 30)),
@@ -3242,6 +3347,14 @@ local function start_playback_on_entity(ply, ent, motionID, options, playbackSet
             -- started (wheel, self via menu, NPC, group) is eligible.
             autoEnter = true,
         })
+    end
+
+    -- Stage-placement and movement options (MMDVMDNPC.BuiltTravel; false when
+    -- they leave the dance as built), and the camera shift that goes with them.
+    local pelvisBone = playbackEnt.LookupBone and playbackEnt:LookupBone(SOURCE_PELVIS) or nil
+    state.travel = MMDVMDNPC.BuiltTravel(built, pelvisBone, state.stageJumps, state.movementScale, state.movementLimit) or false
+    if state.travel and state.cameraSent then
+        send_camera_shift(ply, playbackEnt, state.cameraTransferID, built, pelvisBone, state.travel)
     end
 
     send_play_status(ply, "countdown", string.format("%s starts in %.1f seconds", pathOrErr, math.max(0, delayUntil - now)), playbackEnt)
@@ -3604,6 +3717,38 @@ function MMDVMDNPC.TogglePlaybackPauseForPlayer(ply, ent)
     return true, paused and "paused" or "resumed"
 end
 
+-- The countdown's last MMDVMDNPC.StartTransitionSeconds blend the dancer from
+-- the reference (T-)pose into the pose the dance opens with, origin included,
+-- so it moves to its start spot instead of appearing there when the dance
+-- starts; the first dance tick then continues from that pose.
+local function apply_start_transition(ent, state, now, delayUntil)
+    local length = math.min(tonumber(MMDVMDNPC.StartTransitionSeconds) or 0, tonumber(state.startDelay) or 0)
+    if length <= 0 or delayUntil - now >= length then return end
+    if now < (state.nextTick or 0) then return end
+    state.nextTick = now + (1 / clamp_playback_hz(state.playbackHz))
+
+    local built = state.built or {}
+    local frames = built.frames or {}
+    if #frames <= 0 then return end
+    local startFrame = math.floor(tonumber(built.frame_start) or 0)
+    local endFrame = math.floor(tonumber(built.frame_end) or startFrame)
+    local sourceFPS = math.max(1, tonumber(built.fps) or MMDVMDNPC.VMDFPS or 30)
+    -- The frame the dance shows the moment the countdown ends.
+    local frame = math.Clamp(math.floor(startFrame + (delayUntil - (tonumber(state.started) or delayUntil)) * sourceFPS), startFrame, endFrame)
+    local index = math.Clamp(frame - startFrame + 1, 1, #frames)
+    local travelX, travelY
+    if state.travel then
+        travelX, travelY = state.travel.x[index] or 0, state.travel.y[index] or 0
+    end
+
+    -- Eased at both ends: it leaves the T-pose and settles into the first pose.
+    local progress = math.Clamp(1 - (delayUntil - now) / length, 0, 1)
+    local weight = progress * progress * (3 - 2 * progress)
+    -- The pose does not jump when the dance takes over, so that is no cut.
+    state.cutFrame, state.cutThrough = frame, frame
+    apply_built_sample(ent, frames[index], frames[index], 0, state.pelvisZOffset or 0, state, travelX, travelY, weight)
+end
+
 local function update_playback_state(ent, state, now)
     if not is_usable_npc(ent) then
         MMDVMDNPC.Playbacks[ent] = nil
@@ -3652,6 +3797,7 @@ local function update_playback_state(ent, state, now)
     if delayUntil > now then
         force_reference_pose(ent)
         stop_actor_motion(ent)
+        apply_start_transition(ent, state, now, delayUntil)
         apply_runtime_eye_tracking(ent, state, now)
         if now >= (state.nextCountdownStatus or 0) then
             state.nextCountdownStatus = now + 0.25
@@ -3722,9 +3868,26 @@ local function update_playback_state(ent, state, now)
     local lowerIndex = math.Clamp(lowerFrame - startFrame + 1, 1, #frames)
     local upperIndex = math.Clamp(upperFrame - startFrame + 1, 1, #frames)
 
+    -- Hold the frame before a scene cut until the cut's own frame: blending
+    -- across it slides the dancer through the stage in one frame time.
+    local cuts = state.poseCuts
+    if not cuts then
+        cuts = MMDVMDNPC.BuiltPoseCuts(built, ent.LookupBone and ent:LookupBone(SOURCE_PELVIS) or nil)
+        state.poseCuts = cuts
+    end
+    if cuts[upperFrame] then fraction = 0 end
+    announce_pose_cuts(ent, state, cuts, lowerFrame, sourceFrame, endFrame, sourceFPS)
+
+    local travel, travelX, travelY = state.travel, nil, nil
+    if travel then
+        local ax, ay = travel.x[lowerIndex] or 0, travel.y[lowerIndex] or 0
+        travelX = ax + ((travel.x[upperIndex] or ax) - ax) * fraction
+        travelY = ay + ((travel.y[upperIndex] or ay) - ay) * fraction
+    end
+
     if ent.SetCycle then ent:SetCycle(0) end
     if ent.SetPlaybackRate then ent:SetPlaybackRate(0) end
-    apply_built_sample(ent, frames[lowerIndex], frames[upperIndex], fraction, state.pelvisZOffset or 0, state)
+    apply_built_sample(ent, frames[lowerIndex], frames[upperIndex], fraction, state.pelvisZOffset or 0, state, travelX, travelY)
     apply_runtime_eye_tracking(ent, state, now)
 
     if finished then
@@ -3879,6 +4042,19 @@ hook.Add("Think", "MMDVMDNPCBuiltPlaybackThink", function()
         end
     end
     if update_rpe_body_suppression then update_rpe_body_suppression() end
+end)
+
+-- Root motion carries a dancer anywhere, and the server only sends a player
+-- what the PVS around that player's position covers: a self-playback dancer
+-- left the PVS of its hidden owner, who stays at the start spot while the
+-- camera follows the dance, so it froze there and then jumped ahead. Keep each
+-- dancer in the PVS of the player who started it.
+hook.Add("SetupPlayerVisibility", "MMDVMDNPCPlaybackVisibility", function(ply)
+    for ent, state in pairs(MMDVMDNPC.Playbacks) do
+        if state.ply == ply and IsValid(ent) then
+            AddOriginToPVS(ent:GetPos())
+        end
+    end
 end)
 
 function MMDVMDNPC.OpenDebugForPlayer(ply, ent, motionID, vmdFrame)
@@ -4538,7 +4714,7 @@ end
 net.Receive("mmdvmd_build_begin", function(_, ply)
     local motionID = net.ReadString()
     local options = normalize_options(net.ReadBool(), net.ReadBool(), net.ReadBool(), net.ReadBool())
-    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool())
+    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), read_travel_settings())
     MMDVMDNPC.BeginBuildForPlayer(ply, motionID, options, settings)
 end)
 
@@ -4676,7 +4852,7 @@ end)
 net.Receive("mmdvmd_play_request", function(_, ply)
     local motionID = net.ReadString()
     local options = normalize_options(net.ReadBool(), net.ReadBool(), net.ReadBool(), net.ReadBool())
-    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool())
+    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), read_travel_settings())
     local ok, err = MMDVMDNPC.StartPlaybackForPlayer(ply, motionID, options, settings)
     if not ok and err then MMDVMDNPC.Chat(ply, err) end
 end)
@@ -4684,13 +4860,13 @@ end)
 net.Receive("mmdvmd_play_self_auto", function(_, ply)
     local motionID = net.ReadString()
     local options = normalize_options(net.ReadBool(), net.ReadBool(), net.ReadBool(), net.ReadBool())
-    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool())
+    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), read_travel_settings())
     local ok, err = MMDVMDNPC.PlayOrBuildSelfForPlayer(ply, motionID, options, settings)
     if not ok and err then MMDVMDNPC.Chat(ply, err) end
 end)
 
 net.Receive("mmdvmd_assignment_play_request", function(_, ply)
-    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool())
+    local settings = playback_settings_with_eye_track(net.ReadFloat(), net.ReadFloat(), net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat(), net.ReadBool(), read_travel_settings())
     local ok, err = MMDVMDNPC.StartAssignedGroupPlaybackForPlayer(ply, settings)
     if not ok and err then MMDVMDNPC.Chat(ply, err) end
 end)

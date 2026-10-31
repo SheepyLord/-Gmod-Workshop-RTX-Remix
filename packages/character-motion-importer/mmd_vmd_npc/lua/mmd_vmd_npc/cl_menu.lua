@@ -116,6 +116,9 @@ CreateClientConVar("mmd_vmd_npc_music_omni", "1", true, false, L("mmd_vmd_npc.ui
 CreateClientConVar("mmd_vmd_npc_music_range", "1500", true, false, L("mmd_vmd_npc.ui.music_range"))
 CreateClientConVar("mmd_vmd_npc_music_fade", "300", true, false, L("mmd_vmd_npc.ui.music_fade"))
 CreateClientConVar("mmd_vmd_npc_loop_playback", "0", true, false, L("mmd_vmd_npc.ui.loop_playback"))
+CreateClientConVar("mmd_vmd_npc_stage_jumps", tostring(MMDVMDNPC.DefaultStageJumps or 100), true, false, L("mmd_vmd_npc.ui.stage_jumps"))
+CreateClientConVar("mmd_vmd_npc_movement_scale", tostring(MMDVMDNPC.DefaultMovementScale or 100), true, false, L("mmd_vmd_npc.ui.movement_scale"))
+CreateClientConVar("mmd_vmd_npc_movement_limit", tostring(MMDVMDNPC.DefaultMovementLimit or 0), true, false, L("mmd_vmd_npc.ui.movement_limit"))
 CreateClientConVar("mmd_vmd_npc_build_frames_per_batch", tostring(MMDVMDNPC.DefaultBuildFramesPerBatch or 16), true, false, L("mmd_vmd_npc.ui.build_frames_per_batch"))
 CreateClientConVar("mmd_vmd_npc_playback_hz", tostring(MMDVMDNPC.DefaultPlaybackHz or 120), true, false, L("mmd_vmd_npc.ui.playback_updates_per_second"))
 CreateClientConVar("mmd_vmd_npc_hide_hud", "1", true, false, L("mmd_vmd_npc.ui.hide_hud"))
@@ -219,6 +222,14 @@ local function selected_playback_settings()
     if loopPlayback then
         loopPlaybackEnabled = loopPlayback:GetBool()
     end
+    local stageJumps = GetConVar("mmd_vmd_npc_stage_jumps")
+    local movementScale = GetConVar("mmd_vmd_npc_movement_scale")
+    local movementLimit = GetConVar("mmd_vmd_npc_movement_limit")
+    local jumpsKept, movementRange, movementBound = MMDVMDNPC.NormalizeTravelSettings(
+        stageJumps and stageJumps:GetFloat(),
+        movementScale and movementScale:GetFloat(),
+        movementLimit and movementLimit:GetFloat()
+    )
     return {
         startDelay = math.max(MMDVMDNPC.MinStartDelay or 2, delay and delay:GetFloat() or MMDVMDNPC.DefaultStartDelay or 2),
         -- pelvisZOffset = pelvis and pelvis:GetFloat() or MMDVMDNPC.DefaultPelvisZOffset or -2.5,
@@ -233,6 +244,9 @@ local function selected_playback_settings()
         loopPlayback = loopPlaybackEnabled,
         buildFramesPerBatch = math.Clamp(math.floor(buildFrames and buildFrames:GetFloat() or MMDVMDNPC.DefaultBuildFramesPerBatch or 16), MMDVMDNPC.MinBuildFramesPerBatch or 1, 1024),
         playbackHz = math.Clamp(playbackHz and playbackHz:GetFloat() or MMDVMDNPC.DefaultPlaybackHz or 120, MMDVMDNPC.MinPlaybackHz or 10, MMDVMDNPC.MaxPlaybackHz or 240),
+        stageJumps = jumpsKept,
+        movementScale = movementRange,
+        movementLimit = movementBound,
     }
 end
 
@@ -250,6 +264,9 @@ local function write_selected_playback_settings()
     net.WriteFloat(settings.buildFramesPerBatch or MMDVMDNPC.DefaultBuildFramesPerBatch or 16)
     net.WriteFloat(settings.playbackHz or MMDVMDNPC.DefaultPlaybackHz or 120)
     net.WriteBool(settings.loopPlayback == true)
+    net.WriteFloat(settings.stageJumps or MMDVMDNPC.DefaultStageJumps or 100)
+    net.WriteFloat(settings.movementScale or MMDVMDNPC.DefaultMovementScale or 100)
+    net.WriteFloat(settings.movementLimit or MMDVMDNPC.DefaultMovementLimit or 0)
 end
 
 function MMDVMDNPC.RequestBuildSelectedMotion()
@@ -338,9 +355,14 @@ function MMDVMDNPC.RequestClearAssignedActors(mode)
     net.SendToServer()
 end
 
-function MMDVMDNPC.RequestClearBuiltSelectedMotion(scope)
-    local current = GetConVar("mmd_vmd_npc_motion")
-    local motionID = current and current:GetString() or ""
+-- motionID: optional, the selected motion when omitted (the in-game importer
+-- clears the builds of a motion it just re-imported).
+function MMDVMDNPC.RequestClearBuiltSelectedMotion(scope, motionID)
+    motionID = tostring(motionID or "")
+    if motionID == "" then
+        local current = GetConVar("mmd_vmd_npc_motion")
+        motionID = current and current:GetString() or ""
+    end
     if motionID == "" then
         play_ui_cue("blocked")
         print("[MMD VMD] " .. L("mmd_vmd_npc.error.select_motion"))
@@ -1361,8 +1383,10 @@ local function root_motion_origin_active()
 end
 
 -- skipSetup: for the PAC3 re-apply below, which runs while PAC prepares the
--- entity for drawing; the draw sets the bones up itself.
-local function apply_local_built_sample(ent, frameA, frameB, fraction, pelvisZOffset, skipSetup)
+-- entity for drawing; the draw sets the bones up itself. travelX/travelY: the
+-- pelvis horizontal travel under the stage-placement and movement options
+-- (MMDVMDNPC.BuiltTravel), as the server uses it, when they change it.
+local function apply_local_built_sample(ent, frameA, frameB, fraction, pelvisZOffset, skipSetup, travelX, travelY)
     frameA = frameA or {}
     frameB = frameB or frameA
     fraction = math.Clamp(tonumber(fraction) or 0, 0, 1)
@@ -1391,6 +1415,7 @@ local function apply_local_built_sample(ent, frameA, frameB, fraction, pelvisZOf
                 local y = lerp_value(boneA[6], boneB[6], fraction)
                 local z = lerp_value(boneA[7], boneB[7], fraction)
                 if pelvisBone and bone == pelvisBone then
+                    if travelX then x, y = travelX, travelY end
                     z = z + pelvisZOffset
                     if rootMotion then
                         x = 0
@@ -1692,9 +1717,18 @@ local function start_local_playback(path, playbackEnt, serverStarted)
         -- kept the snapshot made the two writers disagree on the pelvis (and
         -- thus the whole body height) for the entire dance.
         pelvisZOffset = tonumber(settings and settings.pelvisZOffset) or 0,
+        -- Same snapshot for the stage-placement and movement options; they only
+        -- reach this poser's pose when root motion is off (the server moves the
+        -- entity origin otherwise).
+        stageJumps = settings and settings.stageJumps,
+        movementScale = settings and settings.movementScale,
+        movementLimit = settings and settings.movementLimit,
         -- Server-confirmation clock for the orphan reaper (CurTime, so a
         -- paused game does not age states the server also is not ticking).
         lastServerSync = CurTime(),
+        -- The countdown already blended the dancer into the first pose
+        -- (MMDVMDNPC.StartTransitionSeconds), so the start is no pose cut.
+        cutFrame = (tonumber(MMDVMDNPC.StartTransitionSeconds) or 0) > 0 and math.floor(tonumber(built.frame_start) or 0) or nil,
     }
 end
 
@@ -1794,6 +1828,27 @@ local function deactivate_self_proxy_camera()
     MMDVMDNPC.SelfCameraHeightOffset = 0
 end
 
+-- How long hair and cloth physics carries a pose jump (hook MMDVMDNPCPoseCut,
+-- see MMDVMDNPC.BuiltPoseCuts): the bones jump when they arrive, or at once
+-- from this client's own poser, but the entity origin that root motion moves
+-- is drawn one interpolation interval later, then glides for an update.
+local function pose_cut_window()
+    local function setting(name, fallback)
+        local cvar = GetConVar(name)
+        return cvar and cvar:GetFloat() or fallback
+    end
+    local rate = math.max(1, setting("cl_updaterate", 30))
+    local interp = math.max(setting("cl_interp", 0.1), setting("cl_interp_ratio", 2) / rate)
+    return math.Clamp(interp + 2 / rate + 0.05, 0.1, 0.5)
+end
+
+-- The server raises a networked counter just before a dance's pose jumps.
+hook.Add("EntityNetworkedVarChanged", "MMDVMDNPCPoseCut", function(ent, name)
+    if name == MMDVMDNPC.PoseCutNW2 and IsValid(ent) then
+        hook.Run("MMDVMDNPCPoseCut", ent, pose_cut_window())
+    end
+end)
+
 local function stop_one_local_playback(ent, clearPose)
     local playbacks = MMDVMDNPC.LocalPlaybacks or {}
     local state = playbacks[ent]
@@ -1804,6 +1859,7 @@ local function stop_one_local_playback(ent, clearPose)
         deactivate_self_proxy_camera()
     end
     if clearPose ~= false then
+        if IsValid(state.ent) then hook.Run("MMDVMDNPCPoseCut", state.ent, pose_cut_window()) end
         clear_local_playback_pose(state.ent, state.built)
     end
 end
@@ -1891,8 +1947,42 @@ hook.Add("Think", "MMDVMDNPCLocalInterpolatedPlayback", function()
             local lowerIndex = math.Clamp(lowerFrame - startFrame + 1, 1, #frames)
             local upperIndex = math.Clamp(upperFrame - startFrame + 1, 1, #frames)
 
-            apply_local_built_sample(ent, frames[lowerIndex], frames[upperIndex], fraction, state.pelvisZOffset or 0)
+            -- Hold across scene cuts like the server, and tell physics addons
+            -- on the frame this client's own pose jumps (a cut, a loop; the
+            -- start only without the countdown's blend into the first pose).
+            local cuts = state.poseCuts
+            if not cuts then
+                cuts = MMDVMDNPC.BuiltPoseCuts(built, ent.LookupBone and ent:LookupBone(SOURCE_PELVIS) or nil)
+                state.poseCuts = cuts
+            end
+            if cuts[upperFrame] then fraction = 0 end
+            local jump = state.cutFrame == nil or lowerFrame < state.cutFrame
+            if not jump then
+                for frame = state.cutFrame + 1, lowerFrame do
+                    if cuts[frame] then
+                        jump = true
+                        break
+                    end
+                end
+            end
+            state.cutFrame = lowerFrame
+            if jump then hook.Run("MMDVMDNPCPoseCut", ent, pose_cut_window()) end
+
+            local travel = state.travel
+            if travel == nil then
+                travel = MMDVMDNPC.BuiltTravel(built, ent.LookupBone and ent:LookupBone(SOURCE_PELVIS) or nil, state.stageJumps, state.movementScale, state.movementLimit) or false
+                state.travel = travel
+            end
+            local travelX, travelY
+            if travel then
+                local ax, ay = travel.x[lowerIndex] or 0, travel.y[lowerIndex] or 0
+                travelX = ax + ((travel.x[upperIndex] or ax) - ax) * fraction
+                travelY = ay + ((travel.y[upperIndex] or ay) - ay) * fraction
+            end
+
+            apply_local_built_sample(ent, frames[lowerIndex], frames[upperIndex], fraction, state.pelvisZOffset or 0, nil, travelX, travelY)
             state.poseA, state.poseB, state.poseFraction = frames[lowerIndex], frames[upperIndex], fraction
+            state.poseTravelX, state.poseTravelY = travelX, travelY
             apply_local_eye_tracking(ent, state, now)
 
             if finished then
@@ -2000,7 +2090,7 @@ do
         local state = playbacks and playbacks[ent]
         if state then
             if state.poseA then
-                apply_local_built_sample(ent, state.poseA, state.poseB, state.poseFraction, state.pelvisZOffset or 0, true)
+                apply_local_built_sample(ent, state.poseA, state.poseB, state.poseFraction, state.pelvisZOffset or 0, true, state.poseTravelX, state.poseTravelY)
             end
             local eye = state.eyeTrack
             if eye and eye.eyeVec then
