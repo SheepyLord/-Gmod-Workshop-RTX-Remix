@@ -6,99 +6,68 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
-### R6 T1 (unreleased)
+### Added (R6: performance and stability; loader 0.11.0, [plan](docs/handover/R6-plan.md))
 
-- Put loader Remix layers before package DXVK copies, so the non-NVIDIA Auto preset takes effect.
-- Automatically choose high/medium/low performance defaults from the largest NVIDIA adapter's VRAM
-  and RTX class, with a `remix.performance_tier` override, old-package low fallback, and tier details
-  in status, the log, CLI and seven-language menu panel (ADR 0062).
-- Add opt-in `diagnostics.gpu_crash_dumps` (`off`, `next_start`, `always`): a separate startup layer
-  and local dump folder; an atomic loader-owned marker consumes `next_start` without editing config.
-- T1 review fixes: failed built-in tier writes and invalid diagnostic values preserve RTX;
-  an off-mode RTX start re-arms `next_start`; unknown GPUs honor explicit tier overrides with
-  source config. Menu tiers require an effective listed layer, and malformed GPU names cannot
-  stop activation. Clarify Remix's existing consent-controlled Sentry upload of Aftermath dumps.
+- **Remix settings that fit your graphics card.** At each RTX start the loader picks a performance
+  tier for the NVIDIA card with the most video memory. `high` keeps the package's settings, tuned on
+  an RTX 5090. `medium` (10 to 12 GB, or an x70 model) and `low` (8 GB, or an x50/x60 model; a laptop
+  GPU counts one step lower) use fewer light bounces (8 and 4 instead of 12), a lighter neural
+  radiance cache and smaller memory budgets: micromaps, sky probe, volumetric fog grid and terrain
+  atlas; `low` also uses Remix's low-memory mode and 4096-pixel night-sky images. Settings saved in
+  Remix's menu still win. `"remix": { "performance_tier": ... }` in `config.json` picks a tier
+  yourself; the RTX Remix tab's Start here page shows the tier and why
+  ([ADR 0062](docs/decisions/0062-loader-layers-performance-tiers-and-gpu-dumps.md),
+  [ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
+- **On AMD and Intel, Remix's own preset for your GPU takes effect.** The loader's Remix settings
+  now come before the package's copies, which used to override it.
+- **GPU crash dumps when asked for.** `"diagnostics": { "gpu_crash_dumps": "next_start" }` turns on
+  NVIDIA's GPU crash diagnostics for one RTX start (`always` for every start; `off` by default). The
+  dumps go to `native-loader\logs\gpu`; the config file is never edited to consume the request.
+- **What a crash leaves behind is kept.** At the next start the loader copies the previous
+  session's Remix log, the crash dumps already on disk and the memory history into
+  `native-loader\logs\sessions` (five sessions, at most 200 MiB), before the runtime overwrites its
+  log. Nothing is uploaded or deleted at its source. The home menu, `status.json` and
+  `nlctl status` say what probably went wrong and where the copies are
+  ([ADR 0063](docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+- **Memory history.** The loader records process, system and GPU memory every ten seconds in
+  `native-loader\logs\memory.csv` (the last one to two hours; `"diagnostics": {
+  "memory_telemetry": "off" }` stops it). The companion records Remix's own VRAM categories every
+  30 seconds in `garrysmod\data\native-loader\vram*.csv` (`nativeloader_vram_telemetry 0` stops it).
+- **A warning before Windows runs out of memory.** Once per start, before the first map, the home
+  menu warns when the system commit charge is over 70 percent of its limit, or the limit is under
+  32 GiB, and explains page files and closing other programs.
+- **The runtime says what memory looked like when the GPU was lost.** Its log reports driver
+  budgets and use for every heap at camera cuts, every five minutes and at a device loss, and
+  `rtx-remix\logs\last_gpu_crash.json` keeps the last device loss's numbers for the next start.
+  Repeated micromap budget warnings appear at most once a minute, with a count
+  ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
+- **A Memory and stability page in the guide** (all seven languages; the new translations are
+  agent-written and marked for review) and a [player checklist](docs/STABILITY.md): settings for
+  8 GB cards and 16 GB of RAM, reading memory during a session, and what to send after a crash.
+- **No more rejected memory limits at each map load.** The RTX fixes stopped asking Remix for cache
+  and VRAM limits it does not have; `RemixResource.SetMemoryLimits` stays a no-op that returns `true`
+  and logs once ([ADR 0066](docs/decisions/0066-fixes-memory-limits-compatibility.md)).
+- **Smaller ToPBR textures.** The fixes' 83 `~gmod_topbr` normal and roughness maps are linear BC7:
+  34.07 MiB instead of 136.25 MiB on disk, with the same names, sizes and materials
+  ([measurements](packages/fixes/licenses/topbr-bc7/README.md)).
+- An older loader (0.10.1 and before) rejects the new `config.json` keys and starts without RTX;
+  the README, the guide and the checklist say to update `bin\win64\winmm.dll` first.
 
-### R6 T3 (unreleased)
+### Changed (R6, for developers)
 
-- Independent-review fixes: R6-only guide instructions require the loader's status capability;
-  older loaders get bootstrap-update and manual log-copy advice. Complete JSON examples retain
-  native trust and warn that invalid JSON turns RTX off. Crash guidance now saves JSON reports
-  before restarting, saves frame generation off, and re-arms GPU dumps by deleting their marker.
-- Tier display hides non-NVIDIA/unidentified hardware and reports the loader's reason when a
-  medium/low layer is absent. The VRAM sampler preserves damaged/incompatible CSVs and starts a
-  new segment; three consecutive API failures stop repeated calls until retry or a new map/start.
-- Russian guide navigation and tier grammar are corrected; durable translation provenance stays
-  in the i18n README. The 2048 px PBR workflow uses a separate mod so publishing cannot prune the
-  larger variant's DDS files.
-- The RTX companion records Remix's VRAM totals and categories locally every 30 seconds when the
-  fixes' API is available. `nativeloader_vram_telemetry 0` disables it; two rotating hourly CSV files
-  keep at most 240 samples across map changes and restarts.
-- RTX Remix > Start here shows the loader's optional performance tier, selection source, GPU/VRAM
-  and configuration/restart instructions. Older loaders show no tier line.
-- A directly linked **Memory and stability** guide page and [player checklist](docs/STABILITY.md)
-  cover 8 GB GPU/16 GB RAM settings, local memory readings and crash evidence. New companion text
-  is available in all seven languages; the new translations per non-English catalog are
-  agent-written and marked for human review.
-- Tester documentation explains VRAM/commit counters and HUD readings; the MMD PBR skill requires
-  generating and publishing a 2048 px variant for 8 GB players and explains the cost of 4096 px maps.
-
-### R6 T4 (unreleased)
-
-- The runtime logs driver memory budgets/use for every heap and DXVK's device-local totals and
-  categories at camera cuts, every five minutes while presenting, and before device-loss reporting.
-  It keeps a local `rtx-remix/logs/last_gpu_crash.json` for the next start; write failures leave the
-  termination path intact. Micromap budget warnings recur at most once per minute per warning kind,
-  with the number of suppressed repeats ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
-- Runtime rebuilds refresh the configure-time version label and reject missing or non-Release
-  Meson configurations before compiling or importing. First-time setup configures once before the
-  two shader compilation passes. The six tests omitted from the original fork snapshot are now
-  recorded from its staged index and built without silent source guards.
-- The device-loss marker is written before the GPU crash-state recorder and Aftermath waits, with
-  heap locality, device-local driver totals, pending suppressed OMM counts and the same timestamp
-  as its log line. Windows flushes the temporary file to disk before replacing the old marker.
-
-### R6 T6 (unreleased)
-
-- Add optional medium/low performance-tier payloads to the runtime package, preserving classic high
-  settings and user overrides. Candidate bounce/NRC and memory defaults await PoC frame-time, VRAM
-  and visual validation.
-- Ship 4096-wide night-sky copies for low, retaining the existing compressed mip data exactly:
-  53.33 MiB of texels versus 213.33 MiB. Add a validated DDS mip-removal tool and packager support
-  for conditional `rtx.*` tier layers ([ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
-- Validate tier option names, types, ranges and enum values against the patched runtime; pin the
-  classic/compiler inputs unchanged. Expand DDS fixtures to every supported block format.
-- Correct the tiers' OMM/NRC/low-memory explanations and explicitly credit the derived skies.
-  Verify that low-memory flag changes rebuild incompatible BLASes safely; retain medium's original
-  sky images because dropping mip 0 can affect nebula detail even at normal FOV in 4K.
-
-### R6 T5 (unreleased)
-
-- The RTX fixes no longer submit unsupported cache/VRAM limits at each map load. The legacy
-  `RemixResource.SetMemoryLimits` Lua method remains a documented no-op that logs once when
-  explicitly called, preserving its numeric arguments and `true` result without configuration
-  writes ([ADR 0066](docs/decisions/0066-fixes-memory-limits-compatibility.md)).
-- The fixes' 83 `~gmod_topbr` normal and roughness textures now use linear BC7, reducing their
-  deployed DDS size from 136.25 MiB to 34.07 MiB (75%). Names, dimensions, mip counts and raw
-  material references stay the same; [conversion measurements](packages/fixes/licenses/topbr-bc7/README.md).
-
-### R6 T2 (unreleased)
-
-- Preserve recovered CSV bytes before history rotation and retry samples skipped by temporary
-  sharing/access errors. Empty, edited and unrecognized history stays intact.
-
-- Show the previous failure and local evidence folder in the home-menu panel. Warn once per start,
-  before the first map, when recent system commit is over 70 percent used or its limit is under
-  32 GiB; explain system-managed page files and closing other programs. Both notices follow all
-  seven menu languages and are included by Copy diagnostics.
-- Record local process/system/GPU memory every ten seconds by default; `diagnostics.memory_telemetry`
-  (`"on"`/`"off"`; another value keeps it on, with a note) controls CSV history. Rotate about one to two hours across `memory.csv` and
-  `memory.1.csv`, preserve edited history, and retain a latest-only system commit snapshot for the
-  menu warning. DXGI stays runtime-loaded; the bootstrap still imports only KERNEL32.
-- Preserve the previous session's Remix log, local CPU/GPU crash files and memory history before
-  the runtime overwrites its log. `status.json` and `nlctl status` report the likely failure and the
-  local evidence folder. Keep five unchanged archives within 200 MiB; originals and edited copies
-  stay untouched ([ADR 0063](docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+- Activation lists the tier layer and the non-NVIDIA layer first in `DXVK_CONFIG_FILE` (the first
+  file wins for `rtx.*`) and the GPU diagnostics layer last (its `dxvk.enableAftermath*` keys: the
+  last file wins for `dxvk.*`); an older package without tier files gets a built-in `low` fallback.
+  `status.json` reports `activation.performance_tier` and `previous_session`; a wrong diagnostics
+  value costs only that diagnostic (a note), never the loader.
+- `runtime\build_runtime.ps1` refuses a missing or non-Release Meson configuration before building
+  or importing; patch 0015 records the six unit-test sources the fork snapshot had left out.
+- `tools\tests\test_runtime_tiers.py` checks every tier key's name, type and range against the
+  patched runtime; `tools\sky\drop_top_mip.py` removes a DDS top mip losslessly. The classic layer
+  still holds 15 keys this runtime no longer has (old exposure, local tonemap and bloom options,
+  `occluderTextures`, `finalizeWithACES`).
+- The MMD PBR skill requires a 2048-pixel variant for 8 GB players.
+- The task-by-task record of R6 is in [docs/handover/](docs/handover/README.md) (R6-T1 to R6-T6).
 
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
