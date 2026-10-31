@@ -2834,7 +2834,8 @@ and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
   Which temporal pass kept the daylight longest was not isolated.
 - **The night sky image's galaxy band is wrapped three times** around the sky, so the Milky Way's core
   shows three times (`evalStarMap`); an observation for the runtime, not changed.
-- **A start-up crash in NVIDIA's driver** in one of eleven field runs: an access violation reading
-  `0xffffffffffffffff` in `nvoglv64.dll+0xe622f8`, on a worker thread of Remix's `d3d9.dll` compiling
-  pipelines, about 4 s after the device was created (`out\qa-field\r5-sky\08-night-sky-debug-views`;
-  rerun clean). Recorded for the stability work.
+- **A start-up crash in NVIDIA's driver**, twice in about sixteen field starts on 2026-10-31: an access
+  violation reading `0xffffffffffffffff` in `nvoglv64.dll+0xe622f8`, on a worker thread of Remix's
+  `d3d9.dll` compiling pipelines, about 4 s after the device was created, with the same stack both
+  times (`out\qa-field\r5-sky\08-night-sky-debug-views` on the package before R5,
+  `out\qa-field\r5-release\03-map-glass` on R5's; both reruns clean). Recorded for the stability work.
