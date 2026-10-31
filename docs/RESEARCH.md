@@ -2974,3 +2974,50 @@ Source references below are to patch 0015 on the recorded fourteen-patch tree, i
   assigning its arguments; `install_usd_plugins.bat` also enables it around paths. A source path
   containing `!` is stripped during unit dependency staging. T4 used literal-path PowerShell
   copies into its own unit build after that helper failed; the resulting 22-test suite passes.
+
+## R6 T5 fixes memory-limit compatibility
+
+- `packages/fixes/files.json` initially attributed the native DLL to an aggregate staging path
+  (`out/oversized-native-build`) at aggregate commit `04592ae8`; the actual native source is
+  pinned in `packages/fixes/licenses/oversized-skinning/build-pins.json`:
+  `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`. Using the fork checkout's `fc478c06` instead would
+  lose the later oversized-skinning fixes. The new import stages the DLL inside its native
+  worktree, so its origin records native commit `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`.
+- The source delta from that base is four native files: removal of the module-open call
+  (`source/module.cpp`, formerly line 431), a no-op implementation
+  (`source/remixapi/remixapi.cpp:1329`), its declaration comment (`remixapi.h:298`) and the Lua
+  binding comment (`resource_lua_bindings.cpp:75`). The Lua number checks and `true` result remain.
+  The README and a standalone regression are the only other changed files. Full snapshots and
+  the commit patch are in [the corresponding source bundle](../packages/fixes/licenses/oversized-skinning/memory-limits/Source.md).
+- Baseline and changed builds use the same generated projects, dependency revisions,
+  `ReleaseWithSymbols|x64`, MSVC 14.44.35207 and Windows SDK 10.0.26100.0. The 4,848,128-byte old
+  DLL becomes 4,847,616 bytes. PE x64 imports/exports match; both rejected-key strings occur in
+  the original and rebuilt baseline and are absent from the new DLL. HardwareSkinningHooks.cpp
+  matches the preceding source hash exactly; the policy header/test match after CRLF normalization.
+- The earlier restricted attempt could not write the original fork's `.git`. Its shared bare clone
+  under the task's `out/fixes-origin.git` hosts `r6-no-memory-limits`, with its clean worktree at
+  `out/fixes-source`; the resumed run preserves that already-committed source and rebuilt DLL.
+  Recursive dependencies were archived from locally available git objects at their pinned
+  revisions, without fetching or modifying the original checkout. The new commit is unpushed.
+
+## R6 T5 ToPBR texture compression
+
+- The fixes' `garrysmod/rtx-remix/mods/~gmod_topbr/materials.usda:18-20` marks the flat normal
+  texture as `raw`; the roughness reference at `:56-58` does too. A complete reference census
+  finds 113 raw references covering exactly 83 files: 33 normal maps and 50 roughness maps,
+  no colour maps. `encoding = 0` and all USD files remain unchanged. All source DDS headers
+  describe uncompressed BGRA8; retaining RGBA in BC7 avoids dropping any encoded normal channel.
+- NVIDIA Texture Tools Exporter 2023.4.0 is already installed with RTX Remix at
+  `C:/Program Files/NVIDIA Corporation/RTX Remix/exts/omni.flux.resources/deps/tools/nvtt/nvtt_export.exe`.
+  CPU-only, highest-quality BC7 with a linear DXGI tag and gamma/premultiplied mip processing
+  disabled produces DXGI 98 for every file. Names, dimensions and the full 816 mip levels match
+  the originals. See [conversion arguments and hashes](../packages/fixes/licenses/topbr-bc7/conversion.json).
+- DDS bytes fall from 142,869,484 (136.25 MiB) to 35,729,420 (34.07 MiB): 107,140,064 fewer
+  bytes, 74.9916%. xz inputs fall from 16,454,204 to 15,000,576 bytes. These are disk sizes;
+  resident VRAM and renderer output are unmeasured because T5 may not launch the game.
+- Independent Pillow 12.3.0 decoding of all 816 mip levels gives pixel-weighted 8-bit R/G/B RMSE
+  0.659/0.655/0.391 and identical alpha. Worst top-mip channel RMSE is 0.957, worst individual
+  mip channel RMSE 4.0, maximum single-pixel R/G/B errors 28/29/13. Six offline normal/roughness
+  pairs show the same patterns. Evidence is under this task's `out/topbr-bc7` (`manifest.json`,
+  `quality.json`, `comparison.png`); [package notes](../packages/fixes/licenses/topbr-bc7/README.md)
+  preserve the measurements and integration acceptance cases.

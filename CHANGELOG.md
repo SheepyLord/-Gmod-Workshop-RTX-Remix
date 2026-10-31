@@ -48,6 +48,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
   53.33 MiB of texels versus 213.33 MiB. Add a validated DDS mip-removal tool and packager support
   for conditional `rtx.*` tier layers ([ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
 
+### R6 T5 (unreleased)
+
+- The RTX fixes no longer submit unsupported cache/VRAM limits at each map load. The legacy
+  `RemixResource.SetMemoryLimits` Lua method remains a documented no-op that logs once when
+  explicitly called, preserving its numeric arguments and `true` result without configuration
+  writes ([ADR 0066](docs/decisions/0066-fixes-memory-limits-compatibility.md)).
+- The fixes' 83 `~gmod_topbr` normal and roughness textures now use linear BC7, reducing their
+  deployed DDS size from 136.25 MiB to 34.07 MiB (75%). Names, dimensions, mip counts and raw
+  material references stay the same; [conversion measurements](packages/fixes/licenses/topbr-bc7/README.md).
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

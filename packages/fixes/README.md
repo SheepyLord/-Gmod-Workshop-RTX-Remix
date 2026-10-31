@@ -1,0 +1,25 @@
+# RTX fixes package inputs
+
+The GPL-2.0 fixes are imported from the user's fork; [LICENSE](LICENSE) applies. Binary payload
+changes go through [`inputs.py import`](../../tools/inputs.py.md). Part notes and corresponding
+source under `licenses/` are reserved documentation, excluded from the payload index. The package
+builder includes the existing `licenses/oversized-skinning/` tree in the remixbinary add-on as its
+native source bundle, including the R6 change below.
+
+## R6 T5 memory-limit compatibility
+
+The current module uses fixes source commit `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`, a single
+commit on the preceding packaged source `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`. The module
+no longer submits unsupported resource-limit options at map load. The old Lua method is a
+documented no-op that logs once when explicitly called, preserves the two numeric arguments and
+`true` result, and never writes configuration. See the [source, pins and rebuild notes](licenses/oversized-skinning/memory-limits/Source.md).
+
+## R6 T5 ToPBR compression
+
+All 83 DDS files in `garrysmod/rtx-remix/mods/~gmod_topbr/textures` are now BC7_UNORM (linear):
+33 normal maps and 50 roughness maps, all referenced as `colorSpace = "raw"`. Their names,
+dimensions and 816 mip levels remain; the material files are unchanged. DDS size falls from
+142,869,484 to 35,729,420 bytes (75%); xz input size falls from 16,454,204 to 15,000,576 bytes.
+See [encoder, measurements and import instructions](licenses/topbr-bc7/README.md) and the
+[per-file conversion record](licenses/topbr-bc7/conversion.json). Rendering acceptance belongs
+to R6 integration; offline decoding alone does not prove the rendered look.

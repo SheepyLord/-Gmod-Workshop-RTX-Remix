@@ -1,11 +1,16 @@
 # Oversized mesh hardware-skinning source
 
+The R6 DLL rebuild adds the [memory-limit compatibility change](memory-limits/Source.md) on top
+of this recorded source commit, with the same dependencies and generated projects. That folder
+holds the current DLL's source commit, hash and complete patch; the record below describes the
+preceding oversized-skinning build.
+
 These files are GPL-2.0 corresponding source for the native RTXFixesBinary change,
 kept separately from the MIT loader. [COPYING](COPYING) is the upstream licence.
 [build-pins.json](build-pins.json) records the built DLL, source hashes, dependency
 revisions and generated project hashes. No Workshop model or texture is included.
 The exact source commit is b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe on the local
-codex/oversized-skinning-native branch. The current DLL SHA-256 is
+codex/oversized-skinning-native branch. The preceding DLL SHA-256 is
 5e626e34f412cd55e93a485cd1d777794b339a0cb7a5082935454b72fbc72db7.
 The body/arms preview passed the owned cold game check; this final build also
 adds the reviewed small-group render-pass and diagnostic-filter eligibility guards. That branch
