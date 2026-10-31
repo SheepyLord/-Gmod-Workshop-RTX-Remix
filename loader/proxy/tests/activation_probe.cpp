@@ -78,7 +78,7 @@ int activation_probe(const wchar_t* output, const FILETIME& entered_main) {
       ",\"command_line_peb\":" + nl::json::quote(utf8(command_peb)) +
       ",\"ansi_matches_wide\":" + (command_a == expected_a ? "true" : "false") + ",\"environment\":{";
   bool first = true;
-  for (const char* name : {"DXVK_RTX_CONFIG_FILE", "DXVK_CONFIG_FILE", "RTX_TEST", "DXVK_LOG_LEVEL"}) {
+  for (const char* name : {"DXVK_RTX_CONFIG_FILE", "DXVK_CONFIG_FILE", "RTX_TEST", "DXVK_LOG_LEVEL", "DXVK_AFTERMATH_DUMP_PATH"}) {
     if (!first) text += ',';
     first = false;
     const auto environment = nl::activate::environment_value(name);

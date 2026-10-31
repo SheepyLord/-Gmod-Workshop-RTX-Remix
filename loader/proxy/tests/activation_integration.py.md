@@ -21,3 +21,21 @@ Writes JSON probes, loader logs, status snapshots and a ten-sample unchanged-sta
 under `out/m4-synthetic/<configuration>-<PID>/`. Successful scratch is removed, retrying momentary
 Windows image-file locks. Failed scratch is retained and printed. Exit 0 when all checks pass;
 nonzero with traceback/evidence on a mismatch or timeout. Only test-created processes are stopped.
+
+## R6 T1 layer precedence
+
+The short-copy check expects the non-NVIDIA Remix layer before the package's DXVK copies: Remix's
+`rtx.*` options use the first listed layer containing a key. The root `dxvk.conf` stays last.
+
+### R6 T1 performance tiers and GPU diagnostics
+
+Generates medium/low fixture payloads, updates their synthetic manifest hashes and repacks them
+with the vendored gmapack CLI. It checks copied tier bytes and first position on NVIDIA machines
+(non-NVIDIA keeps its existing Auto path), pre-R6 low fallback, high omission and invalid-value
+notes in status/log. GPU diagnostics checks all three layer options, the absolute created local
+folder and environment, next_start once, read-only CLI previews, explicit marker re-arm,
+always/off and config bytes unchanged. Adds only generated files below out/tmp and evidence in
+out/m4-synthetic; no real game, runtime package input or player config is used.
+
+Also verifies that RTX-off does not consume next_start, a blocked dump-folder path preserves
+RTX and the pending request, and activation rollback restores a pre-existing dump destination.

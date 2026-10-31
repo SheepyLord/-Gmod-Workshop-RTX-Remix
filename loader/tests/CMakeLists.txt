@@ -10,6 +10,7 @@ add_executable(nl_tests
   test_discovery.cpp
   test_fs.cpp
   test_gma.cpp
+  test_gpu_diagnostics.cpp
   test_journal.cpp
   test_json.cpp
   test_legacy_detect.cpp
@@ -19,6 +20,7 @@ add_executable(nl_tests
   test_manifest.cpp
   test_package.cpp
   test_paths.cpp
+  test_performance.cpp
   test_planner.cpp
   test_reshade.cpp
   test_sha256.cpp

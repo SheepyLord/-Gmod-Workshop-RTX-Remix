@@ -61,6 +61,10 @@
     row(labels.ram, data.memory ? gib(data.memory) : labels.unavailable);
     if (!data.graphics.length) row(labels.gpu, labels.unavailable);
     data.graphics.forEach(function (gpu) { row(labels.gpu, gpu.name + (gpu.memory ? ' · ' + gib(gpu.memory) : '')); });
+    if (data.performance_tier && data.performance_tier.adapter) {
+      var tier = data.performance_tier;
+      row(labels.performance_tier, labels['tier_' + tier.tier] + ' · ' + labels['tier_' + tier.source]);
+    }
     row(labels.game, game);
     row(labels.loader, data.loader.version + ' · ' + hash(data.loader.sha256, labels), data.loader.sha256);
     if (!data.packages.length) row(labels.package, labels.none);

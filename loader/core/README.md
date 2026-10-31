@@ -6,6 +6,8 @@ manifests, discovery and planning; M3 added deployment; M4 added activation.
 
 | File | Purpose |
 |---|---|
+| `include/nl/performance.h`, `src/performance.cpp` | Pure R6 adapter/class/VRAM tier classification and interface I2 serialization (ADR 0062) |
+| `include/nl/gpu_diagnostics.h`, `src/gpu_diagnostics.cpp` | Read-only one-start marker probe, local diagnostics-layer/dump-folder preparation and atomic next_start consumption (ADR 0062) |
 | `CMakeLists.txt` | Defines `nl_core` (links the LZMA SDK decoder `nl_lzma` privately); generates `nl/version.h` |
 | `include/nl/core.h` | `nl::version()` |
 | `include/nl/version.h.in` | Template for the generated `nl/version.h` (`NL_VERSION_*` macros from the CMake project version) |

@@ -115,3 +115,33 @@ TEST_CASE("config: load reads native-loader/config.json or falls back to default
   CHECK_THROWS_AS(nl::config::load(root), Error);
   std::filesystem::remove_all(root);
 }
+
+TEST_CASE("config: performance tier defaults and overrides, invalid values recover with a note") {
+  using nl::config::PerformanceTier;
+  CHECK(nl::config::parse(R"({"schema":1})").performance_tier == PerformanceTier::automatic);
+  for (const auto& [name, tier] : std::vector<std::pair<std::string, PerformanceTier>>{
+         {"auto", PerformanceTier::automatic}, {"high", PerformanceTier::high},
+         {"medium", PerformanceTier::medium}, {"low", PerformanceTier::low}}) {
+    const auto config = nl::config::parse("{\"schema\":1,\"remix\":{\"performance_tier\":\"" + name + "\"}}");
+    CHECK(config.performance_tier == tier);
+    CHECK(config.notes.empty());
+  }
+  for (const char* invalid : {"\"LOW\"", "\"fast\"", "\"\"", "true", "null", "8", "[]", "{}"}) {
+    const auto config = nl::config::parse(std::string("{\"schema\":1,\"remix\":{\"performance_tier\":") + invalid + "}}");
+    CHECK(config.performance_tier == PerformanceTier::automatic);
+    REQUIRE(config.notes.size() == 1);
+    CHECK(config.notes.front().find("using auto") != std::string::npos);
+  }
+}
+
+TEST_CASE("config: GPU crash dumps are opt-in with strict off next_start always modes") {
+  using nl::config::GpuCrashDumps;
+  CHECK(nl::config::parse(R"({"schema":1})").gpu_crash_dumps == GpuCrashDumps::off);
+  for (const auto& [name, mode] : std::vector<std::pair<std::string, GpuCrashDumps>>{
+         {"off", GpuCrashDumps::off}, {"next_start", GpuCrashDumps::next_start}, {"always", GpuCrashDumps::always}}) {
+    CHECK(nl::config::parse("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":\"" + name + "\"}}").gpu_crash_dumps == mode);
+  }
+  for (const char* invalid : {"\"on\"", "\"NEXT_START\"", "true", "null", "1"})
+    CHECK_THROWS_AS(nl::config::parse(std::string("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":") + invalid + "}}"), Error);
+  CHECK_THROWS_AS(nl::config::parse(R"({"schema":1,"diagnostics":{"gpu_dump":"always"}})"), Error);
+}

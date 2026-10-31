@@ -205,6 +205,11 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   }
   if (!unwritten.empty()) activate::use_sources(report.plan, unwritten);
 
+  if (plan.low_tier_fallback) {
+    layer_folder();
+    write_if_changed(root, activate::kTierLayer, activate::low_tier_layer_text());
+  }
+
   // Without an NVIDIA GPU, the loader's own Remix layer (ADR 0030), which DXVK_CONFIG_FILE lists. A
   // layer that cannot be written costs Remix's automatic preset, not the session (Remix skips a missing file).
   if (plan.non_nvidia) {
@@ -213,6 +218,19 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
       write_if_changed(root, activate::kNonNvidiaLayer, activate::non_nvidia_layer_text());
     } catch (const std::exception& error) {
       session.notes.push_back(std::string("the non-NVIDIA Remix layer was not written: ") + error.what());
+    }
+  }
+
+  if (plan.gpu_crash_dumps) {
+    try {
+      const auto path = gpu_diagnostics::prepare(root);
+      for (auto& [name, value] : report.plan.env) if (name == gpu_diagnostics::kDumpVariable) value = path;
+      // Claim only after preparing the layer and destination, before the runtime can crash during
+      // initialization. CREATE_NEW makes simultaneous game starts share a single next_start request.
+      if (plan.gpu_crash_dumps_once && !gpu_diagnostics::consume_next_start(root))
+        activate::disable_gpu_crash_dumps(report.plan, "GPU diagnostics next_start was claimed by another start; continuing without diagnostics");
+    } catch (const std::exception& error) {
+      activate::disable_gpu_crash_dumps(report.plan, std::string("GPU diagnostics were not enabled: ") + error.what());
     }
   }
 

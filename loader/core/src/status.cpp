@@ -93,6 +93,7 @@ std::string serialize(const Report& r) {
       "\"id\":" + json::quote(p.runtime_id) + ",\"version\":" + json::quote(p.runtime_version) +
       ",\"folder\":" + json::quote(a.runtime_folder) + ",\"dll\":" + json::quote(a.runtime_dll) +
       "},\"system_vulkan_path\":" + json::quote(a.vulkan_path) + ",\"gpu_vendors\":" + numbers(p.gpu_vendors) +
+      ",\"performance_tier\":" + performance::serialize(p.performance_tier) + ",\"notes\":" + strings(p.notes) +
       ",\"non_nvidia\":" + (p.non_nvidia ? "true" : "false") + ",\"environment\":{\"requested\":" + pairs(p.env) + ",\"set\":" + pairs(a.environment_set) +
       ",\"user_values_kept\":" + pairs(p.user_env) + "},\"layers\":{\"rtx\":" + strings(p.rtx_layers) +
       ",\"dxvk\":" + strings(p.dxvk_layers) + "},\"layer_copies\":" + copies_json(p.layer_copies) +
@@ -121,6 +122,7 @@ std::string log_fields(const Report& r) {
       << "\nactivation.runtime.folder=" << json::quote(a.runtime_folder) << "\nactivation.runtime.dll=" << json::quote(a.runtime_dll)
       << "\nactivation.system_vulkan_path=" << json::quote(a.vulkan_path)
       << "\nactivation.gpu_vendors=" << numbers(a.plan.gpu_vendors) << "\nactivation.non_nvidia=" << a.plan.non_nvidia
+      << "\nactivation.performance_tier=" << performance::serialize(a.plan.performance_tier)
       << "\nactivation.environment.set=" << pairs(a.environment_set) << "\nactivation.environment.user_values_kept=" << pairs(a.plan.user_env)
       << "\nactivation.layers.rtx=" << strings(a.plan.rtx_layers) << "\nactivation.layers.dxvk=" << strings(a.plan.dxvk_layers)
       << "\nactivation.layer_copies=" << copies_json(a.plan.layer_copies)
@@ -129,6 +131,7 @@ std::string log_fields(const Report& r) {
       << "\nactivation.windows_error=" << a.windows_error << "\nactivation.missing_system_dependencies=" << strings(a.missing_system_dependencies)
       << "\nactivation.preloaded=" << strings(a.preloaded) << "\nactivation.rolled_back=" << a.rolled_back << "\nactivation.elapsed_ms=" << a.elapsed_ms
       << "\nactivation.reshade=" << reshade_json(a.reshade) << '\n';
+  for (const auto& note : a.plan.notes) out << "activation.note=" << json::quote(note) << '\n';
   out << "session=" << session_json(r.session) << '\n';
   for (const auto& error : r.errors) out << "error=" << json::quote(error) << '\n';
   out << "startup.elapsed_ms=" << r.startup_ms << "\nstartup.complete=1\n";

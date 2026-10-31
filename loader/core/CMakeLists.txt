@@ -11,6 +11,7 @@ add_library(nl_core STATIC
   src/discovery.cpp
   src/fs.cpp
   src/gma.cpp
+  src/gpu_diagnostics.cpp
   src/journal.cpp
   src/json.cpp
   src/legacy_detect.cpp
@@ -20,6 +21,7 @@ add_library(nl_core STATIC
   src/package.cpp
   src/patch.cpp
   src/paths.cpp
+  src/performance.cpp
   src/planner.cpp
   src/reshade.cpp
   src/session.cpp

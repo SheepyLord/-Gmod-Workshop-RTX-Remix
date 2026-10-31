@@ -2839,3 +2839,28 @@ and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
   `d3d9.dll` compiling pipelines, about 4 s after the device was created, with the same stack both
   times (`out\qa-field\r5-sky\08-night-sky-debug-views` on the package before R5,
   `out\qa-field\r5-release\03-map-glass` on R5's; both reruns clean). Recorded for the stability work.
+
+## R6 T1: verified layer consumers (2026-10-31)
+
+At runtime commit `6f2dbd79`, `src/dxvk/dxvk_options.cpp:36-39` reads Aftermath and
+`rtx.enableGpuCrashState` from the same merged `Config`; a search finds no RtxOption declaration
+for that crash-state key. It belongs with the diagnostics layer after package copies despite
+its `rtx.` prefix. `src/dxvk/dxvk_instance.cpp:353-359` reads `DXVK_AFTERMATH_DUMP_PATH`
+and inserts a slash when needed before naming the dump. Remix layer precedence remains as
+recorded in R5 proposal 1: `rtx_option_layer.cpp:51-61,671-706` and `rtx_option.cpp:1156-1186`.
+
+R6 T1 implementation follows byte comparisons rather than rounded GiB: 8.5 GiB = 8704 MiB,
+12.5 GiB = 12800 MiB. `loader/core/src/performance.cpp` classifies names without consulting the
+runtime preset or adapter ordering. `loader/core/src/activate.cpp` chooses I1 tier files only from
+records owned by the selected runtime; the existing proxy validation checks every payload record's
+size/time before copying. A missing record uses the approved old-package fallback; an advertised
+but missing/changed payload is an activation integrity failure, not an excuse to trust a loose file.
+
+Measured in the synthetic Release host on 2026-10-31: DXGI selected NVIDIA GeForce RTX 5090,
+32187 MiB dedicated VRAM. Auto was high; explicit low used the pre-R6 fallback and copied the
+packaged fixture tier when supplied. `loader/core/src/performance.cpp:46,60` implement selection
+and exact thresholds; `loader/core/src/activate.cpp:265,320` select the journal-owned tier and
+late diagnostics slot. Two package DXVK copies plus tier, diagnostics and root default total
+140 characters (259-character budget). The one-start CREATE_NEW claim is at
+`loader/core/src/gpu_diagnostics.cpp:58,63`. The real runtime's effective options and GPU dumps
+remain unmeasured by this task; the fixture exercises loader behavior only.

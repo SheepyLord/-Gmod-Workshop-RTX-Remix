@@ -66,6 +66,23 @@ def main():
 
     build_package(package_a, '1.0.0', args.runtime)
     build_package(package_b, '2.0.0', args.runtime)
+    # Synthetic R6 payloads only: the production tier files belong to task T6.
+    tier_folder = scratch / 'tier-package'
+    tier_package = scratch / 'tiers.gma'
+    gmapack = repo / 'tools/gmapack/gmapack.py'
+    subprocess.run([sys.executable, str(gmapack), 'extract', '--file', str(package_a), '--out', str(tier_folder), '--quiet'],
+                   check=True, capture_output=True)
+    tier_manifest = tier_folder / 'native/manifest.json'
+    manifest = json.loads(tier_manifest.read_text(encoding='utf-8'))
+    for tier, value in (('medium', 768), ('low', 512)):
+        path = tier_folder / f'native/payload/config/dxvk-tiers/{tier}.conf'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = f'rtx.skyProbeSide = {value}\n'.encode('ascii')
+        path.write_bytes(data)
+        manifest['files'][path.relative_to(tier_folder).as_posix()] = {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+    write_json(tier_manifest, manifest)
+    subprocess.run([sys.executable, str(gmapack), 'create', '--folder', str(tier_folder), '--out', str(tier_package),
+                    '--preserve-case', '--quiet'], check=True, capture_output=True)
     incomplete = scratch / 'incomplete-runtime'
     incomplete.mkdir()
     shutil.copy2(args.runtime / 'd3d9.dll', incomplete / 'd3d9.dll')
@@ -98,7 +115,7 @@ def main():
             self.run_number += 1
             env = dict(os.environ)
             for name in ('NATIVE_LOADER_DISABLE', 'DXVK_RTX_CONFIG_FILE', 'DXVK_CONFIG_FILE', 'RTX_TEST', 'DXVK_LOG_LEVEL',
-                         'NL_M4_BAD_CMDLINE', 'NL_M4_FAIL_ATTACH', 'NL_M4_SEH_ATTACH'):
+                         'NL_M4_BAD_CMDLINE', 'NL_M4_FAIL_ATTACH', 'NL_M4_SEH_ATTACH', 'DXVK_AFTERMATH_DUMP_PATH'):
                 env.pop(name, None)
             env.update(env_extra or {})
             argv = [str(self.exe), '--m4-probe', str(self.probe), *extra]
@@ -244,8 +261,11 @@ def main():
         check([layer['copy'] for layer in layer_copies] == ['native-loader/remix/rtx-1.conf', 'native-loader/remix/dxvk-1.conf'],
               f'layer copies: {layer_copies}')
         # A computer without an NVIDIA GPU (CI's runner) also gets the loader's non-NVIDIA layer (ADR 0030).
-        loader_layers = ['native-loader/remix/non-nvidia.conf'] if status['activation']['non_nvidia'] else []
-        check(status['activation']['layers']['dxvk'] == ['native-loader/remix/dxvk-1.conf', *loader_layers, 'dxvk.conf'],
+        tier = status['activation']['performance_tier']
+        loader_layers = [tier['layer']] if tier['layer'] else []
+        if status['activation']['non_nvidia']:
+            loader_layers.append('native-loader/remix/non-nvidia.conf')
+        check(status['activation']['layers']['dxvk'] == [*loader_layers, 'native-loader/remix/dxvk-1.conf', 'dxvk.conf'],
               f'the runtime is not given the copy: {status["activation"]["layers"]}')
         rtx_copy = copies.root / layer_copies[0]['copy']
         rtx_copy.write_text('rtx.test = False\n', encoding='ascii')
@@ -255,12 +275,110 @@ def main():
         dxvk_copy.mkdir()  # a folder in its place: the copy cannot be written
         result = copies.run()
         fallback = active(copies, result)
-        check(result[0]['environment']['DXVK_CONFIG_FILE'] == ','.join([layer_copies[1]['source'], *loader_layers, 'dxvk.conf']),
+        check(result[0]['environment']['DXVK_CONFIG_FILE'] == ','.join([*loader_layers, layer_copies[1]['source'], 'dxvk.conf']),
               f'an unwritten copy did not fall back to its source: {result[0]["environment"]}')
         check([layer['copy'] for layer in fallback['activation']['layer_copies']] == ['native-loader/remix/rtx-1.conf'],
               'an unwritten copy is still reported as used')
         check(any('was not written' in note for note in fallback['session']['notes']), 'no note for the unwritten copy')
         passed('the runtime reads short copies of the package\'s layers; a changed copy is rewritten, an unwritable one falls back')
+
+        dumps = Game('gpu-crash-diagnostics')
+        dumps.config['diagnostics'] = {'gpu_crash_dumps': 'next_start'}
+        dumps.save()
+        preview = dumps.cli('activation')  # no journal yet; preview must not create the marker
+        marker = dumps.root / 'native-loader/remix/gpu-crash-dumps.used'
+        check(not marker.exists(), 'CLI consumed next_start')
+        dumps.config['remix'] = {'enabled': False}
+        dumps.save()
+        vanilla(dumps.run())
+        check(not marker.exists(), 'RTX-off start consumed next_start')
+        dumps.config['remix']['enabled'] = True
+        dumps.save()
+        config_bytes = (dumps.root / 'native-loader/config.json').read_bytes()
+        on = active(dumps, dumps.run())
+        diagnostic_layer = 'native-loader/remix/diagnostics.conf'
+        layers = on['activation']['layers']['dxvk']
+        check(layers[-2:] == [diagnostic_layer, 'dxvk.conf'], f'diagnostics layer order: {layers}')
+        text = (dumps.root / diagnostic_layer).read_text(encoding='utf-8')
+        for option in ('dxvk.enableAftermath = True', 'dxvk.enableAftermathResourceTracking = True', 'rtx.enableGpuCrashState = True'):
+            check(option in text, f'missing diagnostic option {option}')
+        destination = dumps.root / 'native-loader/logs/gpu'
+        requested = {entry['name']: entry['value'] for entry in on['activation']['environment']['requested']}
+        check(Path(requested['DXVK_AFTERMATH_DUMP_PATH']) == destination and destination.is_dir(), 'dump destination not prepared')
+        check(marker.is_file(), 'one-start marker absent')
+        off = active(dumps, dumps.run())
+        check(diagnostic_layer not in off['activation']['layers']['dxvk'], 'next_start repeated')
+        check(not any(entry['name'] == 'DXVK_AFTERMATH_DUMP_PATH' for entry in off['activation']['environment']['set']), 'dump env repeated')
+        marker.unlink()  # documented re-arm
+        ready = dumps.cli('activation')
+        check(not marker.exists(), 'activation preview consumed a rearmed request')
+        check(any(entry['name'] == 'DXVK_AFTERMATH_DUMP_PATH' for entry in ready['env']), 'preview missed rearmed request')
+        rearmed = active(dumps, dumps.run(env_extra={'DXVK_AFTERMATH_DUMP_PATH': 'player-choice'}))
+        check(diagnostic_layer in rearmed['activation']['layers']['dxvk'], 'rearmed diagnostics missing')
+        check((dumps.root / 'native-loader/config.json').read_bytes() == config_bytes, 'next_start rewrote config')
+        dumps.config['diagnostics']['gpu_crash_dumps'] = 'always'
+        dumps.save()
+        for _ in range(2):
+            check(diagnostic_layer in active(dumps, dumps.run())['activation']['layers']['dxvk'], 'always not retained')
+        dumps.config['diagnostics']['gpu_crash_dumps'] = 'off'
+        dumps.save()
+        check(diagnostic_layer not in active(dumps, dumps.run())['activation']['layers']['dxvk'], 'off still lists diagnostics')
+        passed('GPU dumps: correct layer/path, next_start once, read-only preview, rearm, always and off; config preserved')
+
+        blocked = Game('gpu-diagnostics-blocked')
+        blocked.config['diagnostics'] = {'gpu_crash_dumps': 'next_start'}
+        blocked.save()
+        blocker = blocked.root / 'native-loader/logs/gpu'
+        blocker.parent.mkdir(parents=True, exist_ok=True)
+        blocker.write_text('player file in the way', encoding='ascii')
+        status = active(blocked, blocked.run())
+        check(diagnostic_layer not in status['activation']['layers']['dxvk'], 'blocked diagnostics layer still listed')
+        check(not (blocked.root / 'native-loader/remix/gpu-crash-dumps.used').exists(), 'failed preparation consumed next_start')
+        check(blocker.read_text(encoding='ascii') == 'player file in the way', 'blocked dump path was overwritten')
+        check(any('GPU diagnostics were not enabled' in note for note in status['activation']['notes']), 'no diagnostic preparation note')
+        rollback_dumps = Game('gpu-diagnostics-rollback')
+        rollback_dumps.config['diagnostics'] = {'gpu_crash_dumps': 'always'}
+        rollback_dumps.save()
+        rolled_back = rollback_dumps.run(env_extra={'NL_M4_FAIL_ATTACH': '1', 'DXVK_AFTERMATH_DUMP_PATH': 'player-folder'})
+        vanilla(rolled_back, {'DXVK_AFTERMATH_DUMP_PATH': 'player-folder'})
+        check(rolled_back[1]['activation']['rolled_back'], 'diagnostic session failure did not roll back')
+        passed('diagnostics preparation failure preserves RTX and request; activation rollback restores the player dump destination')
+
+        policy = Game('performance-policy')
+        policy.config['remix'] = {'performance_tier': 'low'}
+        policy.save()
+        low = active(policy, policy.run())['activation']['performance_tier']
+        if low['adapter']:  # non-NVIDIA CI machines keep their Auto path, even with an override
+            check(low['tier'] == 'low' and low['source'] == 'fallback', f'old package low fallback: {low}')
+            text = (policy.root / low['layer']).read_text(encoding='utf-8')
+            check('rtx.opacityMicromap.cache.maxBudgetSizeMB = 512' in text, 'built-in fallback not written')
+        else:
+            check(not low['layer'], 'non-NVIDIA adapter received a tier layer')
+        check(policy.cli('activation')['performance_tier'] == low, 'CLI and bootstrap tiers differ')
+        policy.config['remix']['performance_tier'] = 'invalid-tier'
+        policy.save()
+        invalid = active(policy, policy.run())
+        check(any('remix.performance_tier' in note for note in invalid['activation']['notes']), 'invalid tier was not reported')
+        log = (policy.root / 'native-loader/logs/loader.log').read_text(encoding='utf-8')
+        check('activation.performance_tier=' in log and 'using auto' in log, 'tier or config note missing from bootstrap log')
+        passed('performance tier: fallback/non-NVIDIA behavior, CLI equality, invalid value note and bootstrap log')
+
+        packaged = Game('performance-package', tier_package)
+        for choice in ('low', 'medium', 'high'):
+            packaged.config['remix'] = {'performance_tier': choice}
+            packaged.save()
+            status = active(packaged, packaged.run())
+            tier = status['activation']['performance_tier']
+            if tier['adapter']:
+                check(tier['tier'] == choice and tier['source'] == 'config', f'package tier override: {tier}')
+                check(bool(tier['layer']) == (choice != 'high'), f'package tier layer: {tier}')
+                if choice != 'high':
+                    check(status['activation']['layers']['dxvk'][0] == 'native-loader/remix/tier.conf', 'tier copy not first')
+                    check(any(entry['copy'] == tier['layer'] and f'dxvk-tiers/{choice}.conf' in entry['source']
+                              for entry in status['activation']['layer_copies']), 'wrong tier source')
+            else:
+                check(not tier['layer'], 'non-NVIDIA got packaged tier layer')
+        passed('package tier files: low and medium copied from verified runtime payload, high lists none')
 
         chosen = Game('user-window')
         arguments = active(chosen, chosen.run(extra=['-fullscreen', '-w', '1280', '-h', '720']))['activation']['launch_arguments']

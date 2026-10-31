@@ -702,3 +702,62 @@ checks the resync rate limit and the single-shard cap; `test_player_body.py` cov
 private copy, draw-time reuse and the shared-material backoff. In game (not run in R4): after a
 late join on a map with many broken windows, every pane's debris is visible within a few seconds
 and the console shows no reliable-buffer overflow.
+
+## R6 T1 loader layers
+
+`loader/tests/test_activate.cpp` checks that the non-NVIDIA Remix layer precedes the package's
+short DXVK copies, including long payload paths and packages with no DXVK layers. The synthetic
+proxy activation integration checks the same order without starting Garry's Mod.
+
+### R6 T1 tier and diagnostic checks
+
+- `test_performance.cpp`: all 15 required GPU/no-NVIDIA examples plus class/laptop/name-boundary
+  cases, inclusive byte-exact 8.5/12.5 GiB thresholds, multi-adapter maximum, config overrides and I2.
+- `test_activate.cpp`: all high/medium/low/auto x off/next_start/always x NVIDIA/non-NVIDIA lists,
+  package tier records, old-package low fallback and medium omission, config notes and diagnostics
+  disable behavior. Default combined lists stay below the runtime's 259-character budget.
+- `test_gpu_diagnostics.cpp`: read-only probe, unchanged preparation, next_start once and explicit
+  re-arm, empty interrupted marker, concurrent claims, blocked paths and byte-identical config.
+- `test_config.cpp`, `test_status.cpp`: new config schema keys, recoverable invalid tier values,
+  strict dump modes, I2 and notes in JSON/bootstrap log.
+- Proxy presentation tests check tier data/localized-row embedding; the existing seven-language
+  catalog and Node menu checks cover label completeness and text-only rendering.
+- `nl_activation_integration`: a generated fake runtime/package checks diagnostic layer contents
+  and order, the absolute created dump folder/environment at host entry, next_start once, re-arm,
+  read-only preview, always/off, config preservation, tier fallback and generated package tiers.
+  It launches only the synthetic host under this worktree's out, never Garry's Mod.
+
+Run `tools/test.ps1 -Config Release`. On machines where PowerShell's script policy blocks direct
+invocation, a process-only `powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1
+-Config Release` runs the same suite without changing the machine's policy.
+
+Integration still needs a real session by the project manager: force low/medium, confirm the
+selected tier file precedes classic defaults in remix-dxvk.log and that its effective RtxOption
+values (lowMemoryGpu, OMM cap, skyProbeSide, froxel scale, terrain resolution) match. Compare high
+against the existing classic look. On a non-NVIDIA GPU check Auto (graphicsPreset 5). With
+next_start, check `Aftermath enabled` and the requested crash-state option in startup config;
+confirm the following start omits diagnostics. A real GPU fault/dump was not induced by T1.
+
+### R6 T1 validation result (2026-10-31)
+
+Final `tools/test.ps1 -Config Release` run: native build and all 23 CTests passed, including
+26 synthetic activation scenario groups, the tier/config/state unit cases and KERNEL32 imports.
+The Python gmapack group passed (28 tests, one skipped) and steam group passed (25 tests, one
+skipped). The tools group ran 280 tests: its only failures were the 21 existing
+`test_field_snapshot.FieldSnapshotTests` cases, all in setUp at `tools/tests/test_field_snapshot.py:136`:
+`reg add HKCU\Software\NativeLoaderTest_<random> ...` returned 1, `ERROR: Access is denied.`
+A single-case diagnostic rerun captured that exact stderr. No tests were skipped or weakened to
+hide this sandbox restriction; the project manager must run the complete gate with fixture-key
+access before integration. The two documented skips belong to the existing Python suite.
+
+Direct script invocation needed a process-only PowerShell ExecutionPolicy Bypass. Git-reading
+Python tests used GIT_CONFIG_GLOBAL pointing to this worktree's `out/r6-t1/test.gitconfig`, with
+only this worktree in safe.directory; no user/global Git file or permissions were changed.
+The shipped config remains its original minimal allowlist: the optional new values default to
+auto/off in nl_core, so existing installs need no config rewrite. No tools script changed.
+
+Evidence: `out/r6-t1/release-tests-final.log`, `registry-blocker.log`, CTest's
+`out/build/win64-release/Testing/Temporary/LastTest.log`, and `out/m4-synthetic/release-*`.
+The Node harness variant under `out/r6-t1/menu-tier-harness.js` also passed, explicitly rendering
+the low/fallback line in all seven languages with the real menu script/catalog. No real Garry's
+Mod launch, field-install write, runtime payload import, software install or public action occurred.

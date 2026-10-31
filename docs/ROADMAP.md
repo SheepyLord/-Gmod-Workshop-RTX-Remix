@@ -133,3 +133,14 @@ Prevent unset Common Remix sliders from becoming startup zeros, make GMod startu
 and preserve native settings on failed Save or Reload ([ADR 0044](decisions/0044-remix-settings-persistence.md)).
 The panel's six translations include the ownership and save guidance. Validation and delivery are
 recorded in the [QoL report](handover/QoL-report.md#remix-settings-persistence-2026-10-30).
+
+## R6 T1: loader layers and GPU policy (2026-10-31)
+
+In progress on `r6-t1-layers`: fix loader Remix layer precedence, select performance tiers from
+the GPU, and add the opt-in GPU crash-dump switch ([brief](handover/R6-T1-loader-layers.md)).
+
+Implementation finished in this worktree: all R6 T1 tier/layer/diagnostic code and documentation
+are ready for review, uncommitted at the project manager's instruction. Release native CTests
+pass (23/23); the full Release gate is blocked only by 21 existing field-snapshot tests whose
+throwaway HKCU fixture creation is denied by this sandbox. Integration and real-runtime QA remain
+with the project manager; see the R6 T1 validation record in TESTING.md.

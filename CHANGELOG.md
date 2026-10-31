@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R6 T1 (unreleased)
+
+- Put loader Remix layers before package DXVK copies, so the non-NVIDIA Auto preset takes effect.
+- Automatically choose high/medium/low performance defaults from the largest NVIDIA adapter's VRAM
+  and RTX class, with a `remix.performance_tier` override, old-package low fallback, and tier details
+  in status, the log, CLI and seven-language menu panel (ADR 0062).
+- Add opt-in `diagnostics.gpu_crash_dumps` (`off`, `next_start`, `always`): a separate startup layer
+  and local dump folder; an atomic loader-owned marker consumes `next_start` without editing config.
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

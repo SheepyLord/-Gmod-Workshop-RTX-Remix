@@ -9,6 +9,8 @@
 #include "nl/config.h"
 #include "nl/manifest.h"
 #include "nl/journal.h"
+#include "nl/performance.h"
+#include "nl/gpu_diagnostics.h"
 
 #include <functional>
 #include <optional>
@@ -38,13 +40,13 @@ using DisplayGet = std::function<Display()>;
 // Win32 display adapter shared by the CLI and bootstrap (EnumDisplaySettingsW, physical pixels).
 Display primary_display();
 
-// The PCI vendor ids of the computer's hardware graphics adapters (0x10DE NVIDIA, 0x1002 AMD, 0x8086
-// Intel); empty when they cannot be read. The plan reads them only when it activates (ADR 0030).
-using GpuGet = std::function<std::vector<unsigned>()>;
+// Hardware adapters and their dedicated VRAM; empty when DXGI cannot read them. Only queried at RTX
+// activation. The class/VRAM policy itself lives in the pure performance::classify function.
+using GpuGet = std::function<std::vector<performance::Adapter>()>;
 
 // Win32 adapter shared by the CLI and bootstrap: DXGI, loaded from System32 at run time, software
 // adapters left out.
-std::vector<unsigned> graphics_adapters();
+std::vector<performance::Adapter> graphics_adapters();
 
 inline constexpr unsigned kNvidia = 0x10DE;
 
@@ -59,6 +61,9 @@ inline constexpr std::string_view kLayerFolder = "native-loader/remix";
 // package's layers and below the user's own files, gives Remix its automatic choice for the GPU back.
 inline constexpr std::string_view kNonNvidiaLayer = "native-loader/remix/non-nvidia.conf";
 std::string non_nvidia_layer_text();
+
+inline constexpr std::string_view kTierLayer = "native-loader/remix/tier.conf";
+std::string low_tier_layer_text();  // old runtime packages without config/dxvk-tiers/low.conf
 
 // The runtime's DLLs that load late by bare name (ADR 0030): the fork's FSR probe (amd_fidelityfx_vk.dll)
 // and NRC's CUDA runtime and compiler (cudart64_*, nvrtc64_*, nvrtc-builtins64_*). In GMod no search
@@ -81,6 +86,11 @@ struct Plan {
   bool prefer_system_vulkan = false;
   std::vector<unsigned> gpu_vendors;  // the hardware adapters' vendor ids, when the plan activates
   bool non_nvidia = false;            // none of them is NVIDIA: kNonNvidiaLayer goes into DXVK_CONFIG_FILE
+  performance::Selection performance_tier;  // R6 interface I2
+  bool low_tier_fallback = false;
+  bool gpu_crash_dumps = false;
+  bool gpu_crash_dumps_once = false;
+  std::optional<std::string> gpu_dump_package_value;  // restore this request if diagnostics preparation fails
 
   // SetEnvironmentVariable calls, in order: the two config-file layer lists first (only when the
   // package adds layers, retaining the user's list last), then the package's own variables
@@ -130,12 +140,17 @@ struct Plan {
 // with remix.enabled false, the plan is inactive. `command_line` is the process command line, read
 // only to skip launch arguments the user set. `display` is called at most once, and only when the
 // plan sizes the window. `gpus` is called once when the plan activates; without it (or with no
-// adapter found) the computer counts as having an NVIDIA GPU, so nothing changes.
+// adapter found) neither loader GPU layer is applied, retaining the existing unknown-GPU behavior.
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
-          std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus = {});
+          std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus = {},
+          const gpu_diagnostics::Probe& diagnostics = {});
 
 // For the copies the bootstrap could not write: their sources go into the lists and variables
 // instead, and they leave layer_copies, with a note when a list is then too long for the runtime.
 void use_sources(Plan& plan, const std::vector<std::string>& unwritten);
+
+// A diagnostics preparation failure costs diagnostics, not RTX. Removes its layer/environment
+// request, retaining any package DXVK layers and the user's original config-list suffix.
+void disable_gpu_crash_dumps(Plan& plan, const std::string& reason);
 
 }  // namespace nl::activate
