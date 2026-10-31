@@ -6,6 +6,7 @@ manifests, discovery and planning; M3 added deployment; M4 added activation.
 
 | File | Purpose |
 |---|---|
+| `include/nl/evidence.h`, `src/evidence.cpp` | R6: classify the previous session, archive local logs/dumps with full source sharing before runtime log truncation, and retain five intact archives within 200 MiB; never modify original evidence or prune user-edited copies ([ADR 0063](../../docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)) |
 | `CMakeLists.txt` | Defines `nl_core` (links the LZMA SDK decoder `nl_lzma` privately); generates `nl/version.h` |
 | `include/nl/core.h` | `nl::version()` |
 | `include/nl/version.h.in` | Template for the generated `nl/version.h` (`NL_VERSION_*` macros from the CMake project version) |

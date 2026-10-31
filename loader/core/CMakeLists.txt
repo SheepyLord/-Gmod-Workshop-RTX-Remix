@@ -9,6 +9,7 @@ add_library(nl_core STATIC
   src/crc32.cpp
   src/deploy.cpp
   src/discovery.cpp
+  src/evidence.cpp
   src/fs.cpp
   src/gma.cpp
   src/journal.cpp

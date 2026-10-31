@@ -2,6 +2,7 @@
 // Machine-readable M4 startup result, shared with tests and uninstall; schema documented on disk.
 #include "nl/activate.h"
 #include "nl/deploy.h"
+#include "nl/evidence.h"
 #include "nl/reshade.h"
 #include <cstdint>
 #include <filesystem>
@@ -76,6 +77,7 @@ struct Report {
   std::vector<PackageSource> packages;
   std::vector<std::string> errors;
   double startup_ms = 0;
+  evidence::PreviousSession previous_session;
 };
 
 std::string serialize(const Report& report);

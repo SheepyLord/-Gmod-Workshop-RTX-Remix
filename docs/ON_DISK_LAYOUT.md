@@ -1,5 +1,36 @@
 # On-disk layout (game side)
 
+## R6 local session evidence
+
+[ADR 0063](decisions/0063-local-session-evidence-and-memory-telemetry.md) adds:
+
+| Path relative to the game root | Meaning |
+|---|---|
+| `native-loader/logs/session-start.json` | Schema 1: last bootstrap start's `start_filetime` (Windows 100 ns epoch), `time_utc`, `process_id`; the next start uses it to exclude older crash files. On the first R6 start, `loader.log.1`'s `startup_filetime` is the fallback. With neither record, existing bounded evidence is kept conservatively. |
+| `native-loader/logs/sessions/<UTC>-<PID>-<reason>/` | Local copies, preserving each source's relative path; `evidence.json` lists their sizes and SHA-256. Only complete unchanged archives are retention-owned: newest five, at most 200 MiB including receipts. Edited copies, added files, links and unrecognized folders stay outside automatic cleanup. |
+| `native-loader/logs/gpu/` | T1's optional Aftermath destination; collected recursively to two directory levels. The collector never deletes the originals. |
+
+The collector reads at most 256 KiB of the old Remix log to classify it, then copies the full log
+on a worker before permitting runtime load. An oversized/unavailable log falls back to its bounded
+tail. Dump files are streamed and skipped if locked or over the remaining byte limit. At most 256
+crash sources are considered; source timestamps must fall between the previous and current starts.
+`last_gpu_crash.json` is optional, bounded to 64 KiB and subject to the same freshness rule.
+Memory CSV tails are supporting evidence, never themselves a crash indication. Source files are
+opened with read/write/delete sharing and never changed, moved, deleted or uploaded.
+
+Startup status adds `previous_session` (R6 I5):
+
+```json
+{"reason":"device_lost","time_utc":"2026-10-31T01:02:03.000Z","folder":"native-loader/logs/sessions/2026-10-31T020304.000Z-123-device_lost"}
+```
+
+`time_utc` identifies the previous start (empty if unavailable); `folder` is empty if nothing was
+saved. Reasons are `device_lost`, `cs_exception`, `allocation_failed`, `out_of_memory`, `crash`,
+`clean`, `unknown`. Specific failures override generic exceptions/exit markers. The runtime has
+no general normal-shutdown marker, so an ordinary unmarked exit stays `unknown`; only its deliberate
+`RTX: Terminating application` path is recognized as `clean`. This classification does not establish
+the cause of a GPU fault. These local logs/archives stay when packages are uninstalled.
+
 The old-install migration is the narrow exception to the untouched-depot rule: recognized legacy
 edits are archived and restored to verified stock bytes before the shipment is activated
 ([ADR 0042](decisions/0042-legacy-remix-migration.md)). Root rtx.conf/dxvk.conf from that installation

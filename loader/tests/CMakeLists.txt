@@ -8,6 +8,7 @@ add_executable(nl_tests
   test_dependencies.cpp
   test_deploy.cpp
   test_discovery.cpp
+  test_evidence.cpp
   test_fs.cpp
   test_gma.cpp
   test_journal.cpp

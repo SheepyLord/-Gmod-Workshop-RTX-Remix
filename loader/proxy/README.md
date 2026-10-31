@@ -1,5 +1,10 @@
 # loader/proxy
 
+R6: `startup.cpp` starts the local evidence collector outside loader lock, overlaps copying with
+planning and activation, waits for the old Remix log before loading its DLL, and joins the remaining
+dump work before writing `previous_session` to status. Failures are diagnostic notes, never an
+activation veto. See [ADR 0063](../../docs/decisions/0063-local-session-evidence-and-memory-telemetry.md).
+
 Loader 0.8.1 adds `diagnostics.h` / `diagnostics.cpp`: local CPU/thread/RAM/Windows/DXGI information,
 the installed bootstrap SHA-256 and deployed package versions/manifest hashes. `ui/mainmenu.js`,
 `ui/labels.json` and `ui/presentation_data.h.in` provide the seven-language main-menu home panel

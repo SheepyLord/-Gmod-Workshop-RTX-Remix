@@ -1,5 +1,15 @@
 # Testing
 
+## R6 T2 local evidence and telemetry
+
+`nl_tests "evidence:"` uses only generated game roots in the worktree's build tree. It covers every
+classification, optional/malformed structured GPU data, whole-log preservation before a simulated
+runtime truncation, ASCII/UTF-16 OOM strings crossing streaming chunks, stale/future file filtering,
+pre-R6 loader record fallback, empty/clean sessions, locked dumps, byte/file limits, five-session
+retention and preservation of edited archives. It prints mean/max collection time for 30 empty starts.
+`nlctl status <fixture> [--json]` reports previous-session data even without a journal.
+No game launch or source dump modification is involved.
+
 ## Release QA protocol (field install, R4)
 
 What review R4 used to test a release on the user's own install quickly and without guesswork. One

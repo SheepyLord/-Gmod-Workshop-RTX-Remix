@@ -1,5 +1,24 @@
 # Research notes
 
+## R6 T2 evidence boundaries (2026-10-31)
+
+- Release fixture measurement (30 consecutive empty collections on this machine): mean 0.556 ms,
+  maximum 0.883 ms (a previous run averaged 1.419 ms, maximum 8.056 ms during concurrent work).
+  Session-start metadata uses an atomic rename without the deployment journal's
+  write-through flushes; its loss after a power failure falls back to the older loader record.
+  Empty/clean starts do not re-hash old archives; retention runs only when a new archive is saved.
+
+- Runtime fork `src/util/log/log.cpp:75-94` opens `remix-dxvk.log` with a plain `std::ofstream`:
+  starting the runtime truncates it. R6's worker signals readiness only after the log copy/fallback
+  is secure, and bootstrap waits before runtime activation (`loader/proxy/startup.cpp`).
+- The fork has no general clean-exit log marker. `src/dxvk/rtx_render/rtx_context.cpp:945-953`
+  logs `RTX: Terminating application` only for its deliberate delayed termination after captures/
+  exports finish. FSR `onDestroy`/context-destroyed lines are resource lifecycle messages and do
+  not establish a clean process exit. Unmarked sessions remain `unknown`.
+- Engine OOM text can be ASCII or UTF-16 LE inside a dump. R6 scans bounded, copied game-root
+  dumps in 64 KiB chunks with a 64-byte overlap; it does not load the dump into memory or execute it
+  (`loader/core/src/evidence.cpp`, `loader/tests/test_evidence.cpp`).
+
 ## R4 start-up, guard and bootstrap review (loader 0.10.1)
 
 Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock

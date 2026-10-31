@@ -3,6 +3,10 @@
 The loader core on the command line, so packages and installs can be examined and deployed without
 starting Garry's Mod. It links `nl_core`, the same library the bootstrap uses.
 
+R6: `status` also prints the bootstrap report's `previous_session` (reason, UTC time and relative
+evidence folder), including when there is no deployment journal. `--json` adds that object or `null`
+when the report is missing/invalid. This is a read-only view; it never collects or uploads evidence.
+
 | File | Purpose |
 |---|---|
 | `CMakeLists.txt` | Builds `nlctl`; registers the `nlctl_crosscheck_gmapack`, `nlctl_e2e_plan`, `nlctl_e2e_deploy` and `nlctl_uninstall_loader` CTests |

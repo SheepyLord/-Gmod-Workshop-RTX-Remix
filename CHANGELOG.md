@@ -6,6 +6,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R6 T2 (unreleased)
+
+- Preserve the previous session's Remix log, local CPU/GPU crash files and memory history before
+  the runtime overwrites its log. `status.json` and `nlctl status` report the likely failure and the
+  local evidence folder. Keep five unchanged archives within 200 MiB; originals and edited copies
+  stay untouched ([ADR 0063](docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

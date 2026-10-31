@@ -1,5 +1,9 @@
 # Roadmap
 
+R6 T2 is in progress on `r6-t2-evidence`: previous-session evidence, bootstrap memory telemetry
+and the menu's commit warning. The bounded collector and startup/CLI report are implemented;
+the remaining work is tracked by [the T2 brief](handover/R6-T2-evidence-telemetry.md).
+
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.
