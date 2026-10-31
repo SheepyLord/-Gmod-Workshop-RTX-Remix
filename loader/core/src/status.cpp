@@ -78,6 +78,7 @@ std::string serialize(const Report& r) {
   std::string result = "{\n\"schema\":1,\"loader_version\":" + json::quote(r.loader_version) +
       ",\"previous_session\":" + evidence::serialize(r.previous_session) +
       ",\"utc\":" + json::quote(r.utc) + ",\"process_id\":" + std::to_string(r.process_id) +
+      ",\"session_token\":" + json::quote(r.session_token) +
       ",\"startup_elapsed_ms\":" + std::to_string(r.startup_ms) + ",\n\"deployment\":{\"outcome\":" + json::quote(d.outcome) +
       ",\"reason\":" + json::quote(d.error) + ",\"blocked_by\":" + json::quote(blocked_by(d.blocked_by)) +
       ",\"generation\":" + std::to_string(d.generation) + ",\"recovered\":" + (d.recovered ? "true" : "false") +

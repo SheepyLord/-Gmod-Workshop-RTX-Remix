@@ -51,6 +51,12 @@ writes; an independent latest-only system commit snapshot in the game's data fol
 home-menu warning use a recent observation even with history off. Global loader off switches still
 disable both. Snapshot tokens include process creation time to reject previous-process data.
 
+Recovery preserves any content beyond the last CSV receipt in a content-addressed file under
+`native-loader/backup/edits` before adopting it: an otherwise valid extra row might be a user edit.
+Unrecognized/edited history stays intact; transient sharing/access errors skip a sample and retry
+at the next interval. A menu warning uses a recent snapshot and a menu-realm acknowledgement for
+this process's creation-time token, so it is not repeated by an HTML page reload.
+
 Restarting preserves useful evidence instead of erasing it. Large copies run on a worker; a large
 old log can still delay runtime load, and startup waits for remaining evidence before entering the
 engine. Collection cannot recover dumps that the runtime already deleted, sources locked against

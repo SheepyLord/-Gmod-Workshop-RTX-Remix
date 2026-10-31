@@ -184,8 +184,10 @@ TEST_CASE("evidence: file and byte limits, log tail fallback, five archives, use
 
 TEST_CASE("evidence: previous session status round trips and empty-start timing is measured") {
   nl::status::Report report;
+  report.session_token = "123-456";
   report.previous_session = {"out_of_memory", "2026-10-31T01:02:03.000Z", "native-loader/logs/sessions/test-out_of_memory"};
   const auto status = nl::json::parse(nl::status::serialize(report));
+  CHECK(status.find("session_token")->as_string() == report.session_token);
   CHECK(status.find("previous_session")->find("folder")->as_string() == report.previous_session.folder);
   CHECK(nl::status::log_fields(report).find("out_of_memory") != std::string::npos);
   const auto root = nl::test::scratch_dir("evidence_timing");

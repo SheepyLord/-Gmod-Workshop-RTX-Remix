@@ -1,4 +1,5 @@
 #include "telemetry.h"
+#include "nl/fs.h"
 #include "nl/memory.h"
 #include <windows.h>
 #include <memory>
@@ -11,7 +12,8 @@ DWORD WINAPI worker(void* pointer) noexcept {
   {
     std::unique_ptr<Context> context(static_cast<Context*>(pointer));
     module = context->module;
-    SetThreadPriority(GetCurrentThread(), THREAD_MODE_BACKGROUND_BEGIN);
+    if (!SetThreadPriority(GetCurrentThread(), THREAD_MODE_BACKGROUND_BEGIN))
+      SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
     try {
       memory::Sampler sampler(context->history);
       const auto token = memory::process_token();
@@ -22,8 +24,13 @@ DWORD WINAPI worker(void* pointer) noexcept {
         catch (...) { OutputDebugStringW(L"Native Loader: menu memory snapshot unavailable.\n"); }
         if (history) {
           try { memory::append(context->root, sample); }
+          catch (const fs::Error& error) {
+            const auto code = error.code();
+            if (code != ERROR_SHARING_VIOLATION && code != ERROR_LOCK_VIOLATION && code != ERROR_ACCESS_DENIED) history = false;
+            OutputDebugStringW(L"Native Loader: memory history sample skipped (filesystem unavailable).\n");
+          }
           catch (...) {
-            // Preserve a changed/locked log and avoid repeating an expensive failure every ten seconds.
+            // Preserve a changed log and avoid repeating an expensive failure every ten seconds.
             history = false;
             OutputDebugStringW(L"Native Loader: memory history stopped; existing files were kept.\n");
           }
@@ -36,7 +43,7 @@ DWORD WINAPI worker(void* pointer) noexcept {
   FreeLibraryAndExitThread(module, 0);
 }
 }  // namespace
-std::string start(const std::filesystem::path& root, bool history) noexcept {
+std::string_view start(const std::filesystem::path& root, bool history) noexcept {
   HMODULE module = nullptr;
   try {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCWSTR>(&worker), &module))

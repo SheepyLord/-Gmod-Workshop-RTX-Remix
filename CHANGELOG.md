@@ -8,6 +8,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R6 T2 (unreleased)
 
+- Preserve recovered CSV bytes before history rotation and retry samples skipped by temporary
+  sharing/access errors. Empty, edited and unrecognized history stays intact.
+
 - Record local process/system/GPU memory every ten seconds by default; `diagnostics.memory_telemetry`
   (`"on"`/`"off"`) controls CSV history. Rotate about one to two hours across `memory.csv` and
   `memory.1.csv`, preserve edited history, and retain a latest-only system commit snapshot for the

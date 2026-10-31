@@ -58,6 +58,15 @@ void parents(const std::filesystem::path& root, std::string_view path) {
   fs::refuse_links(root, path);
   std::filesystem::create_directories(fs::join(root, path).parent_path());
 }
+void preserve_recovered(const std::filesystem::path& root, std::string_view text) {
+  // A flushed row beyond the last receipt could also be a user's valid CSV append. Keep its exact
+  // bytes outside history rotation before adopting it, rather than guessing who wrote that row.
+  const auto path = "native-loader/backup/edits/memory-" + sha256::of(text) + ".csv";
+  parents(root, path);
+  if (fs::stat(fs::join(root, path)).exists) {
+    if (read(root, path, text.size()) != text) throw std::runtime_error("recovered memory backup was changed; kept unchanged");
+  } else fs::write_atomic(fs::win32(), fs::join(root, path), text);
+}
 }  // namespace
 
 bool commit_warning(std::uint64_t used, std::uint64_t limit) noexcept {
@@ -126,7 +135,7 @@ Sample Sampler::query(bool process) const {
     sample.commit_limit = std::uint64_t(performance.CommitLimit) * performance.PageSize;
     sample.available_ram = std::uint64_t(performance.PhysicalAvailable) * performance.PageSize;
   }
-  if (state_->adapter) {
+  if (process && state_->adapter) {
     DXGI_QUERY_VIDEO_MEMORY_INFO local{}, nonlocal{};
     if (SUCCEEDED(state_->adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &local))) {
       sample.gpu_local_usage = local.CurrentUsage;
@@ -152,6 +161,9 @@ void append(const std::filesystem::path& root, const Sample& sample, const Limit
   const auto line = csv_line(sample);
   if (!limits.rows || csv_header().size() + line.size() > limits.bytes) throw std::runtime_error("memory history limit too small");
   auto active = read(root, kCsv, limits.bytes), rotated = read(root, kRotated, limits.bytes);
+  if ((active.empty() && fs::stat(fs::join(root, kCsv)).exists) ||
+      (rotated.empty() && fs::stat(fs::join(root, kRotated)).exists))
+    throw std::runtime_error("empty memory history is unowned or edited; kept unchanged");
   const auto index_text = read(root, kIndex, 4096);
   Owned previous_active, previous_rotated;
   if (!index_text.empty()) {
@@ -166,6 +178,8 @@ void append(const std::filesystem::path& root, const Sample& sample, const Limit
       (!rotated.empty() && !matches(rotated, previous_rotated) && !moved))
     throw std::runtime_error("memory history changed or is unowned; kept unchanged");
   if (!active.empty() && !active.starts_with(csv_header())) throw std::runtime_error("invalid memory history header");
+  if (!active.empty() && !matches(active, previous_active)) preserve_recovered(root, active);
+  if (!rotated.empty() && !matches(rotated, previous_rotated) && !matches(rotated, previous_active)) preserve_recovered(root, rotated);
   parents(root, kCsv);
   if (!active.empty() && (static_cast<std::size_t>(std::count(active.begin(), active.end(), '\n')) - 1 >= limits.rows || active.size() + line.size() > limits.bytes)) {
     // Verify again immediately before replacing anything. A changed older file is never deleted.

@@ -75,6 +75,9 @@ TEST_CASE("memory: the byte limit rotates before a row would exceed the file bou
 
 TEST_CASE("memory: foreign and edited CSV files are preserved, including a valid-looking edit") {
   const auto root = nl::test::scratch_dir("memory_edits");
+  write(root, m::kCsv, "");
+  CHECK_THROWS_AS(m::append(root, sample()), std::runtime_error);
+  CHECK(read(root, m::kCsv).empty());
   write(root, m::kCsv, std::string(m::csv_header()) + m::csv_line(sample()));
   const auto foreign = read(root, m::kCsv);
   CHECK_THROWS_AS(m::append(root, sample()), std::runtime_error);
@@ -116,6 +119,11 @@ TEST_CASE("memory: a flushed row with an old receipt and an interrupted rotation
   write(root, m::kIndex, receipt);  // crash between row flush and receipt update
   m::append(root, sample(), limits);
   CHECK(rows(read(root, m::kCsv)) == 3);
+  const auto recovered = std::string(m::csv_header()) + m::csv_line(sample()) + m::csv_line(sample());
+  bool preserved = false;
+  for (const auto& entry : fs::directory_iterator(root / "native-loader/backup/edits"))
+    preserved |= nl::fs::read_file(entry.path(), 1u << 20) == recovered;
+  CHECK(preserved);  // a valid row beyond the receipt could have been appended by the user
   fs::rename(nl::fs::join(root, m::kCsv), nl::fs::join(root, m::kRotated));
   write(root, m::kCsv, std::string(m::csv_header()) + m::csv_line(sample()));
   m::append(root, sample(), limits);  // rotation completed, receipt still describes the old active file

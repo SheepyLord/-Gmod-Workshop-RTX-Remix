@@ -43,6 +43,7 @@ struct Limits {
 // Appends and flushes one row, rotates only hash-verified owned files. Throws on locked/foreign/
 // edited files; their bytes stay intact. A receipt tolerates one flushed row after an interrupted
 // receipt update, or a rotation interrupted before the new receipt. Caller runs off startup path.
+// Recovered, unmatched bytes are also kept under backup/edits before being adopted for rotation.
 void append(const std::filesystem::path& root, const Sample& sample, const Limits& limits = {});
 // Only the latest system commit observation, for the home-menu warning; no history or GPU data.
 void write_commit(const std::filesystem::path& root, const Sample& sample, std::string_view token);

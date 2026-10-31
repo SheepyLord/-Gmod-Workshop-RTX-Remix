@@ -70,6 +70,7 @@ struct Report {
   std::string loader_version;
   std::string utc;
   std::uint32_t process_id = 0;
+  std::string session_token;  // PID + process creation FILETIME, for current-process menu notices
   deploy::Report deployment;
   double deployment_ms = 0;
   Activation activation;

@@ -7,6 +7,7 @@
 #include "../client/catalog.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
+#include "nl/memory.h"
 #include "nl/session.h"
 #include "nl/startup.h"
 #include "nl/status.h"
@@ -130,6 +131,7 @@ struct StartupContext {
     report.loader_version = NL_VERSION_STRING;
     report.utc = utc_now();
     report.process_id = GetCurrentProcessId();
+    report.session_token = memory::process_token();
     report.deployment.action = "apply";
     report.deployment.outcome = "skipped";
   }
@@ -144,7 +146,7 @@ void finish_report(StartupContext& context) {
   }
   if (context.prepared.config.from_file && context.prepared.config.enabled) {
     const auto note = telemetry::start(context.root, context.prepared.config.memory_telemetry);
-    if (!note.empty()) context.report.session.notes.push_back(note);
+    if (!note.empty()) context.report.session.notes.emplace_back(note);
   }
   context.report.startup_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - context.began).count();
   status::write(context.root, context.report);
