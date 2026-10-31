@@ -1,0 +1,804 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Codex <noreply@openai.com>
+Date: Sat, 31 Oct 2026 15:37:54 -0700
+Subject: [PATCH] Record GPU memory snapshots and rate-limit micromap budget
+ logs
+
+Share the device-local VRAM collector with GetVramStats, capture all driver
+heaps at cuts, five-minute intervals and device loss, and atomically keep
+a best-effort schema-1 crash marker before Sentry and termination.
+Keep independent micromap warning counts for the device lifetime.
+
+Add CPU-only timing, serialization and failed-write tests. Guard optional
+fork test targets whose ignored sources are absent from the recorded tree
+so a clean, verified build needs no unrecorded source files.
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ src/dxvk/dxvk_device.cpp                      |   3 +
+ src/dxvk/dxvk_objects.h                       |  13 +++
+ src/dxvk/dxvk_queue.cpp                       |   1 +
+ src/dxvk/meson.build                          |   4 +
+ src/dxvk/rtx_render/rtx_context.cpp           |   1 +
+ src/dxvk/rtx_render/rtx_fork_api_entry.cpp    |  38 +++----
+ src/dxvk/rtx_render/rtx_memory_stats.cpp      |  98 +++++++++++++++++
+ src/dxvk/rtx_render/rtx_memory_stats.h        |  44 ++++++++
+ src/dxvk/rtx_render/rtx_memory_stats_data.cpp |  95 ++++++++++++++++
+ src/dxvk/rtx_render/rtx_memory_stats_data.h   | 101 ++++++++++++++++++
+ .../rtx_opacity_micromap_manager.cpp          |   4 +-
+ tests/rtx/apps/RemixAPI/meson.build           |   3 +
+ tests/rtx/meson.build                         |   4 +-
+ tests/rtx/unit/meson.build                    |  58 ++++++----
+ tests/rtx/unit/test_memory_diagnostics.cpp    | 101 ++++++++++++++++++
+ 15 files changed, 521 insertions(+), 47 deletions(-)
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats.cpp
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats.h
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats_data.cpp
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats_data.h
+ create mode 100644 tests/rtx/unit/test_memory_diagnostics.cpp
+
+diff --git a/src/dxvk/dxvk_device.cpp b/src/dxvk/dxvk_device.cpp
+index 3cb6fe57..830c83a0 100644
+--- a/src/dxvk/dxvk_device.cpp
++++ b/src/dxvk/dxvk_device.cpp
+@@ -536,6 +536,9 @@ namespace dxvk {
+   DxvkObjects::DxvkObjects(DxvkDevice* device)
+     : m_device(device),
+     m_memoryManager(device),
++    // NV-DXVK start: Local memory diagnostics
++    m_memoryDiagnostics(device),
++    // NV-DXVK end
+     m_renderPassPool(device),
+     m_pipelineManager(device, &m_renderPassPool),
+     m_eventPool(device),
+diff --git a/src/dxvk/dxvk_objects.h b/src/dxvk/dxvk_objects.h
+index f37f2949..1167d3a4 100644
+--- a/src/dxvk/dxvk_objects.h
++++ b/src/dxvk/dxvk_objects.h
+@@ -37,6 +37,9 @@
+ #include "rtx_render/rtx_atmosphere.h"
+ #include "rtx_render/rtx_precipitation.h"
+ // NV-DXVK end
++// NV-DXVK start: Local memory diagnostics
++#include "rtx_render/rtx_memory_stats.h"
++// NV-DXVK end
+ #include "rtx_render/rtx_global_volumetrics.h"
+ #include "rtx_render/rtx_pathtracer_gbuffer.h"
+ #include "rtx_render/rtx_pathtracer_integrate_direct.h"
+@@ -107,6 +110,12 @@ namespace dxvk {
+       return m_memoryManager;
+     }
+ 
++    // NV-DXVK start: Local memory diagnostics
++    RtxMemoryDiagnostics& metaMemoryDiagnostics() {
++      return m_memoryDiagnostics.get();
++    }
++    // NV-DXVK end
++
+     DxvkRenderPassPool& renderPassPool() {
+       return m_renderPassPool;
+     }
+@@ -377,6 +386,10 @@ namespace dxvk {
+     DxvkDevice*                       m_device;
+ 
+     DxvkMemoryAllocator               m_memoryManager;
++
++    // NV-DXVK start: Local memory diagnostics
++    Active<RtxMemoryDiagnostics>       m_memoryDiagnostics;
++    // NV-DXVK end
+     DxvkRenderPassPool                m_renderPassPool;
+     DxvkPipelineManager               m_pipelineManager;
+ 
+diff --git a/src/dxvk/dxvk_queue.cpp b/src/dxvk/dxvk_queue.cpp
+index 4618915d..fe7f9c26 100644
+--- a/src/dxvk/dxvk_queue.cpp
++++ b/src/dxvk/dxvk_queue.cpp
+@@ -418,6 +418,7 @@ namespace dxvk {
+     // prepare the crash dialog window before the slow Sentry capture/upload below.
+     BridgeMessageChannel::get().send(kGpuCrashNotifyMsgName, 0, 0);
+ 
++    m_device->getCommon()->metaMemoryDiagnostics().onDeviceLoss();
+     waitForAftermathDump();
+     // Capture/upload the GPU crash (no-op if Sentry is inactive) before tearing down.
+     sentry::processPendingGpuCrashReports();
+diff --git a/src/dxvk/meson.build b/src/dxvk/meson.build
+index 25c2a4cd..696d9094 100644
+--- a/src/dxvk/meson.build
++++ b/src/dxvk/meson.build
+@@ -303,6 +303,10 @@ dxvk_src = files([
+   'rtx_render/rtx_mod_usd.h',
+   'rtx_render/rtx_nee_cache.cpp',
+   'rtx_render/rtx_nee_cache.h',
++  'rtx_render/rtx_memory_stats.cpp',
++  'rtx_render/rtx_memory_stats.h',
++  'rtx_render/rtx_memory_stats_data.cpp',
++  'rtx_render/rtx_memory_stats_data.h',
+   'rtx_render/rtx_neural_radiance_cache.cpp',
+   'rtx_render/rtx_neural_radiance_cache.h',
+   'rtx_render/rtx_ngx_wrapper.cpp',
+diff --git a/src/dxvk/rtx_render/rtx_context.cpp b/src/dxvk/rtx_render/rtx_context.cpp
+index ecba91f4..e876731a 100644
+--- a/src/dxvk/rtx_render/rtx_context.cpp
++++ b/src/dxvk/rtx_render/rtx_context.cpp
+@@ -916,6 +916,7 @@ namespace dxvk {
+ 
+   // Called right before D3D9 present
+   void RtxContext::onPresent(Rc<DxvkImage> targetImage) {
++    m_common->metaMemoryDiagnostics().onFrame(getSceneManager().getCameraManager().isCameraCutThisFrame());
+     {
+       static bool s_firstFrameDone = false;
+       if (!s_firstFrameDone) {
+diff --git a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+index d0ba3d4c..b69853a5 100644
+--- a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+@@ -861,36 +861,24 @@ namespace fork_hooks {
+     *out_stats = {};
+ 
+     auto device = remixDevice->GetDXVKDevice();
+-    const VkPhysicalDeviceMemoryProperties memProps = device->adapter()->memoryProperties();
+-    for (uint32_t i = 0; i < memProps.memoryHeapCount; i++) {
+-      const bool isDeviceLocal = (memProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
+-      if (!isDeviceLocal) {
+-        continue;
+-      }
+-      const DxvkMemoryStats stats = device->getMemoryStats(i);
+-      out_stats->totalAllocatedBytes               += stats.totalAllocated();
+-      out_stats->totalUsedBytes                    += stats.totalUsed();
+-      out_stats->usedReplacementGeometryBytes      += stats.usedByCategory(DxvkMemoryStats::Category::RTXReplacementGeometry);
+-      out_stats->usedBufferBytes                   += stats.usedByCategory(DxvkMemoryStats::Category::RTXBuffer);
+-      out_stats->usedAccelerationStructureBytes    += stats.usedByCategory(DxvkMemoryStats::Category::RTXAccelerationStructure);
+-      out_stats->usedOpacityMicromapBytes          += stats.usedByCategory(DxvkMemoryStats::Category::RTXOpacityMicromap);
+-      out_stats->usedMaterialTextureBytes          += stats.usedByCategory(DxvkMemoryStats::Category::RTXMaterialTexture);
+-      out_stats->usedRenderTargetBytes             += stats.usedByCategory(DxvkMemoryStats::Category::RTXRenderTarget);
+-      out_stats->usedAppTextureBytes               += stats.usedByCategory(DxvkMemoryStats::Category::AppTexture);
+-      out_stats->usedAppBufferBytes                += stats.usedByCategory(DxvkMemoryStats::Category::AppBuffer);
+-    }
++    const auto stats = device->getCommon()->metaMemoryDiagnostics().capture();
++    out_stats->totalAllocatedBytes               = stats.allocated;
++    out_stats->totalUsedBytes                    = stats.used;
++    out_stats->usedReplacementGeometryBytes      = stats.categories[MemorySnapshot::ReplacementGeometry];
++    out_stats->usedBufferBytes                   = stats.categories[MemorySnapshot::Buffer];
++    out_stats->usedAccelerationStructureBytes    = stats.categories[MemorySnapshot::AccelerationStructure];
++    out_stats->usedOpacityMicromapBytes          = stats.categories[MemorySnapshot::OpacityMicromap];
++    out_stats->usedMaterialTextureBytes          = stats.categories[MemorySnapshot::MaterialTexture];
++    out_stats->usedRenderTargetBytes             = stats.categories[MemorySnapshot::RenderTarget];
++    out_stats->usedAppTextureBytes               = stats.categories[MemorySnapshot::AppTexture];
++    out_stats->usedAppBufferBytes                = stats.categories[MemorySnapshot::AppBuffer];
+     out_stats->poolRetainedBytes =
+       (out_stats->totalAllocatedBytes > out_stats->totalUsedBytes)
+         ? (out_stats->totalAllocatedBytes - out_stats->totalUsedBytes)
+         : 0;
+ 
+-    const DxvkAdapterMemoryInfo memHeapInfo = device->adapter()->getMemoryHeapInfo();
+-    for (uint32_t i = 0; i < memHeapInfo.heapCount; i++) {
+-      if (memHeapInfo.heaps[i].heapFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+-        out_stats->driverAllocatedBytes += memHeapInfo.heaps[i].memoryAllocated;
+-        out_stats->driverBudgetBytes    += memHeapInfo.heaps[i].memoryBudget;
+-      }
+-    }
++    out_stats->driverAllocatedBytes = stats.driverUsage;
++    out_stats->driverBudgetBytes = stats.driverBudget;
+ 
+     out_stats->forkTextureCacheCount =
+       static_cast<uint32_t>(device->getCommon()->getTextureManager().getTextureTable().size());
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats.cpp b/src/dxvk/rtx_render/rtx_memory_stats.cpp
+new file mode 100644
+index 00000000..62ad965a
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats.cpp
+@@ -0,0 +1,98 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "rtx_memory_stats.h"
++
++#include "../dxvk_device.h"
++#include "../../util/util_filesys.h"
++
++namespace dxvk {
++
++  MemorySnapshot RtxMemoryDiagnostics::capture() const {
++    MemorySnapshot snapshot;
++    snapshot.frame = m_device->getCurrentFrameId();
++    const auto heaps = m_device->adapter()->getMemoryHeapInfo();
++    snapshot.heapCount = heaps.heapCount;
++    static_assert(VK_MAX_MEMORY_HEAPS == 16);
++    constexpr std::array<DxvkMemoryStats::Category, MemorySnapshot::CategoryCount> kCategories = {
++      DxvkMemoryStats::AppBuffer, DxvkMemoryStats::AppTexture,
++      DxvkMemoryStats::RTXReplacementGeometry, DxvkMemoryStats::RTXBuffer,
++      DxvkMemoryStats::RTXAccelerationStructure, DxvkMemoryStats::RTXOpacityMicromap,
++      DxvkMemoryStats::RTXMaterialTexture, DxvkMemoryStats::RTXRenderTarget
++    };
++    for (uint32_t i = 0; i < heaps.heapCount; ++i) {
++      const auto& heap = heaps.heaps[i];
++      snapshot.heaps[i] = {heap.memoryBudget, heap.memoryAllocated};
++      if (!(heap.heapFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)) {
++        continue;
++      }
++      snapshot.driverBudget += heap.memoryBudget;
++      snapshot.driverUsage += heap.memoryAllocated;
++      const auto stats = m_device->getMemoryStats(i);
++      snapshot.allocated += stats.totalAllocated();
++      snapshot.used += stats.totalUsed();
++      for (uint32_t category = 0; category < kCategories.size(); ++category) {
++        snapshot.categories[category] += stats.usedByCategory(kCategories[category]);
++      }
++    }
++    return snapshot;
++  }
++
++  void RtxMemoryDiagnostics::onFrame(bool cameraCut) noexcept {
++    try {
++      if (m_schedule.update(m_device->getCurrentFrameId(), cameraCut, MemoryLogSchedule::Clock::now())) {
++        Logger::info(str::format("[RTX Memory] ", capture().toJson(cameraCut ? "camera_cut" : "periodic")));
++      }
++    } catch (...) {
++      // Diagnostics must not turn an allocation failure into a rendering failure.
++    }
++  }
++
++  void RtxMemoryDiagnostics::onDeviceLoss() const noexcept {
++    try {
++      const auto snapshot = capture();
++      // Preserve the marker even when formatting or emitting the log fails.
++      const bool written = snapshot.writeCrashReport(util::RtxFileSys::path(util::RtxFileSys::Logs));
++      Logger::err(str::format("[RTX Memory] ", snapshot.toJson("device_lost")));
++      if (!written) {
++        Logger::err("[RTX Memory] Could not write last_gpu_crash.json");
++      }
++    } catch (...) {
++      // Device-loss termination must run even if diagnostics run out of memory or disk.
++    }
++  }
++
++  void RtxMemoryDiagnostics::logOmmBudget(bool allocationDenied, uint64_t requested, uint64_t available, uint64_t budget) {
++    const auto suppressed = m_ommWarnings[allocationDenied ? 1 : 0].record(MemoryLogThrottle::Clock::now());
++    if (!suppressed) {
++      return;
++    }
++    if (allocationDenied) {
++      Logger::info(str::format("[RTX Opacity Micromap] Out of memory budget. Requested: ", requested,
++                              " bytes. Free: ", available, " bytes, Budget: ", budget,
++                              " bytes (suppressed repeats: ", *suppressed, ")"));
++    } else {
++      Logger::info(str::format("[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0.",
++                              " (suppressed repeats: ", *suppressed, ")"));
++    }
++  }
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats.h b/src/dxvk/rtx_render/rtx_memory_stats.h
+new file mode 100644
+index 00000000..d6676f50
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats.h
+@@ -0,0 +1,44 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#pragma once
++
++#include "rtx_common_object.h"
++#include "rtx_memory_stats_data.h"
++
++namespace dxvk {
++
++  class RtxMemoryDiagnostics : public CommonDeviceObject {
++  public:
++    explicit RtxMemoryDiagnostics(DxvkDevice* device) : CommonDeviceObject(device) { }
++
++    MemorySnapshot capture() const;
++    void onFrame(bool cameraCut) noexcept;
++    void onDeviceLoss() const noexcept;
++    void logOmmBudget(bool allocationDenied, uint64_t requested, uint64_t available, uint64_t budget);
++
++  private:
++    MemoryLogSchedule m_schedule;
++    // The OMM manager is recreated on camera cuts; the device owns its warning limits.
++    std::array<MemoryLogThrottle, 2> m_ommWarnings;
++  };
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats_data.cpp b/src/dxvk/rtx_render/rtx_memory_stats_data.cpp
+new file mode 100644
+index 00000000..2821edc1
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats_data.cpp
+@@ -0,0 +1,95 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "rtx_memory_stats_data.h"
++
++#include <ctime>
++#include <fstream>
++#include <iomanip>
++#include <locale>
++#include <sstream>
++
++#ifdef _WIN32
++#include <windows.h>
++#endif
++
++namespace dxvk {
++
++  std::string MemorySnapshot::toJson(const char* event) const {
++    const std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
++    std::tm utc {};
++#ifdef _WIN32
++    gmtime_s(&utc, &time);
++#else
++    gmtime_r(&time, &utc);
++#endif
++    std::ostringstream stream;
++    stream.imbue(std::locale::classic());
++    stream << "{\"schema\":1,\"time_utc\":\"" << std::put_time(&utc, "%Y-%m-%dT%H:%M:%SZ")
++           << "\",\"event\":\"" << event << "\",\"frame\":" << frame << ",\"heaps\":[";
++    for (uint32_t i = 0; i < heapCount && i < heaps.size(); ++i) {
++      if (i) {
++        stream << ',';
++      }
++      stream << "{\"index\":" << i << ",\"budget\":" << heaps[i].budget << ",\"usage\":" << heaps[i].usage << '}';
++    }
++    stream << "],\"dxvk\":{\"allocated\":" << allocated << ",\"used\":" << used << "},\"categories\":{";
++    constexpr std::array<const char*, CategoryCount> kCategoryNames = {
++      "app_buffer", "app_texture", "replacement_geometry", "buffer",
++      "acceleration_structure", "opacity_micromap", "material_texture", "render_target"
++    };
++    for (uint32_t i = 0; i < categories.size(); ++i) {
++      if (i) {
++        stream << ',';
++      }
++      stream << '"' << kCategoryNames[i] << "\":" << categories[i];
++    }
++    stream << "}}";
++    return stream.str();
++  }
++
++  bool MemorySnapshot::writeCrashReport(const std::filesystem::path& directory) const noexcept {
++    try {
++      const auto temporary = directory / "last_gpu_crash.json.tmp";
++      const auto destination = directory / "last_gpu_crash.json";
++      std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
++      stream << toJson("device_lost") << '\n';
++      stream.flush();
++      if (!stream) {
++        return false;
++      }
++      stream.close();
++      if (!stream) {
++        return false;
++      }
++#ifdef _WIN32
++      return MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
++#else
++      std::error_code error;
++      std::filesystem::rename(temporary, destination, error);
++      return !error;
++#endif
++    } catch (...) {
++      return false;
++    }
++  }
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats_data.h b/src/dxvk/rtx_render/rtx_memory_stats_data.h
+new file mode 100644
+index 00000000..872c7658
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats_data.h
+@@ -0,0 +1,101 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#pragma once
++
++#include <array>
++#include <chrono>
++#include <cstdint>
++#include <filesystem>
++#include <optional>
++#include <string>
++
++namespace dxvk {
++
++  class MemoryLogThrottle {
++  public:
++    using Clock = std::chrono::steady_clock;
++
++    std::optional<uint64_t> record(Clock::time_point now) {
++      if (m_nextLog && now < *m_nextLog) {
++        ++m_suppressed;
++        return std::nullopt;
++      }
++      const uint64_t suppressed = m_suppressed;
++      m_suppressed = 0;
++      m_nextLog = now + std::chrono::minutes(1);
++      return suppressed;
++    }
++
++  private:
++    std::optional<Clock::time_point> m_nextLog;
++    uint64_t m_suppressed = 0;
++  };
++
++  class MemoryLogSchedule {
++  public:
++    using Clock = std::chrono::steady_clock;
++
++    explicit MemoryLogSchedule(Clock::time_point now = Clock::now())
++      : m_nextPeriodic(now + std::chrono::minutes(5)) { }
++
++    bool update(uint32_t frame, bool cameraCut, Clock::time_point now) {
++      if (m_lastFrame && *m_lastFrame == frame) {
++        return false;
++      }
++      m_lastFrame = frame;
++      const bool periodic = now >= m_nextPeriodic;
++      if (periodic) {
++        m_nextPeriodic = now + std::chrono::minutes(5);
++      }
++      return cameraCut || periodic;
++    }
++
++  private:
++    Clock::time_point m_nextPeriodic;
++    std::optional<uint32_t> m_lastFrame;
++  };
++
++  struct MemorySnapshot {
++    struct Heap {
++      uint64_t budget = 0;
++      uint64_t usage = 0;
++    };
++
++    enum Category : uint32_t {
++      AppBuffer, AppTexture, ReplacementGeometry, Buffer,
++      AccelerationStructure, OpacityMicromap, MaterialTexture, RenderTarget, CategoryCount
++    };
++
++    uint32_t frame = 0;
++    uint32_t heapCount = 0;
++    std::array<Heap, 16> heaps {};
++    uint64_t allocated = 0;
++    uint64_t used = 0;
++    uint64_t driverBudget = 0;
++    uint64_t driverUsage = 0;
++    std::array<uint64_t, CategoryCount> categories {};
++
++    std::string toJson(const char* event) const;
++    bool writeCrashReport(const std::filesystem::path& directory) const noexcept;
++  };
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
+index 9d49c51a..55e5bc68 100644
+--- a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
+@@ -187,7 +187,7 @@ namespace dxvk {
+     }
+   
+     if (m_budget != m_prevBudget && m_budget == 0) {
+-      ONCE(Logger::info("[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."));
++      m_device->getCommon()->metaMemoryDiagnostics().logOmmBudget(false, 0, getAvailable(), m_budget);
+     }
+ 
+     // Invalidate m_vidmemFreeSize to make sure we use it only when it was set at the end of the frame again
+@@ -196,7 +196,7 @@ namespace dxvk {
+ 
+   bool OpacityMicromapMemoryManager::allocate(VkDeviceSize size) {
+     if (size > getAvailable()) {
+-      ONCE(Logger::info(str::format("[RTX Opacity Micromap] Out of memory budget. Requested: ", size, " bytes. Free: ", getAvailable(), " bytes, Budget: ", getBudget(), " bytes")));
++      m_device->getCommon()->metaMemoryDiagnostics().logOmmBudget(true, size, getAvailable(), getBudget());
+       return false;
+     }
+ 
+diff --git a/tests/rtx/apps/RemixAPI/meson.build b/tests/rtx/apps/RemixAPI/meson.build
+index a316de0a..a52b3461 100644
+--- a/tests/rtx/apps/RemixAPI/meson.build
++++ b/tests/rtx/apps/RemixAPI/meson.build
+@@ -7,6 +7,8 @@ RemixAPI_exe = executable(
+ 
+ RemixAPI_exepath = join_paths(meson.current_build_dir(), RemixAPI_exe.name() + '.exe')
+ 
++# The fork's recorded source tree omits this optional, ignored test source.
++if fs.is_file('remixapi_medium_test.cpp')
+ RemixAPI_MediumTest_exe = executable(
+   'RemixAPI_MediumTest',
+   files('./remixapi_medium_test.cpp'),
+@@ -15,3 +17,4 @@ RemixAPI_MediumTest_exe = executable(
+ )
+ 
+ RemixAPI_MediumTest_exepath = join_paths(meson.current_build_dir(), RemixAPI_MediumTest_exe.name() + '.exe')
++endif
+diff --git a/tests/rtx/meson.build b/tests/rtx/meson.build
+index 008b3082..222b8dd2 100644
+--- a/tests/rtx/meson.build
++++ b/tests/rtx/meson.build
+@@ -19,8 +19,10 @@ if dxvk_is_ninja
+   dxvkrt_output_targets += {
+     'apics/RemixAPI'            : RemixAPI_exepath,
+     'apics/RemixAPI_C'          : RemixAPI_C_exepath,
+-    'apics/RemixAPI_MediumTest' : RemixAPI_MediumTest_exepath,
+   }
++  if is_variable('RemixAPI_MediumTest_exepath')
++    dxvkrt_output_targets += {'apics/RemixAPI_MediumTest': RemixAPI_MediumTest_exepath}
++  endif
+   if dxvk_is_msvc and build_os == 'windows'
+     dxvkrt_output_targets += {
+       'apics/HydraTestRender'  : HydraTestRender_exepath
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index 07f7d215..ffead481 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -86,19 +86,25 @@ exe = executable('test_remix_categories', files('test_remix_categories.cpp'), de
+ test('test_remix_categories', exe, env: test_env, priority : -50, args: [ d3d9_dll.full_path(), remix_categories_plugin.full_path() ], depends: [ d3d9_dll, remix_categories_plugin ])
+ tests += exe
+ 
+-exe = executable('test_particle_system_schema', files('test_particle_system_schema.cpp'), dependencies : usd_dep, win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+-test('test_particle_system_schema', exe, env: test_env, args: remix_particle_system_plugin.full_path(), depends: remix_particle_system_plugin)
+-tests += exe
++# These optional fork tests are not present in the recorded source tree.
++if fs.is_file('test_particle_system_schema.cpp')
++  exe = executable('test_particle_system_schema', files('test_particle_system_schema.cpp'), dependencies : usd_dep, win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++  test('test_particle_system_schema', exe, env: test_env, args: remix_particle_system_plugin.full_path(), depends: remix_particle_system_plugin)
++  tests += exe
++endif
+ 
+ exe = executable('test_graph_usd_parser',  files('graph/test_component.h', 'graph/test_flexible_component.h', 'graph/test_flexible_component.cpp', 'test_graph_usd_parser.cpp'),
+   include_directories : test_include_path, dependencies : [ test_unit_deps, d3d9_dep ], link_with: [ dxvk_lib ] , win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+ test('test_graph_usd_parser', exe, env: test_env)
+ tests += exe
+ 
+-exe = executable('test_hot_reload', files('test_hot_reload.cpp'),
+-  include_directories : test_include_path, dependencies : [ test_unit_deps, d3d9_dep ], link_with: [ dxvk_lib ], win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+-test('test_hot_reload', exe, env: test_env)
+-tests += exe
++# These optional fork tests are not present in the recorded source tree.
++if fs.is_file('test_hot_reload.cpp')
++  exe = executable('test_hot_reload', files('test_hot_reload.cpp'),
++    include_directories : test_include_path, dependencies : [ test_unit_deps, d3d9_dep ], link_with: [ dxvk_lib ], win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++  test('test_hot_reload', exe, env: test_env)
++  tests += exe
++endif
+ 
+ exe = executable('test_transform_components',  files('test_transform_components.cpp'), 
+   include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ dxvk_lib ] , win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+@@ -110,10 +116,13 @@ exe = executable('test_rtx_option',  files('test_rtx_option.cpp'),
+ test('test_rtx_option', exe, env: test_env)
+ tests += exe
+ 
+-exe = executable('test_rtx_option_dynamic',  files('test_rtx_option_dynamic.cpp'),
+-  include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ d3d9_dll, dxvk_lib ] , win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+-test('test_rtx_option_dynamic', exe, env: test_env)
+-tests += exe
++# These optional fork tests are not present in the recorded source tree.
++if fs.is_file('test_rtx_option_dynamic.cpp')
++  exe = executable('test_rtx_option_dynamic',  files('test_rtx_option_dynamic.cpp'),
++    include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ d3d9_dll, dxvk_lib ] , win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++  test('test_rtx_option_dynamic', exe, env: test_env)
++  tests += exe
++endif
+ 
+ exe = executable('test_option_layer_export',  files('test_option_layer_export.cpp'), 
+   include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ dxvk_lib ] , win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+@@ -129,15 +138,21 @@ exe = executable('test_f16tof32',  files('test_f16tof32.cpp'),  include_director
+ test('test_f16tof32', exe, env: test_env)
+ tests += exe
+ 
+-exe = executable('test_gpu_profile', files('test_gpu_profile.cpp'),
+-  include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ d3d9_dll, dxvk_lib ], win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+-test('test_gpu_profile', exe, env: test_env)
+-tests += exe
++# These optional fork tests are not present in the recorded source tree.
++if fs.is_file('test_gpu_profile.cpp')
++  exe = executable('test_gpu_profile', files('test_gpu_profile.cpp'),
++    include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ d3d9_dll, dxvk_lib ], win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++  test('test_gpu_profile', exe, env: test_env)
++  tests += exe
++endif
+ 
+-exe = executable('test_gpu_overrides', files('test_gpu_overrides.cpp'),
+-  include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ d3d9_dll, dxvk_lib ], win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+-test('test_gpu_overrides', exe, env: test_env)
+-tests += exe
++# These optional fork tests are not present in the recorded source tree.
++if fs.is_file('test_gpu_overrides.cpp')
++  exe = executable('test_gpu_overrides', files('test_gpu_overrides.cpp'),
++    include_directories : test_include_path, dependencies : [ d3d9_dep, test_unit_deps ], link_with: [ d3d9_dll, dxvk_lib ], win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++  test('test_gpu_overrides', exe, env: test_env)
++  tests += exe
++endif
+ 
+ if dxvk_is_x64 and get_option('remix_with_shim')
+   exe = executable('test_remix_shim', files('test_remix_shim.cpp'), include_directories : test_include_path, dependencies : test_unit_deps, win_subsystem : 'console', override_options: ['cpp_std='+dxvk_cpp_std])
+@@ -156,4 +171,9 @@ exe = executable('test_splash_message', files('test_splash_message.cpp'),
+ test('test_splash_message', exe, env: test_env, args: [meson.current_build_dir() / 'splash-fixture'])
+ tests += exe
+ 
++exe = executable('test_memory_diagnostics', files('test_memory_diagnostics.cpp', '../../../src/dxvk/rtx_render/rtx_memory_stats_data.cpp'),
++  win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_memory_diagnostics', exe, args: [meson.current_build_dir() / 'memory-fixture'])
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_memory_diagnostics.cpp b/tests/rtx/unit/test_memory_diagnostics.cpp
+new file mode 100644
+index 00000000..1341bab0
+--- /dev/null
++++ b/tests/rtx/unit/test_memory_diagnostics.cpp
+@@ -0,0 +1,101 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "../../../src/dxvk/rtx_render/rtx_memory_stats_data.h"
++
++#include <cstdlib>
++#include <fstream>
++#include <iostream>
++#include <iterator>
++#include <limits>
++
++int main(int argc, char** argv) {
++  using namespace dxvk;
++  using namespace std::chrono;
++  const auto check = [](bool passed, const char* message) {
++    if (!passed) {
++      std::cerr << message << '\n';
++      std::exit(1);
++    }
++  };
++  const MemoryLogThrottle::Clock::time_point start {};
++  MemoryLogThrottle warning;
++  MemoryLogThrottle otherWarning;
++  check(warning.record(start) == 0, "The first warning must log");
++  check(!warning.record(start + seconds(1)), "A repeated warning must be suppressed");
++  check(!warning.record(start + seconds(59)), "The limit lasts a full minute");
++  check(otherWarning.record(start + seconds(59)) == 0, "Warning kinds have independent limits");
++  check(warning.record(start + minutes(1)) == 2, "The next warning reports the suppressed count");
++  check(warning.record(start + minutes(3)) == 0, "An idle interval must not invent repeats");
++
++  MemoryLogSchedule schedule(start);
++  check(!schedule.update(0, false, start), "Do not sample every frame");
++  check(schedule.update(1, true, start + minutes(1)), "Camera cuts must sample");
++  check(!schedule.update(1, true, start + minutes(1)), "A repeated present must not log the cut twice");
++  check(schedule.update(2, true, start + minutes(4)), "Every camera cut must sample");
++  check(schedule.update(3, false, start + minutes(5)), "Camera cuts must not postpone periodic samples");
++  check(!schedule.update(4, false, start + minutes(6)), "Periodic samples must not flood the log");
++  check(schedule.update(5, true, start + minutes(10)), "A periodic sample and cut share one sample");
++  check(!schedule.update(6, false, start + minutes(10)), "The coincident periodic sample must advance its timer");
++
++  MemorySnapshot snapshot;
++  snapshot.frame = 42;
++  snapshot.heapCount = 2;
++  snapshot.heaps[0] = {8589934592ULL, 9007199254740993ULL};
++  snapshot.heaps[1] = {17179869184ULL, 64};
++  snapshot.allocated = 4294967296ULL;
++  snapshot.used = 123;
++  snapshot.categories[MemorySnapshot::OpacityMicromap] = std::numeric_limits<uint64_t>::max();
++  const std::string json = snapshot.toJson("device_lost");
++  check(json.find("\"schema\":1,\"time_utc\":\"") != std::string::npos, "The schema and UTC timestamp must be present");
++  check(json.find("Z\",\"event\":\"device_lost\",\"frame\":42") != std::string::npos, "The event, UTC suffix and frame must be present");
++  check(json.find("{\"index\":1,\"budget\":17179869184,\"usage\":64}") != std::string::npos, "Non-local heaps must be retained");
++  check(json.find("9007199254740993") != std::string::npos, "Heap bytes must not round through a floating point number");
++  check(json.find("\"opacity_micromap\":18446744073709551615") != std::string::npos, "Category bytes must retain all 64 bits");
++  check(json.find("\"app_texture\":0") != std::string::npos, "Zero categories must be present");
++
++  check(argc == 2, "A fixture directory is required");
++  const std::filesystem::path directory(argv[1]);
++  check(!std::filesystem::exists(directory), "Do not overwrite an existing fixture");
++  std::filesystem::create_directory(directory);
++  const auto report = directory / "last_gpu_crash.json";
++  const auto temporary = directory / "last_gpu_crash.json.tmp";
++  const auto read = [&] {
++    std::ifstream stream(report, std::ios::binary);
++    return std::string(std::istreambuf_iterator<char>(stream), {});
++  };
++  check(snapshot.writeCrashReport(directory), "Write the first crash marker");
++  check(read().find("\"frame\":42") != std::string::npos, "The marker must contain the snapshot");
++  snapshot.frame = 43;
++  check(snapshot.writeCrashReport(directory), "Replace the previous marker atomically");
++  const auto previous = read();
++  check(previous.find("\"frame\":43") != std::string::npos, "A second crash replaces the first marker");
++  check(!std::filesystem::exists(temporary), "A successful write must leave no temporary file");
++  std::filesystem::create_directory(temporary);
++  check(!snapshot.writeCrashReport(directory), "A blocked temporary file must fail without throwing");
++  check(read() == previous, "A failed write must preserve the previous marker");
++  check(!snapshot.writeCrashReport(directory / "missing"), "An unavailable log directory must fail without throwing");
++  std::filesystem::remove(temporary);
++  std::filesystem::remove(report);
++  std::filesystem::remove(directory);
++  std::cout << "Memory diagnostics tests passed\n";
++  return 0;
++}

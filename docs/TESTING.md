@@ -702,3 +702,54 @@ checks the resync rate limit and the single-shard cap; `test_player_body.py` cov
 private copy, draw-time reuse and the shared-material backoff. In game (not run in R4): after a
 late join on a map with many broken windows, every pane's debris is visible within a few seconds
 and the console shows no reliable-buffer overflow.
+
+### R6 T4: runtime memory diagnostics
+
+Patch 0015 registers `test_memory_diagnostics` in the runtime's `unit_tests` target. Use its
+dedicated `_CompUnitTest_x64` build, as described by the fork's `.agents/skills/run-unit-tests`.
+The test needs no GPU: it checks first/one-minute warning timing, independent suppressed counts,
+cut/present deduplication, a five-minute deadline unaffected by cuts, all heap/category fields,
+64-bit byte precision, replacement of an earlier crash marker, and preservation on write failure.
+The five optional fork tests whose sources are absent from the recorded tree are not registered.
+
+For the runtime build, apply all fifteen patches and run
+`runtime\build_runtime.ps1 -Fork <own clone> -Worktree <verified tree>`. `-Verify` checks the tree
+and SDK/submodule identities without building. T4 uses only preinstalled SDKs; APIC downloads are
+disabled and an offline resolver validates local Packman package/link identities before every
+dependency step. Run `python tools\inputs.py verify --part runtime --deep`,
+`python tools\build_package.py --require-nlctl` and `tools\test.ps1 -Config Release` after import.
+
+The project manager's later authorized PoC acceptance (not performed by T4):
+
+1. At a map/camera cut, find one `[RTX Memory]` JSON line with `event:"camera_cut"`, the current
+   frame, every driver heap's budget/use, and DXVK's device-local totals/eight categories. Compare
+   nearby values with `rtx_vram_stats`; they are sampled at different instants. Stay on the map for
+   five minutes and find `event:"periodic"` even if intervening cuts occurred.
+2. Under repeated OMM pressure, each warning kind logs immediately and then at most once every
+   sixty seconds, including `suppressed repeats: N`. A cut that recreates OMM must not reset its
+   limit. Counts are emitted with the next eligible occurrence, not on an idle timer.
+3. In a development build only, arm the crash hotkeys with process-local
+   `RTX_ENABLE_CRASH_HOTKEY=1` (or the Development tab), then Ctrl+Shift+Alt+G invokes the runtime's
+   GPU-crash shader. This ends the process. Check for `[RTX Memory]` with `event:"device_lost"`
+   before Sentry handling and a complete schema-1 `last_gpu_crash.json` beside the runtime log,
+   with UTC time and matching memory fields. The default folder is `rtx-remix/logs`; a process-local
+   `DXVK_LOG_PATH` relocates both. Repeat with an unwritable marker path: the original exit behavior
+   must remain. No Remix `user.conf` edit is needed.
+
+These diagnostics do not determine the cause of a GPU fault. Aftermath tests and real device-loss
+handling still need a game session; the CPU test covers serialization and best-effort file writes.
+
+T4's dedicated unit build passed 22/22 tests. Its unit install helper mishandles `!` in paths;
+stage `d3d9.dll` and the two compiled USD plugins/resources into the unit test directory using
+literal-path PowerShell copies instead of the affected batch helpers. The runtime rebuild and
+`-Verify` pass, input verification reports zero problems, and the 1,008-file combined GMA passes
+the worktree's `nlctl` checks. Build identities and exact import commands are in
+[runtime/README.md](../runtime/README.md#r6-t4-rebuild-2026-10-31).
+
+`tools\test.ps1 -Config Release` was run both at the unchanged `7759c43` checkout and after T4.
+Both runs pass repository conventions, 333 Python tests (two skips), and 22 of 23 CTests, with the
+same sole failure: `nl_render_guard_tests`, `test_early.cpp:198`, calls `last_write_time` on its
+260-character generated cache path without an extended-length path. Copying the unchanged guard
+test executable to `out/tmp/nl_render_guard_tests.exe` passes all 22 guard cases. T4 leaves
+`loader/` unchanged. Receipts: `out/tmp/release-baseline.log`, `release-final.log` and
+`guard-short-path.log`.
