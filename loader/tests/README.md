@@ -7,6 +7,7 @@ backward compatible.
 
 | File | Purpose |
 |---|---|
+| `test_memory.cpp` | R6 CSV columns/UTC/unavailable values, strict commit-warning boundaries, row/byte rotation, edited/foreign/locked files kept, interrupted receipt/rotation recovery, kernel counter smoke query and latest-only menu snapshot |
 | `test_evidence.cpp` | Previous-session classifications and optional/malformed runtime JSON, complete log preservation before truncation, ASCII/UTF-16 OOM strings across dump chunks, previous-start filtering, legacy loader record fallback, locked files, copy/retention bounds, user-edited archives and empty-start timing |
 | `CMakeLists.txt` | Builds `nl_tests` and `nl_fault_host`; registers the CTests `nl_tests` (everything but the exhaustive fault cases), `nl_tests_faults_upgrade`, `nl_tests_faults_other`, `nl_tests_faults_errors`, `nl_tests_faults_unsubscribe`, `nl_tests_faults_legacy`, `nl_tests_faults_legacy_stock` (one each, so they run in parallel) and `nl_deploy_faults` |
 | `nl_test.h` | Harness: `TEST_CASE("name") { ... }`, `CHECK(expr)` (record and continue), `REQUIRE(expr)` (record and end the case), `CHECK_THROWS_AS(expr, type)`, `scratch_dir(name)` |

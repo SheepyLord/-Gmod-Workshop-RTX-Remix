@@ -2,6 +2,15 @@
 
 ## R6 T2 evidence boundaries (2026-10-31)
 
+- `loader/core/src/memory.cpp` dynamically resolves `K32GetProcessMemoryInfo` and
+  `K32GetPerformanceInfo` from KERNEL32 and converts performance-info page counts to bytes. DXGI
+  is loaded from System32 and queried through `IDXGIAdapter3::QueryVideoMemoryInfo`; no PSAPI/DXGI
+  import library is linked. Release's `check_imports.py` still reports only `KERNEL32.dll`.
+- CSV rows use optional counters so an unavailable GPU query stays blank rather than appearing as
+  zero usage. Two 360-row/256-KiB segments bound default history to about one to two hours. The
+  latest system commit snapshot is independent of CSV history, so the RAM warning can work with
+  `diagnostics.memory_telemetry: "off"` without recording process/GPU data.
+
 - Release fixture measurement (30 consecutive empty collections on this machine): mean 0.556 ms,
   maximum 0.883 ms (a previous run averaged 1.419 ms, maximum 8.056 ms during concurrent work).
   Session-start metadata uses an atomic rename without the deployment journal's

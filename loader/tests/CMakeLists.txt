@@ -18,6 +18,7 @@ add_executable(nl_tests
   test_lzma.cpp
   test_m5.cpp
   test_manifest.cpp
+  test_memory.cpp
   test_package.cpp
   test_paths.cpp
   test_planner.cpp

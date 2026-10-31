@@ -2,6 +2,14 @@
 
 ## R6 T2 local evidence and telemetry
 
+`nl_tests "memory:"` checks byte/UTC CSV fields, unavailable counters, row/byte rotation,
+foreign/edited/locked history preservation, interrupted receipt/rotation recovery, actual kernel
+queries, latest-only commit snapshots and strict warning thresholds (below 32 GiB, above 70 percent,
+unknown/zero limit and overflow boundaries). The config test rejects invalid telemetry modes/types.
+`nl_telemetry_integration` uses the real DLL in generated synthetic host roots: two flushed samples
+ten seconds apart, previous history saved before new sampling, `nlctl` text/JSON, history off and
+loader disabled. `nl_proxy_kernel32_imports` checks static and delay import directories.
+
 `nl_tests "evidence:"` uses only generated game roots in the worktree's build tree. It covers every
 classification, optional/malformed structured GPU data, whole-log preservation before a simulated
 runtime truncation, ASCII/UTF-16 OOM strings crossing streaming chunks, stale/future file filtering,

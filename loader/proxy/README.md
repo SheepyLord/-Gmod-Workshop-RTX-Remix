@@ -31,6 +31,7 @@ See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
 
 | File | Purpose |
 |---|---|
+| `telemetry.h`, `telemetry.cpp` | R6 process-lifetime background worker, outside loader lock after evidence collection; flushes memory history every ten seconds and supplies the latest system-commit snapshot. Holds a bootstrap reference while running; no shutdown join under loader lock. History off queries only system commit; disabled loader starts no worker |
 | `presentation.h`, `presentation.cpp` | Loader 0.7.0: validate current Workshop package identities, build inert display GMAs and a targeted addon-menu overlay under `native-loader/presentation`; exact read redirects give GMod blue native-package cards and normal Workshop descriptions without changing depot or Workshop files ([ADR 0039](../../docs/decisions/0039-native-package-addon-presentation.md)). Loader 0.10.1: when the stock main menu controller changed, the main menu view still carries the multiplayer bootstrap trigger alone ([ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md)) |
 | `CMakeLists.txt` | MASM/RC, `nl_proxy_logic`, DLL, export consistency check and tests |
 | `activation.h`, `activation.cpp` | Pure path/root, quoted argument and off-switch decisions |

@@ -27,6 +27,11 @@ add_test(NAME nl_proxy_installer
 set_tests_properties(nl_proxy_installer PROPERTIES TIMEOUT 60)
 add_test(NAME nl_proxy_kernel32_imports
   COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/check_imports.py" "$<TARGET_FILE:nl_winmm>")
+add_test(NAME nl_telemetry_integration
+  COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/telemetry_integration.py"
+    --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>" --nlctl "$<TARGET_FILE:nlctl>"
+    --scratch "${PROJECT_SOURCE_DIR}/out/tmp/telemetry-$<CONFIG>")
+set_tests_properties(nl_telemetry_integration PROPERTIES TIMEOUT 90)
 
 add_library(nl_m4_static SHARED fixture_static.cpp)
 add_library(nl_m4_delay SHARED fixture_delay.cpp)

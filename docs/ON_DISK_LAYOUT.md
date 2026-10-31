@@ -1,5 +1,29 @@
 # On-disk layout (game side)
 
+## R6 memory diagnostics
+
+| Path relative to the game root | Meaning |
+|---|---|
+| `native-loader/logs/memory.csv` | Current UTC/byte CSV history; a background worker samples immediately after evidence collection, then every ten seconds. |
+| `native-loader/logs/memory.1.csv` | Previous segment. Each segment holds at most 360 samples (one hour) and 256 KiB: about one to two hours across both files. |
+| `native-loader/logs/memory-index.json` | Schema marker `native_loader_memory: 1`, sizes and SHA-256 for `active` and `rotated` files. Hash checks protect edited/unowned CSVs. One extra flushed row or an interrupted rotation can recover after a crash. |
+| `garrysmod/data/native-loader/memory.json` | Latest-only system commit snapshot: schema 1, current-process `session_token` (PID plus process creation FILETIME), `time_utc`, `commit_total`, `commit_limit`, `warning`. Used by the home-menu warning; overwritten atomically. No process/GPU counters or history. |
+
+CSV columns are `time_utc`, `private_bytes`, `working_set_bytes`, `system_commit_bytes`,
+`system_commit_limit_bytes`, `available_ram_bytes`, `gpu_local_usage_bytes`, `gpu_local_budget_bytes`,
+`gpu_nonlocal_usage_bytes`, `gpu_nonlocal_budget_bytes`. Timestamps use ISO 8601 UTC with milliseconds;
+all counters are bytes. A missing/failed counter is an empty CSV field. GPU counters are this process's
+DXGI node-0 usage/budget on the largest NVIDIA adapter, or the largest available hardware adapter
+when there is no NVIDIA adapter. These are not Remix's resource-category counters (T3's `vram.csv`).
+
+Optional config: `"diagnostics": {"memory_telemetry": "off"}` disables process/GPU queries and CSV
+history writes. Default is `"on"`; other values/types and unknown diagnostic keys are errors.
+The independent latest system commit observation remains available for the warning, without
+retaining history. The loader's global off switches, missing/invalid config and `enabled: false`
+start neither history nor the warning observer. No game/config/page-file changes, uploads or new DLL
+import dependencies. Existing diagnostics stay on uninstall. Locked, edited or unrecognized CSV
+history stops recording for that process and is kept; the menu commit snapshot continues.
+
 ## R6 local session evidence
 
 [ADR 0063](decisions/0063-local-session-evidence-and-memory-telemetry.md) adds:

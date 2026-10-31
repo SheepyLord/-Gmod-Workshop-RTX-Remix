@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R6 T2 (unreleased)
 
+- Record local process/system/GPU memory every ten seconds by default; `diagnostics.memory_telemetry`
+  (`"on"`/`"off"`) controls CSV history. Rotate about one to two hours across `memory.csv` and
+  `memory.1.csv`, preserve edited history, and retain a latest-only system commit snapshot for the
+  menu warning. DXGI stays runtime-loaded; the bootstrap still imports only KERNEL32.
 - Preserve the previous session's Remix log, local CPU/GPU crash files and memory history before
   the runtime overwrites its log. `status.json` and `nlctl status` report the likely failure and the
   local evidence folder. Keep five unchanged archives within 200 MiB; originals and edited copies

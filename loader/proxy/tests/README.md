@@ -8,6 +8,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 
 | File | Purpose |
 |---|---|
+| `telemetry_integration.py` | R6 real worker in a copied synthetic host: flushed ten-second samples, default/on/off/disabled policy, old CSV archived before new sampling and `nlctl status` text/JSON ([usage](telemetry_integration.py.md)) |
 | `test_presentation.cpp` | Display GMA CRC/index/metadata checks, inert payload, package identity and source-path refusal, cache edits preserved, stock menu marker validation, private-path exclusion and generated main-menu diagnostics redirect |
 | `test_presentation_hooks.cpp` | Real filesystem fixture IAT: exact A/W read redirects and attribute sizes, unrelated/write-capable/OPEN_ALWAYS calls unchanged, edited caches refused, uninstall pass-through and cache traversal boundary |
 | `CMakeLists.txt` | C++ fixtures/tests, generated-export check, PowerShell installer CTest |

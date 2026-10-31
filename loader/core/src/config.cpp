@@ -49,7 +49,7 @@ Config parse(std::string_view json_text) {
   }
   try {
     if (!root.is_object()) fail("the document must be a JSON object");
-    only_keys(root, "the config", {"schema", "enabled", "allow", "remix", "patch_sets"});
+    only_keys(root, "the config", {"schema", "enabled", "allow", "remix", "patch_sets", "diagnostics"});
     const Value* schema = root.find("schema");
     if (!schema) fail("missing \"schema\"");
     if (schema->as_int("schema") != kSchema) fail("schema " + std::to_string(schema->as_int()) + " is not supported (expected 1)");
@@ -92,6 +92,15 @@ Config parse(std::string_view json_text) {
       }
       if (const Value* render = patches->find("allow_rtx_render_patches"))
         c.allow_secure_rtx_render_patches = render->as_bool("patch_sets.allow_rtx_render_patches");
+    }
+    if (const Value* diagnostics = root.find("diagnostics")) {
+      only_keys(*diagnostics, "diagnostics", {"memory_telemetry"});
+      if (const Value* telemetry = diagnostics->find("memory_telemetry")) {
+        const auto& mode = telemetry->as_string("diagnostics.memory_telemetry");
+        if (mode == "on") c.memory_telemetry = true;
+        else if (mode == "off") c.memory_telemetry = false;
+        else fail("diagnostics.memory_telemetry must be \"on\" or \"off\"");
+      }
     }
     return c;
   } catch (const json::Error& e) {

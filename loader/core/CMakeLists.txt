@@ -18,6 +18,7 @@ add_library(nl_core STATIC
   src/legacy_migrate.cpp
   src/lzma.cpp
   src/manifest.cpp
+  src/memory.cpp
   src/package.cpp
   src/patch.cpp
   src/paths.cpp

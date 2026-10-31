@@ -44,6 +44,13 @@ change the page file, settings, launch options, native trust or Remix configurat
 
 ## Consequences
 
+Implementation detail: CSV history rotates hourly (360 rows per segment), with a 256-KiB per-file
+cap and size/hash receipts. Each logical append is flushed by atomic replacement of the small
+segment, so a crash cannot expose a partial row. History off disables process/GPU sampling and CSV
+writes; an independent latest-only system commit snapshot in the game's data folder lets the
+home-menu warning use a recent observation even with history off. Global loader off switches still
+disable both. Snapshot tokens include process creation time to reject previous-process data.
+
 Restarting preserves useful evidence instead of erasing it. Large copies run on a worker; a large
 old log can still delay runtime load, and startup waits for remaining evidence before entering the
 engine. Collection cannot recover dumps that the runtime already deleted, sources locked against

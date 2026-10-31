@@ -2,6 +2,7 @@
 #include "modules.h"
 #include "presentation.h"
 #include "runtime.h"
+#include "telemetry.h"
 #include "early.h"
 #include "../client/catalog.h"
 #include "nl/activate.h"
@@ -140,6 +141,10 @@ void finish_report(StartupContext& context) {
     context.report.previous_session = std::move(evidence.previous);
     for (auto& note : evidence.notes) context.report.session.notes.push_back(std::move(note));
     context.report.session.notes.push_back("previous session evidence collected in " + std::to_string(evidence.elapsed_ms) + " ms (worker)");
+  }
+  if (context.prepared.config.from_file && context.prepared.config.enabled) {
+    const auto note = telemetry::start(context.root, context.prepared.config.memory_telemetry);
+    if (!note.empty()) context.report.session.notes.push_back(note);
   }
   context.report.startup_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - context.began).count();
   status::write(context.root, context.report);

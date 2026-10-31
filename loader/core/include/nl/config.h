@@ -34,6 +34,7 @@ struct Config {
   bool subscribed_content = true;
   bool remix_enabled = true;             // false: runtime packages are planned but not activated
   Reshade reshade = Reshade::automatic;
+  bool memory_telemetry = true;           // diagnostics.memory_telemetry ("on"/"off", ADR 0063)
   bool patch_sets_require_insecure = true;
   bool allow_secure_rtx_render_patches = true; // exact reviewed renderer recipes only
   bool from_file = false;                // false: defaults, because config.json does not exist
