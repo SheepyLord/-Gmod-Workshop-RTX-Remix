@@ -6,6 +6,55 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (review R4 of the QoL batch and field QA; loader 0.10.1, [review](docs/handover/R4-review.md))
+
+- **Breaking glass no longer ends the game.** Shooting a window on modern_house, or spawning any
+  procedural glass, crashed RTX sessions on the material system's render thread (`studiorender.dll`
+  +0x6603b) with the user's `mat_queue_mode 2`: shards were drawn through DrawModel and
+  GetRenderMesh. They now draw their own mesh, and meshes a queued frame may still use are destroyed
+  eight frames later. Reproduced and bisected in the field install, fixed there.
+- **The toolgun screen's scrolling text is sharp.** The QoL redraw rendered the screen through a 3D
+  camera into a render target, which Remix takes into its path-traced scene, so it never reached the
+  screen. The screen is now drawn as projected 2D triangles after upscaling
+  ([ADR 0057](docs/decisions/0057-toolgun-screen-as-2d-overlay.md)).
+- **"Recalculate normals for RTX"** shows its label on the External Models tab: two Model Hotloader
+  keys lacked the `mmdhl.` prefix in all seven catalogs. `check_addon_i18n.py` now checks every phrase
+  Model Hotloader looks up.
+- The legacy Remix migration never blocks the package: links in a former installation (Mount HL2
+  RTX's) stay and are never followed; a junctioned game folder, a library under a mount point and a
+  linked `d3d9.dll` no longer stop the apply; on another GMod build or beside an unknown edit Steam's
+  files stay as they are, with a note, while the rest is archived; files an RTX-off deployment adopted
+  are archived too; a migration that cannot be planned is a note
+  ([ADR 0055](docs/decisions/0055-legacy-migration-never-blocks.md)).
+- RTX activates when its early render-guard view cannot be prepared (a game update changed
+  `includes/init.lua`); the companion guard then installs from its autorun, and a changed owned cache
+  is kept aside and rewritten. The view installs only on the machine whose loader wrote it, so a listen
+  host no longer gives it to vanilla clients. The guard reports original Lua errors with their stack,
+  quarantines only after three consecutive failures and never a gamemode method (hands keep drawing),
+  and resynchronizes scopes left open by other add-ons. With `patch_sets.allow_rtx_render_patches:
+  false` and no `-insecure` the start stays vanilla instead of running the renderer without its fixes.
+  The multiplayer bootstrap has its own menu trigger, no longer runs the RTX scripts twice on listen
+  hosts and `sv_allowcslua 1` servers, and reaches the client realm only protected; the helper is
+  rebuilt ([ADR 0056](docs/decisions/0056-guard-and-startup-fallbacks.md)).
+- RTXDebug 0.2.1 decides "single-player" from the engine (loopback net channel, one slot), not from
+  the client realm's Lua, which a server's scripts could replace while replicating `sv_cheats`: a
+  malicious insecure server could otherwise reach memory writes for a player launched with
+  `-insecure`. Outside local single-player it no longer returns module addresses, file probes, the
+  console list or non-rendering convars to server-sent Lua.
+- Runtime patch 0014: Discard Changes and Revert All work without a `user.conf`; a settings file or
+  the diagnostic preferences that exist but cannot be read at launch are never saved over; saves retry
+  briefly held files, rewrite a linked target in place and show a failure; the outline-shell rule skips
+  view models and mirrored geometry (`d3d9.dll` `40a50fd5`).
+- `poc_session.py`: `--menu-shot` captures the main menu; the runtime's crash-report prompts are
+  declined (No, never Yes) instead of holding the next run until it times out. `install-loader.ps1`
+  names the way out when a bundle was extracted over an installed loader. Loader version 0.10.1.
+
+### Added (agent skills)
+
+- [`skills/`](skills/README.md): `mmd-remix-pbr` (AI PBR materials for MMD characters with `rpai`),
+  `remix-map-pbr` (map remasters for RTX Remix) and `workshop-content-pack` (characters and maps with
+  their dependencies as hidden Workshop items), written so another agent can repeat the work.
+
 - Loader 0.10.0 hardens RTX graphics-add-on startup (C13): verified early rendering guards,
   scoped later multiplayer installation, process-only stock D3D9 selection and vanilla fallback
   if required V2 preparation fails. Validate rendering resources, preserve session settings,

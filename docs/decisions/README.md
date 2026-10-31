@@ -51,16 +51,19 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0043](0043-player-body-viewmodel-and-shadows.md) | Independent first-person arms, private local-body categories and RTX-tab shadow/height controls | Accepted 2026-10-30 |
 | [0044](0044-remix-settings-persistence.md) | Explicit GMod startup overrides, guarded numeric controls and atomic checked Remix saves | Accepted 2026-10-30 |
 | [0045](0045-diagnostic-consent-and-welcome.md) | Explicit saved diagnostic consent, legacy SDK archival and an interactive twelve-second welcome timeout | Accepted 2026-10-30 |
-| [0046](0046-toolgun-screen-after-upscaling.md) | Full-resolution live toolgun screen with private depth masking and a translated opt-out | Accepted 2026-10-30 |
+| [0046](0046-toolgun-screen-after-upscaling.md) | Full-resolution live toolgun screen with private depth masking and a translated opt-out | Accepted 2026-10-30; mechanism superseded by [0057](0057-toolgun-screen-as-2d-overlay.md) |
 | [0047](0047-ignore-incompatible-model-outlines.md) | Default-on suppression of incompatible outline shells through transient owned options and a translated opt-out | Accepted 2026-10-30 |
 | [0048](0048-layered-alpha-cutouts.md) | Reject transparent cutout candidates before ray commitment and keep cached acceleration opacity flags current | Accepted 2026-10-30 |
 | [0049](0049-importer-normals-material-labels-and-motion-access.md) | Additive imported-model geometry normals, original AME material labels/current-row handoff, and a dedicated VMD launcher | Accepted 2026-10-30 |
 | [0050](0050-startup-text-and-main-menu-diagnostics.md) | Editable localized project splash and local main-menu system/version/hash diagnostics | Accepted 2026-10-30 |
 | [0051](0051-path-bounce-defaults.md) | Default minimum/maximum path bounces to 1/12 while preserving explicit overrides | Accepted 2026-10-30 |
-| [0052](0052-scoped-rtx-multiplayer-bootstrap.md) | Verified RTX-owner multiplayer scripts and exact rendering recipe exception, preserving community Lua and unsafe debug gates | Accepted |
+| [0052](0052-scoped-rtx-multiplayer-bootstrap.md) | Verified RTX-owner multiplayer scripts and exact rendering recipe exception, preserving community Lua and unsafe debug gates | Accepted; amended by [0056](0056-guard-and-startup-fallbacks.md) |
 | [0053](0053-oversized-hardware-skinning.md) | Share a scoped dynamic/direct hardware draw path for certified oversized groups and existing user-forced weighted draws | Accepted |
-| [0054](0054-rtx-rendering-startup-boundaries.md) | RTX-only process backend selection and verified early client guard, with bounded Lua rendering compatibility and explicit evidence limits | Accepted design; validation in progress |
+| [0054](0054-rtx-rendering-startup-boundaries.md) | RTX-only process backend selection and verified early client guard, with bounded Lua rendering compatibility and explicit evidence limits | Accepted design; validation in progress; amended by [0056](0056-guard-and-startup-fallbacks.md) |
 | [0055](0055-legacy-migration-never-blocks.md) | The legacy migration never blocks the package: unplannable migrations are notes, links stay, other builds keep Steam's files, adopted files are archived | Accepted |
+| [0056](0056-guard-and-startup-fallbacks.md) | A guard that cannot be prepared early never disables RTX (autorun fallback, kept-aside cache); the view's proof is local to the machine; the crashing opt-out stays vanilla; bootstrap and quarantine fixes | Accepted (R4) |
+| [0057](0057-toolgun-screen-as-2d-overlay.md) | The toolgun screen is redrawn as projected 2D triangles after upscaling, since Remix takes perspective draws into its scene | Accepted (R4) |
+| [0058](0058-gmpublish-preflight-fallback-recorded.md) | The gmpublish preflight fallback for a stale Steam process id, kept and bounded | Accepted (R4) |
 
 ## Template
 

@@ -2626,3 +2626,30 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   with micromaps disabled. GBuffer compute-query, raygen-query and trace-ray views were clear;
   skin changes, opt-out/re-enable and normal micromaps were exercised. RTXDebug Engine.GetConVar
   independently reported nativeloader_ignore_outlines=1 with archive flags.
+
+## R4 field facts (2026-10-31, Claude)
+
+Measured on the user's install (RTX 5090, loader 0.10.0 and the published package, the user's
+`mat_queue_mode "2"`, 766 subscriptions); evidence in the main checkout's `out\qa-field\`.
+
+- **Procedural glass and queued rendering.** Drawing a `procedural_shard` with `ENT:Draw` ->
+  `self:DrawModel()` and `ENT:GetRenderMesh` returning a Lua `IMesh` crashed the game on the material
+  system's render thread: access violation reading `0xffffffffffffffff` at `studiorender.dll+0x6603b`,
+  called from `+0x141b9` <- `+0x5cb21` <- `+0x5fea7` <- `materialsystem.dll` queued context <- a
+  `vstdlib.dll` job thread; no project module on that stack. It happened for map debris and for the
+  add-on's own spawned pane alike, and not at all when the entity drew its mesh itself
+  (`cam.PushModelMatrix(self:GetWorldTransformMatrix())` + `IMesh:Draw()`). Destroying meshes late alone
+  did not stop it. Codex's PoC acceptance of the map glass ran with the default `mat_queue_mode`.
+- **What Remix rasterizes into a render target.** In an RTX session, 2D draws into a render target from
+  `HUDPaint` work as in Direct3D 9 (`render.Clear`, `render.ClearRenderTarget` and an opaque rectangle
+  all clear it; moving text leaves no trail). The same 2D draws from `PostDrawOpaqueRenderables` leave
+  the target black. A perspective draw (`cam.Start` with a 3D camera) is taken into the path-traced
+  scene even inside `HUDPaint`. Dynamic Toolgun Screen's target (`DTScreen_Screen512`, drawn in
+  `SWEP:RenderScreen`) is sharp when shown flat on the HUD; on the gun only the path-traced screen is
+  seen, whose scrolling text smears under temporal reconstruction.
+- **Crash-report prompts.** After a crash the runtime's next start shows "RTX Remix Crash Report"
+  (Yes/No, in the Windows language: `はい(&Y)` / `いいえ(&N)` here), and after No may show a notice that
+  pending reports could not be removed (OK). `WM_COMMAND` with `IDNO` (7), then `IDOK` (1), answers
+  them in any language; the reports folder is emptied when it can be.
+- **Field timings.** With 766 subscriptions the Workshop remount took 16.5 s and gm_construct was ready
+  23-27 s after launch; the loader's start-up took 0.34-0.36 s.

@@ -1,6 +1,6 @@
 # 0046: Draw the live toolgun screen after upscaling
 
-- Status: Accepted 2026-10-30
+- Status: Accepted 2026-10-30; its mechanism is superseded by [0057](0057-toolgun-screen-as-2d-overlay.md)
 - Decided by: the user's request 22
 
 ## Context

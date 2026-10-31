@@ -1,6 +1,6 @@
 # 0054: RTX rendering compatibility at client startup
 
-- Status: Accepted; implementation and local acceptance complete
+- Status: Accepted; implementation and local acceptance complete; amended by [0056](0056-guard-and-startup-fallbacks.md)
 - Decided by: the user's C13 graphics-add-on/map-load hardening request and the scoped implementation
 
 ## Context
