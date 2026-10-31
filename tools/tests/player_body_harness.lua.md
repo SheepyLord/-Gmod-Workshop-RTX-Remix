@@ -13,3 +13,10 @@ or setup from that callback. It verifies repeated callbacks do not accumulate of
 draw refreshes the snapshot, bone counts are bounded, and invalid names, unused bones, missing
 source/destination matrices and model/name mismatches cannot be written. It also exercises engines
 without the optional bone-flag API/enum and ensures unexpected draw errors are not swallowed.
+
+Review R4: a slot whose material does not exist leaves out only that slot (overridden with the
+proxy's own `rtx_pseudoplayer_noslot`, never the shared original), is reported once and is not
+looked up again on later draws, while the rest of the body draws; a failed capture is retried once,
+five seconds later (a mocked clock, `RealTime`). Thirty draws reuse one pose snapshot, read the
+material list once (it is re-read twice a second), make no translation vectors (the matrix doubles
+count `GetTranslation`; the proxy uses `GetField`/`SetField`) and register a categorized slot once.

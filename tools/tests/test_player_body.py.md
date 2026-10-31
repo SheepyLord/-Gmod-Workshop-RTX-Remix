@@ -13,3 +13,8 @@ and skips incompatible models, invalid/unused bones and missing matrices.
 
 The harness also migrates a file-authored shared player tag with no native bookkeeping, preserves
 unrelated decal flags, and defers procedural lookup until a real draw provides hashes.
+
+Review R4 checks: one slot without a private copy leaves out only itself (reported once, not looked
+up every frame) while the body still draws; draws reuse the pose snapshot and the material list and
+register a categorized slot once; a shared material whose player tags are off is not looked up
+again, and one not drawn yet is looked up less and less often until its hashes appear.

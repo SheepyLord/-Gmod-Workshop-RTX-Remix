@@ -178,14 +178,14 @@
    "imported": "2026-10-30T11:10:22+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\mp-fixes-source\\rtx_pseudoplayer.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-companion\\out\\staging\\fixes\\rtx_pseudoplayer.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-companion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d30c6b15d5a2917e5fb1428a4bed585ca05be44",
+    "commit": "f5f0aba4b093f612ca2e0037b38e773f4b743a5f",
     "dirty": false
    },
-   "imported": "2026-10-31T07:35:32+00:00"
+   "imported": "2026-10-31T13:31:05+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\entities\\rtx_pseudoweapon.lua",
@@ -478,34 +478,34 @@
    "imported": "2026-10-31T12:36:28+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\player-body-arms\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\cl_remix_category_1_pseudoplayer.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-companion\\out\\staging\\fixes\\cl_remix_category_1_pseudoplayer.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/player-body-arms",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-companion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "369dac9bc88913877745379b40db21bfe4cd4841",
+    "commit": "f5f0aba4b093f612ca2e0037b38e773f4b743a5f",
     "dirty": false
    },
-   "imported": "2026-10-30T22:31:04+00:00"
+   "imported": "2026-10-31T13:31:05+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua.md": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\mp-fixes-source\\rtx_pseudoplayer.lua.md",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-companion\\out\\staging\\fixes\\rtx_pseudoplayer.lua.md",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-companion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d30c6b15d5a2917e5fb1428a4bed585ca05be44",
+    "commit": "f5f0aba4b093f612ca2e0037b38e773f4b743a5f",
     "dirty": false
    },
-   "imported": "2026-10-31T07:39:37+00:00"
+   "imported": "2026-10-31T13:31:05+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua.md": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\player-body-arms\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\cl_remix_category_1_pseudoplayer.lua.md",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-companion\\out\\staging\\fixes\\cl_remix_category_1_pseudoplayer.lua.md",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/player-body-arms",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-companion",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "369dac9bc88913877745379b40db21bfe4cd4841",
+    "commit": "f5f0aba4b093f612ca2e0037b38e773f4b743a5f",
     "dirty": false
    },
-   "imported": "2026-10-30T22:36:27+00:00"
+   "imported": "2026-10-31T13:31:05+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_misc.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\player-body-arms\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\cl_rtx_misc.lua",
@@ -1296,15 +1296,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua": {
-   "size": 8879,
-   "sha256": "bf6f39995e47afed4d165a749456a4e1c25361dde8b71bf3ab469b6f826d1040",
-   "mtime_ns": 1793431805497369400,
+   "size": 12633,
+   "sha256": "dcd3178c31205fcb9e7ad8ca53520f9fa0939ed547470c0d48607635b76f9bc7",
+   "mtime_ns": 1793452371189852500,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoplayer.lua.md": {
-   "size": 2004,
-   "sha256": "866b94d74def3637eaa9a7597896304f11004305aa135a7105ad36545a124e2f",
-   "mtime_ns": 1793431805498877500,
+   "size": 3104,
+   "sha256": "260833dc3ee66cfe021e791e11a981da85b1ff7876dddefdbac838f6fcf43054",
+   "mtime_ns": 1793452780432965000,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/entities/rtx_pseudoweapon.lua": {
@@ -1512,15 +1512,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua": {
-   "size": 4364,
-   "sha256": "c2b9670a93744216bd0ab6238194f225422af0be67ca8aa58a31643f761e0400",
-   "mtime_ns": 1793399464330021900,
+   "size": 5187,
+   "sha256": "9f1dc47ce074c00d01877027b50aa714c4b1334ff37243e2c4ec1bcdbb4c1fda",
+   "mtime_ns": 1793452618154127100,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua.md": {
-   "size": 1013,
-   "sha256": "21bc62459d1a0b5f7589fa1fb1da851ef7e155166eaef8bc959ae16ba397d727",
-   "mtime_ns": 1793399787241490400,
+   "size": 1482,
+   "sha256": "093725845dd6dc5a7edb2953f287a73cd7ba5d80da71e4eb6349f16480a268df",
+   "mtime_ns": 1793452634707611700,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_debug.lua": {
