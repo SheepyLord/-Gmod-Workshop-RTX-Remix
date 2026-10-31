@@ -2653,3 +2653,20 @@ Measured on the user's install (RTX 5090, loader 0.10.0 and the published packag
   them in any language; the reports folder is emptied when it can be.
 - **Field timings.** With 766 subscriptions the Workshop remount took 16.5 s and gm_construct was ready
   23-27 s after launch; the loader's start-up took 0.34-0.36 s.
+- **GMod's menu reads generated JavaScript as Windows-1252.** A UTF-8 `·` written into the loader's
+  copy of `control.Menu.js` showed as `Â·`, and every translated label as mojibake; `\uXXXX` escapes
+  (ASCII only) show correctly in all seven languages (loader 0.10.1).
+- **The RTX fixes' late model flush races queued rendering** (PoC, the same game binaries as the
+  field, `-windowed 1280x720`, no Workshop mount). `cl_rtx.lua` calls
+  `RTX_ReloadModelsAfterHardwareSkinningSettings` (`MDLCACHE_FLUSH_STUDIOHWDATA`) once at autorun and
+  once one second after `InitPostEntity`, when the world is drawn. 4 of 8 starts crashed within a
+  few seconds of that second flush: access violation reading 0 at `studiorender.dll+0x5d353` on a
+  `vstdlib.dll` job thread running the `materialsystem.dll` queued context, `[HWSkin] CRASH in
+  DrawGroupHWSkin trampoline!` or `[HWSkin] Exception in RenderFinal trampoline` logged during the
+  flush. The fork's SEH guards around those hooks date from upstream (2026-08), so the race predates
+  the QoL batch. The field (766 add-ons, 4K) reached the map 14 times without it. `RunConsoleCommand
+  ("mat_queue_mode", "0")` from client Lua is accepted, and the material system leaves queued mode at
+  a frame boundary after waiting for its thread.
+- **Minidumps and the declined prompt.** The dump of a crash is written to
+  `rtx-remix\logs\.sentry-native\reports\<uuid>.dmp`; once the next start's prompt is answered No,
+  Remix deletes it, so a test harness must copy it before that start.

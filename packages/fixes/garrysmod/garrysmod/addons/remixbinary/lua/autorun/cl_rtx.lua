@@ -183,13 +183,43 @@ end)
 -- this autorun file first load. Those jobs may repopulate MDLCache with DX90
 -- topology after the initial flush. Run one final hardware-data-only flush
 -- once map initialization and its preload batch have completed.
+--
+-- The world is drawn by then. With queued rendering (mat_queue_mode 2, what
+-- gmod_mcore_test 1 picks) the material system's own thread may be drawing the
+-- very meshes the flush discards: about half of the native loader's PoC starts
+-- crashed there in studiorender, "[HWSkin] CRASH in DrawGroupHWSkin" logged
+-- during the flush (review R4, 2026-10-31). So queued rendering is switched off
+-- for the flush (leaving that mode, the material system waits for its thread at
+-- the next frame) and the player's value is put back after it. If the switch
+-- does not take, the flush is skipped rather than raced.
+local FINAL_RELOAD_FRAMES = 4
+
+local function FinalModelReload()
+    if not RTX_ReloadModelsAfterHardwareSkinningSettings then return end
+    local queue = GetConVar("mat_queue_mode")
+    local previous = queue and queue:GetString()
+    if not previous or previous == "0" then
+        RTX_ReloadModelsAfterHardwareSkinningSettings()
+        return
+    end
+
+    RunConsoleCommand("mat_queue_mode", "0")
+    local flushAt = FrameNumber() + FINAL_RELOAD_FRAMES
+    hook.Add("Think", "RTXHardwareSkinning_FinalModelReload", function()
+        if FrameNumber() < flushAt then return end
+        hook.Remove("Think", "RTXHardwareSkinning_FinalModelReload")
+        if queue:GetString() == "0" then
+            RTX_ReloadModelsAfterHardwareSkinningSettings()
+        else
+            print("[gmRTX - Hardware Skinning] Queued rendering stayed on; the final model reload was skipped")
+        end
+        RunConsoleCommand("mat_queue_mode", previous)
+    end)
+end
+
 hook.Add("InitPostEntity", "RTXHardwareSkinning_FinalModelReload", function()
     if NATIVELOADER_VERIFIED_MULTIPLAYER then return end
-    timer.Simple(1, function()
-        if RTX_ReloadModelsAfterHardwareSkinningSettings then
-            RTX_ReloadModelsAfterHardwareSkinningSettings()
-        end
-    end)
+    timer.Simple(1, FinalModelReload)
 end)
 
 -- Load all sub-addons

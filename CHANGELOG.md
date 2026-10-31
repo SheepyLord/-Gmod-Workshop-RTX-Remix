@@ -45,9 +45,19 @@ Versions follow the loader's CMake project version once it ships; until then eve
   the diagnostic preferences that exist but cannot be read at launch are never saved over; saves retry
   briefly held files, rewrite a linked target in place and show a failure; the outline-shell rule skips
   view models and mirrored geometry (`d3d9.dll` `40a50fd5`).
+- **RTX starts no longer crash a few seconds into the map** (found on the PoC, 4 of 8 starts): the RTX
+  fixes discard the models' hardware meshes one second after the map's entities spawn, while the
+  material system's own thread may still draw them. That one flush now runs with queued rendering
+  switched off for a moment, and the player's `mat_queue_mode` is put back.
+- **The main menu's text is readable in every language.** GMod reads the loader's generated menu
+  script as Windows-1252, which turned the diagnostics panel's separator and every translated label
+  into mojibake; the script is now written as ASCII with `\u` escapes.
 - `poc_session.py`: `--menu-shot` captures the main menu; the runtime's crash-report prompts are
-  declined (No, never Yes) instead of holding the next run until it times out. `install-loader.ps1`
+  declined (No, never Yes) instead of holding the next run until it times out, and the crash's
+  minidumps are kept in the evidence first (Remix deletes them once declined). `install-loader.ps1`
   names the way out when a bundle was extracted over an installed loader. Loader version 0.10.1.
+- [`tools/qa/release_qa.py`](tools/qa/release_qa.py.md) runs the release QA protocol in one command,
+  on the user's install or on the PoC before a publish, and judges each session by its rules.
 
 ### Added (agent skills)
 
