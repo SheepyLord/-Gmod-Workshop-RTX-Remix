@@ -137,21 +137,75 @@ ents.FindByClass=function()return shards end
 util={AddNetworkString=function()end}
 AddCSLuaFile=function()end
 include=function()return function()end,function()end end
+local clock,requested=0,1
+CurTime=function()return clock end
 net={Receive=function(name,callback)receivers[name]=callback end,
     Start=function()current={bits=0,integers={}}end,
     WriteBool=function(v)current.bits=current.bits+1;current.full=v end,
     WriteUInt=function(v,n)current.bits=current.bits+n;current.integers[#current.integers+1]=v end,
     WriteFloat=function()current.bits=current.bits+32 end,
-    Send=function()packets[#packets+1]=current end,
-    ReadEntity=function()return shards[1]end}
+    Send=function(ply)current.to=ply;packets[#packets+1]=current end,
+    ReadEntity=function()return shards[requested]end}
 assert(loadfile(arg[2]))()
-receivers.SHARD_NETWORK(0,{})
-local total=0
-for _,packet in ipairs(packets)do
-    check(packet.full and packet.bits<60000*8,'late-join shard packet stays below net ceiling')
-    total=total+packet.integers[1]
+local function tick()
+    local before=#packets;run('Tick');clock=clock+1/66
+    local sent={};for i=before+1,#packets do sent[#sent+1]=packets[i] end
+    return sent
 end
-check(total==256 and #packets>1,'all valid shards delivered in bounded batches')
-packets={};receivers.SHARD_NETWORK(16,{})
-check(#packets==1 and not packets[1].full,'single-shard request protocol unchanged')
+local function bits(list,ply) local n=0;for _,p in ipairs(list)do if p.to==ply then n=n+p.bits end end;return n end
+-- A late join after 256 shattered windows (about 920 KB): nothing inside the request, then one
+-- bounded batch per tick until every valid shard was sent.
+local joiner={}
+receivers.SHARD_NETWORK(0,joiner)
+check(#packets==0,'a full resync is not written inside the request handler')
+local total,ticks=0,0
+repeat
+    local sent=tick();ticks=ticks+1
+    check(#sent<=1,'one full-update batch per tick')
+    for _,packet in ipairs(sent)do
+        check(packet.full and packet.bits<=16000*8,'late-join batch stays within the per-tick pace')
+        total=total+packet.integers[1]
+    end
+    -- Requests repeated while it is running are ignored.
+    if ticks==3 then receivers.SHARD_NETWORK(0,joiner) end
+until #sent==0 or ticks>1000
+check(total==256 and ticks>16,'all valid shards delivered over many ticks: '..total..' in '..ticks)
+-- One full resync per player per interval: an empty-request flood serializes nothing more.
+for _=1,50 do receivers.SHARD_NETWORK(0,joiner) end
+check(#tick()==0,'a repeated full resync within the interval is ignored')
+clock=clock+31;receivers.SHARD_NETWORK(0,joiner)
+local again=tick()
+check(#again==1 and again[1].full,'a full resync is granted again after the interval')
+while #tick()>0 do end
+-- Two joiners at once: each gets at most one batch per tick.
+local other={};clock=clock+31
+receivers.SHARD_NETWORK(0,joiner);receivers.SHARD_NETWORK(0,other)
+for _=1,5 do
+    local sent=tick()
+    check(#sent==2 and sent[1].to~=sent[2].to,'one batch per joiner per tick')
+end
+while #tick()>0 do end
+-- Single-shard requests (post-break): answered on the tick, the same shard once, bounded per tick.
+packets={}
+requested=1;receivers.SHARD_NETWORK(16,joiner)
+check(#packets==0,'a single-shard answer waits for the tick')
+local sent=tick()
+check(#sent==1 and not sent[1].full,'single-shard request protocol unchanged')
+for _=1,10 do receivers.SHARD_NETWORK(16,joiner) end
+check(#tick()==1,'the same shard requested repeatedly is queued once')
+requested=#shards-1;receivers.SHARD_NETWORK(16,joiner)
+requested=#shards;receivers.SHARD_NETWORK(16,joiner)
+check(#tick()==0,'invalid or empty shards are not answered')
+for i=1,40 do requested=i;receivers.SHARD_NETWORK(16,joiner) end
+local answered,rounds=0,0
+repeat
+    sent=tick();rounds=rounds+1
+    check(#sent<=16 and bits(sent,joiner)<=16000*8,'single-shard answers are capped per tick')
+    answered=answered+#sent
+until #sent==0 or rounds>100
+check(answered==40 and rounds>2,'every requested shard is answered over several ticks')
+-- A player who leaves takes the queue along.
+for i=1,10 do requested=i;receivers.SHARD_NETWORK(16,other) end
+run('PlayerDisconnected',other)
+check(#tick()==0,'a disconnected player is sent nothing')
 print('all glass map assertions passed: '..checks)
