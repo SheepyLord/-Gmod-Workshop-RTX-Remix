@@ -1,5 +1,12 @@
 # Components
 
+R6 T6 adds [`tools/sky/drop_top_mip.py`](../tools/sky/drop_top_mip.py.md), a standard-library DDS
+mip-removal tool, with generated-fixture coverage in
+[`tools/tests/test_drop_top_mip.py`](../tools/tests/test_drop_top_mip.py.md). The runtime packager's
+`--tier-conf TIER FILE` stores optional `rtx.*` payloads under `config/dxvk-tiers/` without listing
+them as unconditional layers; R6 T1 selects the tier. Sources and smaller skies are indexed in
+`packages/runtime/files.json` ([ADR 0064](decisions/0064-performance-tier-defaults.md)).
+
 `loader/guard/` prepares the verified client rendering guard's early stock-initializer read redirect;
 `loader/guard/tests/` exercises generated-file ownership, stock hashes, cache integrity and off switches.
 

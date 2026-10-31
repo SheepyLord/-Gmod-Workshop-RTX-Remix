@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R6 T6 (unreleased)
+
+- Add optional medium/low performance-tier payloads to the runtime package, preserving classic high
+  settings and user overrides. Candidate bounce/NRC and memory defaults await PoC frame-time, VRAM
+  and visual validation. The earlier sandbox's Steamworks failure is recorded in ADR 0064.
+- Ship 4096-wide night-sky copies for low, retaining the existing compressed mip data exactly:
+  53.33 MiB of texels versus 213.33 MiB. Add a validated DDS mip-removal tool and packager support
+  for conditional `rtx.*` tier layers ([ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

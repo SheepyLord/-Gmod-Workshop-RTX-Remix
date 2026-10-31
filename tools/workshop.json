@@ -21,6 +21,12 @@
         "out/inputs/runtime/layers/classic_remix_defaults.conf",
         "--dxvk-conf",
         "out/inputs/runtime/layers/compiler_threads.conf",
+        "--tier-conf",
+        "medium",
+        "out/inputs/runtime/layers/medium.conf",
+        "--tier-conf",
+        "low",
+        "out/inputs/runtime/layers/low.conf",
         "--env",
         "DXVK_FORCE_WINDOWED=1"
       ]

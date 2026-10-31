@@ -41,6 +41,56 @@
     "dirty": false
    },
    "imported": "2026-10-31T06:02:06+00:00"
+  },
+  "layers/medium.conf": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\layers\\medium.conf",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "layers/low.conf": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\layers\\low.conf",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/stars_4096.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\stars_4096.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/galaxy_4096.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\galaxy_4096.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/nebula_4096.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\nebula_4096.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
   }
  },
  "files": {
@@ -66,6 +116,14 @@
    "stored_size": 7430664,
    "stored_sha256": "ef3f2173ac3b7a06724c4c0ca83402b5cae148cceb84b012fa07d60264804952"
   },
+  "files/atmosphere/galaxy_4096.dds": {
+   "size": 11184976,
+   "sha256": "d27c8afd7fb849ce1143fada7df12b2a87595492497895974b01b1f5290c1482",
+   "mtime_ns": 1793485460720740000,
+   "stored": "xz",
+   "stored_size": 2046012,
+   "stored_sha256": "1e6478769547187f03a0e9db40bf20d4f6c1792d101ba4fe5cf2c32ff3febe50"
+  },
   "files/atmosphere/moon_albedo.dds": {
    "size": 2796388,
    "sha256": "b9ba3192d025e1c7840b3d89b75567722e310a80517bf9c9170bb449d19cec6f",
@@ -90,6 +148,14 @@
    "stored_size": 36617144,
    "stored_sha256": "a187706e6aa5d6ec08bbdb5a1a3c3244311c98b476ed4b93ba5a51ed3d97601d"
   },
+  "files/atmosphere/nebula_4096.dds": {
+   "size": 22369796,
+   "sha256": "08c763d0032408455f68602643082c20e64e8dbe7e1aebe6477bd26b99dd9222",
+   "mtime_ns": 1793485460997232200,
+   "stored": "xz",
+   "stored_size": 10673456,
+   "stored_sha256": "69361337508fd111c8514eb6e2e53f774d001a2734e57502c3113d1aa4536591"
+  },
   "files/atmosphere/stars.dds": {
    "size": 89478640,
    "sha256": "158ea3c9842a839b52a6930400b496617a61556f2cf2ceb9cb9504be9be0486c",
@@ -97,6 +163,14 @@
    "stored": "xz",
    "stored_size": 5399612,
    "stored_sha256": "cceb00c9d9d8d31576d9b7afb4e0908fbb5b499b1f6637c339de9d2f2270080a"
+  },
+  "files/atmosphere/stars_4096.dds": {
+   "size": 22369776,
+   "sha256": "189004af92e3c244d1ce1414fad09164102a862ac6080a41e835a513fc8850f8",
+   "mtime_ns": 1793485460504905500,
+   "stored": "xz",
+   "stored_size": 2091640,
+   "stored_sha256": "398f768605be09923350f82750026c52a83d011aaee2c7e1d3ff723c6c683ab4"
   },
   "files/crashpad_handler.exe": {
    "size": 1094144,
@@ -1322,6 +1396,18 @@
    "size": 319,
    "sha256": "fdb168ee65505699c13d8f8396825dc22e38666cf9f2864c5026677ce9f1ebb0",
    "mtime_ns": 1793310301440089100,
+   "stored": "plain"
+  },
+  "layers/low.conf": {
+   "size": 1367,
+   "sha256": "52026dfe20d279c408f74c66eb10fcf46714aa71befe920445bd77dbd16c0173",
+   "mtime_ns": 1793485448930795300,
+   "stored": "plain"
+  },
+  "layers/medium.conf": {
+   "size": 1005,
+   "sha256": "61c3d9da87e3eac01f3484570fce8d8a70334ada7c46de0054d0a91ca697b97c",
+   "mtime_ns": 1793485445954797300,
    "stored": "plain"
   }
  }

@@ -1,5 +1,43 @@
 # Research notes
 
+## R6 T6: tier inputs and DDS measurements (2026-10-31)
+
+- Source files in `out/inputs/runtime/files/atmosphere/`, from the runtime input index: stars DXT5
+  8192 × 8192 (89,478,640 bytes), galaxy DXT5 8192 × 4096 (44,739,408), nebula DX10 BC7 UNORM
+  8192 × 8192 (89,478,660), all 14 mips. After dropping only mip 0 they have 13 mips and occupy
+  22,369,776 / 11,184,976 / 22,369,796 bytes respectively. The original lower mips, including
+  minimum 4 × 4 blocks, compare byte for byte (`tools/sky/drop_top_mip.py`). Derived texel storage
+  falls from 213.33 to 53.33 MiB, exactly 160 MiB saved, excluding driver alignment/overhead.
+- The three imported xz inputs add 14,811,108 bytes (14.13 MiB) to Git LFS, rather than the
+  proposal's estimated 12 MB. The files and their uncompressed/stored hashes are indexed in
+  `packages/runtime/files.json`; the original DDS inputs and runtime DLLs remain unchanged.
+- At runtime commit `6f2dbd79`, `rtx_atmosphere.cpp`'s `resolveSkyTexturePath` joins a relative
+  option to `runtimeFolder()`; `loadSkyTexture:731–813` allocates all declared mip levels and uploads
+  each. The low-tier paths therefore need no loader substitution and do not depend on the game's
+  working directory.
+- At that same commit, `rtx_neural_radiance_cache.cpp:379–422` derives training settings when the
+  NRC preset changes: Ultra 4 iterations/9 bounces/1 cm cache detail; High 3/7/4 cm; Medium 2/6/6 cm.
+  The callback selects the Derived edit target, routed to User under Custom, so duplicating those
+  training values in a lower tier layer cannot override it. The tier selects only the NRC preset.
+- The T6 combined package built from this branch's inputs contains 1,013 payload files and
+  1,893,630,963 payload bytes (GMA 1,893,940,498 bytes), accepted by Release `nlctl manifest`.
+  The new tier payloads are absent from the unconditional DXVK layer list.
+- PoC attempt at 22:27:49 UTC deployed generation 59 and initialized `remix-main+6f2dbd79`, then
+  stopped at a Steamworks error: "Could not determine Steam client install directory."
+  No console/map/FPS/VRAM sample was produced. Evidence: this worktree's
+  `out/t6-evidence/startup-error-full.png`, `sessions/session.json`, and the copied Remix log.
+  Steam discovery also required an explicit client path for the read-only depot verifier in this
+  execution context. All 2,877 depot files passed before the attempt; `autoexec.cfg` was the one
+  allowed user-config difference. This is an environment blocker, not performance evidence.
+  [ADR 0064](decisions/0064-performance-tier-defaults.md) records the unverified tuning and remaining
+  acceptance checks.
+- Resumed as the user: `tools/test.ps1 -Config Release` passes (23/23 CTests; Python groups
+  28/25/287 tests, two expected skips), as do `inputs.py verify --deep` and the combined package
+  with `--require-nlctl`. Logs: `out/t6-release-resumed.log`, `out/t6-inputs-resumed.log`,
+  `out/t6-package-resumed.log`. The previous registry/Git failures were sandbox artifacts.
+  The running field game (PID 24620) prevents the one-game-at-a-time PoC comparisons; it was left
+  alone and the user was asked to quit normally. No PoC files changed during this resumed attempt.
+
 ## R4 start-up, guard and bootstrap review (loader 0.10.1)
 
 Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock

@@ -1,5 +1,42 @@
 # Testing
 
+## R6 T6 performance-tier payloads
+
+`tools\test.ps1 -Config Release` includes `tools/tests/test_package_runtime.py`: optional
+medium/low tiers are hashed, copied, archived and inventoried at fixed `config/dxvk-tiers/` paths,
+without changing the manifest schema/requirement or its unconditional layer lists. Invalid tier
+names, repeated tiers, non-rtx keys, malformed/empty/duplicate assignments, bad UTF-8 and missing or
+non-conf files are refused before output. Existing runtime packager behavior remains covered.
+
+`tools/tests/test_drop_top_mip.py` uses independently generated compressed DDS fixtures: legacy and
+DX10, rectangular images, minimum block sizes, exact mip 1 and lower-mip bytes, header preservation,
+single remaining mip flags, corrupt headers/lengths/shapes/formats and refused overwrites. All
+scratch stays under `out/tmp`. Run these alone from the worktree root with:
+
+```powershell
+python -c "import sys,unittest; sys.path.insert(0,'tools'); unittest.main(module=None,argv=['unittest','tests.test_package_runtime','tests.test_drop_top_mip','-v'])"
+python tools/inputs.py verify --deep
+python tools/build_package.py --require-nlctl --keep-work
+```
+
+Real-asset verification: regenerate the three `_4096.dds` files with
+[`drop_top_mip.py`](../tools/sky/drop_top_mip.py.md), compare the output hashes to
+`packages/runtime/files.json` and verify the retained bytes against source mip 1 onward. The
+combined package's generated manifest/inventory must contain both tier payloads and all three
+smaller skies, while its default DXVK layer list still contains only classic/compiler layers.
+
+On resuming as the user, the required `tools\test.ps1 -Config Release` passes: conventions, all
+23 CTests, and Python groups of 28/25/287 tests (two expected skips). All ten parts pass deep input
+verification, and the actual combined package passes `--require-nlctl`. Evidence is in
+`out/t6-release-resumed.log`, `out/t6-inputs-resumed.log` and `out/t6-package-resumed.log`. The
+earlier sandbox's registry/Git failures are superseded; no tests were skipped or changed to pass.
+
+PoC acceptance remains pending: the original sandbox could not initialize Steamworks, and the
+resumed attempt found the field game running. T6's one-game-at-a-time rule prevents launching the
+PoC until it is closed normally. Do not close the field session from the harness. ADR 0064 gives
+the still-unverified tuning and two-map/sky comparisons. The earlier PoC snapshot was restored
+and hash-verified; no PoC changes have been made by the resumed attempt.
+
 ## Release QA protocol (field install, R4)
 
 What review R4 used to test a release on the user's own install quickly and without guesswork. One
