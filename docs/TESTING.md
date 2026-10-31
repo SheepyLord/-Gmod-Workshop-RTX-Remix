@@ -702,3 +702,28 @@ checks the resync rate limit and the single-shard cap; `test_player_body.py` cov
 private copy, draw-time reuse and the shared-material backoff. In game (not run in R4): after a
 late join on a map with many broken windows, every pane's debris is visible within a few seconds
 and the console shows no reliable-buffer overflow.
+
+### R6 T5 fixes memory-limit compatibility
+
+The GPL source bundle's
+[`test_memory_limits.py`](../packages/fixes/licenses/oversized-skinning/memory-limits/tests/test_memory_limits.py.md)
+compiles the actual production method and Lua wrapper bodies in a fake SDK harness. Run from a
+VS 2022 x64 developer shell, with TEMP/TMP below this worktree's `out/tmp`:
+
+```powershell
+python packages/fixes/licenses/oversized-skinning/memory-limits/tests/test_memory_limits.py --out out/tmp/memory-limits-test
+```
+
+It checks 8,000 concurrent calls, an absent runtime, the retained Lua `true` result, both invalid
+argument cases, a single explanatory log and zero configuration writes. It rejects a module-open
+call or unsupported key strings in the resource source. The native branch's existing
+`oversized_skinning_test.cpp` also passes C++17 `/W4 /WX`, with assertions enabled. Build both
+the base and changed module using the recorded projects and dependencies; compare PE architecture,
+imports/exports and unsupported-option strings, then `inputs.py verify --part fixes --deep`.
+See [source and rebuild pins](../packages/fixes/licenses/oversized-skinning/memory-limits/Source.md).
+
+Integration acceptance (not run by T5): enter maps repeatedly and confirm no
+`rtx.resourceLimits` rejection in `remix-dxvk.log`. Explicitly call
+`RemixResource.SetMemoryLimits(256, 1024)` twice: both return `true`, one compatibility notice
+appears per loaded module lifetime, and no limit-setting API writes occur. No game is launched by
+the offline checks.

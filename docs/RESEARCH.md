@@ -2839,3 +2839,28 @@ and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
   `d3d9.dll` compiling pipelines, about 4 s after the device was created, with the same stack both
   times (`out\qa-field\r5-sky\08-night-sky-debug-views` on the package before R5,
   `out\qa-field\r5-release\03-map-glass` on R5's; both reruns clean). Recorded for the stability work.
+
+## R6 T5 fixes memory-limit compatibility
+
+- `packages/fixes/files.json` initially attributed the native DLL to an aggregate staging path
+  (`out/oversized-native-build`) at aggregate commit `04592ae8`; the actual native source is
+  pinned in `packages/fixes/licenses/oversized-skinning/build-pins.json`:
+  `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`. Using the fork checkout's `fc478c06` instead would
+  lose the later oversized-skinning fixes. The new import stages the DLL inside its native
+  worktree, so its origin records native commit `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`.
+- The source delta from that base is four native files: removal of the module-open call
+  (`source/module.cpp`, formerly line 431), a no-op implementation
+  (`source/remixapi/remixapi.cpp:1329`), its declaration comment (`remixapi.h:298`) and the Lua
+  binding comment (`resource_lua_bindings.cpp:75`). The Lua number checks and `true` result remain.
+  The README and a standalone regression are the only other changed files. Full snapshots and
+  the commit patch are in [the corresponding source bundle](../packages/fixes/licenses/oversized-skinning/memory-limits/Source.md).
+- Baseline and changed builds use the same generated projects, dependency revisions,
+  `ReleaseWithSymbols|x64`, MSVC 14.44.35207 and Windows SDK 10.0.26100.0. The 4,848,128-byte old
+  DLL becomes 4,847,616 bytes. PE x64 imports/exports match; both rejected-key strings occur in
+  the original and rebuilt baseline and are absent from the new DLL. HardwareSkinningHooks.cpp
+  matches the preceding source hash exactly; the policy header/test match after CRLF normalization.
+- The earlier restricted attempt could not write the original fork's `.git`. Its shared bare clone
+  under the task's `out/fixes-origin.git` hosts `r6-no-memory-limits`, with its clean worktree at
+  `out/fixes-source`; the resumed run preserves that already-committed source and rebuilt DLL.
+  Recursive dependencies were archived from locally available git objects at their pinned
+  revisions, without fetching or modifying the original checkout. The new commit is unpushed.

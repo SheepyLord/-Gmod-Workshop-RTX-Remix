@@ -1,5 +1,11 @@
 # Roadmap
 
+R6 T5's native memory-limit cleanup is implemented on `r6-t5-fixes`: the controlled rebuild,
+offline compatibility regression and existing oversized-skinning regression pass. The imported
+DLL keeps its previous native base and records the new fixes commit; see
+[ADR 0066](decisions/0066-fixes-memory-limits-compatibility.md). ToPBR compression and the final
+Release/package checks remain in progress. Game acceptance belongs to R6 integration.
+
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.

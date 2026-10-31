@@ -6,6 +6,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R6 T5 (unreleased)
+
+- The RTX fixes no longer submit unsupported cache/VRAM limits at each map load. The legacy
+  `RemixResource.SetMemoryLimits` Lua method remains a documented no-op that logs once when
+  explicitly called, preserving its numeric arguments and `true` result without configuration
+  writes ([ADR 0066](docs/decisions/0066-fixes-memory-limits-compatibility.md)).
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

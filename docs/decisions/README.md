@@ -67,6 +67,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0059](0059-outline-shell-rule-opt-in.md) | The front-cull outline shell rule is an opt-in (`nativeloader_ignore_outline_shells`, default 0); `nativeloader_ignore_outlines` keeps only the name rule, for materials of loaded models; amends 0047 | Accepted (R4) |
 | [0060](0060-motion-tab-hosts-the-importer.md) | The Motion importer tab is the importer: the add-on's importer and Motion Manager built into the tab by its own builders (its windows use them too), in External Models' look | Accepted (R4) |
 | [0061](0061-loose-glass-breaks-again-and-expires.md) | Broken glass (map debris and the add-on's fragments) is loose physics that players pass through, breaks again until it is dust, shares one 256-piece budget and fades out after `rtx_glass_debris_lifetime` (default 120 s); supersedes part of 0040 | Accepted 2026-10-31 (R5, the user's report) |
+| [0066](0066-fixes-memory-limits-compatibility.md) | Remove the fixes' startup memory-limit call; preserve the Lua API as a documented no-op with one notice and no configuration writes | Accepted 2026-10-31 (R6 T5) |
 
 ## Template
 

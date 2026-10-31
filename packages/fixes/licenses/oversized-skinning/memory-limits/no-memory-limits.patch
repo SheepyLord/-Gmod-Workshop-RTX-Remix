@@ -1,0 +1,261 @@
+From a2c8dbc5e00e3effe49a8de9609dd1b8af34d552 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 15:26:13 -0700
+Subject: [PATCH] Deprecate unsupported Remix resource memory limits without
+ config writes
+
+Remove the module-open SetMemoryLimits call and keep the legacy Lua API as a
+documented no-op. Log once per module lifetime while preserving number checks
+and its true return value. Never substitute User-layer budget settings.
+
+Add an offline regression covering concurrent calls, disconnected Remix and
+Lua compatibility. The prior oversized-skinning policy test still passes.
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ README.md                                 |   9 ++
+ source/module.cpp                         |   3 -
+ source/remixapi/remixapi.cpp              |  13 ++-
+ source/remixapi/remixapi.h                |   2 +-
+ source/remixapi/resource_lua_bindings.cpp |   2 +
+ tests/test_memory_limits.py               | 117 ++++++++++++++++++++++
+ tests/test_memory_limits.py.md            |  19 ++++
+ 7 files changed, 156 insertions(+), 9 deletions(-)
+ create mode 100644 tests/test_memory_limits.py
+ create mode 100644 tests/test_memory_limits.py.md
+
+diff --git a/README.md b/README.md
+index c2304ac..84771ee 100644
+--- a/README.md
++++ b/README.md
+@@ -45,6 +45,15 @@ The standalone [policy and restoration test](tests/oversized_skinning_test.md) n
+ Real rendering acceptance also needs animated large models, multiple skins, ordinary models and
+ first-person arms with r_forcehwskin both off and on.
+ 
++## Legacy memory-limit API
++
++`RemixResource.SetMemoryLimits(maxCacheSize, maxVRAM)` is a deprecated compatibility no-op.
++Remix has no cache-size or VRAM-limit options matching this API. The two arguments must still be
++numbers and the function still returns `true`, so existing add-ons can call it, but neither value
++sets a limit. The first explicit call logs this once per loaded module lifetime. Module startup
++does not call it. It never writes Remix configuration, including the User layer that Save persists
++to `user.conf`; use the loader's performance tiers for package defaults instead.
++
+ ## Installation
+ - Switch to the `x86-64` branch of Garry's Mod on Steam
+ - Ensure you've ran the vanilla game at least once, especially if you switched branches.
+diff --git a/source/module.cpp b/source/module.cpp
+index d718969..03d2b40 100644
+--- a/source/module.cpp
++++ b/source/module.cpp
+@@ -427,9 +427,6 @@ GMOD_MODULE_OPEN() {
+         InitCullingPatches();
+         RegisterCullingPatchLuaFunctions(LUA);
+ 
+-        // Set resource limits
+-        RemixAPI::RemixAPI::Instance().GetResourceManager().SetMemoryLimits(256, 1024);
+-
+         GlobalConvars::InitialiseConVars();
+         RegisterTextureCleanupCommands();
+ #endif //_WIN64
+diff --git a/source/remixapi/remixapi.cpp b/source/remixapi/remixapi.cpp
+index 717b24d..28c3b53 100644
+--- a/source/remixapi/remixapi.cpp
++++ b/source/remixapi/remixapi.cpp
+@@ -1326,11 +1326,14 @@ bool ResourceManager::GetVramStats(remixapi_VramStats& stats) const {
+     return true;
+ }
+ 
+-void ResourceManager::SetMemoryLimits(size_t maxCacheSize, size_t maxVRAM) {
+-    if (!m_remixInterface) return;
+-
+-    m_remixInterface->SetConfigVariable("rtx.resourceLimits.maxCacheSize", std::to_string(maxCacheSize).c_str());
+-    m_remixInterface->SetConfigVariable("rtx.resourceLimits.maxVRAM", std::to_string(maxVRAM).c_str());
++void ResourceManager::SetMemoryLimits(size_t, size_t) {
++    // Compatibility only: Remix has never supported these limits. Do not substitute
++    // other options here: API writes enter the User layer and may be saved to user.conf.
++    static const bool reported = [] {
++        Msg("[ResourceManager] SetMemoryLimits is a no-op: Remix has no cache/VRAM limit options; no limits were changed.\n");
++        return true;
++    }();
++    (void)reported;
+ }
+ 
+ //=============================================================================
+diff --git a/source/remixapi/remixapi.h b/source/remixapi/remixapi.h
+index 16a374b..0af8140 100644
+--- a/source/remixapi/remixapi.h
++++ b/source/remixapi/remixapi.h
+@@ -295,7 +295,7 @@ namespace RemixAPI {
+         bool ForceCleanup();
+         bool GetVramStats(remixapi_VramStats& stats) const;
+         
+-        // Memory management
++        // Deprecated compatibility no-op. Logs once per module lifetime; sets no limits.
+         void SetMemoryLimits(size_t maxCacheSize, size_t maxVRAM);
+         
+         // Lua bindings
+diff --git a/source/remixapi/resource_lua_bindings.cpp b/source/remixapi/resource_lua_bindings.cpp
+index 0723abc..e47824c 100644
+--- a/source/remixapi/resource_lua_bindings.cpp
++++ b/source/remixapi/resource_lua_bindings.cpp
+@@ -72,6 +72,8 @@ LUA_FUNCTION(RemixResource_GetVramStats) {
+ }
+ 
+ // Lua function: RemixResource.SetMemoryLimits(maxCacheSize, maxVRAM)
++// Deprecated no-op: validates the legacy arguments and returns true for compatibility.
++// No Remix options are written; ResourceManager logs the unsupported limits once.
+ LUA_FUNCTION(RemixResource_SetMemoryLimits) {
+     if (!LUA->IsType(1, Type::Number)) {
+         LUA->ThrowError("Expected number for max cache size (MB)");
+diff --git a/tests/test_memory_limits.py b/tests/test_memory_limits.py
+new file mode 100644
+index 0000000..396227a
+--- /dev/null
++++ b/tests/test_memory_limits.py
+@@ -0,0 +1,117 @@
++"""Compile the production compatibility methods in a stand-alone fake SDK harness."""
++import argparse
++from pathlib import Path
++import subprocess
++
++
++def function(text, signature):
++    start = text.index(signature)
++    brace = text.index('{', start)
++    depth = 1
++    end = brace + 1
++    while depth:
++        depth += (text[end] == '{') - (text[end] == '}')
++        end += 1
++    return text[start:end]
++
++
++HARNESS = r'''
++#include <atomic>
++#include <cstddef>
++#include <cstring>
++#include <limits>
++#include <thread>
++#include <vector>
++#include <cstdio>
++using std::size_t;
++static std::atomic<int> messages{0};
++static bool messageIsExplicit = false;
++void Msg(const char* text) {
++    messageIsExplicit = std::strstr(text, "no-op") && std::strstr(text, "no limits were changed");
++    ++messages;
++}
++struct FakeRemix {
++    int writes = 0;
++    void SetConfigVariable(const char*, const char*) { ++writes; }
++};
++namespace GarrysMod { namespace Lua {
++enum class Type { Number };
++class ILuaBase {
++public:
++    bool number[2] = {true, true};
++    double values[2] = {256, 1024};
++    int errors = 0;
++    bool result = false;
++    bool IsType(int i, Type) { return number[i - 1]; }
++    void ThrowError(const char*) { ++errors; }
++    double GetNumber(int i) { return values[i - 1]; }
++    void PushBool(bool value) { result = value; }
++};
++}}
++using namespace GarrysMod::Lua;
++#define LUA_FUNCTION(name) int name(ILuaBase* LUA)
++namespace RemixAPI {
++class ResourceManager {
++public:
++    FakeRemix* m_remixInterface;
++    explicit ResourceManager(FakeRemix* api = nullptr) : m_remixInterface(api) {}
++    void SetMemoryLimits(size_t maxCacheSize, size_t maxVRAM);
++};
++class RemixAPI {
++public:
++    static RemixAPI& Instance() { static RemixAPI api; return api; }
++    ResourceManager& GetResourceManager() { return manager; }
++    ResourceManager manager;
++};
++@METHOD@
++@BINDING@
++}
++int main() {
++    FakeRemix api;
++    RemixAPI::ResourceManager live(&api), disconnected;
++    std::vector<std::thread> workers;
++    for (int i = 0; i < 8; ++i) {
++        workers.emplace_back([&] {
++            for (int n = 0; n < 1000; ++n) live.SetMemoryLimits(256, 1024);
++        });
++    }
++    for (auto& worker : workers) worker.join();
++    disconnected.SetMemoryLimits(0, std::numeric_limits<size_t>::max());
++    ILuaBase lua;
++    if (RemixAPI::RemixResource_SetMemoryLimits(&lua) != 1 || !lua.result || lua.errors) return 1;
++    for (int i = 0; i < 2; ++i) {
++        ILuaBase invalid;
++        invalid.number[i] = false;
++        if (RemixAPI::RemixResource_SetMemoryLimits(&invalid) != 0 || invalid.errors != 1 || invalid.result) return 2;
++    }
++    if (api.writes || messages != 1 || !messageIsExplicit) return 3;
++    std::puts("PASS: 8000 concurrent calls, disconnected API, Lua compatibility; one log, zero config writes");
++}
++'''
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parents[1])
++    parser.add_argument('--out', type=Path, required=True, help='scratch folder under the aggregate worktree out/')
++    args = parser.parse_args()
++    native = args.source / 'source'
++    module = (native / 'module.cpp').read_text()
++    if 'SetMemoryLimits(' in module:
++        raise RuntimeError('module startup still calls SetMemoryLimits')
++    for p in (native / 'remixapi').glob('*.cpp'):
++        if 'rtx.resourceLimits.' in p.read_text():
++            raise RuntimeError(f'{p}: unsupported runtime keys remain')
++    method = function((native / 'remixapi/remixapi.cpp').read_text(), 'void ResourceManager::SetMemoryLimits(')
++    binding = function((native / 'remixapi/resource_lua_bindings.cpp').read_text(), 'LUA_FUNCTION(RemixResource_SetMemoryLimits)')
++    args.out.mkdir(parents=True, exist_ok=True)
++    source = args.out.resolve() / 'memory_limits_test.cpp'
++    source.write_text(HARNESS.replace('@METHOD@', method).replace('@BINDING@', binding))
++    exe = args.out.resolve() / 'memory_limits_test.exe'
++    subprocess.run(['cl.exe', '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX', str(source),
++                    '/Fo' + str(source.with_suffix('.obj')), '/Fe' + str(exe)], check=True)
++    subprocess.run([str(exe)], check=True)
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/tests/test_memory_limits.py.md b/tests/test_memory_limits.py.md
+new file mode 100644
+index 0000000..f01bfa0
+--- /dev/null
++++ b/tests/test_memory_limits.py.md
+@@ -0,0 +1,19 @@
++# test_memory_limits.py
++
++Offline regression for the deprecated memory-limit API. Run in a VS 2022 x64 developer shell:
++
++```powershell
++python tests/test_memory_limits.py --out <aggregate-worktree>/out/tmp/memory-limits-test
++```
++
++`--source` optionally selects another checkout with the same source layout. The test reads the
++actual `ResourceManager::SetMemoryLimits` and Lua binding function bodies into a minimal fake SDK
++harness, compiles it with MSVC C++17 `/W4 /WX`, then runs it without loading any game or runtime.
++It checks repeated/concurrent calls, a disconnected runtime, zero configuration writes, a single
++explanatory message, the retained Lua `true` result and both invalid argument cases. It also
++rejects a startup call or unsupported option keys remaining in the resource source.
++
++Inputs: native source files and installed `cl.exe` on PATH. Outputs: one C++ harness, object and
++executable in `--out`; no other side effects. Set TEMP/TMP to the aggregate worktree's `out/tmp`.
++Exit 0 and a PASS line mean success; any source, compiler or assertion failure exits nonzero.
++This does not test game loading or renderer output; those need separate integration acceptance.
+-- 
+2.56.0.windows.1
+
