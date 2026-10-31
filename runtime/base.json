@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "f9827b35b533caa38c08caa117fb264fb8d18012e3682694e1c92e1faf67a26e",
-  "built_from": "d4921fcb; verified thirteen-patch tree 2a428382d4b65db3a5209df7e68ec1207d80367b; incremental release C++ build -j 4, unchanged shader inputs/stamp reused",
+  "d3d9.dll": "40a50fd55e9a76943fb80861d6e6a0d2690f39e02a52515716f63cae80638f83",
+  "built_from": "6f2dbd79; verified fourteen-patch tree 72f5085eee2d0262216e49ae1154575083c201e4; incremental release C++ build -j 4 (meson reconfigured so the version names 6f2dbd79), unchanged shader inputs/stamp reused",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -67,6 +67,7 @@
    "patches/0011-Keep-imported-model-smooth-normal-tags-transient-and.patch": "c9feae27cbfd6f13245b9a140f1ce2dc9244c8ebb94f98140fa7f4d90f37349a",
    "patches/0012-Read-localized-project-splash-text-from-editable-bou.patch": "2f311fead7b454fe5aebaf6655c6db4dfb7b346c81113220d7248d0c533783d9",
    "patches/0013-Default-to-minimum-one-and-maximum-twelve-path-bounc.patch": "63299c2773a2288c1aa35469eeca61dbbdb44bc6d900516bdb4a8f1b675e2f38",
+   "patches/0014-Never-save-over-unread-settings-retry-saves-and-keep.patch": "224ae520a1e48cde66971dbe3a62225de41892aabf7c19a30f929193a4e76413",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }
