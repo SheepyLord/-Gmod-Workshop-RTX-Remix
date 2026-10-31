@@ -1,0 +1,110 @@
+From 4888b0428c844c588759504c6041641ac129f3c1 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 22:02:05 -0700
+Subject: [PATCH] Keep imported model smooth-normal tags transient and additive
+
+---
+ src/d3d9/d3d9_rtx.cpp                           | 3 ++-
+ src/dxvk/rtx_render/rtx_fork_submit.cpp         | 2 ++
+ src/dxvk/rtx_render/rtx_model_layers.h          | 3 +++
+ src/dxvk/rtx_render/rtx_texture_category_sets.h | 4 +++-
+ src/dxvk/rtx_render/rtx_types.cpp               | 2 ++
+ tests/rtx/unit/test_model_layers.cpp            | 6 ++++--
+ 6 files changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/src/d3d9/d3d9_rtx.cpp b/src/d3d9/d3d9_rtx.cpp
+index 4386fe4e..90ab13df 100644
+--- a/src/d3d9/d3d9_rtx.cpp
++++ b/src/d3d9/d3d9_rtx.cpp
+@@ -1287,7 +1287,8 @@ namespace dxvk {
+       const XXH64_hash_t textureHash = m_activeDrawCallState.materialData.getColorTexture().getImageHash();
+ 
+       // Flag smooth normals category at the d3d9 layer
+-      m_activeDrawCallState.setCategory(InstanceCategories::SmoothNormals, m_textureCategories.smoothNormalsTextures.contains(textureHash));
++      m_activeDrawCallState.setCategory(InstanceCategories::SmoothNormals,
++        m_textureCategories.smoothNormalsTextures.contains(textureHash) || m_textureCategories.importedModelSmoothNormalTextures.contains(textureHash));
+       if (textureHash != kEmptyHash) {
+         m_parent->EmitCs([textureHash](DxvkContext* ctx) {
+           static_cast<RtxContext*>(ctx)->getSceneManager().trackReplacementMaterialHash(textureHash);
+diff --git a/src/dxvk/rtx_render/rtx_fork_submit.cpp b/src/dxvk/rtx_render/rtx_fork_submit.cpp
+index c5fc8fde..401180cb 100644
+--- a/src/dxvk/rtx_render/rtx_fork_submit.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_submit.cpp
+@@ -100,6 +100,8 @@ namespace fork_hooks {
+       applyCategory(RtxOptions::motionBlurMaskOutTextures(), InstanceCategories::IgnoreMotionBlur);
+       applyCategory(RtxOptions::hideInstanceTextures(), InstanceCategories::Hidden);
+       applyCategory(RtxModelLayers::ignoredOutlineTextures(), InstanceCategories::Hidden);
++      applyCategory(RtxOptions::smoothNormalsTextures(), InstanceCategories::SmoothNormals);
++      applyCategory(RtxModelLayers::importedModelSmoothNormalTextures(), InstanceCategories::SmoothNormals);
+     }
+   }
+ 
+diff --git a/src/dxvk/rtx_render/rtx_model_layers.h b/src/dxvk/rtx_render/rtx_model_layers.h
+index bfb0b143..5940f353 100644
+--- a/src/dxvk/rtx_render/rtx_model_layers.h
++++ b/src/dxvk/rtx_render/rtx_model_layers.h
+@@ -13,5 +13,8 @@ namespace dxvk {
+     RTX_OPTION_ARGS("rtx.gmod", fast_unordered_set, ignoredOutlineTextures, {},
+       "Outline textures hidden by the GMod companion for this session. Other texture categories are unchanged.",
+       args.flags = RtxOptionFlags::NoSave | RtxOptionFlags::InvalidatesDrawcallTranslation);
++    RTX_OPTION_ARGS("rtx.gmod", fast_unordered_set, importedModelSmoothNormalTextures, {},
++      "Imported model textures whose normals are recalculated for this session. Saved smooth-normal tags are preserved.",
++      args.flags = RtxOptionFlags::NoSave | RtxOptionFlags::InvalidatesDrawcallTranslation);
+   };
+ }
+diff --git a/src/dxvk/rtx_render/rtx_texture_category_sets.h b/src/dxvk/rtx_render/rtx_texture_category_sets.h
+index 21926843..e414c787 100644
+--- a/src/dxvk/rtx_render/rtx_texture_category_sets.h
++++ b/src/dxvk/rtx_render/rtx_texture_category_sets.h
+@@ -30,7 +30,8 @@ namespace dxvk {
+              &beamTextures, &decalTextures, &dynamicDecalTextures, &singleOffsetDecalTextures, &nonOffsetDecalTextures,
+              &animatedWaterTextures, &playerModelTextures, &playerModelBodyTextures, &terrainTextures, &skyBoxTextures,
+              &particleEmitterTextures, &hairCardTextures, &allowBakedLightingTextures, &lightmapTextures,
+-             &smoothNormalsTextures, &raytracedRenderTargetTextures, &ignoredOutlineTextures }) {
++             &smoothNormalsTextures, &raytracedRenderTargetTextures, &ignoredOutlineTextures,
++             &importedModelSmoothNormalTextures }) {
+         set->refreshLocked();
+       }
+     }
+@@ -64,6 +65,7 @@ namespace dxvk {
+     RtxOptionHashSetCopy smoothNormalsTextures { RtxOptions::smoothNormalsTexturesObject() };
+     RtxOptionHashSetCopy raytracedRenderTargetTextures { RtxOptions::raytracedRenderTargetTexturesObject() };
+     RtxOptionHashSetCopy ignoredOutlineTextures { RtxModelLayers::ignoredOutlineTexturesObject() };
++    RtxOptionHashSetCopy importedModelSmoothNormalTextures { RtxModelLayers::importedModelSmoothNormalTexturesObject() };
+ 
+   private:
+     uint64_t m_revision = std::numeric_limits<uint64_t>::max();
+diff --git a/src/dxvk/rtx_render/rtx_types.cpp b/src/dxvk/rtx_render/rtx_types.cpp
+index ef52f395..bbbadeb0 100644
+--- a/src/dxvk/rtx_render/rtx_types.cpp
++++ b/src/dxvk/rtx_render/rtx_types.cpp
+@@ -407,6 +407,8 @@ namespace dxvk {
+ 
+     setCategory(InstanceCategories::Hidden, sets.hideInstanceTextures.contains(textureHash) ||
+       sets.ignoredOutlineTextures.contains(textureHash));
++    setCategory(InstanceCategories::SmoothNormals, sets.smoothNormalsTextures.contains(textureHash) ||
++      sets.importedModelSmoothNormalTextures.contains(textureHash));
+ 
+     setCategory(InstanceCategories::Particle, sets.particleTextures.contains(textureHash));
+     setCategory(InstanceCategories::Beam, sets.beamTextures.contains(textureHash));
+diff --git a/tests/rtx/unit/test_model_layers.cpp b/tests/rtx/unit/test_model_layers.cpp
+index 2d1f211c..94ad64e8 100644
+--- a/tests/rtx/unit/test_model_layers.cpp
++++ b/tests/rtx/unit/test_model_layers.cpp
+@@ -17,9 +17,11 @@ int main() {
+   if (!user || !derived || user == derived ||
+       RtxModelLayers::ignoredOutlineTexturesObject().getTargetLayer(user) != derived ||
+       RtxModelLayers::ignoreOutlineMeshesObject().getTargetLayer(user) != derived ||
++      RtxModelLayers::importedModelSmoothNormalTexturesObject().getTargetLayer(user) != derived ||
+       !(RtxModelLayers::ignoredOutlineTexturesObject().getFlags() & RtxOptionFlags::InvalidatesDrawcallTranslation) ||
+-      !(RtxModelLayers::ignoreOutlineMeshesObject().getFlags() & RtxOptionFlags::InvalidatesDrawcallTranslation)) {
+-    std::cerr << "Outline controls must invalidate cached draws and remain outside persistent user settings\n";
++      !(RtxModelLayers::ignoreOutlineMeshesObject().getFlags() & RtxOptionFlags::InvalidatesDrawcallTranslation) ||
++      !(RtxModelLayers::importedModelSmoothNormalTexturesObject().getFlags() & RtxOptionFlags::InvalidatesDrawcallTranslation)) {
++    std::cerr << "Model controls must invalidate cached draws and remain outside persistent user settings\n";
+     return 1;
+   }
+   std::cout << "Outline option lifetime tests passed\n";
+-- 
+2.56.0.windows.1
+

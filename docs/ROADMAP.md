@@ -1,5 +1,9 @@
 # Roadmap
 
+QoL requests 17, 19/19.1 and 20 are **done**: optional geometry normals for imported world models, AME original
+material labels and workspace selection handoff, and a dedicated motion-importer tab. Offline
+behavior checks cover the changes; the user explicitly waived in-game validation for this batch.
+
 Milestones with their acceptance criteria. Mark items here as they start and finish, and log the
 change in [CHANGELOG.md](../CHANGELOG.md).
 

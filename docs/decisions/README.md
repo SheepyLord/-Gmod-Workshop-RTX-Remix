@@ -54,6 +54,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0046](0046-toolgun-screen-after-upscaling.md) | Full-resolution live toolgun screen with private depth masking and a translated opt-out | Accepted 2026-10-30 |
 | [0047](0047-ignore-incompatible-model-outlines.md) | Default-on suppression of incompatible outline shells through transient owned options and a translated opt-out | Accepted 2026-10-30 |
 | [0048](0048-layered-alpha-cutouts.md) | Reject transparent cutout candidates before ray commitment and keep cached acceleration opacity flags current | Accepted 2026-10-30 |
+| [0049](0049-importer-normals-material-labels-and-motion-access.md) | Additive imported-model geometry normals, original AME material labels/current-row handoff, and a dedicated VMD launcher | Accepted 2026-10-30 |
 
 ## Template
 

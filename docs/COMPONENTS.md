@@ -1,5 +1,11 @@
 # Components
 
+The companion's `nativeloader_imported_normals.lua` collects active imported-model hashes for an
+optional additive NoSave smooth-normal category. `nativeloader_motion_tab.lua` opens the existing
+motion manager from its own creation tab. These modules and AME's original-name/current-selection
+behavior are checked offline by [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md)
+and its Lua harness.
+
 Every component of the project: where it lives, what it does, and its status. Keep this file in
 sync when you add, rename or finish something ([`tools/check_repo.py`](../tools/check_repo.py.md)
 fails if a folder under `loader/` or `tools/` is missing here).

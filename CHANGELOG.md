@@ -6,6 +6,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Add optional geometry-based normals beside imported character/prop spawn controls for RTX,
+  preserving imported files and saved texture tags.
+- Show original imported material names in AME, retain raw paths in tooltips, and carry the
+  current material selection between RTX and Source/VMT workspaces.
+- Add a dedicated, translated Motion importer spawn-menu tab opening the existing VMD manager.
+
 - Diagnostics default to declined, including legacy implicit grants. The welcome window closes
   after twelve seconds unless interacted with, and permanent dismissal is saved independently.
 - Keep animated toolgun text readable by drawing its live screen after upscaling; the RTX tab

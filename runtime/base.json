@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "415fc0b353ad75375845ec92a75fc5001511a0496460dff420e6558d8cd7e5e9",
-  "built_from": "ccad20be; verified ten-patch tree ac55626fec2a98faa62872c7cde648085a15226c; full two-pass release shader/C++ build, PYTHON_CPU_COUNT=8, -j 4",
+  "d3d9.dll": "0afb29175569f1c87e44696e2847eec3d5f0567442a96b1b7379fc69d4c1a20d",
+  "built_from": "4888b042; verified eleven-patch tree 792332d699c71e6e6facdf216b6dbcffad424b65; incremental release C++ build -j 4, unchanged shader inputs/stamp reused",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -64,6 +64,7 @@
    "patches/0008-Save-Remix-config-atomically-and-retain-edits-on-I-O.patch": "5322fea4cc76c8e36c117ecc414216d8272379438cb6ce5f567465b2eee43625",
    "patches/0009-Default-diagnostics-to-declined-and-make-the-welcome.patch": "d11d2f5fca8786d5b84dd4da3706313264a3b5febb987e4d071100d124b0edd6",
    "patches/0010-Resolve-layered-alpha-cutouts-during-traversal-and-i.patch": "36305e8fb74982a8a7baacdfec442bf49d95ac9a1563cf7c22fe9bf4892db6e8",
+   "patches/0011-Keep-imported-model-smooth-normal-tags-transient-and.patch": "c9feae27cbfd6f13245b9a140f1ce2dc9244c8ebb94f98140fa7f4d90f37349a",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

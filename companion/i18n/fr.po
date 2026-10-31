@@ -766,3 +766,20 @@ msgstr "Écran du toolgun"
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Model outlines"
 msgstr "Contours des modèles"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+msgid "Motion importer"
+msgstr "Importateur de mouvements"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
+msgid "Open the VMD motion importer and motion library."
+msgstr "Ouvrir l’importateur VMD et la bibliothèque de mouvements."
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+msgid "Import VMD files and manage your motion library and playback."
+msgstr "Importez des fichiers VMD et gérez votre bibliothèque de mouvements et leur lecture."
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
+msgid "Open motion importer"
+msgstr "Ouvrir l’importateur de mouvements"
