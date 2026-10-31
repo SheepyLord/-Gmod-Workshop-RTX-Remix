@@ -4,6 +4,7 @@
 #include "nl/json.h"
 #include "nl/sha256.h"
 #include "nl/version.h"
+#include "nl/activate.h"
 
 #include <windows.h>
 #include <dxgi1_2.h>
@@ -53,7 +54,8 @@ System query_system() {
         if (factory->EnumAdapters1(index, &adapter) != S_OK) break;
         DXGI_ADAPTER_DESC1 description{};
         if (SUCCEEDED(adapter->GetDesc1(&description)) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
-          result.graphics.push_back({fs::utf8(std::filesystem::path(description.Description)), description.DedicatedVideoMemory});
+          result.graphics.push_back({fs::utf8(std::filesystem::path(description.Description)), description.DedicatedVideoMemory,
+                                     description.VendorId});
         }
         adapter->Release();
       }
@@ -79,13 +81,23 @@ std::string serialize(const System& system, std::string_view version, std::strin
     out += "{\"id\":" + json::quote(package.id) + ",\"version\":" + json::quote(package.version) +
            ",\"sha256\":" + json::quote(package.manifest_sha256) + '}';
   }
-  return out + "],\"client_bootstrap\":" + (client::native_bootstrap_present(generation) ? "true" : "false") + '}';
+  out += "],\"performance_tier\":" + (system.performance_tier ? performance::serialize(*system.performance_tier) : "null");
+  return out + ",\"client_bootstrap\":" + (client::native_bootstrap_present(generation) ? "true" : "false") + '}';
 }
 
 std::string collect(const std::filesystem::path& root, const journal::Generation& generation) {
   System system;
   std::string hash;
   try { system = query_system(); } catch (...) { }
+  try {
+    // The menu copy is prepared before activation. Preview the same pure tier plan using the
+    // adapters already read above; do not consume next_start or read a stale previous status.json.
+    std::vector<performance::Adapter> adapters;
+    for (const auto& gpu : system.graphics) adapters.push_back({gpu.vendor, gpu.name, gpu.memory});
+    const auto preview = activate::plan(generation, config::load(root), activate::environment_value, L"",
+                                        [] { return activate::Display{}; }, [&] { return adapters; });
+    if (preview.activate) system.performance_tier = preview.performance_tier;
+  } catch (...) { }
   try {
     constexpr std::string_view binary = "bin/win64/winmm.dll";
     fs::refuse_links(root, binary);

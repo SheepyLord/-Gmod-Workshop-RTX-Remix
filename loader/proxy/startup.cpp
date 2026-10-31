@@ -271,7 +271,8 @@ void startup_cxx(StartupContext& context) noexcept {
       const journal::Generation none;
       const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
       context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW(),
-                                                      activate::primary_display, activate::graphics_adapters);
+                                                      activate::primary_display, activate::graphics_adapters,
+                                                      gpu_diagnostics::probe(context.root));
       if (context.report.activation.plan.activate) {
         // The configuration ADR 0052 found crashing: vanilla with the reason instead (ADR 0056).
         if (auto refusal = client::render_recipes_refusal(context.report.activation.plan, GetCommandLineW()); !refusal.empty()) {

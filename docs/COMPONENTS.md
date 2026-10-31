@@ -251,3 +251,11 @@ protection and late-hash/proxy tracking. Native cutout traversal and acceleratio
 recorded in [ADR 0048](decisions/0048-layered-alpha-cutouts.md); outline behavior is in
 [ADR 0047](decisions/0047-ignore-incompatible-model-outlines.md). Client lifecycle coverage is
 [tools/tests/test_model_layers.py](../tools/tests/test_model_layers.py.md).
+
+## R6 T1 loader GPU policy
+
+`loader/core/include/nl/performance.h` / `src/performance.cpp` hold pure GPU tier classification
+and I2 serialization. `gpu_diagnostics.h` / `src/gpu_diagnostics.cpp` probe/prepare local GPU dump
+state and atomically consume one-start requests. `activate` composes the two layer-priority slots;
+`loader/proxy/runtime.cpp` applies them, `status` and `loader/cli/nlctl.cpp` report them, and
+`loader/proxy/diagnostics.cpp` / `ui/mainmenu.js` show a localized menu tier preview (ADR 0062).

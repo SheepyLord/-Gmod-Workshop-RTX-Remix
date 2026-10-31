@@ -108,6 +108,20 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   CHECK_THROWS_AS(p::decorate_main_menu(original, "[]"), std::runtime_error);
 }
 
+TEST_CASE("main menu diagnostics expose the same localized performance tier data as activation") {
+  nl::proxy::diagnostics::System system;
+  system.performance_tier = nl::performance::classify({{nl::performance::kNvidia, "RTX 4060 Ti", 16ull << 30}},
+                                                     nl::config::PerformanceTier::automatic);
+  system.performance_tier->source = "fallback";
+  const auto data = nl::proxy::diagnostics::serialize(system, "0.10.1", "", {});
+  const auto json = nl::json::parse(data);
+  CHECK(json.find("performance_tier")->find("tier")->as_string() == "low");
+  CHECK(json.find("performance_tier")->find("source")->as_string() == "fallback");
+  const auto script = p::decorate_main_menu("function MenuController( $scope, $rootScope ) {}\n", data);
+  CHECK(script.find("labels.performance_tier") != std::string::npos);
+  CHECK(script.find("labels['tier_' + tier.source]") != std::string::npos);
+}
+
 TEST_CASE("main menu: the generated script is ASCII, non-ASCII text written as \\u escapes") {
   // R4: GMod's menu decoded the script as Windows-1252, so the panel's separator showed as "Â·" and the
   // translated labels as mojibake.

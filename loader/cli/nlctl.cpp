@@ -415,15 +415,19 @@ int cmd_activation(const fs::path& game_root, bool json) {
   const nl::config::Config config = nl::config::load(game_root);
   const auto journal = nl::journal::load(game_root);
   if (!journal || !journal->current) {
-    if (json) print("{\n  \"activate\": false,\n  \"reason\": \"nothing deployed\"\n}\n");
-    else print("nothing deployed (no current generation)\n");
+    if (json) print("{\n  \"activate\": false,\n  \"reason\": \"nothing deployed\",\n  \"notes\": " + string_array_json(config.notes) + "\n}\n");
+    else {
+      print("nothing deployed (no current generation)\n");
+      for (const auto& note : config.notes) print("note        " + note + "\n");
+    }
     return kOk;
   }
   nl::activate::Plan plan;
+  plan.notes = config.notes;
   if (!config.from_file) plan.reason = "native-loader/config.json is absent";
   else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
   else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"", nl::activate::primary_display,
-                                 nl::activate::graphics_adapters);
+                                 nl::activate::graphics_adapters, nl::gpu_diagnostics::probe(game_root));
   // As start-up decides it (ADR 0056), for the empty command line this preview assumes.
   if (auto refusal = nl::client::render_recipes_refusal(plan, L""); !refusal.empty()) {
     plan.activate = false;
@@ -448,6 +452,8 @@ int cmd_activation(const fs::path& game_root, bool json) {
     out += ",\n  \"gpu_vendors\": [";
     for (std::size_t i = 0; i < plan.gpu_vendors.size(); ++i) out += (i ? ", " : "") + std::to_string(plan.gpu_vendors[i]);
     out += "],\n  \"non_nvidia\": " + std::string(plan.non_nvidia ? "true" : "false");
+    out += ",\n  \"performance_tier\": " + nl::performance::serialize(plan.performance_tier);
+    out += ",\n  \"notes\": " + string_array_json(plan.notes);
     out += ",\n  \"env\": [";
     for (std::size_t i = 0; i < plan.env.size(); ++i) {
       out += (i ? ",\n    " : "\n    ") + std::string("{\"name\": ") + nl::json::quote(plan.env[i].first) +
@@ -470,6 +476,7 @@ int cmd_activation(const fs::path& game_root, bool json) {
   }
   if (!plan.activate) {
     print("would not load the runtime: " + plan.reason + "\n");
+    for (const auto& note : plan.notes) print("note        " + note + "\n");
     return kOk;
   }
   print("would load  " + plan.runtime_dll + "\n");
@@ -487,6 +494,12 @@ int cmd_activation(const fs::path& game_root, bool json) {
   print("gpus        " + (vendors.empty() ? std::string("(not read)") : vendors) +
         (plan.non_nvidia ? ": no NVIDIA GPU, Remix chooses its preset (" + std::string(nl::activate::kNonNvidiaLayer) + ")" : "") + "\n");
   for (const auto& [name, value] : plan.env) print("env         " + name + "=" + value + "\n");
+  print("performance " + std::string(nl::performance::name(plan.performance_tier.tier)) + " (" + plan.performance_tier.source +
+        "): " + plan.performance_tier.reason + "\n");
+  if (!plan.performance_tier.adapter.empty())
+    print("tier adapter " + plan.performance_tier.adapter + " (" + std::to_string(plan.performance_tier.dedicated_vram_mib) + " MiB)\n");
+  if (!plan.performance_tier.layer.empty()) print("tier layer  " + plan.performance_tier.layer + "\n");
+  for (const auto& note : plan.notes) print("note        " + note + "\n");
   for (const auto& layer : plan.layer_copies) print("layer copy  " + layer.copy + " <- " + layer.source + "\n");
   std::string args;
   for (const auto& a : plan.launch_args) args += (args.empty() ? "" : " ") + a;

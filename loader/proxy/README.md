@@ -52,3 +52,12 @@ installation failure leaves pass-through behavior. If Windows refuses both prote
 the debugger write fallback when restoring an already installed hook, the process is terminated
 instead of recursively entering its patched entry point. This is outside the guarded logging step;
 normal activation and failure-to-log paths are covered by the synthetic host tests.
+
+## R6 T1 activation policy
+
+`startup.cpp` probes loader-owned next_start state; `runtime.cpp` writes the selected tier fallback
+or checked payload copy and the separate diagnostics layer, creates the local dump folder and
+claims one-start requests before runtime initialization. Failure to prepare diagnostics costs only
+that request. Environment rollback retains its existing semantics. `diagnostics.h`/`.cpp` preview
+the same tier plan using the menu hardware query; `ui/mainmenu.js`/`labels.json` show its tier/source
+in seven languages. The new non-English strings are agent-written and await review (ADR 0062).

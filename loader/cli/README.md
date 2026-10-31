@@ -106,3 +106,11 @@ Exit codes: `0` ok, `1` a check found problems (bad CRC, trailing data, failed a
 
 Output is UTF-8. JSON strings come from `nl::json::quote`: invalid UTF-8 bytes in archive paths are
 shown as U+FFFD, never passed through raw.
+
+## R6 performance and GPU diagnostics preview
+
+`activation` reports interface I2 (`performance_tier`) and recoverable config/activation `notes`,
+in text and JSON. It reads the same DXGI adapter details and one-start marker as the bootstrap,
+including the absolute dump destination, but never writes a layer/folder or consumes next_start.
+The new optional config keys are validated by the shared schema-1 parser; an invalid performance
+value uses auto with a note, while an invalid diagnostics mode remains a config error.

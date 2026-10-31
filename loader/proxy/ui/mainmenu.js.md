@@ -18,3 +18,11 @@ The panel appears on the main-menu home screen only and follows the menu languag
 textContent, never HTML. No upload, automatic URL opening, startup-log reading or disk writes.
 The project link and clipboard functions run only on a click. Labels are in labels.json;
 layout/style and project URL are edited here. Compiled into winmm.dll through CMake.
+
+## R6 performance tier
+
+Shows one localized line for a detected NVIDIA adapter's selected performance tier and source
+(automatic, config override or built-in fallback). The data previews the same pure activation
+plan before the menu copy is generated; it never consumes GPU diagnostics or reads stale status.
+The new non-English tier/source translations in `labels.json` are agent-written, awaiting review;
+JSON catalogs do not permit comments. Inputs/outputs and exit behavior are unchanged.

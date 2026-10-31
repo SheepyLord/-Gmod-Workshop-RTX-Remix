@@ -68,6 +68,8 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0060](0060-motion-tab-hosts-the-importer.md) | The Motion importer tab is the importer: the add-on's importer and Motion Manager built into the tab by its own builders (its windows use them too), in External Models' look | Accepted (R4) |
 | [0061](0061-loose-glass-breaks-again-and-expires.md) | Broken glass (map debris and the add-on's fragments) is loose physics that players pass through, breaks again until it is dust, shares one 256-piece budget and fades out after `rtx_glass_debris_lifetime` (default 120 s); supersedes part of 0040 | Accepted 2026-10-31 (R5, the user's report) |
 
+| [0062](0062-loader-layers-performance-tiers-and-gpu-dumps.md) | Loader Remix layers first, GPU performance tiers and opt-in one-start GPU dumps; amends 0030's layer placement | Accepted 2026-10-31 (R6) |
+
 ## Template
 
 ```markdown

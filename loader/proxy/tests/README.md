@@ -54,3 +54,11 @@ through). Evidence under `out/m5-synthetic`. Loader 0.3.0 added module dependenc
 package: the probe loads the fake module through the fake `lua_shared.dll` in RTX sessions, in starts
 without RTX and after a failed activation (it loads, its runtime loaded first from `lua\bin`), and with
 the loader off (`ERROR_MOD_NOT_FOUND`).
+
+## R6 T1 synthetic checks
+
+`activation_probe.cpp` also captures DXVK_AFTERMATH_DUMP_PATH at host entry.
+`activation_integration.py` covers first-match loader layer order, diagnostic layer/folder/env,
+next_start once, preview/re-arm/config preservation, always/off, built-in low fallback, invalid
+tier notes, CLI equality and generated medium/low payload copies. `test_presentation.cpp` checks
+I2 in menu data and the localized row embedding. All fixtures stay below this worktree's out.
