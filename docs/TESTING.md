@@ -3,15 +3,23 @@
 ## R6 companion VRAM sampler
 
 [`test_companion_vram.py`](../tools/tests/test_companion_vram.py.md) exercises the actual companion
-sampler under LuaJIT, with no game or GPU. Eleven scenarios check all 14 fields and byte/count
+sampler under LuaJIT, with no game or GPU. Twenty scenarios check all 14 fields and byte/count
 units, 30-second timing, the default-on client switch, missing/late APIs, invalid values and errors,
 hourly rotation over five sampled hours, the 240-row bound and continuity across module reloads.
-Incompatible or oversized existing CSVs stay untouched. These checks run in `tools/test.ps1`.
+Changed headers, truncated/NUL tails, CRLF, malformed/excess rows and oversized files must be
+preserved byte-for-byte as `vram.previous.csv` while sampling resumes. An oversized segment may
+not be read into memory. Rename failures keep the source and retry. Three consecutive nil/error
+calls stop sampling; valid results reset that count and off/on permits an immediate retry.
+These checks run in `tools/test.ps1`.
 
-[`test_companion_stability.py`](../tools/tests/test_companion_stability.py.md) runs 50 UI scenarios
+[`test_companion_stability.py`](../tools/tests/test_companion_stability.py.md) runs 131 UI scenarios
 against the real menu, guide, i18n module and generated shipping catalogs: high/medium/low and all
-selection sources, missing hardware, fresh status on reopening, absent/malformed/unsupported
-reports, plus direct/default guide navigation in all seven languages. UI construction must write
+selection sources, T1's real non-NVIDIA/query-failed/no-layer data, fresh status on reopening,
+absent/malformed/unsupported reports, plus direct/default guide navigation in all seven languages.
+Older loaders must see update/manual-log-copy advice without R6 config keys or collection promises;
+R6 guide and docs examples must parse as complete JSON with the shipped allowlist intact. Six
+integration cases actually parse full schema-1 JSON documents for the menu and guide using Python
+as the native `util.JSONToTable` replacement. UI construction must write
 no configuration or Remix options. The guide controls wrap/stretch; visual font/layout acceptance
 still belongs to an authorized game session.
 
@@ -22,12 +30,18 @@ an extended-length path. T3 uses an **ignored CMake-cache-only**
 unchanged `tools/test.ps1 -Config Release`; the guard suite passes from that shorter executable
 directory. Source, presets, test assertions and permissions remain unchanged.
 
-T3's Release receipt: the build and all 23 CTests pass; the 28 gmapack and 25 Steam Python tests
-pass (one existing skip each). The 284-test tools group finishes with 21 registry-fixture setup
-failures (`test_field_snapshot.py:136`, sandbox denies HKCU Software create access) and six Git
-ownership errors in existing publisher tests. The 33 focused companion tests, both i18n checks and
-skill validator pass. A full green gate needs a rerun under the project manager's account; no
-failing tests were disabled or rewritten. Local logs are under `out/r6-t3/` in this worktree.
+The fix pass also copied the default-layout guard executable to
+`out/r6-t3-fix/guard-short/nl_render_guard_tests.exe`. The **byte-identical executable** (matching
+SHA-256 recorded in `out/r6-t3-fix/guard-comparison.txt`) fails its repeated-preparation case at the
+long path and passes all **22 guard cases** at the shorter path.
+
+Full-access Release receipt (2026-10-31): `tools/test.ps1 -Config Release` exits **0**, with repo
+conventions, the build, all **23 CTests**, **288 tools Python tests**, **28 gmapack tests** and
+**25 Steam tests** passing (one existing skip in each of the latter two groups). The **37 companion
+tests**, companion/add-on i18n checks and skill validator pass separately. The earlier sandbox-only
+registry/Git errors do not recur. Logs are under `out/r6-t3-fix/` (`release-test.log`,
+`companion-tests.log`, `guard-long-path.log`, `guard-identical-short.log`). No native test assertions
+were changed, and no game was started.
 
 ## R6 testers: reading memory
 
@@ -39,7 +53,7 @@ with the same settings and elapsed time after loading; change one setting per co
 | Reading | Where / how | What to compare |
 |---|---|---|
 | Immediate Remix VRAM | Console `rtx_vram_stats` (RTX fixes module) | Driver allocation/budget, DXVK allocation/use, retained pools, replacement textures/geometry, buffers, acceleration structures, micromaps, render targets and D3D9 app resources. Run before and after an expensive action or map change. |
-| Loader memory history | `native-loader\logs\memory.csv` and rotated `memory.1.csv`, every 10 s | Process private bytes and working set, system commit/limit and available RAM, process GPU local/non-local usage and budgets. `diagnostics.memory_telemetry` is `on` by default; `off` disables it. |
+| Loader memory history (R6 loader only) | `native-loader\logs\memory.csv` and rotated `memory.1.csv`, every 10 s | Process private bytes and working set, system commit/limit and available RAM, process GPU local/non-local usage and budgets. Only after `status.json` reports `activation.performance_tier`, `diagnostics.memory_telemetry` is `on` by default; `off` disables it. Older loaders reject this config key. |
 | Remix category history | `garrysmod\data\native-loader\vram.csv` and `vram.previous.csv`, every 30 s | Same API totals/categories, at most 120 samples per segment. Archived client setting `nativeloader_vram_telemetry` defaults to 1; 0 stops it. No API means no samples. Read the previous segment first, then the current one. |
 | Runtime HUD | Add `dxvk.hud = memory` to the game root's **dxvk.conf**, preserving its other lines, then restart | Watch DXVK memory during the same action. Restore the previous line after the comparison. This HUD does not account for every driver-owned allocation. |
 | Broader health snapshot | Console `rtx_agent_health`, when the bundled `rtx_agent` add-on is available | Its `health.json` includes Remix VRAM, Lua memory, model/entity counts and loaded components; correlate with the CSV times. |
@@ -60,7 +74,9 @@ private bytes is process commit, and system commit covers all processes; none is
 
 Telemetry is bounded by sample count; long gaps between sessions do not count as sampled time.
 Copy both segments promptly after a fault. The bootstrap session folder keeps its own memory tail;
-copy companion `vram*.csv` separately. The R6 project manager must verify actual API readings, HUD
+copy companion `vram*.csv` separately. Copy `garrysmod/data/native-loader/status.json` and
+`session.json` **before restarting**: the next start rewrites them and the evidence collector does
+not copy them. The R6 project manager must verify actual API readings, HUD
 visibility and Task Manager agreement in an authorized game session; offline harnesses test the
 sampler/UI contract without starting a game.
 

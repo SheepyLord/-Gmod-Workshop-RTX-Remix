@@ -196,9 +196,10 @@ golds are not lifted.
   fishnet sheet keeps 11059×8847 because its mesh lines blur at 4096. Remix logs a harmless "doesn't
   fit into STAGING memory" for textures over 96 MB.
   This is a high-resolution variant. For an 8 GB audience, check these overrides and generate a
-  separate capped variant before publishing with `--max-size 2048`; see
+  separate capped variant before publishing with `--max-size 2048 --mod ai_pbr_2048`; see
   [Publishing for 8 GB GPUs](../SKILL.md#publishing-for-8-gb-gpus). A publish-only flag does not
-  resize existing generated maps.
+  resize existing generated maps. Keep each size variant in its own mod: publish prunes unused DDS
+  files in that mod.
 - **Byte-identical sheets** shared between models have one Remix hash. The alphabetically first
   layer wins, and `publish` prints which one.
 - **Never override the engine's shared white texture.** Untextured materials (Guinevere's heels)

@@ -8,6 +8,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R6 T3 (unreleased)
 
+- Independent-review fixes: R6-only guide instructions require the loader's status capability;
+  older loaders get bootstrap-update and manual log-copy advice. Complete JSON examples retain
+  native trust and warn that invalid JSON turns RTX off. Crash guidance now saves JSON reports
+  before restarting, saves frame generation off, and re-arms GPU dumps by deleting their marker.
+- Tier display hides non-NVIDIA/unidentified hardware and reports the loader's reason when a
+  medium/low layer is absent. The VRAM sampler preserves damaged/incompatible CSVs and starts a
+  new segment; three consecutive API failures stop repeated calls until retry or a new map/start.
+- Russian guide navigation and tier grammar are corrected; durable translation provenance stays
+  in the i18n README. The 2048 px PBR workflow uses a separate mod so publishing cannot prune the
+  larger variant's DDS files.
 - The RTX companion records Remix's VRAM totals and categories locally every 30 seconds when the
   fixes' API is available. `nativeloader_vram_telemetry 0` disables it; two rotating hourly CSV files
   keep at most 240 samples across map changes and restarts.
@@ -15,7 +25,7 @@ Versions follow the loader's CMake project version once it ships; until then eve
   and configuration/restart instructions. Older loaders show no tier line.
 - A directly linked **Memory and stability** guide page and [player checklist](docs/STABILITY.md)
   cover 8 GB GPU/16 GB RAM settings, local memory readings and crash evidence. New companion text
-  is available in all seven languages; the 21 new translations per non-English catalog are
+  is available in all seven languages; the new translations per non-English catalog are
   agent-written and marked for human review.
 - Tester documentation explains VRAM/commit counters and HUD readings; the MMD PBR skill requires
   generating and publishing a 2048 px variant for 8 GB players and explains the cost of 4096 px maps.

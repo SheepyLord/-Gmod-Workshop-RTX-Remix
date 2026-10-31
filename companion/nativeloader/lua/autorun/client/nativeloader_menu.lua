@@ -197,11 +197,18 @@ local function performance_tier_line()
     local activation = status.activation
     local tier = type(activation) == "table" and activation.performance_tier
     if type(tier) ~= "table" then return end
+    if activation.non_nvidia or type(tier.adapter) ~= "string" or tier.adapter == "" then return end
     local levels = { high = N("High"), medium = N("Medium"), low = N("Low") }
     if not levels[tier.tier] then return end
+    if tier.tier ~= "high" and (type(tier.layer) ~= "string" or tier.layer == "") then
+        local reason = type(tier.reason) == "string" and tier.reason ~= "" and tier.reason or
+            L("No tier layer is available.")
+        return string.format(L("Performance tier %s is not applied: %s. See the Memory and stability guide."),
+            L(levels[tier.tier]), reason)
+    end
     local sources = { auto = N("Automatic selection"), config = N("Configuration override"),
         fallback = N("Compatibility fallback") }
-    local adapter = type(tier.adapter) == "string" and tier.adapter ~= "" and tier.adapter or L("Unknown GPU")
+    local adapter = tier.adapter
     local memory = tier.dedicated_vram_mib
     memory = type(memory) == "number" and memory >= 0 and memory < math.huge and
         string.format("%.0f", memory) or "?"

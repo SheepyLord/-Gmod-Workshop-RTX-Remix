@@ -209,20 +209,24 @@ Use `references/testing-protocol.md` for anything beyond a quick compare. Essent
 
 ## Publishing for 8 GB GPUs
 
-Characters meant for players with **8 GB GPUs are published with `--max-size 2048`**. Apply the
-cap while generating, then publish that output:
+Characters meant for players with **8 GB GPUs are published with `--max-size 2048` into a separate
+`--mod`**, such as `ai_pbr_2048`. Apply the cap while generating, then publish that output:
 
 ```bash
-rpai run "<pmx>" --max-size 2048
+rpai run "<pmx>" --max-size 2048 --mod ai_pbr_2048
 # Or, with hashes already checked:
-rpai generate "<pmx>" --max-size 2048
-rpai publish "<pmx>" --max-size 2048
+rpai generate "<pmx>" --max-size 2048 --mod ai_pbr_2048
+rpai publish "<pmx>" --max-size 2048 --mod ai_pbr_2048
 ```
 
 `publish` encodes the existing generated maps; adding the flag only at publish time does **not**
 resize an earlier 4096 px generation. Check per-texture `max_size` overrides (including `"source"`)
-before generating the 8 GB variant: they can lift the global cap. Keep a requested larger variant
-separately and verify the DDS dimensions referenced by the packaged layer are at most 2048 px.
+before generating the 8 GB variant: they can lift the global cap. Publishing replaces the model's
+layer and prunes unused DDS files in that mod, so publishing the 2048 variant into the larger
+variant's mod would remove its textures. Keep the larger variant in its own mod and stage/package
+from `rtx-remix/mods/ai_pbr_2048` (pass `--mod ai_pbr_2048` to `package_characters.py`). Verify the
+DDS dimensions referenced by the packaged layer are at most 2048 px. Install one variant at a time
+when they override the same hashes.
 
 At the same format and mip count, a 4096 x 4096 map has four times the pixels and approximately
 four times the fully resident memory of a 2048 x 2048 map. With a full mip chain, BC7 albedo or BC5
@@ -253,14 +257,16 @@ allowlist needed (its ADR 0027). Only on the user's request; keep the item priva
 
 1. **Game up**, in a map, Model Hotloader loaded, the models in its library. Re-check the hashes with
    the models spawned (`rpai hashes`; they were identical across sessions) and `rpai publish` if any
-   changed. For an 8 GB audience, generate and publish the 2048 px variant above before staging it.
+   changed. For an 8 GB audience, generate and publish the 2048 px variant into `--mod ai_pbr_2048`
+   as above before staging it; keep that flag on subsequent publishes of this variant.
    Spawn and remove them yourself with `mmdhl.RequestSpawn(id, {}, cb)` and
    `lua_run Entity(idx):Remove()` if the user has not; remove only what you spawned.
 2. `scripts/hotloader_export.py --game-root <GarrysMod> --asset <id8> ... --title ... --description-file ...
    --file-name <n> --tag cartoon --out <dir>\mmdhl_<n>`: the library's Export without its terms dialog
    (private items only), unpacked to an add-on folder (`addon.json` + `data_static\mmdhl`).
-3. `scripts/stage_pbr_mod.py --src <GarrysMod>\rtx-remix\mods\ai_pbr --dest <dir>\pbr_<n> --layer <key> ...`:
-   only the referenced DDS, SHA-checked, plus `mod.usda`.
+3. `scripts/stage_pbr_mod.py --src <GarrysMod>\rtx-remix\mods\ai_pbr_2048 --dest <dir>\pbr_<n> --layer <key> ...`:
+   the 8 GB variant's referenced DDS, SHA-checked, plus `mod.usda`. For a different audience, use
+   the separate mod holding its chosen variant.
 4. In the repo, no `-I`: `python tools\package_content.py --id <n>-rtx --name ... --addon <dir>\mmdhl_<n>
    --mod <dir>\pbr_<n> --title ... --type model --tag cartoon --description ... --gma <dir>\<n>-rtx.gma --link`;
    then `nlctl manifest` and `nlctl verify` (the main checkout's `out\build\win64-release\loader\cli`).
