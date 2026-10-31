@@ -1,6 +1,6 @@
 # test_render_guard.py
 
-Seventeen unittest cases run eighteen LuaJIT scenarios against the complete production guard,
+Twenty-two unittest cases run twenty-five LuaJIT scenarios against the complete production guard,
 rather than a policy reimplementation. Run from the repository root:
 
     python -m unittest discover -s tools/tests -p test_render_guard.py -v
@@ -19,5 +19,14 @@ The verified multiplayer scenario reproduces the bootstrap's private marker and 
 proxy, while global/inherited-marker and server/menu scenarios must not install client wrappers.
 The installation label explicitly distinguishes this later path from early startup protection.
 The cached-dispatcher scenario captures original hook.Call before installation and requires
-existing/future late render wrappers to contain failures while healthy callbacks and loading-hook
-identity survive. Early registry callback identity remains covered by its original scenario.
+existing/future owned late render wrappers to contain failures while healthy callbacks, server
+callbacks and loading-hook identity survive. Early registry callback identity remains covered by
+its original scenario.
+
+[ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md) cases: the autorun install
+of a local RTX start without the early view; a served initializer (early flag without this
+machine's active start) and an RTX-off start installing nothing; error reports with the original
+message and quarantine only after three consecutive failures within ten seconds, never for a
+gamemode method; per-category report caps; scopes leaked outside protected callbacks at
+FrameNumber and PreRender boundaries; and the hot-path contracts (no switch read for unprotected
+events, lazy entry render target, cached shader names).

@@ -1,5 +1,10 @@
 # loader/client/tests
 
+`test_module.cpp` checks the `poll.h` throttle and attempt bound, and reads `module.cpp` (its path is
+a compile definition) for the contracts a unit test cannot reach without a game: no field access
+on the client realm, the temporary API raw-set inside the protected initializing step, Poll only
+pushing and protect-calling that step, and the self-pin before the Think hook hands out callbacks.
+
 `test_catalog.cpp` exercises the actual `catalog::prepare` policy in synthetic game folders under
 the test build's scratch directory. `CMakeLists.txt` builds `nl_client_catalog_tests` with the
 existing `loader/tests/test_main.cpp` / `nl_test.h` harness. No game, network, real install, or user
@@ -16,7 +21,10 @@ The secure-render policy cases use independent copies of the seven shipped recip
 not accepted digest values. They require the exact owner/module/name/find/offset/replace fields,
 and reject altered ordering, additional patches and every proper subset. The separate config
 suite checks the opt-out's boolean type and that it does not alter native allowlists or the general
-insecure patch gate.
+insecure patch gate. The render-recipe refusal cases (ADR 0056) require activation to fall back
+exactly when the opt-out leaves the reviewed recipes skipped: no `-insecure` on the command line
+(case-insensitive, quoted values excluded) or in the plan's own arguments, and the general gate
+closed. Other owners, changed recipes or no patch sets never refuse.
 
 Build with `cmake --build --preset win64-release --target nl_client_catalog_tests`, then
 `ctest --test-dir out/build/win64-release -R ^nl_client_catalog_tests$ --output-on-failure`.

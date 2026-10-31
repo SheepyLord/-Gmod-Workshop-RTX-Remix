@@ -40,6 +40,21 @@ TEST_CASE("status: schema includes generation activation user layers fallback an
   CHECK(nl::status::log_fields(report).find("activation.outcome=failed") != std::string::npos);
 }
 
+TEST_CASE("status: the companion guard's local RTX-start check matches only an active outcome") {
+  // _nativeloader_guard.lua looks for this exact text (ADR 0056); a writer change must keep it.
+  constexpr std::string_view marker = "\n\"activation\":{\"outcome\":\"active\"";
+  nl::status::Report report;
+  report.activation.outcome = "active";
+  report.session.notes = {"\n\"activation\":{\"outcome\":\"active\""};  // quoted text never matches
+  const auto active = nl::status::serialize(report);
+  CHECK(active.find(marker) != std::string::npos);
+  CHECK(active.find(marker, active.find(marker) + 1) == std::string::npos);
+  for (const char* outcome : {"inactive", "failed"}) {
+    report.activation.outcome = outcome;
+    CHECK(nl::status::serialize(report).find(marker) == std::string::npos);
+  }
+}
+
 TEST_CASE("status: atomic replacement and uninstall remove only generated data") {
   const auto root = nl::test::scratch_dir("startup_status");
   nl::status::Report report;

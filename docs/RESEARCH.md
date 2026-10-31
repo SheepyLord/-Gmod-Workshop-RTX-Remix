@@ -1,5 +1,28 @@
 # Research notes
 
+## R4 start-up, guard and bootstrap review (loader 0.10.1)
+
+Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock
+Lua (read-only) unless marked:
+
+- The stock toolgun screen, `gamemodes/sandbox/entities/weapons/gmod_tool/cl_viewscreen.lua`, pushes
+  its RT at line 51 and `cam.Start2D()` at 52, calls the tool's `DrawToolScreen` unprotected at 62
+  and pops at 71-72: a failing tool leaves both scopes open every frame, outside any guard callback.
+- Base `GM:PostDrawViewModel` (`gamemodes/base/gamemode/cl_init.lua:600`) draws the player's hands
+  for every weapon with `UseHands` or no script, so quarantining that gamemode method hid the hands.
+- The base gamemode defines `PreGamemodeLoaded`, `OnGamemodeLoaded` and `PostGamemodeLoaded`
+  (`gamemodes/base/gamemode/shared.lua:233-241`); sandbox's spawn menu and the menubar module create
+  themselves on `OnGamemodeLoaded`. Their order relative to `Initialize` was not measured in game; the
+  owned payload registers only `Initialize` and `InitPostEntity` callbacks today.
+- Reported (GMod wiki, AddCSLuaFile): files in `lua/autorun/` and `lua/autorun/client/` are sent to
+  clients without `AddCSLuaFile`, so a host that mounts the companion sends its guard autorun anyway.
+- LuaJIT 2.x passes extra arguments through `xpcall(f, handler, ...)`, which the guard now uses to
+  avoid a closure and argument table per protected callback.
+- The guard's cache file names are 81 characters; in this repository's worktrees the early-guard test
+  scratch paths reach 259 characters, so its fixture writer uses extended-length paths.
+- This machine has no Node.js. In R4 the main-menu harness ran in the desktop app's browser pane
+  through a small `vm`/`fs`/`assert` shim and passed (bootstrap polling ends after 239 retries).
+
 ## C13 graphics add-ons and map loading
 
 This is a bounded API/source audit plus controlled baseline work, not a reproduced user crash.

@@ -34,6 +34,7 @@ COMPANION_I18N = 'native/root/garrysmod/addons/nativeloader/lua/nativeloader/i18
 
 DEFAULT_ID = 'rtx-fixes'
 REQUIRES_LOADER = '>=0.2.0'  # the first loader with lua-addon, patch sets, module overrides, session cvars (M5)
+COMPANION_REQUIRES_LOADER = '>=0.10.0'  # the companion's V2 render guard needs the early view (ADR 0054, 0056)
 MAIN_MODULE = 'gmcl_RTXFixesBinary_win64.dll'
 MODULES = (MAIN_MODULE, 'gmcl_rtxwater_win64.dll')
 DEBUG_MODULE = 'gmcl_rtxdebug_win64.dll'
@@ -491,7 +492,7 @@ def build(args):
             'name': name,
             'version': version,
             'kinds': kinds,
-            'requires_loader': '>=0.10.0' if bootstrap else REQUIRES_LOADER,
+            'requires_loader': COMPANION_REQUIRES_LOADER if COMPANION_NAME not in excluded else REQUIRES_LOADER,
             # The fixes' Lua runs only with Remix: without a runtime the loader hides the add-ons (ADR 0013).
             'requires_remix': True,
             'files': listed,

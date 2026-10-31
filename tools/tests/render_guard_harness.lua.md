@@ -9,19 +9,28 @@ sequential and nested views, hook registry/function identity, object self and re
 quarantine, timer/cvar callback arguments and private diagnostics. Embedded-NUL console names,
 command bodies, material names/shaders and material paths must be refused before native mocks.
 
+The local proof is a mocked `native-loader/status.json` (DATA) in the loader's own format: an
+active outcome for local RTX starts, another outcome for an RTX-off start, none for a remote
+client. `AddCSLuaFile` is counted and must never be called. `ErrorNoHaltWithStack`, `SysTime` and
+`FrameNumber` are mocks, so error reports, the quarantine window and frame boundaries are
+deterministic.
+
 The multiplayer fixture executes the actual source in a non-global environment with the native
 bootstrap's raw verified marker and a scoped hook proxy with its own Add forwarding function.
-It requires the real global dispatcher to change, retains loading-hook identity, does not consult
-the temporary catalog API, and reports its later installation provenance. Early-mode registry
-identity stays unchanged; late-mode render registrations deliberately contain wrappers.
+It requires the real global dispatcher to stay unchanged, protects only functions whose
+environment is that private one (server callbacks, timers and their errors keep vanilla
+behaviour), retains loading-hook identity, does not consult the temporary catalog API or
+status.json, and reports its later installation provenance. Early-mode registry identity stays
+unchanged; late-mode owned render registrations deliberately contain wrappers.
 Global/inherited marker counterexamples must perform no mutations; server/menu cases preserve
 their existing behavior. This fixture proves neither pre-autorun timing nor pristine MP enums.
 
 A separate multiplayer fixture captures hook.Call before guard installation. Existing and future
-render callbacks must still quarantine a failing function once, run healthy callbacks, and unwind
-the failed callback's RT push through that cached dispatcher. It checks object self/returns,
-same-function re-registration, replacement recovery, the off switch, and original function identity
-for existing and future InitPostEntity entries used by native bootstrap replay.
+owned render callbacks must still quarantine a failing function after three consecutive failures,
+run healthy callbacks, and unwind the failed callback's RT push through that cached dispatcher. It
+checks object self/returns, same-function re-registration, replacement recovery, the off switch,
+an unchanged server entry and original function identity for existing and future InitPostEntity
+entries used by native bootstrap replay.
 
 The cleanup fixture preserves a caller's RT/camera/clip/model stacks and viewmodel depth range,
 and asserts mesh.End is never used as an abort. No game, GPU, native fault, filesystem/network
@@ -35,3 +44,9 @@ Nested cases require a parent's failure to unwind a successful child's extra pus
 a successful child's completed-scope pop once, and restore a child's direct RT change to its
 parent's recorded entry target. A failed child's already-cleaned restoration log
 must not be propagated and replayed again when its parent fails.
+
+The leak cases model the stock toolgun screen (RT plus 2D camera left open by a failing
+DrawToolScreen) over forty frames and forty failing ENT:Draw scopes in one frame: later pushes are
+never refused, scopes from earlier frames cannot satisfy a later pop, and a protected callback's
+own 33rd scope is still refused and unwound. The hooks case keeps the original error message out
+of the guard's records and MsgN lines while the mocked engine error output receives it.

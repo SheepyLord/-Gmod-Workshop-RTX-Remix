@@ -1,13 +1,29 @@
 // Main-menu diagnostics. Data is text-only; nothing is uploaded or opened automatically.
 (function () {
   'use strict';
+  // The verified RTX multiplayer bootstrap starts here. It needs only the menu's Lua bridge, not the
+  // diagnostics panel or the menu controller it decorates, so a changed menu cannot stop it.
+  if (!window.NativeLoaderClientBootstrap || window.NativeLoaderClientBootstrapRequested) return;
+  var attempts = 0;
+  function request() {
+    if (window.NativeLoaderClientBootstrapRequested) return;
+    if (window.lua && window.lua.Run) {
+      window.NativeLoaderClientBootstrapRequested = true;
+      window.lua.Run('require( "nlrtxclient" )');
+    } else if (++attempts < 240 && window.setTimeout) {
+      window.setTimeout(request, 500);
+    }
+  }
+  request();
+})();
+(function () {
+  'use strict';
   var data = window.NativeLoaderDiagnostics;
   var catalogs = window.NativeLoaderDiagnosticLabels;
   if (!data || !catalogs || window.NativeLoaderDiagnosticsInstalled) return;
   window.NativeLoaderDiagnosticsInstalled = true;
   var panel, body, copyButton, project;
   var last = '';
-  var bootstrapRequested = false;
   function language(scope) {
     var code = String(scope && scope.Language || 'en').toLowerCase();
     if (code === 'zh' || code === 'zh-cn') code = 'zh-CN';
@@ -20,10 +36,6 @@
     var item = document.createElement(tag); parent.appendChild(item); return item;
   }
   function update() {
-    if (!bootstrapRequested && data.client_bootstrap && window.lua && window.lua.Run) {
-      bootstrapRequested = true;
-      window.lua.Run('require( "nlrtxclient" )');
-    }
     var scope = typeof gScope !== 'undefined' ? gScope : null;
     var labels = language(scope);
     var home = !window.location || !window.location.hash || window.location.hash === '#/' || window.location.hash === '#';

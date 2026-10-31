@@ -1,5 +1,31 @@
 # Testing
 
+## R4 start-up, guard and bootstrap fallbacks (loader 0.10.1)
+
+[ADR 0056](decisions/0056-guard-and-startup-fallbacks.md) is covered without a game: 25 LuaJIT
+guard scenarios (autorun install, served-initializer and RTX-off counterexamples, error reports and
+three-failure quarantine, gamemode methods never quarantined, per-category report caps, leaked-scope
+resynchronization at FrameNumber/PreRender boundaries, fractional sizes, MRT clears, hot paths,
+owned-only multiplayer wrapping), 20 bootstrap scenarios (normal-load marker read from the actual
+cl_rtx.lua, listen-host and per-add-on skips, server-delivered entities, missing APIs, the
+loading-event replay order), the main-menu trigger cases in the Node harness (skipped where Node is
+absent; in R4 they ran through a browser shim, see RESEARCH.md), the early-view CTests (local proof,
+input-named cache, kept-aside cache file and folder, junction refusal), the render-recipe refusal
+and module contract cases, and
+two integration runs: the crashing opt-out stays vanilla with its reason (with `-insecure` it starts),
+and a catalog-verified package whose early view cannot be prepared still activates with a note.
+
+Not yet accepted in a game session; suggested live checks on the PoC install:
+
+- Change only the owned `native-loader/presentation/render-guard-*.lua` cache: the next RTX start
+  keeps it under `native-loader/backup/render-guard/`, writes the view again and installs early.
+- `patch_sets.allow_rtx_render_patches: false` without `-insecure`: a vanilla start whose status.json
+  activation reason names the key; with `-insecure`, RTX.
+- A listen server from an RTX session with a vanilla client: no `NativeLoaderRenderGuard` on the
+  client; the host's bootstrap status reads "normal loading already ran the RTX payload".
+- A tool whose DrawToolScreen errors, held for more than 32 frames: no "tracked stack limit"; one
+  failing HUD hook is reported with its stack and quarantined after three frames; hands still draw.
+
 ## C13 graphics add-ons and map loading
 
 Release passes **22 CTests and 294 Python tests (7 skips)**, including 20 early-policy cases,

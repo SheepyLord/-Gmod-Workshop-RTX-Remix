@@ -558,24 +558,24 @@
    "imported": "2026-10-31T07:35:32+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/autorun/cl_rtx.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\mp-fixes-source\\cl_rtx.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-startup\\out\\staging\\fixes\\cl_rtx.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-startup",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d30c6b15d5a2917e5fb1428a4bed585ca05be44",
+    "commit": "614dcb5ec2bed32e7b13459ed41e4f29ba81a347",
     "dirty": false
    },
-   "imported": "2026-10-31T07:35:32+00:00"
+   "imported": "2026-10-31T12:25:25+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/autorun/cl_rtx.lua.md": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\mp-fixes-source\\cl_rtx.lua.md",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-startup\\out\\staging\\fixes\\cl_rtx.lua.md",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-startup",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d30c6b15d5a2917e5fb1428a4bed585ca05be44",
+    "commit": "614dcb5ec2bed32e7b13459ed41e4f29ba81a347",
     "dirty": false
    },
-   "imported": "2026-10-31T07:35:32+00:00"
+   "imported": "2026-10-31T12:25:47+00:00"
   },
   "source/debug/addon/lua/autorun/client/rtx_debug.lua.md": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\mp-fixes-source\\rtx_debug.lua.md",
@@ -1212,15 +1212,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/autorun/cl_rtx.lua": {
-   "size": 8540,
-   "sha256": "b1d44dd99fb136ac8029887ccdfa76577cbb02f60305c41a69bbf53923835129",
-   "mtime_ns": 1793432032240908400,
+   "size": 8832,
+   "sha256": "140ab5e1bdc62d0dd4fe8c35190f0a0218953c2254b14568957a711ea754f704",
+   "mtime_ns": 1793449513226914400,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/autorun/cl_rtx.lua.md": {
-   "size": 758,
-   "sha256": "835268c4ef25e19688a4ff1edfc535fa6d1b0df58e382e9a95f25f35f6b629b5",
-   "mtime_ns": 1793432032241913700,
+   "size": 1085,
+   "sha256": "5e434e9c40838bd29f5fb2289ad338d11b612f33a02d950c05e6878151c54e57",
+   "mtime_ns": 1793449541978366900,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/autorun/matdebug.lua": {

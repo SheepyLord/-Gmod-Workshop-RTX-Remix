@@ -4,6 +4,7 @@
 // Exit codes: 0 ok, 1 a check found problems (or a deployment was refused or failed, leaving the
 // install as it was), 2 bad usage or unreadable/malformed input, 3 bug.
 
+#include "catalog.h"
 #include "nl/activate.h"
 #include "nl/core.h"
 #include "nl/deploy.h"
@@ -423,6 +424,11 @@ int cmd_activation(const fs::path& game_root, bool json) {
   else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
   else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"", nl::activate::primary_display,
                                  nl::activate::graphics_adapters);
+  // As start-up decides it (ADR 0056), for the empty command line this preview assumes.
+  if (auto refusal = nl::client::render_recipes_refusal(plan, L""); !refusal.empty()) {
+    plan.activate = false;
+    plan.reason = std::move(refusal);
+  }
   // ReShade (ADR 0028), as the bootstrap decides it for an RTX session.
   nl::reshade::Plan shade;
   if (plan.activate) {

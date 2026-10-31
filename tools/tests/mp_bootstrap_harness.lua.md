@@ -23,3 +23,16 @@ reload section and execute it with queued timer/hook/convar mocks. Normal nil/fa
 the initial zero-delay reload and final one-second reload, including a restored-convar retry. The
 verified late marker prevents both reloads and further retries with matching, mismatched or missing
 convars. No production implementation is copied into the fixture.
+
+The normal-load scenarios set the global NATIVELOADER_RTX_NORMAL_LOAD before the initializer runs.
+As a listen host (IsListenServerHost) or with sv_allowcslua 1 it finishes with its reason, reads no
+catalog and replays nothing, as it does without hook/CompileString, so the menu stops polling. On
+another server (normal_load_server) only the owner of the catalog's autorun/cl_rtx.lua is left out:
+its autoruns and entities do not run, a cross-owner include of its file falls back to the engine's
+(the server's) copy, the other owners load, and status lists it in normally_loaded. normal_load_marker extracts the one
+marker statement from the actual cl_rtx.lua, checks that it follows the binary-module check and
+precedes the payload, sets the global in a normal environment and nothing in the verified one.
+server_entity makes scripted_ents.GetStored return a server definition for the owned class: the
+owned cl_init.lua is not run, the class is not re-registered and status lists it. Every scenario that
+loads also replays owned OnGamemodeLoaded, PostGamemodeLoaded and Initialize callbacks once, in that
+order, before InitPostEntity, while pre-existing callbacks of those events are not replayed.

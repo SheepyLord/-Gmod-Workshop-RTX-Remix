@@ -82,7 +82,11 @@ root conf last. From loader 0.6.0 the lists name the short copies the bootstrap 
 payload ([ADR 0036](../../docs/decisions/0036-remix-layers-as-short-copies.md)). Missing/disabled config
 and pending journal transactions are inactive. It
 reads the journal and config only. Launch arguments are shown as the package's whole set, since
-nlctl does not have the game's command line. Exit `0` always (or `2` for an invalid journal/config).
+nlctl does not have the game's command line. Like start-up, it reports "would not load" when
+`patch_sets.allow_rtx_render_patches` is false and the reviewed rendering recipes would be skipped
+for want of `-insecure`, the configuration that crashed
+([ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md)); it links the client catalog
+library for that recipe check. Exit `0` always (or `2` for an invalid journal/config).
 
 `manifest` exits `0` for a valid package, `1` when the input has no `native/manifest.json` or the
 manifest breaks a schema-1 rule (the message names the field), `2` for a damaged archive.

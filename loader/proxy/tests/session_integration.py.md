@@ -24,7 +24,7 @@ runs without RTX and after the failed activation; with the loader switched off
 (`NATIVE_LOADER_DISABLE`) it must fail with `ERROR_MOD_NOT_FOUND` (126), which shows the fixture needs
 the hook. It places the host as `bin\win64\gmod.exe` beside the
 built `winmm.dll` and the three fixtures, creates the user's own add-on folder `user_addon`, writes a
-`config.cfg` with the user's values, then runs the host's `--m5-probe` ten times. Each probe also
+`config.cfg` with the user's values, then runs the host's `--m5-probe` twelve times. Each probe also
 lists `garrysmod\addons` through the fake `filesystem_stdio.dll`, relative with the A functions and
 absolute with the W ones, and `garrysmod\cfg`:
 
@@ -40,6 +40,8 @@ absolute with the W ones, and `garrysmod\cfg`:
 | `garrysmod\data\native-loader` a junction (R1-005) | the target's `session.json` unchanged and no `status.json` written there |
 | RTX on again | the user's values recorded afresh, patched again; the add-on listed again |
 | RTX on, runtime DllMain fails (`NL_M4_FAIL_ATTACH`) | activation `failed` after the module hooks went in: no patch, the vanilla shader, and the RTX-only add-on hidden by a second hook installation |
+| A `gmod-rtx-remix` dev package with the seven shipped rendering recipes (from `tools/package_fixes.py`), `patch_sets.allow_rtx_render_patches: false`, no `-insecure` | [ADR 0056](../../../docs/decisions/0056-guard-and-startup-fallbacks.md): activation `failed` with a reason naming the key and `-insecure`, listed in `errors`; no patch, the vanilla shader, the RTX-only add-on hidden |
+| The same with `-insecure` | active; the marker patched; `session.patches` counts the eight patches the session applies |
 
 Inputs and outputs: scratch below `out\tmp` (deleted afterwards); probes, status and session
 reports under `out\m5-synthetic\<config>-<pid>`. Exit 0 when every check passes; an `AssertionError`

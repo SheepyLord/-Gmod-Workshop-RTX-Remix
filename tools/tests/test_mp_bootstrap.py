@@ -43,6 +43,14 @@ class MPBootstrapTests(unittest.TestCase):
                 self.run_case(scenario)
 
     def test_realm_readiness_and_singleplayer_guards(self):
-        for scenario in ('single_player', 'not_ready', 'server', 'menu', 'no_api'):
+        for scenario in ('single_player', 'not_ready', 'server', 'menu', 'no_api', 'missing_api'):
             with self.subTest(scenario=scenario):
                 self.run_case(scenario)
+
+    def test_a_payload_normal_loading_already_ran_is_not_run_twice(self):
+        for scenario in ('normal_load', 'normal_load_allowcslua', 'normal_load_server', 'normal_load_marker'):
+            with self.subTest(scenario=scenario):
+                self.run_case(scenario)
+
+    def test_server_delivered_entity_definitions_are_kept(self):
+        self.run_case('server_entity')

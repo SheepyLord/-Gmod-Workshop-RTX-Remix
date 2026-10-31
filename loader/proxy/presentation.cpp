@@ -1,6 +1,7 @@
 #include "presentation.h"
 #include "diagnostics.h"
 #include "presentation_data.h"
+#include "../client/catalog.h"
 
 #include "nl/crc32.h"
 #include "nl/fs.h"
@@ -153,15 +154,21 @@ std::string decorate_menu(std::string_view original, const std::vector<std::stri
   return prefix + decorated;
 }
 
-std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json) {
+std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json, bool client_bootstrap) {
   constexpr std::string_view anchor = "function MenuController( $scope, $rootScope )";
   const auto at = original.find(anchor);
   if (at == std::string_view::npos || original.find(anchor, at + anchor.size()) != std::string_view::npos)
     throw std::runtime_error("stock main menu controller differs; diagnostics overlay not installed");
   // Parse before embedding so an invalid producer cannot turn the response into arbitrary JavaScript.
   if (!json::parse(diagnostics_json).is_object()) throw std::runtime_error("diagnostics must be a JSON object");
-  return std::string(original) + "\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
+  return std::string(original) + "\nwindow.NativeLoaderClientBootstrap = " + (client_bootstrap ? "true" : "false") +
+    ";\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
     ";\nwindow.NativeLoaderDiagnosticLabels = " + std::string(kDiagnosticsLabels) + ";\n" + std::string(kDiagnosticsScript);
+}
+
+std::string add_client_bootstrap(std::string_view original) {
+  // The same script: without diagnostics data its overlay part stays out, the trigger still runs.
+  return std::string(original) + "\nwindow.NativeLoaderClientBootstrap = true;\n" + std::string(kDiagnosticsScript);
 }
 
 Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation, bool include_diagnostics) {
@@ -208,7 +215,19 @@ Prepared prepare(const std::filesystem::path& root, const journal::Generation& g
       fs::refuse_links(root, kMainMenu);
       const auto source = fs::join(root, kMainMenu);
       const auto text = fs::read_file(source, kMaxMenuBytes);
-      const auto replacement = cache(root, decorate_main_menu(text, diagnostics::collect(root, generation)), ".js");
+      // The multiplayer bootstrap's only trigger lives in this view (ADR 0052): a menu the overlay
+      // no longer recognizes still gets the trigger alone (ADR 0056).
+      const bool bootstrap = client::native_bootstrap_present(generation);
+      std::string decorated;
+      try {
+        decorated = decorate_main_menu(text, diagnostics::collect(root, generation), bootstrap);
+      } catch (const std::exception& error) {
+        if (!bootstrap) throw;
+        prepared.notes.push_back("native loader main menu: " + std::string(error.what()) +
+                                 "; the RTX multiplayer bootstrap trigger is installed without it");
+        decorated = add_client_bootstrap(text);
+      }
+      const auto replacement = cache(root, decorated, ".js");
       prepared.redirects.push_back({source, replacement, {}});
     } catch (const std::exception& error) {
       prepared.notes.push_back("native loader main menu: " + std::string(error.what()));
