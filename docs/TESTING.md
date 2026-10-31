@@ -1,5 +1,13 @@
 # Testing
 
+Requests 17, 19/19.1 and 20 use [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md):
+actual AME methods check original names, path identity, current-row handoff, canonical return and
+independent working stores. Complete companion modules check late hashes/APIs, shared hashes,
+overrides, props, preview/hand exclusions, toggles, removed models, API retry, translations and
+opening the existing motion manager. The runtime's dedicated test_model_layers checks NoSave
+routing and draw invalidation. No game is started, as the user explicitly waived that validation.
+Full Release checks, input verification and a reviewed package comparison remain required.
+
 Player body regression: test_player_body.py executes the real entity, category registrar and menu
 using LuaJIT. It checks proxy-only offsets, white-texture isolation, legacy settings, model state,
 render cleanup and shared-material rejection. test_remix_defaults.py rejects captured player hash

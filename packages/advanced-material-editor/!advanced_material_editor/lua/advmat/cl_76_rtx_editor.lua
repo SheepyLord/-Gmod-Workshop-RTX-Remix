@@ -726,7 +726,8 @@ function PANEL:SelectSourceMaterial( index )
 	if index == nil or not self.Materials[ index + 1 ] then return false end
 	self.SourceDisplaySelected = index
 	local material = self.Materials[ index + 1 ]
-	self.ActiveMaterial:SetText( material )
+	self.ActiveMaterial:SetText( AdvMat.MaterialDisplayName( material, self.TargetEntity or self.TargetModel, self.MaterialSlots[ index ] ) )
+	self.ActiveMaterial:SetTooltip( material )
 	if IsValid( self.SourcePanel ) then
 		self.SourcePanel:SetMaterialSelection( index, material,
 			self.MaterialSlotGroups[ index ] or { self.MaterialSlots[ index ] or index } )
@@ -735,11 +736,20 @@ function PANEL:SelectSourceMaterial( index )
 	return true
 end
 
-function PANEL:OnWorkspaceChanged()
+function PANEL:OnWorkspaceChanged( oldTab, newTab )
 	if self:IsSourceTabActive() then
-		self:SelectSourceMaterial( self.SourceDisplaySelected or self.Selected or 0 )
-	else
+		self:SelectSourceMaterial( self.Selected or self.SourceDisplaySelected or 0 )
+	elseif oldTab == ( self.SourceSheet and self.SourceSheet.Tab ) then
 		local index = self.SourceDisplaySelected or self.Selected
+		if index ~= nil then
+			local canonical = self:CanonicalSlot( index )
+			self:SelectMaterial( canonical, true )
+			local line = self.MaterialLines and self.MaterialLines[ canonical ]
+			if IsValid( line ) and IsValid( self.MaterialList ) then self.MaterialList:SelectItem( line ) end
+		end
+		self:UpdateActionMode()
+	else
+		local index = self.Selected
 		if index ~= nil then
 			local canonical = self:CanonicalSlot( index )
 			self:SelectMaterial( canonical, true )
@@ -918,7 +928,9 @@ function PANEL:PopulateMaterials()
 			unique[ index + 1 ] = material
 			slots[ index ] = sourceIndex - 1
 			groups[ index ] = { sourceIndex - 1 }
-			local line = self.MaterialList:AddLine( sourceIndex - 1, material, "" )
+			local label = AdvMat.MaterialDisplayName( material, self.TargetEntity or self.TargetModel, sourceIndex - 1 )
+			local line = self.MaterialList:AddLine( sourceIndex - 1, label, "" )
+			line:SetTooltip( material )
 			line.AdvMatIndex = index
 			self.MaterialLines[ index ] = line
 			AdvMat.StyleListLine( line, index + 1 )
@@ -1461,7 +1473,8 @@ function PANEL:SelectMaterial( index, forceRTX )
 	if canonical ~= index and self:RedirectSharedAlias( index, canonical ) then return end
 	self.Selected = index
 	local material = self.Materials[ index + 1 ]
-	self.ActiveMaterial:SetText( material )
+	self.ActiveMaterial:SetText( AdvMat.MaterialDisplayName( material, self.TargetEntity or self.TargetModel, self.MaterialSlots[ index ] ) )
+	self.ActiveMaterial:SetTooltip( material )
 
 	if Store and Store.IsSynced and not Store.IsSynced() then
 		self.PendingSelect = index

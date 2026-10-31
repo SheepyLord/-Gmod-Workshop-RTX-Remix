@@ -766,3 +766,20 @@ msgstr "툴건 화면"
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Model outlines"
 msgstr "모델 외곽선"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+msgid "Motion importer"
+msgstr "모션 가져오기"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
+msgid "Open the VMD motion importer and motion library."
+msgstr "VMD 모션 가져오기와 모션 라이브러리를 엽니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+msgid "Import VMD files and manage your motion library and playback."
+msgstr "VMD 파일을 가져오고 모션 라이브러리와 재생을 관리합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
+msgid "Open motion importer"
+msgstr "모션 가져오기 열기"

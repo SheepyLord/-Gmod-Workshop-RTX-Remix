@@ -488,7 +488,7 @@ function PANEL:PopulateSlotChoices( selected )
 		for option, slot in ipairs( group ) do
 			local material = self.MaterialBySlot[ slot ] or self.DisplayMaterial or ""
 			local label = L( "rtx.source.slot", "Source slot {{slot}}: {{material}}", {
-				slot = slot, material = ShortMaterial( material ),
+				slot = slot, material = AdvMat.MaterialDisplayName( material, self.Entity or self.TargetModel, slot ),
 			} )
 			self.SlotBox:AddChoice( label, slot, slot == selected )
 			if slot == selected then self.SlotBox:ChooseOptionID( option ) end

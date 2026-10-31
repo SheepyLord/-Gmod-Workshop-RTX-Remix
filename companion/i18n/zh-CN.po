@@ -766,3 +766,20 @@ msgstr "工具枪屏幕"
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Model outlines"
 msgstr "模型描边"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+msgid "Motion importer"
+msgstr "动作导入器"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
+msgid "Open the VMD motion importer and motion library."
+msgstr "打开 VMD 动作导入器和动作库。"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+msgid "Import VMD files and manage your motion library and playback."
+msgstr "导入 VMD 文件，管理动作库和播放。"
+
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
+msgid "Open motion importer"
+msgstr "打开动作导入器"

@@ -1,6 +1,6 @@
 # QoL report: complete interface translations
 
-Latest batch: [player body, first-person arms and shadows](#player-body-first-person-arms-and-shadows-2026-10-30).
+Latest batch: [importer normals and add-on navigation](../decisions/0049-importer-normals-material-labels-and-motion-access.md).
 
 2026-10-30. Implemented on `codex/translation-review`, from `main` at `7d79c12`.
 The user expanded the audit to every bundled add-on interface. The implementation is recorded in
@@ -499,3 +499,33 @@ borrowed cache GMAs and generated option documentation were removed from the fix
 user.conf retains its original SHA-256, and rtx.conf/dxvk.conf remain absent. Neither the real
 GarrysMod install nor GarrysMod_RTX_c or its backups was written. Main's publish hooks update hidden
 item 3829070317; out/workshop/published.json records the resulting upload and content digest.
+
+## Importer normals and add-on navigation (2026-10-30)
+
+Requests 17, 19/19.1 and 20: both character and static-prop spawn controls offer Recalculate normals
+for RTX, default off. Active imported-model hashes enter a separate NoSave set joined with saved
+Smooth Normals tags. Remix computes area-weighted geometry normals; imported files and normal maps
+are unchanged. The tooltip explains the texture-global effect on instances/previews sharing a hash.
+
+AME's material list, current label and Source slot choices show original imported material names,
+with raw paths retained in tooltips and rule/profile keys. Source follows the current RTX row;
+returning maps to its canonical owner. Switching other RTX workspaces retains RTX selection and
+neither working store is replaced. A dedicated Motion importer tab beside External Models opens
+the existing VMD manager and handles late API loading. All new visible text has six translations.
+
+Three offline LuaJIT behavior cases and the native option-lifetime suite pass. No game was launched:
+the user explicitly waived in-game validation. Native commit 4888b042 matches the verified eleven-
+patch tree 792332d699c71e6e6facdf216b6dbcffad424b65. The incremental C++ build reused unchanged
+shader inputs/stamp; d3d9.dll is 395513856 bytes, SHA-256
+0afb29175569f1c87e44696e2847eec3d5f0567442a96b1b7379fc69d4c1a20d. Build/package and publishing
+evidence is under out/addon-workflow*. No game install or Remix user configuration was written.
+
+Final offline validation: 18 CTests and 267 Python tests (28 + 25 + 214, seven environment-dependent
+skips), complete catalogs (188 companion messages, 472 bundled phrases, 2032 Hotloader keys per
+required language), and deep verification of the three changed input parts pass. The checked GMA
+is 0.0.0-dev.20261031051259+912bb5d6, digest
+f456cb7f565f5a8fbc37e67d7c55f99797ea699ed96f6cba7e3dcd7827933d68. Its native DLL and five changed
+Lua modules were read back and compared byte-for-byte with the reviewed sources; the inventory
+contains only intended runtime/add-on changes and removes nothing. A transient Windows sharing
+denial during the fixes-part folder rename passed on retry. Main's hooks update hidden item
+3829070317; out/workshop/published.json is the upload receipt.

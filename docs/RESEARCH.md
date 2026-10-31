@@ -1,5 +1,20 @@
 # Research notes
 
+## Imported normals and navigation (requests 17, 19/19.1 and 20)
+
+Hotloader materials.lua returns engine-safe paths from Entity:GetMaterials; original names are in
+rig.materials[].name. AME sh_15_mmd.lua now resolves labels separately, including static-prop cache
+names. Paths remain rule/profile identities. cl_76_rtx_editor.lua OnWorkspaceChanged previously
+preferred SourceDisplaySelected over Selected, retaining the stale Source row. It now follows the
+current RTX row on entry and maps the Source row to CanonicalSlot on return.
+
+The motion importer's cl_menu.lua:5862 exposes MMDVMDNPC.OpenMotionManager; the creation tab calls
+that existing entry point. The fixes' source/remixapi/remixapi.cpp:1111 GetConfigVariable reads
+rtx.conf rather than live layers, so replacing the saved smooth-normal set would be unsafe.
+Native rtx_model_layers.h owns a separate NoSave set, joined on D3D9, cached-draw and external
+submission paths. Existing rtx_scene_manager.cpp:1858 dispatches area-weighted geometry normals;
+no shader source or ABI changes are needed. Tags affect all draws sharing a captured texture.
+
 ## Player bodies and first-person arms (2026-10-30)
 
 - The shipped runtime's InstanceManager::createViewModelInstances explicitly zeroed every candidate

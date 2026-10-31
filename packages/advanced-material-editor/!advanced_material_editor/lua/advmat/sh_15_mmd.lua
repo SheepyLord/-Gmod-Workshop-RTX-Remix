@@ -1,5 +1,29 @@
 -- Optional provider: native limits remain unchanged for ordinary Source models.
 AdvMat=AdvMat or {}
+-- Labels are presentation only: rules and RTX profiles still use the real material path.
+function AdvMat.MaterialDisplayName(material,target,slot)
+ local path=AdvMat.NormalizeMaterial(material or '')
+ if not mmdhl then return path end
+ local rig
+ if IsValid(target) then
+  rig=mmdhl.GetRig and mmdhl.GetRig(target)
+  if not rig and mmdhl.GetRigForModel then rig=mmdhl.GetRigForModel(target:GetModel()) end
+ elseif isstring(target) and mmdhl.GetRigForModel then rig=mmdhl.GetRigForModel(target) end
+ local list=rig and rig.materials
+ local part=list and slot~=nil and list[slot+1]
+ if not part or AdvMat.NormalizeMaterial(part.path or '')~=path then
+  part=nil
+  for _,candidate in ipairs(list or {}) do
+   if AdvMat.NormalizeMaterial(candidate.path or '')==path then part=candidate break end
+  end
+ end
+ if not part then
+  local asset,index=path:match('^mmdhl_prop_r%d+_(%x+)_(%d+)[gm]$')
+  local entry=asset and mmdhl.props and mmdhl.props.RenderCache and mmdhl.props.RenderCache[asset]
+  part=entry and entry.info and entry.info.materials and entry.info.materials[tonumber(index)]
+ end
+ return part and isstring(part.name) and part.name~='' and part.name or path
+end
 function AdvMat.GetMaterialLimit(target)
  if not mmdhl or not mmdhl.GetRigForModel then return AdvMat.MAX_SUBMATERIALS end
  if isnumber(target) then target=Entity(target) end
