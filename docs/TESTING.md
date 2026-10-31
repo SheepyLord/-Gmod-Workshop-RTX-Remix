@@ -7,6 +7,16 @@ scripted session per question, each about two minutes, all with the user's own s
 problem shows up the way the user meets it.
 
 1. **Gate.** `tools\test.ps1 -Config Release` passes on the branch.
+   - **Before the publish, the package on the PoC.** A merge into `main` uploads the package the user's
+     install then downloads, so the branch's own package goes through the PoC first, with no Workshop
+     mount (each session about 80 s from launch to quit instead of several minutes):
+     `python tools\build_package.py --require-nlctl --out out\qa-poc\package` (about 3 minutes, 1.84 GB),
+     then `python tools\poc_session.py --evidence out\qa-poc\<round> install --allow-local <absolute .gma>
+     --remix on --replace-config`, then `python tools\qa\release_qa.py --root <PoC> --evidence
+     out\qa-poc\<round> --extra=-insecure`: the sessions of step 4 with no Workshop mount, the modern_house
+     map mounted from the user's subscription alone (`--mount-workshop 3495468649 --change-map
+     modern_house`) and `mat_queue_mode 2` standing in for the field's queued rendering (U1 crashed only
+     with it). Put the PoC's `config.json` back from the `config.json.before-*` copy the install step kept.
 2. **Back up and record.** Copy the field's `bin\win64\winmm.dll`, `winmm.pdb`,
    `native-loader\bootstrap-install.json` and `config.json` with their SHA-256 into
    `out\field-backups\<date>-<purpose>`; record the hashes of `user.conf`, `rtx.conf` and
@@ -15,19 +25,27 @@ problem shows up the way the user meets it.
 3. **Install** with `tools\install-loader.ps1 -GameRoot <field> -AllowSteamManaged`. A bundle the user
    extracted by hand leaves a receipt that names another build: the refusal says so; move the receipt
    to the backup folder and add `-ReplaceUntracked`.
-4. **Sessions**, each `python tools\poc_session.py --root <field> --allow-steam-managed --evidence
+4. **Sessions**, all four in one command that also applies the pass rules of step 5 and records the
+   watched files and the registry key before and after
+   ([`release_qa.py`](../tools/qa/release_qa.py.md), about 10 minutes on the field):
+   `python tools\qa\release_qa.py --field --root <field> --evidence out\qa-field\<run> --extra=-insecure
+   --extra=-tickrate --extra=120` (the user's own launch options). One at a time, each is
+   `python tools\poc_session.py --root <field> --allow-steam-managed --evidence
    out\qa-field\<run> run --name <step> --workshop --addons --no-window --extra=-insecure
    --extra=-tickrate --extra=120` plus:
    - `--menu-shot --map gm_construct --lua tools\qa\rtx_session_probe.lua --lua-shots 90`: the menu
      (diagnostics panel, add-on cards), the session state, the toolgun screen;
    - `--map modern_house --console "sv_cheats 1" --lua tools\qa\map_glass_probe.lua --lua-shots 180`;
-   - `--map gm_construct --console "sv_cheats 1" --lua tools\qa\spawned_glass_probe.lua --lua-shots 120`.
+   - `--map gm_construct --console "sv_cheats 1" --lua tools\qa\spawned_glass_probe.lua --lua-shots 120`;
+   - `--map gm_construct --lua tools\qa\spawnmenu_probe.lua --lua-shots 60`: the spawn menu's External
+     Models and Motion importer tabs (labels translated, the importer laid out in place).
 5. **Pass** when every record has `map_loaded`, `normal_quit` and `lua_errors: 0`, the activation is
    `active` with no status errors, the probe lines show the guard installed and no guard errors, the
    toolgun crop is sharp, glass breaks into shards, and after the runs `user.conf`, `rtx.conf`,
    `client.vdf`, the loader files and the registry export are unchanged (`config.cfg` is rewritten by
    the game at every normal quit: diff it against the copy; the probes change nothing archived).
-6. **A crash** leaves `rtx-remix\logs\.sentry-native\reports\*.dmp`: read the faulting module and the
+6. **A crash** leaves `rtx-remix\logs\.sentry-native\reports\*.dmp`, which `poc_session.py` copies into
+   the session's `crash-reports\` (Remix deletes it once the next start's prompt is declined): read the faulting module and the
    module frames on the faulting thread's stack (a crash on the material system's thread with no
    project module on it points at what was drawn, not at the module that draws). The next start's
    crash-report prompts are declined by `poc_session.py` (No, then OK); never set

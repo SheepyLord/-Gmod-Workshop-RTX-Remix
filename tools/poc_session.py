@@ -378,6 +378,20 @@ def decline_crash_prompts(pid: int) -> int:
     return answered
 
 
+def keep_crash_reports(root: Path, target: Path) -> list[str]:
+    """Copies the minidumps waiting under the install's rtx-remix\\logs\\.sentry-native into `target`
+    and returns their names. The next start's prompt is declined (decline_crash_prompts) and Remix then
+    deletes the reports, which took the only evidence of a crash with it (R4, 2026-10-31)."""
+    folder = root / "rtx-remix" / "logs" / ".sentry-native"
+    kept = []
+    for dump in sorted(folder.rglob("*.dmp")) if folder.is_dir() else []:
+        name = dump.name if dump.parent == folder else f"{dump.parent.name}-{dump.name}"
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(dump, target / name)
+        kept.append(name)
+    return kept
+
+
 def screenshot(hwnd: int, destination: Path) -> dict:
     """Captures the window's client area through DWM (PrintWindow with PW_RENDERFULLCONTENT), so the
     window need not be in front. Falls back to a screen grab of its rectangle if that comes back black."""
@@ -675,6 +689,11 @@ def step_run(args) -> dict:
     environment = dict(os.environ)
     environment.pop("NATIVE_LOADER_DISABLE", None)
     record = {"step": "run", "name": args.name, "root": str(root), "started": now(), "arguments": arguments}
+    # This start declines the crash-report prompt of an earlier crash, and Remix then deletes the report:
+    # keep its minidumps first.
+    waiting = keep_crash_reports(root, evidence / "crash-reports-before")
+    if waiting:
+        record["crash_reports_before"] = waiting
 
     def log_text() -> str:
         return read_shared(console_log, offset)
@@ -917,6 +936,10 @@ def step_run(args) -> dict:
             stop()
     if not_ours:
         record["not_ours"] = sorted(not_ours)  # same-root games this run did not start: left running
+    if not record.get("normal_quit"):
+        crashed = keep_crash_reports(root, evidence / "crash-reports")
+        if crashed:
+            record["crash_reports"] = crashed
     text = log_text()
     (evidence / "console.log").write_text(text, encoding="utf-8")
     dxlevel = re.search(r'"mat_dxlevel" = "(\d+)"', text)

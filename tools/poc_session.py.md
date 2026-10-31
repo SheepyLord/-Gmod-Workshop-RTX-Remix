@@ -86,6 +86,11 @@ dropped, so before a save or the camera the script waits until `console.log` has
     message box in its own game process with No (`IDNO`), then OK (`IDOK`), by button id so any Windows
     language works (record: `declined_crash_prompts`). It never answers Yes, and never sets
     `RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES`, which would grant upload consent.
+  - **Crash minidumps are kept.** Declined, Remix deletes the reports, the only evidence of a crash
+    (in R4 a PoC crash lost its dump this way). So before the launch the run copies every `*.dmp` under
+    `rtx-remix\logs\.sentry-native` into `<step>\crash-reports-before\` (record:
+    `crash_reports_before`), and after a run without a normal quit into `<step>\crash-reports\`
+    (`crash_reports`). A dump in a subfolder is named `<subfolder>-<name>.dmp`.
   - **`--menu-shot`** (with `--workshop` and a map) saves `menu.png` of the main menu once the Workshop
     is mounted, before the map is asked for: the loader's diagnostics panel, the native add-on cards
     and the startup text are only there (record: `menu_screenshot`).

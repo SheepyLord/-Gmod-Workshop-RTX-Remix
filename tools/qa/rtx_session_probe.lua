@@ -27,7 +27,7 @@ if guard then
 end
 emit("PARTS", {
     map = game.GetMap(), dxlevel = render.GetDXLevel(), sky = NATIVELOADER_SKY ~= nil,
-    i18n = NATIVELOADER_I18N ~= nil, mmdhl = mmdhl ~= nil, advmat = advmat ~= nil,
+    i18n = NATIVELOADER_I18N ~= nil, mmdhl = mmdhl ~= nil, advmat = AdvMat ~= nil, motion = MMDVMDNPC ~= nil,
     pseudoplayers = #ents.FindByClass("rtx_pseudoplayer"),
     weapon = IsValid(LocalPlayer()) and IsValid(LocalPlayer():GetActiveWeapon()) and LocalPlayer():GetActiveWeapon():GetClass() or false,
 })

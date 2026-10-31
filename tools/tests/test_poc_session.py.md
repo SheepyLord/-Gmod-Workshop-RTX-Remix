@@ -52,3 +52,10 @@ Exit code: unittest's (0 when all pass).
 - `test_a_partial_first_mount_waits_for_a_remount_for_a_while` (R3-013): `Mounted 3 of 755` first, then a
   remount: the map waits for the second mount (`workshop_ready_by` "the remount"); without a remount it is
   sent once `PARTIAL_MOUNT_GRACE` has passed.
+- `test_crash_report_prompts_are_declined_never_accepted` (R4): the question gets `IDNO`, the notice
+  `IDOK`, never `IDYES`; a run answers them while it waits for the map and records how many.
+- `test_crash_minidumps_are_kept_before_the_declined_prompt_deletes_them` (R4): a dump waiting from an
+  earlier crash is copied into `crash-reports-before\` before the launch, and a crashed run's own into
+  `crash-reports\`, both named in the record.
+- `test_the_menu_shot_is_taken_at_the_menu_before_the_map` (R4): `--menu-shot` captures `menu.png` once
+  the Workshop is mounted and before `map` is sent.

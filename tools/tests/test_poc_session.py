@@ -417,6 +417,36 @@ class StepRunTests(unittest.TestCase):
         self.assertEqual(record['declined_crash_prompts'], 1)
         self.assertTrue(record['map_loaded'])
 
+    def test_crash_minidumps_are_kept_before_the_declined_prompt_deletes_them(self):
+        # Declining the prompt lets Remix delete the reports, the only evidence of a crash (R4): a run
+        # copies the minidumps waiting from an earlier crash before it starts, and its own after a crash.
+        reports = self.root / 'rtx-remix' / 'logs' / '.sentry-native' / 'reports'
+        reports.mkdir(parents=True)
+        (reports / 'earlier.dmp').write_bytes(b'MDMP earlier')
+        clock = Clock()
+        log = self.root / 'garrysmod' / 'console.log'
+
+        def launch(*_, **__):
+            log.write_text('', encoding='utf-8')
+            (reports / 'earlier.dmp').unlink()  # the declined prompt
+            (reports / 'this.dmp').write_bytes(b'MDMP this run')
+            return FakeGame(running=False)  # it crashed before the map
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'decline_crash_prompts', return_value=0), \
+                mock.patch.object(ps, 'console_window', return_value=None), \
+                mock.patch.object(ps, 'game_window', return_value=None), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(run_args(self.root, self.evidence, name='crashed'))
+        self.assertFalse(record['normal_quit'])
+        self.assertEqual(record['crash_reports_before'], ['reports-earlier.dmp'])
+        self.assertEqual(record['crash_reports'], ['reports-this.dmp'])
+        step = self.evidence / 'crashed'
+        self.assertEqual((step / 'crash-reports-before' / 'reports-earlier.dmp').read_bytes(), b'MDMP earlier')
+        self.assertEqual((step / 'crash-reports' / 'reports-this.dmp').read_bytes(), b'MDMP this run')
+
     def test_the_menu_shot_is_taken_at_the_menu_before_the_map(self):
         # --menu-shot: the main menu (the loader's diagnostics panel and add-on cards) is captured once
         # the Workshop is mounted, and only then is the map asked for.
