@@ -1,5 +1,59 @@
 # Testing
 
+## Oversized hardware skinning (item 24)
+
+Current evidence includes **completed asset/engine investigation, final-policy CPU tests and a
+final-DLL cold default NPC/two-skin plus arms pass, and final-GMA force1 PM/two-skin rendering pass**.
+The Airi archive's MDL/VVD/VTX CRCs/checksums, mesh/group vertex ranges, bone references and weight
+normalization pass. Evidence is under the main checkout's `out/oversized-skinning-evidence`.
+The final DLL is built from native local commit `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`, with
+SHA-256 `5e626e34f412cd55e93a485cd1d777794b339a0cb7a5082935454b72fbc72db7`.
+
+```powershell
+cmake --build --preset win64-release --target rtx_oversized_skinning_policy
+ctest --test-dir out/build/win64-release -R '^rtx_oversized_skinning_policy$' --output-on-failure
+```
+
+The standalone GPL policy CTest passes with /UNDEBUG confirmed after Release's default NDEBUG
+in the actual compile command. It exercises threshold/hardware/flex eligibility, complete strip
+slots and stale-cache rejection, borrowed palette/blend restoration, failed capture, user-forced
+small-group eligibility, supported/unsupported diagnostic modes and unsafe static fallback. It
+links no MIT loader code and needs no Source SDK or GPU. Final Release (`final-tests.log`) passes
+20 CTests/277 Python tests (7 skips).
+
+Acceptance must distinguish the 32,767/32,768 per-group boundary, oversized compiled hardware
+groups and normal/flex-dependent/software-only groups. Check the wrapper's eligibility and original
+fallback, weighted bone/palette remaps, missing or invalid data, and restoration of affected render
+state on success and every refusal path. Check dynamic and direct hardware entries separately,
+including same-group re-entry and unsafe config38 bit 0x08. Small normal force0 groups retain their
+path; small user-forced hardware groups must share the scope only inside RenderFinal with a valid
+multi-bone pose and the existing mode 1/matching-bone-count upload predicate. Rigid single-bone,
+flex and eye controls remain on their original paths. Complete strip certificates apply only to
+oversized groups. Do not widen the software limit or silence warnings from unsupported groups.
+
+For live A/B, use the same camera, animation and cvars in the PoC. Capture the existing warning and
+missing oversized geometry with the old module, then compare the rebuilt module with the same deployed
+assets. Exercise both player/NPC variants and all four oversized groups: clothing Fuzz/Fuzz_B,
+three-palette hair and both shoes. Check alternate skins/bodygroups, animation/poses and weighted
+deformation, then a normal face-flex model, the Airi arms control and an unrelated model drawn
+after it. Verify unchanged skinning cvars and no leaked bone/render state; include first spawn,
+repeated spawn, removal and map reload. Repeat the relevant normal single-player and secure
+multiplayer regressions from [ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md).
+
+Measured progression: baseline PM without insecure at force0/softwareskin1 reproduces four size
+warnings and missing hair/shoes. Dynamic-only 0d4 and static-only 034 are superseded: they missed,
+respectively, the direct fallback fatal and smaller force1 body visibility. Preview 357 passes
+force1 PM skins 0/8 with body, hair, boots and arms visible, no fatal and exit zero. Final 5e626e34
+passes cold default NPC skins 0/8 plus arms in `complete-default`. The actual final GMA passes
+force1 PM skins 0/8 with full body and arms visible, no errors and exit zero (`complete-packaged`).
+Its reviewed 998-file GMA readback matches final DLL/source, 28 changes and no removals. Both the
+software warning and later direct-fallback fatal are fixed in these final build checks.
+
+Final-DLL secure multiplayer and CI/publication are **pending**. Earlier 0d4 packaged multiplayer
+passed with server-approved game.MountGMA content and no unrelated add-on Lua forced; it does not
+substitute for the final DLL retest. Preserve exact source/DLL and package hashes with results. See
+[ADR 0053](decisions/0053-oversized-hardware-skinning.md) for scope and provenance.
+
 ## Multiplayer bootstrap and RTXDebug
 
 Loader 0.9.0's targeted offline checks require no game or GPU:

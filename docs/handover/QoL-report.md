@@ -2,6 +2,10 @@
 
 Latest batch: [startup text and menu diagnostics](../decisions/0050-startup-text-and-main-menu-diagnostics.md), plus [1/12 bounce defaults](../decisions/0051-path-bounce-defaults.md).
 
+Item 24 follow-up: [oversized hardware skinning](../decisions/0053-oversized-hardware-skinning.md)
+is implemented and passes final-DLL default NPC/arms, final-GMA force1 PM/two-skin and CPU checks;
+final multiplayer, CI and publication are pending below.
+
 Multiplayer follow-up: [ADR 0052](../decisions/0052-scoped-rtx-multiplayer-bootstrap.md), with
 dedicated-server acceptance passed and final release checks pending below.
 
@@ -653,3 +657,73 @@ The tested loader bundle is out/mp-delivery/gmod-native-loader-0.9.0+64e99136.zi
 SHA-256 35e8ce7eee55193494a6283b70ecb7a40b4b48e0037824722bb836abb1741afa. Workshop cannot
 replace the bootstrap itself. RTXDebug's corresponding source, CLI, dependency notices and build
 provenance are included under rtx_debug/source. Main's native Release build is also refreshed.
+
+## Airi oversized software-skinning warning (item 24)
+
+Work starts on `codex/oversized-skinning` at `04592ae`. Read-only asset inspection confirms that
+Workshop 3830665593's reported 40,509-vertex count belongs to the clothing-fur group in both the
+Airi(InuinuBone) player and NPC models. It is weighted, compiled for hardware skinning and has no
+flexes. Its Fuzz/Fuzz_B materials have no software-skin directive. Hair (62,049 group vertices)
+and both shoes (33,422 each) also exceed the engine's software-group limit and have valid hardware
+data. The arms model's total count exceeds that limit but its individual groups do not.
+
+Native inspection of the matching studiorender.dll confirms `R_StudioDrawDynamicMesh` warns and
+returns zero for software groups of at least 32,768 vertices. The count is valid asset data;
+suppressing the message alone would keep the missing draw. Detailed asset/engine measurements,
+hashes and REA references are recorded in [RESEARCH.md](../RESEARCH.md#oversized-airi-skinning-groups-item-24)
+and the main checkout's `out/oversized-skinning-evidence/asset-findings.md` and
+`model-inventory.json`. No add-on code was executed or textures extracted by that inspection.
+
+The later 62,049-vertex fatal against a 32,768-vertex buffer exposed a second route: the direct
+hardware helper can also fall back to software, without the dynamic entry's capacity precheck.
+The dynamic-only 0d4 fix and static-only 034 intermediate are superseded; the latter left smaller
+body geometry invisible under user-forced hardware skinning.
+
+The correction is scoped to the GPL native RTX fixes module's dynamic and direct hardware entries.
+Only already hardware-skinned, non-flex groups at or above the limit enter the automatic path.
+Creation certificates require each strip to supply all bone slots it uses; runtime fingerprints
+reject stale or unknown data. Re-entry preserves all nine arguments and a thread-local same-group
+marker prevents double wrapping. Unknown oversized static-fallback config38 bit 0x08 fails closed.
+Smaller non-flex hardware groups already selected by user force1/multi-bone mode use the same
+RenderFinal scope when legacy r_hwskin_setbones mode 1 or matching bone count selects them, avoiding
+CPU posing plus indexed-upload double transformation. Their existing remap behavior is preserved;
+full strip certificates apply only to oversized groups. Ordinary force0, rigid single-bone,
+flex and eye paths are unchanged. DrawIndexedPrimitive borrows a UBYTE4 declaration for D3DCOLOR
+blend-index data only when needed, backed by a 16-entry COM cache with references released at
+shutdown. Palette, blend, config, material, group and bookkeeping state are restored with __finally,
+including the original declaration. Normal flex-dependent and unsupported groups retain their
+existing route. Global skinning cvars, Source's software limit, user models/materials and loader
+permissions stay unchanged.
+
+Native source is local commit `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`. The final DLL SHA-256 is
+`5e626e34f412cd55e93a485cd1d777794b339a0cb7a5082935454b72fbc72db7`.
+Source.md, COPYING, build/dependency pins, complete changed source, generated projects and patches
+ship from packages/fixes/licenses/oversized-skinning into short add-on path `remixbinary/src/hw`,
+avoiding Windows staging path limits. No user model or texture is included.
+
+The baseline PM without insecure at `r_forcehwskin 0`/`mat_softwareskin 1` repeatedly warns for all
+four groups and visibly lacks hair/shoes. Preview 357 passes force1 PM skins 0/8 with full body,
+hair, boots and arms visible, no fatal and exit zero. Final 5e626e34 adds minor route/debug guards
+and passes cold default0 NPC skins 0/8 plus arms (`complete-default`). The actual final GMA passes
+force1 PM skins 0/8 with full body/arms visible, no errors and exit zero (`complete-packaged`).
+Both the software warning and the later direct-fallback fatal are fixed. The final standalone GPL
+CTest passes with Release /UNDEBUG, including mode-filter/unsupported-mode cases. Final Release
+`final-tests.log` passes 20 CTests/277 Python tests (7 skips).
+
+Earlier 0d4 packaged client 3752 passed secure multiplayer with cslua/cheats off, rendering
+config/restore and unsafe-command denials, hands and the 233-bone Airi fully rendered. It used
+normal server-approved game.MountGMA content; no unrelated add-on Lua was force-loaded. This
+earlier native build does not establish final 5e626e34 multiplayer acceptance.
+
+Reviewed GMA `0.0.0-dev.20261031090406+335c6f09` has 998 files, 1,837,514,493 bytes, payload digest
+`13f303982ed43e47bccf09847186bd3bb43477cb65dbbcb1c5534117cbae4ba3`.
+Readback confirms final DLL/source, 28 changes and no removals. Final client 18232 passes secure
+dedicated server 37728 without insecure, with sv_allowcslua 0, cheats off, all 44 autoruns/error-free,
+unrelated local Lua blocked and the temporary API absent. Server-approved mounting supplies only
+the test model content: Airi reports 233 bones and renders with first-person hands visible.
+Rendering config/restore succeeds, unsafe Eval/cvar changes remain denied and config hashes stay
+unchanged. Evidence is multiplayer-5e and the matching debug-check record. Both owned games are
+closed and the video-registry snapshot restored with equal hashes. CI/publication are pending.
+The main checkout's unrelated uncommitted changes are preserved; integration uses out/worktrees/pub24.
+The accepted
+policy is [ADR 0053](../decisions/0053-oversized-hardware-skinning.md).

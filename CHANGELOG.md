@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Fix Airi's oversized software-skinning rejection by drawing eligible compiled hardware groups
+  with their bone weights and strip palettes intact, including the 40,509-vertex clothing fur
+  and 62,049-vertex hair. Protect both dynamic and direct hardware entries from unsafe software
+  fallback, and keep smaller weighted body meshes visible under existing user-forced hardware
+  skinning. Validate oversized strip assignments and restore borrowed draw state; normal default
+  draws, flex/eye behavior, the software limit and global skinning cvars stay unchanged
+  ([ADR 0053](docs/decisions/0053-oversized-hardware-skinning.md)).
+
 - Loader 0.9.0 adds the user-requested multiplayer bootstrap for verified scripts owned by the
   allowlisted RTX package, including servers with `sv_allowcslua 0`. Community add-ons retain the
   engine's normal permissions. The shipment no longer requests `-insecure`; seven exact rendering

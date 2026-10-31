@@ -1,5 +1,21 @@
 # Roadmap
 
+QoL item 24 is **validated; publication in progress**. Airi's clothing fur,
+hair and shoes exceed the 32,768-vertex software-group limit. The final GPL native fix protects
+both dynamic and direct hardware entries; a shared scope also preserves smaller weighted meshes
+under the existing user-forced hardware mode. Default ordinary draws, rigid props, flex/eyes and
+cvars retain their behavior. Oversized groups require complete strip certificates and matching
+runtime fingerprints; unsafe static-fallback state fails closed. The earlier dynamic-only and
+static-only prototypes are superseded. Final DLL 5e626e34 passes cold default NPC/two-skin and
+arms checks; the actual final GMA passes force1 PM skins 0/8 with full body/arms visible, no errors
+and exit zero. Final Release passes 20 CTests/277 Python tests (7 skips), including the standalone
+GPL policy test. The reviewed 998-file GMA matches final source/DLL, with 28 changes and no
+removals. Final client 18232 also passes secure dedicated multiplayer, with Airi and first-person
+hands visible, unchanged cslua/cheat restrictions and successful debug rendering/deny probes.
+CI and publication remain pending. Policy and measured acceptance are in
+[ADR 0053](decisions/0053-oversized-hardware-skinning.md) and
+[TESTING.md](TESTING.md#oversized-hardware-skinning-item-24).
+
 The requested multiplayer change is **done**: loader 0.9.0 implements a verified RTX-owner
 script bootstrap without changing `sv_allowcslua`, removes the shipment's `-insecure` request and
 keeps other community scripts under engine permissions. RTXDebug separates local rendering

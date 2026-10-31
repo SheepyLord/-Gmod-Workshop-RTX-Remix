@@ -1,5 +1,35 @@
 # Components
 
+Item 24's oversized-skinning correction belongs in the GPL RTX fixes native module
+(`gmcl_RTXFixesBinary_win64.dll`), shipped by [`packages/fixes`](../packages/README.md). It extends
+the existing wrapper across dynamic and direct hardware entries, with scoped bone uploads/palette
+remaps and state restoration. Nine-argument re-entry and a thread-local same-group marker prevent
+double wrapping. Automatic protection targets eligible oversized hardware groups. The same scope
+also handles smaller non-flex, multi-bone groups already selected by the user's hardware mode,
+inside RenderFinal and under the existing r_hwskin_setbones selection predicate. Ordinary default
+draws, rigid props, flex and eye behavior retain their paths. Oversized-only creation certificates
+prove every strip supplies all its used bone slots; fingerprints reject unknown/changed groups,
+and unsafe config38 bit 0x08 fails closed. Smaller user-forced groups retain their remap behavior.
+A DrawIndexedPrimitive-scoped declaration conversion preserves UBYTE4 blend-index ordering,
+with a bounded 16-entry COM cache and original declaration restoration. The loader's permissions,
+global cvars and Remix option files
+are outside this change. [Corresponding source](../packages/fixes/licenses/oversized-skinning/Source.md),
+COPYING, pins, generated projects and patches ship under the short add-on path `remixbinary/src/hw`
+to stay within Windows staging path limits. Source/build provenance and final-DLL default NPC/arms
+checks are complete. The actual final GMA also passes force1 PM/two-skin and visible-arms checks;
+final multiplayer/CI/publication are pending. Findings are in
+[RESEARCH.md](RESEARCH.md#oversized-airi-skinning-groups-item-24) and
+[ADR 0053](decisions/0053-oversized-hardware-skinning.md).
+
+[`packages/fixes/licenses/oversized-skinning/tests`](../packages/fixes/licenses/oversized-skinning/tests/README.md)
+adds the standalone GPL CTest `rtx_oversized_skinning_policy`. It compiles the shipped policy with
+assertions enabled in Release and checks eligibility, complete strip palettes and borrowed-state
+restoration using CPU fixtures. It needs no Source SDK or GPU and links no MIT loader code; the
+root CMake build registers it as a separate executable for CI. The targeted Release build and
+CTest pass with /UNDEBUG confirmed in the actual compile command.
+The final policy also covers user-mode filtering and unsafe static fallback. The final Release
+suite passes 20 CTests and 277 Python tests (7 skips).
+
 Loader 0.9.0 adds [`loader/client`](../loader/client/README.md): an immutable, SHA-256-verified
 catalog of Lua belonging to the allowlisted `gmod-rtx-remix` owner, a menu-realm native helper
 (`gmsv_nlrtxclient_win64.dll`) and its private client initializer. It leaves `sv_allowcslua` and
