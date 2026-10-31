@@ -24,6 +24,7 @@ python tools\package_runtime.py --runtime ...\_output --d3d9-from ...\built-A8E3
 | `native/payload/runtime/d3d9.dll` | `--runtime`, or `--d3d9-from` (which also supplies `d3d9.pdb` with `--with-pdbs`) |
 | `native/payload/config/rtx/NN_<name>.conf` | each `--rtx-conf`, in the order given (lowest layer first) |
 | `native/payload/config/dxvk/NN_<name>.conf` | each `--dxvk-conf`, likewise |
+| `native/payload/config/dxvk-tiers/{medium,low}.conf` | each `--tier-conf TIER FILE`, optional payloads selected by the loader (never unconditional layers) |
 | `native/manifest.json` | written last: schema 1, kind `remix-runtime`, `requires_loader` `>=0.1.0` |
 
 The manifest's `remix` section names `runtime/d3d9.dll` as the entry, lists the config layers, the
@@ -56,6 +57,11 @@ review.
   `_CompRelease_x64\src\d3d9` hold only `d3d9.dll` and its PDB).
 - `--with-pdbs`: include `.pdb` files.
 - `--rtx-conf <file>`, `--dxvk-conf <file>` (repeatable): config layers, each a `.conf` file.
+- `--tier-conf medium|low <file>` (repeatable, each tier once): a UTF-8 `.conf` with only `rtx.*`
+  assignments and `#` comments. Empty tiers, malformed assignments and duplicate keys are refused.
+  These are ordinary schema-1 payloads under `config/dxvk-tiers/`, hashed and inventoried like every
+  file, without adding them to `remix.dxvk_conf_layers`. Loaders before R6 ignore them; the R6 loader
+  lists only the selected tier before the classic layer. See [ADR 0064](../docs/decisions/0064-performance-tier-defaults.md).
 - `--env NAME=VALUE` (repeatable): `DXVK_*` or `RTX_*` variables for the runtime, values at most
   1,024 printable ASCII characters. `DXVK_CONFIG_FILE` and `DXVK_RTX_CONFIG_FILE` are refused: the
   layers set them.
