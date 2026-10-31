@@ -5,10 +5,6 @@
   "patch": "0001-Support-multiplayer-client-rendering-diagnostics-wit.patch",
   "patch_sha256": "a6b78abd7355771af9f6051bb666bf777e9075d9362c6ebb4660eeaaf7895f2e",
   "complete_checkout": {
-    ".gitattributes": {
-      "size": 12,
-      "sha256": "e753774a5c6c845d5b43db5e4e133c8b7308c233f036517be1e2ae01cb068790"
-    },
     ".gitignore": {
       "size": 59,
       "sha256": "8943f2b2e703a817248579d84eb3893d922ce634a5da41f3b4ce0cea994146a8"
@@ -136,6 +132,10 @@
     "tools/rtxdebug_client.py.md": {
       "size": 747,
       "sha256": "c7c5a77bb6ff67f904a138e539f6363c23c373a37ae7d540aefc30c472f252c8"
+    },
+    "gitattributes.upstream": {
+      "size": 12,
+      "sha256": "e753774a5c6c845d5b43db5e4e133c8b7308c233f036517be1e2ae01cb068790"
     }
   },
   "gmod_common": {
@@ -188,5 +188,8 @@
       "source": "sourcesdk-minimal/LICENSE",
       "sha256": "e666c2b0ae2d3095313868d03d1295bc34d3066a1ee3d4824b0e7d899700181d"
     }
+  },
+  "checkout_path_aliases": {
+    "gitattributes.upstream": ".gitattributes"
   }
 }

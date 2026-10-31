@@ -10,6 +10,8 @@ module source, public external RPC client and tests are all included in checkout
 - Base: ff009d71a5c3d22cd5c400941fb09e7e905b8a73.
 - Patched source: 6105f0b545145dc7781f7ae94af76619c2a6e3d4.
 - checkout/ is the complete tracked text tree at the patched commit; it is already patched.
+  Its .gitattributes is stored byte-for-byte as gitattributes.upstream so that its rules cannot
+  override this repository's no-conversion package policy. provenance.json records that path alias.
 - 0001-Support-multiplayer-client-rendering-diagnostics-wit.patch applies to the base for review
   or rebuilding from the originating repository. It also contains the CLI, protocol and test changes.
 - provenance.json lists the SHA-256 and size of every source file, the patch, dependency pins and
