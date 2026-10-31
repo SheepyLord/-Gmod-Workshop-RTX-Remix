@@ -2,6 +2,7 @@
 import argparse
 import ctypes
 from ctypes import wintypes
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -449,6 +450,42 @@ def main():
         user.cli('uninstall')
         check(not user.status.exists() and not user.status.parent.exists(), 'uninstall left generated status')
         passed('nlctl uninstall removes status and the empty data folder')
+
+        # ADR 0056: the catalog-verified RTX package whose early guard view cannot be prepared (here,
+        # an initializer a game update changed) still starts RTX, and status says why; the companion's
+        # guard autorun installs later instead. Loader 0.10.0 refused RTX for this.
+        guarded_package = scratch / 'guarded-package'
+        subprocess.run([sys.executable, str(repo / 'tools/package_runtime.py'), '--runtime', str(args.runtime), '--out',
+                        str(guarded_package), '--id', 'gmod-rtx-remix', '--version', '1.0.0', '--no-system-vulkan', '--json'],
+                       cwd=repo, check=True, capture_output=True, text=True)
+        manifest_path = guarded_package / 'native/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        for rel, data in {'native/root/garrysmod/lua/bin/gmsv_nlrtxclient_win64.dll': b'synthetic verified client helper',
+                          'native/root/garrysmod/addons/nativeloader/lua/autorun/_nativeloader_guard.lua':
+                              b'-- NATIVELOADER_RENDER_GUARD_V2' + bytes([10])}.items():
+            (guarded_package / rel).parent.mkdir(parents=True, exist_ok=True)
+            (guarded_package / rel).write_bytes(data)
+            manifest['files'][rel] = {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+        manifest['requires_remix'] = True
+        manifest['kinds'] += ['lua-binary-module', 'lua-addon']
+        manifest['root_files'] = manifest.get('root_files', []) + [
+            {'path': 'garrysmod/lua/bin/gmsv_nlrtxclient_win64.dll'}, {'path': 'garrysmod/addons/nativeloader'}]
+        write_json(manifest_path, manifest)
+        guarded = Game('guard-unavailable')
+        guarded.config = {'schema': 1, 'allow': {'dev_folders': [str(guarded_package)]}}
+        guarded.save()
+        initializer = guarded.root / 'garrysmod/lua/includes/init.lua'
+        initializer.parent.mkdir(parents=True)
+        initializer.write_bytes(b'-- a generated initializer that no stock hash matches' + bytes([10]))
+        status = active(guarded, guarded.run())
+        notes = status['session']['notes']
+        check(any(note.startswith('early render guard unavailable (Unsupported stock Lua initializer') and
+                  note.endswith('the companion guard installs at autorun time instead') for note in notes),
+              f'guard-unavailable: the reason is not reported: {notes}')
+        check(not status['errors'], f'guard-unavailable: reported as an error: {status["errors"]}')
+        check(not (guarded.root / 'native-loader/presentation').exists() or
+              not any(guarded.root.glob('native-loader/presentation/render-guard-*.lua')), 'a guard view was written')
+        passed('an RTX package whose early guard view cannot be prepared still starts RTX and says why')
 
         timing = Game('timing')
         active(timing, timing.run())

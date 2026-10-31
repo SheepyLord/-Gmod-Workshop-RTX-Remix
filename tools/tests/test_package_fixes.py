@@ -213,7 +213,8 @@ class PackageFixesTests(unittest.TestCase):
         m = self.manifest(out)
         self.assertEqual(list(m), ['schema', 'id', 'name', 'version', 'kinds', 'requires_loader', 'requires_remix', 'files',
                                    'root_files', 'patch_sets', 'module_overrides', 'session_cvars'])
-        self.assertEqual((m['schema'], m['id'], m['requires_loader'], m['requires_remix']), (1, 'rtx-fixes', '>=0.2.0', True))
+        # The companion carries the V2 render guard, which needs the loader's early view (ADR 0056).
+        self.assertEqual((m['schema'], m['id'], m['requires_loader'], m['requires_remix']), (1, 'rtx-fixes', '>=0.10.0', True))
         self.assertEqual(m['name'], 'RTX fixes ' + m['version'])
         self.assertEqual(m['kinds'], ['lua-binary-module', 'lua-addon', 'root-files', 'patch-set', 'module-override'])
         # Seed data and the ToPBR converter's mod are create-only: what the fixes write there at run time
@@ -345,6 +346,7 @@ class PackageFixesTests(unittest.TestCase):
         self.assertNotIn('session_cvars', m)
         self.assertEqual(m['kinds'], ['lua-binary-module', 'lua-addon', 'root-files', 'module-override'])
         self.assertEqual((m['id'], m['version'], m['name']), ('my-fixes', '1.2.3-rc.1+b.5', 'Test fixes'))
+        self.assertEqual(m['requires_loader'], '>=0.2.0', 'without the companion the M5 minimum stays')
         roots = [r['path'] for r in m['root_files']]
         self.assertNotIn('garrysmod/addons/rtx_agent', roots)
         self.assertNotIn('garrysmod/addons/nativeloader', roots)

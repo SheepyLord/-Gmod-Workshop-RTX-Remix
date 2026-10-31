@@ -331,7 +331,6 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
 
   // Patch sets and module overrides (M5) for the engine DLLs that load after this point, and what
   // binary modules need loaded before them (ADR 0024).
-  for (const auto& set : plan.patch_sets) session.patches += set.set.patches.size();
   if (!plan.patch_sets.empty() || !plan.module_overrides.empty() || !plan.module_dependencies.empty() || !read_redirects.empty()) {
     modules::Setup setup;
     setup.root = std::filesystem::absolute(root);
@@ -340,6 +339,7 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     std::size_t skipped_patches = 0;
     for (const auto& set : plan.patch_sets) {
       if (general_patches || (plan.allow_secure_rtx_render_patches && client::secure_render_patch_set(set.package, set.set))) {
+        session.patches += set.set.patches.size();  // only what this session applies; session.json has each result
         setup.patch_sets.push_back(set.set);
       } else ++skipped_patches;
     }

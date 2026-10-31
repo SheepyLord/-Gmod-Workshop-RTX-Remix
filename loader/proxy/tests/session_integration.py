@@ -306,6 +306,36 @@ def main():
         dependency_loaded('rtx-attach-fails', probe, status, session)
         passed('a runtime that fails to load: hooks undone, no patch or override, the RTX-only add-on hidden, '
                'the module\'s runtime loaded first by the second installation')
+
+        # ADR 0056: opting out of the reviewed rendering recipes without -insecure would start RTX
+        # without them, the configuration ADR 0052 found crashing. The start stays vanilla and says why.
+        sys.path.insert(0, str(repo / 'tools'))
+        import package_fixes  # the seven recipes exactly as the RTX package ships them
+        recipes = scratch / 'recipes'
+        recipe_mod = b'#usda 1.0' + bytes([10])
+        (recipes / 'native/root/rtx-remix/mods/nl_recipes').mkdir(parents=True)
+        (recipes / 'native/root/rtx-remix/mods/nl_recipes/mod.usda').write_bytes(recipe_mod)
+        write_json(recipes / 'native/manifest.json', {
+            'schema': 1, 'id': 'gmod-rtx-remix', 'version': '1.0.0', 'kinds': ['root-files', 'patch-set'],
+            'files': {'native/root/rtx-remix/mods/nl_recipes/mod.usda':
+                      {'size': len(recipe_mod), 'sha256': hashlib.sha256(recipe_mod).hexdigest()}},
+            'root_files': [{'path': 'rtx-remix/mods/nl_recipes'}], 'patch_sets': package_fixes.patch_sets()})
+        config['allow']['dev_folders'].append(str(recipes))
+        config['patch_sets'] = {'allow_rtx_render_patches': False}
+        write_json(root / 'native-loader/config.json', config)
+        probe, status, session = run('rtx-recipes-opted-out')
+        activation = status['activation']
+        check(activation['outcome'] == 'failed' and 'allow_rtx_render_patches' in activation['reason'] and
+              '-insecure' in activation['reason'], f'the crashing opt-out was not refused: {activation}')
+        check(activation['reason'] in status['errors'], f'refusal not reported: {status["errors"]}')
+        check(probe['engine_at_attach'] == 'NLM5PATCH:BEFORE', 'patched in a refused start')
+        check(Path(probe['shader_path']) == shader_vanilla, f'override in a refused start: {probe["shader_path"]}')
+        check(status['session']['hidden_addons'] == ['nl_rtx_addon'], f'vanilla fallback incomplete: {status["session"]}')
+        probe, status, session = run('rtx-recipes-opted-out-insecure', ['-insecure'])
+        check(status['activation']['outcome'] == 'active', f'refused with -insecure: {status["activation"]}')
+        check(probe['engine_at_attach'] == 'NLM5PATCH:AFTER!', 'patch missing with -insecure')
+        check(status['session']['patches'] == 8, f'applied patch count (1 marker + 7 recipes): {status["session"]}')
+        passed('the rendering-recipe opt-out without -insecure stays vanilla with its reason; with -insecure RTX starts')
     finally:
         for _ in range(30):
             try:

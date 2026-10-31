@@ -30,6 +30,8 @@ GarrysMod\
 │  │                                         package's copy replaced; never deleted by the loader (ADR 0035)
 │  ├─ backup\legacy\<transaction>\...    loader 0.8.0: archived prior Remix files plus manifest.json
 │  │                                         with original paths, sizes and SHA-256; kept after uninstall
+│  ├─ backup\render-guard\<file>.<n>      loader 0.10.1: a changed early render guard cache file, moved
+│  │                                         aside before the view is written again; never deleted (ADR 0056)
 │  ├─ bootstrap-install.json               the bootstrap's install receipt (install-loader.ps1); its
 │  │                                         `original` holds the SHA-256 of a kept foreign winmm.dll/.pdb
 │  ├─ original\winmm.dll, winmm.pdb        a winmm.dll that was there before install-loader.ps1 (another
@@ -106,21 +108,26 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
 | `remix.enabled` | `true` | `false`: runtime packages stay planned but no runtime is loaded (vanilla rendering) |
 | `remix.reshade` | `"auto"` | the RTX package's ReShade in RTX sessions ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md)): `"auto"` when the game has a ReShade (`bin\win64\ReShade.ini`) or `native-loader\reshade\ReShade.ini` exists, `"on"` always, `"off"` never |
 | `patch_sets.require_insecure` | `true` | general in-memory patch sets (M5) only with `-insecure`; the exact RTX rendering exception below is separate |
-| `patch_sets.allow_rtx_render_patches` | `true` | loader 0.9.0: allow only the seven fingerprinted rendering recipes owned by `gmod-rtx-remix` without `-insecure`; `false` disables this exception |
+| `patch_sets.allow_rtx_render_patches` | `true` | loader 0.9.0: allow only the seven fingerprinted rendering recipes owned by `gmod-rtx-remix` without `-insecure`; `false` disables this exception, and from loader 0.10.1 RTX then starts only where the general gate lets the recipes apply ([ADR 0056](decisions/0056-guard-and-startup-fallbacks.md)) |
 
 The rendering exception requires the existing native allowlist and active RTX session. Its
 fingerprints bind each complete reviewed patch group, including module, names, find/replace bytes,
 offsets and order; changing or adding a patch cannot inherit the exception. Keep
 `require_insecure: true` to retain the general gate. To opt out, set
-`"allow_rtx_render_patches": false` inside `patch_sets` without changing that gate. Both values must
+`"allow_rtx_render_patches": false` inside `patch_sets` without changing that gate. The renderer
+crashed without these recipes, so with the exception off and the gate closed (no `-insecure`) the
+loader 0.10.1 start stays vanilla and reports why (activation `failed`). Both values must
 be JSON booleans; unknown keys or a string such as `"false"` invalidate config. This does not grant
 community scripts extra permissions or change `sv_allowcslua`. See
 [ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md).
 
-The multiplayer shipment declares `requires_loader: ">=0.9.0"` when it carries the verified client
-helper, so an older loader refuses that package instead of launching without the required scoped
-initialization. The standalone fixes packager retains its older >=0.2.0 minimum when no helper is
-included. Updating only the Workshop payload cannot update the installed `winmm.dll`.
+A fixes build that carries the companion declares `requires_loader: ">=0.10.0"`: the companion's V2
+render guard needs the loader's early view (ADR 0054), and 0.10.0 also has the verified multiplayer
+helper's loader side. An older loader refuses that package instead of launching without them. The
+requirement follows the companion, not the helper option: a fixes build without the companion
+(which cannot carry the helper either) keeps the older >=0.2.0 minimum
+([ADR 0056](decisions/0056-guard-and-startup-fallbacks.md)). Updating only the Workshop payload
+cannot update the installed `winmm.dll`.
 
 - `allow` is the native-code allowlist ([ADR 0003](decisions/0003-native-trust-allowlist.md)).
   Without a config file nothing is allowlisted and the loader does nothing.

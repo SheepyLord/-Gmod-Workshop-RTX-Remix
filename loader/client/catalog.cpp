@@ -1,4 +1,5 @@
 #include "catalog.h"
+#include "nl/cmdline.h"
 #include "nl/fs.h"
 #include "nl/sha256.h"
 #include "nl/paths.h"
@@ -51,6 +52,20 @@ bool secure_render_patch_set(std::string_view owner, const manifest::PatchSet& s
     (set.module == "shaderapidx9.dll" && digest == "0c768ff6e4f4df8b5886f7e4efe5ec3277faa2c70bf5df8d534da410f2f4c1bc") ||
     (set.module == "materialsystem.dll" && digest == "bfde5be5aaa9189459ba5c291501a00df2d82ed7f45d987999252c5e3238c20f") ||
     (set.module == "datacache.dll" && digest == "51fc7fdc90777a6eb265a5dbe0f282a9fb4087364da18ca099bd67b9a4510341");
+}
+
+std::string render_recipes_refusal(const activate::Plan& plan, std::wstring_view command_line) {
+  if (!plan.activate || plan.allow_secure_rtx_render_patches || !plan.patch_sets_need_insecure) return {};
+  const bool insecure = cmdline::has_arg(command_line, L"-insecure") ||
+      std::any_of(plan.launch_args.begin(), plan.launch_args.end(), [](const std::string& arg) { return lower(arg) == "-insecure"; });
+  if (insecure) return {};
+  const bool recipes = std::any_of(plan.patch_sets.begin(), plan.patch_sets.end(), [](const auto& set) {
+    return secure_render_patch_set(set.package, set.set);
+  });
+  if (!recipes) return {};
+  return "RTX not started: patch_sets.allow_rtx_render_patches is false in native-loader/config.json and -insecure is "
+         "absent, so the runtime's reviewed rendering patches would be skipped, and the renderer crashes without them; "
+         "set it to true or launch with -insecure";
 }
 
 Catalog prepare(const std::filesystem::path& root, const config::Config& config,

@@ -3,6 +3,7 @@
 #include "presentation.h"
 #include "runtime.h"
 #include "early.h"
+#include "../client/catalog.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
 #include "nl/session.h"
@@ -272,21 +273,30 @@ void startup_cxx(StartupContext& context) noexcept {
       context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW(),
                                                       activate::primary_display, activate::graphics_adapters);
       if (context.report.activation.plan.activate) {
+        // The configuration ADR 0052 found crashing: vanilla with the reason instead (ADR 0056).
+        if (auto refusal = client::render_recipes_refusal(context.report.activation.plan, GetCommandLineW()); !refusal.empty()) {
+          auto& activation = context.report.activation;
+          activation.plan.activate = false;
+          activation.plan.reason = std::move(refusal);
+          activation.outcome = "failed";
+          context.report.session.notes.push_back("RTX skipped; continuing vanilla");
+        }
+      }
+      if (context.report.activation.plan.activate) {
+        // A guard that cannot be prepared early never costs RTX (ADR 0056): the companion's guard
+        // then installs from its autorun, later, and the note says why.
         try {
           if (auto early = guard::prepare(context.root, context.prepared.config, generation,
                                            context.report.activation.plan.runtime_id)) {
             context.early_guard_source = early->source;
+            if (!early->kept.empty())
+              context.report.session.notes.push_back("the changed render guard cache was kept at " + early->kept + " and written again");
             context.read_redirects.emplace_back(std::move(early->source), std::move(early->replacement));
             context.report.session.notes.push_back("verified client render guard prepared before addon autorun");
           }
-        } catch (const guard::RequiredUnavailable& error) {
-          auto& activation = context.report.activation;
-          activation.plan.activate = false;
-          activation.plan.reason = std::string("Required RTX render protection unavailable: ") + error.what();
-          activation.outcome = "failed";
-          context.report.session.notes.push_back("RTX skipped; continuing vanilla without unguarded V2 scripts");
         } catch (const std::exception& error) {
-          context.report.session.notes.push_back(std::string("early render guard unavailable: ") + error.what());
+          context.report.session.notes.push_back(std::string("early render guard unavailable (") + error.what() +
+                                                 "); the companion guard installs at autorun time instead");
         }
         // ReShade (ADR 0028) is decided for RTX sessions only; a problem reading for it costs ReShade.
         auto& shade = context.report.activation.reshade;

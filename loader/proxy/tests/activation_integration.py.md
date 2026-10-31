@@ -12,6 +12,10 @@ progress (kept) versus an unsubscribe (removed, payload folder deleted; ADR 0025
 recovery, second-instance gating, invalid journal, failed dependency/DllMain/SEH rollback,
 command-line refusal and explicit fallback arguments, cwd/layer checks and status uninstall.
 The fixture host has a test-only TLS switch to invalidate a command-line descriptor before the hook.
+For [ADR 0056](../../../docs/decisions/0056-guard-and-startup-fallbacks.md), a catalog-verifiable
+`gmod-rtx-remix` development package (the runtime plus a synthetic client helper and V2 guard)
+with an initializer no stock hash matches must still activate, note why the early guard view is
+unavailable, report no error and write no view.
 
 Writes JSON probes, loader logs, status snapshots and a ten-sample unchanged-startup timing summary
 under `out/m4-synthetic/<configuration>-<PID>/`. Successful scratch is removed, retrying momentary
