@@ -6,6 +6,8 @@ mip-removal tool, with generated-fixture coverage in
 `--tier-conf TIER FILE` stores optional `rtx.*` payloads under `config/dxvk-tiers/` without listing
 them as unconditional layers; R6 T1 selects the tier. Sources and smaller skies are indexed in
 `packages/runtime/files.json` ([ADR 0064](decisions/0064-performance-tier-defaults.md)).
+[`tools/tests/test_runtime_tiers.py`](../tools/tests/test_runtime_tiers.py.md) checks every layer:
+source-pinned types/ranges/enums for tier options and unchanged hashes for classic/compiler inputs.
 
 `loader/guard/` prepares the verified client rendering guard's early stock-initializer read redirect;
 `loader/guard/tests/` exercises generated-file ownership, stock hashes, cache integrity and off switches.

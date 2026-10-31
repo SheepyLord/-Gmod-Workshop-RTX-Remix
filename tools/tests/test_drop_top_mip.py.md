@@ -1,7 +1,10 @@
 # test_drop_top_mip.py
 
-Generated DDS fixtures for [`drop_top_mip.py`](../sky/drop_top_mip.py.md): legacy DXT1/3/5 and DX10
-BC7, rectangular chains, sub-block dimensions, the last retained mip's flags/caps, preserved header
+Generated DDS fixtures for [`drop_top_mip.py`](../sky/drop_top_mip.py.md): legacy DXT1/3/5, ATI1/2,
+BC4U/S and BC5U/S, and every accepted DX10 BC1/2/3/4/5/6H/7 variant (typeless, UNORM, sRGB, SNORM,
+UF16 and SF16 where applicable). An independent format table supplies the 8/16-byte block sizes;
+each format checks original/result linear sizes and refuses a mismatched size. Covers rectangular
+chains, sub-block dimensions, the last retained mip's flags/caps, preserved header
 fields, exact bytes of source mip 1 and all remaining mips, and corruption detected by verification.
 Refuses invalid headers, dimensions/counts/linear size, unsupported formats, arrays, cubes, volumes,
 truncated data and trailing bytes. The CLI cannot overwrite the source or an existing output.

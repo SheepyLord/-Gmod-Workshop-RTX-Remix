@@ -19,24 +19,51 @@
   NRC preset changes: Ultra 4 iterations/9 bounces/1 cm cache detail; High 3/7/4 cm; Medium 2/6/6 cm.
   The callback selects the Derived edit target, routed to User under Custom, so duplicating those
   training values in a lower tier layer cannot override it. The tier selects only the NRC preset.
-- The T6 combined package built from this branch's inputs contains 1,013 payload files and
-  1,893,630,963 payload bytes (GMA 1,893,940,498 bytes), accepted by Release `nlctl manifest`.
-  The new tier payloads are absent from the unconditional DXVK layer list.
-- PoC attempt at 22:27:49 UTC deployed generation 59 and initialized `remix-main+6f2dbd79`, then
-  stopped at a Steamworks error: "Could not determine Steam client install directory."
-  No console/map/FPS/VRAM sample was produced. Evidence: this worktree's
-  `out/t6-evidence/startup-error-full.png`, `sessions/session.json`, and the copied Remix log.
-  Steam discovery also required an explicit client path for the read-only depot verifier in this
-  execution context. All 2,877 depot files passed before the attempt; `autoexec.cfg` was the one
-  allowed user-config difference. This is an environment blocker, not performance evidence.
-  [ADR 0064](decisions/0064-performance-tier-defaults.md) records the unverified tuning and remaining
-  acceptance checks.
-- Resumed as the user: `tools/test.ps1 -Config Release` passes (23/23 CTests; Python groups
-  28/25/287 tests, two expected skips), as do `inputs.py verify --deep` and the combined package
-  with `--require-nlctl`. Logs: `out/t6-release-resumed.log`, `out/t6-inputs-resumed.log`,
-  `out/t6-package-resumed.log`. The previous registry/Git failures were sandbox artifacts.
-  The running field game (PID 24620) prevents the one-game-at-a-time PoC comparisons; it was left
-  alone and the user was asked to quit normally. No PoC files changed during this resumed attempt.
+- Source recheck: patched R6 T4 snapshot `29546f3566a676a1318b799fb8ddd01b2a110058`, C++ paths
+  below relative to `src/dxvk/rtx_render/`. OMM's free-memory growth calculation includes the
+  default 384 MiB buffer (`rtx_opacity_micromap_manager.h:58-64`, `.cpp:175-182`): medium/low
+  leave 1408 MiB when calculating new growth budget, not 1024 MiB. Existing budget is retained
+  between soft/hard limits; it is recalculated below 1024 MiB. `lowMemoryGpu` also halves the OMM
+  VRAM percentage (`.cpp:162-173`), skips the top streamed replacement-texture mip
+  (`rtx_texture_manager.cpp:1623`), and sets the low-memory AS build flag
+  (`rtx_accel_manager.cpp:292-293`).
+- A bounce-cap stop is not an NRC query:
+  `src/dxvk/shaders/rtx/algorithm/integrator_indirect.slangh:860-885` resolves NRC termination first,
+  then stops at the query path's bounce cap without
+  querying the cache there. `rtx_neural_radiance_cache.cpp:697` sets NRC `maxPathVertices` from
+  `trainingMaxPathBounces`. Mirror/transmission paths can lose light beyond the tier cap.
+- **Changing `lowMemoryGpu` does not issue an incompatible AS UPDATE.** Automatic graphics
+  selection writes it (`rtx_options.cpp:419-461`); the ordinary-GPU decision defaults false
+  (`rtx_gpu_profile.h:55`) and sets true for at most 8 GiB (`:61`, `.cpp:212-220`). Both BLAS
+  UPDATE sites guard with `validateUpdateMode` (`rtx_accel_manager.cpp:892-895,1258-1262`), whose
+  flag comparison rejects the change (`:2011-2016`). The affected BLAS builds on next use instead;
+  TLAS always uses BUILD (`:1946-1951`), as does the one-time intersection BLAS (`:296-312`).
+  Expect rebuild/allocation work per affected BLAS, not an invalid UPDATE. Timing remains unmeasured.
+  PoC tuning question: class-limited low on an RTX 3060 12 GB or 4060 Ti 16 GB still gets the top-mip
+  drop despite its larger memory. Keep the candidate unchanged until detail/memory and Automatic
+  switch costs are measured.
+- **The sky LOD argument is conditional.**
+  `src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh:408-439` uses real texture width/height.
+  Halving them subtracts one from
+  unclamped LOD, preserving samples only when original LOD >= 1. With native 3840 × 2160,
+  90-degree horizontal FOV and zero mip bias, `pixel = 2/3840`: stars' minimum radial stretch
+  from `:365-366,404-409` gives LOD >= 2.21; galaxy `:427-429` gives 1.03; nebula `:435-439`
+  gives **0.44**, blending the missing original mip 0. The pixel angle includes FOV, traced height
+  and mip bias (`rtx_atmosphere.cpp:2914-2916,2934-2941`; `rtx_scene_manager.cpp:320-346`).
+  Narrow FOV/negative bias can expose mip 0 too. Medium therefore retains all original sky images
+  pending PoC comparison; switching all three would save 160 MiB of texels but is not guaranteed
+  visually identical even at a normal FOV in 4K.
+- `tools/tests/test_runtime_tiers.py` pins the tier option types/ranges/enums to those patched
+  declarations and their UI limits (including the six sky-probe extents in
+  `src/dxvk/imgui/dxvk_imgui.cpp:3390-3399`). Every layer is parsed; classic/compiler bytes are pinned
+  separately because classic contains 15 obsolete options with no matching current declaration
+  (old exposure/localtonemap/bloom keys, `rtx.occluderTextures`, `rtx.tonemap.finalizeWithACES`).
+  The source's `RtxOptions.md` SHA-256 is
+  `4a457a8d1e3bb6dbf00efe05720fd9c8c4ea8621509fa72c6621313eb685cc57`. This avoids inventing
+  runtime support for old high-tier keys while rejecting any new or misspelt tier key.
+- PoC measurements of the tiers are pending; the values are candidates.
+  [ADR 0064](decisions/0064-performance-tier-defaults.md) records the tuning and acceptance checks;
+  run-specific history is in the [handover status](handover/R6-T6-performance-tiers.md#status).
 
 ## R4 start-up, guard and bootstrap review (loader 0.10.1)
 
