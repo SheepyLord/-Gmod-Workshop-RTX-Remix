@@ -49,9 +49,11 @@ force1 PM skins 0/8 with full body and arms visible, no errors and exit zero (`c
 Its reviewed 998-file GMA readback matches final DLL/source, 28 changes and no removals. Both the
 software warning and later direct-fallback fatal are fixed in these final build checks.
 
-Final-DLL secure multiplayer and CI/publication are **pending**. Earlier 0d4 packaged multiplayer
-passed with server-approved game.MountGMA content and no unrelated add-on Lua forced; it does not
-substitute for the final DLL retest. Preserve exact source/DLL and package hashes with results. See
+Final client 18232 passes secure dedicated server 37728 with the final DLL: Airi has 233 bones,
+the full model and first-person hands render, cslua/cheats stay off, unsafe commands remain denied,
+and rendering config/restore succeeds without config-file changes. Model content is mounted by
+the server-approved fixed probe; unrelated local Lua remains blocked. Records and the Source JPEG
+are under multiplayer-5e. CI/publication are pending. Preserve exact source/DLL and package hashes. See
 [ADR 0053](decisions/0053-oversized-hardware-skinning.md) for scope and provenance.
 
 ## Multiplayer bootstrap and RTXDebug
