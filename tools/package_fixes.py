@@ -28,6 +28,7 @@ REPO = os.path.dirname(HERE)
 DEFAULT_FIXES = os.path.join(os.path.dirname(REPO), 'garrys-mod-rtx-remixed')  # the checkout beside this repo
 COMPANION = os.path.join(REPO, 'companion', 'nativeloader')
 COMPANION_NAME = 'nativeloader'
+PRESENTATION = os.path.join(REPO, 'companion', 'presentation')
 # The companion's translations, built from companion/i18n/*.po into the add-on (companion_i18n.py).
 COMPANION_I18N = 'native/root/garrysmod/addons/nativeloader/lua/nativeloader/i18n_data.lua'
 
@@ -400,6 +401,9 @@ def build(args):
             files.update(companion_catalog_sources())
         roots.append(('garrysmod/addons/' + name, 'lua-addon'))
     add_to_addons(args.add_to_addon, {name.lower(): name for name, _ in sources}, files, junk)
+    if COMPANION_NAME not in excluded:
+        files.update(collect(PRESENTATION, 'native/root/garrysmod/data/nativeloader_ui', junk, docs=False))
+        roots.append(('garrysmod/data/nativeloader_ui', 'root-files'))
     mods_dir = os.path.join(tree, 'rtx-remix', 'mods')
     mods, empty_mods = [], []
     for name in subfolders(mods_dir, 'the Remix mods folder'):

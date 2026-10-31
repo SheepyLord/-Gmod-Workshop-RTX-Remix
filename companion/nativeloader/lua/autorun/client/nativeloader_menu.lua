@@ -80,7 +80,7 @@ local OPTIONS = {
     { "indirect_mode", "rtx.integrateIndirectMode", N("Indirect lighting"), "choice",
         { { N("Importance sampled"), "0" }, { "ReSTIR GI", "1" }, { N("Neural Radiance Cache"), "2" },
           { N("Hashed radiance cache"), "3" } } },
-    { "max_bounces", "rtx.pathMaxBounces", N("Max light bounces"), "number", { 1, 16, 0, 4 } },
+    { "max_bounces", "rtx.pathMaxBounces", N("Max light bounces"), "number", { 1, 15, 0, 12 } },
     -- The sun and the clouds are the "Sky and weather" panel's (nativeloader_sky.lua), and so is the
     -- fog, unless a fog preset is chosen here.
     { "sky_brightness", "rtx.skyBrightness", N("Sky brightness"), "number", { 0, 10, 2, 1 },

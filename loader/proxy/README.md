@@ -1,5 +1,11 @@
 # loader/proxy
 
+Loader 0.8.1 adds `diagnostics.h` / `diagnostics.cpp`: local CPU/thread/RAM/Windows/DXGI information,
+the installed bootstrap SHA-256 and deployed package versions/manifest hashes. `ui/mainmenu.js`,
+`ui/labels.json` and `ui/presentation_data.h.in` provide the seven-language main-menu home panel
+and its CMake embedding. An exact read redirect supplies a generated copy of control.Menu.js;
+the Steam file is unchanged. No account names, paths or network identifiers are displayed.
+
 X64 bootstrap, output `winmm.dll`: M1 forwarding/entry hook plus M4 startup deployment and activation.
 All 181 System32 export ordinals are forwarded by leaf
 MASM jumps through a table populated from the full System32 path. Named exports resolve by name;

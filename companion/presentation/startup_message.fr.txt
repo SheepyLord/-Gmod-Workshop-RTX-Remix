@@ -1,0 +1,7 @@
+RTX Remix pour Garry's Mod
+Appuyez sur {hotkey} pour ouvrir le menu Remix.
+
+Projet et signalement des problèmes :
+https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix
+
+Fermeture dans {seconds} secondes.

@@ -1,0 +1,220 @@
+From 63a1bb10ea2015db7fbadab9031f02d651ae9a20 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 22:44:13 -0700
+Subject: [PATCH] Read localized project splash text from editable bounded
+ templates
+
+---
+ src/dxvk/imgui/dxvk_imgui_splash.cpp   | 17 ++++----
+ src/dxvk/imgui/dxvk_imgui_splash.h     |  5 ++-
+ src/dxvk/rtx_render/rtx_fork_i18n.cpp  |  2 +
+ src/util/util_startup_message.h        | 56 ++++++++++++++++++++++++++
+ tests/rtx/unit/meson.build             |  6 +++
+ tests/rtx/unit/test_splash_message.cpp | 39 ++++++++++++++++++
+ 6 files changed, 116 insertions(+), 9 deletions(-)
+ create mode 100644 src/util/util_startup_message.h
+ create mode 100644 tests/rtx/unit/test_splash_message.cpp
+
+diff --git a/src/dxvk/imgui/dxvk_imgui_splash.cpp b/src/dxvk/imgui/dxvk_imgui_splash.cpp
+index bfaa60d4..47347a31 100644
+--- a/src/dxvk/imgui/dxvk_imgui_splash.cpp
++++ b/src/dxvk/imgui/dxvk_imgui_splash.cpp
+@@ -26,6 +26,8 @@
+ 
+ #include "imgui.h"
+ #include "../rtx_render/rtx_options.h"
++#include "../rtx_render/rtx_fork_i18n.h"
++#include "../../util/util_startup_message.h"
+ #include "../rtx_render/rtx_bridge_message_channel.h"
+ #include "../rtx_render/rtx_utils.h"
+ #include "../util/util_math.h"
+@@ -85,14 +87,13 @@ namespace dxvk {
+ 
+       if (ImGui::Begin("Splash Message", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove)) {
+         const auto keyBindDescriptor = buildKeyBindDescriptorStringForDisplay(RtxOptions::remixMenuKeyBinds());
+-        std::string message = str::format("Welcome to Garry's Mod RTX.  At any point during gameplay press : ", keyBindDescriptor, " to access the Remix Menu.\n"
+-                                        "\n"
+-                                        "This is a work in progress, report any bugs you find to https://github.com/Xenthio/garrys-mod-rtx-remixed \n"
+-                                        "Please read the 'Known Issues' section on the GitHub page before reporting one. \n"
+-                                        "If you need support, please find us on the RTX Remix Showcase Discord server \n"
+-                                        "\n"
+-                                        "Closing in ", clampedSecondsRemaining);
+-        ImGui::Text(message.c_str());
++        const auto language = StartupMessage::language(RtxForkI18n::language());
++        if (language != m_messageLanguage) {
++          m_messageLanguage = language;
++          m_message = StartupMessage::load("garrysmod/data/nativeloader_ui", language);
++        }
++        const auto message = StartupMessage::format(m_message, keyBindDescriptor, static_cast<unsigned>(clampedSecondsRemaining));
++        ImGui::TextUnformatted(message.c_str());
+       }
+       ImGui::End();
+ 
+diff --git a/src/dxvk/imgui/dxvk_imgui_splash.h b/src/dxvk/imgui/dxvk_imgui_splash.h
+index fd498fe6..44fd24a1 100644
+--- a/src/dxvk/imgui/dxvk_imgui_splash.h
++++ b/src/dxvk/imgui/dxvk_imgui_splash.h
+@@ -26,6 +26,7 @@
+ #include "imgui.h"
+ 
+ #include <chrono>
++#include <string>
+ 
+ namespace dxvk {
+   class DxvkContext;
+@@ -41,6 +42,8 @@ namespace dxvk {
+ 
+   private:
+     bool m_hasStarted = false;
++    std::string m_messageLanguage;
++    std::string m_message;
+     std::chrono::system_clock::time_point m_startTime;
+   };
+-}
+\ No newline at end of file
++}
+diff --git a/src/dxvk/rtx_render/rtx_fork_i18n.cpp b/src/dxvk/rtx_render/rtx_fork_i18n.cpp
+index 674513f8..0486abac 100644
+--- a/src/dxvk/rtx_render/rtx_fork_i18n.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_i18n.cpp
+@@ -24,6 +24,7 @@
+ #include "../imgui/imgui_internal.h"
+ #include "../../util/log/log.h"
+ #include "../../util/util_string.h"
++#include "../../util/util_startup_message.h"
+ 
+ #include <NotoSansSC.otf.h>
+ #include <NotoSansTC.otf.h>
+@@ -245,6 +246,7 @@ namespace dxvk {
+       for (size_t i = 0; i < i18n_data::kLanguageCount; i++) {
+         addCodepoints(i18n_data::kLanguages[i].name, extra);
+       }
++      addCodepoints(StartupMessage::load("garrysmod/data/nativeloader_ui", RtxForkI18n::language()), extra);
+       s_ui.extraRanges = toRanges(std::move(extra));
+ 
+       // The selected language's font gets all of its characters; every other font only the names of its languages.
+diff --git a/src/util/util_startup_message.h b/src/util/util_startup_message.h
+new file mode 100644
+index 00000000..47138929
+--- /dev/null
++++ b/src/util/util_startup_message.h
+@@ -0,0 +1,56 @@
++#pragma once
++#include <algorithm>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <string_view>
++
++namespace dxvk {
++  class StartupMessage {
++  public:
++    static constexpr std::string_view fallback =
++      "RTX Remix for Garry's Mod\nPress {hotkey} to open the Remix menu.\n\n"
++      "Project and issue reports:\nhttps://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix\n\n"
++      "Closing in {seconds} seconds.\n";
++
++    static std::string language(std::string_view code) {
++      if (code == "zh" || code == "zh-cn") return "zh-CN";
++      if (code == "zh-tw") return "zh-TW";
++      for (const auto value : {"zh-CN", "zh-TW", "ja", "ko", "fr", "ru"}) {
++        if (code == value) return std::string(code);
++      }
++      return "en";
++    }
++
++    static std::string load(const std::filesystem::path& directory, std::string_view code) {
++      const auto selected = language(code);
++      for (const auto& locale : {selected, std::string("en")}) {
++        const auto name = locale == "en" ? "startup_message.txt" : "startup_message." + locale + ".txt";
++        std::ifstream input(directory / name, std::ios::binary | std::ios::ate);
++        if (!input) continue;
++        const auto size = input.tellg();
++        if (size <= 0 || size > 8192) continue;
++        std::string text(static_cast<std::size_t>(size), '\0');
++        input.seekg(0);
++        if (!input.read(text.data(), static_cast<std::streamsize>(text.size())) || text.find('\0') != std::string::npos) continue;
++        if (text.compare(0, 3, "\xef\xbb\xbf") == 0) text.erase(0, 3);
++        text.erase(std::remove(text.begin(), text.end(), '\r'), text.end());
++        if (text.find_first_not_of(" \t\n") != std::string::npos) return text;
++      }
++      return std::string(fallback);
++    }
++
++    static std::string format(std::string text, std::string_view hotkey, unsigned seconds) {
++      const auto replace = [&](std::string_view token, std::string_view value) {
++        std::size_t at = 0;
++        while ((at = text.find(token, at)) != std::string::npos) {
++          text.replace(at, token.size(), value);
++          at += value.size();
++        }
++      };
++      replace("{hotkey}", hotkey);
++      replace("{seconds}", std::to_string(seconds));
++      return text;
++    }
++  };
++}
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index 121426b6..07f7d215 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -150,4 +150,10 @@ exe = executable('test_model_layers', files('test_model_layers.cpp'),
+ test('test_model_layers', exe, env: test_env)
+ tests += exe
+ 
++exe = executable('test_splash_message', files('test_splash_message.cpp'),
++  include_directories: test_include_path, dependencies: test_unit_deps,
++  win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_splash_message', exe, env: test_env, args: [meson.current_build_dir() / 'splash-fixture'])
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_splash_message.cpp b/tests/rtx/unit/test_splash_message.cpp
+new file mode 100644
+index 00000000..f166bf8a
+--- /dev/null
++++ b/tests/rtx/unit/test_splash_message.cpp
+@@ -0,0 +1,39 @@
++#include "../../../src/util/util_startup_message.h"
++#include <cstdlib>
++#include <iostream>
++
++int main(int argc, char** argv) {
++  using dxvk::StartupMessage;
++  const auto check = [](bool passed) {
++    if (!passed) { std::cerr << "Startup text policy failed\n"; std::exit(1); }
++  };
++  if (argc != 2) return 1;
++  const std::filesystem::path directory(argv[1]);
++  std::filesystem::create_directories(directory);
++  const auto english = directory / "startup_message.txt";
++  const auto japanese = directory / "startup_message.ja.txt";
++  const auto write = [](const auto& path, const std::string& text) {
++    std::ofstream stream(path, std::ios::binary | std::ios::trunc);
++    stream.write(text.data(), static_cast<std::streamsize>(text.size()));
++  };
++  if (std::filesystem::exists(english) || std::filesystem::exists(japanese)) return 1;
++  write(english, "English {hotkey} {seconds} 100%\n");
++  check(StartupMessage::language("../../other") == "en");
++  check(StartupMessage::language("zh-cn") == "zh-CN");
++  check(StartupMessage::language("zh-tw") == "zh-TW");
++  check(StartupMessage::load(directory, "ja") == "English {hotkey} {seconds} 100%\n");
++  write(japanese, "\xef\xbb\xbf" "日本語\r\n{hotkey} {seconds}\r\n");
++  check(StartupMessage::load(directory, "ja") == "日本語\n{hotkey} {seconds}\n");
++  check(StartupMessage::format("{hotkey} {hotkey} {seconds} 100%", "ALT+X", 12) == "ALT+X ALT+X 12 100%");
++  write(japanese, std::string(8193, 'x'));
++  check(StartupMessage::load(directory, "ja").find("English") == 0);
++  write(japanese, std::string("bad\0data", 8));
++  check(StartupMessage::load(directory, "ja").find("English") == 0);
++  std::filesystem::remove(english);
++  write(japanese, " \r\n\t");
++  check(StartupMessage::load(directory, "ja") == StartupMessage::fallback);
++  std::filesystem::remove(japanese);
++  std::filesystem::remove(directory);
++  std::cout << "Startup text policy tests passed\n";
++  return 0;
++}
+-- 
+2.56.0.windows.1
+

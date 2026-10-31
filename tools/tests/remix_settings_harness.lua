@@ -126,6 +126,13 @@ elseif scenario == "edit" or scenario == "restart" then
         panel()
         assert(#writes == before and runtime["rtx.tonemap.psycho17.purityScale"] == "1.61", "Stale panel value beat native Save")
     end
+elseif scenario == "bounce_defaults" then
+    command("max_bounces_enabled", "1")
+    assert(runtime["rtx.pathMaxBounces"] == "12", "Fresh explicit override must start at twelve")
+    before = #writes command("max_bounces", "16") panel()
+    assert(#writes == before, "Unsupported sixteen-bounce override reached Remix")
+    command("max_bounces", "8")
+    assert(runtime["rtx.pathMaxBounces"] == "8", "An intentional saved override must remain authoritative")
 elseif scenario == "invalid" then
     command("colour_purity_enabled", "1")
     for _, value in ipairs({"nan", "inf", "-1", "6", "not a number", ""}) do

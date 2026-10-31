@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Default path bounces to minimum 1 and maximum 12 across runtime defaults, graphics presets,
+  the packaged layer and the companion's opt-in override. Keep explicit saved settings authoritative.
+
+- Loader 0.8.1 adds a local main-menu diagnostics panel: system hardware, game version/branch,
+  loader version/file hash and deployed add-on versions/manifest hashes, with an explicit copy button.
+- Point the top-left startup message to this project's GitHub repository and load its text from
+  editable UTF-8 templates, in English and six translations. User-edited installed templates persist.
+
 - Add optional geometry-based normals beside imported character/prop spawn controls for RTX,
   preserving imported files and saved texture tags.
 - Show original imported material names in AME, retain raw paths in tooltips, and carry the

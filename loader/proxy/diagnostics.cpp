@@ -1,0 +1,95 @@
+#include "diagnostics.h"
+#include "nl/fs.h"
+#include "nl/json.h"
+#include "nl/sha256.h"
+#include "nl/version.h"
+
+#include <windows.h>
+#include <dxgi1_2.h>
+#include <intrin.h>
+#include <array>
+#include <cstring>
+
+namespace nl::proxy::diagnostics {
+System query_system() {
+  System result;
+  result.os = "Windows x64";
+  using GetVersion = LONG(WINAPI*)(OSVERSIONINFOW*);
+  const auto get_version = reinterpret_cast<GetVersion>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
+  OSVERSIONINFOW version{};
+  version.dwOSVersionInfoSize = sizeof(version);
+  if (get_version && get_version(&version) == 0) {
+    result.os = std::string(version.dwBuildNumber >= 22000 ? "Windows 11" : "Windows 10") +
+                " x64 (" + std::to_string(version.dwMajorVersion) + "." + std::to_string(version.dwMinorVersion) +
+                "." + std::to_string(version.dwBuildNumber) + ")";
+  }
+  std::array<int, 4> registers{};
+  __cpuid(registers.data(), static_cast<int>(0x80000000u));
+  if (static_cast<unsigned>(registers[0]) >= 0x80000004u) {
+    std::array<char, 49> brand{};
+    for (unsigned i = 0; i < 3; ++i) {
+      __cpuid(registers.data(), static_cast<int>(0x80000002u + i));
+      std::memcpy(brand.data() + i * 16, registers.data(), 16);
+    }
+    result.cpu = brand.data();
+    const auto first = result.cpu.find_first_not_of(' ');
+    result.cpu = first == std::string::npos ? "" : result.cpu.substr(first);
+    const auto last = result.cpu.find_last_not_of(' ');
+    if (last != std::string::npos) result.cpu.resize(last + 1);
+  }
+  result.threads = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+  MEMORYSTATUSEX memory{};
+  memory.dwLength = sizeof(memory);
+  if (GlobalMemoryStatusEx(&memory)) result.memory = memory.ullTotalPhys;
+  const auto library = LoadLibraryExW(L"dxgi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+  if (library) {
+    using CreateFactory = HRESULT(WINAPI*)(REFIID, void**);
+    const auto create = reinterpret_cast<CreateFactory>(GetProcAddress(library, "CreateDXGIFactory1"));
+    IDXGIFactory1* factory = nullptr;
+    if (create && SUCCEEDED(create(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory)))) {
+      for (UINT index = 0; index < 32; ++index) {
+        IDXGIAdapter1* adapter = nullptr;
+        if (factory->EnumAdapters1(index, &adapter) != S_OK) break;
+        DXGI_ADAPTER_DESC1 description{};
+        if (SUCCEEDED(adapter->GetDesc1(&description)) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
+          result.graphics.push_back({fs::utf8(std::filesystem::path(description.Description)), description.DedicatedVideoMemory});
+        }
+        adapter->Release();
+      }
+      factory->Release();
+    }
+    FreeLibrary(library);
+  }
+  return result;
+}
+
+std::string serialize(const System& system, std::string_view version, std::string_view hash,
+                      const journal::Generation& generation) {
+  std::string out = "{\"os\":" + json::quote(system.os) + ",\"cpu\":" + json::quote(system.cpu) +
+    ",\"threads\":" + std::to_string(system.threads) + ",\"memory\":" + std::to_string(system.memory) + ",\"graphics\":[";
+  for (std::size_t i = 0; i < system.graphics.size(); ++i) {
+    if (i) out += ',';
+    out += "{\"name\":" + json::quote(system.graphics[i].name) + ",\"memory\":" + std::to_string(system.graphics[i].memory) + '}';
+  }
+  out += "],\"loader\":{\"version\":" + json::quote(version) + ",\"sha256\":" + json::quote(hash) + "},\"packages\":[";
+  for (std::size_t i = 0; i < generation.packages.size(); ++i) {
+    const auto& package = generation.packages[i];
+    if (i) out += ',';
+    out += "{\"id\":" + json::quote(package.id) + ",\"version\":" + json::quote(package.version) +
+           ",\"sha256\":" + json::quote(package.manifest_sha256) + '}';
+  }
+  return out + "]}";
+}
+
+std::string collect(const std::filesystem::path& root, const journal::Generation& generation) {
+  System system;
+  std::string hash;
+  try { system = query_system(); } catch (...) { }
+  try {
+    constexpr std::string_view binary = "bin/win64/winmm.dll";
+    fs::refuse_links(root, binary);
+    hash = sha256::of(fs::read_file(fs::join(root, binary), std::size_t{8} << 20));
+  } catch (...) { }
+  return serialize(system, NL_VERSION_STRING, hash, generation);
+}
+}  // namespace nl::proxy::diagnostics

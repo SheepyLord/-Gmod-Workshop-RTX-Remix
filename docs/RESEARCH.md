@@ -1,5 +1,18 @@
 # Research notes
 
+## Startup text and main-menu identity (requests 15 and 23)
+
+The launch text was hard-coded in runtime src/dxvk/imgui/dxvk_imgui_splash.cpp:88 and referred to
+Xenthio. It now reads companion/presentation/startup_message*.txt from the deployed data
+folder and uses literal text rendering. The runtime font atlas adds the selected template's glyphs.
+
+The stock control.Menu.js exposes gScope.Version/Branch through UpdateVersion and InGame through
+SetInGame. The [menu realm](https://wiki.facepunch.com/gmod/States) is separate from normal client
+add-ons. Loader presentation.cpp appends the local panel through the existing exact-read mechanism.
+diagnostics.cpp reads system descriptors and hashes the installed bootstrap; package hashes come
+from the committed generation's manifest_sha256, avoiding a self-referential package hash or a
+startup rehash of the entire runtime. The UI never reads console logs or displays source paths.
+
 ## Imported normals and navigation (requests 17, 19/19.1 and 20)
 
 Hotloader materials.lua returns engine-safe paths from Entity:GetMaterials; original names are in

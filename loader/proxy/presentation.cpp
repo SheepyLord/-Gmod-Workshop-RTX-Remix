@@ -1,4 +1,6 @@
 #include "presentation.h"
+#include "diagnostics.h"
+#include "presentation_data.h"
 
 #include "nl/crc32.h"
 #include "nl/fs.h"
@@ -16,6 +18,7 @@ namespace {
 
 constexpr std::string_view kDirectory = "native-loader/presentation";
 constexpr std::string_view kMenu = "garrysmod/html/js/menu/control.Addons.js";
+constexpr std::string_view kMainMenu = "garrysmod/html/js/menu/control.Menu.js";
 constexpr std::size_t kMaxMenuBytes = std::size_t{2} << 20;
 
 bool numeric_id(std::string_view text) {
@@ -150,7 +153,18 @@ std::string decorate_menu(std::string_view original, const std::vector<std::stri
   return prefix + decorated;
 }
 
-Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation) {
+std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json) {
+  constexpr std::string_view anchor = "function MenuController( $scope, $rootScope )";
+  const auto at = original.find(anchor);
+  if (at == std::string_view::npos || original.find(anchor, at + anchor.size()) != std::string_view::npos)
+    throw std::runtime_error("stock main menu controller differs; diagnostics overlay not installed");
+  // Parse before embedding so an invalid producer cannot turn the response into arbitrary JavaScript.
+  if (!json::parse(diagnostics_json).is_object()) throw std::runtime_error("diagnostics must be a JSON object");
+  return std::string(original) + "\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
+    ";\nwindow.NativeLoaderDiagnosticLabels = " + std::string(kDiagnosticsLabels) + ";\n" + std::string(kDiagnosticsScript);
+}
+
+Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation, bool include_diagnostics) {
   Prepared prepared;
   std::vector<std::string> ids;
   for (const auto& current : generation.packages) {
@@ -187,6 +201,17 @@ Prepared prepare(const std::filesystem::path& root, const journal::Generation& g
       prepared.redirects.push_back({source, replacement, {}});
     } catch (const std::exception& error) {
       prepared.notes.push_back("native package addon menu: " + std::string(error.what()));
+    }
+  }
+  if (include_diagnostics) {
+    try {
+      fs::refuse_links(root, kMainMenu);
+      const auto source = fs::join(root, kMainMenu);
+      const auto text = fs::read_file(source, kMaxMenuBytes);
+      const auto replacement = cache(root, decorate_main_menu(text, diagnostics::collect(root, generation)), ".js");
+      prepared.redirects.push_back({source, replacement, {}});
+    } catch (const std::exception& error) {
+      prepared.notes.push_back("native loader main menu: " + std::string(error.what()));
     }
   }
   return prepared;
