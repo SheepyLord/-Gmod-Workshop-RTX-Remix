@@ -62,10 +62,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 - Add optional medium/low performance-tier payloads to the runtime package, preserving classic high
   settings and user overrides. Candidate bounce/NRC and memory defaults await PoC frame-time, VRAM
-  and visual validation. The earlier sandbox's Steamworks failure is recorded in ADR 0064.
+  and visual validation.
 - Ship 4096-wide night-sky copies for low, retaining the existing compressed mip data exactly:
   53.33 MiB of texels versus 213.33 MiB. Add a validated DDS mip-removal tool and packager support
   for conditional `rtx.*` tier layers ([ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
+- Validate tier option names, types, ranges and enum values against the patched runtime; pin the
+  classic/compiler inputs unchanged. Expand DDS fixtures to every supported block format.
+- Correct the tiers' OMM/NRC/low-memory explanations and explicitly credit the derived skies.
+  Verify that low-memory flag changes rebuild incompatible BLASes safely; retain medium's original
+  sky images because dropping mip 0 can affect nebula detail even at normal FOV in 4K.
 
 ### R6 T5 (unreleased)
 

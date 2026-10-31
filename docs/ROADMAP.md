@@ -11,10 +11,11 @@ translation review and game acceptance remain with the project manager; this tas
 
 R6 T6 is **in progress; PoC acceptance pending** (2026-10-31, branch `r6-t6-tiers`): optional
 medium/low runtime payloads, lossless mip removal and 4096-wide sky inputs are implemented.
-Release tests, deep input verification and the actual package build pass in the resumed user
-account. Game measurements await the field session closing: T6 must run only one game at a time
-and cannot close or change the field install. The two-map tier comparison and night-sky visual
-check remain required; [ADR 0064](decisions/0064-performance-tier-defaults.md) records candidate values.
+Tier options have source-pinned validation and the DDS fixtures cover every accepted format.
+PoC frame-time, VRAM and visual measurements are pending; values remain candidates. The two-map
+tier comparison, class-limited low-memory trade-off and night-sky checks remain required;
+[ADR 0064](decisions/0064-performance-tier-defaults.md) records the source-verified consequences
+and why medium retains the original skies.
 
 R6 T5 is **implemented and passes offline acceptance** on `r6-t5-fixes`: the fixes DLL drops
 unsupported memory-limit writes while keeping its Lua compatibility API

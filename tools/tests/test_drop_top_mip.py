@@ -11,8 +11,20 @@ sys.path.insert(0, str(REPO / 'tools/sky'))
 import drop_top_mip as dds
 
 
-def fixture(width=16, height=8, count=5, fourcc=b'DXT5', fmt=98):
-    block = 8 if fourcc == b'DXT1' else 16
+# Independent fixture format table: (FourCC, DXGI format, bytes per 4x4 block).
+# Include every variant accepted by the tool, without using its layout() to make expected sizes.
+FORMATS = (
+    (b'DXT1', None, 8), (b'DXT3', None, 16), (b'DXT5', None, 16),
+    (b'ATI1', None, 8), (b'ATI2', None, 16),
+    (b'BC4U', None, 8), (b'BC4S', None, 8),
+    (b'BC5U', None, 16), (b'BC5S', None, 16),
+    *((b'DX10', fmt, 8) for fmt in (70, 71, 72, 79, 80, 81)),  # BC1, BC4
+    *((b'DX10', fmt, 16) for fmt in (73, 74, 75, 76, 77, 78, 82, 83, 84,
+                                   94, 95, 96, 97, 98, 99)),  # BC2/3/5/6H/7
+)
+
+
+def fixture(width=16, height=8, count=5, fourcc=b'DXT5', fmt=98, block=16):
     sizes = [max(1, (max(1, width >> i) + 3) // 4)
              * max(1, (max(1, height >> i) + 3) // 4) * block for i in range(count)]
     header = bytearray(148 if fourcc == b'DX10' else 128)
@@ -28,27 +40,44 @@ def fixture(width=16, height=8, count=5, fourcc=b'DXT5', fmt=98):
 
 class DropTopMipTests(unittest.TestCase):
     def test_legacy_and_dx10_mips_are_kept_exactly(self):
-        for fourcc in (b'DXT1', b'DXT3', b'DXT5', b'DX10'):
-            source, sizes, header = fixture(fourcc=fourcc)
-            result = dds.drop_top_mip(source)
-            self.assertEqual(result[header:], source[header + sizes[0]:])
-            self.assertEqual(result[header:header + sizes[1]], bytes([2]) * sizes[1])
-            self.assertEqual(struct.unpack_from('<4I', result, 12), (4, 8, sizes[1], 1))
-            self.assertEqual(struct.unpack_from('<I', result, 28)[0], 4)
-            self.assertEqual(result[32:header], source[32:header])
-            info = dds.verify(source, result)
-            self.assertEqual((info['payload_bytes'], info['dropped_bytes']), (sum(sizes[1:]), sizes[0]))
+        for fourcc, fmt, block in FORMATS:
+            with self.subTest(fourcc=fourcc, fmt=fmt, block=block):
+                source, sizes, header = fixture(fourcc=fourcc, fmt=fmt, block=block)
+                self.assertEqual(sizes, [8 * block, 2 * block, block, block, block])
+                self.assertEqual(dds.layout(source), (header, 16, 8, sizes))
+                self.assertEqual(struct.unpack_from('<I', source, 20)[0], 8 * block)
+                result = dds.drop_top_mip(source)
+                self.assertEqual(result[header:], source[header + sizes[0]:])
+                self.assertEqual(result[header:header + sizes[1]], bytes([2]) * sizes[1])
+                self.assertEqual(struct.unpack_from('<4I', result, 12), (4, 8, 2 * block, 1))
+                self.assertEqual(struct.unpack_from('<I', result, 28)[0], 4)
+                self.assertEqual(result[32:header], source[32:header])
+                info = dds.verify(source, result)
+                self.assertEqual((info['payload_bytes'], info['dropped_bytes']), (sum(sizes[1:]), sizes[0]))
+
+    def test_each_format_refuses_a_wrong_block_linear_size(self):
+        for fourcc, fmt, block in FORMATS:
+            with self.subTest(fourcc=fourcc, fmt=fmt):
+                source, _, _ = fixture(fourcc=fourcc, fmt=fmt, block=block)
+                changed = bytearray(source)
+                struct.pack_into('<I', changed, 20, 8 * (24 - block))  # the other block size
+                with self.assertRaisesRegex(dds.DdsError, 'linear size'):
+                    dds.drop_top_mip(changed)
 
     def test_small_mips_still_have_one_block_and_last_mip_clears_caps(self):
-        source, sizes, header = fixture(width=2, height=2, count=2)
-        result = dds.drop_top_mip(source)
-        self.assertEqual(result[header:], bytes([2]) * 16)
-        self.assertEqual(struct.unpack_from('<3I', result, 12), (1, 1, 16))
-        self.assertFalse(struct.unpack_from('<I', result, 8)[0] & 0x20000)
-        self.assertFalse(struct.unpack_from('<I', result, 108)[0] & 0x400008)
-        self.assertEqual(dds.verify(source, result)['mips'], 1)
-        with self.assertRaises(dds.DdsError):
-            dds.drop_top_mip(result)
+        for fourcc, fmt, block in FORMATS:
+            with self.subTest(fourcc=fourcc, fmt=fmt):
+                source, sizes, header = fixture(width=2, height=2, count=2,
+                                               fourcc=fourcc, fmt=fmt, block=block)
+                self.assertEqual(sizes, [block, block])
+                result = dds.drop_top_mip(source)
+                self.assertEqual(result[header:], bytes([2]) * block)
+                self.assertEqual(struct.unpack_from('<3I', result, 12), (1, 1, block))
+                self.assertFalse(struct.unpack_from('<I', result, 8)[0] & 0x20000)
+                self.assertFalse(struct.unpack_from('<I', result, 108)[0] & 0x400008)
+                self.assertEqual(dds.verify(source, result)['mips'], 1)
+                with self.assertRaises(dds.DdsError):
+                    dds.drop_top_mip(result)
 
     def test_refuses_bad_headers_unsupported_images_and_wrong_lengths(self):
         source, _, _ = fixture()

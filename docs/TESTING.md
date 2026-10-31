@@ -88,13 +88,22 @@ without changing the manifest schema/requirement or its unconditional layer list
 names, repeated tiers, non-rtx keys, malformed/empty/duplicate assignments, bad UTF-8 and missing or
 non-conf files are refused before output. Existing runtime packager behavior remains covered.
 
-`tools/tests/test_drop_top_mip.py` uses independently generated compressed DDS fixtures: legacy and
-DX10, rectangular images, minimum block sizes, exact mip 1 and lower-mip bytes, header preservation,
+`tools/tests/test_runtime_tiers.py` parses every `packages/runtime/layers/*.conf`. Low/medium and
+new layers must match a pinned table of real option names, C++ types and inclusive ranges/enums,
+cited to declarations in the fully patched R6 T4 runtime source. Typos, wrong types and invalid
+values fail, including numeric/enum boundary fixtures. Classic/compiler are pinned byte-identical;
+classic's 15 obsolete ignored keys are not falsely listed as real options. Refresh the table from
+the patched source when updating the runtime. No external checkout is required to run the test.
+
+`tools/tests/test_drop_top_mip.py` uses independently generated compressed DDS fixtures: legacy
+DXT1/3/5, ATI1/2, BC4U/S, BC5U/S and every accepted DX10 BC1/2/3/4/5/6H/7 variant. Each checks
+8/16-byte block sizes, original/result linear sizes and refusal of a wrong linear size. Covers
+rectangular images, minimum block sizes, exact mip 1 and lower-mip bytes, header preservation,
 single remaining mip flags, corrupt headers/lengths/shapes/formats and refused overwrites. All
 scratch stays under `out/tmp`. Run these alone from the worktree root with:
 
 ```powershell
-python -c "import sys,unittest; sys.path.insert(0,'tools'); unittest.main(module=None,argv=['unittest','tests.test_package_runtime','tests.test_drop_top_mip','-v'])"
+python -c "import sys,unittest; sys.path.insert(0,'tools'); unittest.main(module=None,argv=['unittest','tests.test_package_runtime','tests.test_drop_top_mip','tests.test_runtime_tiers','-v'])"
 python tools/inputs.py verify --deep
 python tools/build_package.py --require-nlctl --keep-work
 ```
@@ -105,17 +114,17 @@ Real-asset verification: regenerate the three `_4096.dds` files with
 combined package's generated manifest/inventory must contain both tier payloads and all three
 smaller skies, while its default DXVK layer list still contains only classic/compiler layers.
 
-On resuming as the user, the required `tools\test.ps1 -Config Release` passes: conventions, all
-23 CTests, and Python groups of 28/25/287 tests (two expected skips). All ten parts pass deep input
-verification, and the actual combined package passes `--require-nlctl`. Evidence is in
-`out/t6-release-resumed.log`, `out/t6-inputs-resumed.log` and `out/t6-package-resumed.log`. The
-earlier sandbox's registry/Git failures are superseded; no tests were skipped or changed to pass.
+PoC acceptance is pending: candidate values need two-map tier frame-time/VRAM/visual comparisons,
+normal/narrow-FOV sky checks (including 4K nebula detail), and class-limited low on cards above
+8 GiB with `lowMemoryGpu` and an Automatic-preset flip. Source inspection proves changed BLAS
+flags rebuild safely; its timing and texture-detail cost still need measurement. ADR 0064 gives
+the lasting acceptance criteria; run-specific evidence belongs in the
+[handover status](handover/R6-T6-performance-tiers.md#status).
 
-PoC acceptance remains pending: the original sandbox could not initialize Steamworks, and the
-resumed attempt found the field game running. T6's one-game-at-a-time rule prevents launching the
-PoC until it is closed normally. Do not close the field session from the harness. ADR 0064 gives
-the still-unverified tuning and two-map/sky comparisons. The earlier PoC snapshot was restored
-and hash-verified; no PoC changes have been made by the resumed attempt.
+The review-fix validation passes 23 focused T6 tests, deep verification of all ten input parts,
+the combined package build with `--require-nlctl` and `tools\test.ps1 -Config Release`: repo
+conventions, 23/23 CTests and Python groups 28/25/291 (two expected skips). The handover status
+records the run logs.
 
 ## R6 T2 local evidence and telemetry
 

@@ -53,24 +53,24 @@
    "imported": "2026-10-31T22:48:47+00:00"
   },
   "layers/medium.conf": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\layers\\medium.conf",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-fix-stage\\layers\\medium.conf",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "commit": "84e0f1a809454d30b436baf47727c6353ba306f8",
     "dirty": false
    },
-   "imported": "2026-10-31T22:25:32+00:00"
+   "imported": "2026-10-31T23:44:37+00:00"
   },
   "layers/low.conf": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\layers\\low.conf",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-fix-stage\\layers\\low.conf",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "commit": "84e0f1a809454d30b436baf47727c6353ba306f8",
     "dirty": false
    },
-   "imported": "2026-10-31T22:25:32+00:00"
+   "imported": "2026-10-31T23:44:37+00:00"
   },
   "files/atmosphere/stars_4096.dds": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\stars_4096.dds",
@@ -101,6 +101,16 @@
     "dirty": false
    },
    "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/CREDITS.txt": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-fix-stage\\atmosphere\\CREDITS.txt",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "84e0f1a809454d30b436baf47727c6353ba306f8",
+    "dirty": false
+   },
+   "imported": "2026-10-31T23:44:37+00:00"
   }
  },
  "files": {
@@ -113,9 +123,9 @@
    "stored_sha256": "e31fcab4f48296f2c5290bf422224a822d4fa259fea84372286ce02b957e7147"
   },
   "files/atmosphere/CREDITS.txt": {
-   "size": 1569,
-   "sha256": "16f3384d2d7ded1b7ae8d325bce54201608f10f1eb671d967c178c0e24911e12",
-   "mtime_ns": 1793314519515967700,
+   "size": 1810,
+   "sha256": "b0833600962f381b2d4a7c7da1add7fad932eac1f794f2952b5b3f5106e51b4a",
+   "mtime_ns": 1793490196604674700,
    "stored": "plain"
   },
   "files/atmosphere/galaxy.dds": {
@@ -1409,15 +1419,15 @@
    "stored_sha256": "398f768605be09923350f82750026c52a83d011aaee2c7e1d3ff723c6c683ab4"
   },
   "layers/low.conf": {
-   "size": 1367,
-   "sha256": "52026dfe20d279c408f74c66eb10fcf46714aa71befe920445bd77dbd16c0173",
-   "mtime_ns": 1793485448930795300,
+   "size": 1627,
+   "sha256": "1b773f87a703fb6167be073000be8c13b82245de7ab86e8d61379735c493df50",
+   "mtime_ns": 1793490196603169100,
    "stored": "plain"
   },
   "layers/medium.conf": {
-   "size": 1005,
-   "sha256": "61c3d9da87e3eac01f3484570fce8d8a70334ada7c46de0054d0a91ca697b97c",
-   "mtime_ns": 1793485445954797300,
+   "size": 1167,
+   "sha256": "3c9fb6adfaf4e2d50a7457310759c98c1aed080d80d14899d9c9822bdd5103dd",
+   "mtime_ns": 1793490196603169100,
    "stored": "plain"
   }
  }
