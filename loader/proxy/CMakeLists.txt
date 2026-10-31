@@ -13,7 +13,7 @@ configure_file(ui/presentation_data.h.in "${CMAKE_CURRENT_BINARY_DIR}/generated/
 add_library(nl_proxy_presentation STATIC presentation.cpp diagnostics.cpp)
 target_include_directories(nl_proxy_presentation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(nl_proxy_presentation PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-target_link_libraries(nl_proxy_presentation PUBLIC nl_core PRIVATE nl_build_options)
+target_link_libraries(nl_proxy_presentation PUBLIC nl_core nl_client_catalog PRIVATE nl_build_options)
 
 configure_file(version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
 add_library(nl_winmm SHARED bootstrap.cpp startup.cpp runtime.cpp modules.cpp generated/thunks.asm

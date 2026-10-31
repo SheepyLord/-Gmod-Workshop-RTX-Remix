@@ -6,6 +6,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Loader 0.9.0 adds the user-requested multiplayer bootstrap for verified scripts owned by the
+  allowlisted RTX package, including servers with `sv_allowcslua 0`. Community add-ons retain the
+  engine's normal permissions. The shipment no longer requests `-insecure`; seven exact rendering
+  recipes have a separate opt-out while general patches keep their insecure gate. RTXDebug permits
+  rendering configuration in multiplayer and retains its single-player, cheats and insecure gate
+  for unsafe commands. A secure dedicated-server join, reconnect and map round trip pass. Scope
+  absent-server-channel handling to owned scripts, and avoid late hardware-model cache flushes
+  after the world is active; normal early loading keeps its reloads
+  ([ADR 0052](docs/decisions/0052-scoped-rtx-multiplayer-bootstrap.md)).
+
 - Default path bounces to minimum 1 and maximum 12 across runtime defaults, graphics presets,
   the packaged layer and the companion's opt-in override. Keep explicit saved settings authoritative.
 

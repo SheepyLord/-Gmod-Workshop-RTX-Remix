@@ -257,6 +257,26 @@ class PackageFixesTests(unittest.TestCase):
         self.assertIn('debug', err)
         self.assertFalse((self.root / 'pkg').exists())
 
+    def test_client_bootstrap_has_a_hashed_root_and_required_notices(self):
+        module = self.write(self.root / 'client' / package_fixes.CLIENT_BOOTSTRAP, b'MZ verified bootstrap')
+        out = self.root / 'pkg'
+        summary = self.build('--out', out, '--client-bootstrap', module)
+        manifest = self.manifest(out)
+        path = 'garrysmod/lua/bin/' + package_fixes.CLIENT_BOOTSTRAP
+        self.assertEqual(manifest['requires_loader'], '>=0.9.0')
+        digest = hashlib.sha256(module.read_bytes()).hexdigest()
+        self.assertEqual(manifest['files']['native/root/' + path], {'size': module.stat().st_size, 'sha256': digest})
+        self.assertIn({'path': path, 'policy': 'replace-owned'}, manifest['root_files'])
+        self.assertEqual(summary['modules'][package_fixes.CLIENT_BOOTSTRAP], digest)
+        notices = out / 'native/root/garrysmod/addons/nativeloader/resource/native-client'
+        self.assertEqual((notices / 'LICENSE-MIT.txt').read_bytes(), (REPO / 'LICENSE').read_bytes())
+        self.assertEqual((notices / 'LICENSE-GarrysModSDK.txt').read_bytes(), (REPO / 'third_party/gmod/LICENSE').read_bytes())
+        code, _, err = self.run_tool('--out', self.root / 'excluded', '--client-bootstrap', module,
+                                     '--exclude-addon', 'nativeloader')
+        self.assertEqual(code, 1)
+        self.assertIn('requires the nativeloader companion', err)
+        self.assertFalse((self.root / 'excluded').exists())
+
     def test_steam_files_configs_and_junk_stay_out(self):
         out = self.root / 'pkg'
         self.build('--out', out)

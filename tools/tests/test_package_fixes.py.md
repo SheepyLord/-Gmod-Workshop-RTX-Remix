@@ -1,5 +1,8 @@
 # test_package_fixes.py
 
+Also verifies the optional verified-client bootstrap's journaled SHA-256/root, required licence
+notices and refusal when the companion is excluded.
+
 Unit tests for [`package_fixes.py`](../package_fixes.py.md). Each test builds a small fake fixes repo
 in a temporary folder under `out\tmp`: add-ons (with a submodule's `.git` file, a `.git` folder,
 `Thumbs.db`, `desktop.ini`, a `.bak`, a loose file), Remix mods (one empty), seed data

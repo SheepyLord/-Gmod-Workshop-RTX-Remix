@@ -99,6 +99,13 @@ left out of the fixes repo.
 - `--modules-from <folder>`: where the built modules are (default `<repo>\x86_64\Release`).
 - `--with-debug-module`: also package `gmcl_rtxdebug_win64.dll` and its add-on `rtx_debug` (one file,
   `require("rtxdebug")`), from the fixes' debug submodule `source/debug/addon`, as the classic install has them.
+- `--client-bootstrap <DLL>`: package this project's menu-realm module as
+  `garrysmod/lua/bin/gmsv_nlrtxclient_win64.dll`, with a hashed module root entry and its MIT/BSD
+  notices under the companion's `resource/native-client`. Requires the companion. Loader 0.9.0
+  invokes it for the verified RTX bundle's multiplayer initialization. This raises requires_loader
+  to >=0.9.0, so older bootstraps keep their previous shipment rather than lose its renderer setup.
+  It does not change server
+  settings or permit loading community scripts. This input is optional for standalone fixes builds.
 - `--exclude-addon <name>` (repeatable): leave an add-on out, compared without case;
   `nativeloader` leaves out the companion. An unknown name is refused.
 - `--add-to-addon <PATH> <SOURCE>` (repeatable): add SOURCE, a file or a folder (its files, junk left

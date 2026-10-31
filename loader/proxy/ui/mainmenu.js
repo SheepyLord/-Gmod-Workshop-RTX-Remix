@@ -7,6 +7,7 @@
   window.NativeLoaderDiagnosticsInstalled = true;
   var panel, body, copyButton, project;
   var last = '';
+  var bootstrapRequested = false;
   function language(scope) {
     var code = String(scope && scope.Language || 'en').toLowerCase();
     if (code === 'zh' || code === 'zh-cn') code = 'zh-CN';
@@ -19,6 +20,10 @@
     var item = document.createElement(tag); parent.appendChild(item); return item;
   }
   function update() {
+    if (!bootstrapRequested && data.client_bootstrap && window.lua && window.lua.Run) {
+      bootstrapRequested = true;
+      window.lua.Run('require( "nlrtxclient" )');
+    }
     var scope = typeof gScope !== 'undefined' ? gScope : null;
     var labels = language(scope);
     var home = !window.location || !window.location.hash || window.location.hash === '#/' || window.location.hash === '#';

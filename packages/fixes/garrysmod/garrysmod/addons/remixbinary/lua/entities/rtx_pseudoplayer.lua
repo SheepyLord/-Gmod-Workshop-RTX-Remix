@@ -26,19 +26,42 @@ local function offsetValue(name)
     return value == value and math.Clamp(value, -128, 128) or 0
 end
 
-local function offsetBones(ent, count)
-    local player = LocalPlayer()
-    if not IsValid(player) then return end
+local function snapshotBones(ent, player)
+    ent.RTXBoneSnapshot = nil
+    local model = player:GetModel()
+    if ent:GetModel() ~= model then return false end
     local angles = GetConVar("rtx_pseudoplayer_offset_localangles"):GetBool()
         and player:EyeAngles() or player:GetRenderAngles()
     local forward = Angle(0, angles.y, 0):Forward()
     local offset = forward * offsetValue("rtx_pseudoplayer_offset_x")
         + Vector(0, 0, offsetValue("rtx_pseudoplayer_offset_z"))
-    for bone = 0, (count or ent:GetBoneCount()) - 1 do
+    local snapshot = {model = model, count = math.min(ent:GetBoneCount(), player:GetBoneCount()),
+        offset = offset, bones = {}}
+    for bone = 0, snapshot.count - 1 do
         local matrix = player:GetBoneMatrix(bone)
-        if matrix then
-            matrix:SetTranslation(matrix:GetTranslation() + offset)
-            ent:SetBoneMatrix(bone, matrix)
+        local name = player:GetBoneName(bone)
+        if matrix and name and name ~= "__INVALIDBONE__" then
+            snapshot.bones[bone] = {matrix = matrix, origin = matrix:GetTranslation(), name = name}
+        end
+    end
+    ent.RTXBoneSnapshot = snapshot
+    return true
+end
+
+local function offsetBones(ent, count)
+    local snapshot = ent.RTXBoneSnapshot
+    if not snapshot or ent:GetModel() ~= snapshot.model then return end
+    local limit = math.min(count or ent:GetBoneCount(), ent:GetBoneCount(), snapshot.count)
+    for bone = 0, limit - 1 do
+        local entry = snapshot.bones[bone]
+        local name = ent:GetBoneName(bone)
+        if entry and name and name ~= "__INVALIDBONE__" and name == entry.name
+            and (not ent.BoneHasFlag or BONE_USED_BY_ANYTHING == nil
+                or ent:BoneHasFlag(bone, BONE_USED_BY_ANYTHING))
+            and ent:GetBoneMatrix(bone) then
+            -- A callback may run more than once per draw. Always offset the saved origin.
+            entry.matrix:SetTranslation(entry.origin + snapshot.offset)
+            ent:SetBoneMatrix(bone, entry.matrix)
         end
     end
 end
@@ -123,6 +146,7 @@ function ENT:Think()
     end
     local model = player:GetModel()
     if self:GetModel() ~= model then
+        self.RTXBoneSnapshot = nil
         self:SetModel(model)
         self.RTXMaterials = {}
     end
@@ -145,6 +169,9 @@ function ENT:Draw()
     if self:GetNoDraw() then return end
     local player = LocalPlayer()
     if not IsValid(player) then return end
+    -- Reading another entity's bones while ours are being built can re-enter bone setup.
+    player:SetupBones()
+    if not snapshotBones(self, player) then return end
     for index, name in ipairs(self:GetMaterials()) do
         local override = player:GetSubMaterial(index - 1)
         if override and override ~= "" then name = override end
@@ -163,7 +190,6 @@ function ENT:Draw()
         render.MaterialOverrideByIndex(index - 1, entry.material)
     end
     self:InvalidateBoneCache()
-    player:SetupBones()
     render.SuppressEngineLighting(true)
     local ok, err = pcall(self.DrawModel, self)
     render.SuppressEngineLighting(false)

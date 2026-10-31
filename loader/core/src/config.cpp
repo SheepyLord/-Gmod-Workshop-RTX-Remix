@@ -86,10 +86,12 @@ Config parse(std::string_view json_text) {
       }
     }
     if (const Value* patches = root.find("patch_sets")) {
-      only_keys(*patches, "patch_sets", {"require_insecure"});
+      only_keys(*patches, "patch_sets", {"require_insecure", "allow_rtx_render_patches"});
       if (const Value* insecure = patches->find("require_insecure")) {
         c.patch_sets_require_insecure = insecure->as_bool("patch_sets.require_insecure");
       }
+      if (const Value* render = patches->find("allow_rtx_render_patches"))
+        c.allow_secure_rtx_render_patches = render->as_bool("patch_sets.allow_rtx_render_patches");
     }
     return c;
   } catch (const json::Error& e) {

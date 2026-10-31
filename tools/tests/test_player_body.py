@@ -9,13 +9,15 @@ import unittest
 REPO = Path(__file__).resolve().parents[2]
 LUA = shutil.which('luajit') or str(Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs/LuaJIT/bin/luajit.exe')
 ADDON = REPO / 'packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua'
+PLAYER_PROXY_SOURCE = Path(os.environ.get('NL_PLAYER_PROXY_SOURCE',
+                                        str(ADDON / 'entities/rtx_pseudoplayer.lua')))
 
 
 class PlayerBodyTest(unittest.TestCase):
     @unittest.skipUnless(Path(LUA).is_file(), 'LuaJIT is not installed')
     def test_actual_proxy_categories_offsets_and_spawnmenu(self):
         result = subprocess.run([LUA, str(REPO / 'tools/tests/player_body_harness.lua'),
-                                 str(ADDON / 'entities/rtx_pseudoplayer.lua'),
+                                 str(PLAYER_PROXY_SOURCE),
                                  str(ADDON / 'remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua'),
                                  str(REPO / 'companion/nativeloader/lua/autorun/client/nativeloader_menu.lua')],
                                 cwd=REPO, capture_output=True, text=True, encoding='utf-8', timeout=15)

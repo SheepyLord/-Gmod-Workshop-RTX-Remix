@@ -1,4 +1,5 @@
 #include "diagnostics.h"
+#include "../client/catalog.h"
 #include "nl/fs.h"
 #include "nl/json.h"
 #include "nl/sha256.h"
@@ -78,7 +79,7 @@ std::string serialize(const System& system, std::string_view version, std::strin
     out += "{\"id\":" + json::quote(package.id) + ",\"version\":" + json::quote(package.version) +
            ",\"sha256\":" + json::quote(package.manifest_sha256) + '}';
   }
-  return out + "]}";
+  return out + "],\"client_bootstrap\":" + (client::native_bootstrap_present(generation) ? "true" : "false") + '}';
 }
 
 std::string collect(const std::filesystem::path& root, const journal::Generation& generation) {

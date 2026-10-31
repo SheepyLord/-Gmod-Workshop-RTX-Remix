@@ -1,5 +1,61 @@
 # Research notes
 
+## Scoped RTX multiplayer loading (loader 0.9.0)
+
+The game has separate menu and client Lua states. The menu's `require("nlrtxclient")` must resolve
+`gmsv_nlrtxclient_win64.dll`, despite the helper initializing client rendering scripts. The initial
+`gmcl_` filename did not load from the menu; native module lookup inspection established that the
+menu uses the non-client prefix. The `gmsv_` name does not make this a dedicated-server initializer:
+`loader/client/module.cpp` explicitly requires `MENU_DLL`, obtains the client state through
+`LUASHARED003`, waits for that state's readiness and verifies the active owned runtime.
+
+`loader/client/catalog.cpp:54` prepares the source snapshot from an enabled config and committed
+deployment. The package identity is exactly `gmod-rtx-remix`; local/dev sources must match their
+respective native allowlists, and Workshop sources must be the configured distribution item
+3829070317 under `workshop/content/4000`. Each owned module/script must still match its journaled
+size and SHA-256, with unsafe paths, links, case collisions and oversized/NUL source refused.
+Other owners cannot supply a replacement at the same virtual Lua path. Generic `rtx_agent` and
+Hotloader debug-source execution are excluded. The temporary native callbacks read catalog keys,
+not arbitrary paths or source text.
+
+Omitting the existing renderer fixes caused a prototype startup crash. The secure-launch exception
+therefore covers only the seven existing rendering recipes in `tools/package_fixes.py:58`, grouped
+as 2 engine, 3 shader API, 1 material-system and 1 data-cache fixes. The classifier at
+`loader/client/catalog.cpp:41` binds the exact owner, module, patch name, find bytes, offset,
+replacement and order. Mutated, extra, incomplete or reordered groups fail classification. Config
+`patch_sets.allow_rtx_render_patches: false` disables the exception; the general
+`patch_sets.require_insecure` default remains true. See
+[ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md).
+
+Two pre-fix client crashes reached `studiorender+0x5D353` on a queued worker with a null hardware
+LOD array. The late cl_rtx.lua initial/final MDLCache flush could invalidate static-prop hardware
+data after the world was active. The bootstrap now sets `NATIVELOADER_VERIFIED_MULTIPLAYER` only
+inside owned environments, and the GPL add-on skips those late flushes. Normal early loading
+retains both reloads. Actual-section timer/hook tests cover normal nil/false flags, convar retries,
+and verified matching/mismatched/missing convars with zero flushes. Crash analysis is retained in
+`out/debug-crash-analysis/findings.md`. The player-shadow proxy also snapshots source bones before
+its callback, validates destination bones and avoids accumulating its offset; two body cases pass.
+
+Some bundled clients request catalog, scene-sharing, motion or material-store channels that a
+vanilla remote server never pools. The scoped net adapter shares drop state across owned source
+environments, suppresses writes/sends for those missing channels and records their names. The
+engine's global net table and registered-channel errors/returns stay intact. This prevents client
+initialization errors; server-dependent tool features still require matching server add-ons.
+
+Offline evidence: 16 catalog cases, 7 config cases and the actual Lua bootstrap/reload suite's
+6 tests/14 scenarios pass. A `gmod.exe -dedicated` prototype was not counted as dedicated-server
+proof. Prototype 7 client PID 8544 subsequently joined genuine 64-bit dedicated PID 78088, with
+VAC secure mode active, `sv_lan 0`, a password-protected loopback connection, `sv_allowcslua 0`,
+cheats off and no client `-insecure`. It completed 44 autoruns with no payload errors, six absent
+server channels recorded, no temporary API global and an unrelated local Lua fixture still blocked.
+Reconnect and gm_construct -> gm_flatgrass -> gm_construct passed in the same client process;
+the Source JPEG at `out/mpc/garrysmod/screenshots/nl_mp_construct.jpg` records the rendered world
+and hands. RTXDebug 0.2 reports connected/in-game client and menu realms, no server realm,
+successful rendering SetConfig/restore with unchanged config-file hashes, and refused Lua.Eval and
+Engine.SetConVar attempts to enable client Lua. Evidence is under `out/multiplayer-evidence/probe7*`.
+This controlled session is not a universal VAC/server-policy guarantee. Final full-suite, package
+readback and publication results remain pending.
+
 ## Startup text and main-menu identity (requests 15 and 23)
 
 The launch text was hard-coded in runtime src/dxvk/imgui/dxvk_imgui_splash.cpp:88 and referred to

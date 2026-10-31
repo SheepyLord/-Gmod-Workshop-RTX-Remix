@@ -1,0 +1,699 @@
+From 6105f0b545145dc7781f7ae94af76619c2a6e3d4 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 00:11:26 -0700
+Subject: [PATCH] Support multiplayer client rendering diagnostics with bound
+ RPC targets
+
+Separate local rtx.* configuration from the developer mutation gate, preserving single-player/cheat/insecure restrictions for arbitrary Lua, engine, memory and detour operations. Report native process identity and bind file RPC requests/replies to the selected PID. Refuse ambiguous external targets and add explicit PID/root selection. Native policy and transport/selection tests pass; build the standalone module against the pinned SDK.
+---
+ .gitignore                                |  1 +
+ README.md                                 | 29 +++++---
+ addon/lua/autorun/client/rtx_debug.lua    |  9 ++-
+ addon/lua/autorun/client/rtx_debug.lua.md |  8 ++
+ premake5.lua                              |  7 +-
+ premake5.lua.md                           |  7 ++
+ source/debug_context.h                    |  1 +
+ source/module.cpp                         | 27 ++++++-
+ source/remix/remix_debug.cpp              |  5 +-
+ source/render_policy.h                    | 26 +++++++
+ source/render_policy.h.md                 |  6 ++
+ tests/render_policy_test.cpp              | 17 +++++
+ tests/render_policy_test.cpp.md           |  5 ++
+ tests/test_client.py                      | 48 ++++++++++++
+ tests/test_client.py.md                   |  6 ++
+ tests/test_transport.py                   | 18 ++++-
+ tests/test_transport.py.md                |  6 ++
+ tools/rtxdebug_client.py                  | 91 ++++++++++++++++++-----
+ tools/rtxdebug_client.py.md               | 10 +++
+ 19 files changed, 295 insertions(+), 32 deletions(-)
+ create mode 100644 addon/lua/autorun/client/rtx_debug.lua.md
+ create mode 100644 premake5.lua.md
+ create mode 100644 source/render_policy.h
+ create mode 100644 source/render_policy.h.md
+ create mode 100644 tests/render_policy_test.cpp
+ create mode 100644 tests/render_policy_test.cpp.md
+ create mode 100644 tests/test_client.py
+ create mode 100644 tests/test_client.py.md
+ create mode 100644 tests/test_transport.py.md
+ create mode 100644 tools/rtxdebug_client.py.md
+
+diff --git a/.gitignore b/.gitignore
+index cce7983..399f981 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -3,4 +3,5 @@
+ /x86/
+ /x86_64/
+ /out/
++/obj/
+ __pycache__/
+diff --git a/README.md b/README.md
+index c62af62..5a36d70 100644
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,6 @@
+ # RTXDebug
+ 
+-Developer introspection module for a local, single-player Garry's Mod RTX Remix session.
++Developer introspection module for Garry's Mod RTX Remix, including multiplayer client diagnostics.
+ The DLL is independent of `RTXFixesBinary`; it uses the existing `RemixConfig`,
+ `RemixResource`, and `RemixMaterial` Lua APIs when that module is loaded. It is
+ compiled against the fork's Remix API headers at version **0.1000.1** and is
+@@ -21,7 +21,12 @@ It has no Win32 configuration, so a Win32 build of the solution skips it, and th
+ parent workspace leaves it out when `source/debug` is not checked out.
+ `premake5.lua` in this folder builds the module alone: run
+ `premake5.exe --os=windows --gmcommon=../../garrysmod_common vs2022` here and
+-build `RTXDebugModule.sln`.
++build `RTXDebugModule.sln`. A standalone worktree can pass
++`--remixinclude=<fork>/public/include` as well as `--gmcommon=<fork>/garrysmod_common`.
++The pinned common SDK works with Premake 5.0.0-beta2; Premake 5.0.0 removes its legacy flags API.
++When the workspace contains `!`, build the project with `-p:IntDir=obj\Release\`
++to keep intermediates relative to it. Use `-p:BuildProjectReferences=false` only when the pinned
++SDK helper libraries have already been built.
+ 
+ ## Install
+ 
+@@ -30,18 +35,24 @@ the contents of `addon/` to `garrysmod/addons/rtx_debug/`. Replace the DLL only
+ while the game is closed or before a map has loaded it: a loaded module locks
+ the file. New addon folders are mounted when the game starts.
+ 
+-Launch with `-insecure -condebug`, start a single-player map and set
+-`sv_cheats 1`. The addon loads the DLL with `require("rtxdebug")`;
+-`RTXDebug.Status()` shows whether the mutation gate is open.
++Read-only client diagnostics and local Remix configuration work without `-insecure`,
++including on a multiplayer server with `sv_allowcslua 0`, once the RTX package's verified
++client bootstrap has loaded this addon. The addon loads the DLL with `require("rtxdebug")`.
++`RTXDebug.Status()` distinguishes the full developer mutation gate from the client rendering gate.
++Arbitrary Lua evaluation, engine/gameplay mutations, memory and detours still require local
++single-player, `sv_cheats 1` and `-insecure`. A remote server realm is unavailable locally.
+ 
+ ## Conventions
+ 
+ - Functions return their result, or `nil` and an error message.
+ - Everything runs on the game thread. Detour callbacks never touch entities or Lua.
+-- Anything that changes game state needs the mutation gate: local single-player,
++- Anything that changes engine/gameplay state needs the mutation gate: local single-player,
+   `sv_cheats 1` and the `-insecure` launch option. Memory reads need it too.
+   Restoring and listing this module's own changes do not, so they still work
+   after `sv_cheats` is turned off.
++- Local Remix-only writes have their own gate: the module's live client realm, the game thread,
++  and an available RemixConfig.SetConfigVariable function. Without the full developer gate,
++  only `rtx.*` option keys are accepted. This does not change server cvars or enable Lua Eval.
+ - Addresses and 64-bit values are hex strings, which Lua numbers cannot hold exactly.
+ - Realms are `"client"`, `"server"` (the listen server in single-player) and `"menu"`.
+   Results from other realms are copied as plain data: vectors and angles become
+@@ -53,7 +64,7 @@ Launch with `-insecure -condebug`, start a single-player map and set
+ The global table is `RTXDebug`:
+ 
+ ```lua
+-RTXDebug.Status()       -- gate inputs, Remix Lua API presence, active change counts
++RTXDebug.Status()       -- process_id, gate inputs, can_configure_rendering, active change counts
+ RTXDebug.RestoreAll()   -- undo every change below; returns counts and failures
+ 
+ RTXDebug.Engine.ListConsole("mat_", 0, 200)      -- prefix, offset, limit (max 1000)
+@@ -80,12 +91,12 @@ RTXDebug.Lua.GCStats("client")
+ 
+ RTXDebug.Remix.Vram()
+ RTXDebug.Remix.ConfigFile("rtx.graphicsPreset")  -- the rtx.conf value, not the live one
+-RTXDebug.Remix.SetConfig("rtx.graphicsPreset", "3", "2")  -- gated; explicit restore value
++RTXDebug.Remix.SetConfig("rtx.graphicsPreset", "3", "2")  -- client rendering gate; explicit restore value
+ RTXDebug.Remix.RestoreConfig("rtx.graphicsPreset")
+ RTXDebug.Remix.SessionConfig("rtx.graphicsPreset")
+ RTXDebug.Remix.Overrides()
+ RTXDebug.Remix.DebugViewFile()
+-RTXDebug.Remix.SetDebugView(3, 0)                -- gated; index, restore index
++RTXDebug.Remix.SetDebugView(3, 0)                -- client rendering gate; index, restore index
+ RTXDebug.Remix.MaterialHashes("models/debug/debugwhite")
+ RTXDebug.Remix.FindMaterialByHash("0x29BF18C8B6EC2F40")  -- {materials, revision}
+ RTXDebug.Remix.TrackedTextures()
+diff --git a/addon/lua/autorun/client/rtx_debug.lua b/addon/lua/autorun/client/rtx_debug.lua
+index 99efa6b..b33a298 100644
+--- a/addon/lua/autorun/client/rtx_debug.lua
++++ b/addon/lua/autorun/client/rtx_debug.lua
+@@ -9,6 +9,7 @@ if not loaded then
+ end
+ 
+ local PROTOCOL = 1
++local processId = RTXDebug.Status().process_id
+ local requestDir = "rtx_debug/requests"
+ local resultDir = "rtx_debug/results"
+ file.CreateDir("rtx_debug")
+@@ -61,10 +62,11 @@ local function writeResult(id, body)
+     body.id = id
+     body.protocol = PROTOCOL
+     body.time = SysTime()
++    body.process_id = processId
+     local encoded = util.TableToJSON(plain(body), true)
+     if not encoded or #encoded > 8 * 1024 * 1024 then
+         encoded = util.TableToJSON({ id = id, protocol = PROTOCOL, ok = false,
+-            error = "result is not JSON serializable or exceeds 8 MiB" }, true)
++            process_id = processId, error = "result is not JSON serializable or exceeds 8 MiB" }, true)
+     end
+     file.Write(resultDir .. "/" .. id .. ".json", encoded)
+     MsgN("[RTXDebug] DONE " .. id)
+@@ -90,6 +92,11 @@ function RTXDebug.DispatchRequest(id)
+         writeResult(id, { ok = false, error = "invalid JSON request or mismatched id" })
+         return false
+     end
++    if request.process_id ~= nil and (not isnumber(request.process_id)
++        or request.process_id ~= processId) then
++        writeResult(id, { ok = false, error = "request belongs to another process" })
++        return false
++    end
+     local fn = resolveMethod(request.method)
+     if not fn or (request.args ~= nil and not istable(request.args)) then
+         writeResult(id, { ok = false, error = "unknown method or invalid args" })
+diff --git a/addon/lua/autorun/client/rtx_debug.lua.md b/addon/lua/autorun/client/rtx_debug.lua.md
+new file mode 100644
+index 0000000..19b4177
+--- /dev/null
++++ b/addon/lua/autorun/client/rtx_debug.lua.md
+@@ -0,0 +1,8 @@
++# rtx_debug.lua
++
++Client JSON RPC adapter for the native RTXDebug API. It restricts method names and request IDs,
++enforces request/result size limits, returns structured errors and restores owned overrides on
++shutdown. Optional process_id binding rejects a request for another client; replies always carry
++the actual native process ID. The transport does not enable client Lua or alter server policy.
++Only native API gates authorize mutations. It reads/writes data/rtx_debug requests/results and
++prints completion markers. No HTTP or sockets are used. Errors do not expose arbitrary globals.
+diff --git a/premake5.lua b/premake5.lua
+index 9f0d686..79eb33d 100644
+--- a/premake5.lua
++++ b/premake5.lua
+@@ -5,6 +5,11 @@ newoption({
+     description = "Path to garrysmod_common",
+     value = "../garrysmod_common"
+ })
++newoption({
++    trigger = "remixinclude",
++    description = "Path to the fork's public/include folder",
++    value = "../../public/include"
++})
+ 
+ local gmcommon = assert(_OPTIONS.gmcommon or os.getenv("GARRYSMOD_COMMON"),
+     "pass --gmcommon=<path to garrysmod_common>")
+@@ -12,4 +17,4 @@ include(gmcommon)
+ 
+ CreateWorkspace({name = "RTXDebugModule", abi_compatible = false, path = ""})
+ dofile("premake_project.lua")
+-CreateRTXDebugProject("source", "../../public/include")
++CreateRTXDebugProject("source", _OPTIONS.remixinclude or "../../public/include")
+diff --git a/premake5.lua.md b/premake5.lua.md
+new file mode 100644
+index 0000000..007034a
+--- /dev/null
++++ b/premake5.lua.md
+@@ -0,0 +1,7 @@
++# premake5.lua
++
++Standalone VS2022 project generator. Pass --gmcommon=<pinned garrysmod_common checkout> and optionally
++--remixinclude=<fork>/public/include. Premake 5.0.0-beta2 supports the pinned common generator;
++5.0.0 removes its legacy flags API. It writes the solution/projects into the working directory.
++Build in an isolated worktree, and override MSBuild IntDir with obj\Release\ when the path contains
++an exclamation mark. See README for the parent-workspace build. Exit follows Premake's result.
+diff --git a/source/debug_context.h b/source/debug_context.h
+index 606ac9b..e538bdd 100644
+--- a/source/debug_context.h
++++ b/source/debug_context.h
+@@ -10,6 +10,7 @@ bool IsSinglePlayer();
+ bool IsInsecureLaunch();
+ bool CheatsEnabled();
+ bool CanMutate();
++bool CanConfigureRendering();
+ GarrysMod::Lua::ILuaBase* Lua();
+ 
+ }
+diff --git a/source/module.cpp b/source/module.cpp
+index 4145094..d8bc5c3 100644
+--- a/source/module.cpp
++++ b/source/module.cpp
+@@ -3,6 +3,7 @@
+ #include "engine/engine.h"
+ #include "lua_bridge/lua_bridge.h"
+ #include "lua_util.h"
++#include "render_policy.h"
+ #include "memory/memory_debug.h"
+ #include "remix/remix_debug.h"
+ #include "transport/transport.h"
+@@ -21,7 +22,7 @@
+ 
+ namespace {
+ 
+-constexpr const char* kVersion = "0.1.0";
++constexpr const char* kVersion = "0.2.0";
+ constexpr const char* kRemixApiVersion = "0.1000.1";
+ 
+ GarrysMod::Lua::ILuaBase* g_lua = nullptr;
+@@ -55,6 +56,8 @@ LUA_FUNCTION_STATIC(RTXDebug_Status) {
+     RTXDebug::SetBool(LUA, "insecure_launch", RTXDebug::IsInsecureLaunch());
+     RTXDebug::SetBool(LUA, "sv_cheats", RTXDebug::CheatsEnabled());
+     RTXDebug::SetBool(LUA, "can_mutate", RTXDebug::CanMutate());
++    RTXDebug::SetBool(LUA, "can_configure_rendering", RTXDebug::CanConfigureRendering());
++    RTXDebug::SetNumber(LUA, "process_id", GetCurrentProcessId());
+     RTXDebug::SetBool(LUA, "remix_lua_api", RemixLuaApiPresent(LUA));
+     // Changes this module will undo on RestoreAll or unload.
+     LUA->CreateTable();
+@@ -163,6 +166,28 @@ bool CanMutate() {
+     return !g_closing && IsMainThread() && IsInsecureLaunch() && IsSinglePlayer() && CheatsEnabled();
+ }
+ 
++bool CanConfigureRendering() {
++    if (!IsMainThread() || !g_lua) return false;
++    const int top = g_lua->Top();
++    const auto flag = [&](const char* name) {
++        g_lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, name);
++        const bool value = g_lua->IsType(-1, GarrysMod::Lua::Type::Bool) && g_lua->GetBool(-1);
++        g_lua->Pop();
++        return value;
++    };
++    const bool client = flag("CLIENT_DLL") && !flag("SERVER") && !flag("MENU_DLL");
++    g_lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, "RemixConfig");
++    bool api = false;
++    if (g_lua->IsType(-1, GarrysMod::Lua::Type::Table)) {
++        g_lua->GetField(-1, "SetConfigVariable");
++        api = g_lua->IsType(-1, GarrysMod::Lua::Type::Function);
++        g_lua->Pop();
++    }
++    g_lua->Pop();
++    g_lua->Pop(g_lua->Top() - top);
++    return Policy::CanConfigureRendering(true, g_closing, client, api);
++}
++
+ } // namespace RTXDebug
+ 
+ GMOD_MODULE_OPEN() {
+diff --git a/source/remix/remix_debug.cpp b/source/remix/remix_debug.cpp
+index dc83dbf..cf6ce6b 100644
+--- a/source/remix/remix_debug.cpp
++++ b/source/remix/remix_debug.cpp
+@@ -2,6 +2,7 @@
+ 
+ #include "../debug_context.h"
+ #include "../lua_util.h"
++#include "../render_policy.h"
+ 
+ #include <GarrysMod/Lua/Interface.h>
+ #include <GarrysMod/Lua/Types.h>
+@@ -93,9 +94,9 @@ bool ApplyConfig(ILuaBase* lua, const std::string& key, const std::string& value
+ 
+ int SetSessionConfig(ILuaBase* lua, const std::string& key,
+     const std::string& value, const std::string& restoreValue) {
+-    if (!IsMainThread() || !CanMutate()) {
++    if (!IsMainThread() || !Policy::CanSetConfig(CanMutate(), lua == Lua() && CanConfigureRendering(), key)) {
+         return PushError(lua,
+-            "Remix writes require local single-player, sv_cheats 1, -insecure, and the game thread");
++            "Remix writes require the client rendering context and an rtx.* option, or the local developer mutation gate");
+     }
+     if (key.empty()) return PushError(lua, "Remix option key cannot be empty");
+ 
+diff --git a/source/render_policy.h b/source/render_policy.h
+new file mode 100644
+index 0000000..b610091
+--- /dev/null
++++ b/source/render_policy.h
+@@ -0,0 +1,26 @@
++#pragma once
++
++#include <string_view>
++
++namespace RTXDebug::Policy {
++
++// This boundary grants only the existing client Remix option API. Engine/gameplay,
++// arbitrary Lua, memory and detour operations retain the separate mutation gate.
++inline bool IsRenderingOption(std::string_view key) {
++    if (key.size() <= 4 || key.size() > 256 || key.substr(0, 4) != "rtx.") return false;
++    for (char c : key) {
++        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
++            || (c >= '0' && c <= '9') || c == '_' || c == '.')) return false;
++    }
++    return true;
++}
++
++inline bool CanConfigureRendering(bool mainThread, bool closing, bool clientRealm, bool remixApi) {
++    return mainThread && !closing && clientRealm && remixApi;
++}
++
++inline bool CanSetConfig(bool fullMutation, bool rendering, std::string_view key) {
++    return fullMutation || (rendering && IsRenderingOption(key));
++}
++
++} // namespace RTXDebug::Policy
+diff --git a/source/render_policy.h.md b/source/render_policy.h.md
+new file mode 100644
+index 0000000..daf8a68
+--- /dev/null
++++ b/source/render_policy.h.md
+@@ -0,0 +1,6 @@
++# render_policy.h
++
++Pure client-rendering configuration boundary. Local renderer changes require the module's client
++realm, the game thread, an open module and Remix API availability. Only syntactically valid rtx.*
++keys are accepted without the existing full single-player developer mutation gate. No cvar,
++server, Lua execution, memory or detour authority is granted. Tested by render_policy_test.cpp.
+diff --git a/tests/render_policy_test.cpp b/tests/render_policy_test.cpp
+new file mode 100644
+index 0000000..ca20274
+--- /dev/null
++++ b/tests/render_policy_test.cpp
+@@ -0,0 +1,17 @@
++#include "../source/render_policy.h"
++#include <iostream>
++
++int main() {
++    using namespace RTXDebug::Policy;
++    if (!CanConfigureRendering(true, false, true, true)) return 1;
++    if (CanConfigureRendering(false, false, true, true) || CanConfigureRendering(true, true, true, true)
++        || CanConfigureRendering(true, false, false, true) || CanConfigureRendering(true, false, true, false)) return 1;
++    for (const auto key : {"rtx.pathMaxBounces", "rtx.showUI", "rtx.debugView.debugViewIdx"})
++        if (!CanSetConfig(false, true, key)) return 1;
++    for (const auto key : {"sv_cheats", "sv_allowcslua", "dxvk.foo", "rtx.", "rtx.foo;exec", "rtx.foo\nbar"})
++        if (CanSetConfig(false, true, key)) return 1;
++    if (CanSetConfig(false, false, "rtx.pathMaxBounces")) return 1;
++    if (!CanSetConfig(true, false, "existing_single_player_option")) return 1;
++    std::cout << "Rendering policy tests passed\n";
++    return 0;
++}
+diff --git a/tests/render_policy_test.cpp.md b/tests/render_policy_test.cpp.md
+new file mode 100644
+index 0000000..9d75458
+--- /dev/null
++++ b/tests/render_policy_test.cpp.md
+@@ -0,0 +1,5 @@
++# render_policy_test.cpp
++
++Standalone CPU check of the actual render_policy.h functions. It covers off-thread/closing/wrong
++realm/missing API refusal, valid renderer options, server cvar and malformed-key rejection, and the
++separate full developer gate. Compile with a C++17 compiler. No game, GPU, file or network access.
+diff --git a/tests/test_client.py b/tests/test_client.py
+new file mode 100644
+index 0000000..b3b98d9
+--- /dev/null
++++ b/tests/test_client.py
+@@ -0,0 +1,48 @@
++"""Target selection and response binding without controlling a game window."""
++import importlib.util
++import json
++from pathlib import Path
++import tempfile
++import unittest
++
++spec = importlib.util.spec_from_file_location('rtxdebug_client', Path(__file__).resolve().parents[1] / 'tools/rtxdebug_client.py')
++client = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(client)
++
++
++class ClientSelectionTest(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.roots = [Path(self.temp.name) / name for name in ('first', 'second')]
++        for root in self.roots:
++            (root / 'garrysmod').mkdir(parents=True)
++        self.candidates = [(11, self.roots[0] / 'bin/win64/gmod.exe', 100),
++                           (22, self.roots[1] / 'bin/win64/gmod.exe', 200)]
++
++    def test_ambiguous_clients_are_not_chosen_arbitrarily(self):
++        with self.assertRaisesRegex(RuntimeError, 'Multiple'):
++            client._select_game(self.candidates)
++
++    def test_explicit_pid_and_root(self):
++        self.assertEqual(client._select_game(self.candidates, pid=200), (22, self.roots[1]))
++        self.assertEqual(client._select_game(self.candidates, root=self.roots[0]), (11, self.roots[0]))
++
++    def test_conflicting_filters_refuse_target(self):
++        with self.assertRaisesRegex(RuntimeError, 'No Garry'):
++            client._select_game(self.candidates, pid=200, root=self.roots[0])
++
++    def test_one_process_with_duplicate_windows_is_one_target(self):
++        one = self.candidates[:1]
++        self.assertEqual(client._select_game(one + one), (11, self.roots[0]))
++
++    def test_response_identity(self):
++        result = {'id': 'request', 'process_id': 100, 'ok': True}
++        self.assertEqual(client._decode_response(json.dumps(result), 'request', 100), result)
++        for bad in ({**result, 'process_id': 200}, {**result, 'id': 'other'}, [], {'id': 'request'}):
++            with self.subTest(value=bad), self.assertRaises(RuntimeError):
++                client._decode_response(json.dumps(bad), 'request', 100)
++
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/tests/test_client.py.md b/tests/test_client.py.md
+new file mode 100644
+index 0000000..07412fa
+--- /dev/null
++++ b/tests/test_client.py.md
+@@ -0,0 +1,6 @@
++# test_client.py
++
++Offline selection and reply-identity tests for tools/rtxdebug_client.py. Multiple distinct client
++processes must be selected by PID/root; duplicate windows from one process do not create a false
++ambiguity. Replies require the selected PID and request ID. No windows or processes are controlled.
++Run with unittest discover; scratch uses the caller's TEMP/TMP. Exit zero on success.
+diff --git a/tests/test_transport.py b/tests/test_transport.py
+index cde22ca..42f0f78 100644
+--- a/tests/test_transport.py
++++ b/tests/test_transport.py
+@@ -18,6 +18,7 @@ ADDON = Path(__file__).resolve().parents[1] / "addon/lua/autorun/client/rtx_debu
+ 
+ API_STUB = r"""
+ function isstring(v) return type(v)=='string' end
++function isnumber(v) return type(v)=='number' end
+ function istable(v) return type(v)=='table' end
+ function isfunction(v) return type(v)=='function' end
+ function IsValid(v) return false end
+@@ -29,7 +30,7 @@ table.maxn = table.maxn or function(t)
+ end
+ restored = 0
+ RTXDebug = {
+-    Status = function() return {version='test'} end,
++    Status = function() return {version='test',process_id=1234} end,
+     RestoreAll = function() restored = restored + 1 return {complete=true} end,
+     Engine = {
+         World = function() return {map='gm_construct'} end,
+@@ -116,6 +117,7 @@ class TransportTest(unittest.TestCase):
+         self.assertTrue(result["ok"])
+         self.assertEqual(result["result"]["map"], "gm_construct")
+         self.assertEqual(result["protocol"], 1)
++        self.assertEqual(result["process_id"], 1234)
+         self.assertEqual(self.markers[-1], "[RTXDebug] DONE world_1")
+ 
+     def test_nil_and_message_is_top_level_error(self):
+@@ -138,6 +140,20 @@ class TransportTest(unittest.TestCase):
+         self.assertTrue(self.request("restore_1", "RestoreAll")["ok"])
+         self.assertEqual(self.lua.globals().restored, 1)
+ 
++    def test_process_binding_rejects_another_client(self):
++        self.write_request('wrong_pid', json.dumps({'method': 'RestoreAll', 'process_id': 5678}))
++        self.lua.globals().RTXDebug.DispatchRequest('wrong_pid')
++        result = self.result('wrong_pid')
++        self.assertFalse(result['ok'])
++        self.assertEqual(result['error'], 'request belongs to another process')
++        self.assertEqual(result['process_id'], 1234)
++        self.assertEqual(self.lua.globals().restored, 0)
++
++    def test_process_binding_accepts_selected_client(self):
++        self.write_request('right_pid', json.dumps({'method': 'Status', 'process_id': 1234}))
++        self.lua.globals().RTXDebug.DispatchRequest('right_pid')
++        self.assertTrue(self.result('right_pid')['ok'])
++
+     def test_only_api_methods_resolve(self):
+         for index, method in enumerate(["DispatchRequest", "Engine.World.extra", "Engine.9World",
+                                         "Secret.Thing", "_G.print", "Engine.", 42]):
+diff --git a/tests/test_transport.py.md b/tests/test_transport.py.md
+new file mode 100644
+index 0000000..b768806
+--- /dev/null
++++ b/tests/test_transport.py.md
+@@ -0,0 +1,6 @@
++# test_transport.py
++
++Exercises the real Lua companion in lupa's LuaJIT runtime. Covers API method resolution, JSON and
++result limits, ID validation, success/error completion, null arguments, shutdown restoration and
++PID-bound requests. Run unittest discover with Python/lupa; no game, GPU, real files or networking.
++Exit zero on success.
+diff --git a/tools/rtxdebug_client.py b/tools/rtxdebug_client.py
+index 19b2daf..11347fd 100644
+--- a/tools/rtxdebug_client.py
++++ b/tools/rtxdebug_client.py
+@@ -28,12 +28,31 @@ SMTO_ABORTIFHUNG = 0x0002
+ PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+ 
+ 
++def _windows_apis():
++    """Use pointer-sized signatures on x64; HWND and HANDLE are not C ints."""
++    user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
++    kernel32.OpenProcess.argtypes = [wt.DWORD, wt.BOOL, wt.DWORD]
++    kernel32.OpenProcess.restype = wt.HANDLE
++    kernel32.CloseHandle.argtypes = [wt.HANDLE]
++    kernel32.CloseHandle.restype = wt.BOOL
++    kernel32.QueryFullProcessImageNameW.argtypes = [wt.HANDLE, wt.DWORD, wt.LPWSTR, ctypes.POINTER(wt.DWORD)]
++    kernel32.QueryFullProcessImageNameW.restype = wt.BOOL
++    user32.GetWindowThreadProcessId.argtypes = [wt.HWND, ctypes.POINTER(wt.DWORD)]
++    user32.GetWindowThreadProcessId.restype = wt.DWORD
++    user32.GetClassNameW.argtypes = [wt.HWND, wt.LPWSTR, ctypes.c_int]
++    user32.GetClassNameW.restype = ctypes.c_int
++    user32.SendMessageTimeoutW.argtypes = [wt.HWND, wt.UINT, wt.WPARAM, ctypes.c_void_p,
++                                          wt.UINT, wt.UINT, ctypes.POINTER(ctypes.c_size_t)]
++    user32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
++    return user32, kernel32
++
++
+ class _CopyData(ctypes.Structure):
+     _fields_ = [("dwData", ctypes.c_size_t), ("cbData", wt.DWORD), ("lpData", ctypes.c_void_p)]
+ 
+ 
+ def _process_image(pid: int) -> Path | None:
+-    kernel32 = ctypes.windll.kernel32
++    _, kernel32 = _windows_apis()
+     handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+     if not handle:
+         return None
+@@ -47,10 +66,28 @@ def _process_image(pid: int) -> Path | None:
+     return None
+ 
+ 
+-def find_game() -> tuple[int, Path]:
++def _select_game(candidates, *, pid: int | None = None, root: Path | str | None = None) -> tuple[int, Path]:
++    wanted = Path(root).resolve() if root is not None else None
++    selected = {}
++    for hwnd, exe, process_id in candidates:
++        if pid is not None and process_id != pid:
++            continue
++        game_root = next((p for p in exe.parents if (p / 'garrysmod').is_dir()), None)
++        if game_root is None or (wanted is not None and game_root.resolve() != wanted):
++            continue
++        selected.setdefault(process_id, (hwnd, game_root))
++    if not selected:
++        raise RuntimeError("No Garry's Mod client window matches the requested PID/root")
++    if len(selected) != 1:
++        raise RuntimeError("Multiple Garry's Mod clients match; select --pid or --root (PIDs: "
++                           + ', '.join(map(str, sorted(selected))) + ')')
++    return next(iter(selected.values()))
++
++
++def find_game(*, pid: int | None = None, root: Path | str | None = None) -> tuple[int, Path]:
+     """The Valve001 window of a running gmod.exe and that game's root folder."""
+-    user32 = ctypes.windll.user32
+-    found: list[tuple[int, Path]] = []
++    user32, _ = _windows_apis()
++    found: list[tuple[int, Path, int]] = []
+ 
+     @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+     def visit(hwnd, _):
+@@ -61,45 +98,62 @@ def find_game() -> tuple[int, Path]:
+             user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+             exe = _process_image(pid.value)
+             if exe and exe.name.lower() == "gmod.exe":
+-                found.append((hwnd, exe))
++                found.append((hwnd, exe, pid.value))
+         return True
+ 
+     user32.EnumWindows(visit, 0)
+     if not found:
+         raise RuntimeError("Garry's Mod is not running (no Valve001 window owned by gmod.exe)")
+-    hwnd, exe = found[0]
+-    for parent in exe.parents:
+-        if (parent / "garrysmod").is_dir():
+-            return hwnd, parent
+-    raise RuntimeError(f"no garrysmod folder above {exe}")
++    return _select_game(found, pid=pid, root=root)
++
++
++def _window_pid(hwnd: int) -> int:
++    user32, _ = _windows_apis()
++    process_id = wt.DWORD()
++    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
++    return process_id.value
+ 
+ 
+ def send_console(hwnd: int, command: str) -> bool:
++    user32, _ = _windows_apis()
+     payload = command.encode("utf-8") + b"\0"
+     buffer = ctypes.create_string_buffer(payload, len(payload))
+     data = _CopyData(0, len(payload), ctypes.cast(buffer, ctypes.c_void_p))
+     result = ctypes.c_size_t(0)
+     # A map load can stall the message loop for a few seconds; retry.
+     for _ in range(3):
+-        if ctypes.windll.user32.SendMessageTimeoutW(hwnd, WM_COPYDATA, 0, ctypes.byref(data),
+-                                                    SMTO_ABORTIFHUNG, 5000, ctypes.byref(result)):
++        if user32.SendMessageTimeoutW(hwnd, WM_COPYDATA, 0, ctypes.byref(data),
++                                     SMTO_ABORTIFHUNG, 5000, ctypes.byref(result)):
+             return True
+         time.sleep(2)
+     return False
+ 
+ 
+-def call(method: str, *args, timeout: float = 30.0) -> dict:
++def _decode_response(raw: str, request_id: str, process_id: int) -> dict:
++    result = json.loads(raw)
++    if not isinstance(result, dict) or result.get('id') != request_id:
++        raise RuntimeError('RTXDebug response has an invalid or mismatched request ID')
++    if result.get('process_id') != process_id:
++        raise RuntimeError('RTXDebug response does not belong to the selected process; update the companion addon')
++    return result
++
++
++def call(method: str, *args, timeout: float = 30.0,
++         pid: int | None = None, root: Path | str | None = None) -> dict:
+     """Run RTXDebug.<method>(*args) in the client realm and return the result file.
+ 
+     The result has ``ok`` and either ``result`` or ``error``.
+     """
+-    hwnd, root = find_game()
++    hwnd, root = find_game(pid=pid, root=root)
++    process_id = _window_pid(hwnd)
++    if not process_id or (pid is not None and process_id != pid):
++        raise RuntimeError('The selected game window changed process')
+     data = root / "garrysmod" / "data" / "rtx_debug"
+     request_id = "c" + uuid.uuid4().hex[:16]
+     request = data / "requests" / f"{request_id}.json"
+     response = data / "results" / f"{request_id}.json"
+     request.parent.mkdir(parents=True, exist_ok=True)
+-    request.write_text(json.dumps({"id": request_id, "method": method, "args": list(args)}),
++    request.write_text(json.dumps({"id": request_id, "method": method, "args": list(args), "process_id": process_id}),
+                        encoding="utf-8")
+     try:
+         if not send_console(hwnd, f"rtx_debug_request {request_id}"):
+@@ -108,7 +162,7 @@ def call(method: str, *args, timeout: float = 30.0) -> dict:
+         while time.monotonic() < deadline:
+             if response.exists():
+                 try:
+-                    return json.loads(response.read_text(encoding="utf-8"))
++                    return _decode_response(response.read_text(encoding="utf-8"), request_id, process_id)
+                 except (OSError, ValueError):
+                     pass  # Still being written.
+             time.sleep(0.1)
+@@ -135,8 +189,11 @@ def main() -> int:
+     parser.add_argument("method", help="RTXDebug function, e.g. Status or Engine.World")
+     parser.add_argument("args", nargs="*", help="arguments, parsed as JSON where possible")
+     parser.add_argument("--timeout", type=float, default=30.0)
++    parser.add_argument("--pid", type=int, help="target this client process (required when multiple clients match)")
++    parser.add_argument("--root", type=Path, help="target this game installation")
+     options = parser.parse_args()
+-    result = call(options.method, *map(_parse_argument, options.args), timeout=options.timeout)
++    result = call(options.method, *map(_parse_argument, options.args), timeout=options.timeout,
++                  pid=options.pid, root=options.root)
+     json.dump(result, sys.stdout, indent=2)
+     print()
+     return 0 if result.get("ok") else 1
+diff --git a/tools/rtxdebug_client.py.md b/tools/rtxdebug_client.py.md
+new file mode 100644
+index 0000000..3e4a53d
+--- /dev/null
++++ b/tools/rtxdebug_client.py.md
+@@ -0,0 +1,10 @@
++# rtxdebug_client.py
++
++Windows WM_COPYDATA transport for a loaded RTXDebug companion. Use
++`python tools/rtxdebug_client.py Status --pid <client-pid>` or select `--root <game-root>`.
++Multiple matches are refused. Windows handle APIs use pointer-sized signatures. Each request and
++response is bound to the selected process and request ID. The updated native module and companion
++are required for PID binding. Request/reply files are removed after completion or timeout.
++No console logs are read. Exceptions report unavailable/ambiguous targets, mismatched replies,
++timeouts or an unavailable module. The command exits zero for a successful API result, one for
++an API failure; transport exceptions produce a nonzero exit. It never enables client Lua.
+-- 
+2.56.0.windows.1
+

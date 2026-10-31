@@ -2,6 +2,9 @@
 
 Latest batch: [startup text and menu diagnostics](../decisions/0050-startup-text-and-main-menu-diagnostics.md), plus [1/12 bounce defaults](../decisions/0051-path-bounce-defaults.md).
 
+Multiplayer follow-up: [ADR 0052](../decisions/0052-scoped-rtx-multiplayer-bootstrap.md), with
+dedicated-server acceptance passed and final release checks pending below.
+
 2026-10-30. Implemented on `codex/translation-review`, from `main` at `7d79c12`.
 The user expanded the audit to every bundled add-on interface. The implementation is recorded in
 [ADR 0038](../decisions/0038-complete-bundled-interface-translations.md).
@@ -570,3 +573,69 @@ companion bounce control, all seven startup templates and the classic 12/1 layer
 payload files differ from the previous publication; none are removed. The bootstrap/UI sources are
 also built and checked separately, since winmm.dll is delivered in the loader bundle. No game was
 launched for this batch; validation used synthetic filesystem/DOM fixtures and CPU tests.
+
+## Multiplayer compatibility and RTXDebug
+
+Implemented on `codex/multiplayer`: loader 0.9.0 can initialize the current RTX package's verified
+shared/client Lua when a remote server has `sv_allowcslua 0`. This follows the user's explicit
+scope: only the bundled RTX owner, with no expanded permissions for community add-ons. It does not
+write that cvar or replace global engine include/require/file functions. Sources come from an
+immutable snapshot tied to the allowlisted `gmod-rtx-remix` committed deployment, with size/SHA-256
+checks and link/path rejection. Local, dev and distribution Workshop sources retain their existing
+native allowlists; another package cannot supply a matching virtual path. Arbitrary-source debug
+automation is excluded from the catalog. Only this initializer's tracked new initialization hooks
+are replayed, after libraries and client entity definitions.
+
+The native helper is `gmsv_nlrtxclient_win64.dll`: menu-realm require uses the non-client prefix,
+confirmed after the initial `gmcl_` prototype failed to load. The helper checks menu realm, its own
+deployed hash, committed state and the active owned runtime before polling a ready client realm.
+Install the **0.9.0 loader bundle** along with the updated Workshop payload; Workshop alone cannot
+update the installed `winmm.dll` bootstrap. The helper-bearing package declares loader >=0.9.0 so
+older loaders refuse it. Standalone fixes without the helper retain their previous >=0.2.0 minimum.
+
+The shipment no longer adds `-insecure`. Seven existing render-only recipes remain eligible in
+secure launches through an exact owner/recipe fingerprint, after omission caused a prototype
+renderer crash. General patches retain `patch_sets.require_insecure: true`. Users can disable this
+separate exception with `patch_sets.allow_rtx_render_patches: false`; changed, extra, reordered or
+incomplete groups fail classification. RTXDebug allows local rendering queries/configuration in
+multiplayer. Unsafe Lua evaluation, memory writes, detours and gameplay/replicated cheat mutations
+still require single-player, `sv_cheats 1` and `-insecure` together.
+
+The scoped network wrapper drops requests for channels absent from the remote server, sharing
+message state across owned environments and leaving global net untouched. Six absent server
+channels were recorded in the vanilla-server fixture. Local rendering remains available;
+server-dependent catalog/sharing/motion/material tools require matching server add-ons.
+
+Two earlier clients crashed in a queued studiorender worker (`+0x5D353`, null hardware LOD array)
+after a late hardware-model cache flush. The environment-only verified multiplayer marker now
+skips cl_rtx.lua's initial/final cache flush when the world is already active. Normal early loading
+keeps both reloads and convar restoration retries. The player-shadow proxy snapshots source bones
+outside its callback, guards destination bones and avoids offset accumulation; two body tests pass.
+Crash analysis is in `out/debug-crash-analysis/findings.md`.
+
+Offline validation passes **16 catalog cases, 7 config cases and 6 Lua tests/14 scenarios**, including
+actual bootstrap and cl_rtx.lua section execution, negative community/traversal checks, scoped
+network behavior and private marker/cache-flush guards. Logs are under
+`out/mp-secure-policy-*.log`, `out/mp-secure-config-tests.log` and the bootstrap test runner output.
+
+Prototype 7 client PID 8544 joined genuine 64-bit dedicated server PID 78088 without `-insecure`,
+with VAC secure mode active, `sv_lan 0`, a password-protected loopback connection, `sv_allowcslua 0`
+and cheats off. It completed 44 autoruns with no payload errors; temporary API and unrelated local
+Lua fixture probes were false. Reconnect and gm_construct -> gm_flatgrass -> gm_construct passed
+in the same client process. RTXDebug 0.2 Engine.World/Realms confirmed connected/in-game client and
+menu states, no server realm, and rendering configuration enabled while unsafe mutation was off.
+Rendering SetConfig and restore succeeded without changing config-file hashes. Lua.Eval and
+Engine.SetConVar attempts to enable client Lua were denied. Evidence is under
+`out/multiplayer-evidence/probe7*`; the Source JPEG at
+`out/mpc/garrysmod/screenshots/nl_mp_construct.jpg` records the rendered world and hands.
+
+Final Release validation passes 19 CTests and 277 Python tests (28 + 25 + 224; seven environment
+skips). The reviewed GMA 0.0.0-dev.20261031073616+a01958a5 has 970 files, 1833547790 bytes and
+digest e7970e08671dff6d67b252ab89e0f4a1df713a75bc708bf351d1cd20cb3bfb1e. Readback verifies the
+helper, debug module/companion, both GPL fixes and source/licence notices: 44 payload files changed,
+none removed. Packaged client 80444 passes the multiplayer probes; single-player client 39532
+loads through the normal engine path without insecure or a forced payload. Their records are under
+out/multiplayer-evidence/packaged and singleplayer. Both clients and the dedicated server were
+closed; the captured video registry export was restored and its hash matches. Publication is pending. This
+controlled session does not promise compatibility with every VAC or server policy. No field
+install, `GarrysMod_RTX_c`, its backups or Remix `user.conf` was changed by the offline work.

@@ -48,6 +48,33 @@ TEST_CASE("config: allow.subscribed_content switches content packages from subsc
   CHECK(rejected);
 }
 
+TEST_CASE("config: secure RTX renderer opt-out preserves the general insecure gate and allowlist") {
+  const auto defaults = nl::config::parse(R"({"schema":1})");
+  CHECK(defaults.allow_secure_rtx_render_patches);
+  CHECK(defaults.patch_sets_require_insecure);
+  const auto disabled = nl::config::parse(R"({"schema":1,"patch_sets":{"allow_rtx_render_patches":false}})");
+  CHECK(!disabled.allow_secure_rtx_render_patches);
+  CHECK(disabled.patch_sets_require_insecure);
+  CHECK(disabled.workshop.empty() && disabled.local.empty() && disabled.dev_folders.empty());
+  const auto enabled = nl::config::parse(R"({"schema":1,"patch_sets":{"require_insecure":true,"allow_rtx_render_patches":true}})");
+  CHECK(enabled.allow_secure_rtx_render_patches);
+  CHECK(enabled.patch_sets_require_insecure);
+  const auto explicitPolicy = nl::config::parse(R"({"schema":1,"patch_sets":{"require_insecure":false,"allow_rtx_render_patches":false}})");
+  CHECK(!explicitPolicy.allow_secure_rtx_render_patches);
+  CHECK(!explicitPolicy.patch_sets_require_insecure);
+}
+
+TEST_CASE("config: secure RTX renderer permission must be a boolean with the exact key") {
+  for (const char* text : {
+    R"({"schema":1,"patch_sets":{"allow_rtx_render_patches":"false"}})",
+    R"({"schema":1,"patch_sets":{"allow_rtx_render_patches":0}})",
+    R"({"schema":1,"patch_sets":{"allow_rtx_render_patches":null}})",
+    R"({"schema":1,"patch_sets":{"allow_render_patches":true}})"
+  }) {
+    CHECK_THROWS_AS(nl::config::parse(text), Error);
+  }
+}
+
 TEST_CASE("config: typos and unsafe values are errors") {
   const char* bad[] = {
       "",                                                         // not JSON

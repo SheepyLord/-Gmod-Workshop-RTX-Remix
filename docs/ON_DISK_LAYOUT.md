@@ -91,7 +91,7 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
     "dev_folders": ["D:/dev/rtx-remix-runtime"]
   },
   "remix": { "enabled": true, "reshade": "auto" },
-  "patch_sets": { "require_insecure": true }
+  "patch_sets": { "require_insecure": true, "allow_rtx_render_patches": true }
 }
 ```
 
@@ -105,7 +105,22 @@ Implemented by `nl::config` (`loader/core/src/config.cpp`). Check what the loade
 | `allow.subscribed_content` | `true` | content-only packages from every subscribed Workshop item, without listing them ([ADR 0027](decisions/0027-content-packages-from-any-subscription.md)); `false` turns that off |
 | `remix.enabled` | `true` | `false`: runtime packages stay planned but no runtime is loaded (vanilla rendering) |
 | `remix.reshade` | `"auto"` | the RTX package's ReShade in RTX sessions ([ADR 0028](decisions/0028-reshade-in-rtx-sessions.md)): `"auto"` when the game has a ReShade (`bin\win64\ReShade.ini`) or `native-loader\reshade\ReShade.ini` exists, `"on"` always, `"off"` never |
-| `patch_sets.require_insecure` | `true` | in-memory patch sets (M5) only with `-insecure` |
+| `patch_sets.require_insecure` | `true` | general in-memory patch sets (M5) only with `-insecure`; the exact RTX rendering exception below is separate |
+| `patch_sets.allow_rtx_render_patches` | `true` | loader 0.9.0: allow only the seven fingerprinted rendering recipes owned by `gmod-rtx-remix` without `-insecure`; `false` disables this exception |
+
+The rendering exception requires the existing native allowlist and active RTX session. Its
+fingerprints bind each complete reviewed patch group, including module, names, find/replace bytes,
+offsets and order; changing or adding a patch cannot inherit the exception. Keep
+`require_insecure: true` to retain the general gate. To opt out, set
+`"allow_rtx_render_patches": false` inside `patch_sets` without changing that gate. Both values must
+be JSON booleans; unknown keys or a string such as `"false"` invalidate config. This does not grant
+community scripts extra permissions or change `sv_allowcslua`. See
+[ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md).
+
+The multiplayer shipment declares `requires_loader: ">=0.9.0"` when it carries the verified client
+helper, so an older loader refuses that package instead of launching without the required scoped
+initialization. The standalone fixes packager retains its older >=0.2.0 minimum when no helper is
+included. Updating only the Workshop payload cannot update the installed `winmm.dll`.
 
 - `allow` is the native-code allowlist ([ADR 0003](decisions/0003-native-trust-allowlist.md)).
   Without a config file nothing is allowlisted and the loader does nothing.

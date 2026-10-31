@@ -1,0 +1,7 @@
+/*.sln
+/*.vcxproj*
+/x86/
+/x86_64/
+/out/
+/obj/
+__pycache__/
