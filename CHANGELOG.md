@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Diagnostics default to declined, including legacy implicit grants. The welcome window closes
+  after twelve seconds unless interacted with, and permanent dismissal is saved independently.
+- Keep animated toolgun text readable by drawing its live screen after upscaling; the RTX tab
+  provides a translated toggle, and custom screen animation remains active.
+- Resolve layered alpha cutouts inside the original ray traversal so transparent layers cannot
+  skip the valid face behind them, including before or without opacity micromaps.
+- Hide incompatible outline meshes by default, including the supplied alternate-skin outline;
+  the translated Model outlines panel provides an opt-out.
+
 - Update the in-game Common Remix guide and its six translations to explain explicit startup
   overrides and saving through Alt+X.
 

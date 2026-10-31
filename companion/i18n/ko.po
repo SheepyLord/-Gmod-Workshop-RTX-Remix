@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "'RTX Remix' 탭 > '시작하기' > '클래식 RTX 설정 사용'(콘솔: nativeloader_rtx_defaults)은 이 값들을 모두 다시 적용하며, 바꾼 값도 덮어씁니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Common Remix settings"
 msgstr "주요 Remix 설정"
 
@@ -474,7 +474,9 @@ msgstr "RTX Remix 가이드"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Rendering"
 msgstr "렌더링"
 
@@ -485,13 +487,13 @@ msgid "Water and glass"
 msgstr "물과 유리"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
 msgid "Start here"
 msgstr "시작하기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Remix settings"
 msgstr "Remix 설정"
 
@@ -737,6 +739,30 @@ msgstr "몸 높이 오프셋(유닛)"
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr "양수 값은 화면에 그려지는 몸만 위로 올립니다. 카메라와 충돌 판정 위치는 바뀌지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
+msgid "Keep toolgun text sharp"
+msgstr "툴건 글자를 선명하게 표시"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
+msgstr "업스케일링 후 툴건 화면을 전체 해상도로 그립니다. 애니메이션과 사용자 지정 화면도 정상적으로 갱신됩니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+msgid "Hide outline meshes"
+msgstr "외곽선 메시 숨기기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
+msgstr "모델을 덮거나 어둡게 만드는 호환되지 않는 외곽선 셸을 숨깁니다. 다른 모델 재질은 정상적으로 렌더링됩니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
 msgid "Player models"
 msgstr "플레이어 모델"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+msgid "Toolgun screen"
+msgstr "툴건 화면"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
+msgid "Model outlines"
+msgstr "모델 외곽선"

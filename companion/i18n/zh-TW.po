@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "「RTX Remix」分頁 >「從這裡開始」>「使用經典 RTX 設定」（主控台指令：nativeloader_rtx_defaults）會再次套用上述所有值，也會覆寫您變更過的值。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Common Remix settings"
 msgstr "常用 Remix 設定"
 
@@ -474,7 +474,9 @@ msgstr "RTX Remix 指南"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Rendering"
 msgstr "渲染"
 
@@ -485,13 +487,13 @@ msgid "Water and glass"
 msgstr "水與玻璃"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
 msgid "Start here"
 msgstr "從這裡開始"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Remix settings"
 msgstr "Remix 設定"
 
@@ -737,6 +739,30 @@ msgstr "身體高度偏移（單位）"
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr "正值只會抬高算繪出的身體，攝影機與碰撞位置維持不變。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
+msgid "Keep toolgun text sharp"
+msgstr "保持工具槍文字清晰"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
+msgstr "在超解析度處理後，以完整解析度繪製工具槍螢幕的即時內容。動畫與自訂螢幕仍會正常更新。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+msgid "Hide outline meshes"
+msgstr "隱藏描邊網格"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
+msgstr "隱藏可能遮蓋模型或使模型變黑的異常描邊外殼。模型的其他材質仍會正常繪製。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
 msgid "Player models"
 msgstr "玩家模型"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+msgid "Toolgun screen"
+msgstr "工具槍螢幕"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
+msgid "Model outlines"
+msgstr "模型描邊"

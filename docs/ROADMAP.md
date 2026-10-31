@@ -21,6 +21,10 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Risks being watched
 
+QoL requests 21–22 and 3–4 are implemented and validated: explicit diagnostic opt-in and welcome
+dismissal, a live toolgun screen after upscaling, and layered model cutouts/outline suppression.
+The complete package passes GPU acceptance and repository checks; see the QoL report for evidence.
+
 | Risk | Plan |
 |---|---|
 | Workshop items with native files | `gmad.exe` will not pack them, but a `gmapack` archive uploaded with `gmpublish` is accepted and served intact, tested privately ([ADR 0015](decisions/0015-workshop-route-for-native-packages.md)). GMod's [Workshop rules](https://wiki.facepunch.com/gmod/Steam_Workshop_Rules) have no rule about file types. GMod itself cannot mount such an item, so its description must say it needs the loader, or it may be flagged as broken. Downloads stay a fallback ([ADR 0012](decisions/0012-distribution-route.md)) |

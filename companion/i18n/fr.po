@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "Onglet RTX Remix > Pour commencer > « Utiliser les paramètres RTX classiques » (console : nativeloader_rtx_defaults) les applique tous de nouveau, en écrasant aussi les valeurs que vous avez modifiées."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Common Remix settings"
 msgstr "Réglages Remix usuels"
 
@@ -474,7 +474,9 @@ msgstr "Guide RTX Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Rendering"
 msgstr "Rendu"
 
@@ -485,13 +487,13 @@ msgid "Water and glass"
 msgstr "Eau et verre"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
 msgid "Start here"
 msgstr "Pour commencer"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Remix settings"
 msgstr "Paramètres Remix"
 
@@ -737,6 +739,30 @@ msgstr "Décalage vertical du corps (unités)"
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr "Une valeur positive relève uniquement le corps affiché. La caméra et les collisions restent en place."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
+msgid "Keep toolgun text sharp"
+msgstr "Garder le texte du toolgun net"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
+msgstr "Affiche le contenu de l’écran du toolgun à pleine résolution après la mise à l’échelle. Les animations et les écrans personnalisés continuent de se mettre à jour normalement."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+msgid "Hide outline meshes"
+msgstr "Masquer les maillages de contour"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
+msgstr "Masque les coques de contour incompatibles qui peuvent recouvrir ou assombrir le modèle. Les autres matériaux du modèle restent affichés normalement."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
 msgid "Player models"
 msgstr "Modèles de joueurs"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+msgid "Toolgun screen"
+msgstr "Écran du toolgun"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
+msgid "Model outlines"
+msgstr "Contours des modèles"
