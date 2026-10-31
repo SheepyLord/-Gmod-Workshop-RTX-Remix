@@ -39,11 +39,15 @@ recorded no status error and finished its probe (`NL_SHOT_DONE`). A session that
 the minidumps `poc_session.py` kept (`crash-reports\`), and new Remix crash reports under
 `rtx-remix\logs\.sentry-native` during the run fail the summary too.
 
-Around the sessions it records the SHA-256 of `user.conf`, `rtx.conf`, `garrysmod\cfg\client.vdf`,
-the loader's `winmm.dll`, `winmm.pdb`, `native-loader\config.json` and `bootstrap-install.json`, and of
+Around the sessions it records the SHA-256 of `user.conf`, `rtx.conf`, the loader's `winmm.dll`,
+`winmm.pdb`, `native-loader\config.json` and `bootstrap-install.json`, and of
 `reg export HKCU\Software\Valve\Source\garrysmod` (kept as `before-registry.reg` / `after-registry.reg`).
-Any change fails the summary. `config.cfg` is copied before and after (`before-config.cfg`,
-`after-config.cfg`); the game rewrites it at every normal quit, so its new lines are listed, not judged.
+Any change fails the summary. The game itself writes `garrysmod\cfg\config.cfg` and `client.vdf` (the
+client convars add-ons archive) at a normal quit, so those two are copied before and after
+(`before-config.cfg`, `after-client.vdf`, ...) and compared value by value (`settings` in the summary:
+`changed`, `added`, `removed`). A new key, such as an add-on version's new convar, is only reported.
+A changed or removed value fails in `client.vdf`, and in `config.cfg` for `mat_queue_mode`, which a session
+switches off for a moment and must put back (R4-28).
 Crash prompts at a start are declined by `poc_session.py` (never accepted).
 
 **Writes:** the evidence folder (sessions, `qa-summary.json`, the copies above). **Changes in the game

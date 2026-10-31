@@ -20,6 +20,9 @@ Covers:
   the toolgun and a toolgun redraw with draws and no error; the spawn-menu probe needs its tab list and
   no missing tab; the map glass needs shards after the first shot; the spawned pane must break into
   more shards than it had.
+- **Settings.** `config.cfg` fails only when `mat_queue_mode` did not come back, other changed values
+  and new keys are listed; `client.vdf` reports a new key (an add-on's new convar) and fails on a changed
+  or removed value.
 - **`--evaluate-only`.** The latest run of each session is checked (an earlier failed run of the same
   session does not count), `qa-summary.json` is written, and the exit code is 0; a crash with kept
   minidumps or a session with no recorded run fails the summary with exit code 1.

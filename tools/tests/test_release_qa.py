@@ -90,6 +90,43 @@ class RuleTests(unittest.TestCase):
                             qa.check_probe('spawned-glass', spawned.replace('shards 9', 'shards 1'))))
 
 
+class SettingsTests(unittest.TestCase):
+    def setUp(self):
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        folder = tempfile.TemporaryDirectory(dir=SCRATCH, prefix='release-qa-settings-')
+        self.addCleanup(folder.cleanup)
+        self.folder = Path(folder.name)
+
+    def write(self, name, text):
+        path = self.folder / name
+        path.write_text(text, encoding='utf-8')
+        return path
+
+    def test_config_cfg_fails_only_on_the_guarded_keys(self):
+        # The game rewrites config.cfg at every quit; only mat_queue_mode, which a session switches
+        # for a moment (R4-28), must come back.
+        before = self.write('b.cfg', 'unbindall\nbind "F1" "gm_showhelp"\nmat_queue_mode "2"\nfps_max "300"\n')
+        after = self.write('a.cfg', 'unbindall\nbind "F1" "gm_showhelp"\nmat_queue_mode "0"\nfps_max "200"\nnew_cvar "1"\n')
+        change = qa.settings_changes(before, after, qa.GUARDED_CONFIG_KEYS)
+        self.assertEqual(change['changed'], {'mat_queue_mode': ['2', '0'], 'fps_max': ['300', '200']})
+        self.assertEqual(change['added'], {'new_cvar': '1'})
+        self.assertEqual(change['problems'], ["mat_queue_mode: '2' -> '0'"])
+        restored = self.write('r.cfg', 'unbindall\nbind "F1" "gm_showhelp"\nmat_queue_mode "2"\nfps_max "200"\n')
+        self.assertEqual(qa.settings_changes(before, restored, qa.GUARDED_CONFIG_KEYS)['problems'], [])
+
+    def test_client_vdf_reports_new_keys_and_fails_on_changed_values(self):
+        # An add-on's new convar adds a key (reported); a changed value is a setting the run changed.
+        before = self.write('b.vdf', '"CVars"\n{\n\t"gm_demo_icon"\t\t"1"\n\t"pp_bloom_passes"\t\t"4"\n}\n')
+        added = self.write('a.vdf', '"CVars"\n{\n\t"gm_demo_icon"\t\t"1"\n\t"pp_bloom_passes"\t\t"4"\n'
+                                    '\t"mmd_vmd_npc_stage_jumps"\t\t"100"\n}\n')
+        change = qa.settings_changes(before, added)
+        self.assertEqual(change['added'], {'"mmd_vmd_npc_stage_jumps"': '100'})
+        self.assertEqual(change['problems'], [])
+        edited = self.write('e.vdf', '"CVars"\n{\n\t"gm_demo_icon"\t\t"0"\n}\n')
+        problems = qa.settings_changes(before, edited)['problems']
+        self.assertEqual(problems, ['"gm_demo_icon": \'1\' -> \'0\'', '"pp_bloom_passes": \'4\' -> None'])
+
+
 class EvaluateOnlyTests(unittest.TestCase):
     def setUp(self):
         SCRATCH.mkdir(parents=True, exist_ok=True)

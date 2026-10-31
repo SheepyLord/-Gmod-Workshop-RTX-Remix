@@ -19,9 +19,15 @@ POC_SESSION = REPO / "tools" / "poc_session.py"
 PROBES = Path(__file__).resolve().parent
 MODERN_HOUSE_MAP_ITEM = "3495468649"  # the user's subscription that holds modern_house (RESEARCH.md)
 REGISTRY_KEY = r"HKCU\Software\Valve\Source\garrysmod"
-# Files a QA run must leave as they were (config.cfg is rewritten by the game at every normal quit).
-WATCHED = ("user.conf", "rtx.conf", "garrysmod/cfg/client.vdf", "bin/win64/winmm.dll", "bin/win64/winmm.pdb",
+# Files a QA run must leave as they were.
+WATCHED = ("user.conf", "rtx.conf", "bin/win64/winmm.dll", "bin/win64/winmm.pdb",
            "native-loader/config.json", "native-loader/bootstrap-install.json")
+# Settings the game itself writes at a normal quit: compared value by value. A new key (an add-on's
+# new convar) is reported; a changed value fails in client.vdf (the player's add-on settings) and, in
+# config.cfg, for the keys a session switches for a moment (R4-28: mat_queue_mode).
+SETTINGS = {"config.cfg": "garrysmod/cfg/config.cfg", "client.vdf": "garrysmod/cfg/client.vdf"}
+GUARDED_CONFIG_KEYS = ("mat_queue_mode",)
+SETTING_LINE = re.compile(r'^\s*(.*?)\s*"([^"]*)"\s*$')
 SESSIONS = {
     "session": {"probe": "rtx_session_probe.lua", "shots": 90, "map": "gm_construct"},
     "spawnmenu": {"probe": "spawnmenu_probe.lua", "shots": 60, "map": "gm_construct"},
@@ -163,28 +169,44 @@ def check_probe(name: str, console: str) -> list[str]:
 
 
 def snapshot(root: Path, evidence: Path, label: str) -> dict[str, str]:
-    """SHA-256 of the watched files and of the game's registry key; keeps config.cfg and the export."""
+    """SHA-256 of the watched files and of the game's registry key; keeps the export and copies of
+    the settings files as <label>-<name>."""
     state = {relative: sha256(root / relative) if (root / relative).exists() else "absent" for relative in WATCHED}
     export = evidence / f"{label}-registry.reg"
     subprocess.run(["reg", "export", REGISTRY_KEY, str(export), "/y"], capture_output=True, check=False)
     state["registry"] = sha256(export) if export.exists() else "absent"
-    config = root / "garrysmod" / "cfg" / "config.cfg"
-    if config.exists():
-        (evidence / f"{label}-config.cfg").write_bytes(config.read_bytes())
+    for name, relative in SETTINGS.items():
+        if (root / relative).exists():
+            (evidence / f"{label}-{name}").write_bytes((root / relative).read_bytes())
     return state
+
+
+def settings(path: Path) -> dict[str, str]:
+    """A config.cfg or client.vdf as {key: value}: each line's last quoted string is its value and
+    what comes before it its key (`bind "F1" "x"` is the key `bind "F1"`)."""
+    values = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            match = SETTING_LINE.match(line)
+            if match and match.group(1) and not match.group(1).startswith("//"):
+                values[match.group(1)] = match.group(2)
+    return values
+
+
+def settings_changes(before: Path, after: Path, guarded=()) -> dict:
+    """What a run changed in one settings file: `changed` values, `added` and `removed` keys, and
+    `problems` (a changed or removed value, or only the guarded keys when `guarded` is given)."""
+    old, new = settings(before), settings(after)
+    changed = {key: [old[key], new[key]] for key in old if key in new and old[key] != new[key]}
+    removed = sorted(key for key in old if key not in new)
+    judged = [key for key in [*changed, *removed] if not guarded or key in guarded]
+    return {"changed": changed, "added": {key: new[key] for key in new if key not in old}, "removed": removed,
+            "problems": [f"{key}: {old.get(key)!r} -> {new.get(key)!r}" for key in judged]}
 
 
 def crash_reports(root: Path) -> int:
     folder = root / "rtx-remix" / "logs" / ".sentry-native"
     return sum(1 for _ in folder.rglob("*.dmp")) if folder.is_dir() else 0
-
-
-def changed_lines(before: Path, after: Path) -> list[str]:
-    if not before.exists() or not after.exists():
-        return []
-    old = before.read_text(encoding="utf-8", errors="replace").splitlines()
-    new = after.read_text(encoding="utf-8", errors="replace").splitlines()
-    return sorted(set(new) - set(old))
 
 
 def next_number(evidence: Path) -> int:
@@ -271,11 +293,14 @@ def main(argv=None) -> int:
             results.append({"name": "crash-reports", "step": None, "passed": False,
                             "problems": [f"{new_dumps} new Remix crash report(s) under rtx-remix\\logs\\.sentry-native"]})
     changed = sorted(key for key in (before or {}) if before[key] != after[key])
+    game_settings = {name: settings_changes(evidence / f"before-{name}", evidence / f"after-{name}",
+                                            GUARDED_CONFIG_KEYS if name == "config.cfg" else ())
+                     for name in SETTINGS} if before else {}
+    setting_problems = [f"{name} {problem}" for name, change in game_settings.items() for problem in change["problems"]]
     summary = {
         "root": str(root), "field": args.field, "started": started, "sessions": results,
-        "unchanged": sorted(set(before or {}) - set(changed)), "changed": changed,
-        "config_cfg_new_lines": changed_lines(evidence / "before-config.cfg", evidence / "after-config.cfg") if before else [],
-        "passed": all(result["passed"] for result in results) and not changed,
+        "unchanged": sorted(set(before or {}) - set(changed)), "changed": changed, "settings": game_settings,
+        "passed": all(result["passed"] for result in results) and not changed and not setting_problems,
     }
     (evidence / "qa-summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     for result in results:
@@ -283,6 +308,11 @@ def main(argv=None) -> int:
               + ("" if result["passed"] else "  " + "; ".join(result["problems"])))
     if changed:
         print(f"FAIL  changed by the run: {', '.join(changed)}")
+    for problem in setting_problems:
+        print(f"FAIL  setting changed by the run: {problem}")
+    for name, change in game_settings.items():
+        if change["added"]:
+            print(f"note  {name}: {len(change['added'])} new key(s) ({', '.join(list(change['added'])[:6])})")
     print(f"{'PASSED' if summary['passed'] else 'FAILED'}: {evidence / 'qa-summary.json'}")
     return 0 if summary["passed"] else 1
 
