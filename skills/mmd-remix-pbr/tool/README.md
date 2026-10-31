@@ -189,6 +189,11 @@ Useful options: `--only "衣.png,髪.png"`, `--max-size 2048`, `--upscaler span`
 slightly softer), `--height --displacement 0.03` (POM height maps, off by default),
 `--emissive-intensity 0.7` (eye emission level, default 1), `--mod my_mod`, and `--settings tune.json`.
 
+For an **8 GB GPU audience**, generate and publish with `--max-size 2048` (or use `run` with that
+flag). A publish-only flag does not resize previously generated maps. Check per-texture size
+overrides before generating and verify the referenced DDS dimensions before packaging. See
+[Publishing for 8 GB GPUs](../SKILL.md#publishing-for-8-gb-gpus) for commands and memory costs.
+
 Review `work\<model>\preview.jpg` (albedo, class map, normal, roughness, metallic and emissive per
 texture) and `work\<model>\classes.json` (class and reason per material).
 

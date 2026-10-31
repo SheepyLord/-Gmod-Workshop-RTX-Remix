@@ -207,6 +207,31 @@ Use `references/testing-protocol.md` for anything beyond a quick compare. Essent
   debugging further.
 - **Present** the sheets and metrics, then ask with options that each carry their measured trade-off.
 
+## Publishing for 8 GB GPUs
+
+Characters meant for players with **8 GB GPUs are published with `--max-size 2048`**. Apply the
+cap while generating, then publish that output:
+
+```bash
+rpai run "<pmx>" --max-size 2048
+# Or, with hashes already checked:
+rpai generate "<pmx>" --max-size 2048
+rpai publish "<pmx>" --max-size 2048
+```
+
+`publish` encodes the existing generated maps; adding the flag only at publish time does **not**
+resize an earlier 4096 px generation. Check per-texture `max_size` overrides (including `"source"`)
+before generating the 8 GB variant: they can lift the global cap. Keep a requested larger variant
+separately and verify the DDS dimensions referenced by the packaged layer are at most 2048 px.
+
+At the same format and mip count, a 4096 x 4096 map has four times the pixels and approximately
+four times the fully resident memory of a 2048 x 2048 map. With a full mip chain, BC7 albedo or BC5
+normals cost about **21.3 MiB at 4096** versus **5.3 MiB at 2048**; BC4 roughness costs about
+**10.7 MiB versus 2.7 MiB**. These are size calculations, not measured savings: residency depends
+on streaming and the runtime's budget. Each sheet can carry several maps, and the original game
+textures still have their own cost. Do not rely on the loader's low tier to make a large published
+pack inexpensive for every player.
+
 ## Packaging
 
 When asked to package characters, ask where (they chose
@@ -228,7 +253,8 @@ allowlist needed (its ADR 0027). Only on the user's request; keep the item priva
 
 1. **Game up**, in a map, Model Hotloader loaded, the models in its library. Re-check the hashes with
    the models spawned (`rpai hashes`; they were identical across sessions) and `rpai publish` if any
-   changed. Spawn and remove them yourself with `mmdhl.RequestSpawn(id, {}, cb)` and
+   changed. For an 8 GB audience, generate and publish the 2048 px variant above before staging it.
+   Spawn and remove them yourself with `mmdhl.RequestSpawn(id, {}, cb)` and
    `lua_run Entity(idx):Remove()` if the user has not; remove only what you spawned.
 2. `scripts/hotloader_export.py --game-root <GarrysMod> --asset <id8> ... --title ... --description-file ...
    --file-name <n> --tag cartoon --out <dir>\mmdhl_<n>`: the library's Export without its terms dialog

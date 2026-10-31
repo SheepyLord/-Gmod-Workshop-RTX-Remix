@@ -47,6 +47,21 @@ local PAGES = {
         { "h", N("Advanced MMD Animation Player") },
         { "p", N("Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start.") },
     } },
+    { N("Memory and stability"), "icon16/chart_bar.png", {
+        { "h", N("For 8 GB GPUs and 16 GB of RAM") },
+        { "p", N("Use a system-managed Windows page file on a drive with at least 30 GB free. Close browsers and stop OBS recording before playing. In Task Manager > Performance > Memory, watch Committed: the first number is in use, the second is the limit. If they are close, close other apps or use fewer heavy models.") },
+        { "p", N("Keep frame generation off (Alt+X). Keep Garry's Mod's texture detail at its highest: lowering it changes the textures Remix hashes and can break replacement matching. Reduce the performance tier or the number of heavy characters instead.") },
+        { "h", N("Performance tiers") },
+        { "p", N("The loader chooses high, medium or low from the NVIDIA GPU's model and VRAM; recognized laptop models step down one class tier. High keeps the classic defaults. Medium and low reduce rendering work and memory use; low also uses smaller night-sky textures. Your saved Remix settings can override these defaults.") },
+        { "p", N("Edit the existing remix section in native-loader\\config.json: set \"performance_tier\" to \"auto\", \"high\", \"medium\" or \"low\", then restart Garry's Mod. RTX Remix tab > Start here shows the selected tier and GPU. Loader tiers are separate from the Graphics Preset in Alt+X.") },
+        { "h", N("Local memory readings") },
+        { "p", N("Console: rtx_vram_stats prints VRAM totals and categories when the RTX fixes are available. The loader records native-loader\\logs\\memory.csv; the companion records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. nativeloader_vram_telemetry 0 stops the companion sampler. These files stay local.") },
+        { "h", N("After a crash") },
+        { "p", N("At the next start, the loader copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder and both vram CSV files before they rotate. If no folder was kept, preserve rtx-remix\\logs\\, crashes\\ and native-loader\\logs\\gpu\\ manually.") },
+        { "p", N("Send that folder, both vram CSV files, and status.json and session.json from garrysmod\\data\\native-loader\\. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading.") },
+        { "p", N("If the session folder missed a locked or oversized file, keep the matching dump from crashes\\ or native-loader\\logs\\gpu\\ and any shaderDebugInfo\\*.nvdbg files. For a GPU hang, include nearby Event Viewer System events from Display or nvlddmkm and any matching Windows LiveKernelReports\\WATCHDOG dump. Dumps can contain process memory; review what you share.") },
+        { "p", N("For a requested GPU-crash reproduction, set diagnostics.gpu_crash_dumps to \"next_start\" in native-loader\\config.json and restart. The switch resets after that start; a GPU dump is created only when supported diagnostics capture a crash.") },
+    } },
     { N("Troubleshooting"), "icon16/wrench.png", {
         { "h", N("First look") },
         { "p", N("Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready.") },
@@ -86,7 +101,7 @@ local function add_image(parent, path)
     image:SetTall(300)
 end
 
-local function open_guide()
+local function open_guide(selected)
     local frame = vgui.Create("DFrame")
     frame:SetTitle(L("RTX Remix guide"))
     frame:SetSize(math.min(960, ScrW() - 40), math.min(720, ScrH() - 40))
@@ -101,11 +116,14 @@ local function open_guide()
             elseif item[1] == "h" then add_text(scroll, L(item[2]), "DermaLarge", Color(118, 185, 0))
             else add_text(scroll, L(item[2]), "DermaDefault") end
         end
-        sheet:AddSheet(L(page[1]), scroll, page[2])
+        local added = sheet:AddSheet(L(page[1]), scroll, page[2])
+        if page[1] == selected then sheet:SetActiveTab(added.Tab) end
     end
 end
 
-concommand.Add("nativeloader_guide", open_guide, nil, "Opens the RTX Remix guide")
+concommand.Add("nativeloader_guide", function() open_guide() end, nil, "Opens the RTX Remix guide")
+concommand.Add("nativeloader_stability_guide", function() open_guide("Memory and stability") end, nil,
+    "Opens the RTX Remix guide's memory and stability page")
 
 -- Once, on the first RTX session: open the guide a moment after the player has spawned.
 hook.Add("InitPostEntity", "nativeloader_guide", function()

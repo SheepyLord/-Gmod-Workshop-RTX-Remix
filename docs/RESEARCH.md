@@ -1,5 +1,34 @@
 # Research notes
 
+## R6 T3: companion VRAM binding (2026-10-31)
+
+- Read-only inspection of `garrys-mod-rtx-remixed/source/remixapi/resource_lua_bindings.cpp:38-71`
+  confirms `RemixResource.GetVramStats()` returns a flat table with 14 numeric fields, or nil on
+  failure. It exposes the driver budget/allocation, DXVK totals, retained pools, six RTX categories,
+  the texture-cache count and D3D9 texture/buffer bytes.
+- `dxvk-remix-gmod/public/include/remix/remix_c.h:1025-1053` defines the same fields. The driver
+  allocation includes non-DXVK overhead such as DLSS/NGX and NRC CUDA; `forkTextureCacheCount` is a
+  count, every other field bytes. The companion preserves those names and units in CSV and leaves
+  missing fields blank for older modules.
+- The PBR tool's `skills/mmd-remix-pbr/tool/rpai/cli.py:384-410` publishes the PNG maps already named
+  in `generated.json`; it does not resize them. The `run` dispatch at `cli.py:654-659` generates
+  before publishing. `config.py:80-96` applies per-texture size overrides after the global cap,
+  including `"source"`, so an 8 GB variant needs generation at 2048 and a check of those overrides.
+- Derived texture cost, excluding DDS headers: a full mip chain at 4096 square has about four
+  times the bytes of one at 2048 square. BC7/BC5 cost about 21.3/5.3 MiB respectively; BC4 costs
+  about 10.7/2.7 MiB. These are format arithmetic, not measured residency or savings on an 8 GB GPU.
+- In this nested worktree the guard fixture's cache path is 262 characters long. Its idempotence
+  case uses raw `std::filesystem::last_write_time` (`loader/guard/tests/test_early.cpp:198-200`) and
+  fails with path-not-found in the default Release layout; other guard file operations already use
+  extended-length paths. The unchanged guard suite passes with executables under the shorter
+  `out/build/win64-release/bin`, configured only in the ignored CMake cache.
+- Sandbox-only Release blockers: `tools/tests/test_field_snapshot.py:136` cannot create its
+  throwaway `HKCU/Software/NativeLoaderTest_*` key (21 failures). A non-mutating `winreg.OpenKey`
+  request for `KEY_CREATE_SUB_KEY` on HKCU Software also returns WinError 5, access denied. Six
+  publisher tests fail at Git reads with "dubious ownership" because the checkout belongs to
+  `matt-peng` and the test process runs as `CodexSandboxOnline`. No ACL, registry permission or
+  global Git configuration was changed.
+
 ## R4 start-up, guard and bootstrap review (loader 0.10.1)
 
 Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock

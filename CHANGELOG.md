@@ -15,6 +15,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - Add opt-in `diagnostics.gpu_crash_dumps` (`off`, `next_start`, `always`): a separate startup layer
   and local dump folder; an atomic loader-owned marker consumes `next_start` without editing config.
 
+### R6 T3 (unreleased)
+
+- The RTX companion records Remix's VRAM totals and categories locally every 30 seconds when the
+  fixes' API is available. `nativeloader_vram_telemetry 0` disables it; two rotating hourly CSV files
+  keep at most 240 samples across map changes and restarts.
+- RTX Remix > Start here shows the loader's optional performance tier, selection source, GPU/VRAM
+  and configuration/restart instructions. Older loaders show no tier line.
+- A directly linked **Memory and stability** guide page and [player checklist](docs/STABILITY.md)
+  cover 8 GB GPU/16 GB RAM settings, local memory readings and crash evidence. New companion text
+  is available in all seven languages; the 21 new translations per non-English catalog are
+  agent-written and marked for human review.
+- Tester documentation explains VRAM/commit counters and HUD readings; the MMD PBR skill requires
+  generating and publishing a 2048 px variant for 8 GB players and explains the cost of 4096 px maps.
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

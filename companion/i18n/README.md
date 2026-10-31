@@ -73,3 +73,13 @@ translations that dropped).
 unreviewed English entries fail. Use `--allow-incomplete` only for local translation drafts.
 The [bundled interface catalogs](addons/README.md) are a separate namespace and are embedded in the
 same generated Lua file. Long RTX slider and combo labels receive a full-width line above the control.
+
+## R6 T3 translation review
+
+The 21 new messages for the performance-tier line/source placeholders, the **Memory and stability**
+guide page and its Start here button are **agent-written by Codex and not yet human-reviewed** in
+all six non-English catalogs (`zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `ru`). Each new translation carries
+the same extracted comment. The English source and POT supply the seventh language. Review the
+technical advice and UI terminology as well as wording; preserve paths, configuration values,
+console commands and printf conversions. The extractor can regenerate comments away; this note
+keeps the provenance until a human review is recorded.
