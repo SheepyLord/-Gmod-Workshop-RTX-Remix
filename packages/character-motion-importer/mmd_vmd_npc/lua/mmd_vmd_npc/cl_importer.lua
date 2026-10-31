@@ -1147,6 +1147,7 @@ function MMDVMDNPC.BuildMotionImporter(parent, opts)
     end
     refresh_inputs()
     refresh_availability()
+    if isfunction(MMDVMDNPC.OwnScale) then MMDVMDNPC.OwnScale(root) end
     return root
 end
 

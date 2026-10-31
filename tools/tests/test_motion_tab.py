@@ -41,6 +41,12 @@ class MotionTabTests(unittest.TestCase):
     def test_a_failing_builder_is_reported_once_and_offers_the_windows(self):
         self.run_lua('broken')
 
+    def test_the_importer_scales_with_the_screen_like_external_models(self):
+        self.run_lua('scale')
+
+    def test_with_gui_scaler_the_tab_opts_out_of_its_second_scaling(self):
+        self.run_lua('guiscaler')
+
     def test_title_and_tooltip_follow_the_language(self):
         self.run_lua('translations')
 

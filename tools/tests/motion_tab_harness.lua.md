@@ -8,7 +8,7 @@ creation tab and the Character Motion Importer's builders (`MMDVMDNPC.BuildMotio
 luajit tools\tests\motion_tab_harness.lua <scenario> <tab .lua> <add-on lua\mmd_vmd_npc folder>
 ```
 
-Scenarios: `late`, `unavailable`, `windows`, `shared`, `fallback`, `broken`, `translations` (what each checks:
+Scenarios: `late`, `unavailable`, `windows`, `shared`, `fallback`, `broken`, `scale`, `guiscaler`, `translations` (what each checks:
 the test's table). The add-on's catalogs and lookups are loaded from `sh_core.lua` (the text between
 `MMDVMDNPC.I18N =` and its `if CLIENT then` block), then its client files run whole. Panels record
 what is set on them; layout is checked from their docking, order (ZPos, then creation), visibility,

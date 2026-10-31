@@ -53,24 +53,24 @@
    "imported": "2026-10-31T12:53:45+00:00"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_menu.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-stage\\mmd_vmd_npc\\lua\\mmd_vmd_npc\\cl_menu.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4\\out\\tmp\\stage-r4-own-scale\\cl_menu.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "75450b724a2c7ab5f3a3e92cea3f18bb2e840ad6",
+    "commit": "cdd1fa32ff9739ebbcb3d579ec9a067f4031a00e",
     "dirty": false
    },
-   "imported": "2026-10-31T13:18:57+00:00"
+   "imported": "2026-10-31T14:09:46+00:00"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_importer.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-stage\\mmd_vmd_npc\\lua\\mmd_vmd_npc\\cl_importer.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4\\out\\tmp\\stage-r4-own-scale\\cl_importer.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "75450b724a2c7ab5f3a3e92cea3f18bb2e840ad6",
+    "commit": "cdd1fa32ff9739ebbcb3d579ec9a067f4031a00e",
     "dirty": false
    },
-   "imported": "2026-10-31T13:18:57+00:00"
+   "imported": "2026-10-31T14:09:46+00:00"
   }
  },
  "files": {
@@ -125,15 +125,15 @@
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_importer.lua": {
-   "size": 50920,
-   "sha256": "8fa93c172c654adfc0ef0cafd431c5a0770ce713f84ab8517207d005c263a35c",
-   "mtime_ns": 1793452736918888400,
+   "size": 50993,
+   "sha256": "58a07cc2d0f174a471bfd40f986f60c962d0152fcbe1afd1e4fa23c271a873f2",
+   "mtime_ns": 1793455786046862400,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_menu.lua": {
-   "size": 270963,
-   "sha256": "9f2792b4cb6956d677349c021ffc74c4875c1d2000356b8551844a9914f3fdfa",
-   "mtime_ns": 1793452736918888400,
+   "size": 271829,
+   "sha256": "8d176431abb3b33eb5c960b94c954f9794ad45984a4c227f72ffcc3b346537ea",
+   "mtime_ns": 1793455786045862300,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_radial.lua": {

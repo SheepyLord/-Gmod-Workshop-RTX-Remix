@@ -28,7 +28,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   Manager shows the library beside the selected motion's music, playback and build controls. Without
   Model Hotloader's file access the importer says why, with Resolve. The floating windows,
   `mmdvmd_import` and `mmdvmd_menu` use the same builders
-  ([ADR 0060](docs/decisions/0060-motion-tab-hosts-the-importer.md)).
+  ([ADR 0060](docs/decisions/0060-motion-tab-hosts-the-importer.md)). Its text and controls follow the
+  screen as External Models does (twice the size at 4K, where they were half the spawn menu's), times
+  the player's `mmd_vmd_npc_menu_scale`, and opt out of the GUI Scaler add-on's second scaling as Model
+  Hotloader's panels do.
 - **The RTX package carries the motion importer's current version (fcd56f4)**: in-game VMD import
   (`mmdvmd_import`, the tool's Import Animation button), dances blending in from the T-pose, scene-cut
   holds and the stage placement and movement options. The part had been imported from a clone stuck

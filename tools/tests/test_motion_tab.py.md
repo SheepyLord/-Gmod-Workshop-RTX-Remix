@@ -16,6 +16,8 @@ python -m unittest discover -s tools/tests -p test_motion_tab.py    # from the r
 | `test_floating_windows_and_console_commands` | `mmdvmd_menu` and `mmdvmd_import` build the windows in Derma's look with their old layout; closing releases the hooks; losing file access closes the importer window and opens Resolve |
 | `test_tab_and_window_share_the_inputs` | A file and an option chosen in the window show in the tab |
 | `test_addon_without_builders_gets_window_buttons` | An add-on copy without the builders: buttons that open its windows |
+| `test_the_importer_scales_with_the_screen_like_external_models` | `MMDVMDNPC.MenuScale()`: 1 at 1080p and below, 2 at 2160p, 4/3 at 1440p, times the player's `mmd_vmd_npc_menu_scale` |
+| `test_with_gui_scaler_the_tab_opts_out_of_its_second_scaling` | With GUI Scaler's convar present, the tab, its buttons and each section (one built later too) carry `gScF`, as Model Hotloader's panels do; without it nothing is marked |
 | `test_a_failing_builder_is_reported_once_and_offers_the_windows` | A builder that throws: one report, no half-built page left, the window buttons instead, and no second attempt on the next frame |
 | `test_title_and_tooltip_follow_the_language` | The tab's title and tooltip through the companion's translations |
 

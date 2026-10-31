@@ -94,6 +94,8 @@ local function build_workspace(panel, api)
             end
         end
         if cookie and isfunction(cookie.Set) then cookie.Set(REMEMBERED, id) end
+        -- The tab sizes itself from the add-on's MenuScale(): out of GUI Scaler's second scaling.
+        if isfunction(api.OwnScale) then api.OwnScale(workspace) end
         body:InvalidateLayout()
     end
     workspace.Show = show
@@ -158,8 +160,18 @@ spawnmenu.AddCreationTab(key, function()
     summary:SetText(L("Import VMD files and manage your motion library and playback."))
     panel.Summary = summary
     -- Built when first shown; the add-on may load after this file, so wait for its builders.
+    local nextOptOut = 0
     panel.Think = function(self)
-        if IsValid(self.Workspace) or buildFailed then return end
+        if IsValid(self.Workspace) then
+            -- Panels a section adds later opt out of GUI Scaler too (a no-op without it).
+            local api = addon()
+            if api and isfunction(api.OwnScale) and RealTime() >= nextOptOut then
+                nextOptOut = RealTime() + 1
+                api.OwnScale(self.Workspace)
+            end
+            return
+        end
+        if buildFailed then return end
         local api = addon()
         if not api then return end
         if isfunction(api.BuildMotionManager) and isfunction(api.UITheme) and isfunction(api.StyleButton) then

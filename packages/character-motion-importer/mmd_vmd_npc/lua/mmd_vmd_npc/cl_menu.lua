@@ -38,9 +38,22 @@ end
 -- User-adjustable size for the Motion Manager and Raw Animation Debug windows.
 CreateClientConVar("mmd_vmd_npc_menu_scale", "1", true, false, "Size multiplier for the Motion Manager and debug windows")
 
+-- The player's multiplier on top of the screen's own scale, 1 at 1080p and 2 at 2160p, as Model
+-- Hotloader's External Models scales: at 4K the importer's text was half the spawn menu's
+-- (native loader review R4, 2026-10-31).
 function MMDVMDNPC.MenuScale()
     local cv = GetConVar("mmd_vmd_npc_menu_scale")
-    return math.Clamp(cv and cv:GetFloat() or 1, 0.6, 2.0)
+    local screen = math.Clamp((isfunction(ScrH) and ScrH() or 1080) / 1080, 1, 2)
+    return math.Clamp(cv and cv:GetFloat() or 1, 0.6, 2.0) * screen
+end
+
+-- GUI Scaler (Workshop 3495129511) resizes buttons and swaps Derma's fonts in the spawn menu (or in
+-- every panel). These panels size themselves from MenuScale(), so they opt out of that second
+-- scaling as Model Hotloader's do: GUI Scaler skips a panel marked gScF.
+function MMDVMDNPC.OwnScale(panel)
+    if not IsValid(panel) or not GetConVar("guiscaler_scale_multiplier") then return end
+    panel.gScF = true
+    for _, child in ipairs(panel:GetChildren()) do MMDVMDNPC.OwnScale(child) end
 end
 
 -- Named fonts, recreated at (base size * menu scale). Recreating a font under the
@@ -6260,6 +6273,7 @@ function MMDVMDNPC.BuildMotionManager(parent, opts)
     populate()
     request_list()
     request_motion_details()
+    MMDVMDNPC.OwnScale(root)
     return root
 end
 

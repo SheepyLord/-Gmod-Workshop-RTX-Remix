@@ -1,6 +1,7 @@
 -- The Motion importer tab and the Character Motion Importer's builders under mocked Derma.
 -- luajit motion_tab_harness.lua <scenario> <companion tab file> <add-on lua/mmd_vmd_npc folder>
--- Scenarios: late, unavailable, windows, shared, fallback, broken, translations. Prints PASS <scenario>.
+-- Scenarios: late, unavailable, windows, shared, fallback, broken, scale, guiscaler, translations.
+-- Prints PASS <scenario>.
 local scenario, tabFile, addonDir = arg[1], arg[2], arg[3]
 assert(scenario and tabFile and addonDir, "usage: motion_tab_harness.lua <scenario> <tab> <addon dir>")
 
@@ -70,6 +71,7 @@ function CreateClientConVar(name, default)
 end
 CreateConVar = CreateClientConVar
 function GetConVar(name) return convar(name) end
+function convar_set(name, value) convars[name] = value end
 local ran, commands = {}, {}
 function RunConsoleCommand(name, ...) ran[#ran + 1] = { name, ... } end
 concommand = { Add = function(name, fn) commands[name] = fn end }
@@ -601,6 +603,44 @@ elseif scenario == "broken" then
     assert(reports[1]:find("builder failed", 1, true), "the builder's error is reported")
     assert(IsValid(rawget(panel, "Launchers")), "window buttons instead")
     equal(#panel:GetChildren(), 1, "no half-built page left")
+elseif scenario == "scale" then
+    -- The importer's size follows the screen as External Models does (1 at 1080p, 2 at 2160p), times
+    -- the player's mmd_vmd_npc_menu_scale (review R4: at 4K its text was half the spawn menu's).
+    load_addon(true)
+    equal(MMDVMDNPC.MenuScale(), 1, "1080p")
+    ScrH = function() return 2160 end
+    equal(MMDVMDNPC.MenuScale(), 2, "2160p")
+    ScrH = function() return 1440 end
+    equal(MMDVMDNPC.MenuScale(), 1440 / 1080, "1440p")
+    ScrH = function() return 720 end
+    equal(MMDVMDNPC.MenuScale(), 1, "below 1080p the screen adds nothing")
+    ScrH = function() return 2160 end
+    convar_set("mmd_vmd_npc_menu_scale", "0.75")
+    equal(MMDVMDNPC.MenuScale(), 1.5, "the player's multiplier on top")
+    ScrH = function() return 1080 end
+elseif scenario == "guiscaler" then
+    -- With GUI Scaler installed, the tab and its sections opt out of its second scaling (gScF), as
+    -- Model Hotloader's panels do; without it nothing is marked (review R4).
+    load_addon(true)
+    local real = GetConVar
+    GetConVar = function(name)
+        if name == "guiscaler_scale_multiplier" then return nil end
+        return real(name)
+    end
+    local tab = load_tab()
+    local plain = tab.Function()
+    plain:Think()
+    local workspace = rawget(plain, "Workspace")
+    assert(IsValid(workspace), "workspace")
+    assert(not rawget(workspace, "gScF") and not rawget(workspace.OpenWindow, "gScF"), "nothing marked without GUI Scaler")
+    GetConVar = real -- the mock answers every name, so GUI Scaler counts as installed
+    local scaled = tab.Function()
+    scaled:Think()
+    workspace = rawget(scaled, "Workspace")
+    assert(rawget(workspace, "gScF") and rawget(workspace.OpenWindow, "gScF"), "the tab's own buttons opt out")
+    assert(rawget(workspace.Pages.import, "gScF"), "the importer section opts out")
+    workspace.Show("manager")
+    assert(rawget(workspace.Pages.manager, "gScF"), "a section built later opts out")
 elseif scenario == "translations" then
     load_tab()
     translated = true

@@ -26,6 +26,11 @@ launcher button of [ADR 0049](../../../../../docs/decisions/0049-importer-normal
   that open its windows instead. A builder that fails is reported once (`ErrorNoHalt`) and the tab
   offers those buttons too, instead of building again every frame (review R4).
 
+Size: everything follows the add-on's `MMDVMDNPC.MenuScale()`, the screen's scale as External Models
+has it (2 at 4K) times the player's `mmd_vmd_npc_menu_scale`. With the GUI Scaler add-on installed the
+tab and its sections are marked `gScF` (`MMDVMDNPC.OwnScale`, again about once a second for panels added
+later), so GUI Scaler does not enlarge their buttons a second time (review R4).
+
 Text: the tab's title, tooltip, summary and Open in window use the companion's catalogs
 (`companion/i18n`); everything inside the sections is the add-on's own, in its nine catalogs. The
 stable tab key and the language callbacks keep the title right when Sandbox rebuilds its spawn menu.
