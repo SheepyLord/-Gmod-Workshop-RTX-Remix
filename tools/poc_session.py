@@ -744,6 +744,11 @@ def step_run(args) -> dict:
     try:
         if menu_first:
             record.update(wait_workshop(began + args.timeout))
+            if args.menu_shot and record["workshop_ready"]:
+                # The main menu as the player sees it (the loader's diagnostics panel, the native add-on
+                # cards, the startup text), before the map is asked for.
+                menu_window = game_window(process.pid)
+                record["menu_screenshot"] = screenshot(menu_window, evidence / "menu.png") if menu_window else None
             hwnd = console_window(process.pid) if record["workshop_ready"] else None
             record["map_command"] = bool(hwnd) and console(hwnd, f"map {args.map}")
         loaded = wait_for_map(1, began + args.timeout) if not menu_first or record["map_command"] else False
@@ -947,6 +952,9 @@ def main(argv=None) -> int:
     run.add_argument("--players", type=int, default=1, help="maxplayers (1: single-player)")
     run.add_argument("--addons", action="store_true", help="mount local add-ons (leave out -noaddons)")
     run.add_argument("--workshop", action="store_true", help="mount Workshop add-ons (leave out -noworkshop)")
+    run.add_argument("--menu-shot", action="store_true",
+                     help="with --workshop and --map: a screenshot of the main menu (menu.png) once the Workshop is "
+                          "mounted, before the map is asked for")
     later = run.add_mutually_exclusive_group()
     later.add_argument("--load-save", help="after the first map, gm_load this save (path relative to garrysmod/)")
     later.add_argument("--change-map", help="after the first map, change to this map (with --mount-workshop for a Workshop map)")
@@ -970,6 +978,8 @@ def main(argv=None) -> int:
     nl.add_argument("rest", nargs=argparse.REMAINDER)
     sub.add_parser("uninstall")
     args = parser.parse_args(argv)
+    if args.action == "run" and args.menu_shot and not (args.workshop and args.map):
+        parser.error("--menu-shot needs --workshop and --map: only then does the run wait at the menu")
     try:
         ctypes.windll.user32.SetProcessDPIAware()
     except Exception:

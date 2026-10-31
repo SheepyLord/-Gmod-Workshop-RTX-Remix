@@ -50,7 +50,7 @@ def run_args(root, evidence, **changes):
     values = dict(root=str(root), evidence=str(evidence), name='run', reference=False, allow_steam_managed=False,
                   width=1280, height=720, workshop=False, addons=False, extra=[], players=1, map='gm_construct',
                   post=[], timeout=30, load_save=None, change_map=None, mount_workshop=None, console=[], camera=None,
-                  hide_hud=False, no_window=False, fps=None, lua=[], lua_shots=None,
+                  hide_hud=False, no_window=False, fps=None, lua=[], lua_shots=None, menu_shot=False,
                   settle=0, screenshots=0, shot_interval=0, quit_timeout=5)
     values.update(changes)
     return SimpleNamespace(**values)
@@ -371,6 +371,46 @@ class StepRunTests(unittest.TestCase):
         self.assertTrue(record['workshop_ready_by'].startswith('a partial first mount'))
         self.assertGreater(sent[0][0], 1000 + ps.PARTIAL_MOUNT_GRACE)
         self.assertTrue(record['map_loaded'])
+
+    def test_the_menu_shot_is_taken_at_the_menu_before_the_map(self):
+        # --menu-shot: the main menu (the loader's diagnostics panel and add-on cards) is captured once
+        # the Workshop is mounted, and only then is the map asked for.
+        clock, game, events = Clock(), FakeGame(), []
+        log = self.root / 'garrysmod' / 'console.log'
+
+        def launch(arguments, **_):
+            log.write_text('Mounted 755 of 755 workshop addons!\n', encoding='utf-8')
+            return game
+
+        def console(hwnd, command, attempts=6):
+            events.append(command)
+            if command == 'map gm_construct':
+                with open(log, 'a', encoding='utf-8') as handle:
+                    handle.write('Clientside Lua startup!\n')
+            elif command == 'quit':
+                game.quit()
+            return True
+
+        def screenshot(window, destination):
+            events.append(('shot', window, destination.name))
+            return {'file': destination.name}
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'console', side_effect=console), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'game_window', return_value=9), \
+                mock.patch.object(ps, 'screenshot', side_effect=screenshot), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(run_args(self.root, self.evidence, workshop=True, menu_shot=True))
+        self.assertEqual(events, [('shot', 9, 'menu.png'), 'map gm_construct', 'quit'])
+        self.assertEqual(record['menu_screenshot'], {'file': 'menu.png'})
+        self.assertTrue(record['map_loaded'])
+        with self.assertRaises(SystemExit):  # it waits at the menu only with --workshop
+            with mock.patch('sys.stderr'):
+                ps.main(['--evidence', str(self.evidence), 'run', '--name', 'x', '--menu-shot'])
 
     def test_with_workshop_add_ons_the_map_waits_for_the_workshop_mount(self):
         # A map on the command line, or sent while Steam still lists the subscriptions, waits on that

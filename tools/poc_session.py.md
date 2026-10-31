@@ -80,6 +80,9 @@ dropped, so before a save or the camera the script waits until `console.log` has
     of quiet log, then sends `map <name>`.
   - The record has `workshop_mounted`, `workshop_ready`, `workshop_ready_by` (which of those rules),
     `quiet_before_map`, `seconds_to_workshop` and `map_command`.
+  - **`--menu-shot`** (with `--workshop` and a map) saves `menu.png` of the main menu once the Workshop
+    is mounted, before the map is asked for: the loader's diagnostics panel, the native add-on cards
+    and the startup text are only there (record: `menu_screenshot`).
 
   It waits for `Clientside Lua startup!` in `console.log` (`--timeout`, 300 s), then:
   `--load-save <name>` sends `gm_load` and waits for the next map (`save_command` and `save_loaded`
