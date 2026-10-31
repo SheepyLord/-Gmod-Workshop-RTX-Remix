@@ -57,15 +57,52 @@ references in the companion's catalogs.
   takeover's checks (`out\tmp\mmdhl-tests\test_workshop_packages_r5.py`). The change is in this repo's
   `packages/model-hotloader` only; Model Hotloader's repository does not have it yet.
 
+## Checked in the game
+
+| Where | What | Result |
+|---|---|---|
+| Field, modern_house | Night sky tours (`night_sky_probe.lua`) before the fix, and with the new sky module swapped in for a session (`out\tmp\night_sky_fixcheck.lua`) | Before: daylight in two views, hazy wedges along the previous view's edge. After: two Modern House re-applies during the tour, every view a clean night sky (`out\qa-field\r5-sky\10-night-sky-fix-check`) |
+| PoC, the R5 package (`out\worktrees\r5\out\dist-r5`) | `release_qa.py` (session, spawn menu, map glass, spawned glass) | All four pass; the summary first failed on `nativeloader_sky_hour` `0.00` -> `0.000000` (the RTX tab's slider writing it back in `%f` form), now compared as numbers (`out\qa-poc\r5-release`) |
+| PoC, modern_house | [`glass_debris_probe.lua`](../../tools/qa/glass_debris_probe.lua.md) | 36 pieces, all `COLLISION_GROUP_WEAPON`; four shots into the pile moved 7 and broke 3; none left after a 6 s lifetime (`out\qa-poc\r5-glass\01-glass-debris`) |
+| PoC, the Evernight and March 7th pack mounted over the field's own settings files with the install records removed | Model Hotloader's scan (`out\tmp\takeover_probe.lua`) | Both models installed, `ownBefore`, labelled with the pack's title, the player's settings kept under `workshop/own` (`out\qa-poc\r5-takeover\01-takeover`; the PoC's state put back afterwards) |
+| PoC, External Models at 1280x720 | The RTX normals checkbox | Under "Import Character Models". At this size, with the native release banner shown, the window's columns already overlap without the new row; it adds 34 px (`out\qa-poc\r5-takeover\02-layout`). Model Hotloader's layout, not changed |
+
+One field run of eleven crashed at start: NVIDIA's `nvoglv64.dll` faulted on a worker thread of the
+runtime compiling pipelines, 4 s after the device was created; the rerun was clean (RESEARCH.md, the
+night sky section).
+
 ## Stability proposal
 
-To come: the research agents' proposal for limited-resource machines (the device lost on an 8 GB RTX
-4060 Laptop, the opacity micromap budget warning, the rejected `rtx.resourceLimits` keys, Aftermath).
+[R5-stability-proposal.md](R5-stability-proposal.md), research only (`dc2218b` on `r5-stability`,
+merged): nothing is implemented. In short:
+
+- **The attached dump is not the device loss.** It is the 2026-10-30 "Venti NPC" crash: system commit
+  exhausted (46.74 of 46.74 GiB, GMod holding 11.44 GiB) while the engine read an NPC texture, with
+  DLSS frame generation on.
+- **The device loss (RTX 4060 Laptop, 8 GB) has no recorded cause**: Aftermath was off. The last
+  warning was the opacity micromap cache at its budget, about 1 GiB of the 7188 MiB the driver gave
+  the process. Leads: opacity micromaps, VRAM paging ending in a GPU timeout, frame generation.
+- **Every GPU runs the RTX 5090 settings**: the package pins the Custom preset, which skips the
+  runtime's own 8 GB rule (`rtx.lowMemoryGpu`), doubles the sky probe and quadruples the fog grid;
+  the companion keeps 213 MiB of night sky images resident.
+- **Found:** the loader's own Remix layer loses to the package's for `rtx.*` keys (the first entry of
+  `DXVK_CONFIG_FILE` is the strongest), so ADR 0030's non-NVIDIA preset has most likely never applied;
+  the rejected `rtx.resourceLimits.*` keys are sent by the RTX fixes module itself at every map load
+  and never existed in the runtime; Remix truncates its log at the next start, and answering No at
+  its crash prompt deletes its dumps.
+- **Proposed first:** list the loader's layers first; an automatic low-VRAM layer for NVIDIA GPUs of
+  8 GiB or less (`rtx.lowMemoryGpu`, a 512 MiB micromap cap, sky probe 1024, fog grid scale 8,
+  terrain 2048); keep the last session's evidence at the next start; a one-start Aftermath switch;
+  memory telemetry for testers. Six more and ten questions for the user are in the proposal.
 
 ## Open
 
+- The stability proposal's decisions (its section 6), above all the layer order and the low-VRAM
+  layer; nothing is implemented until the user chooses.
 - Carry the Model Hotloader changes (`workshop.lua`, `ui.lua`, the catalogs) and the updated test into
   Model Hotloader's own repository.
+- External Models overlaps at small window heights (1280x720 with the native release banner), with or
+  without the new row: Model Hotloader's layout.
 - Modern House RTX (hidden test item 3829275998) could run `NativeLoaderSkySet` itself, or skip its
   sun once the native loader's companion holds the sky; the companion's wrapper covers today's item.
 - The Evernight and March 7th pack (3830769477): plain names and March 7th's terms, then upload again.
