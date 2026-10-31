@@ -183,3 +183,10 @@ The runtime rebuild/import, all 22 runtime unit tests, deep input verification a
 package check are done. Repository Release checks pass 333 Python tests (two skips) and 22/23
 CTests; the remaining guard-cache long-path failure reproduces on unchanged `7759c43`, while all
 22 guard cases pass from a shorter executable path ([TESTING.md](TESTING.md#r6-t4-runtime-memory-diagnostics)).
+
+T1 independent-review fix pass (2026-10-31): all seven findings addressed on `r6-t1-layers`, with
+regressions for fallback write failures, forgiving diagnostic config, off-mode rearm, unknown-GPU
+overrides, effective menu tiers, malformed adapter descriptions and the combined user-list budget.
+The earlier sandbox/HKCU validation limitation above belongs to the initial pass; the fix-pass
+validation record below in TESTING.md records the current full-access run. Integration, actual
+runtime option checks and GPU fault capture remain with the project manager.

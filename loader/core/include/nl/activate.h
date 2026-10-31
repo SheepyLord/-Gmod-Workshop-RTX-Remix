@@ -47,6 +47,8 @@ using GpuGet = std::function<std::vector<performance::Adapter>()>;
 // Win32 adapter shared by the CLI and bootstrap: DXGI, loaded from System32 at run time, software
 // adapters left out.
 std::vector<performance::Adapter> graphics_adapters();
+// A driver description is optional; invalid UTF-16/allocation failure becomes an empty name.
+std::string adapter_description(std::wstring_view description) noexcept;
 
 inline constexpr unsigned kNvidia = 0x10DE;
 
@@ -90,6 +92,7 @@ struct Plan {
   bool low_tier_fallback = false;
   bool gpu_crash_dumps = false;
   bool gpu_crash_dumps_once = false;
+  bool reset_gpu_crash_dumps = false;  // off on an RTX start re-arms next_start, best effort
   std::optional<std::string> gpu_dump_package_value;  // restore this request if diagnostics preparation fails
 
   // SetEnvironmentVariable calls, in order: the two config-file layer lists first (only when the
@@ -140,7 +143,7 @@ struct Plan {
 // with remix.enabled false, the plan is inactive. `command_line` is the process command line, read
 // only to skip launch arguments the user set. `display` is called at most once, and only when the
 // plan sizes the window. `gpus` is called once when the plan activates; without it (or with no
-// adapter found) neither loader GPU layer is applied, retaining the existing unknown-GPU behavior.
+// adapter found) auto applies neither loader GPU layer; an explicit tier still applies.
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
           std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus = {},
           const gpu_diagnostics::Probe& diagnostics = {});
@@ -148,6 +151,9 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
 // For the copies the bootstrap could not write: their sources go into the lists and variables
 // instead, and they leave layer_copies, with a note when a list is then too long for the runtime.
 void use_sources(Plan& plan, const std::vector<std::string>& unwritten);
+
+// A built-in fallback that cannot be written must not load an older tier.conf from disk.
+void disable_performance_tier(Plan& plan, const std::string& reason);
 
 // A diagnostics preparation failure costs diagnostics, not RTX. Removes its layer/environment
 // request, retaining any package DXVK layers and the user's original config-list suffix.

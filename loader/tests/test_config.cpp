@@ -134,14 +134,19 @@ TEST_CASE("config: performance tier defaults and overrides, invalid values recov
   }
 }
 
-TEST_CASE("config: GPU crash dumps are opt-in with strict off next_start always modes") {
+TEST_CASE("config: GPU crash dumps are opt-in and invalid values recover with off and a note") {
   using nl::config::GpuCrashDumps;
   CHECK(nl::config::parse(R"({"schema":1})").gpu_crash_dumps == GpuCrashDumps::off);
   for (const auto& [name, mode] : std::vector<std::pair<std::string, GpuCrashDumps>>{
          {"off", GpuCrashDumps::off}, {"next_start", GpuCrashDumps::next_start}, {"always", GpuCrashDumps::always}}) {
     CHECK(nl::config::parse("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":\"" + name + "\"}}").gpu_crash_dumps == mode);
   }
-  for (const char* invalid : {"\"on\"", "\"NEXT_START\"", "true", "null", "1"})
-    CHECK_THROWS_AS(nl::config::parse(std::string("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":") + invalid + "}}"), Error);
+  for (const char* invalid : {"\"on\"", "\"NEXT_START\"", "\"\"", "true", "null", "1", "[]", "{}"}) {
+    const auto config = nl::config::parse(std::string("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":") + invalid + "}}");
+    CHECK(config.gpu_crash_dumps == GpuCrashDumps::off);
+    REQUIRE(config.notes.size() == 1);
+    CHECK(config.notes.front().find("diagnostics.gpu_crash_dumps") != std::string::npos);
+    CHECK(config.notes.front().find("using off") != std::string::npos);
+  }
   CHECK_THROWS_AS(nl::config::parse(R"({"schema":1,"diagnostics":{"gpu_dump":"always"}})"), Error);
 }

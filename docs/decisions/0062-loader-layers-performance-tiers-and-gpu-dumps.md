@@ -55,16 +55,40 @@ game is closed, leaving config set to next_start. Off and always do not clear th
 The absolute DXVK_AFTERMATH_DUMP_PATH is set only for this process and is restored on activation
 rollback. An existing destination is noted and replaced for the diagnostic session. A failed
 diagnostics preparation disables the diagnostic layer/request with a note and leaves RTX usable.
-The generated layer and consumed marker can remain as inert caches; logs/dumps remain local.
+The generated layer and consumed marker can remain as inert caches. The loader writes dumps to a
+local folder, but Remix passes Aftermath dumps to its Sentry crash reporter, which uploads them
+when the player accepts Remix crash reporting. R6 does not change that consent or upload behavior.
 
 ## Consequences
 
 The non-NVIDIA preset can override the package as intended. Smaller NVIDIA GPUs get lighter
-defaults without changing the high tier's look. Diagnostics are opt-in and local; runtime
-environment variables and the root DXVK config can still override diagnostic options.
+defaults without changing the high tier's look. Diagnostics are opt-in, with local dump files and
+Remix's existing consent-controlled Sentry upload; runtime environment variables and the root
+DXVK config can still override diagnostic options.
 
 ## Alternatives considered
 
 - Keep appending loader Remix layers: the package wins the affected keys.
 - Force Remix Auto on small NVIDIA GPUs: changes more of the look than the approved tiers.
 - Rewrite config to consume `next_start`: the player's configuration is not loader-owned state.
+
+## Review corrections (2026-10-31)
+
+The user's T1 fix-pass instructions supersede the implementation details above in these cases:
+
+- A failed built-in low-layer write costs the tier defaults, not RTX. Remove every occurrence of
+  that fallback from the effective DXVK list/environment, clear I2's layer and report a note, so
+  an old file cannot silently apply. Package-copy source fallback remains as already described.
+- Invalid `diagnostics.gpu_crash_dumps` values/types become off with a note, like invalid tier
+  settings become auto; they do not reject the whole configuration.
+- An RTX start with diagnostic mode off removes the one-start marker, best effort with a note on
+  failure. Thus next_start -> off (one RTX start) -> next_start captures again without manual
+  deletion. Always and read-only previews leave the marker alone; RTX-disabled starts do too.
+- An empty GPU query honors explicit tier overrides and says "GPU not read". Known non-NVIDIA
+  adapters still receive no tier layer. An override always reports source config, including a
+  built-in fallback; source fallback identifies an automatic low selection using built-in text.
+- The menu row requires a listed tier layer and an adapter description. Startup supplies the
+  effective plan after writing layers; vanilla fallback supplies an inactive plan. A read-only
+  preview applies the ADR 0056 render-recipe refusal. High and pre-R6 medium list no tier row.
+- Driver description conversion failures keep the adapter's vendor/VRAM with an empty name;
+  unrecognized model classes, including professional laptop names, use only the VRAM rule.

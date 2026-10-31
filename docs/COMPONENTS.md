@@ -279,3 +279,8 @@ link in the RTX Remix tab. The player checklist is [STABILITY.md](STABILITY.md);
 menu/guide contract is covered by
 [`test_companion_stability.py`](../tools/tests/test_companion_stability.py.md). The companion gettext
 namespace has 21 new agent-written messages in six non-English catalogs, with English as source.
+
+T1 review separates `presentation::prepare_main_menu` so activation supplies its effective layer
+plan after writes, and vanilla fallback supplies an inactive plan. Core GPU diagnostics can reset
+the one-start marker on off-mode RTX starts. Proxy `test_runtime.cpp` applies the real activation
+code to fake DLLs to verify failed tier writes/reset attempts preserve RTX without a GPU reader.

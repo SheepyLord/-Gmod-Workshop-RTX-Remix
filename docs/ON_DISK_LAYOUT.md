@@ -279,31 +279,37 @@ Schema 1 accepts these additional optional keys (older loaders reject them as un
 | Key | Default | Rule |
 |---|---|---|
 | `remix.performance_tier` | `"auto"` | `"high"`, `"medium"`, `"low"` override GPU selection; an invalid value/type uses auto and adds an activation note |
-| `diagnostics.gpu_crash_dumps` | `"off"` | `"next_start"` once, `"always"` every RTX activation; other values/types are config errors |
+| `diagnostics.gpu_crash_dumps` | `"off"` | `"next_start"` once, `"always"` every RTX activation; invalid values/types use off with an activation note |
 
 Auto selects the NVIDIA adapter with the most DXGI DedicatedVideoMemory. The VRAM tier is low
 through 8.5 GiB, medium through 12.5 GiB, high above. Recognized consumer RTX model classes 8/9,
 7 and 5/6 limit it to high, medium and low respectively; Laptop lowers the class one step, and
 Ti/Super do not change it. Use the lighter of class and VRAM. An unmatched description uses VRAM
-alone. No NVIDIA adapter means no tier layer, even with an override; known AMD/Intel adapters
-keep `non-nvidia.conf`. A failed/empty query applies neither loader GPU layer.
+alone. Known non-NVIDIA adapters keep `non-nvidia.conf` and get no tier layer. A failed/empty query
+uses no GPU layer in auto; it honors an explicit tier override and reports "GPU not read".
 
 | Path under the game root | Ownership / behavior |
 |---|---|
 | `native-loader/packages/<runtime>/<version>_<generation>/config/dxvk-tiers/{medium,low}.conf` | Ordinary runtime payload, journaled and checked before activation; no new manifest field |
 | `native-loader/remix/tier.conf` | Regenerated short copy of the selected package tier; a pre-R6 package gets the built-in low fallback, or no layer for medium/high |
 | `native-loader/remix/diagnostics.conf` | Generated only when diagnostics apply; enables Aftermath, resource tracking and startup GPU crash state |
-| `native-loader/remix/gpu-crash-dumps.used` | Loader-owned atomic one-start marker; any existing marker, including an empty one, counts as consumed |
-| `native-loader/logs/gpu/` | Local dump destination; absolute path in this process's DXVK_AFTERMATH_DUMP_PATH, reported in activation.environment |
+| `native-loader/remix/gpu-crash-dumps.used` | Loader-owned atomic one-start marker; any existing marker, including an empty one, counts as consumed; an RTX start in diagnostic off mode removes it best effort |
+| `native-loader/logs/gpu/` | Local dump destination; absolute path in this process's DXVK_AFTERMATH_DUMP_PATH, reported in activation.environment; Remix may upload Aftermath dumps through Sentry with the player's crash-reporting consent |
 
 For one capture set `"diagnostics": {"gpu_crash_dumps":"next_start"}`. After preparing the
 layer/folder, the first RTX activation attempt claims the marker before runtime initialization.
 Later startup failure/crash does not re-arm it. To ask again, close the game and remove only
-`native-loader/remix/gpu-crash-dumps.used`; keep the config at next_start. Switching off/always
-does not reset the marker. Config is never rewritten. Read-only `nlctl activation` and the menu
-preview never consume the request; starts with RTX off do not either. Always ignores the marker.
+`native-loader/remix/gpu-crash-dumps.used`; keep the config at next_start. Alternatively, set the
+diagnostic mode to off, start RTX once, then set next_start again: the off-mode RTX start removes
+the marker best effort (a failure adds a note and keeps RTX). Always leaves the marker alone and
+ignores it. Config is never rewritten. Read-only `nlctl activation` and the menu preview never
+consume or reset the request; starts with RTX disabled do not either.
 A preparation failure is reported and skips diagnostics. Generated files may remain when unused;
 unused files are not listed, and no logs or dumps are deleted by this switch.
+
+The loader creates the dump folder locally. Remix hands Aftermath dumps to its Sentry crash
+reporter and uploads them when the player accepts Remix crash reporting. Enabling diagnostics
+does not grant that consent; R6 leaves the runtime's reporting behavior unchanged.
 
 The DXVK list is tier, non-NVIDIA (mutually exclusive), package short copies, diagnostics, then the
 user's nonempty list or root `dxvk.conf`. The RTX list is unchanged. Standard RtxOptions take the
@@ -322,9 +328,14 @@ rtx.terrainBaker.cascadeMap.levelResolution = 2048
 
 `activation.performance_tier` (interface I2) is
 `{"tier":"high|medium|low","source":"auto|config|fallback","reason":"one line","adapter":"description","dedicated_vram_mib":0,"layer":"listed path or empty"}`.
-Source fallback identifies the built-in low layer; the reason retains whether config requested it.
-Without NVIDIA, tier is the high/no-layer baseline, adapter is empty and reason explains why.
+Source config identifies every explicit override, including one using built-in low defaults.
+Source fallback identifies automatic low selection using the built-in layer. Without NVIDIA the
+adapter is empty and the reason explains why; known non-NVIDIA hardware still gets no tier layer.
 An unwritable package copy uses its source path as ADR 0036 already does; I2 then names that path.
+An unwritable built-in fallback is omitted from the effective list/environment, with an empty I2
+layer and a note; RTX still starts and cannot read an older fallback left at that path.
 `activation.notes` reports recoverable tier/config/diagnostic issues, also in the bootstrap log.
-The menu shows the same planned tier and source in seven languages; these new translations are
+The menu shows the effective tier and source only with a listed tier layer and an adapter name;
+high, pre-R6 medium, failed tier writes and vanilla fallback show no tier row. Read-only preview
+also applies the ADR 0056 recipe refusal. Its seven-language translations are
 agent-written and await review. No license/trust/path/off-switch or loader version change.

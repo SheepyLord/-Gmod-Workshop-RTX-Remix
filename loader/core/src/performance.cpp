@@ -45,11 +45,18 @@ const char* name(Tier tier) {
 
 Selection classify(const std::vector<Adapter>& adapters, config::PerformanceTier requested) {
   Selection result;
+  const bool overridden = requested != config::PerformanceTier::automatic;
+  if (overridden) {
+    result.tier = requested == config::PerformanceTier::high ? Tier::high
+                : requested == config::PerformanceTier::medium ? Tier::medium : Tier::low;
+    result.source = "config";
+  }
   const Adapter* largest = nullptr;
   for (const auto& adapter : adapters)
     if (adapter.vendor == kNvidia && (!largest || adapter.dedicated_video_memory > largest->dedicated_video_memory)) largest = &adapter;
   if (!largest) {
-    result.reason = "no NVIDIA adapter detected; no performance tier layer";
+    result.reason = adapters.empty() ? "GPU not read" : "no NVIDIA adapter detected; no performance tier layer";
+    if (overridden) result.reason = "remix.performance_tier=" + std::string(name(result.tier)) + "; " + result.reason;
     return result;
   }
   result.nvidia = true;
@@ -64,7 +71,7 @@ Selection classify(const std::vector<Adapter>& adapters, config::PerformanceTier
   result.reason = std::to_string(result.dedicated_vram_mib) + " MiB dedicated VRAM -> " + name(vram) +
                   (model ? "; RTX class (including laptop adjustment) -> " + std::string(name(*model))
                          : "; unrecognized RTX class, using VRAM alone");
-  if (requested != config::PerformanceTier::automatic) {
+  if (overridden) {
     result.tier = requested == config::PerformanceTier::high ? Tier::high
                 : requested == config::PerformanceTier::medium ? Tier::medium : Tier::low;
     result.source = "config";

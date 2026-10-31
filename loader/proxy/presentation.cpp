@@ -248,27 +248,36 @@ Prepared prepare(const std::filesystem::path& root, const journal::Generation& g
     }
   }
   if (include_diagnostics) {
+    auto menu = prepare_main_menu(root, generation);
+    for (auto& redirect : menu.redirects) prepared.redirects.push_back(std::move(redirect));
+    for (auto& note : menu.notes) prepared.notes.push_back(std::move(note));
+  }
+  return prepared;
+}
+
+Prepared prepare_main_menu(const std::filesystem::path& root, const journal::Generation& generation,
+                           const activate::Plan* effective) {
+  Prepared prepared;
+  try {
+    fs::refuse_links(root, kMainMenu);
+    const auto source = fs::join(root, kMainMenu);
+    const auto text = fs::read_file(source, kMaxMenuBytes);
+    // The multiplayer bootstrap's only trigger lives in this view (ADR 0052): a menu the overlay
+    // no longer recognizes still gets the trigger alone (ADR 0056).
+    const bool bootstrap = client::native_bootstrap_present(generation);
+    std::string decorated;
     try {
-      fs::refuse_links(root, kMainMenu);
-      const auto source = fs::join(root, kMainMenu);
-      const auto text = fs::read_file(source, kMaxMenuBytes);
-      // The multiplayer bootstrap's only trigger lives in this view (ADR 0052): a menu the overlay
-      // no longer recognizes still gets the trigger alone (ADR 0056).
-      const bool bootstrap = client::native_bootstrap_present(generation);
-      std::string decorated;
-      try {
-        decorated = decorate_main_menu(text, diagnostics::collect(root, generation), bootstrap);
-      } catch (const std::exception& error) {
-        if (!bootstrap) throw;
-        prepared.notes.push_back("native loader main menu: " + std::string(error.what()) +
-                                 "; the RTX multiplayer bootstrap trigger is installed without it");
-        decorated = add_client_bootstrap(text);
-      }
-      const auto replacement = cache(root, decorated, ".js");
-      prepared.redirects.push_back({source, replacement, {}});
+      decorated = decorate_main_menu(text, diagnostics::collect(root, generation, effective), bootstrap);
     } catch (const std::exception& error) {
-      prepared.notes.push_back("native loader main menu: " + std::string(error.what()));
+      if (!bootstrap) throw;
+      prepared.notes.push_back("native loader main menu: " + std::string(error.what()) +
+                               "; the RTX multiplayer bootstrap trigger is installed without it");
+      decorated = add_client_bootstrap(text);
     }
+    const auto replacement = cache(root, decorated, ".js");
+    prepared.redirects.push_back({source, replacement, {}});
+  } catch (const std::exception& error) {
+    prepared.notes.push_back("native loader main menu: " + std::string(error.what()));
   }
   return prepared;
 }

@@ -21,8 +21,10 @@ layout/style and project URL are edited here. Compiled into winmm.dll through CM
 
 ## R6 performance tier
 
-Shows one localized line for a detected NVIDIA adapter's selected performance tier and source
-(automatic, config override or built-in fallback). The data previews the same pure activation
-plan before the menu copy is generated; it never consumes GPU diagnostics or reads stale status.
+Shows one localized line for the effective performance tier and source (automatic, config override
+or built-in fallback) only when an adapter description and a listed tier layer are present.
+Startup prepares its data after tier writes; failed/vanilla activation has no tier row. High and
+pre-R6 medium have no tier layer and no row. Read-only previews apply the rendering-recipe gate.
+It never consumes GPU diagnostics or reads stale status.
 The new non-English tier/source translations in `labels.json` are agent-written, awaiting review;
 JSON catalogs do not permit comments. Inputs/outputs and exit behavior are unchanged.

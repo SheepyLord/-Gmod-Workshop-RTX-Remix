@@ -171,6 +171,10 @@ Display primary_display() {
   return display;  // user32 stays loaded: the game loads it anyway
 }
 
+std::string adapter_description(std::wstring_view description) noexcept {
+  try { return fs::utf8(std::filesystem::path(description)); } catch (...) { return {}; }
+}
+
 std::vector<performance::Adapter> graphics_adapters() {
   // As user32 above: the bootstrap's import table stays KERNEL32-only, so DXGI is loaded here.
   std::vector<performance::Adapter> adapters;
@@ -188,8 +192,11 @@ std::vector<performance::Adapter> graphics_adapters() {
       if (factory->EnumAdapters1(i, &adapter) != S_OK) break;
       DXGI_ADAPTER_DESC1 description{};
       if (adapter && SUCCEEDED(adapter->GetDesc1(&description)) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
-        adapters.push_back({description.VendorId, fs::utf8(std::filesystem::path(description.Description)),
-                            description.DedicatedVideoMemory});
+        // Driver descriptions are optional metadata. Malformed UTF-16 or an allocation failure
+        // here must not lose the adapter's vendor/VRAM or abort RTX startup.
+        auto name = adapter_description(description.Description);
+        try { adapters.push_back({description.VendorId, std::move(name), description.DedicatedVideoMemory}); }
+        catch (...) { }  // retain the adapters read so far if the list cannot grow
       }
       if (adapter) adapter->Release();
       adapter = nullptr;
@@ -263,7 +270,8 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
                  std::none_of(p.gpu_vendors.begin(), p.gpu_vendors.end(), [](unsigned vendor) { return vendor == kNvidia; });
   p.performance_tier = performance::classify(adapters, config.performance_tier);
   std::string tier_source;
-  if (p.performance_tier.nvidia && p.performance_tier.tier != performance::Tier::high) {
+  if (!p.non_nvidia && (p.performance_tier.nvidia || config.performance_tier != config::PerformanceTier::automatic) &&
+      p.performance_tier.tier != performance::Tier::high) {
     const auto path = runtime->payload + "/config/dxvk-tiers/" + performance::name(p.performance_tier.tier) + ".conf";
     const auto file = std::find_if(generation.files.begin(), generation.files.end(), [&](const auto& record) {
       return record.package == runtime->id && paths::fold(record.path) == paths::fold(path);
@@ -273,7 +281,7 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
       p.performance_tier.layer = kTierLayer;
     } else if (p.performance_tier.tier == performance::Tier::low) {
       p.low_tier_fallback = true;
-      p.performance_tier.source = "fallback";
+      if (config.performance_tier == config::PerformanceTier::automatic) p.performance_tier.source = "fallback";
       p.performance_tier.layer = kTierLayer;
       p.performance_tier.reason += "; package has no low tier file, using built-in low defaults";
     } else {
@@ -282,10 +290,11 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
   }
   if (!diagnostics.note.empty()) p.notes.push_back(diagnostics.note);
   p.gpu_crash_dumps_once = config.gpu_crash_dumps == config::GpuCrashDumps::next_start;
+  p.reset_gpu_crash_dumps = config.gpu_crash_dumps == config::GpuCrashDumps::off;
   p.gpu_crash_dumps = config.gpu_crash_dumps == config::GpuCrashDumps::always ||
                       (p.gpu_crash_dumps_once && !diagnostics.consumed);
   if (p.gpu_crash_dumps_once && diagnostics.consumed)
-    p.notes.push_back("diagnostics.gpu_crash_dumps=next_start was already consumed; remove native-loader/remix/gpu-crash-dumps.used to request again");
+    p.notes.push_back("diagnostics.gpu_crash_dumps=next_start was already consumed; start RTX once with diagnostics off or remove native-loader/remix/gpu-crash-dumps.used to request again");
 
   // The runtime's late bare-name loads (ADR 0030): its own deployed files, at the top of its folder.
   for (const journal::File& file : generation.files) {
@@ -310,7 +319,7 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
     const auto value = layer_list(copies, first, last, user && !user->empty() ? std::string_view(*user) : default_user);
     effective = split_layers(value);
     if (!package_layers.empty() || !first.empty() || !last.empty()) {
-      note_length(p.notes, name, value);  // only a long list of the user's own reaches the limit now
+      note_length(p.notes, name, value);
       p.env.emplace_back(name, value);
     }
   };
@@ -391,6 +400,16 @@ void use_sources(Plan& plan, const std::vector<std::string>& unwritten) {
     value = joined(*list);
     note_length(plan.notes, name, value);
   }
+}
+
+void disable_performance_tier(Plan& plan, const std::string& reason) {
+  const auto layer = plan.performance_tier.layer;
+  if (layer.empty()) return;
+  std::erase(plan.dxvk_layers, layer);  // even an explicit duplicate must not read the stale fallback
+  for (auto& [name, value] : plan.env) if (name == "DXVK_CONFIG_FILE") value = joined(plan.dxvk_layers);
+  plan.performance_tier.layer.clear();
+  plan.low_tier_fallback = false;
+  plan.notes.push_back(reason);
 }
 
 void disable_gpu_crash_dumps(Plan& plan, const std::string& reason) {

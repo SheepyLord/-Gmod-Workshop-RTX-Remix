@@ -24,7 +24,8 @@ struct Selection {
   bool nvidia = false;  // internal: not part of interface I2
 };
 // Largest NVIDIA adapter; lower of the VRAM tier and recognized consumer RTX class, with laptops
-// one class step down. Without NVIDIA, even an explicit override creates no tier layer.
+// one class step down. Known non-NVIDIA adapters get no tier layer. An empty query honors an
+// explicit override; its reason reports that the GPU was not read. Overrides report source config.
 Selection classify(const std::vector<Adapter>& adapters, config::PerformanceTier requested);
 std::string serialize(const Selection& selection);  // R6 interface I2
 }  // namespace nl::performance

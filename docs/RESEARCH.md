@@ -3021,3 +3021,18 @@ Source references below are to patch 0015 on the recorded fourteen-patch tree, i
   pairs show the same patterns. Evidence is under this task's `out/topbr-bc7` (`manifest.json`,
   `quality.json`, `comparison.png`); [package notes](../packages/fixes/licenses/topbr-bc7/README.md)
   preserve the measurements and integration acceptance cases.
+
+### R6 T1 independent-review corrections (2026-10-31)
+
+The local runtime fork at `6f2dbd79` routes Aftermath files into its existing Sentry GPU report:
+`src/dxvk/dxvk_instance.cpp:392` calls `queueGpuCrashReport`; `src/util/util_sentry.cpp:447-496`
+attaches the dump to the event and captures/flushes it, and `:858-863` applies the runtime's
+consent flow. Dumps written under the loader's local folder may therefore be uploaded when the
+player accepts Remix crash reporting. R6 does not alter that reporting policy.
+
+The two new DXVK paths and their commas add exactly 67 characters: tier.conf plus diagnostics.conf.
+Regression tests combine them with package copies and a user-supplied DXVK list at 259 (accepted)
+and 260 (warning that Remix ignores the list) characters. RTX 5090 D uses the consumer class rule;
+GTX 1080 Ti and RTX A2000 Laptop GPU use VRAM alone. The Laptop adjustment runs only after a
+consumer RTX class is recognized. Invalid UTF-16 descriptions can throw from filesystem UTF-8
+conversion; the startup adapter reader now keeps vendor/VRAM with an empty name instead.

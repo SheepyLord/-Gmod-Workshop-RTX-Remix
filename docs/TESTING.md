@@ -971,3 +971,53 @@ byte-for-byte to the unchanged input. Receipt and logs are under this task's `ou
 (2 skips), plus repo conventions. The native compatibility harness and unchanged oversized-
 skinning test pass separately; `inputs.py verify --part fixes --deep` reports zero problems.
 The full Release log is `out/tmp/t5-release-tests.log` in this task's worktree.
+
+### R6 T1 review regressions (2026-10-31)
+
+The independent-review fix pass adds these checks, superseding the initial pass's strict dump-mode
+and manual-only rearm descriptions above:
+
+- `loader/proxy/tests/test_runtime.cpp` links the real activation implementation and loads the
+  existing fake runtime. A directory and a read-only stale file at tier.conf both preserve active
+  RTX, omit the tier from the effective list/environment, clear I2's layer, report the failure and
+  generate a menu with no tier. A blocked marker reset preserves RTX and the blocker with a note.
+  These tests supply no GPU reader, so unknown-GPU overrides and write failures run on every host.
+- `test_config.cpp` accepts invalid dump strings/types as off with a note. `test_activate.cpp`
+  checks empty/missing GPU readers, source config for overrides, stale-tier removal including a
+  user duplicate, malformed UTF-16 descriptions retaining vendor/VRAM, and combined package/tier/
+  diagnostic/user DXVK lists at exactly 259 and 260 characters. The new loader layers add 67.
+- `test_performance.cpp` includes RTX 5090 D, GTX 1080 Ti and RTX A2000 Laptop GPU; the professional
+  laptop case proves an unrecognized class does not get the consumer Laptop adjustment.
+- `test_gpu_diagnostics.cpp` exercises marker reset and re-consumption without config writes,
+  no writes for an absent marker, and preservation of a directory at the marker path.
+- `test_presentation.cpp` checks listed layers, empty/classic layers, inactive plans and the ADR
+  0056 recipe refusal, including the -insecure exception. The real Node menu harness checks all
+  seven languages with a tier, without its layer and without its adapter description.
+- Synthetic `nl_activation_integration` verifies off-mode rearm followed by a single new capture,
+  invalid diagnostics preserving activation, and a leftover low/medium tier.conf omitted from
+  both layers.dxvk and DXVK_CONFIG_FILE on the following high run.
+
+Fix-pass validation: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1 -Config
+Release` exited 0, with repository conventions, 23/23 CTests and all three Python groups passing:
+gmapack 28 tests (one skip), steam 25 (one skip), tools 280 (no skips). Native cases include 223
+non-fault core cases, 34 proxy cases, 22 guard cases and 26 synthetic activation scenario groups.
+The initial pass's HKCU fixture restriction did not recur with this run's full user access.
+
+The reported long-path guard failure did not reproduce: the pre-rebuild baseline guard executable
+and the final Release CTest each passed 22/22 cases in the original build path. The identical final
+executable (SHA-256 compared) also passed 22/22 after copying it to `out/g/nl_render_guard_tests.exe`;
+its fixture root stays under this worktree's out and the executable path is 37 characters shorter.
+No guard code, fixtures or test exclusions were changed. The shorter-path check is:
+
+```powershell
+New-Item -ItemType Directory -Force out/g | Out-Null
+Copy-Item out/build/win64-release/loader/guard/tests/nl_render_guard_tests.exe out/g/
+& out/g/nl_render_guard_tests.exe
+```
+
+Evidence is `out/r6-t1-fix/release-tests.log`, `guard-baseline-long.log`, `guard-short.log` and
+`guard-paths.json`, plus CTest's `out/build/win64-release/Testing/Temporary/LastTest.log` and
+`out/m4-synthetic/release-68168-20261031T160751`. Only synthetic hosts/fake DLLs ran. Real Remix
+effective options, actual GPU fault capture/upload and in-game behavior remain for the project
+manager; this pass never launched Garry's Mod or touched the field/PoC installs, Steam files or
+any player's user.conf, and performed no push, merge, tag or publication.

@@ -14,6 +14,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   in status, the log, CLI and seven-language menu panel (ADR 0062).
 - Add opt-in `diagnostics.gpu_crash_dumps` (`off`, `next_start`, `always`): a separate startup layer
   and local dump folder; an atomic loader-owned marker consumes `next_start` without editing config.
+- T1 review fixes: failed built-in tier writes and invalid diagnostic values preserve RTX;
+  an off-mode RTX start re-arms `next_start`; unknown GPUs honor explicit tier overrides with
+  source config. Menu tiers require an effective listed layer, and malformed GPU names cannot
+  stop activation. Clarify Remix's existing consent-controlled Sentry upload of Aftermath dumps.
 
 ### R6 T3 (unreleased)
 

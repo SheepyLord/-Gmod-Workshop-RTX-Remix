@@ -260,7 +260,7 @@ void startup_cxx(StartupContext& context) noexcept {
     if (context.prepared.config.from_file && context.prepared.config.enabled && context.prepared.journal &&
         context.prepared.journal->current && !context.prepared.journal->pending) {
       try {
-        auto display = presentation::prepare(context.root, *context.prepared.journal->current, true);
+        auto display = presentation::prepare(context.root, *context.prepared.journal->current);
         for (auto& redirect : display.redirects) context.read_redirects.emplace_back(std::move(redirect.source), std::move(redirect.replacement));
         for (auto& note : display.notes) context.report.session.notes.push_back(std::move(note));
       } catch (const std::exception& error) {
@@ -325,6 +325,15 @@ void startup_cxx(StartupContext& context) noexcept {
     // RTX-only add-ons out of the session (ADR 0013).
     if (context.report.activation.outcome != "active" && context.prepared.config.from_file && context.prepared.config.enabled) {
       restore_session_cvars(context);
+      // Runtime rollback removed its menu redirect. Vanilla gets a fresh view with no effective
+      // tier, including deployment/recipe refusals and failures after layer preparation.
+      if (context.prepared.journal && context.prepared.journal->current && !context.prepared.journal->pending) {
+        auto inactive = context.report.activation.plan;
+        inactive.activate = false;
+        auto menu = presentation::prepare_main_menu(context.root, *context.prepared.journal->current, &inactive);
+        for (auto& redirect : menu.redirects) context.read_redirects.emplace_back(std::move(redirect.source), std::move(redirect.replacement));
+        for (auto& note : menu.notes) context.report.session.notes.push_back(std::move(note));
+      }
       hide_rtx_addons(context);
     }
     if (context.report.deployment.outcome == "failed" && !context.report.deployment.error.empty())

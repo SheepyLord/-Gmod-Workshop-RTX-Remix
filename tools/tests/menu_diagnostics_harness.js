@@ -58,6 +58,21 @@ const count = body.children.length;
 vm.runInNewContext(source, context); assert.equal(body.children.length, count);
 assert.equal(calls.length, 2, 'no bootstrap request without client_bootstrap');
 
+// The row describes an effective tier layer and needs an adapter description.
+for (const [adapter, layer, visible] of [['GPU', 'native-loader/remix/tier.conf', true],
+                                      ['', 'native-loader/remix/tier.conf', false], ['GPU', '', false]]) {
+  for (const code of Object.keys(labels)) {
+    const doc = makeDocument();
+    const tier = {tier: 'low', source: 'config', adapter, layer};
+    const win = {NativeLoaderDiagnostics: {...data, performance_tier: tier}, NativeLoaderDiagnosticLabels: labels,
+      location: {hash: '#/'}, setInterval() {}};
+    vm.runInNewContext(source, {window: win, document: doc, gScope: {...gScope, Language: code}});
+    const row = all(doc.body).find(item => item.textContent === labels[code].performance_tier + ': ');
+    assert.equal(Boolean(row), visible, `tier row adapter=${adapter} layer=${layer} language=${code}`);
+    if (visible) assert(all(doc.body).some(item => item.textContent === labels[code].tier_low + ' · ' + labels[code].tier_config));
+  }
+}
+
 // client_bootstrap: true. The multiplayer bootstrap is requested once, with the overlay or without it.
 function bootstrapCase(withDiagnostics, bridgeAvailable) {
   const requests = [];
