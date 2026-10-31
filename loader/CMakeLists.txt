@@ -1,5 +1,7 @@
 add_subdirectory(core)
 add_subdirectory(client)
+add_subdirectory(guard)
 add_subdirectory(cli)
 add_subdirectory(tests)
 add_subdirectory(proxy)
+target_link_libraries(nl_winmm PRIVATE nl_render_guard)

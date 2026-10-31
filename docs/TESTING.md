@@ -1,5 +1,67 @@
 # Testing
 
+## C13 graphics add-ons and map loading
+
+Release passes **22 CTests and 294 Python tests (7 skips)**, including 20 early-policy cases,
+6 backend cases, 11 targeted command-line cases and 17 unittest cases running 18 actual-source
+LuaJIT scenarios. CI builds pinned official LuaJIT and requires it, rather than skipping these
+scenarios. CPU tests are separate from the real NVIDIA GPU sessions below.
+
+The actual 998-file GMA reads back against every manifest SHA and matches all preview payloads.
+Its construct session passes ten failure/positive controls: reserved RTs, invalid dimensions,
+unsupported shader/MRT/depth work, pinned HDR writes, valid normal/R32F targets, one quarantined
+HUD failure and restored RT state. Toolgun rendering and spawn-menu open controls pass. Corrupting only its owned
+startup cache gives a clean vanilla map load/exit, no RTX patches or executable init redirect,
+and preserves the changed cache; the fixture restores its original bytes afterward.
+
+Secure dedicated multiplayer passes with no -insecure, sv_allowcslua 0 and cheats 0. The trusted
+RTX payload, RTXDebug and guard load; unrelated local Lua remains excluded and the temporary
+catalog API is absent. A normal server-delivered test verifies an unsupported-shader rejection,
+one failing HUD callback, continuing healthy callbacks and restored RT state with zero cleanup
+errors. It records installation="verified multiplayer bootstrap", with the early flag false.
+This is a later readiness boundary, not protection before the remote server's autoruns.
+
+Earlier controlled baselines load LifeMod defaults, CSM depth24/one controller and GShader/FXAA.
+The guarded combined construct-to-flatgrass transition and explicit DX11-to-D3D9 process choice
+pass. RTX-off loads/exits normally with the guard absent. Steam depot verification passes.
+
+Loader 0.10.0 normalizes explicit shader-backend choices to stock D3D9 only for an RTX process,
+preserving raw unrelated arguments and exact W/A/PEB rollback. It installs the catalog-verified V2
+guard through a hash-supported stock initializer view without editing Steam files. A verified
+V2 stock/cache preparation failure for the selected RTX owner disables RTX with a clear reason
+and vanilla/hide-RTX fallback; foreign-runtime and legacy-V1 behavior stay scoped.
+
+When a remote server supplies its own initializer, the existing native verified-payload path can
+install the guard later. It accepts only that path's raw marker in a private chunk environment,
+uses the real global hook dispatcher and reports its installation timing. It does not expand
+native allowlists, local Lua permissions, debug mutation permissions or the native bridge.
+The saved guard off switch remains. All guard checkouts use LF for stable package/cache hashes.
+
+The original user crash was not reproduced with fresh defaults. Exact QuickBloom/HDR source and
+sixteen collection members were unavailable; author-linked repositories are distinguished from
+exact Workshop archives. Unsupported shader effects can be disabled or quarantined while the
+map loads; this does not promise their original appearance or recovery from native/GPU faults.
+Earlier aliases, later API replacements, unknown native state and already-completed camera/clip/
+matrix pops remain explicit limits. Multiplayer installation is later than server autoruns.
+
+Tested loader SHA-256: `95303c8648686d8f155549cf85fba42d6b06dde2f422bad680dc08c8fd18f269`.
+Guard SHA-256: `0e57e92fae2dae6783c195f79d032a3f8fd79e41ee94be0637f0512d416a1040`.
+Tested archive: `0.0.0-dev.20261031101734+c1874c95`, SHA-256 `c5cb4f4ec0baf6e8b9a6b8a13d7ff931932f2e34d12a77fe66bdf6c3e85f7304`.
+It requires loader >=0.10.0; a Workshop update cannot replace an older bootstrap.
+The Remix runtime `f9827b35b533caa38c08caa117fb264fb8d18012e3682694e1c92e1faf67a26e` and accepted native fixes `5e626e34` are unchanged.
+Evidence: `out/c13-evidence`, including release-test, package-readback, final-accepted,
+required-guard-fallback-final and dedicated-final-accepted. Delivery receipts/CI identifiers are recorded
+after the main push; no tag or public release is part of this batch.
+
+Keep these counterexamples in regressions: full-frame -1 sizing, raw R32F27 without a Lua enum,
+two sequential stereo views, caller-owned RT/camera/matrix layers, deliberate Pre/Post balancing,
+NUL strings before C-string dispatch, nested successful/failed callback cleanup, hook registry
+identity/object self/first-non-nil returns, private-versus-global multiplayer markers and inactive
+server/menu/vanilla contexts. Do not use mesh.End as an abort or reset unknown native state.
+Follow poc_session.py, own-process/log privacy and runtime rebuild rules for future changes.
+Scope/provenance: [ADR 0054](decisions/0054-rtx-rendering-startup-boundaries.md) and
+[API audit](audits/C13-render-api.md).
+
 ## Oversized hardware skinning (item 24)
 
 Current evidence includes **completed asset/engine investigation, final-policy CPU tests and a

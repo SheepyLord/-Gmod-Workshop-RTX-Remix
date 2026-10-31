@@ -1,5 +1,33 @@
 # Components
 
+`loader/guard/` prepares the verified client rendering guard's early stock-initializer read redirect;
+`loader/guard/tests/` exercises generated-file ownership, stock hashes, cache integrity and off switches.
+
+C13 uses loader 0.10.0's [`loader/guard`](../loader/guard/README.md) to prepare an exact, client-only
+read redirect for a hash-supported `includes/init.lua`. Its generated cache includes only the
+catalog-SHA-verified RTX owner's V2 guard, after library setup and before third-party autoruns;
+the Steam initializer stays unchanged. The owned cache is
+`native-loader/presentation/render-guard-<sha>.lua`. The Lua guard requires verified native early proof or the existing verified multiplayer
+bootstrap's raw private marker. An ordinary autorun/global marker cannot activate it; the later
+multiplayer path uses _G.hook and reports its timing rather than claiming early protection. Activation fallback removes the executable
+initializer redirect while ordinary presentation redirects may remain. Once a V2 owner guard is
+catalog-verified for the selected `gmod-rtx-remix` runtime, stock-hash/cache preparation failure is
+required-protection failure: RTX activation is refused with a clear reason and vanilla fallback.
+Foreign runtimes do not read the stock initializer/cache through this path; legacy V1 marker
+failure remains a nonfatal note. Inactive/server/menu contexts stay unchanged. The native early
+suite has 20 passing cases, including foreign/legacy classifications; the latest native run passes
+all 22 CTest entries. Controlled live runs record the stock initializer read hit.
+
+[`loader/proxy/backend.cpp`](../loader/proxy/backend.cpp) and the core command-line span/rewrite API
+normalize explicit alternate shader backends to stock D3D9 only during active RTX startup. All
+duplicates agree; unrelated raw arguments and RTX-off starts are preserved, and rollback restores
+W/A/PEB descriptors. Six backend and eleven core command-line cases pass. The companion's broader
+Lua guard passes seventeen unittest cases/eighteen LuaJIT scenarios and
+actual-package mixed-add-on, map, callback-fault, UI and secure dedicated probes. Raw R32F27 is a
+valid positive control. CI builds pinned official LuaJIT for these policies. See
+[ADR 0054](decisions/0054-rtx-rendering-startup-boundaries.md) for timing/state/coverage limits.
+No Remix or native fixes rebuild was needed; the accepted native fixes remain `5e626e34`.
+
 Item 24's oversized-skinning correction belongs in the GPL RTX fixes native module
 (`gmcl_RTXFixesBinary_win64.dll`), shipped by [`packages/fixes`](../packages/README.md). It extends
 the existing wrapper across dynamic and direct hardware entries, with scoped bone uploads/palette

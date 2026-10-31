@@ -2,6 +2,7 @@
 #include "modules.h"
 #include "presentation.h"
 #include "runtime.h"
+#include "early.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
 #include "nl/session.h"
@@ -118,6 +119,7 @@ struct StartupContext {
   status::Report report;
   startup::Prepared prepared;
   std::vector<std::pair<std::filesystem::path, std::filesystem::path>> read_redirects;
+  std::filesystem::path early_guard_source;
   RuntimeActivation runtime;
   StartupContext() {
     report.loader_version = NL_VERSION_STRING;
@@ -270,6 +272,22 @@ void startup_cxx(StartupContext& context) noexcept {
       context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW(),
                                                       activate::primary_display, activate::graphics_adapters);
       if (context.report.activation.plan.activate) {
+        try {
+          if (auto early = guard::prepare(context.root, context.prepared.config, generation,
+                                           context.report.activation.plan.runtime_id)) {
+            context.early_guard_source = early->source;
+            context.read_redirects.emplace_back(std::move(early->source), std::move(early->replacement));
+            context.report.session.notes.push_back("verified client render guard prepared before addon autorun");
+          }
+        } catch (const guard::RequiredUnavailable& error) {
+          auto& activation = context.report.activation;
+          activation.plan.activate = false;
+          activation.plan.reason = std::string("Required RTX render protection unavailable: ") + error.what();
+          activation.outcome = "failed";
+          context.report.session.notes.push_back("RTX skipped; continuing vanilla without unguarded V2 scripts");
+        } catch (const std::exception& error) {
+          context.report.session.notes.push_back(std::string("early render guard unavailable: ") + error.what());
+        }
         // ReShade (ADR 0028) is decided for RTX sessions only; a problem reading for it costs ReShade.
         auto& shade = context.report.activation.reshade;
         try {
@@ -280,6 +298,12 @@ void startup_cxx(StartupContext& context) noexcept {
         shade.reason = shade.plan.reason;
       }
       context.runtime.apply(context.root, generation, context.report.activation, context.report.session, context.read_redirects);
+      if (context.report.activation.outcome != "active" && !context.early_guard_source.empty()) {
+        // Display redirects remain useful in vanilla fallback; executable guard source is RTX-only.
+        std::erase_if(context.read_redirects, [&](const auto& redirect) {
+          return redirect.first == context.early_guard_source;
+        });
+      }
     } else {
       context.report.activation.reason = context.prepared.reason;
     }

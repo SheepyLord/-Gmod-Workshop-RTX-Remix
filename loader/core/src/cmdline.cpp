@@ -145,12 +145,13 @@ SwapResult swap_records(std::span<const RecordChange> changes, RecordWriter writ
   return result;
 }
 
-std::vector<std::wstring> tokenize(std::wstring_view line) {
-  std::vector<std::wstring> args;
+std::vector<Argument> argument_spans(std::wstring_view line) {
+  std::vector<Argument> args;
   std::size_t pos = 0;
   while (pos < line.size()) {
     while (pos < line.size() && whitespace(line[pos])) ++pos;
     if (pos == line.size()) break;
+    const auto begin = pos;
     std::wstring arg;
     bool quoted = false;
     while (pos < line.size() && (quoted || !whitespace(line[pos]))) {
@@ -173,8 +174,16 @@ std::vector<std::wstring> tokenize(std::wstring_view line) {
         if (pos < line.size() && (quoted || !whitespace(line[pos]))) arg.push_back(line[pos++]);
       }
     }
-    args.push_back(std::move(arg));
+    args.push_back({std::move(arg), begin, pos});
   }
+  return args;
+}
+
+std::vector<std::wstring> tokenize(std::wstring_view line) {
+  auto spans = argument_spans(line);
+  std::vector<std::wstring> args;
+  args.reserve(spans.size());
+  for (auto& arg : spans) args.push_back(std::move(arg.value));
   return args;
 }
 
@@ -208,6 +217,17 @@ void** cached_pointer_slot(const void* getter, std::size_t max_scan) {
 
 SwapResult append_arguments(const std::vector<std::string>& extra_args) {
   if (extra_args.empty()) return {true, {}};
+  const std::wstring original(GetCommandLineW());
+  return rewrite_arguments(original, original, extra_args);
+}
+
+SwapResult rewrite_arguments(std::wstring_view expected, std::wstring_view replacement,
+                             const std::vector<std::string>& extra_args) {
+  if (expected.find(L'\0') != std::wstring_view::npos || replacement.find(L'\0') != std::wstring_view::npos)
+    return {false, "command-line replacement contains NUL"};
+  if (expected == replacement && extra_args.empty())
+    return std::wstring_view(GetCommandLineW()) == expected ? SwapResult{true, {}}
+                                                         : SwapResult{false, "command line changed before the rewrite"};
   std::string suffix;
   for (const std::string& arg : extra_args) {
     for (const unsigned char c : arg) {
@@ -226,11 +246,30 @@ SwapResult append_arguments(const std::vector<std::string>& extra_args) {
   if (!slot_w || !slot_a) return {false, "GetCommandLine is not the cached-pointer shape on this Windows build"};
   wchar_t* current_w = GetCommandLineW();
   char* current_a = GetCommandLineA();  // builds the ANSI cache if it was not built yet
+  if (std::wstring_view(current_w) != expected) return {false, "command line changed before the rewrite"};
   auto* peb = reinterpret_cast<PEB*>(__readgsqword(0x60));
   if (!peb || !peb->ProcessParameters) return {false, "the PEB command line is unavailable"};
 
-  const std::wstring new_w = std::wstring(current_w) + std::wstring(suffix.begin(), suffix.end());
-  const std::string new_a = std::string(current_a) + suffix;
+  const std::wstring new_w = std::wstring(replacement) + std::wstring(suffix.begin(), suffix.end());
+  std::string new_a(current_a);
+  if (expected != replacement) {
+    const auto ansi = [](std::wstring_view text) -> std::optional<std::string> {
+      if (text.empty()) return std::string{};
+      if (text.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) return std::nullopt;
+      const int size = WideCharToMultiByte(CP_ACP, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+      if (size <= 0) return std::nullopt;
+      std::string value(static_cast<std::size_t>(size), '\0');
+      if (!WideCharToMultiByte(CP_ACP, 0, text.data(), static_cast<int>(text.size()), value.data(), size, nullptr, nullptr))
+        return std::nullopt;
+      return value;
+    };
+    const auto before = ansi(expected);
+    const auto after = ansi(replacement);
+    if (!before || !after || *before != current_a)
+      return {false, "ANSI command line differs from the wide cache; backend rewrite refused"};
+    new_a = *after;
+  }
+  new_a += suffix;
   auto heap_w = std::make_unique<wchar_t[]>(new_w.size() + 1);
   std::memcpy(heap_w.get(), new_w.c_str(), (new_w.size() + 1) * sizeof(wchar_t));
   auto heap_a = std::make_unique<char[]>(new_a.size() + 1);

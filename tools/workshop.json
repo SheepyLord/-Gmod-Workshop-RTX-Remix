@@ -8,7 +8,7 @@
     "tags": [
       "realism"
     ],
-    "description": "Native package for the GMod native loader: the RTX Remix runtime, the RTX fixes and ReShade for RTX sessions. This shipment needs loader 0.9.0 or later (bin\\win64\\winmm.dll) and a native-loader\\config.json that allowlists this item. It supports verified RTX client scripts on multiplayer servers with sv_allowcslua 0 and automatic backup and migration of supported previous RTXLauncher installations. GMod does not mount this item itself; the loader deploys it."
+    "description": "Native package for the GMod native loader: the RTX Remix runtime, the RTX fixes and ReShade for RTX sessions. This shipment needs loader 0.10.0 or later (bin\\win64\\winmm.dll) and a native-loader\\config.json that allowlists this item. It includes early client rendering compatibility checks on supported stock builds and process-only stock D3D9 selection for RTX. It supports verified RTX client scripts on multiplayer servers with sv_allowcslua 0 and automatic backup and migration of supported previous RTXLauncher installations. GMod does not mount this item itself; the loader deploys it."
   },
   "parts": [
     {

@@ -1,9 +1,10 @@
 #pragma once
-// Reading and extending the process command line in memory (M4). The engine reads its command line
+// Reading, extending and targeting replacements in the process command line in memory (M4).
+// The engine reads its command line
 // after the EXE entry point, through kernelbase's GetCommandLineW/A (KERNEL32 forwards to them) and
 // the PEB. The bootstrap, at the entry point, appends the runtime's launch arguments by pointing
-// those caches at longer strings, so no relaunch and no IAT patching per module is needed. The
-// parsing helpers are pure and testable; append_arguments() is Win32 and the bootstrap calls it.
+// those caches at owned strings, so no relaunch and no IAT patching per module is needed. The
+// parsing helpers are pure; append_arguments()/rewrite_arguments() are Win32 bootstrap operations.
 
 #include <cstddef>
 #include <cstdint>
@@ -18,6 +19,14 @@ namespace nl::cmdline {
 
 // Splits a command line into arguments by the Windows CommandLineToArgvW rules (quotes, backslashes).
 std::vector<std::wstring> tokenize(std::wstring_view line);
+
+struct Argument {
+  std::wstring value;
+  std::size_t begin = 0;
+  std::size_t end = 0;  // raw half-open span, including any quotes
+};
+// The same parser, retaining raw spans so a targeted edit preserves unrelated spelling/whitespace.
+std::vector<Argument> argument_spans(std::wstring_view line);
 
 // Case-insensitive: is `token` one of the arguments of `line`? Used to skip a launch argument the
 // user already passed (e.g. their own -dxlevel).
@@ -74,6 +83,7 @@ class SwapResult {
   std::unique_ptr<SwapState> state_;
   friend SwapResult swap_records(std::span<const RecordChange>, RecordWriter, void*);
   friend SwapResult append_arguments(const std::vector<std::string>&);
+  friend SwapResult rewrite_arguments(std::wstring_view, std::wstring_view, const std::vector<std::string>&);
 };
 
 // Validates every pointer/Length/MaximumLength and both old/new USHORT bounds before any write.
@@ -87,5 +97,11 @@ SwapResult swap_records(std::span<const RecordChange> changes, RecordWriter writ
 // returns !ok if a getter is not the expected shape or does not point at this command line (then
 // the caller falls back to documented launch options). An empty list is a successful no-op.
 SwapResult append_arguments(const std::vector<std::string>& extra_args);
+
+// Replace an expected current command line, then append ASCII session arguments, in one reversible
+// W/A/PEB swap. Refuses a changed wide cache or an ANSI cache that does not match the original
+// Windows ACP conversion. Unchanged text outside the replacement remains byte-exact in both caches.
+SwapResult rewrite_arguments(std::wstring_view expected, std::wstring_view replacement,
+                             const std::vector<std::string>& extra_args);
 
 }  // namespace nl::cmdline
