@@ -372,6 +372,51 @@ class StepRunTests(unittest.TestCase):
         self.assertGreater(sent[0][0], 1000 + ps.PARTIAL_MOUNT_GRACE)
         self.assertTrue(record['map_loaded'])
 
+    def test_crash_report_prompts_are_declined_never_accepted(self):
+        # After a crash the runtime's next start asks to upload crash data and then may show a notice;
+        # unanswered they hold the run until its timeout. They are answered No (IDNO), then OK (IDOK),
+        # by button id, so any Windows language works; IDYES is never sent.
+        sent = []
+        prompts = [[101], [102]]  # the question, then the notice that replaces it
+        with mock.patch.object(ps, 'crash_prompts', side_effect=lambda pid: prompts.pop(0) if prompts else []), \
+                mock.patch.object(ps.user32, 'SendMessageW', side_effect=lambda h, m, w, l: sent.append((h, m, w))):
+            self.assertEqual(ps.decline_crash_prompts(4242), 2)
+        self.assertEqual(sent, [(101, ps.WM_COMMAND, ps.IDNO), (102, ps.WM_COMMAND, ps.IDOK)])
+        self.assertNotIn(6, [command for _, _, command in sent])  # IDYES
+        # The run answers them while it waits for the map, and records how many.
+        clock, game = Clock(), FakeGame()
+        log = self.root / 'garrysmod' / 'console.log'
+        waits = {'n': 0}
+
+        def launch(*_, **__):
+            log.write_text('', encoding='utf-8')
+            return game
+
+        def decline(pid):
+            waits['n'] += 1
+            if waits['n'] == 3:
+                log.write_text('Clientside Lua startup!\n', encoding='utf-8')
+                return 1
+            return 0
+
+        def console(hwnd, command, attempts=6):
+            if command == 'quit':
+                game.quit()
+            return True
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'decline_crash_prompts', side_effect=decline), \
+                mock.patch.object(ps, 'console', side_effect=console), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'game_window', return_value=None), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(run_args(self.root, self.evidence))
+        self.assertEqual(record['declined_crash_prompts'], 1)
+        self.assertTrue(record['map_loaded'])
+
     def test_the_menu_shot_is_taken_at_the_menu_before_the_map(self):
         # --menu-shot: the main menu (the loader's diagnostics panel and add-on cards) is captured once
         # the Workshop is mounted, and only then is the map asked for.

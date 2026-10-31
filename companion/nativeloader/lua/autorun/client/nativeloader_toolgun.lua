@@ -1,4 +1,4 @@
--- Draw only the toolgun's live screen in the HUD pass, after Remix's temporal reconstruction.
+-- Draw only the toolgun's live screen in the HUD pass, after Remix's temporal reconstruction, as 2D.
 -- Its original renderer still owns the texture; custom tool screens and Dynamic Toolgun Screen
 -- keep updating it normally. No captured render-target hashes or persistent Remix categories.
 local enabled = CreateClientConVar("nativeloader_toolgun_screen", "1", true, false,
@@ -8,9 +8,6 @@ local stats = {captures = 0, draws = 0}
 local white = "models/debug/debugwhite"
 local screen = CreateMaterial("nativeloader_toolgun_screen", "UnlitGeneric", {
     ["$basetexture"] = white, ["$nocull"] = "1",
-})
-local output = CreateMaterial("nativeloader_toolgun_output", "UnlitGeneric", {
-    ["$basetexture"] = white, ["$translucent"] = "1", ["$vertexalpha"] = "1", ["$ignorez"] = "1",
 })
 
 local function screen_material(name)
@@ -92,75 +89,72 @@ hook.Add("PostDrawViewModel", "nativeloader_toolgun_screen", function(model, pla
     end
 end)
 
-local target, width, height
-local function render_screen(data)
-    local w, h = ScrW(), ScrH()
-    if not target or w ~= width or h ~= height then
-        target = GetRenderTargetEx("nativeloader_toolgun_" .. w .. "x" .. h, w, h,
-            RT_SIZE_NO_CHANGE, MATERIAL_RT_DEPTH_SEPARATE, 12, -- Source texture flags CLAMPS | CLAMPT
-            0, IMAGE_FORMAT_BGRA8888)
-        assert(target and not target:IsError(), "Could not create toolgun screen target")
-        width, height = w, h
-        output:SetTexture("$basetexture", target)
+-- The screen is drawn as screen-space triangles, projected here with the view model's own field of
+-- view: Remix rasterizes 2D HUD draws after its upscaling, while any perspective draw, even one made in
+-- HUDPaint into a render target, is taken into the path-traced scene (review R4: the earlier 3D redraw
+-- never reached the screen, and scrolling text kept Remix's temporal smear). Each triangle is cut into
+-- SUBDIVISIONS^2 smaller ones so the texture follows the perspective closely.
+local SUBDIVISIONS = 8
+local function projector(view, w, h)
+    local forward, right, up = view.angles:Forward(), view.angles:Right(), view.angles:Up()
+    -- CViewSetup's view model field of view is horizontal and already scaled to the aspect ratio.
+    local scale = 1 / math.tan(math.rad(view.fovviewmodel or view.fov) * 0.5)
+    local aspect = w / h
+    return function(position)
+        local offset = position - view.origin
+        local depth = offset:Dot(forward)
+        if depth <= 0.5 then return end
+        local x = offset:Dot(right) * scale / depth
+        local y = offset:Dot(up) * scale * aspect / depth
+        return (1 + x) * w * 0.5, (1 - y) * h * 0.5
     end
-    local view = data.view
-    local camera = {type = "3D", origin = view.origin, angles = view.angles,
-        fov = view.fovviewmodel, aspect = view.aspect, x = 0, y = 0, w = w, h = h,
-        znear = view.znearviewmodel, zfar = view.zfarviewmodel, offcenter = view.offcenter}
-    local targetPushed, cameraStarted, modelPushed, meshStarted = false, false, false, false
-    local ok, err = xpcall(function()
-        render.PushRenderTarget(target)
-        targetPushed = true
-        render.Clear(0, 0, 0, 0, true, true)
-        cam.Start(camera)
-        cameraStarted = true
-        -- Build a private depth mask so the screen cannot paint over the gun casing or hands.
-        render.OverrideColorWriteEnable(true, false)
-        render.OverrideAlphaWriteEnable(true, false)
-        render.OverrideDepthEnable(true, true)
-        data.model:DrawModel()
-        if IsValid(data.hands) then data.hands:DrawModel() end
-        render.OverrideColorWriteEnable(false)
-        render.OverrideAlphaWriteEnable(true, true)
-        render.DepthRange(0, 0.99999)
-        cam.PushModelMatrix(Matrix())
-        modelPushed = true
-        render.SetMaterial(screen)
-        for _, part in ipairs(data.parts) do
-            screen:SetTexture("$basetexture", part.texture)
-            render.SetMaterial(screen)
-            mesh.Begin(MATERIAL_TRIANGLES, #part.vertices / 3)
-            meshStarted = true
-            for _, vertex in ipairs(part.vertices) do
-                mesh.Position(vertex.position)
-                mesh.TexCoord(0, vertex.u, vertex.v)
-                mesh.Color(255, 255, 255, 255)
-                mesh.AdvanceVertex()
-            end
-            mesh.End()
-            meshStarted = false
+end
+
+local function lerp_vertex(a, b, c, i, j, n)
+    local s, t = i / n, j / n
+    local r = 1 - s - t
+    return a.position * r + b.position * s + c.position * t,
+        a.u * r + b.u * s + c.u * t, a.v * r + b.v * s + c.v * t
+end
+
+local function draw_triangle(project, a, b, c)
+    local n, rows = SUBDIVISIONS, {}
+    for i = 0, n do
+        rows[i] = {}
+        for j = 0, n - i do
+            local position, u, v = lerp_vertex(a, b, c, i, j, n)
+            local x, y = project(position)
+            if not x then return false end
+            rows[i][j] = {x = x, y = y, u = u, v = v}
         end
-    end, debug.traceback)
-    if meshStarted then pcall(mesh.End) end
-    if modelPushed then cam.PopModelMatrix() end
-    render.OverrideColorWriteEnable(false)
-    render.OverrideAlphaWriteEnable(false)
-    render.OverrideDepthEnable(false)
-    render.DepthRange(0, 1)
-    if cameraStarted then cam.End3D() end
-    if targetPushed then render.PopRenderTarget() end
-    if not ok then error(err) end
-    stats.draws = stats.draws + 1
-    surface.SetMaterial(output)
+    end
+    for i = 0, n - 1 do
+        for j = 0, n - 1 - i do
+            surface.DrawPoly({rows[i][j], rows[i + 1][j], rows[i][j + 1]})
+            if i + j + 2 <= n then surface.DrawPoly({rows[i + 1][j], rows[i + 1][j + 1], rows[i][j + 1]}) end
+        end
+    end
+    return true
+end
+
+local function render_screen(data)
+    local project = projector(data.view, ScrW(), ScrH())
     surface.SetDrawColor(255, 255, 255, 255)
-    surface.DrawTexturedRect(0, 0, w, h)
+    for _, part in ipairs(data.parts) do
+        screen:SetTexture("$basetexture", part.texture)
+        surface.SetMaterial(screen)
+        local vertices = part.vertices
+        for index = 1, #vertices - 2, 3 do
+            if not draw_triangle(project, vertices[index], vertices[index + 1], vertices[index + 2]) then return end
+        end
+    end
+    stats.draws = stats.draws + 1
 end
 
 hook.Add("HUDPaint", "nativeloader_toolgun_screen", function()
     if drawing or failed or not enabled:GetBool() then return end
     local data = captured
     if not data or data.frame ~= FrameNumber() or not IsValid(data.model) then return end
-    if render.GetRenderTarget() ~= nil then return end
     drawing = true
     local ok, err = xpcall(function() render_screen(data) end, debug.traceback)
     drawing = false

@@ -341,6 +341,43 @@ def game_window(pid: int) -> int | None:
     return found[0] if found else None
 
 
+CRASH_PROMPT_TITLE = "RTX Remix Crash Report"
+WM_COMMAND, IDOK, IDNO = 0x0111, 1, 7
+user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+
+
+def crash_prompts(pid: int) -> list[int]:
+    """The Remix runtime's "RTX Remix Crash Report" message boxes open in the game process `pid`."""
+    found = []
+
+    def visit(hwnd, _):
+        owner = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+        if owner.value == pid and user32.IsWindowVisible(hwnd):
+            title = ctypes.create_unicode_buffer(256)
+            user32.GetWindowTextW(hwnd, title, 256)
+            if title.value == CRASH_PROMPT_TITLE:
+                found.append(hwnd)
+        return True
+
+    user32.EnumWindows(WNDENUMPROC(visit), 0)
+    return found
+
+
+def decline_crash_prompts(pid: int) -> int:
+    """Answers the runtime's crash-report prompts after a crash with No, never with Yes: the start
+    after a crash otherwise waits on "upload crash data?" (and then on a notice that pending reports
+    could not be removed) until the run times out. A message box takes its button's id through
+    WM_COMMAND, so this works in any Windows language: IDNO declines the upload, IDOK closes a notice.
+    Consent is never given (RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES would grant it)."""
+    answered = 0
+    for command in (IDNO, IDOK):
+        for hwnd in crash_prompts(pid):
+            user32.SendMessageW(hwnd, WM_COMMAND, command, 0)
+            answered += 1
+    return answered
+
+
 def screenshot(hwnd: int, destination: Path) -> dict:
     """Captures the window's client area through DWM (PrintWindow with PW_RENDERFULLCONTENT), so the
     window need not be in front. Falls back to a screen grab of its rectangle if that comes back black."""
@@ -642,12 +679,18 @@ def step_run(args) -> dict:
     def log_text() -> str:
         return read_shared(console_log, offset)
 
+    def decline_prompts() -> None:
+        declined = decline_crash_prompts(process.pid)
+        if declined:
+            record["declined_crash_prompts"] = record.get("declined_crash_prompts", 0) + declined
+
     def wait_for(marker: re.Pattern, count: int, deadline: float) -> bool:
         while time.monotonic() < deadline:
             if process.poll() is not None:
                 return False
             if len(marker.findall(log_text())) >= count:
                 return True
+            decline_prompts()
             time.sleep(0.5)
         return False
 
@@ -717,6 +760,7 @@ def step_run(args) -> dict:
         rule = None
         while time.monotonic() < deadline and process.poll() is None:
             time.sleep(0.5)
+            decline_prompts()
             text = log_text()
             found = WORKSHOP_MOUNTED.findall(text)
             if found and first_seen is None:
