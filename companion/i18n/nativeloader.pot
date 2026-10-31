@@ -433,7 +433,7 @@ msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Sa
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
-msgid "Update bin\\win64\\winmm.dll to an R6 loader before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
+msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
@@ -461,7 +461,7 @@ msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fi
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
-msgid "This R6 loader also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
+msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
@@ -473,11 +473,11 @@ msgid "Before restarting, copy status.json and session.json from garrysmod\\data
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
-msgid "At the next start, this R6 loader copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
+msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
-msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll for R6 evidence collection."
+msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
@@ -489,7 +489,7 @@ msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
-msgid "For a requested GPU-crash reproduction on this R6 loader, change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
+msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:94

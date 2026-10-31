@@ -433,8 +433,8 @@ msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Sa
 msgstr "在 Alt+X 中关闭帧生成，并点击 'User Settings (user.conf): Save'，以免保存的值在下次启动时恢复。将 Garry's Mod 的纹理细节保持为最高：降低此设置会改变 Remix 用于计算哈希的纹理，可能导致替换失效。减少高负载角色的数量以降低内存压力。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
-msgid "Update bin\\win64\\winmm.dll to an R6 loader before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
-msgstr "更改性能档位或 GPU 崩溃诊断之前，请将 bin\\win64\\winmm.dll 更新为 R6 加载器。旧加载器会拒绝这些配置键，并在不启用 RTX 的情况下启动。"
+msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
+msgstr "更改性能档位或 GPU 崩溃诊断之前，请将 bin\\win64\\winmm.dll 更新为 0.11.0 加载器。旧加载器会拒绝这些配置键，并在不启用 RTX 的情况下启动。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
 msgid "Performance tiers"
@@ -461,8 +461,8 @@ msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fi
 msgstr "控制台：RTX 修复可用时，rtx_vram_stats 会显示显存总量和分类。伴随插件每 30 秒记录 garrysmod\\data\\native-loader\\vram.csv 和 vram.previous.csv。API 连续调用失败三次后，本地图中将停止采样；将 nativeloader_vram_telemetry 关闭 (0) 再开启 (1) 可重试。这些文件仅保存在本地。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
-msgid "This R6 loader also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
-msgstr "此 R6 加载器还会将进程 RAM 和系统提交量记录到 native-loader\\logs\\memory.csv。"
+msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
+msgstr "此 0.11.0 加载器还会将进程 RAM 和系统提交量记录到 native-loader\\logs\\memory.csv。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
 msgid "After a crash"
@@ -473,12 +473,12 @@ msgid "Before restarting, copy status.json and session.json from garrysmod\\data
 msgstr "重启之前，请复制 garrysmod\\data\\native-loader\\ 中的 status.json 和 session.json、两个 vram CSV 文件以及 rtx-remix\\logs\\。下次启动会重写这两个 JSON 报告，也可能覆盖运行时日志；会话证据文件夹不会保存这两个 JSON 报告。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
-msgid "At the next start, this R6 loader copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
-msgstr "下次启动时，此 R6 加载器会将可用的上一会话日志、转储和内存历史复制到 native-loader\\logs\\sessions\\（最近五次会话，总计最多 200 MB）。原始文件保留在原处；这些副本不会上传。请在轮换前复制相应的会话文件夹。如果未保留文件夹，请手动保存 crashes\\、native-loader\\logs\\gpu\\ 和内存 CSV 文件。"
+msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
+msgstr "下次启动时，此 0.11.0 加载器会将可用的上一会话日志、转储和内存历史复制到 native-loader\\logs\\sessions\\（最近五次会话，总计最多 200 MB）。原始文件保留在原处；这些副本不会上传。请在轮换前复制相应的会话文件夹。如果未保留文件夹，请手动保存 crashes\\、native-loader\\logs\\gpu\\ 和内存 CSV 文件。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
-msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll for R6 evidence collection."
-msgstr "此旧加载器不会收集会话证据文件夹。重启游戏之前，请复制 rtx-remix\\logs\\ 和 crashes\\ 中对应的转储；更新 bin\\win64\\winmm.dll 后才能使用 R6 证据收集。"
+msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
+msgstr "此旧加载器不会收集会话证据文件夹。重启游戏之前，请复制 rtx-remix\\logs\\ 和 crashes\\ 中对应的转储；更新 bin\\win64\\winmm.dll 后才能使用 0.11.0 证据收集。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
 msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
@@ -489,8 +489,8 @@ msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\
 msgstr "如果会话文件夹未保存相应文件，请保留 crashes\\ 或 native-loader\\logs\\gpu\\ 中的原始转储和 shaderDebugInfo\\*.nvdbg。GPU 挂起时，请附上事件查看器中时间相近的 Display 或 nvlddmkm 系统事件，以及对应的 Windows LiveKernelReports\\WATCHDOG 转储。转储可能包含进程内存；分享前请检查内容。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
-msgid "For a requested GPU-crash reproduction on this R6 loader, change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
-msgstr "如果被要求在此 R6 加载器上复现 GPU 崩溃，请在上方完整 config.json 示例中将 diagnostics.gpu_crash_dumps 从 \"off\" 改为 \"next_start\" 并重启。配置值会保持为 \"next_start\"；如需再次启用一个诊断启动，请删除 native-loader\\remix\\gpu-crash-dumps.used。诊断会增加开销；只有受支持的诊断捕获到崩溃时才会生成 GPU 转储。"
+msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
+msgstr "如果被要求在此 0.11.0 加载器上复现 GPU 崩溃，请在上方完整 config.json 示例中将 diagnostics.gpu_crash_dumps 从 \"off\" 改为 \"next_start\" 并重启。配置值会保持为 \"next_start\"；如需再次启用一个诊断启动，请删除 native-loader\\remix\\gpu-crash-dumps.used。诊断会增加开销；只有受支持的诊断捕获到崩溃时才会生成 GPU 转储。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:94
 msgid "Troubleshooting"

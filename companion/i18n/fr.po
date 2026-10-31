@@ -433,8 +433,8 @@ msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Sa
 msgstr "Désactivez la génération d’images dans Alt+X et utilisez 'User Settings (user.conf): Save' pour éviter qu’une valeur enregistrée ne revienne au prochain démarrage. Gardez le détail des textures de Garry's Mod au maximum : le réduire modifie les textures dont Remix calcule les empreintes et peut empêcher les remplacements de correspondre. Réduisez le nombre de personnages lourds pour alléger la mémoire."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
-msgid "Update bin\\win64\\winmm.dll to an R6 loader before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
-msgstr "Mettez bin\\win64\\winmm.dll à jour vers un chargeur R6 avant de changer les niveaux de performance ou les diagnostics de plantage GPU. Les anciens chargeurs rejettent ces clés de configuration et démarrent sans RTX."
+msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
+msgstr "Mettez bin\\win64\\winmm.dll à jour vers un chargeur 0.11.0 avant de changer les niveaux de performance ou les diagnostics de plantage GPU. Les anciens chargeurs rejettent ces clés de configuration et démarrent sans RTX."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
 msgid "Performance tiers"
@@ -461,8 +461,8 @@ msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fi
 msgstr "Console : rtx_vram_stats affiche les totaux et catégories de VRAM lorsque les correctifs RTX sont disponibles. Le compagnon écrit garrysmod\\data\\native-loader\\vram.csv et vram.previous.csv toutes les 30 secondes. Après trois appels API échoués de suite, il s’arrête pour cette carte ; désactivez (0) puis réactivez (1) nativeloader_vram_telemetry pour réessayer. Ces fichiers restent locaux."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
-msgid "This R6 loader also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
-msgstr "Ce chargeur R6 écrit aussi native-loader\\logs\\memory.csv avec la RAM du processus et la mémoire validée du système."
+msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
+msgstr "Ce chargeur 0.11.0 écrit aussi native-loader\\logs\\memory.csv avec la RAM du processus et la mémoire validée du système."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
 msgid "After a crash"
@@ -473,12 +473,12 @@ msgid "Before restarting, copy status.json and session.json from garrysmod\\data
 msgstr "Avant de redémarrer, copiez status.json et session.json depuis garrysmod\\data\\native-loader\\, les deux CSV vram et rtx-remix\\logs\\. Le démarrage suivant réécrit les deux rapports JSON et peut écraser les journaux du moteur ; le dossier de preuves de session ne conserve pas ces rapports JSON."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
-msgid "At the next start, this R6 loader copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
-msgstr "Au démarrage suivant, ce chargeur R6 copie les journaux, dumps et mesures mémoire disponibles de la session précédente dans native-loader\\logs\\sessions\\ (cinq dernières sessions, 200 Mo au total au maximum). Les originaux restent en place ; ces copies ne sont jamais envoyées. Copiez le dossier concerné avant sa rotation. Si aucun dossier n’a été conservé, gardez manuellement crashes\\, native-loader\\logs\\gpu\\ et les CSV mémoire."
+msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
+msgstr "Au démarrage suivant, ce chargeur 0.11.0 copie les journaux, dumps et mesures mémoire disponibles de la session précédente dans native-loader\\logs\\sessions\\ (cinq dernières sessions, 200 Mo au total au maximum). Les originaux restent en place ; ces copies ne sont jamais envoyées. Copiez le dossier concerné avant sa rotation. Si aucun dossier n’a été conservé, gardez manuellement crashes\\, native-loader\\logs\\gpu\\ et les CSV mémoire."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
-msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll for R6 evidence collection."
-msgstr "Cet ancien chargeur ne collecte pas de dossier de preuves de session. Copiez rtx-remix\\logs\\ et les dumps correspondants de crashes\\ avant de redémarrer le jeu ; mettez bin\\win64\\winmm.dll à jour pour la collecte R6."
+msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
+msgstr "Cet ancien chargeur ne collecte pas de dossier de preuves de session. Copiez rtx-remix\\logs\\ et les dumps correspondants de crashes\\ avant de redémarrer le jeu ; mettez bin\\win64\\winmm.dll à jour pour la collecte 0.11.0."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
 msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
@@ -489,8 +489,8 @@ msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\
 msgstr "Si aucun dossier de session ne les a conservés, gardez les dumps originaux correspondants de crashes\\ ou native-loader\\logs\\gpu\\ et les fichiers shaderDebugInfo\\*.nvdbg. Si le GPU se bloque, joignez les événements Système proches de cet instant dans l’Observateur d’événements, provenant de Display ou nvlddmkm, et le dump Windows LiveKernelReports\\WATCHDOG correspondant. Les dumps peuvent contenir la mémoire du processus ; vérifiez ce que vous partagez."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
-msgid "For a requested GPU-crash reproduction on this R6 loader, change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
-msgstr "Pour une reproduction de plantage GPU demandée sur ce chargeur R6, passez diagnostics.gpu_crash_dumps de \"off\" à \"next_start\" dans l’exemple complet de config.json ci-dessus, puis redémarrez. La valeur reste \"next_start\" dans la configuration ; pour demander un autre démarrage diagnostique, supprimez native-loader\\remix\\gpu-crash-dumps.used. Les diagnostics ajoutent une charge ; un dump GPU n’est créé que si les diagnostics pris en charge capturent le plantage."
+msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
+msgstr "Pour une reproduction de plantage GPU demandée sur ce chargeur 0.11.0, passez diagnostics.gpu_crash_dumps de \"off\" à \"next_start\" dans l’exemple complet de config.json ci-dessus, puis redémarrez. La valeur reste \"next_start\" dans la configuration ; pour demander un autre démarrage diagnostique, supprimez native-loader\\remix\\gpu-crash-dumps.used. Les diagnostics ajoutent une charge ; un dump GPU n’est créé que si les diagnostics pris en charge capturent le plantage."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:94
 msgid "Troubleshooting"

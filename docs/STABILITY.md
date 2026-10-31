@@ -21,16 +21,16 @@ tab > Start here > Memory and stability guide** (console: `nativeloader_stabilit
   reduce memory pressure instead. A character pack with 2048 px PBR maps is lighter than a 4096 px
   pack; the original game textures and the Remix replacement maps both have a cost.
 
-## Check the loader before using R6 settings
+## Check the loader before using its 0.11.0 settings
 
-Open `garrysmod\data\native-loader\status.json`. The **R6-only** instructions below apply only
+Open `garrysmod\data\native-loader\status.json`. The **0.11.0-only** instructions below apply only
 when it has an `activation.performance_tier` object. The Workshop companion updates independently
-of `bin\win64\winmm.dll`; update that DLL to an R6 loader if this field is absent. Loaders before R6
+of `bin\win64\winmm.dll`; update that DLL to loader 0.11.0 or later if this field is absent. Older loaders
 (including 0.10.1) reject the new tier and diagnostics configuration keys and start **without RTX**.
-Until updated, skip both R6-only sections. After a crash, **copy `rtx-remix\logs\`, `status.json`
+Until updated, skip both 0.11.0-only sections. After a crash, **copy `rtx-remix\logs\`, `status.json`
 and `session.json` before restarting**; older loaders do not collect session evidence automatically.
 
-## Performance tiers (R6 loader only)
+## Performance tiers (loader 0.11.0 or later)
 
 When an NVIDIA adapter is identified, the RTX Remix tab's **Start here** panel shows the loader's
 tier, selection source, GPU and dedicated VRAM. When a non-high tier has no layer, the panel shows
@@ -81,7 +81,7 @@ without the package's smaller night-sky assets. Read the reason shown in **Start
 Console `rtx_vram_stats` prints the driver's VRAM budget/use, DXVK totals and Remix categories when
 the RTX fixes are available. The local CSVs are:
 
-- **R6 loader only:** `native-loader\logs\memory.csv` and its rotated `memory.1.csv`: process RAM,
+- **Loader 0.11.0 or later:** `native-loader\logs\memory.csv` and its rotated `memory.1.csv`: process RAM,
   system commit and GPU local/non-local memory, sampled by the loader every 10 seconds.
 - `garrysmod\data\native-loader\vram.csv` and `vram.previous.csv`: Remix totals/categories every
   30 seconds, when `RemixResource.GetVramStats` is available. Two hourly segments keep at most 240
@@ -102,7 +102,7 @@ These files stay local. For how to interpret their units and compare the reading
 The next start rewrites both JSON reports and may overwrite runtime logs. The session evidence
 collector does **not** copy those JSON reports.
 
-**R6 loader only (with `activation.performance_tier`):** at the next start, the loader keeps
+**Loader 0.11.0 or later (with `activation.performance_tier`):** at the next start, the loader keeps
 available previous-session logs, dumps and a tail of the memory history under
 **`native-loader\logs\sessions\<UTC time>-<reason>\`**. It keeps the last five sessions,
 at most 200 MB in total, leaves original files in place and does not upload these copies. Files
@@ -110,7 +110,7 @@ that are locked or exceed the retention allowance may be missing. The status rep
 `previous_session.folder` and main-menu diagnostics identify the folder when available.
 
 With an older loader, preserve logs and matching dumps manually before restarting and update
-`bin\win64\winmm.dll` for R6 collection. Copy any retained session folder before it rotates. Send:
+`bin\win64\winmm.dll` (0.11.0 or later) for this collection. Copy any retained session folder before it rotates. Send:
 
 - That **session folder**, which already contains the available runtime log, crash dumps and memory
   history. If no folder was kept (including with older loaders), preserve `rtx-remix\logs\`, the
@@ -130,7 +130,7 @@ automatically, attach its matching original dump or shader debug data (`*.nv-gpu
 process memory; review them before sharing. There is no need to send duplicate copies of files
 already in the session folder.
 
-## GPU crash diagnostics (R6 loader only)
+## GPU crash diagnostics (loader 0.11.0 or later)
 
 Use this section **only when `status.json` has `activation.performance_tier`**. Otherwise update
 `bin\win64\winmm.dll` first; older loaders reject `diagnostics` and start without RTX.

@@ -70,6 +70,13 @@ Graphics cards
 - RTX Remix needs a GPU with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or
   newer, Intel Arc. An older card cannot start an RTX session; turn RTX off ("remix": { "enabled":
   false } below) or start with -nonativeloader.
+- Loader 0.11.0 matches Remix's settings to your NVIDIA card (performance tiers). "high" keeps the
+  package's settings, tuned on an RTX 5090. "medium" (for example an RTX 4070, or a card with 10 to
+  12 GB) and "low" (an RTX 4060, 3060 or 2060, or any card with 8 GB) use fewer light bounces, a
+  lighter neural radiance cache and smaller memory budgets, so the frame rate holds up and more
+  video memory stays free. The loader takes the lower of what the card's memory and its model
+  allow; a laptop GPU counts one step lower. The "RTX Remix" tab's Start here page shows the tier
+  and why. Settings you save in Remix's menu (Alt+X) still win over the tier's.
 - Frame generation is off at first. Turn it on in the "RTX Remix" tab (Remix settings > Frame
   generation): DLSS-G needs an RTX 40 or newer, and more than one generated frame (3x, 4x) an RTX 50,
   set in Remix's menu (Alt+X).
@@ -90,6 +97,28 @@ Settings (native-loader\config.json)
 - RTX off, without uninstalling:  { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "enabled": false } }
 - The loader off:                  add "enabled": false
 - Nothing else in the file is needed. Native code comes only from what "allow" lists.
+- Loader 0.11.0 also reads these, all optional. An older loader rejects them and starts without
+  RTX, so replace bin\win64\winmm.dll first.
+  - "remix": { "performance_tier": "low" } picks the tier yourself: "high", "medium" or "low";
+    "auto" (the default) lets the loader choose.
+  - "diagnostics": { "gpu_crash_dumps": "next_start" } turns on NVIDIA's GPU crash diagnostics for
+    the next RTX start, so a GPU crash leaves a dump in native-loader\logs\gpu; "always" turns them
+    on at every start, "off" (the default) never. They cost some speed while they are on.
+  - "diagnostics": { "memory_telemetry": "off" } stops the memory history the loader keeps in
+    native-loader\logs\memory.csv (on by default; the last one to two hours; never uploaded).
+  For example, the low tier:
+  { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "performance_tier": "low" } }
+
+After a crash
+-------------
+
+- Loader 0.11.0 keeps what a session left behind before the next start overwrites it: Remix's
+  log, the crash dumps already on your disk and the memory history, copied into
+  native-loader\logs\sessions (the last five sessions, at most 200 MB). Nothing is uploaded, and the
+  originals stay where they are. The home menu shows what probably went wrong last time and where
+  the copies are.
+- The in-game guide (console command nativeloader_guide) has a "Memory and stability" page: what to
+  try with an 8 GB card or 16 GB of RAM, and what to send with a crash report.
 
 RTX content from other Workshop items
 -------------------------------------

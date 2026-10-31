@@ -433,8 +433,8 @@ msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Sa
 msgstr "Alt+X에서 프레임 생성을 끄고 'User Settings (user.conf): Save'로 저장하세요. 저장하지 않으면 다음 시작 때 이전 값이 돌아올 수 있습니다. Garry's Mod의 텍스처 세부 수준은 최대로 유지하세요. 낮추면 Remix가 해시를 계산하는 텍스처가 바뀌어 교체가 일치하지 않을 수 있습니다. 무거운 캐릭터 수를 줄여 메모리 부담을 낮추세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
-msgid "Update bin\\win64\\winmm.dll to an R6 loader before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
-msgstr "성능 등급이나 GPU 충돌 진단을 변경하기 전에 bin\\win64\\winmm.dll을 R6 로더로 업데이트하세요. 이전 로더는 이 설정 키를 거부하고 RTX 없이 시작합니다."
+msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
+msgstr "성능 등급이나 GPU 충돌 진단을 변경하기 전에 bin\\win64\\winmm.dll을 0.11.0 로더로 업데이트하세요. 이전 로더는 이 설정 키를 거부하고 RTX 없이 시작합니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
 msgid "Performance tiers"
@@ -461,8 +461,8 @@ msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fi
 msgstr "콘솔: RTX 수정 모듈을 사용할 수 있으면 rtx_vram_stats가 VRAM 합계와 범주를 표시합니다. 동반 애드온은 garrysmod\\data\\native-loader\\vram.csv와 vram.previous.csv에 30초마다 기록합니다. API 호출이 세 번 연속 실패하면 이 맵에서 샘플링을 중단합니다. 다시 시도하려면 nativeloader_vram_telemetry를 끄고 (0) 켜세요 (1). 이 파일은 로컬에만 남습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
-msgid "This R6 loader also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
-msgstr "이 R6 로더는 native-loader\\logs\\memory.csv에 프로세스 RAM과 시스템 커밋 값도 기록합니다."
+msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
+msgstr "이 0.11.0 로더는 native-loader\\logs\\memory.csv에 프로세스 RAM과 시스템 커밋 값도 기록합니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
 msgid "After a crash"
@@ -473,12 +473,12 @@ msgid "Before restarting, copy status.json and session.json from garrysmod\\data
 msgstr "다시 시작하기 전에 garrysmod\\data\\native-loader\\의 status.json과 session.json, 두 vram CSV 파일 및 rtx-remix\\logs\\를 복사하세요. 다음 시작 때 두 JSON 보고서가 다시 작성되며 런타임 로그도 덮어쓸 수 있습니다. 세션 증거 폴더는 이 JSON 보고서를 보관하지 않습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
-msgid "At the next start, this R6 loader copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
-msgstr "다음 시작 때 이 R6 로더는 사용 가능한 이전 세션 로그, 덤프, 메모리 기록을 native-loader\\logs\\sessions\\에 복사합니다(최근 5개 세션, 총 200 MB 이하). 원본은 그대로 두며 복사본은 업로드하지 않습니다. 교체되기 전에 해당 세션 폴더를 복사하세요. 폴더가 보관되지 않았다면 crashes\\, native-loader\\logs\\gpu\\ 및 메모리 CSV 파일을 직접 보존하세요."
+msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
+msgstr "다음 시작 때 이 0.11.0 로더는 사용 가능한 이전 세션 로그, 덤프, 메모리 기록을 native-loader\\logs\\sessions\\에 복사합니다(최근 5개 세션, 총 200 MB 이하). 원본은 그대로 두며 복사본은 업로드하지 않습니다. 교체되기 전에 해당 세션 폴더를 복사하세요. 폴더가 보관되지 않았다면 crashes\\, native-loader\\logs\\gpu\\ 및 메모리 CSV 파일을 직접 보존하세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
-msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll for R6 evidence collection."
-msgstr "이 이전 로더는 세션 증거 폴더를 수집하지 않습니다. 게임을 다시 시작하기 전에 rtx-remix\\logs\\와 crashes\\의 해당 덤프를 복사하세요. R6 증거 수집을 사용하려면 bin\\win64\\winmm.dll을 업데이트하세요."
+msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
+msgstr "이 이전 로더는 세션 증거 폴더를 수집하지 않습니다. 게임을 다시 시작하기 전에 rtx-remix\\logs\\와 crashes\\의 해당 덤프를 복사하세요. 0.11.0 증거 수집을 사용하려면 bin\\win64\\winmm.dll을 업데이트하세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
 msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
@@ -489,8 +489,8 @@ msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\
 msgstr "세션 폴더에 보관되지 않았다면 crashes\\ 또는 native-loader\\logs\\gpu\\의 해당 원본 덤프와 shaderDebugInfo\\*.nvdbg를 보존하세요. GPU가 멈췄다면 시간상 가까운 이벤트 뷰어 System 이벤트(Display 또는 nvlddmkm)와 해당 Windows LiveKernelReports\\WATCHDOG 덤프도 포함하세요. 덤프에 프로세스 메모리가 포함될 수 있으므로 공유할 내용을 확인하세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
-msgid "For a requested GPU-crash reproduction on this R6 loader, change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
-msgstr "이 R6 로더에서 GPU 충돌 재현을 요청받았다면 위의 완전한 config.json 예제에서 diagnostics.gpu_crash_dumps를 \"off\"에서 \"next_start\"로 바꾸고 다시 시작하세요. 설정 값은 \"next_start\"로 유지됩니다. 진단 시작을 다시 요청하려면 native-loader\\remix\\gpu-crash-dumps.used를 삭제하세요. 진단은 부하를 추가하며, 지원되는 진단이 충돌을 포착한 경우에만 GPU 덤프가 생성됩니다."
+msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
+msgstr "이 0.11.0 로더에서 GPU 충돌 재현을 요청받았다면 위의 완전한 config.json 예제에서 diagnostics.gpu_crash_dumps를 \"off\"에서 \"next_start\"로 바꾸고 다시 시작하세요. 설정 값은 \"next_start\"로 유지됩니다. 진단 시작을 다시 요청하려면 native-loader\\remix\\gpu-crash-dumps.used를 삭제하세요. 진단은 부하를 추가하며, 지원되는 진단이 충돌을 포착한 경우에만 GPU 덤프가 생성됩니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:94
 msgid "Troubleshooting"

@@ -433,8 +433,8 @@ msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Sa
 msgstr "在 Alt+X 中關閉畫格生成，並按下 'User Settings (user.conf): Save'，以免儲存的值在下次啟動時恢復。將 Garry's Mod 的材質細節保持為最高：降低此設定會改變 Remix 計算雜湊的材質，可能導致替換失效。減少高負載角色的數量以降低記憶體壓力。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
-msgid "Update bin\\win64\\winmm.dll to an R6 loader before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
-msgstr "變更效能等級或 GPU 當機診斷之前，請將 bin\\win64\\winmm.dll 更新為 R6 載入器。舊載入器會拒絕這些設定鍵，並在未啟用 RTX 的情況下啟動。"
+msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
+msgstr "變更效能等級或 GPU 當機診斷之前，請將 bin\\win64\\winmm.dll 更新為 0.11.0 載入器。舊載入器會拒絕這些設定鍵，並在未啟用 RTX 的情況下啟動。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
 msgid "Performance tiers"
@@ -461,8 +461,8 @@ msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fi
 msgstr "主控台：RTX 修正可用時，rtx_vram_stats 會顯示顯示記憶體總量與分類。伴隨附加元件每 30 秒記錄 garrysmod\\data\\native-loader\\vram.csv 和 vram.previous.csv。API 連續呼叫失敗三次後，本地圖將停止取樣；將 nativeloader_vram_telemetry 關閉 (0) 再開啟 (1) 即可重試。這些檔案僅保存在本機。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
-msgid "This R6 loader also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
-msgstr "此 R6 載入器也會將處理程序 RAM 和系統認可量記錄至 native-loader\\logs\\memory.csv。"
+msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
+msgstr "此 0.11.0 載入器也會將處理程序 RAM 和系統認可量記錄至 native-loader\\logs\\memory.csv。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
 msgid "After a crash"
@@ -473,12 +473,12 @@ msgid "Before restarting, copy status.json and session.json from garrysmod\\data
 msgstr "重新啟動之前，請複製 garrysmod\\data\\native-loader\\ 中的 status.json 和 session.json、兩個 vram CSV 檔案及 rtx-remix\\logs\\。下次啟動會重寫這兩個 JSON 報告，也可能覆寫執行階段記錄；工作階段證據資料夾不會保存這兩個 JSON 報告。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
-msgid "At the next start, this R6 loader copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
-msgstr "下次啟動時，此 R6 載入器會將可用的上一工作階段記錄、傾印和記憶體歷史複製到 native-loader\\logs\\sessions\\（最近五次工作階段，總計最多 200 MB）。原始檔案留在原處；這些副本不會上傳。請在輪替前複製對應的工作階段資料夾。若未保留資料夾，請手動保存 crashes\\、native-loader\\logs\\gpu\\ 和記憶體 CSV 檔案。"
+msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
+msgstr "下次啟動時，此 0.11.0 載入器會將可用的上一工作階段記錄、傾印和記憶體歷史複製到 native-loader\\logs\\sessions\\（最近五次工作階段，總計最多 200 MB）。原始檔案留在原處；這些副本不會上傳。請在輪替前複製對應的工作階段資料夾。若未保留資料夾，請手動保存 crashes\\、native-loader\\logs\\gpu\\ 和記憶體 CSV 檔案。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
-msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll for R6 evidence collection."
-msgstr "此舊載入器不會收集工作階段證據資料夾。重新啟動遊戲前，請複製 rtx-remix\\logs\\ 與 crashes\\ 中對應的傾印；更新 bin\\win64\\winmm.dll 才能使用 R6 證據收集。"
+msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
+msgstr "此舊載入器不會收集工作階段證據資料夾。重新啟動遊戲前，請複製 rtx-remix\\logs\\ 與 crashes\\ 中對應的傾印；更新 bin\\win64\\winmm.dll 才能使用 0.11.0 證據收集。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
 msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
@@ -489,8 +489,8 @@ msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\
 msgstr "若工作階段資料夾未保存對應檔案，請保留 crashes\\ 或 native-loader\\logs\\gpu\\ 中的原始傾印及 shaderDebugInfo\\*.nvdbg。GPU 停止回應時，請附上事件檢視器中時間相近的 Display 或 nvlddmkm 系統事件，以及對應的 Windows LiveKernelReports\\WATCHDOG 傾印。傾印可能包含處理程序記憶體；分享前請檢查內容。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
-msgid "For a requested GPU-crash reproduction on this R6 loader, change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
-msgstr "若被要求在此 R6 載入器上重現 GPU 當機，請在上方完整 config.json 範例中將 diagnostics.gpu_crash_dumps 從 \"off\" 改為 \"next_start\" 並重新啟動。設定值會保持為 \"next_start\"；若要再次啟用一次診斷啟動，請刪除 native-loader\\remix\\gpu-crash-dumps.used。診斷會增加負載；只有受支援的診斷擷取到當機時才會產生 GPU 傾印。"
+msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
+msgstr "若被要求在此 0.11.0 載入器上重現 GPU 當機，請在上方完整 config.json 範例中將 diagnostics.gpu_crash_dumps 從 \"off\" 改為 \"next_start\" 並重新啟動。設定值會保持為 \"next_start\"；若要再次啟用一次診斷啟動，請刪除 native-loader\\remix\\gpu-crash-dumps.used。診斷會增加負載；只有受支援的診斷擷取到當機時才會產生 GPU 傾印。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:94
 msgid "Troubleshooting"
