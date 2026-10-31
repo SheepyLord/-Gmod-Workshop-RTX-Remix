@@ -333,6 +333,23 @@ no shader source or ABI changes are needed. Tags affect all draws sharing a capt
 - The launcher's optional MaterialSystemFallbackPatch guard was run in an isolated .NET probe:
   Unsupported, InitializeShader counter initialization site not found. It leaves these bytes
   unchanged, matching its normal warning/skip behavior. No downloaded Python code was executed.
+- Links (2026-10-31, RTXLauncher 7779fc4 read locally): Mount HL2 RTX builds
+  garrysmod/addons/mount-hl2rtx/{models,materials,maps} as real folders whose entries are file and
+  directory symbolic links into Half-Life 2 RTX (Hl2RtxMountService.cs BuildMergedDirectory,
+  File.CreateSymbolicLink :365, Directory.CreateSymbolicLink :375), next to
+  .rtxlauncher-hl2rtx-overlay.json, and adds entries to garrysmod/cfg/mount.cfg. A new launcher
+  install (GarrysModInstallService.cs:80-158) links the VPKs, sourceengine, platform and
+  garrysmod/{saves,dupes,demos,settings,cache,materials,models,maps,screenshots,videos,download};
+  none of those is a path the migration catalogs. mount-hl2rtx is one of its five add-on roots.
+- MSVC std::filesystem::absolute (GetFullPathNameW) resolves "." and ".." before a check of the
+  result could see them, so a path must be checked as given. Iterating "H:\a" yields "H:" first,
+  and stat("H:") reads drive H's current folder, not its root; start link checks at root_path().
+- Re-hashing a freshly staged payload before each move (loader 0.8.0, every step): 1.5 GiB in
+  0.75 s, 2.0 GiB/s (CNG SHA-256, 1 MiB reads, page cache warm; Ryzen 9 9950X3D, which has SHA
+  extensions; other games running; 2026-10-31). The RTX package is about 1.75 GB (files.json:
+  runtime 1,204 MB, fixes 433 MB, model-hotloader 83 MB, the rest 30 MB), so about 0.85 s at every
+  update here, and several seconds on a CPU without SHA extensions or once the staged files have
+  left the cache (estimate). The check now covers the migration's moves only.
 
 Facts the design rests on, with where they came from, so nobody has to dig them up again. Gathered
 2026-10-27 unless a section says otherwise. "Verified" = checked directly (file read, PE parse,

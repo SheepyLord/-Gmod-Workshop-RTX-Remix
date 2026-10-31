@@ -18,4 +18,9 @@ bool exports_function(std::string_view bytes, std::string_view name) noexcept;
 // sparse reads rather than loading the whole image; unreadable, changing or malformed files give false.
 bool is_remix_runtime(const std::filesystem::path& file) noexcept;
 
+// The same for a '/'-separated `relative` path below a game root: links are refused below the root
+// only, as everywhere the deployer works, so a game folder reached through a junction is checked like
+// any other. A linked entry (a symbolic link or junction where the DLL would be) gives false.
+bool is_remix_runtime(const std::filesystem::path& root, std::string_view relative) noexcept;
+
 }  // namespace nl::legacy

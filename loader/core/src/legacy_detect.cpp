@@ -1,6 +1,7 @@
 #include "nl/legacy_detect.h"
 
 #include "nl/fs.h"
+#include "nl/paths.h"
 
 #include <algorithm>
 #include <array>
@@ -237,6 +238,18 @@ class Image {
   std::vector<Section> sections_;
 };
 
+// The export check of a file whose path the caller has checked for links. A file that changes while
+// it is read gives false.
+bool remix_file(const std::filesystem::path& file) {
+  const auto before = fs::stat(file);
+  if (!before.exists || before.directory || before.link || before.size > kMaxImageBytes) return false;
+  File source(file, static_cast<std::size_t>(before.size));
+  const auto result = Image(source).exports(kRemixExport);
+  const auto after = fs::stat(file);
+  if (!after.exists || after.directory || after.link || before.size != after.size || before.mtime != after.mtime) return false;
+  return result;
+}
+
 }  // namespace
 
 bool exports_function(std::string_view bytes, std::string_view name) noexcept {
@@ -250,13 +263,17 @@ bool is_remix_runtime(const std::filesystem::path& file) noexcept {
     for (const auto& part : absolute) if (part == L"." || part == L"..") return false;
     const auto utf8 = absolute.relative_path().generic_u8string();
     fs::refuse_links(absolute.root_path(), std::string(utf8.begin(), utf8.end()));
-    const auto before = fs::stat(absolute);
-    if (!before.exists || before.directory || before.link || before.size > kMaxImageBytes) return false;
-    File source(absolute, static_cast<std::size_t>(before.size));
-    const auto result = Image(source).exports(kRemixExport);
-    const auto after = fs::stat(absolute);
-    if (!after.exists || after.directory || after.link || before.size != after.size || before.mtime != after.mtime) return false;
-    return result;
+    return remix_file(absolute);
+  } catch (...) {
+    return false;
+  }
+}
+
+bool is_remix_runtime(const std::filesystem::path& root, std::string_view relative) noexcept {
+  try {
+    if (!paths::is_safe(relative)) return false;
+    fs::refuse_links(root, relative);
+    return remix_file(fs::join(root, relative));
   } catch (...) {
     return false;
   }
