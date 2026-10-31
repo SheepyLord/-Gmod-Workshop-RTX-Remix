@@ -1,0 +1,78 @@
+{
+  "doc": "Cyrene (昔涟Ver1.0_NoBDSM.pmx, E:\\G\\Upload\\the_cyrene_rc\\昔涟-解压码5201; the copy in H:\\BACKUP_20260815\\Modding\\PBR\\星穹铁道-昔涟 is a Blender re-export with identical UVs, faces, materials and byte-identical textures), Model Hotloader asset dd112b38, reviewed 2026-10-25: aggressive style (the user's choice for this batch). 63 materials, 21 textured sheets. 衣1.png (4096x2048, 17 materials): skirt and dress panels cloth, 头饰金属 headdress frame metal with its gem insets (头饰宝石) gem, 耳环宝石 / 衣链宝石 / 衣饰宝石 / 肩饰宝石 gem (the new 宝石-first rule; 环/链 made the first two metal), 戒指 (#38, a heart-cut diamond on a thin band, sphere map shared with the gems) pinned to gem, 首饰 (#49 'Jewelry', which holds only the white-blue rose petals and white leaves of the choker and waist roses) pinned to cloth after the in-game check (as metal they rendered as dark chrome roses), 鞋 / 鞋花 leather. Region rules: the silver frames of two spade ornaments painted on the skirt mesh become metal, and the white faceted crystal heel cup and heart toe of the shoes become gem (3.7% of the sheet together, checked on the raw sheet). 纱.png: iridescent gauze, headdress petals and shoulder pieces cloth; 頭紗 veil cloth (new 纱 rule); 髮飾环 (hidden) metal. 附件.png: the bodysuit cloth; hidden sticker and band-aid cloth (new 创口贴 rule; it was mouth). 颜.png anime-safe face classes, all names matched. 淚.png tear and drool overlay: face (new rule; matte keeps the painted streaks). No gold-paint rules: the gold-hue candidates were pastel yellow in iridescent fabric and the band-aid. Body.png (8192 source) holds skin, nails and the tongue, so it gets an override in which skin texels keep the legacy look (0.7, flat, original colours) per the standard; nails are glossy. 進肚條 (#10, a belly decal on 刻度表4.png) pinned to skin, so that decal sheet is left to Remix like Firefly's copy. Tattoo sheets (纹身, inmon, inmon2) are skin and left to Remix. Stockings (hidden white pantyhose) at 0.42, the satin look the user chose for Guinaifen. bq.png and 黑.jpg are byte-identical to Hyacine's and keep Hyacine's maps: this layer sorts first and would otherwise take those hashes over. Predicted-only (hidden in game): 黑.jpg, 颜赤.tga, High heels, 附件2.png, clothes2.png, baisiwa.png, inmon2.png. Gold type decided 2026-10-26: no gold; her metal is silver (headdress frame, spade frames, chain, hair ring; F0 0.73-0.85) and stays polished (0.12): a bright metal mirrors the room without going dark, unlike the painted golds.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "10": "skin",
+      "38": "gem",
+      "49": "cloth"
+    },
+    "stockings": {
+      "rough": 0.42
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣1.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "rect": [
+        0.855,
+        0.12,
+        0.95,
+        0.37
+      ],
+      "sat": [
+        0.0,
+        0.14
+      ],
+      "val": [
+        0.7,
+        1.0
+      ],
+      "doc": "silver frames of the two spade ornaments on the skirt mesh (裙1)"
+    },
+    {
+      "texture": "衣1.png",
+      "within": [
+        "leather"
+      ],
+      "class": "gem",
+      "rect": [
+        0.81,
+        0.4,
+        1.0,
+        0.7
+      ],
+      "sat": [
+        0.0,
+        0.12
+      ],
+      "val": [
+        0.72,
+        1.0
+      ],
+      "doc": "white faceted crystal heel cup and heart toe of the shoes"
+    }
+  ],
+  "textures": {
+    "bq.png": {
+      "presets": {
+        "face": {
+          "original": 1
+        }
+      }
+    },
+    "黑.jpg": {
+      "presets": {
+        "face": {
+          "original": 1
+        }
+      }
+    }
+  }
+}

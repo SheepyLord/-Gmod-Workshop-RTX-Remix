@@ -1,0 +1,102 @@
+{
+  "doc": "Evernight (長夜月, E:\\G\\Upload\\evernight_alt\\1_PMX\\完整版\\Evernight.pmx), Model Hotloader asset cf3eec2f, reviewed 2026-10-30: aggressive style (as the rest of the batch), deployed without AABB at the user's request. 82 materials, 27 textures. BODY SKIN, ON THE USER'S REQUEST (2026-10-30, 'whiten Evernight's skin to match the tone in E:\\G\\Upload\\evernight\\1_PMX\\长夜月Evernight_by_-焚夕-_...\\Textures'): body.png (8192, body, arms and face) takes its albedo from body_whitened.png, made by scripts/recolour_skin.py --pmx <pmx> --materials 0,1,2,3,4 with the reference sheets 肌+.png, Avatar_Evernight_00_Face_Color.png and Avatar_Evernight_00_Body_Color_A_L.png (their skin bases: Lab 91.6/1.5/1.0, 91.2/1.5/1.2, 91.9/1.5/-1.3). Measured on the mesh, Lab median before -> after: body 94.2/5.0/6.0 -> 94.2/2.0/1.2, face 93.1/4.7/7.9 -> 93.0/1.8/2.5, arms 93.7/5.8/5.8 -> 93.6/2.4/1.0; lightness and its spread (body L std 12.79) unchanged, so the painted shading and blush stay. Only the colour changes: skin texels keep the shared-sheet standard (roughness 0.7, flat), the face its anime-safe 0.60. Pins: 13 齒 teeth mouth (齒 is not in the 齿 rule; it fell to the texture name 颜 = face); 20 腿環 cloth (a black lace garter, F0 0.00 as metal); 47 耳環 and 58 衣金屬裝飾 gem (red enamel, sRGB 126/13/13 and 144/14/14); 56/57 胸_花 cloth (a red chest flower; 胸 made it skin); 81 QZ+ cloth (lavender skirt and lace pieces; no rule matched). Metal: the 衣金屬 parts (50, 51, 59, 60) and rings (36, 37) are mid-grey painted silver, F0 0.15-0.37, so satin 0.32 per the gold-type standard; the 链子 chain draws with the 金属.png sphere image as its texture (F0 0.44). Untextured metal (口枷, 乳钉, 乳环, 眼罩金属) uses the engine's shared texture and is never replaced. bq.png and 黑.jpg keep face original 1 (byte-identical to Hyacine's, as on Cyrene). Predicted-only (hidden in game): 金属.png, 黑.jpg, 高跟鞋_BaseColor.png, emoji_1.png, 胖次2.png, 乳贴2.png, 颜赤.png, 衣服2.png, inmon2.png (offline prediction agreed 0/18 on this import, so these likely need a re-run of hashes once shown). IN-GAME TUNING (2026-10-30, the user asked to adjust from the in-game look; captures in %USERPROFILE%\\.rpai\\work\\evernight_cf3eec2f\\look_20261030, run2 = A original / B first pass / C this preset / A2 original): at the aggressive values the AI roughness tracked paint brightness, so the grey coat (value 0.25-0.40) sat at roughness 0.35 and read as satin with a reflected red smear, dark shoe leather at 0.02-0.09 (mirror), and the sheer black stockings at 0.30 read as latex. Now cloth 0.65 / rough_ai 0.35 / normal 2.0, leather 0.25 / rough_ai 0.4, stockings 0.42 / rough_ai 0.4 (the satin value the user chose for Guinaifen), and painted black ink (value <= 0.12, sat <= 0.4) on 衣服.png and 衣.png becomes leather so it stays wet-glossy (1.8% of 衣服.png). Coat patch luminance: A 94.9, B 81.9, C 91.9 (A2 94.6, repeat noise 0.3-0.6); ink p95 A 99.7, C 108.1; shin highlight p95 A 59.4, B 74.7, C 74.9 with a softer lobe. Skin whitening in game (face view, Lab): cheek 70.8/9.5/20.2 -> 70.3/6.7/15.3, forehead 69.8/9.6/20.4 -> 69.7/6.6/15.6, A2 within 0.1 of A; the room light is warm (wall b* +9.4). After the user showed hidden parts, 高跟鞋_BaseColor.png and 衣服2.png became live (both predicted hashes had been wrong); still predicted: 金属.png, 黑.jpg, emoji_1.png, 胖次2.png, 乳贴2.png, 颜赤.png, inmon2.png.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "13": "mouth",
+      "20": "cloth",
+      "47": "gem",
+      "56": "cloth",
+      "57": "cloth",
+      "58": "gem",
+      "81": "cloth"
+    },
+    "metal": {
+      "rough": 0.32
+    },
+    "cloth": {
+      "rough": 0.65,
+      "rough_ai": 0.35,
+      "normal": 2.0
+    },
+    "leather": {
+      "rough": 0.25,
+      "rough_ai": 0.4
+    },
+    "stockings": {
+      "rough": 0.42,
+      "rough_ai": 0.4
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣服.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "leather",
+      "val": [
+        0.0,
+        0.12
+      ],
+      "sat": [
+        0.0,
+        0.4
+      ],
+      "doc": "black ink / liquid motifs painted on the coat: glossy, while the grey fabric goes matte"
+    },
+    {
+      "texture": "衣.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "leather",
+      "val": [
+        0.0,
+        0.12
+      ],
+      "sat": [
+        0.0,
+        0.4
+      ],
+      "doc": "black ink drips and motifs on the bodice, coat tails and ribbons"
+    },
+    {
+      "texture": "衣服2.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "leather",
+      "val": [
+        0.0,
+        0.12
+      ],
+      "sat": [
+        0.0,
+        0.4
+      ],
+      "doc": "black ink motifs on the second outfit's top"
+    }
+  ],
+  "textures": {
+    "body.png": {
+      "albedo_source": "C:\\Users\\matt-peng\\.rpai\\work\\evernight_cf3eec2f\\whiten\\body_whitened.png"
+    },
+    "bq.png": {
+      "presets": {
+        "face": {
+          "original": 1
+        }
+      }
+    },
+    "黑.jpg": {
+      "presets": {
+        "face": {
+          "original": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "doc": "Guinaifen (桂乃芬.pmx, H:\\BACKUP_20260815\\Modding\\ipg\\星穹铁道-桂乃芬), Model Hotloader asset 1c2ed2fc, imported 2026-10-25 13:47: aggressive style. Same 63 materials as new_mmd_model_9cdc990f (Guinevere R18) and all 19 texture files byte-identical, so that model's UV-island review, pins and gold-trim regions carry over unchanged. The model carries a base body under its clothes for layered rendering; the visible stockings are siwa1-3 (#12-14, siwa.png, material alpha 0.9) and the white set siwa1+-3+ (#15-17, baisiwa.png) is morph-hidden. Stockings (2026-10-25, AABB of 6 variants x 6 views, repeat noise 0.9-1.9/255): the UV-seam crease is fixed in the tool (gutter padding), seam line contrast 5.9/3.6/2.7/1.7 -> 0.1-0.3 or below, the original Remix level. The user chose variant B: the seam fix only, keeping the satin look the stockings had before (roughness 0.42; the gutter bias in the old class mean had turned the aggressive 0.30 into an effective 0.42, so it is now set explicitly). Measured but not chosen: C, the aggressive 0.30 (wet latex, orange-peel highlights); D, 0.34 with anisotropy -0.6 (highlight stretched down the leg); E, D with AI normals 0.7 (cleanest streaks). Body skin stays at the standard (left to Remix), and the face keeps the anime-safe classes: body skin changes are made and applied only on the user's request. A body-skin look built from the model's own Body normal.png was tested on request on 2026-10-25 and then reverted at the user's request; its settings and evidence are kept, unapplied, in presets/on_request/new_mmd_model_1c2ed2fc_body_skin.json. Gold type decided 2026-10-26 (the user asked for one per character): painted gold is a mid-tone, so as a metal its reflectance (F0, the albedo's linear luminance on the mesh) is far below real gold's ~0.74, and at the aggressive roughness 0.12 it mirrors the dark room (Robin ZZZ's halo: 152 -> 96, -37%, in game). Satin yellow gold (metal roughness 0.32): gold-thread embroidery and trim on the maroon cloth (35% of the skirt sheet), the brass gong and jewelry, F0 0.23-0.32; embroidery is fibrous thread, not mirror plate.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "7": "stockings",
+      "38": "metal",
+      "42": "leather",
+      "43": "leather",
+      "45": "gem",
+      "47": "leather"
+    },
+    "stockings": {
+      "rough": 0.42
+    },
+    "metal": {
+      "rough": 0.32,
+      "rough_ai": 0.5
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold trim painted on the bodice, dress and bands"
+    },
+    {
+      "texture": "衣内.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold trim on the inner faces"
+    },
+    {
+      "texture": "衣2内.png",
+      "within": [
+        "cloth",
+        "leather"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold edges of the headdress petals, mallet fittings, inner skirt embroidery"
+    },
+    {
+      "texture": "衣2.png",
+      "within": [
+        "cloth",
+        "leather"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold embroidery on the maroon skirt panels and flame band, boot trim, mallet fittings"
+    }
+  ]
+}

@@ -1,0 +1,303 @@
+{
+ "doc": "Hiyuki Alt, colourway 01 / skin 0 (Hiyuki.pmx, H:\\BACKUP_20260815\\Modding\\ipg\\hiyuki_alt\\1_PMX\\Hiyuki_PMX), in game as sheepylord's compiled addon hiyuki_alt (models/sheepylord/wuthering_waves/hiyuki_alt.mdl; rpai --mdl). Skin 1 is hiyuki2_08f3c33e (_port/rtx/skin1/Hiyuki2.pmx). Reviewed 2026-10-27 with the most recent preset: aggressive style plus Robin ZZZ's per-character choices (satin painted gold 0.30 with f0 0.74, the game's own normal maps at 1.0 on every class but skin, body skin left to Remix). 15 materials on 7 Wuthering Waves sheets (DXT1 in game, PMX RGB = Source base exactly). Ground truth: the game's FTM type mask (green: 240 = hard gloss, gold or black; 192/120 = satin and gems; 56 = fabric; 0 = skin) and _N (normal in red/green, roughness in alpha). Pins: Kimono, Obi, ObiBow, ObiRibbon, Accessories and Kamikazari cloth (no name rule matches; colour rules split them); Cuff and Headband leather (type 240 but black, roughness 0.34: a black metal or lacquer reads as a glossy dielectric, and keeping it out of the metal class keeps the f0 lift on gold only). Gold: hue 25-60, saturation 0.2+, value 0.3+ on cloth: recall 86%/77% of the game's gold metal on Up01/Down01 at 73%/69% precision; the rest is gold-coloured embroidery and brocade, which the standards treat as satin gold (Guinevere). Body (a skin material) also holds the chest wrap, white sleeve bands and the black arm ribbon (islands cool or dark, cloth; skin islands score 0.00-0.01 cool) and the red nail polish (nail, islands near the hands); the neck lace is painted on skin (game type 0) and stays skin. Legs: gold anklets and heel plates metal (islands 50%+ gold), black shoes, straps and the thigh garter leather (islands 60%+ dark). Eyes: the eye-white islands sclera; the painted star stays iris (no extra glow). Hair: the game's _HN maps are 128 px tiles, so hair keeps the AI normals. Painted gold F0 (median linear luminance on the mesh): Up01 0.33, Down01 0.23, Cloth01 0.27 (satin type per the standards), so f0 0.74 lifts it x2.25, x3.0 (the cap) and x2.7, more than Robin's x1.6-1.7: check the gold against the original in game. Measured in game 2026-10-27 (bracketed AABB on gm_poolrooms, _port/rtx/ingame): gold 6-10% above the original in the close views (f0 0.62: 2-5%), black fabric +2-8% (sheen), pale fabric and body skin within the lighting drift; live state f0 0.74 as requested, 0.62 offered.",
+ "include": [
+  "../aggressive.json"
+ ],
+ "presets": {
+  "_materials": {
+   "6": "cloth",
+   "8": "cloth",
+   "9": "cloth",
+   "10": "cloth",
+   "11": "cloth",
+   "12": "leather",
+   "13": "leather",
+   "14": "cloth"
+  },
+  "metal": {
+   "rough": 0.3,
+   "rough_ai": 0.5,
+   "f0": 0.74
+  }
+ },
+ "regions": [
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up01_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "nail",
+   "islands": 0.6,
+   "sat": [
+    0.4,
+    1.0
+   ],
+   "box": [
+    5.5,
+    10.5,
+    -2,
+    8,
+    14,
+    3
+   ],
+   "doc": "red nail polish"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up01_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "nail",
+   "islands": 0.6,
+   "sat": [
+    0.4,
+    1.0
+   ],
+   "box": [
+    -8,
+    10.5,
+    -2,
+    -5.5,
+    14,
+    3
+   ],
+   "doc": "red nail polish"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up01_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "cloth",
+   "islands": 0.6,
+   "val": [
+    0.0,
+    0.35
+   ],
+   "doc": "black arm ribbon"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up01_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "cloth",
+   "islands": 0.4,
+   "hue": [
+    150,
+    260
+   ],
+   "sat": [
+    0.03,
+    1.0
+   ],
+   "doc": "chest wrap and white sleeve bands"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up01_D.png",
+   "within": [
+    "cloth"
+   ],
+   "class": "metal",
+   "hue": [
+    25,
+    60
+   ],
+   "sat": [
+    0.2,
+    1.0
+   ],
+   "val": [
+    0.3,
+    1.0
+   ],
+   "doc": "gold"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up01_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "hue": [
+    190,
+    250
+   ],
+   "sat": [
+    0.45,
+    1.0
+   ],
+   "val": [
+    0.2,
+    1.0
+   ],
+   "doc": "sapphires"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down01_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "metal",
+   "islands": 0.5,
+   "hue": [
+    25,
+    60
+   ],
+   "sat": [
+    0.15,
+    1.0
+   ],
+   "val": [
+    0.3,
+    1.0
+   ],
+   "doc": "gold anklets and heel plates"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down01_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "leather",
+   "islands": 0.6,
+   "val": [
+    0.0,
+    0.35
+   ],
+   "doc": "black shoes, straps and thigh garter"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down01_D.png",
+   "within": [
+    "cloth"
+   ],
+   "class": "metal",
+   "hue": [
+    25,
+    60
+   ],
+   "sat": [
+    0.2,
+    1.0
+   ],
+   "val": [
+    0.3,
+    1.0
+   ],
+   "doc": "gold"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down01_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "hue": [
+    190,
+    250
+   ],
+   "sat": [
+    0.45,
+    1.0
+   ],
+   "val": [
+    0.2,
+    1.0
+   ],
+   "doc": "earring gems"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Cloth01_D.png",
+   "within": [
+    "cloth"
+   ],
+   "class": "metal",
+   "hue": [
+    25,
+    60
+   ],
+   "sat": [
+    0.2,
+    1.0
+   ],
+   "val": [
+    0.3,
+    1.0
+   ],
+   "doc": "gold trim"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Eye01_D.png",
+   "within": [
+    "eye"
+   ],
+   "class": "sclera",
+   "islands": 0.6,
+   "sat": [
+    0.0,
+    0.25
+   ],
+   "val": [
+    0.6,
+    1.0
+   ],
+   "doc": "eye whites"
+  }
+ ],
+ "textures": {
+  "T_R2T1TaidaonvMd20011Up01_D.png": {
+   "normal_map": "../../Model/T_R2T1TaidaonvMd20011Up01_N.png",
+   "presets": {
+    "cloth": {
+     "normal": 1.0
+    },
+    "metal": {
+     "normal": 1.0
+    },
+    "gem": {
+     "normal": 1.0
+    },
+    "leather": {
+     "normal": 1.0
+    },
+    "nail": {
+     "normal": 1.0
+    }
+   }
+  },
+  "T_R2T1TaidaonvMd20011Down01_D.png": {
+   "normal_map": "../../Model/T_R2T1TaidaonvMd20011Down01_N.png",
+   "presets": {
+    "cloth": {
+     "normal": 1.0
+    },
+    "metal": {
+     "normal": 1.0
+    },
+    "gem": {
+     "normal": 1.0
+    },
+    "leather": {
+     "normal": 1.0
+    }
+   }
+  },
+  "T_R2T1TaidaonvMd20011Cloth01_D.png": {
+   "normal_map": "../../Model/T_R2T1TaidaonvMd20011Cloth01_N.png",
+   "presets": {
+    "cloth": {
+     "normal": 1.0
+    },
+    "metal": {
+     "normal": 1.0
+    },
+    "leather": {
+     "normal": 1.0
+    }
+   }
+  }
+ }
+}

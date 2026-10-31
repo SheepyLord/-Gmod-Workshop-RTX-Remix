@@ -1,0 +1,59 @@
+{
+  "doc": "Castorice (遐蝶Ver1.04_NoBDSM.pmx, E:\\G\\Upload\\Castorice\\1_PMX\\星穹铁道-遐蝶Ver1.04_By_Alicia; the copy in H:\\BACKUP_20260815\\Modding\\PBR\\星穹铁道-遐蝶 is a Blender re-export with identical UVs, faces, materials and byte-identical textures), Model Hotloader asset 7b47f232, reviewed 2026-10-25: aggressive style (the user's choice for this batch). 47 materials, 22 textured sheets. Dress sheets (上衣, 衣, 衣+, 衣2): white ribbons, purple panels, butterflies, flower and petal ornaments, all cloth; the small gold flower brooch at the chest on 上衣.png becomes metal through the region rule (0.3% of the sheet). No gold rule on 衣2.png: the gold-hue candidates there are the orange centres of painted violet petals. 附件.png: gloves cloth, 手套金属 gunmetal spikes metal, 鞋子 heeled shoes leather, hidden sticker and band-aid cloth (new 创口贴 rule; it was mouth). Face.png anime-safe face classes, all names matched (no catchlight mesh on this model). Shy (#8, hidden blush) and 涙 (#10, hidden tears) are face through the new name rules. 丝袜.png (visible lavender lace stockings, 8192x4096 source, soft painted lace) and siwa.png (hidden dark nylon) are stockings at 0.42, the satin look the user chose for Guinaifen, generated at the 4096 cap that matches the game's copy. Body.png (8192 source) holds skin and the tongue, so it gets an override in which skin texels keep the legacy look (0.7, flat, original colours) per the standard. 進肚條 (#13, a belly decal on 刻度表4.png) pinned to skin, so that decal sheet is left to Remix like Firefly's copy; inmon / inmon2 are skin and left to Remix. Kept on other models' maps (this layer sorts first and would otherwise take the hashes over): bq.png and 黑.jpg (byte-identical to Hyacine's) and High heels_BaseColor.png (byte-identical to Firefly's 高跟鞋 set, authored PBR maps). This layer does win 口球.png, Blindfold Text.png, 淚.png and clothes2.png, which are identical on Cyrene and Kafka. Predicted-only (hidden in game): 黑.jpg, High heels, 附件2.png, clothes2.png, Shy.png, siwa.png, inmon2.png. Gold type decided 2026-10-26: kept polished. Her only gold is the small flower brooch on 上衣.png (0.3% of the sheet), the brightest painted gold of all characters (F0 0.55), where polish reads as jewelry sparkle; the glove spikes (附件.png) are near-black gunmetal (F0 0.03), not gold, and stay as they were.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "13": "skin"
+    },
+    "stockings": {
+      "rough": 0.42
+    }
+  },
+  "regions": [
+    {
+      "texture": "上衣.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold flower brooch at the chest"
+    }
+  ],
+  "textures": {
+    "bq.png": {
+      "presets": {
+        "face": {
+          "original": 1
+        }
+      }
+    },
+    "黑.jpg": {
+      "presets": {
+        "face": {
+          "original": 1
+        }
+      }
+    },
+    "High heels_BaseColor.png": {
+      "presets": {
+        "leather": {
+          "original": 1
+        }
+      }
+    }
+  }
+}

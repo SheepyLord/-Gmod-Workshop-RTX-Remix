@@ -1,0 +1,45 @@
+{
+  "doc": "March 7th (三月七 1.0.pmx), Model Hotloader asset e2c25f9e, reviewed 2026-10-30: aggressive style, deployed without AABB at the user's request. The import's source folder (Desktop\\星穹铁道—三月七_by_崩坏：星穹铁道_7bffc09c...) is gone; the PMX was rebuilt in %USERPROFILE%\\.rpai\\sources\\march_7th_1.0 from the import's model.bin (SHA-256 942aef2a... = the manifest's sourceHash) with the five textures from E:\\G\\Upload\\march_7th\\1_PMX\\星穹铁道_三月七 (each pixel-identical to the import's VTF, mean difference 0.0). Run with --asset e2c25f9e. 30 materials, 5 sheets, all hashes live. Pins: 7 脖子 neck skin (fell to the texture name 衣服1 = cloth; skin on a shared sheet keeps the legacy look); 15 腿环 leather (a white thigh strap, F0 0.81 as metal would mirror); 17 鞋饰 gem (the painted lavender ice crystals on the boots); 23 相机 camera rubber at 0.25 (glossy plastic body and lens; cloth relief would texture it). Metal: 衣饰铁 is champagne-painted gold (hue 36, sat 0.20, F0 0.56), satin 0.32 per the gold-type standard. Body skin (手, 腿, 脖子 on 衣服1.png) stays as Remix renders it. IN-GAME TUNING (2026-10-30, the user asked to adjust from the in-game look; captures in %USERPROFILE%\\.rpai\\work\\model_e2c25f9e\\look_20261030, run2 = A/B/C/A2): the same brightness-tracking AI roughness as on Evernight (dark cloth 0.24-0.27, dark leather 0.02), so cloth 0.65 / rough_ai 0.35 / normal 2.0 and leather 0.25 / rough_ai 0.4. The white/pink/lavender flower charm on the thigh strap and waist is island 1 of 衣饰铁 (median 232/232/232) and rendered as a chrome mirror; a region rule makes it glossy plastic (rubber 0.25), the champagne hook and bars stay satin metal. Irises looked greyer in B but measured unchanged (saturation -0.01, the untouched wall -0.02): light drift, so the eyes keep the standard.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "7": "skin",
+      "15": "leather",
+      "17": "gem",
+      "23": "rubber"
+    },
+    "metal": {
+      "rough": 0.32
+    },
+    "rubber": {
+      "rough": 0.25
+    },
+    "cloth": {
+      "rough": 0.65,
+      "rough_ai": 0.35,
+      "normal": 2.0
+    },
+    "leather": {
+      "rough": 0.25,
+      "rough_ai": 0.4
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣服1.png",
+      "within": [
+        "metal"
+      ],
+      "class": "rubber",
+      "rect": [
+        0.45,
+        0.0,
+        0.7,
+        0.12
+      ],
+      "doc": "the white/pink/lavender flower charm (thigh strap, waist) is island 1 of 衣饰铁 (median 232/232/232); as metal it rendered as a chrome mirror in game (F0 0.81), so it is glossy enamel-like plastic; the champagne hook and bars (islands 2-4) stay satin metal"
+    }
+  ]
+}
