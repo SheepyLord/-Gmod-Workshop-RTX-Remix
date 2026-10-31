@@ -2,10 +2,16 @@
 - More shards
 - Better impact physics
 - Shatter effects
-- Native `func_breakable` glass windows retain their map behavior and leave persistent, networked
-  physics shards when broken. This covers Modern House's ordinary breakable panes.
-- Convex fracture works on vertical, horizontal and rotated panes. Native map debris stays until
-  cleanup or the 256-piece oldest-first budget; it does not immediately become short-lived particles.
+- Native `func_breakable` glass windows retain their map behavior and leave networked physics
+  shards when broken. This covers Modern House's ordinary breakable panes.
+- Convex fracture works on vertical, horizontal and rotated panes.
+- Broken glass, from map windows and from the add-on's own panes, is loose physics: players walk
+  through it, props push it, bullets and explosions knock it about, and the physgun, the gravity gun
+  and +use pick it up. Shooting a piece, an explosion or a hard impact (500 units/s) breaks it again,
+  until its fragments are small enough to turn into dust.
+- Settings: `rtx_glass_debris_lifetime` (seconds broken pieces stay before they shrink away; default
+  120, 0 keeps them until map cleanup) and `rtx_glass_expensive_shards` (1: the pieces of a pile also
+  collide with each other; 0: cheaper). At most 256 broken pieces exist; the oldest go first.
 - Late-join shard data is split into bounded network packets, and visual bounds match each mesh.
 
 # Glass-Rewrite

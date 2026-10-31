@@ -45,7 +45,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0037](0037-frame-generation-off-by-default.md) | Frame generation is off by default, at one generated frame (2x) when a player turns DLSS-G on: the classic install's DLSS-G at 3x crashed RTX 30, RTX 40 and AMD GPUs at start, and Remix's menu hides the multiplier where multi-frame generation is unsupported; `remix_defaults.py` forces the three options; amends 0020 | Accepted 2026-10-29 (the user, emergency fix) |
 | [0038](0038-complete-bundled-interface-translations.md) | Complete bundled interfaces, separate Traditional Chinese, Korean Destruction, strict catalog builds and client-localized notices | Accepted 2026-10-30 (the user) |
 | [0039](0039-native-package-addon-presentation.md) | Inert display archives suppress native-container mount warnings; exact read redirects provide blue addon cards and normal Workshop descriptions; guarded publisher retry for a stale Steam presence check | Accepted 2026-10-30 (the user) |
-| [0040](0040-native-map-glass-debris.md) | Native glass brushes keep map behavior and leave persistent convex physics shards; bounded debris and late-join mesh updates | Accepted 2026-10-30 (the user) |
+| [0040](0040-native-map-glass-debris.md) | Native glass brushes keep map behavior and leave persistent convex physics shards; bounded debris and late-join mesh updates | Accepted 2026-10-30 (the user); persistence, no recursive fracture and the map-only budget superseded by [0061](0061-loose-glass-breaks-again-and-expires.md) |
 | [0041](0041-hotloader-remix-depth-materials.md) | Hotloader avoids unavailable DepthWrite materials and Source depth passes on fixed-function Remix; programmable Source keeps its depth shader and cutouts | Accepted 2026-10-30 (the user) |
 | [0042](0042-legacy-remix-migration.md) | Archive recognized legacy Remix installs and restore known modified depot files transactionally | Accepted 2026-10-30 |
 | [0043](0043-player-body-viewmodel-and-shadows.md) | Independent first-person arms, private local-body categories and RTX-tab shadow/height controls | Accepted 2026-10-30 |
@@ -66,6 +66,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0058](0058-gmpublish-preflight-fallback-recorded.md) | The gmpublish preflight fallback for a stale Steam process id, kept and bounded | Accepted (R4) |
 | [0059](0059-outline-shell-rule-opt-in.md) | The front-cull outline shell rule is an opt-in (`nativeloader_ignore_outline_shells`, default 0); `nativeloader_ignore_outlines` keeps only the name rule, for materials of loaded models; amends 0047 | Accepted (R4) |
 | [0060](0060-motion-tab-hosts-the-importer.md) | The Motion importer tab is the importer: the add-on's importer and Motion Manager built into the tab by its own builders (its windows use them too), in External Models' look | Accepted (R4) |
+| [0061](0061-loose-glass-breaks-again-and-expires.md) | Broken glass (map debris and the add-on's fragments) is loose physics that players pass through, breaks again until it is dust, shares one 256-piece budget and fades out after `rtx_glass_debris_lifetime` (default 120 s); supersedes part of 0040 | Accepted 2026-10-31 (R5, the user's report) |
 
 ## Template
 

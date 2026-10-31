@@ -1,7 +1,9 @@
 # 0040: Persistent debris for native map glass
 
 - Status: Accepted 2026-10-30, implementing the user's request: "Fix glass effect on map glasses."
-  The reported failure was Modern House windows disappearing without scattered glass.
+  The reported failure was Modern House windows disappearing without scattered glass. Its persistent
+  debris, the exclusion of map debris from recursive splitting and the map-only budget are superseded
+  by [0061](0061-loose-glass-breaks-again-and-expires.md).
 - Scope: the bundled GPL-2.0 Glass-Rewrite-Remix input in `packages/fixes`; no native loader or
   runtime binary changes, and no change to the map or Modern House's separate Workshop package.
 

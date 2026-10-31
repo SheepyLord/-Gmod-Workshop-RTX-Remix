@@ -70,6 +70,9 @@ function PANEL:CreateVisualSection(parent)
     
     -- Velocity Transfer
     self:CreateSlider(visual_panel, NL("Velocity Transfer"), "rtx_glass_velocity_transfer", 0.1, 3.0, 2, NL("How forcefully glass fragments scatter"))
+
+    -- Debris Lifetime (glass_debris.lua)
+    self:CreateSlider(visual_panel, NL("Debris lifetime (s)"), "rtx_glass_debris_lifetime", 0, 600, 0, NL("Seconds broken pieces stay before they disappear (0 = keep until map cleanup or the 256-piece limit)"))
 end
 
 function PANEL:CreatePhysicsSection(parent)
@@ -185,6 +188,7 @@ function PANEL:ResetToDefaults()
         rtx_glass_rigidity = 0,
         rtx_glass_mass_factor = 0.8,
         rtx_glass_velocity_transfer = 2.0,
+        rtx_glass_debris_lifetime = 120,
         rtx_glass_player_mass = 80,
         rtx_glass_player_break_speed = 100,
         rtx_glass_expensive_shards = 1
@@ -255,6 +259,15 @@ hook.Add("PopulateToolMenu", "GlassRewriteSettings", function()
             Min = "0.1",
             Max = "3.0"
         })
+
+        panel:AddControl("Slider", {
+            Label = NL("Debris lifetime (s)"),
+            Command = "rtx_glass_debris_lifetime",
+            Type = "Integer",
+            Min = "0",
+            Max = "600"
+        })
+        panel:ControlHelp(NL("Seconds broken pieces stay before they disappear (0 = keep until map cleanup or the 256-piece limit)"))
     end)
 end)
 
