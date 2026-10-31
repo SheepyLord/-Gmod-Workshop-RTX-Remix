@@ -12,6 +12,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   `RemixResource.SetMemoryLimits` Lua method remains a documented no-op that logs once when
   explicitly called, preserving its numeric arguments and `true` result without configuration
   writes ([ADR 0066](docs/decisions/0066-fixes-memory-limits-compatibility.md)).
+- The fixes' 83 `~gmod_topbr` normal and roughness textures now use linear BC7, reducing their
+  deployed DDS size from 136.25 MiB to 34.07 MiB (75%). Names, dimensions, mip counts and raw
+  material references stay the same; [conversion measurements](packages/fixes/licenses/topbr-bc7/README.md).
 
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 

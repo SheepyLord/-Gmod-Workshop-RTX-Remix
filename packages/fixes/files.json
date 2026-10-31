@@ -626,6 +626,16 @@
     "dirty": false
    },
    "imported": "2026-10-31T20:49:23+00:00"
+  },
+  "garrysmod/rtx-remix/mods/~gmod_topbr/textures": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t5-fixes\\out\\topbr-bc7\\textures",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t5-fixes",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "465bf1f46f779e539d30da90e7f242ce76a30455",
+    "dirty": false
+   },
+   "imported": "2026-10-31T23:05:37+00:00"
   }
  },
  "files": {
@@ -3116,668 +3126,668 @@
    "stored": "plain"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/brick_brickwall003a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "ad6999b5cdd219f5bbfc75862a7713b735fb119969f9144b6b4e592f892c001d",
-   "mtime_ns": 1792912214161624000,
+   "size": 349700,
+   "sha256": "1649f5712835d71e7353708b8cd76558cdd97bb6cf132b2c4ca43169614aaef3",
+   "mtime_ns": 1793485423972234800,
    "stored": "xz",
-   "stored_size": 332188,
-   "stored_sha256": "a9dffbc3500b1ec5adf086c9a808978564ed1d0cab474f7037d8d0469b97fd4f"
+   "stored_size": 266244,
+   "stored_sha256": "ad4e78cfdf4896864f46950f81e11361493842df046d40123d2d769a3941f36d"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template003a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "85935727f2d2d9dc4283a3a75e3f3ada63635359bef2a57be0cf43946fe1b405",
-   "mtime_ns": 1792912214164628300,
+   "size": 349700,
+   "sha256": "19dfd50d8465d3c95549216529d6464aa75908e8bdcfdaed2a8e4888a26d33a9",
+   "mtime_ns": 1793485429620540400,
    "stored": "xz",
-   "stored_size": 263320,
-   "stored_sha256": "b8975291231bec6255b2ec20ddc9ed501dc009123d9dc24c4c4b73107e13e701"
+   "stored_size": 227220,
+   "stored_sha256": "8c6fe9ecb59bf8f65449d18b21c64dbccfa00df4bc89b4b26fe7eb838ae9b402"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template006b_roughness.dds": {
-   "size": 1398228,
-   "sha256": "badd9cdbc1cbcedc143dc98e6ff605d39f5a1077e8b794d2dd01191fdd9229ee",
-   "mtime_ns": 1792912214169627900,
+   "size": 349700,
+   "sha256": "3d5c1a83f8dd61cd316ca92465b8726c2bb16baa719254c731379613c1ed8df0",
+   "mtime_ns": 1793485434660495200,
    "stored": "xz",
-   "stored_size": 110940,
-   "stored_sha256": "0752b8b61710e9a7c3af6ed64506c2724a7b5460c87c0d32ec1c7e4c8a7a79c6"
+   "stored_size": 108044,
+   "stored_sha256": "7846525405f564898745ce1b1f7864b44bd6287fe0143ff6815834d74092150b"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007b_roughness.dds": {
-   "size": 1398228,
-   "sha256": "9a244524aa6baa4c4bffa7aeb5caf9580b85010bd9538b3dbf8898f3248da399",
-   "mtime_ns": 1792912214172131900,
+   "size": 349700,
+   "sha256": "a169e4e60441006fd0e96cff95d7fef905cbd4ef8973801e49b5b71ccc87b170",
+   "mtime_ns": 1793485436123689700,
    "stored": "xz",
-   "stored_size": 1096,
-   "stored_sha256": "650ba798b628cbd9c7dada30e3b69c71afd11f6456d7ef426a6ee6a5248fe99d"
+   "stored_size": 1800,
+   "stored_sha256": "3a2fd521aeaf30b55ce919ea2201ac7babfee6c6ac9b274576d758d7278657bc"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007c_roughness.dds": {
-   "size": 1398228,
-   "sha256": "d64306027134bd5d1de60962961d2a4cedcd3421fac6a3ee4ebd1e2379247d1d",
-   "mtime_ns": 1792912214174133500,
+   "size": 349700,
+   "sha256": "bf2e6f8d48acde68c57d58ce2b949ecdc6b4243002a7b00e37b2b214d78ef59f",
+   "mtime_ns": 1793485443791722100,
    "stored": "xz",
-   "stored_size": 1128,
-   "stored_sha256": "09208d2dab2f97f69ea5e91e31f44afacedeaad232a0b75d7bc3c2e4be3a96e4"
+   "stored_size": 2700,
+   "stored_sha256": "d0cba2df59f83004c5b9005356814bc51d75864f81a91e80a7684b9e2eb7a0eb"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007d_roughness.dds": {
-   "size": 1398228,
-   "sha256": "748af1dcdef5ac28e18294293c7c713da1b09e53c58217367be55eddfb07ef1a",
-   "mtime_ns": 1792912214179204600,
+   "size": 349700,
+   "sha256": "b544303ea279b272efd7cff84d5f10f68695376bce55f2a322011c48c316f6a1",
+   "mtime_ns": 1793485449457280500,
    "stored": "xz",
-   "stored_size": 1136,
-   "stored_sha256": "4f99bc54be7ef80b5ed820a8d33b44db8a5ba6ad8d6ed4ebd8ae2ac231bcfe4a"
+   "stored_size": 1724,
+   "stored_sha256": "97e686af752656ac6357f701a457f23fbd2f8a69ebc8ec48e0551662e87753ed"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007h_roughness.dds": {
-   "size": 1398228,
-   "sha256": "eae09663b2665fe856a068528693c42623b66e6c611cfb1b9b63ec73bad45e78",
-   "mtime_ns": 1792912214180204900,
+   "size": 349700,
+   "sha256": "4f23ba9231a4a1dd726787be805d034548518ec541f7c0f0f52b7ddade1a2be9",
+   "mtime_ns": 1793485451002030500,
    "stored": "xz",
-   "stored_size": 3416,
-   "stored_sha256": "4b89a612194a06ba2180e986b9198ee13e20f8a9e316544ebcd925590d3f1119"
+   "stored_size": 3808,
+   "stored_sha256": "d246c97fc119e807dbb2a62fa6c42fafc1c695fc0a70099b774e735e2071c20e"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007i_roughness.dds": {
-   "size": 1398228,
-   "sha256": "dc4a600c128a726196bf48f25c90eb5aa0d24ed09a72f81ed9a75b557cc19b8d",
-   "mtime_ns": 1792912214182714400,
+   "size": 349700,
+   "sha256": "e88d48ad688131f4867b720c087b93081502917f81b8712d26c921e24fef3353",
+   "mtime_ns": 1793485452480161300,
    "stored": "xz",
-   "stored_size": 1072,
-   "stored_sha256": "a50731d18194272c08cb12e76b08f8a7cb17b54ced05ed98b998b471d2cadcea"
+   "stored_size": 1496,
+   "stored_sha256": "a3a858b69776b9ad0aa4642a6808b5cca8dd503346b8992fbb0bce960eacab19"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007j_roughness.dds": {
-   "size": 1398228,
-   "sha256": "fe84c26f6c69189af148fa9e172829fed75cfac47bf597c8692861b2ff03c561",
-   "mtime_ns": 1792912214184713600,
+   "size": 349700,
+   "sha256": "71ad7cf44ce93eb6faf4f6f415bf618db634518a9f0cc2fe42a0a3afdcaccab7",
+   "mtime_ns": 1793485454178787900,
    "stored": "xz",
-   "stored_size": 2096,
-   "stored_sha256": "d9570d3cb466810ad740134107adc1d658bec9543482f3cb0bfa0e2c7a080fef"
+   "stored_size": 2744,
+   "stored_sha256": "f1985faf48859ac30727ffb45a86c219fffb329b4fe8e4dceaebce52a537d339"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template007m_roughness.dds": {
-   "size": 1398228,
-   "sha256": "e8a994725eedd85f5989c674905d97bc693196fb3c8b5bcbd1a14e4615f58f3f",
-   "mtime_ns": 1792912214185713800,
+   "size": 349700,
+   "sha256": "e470ffd850c2243763b43ae0a3225f6e0e6ed0038481b016b60e71b86906cb50",
+   "mtime_ns": 1793485455327984900,
    "stored": "xz",
-   "stored_size": 3328,
-   "stored_sha256": "4d6b8cd68c936abe02d7b2f62b3704fd0816f33b4b554d52e1c08cf89be925f6"
+   "stored_size": 3600,
+   "stored_sha256": "9b634b030d349322ee21ab62d9d04e9bdaa7e551a154578e778b3451045911d2"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template010b_roughness.dds": {
-   "size": 1398228,
-   "sha256": "2af1b13ddba72bfc380a967552548b47edf08d5a9569e9f157ea90b012768fa5",
-   "mtime_ns": 1792912214187713100,
+   "size": 349700,
+   "sha256": "13b55b8258e5e57aa9ab18f0bbee927def4abac4d5d64860d515cadb1ddef31f",
+   "mtime_ns": 1793485456333670700,
    "stored": "xz",
-   "stored_size": 872,
-   "stored_sha256": "b46cc9fae150a0d59393d7021e01445244206a5c7b8db2e56db164baf08cf2a9"
+   "stored_size": 1584,
+   "stored_sha256": "e663fdfa5a9c9fd8c7fbfe6a9cbdba4ebafe4ca2943d480350aadc2ac053a58c"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template010c_roughness.dds": {
-   "size": 1398228,
-   "sha256": "41efd0c0e6422c654616136c8dd88704f972f309614ecc7d282600d3e333417e",
-   "mtime_ns": 1792912214188713300,
+   "size": 349700,
+   "sha256": "0704ce07756abb72a90ba06b1096ce1ff669496996f11e162a12620c60395ebe",
+   "mtime_ns": 1793485457426116700,
    "stored": "xz",
-   "stored_size": 872,
-   "stored_sha256": "93a82e04fefea9faa15cd3fad21c2af2fcf82b0b1cbc0917c8eb221b8ebff82f"
+   "stored_size": 1612,
+   "stored_sha256": "17eb8faa752f8b60e8b7d0c061c7bcc53f09c72e1d41b7866fb25cfe7ea90ef6"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template010g_roughness.dds": {
-   "size": 1398228,
-   "sha256": "41efd0c0e6422c654616136c8dd88704f972f309614ecc7d282600d3e333417e",
-   "mtime_ns": 1792912214189713000,
+   "size": 349700,
+   "sha256": "0704ce07756abb72a90ba06b1096ce1ff669496996f11e162a12620c60395ebe",
+   "mtime_ns": 1793485458625883700,
    "stored": "xz",
-   "stored_size": 872,
-   "stored_sha256": "93a82e04fefea9faa15cd3fad21c2af2fcf82b0b1cbc0917c8eb221b8ebff82f"
+   "stored_size": 1612,
+   "stored_sha256": "17eb8faa752f8b60e8b7d0c061c7bcc53f09c72e1d41b7866fb25cfe7ea90ef6"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_building_template013h_roughness.dds": {
-   "size": 699180,
-   "sha256": "46b69b860f6ce0638b2c2380a8968c4cca0fe16670fe603ae067c6c691c6806b",
-   "mtime_ns": 1792912214191712900,
+   "size": 174948,
+   "sha256": "d268025c9886596164eb8c3e605feffb5436ecc8fc783d7d5147c8d738df26a0",
+   "mtime_ns": 1793485460916553300,
    "stored": "xz",
-   "stored_size": 1068,
-   "stored_sha256": "0a18945cdcd80d525af229fb2b287e4d18439a966b2ab0141f28ad7068671bde"
+   "stored_size": 1744,
+   "stored_sha256": "8d9c3772ff8b431ba4655ac00776e0a3ee14ca68f99f9e860c7666962615cc09"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/building_template_roof_template001a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "778c48056a62568f4f7da4a102e37da8292706a5845245b5058bc7cc61e238ce",
-   "mtime_ns": 1792912214193218000,
+   "size": 349700,
+   "sha256": "cb5fab0cdadef6f74a4941c41d75eb5d09c642472f39abe3092d2e004fbf73c3",
+   "mtime_ns": 1793485467366004300,
    "stored": "xz",
-   "stored_size": 87040,
-   "stored_sha256": "e36b1f128f872a3abef8f39884a94089b852e487f2bdac10b86ea8d7aab2e720"
+   "stored_size": 47264,
+   "stored_sha256": "521448e9fb3ec09cf440faad47aeeaa946044f73bedc1013f7c481f909a73bb2"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor025a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "a78a432f8b7b7bedab95cc426d58be42296c839ccc6ebd8a50c8de90d135977c",
-   "mtime_ns": 1792912214197724900,
+   "size": 349700,
+   "sha256": "ea3d18749d9f97a0831692418465c987d85690c39153014cd24a5de04f1bbc55",
+   "mtime_ns": 1793485473089235700,
    "stored": "xz",
-   "stored_size": 259748,
-   "stored_sha256": "0618c80299a2c4984ade4921cb1a8a3ad3c9fc3b52378e4026d63f3c14ca50f5"
+   "stored_size": 230368,
+   "stored_sha256": "b2412143eba56ed01cba6306d4426e61f31882098c147467a744e8589dc510bd"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor028a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "0b3fb2d16192a1f8e3542535e522be715d318171ff63ca28c1e60408a402e3ea",
-   "mtime_ns": 1792912214203231900,
+   "size": 349700,
+   "sha256": "0d4a8d9ffe03c760f52c91cfe79e50d576c42e89531175e0c8ad99d30cd8a109",
+   "mtime_ns": 1793485480293596600,
    "stored": "xz",
-   "stored_size": 210280,
-   "stored_sha256": "5663399a894053533a3b12f931df672aa861de768789bd440140f21d8ae9d39c"
+   "stored_size": 207572,
+   "stored_sha256": "9015490d6b55eadbd7f6dd66cb76dbb5b08328188f7f05eb0315b1bbac66db76"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor028a_normal_roughness.dds": {
-   "size": 1398228,
-   "sha256": "66225205c2388c94cd1944def02379029f5daebe615f6d9feee046353e105400",
-   "mtime_ns": 1792912214207231400,
+   "size": 349700,
+   "sha256": "99a6cb1e41e4ea4ec4e898aaee6607e5a4ecbad8f98ddc3ad3364c10613cdd93",
+   "mtime_ns": 1793485489215374900,
    "stored": "xz",
-   "stored_size": 342236,
-   "stored_sha256": "e73f343521b67fe6a9ffaacf5d3135466e7ea3415bd1249ff15dea93c16b542b"
+   "stored_size": 244396,
+   "stored_sha256": "eac2cea45dcd29c2698967ffc11d7a0ee91a5e39236500173d7197a6cfbfa6bc"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor028c_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "6e40d7cd5c35e9e4c9644017241b79b72cf7a5ad1aa3319296eecfac23c9c6b2",
-   "mtime_ns": 1792912214213739000,
+   "size": 349700,
+   "sha256": "698af987a0211c12b9ac9aae852f7e096bed9e6f24f00129f21ab5ace85daa5f",
+   "mtime_ns": 1793485494293025000,
    "stored": "xz",
-   "stored_size": 74736,
-   "stored_sha256": "e09a9c892dfbfa92f37b7d0ab0ddf543892c2ca89567f1188174be9a39cb46e9"
+   "stored_size": 92172,
+   "stored_sha256": "36de1ed17fe5cda170bf840b84b74bc1f2c955a7556a362639ef427e5e26cd02"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor028c_normal_roughness.dds": {
-   "size": 1398228,
-   "sha256": "25acdde02d5666ac1d85a87b1431a6a728d525049fd30cfc3a45cd20b71855cf",
-   "mtime_ns": 1792912214217738600,
+   "size": 349700,
+   "sha256": "c67541a4ffd8dd240438b2577a4acb01a954ab4e0960ca641a467d42202eaa06",
+   "mtime_ns": 1793485501772335900,
    "stored": "xz",
-   "stored_size": 342272,
-   "stored_sha256": "5d4298bad2c8400a65d912e0e8f61daaa364b0f8a12a6c587fbfed79b98c03f4"
+   "stored_size": 249988,
+   "stored_sha256": "8aa48674593ad5ce8b5615ee9cccd2fa06ba0bcc121ab744926db2e07eba723e"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor039a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "b8035a93ef58e9c723f2924b11237ea5b7d8597c0c6d10060b00ec8eda387a3f",
-   "mtime_ns": 1792912214221776000,
+   "size": 349700,
+   "sha256": "6f6cb6f31ddd33d611b41dab251adae4646e99b52d99b75cc00d08f0e2ad1552",
+   "mtime_ns": 1793485506916352400,
    "stored": "xz",
-   "stored_size": 243792,
-   "stored_sha256": "d17d0b082f4385cbeb6f63b286891f6820bacb257b8523f139e544d756aa5c84"
+   "stored_size": 224640,
+   "stored_sha256": "08d7aa60c4b6e4f3e0f8eb55d19102b5b556a41f0825e8000600c1d534fd7dde"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/concrete_concretefloor039a_normal_roughness.dds": {
-   "size": 1398228,
-   "sha256": "e8fed83c0fb4aa90d736cef012c07765677539a39f313d2604dfdb1284a90b79",
-   "mtime_ns": 1792912214226780000,
+   "size": 349700,
+   "sha256": "ec4953851b7fc073764d7673a23b739224b23459e60b2936ee6f2e5b47c91c9a",
+   "mtime_ns": 1793485514904557600,
    "stored": "xz",
-   "stored_size": 348472,
-   "stored_sha256": "2bc5623d988780e84306fc000a499aa554e3fb4042dd8c6ae3f25a2954598e51"
+   "stored_size": 247224,
+   "stored_sha256": "878ff7dddc7f35415b753b86730bc51bf74e86bdb7ae24b6d68433ad7d528606"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/gm_construct_construct_concrete_floor_normal_normal.dds": {
-   "size": 349652,
-   "sha256": "fa054cb03f5c42c14d1c192697b026e3736f32f4ccec0168082623ba6367cdb3",
-   "mtime_ns": 1792912214227780100,
+   "size": 87556,
+   "sha256": "1f13bf52aeac04251a9c9dfb5ebba4b4be2da4c482c00de1552ccb8d2a1fea55",
+   "mtime_ns": 1793485516380003000,
    "stored": "xz",
-   "stored_size": 91056,
-   "stored_sha256": "30633f56dd2a0f20c1aeef212cecbfad47bc3c3825ffbe90b35d0f9707e0662e"
+   "stored_size": 72236,
+   "stored_sha256": "35a68328f0732459d82498915a2db0bf5a9ef5bc28cbb6e40bb7da0e77b1db91"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/gm_construct_construct_concrete_ground_normal_normal.dds": {
-   "size": 5592532,
-   "sha256": "7670e6326d7b00789bc89d06b376f9dcca5e70e62054cd707d11509e40ff1473",
-   "mtime_ns": 1792912214244304800,
+   "size": 1398276,
+   "sha256": "ff45d5b0e57a11308d30904407c498191b4b2566b012517cd6b25d355afe2e14",
+   "mtime_ns": 1793485540244209200,
    "stored": "xz",
-   "stored_size": 1333300,
-   "stored_sha256": "16c4aa7244d99eeaa1410fa5a0696c7a34df0a6ada3a7ffb5f5fd8712b519d6c"
+   "stored_size": 1027776,
+   "stored_sha256": "9806f4b0f10995a384299acaf9fbaaf93d31a3bc7f6f8ab439065fada907f3bc"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/gm_construct_water_13_normal_normal.dds": {
-   "size": 349652,
-   "sha256": "d82f239dbbb5b42729d00f53abfc2a058299c00fd49f59f50eff0a94bcac51ea",
-   "mtime_ns": 1792912214245304000,
+   "size": 87556,
+   "sha256": "a103f49a134bc4727b8b50bbc690bc8581ab3c7fdd9ed6cfead69598bc0d526d",
+   "mtime_ns": 1793485541849112100,
    "stored": "xz",
-   "stored_size": 68400,
-   "stored_sha256": "e24d0f9e223379e87c1ce1bac1dc26f708c5031a9941443bbe414ca92ad41d60"
+   "stored_size": 62236,
+   "stored_sha256": "85bb23951874468319d5c8661f814f8573f9fd8d7ef33dfadd6a09b15c1ca3c0"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/maxofs2d_models_companion_doll_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "e066d0de6637ba5298b2ebe512c60076b75ee31f63b47a486e038700d73adcdc",
-   "mtime_ns": 1792912214250303700,
+   "size": 349700,
+   "sha256": "9c796af478663e759023a984029b0a4654f72e35004f96042f95b60b6aa36007",
+   "mtime_ns": 1793485547625315100,
    "stored": "xz",
-   "stored_size": 305380,
-   "stored_sha256": "af78f31f1d275b684251637fd30eecc3c3e8a34418d9734871a8a46429976733"
+   "stored_size": 245008,
+   "stored_sha256": "79c68a0cf4994551b50774b36b9ea9197a01b50724528fcd4952439d9a03c2f6"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/maxofs2d_models_companion_doll_normal_phongmask_roughness_v2_r615.dds": {
-   "size": 1398228,
-   "sha256": "59ec4a50452a93885ec359ea03f81558446930473b2f0d5ce0d5f425a94c3e2d",
-   "mtime_ns": 1792912214253810600,
+   "size": 349700,
+   "sha256": "79ffb0a1adcd2c29546d1ba778022f50b47372364d66ec4742eb4d83090a9a1d",
+   "mtime_ns": 1793485552349621400,
    "stored": "xz",
-   "stored_size": 196636,
-   "stored_sha256": "52a56ba93727f7435f35339b33bb5d855493f8230081b837d02ecc94feb28063"
+   "stored_size": 208008,
+   "stored_sha256": "82149361f744ae25a06ba198f17d77cc5c471fb9c9c392ed67fe0e354eb5be29"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/maxofs2d_models_gm_painting_phongmask_roughness_v2_r586.dds": {
-   "size": 5592532,
-   "sha256": "c530d43e5f2f44a3aac3f989e92b3a7388fc0ed008fe6eabc5cc29f8583530ca",
-   "mtime_ns": 1792912214266318000,
+   "size": 1398276,
+   "sha256": "05ea9b876868db2ea63bf68eaf2974c77b3c5de822c8bdf1d40f88ab1f877031",
+   "mtime_ns": 1793485587023189100,
    "stored": "xz",
-   "stored_size": 971236,
-   "stored_sha256": "69ec6119deff3365b2c402bd9be58325f12eaa5ec633d56a2bdcd0d32becf683"
+   "stored_size": 895632,
+   "stored_sha256": "8c3971e0a000386531745f470dc95da021727aa8afce59be79a56962a6a69110"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/metal_metalpipe003a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "63eaa13b2489098a5eceb853a8bb0ec20603d448f30132e5f231bd4e7452b15d",
-   "mtime_ns": 1792912214271821200,
+   "size": 349700,
+   "sha256": "90c70c207d67781ce5a277c393d27365483d8d7e9a0e56ea45a8cf95b6522416",
+   "mtime_ns": 1793485594232974000,
    "stored": "xz",
-   "stored_size": 9376,
-   "stored_sha256": "c8e37ea6fdb841ea99b304fead16dfa41d64896c1fea7a9738b9341829f4912b"
+   "stored_size": 7828,
+   "stored_sha256": "e218b07dcbf668a5212356a151af7094ac99ce122df0d410354f883b9fe57c35"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_kleiner_glassesfrontmask_walter_roughness.dds": {
-   "size": 43820,
-   "sha256": "96dfd814fb5700a6da8ff7d90844b720dcdfb08e6ba47d8a531dda7243b6c854",
-   "mtime_ns": 1792912214271821200,
+   "size": 11108,
+   "sha256": "fe41e9d7197c2dded93d560aeb2d93f7c6c54f6aae2dbaf42db35a0367212656",
+   "mtime_ns": 1793485594501724500,
    "stored": "xz",
-   "stored_size": 2064,
-   "stored_sha256": "2399fb2964077b2d975cec0d3172b349e932ceecef53fdeba1a5667a24a58d5e"
+   "stored_size": 2468,
+   "stored_sha256": "d39029c2c302039e91baaeff0b0dece0150447805754d1c1427ee4e83f99104d"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_kleiner_glassessidemask_walter_roughness.dds": {
-   "size": 11052,
-   "sha256": "e701edb6587e7d62cc940ab839e263d030617dffc15a207d6bbe4d36f58f0117",
-   "mtime_ns": 1792912214271821200,
+   "size": 2916,
+   "sha256": "78bd8adbefc4b236a67270da93f61939d9a22131e8f9c715915fbaee63f5049b",
+   "mtime_ns": 1793485594689183700,
    "stored": "xz",
-   "stored_size": 612,
-   "stored_sha256": "cc086bd71bc1c4a56dcc89df0e8bb07423dab9c48beb8562474e121efe31d7af"
+   "stored_size": 756,
+   "stored_sha256": "87b7d60c1a78e578fc20ff75e9d9cb2054561be0b26b2a6b4677a10bc008ac41"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_kleiner_kleiner_sheet_normal_normal.dds": {
-   "size": 5592532,
-   "sha256": "956a73af79ef35c9eb7f71b89d60d3072f003278393f97f511acca2f79c9ed90",
-   "mtime_ns": 1792912214289331600,
+   "size": 1398276,
+   "sha256": "1a83f81ed6830fcb8cb739c787f594231969e39fcec2d983255d8671a69f015f",
+   "mtime_ns": 1793485615213297600,
    "stored": "xz",
-   "stored_size": 1035176,
-   "stored_sha256": "b103fd771a70579bee9a4af3d1cba88df9504bbf8e33f42d0e326f0088666276"
+   "stored_size": 855968,
+   "stored_sha256": "481105f323453b3a050c26fd172f19fcae4d8813f936075d677e19038dfd814f"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_kleiner_kleiner_sheet_normal_phongmask_roughness_v2_r731.dds": {
-   "size": 5592532,
-   "sha256": "4c7735988a96c9bac78ecd2c2c291c30c52882faa6f0a6e083f94f51dc0f3181",
-   "mtime_ns": 1792912214299839900,
+   "size": 1398276,
+   "sha256": "c69ed541f6a7279c8ef6b75963d82a59509d9db5e9d48baf59d8a133f0edca26",
+   "mtime_ns": 1793485633306427800,
    "stored": "xz",
-   "stored_size": 696448,
-   "stored_sha256": "039dbb79781b9221f6bdc39d09b572811e3f0a2369cc4e98f8052c01b006f44e"
+   "stored_size": 746052,
+   "stored_sha256": "2a70cf095328a95545e15dafdcb2ea94619970159cb88bae221f90594416d042"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_kleiner_walter_face_normal_normal.dds": {
-   "size": 699180,
-   "sha256": "5da58a3c6ee626daee3ace5965c9b9f3367c7263b688bda64907723ea33aed3b",
-   "mtime_ns": 1792912214302350700,
+   "size": 174948,
+   "sha256": "fb63a6d1f8b9a7534b2f7663e616b955fda73c4b32784d6a173ed4c961fbb7bb",
+   "mtime_ns": 1793485635646578900,
    "stored": "xz",
-   "stored_size": 78796,
-   "stored_sha256": "5f8161196b607fb5a21f1bdfd6571ecbdf2984cc5d7a33386a772daeafc8771b"
+   "stored_size": 83184,
+   "stored_sha256": "741ee48f8143eb7691b08b348612a6e0f13b9b7190be69f9e5a02f339c2f9e88"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_kleiner_walter_face_phongmask_roughness_v2_r639.dds": {
-   "size": 2796332,
-   "sha256": "a83320a873b5a0df4eec3d2006f00252969d0acfeaa9e3c3a83e2fb9a213d498",
-   "mtime_ns": 1792912214309857900,
+   "size": 699236,
+   "sha256": "54459cab99553179cf84df79fb439a2c46b98c4325056e507fbcc8129b0f6046",
+   "mtime_ns": 1793485643082325700,
    "stored": "xz",
-   "stored_size": 323808,
-   "stored_sha256": "aff80eea5471591389b144cd4fbf4c7832cbcecb670fa152384a970d2b042379"
+   "stored_size": 309288,
+   "stored_sha256": "31dcaa4211e03591ca3110171dbde1526c8af3e4fbb4754f45bf9286104c05a8"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_buildings_buildingsheet_03a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "39e90bd3be5257ed2e10ae43e63412e69fb56ebf2720bda1c48c86e630aa6020",
-   "mtime_ns": 1792912214312382000,
+   "size": 349700,
+   "sha256": "ce97f10d82e491ddcfdbe2c30ad7fafb9c50399282a8351e4363a84837371a88",
+   "mtime_ns": 1793485644627699500,
    "stored": "xz",
-   "stored_size": 30640,
-   "stored_sha256": "ff6192cceb84d1b025a329326ced04a9653399dc409fdc39e992ccc6d656ffac"
+   "stored_size": 41408,
+   "stored_sha256": "f1360d87f3ebf850500acd711685c5ba16d88398667b8d2da691221310dbb53e"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_buildings_long_building001a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "51b5eb3366f1709fc468668b9b52b0e659160e5fe7fdf601bef8217244372667",
-   "mtime_ns": 1792912214314382000,
+   "size": 349700,
+   "sha256": "9ecb9cc4e797784f296bf320853822f553da63bc4e27231c7376a720781a413e",
+   "mtime_ns": 1793485646793875900,
    "stored": "xz",
-   "stored_size": 58332,
-   "stored_sha256": "b4a315ce4edf83bbfe647270e7f48fb67003273483fa58207befd1778c8a3785"
+   "stored_size": 66104,
+   "stored_sha256": "efad92f58dc3aa8ce66e6e388c752542d54e4ef71d1b7c6233f9603cea29a1a7"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_buildings_project_building01_roughness.dds": {
-   "size": 1398228,
-   "sha256": "d9f8820ecacfa19421f254b1fd17baf4a58e4d1b587e625bcd19573c231124f1",
-   "mtime_ns": 1792912214315381900,
+   "size": 349700,
+   "sha256": "12a4df96c889daac27275597ec5c29efa48e6401ccc802fd27d23d31ff2cf1a7",
+   "mtime_ns": 1793485649161052700,
    "stored": "xz",
-   "stored_size": 17296,
-   "stored_sha256": "8a5f3c6473a2e17c43bd4260d0c6c44961d09edb27cdff7d9100311c512e9410"
+   "stored_size": 23276,
+   "stored_sha256": "d6a24f580d2ff835f7064a09060c4f411b82a2957536d6233a637f47a74c15a0"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_buildings_project_building03_roughness.dds": {
-   "size": 1398228,
-   "sha256": "a16e0d3e4d1e3efb7bbe87b7c6747f9e94a4ef0c49cd364a69febc61e74878d5",
-   "mtime_ns": 1792912214317381900,
+   "size": 349700,
+   "sha256": "c8fc2541c5b6a1cc39815913e8ab1c80c533176aebe5554c19136f0429ea24c1",
+   "mtime_ns": 1793485651175943500,
    "stored": "xz",
-   "stored_size": 13904,
-   "stored_sha256": "5b7fa57ead51158ae7b195f6ebf1a5143c4f70d9fec86ec0c0cad5d8eacb1ad1"
+   "stored_size": 21360,
+   "stored_sha256": "aaacb77f0c9709a5af4c6e3af43b06a02d60617608de4a346e301655e03784e2"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_buildings_short_building001a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "1344f3ce29049aa507e60b998d153cff44e7322a1ddf7615f5925b963cccda6c",
-   "mtime_ns": 1792912214318382000,
+   "size": 349700,
+   "sha256": "95de3dfbe0ce0807a40e2f74f54382b2dae01320c26c4e2edc1357d7cf3304ff",
+   "mtime_ns": 1793485652468992600,
    "stored": "xz",
-   "stored_size": 30592,
-   "stored_sha256": "b7afdd0a667b04c42a9ffea5ddf357593bd569170c5616ad5f5cb91dd252a960"
+   "stored_size": 38528,
+   "stored_sha256": "35cf5404b84a5e83cac2c3172c754a7b477a3c554afac7174cfd28025c1b1ddb"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_c17_furniturecouch002a_roughness.dds": {
-   "size": 5592532,
-   "sha256": "2a333edc44802f25ace7f9d21f0cf4deff3a101482a1aa9587ef86b6dadfc9f3",
-   "mtime_ns": 1792912214329890600,
+   "size": 1398276,
+   "sha256": "fd86a45d19a1fa8de546f2cc7a520e08b507d5fea7b5053ce20e74b715d316d5",
+   "mtime_ns": 1793485664257188900,
    "stored": "xz",
-   "stored_size": 292628,
-   "stored_sha256": "1ce86f4dbb230dbb39f2fdf43e38ff5b3b9c45500fd2ba262b310754e3949942"
+   "stored_size": 372584,
+   "stored_sha256": "252bb0fb259a4ce86f2b31f20fda667f99595de8504cd053d8d8c44e238723ab"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_c17_furniturecupboard001a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "e14a8adc25e72eb7903f72761670a41683e016de6d87672f8adb6e18bf7b18f3",
-   "mtime_ns": 1792912214333398300,
+   "size": 349700,
+   "sha256": "eda1d87b07d15ad384ef979d7740cd1047dfff75d7b185d75443a10854d61c27",
+   "mtime_ns": 1793485668256545000,
    "stored": "xz",
-   "stored_size": 149536,
-   "stored_sha256": "16f5078267c64d76e84c60ba9254eda2c1c5d6bafc4190ff83ba80644fcd8f64"
+   "stored_size": 166512,
+   "stored_sha256": "e7e2842ee1434c6b645b1dfb8951edd2ebf408d1c8263e59ebc25cee5d447864"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_c17_furnituretable003a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "fe2df128e60eb1528e02d4efbba53dc57d2a4673d8262e1645dd9c46e80ed8c9",
-   "mtime_ns": 1792912214337398000,
+   "size": 349700,
+   "sha256": "e77716e3ee377ee64309428e4b20f4a4083c4a9863c9fe7e36b1ec0b0b7cc1b4",
+   "mtime_ns": 1793485669727588900,
    "stored": "xz",
-   "stored_size": 42364,
-   "stored_sha256": "de78d871b07a1e82af3a7cbf3eb0eee2eaf97daacd49c9f5a346de7612ca93f2"
+   "stored_size": 42736,
+   "stored_sha256": "273d906b792e182f9585d303e62b45a70e60a4ad9f47ef0208d66285b6e02e12"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_c17_furniturewooddrawers001a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "490f93027410de44aa9a9f8f91f8439127f543e798d4aeb5235374af4aa9cfdc",
-   "mtime_ns": 1792912214340399600,
+   "size": 349700,
+   "sha256": "86b692c4ecf542839b435ab803ee584897cf3ace9193d5ed35c88f1c3258099f",
+   "mtime_ns": 1793485673053642100,
    "stored": "xz",
-   "stored_size": 130344,
-   "stored_sha256": "cdbac84e176228138980d701f747b65ab381aa32de977c80f15e59415eb93b0a"
+   "stored_size": 147712,
+   "stored_sha256": "d6c92574e7d6c159d069e4b843a26db83ff370f9735c373a1148baa789cde741"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_props_interiors_sinkkitchen01a_roughness.dds": {
-   "size": 1398228,
-   "sha256": "9ed5686e30bcc2ce7f70e6c3a6fe18af668efa337874184191f7f62c2e5230d7",
-   "mtime_ns": 1792912214341399300,
+   "size": 349700,
+   "sha256": "4d9aca6bf6ccd1d56ad09a23736889d8638e1b1ed17d706fa66ec732d25ba974",
+   "mtime_ns": 1793485677069803400,
    "stored": "xz",
-   "stored_size": 138488,
-   "stored_sha256": "078d9a37f98d2d328df89f0a8d9e7a164a889ac7eeb45caf2b2426007e9033cf"
+   "stored_size": 139716,
+   "stored_sha256": "8d136d046b9ce0a2146c09765a722d28c060806c2636db11f46e19846f89fe50"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_c_arms_citizen_c_arms_citizen_hands_normal_normal.dds": {
-   "size": 5592532,
-   "sha256": "f07d0048a1d314ea455ceb3699773a1e7bf03e165e494a999f42fe01e5bef9cc",
-   "mtime_ns": 1792912214354028700,
+   "size": 1398276,
+   "sha256": "fb61a5804dc5a481c9f2468cb623e9682b59820b5cd2bbf7c603e468dba52fd5",
+   "mtime_ns": 1793485697143544000,
    "stored": "xz",
-   "stored_size": 610260,
-   "stored_sha256": "8cdd6d6fa0b158a17ad0f800e1186f555ed549ece5fb4396a0941fea8eac0b77"
+   "stored_size": 526820,
+   "stored_sha256": "cd7df2579777573f1bb7886e4d310a16edf42dfb94a5a400ec79160f03e3ba94"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_c_arms_citizen_c_arms_citizen_hands_normal_phongmask_roughness_v2_r669.dds": {
-   "size": 5592532,
-   "sha256": "0e14d468ee58ac882b4df7c69a0d4b61d8ef7f22b7b240846ec0e43e0abfce56",
-   "mtime_ns": 1792912214366041900,
+   "size": 1398276,
+   "sha256": "62968f264eb8fcd2082e24fa55b84ae57a68e915af4902857a7b09c4f035b9ce",
+   "mtime_ns": 1793485713514602700,
    "stored": "xz",
-   "stored_size": 619184,
-   "stored_sha256": "8fffa825b6dc96eb877021498aa744592a367b8cc0d8ef642c846db2e76636f1"
+   "stored_size": 642408,
+   "stored_sha256": "65d2023918004d2fe5c1ce59c177e7eea7c0436347aa75845afc9e39d5ebd579"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_c_arms_citizen_c_arms_citizen_sleeves_normal_normal.dds": {
-   "size": 11184940,
-   "sha256": "8bd45176b016933982f98153affbbcd596fd19519d0f0cfabc65080556cbe58c",
-   "mtime_ns": 1792912214399566400,
+   "size": 2796388,
+   "sha256": "83ac4688d567906ccb250279416fa663c8ebe5e329992ec8cf9c9061943b5726",
+   "mtime_ns": 1793485758736743900,
    "stored": "xz",
-   "stored_size": 2274100,
-   "stored_sha256": "c16df6d13a4a7071888e060f66e6bc850fbe46da976502bb758a905bed191bb6"
+   "stored_size": 1720012,
+   "stored_sha256": "619253e74dfe37725e783c7823cb3f2aef4e37ff6c6d7c1a4c150d4dc0cfa02e"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_c_arms_citizen_c_arms_citizen_sleeves_normal_phongexp_roughness_v2.dds": {
-   "size": 11184940,
-   "sha256": "0fbb4e7249f0a2bfc57a16bf06905a95d75ceb806ac37356eebf9f6e7e45dd63",
-   "mtime_ns": 1792912214421581000,
+   "size": 2796388,
+   "sha256": "87b44704419953b0b8435e48b74db72ee26e900abd89295298f372c6c9244c3c",
+   "mtime_ns": 1793487802153073300,
    "stored": "xz",
-   "stored_size": 972800,
-   "stored_sha256": "0e6333f69440e8075d5a587d4ee77ed6d1801b6c0df422b288e7145c99e4f8c0"
+   "stored_size": 995692,
+   "stored_sha256": "6802b77153d6a23a0f45f2e56c5220f9fdde474a1351ae5c200dbf6d897e83c0"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_357_357_sheet_roughness.dds": {
-   "size": 1398228,
-   "sha256": "810de9f3a6734b8d1dc573237194fa583cb33d231584be03d882c8457b829c64",
-   "mtime_ns": 1792912214423088300,
+   "size": 349700,
+   "sha256": "90a417a9e1ae491610baf77c8c1fa4eaf31a4251ce4e92cf6ba9c4cce19db612",
+   "mtime_ns": 1793487808095771200,
    "stored": "xz",
-   "stored_size": 249808,
-   "stored_sha256": "a05233c7f2d9bdb4ecf48efcd3d3358e123f873214e073d98dfc3fe6660e2c56"
+   "stored_size": 229336,
+   "stored_sha256": "cf5f512704cbe37fee3c179531b34d5b74cfed586c32653cb5721acbf1c0d5fe"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_crossbow_string_normal_normal.dds": {
-   "size": 21980,
-   "sha256": "6561e778d9761ab5bbd98514655765c3f3d3f293eed49afe5cd932db114ea5b9",
-   "mtime_ns": 1792912214423088300,
+   "size": 5668,
+   "sha256": "4db8acbf765fd780c5dfe4ae7565591d4f07a44e75aca88b3ed37788b0edaa91",
+   "mtime_ns": 1793487808443576500,
    "stored": "xz",
-   "stored_size": 4964,
-   "stored_sha256": "57e7c9eace0e3a2bb4aa99839c894ee91d0939859e7ff2da45a749d2be174be9"
+   "stored_size": 4772,
+   "stored_sha256": "048cfd078615881818992e188a6ec49bc6227706472546fa53ccd818e0341e1a"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_crowbar_crowbar_normal_normal.dds": {
-   "size": 349652,
-   "sha256": "c98eaf9cd91ade33b219402d18e2c2ccb681a0d30731ef36af73f6831f171610",
-   "mtime_ns": 1792912214425088400,
+   "size": 87556,
+   "sha256": "b820a64ad4381ec99a508e28d9f29f77c733e420d2d5acffda7f5fe0606c7f67",
+   "mtime_ns": 1793487810030191100,
    "stored": "xz",
-   "stored_size": 56244,
-   "stored_sha256": "cff90fffc049352a7814281146aa2d376b98180c0f432491de42f93d3bae3663"
+   "stored_size": 55888,
+   "stored_sha256": "1bfbb7cd128baf39e5949b49ae550a758f98d6ab21ee7668633e08c1b9764cd3"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_crowbar_crowbar_normal_phongmask_roughness_v2_r586.dds": {
-   "size": 349652,
-   "sha256": "6502bca95f9d69189f7cc4db4b70c22342328d7764dd53cb12618776ca683979",
-   "mtime_ns": 1792912214426087400,
+   "size": 87556,
+   "sha256": "c5670ef1c64954cd3ca6ea0af0e5a1f69d74a693297ba198522b95c847e077d8",
+   "mtime_ns": 1793487811299170200,
    "stored": "xz",
-   "stored_size": 36380,
-   "stored_sha256": "7f9503f16d035f4fc15f97c126e928f3a083e4031150fc9e792cb5a2ec5757b4"
+   "stored_size": 47128,
+   "stored_sha256": "6b5df2531cf9de64f78e739a09117f2db1a13dbb2af9ccc2b1052cc2dc47e287"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_crowbar_head_normal_normal.dds": {
-   "size": 349652,
-   "sha256": "2a162983090b71f072e09e27841e0d39d1b609013e8bce37340e15a24f71446c",
-   "mtime_ns": 1792912214427087300,
+   "size": 87556,
+   "sha256": "ae7a3feaf4c06cf5f4f044bbc8e14087b6617fda2be2891694e8e741a0198001",
+   "mtime_ns": 1793487812896686500,
    "stored": "xz",
-   "stored_size": 60408,
-   "stored_sha256": "7053ab051d6755250035e5a9b6193e84552679c109af73fb458cd2042d5d0a35"
+   "stored_size": 58020,
+   "stored_sha256": "610c04e8c417aec73c9beb29867b55f8a5db69850f16277ad77e3d14ff10ebab"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_crowbar_head_normal_phongmask_roughness_v2_r586.dds": {
-   "size": 349652,
-   "sha256": "7046e17830812773b5d57c0448a05eef0759a4b313f12c56ec71ba1069988c41",
-   "mtime_ns": 1792912214428087200,
+   "size": 87556,
+   "sha256": "ec4733f28e391d8c7dabea61f2c898ce7ffa34508b32c0b3c641b9f2a1b9b893",
+   "mtime_ns": 1793487814361630500,
    "stored": "xz",
-   "stored_size": 45248,
-   "stored_sha256": "95e282ec703dbca76e6c5875111738942d1ac7cc4a87226139d64bc0f70d9639"
+   "stored_size": 53780,
+   "stored_sha256": "671be443ee362021b7082b5f63c0ea9f49cc3795e683140d8ef59f80f01f7ebd"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_grenade_handle_normal_normal.dds": {
-   "size": 699180,
-   "sha256": "34aa7486eecc4e5ba5d3696b7201e17fbde1ddf9479d26f589aa0250d49349d0",
-   "mtime_ns": 1792912214430593300,
+   "size": 174948,
+   "sha256": "2764aff1a9f5d53df1e87e5d61e95bb79cd4f5c402a20d6055adf40a902fad50",
+   "mtime_ns": 1793487816584926600,
    "stored": "xz",
-   "stored_size": 79308,
-   "stored_sha256": "7ac72189290aa1f39142b1ca3ebc3c0634334df46966791cf061c7659a97a7de"
+   "stored_size": 69784,
+   "stored_sha256": "131cc31380b01a76600cf424eb6e10b15be96b135536c7618ddb1b8c0611f53d"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_grenade_handle_normal_phongmask_roughness_v2_r389.dds": {
-   "size": 699180,
-   "sha256": "9dd74a5adaeb8216022c52aec1769b7b0d1706a7cb65ac83688838b352432aad",
-   "mtime_ns": 1792912214432101100,
+   "size": 174948,
+   "sha256": "379cb968c79becdd90e79388af46a47265a0b78e3efc387feebbcd13f3396344",
+   "mtime_ns": 1793487819174897000,
    "stored": "xz",
-   "stored_size": 90436,
-   "stored_sha256": "c33c3e598a9079296ffe42a1efa3b89a3f8a851620075b65129f70062c68a919"
+   "stored_size": 105512,
+   "stored_sha256": "89dc7e5d0f8f71f29d6aa27fb95cde3ac92f949fc6e379232771555e77bbe8ba"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_grenade_rim_normal_normal.dds": {
-   "size": 87516,
-   "sha256": "1b3bd6ae6e4a1b092b655ac730bc0d5b4b076f362bf1a39461b1bbe694f98ffe",
-   "mtime_ns": 1792912214433102600,
+   "size": 22052,
+   "sha256": "09a504410d62d109a0cb63c72c1033e87399bd1614cdaddbb21f8515f2306c9b",
+   "mtime_ns": 1793487819540428600,
    "stored": "xz",
-   "stored_size": 1760,
-   "stored_sha256": "6ea69113c1332fa35bec6d27ca049251a37a723bcbb492fec8a866d4db2a9b8d"
+   "stored_size": 1576,
+   "stored_sha256": "4d1ecef965a37974510eb9b2b81987ffe528280827eab3e78c6426af718235ab"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_grenade_rim_normal_phongmask_roughness_v2_r348.dds": {
-   "size": 87516,
-   "sha256": "de919bb63eff94cc97af6b295b241fdfce194c0e8ec94badd7e99fb6b8a0f945",
-   "mtime_ns": 1792912214434103000,
+   "size": 22052,
+   "sha256": "19365052d8137f0aa65958a84b7f414bc1473ccb5d6294d86831a02cf6613404",
+   "mtime_ns": 1793487820131619200,
    "stored": "xz",
-   "stored_size": 16916,
-   "stored_sha256": "fde5787b7e9a4ddca97983b2bbb11f132d99d86178824c6ef9642644582d4165"
+   "stored_size": 16800,
+   "stored_sha256": "4bb6ccb12903a0f89809937b3f890b8194e21586c74da467ab56e782a2740704"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_grenade_top_normal_normal.dds": {
-   "size": 349652,
-   "sha256": "68eec67f3fdc5b43be18374bf4bce37d114b0ae662d453e15ae7d97f5df696c4",
-   "mtime_ns": 1792912214435102400,
+   "size": 87556,
+   "sha256": "aa092d83121fe0346f71d3d34bcb5d17305fee909281c6c31e9b5f17d61896c8",
+   "mtime_ns": 1793487821445984200,
    "stored": "xz",
-   "stored_size": 66556,
-   "stored_sha256": "64f73e18516a93f7a0f1fa63709d775f7661d106d5159db48deda53770054ab8"
+   "stored_size": 54084,
+   "stored_sha256": "3722b1d4667ea0e8b9cd58081d7b430ba2e140e157a97e5605ba61a5bf45c664"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_grenade_top_normal_phongmask_roughness_v2_r457.dds": {
-   "size": 349652,
-   "sha256": "c4966ca59ee5e2a60491f0dc5dfa8488930d1e1fb76c6de8955a8f6ed4e76453",
-   "mtime_ns": 1792912214436102400,
+   "size": 87556,
+   "sha256": "28ace1010832b4830d819d74e2acc0ced5cf428a56b244bbcd19f5f02302a5c9",
+   "mtime_ns": 1793487822501033600,
    "stored": "xz",
-   "stored_size": 26740,
-   "stored_sha256": "75f87a5d065749fb9465a66a5326361e940d2bf8bd1d2dbfefe02e7ca10e1bc7"
+   "stored_size": 33056,
+   "stored_sha256": "9dad60fbe450395b814efd84eae4f285c402c717b626ab5e7f2b4292435632ba"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_irifle_v_irifle_normal_normal.dds": {
-   "size": 349652,
-   "sha256": "bb950bcd756a168d7ccf38cc1714356605161c627baf59e0e810584d43fbbe80",
-   "mtime_ns": 1792912214439103000,
+   "size": 87556,
+   "sha256": "914fdd3fd9eaf91b1368328486f4eb66ff512baf0326d23b248c3bcc30062e8c",
+   "mtime_ns": 1793487823804332800,
    "stored": "xz",
-   "stored_size": 272,
-   "stored_sha256": "5c520ca46a855f903ba349c784e3d5dd86316fe7df0d7d1a4187f400d7f5b295"
+   "stored_size": 280,
+   "stored_sha256": "b316ed3cc5d3b480b693672f98b736e1fdeda40ffc15ba24e90dc2c1f4975e43"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_irifle_v_irifle_normal_phongmask_roughness_v2_r496.dds": {
-   "size": 349652,
-   "sha256": "c3b7b54a3f395d7cb16599a63d0d0961383bb300add6bb3ad15607c3f6e8ba54",
-   "mtime_ns": 1792912214440103200,
+   "size": 87556,
+   "sha256": "4cce76cf0da9fe0446c7e7b40c349b5f4874a8dc2fd84b62b79e0d4938e32783",
+   "mtime_ns": 1793487825172793800,
    "stored": "xz",
-   "stored_size": 40448,
-   "stored_sha256": "140c99da3b36b4fd3a8199ba1cb4a179f50e71a96dca3f6aed45bd7193abcd82"
+   "stored_size": 45648,
+   "stored_sha256": "7bf43ed17d26f6f35d922e1d158da72ea473d9f24836179b252fa102e8a8a254"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_physcannon_v_physcannon_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "b4b5ff46f43caba9be0aa7c4c47cb1bfbc3af6f39aec324c53e5c897d2249021",
-   "mtime_ns": 1792912214443612200,
+   "size": 349700,
+   "sha256": "c29b7b42deb7ede19ef83628dbcbc59f4339bcd3dbbc7c576904d524077e2f9e",
+   "mtime_ns": 1793487830610005300,
    "stored": "xz",
-   "stored_size": 221400,
-   "stored_sha256": "d51bb66af7e77912105266f195b74d3df8ead5309b3e4a213a2d820e6c9c22b9"
+   "stored_size": 207100,
+   "stored_sha256": "da29126e5f34149901df391bac438c371d8e1f98c52b7ff3439e847e9d198452"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_physcannon_v_physcannon_normal_phongmask_roughness_v2_r492.dds": {
-   "size": 1398228,
-   "sha256": "f3686793be3df38b1c2ae434c855e4fa918463d9fcbbf6b9a21f5ad9a30950b6",
-   "mtime_ns": 1792912214447611700,
+   "size": 349700,
+   "sha256": "0f97b79cd7e6c6df547f73a39e3a0378f3e541a6067a636352a8f1c7a8e869d0",
+   "mtime_ns": 1793487835009403300,
    "stored": "xz",
-   "stored_size": 187408,
-   "stored_sha256": "02015d992e6b20dce20fbdc46533c926e8bf8a135ae0b3f2bc9c700011306a9e"
+   "stored_size": 192360,
+   "stored_sha256": "f6300a2b48dbc48adf09a5b6b4e0d3bd897e911aeb24607506556b8f4c5edac7"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_physcannon_v_superphyscannon_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "e7c4151173fb128b7dafdf3679a79375ca857d3854d5a4f7e70c7ac8f033d9b0",
-   "mtime_ns": 1792912214449611300,
+   "size": 349700,
+   "sha256": "8d18d628969d58c33ccc495c4b6fe7c7ba2147c61c3aea5c2333bb0e286e61be",
+   "mtime_ns": 1793487841001790600,
    "stored": "xz",
-   "stored_size": 297396,
-   "stored_sha256": "b68c70759d5166953242c73cd16989219e9c3bddb57a7cba4fd9ab91f486ebd8"
+   "stored_size": 250364,
+   "stored_sha256": "aee1a69d3ca803ba5ae6979aaddb00c8b331a477ec1d11e0799718a0e8b21d0d"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_physcannon_v_superphyscannon_normal_phongmask_roughness_v2_r707.dds": {
-   "size": 1398228,
-   "sha256": "25274f6932532989489e0b9a86945d6b99f801ab0e2b3a8dba71a568e7b60884",
-   "mtime_ns": 1792912214456117000,
+   "size": 349700,
+   "sha256": "227f0e7dbafab8762d42e08c28a11fe0e50235095c4a7ea1ae2c84584d649413",
+   "mtime_ns": 1793487844260711700,
    "stored": "xz",
-   "stored_size": 157428,
-   "stored_sha256": "305b4195e9c28097f7580827156bb562468f925553859850802e0564d5dd4be6"
+   "stored_size": 156008,
+   "stored_sha256": "bfa6bc77c9984b23ffd76ef8fbaa84bd28d86ea2b7571ab0f66f486751d26102"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_pistol_v_pistol_sheet_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "540f963eb61abea86c0f84e8b8af5053b1f9a1b669d17efd19205e79cc305681",
-   "mtime_ns": 1792912214460118000,
+   "size": 349700,
+   "sha256": "e7d2fb8714530ea16267188ad9a110a22d3f828b7a9218a16f18574c8e79336d",
+   "mtime_ns": 1793487849734330800,
    "stored": "xz",
-   "stored_size": 242696,
-   "stored_sha256": "d0c9886591329052fdbc00a0176eab67ce943bba994920e9c0d62235bc493813"
+   "stored_size": 227612,
+   "stored_sha256": "1c9276bb91b52854659ae616a2ecd89805a8fecbba01e6b14fd5be8b1cb1a4f6"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_pistol_v_pistol_sheet_normal_phongmask_roughness_v2_r586.dds": {
-   "size": 1398228,
-   "sha256": "bc3bf2911c14dfb54afcfce218989151b708bb8b88589e8d451798bd5bf5ff21",
-   "mtime_ns": 1792912214465627400,
+   "size": 349700,
+   "sha256": "f9ea9d1f8ad72d5824a9923bef86e96bfca25fe22ef6ad660fcf1069ee5fe004",
+   "mtime_ns": 1793487853804759300,
    "stored": "xz",
-   "stored_size": 91848,
-   "stored_sha256": "5fd56ce35811374ebd36aa98786fa9b403d22b0a4b639f71fd33922218000596"
+   "stored_size": 115024,
+   "stored_sha256": "d5d3f7975a07e6525bfb4f7b02859b2c7fbaf386c65d65fa3a615ef4b3df1e1a"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_rocket_launcher_flat_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "a31cb5515a3fb67ecb1db47cdcbb04e4ee50d112cbd4035d41fe1ccfc1507b31",
-   "mtime_ns": 1792912214479131800,
+   "size": 349700,
+   "sha256": "78de17c7fe8560d45aa8de2110d3316f00bedf164185a361b5ee8442b6b0a70c",
+   "mtime_ns": 1793487855983054100,
    "stored": "xz",
-   "stored_size": 376,
-   "stored_sha256": "231129fcbaf0d4b5166dd80d409516459970c590ade93d58d834ceb60a65b031"
+   "stored_size": 268,
+   "stored_sha256": "886e43ba1a08e0ecd9729af22cd7bf1623df79dfbb7304e973ecfc1ad27431cb"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_rocket_launcher_flat_normal_phongmask_roughness_v2_r522.dds": {
-   "size": 1398228,
-   "sha256": "6bf59f3ec776936a36599d99af44a257ee2ee70db352e13bdf1495dc0252b766",
-   "mtime_ns": 1792912214484641000,
+   "size": 349700,
+   "sha256": "0f1fe48beddd85e60bf3ab915bd28dd8ed4f17ff832b9bae1c8d21661bafe9c7",
+   "mtime_ns": 1793487859584272900,
    "stored": "xz",
-   "stored_size": 121192,
-   "stored_sha256": "1006fc9fab0318f72c9e6179cb0ef92675537f44f3b47dd4f842caccd28b4463"
+   "stored_size": 144144,
+   "stored_sha256": "2b2dbaaa6478e255b41629af09e91b6746e18a83ad95812cdd30bd000c0ee64a"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_shotgun_vshotgun_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "076506d9cfea380864315a29ee045d711232587164648b91fb1ea41981800dd5",
-   "mtime_ns": 1792912214486640600,
+   "size": 349700,
+   "sha256": "33b2ca4911d3c3f88f0029087ffba87149b1f907318f94722117de62f3e6007e",
+   "mtime_ns": 1793487864607312800,
    "stored": "xz",
-   "stored_size": 131444,
-   "stored_sha256": "5b7a8c30899b078358b7780cfbb98bcabaafa0a7835c34a9db3edf1b0112580e"
+   "stored_size": 145764,
+   "stored_sha256": "0004e145672efa9fc81e4435507712d769564b94d73b2cfbe84135ae27c1a9ad"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_shotgun_vshotgun_normal_phongmask_roughness_v2_r639.dds": {
-   "size": 1398228,
-   "sha256": "2e2869a6b56e564dc9f7a2e41fd41e91444ffebc16051b335ac4171fdea1f63e",
-   "mtime_ns": 1792912214488640400,
+   "size": 349700,
+   "sha256": "4f25b9ea425cac4efe026bdd6f928cbb875e20397b0278b7f89a0f4af23e4ccd",
+   "mtime_ns": 1793487868983350700,
    "stored": "xz",
-   "stored_size": 162408,
-   "stored_sha256": "dd9755f35ccd36985554473961196a5949879ac603b1ffc00a481faa3397620b"
+   "stored_size": 186900,
+   "stored_sha256": "c9c17fbf3a7809ca94661a3c2b1e271a917307a227e553a457a51ed7321c88a2"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_smg1_smg1_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "d460ded26be2cc8021162ba3aeebf4955e366ed239f045e4613e5e1da7e8ab74",
-   "mtime_ns": 1792912214490640300,
+   "size": 349700,
+   "sha256": "e44b517844e53d61275258a6b714b63ade72df3830bd3567b0c735924f591d90",
+   "mtime_ns": 1793487874146483800,
    "stored": "xz",
-   "stored_size": 145440,
-   "stored_sha256": "bfed924cb55e3462333d0fbeabec3664027c64b5bbb7aa0acf6bbee2bcceea43"
+   "stored_size": 157956,
+   "stored_sha256": "576f2d6eecd33ed5ca7ff0d02d84aa2ba1b1f883e7b70b83d53366ea2467f3df"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_smg1_smg1_normal_phongmask_roughness_v2_r454.dds": {
-   "size": 1398228,
-   "sha256": "1bf8e30949cb8ac5fb5c9f2fdab4f523c6f20f23d23b24f1d9fe8660b0b0c84f",
-   "mtime_ns": 1792912214492144600,
+   "size": 349700,
+   "sha256": "079cb65197f160b4c3915609e7b24ae3bac0b232b7fc14ba4e1cc409d5f90a43",
+   "mtime_ns": 1793487878667821300,
    "stored": "xz",
-   "stored_size": 121736,
-   "stored_sha256": "a754e5b2fe565674dbd2d5b0a1a58427e87952a680c14ed16b541eb326a60f19"
+   "stored_size": 163504,
+   "stored_sha256": "81b257af6adfcdd932cf4b083601ecd553d099464a6f11e44b577e731a9681ea"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_toolgun_toolgun3_exp_phongexp_roughness_v2.dds": {
-   "size": 349652,
-   "sha256": "15886a027a4be77a3e352882e9095da1a606afd2e5bc7bfc3cb318070d8792e0",
-   "mtime_ns": 1792912214505655500,
+   "size": 87556,
+   "sha256": "e87b62d00187ff6f1036c729e11228db7afc3dd2df8b4866142ca754b68c91fd",
+   "mtime_ns": 1793487880068260500,
    "stored": "xz",
-   "stored_size": 16404,
-   "stored_sha256": "3691a11b669ca18c1ee7b4c05be60f7746408e2683f5a3f21e1d524cb52aefc1"
+   "stored_size": 22336,
+   "stored_sha256": "1ad5436e4b3cc0efb64e79ce100358f1836d95d0bbd53e8f127288e5005d334f"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/models_weapons_v_toolgun_toolgun_exp_phongexp_roughness_v2.dds": {
-   "size": 349652,
-   "sha256": "d1f9e9d46b6f2e2289471f0596d732b3a31a598e91ce4ef855f729cb1c32f6ad",
-   "mtime_ns": 1792912214505655500,
+   "size": 87556,
+   "sha256": "446042db331c0d45c5c8ef57936aef62e7edb81bc24493650d9c91d8b9b46724",
+   "mtime_ns": 1793487880713294100,
    "stored": "xz",
-   "stored_size": 1936,
-   "stored_sha256": "f3418b3b21c02bcce09d1ffe1f1ba471be481fe4a27326afe654036d3b908bff"
+   "stored_size": 2600,
+   "stored_sha256": "4c83bf119d69a755ca7c7e701be299dfda7f810bb97ab37a087482304d61a55a"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/null-bumpmap_normal.dds": {
-   "size": 1492,
-   "sha256": "1ec6c65ec1b909edd616e3cf8d4f0753cf167799427430275837a5d71bc23717",
-   "mtime_ns": 1792912214506655300,
+   "size": 516,
+   "sha256": "90b45bec244e74c4290966cd5e64e841442b2ebfa9ca579ca8eaecc6797ca8cd",
+   "mtime_ns": 1793487880988076300,
    "stored": "xz",
-   "stored_size": 120,
-   "stored_sha256": "fb23fe72b422081d2c1f34c4b5faa02c46a2c0ed88cc89189d6ea34b4d8d8484"
+   "stored_size": 152,
+   "stored_sha256": "59703e5babfc48aa2af9a295093b3705895b97661823760f36a9e7162f5f2a44"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/plaster_plasterceiling005a_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "3ee474035db0a280f81bf9f50a4b1c786aa589a95e63628c7b7dbc502d6ff93c",
-   "mtime_ns": 1792912214509160800,
+   "size": 349700,
+   "sha256": "87553b97ab2fd5f6026eeba9a4093421eceac53c127629f7527c05ccc83419c7",
+   "mtime_ns": 1793487885003909800,
    "stored": "xz",
-   "stored_size": 39436,
-   "stored_sha256": "0f5b5a0a647796bedade724715e89fb25d421abfa01c40438d9f273b3a1d99bd"
+   "stored_size": 42124,
+   "stored_sha256": "ca82bf90656f5c5b1a8e0c29ba46103cc38e18d4fac5cf95feb7e49860a456a3"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/plaster_plasterwall017c_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "c7a7478327208b5f48ecbaa7d49e01e2b2c5d205c043c0b16474864b380051f1",
-   "mtime_ns": 1792912214513407200,
+   "size": 349700,
+   "sha256": "21a13b244ab7d38b9a6dd4f2c13828296b3c21204a4f7ef9de1f817a0bba9ad8",
+   "mtime_ns": 1793487889295504800,
    "stored": "xz",
-   "stored_size": 126240,
-   "stored_sha256": "7968f034c65c5cd6226373c838535af5077036834113cc3c57f02ec354158ec6"
+   "stored_size": 133568,
+   "stored_sha256": "fdb8357ec56b90c341bd71ab8be3a5c088edb08c58031092f620a2fbcb25cc8a"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/plaster_plasterwall017c_normal_roughness.dds": {
-   "size": 1398228,
-   "sha256": "03cadcd430d4c7c8eed72f0b48ebc455d8705e1634c42be71d3ab2a5baeeabe5",
-   "mtime_ns": 1792912214515407200,
+   "size": 349700,
+   "sha256": "fa30f4157144dcb324c234e065447f1d295b06f5e64c1f02669ec51653b24656",
+   "mtime_ns": 1793487893042779500,
    "stored": "xz",
-   "stored_size": 181416,
-   "stored_sha256": "0ee640f5b781b5be9fcbdfe7bad14dde9ffbba3f7f44ba5084eac1a32fb034c7"
+   "stored_size": 156348,
+   "stored_sha256": "d4c2132cbb33866e811a8c63ab70db7c897c5c5ae6736201a1caa10c0115446c"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/plaster_plasterwall022c_normal_normal.dds": {
-   "size": 1398228,
-   "sha256": "c7a7478327208b5f48ecbaa7d49e01e2b2c5d205c043c0b16474864b380051f1",
-   "mtime_ns": 1792912214519407300,
+   "size": 349700,
+   "sha256": "21a13b244ab7d38b9a6dd4f2c13828296b3c21204a4f7ef9de1f817a0bba9ad8",
+   "mtime_ns": 1793487897368080900,
    "stored": "xz",
-   "stored_size": 126240,
-   "stored_sha256": "7968f034c65c5cd6226373c838535af5077036834113cc3c57f02ec354158ec6"
+   "stored_size": 133568,
+   "stored_sha256": "fdb8357ec56b90c341bd71ab8be3a5c088edb08c58031092f620a2fbcb25cc8a"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/textures/plaster_plasterwall022c_normal_roughness.dds": {
-   "size": 1398228,
-   "sha256": "03cadcd430d4c7c8eed72f0b48ebc455d8705e1634c42be71d3ab2a5baeeabe5",
-   "mtime_ns": 1792912214521913000,
+   "size": 349700,
+   "sha256": "fa30f4157144dcb324c234e065447f1d295b06f5e64c1f02669ec51653b24656",
+   "mtime_ns": 1793487901316061100,
    "stored": "xz",
-   "stored_size": 181416,
-   "stored_sha256": "0ee640f5b781b5be9fcbdfe7bad14dde9ffbba3f7f44ba5084eac1a32fb034c7"
+   "stored_size": 156348,
+   "stored_sha256": "d4c2132cbb33866e811a8c63ab70db7c897c5c5ae6736201a1caa10c0115446c"
   },
   "garrysmod/rtx-remix/mods/~gmod_topbr/topbr_generation.txt": {
    "size": 4,

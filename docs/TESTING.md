@@ -727,3 +727,36 @@ Integration acceptance (not run by T5): enter maps repeatedly and confirm no
 `RemixResource.SetMemoryLimits(256, 1024)` twice: both return `true`, one compatibility notice
 appears per loaded module lifetime, and no limit-setting API writes occur. No game is launched by
 the offline checks.
+
+### R6 T5 ToPBR compression
+
+The [conversion record](../packages/fixes/licenses/topbr-bc7/conversion.json) pins the encoder,
+its arguments and every original/converted DDS hash. The offline audit checks all 83 files:
+DXGI 98 (BC7_UNORM, linear), single 2D image, unchanged name/dimensions/mip count, exact block
+payload size, and successful independent Pillow decoding of all 816 mip levels. Compare the
+decoded raw channels against the pre-conversion aggregate commit in that record; RGB errors
+are measured in 8-bit units, and alpha must match. All 113 USD references resolve to the same
+83 raw normal/roughness files. The [package notes](../packages/fixes/licenses/topbr-bc7/README.md)
+record measured errors and the before/after sizes; local evidence is in `out/topbr-bc7`.
+
+```powershell
+python tools/inputs.py verify --part fixes --deep
+tools/test.ps1 -Config Release
+python tools/build_package.py --require-nlctl
+```
+
+Integration acceptance (not run by T5): compare Construct brick/concrete/water, arms and
+weapons, and Kleiner in matched lighting and camera positions, near and distant. Their normal
+direction, seams and roughness should retain the preceding look. BC7 is lossy; matching metadata
+and low decoded-channel error do not replace this renderer check.
+
+T5's 2026-10-31 package build with `--require-nlctl --json` passes: the combined GMA is
+1,730,986,849 bytes with 1,017 payload files. A separate archive read matches all 83 texture
+hashes to the conversion record, the native DLL hash to its build pins, and `materials.usda`
+byte-for-byte to the unchanged input. Receipt and logs are under this task's `out/dist` and
+`out/tmp/t5-package-build.log`; nothing was uploaded or installed.
+
+`tools/test.ps1 -Config Release` also passes on 2026-10-31: 23 CTests and 333 Python tests
+(2 skips), plus repo conventions. The native compatibility harness and unchanged oversized-
+skinning test pass separately; `inputs.py verify --part fixes --deep` reports zero problems.
+The full Release log is `out/tmp/t5-release-tests.log` in this task's worktree.

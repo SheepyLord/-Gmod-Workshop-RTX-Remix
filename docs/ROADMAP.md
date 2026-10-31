@@ -1,10 +1,13 @@
 # Roadmap
 
-R6 T5's native memory-limit cleanup is implemented on `r6-t5-fixes`: the controlled rebuild,
-offline compatibility regression and existing oversized-skinning regression pass. The imported
-DLL keeps its previous native base and records the new fixes commit; see
-[ADR 0066](decisions/0066-fixes-memory-limits-compatibility.md). ToPBR compression and the final
-Release/package checks remain in progress. Game acceptance belongs to R6 integration.
+R6 T5 is **implemented and passes offline acceptance** on `r6-t5-fixes`: the fixes DLL drops
+unsupported memory-limit writes while keeping its Lua compatibility API
+([ADR 0066](decisions/0066-fixes-memory-limits-compatibility.md)); all 83 ToPBR textures use
+linear BC7, reducing DDS size from 136.25 to 34.07 MiB. Controlled rebuild/source checks,
+compatibility and oversized-skinning regressions, deep input verification, the full Release
+suite (23 CTests, 333 Python tests with 2 skips), and the nlctl-validated combined package pass.
+Game acceptance belongs to R6 integration: no resource-limit rejections at map load and
+unchanged ToPBR appearance. See [T5 validation](TESTING.md#r6-t5-topbr-compression).
 
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and

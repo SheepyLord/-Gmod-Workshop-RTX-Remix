@@ -2864,3 +2864,25 @@ and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
   `out/fixes-source`; the resumed run preserves that already-committed source and rebuilt DLL.
   Recursive dependencies were archived from locally available git objects at their pinned
   revisions, without fetching or modifying the original checkout. The new commit is unpushed.
+
+## R6 T5 ToPBR texture compression
+
+- The fixes' `garrysmod/rtx-remix/mods/~gmod_topbr/materials.usda:18-20` marks the flat normal
+  texture as `raw`; the roughness reference at `:56-58` does too. A complete reference census
+  finds 113 raw references covering exactly 83 files: 33 normal maps and 50 roughness maps,
+  no colour maps. `encoding = 0` and all USD files remain unchanged. All source DDS headers
+  describe uncompressed BGRA8; retaining RGBA in BC7 avoids dropping any encoded normal channel.
+- NVIDIA Texture Tools Exporter 2023.4.0 is already installed with RTX Remix at
+  `C:/Program Files/NVIDIA Corporation/RTX Remix/exts/omni.flux.resources/deps/tools/nvtt/nvtt_export.exe`.
+  CPU-only, highest-quality BC7 with a linear DXGI tag and gamma/premultiplied mip processing
+  disabled produces DXGI 98 for every file. Names, dimensions and the full 816 mip levels match
+  the originals. See [conversion arguments and hashes](../packages/fixes/licenses/topbr-bc7/conversion.json).
+- DDS bytes fall from 142,869,484 (136.25 MiB) to 35,729,420 (34.07 MiB): 107,140,064 fewer
+  bytes, 74.9916%. xz inputs fall from 16,454,204 to 15,000,576 bytes. These are disk sizes;
+  resident VRAM and renderer output are unmeasured because T5 may not launch the game.
+- Independent Pillow 12.3.0 decoding of all 816 mip levels gives pixel-weighted 8-bit R/G/B RMSE
+  0.659/0.655/0.391 and identical alpha. Worst top-mip channel RMSE is 0.957, worst individual
+  mip channel RMSE 4.0, maximum single-pixel R/G/B errors 28/29/13. Six offline normal/roughness
+  pairs show the same patterns. Evidence is under this task's `out/topbr-bc7` (`manifest.json`,
+  `quality.json`, `comparison.png`); [package notes](../packages/fixes/licenses/topbr-bc7/README.md)
+  preserve the measurements and integration acceptance cases.
