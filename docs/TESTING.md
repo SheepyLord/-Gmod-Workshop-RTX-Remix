@@ -661,3 +661,17 @@ are not a valid cold-spawn comparison. Raw albedo and interaction views distingu
 selection from lighting. Ganyu has two skins; Lynette and March 7th expose one in the current cache.
 Exercise Ganyu's outline skin, suppression off/on and return to the transparent skin. A separate
 stock-model fixture verifies front-culled outline suppression and retained body/ground shadows.
+
+### R4 companion review: outline work per frame, player shadow, glass resync
+
+`test_model_layers.py` also runs the separate opt-in shell rule (`nativeloader_ignore_outline_shells`,
+[ADR 0059](decisions/0059-outline-shell-rule-opt-in.md)), map textures named `*_outline` (never
+hidden; the cached-material registry is not scanned), 2001 entities with bounded engine and hash
+calls per frame, a missing or changed hash revision, removed entities and the growing delay after a
+refused write. `test_remix_settings.py` loads the menu with the RTX fixes' real `rtx_pseudoplayer`
+default (1) and checks that map start never writes the player shadow unless startup replay is on.
+`test_glass_map.py` paces a 256-shard late join at one batch of at most 16,000 bytes per tick and
+checks the resync rate limit and the single-shard cap; `test_player_body.py` covers a slot without a
+private copy, draw-time reuse and the shared-material backoff. In game (not run in R4): after a
+late join on a map with many broken windows, every pane's debris is visible within a few seconds
+and the console shows no reliable-buffer overflow.
