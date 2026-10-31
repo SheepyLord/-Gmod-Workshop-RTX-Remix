@@ -4,7 +4,10 @@
 -- the models of mounted packages with the verified shared-file transfer. Clients
 -- label Workshop models, hide deleted ones until restored, and drop models whose
 -- addon is no longer mounted. Packages marked "user" (demo models) are installed
--- once and then belong to the player like their own imports.
+-- once and then belong to the player like their own imports. A subscribed package
+-- always provides its models: a model the player imported themselves is installed
+-- again from the package and shown as its Workshop model, the player's settings
+-- files kept aside (workshop/own) and put back if the package goes (R5).
 local native=mmdhl.native
 local L=mmdhl.L
 local W=mmdhl.workshop or {}
@@ -266,6 +269,27 @@ local function writeIfMissing(path,value)
  if file.Exists(path,'DATA') then return end
  file.CreateDir(string.GetPathFromFilename(path):sub(1,-2)) file.Write(path,util.TableToJSON(value,true))
 end
+-- A model the player imported themselves that a package takes over: the package's settings
+-- replace the player's, whose file is kept once under workshop/own/<asset>/ (R5).
+local OwnDir='mmd_hotloader/workshop/own/'
+local function writeOver(path,value,asset)
+ if file.Exists(path,'DATA') then
+  local kept=OwnDir..asset..'/'..path:gsub('^mmd_hotloader/','')
+  if not file.Exists(kept,'DATA') then
+   file.CreateDir(string.GetPathFromFilename(kept):sub(1,-2)) file.Write(kept,file.Read(path,'DATA') or '')
+  end
+ end
+ file.CreateDir(string.GetPathFromFilename(path):sub(1,-2)) file.Write(path,util.TableToJSON(value,true))
+end
+-- The package went: the player's own settings files come back, the model is theirs again.
+local function restoreOwn(kind,asset)
+ local names=kind=='static' and {'static/library/'..asset..'.json'} or {'library/'..asset..'.json','arms/'..asset..'.json','fit_overrides/'..asset..'.json'}
+ for _,name in ipairs(names) do
+  local kept=OwnDir..asset..'/'..name
+  if file.Exists(kept,'DATA') then file.Write('mmd_hotloader/'..name,file.Read(kept,'DATA') or '') file.Delete(kept) end
+ end
+end
+W.RestoreOwn=restoreOwn
 local refreshPending
 local function refreshLibraries()
  if SERVER or refreshPending then return end refreshPending=true
@@ -283,15 +307,19 @@ local function installed(job)
   local settings=W.ItemSettings(item)
   local user=package.install=='user'
   if user and package.folder~='' and not package.folder:find('[/\\]') then settings.folder=package.folder end
-  if item.kind=='static' then writeIfMissing('mmd_hotloader/static/library/'..item.asset..'.json',settings)
+  -- A takeover writes the package's settings over the player's (kept aside); otherwise only
+  -- missing files are written, so a player's later changes stay.
+  local taken=(W.state.assets[job.key] or {}).ownBefore
+  local function put(path,value) if taken then writeOver(path,value,item.asset) else writeIfMissing(path,value) end end
+  if item.kind=='static' then put('mmd_hotloader/static/library/'..item.asset..'.json',settings)
   else
-   writeIfMissing('mmd_hotloader/library/'..item.asset..'.json',settings)
-   local arms=W.ItemArms(item) if arms then writeIfMissing('mmd_hotloader/arms/'..item.asset..'.json',arms) end
-   local fit=W.ItemFit(item) if fit then writeIfMissing('mmd_hotloader/fit_overrides/'..item.asset..'.json',fit) end
+   put('mmd_hotloader/library/'..item.asset..'.json',settings)
+   local arms=W.ItemArms(item) if arms then put('mmd_hotloader/arms/'..item.asset..'.json',arms) end
+   local fit=W.ItemFit(item) if fit then put('mmd_hotloader/fit_overrides/'..item.asset..'.json',fit) end
   end
   if mmdhl.terms and item.terms then mmdhl.terms.SaveFromPackage(item.kind,item.asset,item.terms,package.title) end
   local rec=W.state.assets[job.key] or {}
-  rec.installed=true rec.adopted=user or rec.adopted or nil rec.hidden=nil rec.name=item.name rec.package=package.id rec.times=stamps(item)
+  rec.installed=true rec.installing=nil rec.adopted=user or rec.adopted or nil rec.hidden=nil rec.name=item.name rec.package=package.id rec.times=stamps(item)
   W.state.assets[job.key]=rec saveState()
   refreshLibraries()
   -- A model deleted earlier this session can still be queued for disk cleanup,
@@ -377,6 +405,9 @@ hook.Add('Think','MMDHL.WorkshopInstall',function()
   current=table.remove(queue,1)
   if not current then return end
   current.index,current.phase=current.changed or 1,current.changed and 'open' or 'check' progress()
+  -- An install records itself before it writes anything: a model it leaves part way is then
+  -- resumed by the next scan, not taken for the player's own import (W.Reconcile, R5).
+  if CLIENT and not W.state.assets[current.key] then W.state.assets[current.key]={installing=true} saveState() end
  end
  local finished,err=step(current,SysTime()+ChunkBudget)
  if not finished then return end
@@ -482,8 +513,13 @@ if CLIENT then
   for key,rec in pairs(W.state.assets) do
    local kind,id=split(key)
    if not W.provided[key] and rec.installed and not rec.adopted then
-    if not inCache(kind,id) then W.state.assets[key]=nil
+    -- A model the player had imported before a package took it over stays: theirs again.
+    if rec.ownBefore then restoreOwn(kind,id) W.state.assets[key]=nil
+    elseif not inCache(kind,id) then W.state.assets[key]=nil
     elseif not used[id] then if kind=='static' then props[#props+1]=id else characters[#characters+1]=id end end
+   elseif not W.provided[key] and not rec.installed and not rec.hidden and (rec.installing or rec.ownBefore) then
+    -- An install that never finished, for a package that went: nothing to keep.
+    W.state.assets[key]=nil
    end
   end
   saveState()
@@ -506,7 +542,14 @@ if CLIENT then
    local user=false for _,pid in ipairs(list) do if W.packages[pid].install=='user' then user=true end end
    if rec and rec.installed and user and not rec.adopted then rec.adopted=true dirty=true end
    if not (rec and rec.hidden) then
-    if not complete(item,package,rec and rec.installed) then
+    -- A subscribed package always provides its models (the user, 2026-10-31): the player's own
+    -- import of this model is installed again from the package, which overwrites it, and is then
+    -- shown as the package's. Own means cached with no record of this addon's install: a record
+    -- is an install being resumed or repaired. Demo ("user") packages leave the player's copy alone.
+    if not user and package.install=='workshop' and (not rec or (rec.ownBefore and not rec.installed)) and inCache(kind,id) then
+     rec=rec or {} rec.ownBefore=true W.state.assets[key]=rec dirty=true
+     enqueue(package,item)
+    elseif not complete(item,package,rec and rec.installed) then
      -- A missing or resized file: not installed until the package repairs it.
      if rec and rec.installed then rec.installed=nil dirty=true end
      enqueue(package,item)
