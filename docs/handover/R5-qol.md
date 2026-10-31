@@ -67,9 +67,22 @@ references in the companion's catalogs.
 | PoC, the Evernight and March 7th pack mounted over the field's own settings files with the install records removed | Model Hotloader's scan (`out\tmp\takeover_probe.lua`) | Both models installed, `ownBefore`, labelled with the pack's title, the player's settings kept under `workshop/own` (`out\qa-poc\r5-takeover\01-takeover`; the PoC's state put back afterwards) |
 | PoC, External Models at 1280x720 | The RTX normals checkbox | Under "Import Character Models". At this size, with the native release banner shown, the window's columns already overlap without the new row; it adds 34 px (`out\qa-poc\r5-takeover\02-layout`). Model Hotloader's layout, not changed |
 
-One field run of eleven crashed at start: NVIDIA's `nvoglv64.dll` faulted on a worker thread of the
-runtime compiling pipelines, 4 s after the device was created; the rerun was clean (RESEARCH.md, the
-night sky section).
+After the merge (`cff3c67`, package `0.0.0-dev.20261031211748+22c6b7b2`, its download byte-identical
+to the upload), in the field install (`out\qa-field\r5-release`):
+
+| What | Result |
+|---|---|
+| `release_qa.py --field` | `session`, `spawnmenu`, `spawned-glass` passed; `map-glass` crashed at start (below) and passed on its rerun (the window broke into 36 shards). Summary passed, nothing watched changed |
+| The takeover on the user's data | Evernight and March 7th (`cf3eec2f`, `e2c25f9e`), the user's own imports, installed from the pack and labelled as its own; the user's settings files (the folder `Honkai_StarRail`) kept under `workshop/own/`. The field's Model Hotloader data was backed up first (`out\field-backups\20261031-r5-mmdhl-meta`) |
+| Night sky, three tours on modern_house in the map's first two minutes | 30 views, all three Modern House re-applies inside the tours: every view a clean night sky (`06-night-sky`); the player's sky settings put back |
+
+**A start-up crash in NVIDIA's driver, twice.** Field run 08 (on the package before R5) and the first
+`map-glass` session (on R5's) crashed the same way, about 4 s after the runtime created its device:
+`nvoglv64.dll+0xe622f8` reading `0xffffffffffffffff` on a worker thread of the runtime's `d3d9.dll`
+compiling pipelines. Two of about sixteen field starts that day; both reruns were clean. Recorded for
+the stability work: the package gives shader compilation every hardware thread but two
+([ADR 0032](../decisions/0032-real-moon-stars-eclipses-and-fog-presets.md)), a lead to test, not a
+finding.
 
 ## Stability proposal
 
