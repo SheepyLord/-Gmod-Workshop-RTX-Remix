@@ -120,10 +120,15 @@ checkout's `out\qa-field\release` and `out\qa-poc\r4-final`:
 
 ## Open after R4
 
-- **The motion add-on differs from its repository.** The part carries the add-on's main (fcd56f4) plus
-  this repository's changes: the builders and scale (`cl_importer.lua`, `cl_menu.lua`), the translations
-  (`sh_core.lua`, `cl_radial.lua`, the tool file). Carry them to the add-on's repository, or the next
-  import from there loses them.
+- **The motion add-on's changes are on a branch of its repository, not pushed.** The part carries the
+  add-on's main (fcd56f4) plus this repository's changes: the builders and scale (`cl_importer.lua`,
+  `cl_menu.lua`), the translations (`sh_core.lua`, `cl_radial.lua`) and the tool file's companion hook.
+  They are commit `69c9c37` on branch `native-loader-r4` of `H:\BACKUP_20260815\Modding\ipg\Gmod-Mmd-Motion-Importer`
+  (worktree `out\worktrees\motion-addon-r4`), with a README paragraph; the add-on's 33 tests and this
+  repository's motion-tab harness pass on it, and its Lua equals the part's. Push and merge it there (and
+  rebuild its `mmd_vmd_npc.gma`) before the next import from that repository. That clone's own `main`
+  is still at 318b054 with an uncommitted `mmd_vmd_npc.gma`; a newer clone at fcd56f4 is in
+  `C:\Users\matt-peng\Documents\Codex\2026-10-17\please-help-me-connect-claude-on\Gmod-Mmd-Motion-Importer`.
 - **Unreviewed translations:** Traditional Chinese for the motion importer's 98 new phrases and the
   companion's "Open in window" in six languages were written by agents.
 - **Cosmetic:** in a narrow spawn menu at 4K the importer's longest heading ("Face/Flex VMDs (if they
