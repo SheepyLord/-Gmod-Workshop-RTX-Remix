@@ -183,8 +183,8 @@ it back 3, 23, 43 and 63 s after the map starts.
   its name. Modern House RTX is recognised by its `MHRTX_Config` on `modern_house`.
 - **When the add-on sets its sky again**, it runs the hook `NativeLoaderSkySet`, and a sky the player
   has taken over goes back in the same tick. Modern House RTX does not run it, so the companion wraps
-  its `MHRTX.ApplySettings` (at the start of the map, and every 10 s if it was not there yet) to run
-  it afterwards. Before R5 the player's sky waited for the 10 s timer: on `modern_house` the
+  its `MHRTX.ApplySettings` to run it afterwards (at the start of the map, and on the 10 s timer
+  whenever the function is not the wrapper: not loaded yet, or replaced by a reload of that add-on). Before R5 the player's sky waited for the 10 s timer: on `modern_house` the
   afternoon sun came up for as long as 10 s in the middle of the player's night, three times in the
   first minute, and the daylight lingered in the image's temporal history wherever the camera had
   looked, a haze over the stars with a straight edge where the view had turned (native loader review

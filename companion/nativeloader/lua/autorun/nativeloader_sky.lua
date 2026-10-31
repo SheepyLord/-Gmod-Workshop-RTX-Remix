@@ -509,16 +509,16 @@ end)
 -- then lingered in the image's temporal history wherever the camera had looked, a haze over the
 -- stars with a straight edge where the view had turned (native loader review R5, 2026-10-31). An
 -- add-on that runs the hook NativeLoaderSkySet after setting the sky gets the player's sky back in
--- the same tick; Modern House RTX's MHRTX.ApplySettings is wrapped to run it.
+-- the same tick; Modern House RTX's MHRTX.ApplySettings is wrapped to run it (again after a reload
+-- of that add-on's Lua replaced it).
 local function followMapAddon()
-    if istable(MHRTX) and isfunction(MHRTX.ApplySettings) and not MHRTX.nativeLoaderFollowed then
-        local applySettings = MHRTX.ApplySettings
-        MHRTX.ApplySettings = function(...)
-            applySettings(...)
-            hook.Run("NativeLoaderSkySet")
-        end
-        MHRTX.nativeLoaderFollowed = true
+    if not (istable(MHRTX) and isfunction(MHRTX.ApplySettings)) or MHRTX.ApplySettings == MHRTX.nativeLoaderApply then return end
+    local applySettings = MHRTX.ApplySettings
+    MHRTX.nativeLoaderApply = function(...)
+        applySettings(...)
+        hook.Run("NativeLoaderSkySet")
     end
+    MHRTX.ApplySettings = MHRTX.nativeLoaderApply
 end
 hook.Add("NativeLoaderSkySet", "nativeloader_sky", function()
     if takenOver and owner() and ready() then applyAll() end

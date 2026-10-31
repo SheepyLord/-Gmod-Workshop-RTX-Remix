@@ -231,7 +231,12 @@ if SCRIPT == "follow" then
   report("mine", "rtx.atmosphere.sunElevation")
   MHRTX.ApplySettings(true)
   report("again", "rtx.atmosphere.sunElevation", "rtx.atmosphere.cloudDensity")
-  print("followed " .. tostring(MHRTX.nativeLoaderFollowed))
+  print("followed " .. tostring(MHRTX.ApplySettings == MHRTX.nativeLoaderApply))
+  -- A reload of the add-on's Lua replaces the function: wrapped again by the 10 s timer.
+  MHRTX.ApplySettings = function() RemixConfig.SetConfigVariable("rtx.atmosphere.sunElevation", "35") end
+  tick(10)
+  MHRTX.ApplySettings(true)
+  report("reloaded", "rtx.atmosphere.sunElevation")
   return
 end
 if SCRIPT == "release" then
@@ -521,6 +526,7 @@ class SkyTests(unittest.TestCase):
         again = self.settings(out['again'])
         self.assertEqual(float(again['rtx.atmosphere.sunElevation']), mine)
         self.assertNotEqual(again['rtx.atmosphere.cloudDensity'], '4')
+        self.assertEqual(float(self.settings(out['reloaded'])['rtx.atmosphere.sunElevation']), mine)
 
     def test_a_slider_writing_back_its_rounded_value_keeps_the_maps_sun(self):
         out = self.run_lua(SESSION, MAP='gm_construct', BSP=bsp(CONSTRUCT), SCRIPT='slider')

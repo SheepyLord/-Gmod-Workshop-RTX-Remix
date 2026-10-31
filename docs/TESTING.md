@@ -615,10 +615,18 @@ first; 450 units/s and another loose piece leave a piece whole, 700 units/s brea
 time, younger fragments keep theirs, 0 keeps pieces for an hour; and the client's `Draw` shrinks an
 expired piece by its transform without building or freeing a mesh. Against the add-on before ADR 0061
 the map section's new collision-group check fails, and with it skipped all eight scenarios fail. In
-game (not run in R5): shoot, punt, pick up and blast debris on
-modern_house; players and NPCs pass through it while props collide; pieces shrink away after two
-minutes under Remix with `mat_queue_mode 2`; an explosion in a full pile; a second player on a listen
-server sees the same pieces.
+game: [`tools/qa/glass_debris_probe.lua`](../tools/qa/glass_debris_probe.lua.md) breaks a modern_house
+window, reads the pieces' collision group, shoots the pile (pieces move or break) and waits out a 6 s
+lifetime (no piece left). Not scripted: punting and picking up debris, players and NPCs passing
+through while props collide, an explosion in a full pile, a second player on a listen server.
+
+### The night sky on a map whose add-on sets the sky (R5)
+
+[`tools/qa/night_sky_probe.lua`](../tools/qa/night_sky_probe.lua.md) on modern_house in the field
+install, in the map's first minute (Modern House RTX re-applies its settings at 23, 43 and 63 s): a
+clear midnight, ten views of the sky from a place under open sky. Pass: every view a night sky, no
+daylight, no haze with a straight edge. `test_companion_sky.py` checks that the player's sky comes
+back in the same tick when Modern House RTX's `ApplySettings` runs.
 
 ### Hotloader shader-family routing
 
