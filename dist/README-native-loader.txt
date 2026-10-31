@@ -54,6 +54,10 @@ Install
      and renderer; custom DX11 effects need a compatible implementation.
      The guard also runs in multiplayer through the verified RTX payload. That path starts after
      the client is ready, so earlier server scripts and their cached API references remain outside it.
+   - Loader 0.10.1 keeps RTX on when a game update changes the files the early guard is built from:
+     the guard then starts with the add-ons instead, and a note in native-loader\logs says why.
+     A listen server you host no longer passes the guard to friends without RTX, and the RTX
+     scripts no longer run twice on servers that already send them.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.
