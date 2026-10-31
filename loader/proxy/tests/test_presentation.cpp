@@ -108,6 +108,26 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   CHECK_THROWS_AS(p::decorate_main_menu(original, "[]"), std::runtime_error);
 }
 
+TEST_CASE("main menu: the generated script is ASCII, non-ASCII text written as \\u escapes") {
+  // R4: GMod's menu decoded the script as Windows-1252, so the panel's separator showed as "Â·" and the
+  // translated labels as mojibake.
+  nl::proxy::diagnostics::System system;
+  system.os = "Windows x64";
+  system.cpu = "CPU caf\xC3\xA9 \xE6\xB8\xB8 \xF0\x9F\x8E\xAE";  // é, 游, U+1F3AE
+  system.threads = 8;
+  system.graphics.push_back({"GPU", 8ull << 30});
+  nl::journal::Generation generation;
+  const auto data = nl::proxy::diagnostics::serialize(system, "0.10.1", std::string(64, 'b'), generation);
+  const std::string original = "function MenuController( $scope, $rootScope ) {}\n";
+  for (const auto& script : {p::decorate_main_menu(original, data, true), p::add_client_bootstrap(original)}) {
+    CHECK(std::all_of(script.begin(), script.end(), [](char c) { return static_cast<unsigned char>(c) < 0x80; }));
+  }
+  const auto decorated = p::decorate_main_menu(original, data, true);
+  CHECK(decorated.find("\\u00b7") != std::string::npos);  // the script's own separator
+  CHECK(decorated.find("caf\\u00e9 \\u6e38 \\ud83c\\udfae") != std::string::npos);
+  CHECK(decorated.starts_with(original));
+}
+
 TEST_CASE("main menu: the multiplayer bootstrap trigger does not depend on the overlay anchor") {
   nl::proxy::diagnostics::System system;
   const auto data = nl::proxy::diagnostics::serialize(system, "0.10.1", std::string(64, 'b'), {});
