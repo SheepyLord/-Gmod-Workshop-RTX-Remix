@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../session_policy.h"
+
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -12,6 +14,10 @@ namespace RTXDebug::Engine {
 
 // RTXDebug table is on top of the stack. Registers Engine and Interfaces.
 void Register(GarrysMod::Lua::ILuaBase* lua);
+
+// The engine client's connection facts for the single-player decision, read from
+// IVEngineClient and the client's net channel. All false off the game thread.
+Policy::SessionFacts ReadSessionFacts();
 
 // Convars changed through this module's API that are not restored yet.
 size_t ActiveOverrides();

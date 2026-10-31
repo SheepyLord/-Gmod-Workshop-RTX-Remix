@@ -1,17 +1,38 @@
 {
   "repository": "https://github.com/SheepyLord/garrys-mod-rtx-debug-module.git",
   "base_commit": "ff009d71a5c3d22cd5c400941fb09e7e905b8a73",
-  "source_commit": "6105f0b545145dc7781f7ae94af76619c2a6e3d4",
-  "patch": "0001-Support-multiplayer-client-rendering-diagnostics-wit.patch",
-  "patch_sha256": "a6b78abd7355771af9f6051bb666bf777e9075d9362c6ebb4660eeaaf7895f2e",
+  "source_commit": "359b51bcd15eef18dfdb45482367ef43ffcf71c7",
+  "patches": [
+    {
+      "file": "0001-Support-multiplayer-client-rendering-diagnostics-wit.patch",
+      "size": 33122,
+      "sha256": "a6b78abd7355771af9f6051bb666bf777e9075d9362c6ebb4660eeaaf7895f2e",
+      "applies_to": "ff009d71a5c3d22cd5c400941fb09e7e905b8a73",
+      "result": "6105f0b545145dc7781f7ae94af76619c2a6e3d4"
+    },
+    {
+      "file": "0002-Decide-single-player-natively-for-the-developer-muta.patch",
+      "size": 20836,
+      "sha256": "f856051c28d4a9563959cdb4bd02326141e2d753832658809670d71017384b48",
+      "applies_to": "6105f0b545145dc7781f7ae94af76619c2a6e3d4",
+      "result": "bc0c698c1b55f3ceb3ec4d2d573a81d100f52fea"
+    },
+    {
+      "file": "0003-Restrict-read-only-diagnostics-to-local-single-playe.patch",
+      "size": 13575,
+      "sha256": "fee2f34485ad6d07ecfe75908eaccecdd3447bf2d8680b9eb08a77ab60c40b2e",
+      "applies_to": "bc0c698c1b55f3ceb3ec4d2d573a81d100f52fea",
+      "result": "359b51bcd15eef18dfdb45482367ef43ffcf71c7"
+    }
+  ],
   "complete_checkout": {
     ".gitignore": {
       "size": 59,
       "sha256": "8943f2b2e703a817248579d84eb3893d922ce634a5da41f3b4ce0cea994146a8"
     },
     "README.md": {
-      "size": 9863,
-      "sha256": "1891ae7a159984ec1cd7903583580edf27bba2acfaa1fdebd5828b5efcbc3332"
+      "size": 12022,
+      "sha256": "4a8970b3198709df1448de7be9a24cbda0117ea1c1b45265ba766e3503f14afd"
     },
     "addon/lua/autorun/client/rtx_debug.lua": {
       "size": 5213,
@@ -34,8 +55,8 @@
       "sha256": "7cf126277ae6d6a6107e509e01614f5d19633c39de96dd3ee980a0f181963e2a"
     },
     "source/debug_context.h": {
-      "size": 323,
-      "sha256": "467df3b200eec15f0c198eacbaf5347e6afd67dd141a91fe0ea0b2f480d2fe8d"
+      "size": 409,
+      "sha256": "96f61a9a10986fd9078063582bb045aeaf7a656a46c3e4a4d43a7d2d5d6153de"
     },
     "source/detours/detours.cpp": {
       "size": 10333,
@@ -46,20 +67,20 @@
       "sha256": "a005f452f6fe4b72bbaba702fffe4953d6bbf49a2ef916dcd483ad4712857a9a"
     },
     "source/engine/engine.cpp": {
-      "size": 26644,
-      "sha256": "e03f551e31a93f2797be4b35808d0abf08319c0be23daa3b00b1447833c9ee47"
+      "size": 28576,
+      "sha256": "bd110854861fe8440d2feba84df1605a229a73988ff07cf76236ac6cb13dc101"
     },
     "source/engine/engine.h": {
-      "size": 645,
-      "sha256": "d64509810c94d49a35d945d14fcb6ff1af174bccd54d9a95bb01b60d9a6273a6"
+      "size": 880,
+      "sha256": "afaa00543b89e1958f0a78a88d48188dd1a2bc16dde63bb6eb15c65049d5d0eb"
     },
     "source/lua_bridge/lua_bridge.cpp": {
-      "size": 14723,
-      "sha256": "9b1771201efcd4f026c7bc03721eb397399ecd6b11ec360e5352774d3811eeb0"
+      "size": 15297,
+      "sha256": "ca678ed75206fd023de2148fd5217d540ca0347ef35d4327c7439bcf0ac20b9e"
     },
     "source/lua_bridge/lua_bridge.h": {
-      "size": 809,
-      "sha256": "460b58afcf1a268e09a7c8e5b0fe950fdb270d2ccc282d6bf56641ed252201fe"
+      "size": 1116,
+      "sha256": "d8cb8a4a19a55024a496958054550b9231f0e16f521d8b237aab1d0b9dcfb437"
     },
     "source/lua_util.h": {
       "size": 1952,
@@ -74,8 +95,8 @@
       "sha256": "cf08614848faeaf223baa8c24949bc458eafa49c615e1c26421614b51951d2e1"
     },
     "source/module.cpp": {
-      "size": 8764,
-      "sha256": "16544b3cec043489ba64aafc978b6d86d797e9698781ddfb27e667573f398994"
+      "size": 8593,
+      "sha256": "46f3edf21152f7c0ee1df0fd158ea8f070bbdb82773bee82a1291f2d00a62854"
     },
     "source/remix/remix_debug.cpp": {
       "size": 12271,
@@ -86,12 +107,20 @@
       "sha256": "65487ab0c05769a561ada7096681c002c12c5fb5a4458228d79ec97ab237202e"
     },
     "source/render_policy.h": {
-      "size": 919,
-      "sha256": "aea70f362a48d757919e4911ca087304ef33a4c6e8c06f8f74dacd0e504d7d21"
+      "size": 2237,
+      "sha256": "4c47b9e22b64fca9e1a1b12bf0e6ec9546b3128eb701b326347163e456303742"
     },
     "source/render_policy.h.md": {
-      "size": 402,
-      "sha256": "14eaa1f283d1484043d2c6255c8d294659cdc6bbed2814522a9450af939dead3"
+      "size": 606,
+      "sha256": "47cf59f8230f2754b76de2401dc03e4d1affbc7d48de3d32c26a0e94441449f2"
+    },
+    "source/session_policy.h": {
+      "size": 1808,
+      "sha256": "0fd07262e8c3a8e0773bb31f5f38b13174f4c1389d4a6b23cd6aa0e5604b8910"
+    },
+    "source/session_policy.h.md": {
+      "size": 479,
+      "sha256": "303a7709dc791801da4069c27da74709a131f24299f86c587bb7eacc6bd64cd9"
     },
     "source/transport/transport.cpp": {
       "size": 2660,
@@ -102,12 +131,20 @@
       "sha256": "042409e9c6a90d06935d3bf573bdffdffe79ad88a2a13ccc2b73242062c4054b"
     },
     "tests/render_policy_test.cpp": {
-      "size": 930,
-      "sha256": "6380c5c8fc296d7d33069a1d32e99fdc8914b4e15baa86ea0269cf560dd6696f"
+      "size": 1475,
+      "sha256": "00ac506e1895ad8d2bbda1b7feff5c71dd9cce2836c0fef03c40f8c04c4dca46"
     },
     "tests/render_policy_test.cpp.md": {
       "size": 322,
       "sha256": "05bae9d088ac0b76ba72c2190ab04bab7f71af0d4866c08f9222cc0cd6dacf43"
+    },
+    "tests/session_policy_test.cpp": {
+      "size": 3163,
+      "sha256": "1f3c86710454b06fa6f2f8daafa36497ca206c463becfce90fbfbaddc8c611af"
+    },
+    "tests/session_policy_test.cpp.md": {
+      "size": 556,
+      "sha256": "fd67a55fe3b7bbacbf570f4c21bef8a2e96eea206107039c229ecefcf988f709"
     },
     "tests/test_client.py": {
       "size": 2157,
@@ -162,9 +199,26 @@
   },
   "built_artifact": {
     "name": "gmcl_rtxdebug_win64.dll",
-    "version": "0.2.0",
-    "size": 427008,
-    "sha256": "5bfdfdc5d0a524a25b8f2d1715d1d741d16706b0c81027241fff1ee07a2916a5"
+    "version": "0.2.1",
+    "size": 428032,
+    "sha256": "73edd9156bd155e4d9cb70cd75f07da798364b89ea146326f983927218f58e91"
+  },
+  "vtable_checks": {
+    "note": "Slots the native single-player check calls, found through RTTI in GMod x64 engine.dll",
+    "engine_dll": {
+      "install": "GarrysMod_PoC (vanilla)",
+      "size": 5707088,
+      "sha256": "d8f74db72412ffa91c1f01a633d108331145d0a7dff6cffabe1b67ed5abe4fcb"
+    },
+    "CEngineClient": {
+      "GetMaxClients": 21,
+      "IsConnected": 27,
+      "GetNetChannelInfo": 72,
+      "IsPlayingDemo": 76
+    },
+    "CNetChan": {
+      "IsLoopback": 6
+    }
   },
   "license_note": "The recorded RTXDebug commits contain no separate LICENSE file. Existing source notices are retained; this provenance record grants no additional license.",
   "dependency_notices": {

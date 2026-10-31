@@ -47,6 +47,10 @@ ILuaInterface* GetRealm(const char* name) {
     return g_luaShared->GetLuaInterface(state);
 }
 
+bool SameState(ILuaBase* first, ILuaBase* second) {
+    return first == second || (first->GetState() && first->GetState() == second->GetState());
+}
+
 void CopyValue(ILuaBase* source, ILuaBase* destination,
                int index, int depth, int& nodes) {
     if (++nodes > kMaxNodes || depth > kMaxDepth) {
@@ -178,6 +182,8 @@ LUA_FUNCTION_STATIC(Global) {
     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
     if (!LUA->IsType(1, String) || !LUA->IsType(2, String))
         return PushError(LUA, "Global(realm, dottedPath) expects two strings");
+    if (!IsRealmState(LUA, LUA->GetString(1)) && !RTXDebug::IsSinglePlayer())
+        return PushError(LUA, "outside local single-player, only the client realm can be read");
     const std::string path = LUA->GetString(2);
     const std::string snippet =
         "local __value=_G\n"
@@ -194,6 +200,8 @@ LUA_FUNCTION_STATIC(Global) {
 LUA_FUNCTION_STATIC(Hooks) {
     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
     if (!LUA->IsType(1, String)) return PushError(LUA, "Hooks(realm, event) expects a realm string");
+    if (!IsRealmState(LUA, LUA->GetString(1)) && !RTXDebug::IsSinglePlayer())
+        return PushError(LUA, "outside local single-player, only the client realm can be read");
     const std::string event = LUA->IsType(2, String) ? LUA->GetString(2) : "";
     const std::string snippet =
         "local __out={} local __all=hook.GetTable() local __event=" + QuoteLua(event) + "\n"
@@ -337,15 +345,19 @@ bool RunSnapshot(ILuaBase* caller, const char* realm,
         return false;
     }
     target->GetField(GarrysMod::Lua::INDEX_GLOBAL, kSnapshotName);
-    const bool sameState = static_cast<ILuaBase*>(target) == caller
-        || (target->GetState() && target->GetState() == caller->GetState());
-    if (!sameState) {
+    if (!SameState(target, caller)) {
         int nodes = 0;
         CopyValue(target, caller, -1, 0, nodes);
         target->Pop();
     }
     RestoreSnapshotGlobal(target, hadPrevious, previousRef);
     return true;
+}
+
+bool IsRealmState(ILuaBase* lua, const char* realm) {
+    if (!lua || !RTXDebug::IsMainThread()) return false;
+    ILuaInterface* target = GetRealm(realm);
+    return target && SameState(target, lua);
 }
 
 void Register(ILuaBase* lua) {

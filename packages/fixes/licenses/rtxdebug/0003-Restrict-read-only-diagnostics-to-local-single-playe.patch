@@ -1,0 +1,243 @@
+From 359b51bcd15eef18dfdb45482367ef43ffcf71c7 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 05:20:56 -0700
+Subject: [PATCH] Restrict read-only diagnostics to local single-player
+
+Several read-only queries disclosed host information to whatever client Lua
+runs in the client realm. On a remote server that Lua is server-sent, so a
+multiplayer client exposed: Interfaces.Resolve (module and vtable addresses),
+Interfaces.FileExists (filesystem probing), Engine.ListConsole and
+Engine.GetConVar (any convar value), and Lua.Global/Lua.Hooks against the
+menu or server realm.
+
+Outside local single-player (the native IsLocalSinglePlayer decision), these
+now refuse:
+- Interfaces.Resolve, Interfaces.FileExists, Engine.ListConsole: refused
+  outright.
+- Engine.GetConVar: only rendering convars, by the short case-insensitive
+  allowlist Policy::IsRenderingConVar in render_policy.h (rtx*, r_*, mat_*,
+  cl_draw*), tested in render_policy_test.cpp.
+- Lua.Global and Lua.Hooks: only the module's own client state; other realms
+  need single-player.
+
+The read-only client diagnostics and the rtx.* rendering query/config surface
+a multiplayer RTX session uses are unchanged. Single-player is still decided
+natively from the engine client.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ README.md                        | 18 ++++++++++++------
+ source/engine/engine.cpp         | 14 +++++++++++++-
+ source/lua_bridge/lua_bridge.cpp |  4 ++++
+ source/render_policy.h           | 27 +++++++++++++++++++++++++++
+ source/render_policy.h.md        |  5 ++++-
+ tests/render_policy_test.cpp     |  7 +++++++
+ 6 files changed, 67 insertions(+), 8 deletions(-)
+
+diff --git a/README.md b/README.md
+index 37b04c4..1b2bc5a 100644
+--- a/README.md
++++ b/README.md
+@@ -58,6 +58,12 @@ client's own connection, never from Lua. A remote server realm is unavailable lo
+   from the process command line and `sv_cheats` from the cvar system. A remote server's client
+   scripts can replace `game.SinglePlayer`, and the server replicates `sv_cheats`, but it cannot
+   make the client's channel loopback.
++- Outside local single-player, read-only queries that could disclose information to a remote
++  server's client scripts are refused: `Interfaces.Resolve` and `Interfaces.FileExists`,
++  `Engine.ListConsole`, `Engine.GetConVar` for non-rendering convars (allowlist `IsRenderingConVar`
++  in `source/render_policy.h`: `rtx*`, `r_*`, `mat_*`, `cl_draw*`), and `Lua.Global`/`Lua.Hooks` for
++  any realm other than the module's own client state. The read-only client diagnostics and the
++  `rtx.*` rendering query/config surface a multiplayer RTX session uses stay available.
+ - Local Remix-only writes have their own gate: the module's live client realm (the state that
+   lua_shared reports as the client's, not the `CLIENT_DLL`/`SERVER` globals), the game thread,
+   and an available RemixConfig.SetConfigVariable function. Without the full developer gate,
+@@ -76,8 +82,8 @@ The global table is `RTXDebug`:
+ RTXDebug.Status()       -- process_id, gate inputs, can_configure_rendering, active change counts
+ RTXDebug.RestoreAll()   -- undo every change below; returns counts and failures
+ 
+-RTXDebug.Engine.ListConsole("mat_", 0, 200)      -- prefix, offset, limit (max 1000)
+-RTXDebug.Engine.GetConVar("mat_queue_mode")
++RTXDebug.Engine.ListConsole("mat_", 0, 200)      -- local single-player only; prefix, offset, limit (max 1000)
++RTXDebug.Engine.GetConVar("mat_queue_mode")      -- rendering convars anywhere; other names local single-player only
+ RTXDebug.Engine.SetConVar("mat_queue_mode", "0") -- gated; restored on RestoreAll/unload
+ RTXDebug.Engine.RestoreConVar("mat_queue_mode")
+ RTXDebug.Engine.ConVarOverrides()
+@@ -87,15 +93,15 @@ RTXDebug.Engine.Entities("client", "prop_physics", 0, 200)
+ RTXDebug.Engine.Entity("client", 1)              -- materials, submaterials, bodygroups, NW vars
+ 
+ RTXDebug.Interfaces.Status()                     -- which Source interfaces are exported
+-RTXDebug.Interfaces.Resolve("engine", "VEngineClient015")  -- address, vtable, vtable_rva
++RTXDebug.Interfaces.Resolve("engine", "VEngineClient015")  -- local single-player only; address, vtable, vtable_rva
+ RTXDebug.Interfaces.Material("models/debug/debugwhite")    -- shader, flags, shader params
+ RTXDebug.Interfaces.Materials("models/", 0, 200) -- loaded materials by prefix
+-RTXDebug.Interfaces.FileExists("materials/debug/debugwhite.vmt", "GAME")
++RTXDebug.Interfaces.FileExists("materials/debug/debugwhite.vmt", "GAME")  -- local single-player only
+ 
+ RTXDebug.Lua.Realms()
+ RTXDebug.Lua.Eval("menu", "return collectgarbage('count')")  -- gated; {value, values, n}
+-RTXDebug.Lua.Global("client", "RemixRenderCore._handlers")
+-RTXDebug.Lua.Hooks("client", "Think")
++RTXDebug.Lua.Global("client", "RemixRenderCore._handlers")  -- other realms local single-player only
++RTXDebug.Lua.Hooks("client", "Think")                      -- other realms local single-player only
+ RTXDebug.Lua.GCStats("client")
+ 
+ RTXDebug.Remix.Vram()
+diff --git a/source/engine/engine.cpp b/source/engine/engine.cpp
+index 267f128..68ed687 100644
+--- a/source/engine/engine.cpp
++++ b/source/engine/engine.cpp
+@@ -4,6 +4,7 @@
+ #include "../lua_bridge/lua_bridge.h"
+ #include "../lua_util.h"
+ #include "../memory/memory_debug.h"
++#include "../render_policy.h"
+ 
+ #include <GarrysMod/FactoryLoader.hpp>
+ #include <GarrysMod/Lua/Interface.h>
+@@ -37,6 +38,7 @@ namespace {
+ 
+ constexpr const char* kGameThreadError = "Source interfaces must be accessed on the game thread";
+ constexpr const char* kGateError = "mutation requires local single-player, sv_cheats 1, and -insecure";
++constexpr const char* kLocalError = "this query is available only in local single-player";
+ 
+ struct SavedConVar {
+     std::string name;
+@@ -131,6 +133,8 @@ bool HasPrefix(const char* name, const std::string& prefix) {
+ 
+ LUA_FUNCTION_STATIC(ListConsole) {
+     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
++    // Enumerating every convar would let a remote server's client scripts read the whole console.
++    if (!RTXDebug::IsSinglePlayer()) return PushError(LUA, kLocalError);
+     ICvar* console = Cvar();
+     if (!console) return PushError(LUA, "ICvar is unavailable");
+     const std::string prefix = LUA->IsType(1, String) ? LUA->GetString(1) : "";
+@@ -167,8 +171,12 @@ LUA_FUNCTION_STATIC(ListConsole) {
+ LUA_FUNCTION_STATIC(GetConVar) {
+     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
+     if (!LUA->IsType(1, String)) return PushError(LUA, "GetConVar(name) expects a string");
++    const char* requested = LUA->GetString(1);
++    // Outside a local game, read only the rendering convars a multiplayer RTX session inspects.
++    if (!RTXDebug::IsSinglePlayer() && !Policy::IsRenderingConVar(requested))
++        return PushError(LUA, "outside local single-player, GetConVar reads only rendering convars (rtx*, r_*, mat_*, cl_draw*)");
+     ICvar* console = Cvar();
+-    ConVar* variable = console ? console->FindVar(LUA->GetString(1)) : nullptr;
++    ConVar* variable = console ? console->FindVar(requested) : nullptr;
+     if (!variable) return PushError(LUA, "convar was not found");
+     LUA->CreateTable();
+     SetString(LUA, "name", variable->GetName());
+@@ -389,6 +397,8 @@ LUA_FUNCTION_STATIC(InterfaceStatus) {
+ // and the vtable's offset in the module that implements it.
+ LUA_FUNCTION_STATIC(ResolveInterface) {
+     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
++    // Module and vtable addresses would help someone exploiting another bug; local games only.
++    if (!RTXDebug::IsSinglePlayer()) return PushError(LUA, kLocalError);
+     if (!LUA->IsType(1, String) || !LUA->IsType(2, String))
+         return PushError(LUA, "Resolve(module, version) expects two strings");
+     SourceSDK::FactoryLoader loader(LUA->GetString(1));
+@@ -536,6 +546,8 @@ LUA_FUNCTION_STATIC(MaterialList) {
+ 
+ LUA_FUNCTION_STATIC(FileExists) {
+     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
++    // Probing the game's filesystem is a disclosure; local games only.
++    if (!RTXDebug::IsSinglePlayer()) return PushError(LUA, kLocalError);
+     if (!LUA->IsType(1, String)) return PushError(LUA, "FileExists(path, pathId) expects a path");
+     IFileSystem* filesystem = Filesystem();
+     if (!filesystem) return PushError(LUA, "IFileSystem is unavailable");
+diff --git a/source/lua_bridge/lua_bridge.cpp b/source/lua_bridge/lua_bridge.cpp
+index fad9bf6..e0b2e2d 100644
+--- a/source/lua_bridge/lua_bridge.cpp
++++ b/source/lua_bridge/lua_bridge.cpp
+@@ -182,6 +182,8 @@ LUA_FUNCTION_STATIC(Global) {
+     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
+     if (!LUA->IsType(1, String) || !LUA->IsType(2, String))
+         return PushError(LUA, "Global(realm, dottedPath) expects two strings");
++    if (!IsRealmState(LUA, LUA->GetString(1)) && !RTXDebug::IsSinglePlayer())
++        return PushError(LUA, "outside local single-player, only the client realm can be read");
+     const std::string path = LUA->GetString(2);
+     const std::string snippet =
+         "local __value=_G\n"
+@@ -198,6 +200,8 @@ LUA_FUNCTION_STATIC(Global) {
+ LUA_FUNCTION_STATIC(Hooks) {
+     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
+     if (!LUA->IsType(1, String)) return PushError(LUA, "Hooks(realm, event) expects a realm string");
++    if (!IsRealmState(LUA, LUA->GetString(1)) && !RTXDebug::IsSinglePlayer())
++        return PushError(LUA, "outside local single-player, only the client realm can be read");
+     const std::string event = LUA->IsType(2, String) ? LUA->GetString(2) : "";
+     const std::string snippet =
+         "local __out={} local __all=hook.GetTable() local __event=" + QuoteLua(event) + "\n"
+diff --git a/source/render_policy.h b/source/render_policy.h
+index b610091..5d17e52 100644
+--- a/source/render_policy.h
++++ b/source/render_policy.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <cstddef>
+ #include <string_view>
+ 
+ namespace RTXDebug::Policy {
+@@ -23,4 +24,30 @@ inline bool CanSetConfig(bool fullMutation, bool rendering, std::string_view key
+     return fullMutation || (rendering && IsRenderingOption(key));
+ }
+ 
++// Convar names that RTXDebug.Engine.GetConVar may read outside local single-player. Outside a
++// local game a remote server's client scripts can reach this module, so there GetConVar is limited
++// to the rendering surface a multiplayer RTX session inspects; every other convar is refused, and
++// ListConsole (which would enumerate them all) is refused outright. The list is deliberately short
++// and matched case-insensitively by prefix. Names with unexpected characters never match.
++inline bool IsRenderingConVar(std::string_view name) {
++    if (name.empty() || name.size() > 128) return false;
++    for (char c : name) {
++        const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
++            || (c >= '0' && c <= '9') || c == '_' || c == '.';
++        if (!ok) return false;
++    }
++    static constexpr std::string_view kPrefixes[] = {"r_", "mat_", "rtx", "cl_draw"};
++    for (std::string_view prefix : kPrefixes) {
++        if (name.size() < prefix.size()) continue;
++        bool match = true;
++        for (std::size_t i = 0; i < prefix.size(); ++i) {
++            char a = name[i];
++            if (a >= 'A' && a <= 'Z') a = static_cast<char>(a - 'A' + 'a');
++            if (a != prefix[i]) { match = false; break; }
++        }
++        if (match) return true;
++    }
++    return false;
++}
++
+ } // namespace RTXDebug::Policy
+diff --git a/source/render_policy.h.md b/source/render_policy.h.md
+index daf8a68..a5ac45e 100644
+--- a/source/render_policy.h.md
++++ b/source/render_policy.h.md
+@@ -3,4 +3,7 @@
+ Pure client-rendering configuration boundary. Local renderer changes require the module's client
+ realm, the game thread, an open module and Remix API availability. Only syntactically valid rtx.*
+ keys are accepted without the existing full single-player developer mutation gate. No cvar,
+-server, Lua execution, memory or detour authority is granted. Tested by render_policy_test.cpp.
++server, Lua execution, memory or detour authority is granted. `IsRenderingConVar` is the short
++allowlist of convar name prefixes (`rtx`, `r_`, `mat_`, `cl_draw`) that `Engine.GetConVar` may read
++outside local single-player; every other convar name is refused there. Tested by
++render_policy_test.cpp.
+diff --git a/tests/render_policy_test.cpp b/tests/render_policy_test.cpp
+index ca20274..ac909c8 100644
+--- a/tests/render_policy_test.cpp
++++ b/tests/render_policy_test.cpp
+@@ -12,6 +12,13 @@ int main() {
+         if (CanSetConfig(false, true, key)) return 1;
+     if (CanSetConfig(false, false, "rtx.pathMaxBounces")) return 1;
+     if (!CanSetConfig(true, false, "existing_single_player_option")) return 1;
++    // The rendering-convar allowlist for Engine.GetConVar outside local single-player.
++    for (const auto name : {"r_drawworld", "mat_queue_mode", "rtx_conf", "rtxSomething",
++                            "cl_drawhud", "cl_drawviewmodel", "R_SHADOWS", "Mat_Fullbright"})
++        if (!IsRenderingConVar(name)) return 1;
++    for (const auto name : {"sv_cheats", "sv_allowcslua", "rcon_password", "cl_name", "net_graph",
++                            "", "mat_x;quit", "mat x", "server_rtx", "notrtx"})
++        if (IsRenderingConVar(name)) return 1;
+     std::cout << "Rendering policy tests passed\n";
+     return 0;
+ }
+-- 
+2.56.0.windows.1
+

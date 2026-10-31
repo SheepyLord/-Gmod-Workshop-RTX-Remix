@@ -154,6 +154,19 @@ opt-out. Exercise RTXDebug's local rendering queries/configuration in multiplaye
 Lua evaluation, memory writes, detours and gameplay/replicated cheat mutations remain refused;
 their development path requires single-player, `sv_cheats 1` and `-insecure` together.
 
+RTXDebug 0.2.1 decides single-player from the engine (connected, loopback net channel, one player
+slot, no demo), never from Lua. Its offline checks are `tests/session_policy_test.cpp` and
+`tests/render_policy_test.cpp` in the module's tree (see
+`packages/fixes/licenses/rtxdebug/Source.md`). Live, still to run: on the dedicated fixture with
+client `-insecure` and server `sv_cheats 1`, `RTXDebug.Status()` reports `single_player` and
+`can_mutate` false, also after a client script replaces `game.SinglePlayer`, and Lua.Eval,
+Memory, Engine.SetConVar and Detours.Enable are refused; rendering SetConfig/restore still works.
+In local single-player with `-insecure` and `sv_cheats 1`, both are true and Lua.Eval works.
+0.2.1 also gates the read-only information leaks: on that multiplayer fixture, verify
+`Interfaces.Resolve`, `Interfaces.FileExists` and `Engine.ListConsole` are refused,
+`Engine.GetConVar` returns `mat_queue_mode` but refuses `sv_allowcslua`, and `Lua.Global`/`Lua.Hooks`
+work for `client` but refuse `menu`; in single-player all of these work.
+
 Prototype 7 **passes** the secure dedicated join, reconnect and gm_construct -> gm_flatgrass ->
 gm_construct round trip in client PID 8544 against genuine 64-bit server PID 78088. The server
 reported VAC secure mode active, `sv_lan 0`, `sv_allowcslua 0` and cheats off; the password-protected

@@ -1,0 +1,463 @@
+From bc0c698c1b55f3ceb3ec4d2d573a81d100f52fea Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 04:50:32 -0700
+Subject: [PATCH] Decide single-player natively for the developer mutation gate
+
+The mutation gate (Lua.Eval, convar writes and console commands, memory,
+detours, Remix options outside rtx.*) called the client realm's
+game.SinglePlayer. A remote server's client scripts can replace that
+function and the server replicates sv_cheats, so a player who launched with
+-insecure passed the gate on a malicious insecure server.
+
+Single-player now comes from the engine client: connected, a loopback net
+channel (IVEngineClient::GetNetChannelInfo()->IsLoopback(), address type
+NA_LOOPBACK, which only the server running in this process has), no demo
+playback and one player slot. -insecure still comes from the process command
+line and sv_cheats from the cvar system. The rendering gate's client-realm
+check compares the module's state with lua_shared's client state instead of
+reading the CLIENT_DLL/SERVER/MENU_DLL globals.
+
+The pure decision is in source/session_policy.h, tested by
+tests/session_policy_test.cpp. The vtable slots it uses (CEngineClient 21,
+27, 72 and 76; CNetChan 6) were checked against GMod x64 engine.dll through
+RTTI. Version 0.2.1.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ README.md                        | 25 ++++++++--
+ source/debug_context.h           |  1 +
+ source/engine/engine.cpp         | 20 ++++++++
+ source/engine/engine.h           |  6 +++
+ source/lua_bridge/lua_bridge.cpp | 14 ++++--
+ source/lua_bridge/lua_bridge.h   |  5 ++
+ source/module.cpp                | 43 +++++++----------
+ source/session_policy.h          | 35 ++++++++++++++
+ source/session_policy.h.md       |  7 +++
+ tests/session_policy_test.cpp    | 79 ++++++++++++++++++++++++++++++++
+ tests/session_policy_test.cpp.md |  8 ++++
+ 11 files changed, 209 insertions(+), 34 deletions(-)
+ create mode 100644 source/session_policy.h
+ create mode 100644 source/session_policy.h.md
+ create mode 100644 tests/session_policy_test.cpp
+ create mode 100644 tests/session_policy_test.cpp.md
+
+diff --git a/README.md b/README.md
+index 5a36d70..37b04c4 100644
+--- a/README.md
++++ b/README.md
+@@ -40,7 +40,8 @@ including on a multiplayer server with `sv_allowcslua 0`, once the RTX package's
+ client bootstrap has loaded this addon. The addon loads the DLL with `require("rtxdebug")`.
+ `RTXDebug.Status()` distinguishes the full developer mutation gate from the client rendering gate.
+ Arbitrary Lua evaluation, engine/gameplay mutations, memory and detours still require local
+-single-player, `sv_cheats 1` and `-insecure`. A remote server realm is unavailable locally.
++single-player, `sv_cheats 1` and `-insecure`. The module decides single-player from the engine
++client's own connection, never from Lua. A remote server realm is unavailable locally.
+ 
+ ## Conventions
+ 
+@@ -50,7 +51,15 @@ single-player, `sv_cheats 1` and `-insecure`. A remote server realm is unavailab
+   `sv_cheats 1` and the `-insecure` launch option. Memory reads need it too.
+   Restoring and listing this module's own changes do not, so they still work
+   after `sv_cheats` is turned off.
+-- Local Remix-only writes have their own gate: the module's live client realm, the game thread,
++- The mutation gate reads nothing from Lua (`source/session_policy.h`). Single-player means the
++  engine client is connected through the in-process loopback channel to the server this game runs,
++  with one player slot and no demo playing: `IVEngineClient::IsConnected`,
++  `GetNetChannelInfo()->IsLoopback()`, `GetMaxClients()` and `IsPlayingDemo()`. `-insecure` comes
++  from the process command line and `sv_cheats` from the cvar system. A remote server's client
++  scripts can replace `game.SinglePlayer`, and the server replicates `sv_cheats`, but it cannot
++  make the client's channel loopback.
++- Local Remix-only writes have their own gate: the module's live client realm (the state that
++  lua_shared reports as the client's, not the `CLIENT_DLL`/`SERVER` globals), the game thread,
+   and an available RemixConfig.SetConfigVariable function. Without the full developer gate,
+   only `rtx.*` option keys are accepted. This does not change server cvars or enable Lua Eval.
+ - Addresses and 64-bit values are hex strings, which Lua numbers cannot hold exactly.
+@@ -136,7 +145,11 @@ differ: vstdlib's cvar iterator has a virtual destructor in front of its
+ methods, so `ListConsole` uses its own iterator declaration, and
+ `CMatSystemSurface::GetScreenSize` sits one slot later than `ISurfaceV30`
+ declares it, so there is no VGUI surface query (`Engine.World` reports the
+-screen size). Check new interface calls the same way before using them.
++screen size). Check new interface calls the same way before using them. The
++single-player check uses `CEngineClient` slots 21 (`GetMaxClients`), 27
++(`IsConnected`), 72 (`GetNetChannelInfo`) and 76 (`IsPlayingDemo`), and
++`CNetChan` slot 6 (`IsLoopback`, a test for address type `NA_LOOPBACK`), all
++where `sourcesdk-minimal` declares them.
+ 
+ The `client_cmd` detour records calls to `IVEngineClient::ClientCmd` in a
+ 128-entry ring buffer (sequence, tick, thread, command text).
+@@ -184,7 +197,11 @@ No network listener is opened.
+ ## Tests
+ 
+ `python tests/test_transport.py` checks the request protocol without starting
+-GMod (`lupa` required; it uses LuaJIT when lupa has it).
++GMod (`lupa` required; it uses LuaJIT when lupa has it). `python -m unittest
++discover -s tests` also runs the external client's target-selection tests.
++`tests/render_policy_test.cpp` and `tests/session_policy_test.cpp` check the
++rendering and mutation gates: compile each with a C++17 compiler (for example
++`cl /std:c++17 /EHsc /W4`) and run it.
+ 
+ ## Lifecycle
+ 
+diff --git a/source/debug_context.h b/source/debug_context.h
+index e538bdd..a6a5773 100644
+--- a/source/debug_context.h
++++ b/source/debug_context.h
+@@ -6,6 +6,7 @@ namespace RTXDebug {
+ 
+ // The client Lua state and Source interfaces are owned by the game thread.
+ bool IsMainThread();
++// Local single-player as the engine client reports it (session_policy.h); never Lua.
+ bool IsSinglePlayer();
+ bool IsInsecureLaunch();
+ bool CheatsEnabled();
+diff --git a/source/engine/engine.cpp b/source/engine/engine.cpp
+index 83afab5..267f128 100644
+--- a/source/engine/engine.cpp
++++ b/source/engine/engine.cpp
+@@ -11,6 +11,7 @@
+ #include <cdll_int.h>
+ #include <filesystem.h>
+ #include <icvar.h>
++#include <inetchannelinfo.h>
+ #include <materialsystem/imaterial.h>
+ #include <materialsystem/imaterialsystem.h>
+ #include <materialsystem/imaterialvar.h>
+@@ -549,6 +550,25 @@ LUA_FUNCTION_STATIC(FileExists) {
+ 
+ } // namespace
+ 
++// Checked against GMod x64 engine.dll through RTTI: CEngineClient's vtable has
++// GetMaxClients at slot 21, IsConnected at 27, GetNetChannelInfo at 72 (it returns the
++// client state's channel pointer) and IsPlayingDemo at 76, as cdll_int.h declares them.
++// CNetChan has IsLoopback at slot 6; it tests its remote address for type NA_LOOPBACK,
++// which only a connection to the server running in this process has.
++Policy::SessionFacts ReadSessionFacts() {
++    Policy::SessionFacts facts;
++    if (!RTXDebug::IsMainThread()) return facts;
++    IVEngineClient* engine = EngineClient();
++    if (!engine || !engine->IsConnected()) return facts;
++    facts.connected = true;
++    facts.maxClients = engine->GetMaxClients();
++    facts.demoPlayback = engine->IsPlayingDemo();
++    const INetChannelInfo* channel = engine->GetNetChannelInfo();
++    facts.netChannel = channel != nullptr;
++    facts.loopback = channel && channel->IsLoopback();
++    return facts;
++}
++
+ void Register(ILuaBase* lua) {
+     lua->CreateTable();
+     AddFunction(lua, "ListConsole", ListConsole);
+diff --git a/source/engine/engine.h b/source/engine/engine.h
+index fba20c8..be2b119 100644
+--- a/source/engine/engine.h
++++ b/source/engine/engine.h
+@@ -1,5 +1,7 @@
+ #pragma once
+ 
++#include "../session_policy.h"
++
+ #include <cstddef>
+ #include <string>
+ #include <vector>
+@@ -13,6 +15,10 @@ namespace RTXDebug::Engine {
+ // RTXDebug table is on top of the stack. Registers Engine and Interfaces.
+ void Register(GarrysMod::Lua::ILuaBase* lua);
+ 
++// The engine client's connection facts for the single-player decision, read from
++// IVEngineClient and the client's net channel. All false off the game thread.
++Policy::SessionFacts ReadSessionFacts();
++
+ // Convars changed through this module's API that are not restored yet.
+ size_t ActiveOverrides();
+ 
+diff --git a/source/lua_bridge/lua_bridge.cpp b/source/lua_bridge/lua_bridge.cpp
+index 0c46419..fad9bf6 100644
+--- a/source/lua_bridge/lua_bridge.cpp
++++ b/source/lua_bridge/lua_bridge.cpp
+@@ -47,6 +47,10 @@ ILuaInterface* GetRealm(const char* name) {
+     return g_luaShared->GetLuaInterface(state);
+ }
+ 
++bool SameState(ILuaBase* first, ILuaBase* second) {
++    return first == second || (first->GetState() && first->GetState() == second->GetState());
++}
++
+ void CopyValue(ILuaBase* source, ILuaBase* destination,
+                int index, int depth, int& nodes) {
+     if (++nodes > kMaxNodes || depth > kMaxDepth) {
+@@ -337,9 +341,7 @@ bool RunSnapshot(ILuaBase* caller, const char* realm,
+         return false;
+     }
+     target->GetField(GarrysMod::Lua::INDEX_GLOBAL, kSnapshotName);
+-    const bool sameState = static_cast<ILuaBase*>(target) == caller
+-        || (target->GetState() && target->GetState() == caller->GetState());
+-    if (!sameState) {
++    if (!SameState(target, caller)) {
+         int nodes = 0;
+         CopyValue(target, caller, -1, 0, nodes);
+         target->Pop();
+@@ -348,6 +350,12 @@ bool RunSnapshot(ILuaBase* caller, const char* realm,
+     return true;
+ }
+ 
++bool IsRealmState(ILuaBase* lua, const char* realm) {
++    if (!lua || !RTXDebug::IsMainThread()) return false;
++    ILuaInterface* target = GetRealm(realm);
++    return target && SameState(target, lua);
++}
++
+ void Register(ILuaBase* lua) {
+     lua->CreateTable();
+     AddFunction(lua, "Eval", Eval);
+diff --git a/source/lua_bridge/lua_bridge.h b/source/lua_bridge/lua_bridge.h
+index 7f6e290..ff90f56 100644
+--- a/source/lua_bridge/lua_bridge.h
++++ b/source/lua_bridge/lua_bridge.h
+@@ -23,4 +23,9 @@ bool RunSnapshot(GarrysMod::Lua::ILuaBase* caller,
+ // Quotes text as a Lua string literal for generated snapshot statements.
+ std::string QuoteLua(const std::string& text);
+ 
++// True when lua is the Lua state that lua_shared reports for realm ("client",
++// "server" or "menu"). Read natively, not from the CLIENT/SERVER/MENU_DLL globals,
++// which any script in the state can reassign. False off the game thread.
++bool IsRealmState(GarrysMod::Lua::ILuaBase* lua, const char* realm);
++
+ } // namespace RTXDebug::LuaBridge
+diff --git a/source/module.cpp b/source/module.cpp
+index d8bc5c3..6e05cdb 100644
+--- a/source/module.cpp
++++ b/source/module.cpp
+@@ -4,6 +4,7 @@
+ #include "lua_bridge/lua_bridge.h"
+ #include "lua_util.h"
+ #include "render_policy.h"
++#include "session_policy.h"
+ #include "memory/memory_debug.h"
+ #include "remix/remix_debug.h"
+ #include "transport/transport.h"
+@@ -22,7 +23,7 @@
+ 
+ namespace {
+ 
+-constexpr const char* kVersion = "0.2.0";
++constexpr const char* kVersion = "0.2.1";
+ constexpr const char* kRemixApiVersion = "0.1000.1";
+ 
+ GarrysMod::Lua::ILuaBase* g_lua = nullptr;
+@@ -130,24 +131,11 @@ GarrysMod::Lua::ILuaBase* Lua() {
+     return g_lua;
+ }
+ 
++// Asks the engine client, not Lua: a remote server's client scripts can replace
++// game.SinglePlayer, so a Lua answer would let any server open the mutation gate.
+ bool IsSinglePlayer() {
+-    if (!IsMainThread() || !g_lua) return false;
+-    const int top = g_lua->Top();
+-    g_lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+-    g_lua->GetField(-1, "game");
+-    if (!g_lua->IsType(-1, GarrysMod::Lua::Type::Table)) {
+-        g_lua->Pop(g_lua->Top() - top);
+-        return false;
+-    }
+-    g_lua->GetField(-1, "SinglePlayer");
+-    if (!g_lua->IsType(-1, GarrysMod::Lua::Type::Function)) {
+-        g_lua->Pop(g_lua->Top() - top);
+-        return false;
+-    }
+-    const bool called = g_lua->PCall(0, 1, 0) == 0;
+-    const bool result = called && g_lua->GetBool(-1);
+-    g_lua->Pop(g_lua->Top() - top);
+-    return result;
++    if (!IsMainThread() || g_closing) return false;
++    return Policy::IsLocalSinglePlayer(Engine::ReadSessionFacts());
+ }
+ 
+ bool IsInsecureLaunch() {
+@@ -162,20 +150,21 @@ bool CheatsEnabled() {
+     return cheats && cheats->GetBool();
+ }
+ 
++// Every input is native. The engine and the cvar system are asked only on the game
++// thread of an open module.
+ bool CanMutate() {
+-    return !g_closing && IsMainThread() && IsInsecureLaunch() && IsSinglePlayer() && CheatsEnabled();
++    const bool mainThread = IsMainThread();
++    const bool ask = mainThread && !g_closing;
++    return Policy::CanMutate(mainThread, g_closing, IsInsecureLaunch(),
++        ask && IsSinglePlayer(), ask && CheatsEnabled());
+ }
+ 
+ bool CanConfigureRendering() {
+-    if (!IsMainThread() || !g_lua) return false;
++    if (!IsMainThread() || !g_lua || g_closing) return false;
++    // The module's state must be the client state that lua_shared reports. The
++    // CLIENT_DLL, SERVER and MENU_DLL globals are not consulted: scripts can reassign them.
++    const bool client = LuaBridge::IsRealmState(g_lua, "client");
+     const int top = g_lua->Top();
+-    const auto flag = [&](const char* name) {
+-        g_lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, name);
+-        const bool value = g_lua->IsType(-1, GarrysMod::Lua::Type::Bool) && g_lua->GetBool(-1);
+-        g_lua->Pop();
+-        return value;
+-    };
+-    const bool client = flag("CLIENT_DLL") && !flag("SERVER") && !flag("MENU_DLL");
+     g_lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, "RemixConfig");
+     bool api = false;
+     if (g_lua->IsType(-1, GarrysMod::Lua::Type::Table)) {
+diff --git a/source/session_policy.h b/source/session_policy.h
+new file mode 100644
+index 0000000..db55370
+--- /dev/null
++++ b/source/session_policy.h
+@@ -0,0 +1,35 @@
++#pragma once
++
++namespace RTXDebug::Policy {
++
++// What the engine client reports about its connection. The module reads every field
++// natively (IVEngineClient and the client's INetChannelInfo), never from a Lua state:
++// client scripts that a remote server sends can replace any Lua function, including
++// game.SinglePlayer, and the server replicates sv_cheats.
++struct SessionFacts {
++    bool connected = false;    // IVEngineClient::IsConnected
++    bool netChannel = false;   // IVEngineClient::GetNetChannelInfo returned a channel
++    bool loopback = false;     // INetChannelInfo::IsLoopback: the engine's in-process loopback
++    bool demoPlayback = false; // IVEngineClient::IsPlayingDemo
++    int maxClients = 0;        // IVEngineClient::GetMaxClients
++};
++
++// Local single-player: the client is joined, through the in-process loopback channel, to
++// the server this process runs, and that server has one player slot. A remote server
++// cannot make the client's channel loopback. The player count comes from the server's
++// own ServerInfo message, so it counts only together with loopback.
++inline bool IsLocalSinglePlayer(const SessionFacts& facts) {
++    return facts.connected && facts.netChannel && facts.loopback && !facts.demoPlayback
++        && facts.maxClients == 1;
++}
++
++// The developer mutation gate (Lua.Eval, convar writes and console commands, memory,
++// detours, and Remix options outside rtx.*): the game thread of an open module, the
++// -insecure launch option on the process command line, local single-player as above, and
++// sv_cheats 1.
++inline bool CanMutate(bool mainThread, bool closing, bool insecureLaunch,
++                      bool localSinglePlayer, bool cheats) {
++    return mainThread && !closing && insecureLaunch && localSinglePlayer && cheats;
++}
++
++} // namespace RTXDebug::Policy
+diff --git a/source/session_policy.h.md b/source/session_policy.h.md
+new file mode 100644
+index 0000000..218829d
+--- /dev/null
++++ b/source/session_policy.h.md
+@@ -0,0 +1,7 @@
++# session_policy.h
++
++Pure developer mutation gate. `IsLocalSinglePlayer` decides single-player from facts the module
++reads natively from the engine client (`IsConnected`, `GetNetChannelInfo()->IsLoopback()`,
++`GetMaxClients`, `IsPlayingDemo`), never from a Lua state, which a remote server's client scripts
++can change. `CanMutate` combines it with the game thread, an open module, `-insecure` from the
++process command line and `sv_cheats`. Tested by tests/session_policy_test.cpp.
+diff --git a/tests/session_policy_test.cpp b/tests/session_policy_test.cpp
+new file mode 100644
+index 0000000..e944a9e
+--- /dev/null
++++ b/tests/session_policy_test.cpp
+@@ -0,0 +1,79 @@
++#include "../source/session_policy.h"
++
++#include <iostream>
++
++namespace {
++
++using RTXDebug::Policy::CanMutate;
++using RTXDebug::Policy::IsLocalSinglePlayer;
++using RTXDebug::Policy::SessionFacts;
++
++int g_failures = 0;
++
++void Expect(bool condition, const char* what) {
++    if (condition) return;
++    std::cout << "FAIL: " << what << "\n";
++    ++g_failures;
++}
++
++// What the engine reports while the player is in a game they started themselves.
++SessionFacts LocalGame() {
++    SessionFacts facts;
++    facts.connected = true;
++    facts.netChannel = true;
++    facts.loopback = true;
++    facts.demoPlayback = false;
++    facts.maxClients = 1;
++    return facts;
++}
++
++} // namespace
++
++int main() {
++    Expect(IsLocalSinglePlayer(LocalGame()), "a local one-slot game over loopback is single-player");
++    Expect(!IsLocalSinglePlayer(SessionFacts{}), "the main menu (no connection) is not single-player");
++
++    // A remote server decides what it sends (its player count, sv_cheats, every client
++    // Lua function) but not the client's own net channel, which is never loopback.
++    SessionFacts remote = LocalGame();
++    remote.loopback = false;
++    Expect(!IsLocalSinglePlayer(remote), "a remote server that reports one player slot is not single-player");
++
++    SessionFacts facts = LocalGame();
++    facts.connected = false;
++    Expect(!IsLocalSinglePlayer(facts), "a client that is not connected is not single-player");
++    facts = LocalGame();
++    facts.netChannel = false;
++    Expect(!IsLocalSinglePlayer(facts), "a connection without a net channel is not single-player");
++    facts = LocalGame();
++    facts.demoPlayback = true;
++    Expect(!IsLocalSinglePlayer(facts), "demo playback is not single-player");
++    for (int slots : {0, 2, 8, 128, -1}) {
++        facts = LocalGame();
++        facts.maxClients = slots;
++        Expect(!IsLocalSinglePlayer(facts), "a loopback game without exactly one player slot is not single-player");
++    }
++
++    // The gate opens only when every part holds.
++    for (int mask = 0; mask < 32; ++mask) {
++        const bool mainThread = (mask & 1) != 0;
++        const bool closing = (mask & 2) != 0;
++        const bool insecure = (mask & 4) != 0;
++        const bool singlePlayer = (mask & 8) != 0;
++        const bool cheats = (mask & 16) != 0;
++        const bool expected = mainThread && !closing && insecure && singlePlayer && cheats;
++        Expect(CanMutate(mainThread, closing, insecure, singlePlayer, cheats) == expected,
++            "CanMutate requires the game thread, an open module, -insecure, single-player and sv_cheats");
++    }
++
++    // The reviewed case: the player launched with -insecure, the remote server replicates
++    // sv_cheats 1 and its scripts replace game.SinglePlayer. The engine facts still say remote.
++    Expect(!CanMutate(true, false, true, IsLocalSinglePlayer(remote), true),
++        "a remote insecure server with sv_cheats 1 cannot open the mutation gate");
++    Expect(CanMutate(true, false, true, IsLocalSinglePlayer(LocalGame()), true),
++        "local single-player with -insecure and sv_cheats 1 opens the mutation gate");
++
++    if (g_failures) return 1;
++    std::cout << "Session policy tests passed\n";
++    return 0;
++}
+diff --git a/tests/session_policy_test.cpp.md b/tests/session_policy_test.cpp.md
+new file mode 100644
+index 0000000..7c2fc40
+--- /dev/null
++++ b/tests/session_policy_test.cpp.md
+@@ -0,0 +1,8 @@
++# session_policy_test.cpp
++
++Standalone CPU check of the actual session_policy.h functions. Single-player needs a connected
++client, a loopback net channel, no demo playback and exactly one player slot; a remote server that
++reports one slot, a listen server with more slots, the main menu and demo playback are refused. The
++mutation gate's full truth table is checked, including the case of a remote insecure server with
++sv_cheats 1. Compile with a C++17 compiler and run it; exit 0 when every check passes, 1 otherwise.
++No game, GPU, file or network access.
+-- 
+2.56.0.windows.1
+
