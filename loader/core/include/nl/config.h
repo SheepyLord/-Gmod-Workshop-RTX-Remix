@@ -41,6 +41,8 @@ struct Config {
   PerformanceTier performance_tier = PerformanceTier::automatic;
   GpuCrashDumps gpu_crash_dumps = GpuCrashDumps::off;
   std::vector<std::string> notes;        // recoverable config issues, reported by activation
+
+  bool memory_telemetry = true;           // diagnostics.memory_telemetry ("on"/"off", ADR 0063)
   bool patch_sets_require_insecure = true;
   bool allow_secure_rtx_render_patches = true; // exact reviewed renderer recipes only
   bool from_file = false;                // false: defaults, because config.json does not exist

@@ -117,6 +117,46 @@ PoC until it is closed normally. Do not close the field session from the harness
 the still-unverified tuning and two-map/sky comparisons. The earlier PoC snapshot was restored
 and hash-verified; no PoC changes have been made by the resumed attempt.
 
+## R6 T2 local evidence and telemetry
+
+2026-10-31: `tools/test.ps1 -Config Release` passed all 24 CTests and 334 Python tests (28 gmapack,
+25 Steam, 281 tools; two expected fixture/environment skips). The final log is
+`out/r6-t2-evidence/release-tests-final-verified.log`. Nine evidence cases, eight memory cases, strict
+config tests, Node/LuaJIT notices and real-worker synthetic integration all passed. No GMod launch,
+in-game warning/soak comparison or real device-loss reproduction was performed by T2.
+
+On the long `r6-t2-evidence` worktree, the pre-existing guard idempotence check reaches a 261-character
+cache path and plain `std::filesystem::last_write_time` fails (`loader/guard/tests/test_early.cpp:198`).
+An archived rebuild of original commit `7759c43` reproduces it; that exact executable passes from a
+shorter `out` path. Local validation keeps all tests and sources intact, with an ignored CMake
+include at `out/r6-t2-evidence/short-guard-output.cmake`: deferred `set_target_properties` sets only
+`nl_render_guard_tests`'s `RUNTIME_OUTPUT_DIRECTORY` to `${CMAKE_BINARY_DIR}/g`. It is loaded through
+the local cache variable `CMAKE_PROJECT_native_loader_INCLUDE`; no tracked CMake or guard test edit,
+drive mapping or system setting change. Logs and the baseline rebuild are in `out/r6-t2-evidence`.
+
+`tools/tests/test_presentation_ui.py` runs the actual menu JavaScript in Node and the embedded local
+notice reader in LuaJIT, without a game/browser: five failure classes and RAM text in all seven
+languages, evidence-folder copy, stale/other-process snapshots including PID reuse, bounded reads/
+retries, once-per-start acknowledgement, language changes, hidden/home/map transitions and no
+automatic outbound action. The C++ presentation tests verify current-process metadata, embedding,
+ASCII output for the game's decoder and unchanged stock menu sources.
+
+`nl_tests "memory:"` checks byte/UTC CSV fields, unavailable counters, row/byte rotation,
+foreign/edited/locked history preservation, interrupted receipt/rotation recovery, actual kernel
+queries, latest-only commit snapshots and strict warning thresholds (below 32 GiB, above 70 percent,
+unknown/zero limit and overflow boundaries). The config test rejects invalid telemetry modes/types.
+`nl_telemetry_integration` uses the real DLL in generated synthetic host roots: two flushed samples
+ten seconds apart, previous history saved before new sampling, `nlctl` text/JSON, history off and
+loader disabled. `nl_proxy_kernel32_imports` checks static and delay import directories.
+
+`nl_tests "evidence:"` uses only generated game roots in the worktree's build tree. It covers every
+classification, optional/malformed structured GPU data, whole-log preservation before a simulated
+runtime truncation, ASCII/UTF-16 OOM strings crossing streaming chunks, stale/future file filtering,
+pre-R6 loader record fallback, empty/clean sessions, locked dumps, byte/file limits, five-session
+retention and preservation of edited archives. It prints mean/max collection time for 30 empty starts.
+`nlctl status <fixture> [--json]` reports previous-session data even without a journal.
+No game launch or source dump modification is involved.
+
 ## Release QA protocol (field install, R4)
 
 What review R4 used to test a release on the user's own install quickly and without guesswork. One

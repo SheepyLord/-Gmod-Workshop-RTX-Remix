@@ -76,7 +76,9 @@ std::string serialize(const Report& r) {
   const auto& a = r.activation;
   const auto& p = a.plan;
   std::string result = "{\n\"schema\":1,\"loader_version\":" + json::quote(r.loader_version) +
+      ",\"previous_session\":" + evidence::serialize(r.previous_session) +
       ",\"utc\":" + json::quote(r.utc) + ",\"process_id\":" + std::to_string(r.process_id) +
+      ",\"session_token\":" + json::quote(r.session_token) +
       ",\"startup_elapsed_ms\":" + std::to_string(r.startup_ms) + ",\n\"deployment\":{\"outcome\":" + json::quote(d.outcome) +
       ",\"reason\":" + json::quote(d.error) + ",\"blocked_by\":" + json::quote(blocked_by(d.blocked_by)) +
       ",\"generation\":" + std::to_string(d.generation) + ",\"recovered\":" + (d.recovered ? "true" : "false") +
@@ -108,6 +110,7 @@ std::string serialize(const Report& r) {
 
 std::string log_fields(const Report& r) {
   std::ostringstream out;
+  out << "previous_session=" << evidence::serialize(r.previous_session) << '\n';
   out << "deployment.outcome=" << r.deployment.outcome << "\ndeployment.generation=" << r.deployment.generation
       << "\ndeployment.change_count=" << r.deployment.changes.size() << "\ndeployment.operations=" << r.deployment.operations
       << "\ndeployment.elapsed_ms=" << r.deployment_ms << "\ndeployment.recovered=" << r.deployment.recovered

@@ -85,6 +85,8 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   system.cpu = "CPU \"quoted\" <script>literal</script>\n";
   system.threads = 12;
   system.memory = 32ull << 30;
+  system.process_id = 123;
+  system.session_token = "123-456";
   system.graphics.push_back({"GPU", 8ull << 30});
   nl::journal::Generation generation;
   nl::journal::Package package;
@@ -97,12 +99,17 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   const auto parsed = nl::json::parse(data);
   CHECK(parsed.find("cpu")->as_string() == system.cpu);
   CHECK(parsed.find("threads")->as_int() == 12);
+  CHECK(parsed.find("process_id")->as_int() == 123);
+  CHECK(parsed.find("session_token")->as_string() == system.session_token);
   CHECK(parsed.find("loader")->find("sha256")->as_string() == std::string(64, 'b'));
   CHECK(data.find("private/location") == std::string::npos);
   const std::string original = "function MenuController( $scope, $rootScope ) {}\n";
   const auto decorated = p::decorate_main_menu(original, data);
   CHECK(decorated.starts_with(original));
   CHECK(decorated.find("native-loader-diagnostics") != std::string::npos);
+  CHECK(decorated.find("window.NativeLoaderReadNotices = ") != std::string::npos);
+  CHECK(decorated.find("native-loader/status.json") != std::string::npos);
+  CHECK(decorated.find("native-loader/memory.json") != std::string::npos);
   CHECK_THROWS_AS(p::decorate_main_menu("changed menu", data), std::runtime_error);
   CHECK_THROWS_AS(p::decorate_main_menu(original, "{};unexpected()"), std::runtime_error);
   CHECK_THROWS_AS(p::decorate_main_menu(original, "[]"), std::runtime_error);

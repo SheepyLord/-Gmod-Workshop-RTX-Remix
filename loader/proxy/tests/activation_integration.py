@@ -586,9 +586,16 @@ def main():
         check('MAX_PATH' in result[1]['activation']['reason'], 'runtime path bound was not enforced')
         passed('runtime paths exceeding MAX_PATH are refused before preload')
 
+        memory_before = {name: user.status.with_name(name).read_bytes()
+                         for name in ('memory.json', 'memory.json.tmp') if user.status.with_name(name).exists()}
         user.cli('uninstall')
-        check(not user.status.exists() and not user.status.parent.exists(), 'uninstall left generated status')
-        passed('nlctl uninstall removes status and the empty data folder')
+        check(not user.status.exists(), 'uninstall left generated status')
+        if memory_before:
+            for name, before in memory_before.items():
+                check(user.status.with_name(name).read_bytes() == before, 'uninstall changed retained memory diagnostics')
+        else:
+            check(not user.status.parent.exists(), 'uninstall left an empty status folder')
+        passed('nlctl uninstall removes status and retains local memory diagnostics when present')
 
         # ADR 0056: the catalog-verified RTX package whose early guard view cannot be prepared (here,
         # an initializer a game update changed) still starts RTX, and status says why; the companion's

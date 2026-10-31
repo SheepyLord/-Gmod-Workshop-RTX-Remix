@@ -93,14 +93,22 @@ Config parse(std::string_view json_text) {
         else fail("remix.reshade must be \"auto\", \"on\" or \"off\"");
       }
     }
+    // A wrong diagnostics value only costs that diagnostic (a note, then its default); it never
+    // switches the loader off. An unknown key still fails like everywhere else.
     if (const Value* diagnostics = root.find("diagnostics")) {
-      only_keys(*diagnostics, "diagnostics", {"gpu_crash_dumps"});
+      only_keys(*diagnostics, "diagnostics", {"gpu_crash_dumps", "memory_telemetry"});
       if (const Value* dumps = diagnostics->find("gpu_crash_dumps")) {
         const std::string mode = dumps->is_string() ? dumps->as_string() : std::string{};
         if (mode == "off") c.gpu_crash_dumps = GpuCrashDumps::off;
         else if (mode == "next_start") c.gpu_crash_dumps = GpuCrashDumps::next_start;
         else if (mode == "always") c.gpu_crash_dumps = GpuCrashDumps::always;
         else c.notes.push_back("diagnostics.gpu_crash_dumps must be off, next_start or always; using off");
+      }
+      if (const Value* telemetry = diagnostics->find("memory_telemetry")) {
+        const std::string mode = telemetry->is_string() ? telemetry->as_string() : std::string{};
+        if (mode == "on") c.memory_telemetry = true;
+        else if (mode == "off") c.memory_telemetry = false;
+        else c.notes.push_back("diagnostics.memory_telemetry must be on or off; using on");
       }
     }
     if (const Value* patches = root.find("patch_sets")) {

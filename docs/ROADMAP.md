@@ -25,6 +25,12 @@ suite (23 CTests, 333 Python tests with 2 skips), and the nlctl-validated combin
 Game acceptance belongs to R6 integration: no resource-limit rejections at map load and
 unchanged ToPBR appearance. See [T5 validation](TESTING.md#r6-t5-topbr-compression).
 
+R6 T2 implementation and automated validation are **done** on `r6-t2-evidence`: bounded previous-session
+evidence, startup/CLI reporting, bootstrap memory history, and seven-language failure/RAM notices.
+Release passes 24 CTests and 334 Python tests (two expected skips), with the pre-existing long-worktree
+guard-test path workaround documented in [TESTING](TESTING.md#r6-t2-local-evidence-and-telemetry).
+No game was launched; integration and game QA remain with Claude ([T2 brief](handover/R6-T2-evidence-telemetry.md)).
+
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.

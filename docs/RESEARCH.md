@@ -88,6 +88,50 @@
   The running field game (PID 24620) prevents the one-game-at-a-time PoC comparisons; it was left
   alone and the user was asked to quit normally. No PoC files changed during this resumed attempt.
 
+## R6 T2 evidence boundaries (2026-10-31)
+
+- The stock menu's [`lua/menu/mainmenu.lua`](https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/menu/mainmenu.lua#L23-L32)
+  quotes string arguments to `lua.Run` and exposes `pnlMainMenu:Call` through `QueueJavascript`
+  (lines 156-159, read 2026-10-31). R6 uses that bridge for bounded DATA reads and JSON-encodes parsed
+  results again; it never concatenates raw file text into executable JavaScript.
+- `loader/proxy/ui/mainmenu.js:30-63` validates creation-time tokens and a 30-second snapshot age,
+  consumes a RAM warning only while visible before the first map, and acknowledges it in the menu
+  Lua realm. `loader/core/src/memory.cpp:72-74` uses strict, overflow-safe 32-GiB/70-percent thresholds.
+
+- `loader/core/src/memory.cpp` dynamically resolves `K32GetProcessMemoryInfo` and
+  `K32GetPerformanceInfo` from KERNEL32 and converts performance-info page counts to bytes. DXGI
+  is loaded from System32 and queried through `IDXGIAdapter3::QueryVideoMemoryInfo`; no PSAPI/DXGI
+  import library is linked. Release's `check_imports.py` still reports only `KERNEL32.dll`.
+- CSV rows use optional counters so an unavailable GPU query stays blank rather than appearing as
+  zero usage. Two 360-row/256-KiB segments bound default history to about one to two hours. The
+  latest system commit snapshot is independent of CSV history, so the RAM warning can work with
+  `diagnostics.memory_telemetry: "off"` without recording process/GPU data.
+
+- Release fixture measurement (30 consecutive empty collections on this machine): mean 0.556 ms,
+  maximum 0.883 ms (a previous run averaged 1.419 ms, maximum 8.056 ms during concurrent work).
+  Session-start metadata uses an atomic rename without the deployment journal's
+  write-through flushes; its loss after a power failure falls back to the older loader record.
+  Empty/clean starts do not re-hash old archives; retention runs only when a new archive is saved.
+  A later measurement during concurrent Release checks averaged 1.145 ms, maximum 1.658 ms.
+
+- The long T2 worktree makes the unchanged early-guard idempotence test's cache path 261 characters.
+  `test_early.cpp:198` uses plain `std::filesystem::last_write_time` and fails there, despite the file
+  existing and system `LongPathsEnabled=1`. An archived, rebuilt original commit `7759c43` fails at
+  the same line; its identical executable passes when copied to the shorter worktree `out` path.
+  T2's Release check uses a local CMake output-directory override only for that test executable;
+  test sources and coverage are unchanged. No system setting or other worktree was changed.
+
+- Runtime fork `src/util/log/log.cpp:75-94` opens `remix-dxvk.log` with a plain `std::ofstream`:
+  starting the runtime truncates it. R6's worker signals readiness only after the log copy/fallback
+  is secure, and bootstrap waits before runtime activation (`loader/proxy/startup.cpp`).
+- The fork has no general clean-exit log marker. `src/dxvk/rtx_render/rtx_context.cpp:945-953`
+  logs `RTX: Terminating application` only for its deliberate delayed termination after captures/
+  exports finish. FSR `onDestroy`/context-destroyed lines are resource lifecycle messages and do
+  not establish a clean process exit. Unmarked sessions remain `unknown`.
+- Engine OOM text can be ASCII or UTF-16 LE inside a dump. R6 scans bounded, copied game-root
+  dumps in 64 KiB chunks with a 64-byte overlap; it does not load the dump into memory or execute it
+  (`loader/core/src/evidence.cpp`, `loader/tests/test_evidence.cpp`).
+
 ## R4 start-up, guard and bootstrap review (loader 0.10.1)
 
 Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock

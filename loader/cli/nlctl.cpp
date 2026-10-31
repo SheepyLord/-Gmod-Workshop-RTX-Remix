@@ -15,6 +15,7 @@
 #include "nl/lzma.h"
 #include "nl/config.h"
 #include "nl/discovery.h"
+#include "nl/evidence.h"
 #include "nl/manifest.h"
 #include "nl/package.h"
 #include "nl/planner.h"
@@ -590,10 +591,28 @@ int cmd_uninstall(const fs::path& game_root, bool json, bool dry_run) {
 // Read-only: the journal, and whether the current generation's files are still as placed.
 int cmd_status(const fs::path& game_root, bool json, bool verify) {
   const auto s = nl::deploy::status(game_root, verify);
+  // Startup's previous-session summary is independent of the deployment journal, including when
+  // there are no packages. Invalid/missing reports never make a read-only status command fail.
+  std::string previous_json = "null", previous_text;
+  try {
+    constexpr std::string_view path = "garrysmod/data/native-loader/status.json";
+    nl::fs::refuse_links(game_root, path);
+    const auto startup = nl::json::parse(nl::fs::read_file(nl::fs::join(game_root, path), 1u << 20));
+    if (const auto previous = startup.find("previous_session"); previous && previous->is_object()) {
+      nl::evidence::PreviousSession p;
+      if (const auto reason = previous->find("reason"); reason && reason->is_string()) p.reason = reason->as_string();
+      if (const auto time = previous->find("time_utc"); time && time->is_string()) p.time_utc = time->as_string();
+      if (const auto folder = previous->find("folder"); folder && folder->is_string()) p.folder = folder->as_string();
+      previous_json = nl::evidence::serialize(p);
+      previous_text = "previous session " + p.reason + (p.time_utc.empty() ? "" : " at " + p.time_utc) +
+                      (p.folder.empty() ? "" : "; evidence: " + p.folder) + "\n";
+    }
+  } catch (...) { }
   const bool pending = s.journal && s.journal->pending;
   const bool ok = s.drift.empty() && !pending;
   if (json) {
     std::string out = "{\n  \"game_root\": " + nl::json::quote(utf8(game_root)) + ",\n  \"ok\": " + (ok ? "true" : "false");
+    out += ",\n  \"previous_session\": " + previous_json;
     out += ",\n  \"drift\": [";
     for (std::size_t i = 0; i < s.drift.size(); ++i) {
       out += (i ? ", " : "") + std::string("{\"path\": ") + nl::json::quote(s.drift[i].path) + ", \"problem\": \"" +
@@ -605,6 +624,7 @@ int cmd_status(const fs::path& game_root, bool json, bool verify) {
     print(out);
     return ok ? kOk : kCheckFailed;
   }
+  if (!previous_text.empty()) print(previous_text);
   if (!s.journal) {
     print("nothing deployed (no native-loader/state.json)\n");
     return kOk;

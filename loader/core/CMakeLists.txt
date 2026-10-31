@@ -9,6 +9,7 @@ add_library(nl_core STATIC
   src/crc32.cpp
   src/deploy.cpp
   src/discovery.cpp
+  src/evidence.cpp
   src/fs.cpp
   src/gma.cpp
   src/gpu_diagnostics.cpp
@@ -18,6 +19,7 @@ add_library(nl_core STATIC
   src/legacy_migrate.cpp
   src/lzma.cpp
   src/manifest.cpp
+  src/memory.cpp
   src/package.cpp
   src/patch.cpp
   src/paths.cpp

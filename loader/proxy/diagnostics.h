@@ -23,6 +23,9 @@ struct System {
   std::uint64_t memory = 0;
   std::vector<GraphicsAdapter> graphics;
   std::optional<performance::Selection> performance_tier;
+
+  std::uint32_t process_id = 0;
+  std::string session_token;
 };
 System query_system();
 // Pure selection for the menu: only an activating, permitted plan with a listed tier layer.

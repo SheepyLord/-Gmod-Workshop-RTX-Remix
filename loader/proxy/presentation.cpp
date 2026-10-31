@@ -200,6 +200,7 @@ std::string decorate_main_menu(std::string_view original, std::string_view diagn
   if (!json::parse(diagnostics_json).is_object()) throw std::runtime_error("diagnostics must be a JSON object");
   return std::string(original) + ascii_javascript("\nwindow.NativeLoaderClientBootstrap = " + std::string(client_bootstrap ? "true" : "false") +
     ";\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
+    ";\nwindow.NativeLoaderReadNotices = " + json::quote(kDiagnosticsNotices) +
     ";\nwindow.NativeLoaderDiagnosticLabels = " + std::string(kDiagnosticsLabels) + ";\n" + std::string(kDiagnosticsScript));
 }
 

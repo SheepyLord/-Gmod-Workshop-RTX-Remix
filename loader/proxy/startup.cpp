@@ -2,10 +2,12 @@
 #include "modules.h"
 #include "presentation.h"
 #include "runtime.h"
+#include "telemetry.h"
 #include "early.h"
 #include "../client/catalog.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
+#include "nl/memory.h"
 #include "nl/session.h"
 #include "nl/startup.h"
 #include "nl/status.h"
@@ -14,6 +16,7 @@
 #include <cstdio>
 #include <cwchar>
 #include <filesystem>
+#include <future>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -122,16 +125,29 @@ struct StartupContext {
   std::vector<std::pair<std::filesystem::path, std::filesystem::path>> read_redirects;
   std::filesystem::path early_guard_source;
   RuntimeActivation runtime;
+  std::future<evidence::Result> evidence_worker;
+  std::future<void> evidence_log_ready;
   StartupContext() {
     report.loader_version = NL_VERSION_STRING;
     report.utc = utc_now();
     report.process_id = GetCurrentProcessId();
+    report.session_token = memory::process_token();
     report.deployment.action = "apply";
     report.deployment.outcome = "skipped";
   }
 };
 
 void finish_report(StartupContext& context) {
+  if (context.evidence_worker.valid()) {
+    auto evidence = context.evidence_worker.get();
+    context.report.previous_session = std::move(evidence.previous);
+    for (auto& note : evidence.notes) context.report.session.notes.push_back(std::move(note));
+    context.report.session.notes.push_back("previous session evidence collected in " + std::to_string(evidence.elapsed_ms) + " ms (worker)");
+  }
+  if (context.prepared.config.from_file && context.prepared.config.enabled) {
+    const auto note = telemetry::start(context.root, context.prepared.config.memory_telemetry);
+    if (!note.empty()) context.report.session.notes.emplace_back(note);
+  }
   context.report.startup_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - context.began).count();
   status::write(context.root, context.report);
   const auto text = status::log_fields(context.report);
@@ -257,6 +273,24 @@ void startup_cxx(StartupContext& context) noexcept {
     context.report.deployment_ms = context.prepared.elapsed_ms;
     if (context.prepared.journal && context.prepared.journal->current)
       context.report.deployment.generation = context.prepared.journal->current->number;
+    if (context.prepared.config.from_file && context.prepared.config.enabled) {
+      // Start outside loader lock. Full log copying overlaps planning/presentation; dump copying
+      // overlaps runtime activation. The report joins the worker before the engine entry point.
+      try {
+        auto ready = std::make_shared<std::promise<void>>();
+        auto signal = ready->get_future();
+        const auto root = context.root;
+        const auto start = evidence::now_filetime();
+        const auto process = context.report.process_id;
+        context.evidence_worker = std::async(std::launch::async, [root, start, process, ready] {
+          SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+          return evidence::collect(root, start, process, [ready] { ready->set_value(); });
+        });
+        context.evidence_log_ready = std::move(signal);
+      } catch (const std::exception& error) {
+        context.report.session.notes.push_back(std::string("previous session evidence worker unavailable: ") + error.what());
+      }
+    }
     if (context.prepared.config.from_file && context.prepared.config.enabled && context.prepared.journal &&
         context.prepared.journal->current && !context.prepared.journal->pending) {
       try {
@@ -308,6 +342,8 @@ void startup_cxx(StartupContext& context) noexcept {
         }
         shade.reason = shade.plan.reason;
       }
+      // A runtime can truncate remix-dxvk.log from its DLL initializer, before creating a device.
+      if (context.evidence_log_ready.valid()) context.evidence_log_ready.get();
       context.runtime.apply(context.root, generation, context.report.activation, context.report.session, context.read_redirects);
       if (context.report.activation.outcome != "active" && !context.early_guard_source.empty()) {
         // Display redirects remain useful in vanilla fallback; executable guard source is RTX-only.

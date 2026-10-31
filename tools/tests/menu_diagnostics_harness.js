@@ -108,4 +108,95 @@ let attempts = 0;
 while (never.timeouts.length) { never.timeouts.shift()(); attempts++; assert(attempts < 1000, 'polling never ends'); }
 assert(attempts > 0 && attempts < 240, 'bounded polling without a Lua bridge');
 assert.equal(never.requests.length, 0);
+
+// Current-process notices use bounded local reads, never the startup snapshot from another run.
+function noticeCase(code = 'en', inGame = false, hash = '#/', clock) {
+  const requests = [], doc = makeDocument();
+  let update;
+  const diagnostic = {...data, process_id: 123, session_token: '123-456'};
+  const win = {NativeLoaderDiagnostics: diagnostic, NativeLoaderDiagnosticLabels: labels,
+    NativeLoaderReadNotices: 'read-local-notices', location: {hash},
+    setInterval: fn => { update = fn; }, lua: {Run: (...args) => requests.push(args)}};
+  const scope = {Language: code, InGame: inGame};
+  const ctx = {window: win, document: doc, gScope: scope};
+  if (clock) ctx.Date = clock;
+  vm.runInNewContext(source, ctx);
+  const panel = doc.getElementById('native-loader-diagnostics');
+  return {requests, win, scope, panel, tick: () => update(),
+    text: () => all(panel).map(item => item.textContent),
+    receive: value => win.NativeLoaderReceiveNotices(value)};
+}
+function notice(reason = 'device_lost', warning = false) {
+  return {session_token: '123-456', warning_allowed: true,
+    previous_session: {reason, folder: 'native-loader/logs/sessions/<literal>-failure'},
+    commit: {session_token: '123-456', time_utc: new Date().toISOString(),
+      commit_total: (warning ? 50 : 16) * 1073741824, commit_limit: 64 * 1073741824, warning}};
+}
+for (const [code, catalog] of Object.entries(labels)) {
+  for (const reason of ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'crash']) {
+    const view = noticeCase(code);
+    assert.equal(view.requests.length, 1);
+    assert.deepEqual(view.requests[0], ['read-local-notices', '123-456', 123]);
+    view.receive(notice(reason));
+    const expected = catalog.previous_session + ': ' + catalog['failure_' + reason] + ' · native-loader/logs/sessions/<literal>-failure';
+    assert(view.text().includes(expected), code + '/' + reason + ' is localized and text-only');
+    all(view.panel).find(item => item.tag === 'button').onclick();
+    assert(view.requests.find(item => item[0] === 'SetClipboardText( %s )')[1].includes(expected));
+  }
+  const view = noticeCase(code);
+  view.receive(notice('out_of_memory', true));
+  assert(view.text().some(text => text.includes(catalog.ram_warning)), code + ' includes meaning and both fixes');
+}
+for (const reason of ['clean', 'unknown', 'future_reason']) {
+  const view = noticeCase(); view.receive(notice(reason));
+  assert(!view.text().some(text => text.startsWith(labels.en.previous_session + ':')));
+}
+const unsaved = noticeCase(); const noFolder = notice(); noFolder.previous_session.folder = '';
+unsaved.receive(noFolder);
+assert(unsaved.text().some(text => text.includes(labels.en.evidence_unavailable)));
+
+const warning = noticeCase(); warning.receive(notice('out_of_memory', true));
+const acknowledgements = () => warning.requests.filter(item => item[0] === '_G.NativeLoaderRAMWarningSession = %s');
+assert.equal(acknowledgements().length, 1);
+warning.receive(notice('out_of_memory', true)); warning.tick();
+assert.equal(acknowledgements().length, 1, 'one warning acknowledgement per start');
+assert.equal(warning.text().filter(text => text.startsWith(labels.en.ram_warning_heading + ':')).length, 1);
+warning.scope.Language = 'fr'; warning.tick();
+assert(warning.text().some(text => text.includes(labels.fr.ram_warning)), 'visible warning follows language changes');
+warning.win.location.hash = '#/addons/'; warning.tick();
+warning.win.location.hash = '#/'; warning.tick();
+warning.receive(notice('out_of_memory', true));
+assert(!warning.text().some(text => text.startsWith(labels.fr.ram_warning_heading + ':')), 'no repeat after leaving home');
+const reloaded = noticeCase(); const alreadyShown = notice('out_of_memory', true); alreadyShown.warning_allowed = false;
+reloaded.receive(alreadyShown);
+assert(!reloaded.text().some(text => text.includes(labels.en.ram_warning)), 'Lua realm remembers a warning across page reloads');
+
+const duringMap = noticeCase('en', true);
+assert.equal(duringMap.requests.length, 0, 'no automatic diagnostics reads in a map');
+duringMap.receive(notice('crash', true)); duringMap.scope.InGame = false; duringMap.tick();
+duringMap.receive(notice('crash', true));
+assert(!duringMap.text().some(text => text.includes(labels.en.ram_warning)), 'RAM warning only before the first map');
+const hidden = noticeCase('en', false, '#/addons/'); hidden.receive(notice('crash', true));
+assert.equal(hidden.requests.length, 0, 'hidden notice is not consumed');
+hidden.win.location.hash = '#/'; hidden.tick(); hidden.receive(notice('crash', true));
+assert(hidden.text().some(text => text.includes(labels.en.ram_warning)));
+
+for (const mutate of [
+  value => { value.session_token = 'old-process'; },
+  value => { value.commit.session_token = 'old-process'; },
+  value => { value.commit.time_utc = new Date(Date.now() - 31000).toISOString(); },
+  value => { value.commit.time_utc = new Date(Date.now() + 10000).toISOString(); },
+  value => { value.commit.commit_limit = 0; },
+  value => { value.commit.commit_total = 'invalid'; },
+  value => { value.commit.commit_limit = Infinity; },
+  value => { value.commit = null; }
+]) {
+  const view = noticeCase(), value = notice('crash', true); mutate(value); view.receive(value);
+  assert(!view.text().some(text => text.includes(labels.en.ram_warning)), 'invalid/stale snapshots do not warn');
+  assert(!view.requests.some(item => item[0] === '_G.NativeLoaderRAMWarningSession = %s'));
+}
+let now = Date.now();
+const bounded = noticeCase('en', false, '#/', {now: () => now, parse: Date.parse});
+for (let i = 0; i < 200; i++) { now += 1000; bounded.tick(); }
+assert.equal(bounded.requests.length, 120, 'bounded retries if local status/snapshot never become readable');
 console.log('PASS menu diagnostics');

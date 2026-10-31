@@ -1,10 +1,21 @@
 # loader/proxy
 
+R6: `startup.cpp` starts the local evidence collector outside loader lock, overlaps copying with
+planning and activation, waits for the old Remix log before loading its DLL, and joins the remaining
+dump work before writing `previous_session` to status. Failures are diagnostic notes, never an
+activation veto. See [ADR 0063](../../docs/decisions/0063-local-session-evidence-and-memory-telemetry.md).
+
 Loader 0.8.1 adds `diagnostics.h` / `diagnostics.cpp`: local CPU/thread/RAM/Windows/DXGI information,
 the installed bootstrap SHA-256 and deployed package versions/manifest hashes. `ui/mainmenu.js`,
 `ui/labels.json` and `ui/presentation_data.h.in` provide the seven-language main-menu home panel
 and its CMake embedding. An exact read redirect supplies a generated copy of control.Menu.js;
 the Steam file is unchanged. No account names, paths or network identifiers are displayed.
+
+R6's `ui/read_notices.lua` is an embedded, bounded, read-only menu bridge for this start's status
+and latest system commit. The panel localizes failure summaries/evidence folders and its RAM warning
+in seven languages. Status, menu data and memory snapshots share a PID/creation-time token to reject
+stale starts, including PID reuse. The warning is acknowledged in menu Lua, once before a map;
+no page-file or game setting is changed. The only displayed path is the relative evidence folder.
 
 X64 bootstrap, output `winmm.dll`: M1 forwarding/entry hook plus M4 startup deployment and activation.
 All 181 System32 export ordinals are forwarded by leaf
@@ -26,6 +37,7 @@ See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
 
 | File | Purpose |
 |---|---|
+| `telemetry.h`, `telemetry.cpp` | R6 process-lifetime background worker, outside loader lock after evidence collection; flushes memory history every ten seconds and supplies the latest system-commit snapshot. Holds a bootstrap reference while running; no shutdown join under loader lock. History off queries only system commit; disabled loader starts no worker |
 | `presentation.h`, `presentation.cpp` | Loader 0.7.0: validate current Workshop package identities, build inert display GMAs and a targeted addon-menu overlay under `native-loader/presentation`; exact read redirects give GMod blue native-package cards and normal Workshop descriptions without changing depot or Workshop files ([ADR 0039](../../docs/decisions/0039-native-package-addon-presentation.md)). Loader 0.10.1: when the stock main menu controller changed, the main menu view still carries the multiplayer bootstrap trigger alone ([ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md)) |
 | `CMakeLists.txt` | MASM/RC, `nl_proxy_logic`, DLL, export consistency check and tests |
 | `activation.h`, `activation.cpp` | Pure path/root, quoted argument and off-switch decisions |

@@ -72,6 +72,24 @@ Versions follow the loader's CMake project version once it ships; until then eve
   deployed DDS size from 136.25 MiB to 34.07 MiB (75%). Names, dimensions, mip counts and raw
   material references stay the same; [conversion measurements](packages/fixes/licenses/topbr-bc7/README.md).
 
+### R6 T2 (unreleased)
+
+- Preserve recovered CSV bytes before history rotation and retry samples skipped by temporary
+  sharing/access errors. Empty, edited and unrecognized history stays intact.
+
+- Show the previous failure and local evidence folder in the home-menu panel. Warn once per start,
+  before the first map, when recent system commit is over 70 percent used or its limit is under
+  32 GiB; explain system-managed page files and closing other programs. Both notices follow all
+  seven menu languages and are included by Copy diagnostics.
+- Record local process/system/GPU memory every ten seconds by default; `diagnostics.memory_telemetry`
+  (`"on"`/`"off"`; another value keeps it on, with a note) controls CSV history. Rotate about one to two hours across `memory.csv` and
+  `memory.1.csv`, preserve edited history, and retain a latest-only system commit snapshot for the
+  menu warning. DXGI stays runtime-loaded; the bootstrap still imports only KERNEL32.
+- Preserve the previous session's Remix log, local CPU/GPU crash files and memory history before
+  the runtime overwrites its log. `status.json` and `nlctl status` report the likely failure and the
+  local evidence folder. Keep five unchanged archives within 200 MiB; originals and edited copies
+  stay untouched ([ADR 0063](docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

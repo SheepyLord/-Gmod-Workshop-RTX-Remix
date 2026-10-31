@@ -36,6 +36,35 @@ TEST_CASE("config: only the schema is required; defaults allow nothing") {
   CHECK(defaults.workshop.empty());
 }
 
+TEST_CASE("config: local memory history is on by default and accepts only on or off") {
+  CHECK(nl::config::Config{}.memory_telemetry);
+  CHECK(nl::config::parse(R"({"schema":1,"diagnostics":{}})").memory_telemetry);
+  CHECK(nl::config::parse(R"({"schema":1,"diagnostics":{"memory_telemetry":"on"}})").memory_telemetry);
+  const auto off = nl::config::parse(R"({"schema":1,"diagnostics":{"memory_telemetry":"off"}})");
+  CHECK(!off.memory_telemetry);
+  CHECK(off.enabled && off.remix_enabled && off.workshop.empty());
+  for (const char* invalid : {"true", "\"auto\"", "null", "\"OFF\"", "[]"}) {
+    const auto config = nl::config::parse(std::string(R"({"schema":1,"diagnostics":{"memory_telemetry":)") + invalid + "}}");
+    CHECK(config.memory_telemetry);
+    REQUIRE(config.notes.size() == 1);
+    CHECK(config.notes.front().find("diagnostics.memory_telemetry") != std::string::npos);
+    CHECK(config.notes.front().find("using on") != std::string::npos);
+  }
+  for (const char* text : {
+    R"({"schema":1,"diagnostics":{"memory": "off"}})",
+    R"({"schema":1,"diagnostics":false})"
+  }) CHECK_THROWS_AS(nl::config::parse(text), Error);
+}
+
+TEST_CASE("config: both diagnostics settings are accepted together") {
+  using nl::config::GpuCrashDumps;
+  const auto both = nl::config::parse(
+      R"({"schema":1,"diagnostics":{"gpu_crash_dumps":"next_start","memory_telemetry":"off"}})");
+  CHECK(both.gpu_crash_dumps == GpuCrashDumps::next_start);
+  CHECK(!both.memory_telemetry);
+  CHECK(both.notes.empty());
+}
+
 TEST_CASE("config: allow.subscribed_content switches content packages from subscriptions off") {
   CHECK(!nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": false}})").subscribed_content);
   CHECK(nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": true, "workshop": ["1"]}})").subscribed_content);
