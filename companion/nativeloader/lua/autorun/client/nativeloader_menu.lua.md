@@ -85,3 +85,9 @@ slider); what does not fit is a help line below the control (an option's sixth f
     `rtx_graphics_preset.h` of the fork.
 
 Moved RTX panels and the companion panels use `i18n.PreparePanel` so long translated slider/combo labels are shown above their controls. Other tabs retain their original builders.
+
+Rendering also contains a translated Toolgun screen panel. Its Keep toolgun text sharp checkbox
+controls `nativeloader_toolgun_screen` (default on); see [nativeloader_toolgun.lua](nativeloader_toolgun.lua.md).
+
+Model outlines has a default-on suppression control. It manages only the
+companion's nonpersistent native options; see [nativeloader_model_layers.lua](nativeloader_model_layers.lua.md).

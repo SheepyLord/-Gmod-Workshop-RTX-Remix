@@ -19,6 +19,8 @@ the `.md` files, and adds the translations built from `i18n/`.
 | [`nativeloader/lua/nativeloader/i18n.lua`](nativeloader/lua/nativeloader/i18n.lua.md) | The translations of the tab, the guide and the update notice: `L` and `N`, the language (`gmod_language`, or `nativeloader_language`) ([ADR 0029](../docs/decisions/0029-companion-translations.md)) |
 | [`nativeloader/lua/autorun/nativeloader_i18n.lua`](nativeloader/lua/autorun/nativeloader_i18n.lua.md) | Sends the translations to clients |
 | [`i18n/`](i18n/README.md) | The translations as gettext files for people to review and edit: `nativeloader.pot` and one `.po` per language. Not part of the add-on: the RTX package's build writes them into it as `lua/nativeloader/i18n_data.lua` |
+| [`nativeloader/lua/autorun/client/nativeloader_toolgun.lua`](nativeloader/lua/autorun/client/nativeloader_toolgun.lua.md) | Redraws the live toolgun screen after upscaling with a separate depth mask for the gun and hands |
+| [`nativeloader/lua/autorun/client/nativeloader_model_layers.lua`](nativeloader/lua/autorun/client/nativeloader_model_layers.lua.md) | Suppresses recognized outline meshes through transient options while protecting shared ordinary textures |
 
 M5: the status print. M6: the restart notice for Workshop package updates that Steam downloaded
 (`steamworks.FileInfo`, checked at client start and every 600 seconds).

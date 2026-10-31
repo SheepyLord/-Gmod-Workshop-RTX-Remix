@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Common Remix settings"
 msgstr ""
 
@@ -474,7 +474,9 @@ msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "Rendering"
 msgstr ""
 
@@ -485,13 +487,13 @@ msgid "Water and glass"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
 msgid "Start here"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:267
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
 msgid "Remix settings"
 msgstr ""
 
@@ -737,6 +739,30 @@ msgstr ""
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
+msgid "Keep toolgun text sharp"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+msgid "Hide outline meshes"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
 msgid "Player models"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+msgid "Toolgun screen"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
+msgid "Model outlines"
 msgstr ""

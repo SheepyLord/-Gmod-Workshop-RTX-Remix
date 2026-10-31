@@ -253,6 +253,16 @@ local function player_settings(panel)
     panel:ControlHelp(L("Positive values raise only the rendered body. Your camera and collision stay in place."))
 end
 
+local function toolgun_settings(panel)
+    panel:CheckBox(L("Keep toolgun text sharp"), "nativeloader_toolgun_screen")
+    panel:ControlHelp(L("Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."))
+end
+
+local function model_layers_settings(panel)
+    panel:CheckBox(L("Hide outline meshes"), "nativeloader_ignore_outlines")
+    panel:ControlHelp(L("Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."))
+end
+
 concommand.Add("nativeloader_remix_reset", function()
     for _, option in ipairs(OPTIONS) do
         RunConsoleCommand("nativeloader_remix_" .. option[1], "")
@@ -266,4 +276,6 @@ hook.Add("PopulateToolMenu", "nativeloader_menu", function()
     add_tool_menu_option(TAB, N("Start here"), "nativeloader_start", L("Start here"), "", "", readable_panel(start_here))
     add_tool_menu_option(TAB, N("Remix settings"), "nativeloader_remix", L("Common Remix settings"), "", "", readable_panel(remix_settings))
     add_tool_menu_option(TAB, N("Rendering"), "nativeloader_player", L("Player models"), "", "", readable_panel(player_settings))
+    add_tool_menu_option(TAB, N("Rendering"), "nativeloader_toolgun", L("Toolgun screen"), "", "", readable_panel(toolgun_settings))
+    add_tool_menu_option(TAB, N("Rendering"), "nativeloader_model_layers", L("Model outlines"), "", "", readable_panel(model_layers_settings))
 end)

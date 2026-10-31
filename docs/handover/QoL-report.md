@@ -412,3 +412,90 @@ Evidence and delivery receipts are under out/settings-evidence and out/settings-
 
 The in-game guide's Common Remix paragraph also describes opt-in replay, native saving and numeric
 selection in all six languages. ADR 0022's status records the superseded startup-replay behavior.
+
+## Welcome privacy and toolgun screen (2026-10-30, requests 21–22)
+
+The runtime now requires a saved explicit diagnostic choice under a versioned policy. Missing
+preferences and legacy checked defaults decline both reports. Unconfirmed SDK databases, including
+queued data, are archived before initialization; no upload is granted by closing the welcome
+window. Failed writes roll back consent. The crash question defaults to No. The welcome closes
+after twelve visible seconds unless clicked, scrolled or navigated; permanent dismissal is
+independent and can be reversed in Permissions. All new messages have six native translations.
+
+Live acceptance used disposable LOCALAPPDATA and SDK-log folders. An unattended opening logged a
+roughly twelve-second timeout. In welcome-final-permanent, clicking the title kept it open past
+the deadline, then Never Show This Again saved neverShowFirstUseGuide=True while both grants stayed
+False. welcome-final-restart, under the same profile and a newer package version, loaded and quit
+without reopening the guide. The API's NoSave layer and the public cursor state were also corrected;
+the welcome can be closed even when opened through the API and GMod releases its mouse correctly.
+
+The companion redraws only the toolgun's live screen at full output resolution after upscaling.
+Its original renderer and custom screen add-ons retain ownership of the animated texture. A private
+gun/hands depth mask and actual viewmodel FOV keep the redraw aligned. RTX Remix / Rendering /
+Toolgun screen contains its default-on toggle, translated in all six languages.
+
+Nine Lua harness scenarios cover bone-zero weights, inverse bind transforms, live texture changes,
+projection, unsupported views, stale frames, allocation retry, resize and failure unwinding.
+toolgun-final-fg captured off/on comparisons at native resolution, DLSS and DLSS-G with subscribed
+Dynamic Toolgun Screen. The backend actually resolved dlfg.enable=True (FSR False); live counters
+advanced, screen text remained animated and aligned, and the module reported no errors. Assets
+were mounted only from an owned fixture cache and are not redistributed. Private evidence is under
+out/welcome-evidence.
+
+## Layered model cutouts and outlines (2026-10-30, requests 3–4)
+
+The runtime now rejects transparent alpha-tested candidates before committing ray hits. This
+keeps valid coincident faces eligible and avoids the offset/retrace that could skip them. The
+same alpha evaluation runs in ray-query and trace-ray paths, primary/PSR and indirect traversal.
+NRC, SHARC, POM, portal and WBOIT variants retain matching payloads. Cached acceleration flags
+also follow material/skin opacity changes and mixed shared geometry. Ray budgets and user.conf
+remain unchanged. The targeted facial shadow policies explored during diagnosis are not shipped.
+
+Incompatible outline geometry is ignored by default, as permitted in request 4. The runtime
+handles front-culled opaque shells; the companion handles explicit outline names and the supplied
+MMD family's dedicated hei/touming materials, including skin, submaterial and local-body proxy
+bindings. It protects shared ordinary textures and owns only transient native options. The RTX
+tab's Model outlines panel has a translated opt-out. No original model material is edited.
+
+All three supplied cached Workshop models passed separate cold-process captures with micromaps
+disabled: initial spawn, two seconds and fourteen seconds. Ganyu's live metadata shows two skins;
+Lynette and March 7th show one. All three GBuffer ray modes, Ganyu's second skin and return to its
+transparent skin, outline off/on and normal micromaps were exercised without Lua errors or an
+abnormal exit. RTXDebug read the effective outline ConVar. A stock-model front-cull fixture checks
+suppression separately from the user assets. No user asset is redistributed.
+
+Native release and dedicated unit shader builds validated 104 any-hit and 104 closest-hit
+entry-point stages. Runtime policy/export and transient outline-option suites pass. The outline
+Lua harness has twelve lifecycle cases, and the toolgun harness has nine. All six companion
+catalogs contain 184 translated messages; bundled catalogs retain 472; native catalogs contain
+3303. The final import and package checks below complete the local validation.
+
+Private evidence is under out/welcome-evidence; source-build/test logs are out/welcome-*.log.
+Earlier unsuccessful sampler, offset, ray-limit and facial-policy experiments are not acceptance
+passes. A local package-force test hit a transient Windows sharing denial and passed on retry;
+final required checks are repeated after importing the verified runtime.
+
+Final source build: native commit ccad20be, verified ten-patch tree
+ac55626fec2a98faa62872c7cde648085a15226c. The full shader pass and subsequent C++ link produced
+395512832-byte d3d9.dll, SHA-256
+415fc0b353ad75375845ec92a75fc5001511a0496460dff420e6558d8cd7e5e9. Only this final DLL was imported
+into Git LFS. Deep input verification reports zero problems. tools/test.ps1 -Config Release passes
+18 CTests and 264 Python tests (28 + 25 + 211, with seven environment-dependent skips). The first
+full run caught the new test's discovery import; the standalone lookup was corrected before the
+passing repeat. No loader or packager behavior changed in this batch.
+
+The checked branch package is 0.0.0-dev.20261031042614+22315109, content digest
+a17e4e1b308f86bd1cbb46b8105205bdbfe1592081ba4f03bcbe2e9ac421e82a, validated by nlctl. Its only
+payload differences from the published baseline are d3d9.dll, the menu, the two new client modules
+and generated companion translations; no files are removed. package-shipping-models captures all
+eight ray-mode/skin stages, including effective skin 1/2, and package-shipping-toolgun captures six
+native/DLSS/frame-generation comparisons. Both load this actual GMA with an empty dev-folder list
+and no loose test add-on, report zero Lua errors, and exit normally. Rendering probes explicitly
+close the welcome through its transient API option; earlier captures covered by the welcome are
+not visual acceptance. The separate welcome tests establish its timeout and dismissal behavior.
+
+The fixture's original bootstrap, config, VDF and video settings were restored and hash-checked;
+borrowed cache GMAs and generated option documentation were removed from the fixture. Native
+user.conf retains its original SHA-256, and rtx.conf/dxvk.conf remain absent. Neither the real
+GarrysMod install nor GarrysMod_RTX_c or its backups was written. Main's publish hooks update hidden
+item 3829070317; out/workshop/published.json records the resulting upload and content digest.

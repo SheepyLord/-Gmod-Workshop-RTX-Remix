@@ -2229,3 +2229,57 @@ The final UI tour inspected 6,850 text elements across English and the six reque
 - The rebuilt runtime is 362,799,104 bytes, SHA-256
   `ab03a3f792b1f75fcbb63270ba327e836af29cdd691d2a5b9d01db0052dd296b`, from verified
   eight-patch tree `615096202d12baa268afdac94e13eb8682094fe0`. No shader source changed.
+
+## Welcome policy and animated toolgun screen (2026-10-30)
+
+- The old welcome dialog's missing-value defaults were true. Closing it persisted those values,
+  so an old true alone cannot demonstrate explicit consent. The new policy marker and SDK archive
+  are evaluated before sentry_init; new/legacy grants fail closed. The NoSave showUI option must
+  use its derived layer even through the public API. Exposing FirstUseGuide as BASIC to the public
+  getUiState also releases GMod's cursor through the existing tmc bridge.
+- Disposable-profile GPU acceptance kept both grants false, cancelled the countdown by clicking
+  the title, saved neverShowFirstUseGuide=true and retained dismissal in a new process. The
+  unattended opening logged dismissal after approximately twelve visible seconds.
+- Dynamic Toolgun Screen item 3826729485 retains the stock
+  models/weapons/v_toolgun/screen material while updating its render-target texture. The stock
+  mesh has two triangles, weighted to bone 41. Its mesh rest matrix is already inverse bind;
+  multiplying the current bone matrix by that matrix reproduces the live pose.
+- GMod's render.GetViewSetup(true) supplies the actual viewmodel FOV and near/far planes; using
+  the world FOV misaligns a redraw. Source texture flag globals are not exposed in this client,
+  so the render-target clamp flags use their numeric value 12. Allocation failure must not clear
+  the main framebuffer.
+- Live native/DLSS/DLSS-G comparisons on the isolated fixture preserved the moving text and screen
+  alignment. The final DLSS-G stages resolved frameGenerationType=1 and dlfg.enable=True, with
+  fsrfg.enable=False; capture/draw counts advanced and no module error was logged.
+
+
+## Layered alpha cutouts and outline meshes (2026-10-30)
+
+- Ordered GBuffer rays forced opaque hits and used resolveVertexFinalContinue's normal offset
+  after alpha rejection. With coplanar MMD layers the offset could pass the valid face too.
+  Ganyu's raw-albedo nose patch was blue back hair, establishing geometry selection before
+  lighting as the remaining cause. In-traversal rejection removed it from the first captured
+  cold spawn, with micromaps off and targeted facial workarounds disabled.
+- rejectCutoutCandidate uses the existing material alpha evaluation and preserves the original
+  comparison and texture operations. Ray queries commit accepted nonopaque candidates; matching
+  any-hit stages mirror the existing closest-hit payload variants. SPIR-V entry-point validation
+  checks 104 any-hit and 104 closest-hit outputs in both release and dedicated unit builds.
+- Cached geometry flags were refreshed only for vertex/billboard changes; static skin/material
+  opacity changes also need refresh. Dynamic BLAS compatibility must be checked even without a
+  vertex update. Shared geometry is opaque only when all linked instances are opaque, while the
+  no-duplicate-any-hit flag is retained if any linked instance needs it.
+- Live metadata exposes two skins for models/pm/ganyu_kk_pm.mdl, and one for the cached Lynette
+  and March 7th playermodels. Ganyu's hei is the dedicated black outline material; touming is its
+  transparent partner. Eyebrow/eye-white names can carry parenthesized mayuge/sirome suffixes.
+  These names are relevant only to optional outline suppression, not cutout correctness.
+- A front-culled shell can be invisible to the camera while its inward faces block light from
+  the model. Ignoring the incompatible shell removes that geometry from every rendering path.
+  The owned outline texture list joins the existing Hidden category without replacing user data.
+- Pure state synchronization must run from Think: the main opaque pass can have a non-nil render
+  target. GPU hash readiness can change without a material-binding revision; unresolved hashes
+  need retry and resolved bindings need periodic refresh. Ordinary-image aliases are protected.
+- Separate fresh processes avoid retained-mesh ghosts when replacing actors at identical poses.
+  All three supplied models were clear at the first, two-second and fourteen-second captures
+  with micromaps disabled. GBuffer compute-query, raygen-query and trace-ray views were clear;
+  skin changes, opt-out/re-enable and normal micromaps were exercised. RTXDebug Engine.GetConVar
+  independently reported nativeloader_ignore_outlines=1 with archive flags.

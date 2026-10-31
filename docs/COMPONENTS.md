@@ -133,3 +133,15 @@ Remix persistence regressions use [`tools/tests/test_remix_settings.py`](../tool
 and its Lua widget/lifecycle harness. Common Remix numeric controls are unbound and selected
 explicitly; startup replay is opt-in. Runtime patch 0008 adds atomic checked Save and non-destructive
 failed Reload ([ADR 0044](decisions/0044-remix-settings-persistence.md)).
+
+The companion's `nativeloader_toolgun.lua` redraws the live toolgun screen after upscaling with a
+private viewmodel depth mask. Its LuaJIT regression harness is
+[tools/tests/test_toolgun_screen.py](../tools/tests/test_toolgun_screen.py.md).
+Runtime diagnostic policy and welcome behavior are recorded in
+[ADR 0045](decisions/0045-diagnostic-consent-and-welcome.md).
+
+`nativeloader_model_layers.lua` controls only owned transient outline suppression, with collision
+protection and late-hash/proxy tracking. Native cutout traversal and acceleration-cache fixes are
+recorded in [ADR 0048](decisions/0048-layered-alpha-cutouts.md); outline behavior is in
+[ADR 0047](decisions/0047-ignore-incompatible-model-outlines.md). Client lifecycle coverage is
+[tools/tests/test_model_layers.py](../tools/tests/test_model_layers.py.md).

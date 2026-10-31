@@ -50,6 +50,10 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0042](0042-legacy-remix-migration.md) | Archive recognized legacy Remix installs and restore known modified depot files transactionally | Accepted 2026-10-30 |
 | [0043](0043-player-body-viewmodel-and-shadows.md) | Independent first-person arms, private local-body categories and RTX-tab shadow/height controls | Accepted 2026-10-30 |
 | [0044](0044-remix-settings-persistence.md) | Explicit GMod startup overrides, guarded numeric controls and atomic checked Remix saves | Accepted 2026-10-30 |
+| [0045](0045-diagnostic-consent-and-welcome.md) | Explicit saved diagnostic consent, legacy SDK archival and an interactive twelve-second welcome timeout | Accepted 2026-10-30 |
+| [0046](0046-toolgun-screen-after-upscaling.md) | Full-resolution live toolgun screen with private depth masking and a translated opt-out | Accepted 2026-10-30 |
+| [0047](0047-ignore-incompatible-model-outlines.md) | Default-on suppression of incompatible outline shells through transient owned options and a translated opt-out | Accepted 2026-10-30 |
+| [0048](0048-layered-alpha-cutouts.md) | Reject transparent cutout candidates before ray commitment and keep cached acceleration opacity flags current | Accepted 2026-10-30 |
 
 ## Template
 

@@ -334,3 +334,34 @@ PoC acceptance builds the real DForm/DNumSlider controls with the existing archi
 Remix API writes while opening and reopening them, exercises an explicit zero and startup replay,
 and checks another launch without replay. Snapshot client.vdf/server.vdf along with the usual
 bootstrap/config/video settings. Hash user.conf without editing it. Keep only own-session logs.
+
+### Welcome privacy and toolgun screen
+
+The dedicated runtime option-layer export suite also tests explicit diagnostic policy migration,
+unique archival of legacy SDK state, saved opt-in/opt-out across restart, failed-write rollback,
+stale SDK consent and the twelve-second timer including interaction and reopening. Use disposable
+LOCALAPPDATA and DXVK_LOG_PATH directories for live acceptance. Do not grant reporting consent or
+use the automation environment switch that does so implicitly. Confirm unattended timeout, an
+interaction lasting beyond twelve seconds, permanent dismissal and a restart with both grants off.
+
+`tools/tests/test_toolgun_screen.py` runs the shipped module under LuaJIT. It covers live texture
+replacement, inverse-bind skinning including bone zero, viewmodel FOV, third-person/auxiliary view
+exclusion, stale frames, render-target allocation and retry, resize and exception cleanup. Live
+comparison uses native resolution, DLSS, and DLSS with frame generation, with the redraw off/on.
+Record the resolved backend enable flag rather than inferring activation from the dropdown alone.
+
+### Layered model materials and outline shells
+
+`tools/tests/test_model_layers.py` runs the shipped outline module under LuaJIT. Cases cover
+late hashes without revision changes, ordinary-image collisions, source suffixes, skin/submaterial
+changes, clientside entities, native-registry and proxy bindings, toggles and retries. The native
+test_model_layers suite verifies owned controls are NoSave/derived and invalidate cached draws.
+
+Native shader builds compile and validate every ray-query and any-hit variant. Live acceptance
+uses the three user-specified cached model archives in separate fresh processes: capture the
+first spawn, two seconds and fourteen seconds with micromaps off, then test normal micromaps and
+GBuffer ray modes. Sequential actors at one position can retain old cached meshes briefly and
+are not a valid cold-spawn comparison. Raw albedo and interaction views distinguish geometry
+selection from lighting. Ganyu has two skins; Lynette and March 7th expose one in the current cache.
+Exercise Ganyu's outline skin, suppression off/on and return to the transparent skin. A separate
+stock-model fixture verifies front-culled outline suppression and retained body/ground shadows.
