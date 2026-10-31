@@ -40,7 +40,9 @@ install: a failed copy rolls back the DLL, PDB and receipt with it and removes t
 such as a release bundle extracted by hand, when the DLL identifies as the loader. Their bytes are
 copied to `native-loader\replaced\` first. Files a receipt records are still refused when they changed,
 and a foreign DLL is kept as the original, as without the switch. [`workflow.ps1`](workflow.ps1.md)
-`-Install` passes it on.
+`-Install` passes it on. When the refused DLL is a loader build the receipt does not record (a bundle
+extracted over an installed loader, as the field install had on 2026-10-31), the refusal says so and
+names the way out: move `bootstrap-install.json` aside, then install with `-ReplaceUntracked`.
 
 `-Uninstall` removes only verified DLL/PDB; state stays by default. `-RemoveState` (requires
 `-Uninstall`) deletes the loader's own control and log files in `native-loader` (`config.json`,

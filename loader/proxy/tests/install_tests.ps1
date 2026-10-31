@@ -135,6 +135,15 @@ try {
     [IO.File]::WriteAllBytes($handDll, $changed)  # now a receipt records the build: a changed DLL stays refused
     Refuses { & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked } 'changed or untracked'
     Check ((Get-Item -LiteralPath $handDll).Length -eq $changed.Length) 'ReplaceUntracked overwrote a changed tracked DLL.'
+    # The refusal names the way out for a loader build the receipt does not record (a bundle extracted
+    # over an installed loader, as the field install had on 2026-10-31).
+    Refuses { & $installer -GameRoot $byHand -Config $Config } 'receipt does not record'
+    $receiptFile = Join-Path $byHand 'native-loader\bootstrap-install.json'
+    Move-Item -LiteralPath $receiptFile -Destination "$receiptFile.aside"
+    & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked
+    Check ((Get-FileHash -LiteralPath $handDll).Hash -ceq (Get-FileHash -LiteralPath $sourceDll).Hash) 'The way out did not install the build.'
+    Remove-Item -LiteralPath "$receiptFile.aside"
+    [IO.File]::WriteAllBytes($handDll, $changed)
     Refuses { & $installer -GameRoot $byHand -Config $Config -Uninstall -ReplaceUntracked } 'does not go with -Uninstall'
     [IO.File]::WriteAllText($handDll, 'foreign DLL')  # foreign is foreign, whatever the switch: kept as the original
     & $installer -GameRoot $byHand -Config $Config -ReplaceUntracked
