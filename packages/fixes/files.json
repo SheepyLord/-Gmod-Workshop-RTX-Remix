@@ -88,14 +88,14 @@
    "imported": "2026-10-30T11:10:22+00:00"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\map-glass\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4\\out\\r4-inputs\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/map-glass",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "28805d578a530d7a6d6d286905d0cb7e9ff18da2",
-    "dirty": true
+    "commit": "de8f2e75cf7f7f3cff76c70df47ece72c5197b66",
+    "dirty": false
    },
-   "imported": "2026-10-30T17:48:06+00:00"
+   "imported": "2026-10-31T12:36:07+00:00"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard_init.lua",
@@ -448,34 +448,34 @@
    "imported": "2026-10-30T17:48:06+00:00"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/networking.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\map-glass\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\autorun\\networking.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4\\out\\r4-inputs\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\autorun\\networking.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/map-glass",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "28805d578a530d7a6d6d286905d0cb7e9ff18da2",
-    "dirty": true
+    "commit": "de8f2e75cf7f7f3cff76c70df47ece72c5197b66",
+    "dirty": false
    },
-   "imported": "2026-10-30T17:48:06+00:00"
+   "imported": "2026-10-31T12:36:07+00:00"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/networking.lua.md": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\map-glass\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\autorun\\networking.lua.md",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4\\out\\r4-inputs\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\autorun\\networking.lua.md",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/map-glass",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "28805d578a530d7a6d6d286905d0cb7e9ff18da2",
-    "dirty": true
+    "commit": "de8f2e75cf7f7f3cff76c70df47ece72c5197b66",
+    "dirty": false
    },
-   "imported": "2026-10-30T18:00:27+00:00"
+   "imported": "2026-10-31T12:36:28+00:00"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua.md": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\map-glass\\packages\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard.lua.md",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4\\out\\r4-inputs\\fixes\\garrysmod\\garrysmod\\addons\\Glass-Rewrite-Remix\\lua\\entities\\procedural_shard.lua.md",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/map-glass",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "28805d578a530d7a6d6d286905d0cb7e9ff18da2",
-    "dirty": true
+    "commit": "de8f2e75cf7f7f3cff76c70df47ece72c5197b66",
+    "dirty": false
    },
-   "imported": "2026-10-30T18:00:27+00:00"
+   "imported": "2026-10-31T12:36:28+00:00"
   },
   "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\player-body-arms\\packages\\fixes\\garrysmod\\garrysmod\\addons\\remixbinary\\lua\\remixlua\\cl\\remixapi\\cl_remix_category_1_pseudoplayer.lua",
@@ -614,15 +614,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/networking.lua": {
-   "size": 8733,
-   "sha256": "17df4163efab1c6bdca5bb81c7d9fd82a6458ed9a37dcb76cab1767ea245c11d",
-   "mtime_ns": 1793382226213787500,
+   "size": 9765,
+   "sha256": "c8b58f653b0b8c0968667f14501441a3d3a148340d5d5779f3fb031ee34127b6",
+   "mtime_ns": 1793448754342380900,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/networking.lua.md": {
-   "size": 476,
-   "sha256": "c0ca78b95197c8582273bd6093ac65edc7fc87a8426d721aa60e75e5b254bd63",
-   "mtime_ns": 1793383227299566600,
+   "size": 707,
+   "sha256": "11fd952a0d775d06670274ae9e396a11b0174c70bf48a19bbf9c070eac643160",
+   "mtime_ns": 1793450188317521500,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/server/rtx_map_glass.lua": {
@@ -638,15 +638,15 @@
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua": {
-   "size": 42647,
-   "sha256": "5b5a66144ee1cfa89ca0c7748c25081839cb1c4ed25463dc1dd1774c842b6456",
-   "mtime_ns": 1793382226212788200,
+   "size": 44337,
+   "sha256": "50e13f7970e014d8a7834caadcb08f6654b06aabda8b76b68bcc9338eca69e74",
+   "mtime_ns": 1793450167803637800,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua.md": {
-   "size": 459,
-   "sha256": "d6b6b83d2263e4f0d3cb62b29acb4e02bf98bd993bfa1cab835d608d592b651a",
-   "mtime_ns": 1793383227300066400,
+   "size": 948,
+   "sha256": "12706deb99611073fc055a66c7e8f171439c0338fa5385c47bbfe484a0ba3518",
+   "mtime_ns": 1793450188318522300,
    "stored": "plain"
   },
   "garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard_init.lua": {

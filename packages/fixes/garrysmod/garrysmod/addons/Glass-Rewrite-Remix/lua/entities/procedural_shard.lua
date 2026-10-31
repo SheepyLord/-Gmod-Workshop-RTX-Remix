@@ -108,30 +108,48 @@ if CLIENT then
         self:SetNextClientThink(CurTime())
     end
 
-    function ENT:GetRenderMesh()
-        if !self.RENDER_MESH then return end
-        return self.RENDER_MESH
-    end
+    -- The shard's mesh is drawn here, not through DrawModel and GetRenderMesh: that route renders it
+    -- through studiorender, which crashed on the material system's render thread (studiorender.dll
+    -- +0x6603b, mat_queue_mode 2) whenever a shard was drawn in an RTX session (review R4: shooting a
+    -- window on modern_house, or spawning any procedural glass, ended the game).
+    function ENT:GetRenderMesh() end
 
     function ENT:Draw()
-        -- Draw the normal glass mesh
-        self:DrawModel()
-        
+        local render_mesh = self.RENDER_MESH
+        if !render_mesh or !render_mesh.Mesh or !render_mesh.Mesh:IsValid() then return end
+        local override = self:GetMaterial()
+        if override != "" and override != self.drawn_material_name then
+            self.drawn_material_name, self.drawn_material = override, Material(override)
+        end
+        local color = self:GetColor()
+        render.SetMaterial(override != "" and self.drawn_material or render_mesh.Material)
+        render.SetColorModulation(color.r / 255, color.g / 255, color.b / 255)
+        render.SetBlend(color.a / 255)
+        cam.PushModelMatrix(self:GetWorldTransformMatrix())
+        render_mesh.Mesh:Draw()
+        cam.PopModelMatrix()
+        render.SetBlend(1)
+        render.SetColorModulation(1, 1, 1)
+
         -- Draw crack overlay if present
         if self.crack_lines then
             self:DrawCracks()
         end
     end
 
+    local function retire(mesh)
+        if !mesh or !mesh:IsValid() then return end
+        if GlassRewriteRetireMesh then GlassRewriteRetireMesh(mesh) else mesh:Destroy() end
+    end
+
     function ENT:OnRemove()
-        if self.RENDER_MESH and self.RENDER_MESH.Mesh and self.RENDER_MESH.Mesh:IsValid() then
-            self.RENDER_MESH.Mesh:Destroy()
+        -- A frame queued before the removal may still draw these meshes (mat_queue_mode 2).
+        if self.RENDER_MESH then
+            retire(self.RENDER_MESH.Mesh)
+            self.RENDER_MESH.Mesh = nil
         end
-        
-        -- Clean up crack mesh
-        if self.crack_mesh then
-            self.crack_mesh:Destroy()
-        end
+        retire(self.crack_mesh)
+        self.crack_mesh = nil
     end
 else
     function ENT:Split(pos, explode, skip_cracks)
@@ -691,7 +709,7 @@ function ENT:Initialize(first)
         return 
     end
 
-    self.RENDER_MESH = {Mesh = Mesh(), Material = default_mat}
+    self.RENDER_MESH = {Material = default_mat}   -- the mesh arrives with the shard's data (networking.lua)
     
     if first then return end
 
@@ -904,13 +922,15 @@ if CLIENT then
             crack_verts[vert_count] = {pos = v4, normal = Vector(0, 0, 1), u = 0, v = 1}
         end
         
-        -- Create or update crack mesh
-        if !self.crack_mesh then
-            self.crack_mesh = Mesh()
-        end
-        
+        -- A new crack mesh each time: rebuilding one a queued frame may still draw is not safe.
         if #crack_verts > 0 then
-            self.crack_mesh:BuildFromTriangles(crack_verts)
+            local fresh = Mesh()
+            fresh:BuildFromTriangles(crack_verts)
+            local old = self.crack_mesh
+            self.crack_mesh = fresh
+            if old and old:IsValid() then
+                if GlassRewriteRetireMesh then GlassRewriteRetireMesh(old) else old:Destroy() end
+            end
         end
     end
     
@@ -928,7 +948,8 @@ if CLIENT then
             if self.crack_alpha <= 10 then
                 self.crack_lines = nil
                 if self.crack_mesh then
-                    self.crack_mesh:Destroy()
+                    -- Retired, not destroyed: a queued frame may still draw it (mat_queue_mode 2).
+                    if GlassRewriteRetireMesh then GlassRewriteRetireMesh(self.crack_mesh) else self.crack_mesh:Destroy() end
                     self.crack_mesh = nil
                 end
                 return

@@ -78,6 +78,28 @@ if SERVER then
     end)
 else
     local default_mat = Material("models/props_combine/health_charger_glass")
+
+    -- With queued rendering (mat_queue_mode 2) the material system draws a frame on its own thread
+    -- after Lua has moved on, so a mesh destroyed or rebuilt while such a frame still uses it is freed
+    -- under the render thread: breaking any glass crashed the game in studiorender (review R4). Meshes
+    -- are retired instead and destroyed several frames later.
+    local retired = {}
+    function GlassRewriteRetireMesh(mesh)
+        if mesh and mesh.IsValid and mesh:IsValid() then
+            retired[#retired + 1] = {mesh = mesh, frame = FrameNumber() + 8}
+        end
+    end
+    hook.Add("Think", "glass_retired_meshes", function()
+        if #retired == 0 then return end
+        local frame = FrameNumber()
+        for i = #retired, 1, -1 do
+            local item = retired[i]
+            if frame >= item.frame then
+                if item.mesh:IsValid() then item.mesh:Destroy() end
+                table.remove(retired, i)
+            end
+        end
+    end)
     -- NEW: Receive finalized vertex data and build the visual mesh
     net.Receive("SHARD_NETWORK", function(len)
         local is_full_update = net.ReadBool()
@@ -134,12 +156,12 @@ else
                 shard_entity.RENDER_MESH = { Material = default_mat }
             end
 
-            if shard_entity.RENDER_MESH.Mesh and shard_entity.RENDER_MESH.Mesh:IsValid() then
-                shard_entity.RENDER_MESH.Mesh:Destroy()
-            end
-            
-            shard_entity.RENDER_MESH.Mesh = Mesh()
-            shard_entity.RENDER_MESH.Mesh:BuildFromTriangles(shard_entity.TRIANGLES)
+            -- Build the new mesh before it replaces the old one, which may still be queued for drawing.
+            local fresh = Mesh()
+            fresh:BuildFromTriangles(shard_entity.TRIANGLES)
+            local old = shard_entity.RENDER_MESH.Mesh
+            shard_entity.RENDER_MESH.Mesh = fresh
+            GlassRewriteRetireMesh(old)
             -- Map fragments have arbitrary dimensions, not the placeholder model's bounds.
             local low, high = Vector(math.huge, math.huge, math.huge), Vector(-math.huge, -math.huge, -math.huge)
             for _, vertex in ipairs(model_triangles) do
