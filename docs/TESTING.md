@@ -281,9 +281,10 @@ changed by these checks. Full Release tests, input verification and the package 
 Requests 17, 19/19.1 and 20 use [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md):
 actual AME methods check original names, path identity, current-row handoff, canonical return and
 independent working stores. Complete companion modules check late hashes/APIs, shared hashes,
-overrides, props, preview/hand exclusions, toggles, removed models and API retry. The runtime's dedicated test_model_layers checks NoSave
-routing and draw invalidation. No game is started, as the user explicitly waived that validation.
-Full Release checks, input verification and a reviewed package comparison remain required.
+overrides, props, preview/hand exclusions, toggles, removed models and API retry. The runtime's
+dedicated test_model_layers checks NoSave routing and draw invalidation. No game is started, as
+the user explicitly waived that validation. Full Release checks, input verification and a reviewed
+package comparison remain required.
 
 The Motion importer tab ([ADR 0060](decisions/0060-motion-tab-hosts-the-importer.md)) uses
 [test_motion_tab.py](../tools/tests/test_motion_tab.py.md): under LuaJIT and mocked Derma it loads
