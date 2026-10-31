@@ -1,0 +1,59 @@
+{
+  "doc": "Firefly R18 (流萤R18Ver2.1.pmx): aggressive style. Pins checked against the UV islands on 衣服.png / 兔女郎.png on 2026-10-25. The fishnet stockings sheet keeps its full 11059x8847: at 4096 its mesh lines blur. Gold type decided 2026-10-26 (the user asked for one per character): painted gold is a mid-tone, so as a metal its reflectance (F0, the albedo's linear luminance on the mesh) is far below real gold's ~0.74, and at the aggressive roughness 0.12 it mirrors the dark room (Robin ZZZ's halo: 152 -> 96, -37%, in game). Satin pale brass (metal roughness 0.30) for the skirt, back-bell, chest and sleeve fittings on 衣服.png, F0 0.31; the hidden bunny suit's white-silver trim (F0 0.97) keeps the satin look it rendered with (0.37). Seam fix carried over 2026-10-26: this model was generated before the UV-gutter fix, so regenerating it for the gold type also removed its gutter bias. To keep the look the user accepted (as on Guinaifen: seam fix, same look), the classes whose effective on-mesh roughness had been biased are pinned per sheet to it: the fishnet stockings 0.23 (class 0.30), dress leather 0.22, pasties cloth 0.66, and the hidden bunny suit's cloth 0.84, latex 0.16 and silver trim 0.37.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "textures": {
+    "丝袜.png": {
+      "max_size": "source",
+      "presets": {
+        "stockings": {
+          "rough": 0.23
+        }
+      }
+    },
+    "兔女郎.png": {
+      "presets": {
+        "cloth": {
+          "rough": 0.84
+        },
+        "rubber": {
+          "rough": 0.16
+        },
+        "metal": {
+          "rough": 0.37,
+          "rough_ai": 0.8
+        }
+      }
+    },
+    "衣服.png": {
+      "presets": {
+        "leather": {
+          "rough": 0.22
+        }
+      }
+    },
+    "乳贴.png": {
+      "presets": {
+        "cloth": {
+          "rough": 0.66
+        }
+      }
+    }
+  },
+  "presets": {
+    "_materials": {
+      "15": "skin",
+      "22": "rubber",
+      "23": "rubber",
+      "26": "cloth",
+      "27": "cloth",
+      "67": "metal",
+      "70": "metal"
+    },
+    "metal": {
+      "rough": 0.3,
+      "rough_ai": 0.5
+    }
+  }
+}

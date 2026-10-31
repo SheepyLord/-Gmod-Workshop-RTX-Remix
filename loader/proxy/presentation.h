@@ -27,7 +27,10 @@ struct Prepared {
 std::string make_archive(const gma::Index& original, const journal::Package& package, std::string_view workshop_item);
 // Throws when the expected stock menu implementation differs; no partial override is returned.
 std::string decorate_menu(std::string_view original, const std::vector<std::string>& workshop_items);
-std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json);
+// The diagnostics overlay, and the multiplayer bootstrap trigger when `client_bootstrap` (ADR 0052).
+std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json, bool client_bootstrap = false);
+// The trigger alone, for a main menu the overlay does not recognize (ADR 0056). Never throws on the menu's text.
+std::string add_client_bootstrap(std::string_view original);
 
 // Validates each current Workshop source's package identity, creates content-addressed display
 // files below native-loader/presentation, and returns exact read redirects. Missing/changed sources,

@@ -31,7 +31,7 @@ Sources are relative to the fixes repo's `garrysmod\` folder (its distributable 
 | `native/payload/shaders/stdshader_dx6.dll` | `bin\win64\stdshader_dx6.dll` | `module_overrides: [{"module": "stdshader_dx6.dll", "file": "native/payload/shaders/stdshader_dx6.dll"}]`, kind `module-override` |
 | none (manifest data) | the seven `patches64` patches, as data in the script | `patch_sets`, kind `patch-set` |
 | none (manifest data) | the RTX section of `garrysmod\cfg\autoexec.cfg` (below) | `session_cvars` |
-| `native/manifest.json` | written last: schema 1, `requires_loader` `>=0.2.0`, `requires_remix` (the add-ons are hidden from sessions without a runtime, [ADR 0013](../docs/decisions/0013-rtx-only-addons-hidden-without-rtx.md)), `kinds` exactly those used | |
+| `native/manifest.json` | written last: schema 1, `requires_loader` `>=0.10.0` when the companion is included (its V2 render guard needs the loader's early view, [ADR 0056](../docs/decisions/0056-guard-and-startup-fallbacks.md)), else `>=0.2.0`; `requires_remix` (the add-ons are hidden from sessions without a runtime, [ADR 0013](../docs/decisions/0013-rtx-only-addons-hidden-without-rtx.md)), `kinds` exactly those used | |
 
 **Patch sets.** The seven patches of `patches64` from `sambow23/SourceRTXTweaks`, which RTXLauncher
 writes into the DLLs on disk, tabled with their purpose in [RESEARCH.md](../docs/RESEARCH.md) section
@@ -102,9 +102,9 @@ left out of the fixes repo.
 - `--client-bootstrap <DLL>`: package this project's menu-realm module as
   `garrysmod/lua/bin/gmsv_nlrtxclient_win64.dll`, with a hashed module root entry and its MIT/BSD
   notices under the companion's `resource/native-client`. Requires the companion. Loader 0.9.0
-  invokes it for the verified RTX bundle's multiplayer initialization. This raises requires_loader
-  to >=0.10.0, so older bootstraps keep their previous shipment rather than miss early renderer protection.
-  It does not change server
+  invokes it for the verified RTX bundle's multiplayer initialization. The loader requirement does
+  not depend on this option: it follows the companion (see the manifest row above), so a build
+  without the helper still requires the loader that prepares the guard's early view. It does not change server
   settings or permit loading community scripts. This input is optional for standalone fixes builds.
 - `--exclude-addon <name>` (repeatable): leave an add-on out, compared without case;
   `nativeloader` leaves out the companion. An unknown name is refused.

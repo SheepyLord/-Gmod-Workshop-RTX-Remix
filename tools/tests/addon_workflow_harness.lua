@@ -79,36 +79,5 @@ elseif scenario == 'normals' then
     fail=false now=4 tick() equal(#calls,count+1) equal(calls[#calls],'0xb, 0xc')
     actors={} props={} now=5 tick() equal(calls[#calls],'')
     RemixMaterial=nil now=6 tick()
-elseif scenario == 'motion' then
-    TOP=1
-    local tabs, callbacks, phrases, children = {}, {}, {}, {}
-    local translated=false
-    include=function() return {L=function(text) return translated and 'translated:'..text or text end} end
-    language={Add=function(key,value) phrases[key]=value end}
-    spawnmenu={AddCreationTab=function(key,build,icon,order,tooltip) tabs[key]={build=build,Tooltip=tooltip} end,
-        GetCreationTabs=function() return tabs end}
-    cvars={AddChangeCallback=function(key,fn) callbacks[key]=fn end}
-    local function panel(kind)
-        local p={kind=kind}
-        for _,name in ipairs({'Dock','DockPadding','SetWrap','SetAutoStretchVertical','SetDark','DockMargin','SetTall'}) do p[name]=function() end end
-        p.SetText=function(self,text) self.text=text end
-        p.SetEnabled=function(self,value) self.enabled=value end
-        p.Add=function(_,childKind) local child=panel(childKind) children[#children+1]=child return child end
-        return p
-    end
-    vgui={Create=panel}
-    dofile(source)
-    local tab=tabs['#nativeloader.motion_importer'] assert(tab)
-    local opens, closed=0,0
-    tab.build()
-    local button=children[2] button:Think() equal(button.enabled,false) equal(opens,0)
-    MMDVMDNPC={OpenMotionManager=function() opens=opens+1 end}
-    g_SpawnMenu={Close=function() closed=closed+1 end}
-    button:Think() equal(button.enabled,true) equal(opens,0)
-    button:DoClick() equal(opens,1) equal(closed,1)
-    MMDVMDNPC=nil button:DoClick() equal(opens,1)
-    translated=true callbacks.nativeloader_language()
-    equal(phrases['nativeloader.motion_importer'],'translated:Motion importer')
-    assert(tab.Tooltip:find('translated:',1,true))
 else error('unknown scenario') end
 print('PASS '..scenario)

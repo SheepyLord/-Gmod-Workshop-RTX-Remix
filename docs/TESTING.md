@@ -1,5 +1,83 @@
 # Testing
 
+## Release QA protocol (field install, R4)
+
+What review R4 used to test a release on the user's own install quickly and without guesswork. One
+scripted session per question, each about two minutes, all with the user's own settings, so a field
+problem shows up the way the user meets it.
+
+1. **Gate.** `tools\test.ps1 -Config Release` passes on the branch.
+   - **Before the publish, the package on the PoC.** A merge into `main` uploads the package the user's
+     install then downloads, so the branch's own package goes through the PoC first, with no Workshop
+     mount (each session about 80 s from launch to quit instead of several minutes):
+     `python tools\build_package.py --require-nlctl --out out\qa-poc\package` (about 3 minutes, 1.84 GB),
+     then `python tools\poc_session.py --evidence out\qa-poc\<round> install --allow-local <absolute .gma>
+     --remix on --replace-config`, then `python tools\qa\release_qa.py --root <PoC> --evidence
+     out\qa-poc\<round> --extra=-insecure`: the sessions of step 4 with no Workshop mount, the modern_house
+     map mounted from the user's subscription alone (`--mount-workshop 3495468649 --change-map
+     modern_house`) and `mat_queue_mode 2` standing in for the field's queued rendering (U1 crashed only
+     with it). Put the PoC's `config.json` back from the `config.json.before-*` copy the install step kept.
+2. **Back up and record.** Copy the field's `bin\win64\winmm.dll`, `winmm.pdb`,
+   `native-loader\bootstrap-install.json` and `config.json` with their SHA-256 into
+   `out\field-backups\<date>-<purpose>`; record the hashes of `user.conf`, `rtx.conf` and
+   `garrysmod\cfg\client.vdf`, copy `config.cfg`, and `reg export HKCU\Software\Valve\Source\garrysmod`.
+   A user's game that is running is closed with a console `quit` (it saves normally), never killed.
+3. **Install** with `tools\install-loader.ps1 -GameRoot <field> -AllowSteamManaged`. A bundle the user
+   extracted by hand leaves a receipt that names another build: the refusal says so; move the receipt
+   to the backup folder and add `-ReplaceUntracked`.
+4. **Sessions**, all four in one command that also applies the pass rules of step 5 and records the
+   watched files and the registry key before and after
+   ([`release_qa.py`](../tools/qa/release_qa.py.md), about 10 minutes on the field):
+   `python tools\qa\release_qa.py --field --root <field> --evidence out\qa-field\<run> --extra=-insecure
+   --extra=-tickrate --extra=120` (the user's own launch options). One at a time, each is
+   `python tools\poc_session.py --root <field> --allow-steam-managed --evidence
+   out\qa-field\<run> run --name <step> --workshop --addons --no-window --extra=-insecure
+   --extra=-tickrate --extra=120` plus:
+   - `--menu-shot --map gm_construct --lua tools\qa\rtx_session_probe.lua --lua-shots 90`: the menu
+     (diagnostics panel, add-on cards), the session state, the toolgun screen;
+   - `--map modern_house --console "sv_cheats 1" --lua tools\qa\map_glass_probe.lua --lua-shots 180`;
+   - `--map gm_construct --console "sv_cheats 1" --lua tools\qa\spawned_glass_probe.lua --lua-shots 120`;
+   - `--map gm_construct --lua tools\qa\spawnmenu_probe.lua --lua-shots 60`: the spawn menu's External
+     Models and Motion importer tabs (labels translated, the importer laid out in place).
+5. **Pass** when every record has `map_loaded`, `normal_quit` and `lua_errors: 0`, the activation is
+   `active` with no status errors, the probe lines show the guard installed and no guard errors, the
+   toolgun crop is sharp, glass breaks into shards, and after the runs `user.conf`, `rtx.conf`,
+   `client.vdf`, the loader files and the registry export are unchanged (`config.cfg` is rewritten by
+   the game at every normal quit: diff it against the copy; the probes change nothing archived).
+6. **A crash** leaves `rtx-remix\logs\.sentry-native\reports\*.dmp`, which `poc_session.py` copies into
+   the session's `crash-reports\` (Remix deletes it once the next start's prompt is declined): read the faulting module and the
+   module frames on the faulting thread's stack (a crash on the material system's thread with no
+   project module on it points at what was drawn, not at the module that draws). The next start's
+   crash-report prompts are declined by `poc_session.py` (No, then OK); never set
+   `RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES`, which grants upload consent. Bisect with
+   `--console "lua_run ..."` / `lua_run_cl` switches in the same scripted session rather than by editing
+   deployed files.
+## R4 start-up, guard and bootstrap fallbacks (loader 0.10.1)
+
+[ADR 0056](decisions/0056-guard-and-startup-fallbacks.md) is covered without a game: 25 LuaJIT
+guard scenarios (autorun install, served-initializer and RTX-off counterexamples, error reports and
+three-failure quarantine, gamemode methods never quarantined, per-category report caps, leaked-scope
+resynchronization at FrameNumber/PreRender boundaries, fractional sizes, MRT clears, hot paths,
+owned-only multiplayer wrapping), 20 bootstrap scenarios (normal-load marker read from the actual
+cl_rtx.lua, listen-host and per-add-on skips, server-delivered entities, missing APIs, the
+loading-event replay order), the main-menu trigger cases in the Node harness (skipped where Node is
+absent; in R4 they ran through a browser shim, see RESEARCH.md), the early-view CTests (local proof,
+input-named cache, kept-aside cache file and folder, junction refusal), the render-recipe refusal
+and module contract cases, and
+two integration runs: the crashing opt-out stays vanilla with its reason (with `-insecure` it starts),
+and a catalog-verified package whose early view cannot be prepared still activates with a note.
+
+Not yet accepted in a game session; suggested live checks on the PoC install:
+
+- Change only the owned `native-loader/presentation/render-guard-*.lua` cache: the next RTX start
+  keeps it under `native-loader/backup/render-guard/`, writes the view again and installs early.
+- `patch_sets.allow_rtx_render_patches: false` without `-insecure`: a vanilla start whose status.json
+  activation reason names the key; with `-insecure`, RTX.
+- A listen server from an RTX session with a vanilla client: no `NativeLoaderRenderGuard` on the
+  client; the host's bootstrap status reads "normal loading already ran the RTX payload".
+- A tool whose DrawToolScreen errors, held for more than 32 frames: no "tracked stack limit"; one
+  failing HUD hook is reported with its stack and quarantined after three frames; hands still draw.
+
 ## C13 graphics add-ons and map loading
 
 Release passes **22 CTests and 294 Python tests (7 skips)**, including 20 early-policy cases,
@@ -154,6 +232,19 @@ opt-out. Exercise RTXDebug's local rendering queries/configuration in multiplaye
 Lua evaluation, memory writes, detours and gameplay/replicated cheat mutations remain refused;
 their development path requires single-player, `sv_cheats 1` and `-insecure` together.
 
+RTXDebug 0.2.1 decides single-player from the engine (connected, loopback net channel, one player
+slot, no demo), never from Lua. Its offline checks are `tests/session_policy_test.cpp` and
+`tests/render_policy_test.cpp` in the module's tree (see
+`packages/fixes/licenses/rtxdebug/Source.md`). Live, still to run: on the dedicated fixture with
+client `-insecure` and server `sv_cheats 1`, `RTXDebug.Status()` reports `single_player` and
+`can_mutate` false, also after a client script replaces `game.SinglePlayer`, and Lua.Eval,
+Memory, Engine.SetConVar and Detours.Enable are refused; rendering SetConfig/restore still works.
+In local single-player with `-insecure` and `sv_cheats 1`, both are true and Lua.Eval works.
+0.2.1 also gates the read-only information leaks: on that multiplayer fixture, verify
+`Interfaces.Resolve`, `Interfaces.FileExists` and `Engine.ListConsole` are refused,
+`Engine.GetConVar` returns `mat_queue_mode` but refuses `sv_allowcslua`, and `Lua.Global`/`Lua.Hooks`
+work for `client` but refuse `menu`; in single-player all of these work.
+
 Prototype 7 **passes** the secure dedicated join, reconnect and gm_construct -> gm_flatgrass ->
 gm_construct round trip in client PID 8544 against genuine 64-bit server PID 78088. The server
 reported VAC secure mode active, `sv_lan 0`, `sv_allowcslua 0` and cheats off; the password-protected
@@ -190,10 +281,20 @@ changed by these checks. Full Release tests, input verification and the package 
 Requests 17, 19/19.1 and 20 use [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md):
 actual AME methods check original names, path identity, current-row handoff, canonical return and
 independent working stores. Complete companion modules check late hashes/APIs, shared hashes,
-overrides, props, preview/hand exclusions, toggles, removed models, API retry, translations and
-opening the existing motion manager. The runtime's dedicated test_model_layers checks NoSave
-routing and draw invalidation. No game is started, as the user explicitly waived that validation.
-Full Release checks, input verification and a reviewed package comparison remain required.
+overrides, props, preview/hand exclusions, toggles, removed models and API retry. The runtime's
+dedicated test_model_layers checks NoSave routing and draw invalidation. No game is started, as
+the user explicitly waived that validation. Full Release checks, input verification and a reviewed
+package comparison remain required.
+
+The Motion importer tab ([ADR 0060](decisions/0060-motion-tab-hosts-the-importer.md)) uses
+[test_motion_tab.py](../tools/tests/test_motion_tab.py.md): under LuaJIT and mocked Derma it loads
+the companion's tab and the shipped motion importer files (`sh_core.lua`'s catalogs, `cl_menu.lua`,
+`cl_import_data.lua`, `cl_import_bake.lua`, `cl_importer.lua`). It checks the tab waiting for the
+add-on, the importer's inputs in the desktop importer's order and its bake side, a file picked
+through a mocked Model Hotloader, the library's columns and actions, Open in window, the file-access
+notice, inputs shared between the tab and a window, the windows' old layout and console commands,
+and the fallback for an add-on without the builders. Pixels and the light theme's colours on real
+Derma need a look in the game.
 
 Player body regression: test_player_body.py executes the real entity, category registrar and menu
 using LuaJIT. It checks proxy-only offsets, white-texture isolation, legacy settings, model state,
@@ -560,3 +661,17 @@ are not a valid cold-spawn comparison. Raw albedo and interaction views distingu
 selection from lighting. Ganyu has two skins; Lynette and March 7th expose one in the current cache.
 Exercise Ganyu's outline skin, suppression off/on and return to the transparent skin. A separate
 stock-model fixture verifies front-culled outline suppression and retained body/ground shadows.
+
+### R4 companion review: outline work per frame, player shadow, glass resync
+
+`test_model_layers.py` also runs the separate opt-in shell rule (`nativeloader_ignore_outline_shells`,
+[ADR 0059](decisions/0059-outline-shell-rule-opt-in.md)), map textures named `*_outline` (never
+hidden; the cached-material registry is not scanned), 2001 entities with bounded engine and hash
+calls per frame, a missing or changed hash revision, removed entities and the growing delay after a
+refused write. `test_remix_settings.py` loads the menu with the RTX fixes' real `rtx_pseudoplayer`
+default (1) and checks that map start never writes the player shadow unless startup replay is on.
+`test_glass_map.py` paces a 256-shard late join at one batch of at most 16,000 bytes per tick and
+checks the resync rate limit and the single-shard cap; `test_player_body.py` covers a slot without a
+private copy, draw-time reuse and the shared-material backoff. In game (not run in R4): after a
+late join on a map with many broken windows, every pane's debris is visible within a few seconds
+and the console shows no reliable-buffer overflow.

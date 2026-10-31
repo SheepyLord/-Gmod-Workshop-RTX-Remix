@@ -1,0 +1,104 @@
+{
+  "doc": "Guinevere / Guinaifen R18 (桂乃芬.pmx): aggressive style. Classes and regions from the UV-island review of every texture in the folder, 2026-10-25. The face sheet (颜.png) uses the anime-safe face classes; 眉目 and 眼线内 are now caught by the lash rule. Gold type decided 2026-10-26 (the user asked for one per character): painted gold is a mid-tone, so as a metal its reflectance (F0, the albedo's linear luminance on the mesh) is far below real gold's ~0.74, and at the aggressive roughness 0.12 it mirrors the dark room (Robin ZZZ's halo: 152 -> 96, -37%, in game). Satin yellow gold (metal roughness 0.32), same as Guinaifen (new_mmd_model_1c2ed2fc), whose layer wins every shared hash; this layer was not regenerated for it (shadowed).",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "7": "stockings",
+      "38": "metal",
+      "42": "leather",
+      "43": "leather",
+      "45": "gem",
+      "47": "leather"
+    },
+    "metal": {
+      "rough": 0.32,
+      "rough_ai": 0.5
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold trim painted on the bodice, dress and bands"
+    },
+    {
+      "texture": "衣内.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold trim on the inner faces"
+    },
+    {
+      "texture": "衣2内.png",
+      "within": [
+        "cloth",
+        "leather"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold edges of the headdress petals, mallet fittings, inner skirt embroidery"
+    },
+    {
+      "texture": "衣2.png",
+      "within": [
+        "cloth",
+        "leather"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "gold embroidery on the maroon skirt panels and flame band, boot trim, mallet fittings"
+    }
+  ]
+}

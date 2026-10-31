@@ -36,6 +36,14 @@ class MPBootstrapTests(unittest.TestCase):
             with self.subTest(scenario=scenario):
                 self.run_case(scenario)
 
+    def test_the_final_flush_runs_with_queued_rendering_off(self):
+        # R4-28: the late flush raced the material system's thread. It switches mat_queue_mode to 0,
+        # waits frames, flushes and puts the player's value back; already off, it flushes at once; a
+        # switch that does not take skips the flush and says so.
+        for scenario in ('model_reload_normal_nil', 'model_reload_normal_queue_off', 'model_reload_normal_queue_refused'):
+            with self.subTest(scenario=scenario):
+                self.run_case(scenario)
+
     def test_verified_late_hardware_skinning_never_flushes_world_model_cache(self):
         for scenario in ('model_reload_verified_match', 'model_reload_verified_mismatch',
                          'model_reload_verified_missing'):
@@ -43,6 +51,14 @@ class MPBootstrapTests(unittest.TestCase):
                 self.run_case(scenario)
 
     def test_realm_readiness_and_singleplayer_guards(self):
-        for scenario in ('single_player', 'not_ready', 'server', 'menu', 'no_api'):
+        for scenario in ('single_player', 'not_ready', 'server', 'menu', 'no_api', 'missing_api'):
             with self.subTest(scenario=scenario):
                 self.run_case(scenario)
+
+    def test_a_payload_normal_loading_already_ran_is_not_run_twice(self):
+        for scenario in ('normal_load', 'normal_load_allowcslua', 'normal_load_server', 'normal_load_marker'):
+            with self.subTest(scenario=scenario):
+                self.run_case(scenario)
+
+    def test_server_delivered_entity_definitions_are_kept(self):
+        self.run_case('server_entity')

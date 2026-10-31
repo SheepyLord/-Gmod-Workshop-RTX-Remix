@@ -1,5 +1,6 @@
-add_executable(nl_client_catalog_tests ../../tests/test_main.cpp test_catalog.cpp)
+add_executable(nl_client_catalog_tests ../../tests/test_main.cpp test_catalog.cpp test_module.cpp)
 target_include_directories(nl_client_catalog_tests PRIVATE ../../tests)
 target_link_libraries(nl_client_catalog_tests PRIVATE nl_client_catalog nl_build_options)
+target_compile_definitions(nl_client_catalog_tests PRIVATE NL_CLIENT_MODULE_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/../module.cpp")
 add_test(NAME nl_client_catalog_tests COMMAND nl_client_catalog_tests)
 set_tests_properties(nl_client_catalog_tests PROPERTIES TIMEOUT 120)

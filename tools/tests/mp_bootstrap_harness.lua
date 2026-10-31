@@ -3,6 +3,26 @@ local source, scenario, modelReloadSource = ...
 local function equal(actual, expected, context)
     assert(actual == expected, (context or '') .. ': ' .. tostring(actual) .. ' ~= ' .. tostring(expected))
 end
+if scenario == 'normal_load_marker' then
+    -- The actual cl_rtx.lua line that tells the verified initializer the payload already ran.
+    local input = assert(io.open(assert(modelReloadSource, 'cl_rtx.lua path required'), 'rb'))
+    local actual = input:read('*a')
+    input:close()
+    local line = assert(actual:match('[^\r\n]*NATIVELOADER_RTX_NORMAL_LOAD[^\r\n]*'), 'normal-load marker not found in cl_rtx.lua')
+    local _, count = actual:gsub('NATIVELOADER_RTX_NORMAL_LOAD', '')
+    equal(count, 1, 'one marker statement')
+    local first = actual:find(line, 1, true)
+    assert(first > actual:find('IsBinaryModuleInstalled', 1, true), 'set only once the binary module check passed')
+    assert(first < actual:find('require("niknaks")', 1, true), 'set before the payload starts loading')
+    local normal = {}
+    setfenv(assert(loadstring(line, '@actual-cl_rtx-marker')), setmetatable({}, {__index = _G, __newindex = normal}))()
+    equal(normal.NATIVELOADER_RTX_NORMAL_LOAD, true, 'normal loading sets the global marker')
+    local verified, written = {NATIVELOADER_VERIFIED_MULTIPLAYER = true}, {}
+    setfenv(assert(loadstring(line, '@actual-cl_rtx-marker')), setmetatable(verified, {__index = _G, __newindex = written}))()
+    equal(next(written), nil, 'the verified environment never sets it')
+    print('PASS ' .. scenario)
+    return
+end
 if scenario:match('^model_reload_') then
     local input = assert(io.open(assert(modelReloadSource, 'model reload source path required'), 'rb'))
     local actual = input:read('*a')
@@ -16,8 +36,20 @@ if scenario:match('^model_reload_') then
     if scenario == 'model_reload_normal_false' then flag = false end
     local queue, delays, callbacks, errors = {}, {}, {}, {}
     local reloads, convarReads = 0, 0
+    -- The final reload switches queued rendering off for its flush (R4-28): mat_queue_mode, the
+    -- console commands, frames and the Think hook it waits on are mocked here.
+    local queueMode = scenario == 'model_reload_normal_queue_off' and '0' or '2'
+    local refused = scenario == 'model_reload_normal_queue_refused'
+    local commands, thinks, printed, reloadModes, frame = {}, {}, {}, {}, 100
     local env = setmetatable({NATIVELOADER_VERIFIED_MULTIPLAYER = flag}, {__index = _G})
+    env.FrameNumber = function() return frame end
+    env.print = function(text) printed[#printed + 1] = text end
+    env.RunConsoleCommand = function(name, value)
+        commands[#commands + 1] = name .. ' ' .. tostring(value)
+        if name == 'mat_queue_mode' and not refused then queueMode = value end
+    end
     env.GetConVar = function(name)
+        if name == 'mat_queue_mode' then return {GetString = function() return queueMode end} end
         equal(name, 'r_forcehwskin', 'model reload convar')
         convarReads = convarReads + 1
         if scenario == 'model_reload_verified_missing' then return nil end
@@ -26,18 +58,31 @@ if scenario:match('^model_reload_') then
             return '0'
         end}
     end
-    env.RTX_ReloadModelsAfterHardwareSkinningSettings = function() reloads = reloads + 1 end
+    env.RTX_ReloadModelsAfterHardwareSkinningSettings = function()
+        reloads = reloads + 1
+        reloadModes[reloads] = {mode = queueMode, frame = frame}
+    end
     env.ErrorNoHalt = function(reason) errors[#errors + 1] = reason end
     env.timer = {Simple = function(delay, fn)
         delays[#delays + 1] = delay
         queue[#queue + 1] = {delay = delay, fn = fn}
     end}
-    env.hook = {Add = function(event, name, fn)
-        equal(event, 'InitPostEntity', 'model reload hook event')
-        equal(name, 'RTXHardwareSkinning_FinalModelReload', 'model reload hook ID')
-        assert(callbacks[name] == nil, 'model reload hook registered twice')
-        callbacks[name] = fn
-    end}
+    env.hook = {
+        Add = function(event, name, fn)
+            equal(name, 'RTXHardwareSkinning_FinalModelReload', 'model reload hook ID')
+            if event == 'Think' then
+                thinks[name] = fn
+                return
+            end
+            equal(event, 'InitPostEntity', 'model reload hook event')
+            assert(callbacks[name] == nil, 'model reload hook registered twice')
+            callbacks[name] = fn
+        end,
+        Remove = function(event, name)
+            equal(event, 'Think', 'only the frame wait is removed')
+            thinks[name] = nil
+        end,
+    }
     local fn = assert(loadstring('local desiredForceHardwareSkinning = "0"\n' .. actual:sub(first, last - 1),
         '@actual-cl_rtx-model-reload'))
     setfenv(fn, env)()
@@ -66,7 +111,34 @@ if scenario:match('^model_reload_') then
         equal(delays[#delays], 1, 'final model reload delay')
     end
     drain()
-    equal(reloads, verified and 0 or 2, 'complete early/late model reload behavior')
+    local started, waited = frame, 0
+    while thinks.RTXHardwareSkinning_FinalModelReload do
+        waited = waited + 1
+        assert(waited <= 10, 'the final reload waits only a few frames')
+        frame = frame + 1
+        thinks.RTXHardwareSkinning_FinalModelReload()
+    end
+    if verified then
+        equal(#commands, 0, 'verified path never touches queued rendering')
+    elseif scenario == 'model_reload_normal_queue_off' then
+        equal(#commands, 0, 'queued rendering already off: nothing switched')
+        equal(waited, 0, 'flushed at once')
+    else
+        -- Queued rendering goes off before the flush and comes back as the player had it.
+        equal(table.concat(commands, ';'), 'mat_queue_mode 0;mat_queue_mode 2', 'switched off and back')
+        equal(queueMode, '2', 'the player value is back')
+        assert(waited >= 4, 'the flush waits frames for the material system to leave queued mode')
+    end
+    if refused then
+        equal(reloads, 1, 'a switch that did not take skips the final flush')
+        assert(printed[1] and printed[1]:find('skipped', 1, true), 'the skip is reported')
+    else
+        equal(reloads, verified and 0 or 2, 'complete early/late model reload behavior')
+        if not verified then
+            equal(reloadModes[2].mode, '0', 'the final flush runs with queued rendering off')
+            assert(reloadModes[2].frame - started >= 4 or waited == 0, 'the final flush waited its frames')
+        end
+    end
     equal(#errors, 0, 'no hardware restoration timeout')
     equal(NATIVELOADER_VERIFIED_MULTIPLAYER, nil, 'model reload marker did not leak globally')
     print('PASS ' .. scenario)
@@ -79,7 +151,7 @@ local hooks, registered = {InitPostEntity = {}}, {}
 local oldInitCalls, foreignInitCalls, overwrittenCalls, removedCalls = 0, 0, 0, 0
 local ownedInitCalls, objectInitCalls = 0, 0
 local validPlayer = scenario ~= 'not_ready'
-local player = {valid = true}
+local player = {valid = true, IsListenServerHost = function() return scenario == 'normal_load' end}
 CLIENT_DLL = scenario ~= 'server' and scenario ~= 'menu'
 SERVER = scenario == 'server'
 MENU_DLL = scenario == 'menu'
@@ -92,6 +164,15 @@ function CompileString(text, name)
     local fn, reason = loadstring(text, name)
     return fn or reason
 end
+if scenario == 'missing_api' then CompileString = nil end
+-- The packaged cl_rtx.lua ran through normal loading in this realm (listen host, sv_allowcslua 1).
+-- normal_load is a listen host, normal_load_allowcslua an sv_allowcslua 1 server: every local add-on ran.
+-- normal_load_server delivered only its own copy of the add-on whose cl_rtx.lua set the marker.
+if scenario:match('^normal_load') and scenario ~= 'normal_load_marker' then NATIVELOADER_RTX_NORMAL_LOAD = true end
+function GetConVar(name)
+    if name == 'sv_allowcslua' then return {GetBool = function() return scenario == 'normal_load_allowcslua' end} end
+end
+local serverEntity = scenario == 'server_entity'
 
 local originalHook = {}
 function originalHook.GetTable() return hooks end
@@ -102,6 +183,8 @@ end
 function originalHook.Remove(event, name) if hooks[event] then hooks[event][name] = nil end end
 hook = originalHook
 hooks.InitPostEntity.before = function() oldInitCalls = oldInitCalls + 1 end
+hooks.Initialize = {before = function() oldInitCalls = oldInitCalls + 1 end}
+hooks.OnGamemodeLoaded = {before = function() oldInitCalls = oldInitCalls + 1 end}
 function RegisterForeignHook()
     originalHook.Add('InitPostEntity', 'foreign', function() foreignInitCalls = foreignInitCalls + 1 end)
 end
@@ -111,13 +194,22 @@ end
 OWNED_OBJECT = {valid = true}
 INVALID_OBJECT = {valid = false}
 function OwnedInit()
-    assert(registered.owned_entity and registered.owned_entity.Shared, 'owned Init ran before entity registration')
+    if not serverEntity then
+        assert(registered.owned_entity and registered.owned_entity.Shared, 'owned Init ran before entity registration')
+    end
+    TRACE[#TRACE + 1] = 'replay:InitPostEntity'
     ownedInitCalls = ownedInitCalls + 1
 end
 function OwnedObjectInit(value)
     equal(value, OWNED_OBJECT, 'object-ID self argument')
-    assert(registered.owned_entity and registered.owned_entity.Shared)
+    if not serverEntity then assert(registered.owned_entity and registered.owned_entity.Shared) end
     objectInitCalls = objectInitCalls + 1
+end
+function OwnedLoading(event)
+    return function()
+        assert(OWNED_LIBRARY and CLIENT_AUTORUN_RAN, event .. ' replayed before the autoruns finished')
+        TRACE[#TRACE + 1] = 'replay:' .. event
+    end
 end
 function OverwrittenInit() overwrittenCalls = overwrittenCalls + 1 end
 function RemovedInit() removedCalls = removedCalls + 1 end
@@ -125,6 +217,7 @@ function RemovedInit() removedCalls = removedCalls + 1 end
 local function engineInclude(name)
     includeCalls[#includeCalls + 1] = name
     if name == 'engine/approved.lua' then return 'engine-approved-include' end
+    if name == 'remixlua/shared_helper.lua' and scenario == 'normal_load_server' then return 'server-copy' end
     error('engine policy denied local include: ' .. tostring(name))
 end
 local nativeModule = {native = true}
@@ -210,10 +303,13 @@ util = originalUtil
 NETWORK_CALLS, NETWORK_LOOKUPS, NETWORK_CHANNELS = networkCalls, channelLookups, networkChannels
 ENT = {original = true}
 local originalENT = ENT
+local serverDefinition = {ClassName = 'owned_entity', FromServer = true}
 scripted_ents = {Register = function(ent, name)
     assert(OWNED_LIBRARY and SHARED_B_READY, 'entity registered before shared libraries')
     registered[name] = ent
     trace[#trace + 1] = 'entity:' .. name
+end, GetStored = function(name)
+    if serverEntity and name == 'owned_entity' then return serverDefinition end
 end}
 TRACE = trace
 
@@ -250,6 +346,9 @@ assert(found.lib and found.shared and found.client and found.remote_dir)
 local ordinary, ordinaryDirs = file.Find('test/*', 'DATA')
 assert(ordinary[1] == 'asset.dat' and ordinaryDirs[1] == 'assets')
 hook.Add('InitPostEntity', 'owned', OwnedInit)
+hook.Add('Initialize', 'owned_initialize', OwnedLoading('Initialize'))
+hook.Add('PostGamemodeLoaded', 'owned_post_loaded', OwnedLoading('PostGamemodeLoaded'))
+hook.Add('OnGamemodeLoaded', 'owned_loaded', OwnedLoading('OnGamemodeLoaded'))
 hook.Add('InitPostEntity', 'scoped_marker', function()
     assert(NATIVELOADER_VERIFIED_MULTIPLAYER == true, 'callback lost scoped verified marker')
     assert(_G.NATIVELOADER_VERIFIED_MULTIPLAYER == nil, 'callback exposed global verified marker')
@@ -293,6 +392,15 @@ ENT.FromClient = true
     ['alpha/entities/owned_entity/shared.lua'] = [=[ENT.Shared = true ENT.Base = 'base_anim']=],
 }
 if scenario == 'script_error' then scripts['alpha/autorun/c_failure.lua'] = [=[error('intentional owned failure')]=] end
+if scenario == 'normal_load_server' then
+    scripts['remixfix/autorun/cl_rtx.lua'] = [=[REMIXFIX_RUNS = (REMIXFIX_RUNS or 0) + 1]=]
+    scripts['remixfix/remixlua/shared_helper.lua'] = [=[REMIXFIX_HELPER_RUNS = (REMIXFIX_HELPER_RUNS or 0) + 1 return 'catalog-copy']=]
+    scripts['remixfix/entities/remix_entity.lua'] = [=[ENT.Remix = true]=]
+    scripts['alpha/autorun/client/zz_uses_fix.lua'] = [=[
+assert(include('remixlua/shared_helper.lua') == 'server-copy', 'normally loaded add-on served from the catalog')
+USES_FIX_RAN = true
+]=]
+end
 if scenario == 'network' then
     scripts['beta/net/network_helper.lua'] = [=[
 assert(net ~= _G.net, 'helper received global net table')
@@ -409,14 +517,21 @@ equal(util, originalUtil, 'global util retained')
 for name, fn in pairs(originalNetFunctions) do equal(net[name], fn, 'global net function retained: ' .. name) end
 equal(ENT, originalENT, 'global ENT retained')
 
-local early = scenario == 'single_player' or scenario == 'not_ready' or scenario == 'server' or scenario == 'menu' or scenario == 'no_api'
+local finishing = {single_player = 'normal single-player loading', normal_load = 'normal loading already ran the RTX payload',
+    normal_load_allowcslua = 'normal loading already ran the RTX payload',
+    missing_api = 'the client realm has no hook library or CompileString'}
+local early = finishing[scenario] or scenario == 'not_ready' or scenario == 'server' or scenario == 'menu' or scenario == 'no_api'
 if early then
     equal(listed, 0, 'no catalog before realm/readiness approval')
     equal(#reads, 0, 'no forced source before approval')
     equal(CLIENT_AUTORUN_RAN, nil, 'no client autorun before approval')
     equal(NATIVELOADER_CLIENT_PAYLOAD, nil, 'no completion payload before approval')
-    equal(#finished, scenario == 'single_player' and 1 or 0, 'early finish count')
-    if scenario == 'single_player' then equal(finished[1].loaded, 0) equal(finished[1].errors, 0) end
+    -- A final exit finishes, so the menu stops polling; a realm that is not ready yet does not.
+    equal(#finished, finishing[scenario] and 1 or 0, 'early finish count')
+    if finishing[scenario] then
+        equal(finished[1].loaded, 0) equal(finished[1].errors, 0) equal(finished[1].reason, finishing[scenario])
+    end
+    equal(ownedInitCalls + objectInitCalls + oldInitCalls, 0, 'nothing replayed')
 else
     equal(listed, 1, 'one sealed catalog')
     equal(#finished, 1, 'one completion')
@@ -442,11 +557,38 @@ else
     equal(trace[1], 'shared-a', 'shared startup order')
     equal(trace[2], 'shared-b', 'all shared scripts precede client scripts')
     equal(trace[3], 'client', 'client startup order')
-    equal(trace[4], 'entity:owned_entity', 'entity registration follows libraries')
-    equal(#includeCalls, 3, 'normal include fallback calls')
+    local replayAt = 4
+    if serverEntity then
+        -- The server delivered this class: its definition stays, the owned copy is not run.
+        equal(registered.owned_entity, nil, 'server-delivered entity not re-registered')
+        equal(NATIVELOADER_CLIENT_PAYLOAD.server_entities[1], 'owned_entity', 'kept server entity reported')
+        for _, key in ipairs(reads) do assert(not key:find('owned_entity', 1, true), 'owned entity source was run') end
+    else
+        equal(trace[4], 'entity:owned_entity', 'entity registration follows libraries')
+        equal(#NATIVELOADER_CLIENT_PAYLOAD.server_entities, 0, 'no server entity reported')
+        replayAt = 5
+    end
+    -- Owned loading callbacks are replayed once each, gamemode-loaded events first, InitPostEntity last.
+    equal(trace[replayAt], 'replay:OnGamemodeLoaded', 'OnGamemodeLoaded replay')
+    equal(trace[replayAt + 1], 'replay:PostGamemodeLoaded', 'PostGamemodeLoaded replay')
+    equal(trace[replayAt + 2], 'replay:Initialize', 'Initialize replay')
+    equal(trace[replayAt + 3], 'replay:InitPostEntity', 'InitPostEntity replay last')
+    equal(#trace, replayAt + 3, 'each owned loading callback replayed once')
+    equal(#includeCalls, scenario == 'normal_load_server' and 4 or 3, 'normal include fallback calls')
     equal(includeCalls[1], 'engine/approved.lua')
     equal(includeCalls[2], 'community/local.lua')
     equal(includeCalls[3], '../../../../community/local.lua')
+    if scenario == 'normal_load_server' then
+        equal(includeCalls[4], 'remixlua/shared_helper.lua', 'a normally loaded file comes from the engine')
+        equal(USES_FIX_RAN, true, 'other owned add-ons still load')
+        equal(REMIXFIX_RUNS, nil, 'the normally loaded add-on is not run again')
+        equal(REMIXFIX_HELPER_RUNS, nil, 'nor its files through a cross-owner include')
+        equal(registered.remix_entity, nil, 'nor its entities')
+        equal(NATIVELOADER_CLIENT_PAYLOAD.normally_loaded[1], 'remixfix', 'normally loaded owner reported')
+        equal(#NATIVELOADER_CLIENT_PAYLOAD.normally_loaded, 1)
+    else
+        equal(#NATIVELOADER_CLIENT_PAYLOAD.normally_loaded, 0, 'no normally loaded owner reported')
+    end
     equal(#requireCalls, 2, 'normal require fallback calls')
     equal(requireCalls[1], 'native_render_module') equal(requireCalls[2], 'community_module')
     if scenario == 'network' then

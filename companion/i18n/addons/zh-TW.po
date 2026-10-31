@@ -285,29 +285,29 @@ msgstr "可破壞的樂趣"
 msgid "Spawn and damage it"
 msgstr "生成後對它造成傷害"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:451
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:469
 #, c-format
 msgid "Glass damage: %d / %d"
 msgstr "玻璃損傷：%d / %d"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:710
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:728
 msgid "Glass Shard"
 msgstr "玻璃碎片"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:772
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:790
 #, c-format
 msgid "Reset glass damage from %d to 0"
 msgstr "已將玻璃損傷從 %d 重置為 0"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:774
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:792
 msgid "Look at a glass shard to reset its damage"
 msgstr "看向玻璃碎片即可重置其損傷"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:797
 msgid "Opening Glass Settings Panel..."
 msgstr "正在開啟玻璃設定面板…"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:780
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:798
 msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
 msgstr "在主控台執行 glass_open_panel，或在物件清單中開啟 RTX Remix > 水與玻璃 > 設定。"
 

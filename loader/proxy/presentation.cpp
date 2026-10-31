@@ -1,6 +1,7 @@
 #include "presentation.h"
 #include "diagnostics.h"
 #include "presentation_data.h"
+#include "../client/catalog.h"
 
 #include "nl/crc32.h"
 #include "nl/fs.h"
@@ -153,15 +154,58 @@ std::string decorate_menu(std::string_view original, const std::vector<std::stri
   return prefix + decorated;
 }
 
-std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json) {
+// GMod's menu decodes these generated scripts as Windows-1252: UTF-8 text in them showed as mojibake
+// (the panel's "·" as "Â·", and every translated label; review R4). Each non-ASCII character is written
+// as a \uXXXX escape (UTF-16, surrogate pairs above U+FFFF), which JavaScript reads as the same character
+// in strings, JSON, comments and identifiers.
+static std::string ascii_javascript(std::string_view text) {
+  std::string out;
+  out.reserve(text.size());
+  const auto put = [&out](std::uint32_t unit) {
+    constexpr char kHex[] = "0123456789abcdef";
+    out += "\\u";
+    for (int shift = 12; shift >= 0; shift -= 4) out += kHex[(unit >> shift) & 0xF];
+  };
+  for (std::size_t i = 0; i < text.size();) {
+    const auto lead = static_cast<unsigned char>(text[i]);
+    if (lead < 0x80) { out += static_cast<char>(lead); ++i; continue; }
+    const std::size_t length = lead >= 0xF0 && lead <= 0xF4 ? 4 : lead >= 0xE0 ? 3 : lead >= 0xC2 && lead < 0xE0 ? 2 : 0;
+    if (length == 0 || lead > 0xF4 || i + length > text.size()) throw std::runtime_error("generated menu script is not UTF-8");
+    std::uint32_t code = lead & (length == 2 ? 0x1F : length == 3 ? 0x0F : 0x07);
+    for (std::size_t k = 1; k < length; ++k) {
+      const auto next = static_cast<unsigned char>(text[i + k]);
+      if ((next & 0xC0) != 0x80) throw std::runtime_error("generated menu script is not UTF-8");
+      code = (code << 6) | (next & 0x3F);
+    }
+    const std::uint32_t lowest = length == 2 ? 0x80 : length == 3 ? 0x800 : 0x10000;
+    if (code < lowest || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF))
+      throw std::runtime_error("generated menu script is not UTF-8");
+    if (code >= 0x10000) {
+      put(0xD800 + ((code - 0x10000) >> 10));
+      put(0xDC00 + ((code - 0x10000) & 0x3FF));
+    } else {
+      put(code);
+    }
+    i += length;
+  }
+  return out;
+}
+
+std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json, bool client_bootstrap) {
   constexpr std::string_view anchor = "function MenuController( $scope, $rootScope )";
   const auto at = original.find(anchor);
   if (at == std::string_view::npos || original.find(anchor, at + anchor.size()) != std::string_view::npos)
     throw std::runtime_error("stock main menu controller differs; diagnostics overlay not installed");
   // Parse before embedding so an invalid producer cannot turn the response into arbitrary JavaScript.
   if (!json::parse(diagnostics_json).is_object()) throw std::runtime_error("diagnostics must be a JSON object");
-  return std::string(original) + "\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
-    ";\nwindow.NativeLoaderDiagnosticLabels = " + std::string(kDiagnosticsLabels) + ";\n" + std::string(kDiagnosticsScript);
+  return std::string(original) + ascii_javascript("\nwindow.NativeLoaderClientBootstrap = " + std::string(client_bootstrap ? "true" : "false") +
+    ";\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
+    ";\nwindow.NativeLoaderDiagnosticLabels = " + std::string(kDiagnosticsLabels) + ";\n" + std::string(kDiagnosticsScript));
+}
+
+std::string add_client_bootstrap(std::string_view original) {
+  // The same script: without diagnostics data its overlay part stays out, the trigger still runs.
+  return std::string(original) + ascii_javascript("\nwindow.NativeLoaderClientBootstrap = true;\n" + std::string(kDiagnosticsScript));
 }
 
 Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation, bool include_diagnostics) {
@@ -208,7 +252,19 @@ Prepared prepare(const std::filesystem::path& root, const journal::Generation& g
       fs::refuse_links(root, kMainMenu);
       const auto source = fs::join(root, kMainMenu);
       const auto text = fs::read_file(source, kMaxMenuBytes);
-      const auto replacement = cache(root, decorate_main_menu(text, diagnostics::collect(root, generation)), ".js");
+      // The multiplayer bootstrap's only trigger lives in this view (ADR 0052): a menu the overlay
+      // no longer recognizes still gets the trigger alone (ADR 0056).
+      const bool bootstrap = client::native_bootstrap_present(generation);
+      std::string decorated;
+      try {
+        decorated = decorate_main_menu(text, diagnostics::collect(root, generation), bootstrap);
+      } catch (const std::exception& error) {
+        if (!bootstrap) throw;
+        prepared.notes.push_back("native loader main menu: " + std::string(error.what()) +
+                                 "; the RTX multiplayer bootstrap trigger is installed without it");
+        decorated = add_client_bootstrap(text);
+      }
+      const auto replacement = cache(root, decorated, ".js");
       prepared.redirects.push_back({source, replacement, {}});
     } catch (const std::exception& error) {
       prepared.notes.push_back("native loader main menu: " + std::string(error.what()));

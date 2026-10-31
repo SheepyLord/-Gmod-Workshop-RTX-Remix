@@ -1,0 +1,76 @@
+{
+  "doc": "Robin R18 (知更鸟.pmx, H:\\BACKUP_20260815\\Modding\\PBR\\星穹铁道-知更鳥), Model Hotloader asset f9c3e4b4, reviewed 2026-10-26: aggressive style. 83 materials on 20 sheets; 14 hashes live, 6 predicted (hidden: bunny suit, mask, 颜赤 blush, 黑 eye shadow, sita tongue, inmon2). Seven sheets are byte-identical to ones earlier layers already override (bq, 黑, 颜赤, asanawa ropes, 口球, Blindfold Text, sita); this layer sorts last and cannot win them, so they are not generated (generate --only her own 13). 衣.png (outfit atlas, 26 materials, the same HSR art as robin_zzz's body sheet): dress panels cloth; the gold piping and borders painted on them become metal through a colour rule (hue 25-60, sat >= 0.15), as do those on 衣内.png; the gold stars, crescents, treble clef, shoe and sleeve ornaments and the halo strip (手金属, 裙金属, 金属上, 光环, 鞋金属, 音符金属, 袖金屬, Bunny Legmetal; 60-92% gold texels) are metal by name; 裙金属2 is a silver star (metal). Pins: 手环 / 手环内部 (#50/#51) are purple satin wrist cuffs, not metal (环 had made them metal) -> cloth; 光环花 / 光环花+ (#65/#66, white-lavender halo flowers) -> gem; 珠, 手饰珠, 袖珠 (#62/#48/#73, white-lavender pearls) and 面珠 (#33, the coloured face jewels under the eye) -> wet (smooth dielectric); 脖子 (#19, the neck on the atlas) -> skin, left at the legacy look; 口罩 (#11/#12, face mask; 口 had made it mouth) -> cloth; bunny bow, tail, leg loop and ears (#39/#40/#41/#43, no rule matched) -> cloth; 鏡框 (#78, purple acetate glasses frame) -> wet, 鏡片 lens gem. Stockings (丝袜 on neiyi.png, 黑絲襪 on 丝袜.png) at the 0.42 satin roughness the user chose for Guinaifen. Body.png and inmon2.png are skin-only and left to Remix; Body normal.png is noted but not used (body skin only on request). Gold type (decided 2026-10-26 with the other characters): satin champagne gold (metal roughness 0.30): her painted gold has F0 0.34-0.39, and the same design in robin_zzz went 37% darker in game at the aggressive polish (0.12). Measured in game 2026-10-26 (bracketed A, P polished 0.12, S satin 0.30, A2; aabb_20261026 in the work folder): the layer changes the model by 3.6-6.7/255 per view (drift 1.6-3.3); iris +27.2, face +4.6, white dress +4.1, purple bodice +6.9, body skin within drift. Gold pixels vs the original: satin -19% (halo), -25% (torso), -30% (choker) against polished -37%, -45%, -36%, with equal highlight peaks, so satin stays. Reflectance test 2026-10-26 (user request: keep whichever is closer to the original brightness; bracketed A, S satin, L1 f0 0.55, L2 f0 0.74, A2; aabb_20261026_f0): gold brightness against the original, satin -12% (halo) / -15% (choker) / -25% (torso), f0 0.55 -3% / -9% / -14%, f0 0.74 +4% / -5% / -10%; pixel-weighted distance 21.0% / 10.8% / 8.2% (9.0% with the floor-normalised check). Kept: satin 0.30 with f0 0.74 (about real gold's reflectance; her gold lifted x1.91 on 衣.png and x2.02 on 衣内.png). Cost: the halo reads paler (gold saturation 0.19 against the original 0.30; torso 0.30 against 0.33), and the brightest 10% of gold pixels peak higher (halo 242 against the original 173), as metal does.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "11": "cloth",
+      "12": "cloth",
+      "19": "skin",
+      "33": "wet",
+      "39": "cloth",
+      "40": "cloth",
+      "41": "cloth",
+      "43": "cloth",
+      "48": "wet",
+      "50": "cloth",
+      "51": "cloth",
+      "62": "wet",
+      "65": "gem",
+      "66": "gem",
+      "73": "wet",
+      "78": "wet"
+    },
+    "stockings": {
+      "rough": 0.42
+    },
+    "metal": {
+      "rough": 0.3,
+      "rough_ai": 0.5,
+      "f0": 0.74
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        25,
+        60
+      ],
+      "sat": [
+        0.15,
+        1.0
+      ],
+      "val": [
+        0.35,
+        1.0
+      ],
+      "doc": "gold piping and borders painted on the dress panels"
+    },
+    {
+      "texture": "衣内.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        25,
+        60
+      ],
+      "sat": [
+        0.15,
+        1.0
+      ],
+      "val": [
+        0.35,
+        1.0
+      ],
+      "doc": "gold piping on the inner faces"
+    }
+  ]
+}

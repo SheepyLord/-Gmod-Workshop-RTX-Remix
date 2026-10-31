@@ -1,0 +1,58 @@
+{
+  "doc": "Kafka (Kafka.pmx, H:\\BACKUP_20260815\\Modding\\PBR\\星穹铁道-卡芙卡), Model Hotloader asset 4ab9d7e3, reviewed 2026-10-25: aggressive style (the user's choice for this batch). 52 materials, 15 textured sheets. 外套.png coat atlas: coat, sleeves and trims cloth; the bronze brackets and V shields (袖子铁, 腿环铁, 腿饰铁, 衣服铁, 上衣铁, 外套铁) metal; 腿带 (#21, magenta thigh strap; the name rule now gives cloth) and 袜子 (#23, a riveted Y-shaped garter strap, not stockings) pinned to leather. 衣服.png: magenta panels and the dark shorts cloth, 鞋子 boots leather, 耳环 earrings metal, 眼镜 (#40, tinted sunglasses: maroon lens disc and thin frame) gem through the new glasses rule (it was an emissive iris before), 皮肤 (#46) a skin patch left at the legacy look. 衣服2.png white shirt cloth; its tan spider-web embroidery and a gold button become metal through the region rule (2.4% of the sheet; no gold paint on the coat sheets, checked). siwa.png: mauve pantyhose stockings, 手套 gloves (#20, opaque magenta with a silver web) cloth. 脸.png anime-safe face classes; 眼睛1 (#50, a 30%-alpha eye-shadow crescent) pinned to face so it gets no iris emission. Stockings at roughness 0.42, the satin look the user chose for Guinaifen over the aggressive 0.30. Shared sheets: 表情.png and 颜赤.png are byte-identical to Firefly's and 口球.png and Blindfold Text.png to Cyrene's and Castorice's; the alphabetically first layer (firefly / castorice) wins those hashes. Body.png and inmon.png are skin-only and left to Remix; the model's Body normal.png is noted but not used (body skin changes only on the user's request). Gold type decided 2026-10-26 (the user asked for one per character): painted gold is a mid-tone, so as a metal its reflectance (F0, the albedo's linear luminance on the mesh) is far below real gold's ~0.74, and at the aggressive roughness 0.12 it mirrors the dark room (Robin ZZZ's halo: 152 -> 96, -37%, in game). Satin antique bronze (metal roughness 0.36): coat brackets, V shields and earring hooks, F0 0.17-0.20, plus the tan web embroidery (F0 0.44); aged bronze is not mirror polished.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "21": "leather",
+      "23": "leather",
+      "50": "face"
+    },
+    "stockings": {
+      "rough": 0.42
+    },
+    "metal": {
+      "rough": 0.36,
+      "rough_ai": 0.5
+    }
+  },
+  "regions": [
+    {
+      "texture": "衣服2.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "hue": [
+        28,
+        58
+      ],
+      "sat": [
+        0.3,
+        1.0
+      ],
+      "val": [
+        0.5,
+        1.0
+      ],
+      "doc": "tan spider-web embroidery on the white shirt front and a gold button"
+    },
+    {
+      "texture": "衣服.png",
+      "within": [
+        "metal"
+      ],
+      "class": "wet",
+      "sat": [
+        0.0,
+        0.12
+      ],
+      "val": [
+        0.7,
+        1.0
+      ],
+      "doc": "the white pearl of the earrings (耳环 #37): as metal it rendered as a dark chrome ball (patch 207 -> 126/255); a smooth dielectric keeps it white. The bronze hook and pin stay metal"
+    }
+  ]
+}

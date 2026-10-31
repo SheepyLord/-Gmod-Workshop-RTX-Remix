@@ -1,5 +1,28 @@
 # Research notes
 
+## R4 start-up, guard and bootstrap review (loader 0.10.1)
+
+Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock
+Lua (read-only) unless marked:
+
+- The stock toolgun screen, `gamemodes/sandbox/entities/weapons/gmod_tool/cl_viewscreen.lua`, pushes
+  its RT at line 51 and `cam.Start2D()` at 52, calls the tool's `DrawToolScreen` unprotected at 62
+  and pops at 71-72: a failing tool leaves both scopes open every frame, outside any guard callback.
+- Base `GM:PostDrawViewModel` (`gamemodes/base/gamemode/cl_init.lua:600`) draws the player's hands
+  for every weapon with `UseHands` or no script, so quarantining that gamemode method hid the hands.
+- The base gamemode defines `PreGamemodeLoaded`, `OnGamemodeLoaded` and `PostGamemodeLoaded`
+  (`gamemodes/base/gamemode/shared.lua:233-241`); sandbox's spawn menu and the menubar module create
+  themselves on `OnGamemodeLoaded`. Their order relative to `Initialize` was not measured in game; the
+  owned payload registers only `Initialize` and `InitPostEntity` callbacks today.
+- Reported (GMod wiki, AddCSLuaFile): files in `lua/autorun/` and `lua/autorun/client/` are sent to
+  clients without `AddCSLuaFile`, so a host that mounts the companion sends its guard autorun anyway.
+- LuaJIT 2.x passes extra arguments through `xpcall(f, handler, ...)`, which the guard now uses to
+  avoid a closure and argument table per protected callback.
+- The guard's cache file names are 81 characters; in this repository's worktrees the early-guard test
+  scratch paths reach 259 characters, so its fixture writer uses extended-length paths.
+- This machine has no Node.js. In R4 the main-menu harness ran in the desktop app's browser pane
+  through a small `vm`/`fs`/`assert` shim and passed (bootstrap polling ends after 239 retries).
+
 ## C13 graphics add-ons and map loading
 
 This is a bounded API/source audit plus controlled baseline work, not a reproduced user crash.
@@ -257,6 +280,24 @@ Engine.SetConVar attempts to enable client Lua. Evidence is under `out/multiplay
 This controlled session is not a universal VAC/server-policy guarantee. Final full-suite, package
 readback and publication results remain pending.
 
+RTXDebug 0.2.0 took "single-player" for its developer mutation gate from the client realm's Lua
+`game.SinglePlayer`, which a remote server's client scripts can replace; the server also replicates
+`sv_cheats`. 0.2.1 (R4) asks the engine instead. In the vanilla x64 engine.dll (5707088 bytes,
+SHA-256 d8f74db72412ffa91c1f01a633d108331145d0a7dff6cffabe1b67ed5abe4fcb), RTTI finds one
+`CEngineClient` vtable (RVA 0x39d048) and one `CNetChan` vtable (RVA 0x3e0150). Their slots match
+sourcesdk-minimal's `cdll_int.h` and `inetchannelinfo.h`: `CEngineClient` 21 `GetMaxClients` and 12
+`GetLocalPlayer` read client-state fields, 26 `IsInGame` and 27 `IsConnected` compare the signon
+state with 6 and 2, 72 `GetNetChannelInfo` returns the client state's channel pointer, 76
+`IsPlayingDemo` and 78 `IsPlayingTimeDemo` call the demo player at vtable offsets 0x30 and 0x40, and
+106 is `ClientCmd_Unrestricted`. `CNetChan` slots 0-9 match in order. Slots 1 `GetAddress` and 6
+`IsLoopback` both use the remote address at +0xC4, and `netadr_t::IsLoopback` is only
+`type == NA_LOOPBACK` (1), the engine's in-process loopback buffers: a connection to 127.0.0.1 or a
+LAN server is not loopback. Slot 8 `IsPlayback` is the same folded function as `IsPlayingDemo`. The
+header's last declarations do not match (slot 150, declared `IsDedicatedServer`, takes five
+arguments); RTXDebug does not call them. `Engine.World` reported `max_clients` 8 in probe 7's
+dedicated session and 1 in single-player (`out/multiplayer-evidence/probe7/debug-checks.json`,
+`out/multiplayer-evidence/singleplayer/checks.json`).
+
 ## Startup text and main-menu identity (requests 15 and 23)
 
 The launch text was hard-coded in runtime src/dxvk/imgui/dxvk_imgui_splash.cpp:88 and referred to
@@ -333,6 +374,23 @@ no shader source or ABI changes are needed. Tags affect all draws sharing a capt
 - The launcher's optional MaterialSystemFallbackPatch guard was run in an isolated .NET probe:
   Unsupported, InitializeShader counter initialization site not found. It leaves these bytes
   unchanged, matching its normal warning/skip behavior. No downloaded Python code was executed.
+- Links (2026-10-31, RTXLauncher 7779fc4 read locally): Mount HL2 RTX builds
+  garrysmod/addons/mount-hl2rtx/{models,materials,maps} as real folders whose entries are file and
+  directory symbolic links into Half-Life 2 RTX (Hl2RtxMountService.cs BuildMergedDirectory,
+  File.CreateSymbolicLink :365, Directory.CreateSymbolicLink :375), next to
+  .rtxlauncher-hl2rtx-overlay.json, and adds entries to garrysmod/cfg/mount.cfg. A new launcher
+  install (GarrysModInstallService.cs:80-158) links the VPKs, sourceengine, platform and
+  garrysmod/{saves,dupes,demos,settings,cache,materials,models,maps,screenshots,videos,download};
+  none of those is a path the migration catalogs. mount-hl2rtx is one of its five add-on roots.
+- MSVC std::filesystem::absolute (GetFullPathNameW) resolves "." and ".." before a check of the
+  result could see them, so a path must be checked as given. Iterating "H:\a" yields "H:" first,
+  and stat("H:") reads drive H's current folder, not its root; start link checks at root_path().
+- Re-hashing a freshly staged payload before each move (loader 0.8.0, every step): 1.5 GiB in
+  0.75 s, 2.0 GiB/s (CNG SHA-256, 1 MiB reads, page cache warm; Ryzen 9 9950X3D, which has SHA
+  extensions; other games running; 2026-10-31). The RTX package is about 1.75 GB (files.json:
+  runtime 1,204 MB, fixes 433 MB, model-hotloader 83 MB, the rest 30 MB), so about 0.85 s at every
+  update here, and several seconds on a CPU without SHA extensions or once the staged files have
+  left the cache (estimate). The check now covers the migration's moves only.
 
 Facts the design rests on, with where they came from, so nobody has to dig them up again. Gathered
 2026-10-27 unless a section says otherwise. "Verified" = checked directly (file read, PE parse,
@@ -2537,6 +2595,32 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   alignment. The final DLSS-G stages resolved frameGenerationType=1 and dlfg.enable=True, with
   fsrfg.enable=False; capture/draw counts advanced and no module error was logged.
 
+## R4 companion review facts (2026-10-31)
+
+From the RTX fixes' source (`H:\BACKUP_20260815\Modding\garrys-mod-rtx-remixed\source`, read only)
+and this repository:
+
+- `RemixMaterial.GetMaterialHashRevision()` returns nil whenever the native material-hash lookup is
+  unavailable: while a refresh runs, or after one failed (`d3d9_texture_tracker.cpp:794-801`). A
+  refresh fails when any cached texture has no hash yet (`:748-752`, `:780-784`) and runs at most
+  once a second (`:716-737`), so nil is common while textures load; the old outline module then
+  rescanned every cached material and re-read every hash on every frame.
+- `RemixMaterial.GetCachedMaterials()` lists the tracker's whole texture cache, every material drawn
+  (world brushes, decals and sprites too: `d3d9_texture_tracker.cpp:472-480`); it says nothing about
+  which entity uses a material.
+- `RemixMaterial.GetAllTextureHashes(name)` reads only that cache (`material_lua_bindings.cpp:644-690`,
+  `d3d9_texture_tracker.cpp:445-470`): a material has hashes only after it was drawn.
+- `RemixConfig.SetConfigVariable` prints a warning on every refused write (`config_lua_bindings.cpp:27-30`);
+  `RemixMaterial.TrackMaterial` warns for a name with no material or no `$basetexture`
+  (`material_lua_bindings.cpp:547-553`).
+- The runtime's `rtx.gmod.ignoreOutlineMeshes` defaults to `True` (NoSave; runtime patch 0014,
+  `rtx_model_layers.h`), so the companion sends `False` to keep the shell rule off.
+- `rtx_pseudoplayer` is created by the RTX fixes (`remixlua/cl/cl_rtx_misc.lua:3`, default 1), which
+  `autorun/cl_rtx.lua` includes while GMod runs `lua/autorun/`, before `lua/autorun/client/`: the
+  companion menu's own `CreateClientConVar("rtx_pseudoplayer", "0", ...)` never set the default.
+- Glass Rewrite's client asks for every shard once (an empty `SHARD_NETWORK` 1 s after
+  `InitPostEntity`, `networking.lua`) and for each new shard in its `Initialize`
+  (`procedural_shard.lua:716-719`); 256 shards of 300 vertices are about 920 KB.
 
 ## Layered alpha cutouts and outline meshes (2026-10-30)
 
@@ -2568,3 +2652,80 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   with micromaps disabled. GBuffer compute-query, raygen-query and trace-ray views were clear;
   skin changes, opt-out/re-enable and normal micromaps were exercised. RTXDebug Engine.GetConVar
   independently reported nativeloader_ignore_outlines=1 with archive flags.
+
+## R4 field facts (2026-10-31, Claude)
+
+Measured on the user's install (RTX 5090, loader 0.10.0 and the published package, the user's
+`mat_queue_mode "2"`, 766 subscriptions); evidence in the main checkout's `out\qa-field\`.
+
+- **Procedural glass and queued rendering.** Drawing a `procedural_shard` with `ENT:Draw` ->
+  `self:DrawModel()` and `ENT:GetRenderMesh` returning a Lua `IMesh` crashed the game on the material
+  system's render thread: access violation reading `0xffffffffffffffff` at `studiorender.dll+0x6603b`,
+  called from `+0x141b9` <- `+0x5cb21` <- `+0x5fea7` <- `materialsystem.dll` queued context <- a
+  `vstdlib.dll` job thread; no project module on that stack. It happened for map debris and for the
+  add-on's own spawned pane alike, and not at all when the entity drew its mesh itself
+  (`cam.PushModelMatrix(self:GetWorldTransformMatrix())` + `IMesh:Draw()`). Destroying meshes late alone
+  did not stop it. Codex's PoC acceptance of the map glass ran with the default `mat_queue_mode`.
+- **What Remix rasterizes into a render target.** In an RTX session, 2D draws into a render target from
+  `HUDPaint` work as in Direct3D 9 (`render.Clear`, `render.ClearRenderTarget` and an opaque rectangle
+  all clear it; moving text leaves no trail). The same 2D draws from `PostDrawOpaqueRenderables` leave
+  the target black. A perspective draw (`cam.Start` with a 3D camera) is taken into the path-traced
+  scene even inside `HUDPaint`. Dynamic Toolgun Screen's target (`DTScreen_Screen512`, drawn in
+  `SWEP:RenderScreen`) is sharp when shown flat on the HUD; on the gun only the path-traced screen is
+  seen, whose scrolling text smears under temporal reconstruction.
+- **Crash-report prompts.** After a crash the runtime's next start shows "RTX Remix Crash Report"
+  (Yes/No, in the Windows language: `はい(&Y)` / `いいえ(&N)` here), and after No may show a notice that
+  pending reports could not be removed (OK). `WM_COMMAND` with `IDNO` (7), then `IDOK` (1), answers
+  them in any language; the reports folder is emptied when it can be.
+- **Field timings.** With 766 subscriptions the Workshop remount took 16.5 s and gm_construct was ready
+  23-27 s after launch; the loader's start-up took 0.34-0.36 s.
+- **GMod's menu reads generated JavaScript as Windows-1252.** A UTF-8 `·` written into the loader's
+  copy of `control.Menu.js` showed as `Â·`, and every translated label as mojibake; `\uXXXX` escapes
+  (ASCII only) show correctly in all seven languages (loader 0.10.1).
+- **The RTX fixes' late model flush races queued rendering** (PoC, the same game binaries as the
+  field, `-windowed 1280x720`, no Workshop mount). `cl_rtx.lua` calls
+  `RTX_ReloadModelsAfterHardwareSkinningSettings` (`MDLCACHE_FLUSH_STUDIOHWDATA`) once at autorun and
+  once one second after `InitPostEntity`, when the world is drawn. 4 of 8 starts crashed within a
+  few seconds of that second flush: access violation reading 0 at `studiorender.dll+0x5d353` on a
+  `vstdlib.dll` job thread running the `materialsystem.dll` queued context, `[HWSkin] CRASH in
+  DrawGroupHWSkin trampoline!` or `[HWSkin] Exception in RenderFinal trampoline` logged during the
+  flush. The fork's SEH guards around those hooks date from upstream (2026-08), so the race predates
+  the QoL batch. The field (766 add-ons, 4K) reached the map 14 times without it. `RunConsoleCommand
+  ("mat_queue_mode", "0")` from client Lua is accepted, and the material system leaves queued mode at
+  a frame boundary after waiting for its thread.
+- **Minidumps and the declined prompt.** The dump of a crash is written to
+  `rtx-remix\logs\.sentry-native\reports\<uuid>.dmp`; once the next start's prompt is answered No,
+  Remix deletes it, so a test harness must copy it before that start.
+
+## The Motion importer tab and the bundled motion importer (2026-10-31, Claude)
+
+- **The part was behind its add-on.** `packages/character-motion-importer` was imported on
+  2026-10-30 from `H:\BACKUP_20260815\Modding\ipg\Gmod-Mmd-Motion-Importer`, a clone at 318b054
+  (2026-10-07). The add-on's `main` (`origin/main`, and the clone in
+  `C:\Users\matt-peng\Documents\Codex\2026-10-17\please-help-me-connect-claude-on\Gmod-Mmd-Motion-Importer`) is at fcd56f4 (2026-10-27).
+  7751327 there added the in-game importer: `cl_importer.lua` (1,005 lines: the window, Resolve,
+  the job in a coroutine at 12 ms a frame), `cl_import_bake.lua` (1,946: a Lua port of the native
+  baker), `cl_import_data.lua` (938: the bundled skeleton), `mmdvmd_import`, the tool's import button,
+  and 98 phrases in its eight languages (no Traditional Chinese). 810c0d1 and a03b7af added the
+  stage placement and movement options. So the RTX package shipped no in-game importer, and ADR 0049's
+  tab could only open the Motion Manager.
+- **Line endings.** The add-on's working tree has every Lua file with CRLF (`core.autocrlf`) except
+  `cl_camera.lua`, which is LF (40,354 bytes, the size of the blob). The part stores CRLF throughout.
+- **Catalogs after the upgrade:** 462 keys in each of the nine (`ar en es fr ja ko ru zh zh-tw`),
+  `tools/check_addon_i18n.py` 0 problems.
+- **When a creation tab is built.** Sandbox's `gamemodes/sandbox/gamemode/spawnmenu/creationmenu.lua`
+  (PoC install) creates a plain `Panel` per tab and, in `timer.Simple(0)`, calls the tab's function,
+  parents the returned panel to it and docks it `FILL`: at the start of the session and on every
+  `spawnmenu_reload`, not when the tab is first opened. Panels only think while visible, so the motion
+  tab builds its content in its first `Think` (as External Models does in `mmdhl/menu.lua`, waiting
+  for `mmdhl.CreateLibrary`), which also covers the add-on loading after the companion.
+- **External Models' look** (`mmdhl/ui.lua`): text `Color(31,43,58)`, muted `Color(93,109,127)`,
+  accent `Color(34,109,185)` (line 4); flat rounded button styles primary, success, warning, danger,
+  secondary, tab (lines 27-34, `draw.RoundedBox(4, ...)`, a selected tab filled with the accent); the
+  page `Color(246,248,251)` (line 141); the left column `clamp(width * 0.37, 260, 460)` scaled by
+  `ScrH()/1080` (line 865). `mmdhl.UI` exports these helpers, but only Model Hotloader uses it; the
+  motion importer's light theme copies the colours instead of depending on it.
+- **Hooks keyed by a panel.** GMod's `hook.Run` passes a non-string identifier as the first argument
+  and drops it once `IsValid` fails, so the builders key their hooks by their root panel: a closed
+  window or a rebuilt spawn menu drops them without `OnRemove` (the window still releases its hooks
+  and stops the music preview in `OnRemove`, as before).

@@ -1,4 +1,5 @@
 #pragma once
+#include "nl/activate.h"
 #include "nl/config.h"
 #include "nl/journal.h"
 #include <filesystem>
@@ -25,4 +26,9 @@ Catalog prepare(const std::filesystem::path& root, const config::Config& config,
                 const journal::Generation& generation);
 bool native_bootstrap_present(const journal::Generation& generation);
 bool secure_render_patch_set(std::string_view owner, const manifest::PatchSet& set);
+// Why an activating plan must fall back to vanilla, or empty. With patch_sets.allow_rtx_render_patches
+// false and the general gate closed (require_insecure, no -insecure in `command_line` nor in the
+// arguments the plan adds), the reviewed rendering recipes would be skipped: the renderer crashed
+// without them (ADR 0052, ADR 0056).
+std::string render_recipes_refusal(const activate::Plan& plan, std::wstring_view command_line);
 }

@@ -1,14 +1,43 @@
 local api = __NATIVELOADER_CLIENT_API
 __NATIVELOADER_CLIENT_API = nil
 if not api or not CLIENT_DLL or SERVER or MENU_DLL then return end
-if not GAMEMODE or not hook or not CompileString or not IsValid(LocalPlayer()) then return end
+-- Missing lifecycle APIs never appear later: finish rather than be compiled again on every poll.
+if not hook or not CompileString then api.finish(0, 0, 'the client realm has no hook library or CompileString') return end
+if not GAMEMODE or not IsValid(LocalPlayer()) then return end
 if game.SinglePlayer() then api.finish(0, 0, 'normal single-player loading') return end
+-- The packaged cl_rtx.lua says when normal loading already ran it; a second run would register its
+-- hooks, convar callbacks and entities again. A listen host and an sv_allowcslua 1 server ran every
+-- local add-on that way. Any other server delivered its own copy of that add-on: leave out just it.
+local normalLoad = rawget(_G, 'NATIVELOADER_RTX_NORMAL_LOAD') == true
+if normalLoad then
+    local _, host = pcall(function() return LocalPlayer():IsListenServerHost() end)
+    local _, allowed = pcall(function() return GetConVar('sv_allowcslua'):GetBool() end)
+    if host == true or allowed == true then
+        api.finish(0, 0, 'normal loading already ran the RTX payload')
+        return
+    end
+end
 
 local files, keys = {}, api.list()
 for _, key in ipairs(keys) do files[key] = true end
+local normallyLoaded, normallyLoadedList = {}, {}
+if normalLoad then
+    for _, key in ipairs(keys) do
+        local owner = key:match('^([^/]+)/autorun/cl_rtx%.lua$')
+        if owner and not normallyLoaded[owner] then
+            normallyLoaded[owner] = true
+            normallyLoadedList[#normallyLoadedList + 1] = owner
+        end
+    end
+end
 local originalInclude, originalRequire, originalFile = include, require, file
 local errors, loaded, loading, required = {}, 0, {}, {}
-local newInit, originalHook = {}, hook
+local originalHook = hook
+-- Loading events that already happened before this late initialization, in the order they are
+-- replayed. Only owned registrations are tracked and replayed.
+local replayed = {'OnGamemodeLoaded', 'PostGamemodeLoaded', 'Initialize', 'InitPostEntity'}
+local registrations = {}
+for _, event in ipairs(replayed) do registrations[event] = {} end
 -- Client rendering remains useful when the remote server has none of the bundled tools.
 -- Keep their absent-channel traffic local to these environments; never replace global net.
 local missingChannels, droppedMessage, originalNet = {}, false, net
@@ -59,8 +88,10 @@ local function resolve(owner, path, from)
     local found
     if global then for _, key in ipairs(keys) do
         if key:sub(-#global - 1) == '/' .. global then
-            local _, virtual = key:match('^([^/]+)/(.*)$')
+            local holder, virtual = key:match('^([^/]+)/(.*)$')
             if virtual == global then if found then return end found = key end
+            -- The server's own copy of a normally loaded add-on serves it through the engine.
+            if found == key and normallyLoaded[holder] then return end
         end
     end end
     return found
@@ -123,9 +154,10 @@ local function environment(key, special)
     rawset(env, 'file', scopedFile)
     rawset(env, 'net', scopedNet)
     local scopedHook = setmetatable({}, {__index = originalHook})
-    scopedHook.Add = function(event, name, fn)
-        if event == 'InitPostEntity' then newInit[name] = fn end
-        return originalHook.Add(event, name, fn)
+    scopedHook.Add = function(event, name, fn, ...)
+        local tracked = registrations[event]
+        if tracked and name ~= nil then tracked[name] = fn end
+        return originalHook.Add(event, name, fn, ...)
     end
     rawset(env, 'hook', scopedHook)
     return env
@@ -150,9 +182,9 @@ local function safely(key, special)
 end
 local autoruns = {}
 for _, key in ipairs(keys) do
-    local path = key:match('^[^/]+/(.*)$')
+    local owner, path = key:match('^([^/]+)/(.*)$')
     local area = path:match('^(.*)/[^/]+%.lua$')
-    if area == 'autorun' or area == 'autorun/client' then autoruns[#autoruns + 1] = key end
+    if (area == 'autorun' or area == 'autorun/client') and not normallyLoaded[owner] then autoruns[#autoruns + 1] = key end
 end
 table.sort(autoruns, function(a, b)
     local x, y = a:match('^[^/]+/(.*)$'), b:match('^[^/]+/(.*)$')
@@ -164,23 +196,31 @@ for _, key in ipairs(autoruns) do
     local path = key:match('^[^/]+/(.*)$')
     safely(key)
 end
--- Definitions follow their libraries; only our newly installed InitPostEntity callbacks are replayed.
+-- Definitions follow their libraries. A class the server already delivered keeps its definition.
+local delivered = {}
 for _, key in ipairs(keys) do
-    local path = key:match('^[^/]+/(.*)$')
+    local owner, path = key:match('^([^/]+)/(.*)$')
     local name = path:match('^entities/([^/]+)%.lua$') or path:match('^entities/([^/]+)/cl_init%.lua$')
-    if name then
-        local ent = {Type = 'anim', Base = 'base_anim', ClassName = name}
-        if safely(key, {ENT = ent}) and scripted_ents then scripted_ents.Register(ent, name) end
+    if name and not normallyLoaded[owner] then
+        if scripted_ents and scripted_ents.GetStored and scripted_ents.GetStored(name) then
+            delivered[#delivered + 1] = name
+        else
+            local ent = {Type = 'anim', Base = 'base_anim', ClassName = name}
+            if safely(key, {ENT = ent}) and scripted_ents then scripted_ents.Register(ent, name) end
+        end
     end
 end
-for name, fn in pairs(newInit) do
-    if (hook.GetTable().InitPostEntity or {})[name] == fn and (type(name) == 'string' or IsValid(name)) then
-        local ok, reason
-        if type(name) == 'string' then ok, reason = pcall(fn) else ok, reason = pcall(fn, name) end
-        if not ok then errors[#errors + 1] = 'InitPostEntity/' .. tostring(name) .. ': ' .. tostring(reason) end
+-- Only our newly installed loading callbacks are replayed, event by event.
+for _, event in ipairs(replayed) do
+    for name, fn in pairs(registrations[event]) do
+        if (hook.GetTable()[event] or {})[name] == fn and (type(name) == 'string' or IsValid(name)) then
+            local ok, reason
+            if type(name) == 'string' then ok, reason = pcall(fn) else ok, reason = pcall(fn, name) end
+            if not ok then errors[#errors + 1] = event .. '/' .. tostring(name) .. ': ' .. tostring(reason) end
+        end
     end
 end
 NATIVELOADER_CLIENT_PAYLOAD = {identity = api.identity, loaded = loaded, errors = errors, multiplayer = true,
-    missing_server_channels = missingChannels}
+    missing_server_channels = missingChannels, server_entities = delivered, normally_loaded = normallyLoadedList}
 for _, reason in ipairs(errors) do MsgN('[NativeLoader RTX client] ' .. reason) end
 api.finish(loaded, #errors, 'verified client payload loaded')

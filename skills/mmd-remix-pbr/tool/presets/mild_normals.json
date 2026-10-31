@@ -1,0 +1,6 @@
+{
+  "presets": {
+    "cloth": {"normal": 0.9},
+    "leather": {"normal": 0.7}
+  }
+}

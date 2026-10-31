@@ -102,7 +102,14 @@ function Assert-Unedited([string] $Path, [string] $RecordedHash, [string] $Build
     $actual = Get-HashOrNull $Path
     $expected = if ($RecordedHash) { $RecordedHash } else { Get-HashOrNull $BuildPath }
     if (-not $actual -or -not $expected -or $actual -cne $expected) {
-        throw "Refusing to overwrite/remove a changed or untracked file: $Path (no matching recorded/build SHA-256)."
+        $hint = ''
+        if ($RecordedHash -and $Path -eq $dllPath -and (Test-LoaderIdentity $Path)) {
+            # A loader build the receipt does not record: typically a release bundle extracted over an
+            # installed loader. The receipt then describes a DLL that is gone.
+            $hint = " It is a loader build the receipt does not record (a bundle extracted over an installed loader?):" +
+                " move $receiptPath aside, then install with -ReplaceUntracked, which keeps it in $replacedDir."
+        }
+        throw "Refusing to overwrite/remove a changed or untracked file: $Path (no matching recorded/build SHA-256).$hint"
     }
 }
 $knownDllHash = if ($receipt) { $receipt.dll_sha256 } else { $null }

@@ -1,0 +1,15 @@
+{
+  "doc": "Strong, clearly-PBR look: every material class pushed away from Remix's legacy roughness 0.7 (glossier speculars), AI roughness variation amplified, normals well above 1. Skin and the face classes (face, mouth, lash, sclera, eye, highlight) are deliberately left at their anime-safe defaults in classify.py: pushing them turns cel-painted skin and faces plastic, and the AI finds no skin detail to amplify. wet only applies where a settings file pins it.",
+  "presets": {
+    "default":   {"rough": 0.45, "rough_ai": 1.0, "normal": 1.8},
+    "cloth":     {"rough": 0.55, "rough_ai": 1.2, "normal": 2.6},
+    "stockings": {"rough": 0.30, "rough_ai": 0.8, "normal": 1.4},
+    "leather":   {"rough": 0.20, "rough_ai": 1.0, "normal": 2.0},
+    "rubber":    {"rough": 0.08, "rough_ai": 0.5, "normal": 0.8},
+    "hair":      {"rough": 0.28, "rough_ai": 0.9, "normal": 1.2},
+    "nail":      {"rough": 0.08, "rough_ai": 0.3, "normal": 0.3},
+    "wet":       {"rough": 0.12, "rough_ai": 0.2, "normal": 0.0},
+    "gem":       {"rough": 0.02, "rough_ai": 0.0, "normal": 0.4},
+    "metal":     {"rough": 0.12, "rough_ai": 0.8, "metal": 1.0, "normal": 1.6}
+  }
+}

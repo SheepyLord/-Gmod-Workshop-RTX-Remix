@@ -124,6 +124,27 @@ TEST_CASE("legacy detect: ordinary file wrapper refuses absent files directories
   fs::remove(junction); fs::remove_all(root);
 }
 
+TEST_CASE("legacy detect: below a game root only links under the root count, and a linked entry is no runtime") {
+  namespace fs = std::filesystem;
+  const auto root = nl::test::scratch_dir("legacy_detect_root");
+  write(root / "real/bin/win64/d3d9.dll", fixture());
+  const auto junction = [](const fs::path& link, const fs::path& target) {
+    const auto command = "cmd /c mklink /J \"" + link.string() + "\" \"" + target.string() + "\" >nul";
+    return std::system(command.c_str()) == 0;
+  };
+  REQUIRE(junction(root / "game", root / "real"));  // a game folder reached through a junction
+  CHECK(nl::legacy::is_remix_runtime(root / "game", "bin/win64/d3d9.dll"));
+  CHECK(!nl::legacy::is_remix_runtime(root / "game/bin/win64/d3d9.dll"));  // the whole-path form refuses it
+  REQUIRE(junction(root / "real/bin/linked", root / "real/bin/win64"));
+  CHECK(!nl::legacy::is_remix_runtime(root / "game", "bin/linked/d3d9.dll"));
+  REQUIRE(junction(root / "real/bin/win64/d3d9_remix.dll", root / "real/bin/win64"));
+  CHECK(!nl::legacy::is_remix_runtime(root / "game", "bin/win64/d3d9_remix.dll"));
+  CHECK(!nl::legacy::is_remix_runtime(root / "game", "bin/win64/../win64/d3d9.dll"));
+  CHECK(!nl::legacy::is_remix_runtime(root / "game", "bin/win64/missing.dll"));
+  fs::remove(root / "real/bin/win64/d3d9_remix.dll"); fs::remove(root / "real/bin/linked"); fs::remove(root / "game");
+  fs::remove_all(root);
+}
+
 TEST_CASE("legacy detect: sparse reader reaches distant sections and checks cross-page strings") {
   namespace fs = std::filesystem;
   const auto root = nl::test::scratch_dir("legacy_detect_sparse");

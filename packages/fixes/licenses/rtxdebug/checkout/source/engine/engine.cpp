@@ -4,6 +4,7 @@
 #include "../lua_bridge/lua_bridge.h"
 #include "../lua_util.h"
 #include "../memory/memory_debug.h"
+#include "../render_policy.h"
 
 #include <GarrysMod/FactoryLoader.hpp>
 #include <GarrysMod/Lua/Interface.h>
@@ -11,6 +12,7 @@
 #include <cdll_int.h>
 #include <filesystem.h>
 #include <icvar.h>
+#include <inetchannelinfo.h>
 #include <materialsystem/imaterial.h>
 #include <materialsystem/imaterialsystem.h>
 #include <materialsystem/imaterialvar.h>
@@ -36,6 +38,7 @@ namespace {
 
 constexpr const char* kGameThreadError = "Source interfaces must be accessed on the game thread";
 constexpr const char* kGateError = "mutation requires local single-player, sv_cheats 1, and -insecure";
+constexpr const char* kLocalError = "this query is available only in local single-player";
 
 struct SavedConVar {
     std::string name;
@@ -130,6 +133,8 @@ bool HasPrefix(const char* name, const std::string& prefix) {
 
 LUA_FUNCTION_STATIC(ListConsole) {
     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
+    // Enumerating every convar would let a remote server's client scripts read the whole console.
+    if (!RTXDebug::IsSinglePlayer()) return PushError(LUA, kLocalError);
     ICvar* console = Cvar();
     if (!console) return PushError(LUA, "ICvar is unavailable");
     const std::string prefix = LUA->IsType(1, String) ? LUA->GetString(1) : "";
@@ -166,8 +171,12 @@ LUA_FUNCTION_STATIC(ListConsole) {
 LUA_FUNCTION_STATIC(GetConVar) {
     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
     if (!LUA->IsType(1, String)) return PushError(LUA, "GetConVar(name) expects a string");
+    const char* requested = LUA->GetString(1);
+    // Outside a local game, read only the rendering convars a multiplayer RTX session inspects.
+    if (!RTXDebug::IsSinglePlayer() && !Policy::IsRenderingConVar(requested))
+        return PushError(LUA, "outside local single-player, GetConVar reads only rendering convars (rtx*, r_*, mat_*, cl_draw*)");
     ICvar* console = Cvar();
-    ConVar* variable = console ? console->FindVar(LUA->GetString(1)) : nullptr;
+    ConVar* variable = console ? console->FindVar(requested) : nullptr;
     if (!variable) return PushError(LUA, "convar was not found");
     LUA->CreateTable();
     SetString(LUA, "name", variable->GetName());
@@ -388,6 +397,8 @@ LUA_FUNCTION_STATIC(InterfaceStatus) {
 // and the vtable's offset in the module that implements it.
 LUA_FUNCTION_STATIC(ResolveInterface) {
     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
+    // Module and vtable addresses would help someone exploiting another bug; local games only.
+    if (!RTXDebug::IsSinglePlayer()) return PushError(LUA, kLocalError);
     if (!LUA->IsType(1, String) || !LUA->IsType(2, String))
         return PushError(LUA, "Resolve(module, version) expects two strings");
     SourceSDK::FactoryLoader loader(LUA->GetString(1));
@@ -535,6 +546,8 @@ LUA_FUNCTION_STATIC(MaterialList) {
 
 LUA_FUNCTION_STATIC(FileExists) {
     if (!RTXDebug::IsMainThread()) return PushError(LUA, kGameThreadError);
+    // Probing the game's filesystem is a disclosure; local games only.
+    if (!RTXDebug::IsSinglePlayer()) return PushError(LUA, kLocalError);
     if (!LUA->IsType(1, String)) return PushError(LUA, "FileExists(path, pathId) expects a path");
     IFileSystem* filesystem = Filesystem();
     if (!filesystem) return PushError(LUA, "IFileSystem is unavailable");
@@ -548,6 +561,25 @@ LUA_FUNCTION_STATIC(FileExists) {
 // Engine.World reports the screen size through IVEngineClient instead.
 
 } // namespace
+
+// Checked against GMod x64 engine.dll through RTTI: CEngineClient's vtable has
+// GetMaxClients at slot 21, IsConnected at 27, GetNetChannelInfo at 72 (it returns the
+// client state's channel pointer) and IsPlayingDemo at 76, as cdll_int.h declares them.
+// CNetChan has IsLoopback at slot 6; it tests its remote address for type NA_LOOPBACK,
+// which only a connection to the server running in this process has.
+Policy::SessionFacts ReadSessionFacts() {
+    Policy::SessionFacts facts;
+    if (!RTXDebug::IsMainThread()) return facts;
+    IVEngineClient* engine = EngineClient();
+    if (!engine || !engine->IsConnected()) return facts;
+    facts.connected = true;
+    facts.maxClients = engine->GetMaxClients();
+    facts.demoPlayback = engine->IsPlayingDemo();
+    const INetChannelInfo* channel = engine->GetNetChannelInfo();
+    facts.netChannel = channel != nullptr;
+    facts.loopback = channel && channel->IsLoopback();
+    return facts;
+}
 
 void Register(ILuaBase* lua) {
     lua->CreateTable();

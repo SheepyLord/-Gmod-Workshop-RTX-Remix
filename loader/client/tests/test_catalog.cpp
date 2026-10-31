@@ -329,3 +329,53 @@ TEST_CASE("secure render patches: changed fields extra recipes subsets and order
     }
   }
 }
+
+namespace {
+nl::activate::Plan render_plan(std::string_view owner) {
+  nl::activate::Plan plan;
+  plan.activate = true;
+  plan.runtime_id = std::string(kPackage);
+  plan.patch_sets_need_insecure = true;
+  plan.allow_secure_rtx_render_patches = false;
+  for (const auto& set : renderer_recipes()) plan.patch_sets.push_back({std::string(owner), set});
+  return plan;
+}
+}
+
+TEST_CASE("render recipes: the opt-out without -insecure refuses activation (ADR 0056)") {
+  const auto plan = render_plan(kPackage);
+  const auto reason = nl::client::render_recipes_refusal(plan, L"gmod.exe -windowed");
+  CHECK(!reason.empty());
+  CHECK(reason.find("patch_sets.allow_rtx_render_patches") != std::string::npos);
+  CHECK(reason.find("-insecure") != std::string::npos);
+}
+
+TEST_CASE("render recipes: any path that applies the recipes keeps activation") {
+  auto plan = render_plan(kPackage);
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe -INSECURE").empty());
+  CHECK(nl::client::render_recipes_refusal(plan, L"\"C:\\Program Files\\gmod.exe\" -insecure -windowed").empty());
+  plan.launch_args = {"-insecure"};  // a package that asks for it
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe").empty());
+  plan = render_plan(kPackage);
+  plan.allow_secure_rtx_render_patches = true;  // the default exception
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe").empty());
+  plan = render_plan(kPackage);
+  plan.patch_sets_need_insecure = false;  // the general gate is open
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe").empty());
+  plan = render_plan(kPackage);
+  plan.activate = false;  // nothing to refuse
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe").empty());
+}
+
+TEST_CASE("render recipes: other patch sets, owners or a bare -insecure value never refuse") {
+  CHECK(nl::client::render_recipes_refusal(render_plan("community-package"), L"gmod.exe").empty());
+  auto plan = render_plan(kPackage);
+  plan.patch_sets.clear();
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe").empty());
+  plan = render_plan(kPackage);
+  plan.patch_sets.front().set.patches.front().replace = "90";
+  plan.patch_sets.resize(1);  // a changed recipe never inherits the exception, so its skip is not this refusal
+  CHECK(nl::client::render_recipes_refusal(plan, L"gmod.exe").empty());
+  // A quoted value that merely contains the text is not the option.
+  CHECK(!nl::client::render_recipes_refusal(render_plan(kPackage), L"gmod.exe +hostname \"-insecure server\"").empty());
+}

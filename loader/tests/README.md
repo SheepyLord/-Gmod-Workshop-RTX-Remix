@@ -7,7 +7,7 @@ backward compatible.
 
 | File | Purpose |
 |---|---|
-| `CMakeLists.txt` | Builds `nl_tests` and `nl_fault_host`; registers the CTests `nl_tests` (everything but the exhaustive fault cases), `nl_tests_faults_upgrade`, `nl_tests_faults_other`, `nl_tests_faults_errors`, `nl_tests_faults_unsubscribe` (one each, so they run in parallel) and `nl_deploy_faults` |
+| `CMakeLists.txt` | Builds `nl_tests` and `nl_fault_host`; registers the CTests `nl_tests` (everything but the exhaustive fault cases), `nl_tests_faults_upgrade`, `nl_tests_faults_other`, `nl_tests_faults_errors`, `nl_tests_faults_unsubscribe`, `nl_tests_faults_legacy`, `nl_tests_faults_legacy_stock` (one each, so they run in parallel) and `nl_deploy_faults` |
 | `nl_test.h` | Harness: `TEST_CASE("name") { ... }`, `CHECK(expr)` (record and continue), `REQUIRE(expr)` (record and end the case), `CHECK_THROWS_AS(expr, type)`, `scratch_dir(name)` |
 | `test_main.cpp` | Runner: runs every case, those whose name contains the first argument, or, with `--skip=<text>`, all but those; prints `ok`/`FAIL` per case; exit code 0 only if at least one case ran and none failed. Also defines `scratch_dir` |
 | `gma_fixture.h` | Builds synthetic GMAD archives independently of the reader (versions, CRC on or off, custom sizes and CRCs, trailing bytes) |
@@ -34,11 +34,11 @@ backward compatible.
 | `test_cmdline.cpp` | Token/getter decoding, synthetic descriptor validation, lengths/capacity bounds, failed/partial-write rollback and scoped restoration |
 | `cmdline_host.cpp` | Separate CTest process `nl_cmdline_roundtrip`: real kernelbase W/A and PEB swap, updated lengths, then exact explicit and scoped restoration; includes original quoted/Unicode arguments |
 | `test_version.cpp` | `nl::version()` matches the CMake project version |
-| `legacy_fixture.h` | Generated inert PE export fixture shared by migration and deployment tests; no game code |
-| `test_legacy_detect.cpp` | PE32/PE32+ exports, sparse/page-boundary reads, aliases, malformed mappings and link refusal |
-| `test_legacy_migrate.cpp` | Prior-runtime detection, protected files, exact journal exceptions, ownership exclusions, unknown depot edits and backup collisions; test_deploy.cpp additionally tests migration/uninstall and every interrupted/failed filesystem operation |
+| `legacy_fixture.h` | Generated inert PE export fixture shared by migration and deployment tests, and a synthetic depot for stock restoration: stock, launcher and build-anchor bytes for three paths of the built-in catalog, with the catalog that trusts them; no game code or bytes |
+| `test_legacy_detect.cpp` | PE32/PE32+ exports, sparse/page-boundary reads, aliases, malformed mappings and link refusal; below a game root, a junctioned root accepted and linked entries refused |
+| `test_legacy_migrate.cpp` | Prior-runtime detection, protected files, exact journal exceptions, ownership exclusions and backup collisions; links left in place (Mount HL2 RTX's linked folders, a junctioned add-on root), linked runtime entries, a junctioned game root, `.`/`..` in recovery sources; stock restoration over the synthetic catalog (backup_patches, `.bak` and explicit sources, the manifest's sources, another build and unknown edits leaving every depot file, a copy that does not verify, a catalog that may not widen `step_path`). test_deploy.cpp additionally tests migration/uninstall, adopted legacy files, links, junctioned roots, an unplannable migration, a missing stock copy, the check before each migration move, and every interrupted/failed filesystem operation with and without stock restoration |
 | `test_startup.cpp` | Keep-last-good source decisions, explicit removals/Workshop disable/unsubscribe, which removed packages lose their rollback copy, absent/disabled/invalid config, invalid journal and contention with/without pending transaction; late staging failure versus CLI behavior is also covered in `test_deploy.cpp` |
-| `test_status.cpp` | Status JSON schema/content, user layers and fallback details, atomic replacement and selective uninstall cleanup |
+| `test_status.cpp` | Status JSON schema/content, user layers and fallback details, the exact active-outcome text the companion guard's local RTX-start check reads (ADR 0056), atomic replacement and selective uninstall cleanup |
 | `fault_host.cpp` | `nl_fault_host`, test-only: one deployer command (`apply`, `rollback`, `uninstall`, `recover`) that ends itself before change N (`--kill-at N`, exit 99) or fails it (`--fail-at N`) |
 | `deploy_faults.py` | CTest `nl_deploy_faults`: kills `nl_fault_host` before every change of the same four scenarios on the real file system ([doc](deploy_faults.py.md)) |
 

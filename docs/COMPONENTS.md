@@ -18,6 +18,16 @@ failure remains a nonfatal note. Inactive/server/menu contexts stay unchanged. T
 suite has 20 passing cases, including foreign/legacy classifications; the latest native run passes
 all 22 CTest entries. Controlled live runs record the stock initializer read hit.
 
+R4 (loader 0.10.1, [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md)) amends this: a guard
+that cannot be prepared early no longer refuses RTX. Start-up notes why, and the companion's guard
+installs from its autorun (installation "autorun") when this machine's status.json reports an active
+start. The cache is named from its inputs and the generated block installs the guard only where that
+file exists locally (`BASE_PATH`), so a listen host's served view does nothing on remote clients; a
+changed cache file moves to `native-loader/backup/render-guard/`. With
+`patch_sets.allow_rtx_render_patches: false` and no `-insecure`, start-up stays vanilla with a reason
+(`client::render_recipes_refusal`), and `nlctl activation` says so. The multiplayer route protects
+only owned callbacks and leaves `hook.Call` alone; `loader/client/poll.h` bounds the module's polling.
+
 [`loader/proxy/backend.cpp`](../loader/proxy/backend.cpp) and the core command-line span/rewrite API
 normalize explicit alternate shader backends to stock D3D9 only during active RTX startup. All
 duplicates agree; unrelated raw arguments and RTX-off starts are preserved, and rollback restores
@@ -80,10 +90,14 @@ create-only root files by package_fixes.py. [test_presentation_ui.py](../tools/t
 checks assets and the actual UI script alongside the proxy C++ tests and runtime text-policy test.
 
 The companion's `nativeloader_imported_normals.lua` collects active imported-model hashes for an
-optional additive NoSave smooth-normal category. `nativeloader_motion_tab.lua` opens the existing
-motion manager from its own creation tab. These modules and AME's original-name/current-selection
+optional additive NoSave smooth-normal category. It and AME's original-name/current-selection
 behavior are checked offline by [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md)
-and its Lua harness.
+and its Lua harness. `nativeloader_motion_tab.lua` is the Motion importer creation tab: the bundled
+motion importer's in-game importer and Motion Manager, built into the tab by the add-on's own
+builders (`MMDVMDNPC.BuildMotionImporter`, `MMDVMDNPC.BuildMotionManager`, which its windows use
+too) in External Models' look ([ADR 0060](decisions/0060-motion-tab-hosts-the-importer.md));
+[test_motion_tab.py](../tools/tests/test_motion_tab.py.md) checks the tab, the builders and the
+windows under LuaJIT.
 
 Every component of the project: where it lives, what it does, and its status. Keep this file in
 sync when you add, rename or finish something ([`tools/check_repo.py`](../tools/check_repo.py.md)
@@ -183,6 +197,7 @@ activation inside the bootstrap; real-game visual acceptance remains open as rec
 | CI package build | [`.github/workflows/package.yml`](../.github/workflows/package.yml) | done (2026-10-30) | GitHub Actions on `windows-2022`, on changes to the package's inputs and by hand: cached Git LFS objects, `inputs.py verify`, a Release build of the loader, `build_package.py --require-nlctl`; keeps the summary (the `.gma` when asked for) |
 | Runtime patches | [`runtime/`](../runtime/README.md), [`runtime/build_runtime.ps1`](../runtime/build_runtime.ps1.md) | done (2026-10-30) | This project's changes to the Remix runtime fork as a `format-patch` series against the fork commit in `base.json`; the script applies them in a fork worktree, builds twice (the shader stamp) and imports `d3d9.dll` into `packages/runtime` |
 | Sky texture tools | [`tools/sky`](../tools/sky/make_moon_textures.py.md) | done (2026-10-30) | Make the runtime's sky textures: the Moon's from NASA's CGI Moon Kit ([`make_moon_textures.py`](../tools/sky/make_moon_textures.py.md)), the night sky's from Night Sky HD LE ([`bake_nightsky.py`](../tools/sky/bake_nightsky.py.md), [`nif_read.py`](../tools/sky/nif_read.py.md)), and check the shader's mappings against the mod's mesh ([`nightsky_mapping.py`](../tools/sky/nightsky_mapping.py.md)) |
+| Field QA probes | [`tools/qa`](../tools/qa/rtx_session_probe.lua.md) | done (2026-10-31, R4) | Client Lua probes for `poc_session.py --lua`: the RTX session's state and the toolgun screen, map glass on modern_house, spawned procedural glass, the spawn menu's External Models and Motion importer tabs; [`release_qa.py`](../tools/qa/release_qa.py.md) runs them all on the field or the PoC and applies the pass rules of the release QA protocol in [TESTING.md](TESTING.md#release-qa-protocol-field-install-r4) |
 
 ## Outside this repo (used, not owned here)
 

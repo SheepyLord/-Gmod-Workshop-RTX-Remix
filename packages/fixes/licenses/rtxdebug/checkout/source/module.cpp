@@ -4,6 +4,7 @@
 #include "lua_bridge/lua_bridge.h"
 #include "lua_util.h"
 #include "render_policy.h"
+#include "session_policy.h"
 #include "memory/memory_debug.h"
 #include "remix/remix_debug.h"
 #include "transport/transport.h"
@@ -22,7 +23,7 @@
 
 namespace {
 
-constexpr const char* kVersion = "0.2.0";
+constexpr const char* kVersion = "0.2.1";
 constexpr const char* kRemixApiVersion = "0.1000.1";
 
 GarrysMod::Lua::ILuaBase* g_lua = nullptr;
@@ -130,24 +131,11 @@ GarrysMod::Lua::ILuaBase* Lua() {
     return g_lua;
 }
 
+// Asks the engine client, not Lua: a remote server's client scripts can replace
+// game.SinglePlayer, so a Lua answer would let any server open the mutation gate.
 bool IsSinglePlayer() {
-    if (!IsMainThread() || !g_lua) return false;
-    const int top = g_lua->Top();
-    g_lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-    g_lua->GetField(-1, "game");
-    if (!g_lua->IsType(-1, GarrysMod::Lua::Type::Table)) {
-        g_lua->Pop(g_lua->Top() - top);
-        return false;
-    }
-    g_lua->GetField(-1, "SinglePlayer");
-    if (!g_lua->IsType(-1, GarrysMod::Lua::Type::Function)) {
-        g_lua->Pop(g_lua->Top() - top);
-        return false;
-    }
-    const bool called = g_lua->PCall(0, 1, 0) == 0;
-    const bool result = called && g_lua->GetBool(-1);
-    g_lua->Pop(g_lua->Top() - top);
-    return result;
+    if (!IsMainThread() || g_closing) return false;
+    return Policy::IsLocalSinglePlayer(Engine::ReadSessionFacts());
 }
 
 bool IsInsecureLaunch() {
@@ -162,20 +150,21 @@ bool CheatsEnabled() {
     return cheats && cheats->GetBool();
 }
 
+// Every input is native. The engine and the cvar system are asked only on the game
+// thread of an open module.
 bool CanMutate() {
-    return !g_closing && IsMainThread() && IsInsecureLaunch() && IsSinglePlayer() && CheatsEnabled();
+    const bool mainThread = IsMainThread();
+    const bool ask = mainThread && !g_closing;
+    return Policy::CanMutate(mainThread, g_closing, IsInsecureLaunch(),
+        ask && IsSinglePlayer(), ask && CheatsEnabled());
 }
 
 bool CanConfigureRendering() {
-    if (!IsMainThread() || !g_lua) return false;
+    if (!IsMainThread() || !g_lua || g_closing) return false;
+    // The module's state must be the client state that lua_shared reports. The
+    // CLIENT_DLL, SERVER and MENU_DLL globals are not consulted: scripts can reassign them.
+    const bool client = LuaBridge::IsRealmState(g_lua, "client");
     const int top = g_lua->Top();
-    const auto flag = [&](const char* name) {
-        g_lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, name);
-        const bool value = g_lua->IsType(-1, GarrysMod::Lua::Type::Bool) && g_lua->GetBool(-1);
-        g_lua->Pop();
-        return value;
-    };
-    const bool client = flag("CLIENT_DLL") && !flag("SERVER") && !flag("MENU_DLL");
     g_lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, "RemixConfig");
     bool api = false;
     if (g_lua->IsType(-1, GarrysMod::Lua::Type::Table)) {

@@ -48,7 +48,7 @@ struct Session {
   std::size_t recorded = 0;        // user values held for the restore
   std::size_t restore_values = 0;  // start without RTX: values run through restore_exec
   std::string restore_exec;        // nativeloader_restore.cfg, or empty
-  std::size_t patches = 0;         // patches planned (across patch sets)
+  std::size_t patches = 0;         // patches of the patch sets this session applies (not the skipped ones)
   bool patches_allowed = false;
   std::vector<std::string> overrides;  // module names
   std::string hooks;               // installed, not needed, or why not

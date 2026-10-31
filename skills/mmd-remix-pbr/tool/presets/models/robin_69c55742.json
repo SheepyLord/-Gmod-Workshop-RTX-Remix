@@ -1,0 +1,276 @@
+{
+  "doc": "Robin (Robin.pmx, H:\\BACKUP_20260815\\Modding\\ipg\\zzz_34\\output\\robin_zzz\\1_PMX\\Robin), in game as sheepylord's compiled addon robin_zzz (models/sheepylord/zenless_zone_zero/robin_zzz.mdl, a ragdoll; rpai --mdl), reviewed 2026-10-25: aggressive style (the user's choice for the recent batches). 11 materials on 3 game-rip sheets, 2048 DXT5 in game, all 3 hashes live (the DXT5 prediction agreed 3/3); Robin_Weapon_D.png is referenced by no material and missing. The rip ships normal maps (Robin_Body_Map1_N / Map2_N, 1024: normal in red/green, a mask in blue; DirectX by the curl test, 3.0x / 2.3x) and they replace the AI normals at strength 1.0 on every class but skin, which stays flat. Robin_Body_Map1_D.png is the single Body material: dress, gloves, skin, gold, crystals and shoes in 622 UV islands, so it is pinned to cloth and split per island, in order: islands whose texels are at least 80% warm skin paint become skin (20 islands, all 100%: legs, arms, torso, ears, feet; next best 60%, the lace sleeve) and keep the legacy look (0.7, flat, game colours) per the standard; islands at least 30% champagne gold become metal (91 islands: stars, bands, crescents, the square frame, the collar star, ankle ornaments; the rest score 6% or less); the white facets of the collar star become gem; the faceted white stars on the skirt front and the ankle strap become gem (rect + island); the purple islands below 2.6 of 20.9 units become leather (18 islands: shoe uppers, heels, soles, ankle straps). The white lace gloves and sleeves, the iridescent skirt discs and the feather trims stay cloth. Robin_Body_Map2_D.png: Hair and Bangs hair; HeadWings (white feathers; the texture name had made it skin) pinned to cloth, its bronze clasp island metal; Halo and Brooch (champagne gold) pinned to metal, Earring metal by name; the blue and purple islands inside them (the shells, the brooch's galaxy orb, the crescent) and the gem insets in gold frames are gem. Robin_Face_D.png: Face face, Brows lash, Lashes lash with its two white islands (the eye whites) sclera, Eyes eye (iris and the dark upper-iris shade) with its bright islands (white catchlights, the teal dot and the yellow star sparkle) highlight. Gold type decided 2026-10-26 (the user asked for one per character): painted gold is a mid-tone, so as a metal its reflectance (F0, the albedo's linear luminance on the mesh) is far below real gold's ~0.74, and at the aggressive roughness 0.12 it mirrors the dark room (Robin ZZZ's halo: 152 -> 96, -37%, in game). Satin champagne gold (metal roughness 0.30): halo ring, stars, crescents, bands and frames, F0 0.43-0.47. Reflectance lift 2026-10-26 (user request, carried over from Robin R18, whose outfit gold is the same art): satin 0.30 with f0 0.74, which on R18 measured closest to the original gold brightness (8.2% against satin's 21.0%). Her gold reflects 0.47 (body sheet) and 0.43 (hair and accessory sheet), so it is lifted about x1.6 and x1.7. Not yet measured in game: the user skipped the measurement for now (2026-10-26); the kit is in the work folder's aabb_todo_f0.",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "0": "cloth",
+      "1": "metal",
+      "2": "metal",
+      "9": "cloth"
+    },
+    "metal": {
+      "rough": 0.3,
+      "rough_ai": 0.5,
+      "f0": 0.74
+    }
+  },
+  "regions": [
+    {
+      "texture": "Robin_Body_Map1_D.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "skin",
+      "islands": 0.8,
+      "hue": [
+        340,
+        25
+      ],
+      "sat": [
+        0.03,
+        0.35
+      ],
+      "val": [
+        0.6,
+        1.0
+      ],
+      "doc": "skin islands"
+    },
+    {
+      "texture": "Robin_Body_Map1_D.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "islands": 0.3,
+      "hue": [
+        25,
+        60
+      ],
+      "sat": [
+        0.15,
+        1.0
+      ],
+      "val": [
+        0.3,
+        1.0
+      ],
+      "doc": "gold islands"
+    },
+    {
+      "texture": "Robin_Body_Map1_D.png",
+      "within": [
+        "metal"
+      ],
+      "class": "gem",
+      "rect": [
+        0.068,
+        0.61,
+        0.199,
+        0.763
+      ],
+      "sat": [
+        0.0,
+        0.15
+      ],
+      "val": [
+        0.75,
+        1.0
+      ],
+      "doc": "collar star facets"
+    },
+    {
+      "texture": "Robin_Body_Map1_D.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "gem",
+      "islands": 0.5,
+      "rect": [
+        0.682,
+        0.765,
+        0.766,
+        0.857
+      ],
+      "sat": [
+        0.0,
+        0.35
+      ],
+      "val": [
+        0.55,
+        1.0
+      ],
+      "doc": "skirt crystal star"
+    },
+    {
+      "texture": "Robin_Body_Map1_D.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "gem",
+      "islands": 0.5,
+      "rect": [
+        0.441,
+        0.0,
+        0.489,
+        0.042
+      ],
+      "sat": [
+        0.0,
+        0.35
+      ],
+      "val": [
+        0.55,
+        1.0
+      ],
+      "doc": "ankle crystal star"
+    },
+    {
+      "texture": "Robin_Body_Map1_D.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "leather",
+      "islands": 0.5,
+      "box": [
+        -10,
+        -1,
+        -10,
+        10,
+        2.6,
+        10
+      ],
+      "hue": [
+        200,
+        320
+      ],
+      "sat": [
+        0.15,
+        1.0
+      ],
+      "doc": "shoes and ankle straps"
+    },
+    {
+      "texture": "Robin_Body_Map2_D.png",
+      "within": [
+        "metal"
+      ],
+      "class": "gem",
+      "islands": 0.4,
+      "hue": [
+        180,
+        330
+      ],
+      "sat": [
+        0.08,
+        1.0
+      ],
+      "doc": "shells, orb, crescent (whole islands)"
+    },
+    {
+      "texture": "Robin_Body_Map2_D.png",
+      "within": [
+        "metal"
+      ],
+      "class": "gem",
+      "hue": [
+        180,
+        330
+      ],
+      "sat": [
+        0.15,
+        1.0
+      ],
+      "doc": "gem insets in gold frames"
+    },
+    {
+      "texture": "Robin_Body_Map2_D.png",
+      "within": [
+        "cloth"
+      ],
+      "class": "metal",
+      "islands": 0.5,
+      "hue": [
+        15,
+        60
+      ],
+      "sat": [
+        0.1,
+        1.0
+      ],
+      "val": [
+        0.25,
+        1.0
+      ],
+      "doc": "bronze clasp of the head wings"
+    },
+    {
+      "texture": "Robin_Face_D.png",
+      "within": [
+        "lash"
+      ],
+      "class": "sclera",
+      "islands": 0.6,
+      "sat": [
+        0.0,
+        0.15
+      ],
+      "val": [
+        0.8,
+        1.0
+      ],
+      "doc": "eye whites"
+    },
+    {
+      "texture": "Robin_Face_D.png",
+      "within": [
+        "eye"
+      ],
+      "class": "highlight",
+      "islands": 0.6,
+      "val": [
+        0.85,
+        1.0
+      ],
+      "doc": "catchlights and star"
+    }
+  ],
+  "textures": {
+    "Robin_Body_Map1_D.png": {
+      "normal_map": "Robin_Body_Map1_N.png",
+      "presets": {
+        "cloth": {
+          "normal": 1.0
+        },
+        "metal": {
+          "normal": 1.0
+        },
+        "gem": {
+          "normal": 1.0
+        },
+        "leather": {
+          "normal": 1.0
+        }
+      }
+    },
+    "Robin_Body_Map2_D.png": {
+      "normal_map": "Robin_Body_Map2_N.png",
+      "presets": {
+        "hair": {
+          "normal": 1.0
+        },
+        "cloth": {
+          "normal": 1.0
+        },
+        "metal": {
+          "normal": 1.0
+        },
+        "gem": {
+          "normal": 1.0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "doc": "Guinaifen (new_mmd_model_1c2ed2fc) body skin, NOT applied by default. Built and measured on the user's request on 2026-10-25 (variant R12 with the seam fix), then reverted to the standard at their request: body skin changes are made and applied only when the user asks. To show it again on request: rpai generate \"<pmx>\" --settings presets/on_request/new_mmd_model_1c2ed2fc_body_skin.json, then rpai publish with the same --settings; a later run without it reverts. What it does: Body.png takes its relief from the model's own Body normal.png (a flattened map rebuilt by compose.relief_normals) at strength 12 with roughness 0.55, and the upper neck on 衣.png gets the same roughness so the join matches. Evidence (two AABB rounds plus a seam round, repeat noise 0.4-1.3/255): skin changed by 2.9-7.8/255 (kneecaps, toe pads and creases, spine groove, clavicle line); strength 16 adds about 25%; side-seam line contrast 0.0 after the border handling; subsurface scattering was rejected (forearm streaks, a band at the neck join, darker skin, dull eye whites on the face sheet). Sheets: %USERPROFILE%\\.rpai\\work\\new_mmd_model_1c2ed2fc\\aabb_skin_20261025.",
+  "textures": {
+    "Body.png": {"normal_map": "Body normal.png",
+                 "presets": {"skin": {"original": 0, "rough": 0.55, "rough_ai": 0, "normal": 12}}},
+    "衣.png": {"presets": {"skin": {"rough": 0.55}}}
+  }
+}

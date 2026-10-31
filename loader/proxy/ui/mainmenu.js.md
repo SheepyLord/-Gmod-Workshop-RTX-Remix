@@ -1,8 +1,18 @@
 # mainmenu.js
 
-Display-only panel appended to the stock menu controller by the loader's exact read redirect.
-Shows OS, CPU/logical threads, physical RAM, graphics adapters/VRAM, the game's own version/branch,
-loader version/file SHA-256 and deployed native package versions/manifest SHA-256. Hashes are
+Two independent parts, appended to the stock control.Menu.js by the loader's exact read redirect.
+
+**The verified RTX multiplayer bootstrap trigger** (ADR 0052). When the loader sets
+`window.NativeLoaderClientBootstrap` (the committed generation holds the `gmsv_nlrtxclient` helper),
+it runs `require( "nlrtxclient" )` once through the menu's Lua bridge, waiting up to two minutes
+for that bridge. It does not depend on the diagnostics panel or its data, and the loader installs it
+even when the stock menu controller the overlay decorates has changed (a GMod menu update): that
+view carries only the trigger, with a startup note
+([ADR 0056](../../../docs/decisions/0056-guard-and-startup-fallbacks.md)).
+
+**The display-only diagnostics panel**, appended only beside the stock menu controller. Shows OS,
+CPU/logical threads, physical RAM, graphics adapters/VRAM, the game's own version/branch, loader
+version/file SHA-256 and deployed native package versions/manifest SHA-256. Hashes are
 abbreviated visually, available in hover text and copied in full by the explicit copy button.
 The panel appears on the main-menu home screen only and follows the menu language. Values use
 textContent, never HTML. No upload, automatic URL opening, startup-log reading or disk writes.

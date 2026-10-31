@@ -285,29 +285,29 @@ msgstr "부수는 재미"
 msgid "Spawn and damage it"
 msgstr "생성한 뒤 피해를 주세요"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:451
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:469
 #, c-format
 msgid "Glass damage: %d / %d"
 msgstr "유리 피해량: %d / %d"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:710
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:728
 msgid "Glass Shard"
 msgstr "유리 파편"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:772
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:790
 #, c-format
 msgid "Reset glass damage from %d to 0"
 msgstr "유리 피해량을 %d에서 0으로 초기화했습니다"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:774
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:792
 msgid "Look at a glass shard to reset its damage"
 msgstr "유리 파편을 바라보면 피해량을 초기화할 수 있습니다"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:779
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:797
 msgid "Opening Glass Settings Panel..."
 msgstr "유리 설정 패널을 여는 중..."
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:780
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:798
 msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
 msgstr "콘솔에서 glass_open_panel을 실행하거나 스폰 메뉴에서 RTX Remix > 물과 유리 > 설정을 여세요."
 

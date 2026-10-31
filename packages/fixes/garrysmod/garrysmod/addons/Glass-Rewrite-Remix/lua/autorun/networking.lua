@@ -47,37 +47,110 @@ if SERVER then
         net.Send(ply)
     end
 
+    -- Answers are queued per player and paced (review R4): writing a late joiner's whole pile in one
+    -- call could overflow its reliable buffer, and any client could make the server serialize every
+    -- shard by repeating the empty request. Each tick a player gets about BYTES_PER_TICK: queued
+    -- single shards first (at least one), otherwise one batch of its full resync. A full resync is
+    -- granted once per RESYNC_INTERVAL seconds per player; repeats meanwhile are ignored, and a shard
+    -- already queued for a player is not queued again.
+    local BYTES_PER_TICK = 16000
+    local SINGLES_PER_TICK = 16
+    local RESYNC_INTERVAL = 30
+    local queues = {}
+    local function queueFor(ply)
+        local queue = queues[ply]
+        if not queue then
+            queue = {singles = {}, wanted = {}, granted = -math.huge}
+            queues[ply] = queue
+        end
+        return queue
+    end
+
     -- Handles requests for shard data from clients
     net.Receive("SHARD_NETWORK", function(len, ply)
+        if not IsValid(ply) then return end
+        local queue = queueFor(ply)
         -- If len > 0, client is requesting a single shard (post-break)
         if len > 0 then
             local shard = net.ReadEntity()
-            if not shardBytes(shard) then return end
-            
-            net.Start("SHARD_NETWORK")
-            net.WriteBool(false) -- Indicate this is NOT a full update
-            writeShard(shard)
-            net.Send(ply)
-        else 
+            if not shardBytes(shard) or queue.wanted[shard] then return end
+            queue.wanted[shard] = true
+            queue.singles[#queue.singles + 1] = shard
+        else
             -- If len == 0, client is joining and needs all existing shards
-            local all_shards = ents.FindByClass("procedural_shard")
-            local batch, bytes = {}, 8
-            for _, shard in ipairs(all_shards) do
-                local size = shardBytes(shard)
-                if size then
-                    if bytes + size > MAX_SHARD_BYTES then
-                        sendBatch(batch, ply)
-                        batch, bytes = {}, 8
-                    end
-                    batch[#batch + 1] = shard
-                    bytes = bytes + size
-                end
-            end
-            sendBatch(batch, ply)
+            if queue.full or CurTime() - queue.granted < RESYNC_INTERVAL then return end
+            queue.granted = CurTime()
+            queue.full, queue.next = ents.FindByClass("procedural_shard"), 1
         end
     end)
+
+    local function sendSingles(ply, queue)
+        local sent, bytes = 0, 0
+        while sent < SINGLES_PER_TICK and #queue.singles > 0 do
+            local shard = queue.singles[1]
+            local size = shardBytes(shard)
+            if size and sent > 0 and bytes + size > BYTES_PER_TICK then break end
+            table.remove(queue.singles, 1)
+            queue.wanted[shard] = nil
+            if size then
+                net.Start("SHARD_NETWORK")
+                net.WriteBool(false) -- Indicate this is NOT a full update
+                writeShard(shard)
+                net.Send(ply)
+                sent, bytes = sent + 1, bytes + size
+            end
+        end
+        return sent
+    end
+    local function sendResyncBatch(ply, queue)
+        local shards, batch, bytes = queue.full, {}, 8
+        while queue.next <= #shards do
+            local shard = shards[queue.next]
+            local size = shardBytes(shard)
+            if size then
+                if #batch > 0 and bytes + size > BYTES_PER_TICK then break end
+                batch[#batch + 1] = shard
+                bytes = bytes + size
+            end
+            queue.next = queue.next + 1
+        end
+        if queue.next > #shards then queue.full = nil end
+        sendBatch(batch, ply)
+    end
+    hook.Add("Tick", "glass_shard_network", function()
+        for ply, queue in pairs(queues) do
+            if not IsValid(ply) then
+                queues[ply] = nil
+            elseif sendSingles(ply, queue) == 0 and queue.full then
+                sendResyncBatch(ply, queue)
+            end
+        end
+    end)
+    hook.Add("PlayerDisconnected", "glass_shard_network", function(ply) queues[ply] = nil end)
 else
     local default_mat = Material("models/props_combine/health_charger_glass")
+
+    -- With queued rendering (mat_queue_mode 2) the material system draws a frame on its own thread
+    -- after Lua has moved on, so a mesh destroyed or rebuilt while such a frame still uses it is freed
+    -- under the render thread: breaking any glass crashed the game in studiorender (review R4). Meshes
+    -- are retired instead and destroyed several frames later.
+    local retired = {}
+    function GlassRewriteRetireMesh(mesh)
+        if mesh and mesh.IsValid and mesh:IsValid() then
+            retired[#retired + 1] = {mesh = mesh, frame = FrameNumber() + 8}
+        end
+    end
+    hook.Add("Think", "glass_retired_meshes", function()
+        if #retired == 0 then return end
+        local frame = FrameNumber()
+        for i = #retired, 1, -1 do
+            local item = retired[i]
+            if frame >= item.frame then
+                if item.mesh:IsValid() then item.mesh:Destroy() end
+                table.remove(retired, i)
+            end
+        end
+    end)
     -- NEW: Receive finalized vertex data and build the visual mesh
     net.Receive("SHARD_NETWORK", function(len)
         local is_full_update = net.ReadBool()
@@ -134,12 +207,12 @@ else
                 shard_entity.RENDER_MESH = { Material = default_mat }
             end
 
-            if shard_entity.RENDER_MESH.Mesh and shard_entity.RENDER_MESH.Mesh:IsValid() then
-                shard_entity.RENDER_MESH.Mesh:Destroy()
-            end
-            
-            shard_entity.RENDER_MESH.Mesh = Mesh()
-            shard_entity.RENDER_MESH.Mesh:BuildFromTriangles(shard_entity.TRIANGLES)
+            -- Build the new mesh before it replaces the old one, which may still be queued for drawing.
+            local fresh = Mesh()
+            fresh:BuildFromTriangles(shard_entity.TRIANGLES)
+            local old = shard_entity.RENDER_MESH.Mesh
+            shard_entity.RENDER_MESH.Mesh = fresh
+            GlassRewriteRetireMesh(old)
             -- Map fragments have arbitrary dimensions, not the placeholder model's bounds.
             local low, high = Vector(math.huge, math.huge, math.huge), Vector(-math.huge, -math.huge, -math.huge)
             for _, vertex in ipairs(model_triangles) do

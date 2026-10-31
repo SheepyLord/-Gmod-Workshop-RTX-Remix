@@ -22,3 +22,17 @@ Compiled internal flag fields are omitted when cloning the material; authored al
 are retained without duplicate-variable warnings. Only private materials receive player-body categories; rendering resets its overrides after
 a draw failure. No user.conf edits or global player-bone changes. This source sidecar is excluded
 from the deployed addon by package_fixes.py.
+
+Per draw (review R4): the pose snapshot and its per-bone entries are reused, each bone keeping the
+player's matrix and its original translation as numbers (`VMatrix:GetField`/`SetField`), and the
+offset is three numbers, so a draw allocates no snapshot tables or vectors; only the engine's
+`GetBoneMatrix` results remain. The slot list (the model's materials with the player's sub-material
+overrides) is read twice a second and again after a model or skin change, not per draw. A slot is
+registered with the category manager until that succeeds (every draw for its first two seconds,
+then twice a second), then never again.
+
+A slot whose material cannot be copied (no such material, no `$basetexture` or `$iris`) no longer
+skips the whole body: only that slot is left out, overridden with the proxy's own
+`rtx_pseudoplayer_noslot` material (`$no_draw`), since its shared original would be an ordinary,
+uncategorized mesh around the first-person camera. The console names each such material once, and it
+is not tried again; a failed capture or copy is retried once, five seconds later.

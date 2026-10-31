@@ -26,54 +26,112 @@ local function offsetValue(name)
     return value == value and math.Clamp(value, -128, 128) or 0
 end
 
+-- The draw runs every frame: the pose snapshot and its per-bone entries are reused from draw to draw,
+-- each bone keeping the player's matrix and its original translation as three numbers, and the
+-- offset is three numbers too, so a draw allocates no snapshot tables or vectors.
 local function snapshotBones(ent, player)
-    ent.RTXBoneSnapshot = nil
+    local snapshot = ent.RTXBoneSnapshot
+    if not snapshot then
+        snapshot = {bones = {}, count = 0}
+        ent.RTXBoneSnapshot = snapshot
+    end
+    snapshot.model = nil
     local model = player:GetModel()
     if ent:GetModel() ~= model then return false end
     local angles = GetConVar("rtx_pseudoplayer_offset_localangles"):GetBool()
         and player:EyeAngles() or player:GetRenderAngles()
-    local forward = Angle(0, angles.y, 0):Forward()
-    local offset = forward * offsetValue("rtx_pseudoplayer_offset_x")
-        + Vector(0, 0, offsetValue("rtx_pseudoplayer_offset_z"))
-    local snapshot = {model = model, count = math.min(ent:GetBoneCount(), player:GetBoneCount()),
-        offset = offset, bones = {}}
-    for bone = 0, snapshot.count - 1 do
-        local matrix = player:GetBoneMatrix(bone)
-        local name = player:GetBoneName(bone)
-        if matrix and name and name ~= "__INVALIDBONE__" then
-            snapshot.bones[bone] = {matrix = matrix, origin = matrix:GetTranslation(), name = name}
+    -- Angle(0, yaw, 0):Forward() is (cos yaw, sin yaw, 0).
+    local yaw, forward = math.rad(angles.y), offsetValue("rtx_pseudoplayer_offset_x")
+    snapshot.dx, snapshot.dy = math.cos(yaw) * forward, math.sin(yaw) * forward
+    snapshot.dz = offsetValue("rtx_pseudoplayer_offset_z")
+    local count = math.min(ent:GetBoneCount(), player:GetBoneCount())
+    local bones = snapshot.bones
+    for bone = 0, math.max(count, snapshot.count) - 1 do
+        local entry = bones[bone]
+        local matrix = bone < count and player:GetBoneMatrix(bone) or nil
+        local name = matrix and player:GetBoneName(bone)
+        if name and name ~= "__INVALIDBONE__" then
+            if not entry then
+                entry = {}
+                bones[bone] = entry
+            end
+            entry.matrix, entry.name = matrix, name
+            entry.x, entry.y, entry.z = matrix:GetField(1, 4), matrix:GetField(2, 4), matrix:GetField(3, 4)
+        elseif entry then
+            entry.matrix = nil
         end
     end
-    ent.RTXBoneSnapshot = snapshot
+    snapshot.count, snapshot.model = count, model
     return true
 end
 
 local function offsetBones(ent, count)
     local snapshot = ent.RTXBoneSnapshot
-    if not snapshot or ent:GetModel() ~= snapshot.model then return end
+    if not snapshot or not snapshot.model or ent:GetModel() ~= snapshot.model then return end
     local limit = math.min(count or ent:GetBoneCount(), ent:GetBoneCount(), snapshot.count)
+    local dx, dy, dz = snapshot.dx, snapshot.dy, snapshot.dz
     for bone = 0, limit - 1 do
         local entry = snapshot.bones[bone]
-        local name = ent:GetBoneName(bone)
-        if entry and name and name ~= "__INVALIDBONE__" and name == entry.name
+        local matrix = entry and entry.matrix
+        local name = matrix and ent:GetBoneName(bone)
+        if name and name ~= "__INVALIDBONE__" and name == entry.name
             and (not ent.BoneHasFlag or BONE_USED_BY_ANYTHING == nil
                 or ent:BoneHasFlag(bone, BONE_USED_BY_ANYTHING))
             and ent:GetBoneMatrix(bone) then
             -- A callback may run more than once per draw. Always offset the saved origin.
-            entry.matrix:SetTranslation(entry.origin + snapshot.offset)
-            ent:SetBoneMatrix(bone, entry.matrix)
+            matrix:SetField(1, 4, entry.x + dx)
+            matrix:SetField(2, 4, entry.y + dy)
+            matrix:SetField(3, 4, entry.z + dz)
+            ent:SetBoneMatrix(bone, matrix)
         end
     end
 end
 
+-- A slot whose material cannot be copied (no such material, no $basetexture or $iris) is left out
+-- of the body rather than the whole body: drawn with its shared original it would be an ordinary,
+-- uncategorized mesh around the first-person camera. Each name is reported once and not tried again
+-- every frame; a failed capture is retried once, five seconds later.
+local unavailable, failures, noSlot = {}, {}, nil
+local function noCopy(name, reason, transient)
+    failures[name] = (failures[name] or 0) + 1
+    if failures[name] == 1 then
+        print("[gmRTX] Player proxy: no private copy of '" .. tostring(name) .. "' (" .. reason
+            .. "); that part is left out of the body")
+    end
+    unavailable[name] = (transient and failures[name] == 1) and RealTime() + 5 or math.huge
+end
+local function hiddenSlot()
+    noSlot = noSlot or CreateMaterial("rtx_pseudoplayer_noslot", "VertexLitGeneric",
+        {["$no_draw"] = "1", ["$model"] = "1", ["$translucent"] = "1", ["$alpha"] = "0"})
+    return noSlot
+end
+
+-- The slots to draw and the material each copies: the model's materials with the player's
+-- sub-material overrides. Read twice a second (and again after a model or skin change), not per draw.
+local function slotNames(ent, player)
+    local now = RealTime()
+    local slots = ent.RTXSlotNames
+    if slots and now < slots.refresh then return slots end
+    slots = slots or {}
+    local list = ent:GetMaterials() or {}
+    for index, name in ipairs(list) do
+        local override = player:GetSubMaterial(index - 1)
+        slots[index] = override and override ~= "" and override or name
+    end
+    for index = #list + 1, #slots do slots[index] = nil end
+    slots.refresh = now + 0.5
+    ent.RTXSlotNames = slots
+    return slots
+end
+
 local function proxyMaterial(name, skin)
     local original = Material(name)
-    if original:IsError() then return end
+    if original:IsError() then return nil, "material not found" end
     local shader = original:GetShader():gsub("_DX%d+$", "")
     local eye = shader:lower():find("eye", 1, true)
     local texture = eye and original:GetTexture("$iris") or original:GetTexture("$basetexture")
     if not texture or texture:IsError() then texture = original:GetTexture("$basetexture") end
-    if not texture or texture:IsError() then return end
+    if not texture or texture:IsError() then return nil, "no $basetexture or $iris" end
     if eye then shader = "VertexLitGeneric" end
     local key = util.CRC(name .. ":" .. skin .. ":" .. texture:GetName())
         .. "_" .. texture:Width() .. "x" .. texture:Height()
@@ -105,13 +163,13 @@ local function proxyMaterial(name, skin)
     local image = render.Capture({format = "png", x = 0, y = 0,
         w = target:Width(), h = target:Height(), alpha = true})
     render.PopRenderTarget()
-    if not image then return end
+    if not image then return nil, "capture failed", true end
 
     file.CreateDir("rtx_player_proxy")
     local path = "rtx_player_proxy/v2_" .. key .. ".png"
     file.Write(path, image)
     local copy = Material("data/" .. path, "smooth"):GetTexture("$basetexture")
-    if not copy or copy:IsError() then return end
+    if not copy or copy:IsError() then return nil, "the copied texture did not load", true end
     local values = original:GetKeyValues()
     local flags = tonumber(values['$flags']) or 0
     for parameter, mask in pairs(materialFlags) do values[parameter] = bit.band(flags, mask) ~= 0 and '1' or '0' end
@@ -148,13 +206,13 @@ function ENT:Think()
     if self:GetModel() ~= model then
         self.RTXBoneSnapshot = nil
         self:SetModel(model)
-        self.RTXMaterials = {}
+        self.RTXMaterials, self.RTXSlotNames = {}, nil
     end
     self:SetPos(player:GetPos())
     self:SetAngles(player:GetRenderAngles())
     if self:GetSkin() ~= player:GetSkin() then
         self:SetSkin(player:GetSkin())
-        self.RTXMaterials = {}
+        self.RTXMaterials, self.RTXSlotNames = {}, nil
     end
     for group = 0, player:GetNumBodyGroups() - 1 do
         self:SetBodygroup(group, player:GetBodygroup(group))
@@ -172,22 +230,35 @@ function ENT:Draw()
     -- Reading another entity's bones while ours are being built can re-enter bone setup.
     player:SetupBones()
     if not snapshotBones(self, player) then return end
-    for index, name in ipairs(self:GetMaterials()) do
-        local override = player:GetSubMaterial(index - 1)
-        if override and override ~= "" then name = override end
-        local entry = self.RTXMaterials[index]
-        if not entry or entry.name ~= name then
-            local proxy = proxyMaterial(name, self:GetSkin())
-            if not proxy then return end
-            entry = {name = name, material = proxy}
-            self.RTXMaterials[index] = entry
+    local slots, entries, now = slotNames(self, player), self.RTXMaterials, RealTime()
+    for index = 1, #slots do
+        local name = slots[index]
+        local entry = entries[index]
+        if not entry or entry.name ~= name or (not entry.material and now >= (unavailable[name] or 0)) then
+            -- A slot without a material (no private copy) keeps its entry, so it is not tried every frame.
+            entry = {name = name, created = now}
+            if now >= (unavailable[name] or 0) then
+                local proxy, reason, transient = proxyMaterial(name, self:GetSkin())
+                if proxy then
+                    unavailable[name], failures[name] = nil, nil
+                    entry.material = proxy
+                else
+                    noCopy(name, reason, transient)
+                end
+            end
+            entries[index] = entry
         end
-        if RemixCategoryManager and RemixCategoryManager.RegisterPlayerProxyMaterial then
-            RemixCategoryManager.RegisterPlayerProxyMaterial(entry.material:GetName())
+        -- Categorized once: tried on every draw for two seconds (its hashes appear after its first
+        -- draw), then twice a second, until it succeeds.
+        if entry.material and not entry.registered and now >= (entry.retry or 0)
+            and RemixCategoryManager and RemixCategoryManager.RegisterPlayerProxyMaterial then
+            entry.registered = RemixCategoryManager.RegisterPlayerProxyMaterial(entry.material:GetName())
+            entry.retry = now + (now - entry.created < 2 and 0 or 0.5)
         end
     end
-    for index, entry in ipairs(self.RTXMaterials) do
-        render.MaterialOverrideByIndex(index - 1, entry.material)
+    for index = #slots + 1, #entries do entries[index] = nil end
+    for index = 1, #entries do
+        render.MaterialOverrideByIndex(index - 1, entries[index].material or hiddenSlot())
     end
     self:InvalidateBoneCache()
     render.SuppressEngineLighting(true)

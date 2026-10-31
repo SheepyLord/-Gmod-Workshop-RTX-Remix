@@ -20,11 +20,15 @@ Install
 4. In Steam, set Garry's Mod's beta branch to x86-64 (Properties > Betas), then start the game.
    - Loader 0.8.0 detects a supported previous RTXLauncher/Remix installation and backs up its
      replaced files under native-loader\backup\legacy before deploying our shipment. user.conf,
-     personal mods and data stay intact. The backup stays after uninstall.
-   - Known old changes to Steam files are restored only from hash-verified vanilla copies.
-     If originals are unavailable or unknown edits are detected, migration stops before replacement
-     and the loader log names the file. Steam verification can restore a modified Steam install;
-     offline recovery can use nlctl apply <game root> --legacy-source <verified vanilla root>.
+     personal mods and data stay intact. The backup stays after uninstall. Links in its folders
+     (such as those of Mount HL2 RTX) are never followed or moved; they stay where they are.
+   - Known old changes to Steam files are restored only from hash-verified vanilla copies, and only
+     on the GMod build the loader knows. On another build, or next to a change it does not
+     recognize, every Steam file stays as it is (the rest is still backed up) and the loader log
+     says so: verify the game in Steam to undo those changes. If a vanilla copy is missing, the
+     previous installation stays as it is, the package deploys anyway, and the log names the file.
+     Steam verification (then the next start), or nlctl apply <game root> --legacy-source
+     <verified vanilla root>, completes the migration.
    - The first start after a download deploys the package, about 1.5 GB, which takes a few seconds.
      This shipment needs this loader (0.10.0 or later); an older loader keeps the version it has.
    - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
@@ -50,6 +54,10 @@ Install
      and renderer; custom DX11 effects need a compatible implementation.
      The guard also runs in multiplayer through the verified RTX payload. That path starts after
      the client is ready, so earlier server scripts and their cached API references remain outside it.
+   - Loader 0.10.1 keeps RTX on when a game update changes the files the early guard is built from:
+     the guard then starts with the add-ons instead, and a note in native-loader\logs says why.
+     A listen server you host no longer passes the guard to friends without RTX, and the RTX
+     scripts no longer run twice on servers that already send them.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.

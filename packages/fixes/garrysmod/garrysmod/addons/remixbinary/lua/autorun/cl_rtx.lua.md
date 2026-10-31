@@ -9,3 +9,15 @@ The verified late multiplayer initializer sets NATIVELOADER_VERIFIED_MULTIPLAYER
 scoped script environment. In that context the initial/final model hardware-cache flushes are
 skipped: the world already holds static-prop mesh references. Existing meshes stay valid and
 the native VTX hooks serve subsequent loads. Ordinary early engine loading keeps both reloads.
+
+Loaded normally (outside that environment, once the binary module is installed), it sets the
+global NATIVELOADER_RTX_NORMAL_LOAD. The verified initializer then finishes without running the
+payload a second time: on a listen host, an sv_allowcslua 1 server or a server that ships these
+add-ons, the normal load already ran it.
+
+The final flush (one second after InitPostEntity) runs while the world is drawn. With queued
+rendering (mat_queue_mode 2, what gmod_mcore_test 1 picks) it raced the material system's thread
+drawing the meshes it discards: about half of the native loader's PoC starts crashed in studiorender
+(review R4, 2026-10-31). It now switches queued rendering off, flushes four frames later (leaving
+that mode, the material system waits for its thread), and puts the player's mat_queue_mode back; if
+the switch does not take, it skips the flush and says so.

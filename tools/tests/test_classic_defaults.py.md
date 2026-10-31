@@ -9,5 +9,7 @@ when it exists) and delete it.
   variables are left out. The version is written.
 - `main` writes the table, `--check` passes on an up-to-date table and fails on a changed one, and a
   missing reference gives exit 1.
+- There is no default reference: without `--reference` it exits 1 and writes nothing (it used to read
+  `GarrysMod_RTX_c`, which is no longer a classic install).
 
 No game, network or install is touched. Exit codes are unittest's.

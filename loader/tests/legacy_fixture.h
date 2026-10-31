@@ -1,5 +1,8 @@
 #pragma once
 #include "nl/legacy_detect.h"
+#include "nl/legacy_migrate.h"
+#include "nl/sha256.h"
+#include <map>
 #include <string>
 namespace nl::test::legacy_fixture {
 constexpr std::size_t kPe = 0x80, kCoff = kPe + 4, kOptional = kCoff + 20;
@@ -32,5 +35,27 @@ inline std::string fixture(bool x64 = true) {
   text(bytes, kRaw + 0x80, std::string(nl::legacy::kRemixExport));
   bytes[kRaw + 0x400] = static_cast<char>(0xc3);
   return bytes;
+}
+
+// A synthetic GMod build for stock-restoration tests: stock and launcher bytes for three paths of the
+// built-in catalog (no game bytes), unmodified anchor files that confirm the build, and the catalog
+// that trusts exactly them (nl::legacy::plan's test overload, deploy::Options::legacy_catalog).
+struct Depot {
+  nl::legacy::Catalog catalog;
+  std::map<std::string, std::string> stock, legacy, anchors;  // path -> bytes
+};
+inline Depot depot() {
+  Depot d;
+  d.catalog.build = "test-build";
+  for (const std::string path : {"bin/win64/engine.dll", "garrysmod/gamemodes/sandbox/logo.png", "garrysmod/html/loading.png"}) {
+    d.stock[path] = "stock bytes of " + path;
+    d.legacy[path] = "RTXLauncher's bytes of " + path;
+    d.catalog.files.push_back({path, d.stock[path].size(), nl::sha256::of(d.stock[path]), nl::sha256::of(d.legacy[path])});
+  }
+  for (const std::string path : {"bin/win64/gmod.exe", "bin/win64/client.dll", "bin/win64/server.dll"}) {
+    d.anchors[path] = "unmodified " + path;
+    d.catalog.anchors.push_back({path, d.anchors[path].size(), nl::sha256::of(d.anchors[path]), {}});
+  }
+  return d;
 }
 }

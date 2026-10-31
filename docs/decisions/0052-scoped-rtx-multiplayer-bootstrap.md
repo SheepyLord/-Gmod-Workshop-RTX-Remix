@@ -1,6 +1,6 @@
 # 0052: Verified RTX-owner scripts in multiplayer
 
-- Status: Accepted
+- Status: Accepted; amended by [0056](0056-guard-and-startup-fallbacks.md)
 - Decided by: the user's multiplayer request, explicitly limited to the RTX payload and excluding other community add-ons
 
 ## Context

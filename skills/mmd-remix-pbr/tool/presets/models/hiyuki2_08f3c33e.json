@@ -1,0 +1,348 @@
+{
+ "doc": "Hiyuki Alt, colourway 02 / skin 1 (_port/rtx/skin1/Hiyuki2.pmx, written by _port/rtx/make_skin1_pmx.py: Hiyuki.pmx with every material renamed <name>2 and pointed at RGB copies of the 02 sheets in skin1/tex, matching the <name>2 VMTs of hiyuki_alt.mdl's second skin family; RGB because the game's alpha is a toon mask and the VMTs alpha-test at 0.5: read from the raw sheets, the published albedo cut skin 1 away in game, 2026-10-27). Same preset as hiyuki_08f3c33e (aggressive, satin gold 0.30 with f0 0.74, the game's normal maps at 1.0, body skin left to Remix); see its doc for the method. Differences in this colourway, from the game's FTM type mask: Kimono, ObiRibbon, Cuff and Headband are pale blue fabric (type 0/56, no metal), so Cuff and Headband are cloth here; the gold anklets, heel plates and black shoes of 01 are glossy pale blue (type 192) and become leather (glossy dielectric); the bow is cream fabric (hue 45-60), so the gold rule stops at hue 44 (recall 68%/57% of the game's gold on Up02/Down02 at 78%/50% precision; hue 25-60 took the bow: 55% precision); the sapphires stay blue and are taken by colour inside the gem rectangles measured on 01 (the obi's top gem turns grey here and stays cloth); nails are blue; Cloth02 has no gold in the game's mask, so it has no gold rule. Painted gold F0 (median linear luminance on the mesh): Up02 0.30, Down02 0.37, so f0 0.74 lifts it x2.5 and x2.0.",
+ "include": [
+  "../aggressive.json"
+ ],
+ "presets": {
+  "_materials": {
+   "6": "cloth",
+   "8": "cloth",
+   "9": "cloth",
+   "10": "cloth",
+   "11": "cloth",
+   "12": "cloth",
+   "13": "cloth",
+   "14": "cloth"
+  },
+  "metal": {
+   "rough": 0.3,
+   "rough_ai": 0.5,
+   "f0": 0.74
+  }
+ },
+ "regions": [
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "nail",
+   "islands": 0.6,
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.1,
+    1.0
+   ],
+   "box": [
+    5.5,
+    10.5,
+    -2,
+    8,
+    14,
+    3
+   ],
+   "doc": "blue nail polish"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "nail",
+   "islands": 0.6,
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.1,
+    1.0
+   ],
+   "box": [
+    -8,
+    10.5,
+    -2,
+    -5.5,
+    14,
+    3
+   ],
+   "doc": "blue nail polish"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "cloth",
+   "islands": 0.4,
+   "hue": [
+    150,
+    260
+   ],
+   "sat": [
+    0.03,
+    1.0
+   ],
+   "doc": "chest wrap, arm ribbon and sleeve bands"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "cloth"
+   ],
+   "class": "metal",
+   "hue": [
+    25,
+    44
+   ],
+   "sat": [
+    0.15,
+    1.0
+   ],
+   "val": [
+    0.3,
+    1.0
+   ],
+   "doc": "gold"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "rect": [
+    0.736,
+    0.496,
+    0.8,
+    0.588
+   ],
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.35,
+    1.0
+   ],
+   "val": [
+    0.15,
+    1.0
+   ],
+   "doc": "oval sapphire"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "rect": [
+    0.812,
+    0.681,
+    0.838,
+    0.707
+   ],
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.35,
+    1.0
+   ],
+   "val": [
+    0.15,
+    1.0
+   ],
+   "doc": "small sapphire"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Up02_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "rect": [
+    0.57,
+    0.685,
+    0.625,
+    0.78
+   ],
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.35,
+    1.0
+   ],
+   "val": [
+    0.15,
+    1.0
+   ],
+   "doc": "obi sapphire"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down02_D.png",
+   "within": [
+    "skin"
+   ],
+   "class": "leather",
+   "islands": 0.6,
+   "hue": [
+    150,
+    260
+   ],
+   "sat": [
+    0.02,
+    1.0
+   ],
+   "doc": "glossy pale blue shoes, anklets, straps and garter"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down02_D.png",
+   "within": [
+    "cloth"
+   ],
+   "class": "metal",
+   "hue": [
+    25,
+    44
+   ],
+   "sat": [
+    0.15,
+    1.0
+   ],
+   "val": [
+    0.3,
+    1.0
+   ],
+   "doc": "gold"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down02_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "rect": [
+    0.722,
+    0.25,
+    0.745,
+    0.27
+   ],
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.35,
+    1.0
+   ],
+   "val": [
+    0.15,
+    1.0
+   ],
+   "doc": "earring gem"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Down02_D.png",
+   "within": [
+    "cloth",
+    "metal"
+   ],
+   "class": "gem",
+   "rect": [
+    0.954,
+    0.297,
+    0.975,
+    0.321
+   ],
+   "hue": [
+    180,
+    250
+   ],
+   "sat": [
+    0.35,
+    1.0
+   ],
+   "val": [
+    0.15,
+    1.0
+   ],
+   "doc": "earring gem"
+  },
+  {
+   "texture": "T_R2T1TaidaonvMd20011Eye02_D.png",
+   "within": [
+    "eye"
+   ],
+   "class": "sclera",
+   "islands": 0.6,
+   "sat": [
+    0.0,
+    0.25
+   ],
+   "val": [
+    0.6,
+    1.0
+   ],
+   "doc": "eye whites"
+  }
+ ],
+ "textures": {
+  "T_R2T1TaidaonvMd20011Up02_D.png": {
+   "normal_map": "../../../../1_PMX/Model/T_R2T1TaidaonvMd20011Up02_N.png",
+   "presets": {
+    "cloth": {
+     "normal": 1.0
+    },
+    "metal": {
+     "normal": 1.0
+    },
+    "gem": {
+     "normal": 1.0
+    },
+    "nail": {
+     "normal": 1.0
+    }
+   }
+  },
+  "T_R2T1TaidaonvMd20011Down02_D.png": {
+   "normal_map": "../../../../1_PMX/Model/T_R2T1TaidaonvMd20011Down02_N.png",
+   "presets": {
+    "cloth": {
+     "normal": 1.0
+    },
+    "metal": {
+     "normal": 1.0
+    },
+    "gem": {
+     "normal": 1.0
+    },
+    "leather": {
+     "normal": 1.0
+    }
+   }
+  },
+  "T_R2T1TaidaonvMd20011Cloth02_D.png": {
+   "normal_map": "../../../../1_PMX/Model/T_R2T1TaidaonvMd20011Cloth02_N.png",
+   "presets": {
+    "cloth": {
+     "normal": 1.0
+    },
+    "metal": {
+     "normal": 1.0
+    }
+   }
+  }
+ }
+}

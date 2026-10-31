@@ -341,6 +341,57 @@ def game_window(pid: int) -> int | None:
     return found[0] if found else None
 
 
+CRASH_PROMPT_TITLE = "RTX Remix Crash Report"
+WM_COMMAND, IDOK, IDNO = 0x0111, 1, 7
+user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+
+
+def crash_prompts(pid: int) -> list[int]:
+    """The Remix runtime's "RTX Remix Crash Report" message boxes open in the game process `pid`."""
+    found = []
+
+    def visit(hwnd, _):
+        owner = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+        if owner.value == pid and user32.IsWindowVisible(hwnd):
+            title = ctypes.create_unicode_buffer(256)
+            user32.GetWindowTextW(hwnd, title, 256)
+            if title.value == CRASH_PROMPT_TITLE:
+                found.append(hwnd)
+        return True
+
+    user32.EnumWindows(WNDENUMPROC(visit), 0)
+    return found
+
+
+def decline_crash_prompts(pid: int) -> int:
+    """Answers the runtime's crash-report prompts after a crash with No, never with Yes: the start
+    after a crash otherwise waits on "upload crash data?" (and then on a notice that pending reports
+    could not be removed) until the run times out. A message box takes its button's id through
+    WM_COMMAND, so this works in any Windows language: IDNO declines the upload, IDOK closes a notice.
+    Consent is never given (RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES would grant it)."""
+    answered = 0
+    for command in (IDNO, IDOK):
+        for hwnd in crash_prompts(pid):
+            user32.SendMessageW(hwnd, WM_COMMAND, command, 0)
+            answered += 1
+    return answered
+
+
+def keep_crash_reports(root: Path, target: Path) -> list[str]:
+    """Copies the minidumps waiting under the install's rtx-remix\\logs\\.sentry-native into `target`
+    and returns their names. The next start's prompt is declined (decline_crash_prompts) and Remix then
+    deletes the reports, which took the only evidence of a crash with it (R4, 2026-10-31)."""
+    folder = root / "rtx-remix" / "logs" / ".sentry-native"
+    kept = []
+    for dump in sorted(folder.rglob("*.dmp")) if folder.is_dir() else []:
+        name = dump.name if dump.parent == folder else f"{dump.parent.name}-{dump.name}"
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(dump, target / name)
+        kept.append(name)
+    return kept
+
+
 def screenshot(hwnd: int, destination: Path) -> dict:
     """Captures the window's client area through DWM (PrintWindow with PW_RENDERFULLCONTENT), so the
     window need not be in front. Falls back to a screen grab of its rectangle if that comes back black."""
@@ -638,9 +689,19 @@ def step_run(args) -> dict:
     environment = dict(os.environ)
     environment.pop("NATIVE_LOADER_DISABLE", None)
     record = {"step": "run", "name": args.name, "root": str(root), "started": now(), "arguments": arguments}
+    # This start declines the crash-report prompt of an earlier crash, and Remix then deletes the report:
+    # keep its minidumps first.
+    waiting = keep_crash_reports(root, evidence / "crash-reports-before")
+    if waiting:
+        record["crash_reports_before"] = waiting
 
     def log_text() -> str:
         return read_shared(console_log, offset)
+
+    def decline_prompts() -> None:
+        declined = decline_crash_prompts(process.pid)
+        if declined:
+            record["declined_crash_prompts"] = record.get("declined_crash_prompts", 0) + declined
 
     def wait_for(marker: re.Pattern, count: int, deadline: float) -> bool:
         while time.monotonic() < deadline:
@@ -648,6 +709,7 @@ def step_run(args) -> dict:
                 return False
             if len(marker.findall(log_text())) >= count:
                 return True
+            decline_prompts()
             time.sleep(0.5)
         return False
 
@@ -717,6 +779,7 @@ def step_run(args) -> dict:
         rule = None
         while time.monotonic() < deadline and process.poll() is None:
             time.sleep(0.5)
+            decline_prompts()
             text = log_text()
             found = WORKSHOP_MOUNTED.findall(text)
             if found and first_seen is None:
@@ -744,6 +807,11 @@ def step_run(args) -> dict:
     try:
         if menu_first:
             record.update(wait_workshop(began + args.timeout))
+            if args.menu_shot and record["workshop_ready"]:
+                # The main menu as the player sees it (the loader's diagnostics panel, the native add-on
+                # cards, the startup text), before the map is asked for.
+                menu_window = game_window(process.pid)
+                record["menu_screenshot"] = screenshot(menu_window, evidence / "menu.png") if menu_window else None
             hwnd = console_window(process.pid) if record["workshop_ready"] else None
             record["map_command"] = bool(hwnd) and console(hwnd, f"map {args.map}")
         loaded = wait_for_map(1, began + args.timeout) if not menu_first or record["map_command"] else False
@@ -868,6 +936,10 @@ def step_run(args) -> dict:
             stop()
     if not_ours:
         record["not_ours"] = sorted(not_ours)  # same-root games this run did not start: left running
+    if not record.get("normal_quit"):
+        crashed = keep_crash_reports(root, evidence / "crash-reports")
+        if crashed:
+            record["crash_reports"] = crashed
     text = log_text()
     (evidence / "console.log").write_text(text, encoding="utf-8")
     dxlevel = re.search(r'"mat_dxlevel" = "(\d+)"', text)
@@ -947,6 +1019,9 @@ def main(argv=None) -> int:
     run.add_argument("--players", type=int, default=1, help="maxplayers (1: single-player)")
     run.add_argument("--addons", action="store_true", help="mount local add-ons (leave out -noaddons)")
     run.add_argument("--workshop", action="store_true", help="mount Workshop add-ons (leave out -noworkshop)")
+    run.add_argument("--menu-shot", action="store_true",
+                     help="with --workshop and --map: a screenshot of the main menu (menu.png) once the Workshop is "
+                          "mounted, before the map is asked for")
     later = run.add_mutually_exclusive_group()
     later.add_argument("--load-save", help="after the first map, gm_load this save (path relative to garrysmod/)")
     later.add_argument("--change-map", help="after the first map, change to this map (with --mount-workshop for a Workshop map)")
@@ -970,6 +1045,8 @@ def main(argv=None) -> int:
     nl.add_argument("rest", nargs=argparse.REMAINDER)
     sub.add_parser("uninstall")
     args = parser.parse_args(argv)
+    if args.action == "run" and args.menu_shot and not (args.workshop and args.map):
+        parser.error("--menu-shot needs --workshop and --map: only then does the run wait at the menu")
     try:
         ctypes.windll.user32.SetProcessDPIAware()
     except Exception:

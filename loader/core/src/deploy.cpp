@@ -181,7 +181,8 @@ struct Run {
         dry_run(options.dry_run),
         allow_running_game(options.allow_running_game),
         exclude_process_id(options.exclude_process_id),
-        legacy_source(options.legacy_source) {
+        legacy_source(options.legacy_source),
+        legacy_catalog(options.legacy_catalog ? options.legacy_catalog : &legacy::builtin_catalog()) {
     report.action = action;
   }
 
@@ -194,6 +195,7 @@ struct Run {
   bool allow_running_game;
   std::uint32_t exclude_process_id;
   std::optional<Path> legacy_source;
+  const legacy::Catalog* legacy_catalog;
   Report report;
   Journal journal;
 };
@@ -469,6 +471,15 @@ bool begin(Run& run, Lock& lock) {
   return true;
 }
 
+// The legacy migration's moves (ADR 0042) are checked by SHA-256 just before they happen: a file
+// they archive is not the loader's, and a staged stock copy is what rule 2's exception rests on.
+// Package files were hashed as they were staged; hashing the whole shipment again at every update
+// (about 1.7 GB for the RTX package) would buy nothing but time (docs/RESEARCH.md).
+bool checked_before_move(const Step& step, std::uint64_t tx) {
+  return paths::within(step.to, legacy::kBackups) ||
+         paths::within(step.from, std::string(kStaging) + "/" + std::to_string(tx) + "/legacy");
+}
+
 // Makes the steps, then commits `next`. Any failure before the commit undoes them, so the install
 // is as it was; a crash instead leaves `pending` in the journal for the next run to undo.
 bool transact(Run& run, Journal next, const std::vector<Step>& steps, std::uint64_t tx, const char* action) {
@@ -483,7 +494,7 @@ bool transact(Run& run, Journal next, const std::vector<Step>& steps, std::uint6
         run.disk.create_directory(run.at(step.to));
       } else {
         fs::refuse_links(run.root, step.from);
-        if (!step.sha256.empty() && fs::hash_file(run.at(step.from)).sha256 != step.sha256)
+        if (!step.sha256.empty() && checked_before_move(step, tx) && fs::hash_file(run.at(step.from)).sha256 != step.sha256)
           throw std::runtime_error("transaction source changed before its move: " + step.from);
         run.disk.move(run.at(step.from), run.at(step.to), false);
       }
@@ -947,6 +958,41 @@ void report_skipped(Report& report, const planner::Plan& plan) {
   }
 }
 
+// The legacy migration of an RTX apply (ADR 0042), planned read-only. A file the current generation
+// placed is the loader's; one it only adopted (found with the package's content by an RTX-off
+// deployment or loader 0.7.0) can still be part of the former installation, so it is planned like the
+// rest. A migration that cannot be planned never stops the packages: they deploy as they did before
+// loader 0.8.0, the installation stays as it is, and the next apply plans it again.
+legacy::Migration plan_migration(const Run& run, std::uint64_t tx) {
+  try {
+    std::set<std::string> owned;
+    if (run.journal.current) {
+      for (const File& f : run.journal.current->files) {
+        if (!f.adopted) owned.insert(fold(f.path));
+      }
+    }
+    legacy::Migration migration = legacy::plan(run.root, owned, tx, run.legacy_source, *run.legacy_catalog);
+    if (!migration.archive.empty()) {
+      // An earlier RTX-off deployment may already have displaced old addon files as normal
+      // uninstall originals. Move those copies into the permanent migration archive too, or a
+      // later uninstall would revive part of the former installation.
+      for (const File& original : run.journal.originals) {
+        if (!legacy::installed_path(original.path)) continue;
+        const std::string from = std::string(journal::kOriginals) + "/" + original.path;
+        if (!through_link(run, from) && unchanged(run.at(from), original, true)) {
+          migration.files.push_back({from, {original.sha256, original.size}, {}, {}, original.path});
+        }
+      }
+    }
+    return migration;
+  } catch (const std::exception& e) {
+    legacy::Migration none;
+    none.notes.push_back(std::string("the previous RTX Remix installation is left as it is for now (") + e.what() +
+                         "); the packages are deployed without migrating it, and the next start tries again");
+    return none;
+  }
+}
+
 // One planning pass of apply. Throws Broken to have a package re-planned as broken. `release_hold`:
 // a rollback's hold is in place and the plan no longer names the packages it came from, so the hold
 // ends with this run, which therefore writes the journal even when it changes nothing else.
@@ -964,27 +1010,14 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   legacy::Migration migration;
   if (std::any_of(plan.decisions.begin(), plan.decisions.end(),
                   [](const planner::Decision& d) { return d.active && d.activate_runtime; })) {
-    std::set<std::string> owned;
-    if (run.journal.current) for (const auto& f : run.journal.current->files) owned.insert(fold(f.path));
-    migration = legacy::plan(run.root, owned, tx, run.legacy_source);
-    if (!migration.archive.empty()) {
-      // An earlier RTX-off deployment may already have displaced old addon files as normal
-      // uninstall originals. Move those copies into the permanent migration archive too, or a
-      // later uninstall would revive part of the former installation.
-      for (const auto& original : run.journal.originals) {
-        if (!legacy::installed_path(original.path)) continue;
-        const std::string from = std::string(journal::kOriginals) + "/" + original.path;
-        fs::refuse_links(run.root, from);
-        if (unchanged(run.at(from), original, true)) {
-          migration.files.push_back({from, {original.sha256, original.size}, {}, {}, original.path});
-        }
-      }
-    }
+    migration = plan_migration(run, tx);
     // Archiving a legacy file is permanent. It must not become a normal original that uninstall
-    // puts back, which would silently re-enable the former RTX installation.
+    // puts back, which would silently re-enable the former RTX installation, nor stay adopted, which
+    // uninstall leaves in place: the package's copy goes in as the loader's own.
     for (auto& r : roots) {
-      if (!r.current && std::any_of(migration.files.begin(), migration.files.end(),
-                                    [&](const legacy::SavedFile& f) { return fold(f.path) == fold(r.path); })) {
+      if (r.planned != kNoPackage && (!r.current || r.current->adopted) &&
+          std::any_of(migration.files.begin(), migration.files.end(),
+                      [&](const legacy::SavedFile& f) { return fold(f.path) == fold(r.path); })) {
         r.act = Act::install;
         r.original = false;
         r.kept_at.clear();

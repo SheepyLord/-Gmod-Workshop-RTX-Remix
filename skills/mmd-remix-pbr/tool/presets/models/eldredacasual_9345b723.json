@@ -1,0 +1,104 @@
+{
+  "doc": "Eldreda Sunbringer Alt (EldredaCasual.pmx, H:\\BACKUP_20260815\\Modding\\ipg\\zzz_33_c\\output\\eldreda_sunbringer_alt\\1_PMX\\EldredaCasual), in game as sheepylord's compiled addon (models/sheepylord/zenless_zone_zero/eldreda_sunbringer_alt.mdl, a ragdoll; rpai --mdl), reviewed 2026-10-27: aggressive style (the user's choice for the recent batches). 20 materials on 5 sheets, 2048 DXT in game, all 5 hashes live (offline prediction 5/5). face.png and hair.png are byte-identical to Eldreda's and share her Remix hashes; eldreda_207edb89 sorts first and owns them, so this layer leaves both sheets alone (per-texture original). skin.png is skin only and left to Remix. body.png: Top (#1) and HairOrnament (#5) took skin from the texture name (体 -> body); Top pinned to cloth (striped jacket, black print crop top, black bodysuit, white faux fur, star patch), HairOrnament pinned to leather (dark mechanical clip and star at the back of the head; rpai has no plastic class and leather's aggressive values, 0.20 and normal 2.0, suit a hard glossy coat). Island rules: the choker pieces and pendant (bottom-right column) and the blue-silver wrist star become metal, the dark wrist star leather; the jacket stripes are blue-grey themselves, so no colour rule runs on this sheet. clothes.png: Skirt and Sleeve cloth (denim, white quilted panel), Boots leather by name (mustard and white leather). The alt's silver is painted blue-tinted (hue 218-222, sat 0.10-0.22) while the white fabric is neutral (sat ~0.01): whole blue-silver islands (star disc, buckles, clips, shield) and, inside rectangles that avoid the denim, the boot-top chain rings, belt studs and strap grommets become metal; the studded belts, belt loops, dark tabs and the red enamel badge become leather; the neutral silver badge on the sleeve metal. Checked per island: white strips and denim stay cloth. Metal F0 measured on the mesh (median linear luminance): 0.41 (body.png), 0.38 (clothes.png), a painted mid-tone silver, so it takes the satin metal of the gold-type standard (0.30) rather than the aggressive polish (0.12). Published 2026-10-27 (2 overrides, 8 DDS) and measured in game with the player teleported beside the ragdolls (a first capture with the player 5,400 units away filmed only floor tiles): bracketed AABB, 4 views, repeat noise 0.3-1.1/255, drift <= 1.0; B against the mean of A and A2: boot silver star -38%, chain band -31%, belt studs and clips -28%, belt hardware -13%, wrist star -4% to -8% (brightest 10% 186 -> 236), denim, white panel, faux fur, print top and jacket +3% to +5%; knee and belly skin unchanged (0.0, +1%). Evidence: H:\\BACKUP_20260815\\Modding\\ipg\\zzz_33_c\\pbr\\aabb (run_alt_tp, summary_alt_tp.jpg).",
+  "include": [
+    "../aggressive.json"
+  ],
+  "presets": {
+    "_materials": {
+      "1": "cloth",
+      "5": "leather",
+      "12": "mouth",
+      "16": "highlight",
+      "17": "highlight",
+      "18": "highlight"
+    },
+    "metal": {
+      "rough": 0.3,
+      "rough_ai": 0.5
+    }
+  },
+  "regions": [
+    {
+      "texture": "body.png", "within": ["cloth"], "class": "metal",
+      "islands": 0.7, "rect": [0.69, 0.66, 0.8, 1.0],
+      "doc": "choker pieces and pendant (blue-silver)"
+    },
+    {
+      "texture": "body.png", "within": ["cloth"], "class": "metal",
+      "islands": 0.7, "rect": [0.57, 0.73, 0.66, 0.83],
+      "doc": "blue-silver wrist star"
+    },
+    {
+      "texture": "body.png", "within": ["cloth"], "class": "leather",
+      "islands": 0.7, "rect": [0.67, 0.53, 0.77, 0.62],
+      "doc": "dark wrist star"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth"], "class": "leather",
+      "islands": 0.8, "rect": [0.0, 0.86, 0.55, 1.0],
+      "doc": "studded belts"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth"], "class": "leather",
+      "islands": 0.8, "rect": [0.14, 0.57, 0.34, 0.63],
+      "doc": "belt loops and straps"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth"], "class": "leather",
+      "islands": 0.8, "rect": [0.0, 0.64, 0.075, 0.715],
+      "doc": "dark leather tabs"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth"], "class": "leather",
+      "islands": 0.8, "rect": [0.0, 0.575, 0.095, 0.65],
+      "doc": "red enamel badge and its button"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth"], "class": "metal",
+      "islands": 0.8, "rect": [0.09, 0.575, 0.165, 0.655],
+      "doc": "silver badge on the sleeve"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth", "leather"], "class": "metal",
+      "islands": 0.6, "hue": [200, 240], "sat": [0.05, 0.32], "val": [0.5, 0.95],
+      "doc": "blue-silver hardware (whole islands): star disc, buckles, clips, shield"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth", "leather"], "class": "metal",
+      "rect": [0.65, 0.27, 1.0, 0.43], "hue": [200, 240], "sat": [0.05, 0.32], "val": [0.5, 0.95],
+      "doc": "chain rings on the boot tops"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth", "leather"], "class": "metal",
+      "rect": [0.0, 0.86, 0.55, 1.0], "hue": [200, 240], "sat": [0.05, 0.32], "val": [0.5, 0.95],
+      "doc": "star studs on the belts"
+    },
+    {
+      "texture": "clothes.png", "within": ["cloth", "leather"], "class": "metal",
+      "rect": [0.94, 0.48, 1.0, 0.72], "hue": [200, 240], "sat": [0.05, 0.32], "val": [0.5, 0.95],
+      "doc": "grommets on the boot strap"
+    }
+  ],
+  "textures": {
+    "face.png": {
+      "presets": {
+        "face": {"original": 1},
+        "mouth": {"original": 1},
+        "lash": {"original": 1},
+        "sclera": {"original": 1},
+        "eye": {"original": 1},
+        "highlight": {"original": 1}
+      }
+    },
+    "hair.png": {
+      "presets": {
+        "hair": {"original": 1},
+        "cloth": {"original": 1},
+        "leather": {"original": 1},
+        "metal": {"original": 1},
+        "gem": {"original": 1},
+        "nail": {"original": 1}
+      }
+    }
+  }
+}

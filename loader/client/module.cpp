@@ -1,11 +1,13 @@
 #include "catalog.h"
 #include "bootstrap_data.h"
+#include "poll.h"
 #include "nl/fs.h"
 #include <GarrysMod/Lua/Interface.h>
 #include <GarrysMod/Lua/LuaInterface.h>
 #include <GarrysMod/Lua/LuaShared.h>
 #include <windows.h>
 #include <optional>
+#include <string_view>
 
 namespace {
 using GarrysMod::Lua::ILuaBase;
@@ -17,27 +19,60 @@ ILuaShared* shared = nullptr;
 ILuaBase* menu = nullptr;
 ILuaInterface* client = nullptr;
 std::string status = "not initialized";
+nl::client::PollGate gate;
 constexpr const char* kHook = "NativeLoader.VerifiedRTXClient";
 constexpr const char* kRegistry = "NativeLoader.VerifiedRTXClient.Identity";
+constexpr const char* kAttempts = "NativeLoader.VerifiedRTXClient.Attempts";
+constexpr const char* kApi = "__NATIVELOADER_CLIENT_API";
 
+// Menu realm only: that state is ours.
 bool boolean(ILuaBase* lua, const char* key) {
   lua->GetField(GarrysMod::Lua::INDEX_GLOBAL, key);
   const bool value = lua->IsType(-1, Type::Bool) && lua->GetBool(-1);
   lua->Pop();
   return value;
 }
-void done(ILuaInterface* lua) {
-  lua->PushSpecial(GarrysMod::Lua::SPECIAL_REG);
-  lua->PushString(catalog->identity.c_str());
-  lua->SetField(-2, kRegistry);
+// Client realm: server Lua may have set metamethods on _G (a __newindex could take the API), so
+// every access there is raw. Pushes table[key].
+void raw_get(ILuaBase* lua, int table, const char* key) {
+  lua->PushSpecial(table);
+  lua->PushString(key);
+  lua->RawGet(-2);
+  lua->Remove(-2);
+}
+// table[key] = the value on top of the stack, which is popped.
+void raw_set(ILuaBase* lua, int table, const char* key) {
+  lua->PushSpecial(table);
+  lua->Insert(-2);
+  lua->PushString(key);
+  lua->Insert(-2);
+  lua->RawSet(-3);
   lua->Pop();
 }
-bool is_done(ILuaInterface* lua) {
-  lua->PushSpecial(GarrysMod::Lua::SPECIAL_REG);
-  lua->GetField(-1, kRegistry);
-  const bool result = lua->IsType(-1, Type::String) && lua->GetString(-1) == catalog->identity;
-  lua->Pop(2);
+bool raw_bool(ILuaBase* lua, const char* key) {
+  raw_get(lua, GarrysMod::Lua::SPECIAL_GLOB, key);
+  const bool value = lua->IsType(-1, Type::Bool) && lua->GetBool(-1);
+  lua->Pop();
+  return value;
+}
+void done(ILuaBase* lua) {
+  lua->PushString(catalog->identity.c_str());
+  raw_set(lua, GarrysMod::Lua::SPECIAL_REG, kRegistry);
+}
+bool is_done(ILuaBase* lua) {
+  raw_get(lua, GarrysMod::Lua::SPECIAL_REG, kRegistry);
+  unsigned length = 0;
+  const char* text = lua->IsType(-1, Type::String) ? lua->GetString(-1, &length) : nullptr;
+  const bool result = text && std::string_view(text, length) == std::string_view(catalog->identity);
+  lua->Pop();
   return result;
+}
+unsigned attempts(ILuaBase* lua) {
+  raw_get(lua, GarrysMod::Lua::SPECIAL_REG, kAttempts);
+  const double value = lua->IsType(-1, Type::Number) ? lua->GetNumber(-1) : 0;
+  lua->Pop();
+  if (!(value >= 1)) return 0;
+  return value >= nl::client::kMaxClientAttempts ? nl::client::kMaxClientAttempts : static_cast<unsigned>(value);
 }
 LUA_FUNCTION_STATIC(Read) {
   if (!catalog || LUA != client || !LUA->IsType(1, Type::String)) {
@@ -58,7 +93,7 @@ LUA_FUNCTION_STATIC(List) {
   unsigned index = 0;
   for (const auto& [name, script] : catalog->scripts) {
     (void)script;
-    LUA->PushNumber(++index); LUA->PushString(name.c_str()); LUA->SetTable(-3);
+    LUA->PushNumber(++index); LUA->PushString(name.c_str()); LUA->RawSet(-3);
   }
   return 1;
 }
@@ -75,25 +110,45 @@ LUA_FUNCTION_STATIC(Status) {
   LUA->PushNumber(catalog ? static_cast<double>(catalog->scripts.size()) : 0); LUA->SetField(-2, "scripts");
   return 1;
 }
-LUA_FUNCTION_STATIC(Poll) {
-  if (LUA != menu || !catalog || !shared) return 0;
-  client = shared->GetLuaInterface(GarrysMod::Lua::State::CLIENT);
-  if (!client || !boolean(client, "CLIENT_DLL") || boolean(client, "SERVER") || is_done(client)) return 0;
-  client->GetField(GarrysMod::Lua::INDEX_GLOBAL, "GAMEMODE");
-  const bool ready = client->IsType(-1, Type::Table);
-  client->Pop();
+// Runs on the client realm, called protected there by Poll: an error raised in that state outside
+// a protected call would end the process. No C++ object with a destructor lives in this frame.
+LUA_FUNCTION_STATIC(InitializeClient) {
+  if (!catalog || LUA != client) return 0;
+  if (!raw_bool(LUA, "CLIENT_DLL") || raw_bool(LUA, "SERVER") || is_done(LUA)) return 0;
+  raw_get(LUA, GarrysMod::Lua::SPECIAL_GLOB, "GAMEMODE");
+  const bool ready = LUA->IsType(-1, Type::Table);
+  LUA->Pop();
   if (!ready) return 0;
-  const int top = client->Top();
-  client->CreateTable();
-  client->PushCFunction(Read); client->SetField(-2, "read");
-  client->PushCFunction(List); client->SetField(-2, "list");
-  client->PushCFunction(Finish); client->SetField(-2, "finish");
-  client->PushString(catalog->identity.c_str()); client->SetField(-2, "identity");
-  client->SetField(GarrysMod::Lua::INDEX_GLOBAL, "__NATIVELOADER_CLIENT_API");
+  // The initializer declines while the local player is not valid; a realm that never gets one is
+  // given up instead of being compiled again on every poll.
+  const unsigned attempt = attempts(LUA) + 1;
+  if (!nl::client::attempt_allowed(attempt)) {
+    status = "the client realm never became ready for the verified RTX payload";
+    done(LUA);
+    return 0;
+  }
+  LUA->PushNumber(attempt);
+  raw_set(LUA, GarrysMod::Lua::SPECIAL_REG, kAttempts);
+  LUA->CreateTable();
+  LUA->PushString("read"); LUA->PushCFunction(Read); LUA->RawSet(-3);
+  LUA->PushString("list"); LUA->PushCFunction(List); LUA->RawSet(-3);
+  LUA->PushString("finish"); LUA->PushCFunction(Finish); LUA->RawSet(-3);
+  LUA->PushString("identity"); LUA->PushString(catalog->identity.c_str()); LUA->RawSet(-3);
+  raw_set(LUA, GarrysMod::Lua::SPECIAL_GLOB, kApi);
   const bool ok = client->RunStringEx("@nativeloader/verified-client-bootstrap", "", kClientBootstrap.data(), true, false, true, true);
-  client->PushNil(); client->SetField(GarrysMod::Lua::INDEX_GLOBAL, "__NATIVELOADER_CLIENT_API");
+  LUA->PushNil();
+  raw_set(LUA, GarrysMod::Lua::SPECIAL_GLOB, kApi);
+  if (!ok) { status = "verified client bootstrap failed"; done(LUA); }
+  return 0;
+}
+LUA_FUNCTION_STATIC(Poll) {
+  if (LUA != menu || !catalog || !shared || !gate.due(GetTickCount64())) return 0;
+  client = shared->GetLuaInterface(GarrysMod::Lua::State::CLIENT);
+  if (!client) return 0;
+  const int top = client->Top();
+  client->PushCFunction(InitializeClient);
+  if (client->PCall(0, 0, 0) != 0) status = "verified client bootstrap step failed";
   client->Pop(client->Top() - top);
-  if (!ok) { status = "verified client bootstrap failed"; done(client); }
   return 0;
 }
 std::filesystem::path module_path(HMODULE module) {
@@ -141,6 +196,11 @@ GMOD_MODULE_OPEN() {
     const auto factory = library ? reinterpret_cast<Factory>(GetProcAddress(library, "CreateInterface")) : nullptr;
     shared = factory ? static_cast<ILuaShared*>(factory(GMOD_LUASHARED_INTERFACE, nullptr)) : nullptr;
     if (!shared) throw std::runtime_error("The Lua shared interface is unavailable");
+    // The owned environments keep api.read and the other callbacks reachable for the client
+    // realm's lifetime, longer than the menu's require reference: never unload this code.
+    HMODULE pinned = nullptr;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+                            reinterpret_cast<LPCWSTR>(&catalog), &pinned)) throw std::runtime_error("Cannot keep the RTX client bootstrap loaded");
     catalog = std::move(snapshot);
     menu = LUA;
     status = "verified; waiting for the client realm";

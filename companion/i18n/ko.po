@@ -145,7 +145,7 @@ msgid "Night"
 msgstr "밤"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:661
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:207
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "이번 세션에서는 Remix API를 사용할 수 없어 이 설정들을 적용할 수 없습니다. 자세한 내용은 nativeloader_status를 실행하세요."
 
@@ -248,8 +248,8 @@ msgid "Weather"
 msgstr "날씨"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:710
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:214
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
 msgid "(leave to Remix)"
 msgstr "(Remix에 맡김)"
 
@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "'RTX Remix' 탭 > '시작하기' > '클래식 RTX 설정 사용'(콘솔: nativeloader_rtx_defaults)은 이 값들을 모두 다시 적용하며, 바꾼 값도 덮어씁니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:283
 msgid "Common Remix settings"
 msgstr "주요 Remix 설정"
 
@@ -474,9 +474,9 @@ msgstr "RTX Remix 가이드"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:285
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:286
 msgid "Rendering"
 msgstr "렌더링"
 
@@ -487,299 +487,296 @@ msgid "Water and glass"
 msgstr "물과 유리"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:282
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:282
 msgid "Start here"
 msgstr "시작하기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:277
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:283
 msgid "Remix settings"
 msgstr "Remix 설정"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:70
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
 msgid "Graphics preset"
 msgstr "그래픽 프리셋"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Ultra"
 msgstr "울트라"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "High"
 msgstr "높음"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Medium"
 msgstr "중간"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:71
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
 msgid "Low"
 msgstr "낮음"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
 msgid "Custom (keeps your own settings)"
 msgstr "사용자 지정(내 설정 유지)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:72
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
 msgid "Automatic (by GPU)"
 msgstr "자동(GPU에 따라)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
 msgid "Upscaler"
 msgstr "업스케일러"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
 msgid "None"
 msgstr "없음"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:75
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
 msgid "DLSS quality"
 msgstr "DLSS 품질"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
 msgid "Ultra performance"
 msgstr "울트라 성능"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
 msgid "Performance"
 msgstr "성능"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
 msgid "Balanced"
 msgstr "균형"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
 msgid "Quality"
 msgstr "품질"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
 msgid "Auto"
 msgstr "자동"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
 msgid "Full resolution (DLAA)"
 msgstr "전체 해상도(DLAA)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:78
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
 msgid "Frame generation"
 msgstr "프레임 생성"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:79
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:222
 msgid "Off"
 msgstr "끄기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:83
 msgid "Indirect lighting"
 msgstr "간접 조명"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:84
 msgid "Importance sampled"
 msgstr "중요도 샘플링"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:84
 msgid "Neural Radiance Cache"
 msgstr "신경망 방사휘도 캐시(NRC)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:85
 msgid "Hashed radiance cache"
 msgstr "해시 방사휘도 캐시"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:83
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
 msgid "Max light bounces"
 msgstr "최대 광선 반사 수"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:86
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
 msgid "Sky brightness"
 msgstr "하늘 밝기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:87
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
 msgid "The map's own skybox only."
 msgstr "맵 자체의 스카이박스에만 적용됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:88
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:91
 msgid "Fog"
 msgstr "안개"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:92
 msgid "Remix default"
 msgstr "Remix 기본값"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:92
 msgid "Heavy fog"
 msgstr "짙은 안개"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:89
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:92
 msgid "Light fog"
 msgstr "옅은 안개"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
 msgid "Mist"
 msgstr "박무"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
 msgid "Haze"
 msgstr "연무"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
 msgid "Dust"
 msgstr "먼지"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
 msgid "Smoke"
 msgstr "연기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:91
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:94
 msgid "Remix's volumetric fog presets. One chosen here replaces the weather's fog. Dense fog stays dark where no light reaches it."
 msgstr "Remix의 볼류메트릭 안개 프리셋입니다. 여기서 고르면 날씨의 안개를 대신합니다. 짙은 안개는 빛이 닿지 않는 곳에서는 어둡게 남습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:96
 msgid "Post effects"
 msgstr "후처리 효과"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:93
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:96
 msgid "Bloom, motion blur and film grain."
 msgstr "블룸, 모션 블러, 필름 그레인."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:94
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:97
 msgid "Tone map colour purity"
 msgstr "톤 매핑 색 순도"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:184
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:190
 msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
 msgstr "이번 세션에서는 RTX Remix가 네이티브 로더를 통해 실행되고 있습니다. RTX에 관한 모든 것은 이 탭에 있습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:185
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:191
 msgid "Open the RTX Remix guide"
 msgstr "RTX Remix 가이드 열기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:186
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:192
 msgid "Print the loader's status to the console"
 msgstr "로더 상태를 콘솔에 출력"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:187
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:193
 msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
 msgstr "클래식 설정: 기존 RTX 환경의 값입니다. 아직 기본값이던 설정에만 한 번 적용되었습니다. 이 버튼은 이 값들을 모두 다시 적용합니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:188
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:194
 msgid "Use the classic RTX settings"
 msgstr "클래식 RTX 설정 사용"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:189
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:195
 msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
 msgstr "애드온이 RTX 설정을 되돌리거나 화면에 후처리를 덧그리지 못하게 막기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:190
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:196
 msgid "RTX session guard"
 msgstr "RTX 세션 보호"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:191
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
 msgid "Turn this off only to test an add-on that misbehaves."
 msgstr "오작동하는 애드온을 테스트할 때만 끄세요."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:192
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
 msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
 msgstr "Remix 자체 메뉴: Alt+X를 누르세요. 개별 설정을 바꾸기 전에 그래픽 프리셋으로 '사용자 지정'(Custom)을 고르고, 그다음 '저장'(Save)을 누르세요. 그렇지 않으면 다음 실행 시 원래대로 돌아갑니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:193
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
 msgid "Language"
 msgstr "언어"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:194
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:200
 msgid "Same as Garry's Mod"
 msgstr "Garry's Mod와 동일"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:196
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:202
 msgid "Language of this tab and the guide"
 msgstr "언어(이 탭과 가이드)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:203
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
 msgid "Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."
 msgstr "여기서 변경한 값은 이번 게임에 적용됩니다. 유지하려면 Alt+X 메뉴에서 설정을 저장하세요. 여기에 표시되는 값은 이 패널의 덮어쓰기 값이며, Remix의 현재 값을 실시간으로 표시하는 것은 아닙니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:204
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
 msgid "Reapply these overrides at every launch"
 msgstr "시작할 때마다 이 덮어쓰기 값 다시 적용"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:211
 msgid "Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."
 msgstr "끄면 Remix에 저장된 설정을 불러옵니다. 이 패널의 값으로 덮어쓰려는 경우에만 켜세요."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:221
 msgid "On"
 msgstr "켜기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:219
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:225
 #, c-format
 msgid "Set %s here"
 msgstr "여기서 %s 설정"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:245
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
 msgid "Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."
 msgstr "숫자를 편집하기 전에 해당 항목의 덮어쓰기를 켜세요. 하늘 밝기와 색 순도는 0으로 설정할 수도 있습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
 msgid "Clear this panel's overrides"
 msgstr "이 패널의 덮어쓰기 값 지우기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:256
 msgid "Local player shadow"
 msgstr "내 플레이어 그림자"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
 msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
 msgstr "1인칭 시점에서 내 몸의 그림자와 반사를 표시합니다. 다른 플레이어와 래그돌에는 영향을 주지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
 msgid "Body height offset (units)"
 msgstr "몸 높이 오프셋(유닛)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:259
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr "양수 값은 화면에 그려지는 몸만 위로 올립니다. 카메라와 충돌 판정 위치는 바뀌지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
 msgid "Keep toolgun text sharp"
 msgstr "툴건 글자를 선명하게 표시"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
 msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
 msgstr "업스케일링 후 툴건 화면을 전체 해상도로 그립니다. 애니메이션과 사용자 지정 화면도 정상적으로 갱신됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
 msgid "Hide outline meshes"
 msgstr "외곽선 메시 숨기기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
 msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
 msgstr "모델을 덮거나 어둡게 만드는 호환되지 않는 외곽선 셸을 숨깁니다. 다른 모델 재질은 정상적으로 렌더링됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
 msgid "Player models"
 msgstr "플레이어 모델"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:285
 msgid "Toolgun screen"
 msgstr "툴건 화면"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:286
 msgid "Model outlines"
 msgstr "모델 외곽선"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:9
 msgid "Motion importer"
 msgstr "모션 가져오기"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
-msgid "Open the VMD motion importer and motion library."
-msgstr "VMD 모션 가져오기와 모션 라이브러리를 엽니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:11
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:158
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:184
 msgid "Import VMD files and manage your motion library and playback."
 msgstr "VMD 파일을 가져오고 모션 라이브러리와 재생을 관리합니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
-msgid "Open motion importer"
-msgstr "모션 가져오기 열기"
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
+msgid "Open in window"
+msgstr "창으로 열기"

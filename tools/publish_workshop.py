@@ -51,9 +51,13 @@ STATE = shared_state()
 HOOK_MARKER = '# nl-workshop-hook'
 # What goes into the item from this repository: a change here can change the package. packages/ holds
 # every part's inputs (its LFS files are pointers in git, so the tree hash covers their content).
+# companion_i18n.py builds the shipped i18n_data.lua (package_fixes.py imports it); package_fixes.py
+# ships LICENSE and third_party/gmod/LICENSE as notices; .gitattributes sets the bytes a checkout
+# gives some of these (/LICENSE, the guard).
 REPO_INPUTS = ('companion', 'packages', 'tools/inputs.py', 'tools/package_fixes.py', 'tools/package_runtime.py',
                'tools/package_workshop.py', 'tools/package_content.py', 'tools/package_reshade.py', 'third_party/reshade',
-               'tools/gmapack/gmapack.py', 'tools/workshop.json')
+               'tools/gmapack/gmapack.py', 'tools/workshop.json', 'tools/companion_i18n.py', 'LICENSE',
+               'third_party/gmod/LICENSE', '.gitattributes')
 BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
             'package_content': 'tools/package_content.py', 'package_reshade': 'tools/package_reshade.py'}
 LOCK_WAIT = 2 * 60 * 60
@@ -325,7 +329,10 @@ def upload(config: dict, gma: Path, changes: str, log) -> str:
         if not scratch.is_relative_to(REPO.resolve() / 'out'):
             raise PublishError('Steam preflight fallback scratch path leaves repository out/')
         scratch.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix='gmpublish-preflight-', dir=scratch) as temporary:
+        # The copy may still be held for a moment after it exits (Windows, a virus scanner). A folder
+        # that cannot be removed must not turn an upload that succeeded into an error: published.json
+        # would not be written and the next hook run would upload again.
+        with tempfile.TemporaryDirectory(prefix='gmpublish-preflight-', dir=scratch, ignore_cleanup_errors=True) as temporary:
             folder = Path(temporary).resolve()
             if not folder.is_relative_to(scratch):
                 raise PublishError('Steam preflight fallback directory leaves its scratch root')
@@ -337,6 +344,8 @@ def upload(config: dict, gma: Path, changes: str, log) -> str:
                                   stdin=subprocess.DEVNULL, timeout=4 * 60 * 60)
             output = (done.stdout + done.stderr).strip()
             log(output[-3000:])
+        if Path(temporary).exists():
+            log(f'{temporary} could not be removed yet; it is left in out/tmp')
     if done.returncode or 'Success!' not in output:
         raise PublishError(f'gmpublish failed (exit {done.returncode})')
     return output
