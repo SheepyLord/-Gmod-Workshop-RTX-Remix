@@ -75,10 +75,60 @@ launch options `-insecure -tickrate 120`, 766 Workshop subscriptions), with `poc
   registry key unchanged.
 - `glass`: U1 reproduced (exit `0xC0000005`), bisected (runs 02-09) and the fix checked live.
 - `toolgun`: U3 diagnosed (redraw counters, render-target probes in both passes) and the fix checked live.
-- The release run is recorded in the section below once the release is installed.
+- The release run is below.
+
+## Release run (2026-10-31)
+
+The release on the user's install, with [`release_qa.py`](../../tools/qa/release_qa.py.md) (the
+protocol in [TESTING.md](../TESTING.md#release-qa-protocol-field-install-r4)); evidence in the main
+checkout's `out\qa-field\release` and `out\qa-poc\r4-final`:
+
+- **Before the publish, on the PoC** (the branch's own package, no Workshop mount): all four sessions
+  passed in 4.3 minutes; the modern_house window broke into 36 shards with queued rendering, the
+  spawned pane into 5; `mat_queue_mode` came back. A 4K window with GUI Scaler mounted checked R4-31.
+- **Backup:** the loader, its receipt and `config.json`, `config.cfg`, `client.vdf`, `autoexec.cfg`,
+  `user.conf`, `rtx.conf`, `native-loader\replaced` and the registry key in
+  `out\field-backups\20261031-r4` (SHA-256 list beside them).
+- **Install:** loader 0.10.1 (`d48bcd7d`) over the hand-copied 0.10.0, its stale 0.7.0 receipt moved
+  into the backup, with `-ReplaceUntracked` (the 0.10.0 files kept in `native-loader\replaced`).
+- **Warm-up:** loader 0.10.1 with the previous package (RTX active, no Lua errors, normal quit); Steam
+  fetched the new item meanwhile, byte-identical to the upload.
+- **Sessions** (the user's settings, 4K, launch options `-insecure -tickrate 120`, 763 subscriptions,
+  762 mounted):
+  - first release (`cdd1fa3`, package `+1aa057a3`), `out\qa-field\release`: all four sessions passed in
+    6.3 minutes; the 4K screenshots showed the Motion importer's text at half the spawn menu's size
+    (R4-31), fixed in `414b7a7` (tested on the PoC in a 4K window with GUI Scaler mounted) and
+    published again;
+  - final release (`414b7a7`, package `+c8b17ab2`, its download byte-identical to the upload),
+    `out\qa-field\release-final`: `session` 92 s (map in 28.6 s; guard installed early, no guard errors
+    before or after the toolgun, toolgun redraw drawing), `spawnmenu` 84 s, `map-glass` 109 s (the
+    modern_house window broke into 36 shards, no crash), `spawned-glass` 89 s (the pane broke into 5);
+    every session RTX active on that package, zero Lua errors, normal quit, no crash prompt.
+- **Unchanged after the runs:** `user.conf`, `rtx.conf`, the loader files, `config.json` and the
+  registry key; `config.cfg` with the same values (`mat_queue_mode` included); `client.vdf` gained only
+  the companion's new `nativeloader_ignore_outline_shells` (0).
+- **Seen in the screenshots:** the diagnostics panel's separator and text (R4-27), "Recalculate
+  normals for RTX" (U4), the toolgun's sharp scrolling text (U3), the Motion importer tab laid out like
+  the desktop importer at 4K (U2, R4-31), glass breaking without a crash (U1).
 
 ## Not changed, and why
 
 - The secure-launch default (ADR 0052) stays: the user's decision.
 - The GPL oversized-skinning module is not rebuilt for its low findings (R4-24).
 - Runtime low findings (R4-26) wait for a runtime round that needs a shader build.
+- The shipped translation catalogs' line endings (R4-30) are left for a packaging change.
+
+## Open after R4
+
+- **The motion add-on differs from its repository.** The part carries the add-on's main (fcd56f4) plus
+  this repository's changes: the builders and scale (`cl_importer.lua`, `cl_menu.lua`), the translations
+  (`sh_core.lua`, `cl_radial.lua`, the tool file). Carry them to the add-on's repository, or the next
+  import from there loses them.
+- **Unreviewed translations:** Traditional Chinese for the motion importer's 98 new phrases and the
+  companion's "Open in window" in six languages were written by agents.
+- **Cosmetic:** in a narrow spawn menu at 4K the importer's longest heading ("Face/Flex VMDs (if they
+  are stored in separate VMDs from the body motion)") is cut at the column's edge; long translations
+  may cut button labels the same way.
+- **Not run in a game:** a late join on a map with many broken windows (the paced resync), a failed body
+  proxy slot hidden by `$no_draw`, and an outline-heavy model with the shell rule off (r4-companion's
+  own list).

@@ -2729,3 +2729,17 @@ Measured on the user's install (RTX 5090, loader 0.10.0 and the published packag
   and drops it once `IsValid` fails, so the builders key their hooks by their root panel: a closed
   window or a rebuilt spawn menu drops them without `OnRemove` (the window still releases its hooks
   and stops the music preview in `OnRemove`, as before).
+
+## R4 release facts (2026-10-31, Claude)
+
+- **GUI Scaler** (Workshop 3495129511, `lua/autorun/client/cl_guiscaler.lua`, the user has it): with
+  `guiscaler_only_spawnmenu 1` (its default) it walks the spawn menu's panel tree and, per panel class,
+  multiplies `DButton` sizes by `ScrH()/1080 * guiscaler_scale_multiplier` and swaps `DermaDefault`,
+  `DermaDefaultBold` and `DermaLarge` for its own scaled fonts; other named fonts stay as they are. It
+  marks a processed panel `gScF` and skips one already marked, which is how Model Hotloader's
+  `ownScale` opts its resolution-aware panels out. So a tab that sizes itself must mark its subtree, or
+  its buttons grow twice while its own fonts do not (the motion importer at 4K before R4-31).
+- **The field release runs** (763 subscriptions, 762 mounted, 4K, the user's settings): the map was
+  ready 21.6-28.6 s after launch; the four release QA sessions took 6.2-6.3 minutes in all, the PoC's
+  4.3. A start right after a publish ran the previous package: GMod fetched the update (1.84 GB)
+  during that session, byte-identical to the upload, and the next start deployed it.
