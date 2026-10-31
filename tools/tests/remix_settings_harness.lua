@@ -1,9 +1,12 @@
 -- Exercise the menu's persistence boundary without needing the game or a GPU.
-local menu, scenario = ...
+-- body_default: the RTX fixes' own default for rtx_pseudoplayer (cl_rtx_misc.lua), read by the runner.
+local menu, scenario, body_default = ...
 local archive, callbacks, commands, hooks, delayed = {}, {}, {}, {}, {}
 local writes, pending, panels = {}, {}, {}
 local runtime = { ["rtx.tonemap.psycho17.purityScale"] = "1.37" }
 local prefix = "nativeloader_remix_"
+local SHADOW = "rtx.playerModel.enablePrimaryShadows"
+if scenario == "player_shadow" then runtime[SHADOW] = "False" end -- turned off in Alt+X and saved
 if scenario == "legacy" then
     archive[prefix .. "colour_purity"] = "0.000000"
     archive[prefix .. "sky_brightness"] = "0.000000"
@@ -27,7 +30,7 @@ local function cv(name)
     }
 end
 function CreateClientConVar(name, default)
-    if archive[name] == nil then archive[name] = default end
+    if archive[name] == nil then archive[name] = tostring(default) end
     return cv(name)
 end
 GetConVar = cv
@@ -67,6 +70,9 @@ RemixConfig = {SetConfigVariable = function(key, value)
     writes[#writes + 1] = {key, value} runtime[key] = value return true
 end, GetConfigVariable = function() error("The file-only getter is not a live readout") end}
 local function boot()
+    -- The RTX fixes create rtx_pseudoplayer first (autorun/cl_rtx.lua includes cl_rtx_misc.lua before
+    -- GMod runs autorun/client), so the menu runs with their default, as in the game.
+    CreateClientConVar("rtx_pseudoplayer", assert(body_default, "the fixes' rtx_pseudoplayer default"), true, false)
     dofile(menu)
     for _, fn in pairs(hooks.PopulateToolMenu) do fn() end
     for _, fn in pairs(hooks.InitPostEntity) do fn() end
@@ -99,7 +105,9 @@ boot()
 if scenario == "replay" then
     assert(runtime["rtx.tonemap.psycho17.purityScale"] == "0", "Intentional zero was not replayed")
     assert(runtime["rtx.skyBrightness"] == "0" and runtime["rtx.pathMaxBounces"] == "6")
+    assert(runtime[SHADOW] == "True", "Opt-in replay did not request the body's shadow")
 else
+    -- With the fixes' default (the body on), a fresh start must not write the player shadow either.
     assert(#writes == 0, "Startup overwrote Remix's saved values")
 end
 local before = #writes
@@ -141,6 +149,18 @@ elseif scenario == "invalid" then
     end
     before = #writes command("graphics_preset", "not a preset") command("post_effects", "banana")
     assert(#writes == before, "Invalid choice reached Remix")
+elseif scenario == "player_shadow" then
+    assert(archive.rtx_pseudoplayer == "1" and runtime[SHADOW] == "False", "Startup turned a saved shadow back on")
+    before = #writes
+    RunConsoleCommand("rtx_pseudoplayer", "0") flush()
+    assert(#writes == before, "Turning the body off wrote Remix")
+    RunConsoleCommand("rtx_pseudoplayer", "1") flush()
+    assert(runtime[SHADOW] == "True" and #writes == before + 1, "Turning the body on did not request its shadow")
+    -- Off again in Alt+X and saved: the next session keeps it.
+    runtime[SHADOW] = "False"
+    before = #writes
+    boot()
+    assert(#writes == before and runtime[SHADOW] == "False", "A new session overrode the saved shadow")
 elseif scenario == "reset" then
     command("colour_purity_enabled", "1") command("colour_purity", "0") command("reapply", "1")
     before = #writes

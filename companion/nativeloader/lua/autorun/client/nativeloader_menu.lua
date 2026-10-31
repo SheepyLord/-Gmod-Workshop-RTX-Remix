@@ -26,15 +26,18 @@ local function remix_ready()
     return istable(RemixConfig) and isfunction(RemixConfig.SetConfigVariable)
 end
 
-CreateClientConVar("rtx_pseudoplayer", "0", true, false)
+-- The local body proxy's switch, rtx_pseudoplayer, belongs to the RTX fixes: cl_rtx_misc.lua creates it
+-- (default 1) before this file loads. Turning it on asks Remix for the player's primary shadows
+-- (ADR 0043). Only that toggle writes the option, or the opt-in startup replay below: at map start
+-- Remix's saved setting wins (ADR 0044), so a shadow turned off in Alt+X and saved stays off.
 CreateClientConVar("rtx_pseudoplayer_offset_z", "0", true, false)
 local function player_shadow()
-    if GetConVar("rtx_pseudoplayer"):GetBool() and remix_ready() then
+    local body = GetConVar("rtx_pseudoplayer")
+    if body and body:GetBool() and remix_ready() then
         RemixConfig.SetConfigVariable("rtx.playerModel.enablePrimaryShadows", "True")
     end
 end
 cvars.AddChangeCallback("rtx_pseudoplayer", player_shadow, "nativeloader_player_shadow")
-hook.Add("InitPostEntity", "nativeloader_player_shadow", function() timer.Simple(4, player_shadow) end)
 
 -- Remix's own volumetric fog presets ("Volumetric Visual Presets" in its menu,
 -- rtx_global_volumetrics.cpp), applied as its Apply button does: the four fog values, the game's
@@ -149,7 +152,10 @@ end
 hook.Add("InitPostEntity", "nativeloader_remix_options", function()
     timer.Simple(4, function()
         started = true
-        if replay:GetBool() then for _, option in ipairs(OPTIONS) do push(option) end end
+        if replay:GetBool() then
+            for _, option in ipairs(OPTIONS) do push(option) end
+            player_shadow()
+        end
     end)
 end)
 
