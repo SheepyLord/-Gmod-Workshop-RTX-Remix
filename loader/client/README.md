@@ -6,12 +6,13 @@ sv_allowcslua, widen the native source allowlist, or create a general source-exe
 | File | Purpose |
 |---|---|
 | `catalog.h`, `catalog.cpp` | Validate the enabled RTX owner/source, bind the bootstrap module to its journaled SHA-256, and snapshot only owned add-on Lua whose exact bytes match the committed generation |
-| `module.cpp` | Menu-realm module entry, active-owned-runtime and committed-journal checks, client-realm lifecycle polling, private catalog callbacks, completion/status and cleanup |
+| `module.cpp` | Menu-realm module entry, active-owned-runtime and committed-journal checks, client-realm lifecycle polling, private catalog callbacks, completion/status and cleanup. From loader 0.10.1 every client-realm access is raw and runs inside one protected call on that realm, the temporary API is raw-set, and the module pins itself while its callbacks stay reachable ([ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md)) |
+| `poll.h` | The polling policy: a client-realm check at most every 250 ms, and at most 480 initializer runs (two minutes) for a realm whose local player never becomes valid |
 | `bootstrap.lua` | Private client initializer: scoped include/require/file helpers, shared/client autoruns, client entity registration and owned initialization-hook replay |
 | `bootstrap.lua.md` | Initializer behavior and side effects |
 | `bootstrap_data.h.in` | CMake embedding template for the initializer |
 | `CMakeLists.txt` | Static catalog library, native module, script embedding and test targets |
-| `tests/` | Synthetic catalog policy checks; see [tests/README.md](tests/README.md) |
+| `tests/` | Synthetic catalog policy, polling-policy and module source-contract checks; see [tests/README.md](tests/README.md) |
 
 The module consumes the existing protected native-loader journal and config through nl_core.
 Catalog preparation expects a validated committed generation; normal use refuses absent/pending

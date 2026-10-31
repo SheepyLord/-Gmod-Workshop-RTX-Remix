@@ -1,5 +1,6 @@
 #include "presentation.h"
 #include "diagnostics.h"
+#include "catalog.h"
 
 #include "gma_fixture.h"
 #include "nl/fs.h"
@@ -105,6 +106,51 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   CHECK_THROWS_AS(p::decorate_main_menu("changed menu", data), std::runtime_error);
   CHECK_THROWS_AS(p::decorate_main_menu(original, "{};unexpected()"), std::runtime_error);
   CHECK_THROWS_AS(p::decorate_main_menu(original, "[]"), std::runtime_error);
+}
+
+TEST_CASE("main menu: the multiplayer bootstrap trigger does not depend on the overlay anchor") {
+  nl::proxy::diagnostics::System system;
+  const auto data = nl::proxy::diagnostics::serialize(system, "0.10.1", std::string(64, 'b'), {});
+  const std::string original = "function MenuController( $scope, $rootScope ) {}\n";
+  const auto overlay = p::decorate_main_menu(original, data, true);
+  CHECK(overlay.find("window.NativeLoaderClientBootstrap = true;") != std::string::npos);
+  CHECK(overlay.find("window.NativeLoaderDiagnostics = ") != std::string::npos);
+  CHECK(p::decorate_main_menu(original, data).find("window.NativeLoaderClientBootstrap = false;") != std::string::npos);
+  // A GMod update that moves the controller costs the overlay, never the trigger.
+  const std::string changed = "function NewMenuController( $scope ) {}\n";
+  CHECK_THROWS_AS(p::decorate_main_menu(changed, data, true), std::runtime_error);
+  const auto trigger = p::add_client_bootstrap(changed);
+  CHECK(trigger.starts_with(changed));
+  CHECK(trigger.find("window.NativeLoaderClientBootstrap = true;") != std::string::npos);
+  CHECK(trigger.find("require( \"nlrtxclient\" )") != std::string::npos);
+  CHECK(trigger.find("window.NativeLoaderDiagnostics = ") == std::string::npos);
+}
+
+TEST_CASE("main menu: a changed menu still receives the trigger when the helper is deployed") {
+  auto f = fixture("main_menu_bootstrap_only");
+  const auto main = nl::fs::join(f.root, "garrysmod/html/js/menu/control.Menu.js");
+  const std::string original = "function MovedMenuController( $scope ) {}\n";
+  write(main, original);
+  nl::journal::File helper;
+  helper.path = std::string(nl::client::kModule);
+  helper.package = std::string(nl::client::kPackage);
+  helper.sha256 = std::string(64, 'c');
+  helper.size = 1;
+  f.generation.files.push_back(helper);
+  const auto prepared = p::prepare(f.root, f.generation, true);
+  REQUIRE(prepared.redirects.size() == 3);
+  CHECK(prepared.redirects[2].source == main);
+  REQUIRE(prepared.notes.size() == 1);
+  CHECK(prepared.notes[0].find("bootstrap trigger is installed without it") != std::string::npos);
+  const auto decorated = nl::fs::read_file(prepared.redirects[2].replacement, 131072);
+  CHECK(decorated == p::add_client_bootstrap(original));
+  CHECK(nl::fs::read_file(main, 65536) == original);
+  // Without the helper there is nothing to trigger: the changed menu is left alone, as before.
+  f.generation.files.pop_back();
+  const auto plain = p::prepare(f.root, f.generation, true);
+  CHECK(plain.redirects.size() == 2);
+  REQUIRE(plain.notes.size() == 1);
+  CHECK(plain.notes[0].find("diagnostics overlay not installed") != std::string::npos);
 }
 
 TEST_CASE("main menu diagnostics redirect only a generated copy and preserve the stock source") {

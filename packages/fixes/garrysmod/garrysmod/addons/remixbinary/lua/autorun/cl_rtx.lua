@@ -6,6 +6,10 @@ if not game.SinglePlayer() and not util.IsBinaryModuleInstalled("RTXFixesBinary"
     return
 end
 
+-- Tells the native loader's verified multiplayer initializer that normal loading already ran this
+-- payload (a listen host, sv_allowcslua 1, a server shipping these add-ons), so it is not run twice.
+if not NATIVELOADER_VERIFIED_MULTIPLAYER then NATIVELOADER_RTX_NORMAL_LOAD = true end
+
 if CLIENT then
     require((BRANCH == "x86-64" or BRANCH == "chromium" ) and "RTXFixesBinary" or "RTXFixesBinary")
 end

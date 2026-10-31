@@ -1,6 +1,8 @@
 # test_presentation_ui.py
 
 Offline checks for all seven startup templates, supported placeholders/project URL, complete
-seven-language main-menu labels, and the real JavaScript UI in Node. Run with tools/test.ps1 or
-unittest discover. Node is optional in environments without it; the asset checks always run.
-No game, browser, network, clipboard or filesystem mutation. Exit zero on success.
+seven-language main-menu labels, and the real JavaScript UI in Node, including the multiplayer
+bootstrap trigger with and without the diagnostics overlay. Run with tools/test.ps1 or unittest
+discover. Node is optional in environments without it (that one case is skipped, as before); the
+asset checks always run. No game, browser, network, clipboard or filesystem mutation. Exit zero on
+success.
