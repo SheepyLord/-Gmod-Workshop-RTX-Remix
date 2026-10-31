@@ -1,13 +1,13 @@
 # Roadmap
 
 R6 T3 implementation (companion telemetry, tier display, translated stability guide and 2048 px
-publishing guidance) is complete, uncommitted for the project manager on `r6-t3-companion`; see
-[the task brief](handover/R6-T3-companion-docs.md). All 33 companion tests and both i18n checks pass;
-the Release build and all 23 CTests pass with a cache-only shorter executable output directory.
-The full Release gate is **blocked by the sandbox**: 21 existing registry-fixture setup failures
-and six existing publisher-test Git ownership errors. No failing tests were disabled. Integration,
-a full gate under the project manager's account, human translation review and game acceptance
-remain with the project manager; this task starts no game.
+publishing guidance) was committed as `a28d6b6` on `r6-t3-companion`; see
+[the task brief](handover/R6-T3-companion-docs.md). Its independent-review fix pass covers older-loader
+guidance, missing tier layers/hardware, recoverable CSV segments, API back-off and documentation.
+The fix pass is complete on that branch: all 37 companion tests, both i18n checks,
+skill validation and the full Release gate pass with the user's access (288 tools Python tests,
+23 CTests; the unchanged guard passes from a shorter executable path). Integration, human
+translation review and game acceptance remain with the project manager; this task started no game.
 
 R6 T6 is **in progress; PoC acceptance pending** (2026-10-31, branch `r6-t6-tiers`): optional
 medium/low runtime payloads, lossless mip removal and 4096-wide sky inputs are implemented.

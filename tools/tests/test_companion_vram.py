@@ -12,7 +12,9 @@ class CompanionVramTests(unittest.TestCase):
         source = REPO / 'companion/nativeloader/lua/autorun/client/nativeloader_vram.lua'
         harness = Path(__file__).with_name('companion_vram_harness.lua')
         for scenario in ('normal', 'missing', 'disabled', 'late_api', 'invalid', 'rotation',
-                         'restart', 'foreign_file', 'oversized', 'file_error', 'server'):
+                         'restart', 'foreign_file', 'oversized', 'truncated_tail', 'nul_tail',
+                         'crlf', 'partial_row', 'excess_rows', 'rename_error', 'file_error',
+                         'nil_backoff', 'error_backoff', 'failure_reset', 'server'):
             with self.subTest(scenario=scenario):
                 result = subprocess.run([LUAJIT, str(harness), str(source), scenario],
                                         capture_output=True, text=True, timeout=20)

@@ -19,25 +19,52 @@ local FIELDS = {
 }
 local HEADER = "time_utc," .. table.concat(FIELDS, ",") .. "\n"
 local rows
+local failures = 0
+local MAX_FAILURES = 3
+
+cvars.AddChangeCallback("nativeloader_vram_telemetry", function(_, _, value)
+    if value == "0" then failures = 0 end
+end, "nativeloader_vram")
+
+local function rotate_current()
+    -- These are the companion's own segments. Rename even a large/damaged file without reading
+    -- or repairing it, keeping its bytes for diagnosis until the next rotation.
+    file.Delete(PREVIOUS)
+    if file.Exists(PREVIOUS, "DATA") then return end
+    file.Rename(CURRENT, PREVIOUS)
+    if file.Exists(CURRENT, "DATA") or not file.Exists(PREVIOUS, "DATA") then return end
+    return "", 0
+end
 
 local function read_current()
     if not file.Exists(CURRENT, "DATA") then return "", 0 end
-    if file.Size(CURRENT, "DATA") > MAX_FILE_BYTES then return end
+    if file.Size(CURRENT, "DATA") > MAX_FILE_BYTES then return rotate_current() end
     local body = file.Read(CURRENT, "DATA")
     if not body then return end
     if body == "" then return body, 0 end
-    -- Leave an unrelated, edited or incompatible file alone rather than mixing CSV schemas.
-    if body:sub(1, #HEADER) ~= HEADER or body:sub(-1) ~= "\n" then return end
-    local _, lines = body:gsub("\n", "")
-    if lines - 1 > ROWS_PER_FILE then return end
-    return body, lines - 1
+    if body:sub(1, #HEADER) ~= HEADER or body:sub(-1) ~= "\n" or
+        body:find("\0", 1, true) or body:find("\r", 1, true) then return rotate_current() end
+    local count = 0
+    for line in body:sub(#HEADER + 1):gmatch("([^\n]*)\n") do
+        if not line:match("^%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d:%d%dZ,") then return rotate_current() end
+        local cells = 0
+        for cell in (line .. ","):gmatch("(.-),") do
+            cells = cells + 1
+            if cells > 1 and cell ~= "" and not cell:match("^%d+$") then return rotate_current() end
+        end
+        if cells ~= #FIELDS + 1 then return rotate_current() end
+        count = count + 1
+        if count >= ROWS_PER_FILE then return rotate_current() end
+    end
+    return body, count
 end
 
 local function sample()
-    if not enabled:GetBool() or type(RemixResource) ~= "table" or
+    if not enabled:GetBool() then failures = 0 return end
+    if failures >= MAX_FAILURES or type(RemixResource) ~= "table" or
         type(RemixResource.GetVramStats) ~= "function" then return end
     local ok, stats = pcall(RemixResource.GetVramStats)
-    if not ok or type(stats) ~= "table" then return end
+    if not ok or type(stats) ~= "table" then failures = failures + 1 return end
     local values, found = { os.date("!%Y-%m-%dT%H:%M:%SZ") }, false
     for _, name in ipairs(FIELDS) do
         local value = stats[name]
@@ -48,25 +75,21 @@ local function sample()
             values[#values + 1] = ""
         end
     end
-    if not found then return end
+    if not found then failures = failures + 1 return end
+    failures = 0
 
     if rows == nil or rows >= ROWS_PER_FILE then
         local body, count = read_current()
         if not body then return end
         file.CreateDir("native-loader")
-        if count >= ROWS_PER_FILE then
-            file.Write(PREVIOUS, body)
-            file.Write(CURRENT, HEADER)
-            rows = 0
-        else
-            if body == "" then file.Write(CURRENT, HEADER) end
-            rows = count
-        end
+        if body == "" then file.Write(CURRENT, HEADER) end
+        rows = count
     end
     file.Append(CURRENT, table.concat(values, ",") .. "\n")
     rows = rows + 1
 end
 
--- Retry availability on every tick: the binary module can load after this autorun. Failed API or
--- file operations stay silent and never interrupt the game. Each append is a separate file write.
+-- Retry availability: the binary module can load after this autorun. Stop after three failed API
+-- calls, since the native binding warns on each failure. Off/on or a map/restart permits a retry.
+-- File errors stay silent and never interrupt the game. Each append is a separate file write.
 timer.Create("nativeloader_vram", 30, 0, function() pcall(sample) end)

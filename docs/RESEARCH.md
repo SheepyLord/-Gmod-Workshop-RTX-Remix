@@ -1,5 +1,26 @@
 # Research notes
 
+## R6 T3: independent-review fixes (2026-10-31)
+
+- At base `7759c43`, `loader/core/src/config.cpp:52,78` permits neither a top-level `diagnostics`
+  nor `remix.performance_tier`; `loader/core/src/startup.cpp:132-135` turns configuration errors
+  into `may_activate = false`. Workshop companion updates therefore gate new instructions on
+  the additive I2 capability, not their own version. `dist/native-loader/config.json:1-6` has only
+  schema and allow, so fragment-only examples neither describe the shipped file nor preserve trust.
+- The fixes' `source/remixapi/remixapi.cpp:1311-1325` warns on every unavailable/failed VRAM API
+  request; `resource_lua_bindings.cpp:38-71` returns nil for it. Three consecutive failures now
+  stop automatic calls until an off/on retry or a map/start; late API availability stays supported.
+- `skills/mmd-remix-pbr/tool/rpai/cli.py:391-418` replaces the model layer and prunes its unused
+  DDS files under the chosen mod. `--mod` at `cli.py:621` supplies that folder name. A 2048 px
+  publish must use a separate mod to preserve a larger variant's published textures.
+- Full-access re-check reproduced the guard fixture's 262-character path failure in unchanged
+  `test_early.cpp:198`; its shorter-output executable passes all 22 guard cases. The sandbox-only
+  observations in the original T3 notes below are historical, not current access restrictions.
+- The byte-identical default-layout guard executable (SHA-256 `698ce23a0abff6c8f90334f01f6864a2697c783e940bbc5ec9c4bfbb0cc928aa`)
+  passes all 22 cases from `out/r6-t3-fix/guard-short`; full-access `tools/test.ps1 -Config Release`
+  passes all 23 CTests and 288/28/25 tools/gmapack/Steam Python tests. The old registry/Git errors
+  did not recur. Receipts are in `out/r6-t3-fix/`; no native source was changed.
+
 ## R6 T3: companion VRAM binding (2026-10-31)
 
 - Read-only inspection of `garrys-mod-rtx-remixed/source/remixapi/resource_lua_bindings.cpp:38-71`

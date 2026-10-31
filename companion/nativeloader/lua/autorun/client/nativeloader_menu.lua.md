@@ -4,8 +4,11 @@ R6 adds an optional performance-tier help line to **Start here**. It reads
 `garrysmod/data/native-loader/status.json` `activation.performance_tier` (interface I2), showing the
 translated tier/source, adapter description, dedicated VRAM in MiB and the configuration/restart
 instructions. Missing fields on older loaders, unreadable JSON, unsupported schemas and invalid
-tiers show no line. Missing adapter/memory uses an explicit unknown placeholder. It reads the report
-only when the panel opens and never applies a tier or writes settings. The adjacent **Memory and
+tiers show no line. Non-NVIDIA activation and absent/empty adapter descriptions also show no line
+(T1 still writes a high/auto I2 object with empty hardware data in those cases). A medium/low tier
+without a layer shows its loader-provided reason as **not applied**; high correctly has no layer.
+Unknown memory/source values use explicit placeholders. It reads the report only when the panel
+opens and never applies a tier or writes settings. The adjacent **Memory and
 stability guide** button runs `nativeloader_stability_guide` to select that guide page directly.
 These strings use the companion gettext catalogs; new translations are agent-written.
 
