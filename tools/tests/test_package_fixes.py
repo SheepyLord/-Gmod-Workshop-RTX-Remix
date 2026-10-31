@@ -263,7 +263,7 @@ class PackageFixesTests(unittest.TestCase):
         summary = self.build('--out', out, '--client-bootstrap', module)
         manifest = self.manifest(out)
         path = 'garrysmod/lua/bin/' + package_fixes.CLIENT_BOOTSTRAP
-        self.assertEqual(manifest['requires_loader'], '>=0.9.0')
+        self.assertEqual(manifest['requires_loader'], '>=0.10.0')
         digest = hashlib.sha256(module.read_bytes()).hexdigest()
         self.assertEqual(manifest['files']['native/root/' + path], {'size': module.stat().st_size, 'sha256': digest})
         self.assertIn({'path': path, 'policy': 'replace-owned'}, manifest['root_files'])

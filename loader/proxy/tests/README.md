@@ -12,6 +12,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `test_presentation_hooks.cpp` | Real filesystem fixture IAT: exact A/W read redirects and attribute sizes, unrelated/write-capable/OPEN_ALWAYS calls unchanged, edited caches refused, uninstall pass-through and cache traversal boundary |
 | `CMakeLists.txt` | C++ fixtures/tests, generated-export check, PowerShell installer CTest |
 | `test_activation.cpp` | Path/root, quoted/backslash command-line parsing and off-switch unit cases |
+| `test_backend.cpp` | Separate `nl_backend_tests` target: case/duplicate/assignment/quoted-path backend normalization, unchanged RTX-off and unrelated raw Unicode arguments, malformed operands, real W/A/PEB replacement and byte-exact nested rollback/refusal in the test process only |
 | `test_proxy.cpp` | Export/forwarding checks and temporary-host integration/rotation tests |
 | `host.cpp` | Statically imports `timeGetTime`; writes the timestamped main marker |
 | `activation_probe.h`, `activation_probe.cpp` | M4 host probe: module/static/delay paths, environment, DLL directory, W/A/PEB command line; test-only TLS descriptor fault and hold mode |
@@ -25,7 +26,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `session_integration.py` | M5 synthetic acceptance: patch before DllMain, override, session cfg, restore; [usage](session_integration.py.md) |
 | `check_imports.py` | Standard-library PE import/delay-import check: the bootstrap must import only KERNEL32; [usage](check_imports.py.md) |
 
-Run all tests through `tools/build.ps1`, or select `nl_proxy_tests`, `nl_proxy_generated_exports`,
+Run all tests through `tools/build.ps1`, or select `nl_backend_tests`, `nl_proxy_tests`, `nl_proxy_generated_exports`,
 `nl_proxy_installer` with CTest. `nl_proxy_host` is copied to a temporary `bin/win64/gmod.exe` beside
 the built proxy. Tests never launch or modify a real game. Host scratch directories live under
 the CMake binary directory (`loader/proxy/tests/scratch`); installer roots live only in `out/`.

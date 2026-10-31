@@ -29,6 +29,7 @@ See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
 | `presentation.h`, `presentation.cpp` | Loader 0.7.0: validate current Workshop package identities, build inert display GMAs and a targeted addon-menu overlay under `native-loader/presentation`; exact read redirects give GMod blue native-package cards and normal Workshop descriptions without changing depot or Workshop files ([ADR 0039](../../docs/decisions/0039-native-package-addon-presentation.md)) |
 | `CMakeLists.txt` | MASM/RC, `nl_proxy_logic`, DLL, export consistency check and tests |
 | `activation.h`, `activation.cpp` | Pure path/root, quoted argument and off-switch decisions |
+| `backend.h`, `backend.cpp` | RTX-only stock D3D9 process selection: rewrite every explicit `-shaderapi` choice, including duplicate/case/quoted-path forms, while preserving unrelated raw arguments. RTX-off launches stay unchanged. `runtime.cpp` uses the reversible W/A/PEB swap and reports the compatibility choice only after successful activation; Steam launch options and graphics DLL files are never edited |
 | `bootstrap.h` | Fixed process state shared by the hook and logger |
 | `bootstrap.cpp` | System forwarding table, `DllMain`, PE entry patch/restore and hook |
 | `startup.cpp` | Entry log/proof/rotation, config→discovery→deployment→activation orchestration, atomic status and final logging, C++/SEH containment |

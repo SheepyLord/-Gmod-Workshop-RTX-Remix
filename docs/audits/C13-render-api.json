@@ -1,0 +1,772 @@
+{
+  "schema": 1,
+  "snapshot_utc": "2026-10-31T09:26:32.099989+00:00",
+  "phase": "read-only source/API audit; recommendations are not runtime acceptance",
+  "source_content_included": false,
+  "sources": [
+    {
+      "id": "V01",
+      "base": "vanilla",
+      "relative_path": "lua/includes/extensions/client/render.lua",
+      "ranges": [
+        [
+          32,
+          196
+        ]
+      ],
+      "exists": true,
+      "sha256": "96ef9cf3f9593366e0d8af463599810b4d9cef644db8f1a0aa07ed67102d69e1",
+      "bytes": 4842,
+      "lines": 196,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V02",
+      "base": "vanilla",
+      "relative_path": "lua/includes/modules/hook.lua",
+      "ranges": [
+        [
+          85,
+          145
+        ]
+      ],
+      "exists": true,
+      "sha256": "8343fb394834437c634c23a6e79594cd93e0cf3c94c160c25966a2c589255a2a",
+      "bytes": 4058,
+      "lines": 143,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V03",
+      "base": "vanilla",
+      "relative_path": "lua/includes/modules/cvars.lua",
+      "ranges": [
+        [
+          37,
+          92
+        ]
+      ],
+      "exists": true,
+      "sha256": "1efaeaff72fa52c9fb25106df4e2c9854a063adcc8d8db5bfe1e55228f4917a1",
+      "bytes": 3713,
+      "lines": 147,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V04",
+      "base": "vanilla",
+      "relative_path": "lua/postprocess/stereoscopy.lua",
+      "ranges": [
+        [
+          10,
+          52
+        ]
+      ],
+      "exists": true,
+      "sha256": "883b6a2144af724e4efc2671aae527afc0cdbd1b22e02d007fc56fb82063538c",
+      "bytes": 1989,
+      "lines": 70,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V05",
+      "base": "vanilla",
+      "relative_path": "lua/postprocess/frame_blend.lua",
+      "ranges": [
+        [
+          62,
+          62
+        ]
+      ],
+      "exists": true,
+      "sha256": "84e61381348649db0693e3649beab9c411b9a72a8821ed2b271034ee835de8e8",
+      "bytes": 4799,
+      "lines": 208,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V06",
+      "base": "vanilla",
+      "relative_path": "lua/postprocess/bloom.lua",
+      "ranges": [
+        [
+          25,
+          75
+        ]
+      ],
+      "exists": true,
+      "sha256": "abe15fa6b46eea86fb27f0c12f4c3cad43abedf8bb90a653ec574ad3ea310dd8",
+      "bytes": 4415,
+      "lines": 111,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V07",
+      "base": "vanilla",
+      "relative_path": "lua/postprocess/super_dof.lua",
+      "ranges": [
+        [
+          174,
+          250
+        ]
+      ],
+      "exists": true,
+      "sha256": "41bf914b0ed06bfb0bd47ea10b080c34d7d306417a93fda618a6830c451f863d",
+      "bytes": 10486,
+      "lines": 390,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V08",
+      "base": "vanilla",
+      "relative_path": "gamemodes/sandbox/entities/weapons/gmod_tool/cl_viewscreen.lua",
+      "ranges": [
+        [
+          44,
+          72
+        ]
+      ],
+      "exists": true,
+      "sha256": "9d54d23a5511b7860f55770165b4af8e09f6f942a6fe9b45e9b4b17d231f934c",
+      "bytes": 1970,
+      "lines": 74,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V09",
+      "base": "vanilla",
+      "relative_path": "lua/includes/modules/halo.lua",
+      "ranges": [
+        [
+          41,
+          136
+        ]
+      ],
+      "exists": true,
+      "sha256": "d8a87b65b3d76f2b246d876556537031b9409b6ee9a22d4b06dfc9f8afd34b1a",
+      "bytes": 4309,
+      "lines": 153,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V10",
+      "base": "vanilla",
+      "relative_path": "lua/vgui/dmodelpanel.lua",
+      "ranges": [
+        [
+          103,
+          140
+        ]
+      ],
+      "exists": true,
+      "sha256": "d4e6c6dda6210ea9daed335262e73f6cc9671cee84833712f889edb0ab50c4a4",
+      "bytes": 4660,
+      "lines": 186,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V11",
+      "base": "vanilla",
+      "relative_path": "gamemodes/sandbox/entities/entities/gmod_light.lua",
+      "ranges": [
+        [
+          58,
+          79
+        ]
+      ],
+      "exists": true,
+      "sha256": "3d43aaa5a9a76d9de51df183a4008aae6baa3fb4b6a3ee7945107f57ad6f02fe",
+      "bytes": 3536,
+      "lines": 129,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "V12",
+      "base": "vanilla",
+      "relative_path": "lua/includes/init.lua",
+      "ranges": [
+        [
+          97,
+          120
+        ]
+      ],
+      "exists": true,
+      "sha256": "04a0d82fa01f39c7470ae266aabfd1b38fce6ee9abbe01e93d2b70bf561ed276",
+      "bytes": 3610,
+      "lines": 124,
+      "provenance": {
+        "kind": "installed vanilla fixture source; static inspection only"
+      }
+    },
+    {
+      "id": "S01",
+      "base": "selected",
+      "relative_path": "1837527967/source/lua/lifemod/render/rendercore.lua",
+      "ranges": [
+        [
+          255,
+          270
+        ]
+      ],
+      "exists": true,
+      "sha256": "8926d3fb377da38d808476c4d1676cd8dafa3eac84a6c1ef3e1af3a6a93d6a8b",
+      "bytes": 11717,
+      "lines": 424,
+      "provenance": {
+        "kind": "exact cached Workshop source export",
+        "item": "1837527967"
+      }
+    },
+    {
+      "id": "S02",
+      "base": "selected",
+      "relative_path": "1837527967/source/lua/lifemod/render/modules/dof.lua",
+      "ranges": [
+        [
+          31,
+          50
+        ]
+      ],
+      "exists": true,
+      "sha256": "69008f845f1f2e0ad9051581c5d50eeda475b8127d748bbb0828fc1cf5da094e",
+      "bytes": 1549,
+      "lines": 60,
+      "provenance": {
+        "kind": "exact cached Workshop source export",
+        "item": "1837527967"
+      }
+    },
+    {
+      "id": "S03",
+      "base": "selected",
+      "relative_path": "1837527967/source/lua/lifemod/render/modules/videodistortion.lua",
+      "ranges": [
+        [
+          152,
+          226
+        ]
+      ],
+      "exists": true,
+      "sha256": "a4024e2530c7b96a68bf6eb48f14c3f2a69b6d15607e682597527f2162a34c51",
+      "bytes": 7550,
+      "lines": 232,
+      "provenance": {
+        "kind": "exact cached Workshop source export",
+        "item": "1837527967"
+      }
+    },
+    {
+      "id": "S04",
+      "base": "selected",
+      "relative_path": "2817072898/upstream/lua/entities/edit_csm/cl_init.lua",
+      "ranges": [
+        [
+          65,
+          156
+        ],
+        [
+          1221,
+          1227
+        ]
+      ],
+      "exists": true,
+      "sha256": "3efce3957c9f075379cf840f7b1201faa96aa3493c3c2c6bd87d9f2e4a2f9c5a",
+      "bytes": 51919,
+      "lines": 1296,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "2817072898",
+        "repository": "https://github.com/Xenthio/RealCSM",
+        "commit": "81cf47b8f90016f22b59b6aa9faae0134492040c"
+      }
+    },
+    {
+      "id": "S05",
+      "base": "selected",
+      "relative_path": "2817072898/upstream/lua/autorun/realcsm_client.lua",
+      "ranges": [],
+      "exists": true,
+      "sha256": "de77fbd95037a07a4d2ac89f9423fe68250dca2e533ea4895fcb0f5731934429",
+      "bytes": 31858,
+      "lines": 683,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "2817072898",
+        "repository": "https://github.com/Xenthio/RealCSM",
+        "commit": "81cf47b8f90016f22b59b6aa9faae0134492040c"
+      }
+    },
+    {
+      "id": "S06",
+      "base": "selected",
+      "relative_path": "3542644649/upstream/lua/autorun/client/depthbuffer.lua",
+      "ranges": [
+        [
+          4,
+          90
+        ]
+      ],
+      "exists": true,
+      "sha256": "0048adb2d1671655375980f115d99c65acb2c6c9f75f5026675f68e02d692ab1",
+      "bytes": 22337,
+      "lines": 548,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "3542644649",
+        "repository": "https://github.com/Akabenko/GShader-library",
+        "commit": "512c666c560a890434436ce6f2ce2dedbb7dfe36"
+      }
+    },
+    {
+      "id": "S07",
+      "base": "selected",
+      "relative_path": "3542644649/upstream/lua/autorun/client/worldpos.lua",
+      "ranges": [
+        [
+          27,
+          58
+        ]
+      ],
+      "exists": true,
+      "sha256": "f6fa3f798f4f2b3141e6d447148df0074fea8ff88d3f000ace6f87f1eb49c92b",
+      "bytes": 9362,
+      "lines": 271,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "3542644649",
+        "repository": "https://github.com/Akabenko/GShader-library",
+        "commit": "512c666c560a890434436ce6f2ce2dedbb7dfe36"
+      }
+    },
+    {
+      "id": "S08",
+      "base": "selected",
+      "relative_path": "3542644649/upstream/lua/postprocess/shader_lib.lua",
+      "ranges": [
+        [
+          214,
+          502
+        ]
+      ],
+      "exists": true,
+      "sha256": "2153f17eddec061ba74cfe08ab512250294f4c0611e9d4a5ed20d161da71706e",
+      "bytes": 21514,
+      "lines": 507,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "3542644649",
+        "repository": "https://github.com/Akabenko/GShader-library",
+        "commit": "512c666c560a890434436ce6f2ce2dedbb7dfe36"
+      }
+    },
+    {
+      "id": "S09",
+      "base": "selected",
+      "relative_path": "3542644649/upstream/lua/autorun/!!projected_texture_wrapper.lua",
+      "ranges": [
+        [
+          19,
+          84
+        ]
+      ],
+      "exists": true,
+      "sha256": "83787bb308d292c4f4e870c17d6a56824a399e022a1b688c5e1c0e444cfe77a0",
+      "bytes": 2075,
+      "lines": 83,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "3542644649",
+        "repository": "https://github.com/Akabenko/GShader-library",
+        "commit": "512c666c560a890434436ce6f2ce2dedbb7dfe36"
+      }
+    },
+    {
+      "id": "S10",
+      "base": "selected",
+      "relative_path": "3542644649/upstream/lua/autorun/!!dynamic_light_wrapper.lua",
+      "ranges": [
+        [
+          62,
+          97
+        ]
+      ],
+      "exists": true,
+      "sha256": "fab90c0936391f026dd061717739c6e3f4bac484ef470a337f422b5f697e83c1",
+      "bytes": 6246,
+      "lines": 252,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "3542644649",
+        "repository": "https://github.com/Akabenko/GShader-library",
+        "commit": "512c666c560a890434436ce6f2ce2dedbb7dfe36"
+      }
+    },
+    {
+      "id": "S11",
+      "base": "selected",
+      "relative_path": "3542644649/upstream/lua/autorun/client/bumps_building.lua",
+      "ranges": [],
+      "exists": true,
+      "sha256": "e1dea0616500044d8896cf241353cb229463d224cf2a2bf760e6623d88d109f6",
+      "bytes": 13361,
+      "lines": 494,
+      "provenance": {
+        "kind": "author-linked upstream; exact Workshop bytes unverified",
+        "item": "3542644649",
+        "repository": "https://github.com/Akabenko/GShader-library",
+        "commit": "512c666c560a890434436ce6f2ce2dedbb7dfe36"
+      }
+    },
+    {
+      "id": "S12",
+      "base": "selected",
+      "relative_path": "3555378834/source/lua/postprocess/fxaa.lua",
+      "ranges": [
+        [
+          85,
+          119
+        ]
+      ],
+      "exists": true,
+      "sha256": "eafc3a4e3223398fbd2d2b04ca2473ee82b2d48ee3dec46334ed2f41d3d575e4",
+      "bytes": 6119,
+      "lines": 146,
+      "provenance": {
+        "kind": "exact cached Workshop source/VMT export",
+        "item": "3555378834"
+      }
+    },
+    {
+      "id": "S13",
+      "base": "selected",
+      "relative_path": "3555378834/source/materials/pp/pp_fxaa_high.vmt",
+      "ranges": [],
+      "exists": true,
+      "sha256": "0223a72ccb9b3e4a84b8c67ebbfd953781f81b31d11694e26283be6efb239cc7",
+      "bytes": 270,
+      "lines": 22,
+      "provenance": {
+        "kind": "exact cached Workshop source/VMT export",
+        "item": "3555378834"
+      }
+    }
+  ],
+  "primary_urls": [
+    "https://learn.microsoft.com/en-us/cpp/cpp/structured-exception-handling-c-cpp?view=msvc-170",
+    "https://wiki.facepunch.com/gmod/Entity:DrawModel",
+    "https://wiki.facepunch.com/gmod/Enums/RT_SIZE",
+    "https://wiki.facepunch.com/gmod/GM:NeedsDepthPass",
+    "https://wiki.facepunch.com/gmod/GM:RenderScene",
+    "https://wiki.facepunch.com/gmod/Global.CreateMaterial",
+    "https://wiki.facepunch.com/gmod/Global.DynamicLight",
+    "https://wiki.facepunch.com/gmod/Global.GetRenderTarget",
+    "https://wiki.facepunch.com/gmod/Global.GetRenderTargetEx",
+    "https://wiki.facepunch.com/gmod/Global.ProjectedTexture",
+    "https://wiki.facepunch.com/gmod/Global.pcall",
+    "https://wiki.facepunch.com/gmod/IMaterial:GetShader",
+    "https://wiki.facepunch.com/gmod/IMaterial:IsError",
+    "https://wiki.facepunch.com/gmod/IMesh:BuildFromTriangles",
+    "https://wiki.facepunch.com/gmod/IMesh:Destroy",
+    "https://wiki.facepunch.com/gmod/IMesh:Draw",
+    "https://wiki.facepunch.com/gmod/IMesh:IsValid",
+    "https://wiki.facepunch.com/gmod/ITexture:Download",
+    "https://wiki.facepunch.com/gmod/ITexture:IsError",
+    "https://wiki.facepunch.com/gmod/ITexture:IsErrorTexture",
+    "https://wiki.facepunch.com/gmod/ProjectedTexture:Remove",
+    "https://wiki.facepunch.com/gmod/ProjectedTexture:SetFOV",
+    "https://wiki.facepunch.com/gmod/ProjectedTexture:Update",
+    "https://wiki.facepunch.com/gmod/cam.PushModelMatrix",
+    "https://wiki.facepunch.com/gmod/cam.Start",
+    "https://wiki.facepunch.com/gmod/cam.Start3D",
+    "https://wiki.facepunch.com/gmod/cvars.AddChangeCallback",
+    "https://wiki.facepunch.com/gmod/hook.Call",
+    "https://wiki.facepunch.com/gmod/mesh.AdvanceVertex",
+    "https://wiki.facepunch.com/gmod/mesh.Begin",
+    "https://wiki.facepunch.com/gmod/mesh.End",
+    "https://wiki.facepunch.com/gmod/render.DepthRange",
+    "https://wiki.facepunch.com/gmod/render.GetResolvedFullFrameDepth",
+    "https://wiki.facepunch.com/gmod/render.Model",
+    "https://wiki.facepunch.com/gmod/render.OverrideBlend",
+    "https://wiki.facepunch.com/gmod/render.OverrideColorWriteEnable",
+    "https://wiki.facepunch.com/gmod/render.OverrideDepthEnable",
+    "https://wiki.facepunch.com/gmod/render.PopRenderTarget",
+    "https://wiki.facepunch.com/gmod/render.PushRenderTarget",
+    "https://wiki.facepunch.com/gmod/render.RenderView",
+    "https://wiki.facepunch.com/gmod/render.SetRenderTargetEx",
+    "https://wiki.facepunch.com/gmod/timer.Create",
+    "https://www.lua.org/manual/5.1/manual.html#2.7"
+  ],
+  "selected_addon_coverage": [
+    {
+      "id": "1837527967",
+      "title": "Life Mod: Advanced Graphic Settings",
+      "status": "exact local archive"
+    },
+    {
+      "id": "3555378834",
+      "title": "FXAA",
+      "status": "exact local archive"
+    },
+    {
+      "id": "2861839844",
+      "title": "NikNaks",
+      "status": "exact local archive"
+    },
+    {
+      "id": "2817072898",
+      "title": "Real CSM",
+      "status": "author-linked upstream snapshot, not verified Workshop-byte-identical"
+    },
+    {
+      "id": "3542644649",
+      "title": "GShader Library",
+      "status": "author-linked upstream snapshot, not verified Workshop-byte-identical"
+    },
+    {
+      "id": "3712613623",
+      "title": "Projected Volumetric Light",
+      "status": "author-linked upstream snapshot, not verified Workshop-byte-identical"
+    },
+    {
+      "id": "3731958150",
+      "title": "Spherical Sky",
+      "status": "author-linked upstream snapshot, not verified Workshop-byte-identical"
+    },
+    {
+      "id": "3550458664",
+      "title": "Outline Shader",
+      "status": "author-linked upstream snapshot, not verified Workshop-byte-identical"
+    },
+    {
+      "id": "3669946645",
+      "title": "Physical Sky & Volumetric Clouds (Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3613474540",
+      "title": "Motion Blur (Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3556046077",
+      "title": "Physically Based Bloom (Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3453258660",
+      "title": "Screen Space Ambient Occlusion (SSAO shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3707449642",
+      "title": "Screen Space Direction Occlusion (SSDO shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3586554495",
+      "title": "Screen Space Reflections (SSR Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3455761038",
+      "title": "SMAA Shader",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3614258237",
+      "title": "Bokeh Dynamic Depth of Field (DDoF Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3645490126",
+      "title": "Contact Shadows (Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3722503099",
+      "title": "Horizon-Based Ambient Occlusion (HBAO shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3730026700",
+      "title": "Contrast Adaptive Sharpening (AMD FidelityFX CAS)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3644677720",
+      "title": "Sharpness Shader",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3764126498",
+      "title": "Raindrops overlay (shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3759429582",
+      "title": "Point Lights in Fog (Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3647783822",
+      "title": "Screen Space Sun Shafts (SSSS Shader)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "3558518483",
+      "title": "Adaptive Depth of Field (SHADER)",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    },
+    {
+      "id": "2811767286",
+      "title": "Quick Bloom/HDR Brightness Fix",
+      "status": "unavailable: no matching installed payload or addon-specific author source found"
+    }
+  ],
+  "collection": {
+    "collection_id": "3728139288",
+    "items": [
+      {
+        "id": "3555378834",
+        "title": "Fast approximate anti-aliasing (FXAA Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3555378834"
+      },
+      {
+        "id": "3669946645",
+        "title": "Physical Sky & Volumetric Clouds (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3669946645"
+      },
+      {
+        "id": "3613474540",
+        "title": "Motion Blur (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3613474540"
+      },
+      {
+        "id": "3556046077",
+        "title": "Physically Based Bloom (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3556046077"
+      },
+      {
+        "id": "3712613623",
+        "title": "Proj Volumetric Light (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3712613623"
+      },
+      {
+        "id": "3453258660",
+        "title": "Screen Space Ambient Occlusion (SSAO shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3453258660"
+      },
+      {
+        "id": "3707449642",
+        "title": "Screen Space Direction Occlusion (SSDO shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3707449642"
+      },
+      {
+        "id": "3586554495",
+        "title": "Screen Space Reflections (SSR Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3586554495"
+      },
+      {
+        "id": "3455761038",
+        "title": "SMAA Shader",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3455761038"
+      },
+      {
+        "id": "3614258237",
+        "title": "Bokeh Dynamic Depth of Field (DDoF Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3614258237"
+      },
+      {
+        "id": "3645490126",
+        "title": "Contact Shadows (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3645490126"
+      },
+      {
+        "id": "3542644649",
+        "title": "GShader Library",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3542644649"
+      },
+      {
+        "id": "2861839844",
+        "title": "NikNaks",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2861839844"
+      },
+      {
+        "id": "3550458664",
+        "title": "Outline Shader",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3550458664"
+      },
+      {
+        "id": "3722503099",
+        "title": "Horizon-Based Ambient Occlusion (HBAO shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3722503099"
+      },
+      {
+        "id": "3730026700",
+        "title": "Contrast Adaptive Sharpening (AMD FidelityFX CAS)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3730026700"
+      },
+      {
+        "id": "3644677720",
+        "title": "Sharpness Shader",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3644677720"
+      },
+      {
+        "id": "3731958150",
+        "title": "Spherical Sky (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3731958150"
+      },
+      {
+        "id": "3764126498",
+        "title": "Raindrops overlay (shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3764126498"
+      },
+      {
+        "id": "3759429582",
+        "title": "Point Lights in Fog (Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3759429582"
+      },
+      {
+        "id": "3647783822",
+        "title": "Screen Space Sun Shafts (SSSS Shader)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3647783822"
+      },
+      {
+        "id": "3558518483",
+        "title": "Adaptive Depth of Field (SHADER)",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3558518483"
+      }
+    ]
+  },
+  "limitations": [
+    "Wiki contracts and author comments are not native crash reproductions.",
+    "LifeMod and FXAA exact cached source; RealCSM/GShader author-linked repositories are not verified current Workshop payloads.",
+    "QuickBloom exact429-byte source unavailable.",
+    "Collection22 identifiers enumerated; every effect is not audited.",
+    "Lexical API references can include comments and omit aliases/dynamic dispatch.",
+    "Native engine/driver/SEH continuation and all API methods remain unproven."
+  ],
+  "unavailable_api_url": "https://wiki.facepunch.com/gmod/render.RenderDepth"
+}

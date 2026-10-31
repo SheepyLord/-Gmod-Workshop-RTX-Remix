@@ -32,9 +32,47 @@ jobs:
       - name: Python packages the tests use
         run: python -m pip install --disable-pip-version-check pillow
 
+      # Official source only; this pin was verified against LuaJIT/LuaJIT v2.1.
+      # https://luajit.org/install.html (Windows/MSVC), src/msvcbuild.bat static.
+      # Keep source, generated native files and compiler temporary files under out.
+      - name: Build pinned LuaJIT for the Lua policy tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Import-Module ./tools/lib/VsDevEnv.psm1
+          Enter-VsDevEnv
+          $luaJitCommit = 'ea9eb7edb5eac4a9d175d74523db34fac0fa5180'
+          $luaJitRoot = Join-Path $env:GITHUB_WORKSPACE 'out/ci-luajit'
+          $luaJitTemp = Join-Path $env:GITHUB_WORKSPACE 'out/tmp/ci-luajit'
+          New-Item -ItemType Directory -Force -Path $luaJitRoot, $luaJitTemp | Out-Null
+          $env:TEMP = $luaJitTemp
+          $env:TMP = $luaJitTemp
+          git -C $luaJitRoot init --quiet
+          if ($LASTEXITCODE -ne 0) { throw 'LuaJIT git init failed' }
+          git -C $luaJitRoot remote add origin https://github.com/LuaJIT/LuaJIT.git
+          if ($LASTEXITCODE -ne 0) { throw 'LuaJIT official source setup failed' }
+          git -C $luaJitRoot fetch --depth 1 origin $luaJitCommit
+          if ($LASTEXITCODE -ne 0) { throw 'LuaJIT pinned source fetch failed' }
+          git -C $luaJitRoot checkout --detach --quiet FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'LuaJIT pinned checkout failed' }
+          if ((git -C $luaJitRoot rev-parse HEAD) -ne $luaJitCommit) { throw 'LuaJIT revision mismatch' }
+          $luaJitBin = Join-Path $luaJitRoot 'src'
+          Push-Location -LiteralPath $luaJitBin
+          try {
+            & .\msvcbuild.bat static
+            if ($LASTEXITCODE -ne 0) { throw 'LuaJIT MSVC build failed' }
+            & .\luajit.exe -e "assert(jit.os == 'Windows' and jit.arch == 'x64'); print(jit.version)"
+            if ($LASTEXITCODE -ne 0) { throw 'LuaJIT x64 smoke check failed' }
+          } finally { Pop-Location }
+          $luaJitBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Conventions, Release build, CTest and Python tests (tools\test.ps1)
         shell: pwsh
-        run: ./tools/test.ps1 -Config Release
+        run: |
+          # Fail rather than silently skip the guard/companion LuaJIT scenarios.
+          python -c "import shutil; assert shutil.which('luajit'), 'CI requires the pinned LuaJIT build'"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./tools/test.ps1 -Config Release
 
       - name: End-user bundle (tools\package_loader.py)
         shell: pwsh

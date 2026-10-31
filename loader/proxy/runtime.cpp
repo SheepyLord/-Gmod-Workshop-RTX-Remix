@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "backend.h"
 #include "../client/catalog.h"
 #include "modules.h"
 #include "nl/fs.h"
@@ -240,12 +241,16 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
       session.notes.push_back(std::string("session console variables not applied: ") + error.what());
     }
   }
-  command_line_ = cmdline::append_arguments(arguments);
+  const std::wstring original_command_line(GetCommandLineW());
+  const auto backend_selection = backend::select(original_command_line, true);
+  command_line_ = backend_selection.changed
+      ? cmdline::rewrite_arguments(original_command_line, backend_selection.line, arguments)
+      : cmdline::append_arguments(arguments);
   if (!command_line_.ok) {
     report.fallback_launch_options = options(plan.launch_args);
     return fail("command-line swap refused: " + command_line_.detail);
   }
-  if (!arguments.empty()) touched_ = true;
+  if (!arguments.empty() || backend_selection.changed) touched_ = true;
   if (plan.prefer_system_vulkan) {
     const auto path = system_directory() / L"vulkan-1.dll";
     vulkan_ = LoadLibraryW(path.c_str());
@@ -404,6 +409,8 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     }
   }
   report.outcome = "active";
+  if (backend_selection.changed)
+    session.notes.push_back("RTX compatibility: shader API selection uses stock shaderapidx9 for this process; launch settings are unchanged");
   report.reason = plan.reason;
   report.environment_set = plan.env;
   report.arguments_added = arguments;

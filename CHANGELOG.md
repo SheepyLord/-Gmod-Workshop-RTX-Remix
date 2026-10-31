@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- Loader 0.10.0 hardens RTX graphics-add-on startup (C13): verified early rendering guards,
+  scoped later multiplayer installation, process-only stock D3D9 selection and vanilla fallback
+  if required V2 preparation fails. Validate rendering resources, preserve session settings,
+  quarantine recoverable callback errors and restore only known owned state. Preserve Steam
+  files, user settings, native trust and server permissions. Release, actual-package and secure
+  dedicated checks pass; original crash reproduction and unavailable add-on sources remain
+  limits ([ADR 0054](docs/decisions/0054-rtx-rendering-startup-boundaries.md)).
+
 - Fix Airi's oversized software-skinning rejection by drawing eligible compiled hardware groups
   with their bone weights and strip palettes intact, including the 40,509-vertex clothing fur
   and 62,049-vertex hair. Protect both dynamic and direct hardware entries from unsafe software

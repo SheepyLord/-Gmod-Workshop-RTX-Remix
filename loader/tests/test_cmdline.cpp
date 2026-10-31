@@ -56,6 +56,18 @@ TEST_CASE("cmdline: has_arg is case-insensitive and whole-argument") {
   CHECK(!cmdline::has_arg(L"gmod.exe -game garrysmod", L"-dxlevel"));
 }
 
+TEST_CASE("cmdline: argument spans retain exact raw tokens without changing decoded values") {
+  const std::wstring line = LR"(  "gmod app.exe"  "-shaderapi" "C:\FX mods\shaderapidx11.dll"  "" +name plain)";
+  const auto spans = cmdline::argument_spans(line);
+  REQUIRE(spans.size() == 6);
+  CHECK(line.substr(spans[0].begin, spans[0].end - spans[0].begin) == L"\"gmod app.exe\"");
+  CHECK(spans[0].value == L"gmod app.exe");
+  CHECK(line.substr(spans[2].begin, spans[2].end - spans[2].begin) == LR"("C:\FX mods\shaderapidx11.dll")");
+  CHECK(spans[3].value.empty() && line.substr(spans[3].begin, spans[3].end - spans[3].begin) == L"\"\"");
+  const auto decoded = cmdline::tokenize(line);
+  for (std::size_t i = 0; i < spans.size(); ++i) CHECK(spans[i].value == decoded[i]);
+}
+
 TEST_CASE("cmdline: the cached-pointer getter shape is recognised and others refused") {
   const unsigned char good[] = {0x48, 0x8b, 0x05, 0x41, 0x08, 0x2b, 0x00, 0xc3};  // kernelbase GetCommandLineA shape
   const auto disp = cmdline::cached_pointer_displacement(good, sizeof(good));

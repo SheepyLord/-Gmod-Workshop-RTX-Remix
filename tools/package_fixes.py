@@ -491,7 +491,7 @@ def build(args):
             'name': name,
             'version': version,
             'kinds': kinds,
-            'requires_loader': '>=0.9.0' if bootstrap else REQUIRES_LOADER,
+            'requires_loader': '>=0.10.0' if bootstrap else REQUIRES_LOADER,
             # The fixes' Lua runs only with Remix: without a runtime the loader hides the add-ons (ADR 0013).
             'requires_remix': True,
             'files': listed,

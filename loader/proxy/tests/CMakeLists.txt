@@ -1,3 +1,8 @@
+add_executable(nl_backend_tests ../../tests/test_main.cpp test_backend.cpp)
+target_include_directories(nl_backend_tests PRIVATE ../../tests)
+target_link_libraries(nl_backend_tests PRIVATE nl_proxy_logic nl_core nl_build_options)
+add_test(NAME nl_backend_tests COMMAND nl_backend_tests)
+
 add_executable(nl_proxy_tests
   ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp test_presentation.cpp test_presentation_hooks.cpp ../modules.cpp)
 target_include_directories(nl_proxy_tests PRIVATE ../../tests)

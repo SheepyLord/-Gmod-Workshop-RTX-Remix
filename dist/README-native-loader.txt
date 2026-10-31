@@ -26,7 +26,7 @@ Install
      and the loader log names the file. Steam verification can restore a modified Steam install;
      offline recovery can use nlctl apply <game root> --legacy-source <verified vanilla root>.
    - The first start after a download deploys the package, about 1.5 GB, which takes a few seconds.
-     This shipment needs this loader (0.9.0 or later); an older loader keeps the version it has.
+     This shipment needs this loader (0.10.0 or later); an older loader keeps the version it has.
    - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
      Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer for
      RTX sessions. If you put copies of them into garrysmod\addons or their files into
@@ -42,6 +42,14 @@ Install
      multiplayer servers, including servers with sv_allowcslua 0. The package no longer adds
      -insecure. Other local add-ons follow the server's normal rules; server-side tools still need
      the matching server add-on. RTXDebug supports client rendering diagnostics in multiplayer.
+   - Loader 0.10.0 starts the verified rendering compatibility guard before third-party autoruns
+     on supported game builds. RTX sessions use the stock Direct3D 9 backend even if your launch
+     options select a different shader API. Your Steam options and graphics DLL files stay as they
+     are; the alternate backend choice applies again when RTX is off. Guarded effects can use a
+     limited fallback when their rendering path is unsupported. Coverage depends on the add-on
+     and renderer; custom DX11 effects need a compatible implementation.
+     The guard also runs in multiplayer through the verified RTX payload. That path starts after
+     the client is ready, so earlier server scripts and their cached API references remain outside it.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.
@@ -109,6 +117,8 @@ Updating
 - The RTX package updates through the Workshop. Steam downloads a new version, and the next start of
   Garry's Mod deploys it. An in-game message says when a restart is needed.
 - A new loader: replace only bin\win64\winmm.dll. Keep your native-loader\config.json.
+- The early rendering guard needs loader 0.10.0 or later. Updating the Workshop item alone does
+  not replace an older installed winmm.dll.
 
 Removing
 --------

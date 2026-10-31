@@ -1,5 +1,110 @@
 # Research notes
 
+## C13 graphics add-ons and map loading
+
+This is a bounded API/source audit plus controlled baseline work, not a reproduced user crash.
+The local record is `out/c13-evidence`: `wiki-api-audit.md`, `addons/addon-audit.md`, native
+`findings.md`, and their hash/URL inventories. It covers 17 API families and 43 primary URLs
+(41 Facepunch wiki pages, Lua's manual and Microsoft's SEH reference). The focused index has
+25 call-site files (12 stock/13 add-on), alongside the broader 228-file add-on inventory. The durable
+[API audit snapshot](audits/C13-render-api.md) and [compact provenance](audits/C13-render-api.json)
+retain source hashes/URLs without game source code or private paths. These counts do not imply every function or payload
+was executed. Of 25 distinct selected add-ons, eight sources were obtained: exact LifeMod, FXAA
+and NikNaks archives, plus author-linked RealCSM, GShader Library, Projected Volumetric Light,
+Spherical Sky and Outline Shader repositories. Repository snapshots are not asserted to match
+current Workshop bytes. The coverage ledger marks 17 selected sources unavailable: QuickBloom/HDR
+and 16 of the 22 collection members. Only FXAA and NikNaks have exact collection archives; the
+other collection source snapshots do not establish current Workshop-byte identity.
+
+Source exposes concrete compatibility boundaries: RealCSM upgrades eight shadow-target formats
+and creates cascaded projected lights; GShader requests shared resolved-depth changes, float
+targets/MRT and a DepthWrite material, and installs global/metatable wrappers. These are candidate
+native resource paths to isolate, not proof of this user's crash. The official contracts include
+[render-target lifetime](https://wiki.facepunch.com/gmod/Global.GetRenderTarget),
+[target sizing/format parameters](https://wiki.facepunch.com/gmod/Global.GetRenderTargetEx),
+[secondary views](https://wiki.facepunch.com/gmod/render.RenderView) and
+[hook dispatch](https://wiki.facepunch.com/gmod/hook.Call). Stock frame blending uses full-frame
+size modes with -1 dimensions; stereoscopy makes two views inside RenderScene; the toolgun can
+invoke a custom screen callback inside a caller-owned RT/camera scope. Blanket positive-size,
+one-view-per-frame or reset-to-depth-zero policies would break those valid cases.
+
+Native backend audit: the referenced [LUX DX11 README](https://github.com/Akabenko/LUX-Gmod-shaderapidx11/blob/30fb5b1b5ec6db70dea93e4556468cb904dc0a98/README.md)
+selects `-shaderapi shaderapidx11`. Remix's [D3D9 SDK path](https://github.com/NVIDIAGameWorks/dxvk-remix/blob/main/documentation/RemixSDK.md)
+and our native module's `FindD3D9Device`/registration require the Source D3D9 device. Forty-one
+bounded installed/fixture PE observations found stock matching graphics-core hashes and a local
+DXVK `d3d9.dll`; no DX11 backend was found on the scanned surfaces. No actual DX11-payload live
+compatibility or Steam launch-option inspection is claimed. Stock shaderapidx9 SHA-256
+`7534cd56738f3f729dab0b88fce7f5fa224898fc15c28021762f3352643f8ca9` imports Direct3DCreate9;
+passive REA evidence `ev_868c0082e4c0ba1e112e51c15f3c9920c842f3a82a86695ce68350a8a4ff4853`
+is retained locally, with the session closed. DLL presence alone is not an incompatibility test:
+DXVK is retained for RTX-off starts and the loader itself uses system DXGI for adapter information.
+
+Loader 0.10.0 now normalizes every explicit shader-API choice in the process command line,
+preserving other raw spans and exact rollback. It does not rewrite Steam options or graphics DLLs.
+The existing selected-Remix-DLL path/handle identity refusal remains. The early client initializer
+view is separate: only a supported stock hash and the enabled catalog-verified owner/V2 guard may
+produce the generated owned view, after libraries and before autoruns. This reduces alias-capture
+gaps without editing the depot initializer or granting foreign Lua/native code new permissions.
+The cache path is `native-loader/presentation/render-guard-<sha>.lua`. The Lua guard additionally
+requires `__NATIVELOADER_RTX_GUARD_EARLY`; activation fallback removes its executable read redirect,
+and no ordinary late-autorun fallback substitutes for verified early installation.
+For the selected `gmod-rtx-remix` runtime, stock/cache failure after catalog verification of a V2
+owner raises required-protection failure, disables activation and retains vanilla/hide-RTX fallback.
+That requirement does not run before owner/V2 verification or widen trust. A foreign runtime does
+not read the initializer/cache through this path; legacy V1 marker failure remains a nonfatal note.
+
+The Lua prototype addresses reserved depth targets, unsupported depth/MRT paths, RenderView
+recursion, additional cvar entry points and protected render/loading hook dispatch. Cleanup must
+respect each callback's entry state, never call mesh.Abort, and never assume that
+depth zero/default render state belongs to it. Recoverable Lua-error containment does not establish
+recovery from native access violations, engine fatals or GPU faults. Raw R32F format 27 is valid;
+the format check was corrected and the normal/MMDHL target positive control passes. A reserved-name
+collision or unsupported MRT/depth feature is a separate capability issue, not proof R32F is invalid.
+
+Current measured baselines are fresh loader-0.9 LifeMod defaults on flatgrass, author-linked
+RealCSM with depth format 24/one controller on flatgrass, and GShader/FXAA source inputs on
+flatgrass and construct. All load; none reproduces the original failure. The protected-shader2/3
+runs activate RTX and record the redirected stock initializer read. The guarded combined
+construct-to-flatgrass transition exits zero; combined2 passes ten live assertions including
+blocked mat_hdr_level:SetInt, one intentional HUD failure quarantined with RT state restored,
+and valid normal/R32F targets. CSM depth-24/one-controller fallback is nonfatal. Two rejected
+GShader autoruns remain visible in GMod's reports; this is not full effect compatibility.
+Release passes **22 CTests and 294 Python tests (7 skips)**, including 20 early-policy cases,
+6 backend cases, 11 targeted command-line cases and 17 unittest cases running 18 actual-source
+LuaJIT scenarios. CI builds pinned official LuaJIT and requires it, rather than skipping these
+scenarios. CPU tests are separate from the real NVIDIA GPU sessions below.
+
+The actual 998-file GMA reads back against every manifest SHA and matches all preview payloads.
+Its construct session passes ten failure/positive controls: reserved RTs, invalid dimensions,
+unsupported shader/MRT/depth work, pinned HDR writes, valid normal/R32F targets, one quarantined
+HUD failure and restored RT state. Toolgun rendering and spawn-menu open controls pass. Corrupting only its owned
+startup cache gives a clean vanilla map load/exit, no RTX patches or executable init redirect,
+and preserves the changed cache; the fixture restores its original bytes afterward.
+
+Secure dedicated multiplayer passes with no -insecure, sv_allowcslua 0 and cheats 0. The trusted
+RTX payload, RTXDebug and guard load; unrelated local Lua remains excluded and the temporary
+catalog API is absent. A normal server-delivered test verifies an unsupported-shader rejection,
+one failing HUD callback, continuing healthy callbacks and restored RT state with zero cleanup
+errors. It records installation="verified multiplayer bootstrap", with the early flag false.
+This is a later readiness boundary, not protection before the remote server's autoruns.
+
+Earlier controlled baselines load LifeMod defaults, CSM depth24/one controller and GShader/FXAA.
+The guarded combined construct-to-flatgrass transition and explicit DX11-to-D3D9 process choice
+pass. RTX-off loads/exits normally with the guard absent. Steam depot verification passes.
+
+The original user crash was not reproduced with fresh defaults. Exact QuickBloom/HDR source and
+sixteen collection members were unavailable; author-linked repositories are distinguished from
+exact Workshop archives. Unsupported shader effects can be disabled or quarantined while the
+map loads; this does not promise their original appearance or recovery from native/GPU faults.
+Earlier aliases, later API replacements, unknown native state and already-completed camera/clip/
+matrix pops remain explicit limits. Multiplayer installation is later than server autoruns.
+
+The secure test first exposed an actual gap: a read hit came from menu initialization while
+the remote client guard was absent. Loaded-44/errors-empty was not guard-execution evidence.
+The final private-environment path and global-HUD fault test establish later client installation.
+No runtime/native bridge rebuild was needed; the renderer/native fixes remain unchanged.
+Policy: [ADR 0054](decisions/0054-rtx-rendering-startup-boundaries.md).
+
 ## Oversized Airi skinning groups (item 24)
 
 Read-only inspection of Workshop 3830665593, VRChat Airi(InuinuBone), identifies the reported

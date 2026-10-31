@@ -103,7 +103,7 @@ left out of the fixes repo.
   `garrysmod/lua/bin/gmsv_nlrtxclient_win64.dll`, with a hashed module root entry and its MIT/BSD
   notices under the companion's `resource/native-client`. Requires the companion. Loader 0.9.0
   invokes it for the verified RTX bundle's multiplayer initialization. This raises requires_loader
-  to >=0.9.0, so older bootstraps keep their previous shipment rather than lose its renderer setup.
+  to >=0.10.0, so older bootstraps keep their previous shipment rather than miss early renderer protection.
   It does not change server
   settings or permit loading community scripts. This input is optional for standalone fixes builds.
 - `--exclude-addon <name>` (repeatable): leave an add-on out, compared without case;

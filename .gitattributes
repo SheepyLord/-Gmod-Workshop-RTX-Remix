@@ -11,6 +11,9 @@
 # This text is also packaged as the native client's notice; keep its bytes reproducible.
 /LICENSE text eol=lf
 
+# The verified guard is hashed into the package and generated startup view; all checkouts use it verbatim.
+/companion/nativeloader/lua/autorun/_nativeloader_guard.lua text eol=lf
+
 # Vendored third-party code stays byte-identical to upstream (hashes in each README): no EOL conversion.
 third_party/** -text
 

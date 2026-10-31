@@ -59,6 +59,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0051](0051-path-bounce-defaults.md) | Default minimum/maximum path bounces to 1/12 while preserving explicit overrides | Accepted 2026-10-30 |
 | [0052](0052-scoped-rtx-multiplayer-bootstrap.md) | Verified RTX-owner multiplayer scripts and exact rendering recipe exception, preserving community Lua and unsafe debug gates | Accepted |
 | [0053](0053-oversized-hardware-skinning.md) | Share a scoped dynamic/direct hardware draw path for certified oversized groups and existing user-forced weighted draws | Accepted |
+| [0054](0054-rtx-rendering-startup-boundaries.md) | RTX-only process backend selection and verified early client guard, with bounded Lua rendering compatibility and explicit evidence limits | Accepted design; validation in progress |
 
 ## Template
 
