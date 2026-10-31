@@ -2743,3 +2743,8 @@ Measured on the user's install (RTX 5090, loader 0.10.0 and the published packag
   ready 21.6-28.6 s after launch; the four release QA sessions took 6.2-6.3 minutes in all, the PoC's
   4.3. A start right after a publish ran the previous package: GMod fetched the update (1.84 GB)
   during that session, byte-identical to the upload, and the next start deployed it.
+- **`steamworks.FileInfo` rounds its numbers to a 32-bit float.** For this project's Workshop items
+  (PoC, 2026-10-31) `updated`, `created` and `size` came back rounded to steps of 128:
+  `updated` 1793444864 for the 1793444836 in `appworkshop_4000.acf`, `size` 1222846336 for 1222846295
+  (Evernight and March 7th; Robin, Guinaifen and the RTX package likewise); `fileid` was 0 and
+  `installed` false. Compare such times with a tolerance of one step (`math.frexp`: 2^(exponent-24)).

@@ -86,6 +86,19 @@ class CompanionTests(unittest.TestCase):
             {'123': {'updated': 200}})
         self.assertFalse([line for line in lines if line.startswith('NOTICE') or 'newer Workshop version' in line], lines)
 
+    def test_steams_float_rounded_time_of_the_deployed_version_says_nothing(self):
+        # steamworks.FileInfo returns times rounded to a 32-bit float (128 s steps today): the
+        # Evernight and March 7th item, deployed at 1793444836, came back as 1793444864, and the restart
+        # notice came at every start (2026-10-31). A version more than one step later is still announced.
+        same = self.run_companion(self.status([{'id': 'evernight-march7th-rtx', 'version': '1.0.0', 'source': 'workshop',
+                                                 'label': '3830769477', 'time_updated': 1793444836}]),
+                                  {'3830769477': {'updated': 1793444864}})
+        self.assertFalse([line for line in same if line.startswith('NOTICE') or 'newer Workshop version' in line], same)
+        later = self.run_companion(self.status([{'id': 'evernight-march7th-rtx', 'version': '1.0.0', 'source': 'workshop',
+                                                  'label': '3830769477', 'time_updated': 1793444836}]),
+                                   {'3830769477': {'updated': 1793445120}})
+        self.assertEqual(len([line for line in later if line.startswith('NOTICE')]), 1, later)
+
     def test_the_status_says_whether_the_remix_api_is_ready(self):
         status = self.status([])
         ready = self.run_companion(status, {}, api=True)

@@ -195,6 +195,14 @@ end
 -- Two-phase updates (M6): a Workshop package is deployed at start-up, so a version Steam downloads
 -- during the session is used from the next start. Compare each Workshop package's update time with
 -- the one deployed and say so once.
+-- steamworks.FileInfo's times pass through a 32-bit float: today's come back rounded to a 128 s step
+-- (1793444836 as 1793444864). The deployed time is Steam's exact one, so the very version deployed
+-- could look newer, and the restart notice came at every start (2026-10-31, the Evernight and March 7th
+-- item). Only a time more than one such step later is a newer version.
+local function float_step(seconds)
+    local _, exponent = math.frexp(seconds)
+    return 2 ^ math.max(exponent - 24, 0)
+end
 local announced = {}
 local function check_updates(status)
     if not steamworks or not steamworks.FileInfo then return end
@@ -203,7 +211,7 @@ local function check_updates(status)
         if field(package, "source") == "workshop" and item and deployed and not announced[item] then
             steamworks.FileInfo(item, function(info)
                 local updated = info and tonumber(info.updated)
-                if not updated or updated <= deployed or announced[item] then return end
+                if not updated or updated <= deployed + float_step(deployed) or announced[item] then return end
                 announced[item] = true
                 say(text(id) .. " has a newer Workshop version (" .. os.date("!%Y-%m-%d %H:%M UTC", updated) ..
                     "); it is deployed when Garry's Mod starts again.")

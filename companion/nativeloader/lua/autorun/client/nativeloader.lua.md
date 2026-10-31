@@ -62,6 +62,11 @@ game itself (a long stay in the main menu) shows its own report as stale.
 - The console output and the console command `nativeloader_status`.
 - The update notice: for each deployed Workshop package, `steamworks.FileInfo` asks Steam for the
   item's update time. That is a Steam request, not one of its own.
+  - GMod hands `FileInfo`'s times over as 32-bit floats, rounded to a 128 s step at today's
+    timestamps (1793444836 comes back as 1793444864), while `time_updated` is Steam's exact time. So
+    only a time more than one such step after the deployed one counts as newer; compared directly,
+    the deployed version itself looked newer for about half the items, and its restart notice came at
+    every start (the Evernight and March 7th item, 2026-10-31).
   - When Steam has a newer version than the one deployed, it prints the notice once per item per
     session, and shows a `notification.AddLegacy` hint, in the player's language when the
     translations load (`nativeloader/i18n.lua` through `include`, English otherwise; the console

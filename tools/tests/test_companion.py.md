@@ -9,6 +9,9 @@ harness written to a scratch folder under `out\tmp`.
   the "newer Workshop version" line and raises exactly one notification (M6's restart notice); the
   session-variable line from `status.json` is printed.
 - The deployed version, and a local package, print and raise nothing about updates.
+- Steam's float-rounded time of the deployed version (1793444864 for 1793444836, as
+  `steamworks.FileInfo` returns it) raises nothing; a version more than one 128 s step later still
+  raises the one notice.
 - The status says "Remix API: ready (RemixLight, RemixConfig)" when the RTX fixes' tables exist,
   and "not available" when they do not (`hook`, `istable`, `isfunction` mocked too).
 - A `reshade:` line shows ReShade's outcome, reason and settings from a loader 0.5.0 status, and none

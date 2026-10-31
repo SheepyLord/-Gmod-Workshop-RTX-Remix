@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (after the 0.10.1 release)
+
+- **No more "RTX package ... was updated: restart Garry's Mod" at every start.** GMod's
+  `steamworks.FileInfo` returns Workshop update times rounded to a 32-bit float (128 s steps today),
+  and the companion compared that with Steam's exact time, so the version already deployed looked
+  newer for about half the items, and an item such as Evernight and March 7th looked never installed.
+  Only a time more than one such step later counts as a newer version now.
+
 ### Fixed (review R4 of the QoL batch and field QA; loader 0.10.1, [review](docs/handover/R4-review.md))
 
 - **Breaking glass no longer ends the game.** Shooting a window on modern_house, or spawning any

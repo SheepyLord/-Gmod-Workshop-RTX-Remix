@@ -63,6 +63,7 @@ Severity is this review's. "Fixed" means fixed with a regression test unless not
 | R4-29 | Tools | med | Found in PoC QA: `poc_session.py` declined the next start's crash prompt, and Remix then deleted the report: the first R4-28 crash lost its only dump | Fixed: minidumps are copied into the evidence before each launch and after a crash; `release_qa.py` runs the whole protocol (`a4ddba4`) |
 | R4-30 | Tools | low | Found when the publish was compared with the PoC-tested build: the same inputs gave two content digests. The seven shipped translation catalogs take the checkout's line endings (LF in a worktree after `companion_i18n.py update`, CRLF in the main checkout); every Lua and binary file was identical | Noted: normalize the catalogs in `package_fixes.py` or pin their `eol` in `.gitattributes` in a later round |
 | R4-31 | Motion | low | Found in field QA at 4K: the Motion importer tab's text was half the size of the spawn menu's; its fonts followed only `mmd_vmd_npc_menu_scale` | Fixed: `MenuScale()` also takes the screen's scale, and the panels opt out of GUI Scaler (`gScF`, which enlarged only the buttons), as Model Hotloader does |
+| R4-32 | Companion | med | Found after the release, from the user's report that the Evernight and March 7th item (3830769477) had no effect and looked not installed: every start announced "RTX package ... was updated: restart" for items whose Steam time, rounded by `steamworks.FileInfo` to a 32-bit float (128 s steps), came out above the exact time deployed (for that item 1793444864 against 1793444836; also Robin, Guinaifen and the RTX package on the PoC) | Fixed: one float step of tolerance, with a regression test |
 
 ## Field QA
 
@@ -134,6 +135,12 @@ checkout's `out\qa-field\release` and `out\qa-poc\r4-final`:
 - **Cosmetic:** in a narrow spawn menu at 4K the importer's longest heading ("Face/Flex VMDs (if they
   are stored in separate VMDs from the body motion)") is cut at the column's edge; long translations
   may cut button labels the same way.
+- **The Evernight and March 7th item adds nothing on the field install, by design.** Its package is
+  valid (Model Hotloader's checks, the loader's deployment, GMod's add-on list), and on the PoC both
+  models installed from it with its PBR mod. On the field install both models were already the
+  user's own imports with the same files (Model Hotloader then keeps them as the player's and lists
+  nothing under Workshop), and its PBR mod is the same as `ai_pbr`, which the PBR session left there.
+  Only removing those duplicates (the user's call) makes the item what supplies them.
 - **Not run in a game:** a late join on a map with many broken windows (the paced resync), a failed body
   proxy slot hidden by `$no_draw`, and an outline-heavy model with the shell rule off (r4-companion's
   own list).
