@@ -193,11 +193,22 @@ def settings(path: Path) -> dict[str, str]:
     return values
 
 
+def same_value(a: str, b: str) -> bool:
+    """Equal as written, or as numbers: a slider writes a convar back in the engine's %f form
+    ("0.00" becomes "0.000000") without changing it (R5)."""
+    if a == b:
+        return True
+    try:
+        return float(a) == float(b)
+    except ValueError:
+        return False
+
+
 def settings_changes(before: Path, after: Path, guarded=()) -> dict:
     """What a run changed in one settings file: `changed` values, `added` and `removed` keys, and
     `problems` (a changed or removed value, or only the guarded keys when `guarded` is given)."""
     old, new = settings(before), settings(after)
-    changed = {key: [old[key], new[key]] for key in old if key in new and old[key] != new[key]}
+    changed = {key: [old[key], new[key]] for key in old if key in new and not same_value(old[key], new[key])}
     removed = sorted(key for key in old if key not in new)
     judged = [key for key in [*changed, *removed] if not guarded or key in guarded]
     return {"changed": changed, "added": {key: new[key] for key in new if key not in old}, "removed": removed,

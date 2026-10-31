@@ -503,8 +503,30 @@ timer.Create("nativeloader_sky", interval(), 0, function()
     end
 end)
 
+-- A map's add-on that sets its sky again after the player took it over showed that sky until the
+-- timer below put the player's back. Modern House RTX does so 23, 43 and 63 s after the map starts:
+-- its afternoon sun came up for as long as 10 s in the middle of the player's night, and the daylight
+-- then lingered in the image's temporal history wherever the camera had looked, a haze over the
+-- stars with a straight edge where the view had turned (native loader review R5, 2026-10-31). An
+-- add-on that runs the hook NativeLoaderSkySet after setting the sky gets the player's sky back in
+-- the same tick; Modern House RTX's MHRTX.ApplySettings is wrapped to run it (again after a reload
+-- of that add-on's Lua replaced it).
+local function followMapAddon()
+    if not (istable(MHRTX) and isfunction(MHRTX.ApplySettings)) or MHRTX.ApplySettings == MHRTX.nativeLoaderApply then return end
+    local applySettings = MHRTX.ApplySettings
+    MHRTX.nativeLoaderApply = function(...)
+        applySettings(...)
+        hook.Run("NativeLoaderSkySet")
+    end
+    MHRTX.ApplySettings = MHRTX.nativeLoaderApply
+end
+hook.Add("NativeLoaderSkySet", "nativeloader_sky", function()
+    if takenOver and owner() and ready() then applyAll() end
+end)
+
 -- On a map whose add-on set the sky, once the player took it over: put it back every 10 s.
 timer.Create("nativeloader_sky_owned", 10, 0, function()
+    followMapAddon()
     if takenOver and owner() and ready() then applyAll() end
 end)
 
@@ -559,6 +581,7 @@ end
 for name in pairs(DEFAULTS) do cvars.AddChangeCallback(name, changed, "nativeloader_sky") end
 
 local function start()
+    followMapAddon()
     mapInfo = readMap()
     startClock()
     setWeather(true)

@@ -2748,3 +2748,93 @@ Measured on the user's install (RTX 5090, loader 0.10.0 and the published packag
   `updated` 1793444864 for the 1793444836 in `appworkshop_4000.acf`, `size` 1222846336 for 1222846295
   (Evernight and March 7th; Robin, Guinaifen and the RTX package likewise); `fileid` was 0 and
   `installed` false. Compare such times with a tolerance of one step (`math.frexp`: 2^(exponent-24)).
+
+## Loose glass physics in GMod (2026-10-31, Claude, R5)
+
+Read in the PoC install's shipped Lua and the add-on (`packages/fixes/.../Glass-Rewrite-Remix`) for
+[ADR 0061](decisions/0061-loose-glass-breaks-again-and-expires.md):
+
+- **`COLLISION_GROUP_WORLD` collides with the world only.** It is what the No Collide tool's right
+  click sets (`gamemodes/sandbox/entities/weapons/gmod_tool/stools/nocollide.lua:76-82`; its text,
+  `resource/localization/en/tool.properties:234`: "Make an object have no collisions with anything but
+  the world") and the context menu's Disable Collisions (`lua/autorun/properties/collisions.lua:34`).
+  The add-on's `rtx_glass_expensive_shards 1` ("collide with everything", the default) put map debris
+  and small fragments there; 0 gave `COLLISION_GROUP_DEBRIS`.
+- **`COLLISION_GROUP_WEAPON` is GMod's group for props that must not collide with players** ("Don't
+  collide with the player": `gamemodes/sandbox/entities/entities/gmod_cameraprop.lua:38-39`,
+  `gamemodes/base/entities/entities/ragdoll_motion.lua:52-53`; also `prop_effect.lua:54`). TTT gives
+  corpses, "nonsolid to players, but can be picked up and shot", `COLLISION_GROUP_WEAPON` with
+  `ttt_ragdoll_collide 1` and `COLLISION_GROUP_DEBRIS_TRIGGER` otherwise
+  (`gamemodes/terrortown/gamemode/corpse.lua:368, 392-393`). Traces with `COLLISION_GROUP_NONE`
+  (bullets, the physgun, the gravity gun, `+use`) hit these groups.
+- **A SENT that defines `OnTakeDamage` reacts to no damage physically.** base_anim's server
+  `ENT:OnTakeDamage` is empty (`gamemodes/base/entities/entities/base_anim.lua:57-70`); GMod's own
+  entities call `self:TakePhysicsDamage(dmginfo)` in theirs ("React to physics damage",
+  `gamemodes/sandbox/entities/entities/gmod_light.lua:46-48`; `gmod_wheel.lua:59`, `gmod_thruster.lua:220`,
+  `lua/entities/sent_ball.lua:149-150`). `procedural_shard.lua`'s never did, so bullets and blasts did
+  not move shards.
+- **`CollisionData.HitObject` is a PhysObj** (no `GetClass`); the entity hit is `HitEntity`. The
+  add-on's "two breakable shards do not break each other" test reads `HitObject:GetClass` and never
+  matches, so a shard flying into a pane breaks it; its impact mass reads
+  `HitObject:GetPhysicsObject`, which does not exist either, so the mass of the other object is always
+  1. Both are left as they are (panes' behaviour and the rigidity tuning depend on them); ADR 0061
+  adds its own `HitEntity` check for two loose pieces.
+- **Clients have no physics copy of a shard.** `BuildCollision` runs on the server only (Split, the
+  spawn functions, the tool, `rtx_map_glass.lua`, `OnDuplicated`); the client's `Initialize` calls
+  `PhysicsInit` on an entity without a model, which fails. The client `Think` that freezes and pins a
+  physics copy (`procedural_shard.lua`) therefore never runs past its first check.
+- **The client never defines the crack functions.** `procedural_shard.lua` returns on the client
+  right after `UpdateTransmitState` (`if CLIENT then NLP(...) return end`), before `ShowCracks`,
+  `UpdateCrackMesh` and `DrawCracks`, so `GLASS_SHOW_CRACKS` finds no `ShowCracks` and no crack is ever
+  drawn. Found in R5, not changed.
+- **Split sizes.** A split makes `num_radial` (`random(max(2, d-1), d+2)`) plus `num_concentric`
+  (`random(d-2, d)`) planes for a depth `d`: 21-26 at the default `rtx_glass_shard_count 12` (a pane's
+  first break adds 2-4 to the depth), 3-8 at the loose-piece depth 3. Bounding radius 20 was already
+  the size below which a fragment is removed with GlassImpact (`BuildCollision`).
+- **Falls.** At `sv_gravity 600` a free fall reaches 300 units/s (a pane's break speed) after 75 units
+  and 500 units/s after about 210 (`v^2 = 2gh`); map debris also leaves a window with the damage
+  impulse, capped at 350 units/s, plus a random scatter of up to 60 units/s per axis at the default
+  velocity transfer 2 (`rtx_map_glass.lua`).
+
+## The night sky line on modern_house (2026-10-31, Claude, R5)
+
+Measured in the field install on `modern_house` with [`night_sky_probe.lua`](../tools/qa/night_sky_probe.lua.md)
+and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
+
+- **What it was.** A straight-edged brownish haze over part of the night sky, stars faint inside it and
+  crisp outside, and in two views 15-20 s apart the whole scene in daylight. Remix's debug views
+  (below) showed no geometry in the sky at all; the haze ran along the edge of the previous view's
+  frustum, so it lived in the image's temporal history. Modern House RTX's `MHRTX_Settings` timer
+  (20 s, three times, started 3 s after the map: `lua/modern_house_rtx/cl_main.lua:320-328`) re-applies
+  its settings, its afternoon sun (`atmosphereSun`) among them; the companion, holding the player's
+  night, put it back on its 10 s `nativeloader_sky_owned` timer. Each daylight episode left the
+  history. In a tour after the third re-apply, and with the companion following the re-applies, all
+  views were clean, clouds on or off.
+- **Ruled out on the way:** the night sky image's seams (a CPU render of `evalStarMap`'s three layers
+  is seamless), the fixes' Custom 2D Skybox (`rtx_sky2d_enable 0` changed nothing; it draws only with
+  the world draw patched out), `r_skybox 0`, Modern House's mirrors, and the clouds' hex de-tiling
+  (the haze came with `rtx.atmosphere.cloudHexTilingEnable False` too, and went with it on once the
+  re-applies stopped).
+- **Sky draws in the physical sky.** With `rtx.skyMode 1` (Numos) `tryHandleSky` drops every draw whose
+  camera is Sky (`dxvk-remix-gmod src/dxvk/rtx_render/rtx_sky.h:85-89`); a draw is Sky when it carries
+  the Sky category: its colour texture is in `rtx.skyBoxTextures`, its viewport `minZ` reaches
+  `rtx.skyMinZThreshold`, or `rtx.skyAutoDetect` classifies it (`rtx_types.cpp:548-626`,
+  `rtx_camera_manager.cpp:111-118`). The modern_house skybox `sky_day02_03`'s face hashes (Remix's
+  `RemixMaterial.GetTextureHash`): lf `0x3A6D016CA2191AE0`, bk `0xA512403F9F80897C`, ft
+  `0x9225497508AC6197`, up `0x5D47E153E359F0B1`, dn `0x24CA07058BAA92B0` (rt returned 0); none is in
+  the package's list, auto-detection classifies them.
+- **Remix debug views from Lua.** `RemixConfig.SetConfigVariable("rtx.debugView.debugViewIdx", n)`
+  switches the view in a session (`GetConfigVariable` keeps returning `rtx.conf`'s value, 0); useful
+  indices (`src/dxvk/shaders/rtx/utility/debug_view_indices.h`): 271 primary depth, 277 geometry hash,
+  23 albedo, 22 material type, 166 stochastic alpha-blend background transparency, 876 the cloud
+  render target (black at night: its radiance is too dim to show).
+- **The clouds' temporal smoothing** blends each frame's cloud layer with a reprojected history
+  (`rtx.atmosphere.cloudHistoryWeight`, 0.92 by the comments) and drops history that is off-screen or
+  not from the previous frame (`src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh:948-1060`).
+  Which temporal pass kept the daylight longest was not isolated.
+- **The night sky image's galaxy band is wrapped three times** around the sky, so the Milky Way's core
+  shows three times (`evalStarMap`); an observation for the runtime, not changed.
+- **A start-up crash in NVIDIA's driver** in one of eleven field runs: an access violation reading
+  `0xffffffffffffffff` in `nvoglv64.dll+0xe622f8`, on a worker thread of Remix's `d3d9.dll` compiling
+  pipelines, about 4 s after the device was created (`out\qa-field\r5-sky\08-night-sky-debug-views`;
+  rerun clean). Recorded for the stability work.

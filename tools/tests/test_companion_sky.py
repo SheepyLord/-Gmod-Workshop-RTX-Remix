@@ -222,6 +222,23 @@ if SCRIPT == "ownership" then
   report("taken", "rtx.skyMode", "rtx.atmosphere.cloudDensity")
   return
 end
+if SCRIPT == "follow" then
+  -- Modern House RTX setting its sky again (its timer, 23, 43 and 63 s into the map) before and
+  -- after the player took the sky over; no timer of the companion runs in between.
+  MHRTX.ApplySettings(true)
+  report("theirs", "rtx.atmosphere.sunElevation")
+  cmd("nativeloader_sky_time", "midnight")
+  report("mine", "rtx.atmosphere.sunElevation")
+  MHRTX.ApplySettings(true)
+  report("again", "rtx.atmosphere.sunElevation", "rtx.atmosphere.cloudDensity")
+  print("followed " .. tostring(MHRTX.ApplySettings == MHRTX.nativeLoaderApply))
+  -- A reload of the add-on's Lua replaces the function: wrapped again by the 10 s timer.
+  MHRTX.ApplySettings = function() RemixConfig.SetConfigVariable("rtx.atmosphere.sunElevation", "35") end
+  tick(10)
+  MHRTX.ApplySettings(true)
+  report("reloaded", "rtx.atmosphere.sunElevation")
+  return
+end
 if SCRIPT == "release" then
   cmd("nativeloader_weather_seconds", "0")
   cmd("nativeloader_weather", "rainstorm")
@@ -494,6 +511,22 @@ class SkyTests(unittest.TestCase):
         self.assertEqual((out['adjusted'].split()[0], out['interval_now']), ('0', '0.1'))
         taken = self.settings(out['taken'])
         self.assertEqual((taken['rtx.skyMode'], taken['rtx.atmosphere.cloudDensity']), ('1', '1.8'))
+
+    def test_a_sky_taken_over_comes_back_at_once_when_the_maps_add_on_sets_its_own_again(self):
+        # R5: Modern House RTX puts its afternoon sun back three times in the first minute; the
+        # player's night used to wait up to 10 s for the companion's timer.
+        add_on = ('MHRTX_Config = {}\nMHRTX = { ApplySettings = function()\n'
+                  '  RemixConfig.SetConfigVariable("rtx.atmosphere.sunElevation", "35")\n'
+                  '  RemixConfig.SetConfigVariable("rtx.atmosphere.cloudDensity", "4")\nend }\n')
+        out = self.run_lua(add_on + SESSION, MAP='modern_house', BSP=bsp(CONSTRUCT), SCRIPT='follow')
+        self.assertEqual(out['followed'], 'true')
+        self.assertEqual(self.settings(out['theirs'])['rtx.atmosphere.sunElevation'], '35')
+        mine = float(self.settings(out['mine'])['rtx.atmosphere.sunElevation'])
+        self.assertLess(mine, -10)
+        again = self.settings(out['again'])
+        self.assertEqual(float(again['rtx.atmosphere.sunElevation']), mine)
+        self.assertNotEqual(again['rtx.atmosphere.cloudDensity'], '4')
+        self.assertEqual(float(self.settings(out['reloaded'])['rtx.atmosphere.sunElevation']), mine)
 
     def test_a_slider_writing_back_its_rounded_value_keeps_the_maps_sun(self):
         out = self.run_lua(SESSION, MAP='gm_construct', BSP=bsp(CONSTRUCT), SCRIPT='slider')

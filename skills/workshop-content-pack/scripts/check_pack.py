@@ -297,17 +297,17 @@ def check_item(r: Report, item: dict, files: dict):
         r.warn("%s: the name is over 100 bytes; Model Hotloader clips it" % label)
     if R18.search(name):
         r.warn("%s: the display name carries R18" % label)
-    if ascii_text(name):
-        r.ok("%s: ASCII display name, shown as written" % label)
-    elif english and ascii_text(english) and english != name:
-        if R18.search(english) or PLACEHOLDER.match(english.strip()):
-            r.warn("%s: English readers will see the PMX English name %r instead (names.lua); "
-                   "give an ASCII name such as the character's" % (label, english))
-        else:
-            r.ok("%s: English readers see the PMX English name %r (names.lua); an ASCII name would show as written"
-                 % (label, english))
+    # The pack's display name is the character's plain ASCII name (Robin), never the PMX's own:
+    # the Evernight and March 7th pack shipped 長夜月 and 三月七 (the user, 2026-10-31).
+    if ascii_text(name) and name.strip() and not PLACEHOLDER.match(name.strip()):
+        r.ok("%s: plain ASCII display name, shown as written" % label)
+    elif ascii_text(name):
+        r.error("%s: a placeholder display name; give the character's plain name (Robin)" % label)
+    elif english and ascii_text(english) and english != name and not (R18.search(english) or PLACEHOLDER.match(english.strip())):
+        r.error("%s: non-ASCII display name; give the character's plain ASCII name (English readers would see "
+                "the PMX English name %r, others the PMX name)" % (label, english))
     else:
-        r.warn("%s: non-ASCII name without an English one; Model Hotloader may machine-translate it" % label)
+        r.error("%s: non-ASCII display name; give the character's plain ASCII name (Robin)" % label)
     settings = item.get("settings") if isinstance(item.get("settings"), dict) else {}
     groups = settings.get("bodygroups")
     if item["kind"] == "character":
@@ -333,7 +333,9 @@ def check_item(r: Report, item: dict, files: dict):
         snippet = re.sub(r"\s+", " ", notes[max(0, hit.start() - 40):hit.end() + 40]).strip()
         r.warn("%s: its terms mention restrictions (...%s...): review before any public release" % (label, snippet))
     elif not terms:
-        r.info("%s: no terms-of-use record (no recorded redistribution terms)" % label)
+        # Every packed model carries its terms of use (March 7th went out without; the user,
+        # 2026-10-31): record them in Model Hotloader (the import's terms dialog) and pack again.
+        r.error("%s: no terms-of-use record; record the model's terms in Model Hotloader and pack again" % label)
 
 
 # ---- the Remix mod -----------------------------------------------------------------------------

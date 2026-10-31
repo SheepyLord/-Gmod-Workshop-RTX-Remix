@@ -6,6 +6,36 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
+
+- **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,
+  43 and 63 s after the map starts, its afternoon sun among them. Once you had set your own sky, the
+  companion took it back only on its 10-second timer: up to 10 s of afternoon in the middle of the
+  night, and the daylight then lingered in the image's history where the camera had looked, a haze
+  over the stars with a straight edge, stars on one side only. The companion now takes the sky back
+  in the same tick, and a map's add-on can run the hook `NativeLoaderSkySet` after setting its sky.
+- **Broken glass is interactive.** Map window debris and the glass add-on's pieces are real physics:
+  players walk through them, props push them, bullets and explosions knock them about, and the
+  physgun, gravity gun and +use pick them up
+  ([ADR 0061](docs/decisions/0061-loose-glass-breaks-again-and-expires.md)).
+- **Broken glass breaks again.** Shooting a piece, an explosion or a hard impact cracks it into
+  fragments, again and again, until they turn into dust. All broken glass shares one 256-piece
+  budget, oldest first.
+- **Broken glass goes away after a while.** New setting `rtx_glass_debris_lifetime` (seconds, default
+  120; 0 keeps pieces until map cleanup), with a slider in the glass settings. Expired pieces shrink
+  away. Its translations are agent-written and not yet reviewed.
+- **A subscribed Workshop model pack always provides its models**, even a model you had imported
+  yourself (the user, 2026-10-31). Model Hotloader installs it again from the package (only files
+  that differ are written) and shows it as the package's; your settings for it are kept aside and
+  come back, with the model, if you unsubscribe. Before, such a model counted as your own import and
+  the package never showed as installed.
+- **"Recalculate normals for RTX" sits under the import button** on External Models, one switch for
+  characters and props, and its note says to turn it on only if a model looks wrong in RTX Remix
+  (translations agent-written, unreviewed).
+- **The content pack skill refuses what the Evernight and March 7th pack got wrong:** a display name
+  that is not the character's plain ASCII name, and a model without a terms-of-use record; its upload
+  step now starts with a check in the game.
+
 ### Fixed (after the 0.10.1 release)
 
 - **No more "RTX package ... was updated: restart Garry's Mod" at every start.** GMod's

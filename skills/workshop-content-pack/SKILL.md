@@ -159,7 +159,17 @@ $B     = "$repo\out\packages\<n>"                              # the build folde
 8. **Validate.** `& $nlctl manifest "$B\<n>-rtx.gma"` (`OK: valid native package`), `& $nlctl verify
    "$B\<n>-rtx.gma"` (`OK: gmad, <files> files`), then
    `python -I $K\scripts\check_pack.py $B --hashes-json $env:USERPROFILE\.rpai\work\<key>\hashes.json --deep`:
-   no errors; carry its warnings into the report.
+   no errors; carry its warnings into the report. A non-ASCII or placeholder display name and a model
+   without a terms-of-use record are errors (R5: the Evernight and March 7th pack went out with
+   長夜月, 三月七 and no terms for March 7th): rename in Model Hotloader or pass `--item <id8>=<Name>`,
+   record the terms, and pack again.
+   - **Check it in the game before the upload.** On the PoC, never the user's install:
+     `python $repo\tools\poc_session.py --evidence $repo\out\packages\<n>\poc install --allow-workshop 3829070317
+     --allow-local "$B\<n>-rtx.gma" --replace-config`, then `run --name 01-pack --addons --map gm_construct
+     --settle 40 --screenshots 1`: the console shows Model Hotloader installing the models, the library
+     lists them under the pack's title, and one spawned shows its PBR. Put the PoC's `config.json` back
+     from the copy the install step kept. The Evernight pack skipped this (R5); on the user's install it
+     would have shown nothing anyway, because their own imports of the same models were already there.
 9. **Upload** (Steam running, signed in to the user's account; from a game root holding
    `steam_appid.txt`, the PoC as `tools\workshop.json` names it):
    ```powershell

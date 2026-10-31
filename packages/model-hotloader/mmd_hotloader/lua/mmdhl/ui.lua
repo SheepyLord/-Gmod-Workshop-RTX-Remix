@@ -170,6 +170,14 @@ function PANEL:Init()
    end
   end
  end
+ -- Under the import button: the RTX package's switch for how imported models are shaded in RTX
+ -- Remix (its companion's convar, so only when that is there), one place for characters and props.
+ if GetConVar('nativeloader_imported_model_normals') then
+  local row=self:Add('DPanel') row:Dock(TOP) row:SetTall(s(28)) row:SetPaintBackground(false) row:DockMargin(0,0,0,s(6))
+  self.RTXNormals=checkbox(row,L'ui.character.rtx_normals','nativeloader_imported_model_normals',f.Body,s(28)) self.RTXNormals:Dock(RIGHT)
+  self.RTXNormals:SetTooltip(L'ui.tooltip.rtx_normals')
+  row.PerformLayout=function() self.RTXNormals:SetWide(math.max(self.Import:GetWide(),natural(f.Body,L'ui.character.rtx_normals'))) end
+ end
  self.ImportBanner=self:Add('DPanel') self.ImportBanner:Dock(TOP) self.ImportBanner:SetTall(s(74)) self.ImportBanner:DockMargin(0,0,0,s(8)) self.ImportBanner:SetVisible(false)
  self.ImportBanner.Paint=function(_,w,h)
   draw.RoundedBox(5,0,0,w,h,Color(220,237,251))
@@ -314,10 +322,6 @@ function PANEL:BuildCharacterActions()
  self.PhysicsEdit=button(actions,L'ui.character.ragdoll_physics',function() self:EditPhysics() end,s(30),f.Body)
  self.PhysicsEdit:Dock(TOP) self.PhysicsEdit:DockMargin(0,0,0,s(6)) self.PhysicsEdit:SetTooltip(L'ui.tooltip.ragdoll_physics') self.PhysicsEdit:SetVisible(mmdhl.OpenModelPhysicsEditor~=nil)
  self.Frozen=checkbox(actions,L'ui.character.freeze','mmdhl_spawn_frozen',f.Body,s(28)) self.Frozen:Dock(TOP) self.Frozen:DockMargin(0,0,0,s(4))
- if GetConVar('nativeloader_imported_model_normals') then
-  self.RTXNormals=checkbox(actions,L'ui.character.rtx_normals','nativeloader_imported_model_normals',f.Body,s(28)) self.RTXNormals:Dock(TOP)
-  self.RTXNormals:SetTooltip(L'ui.tooltip.rtx_normals')
- end
  -- Health of new NPCs, from these buttons or the spawn menu; at 0 the label says the game's health is kept.
  self.NPCHealth=actions:Add('DNumSlider') self.NPCHealth:Dock(TOP) self.NPCHealth:SetTall(s(32)) self.NPCHealth:SetMinMax(0,mmdhl.MaxNPCHealth) self.NPCHealth:SetDecimals(0) self.NPCHealth:SetDark(true) self.NPCHealth.Label:SetFont(f.Body) self.NPCHealth:DockMargin(0,0,0,s(4))
  self.NPCHealth:SetConVar('mmdhl_npc_health') self.NPCHealth:SetTooltip(L'ui.tooltip.npc_health')
@@ -364,10 +368,6 @@ function PANEL:BuildPropActions()
  self.PropScale.OnValueChanged=function() self:ResetCamera(false) end
  self.PropSizeInfo=label(panel,'',f.Small,s(22)) self.PropSizeInfo:Dock(TOP) self.PropSizeInfo:SetTextColor(muted)
  self.PropFrozen=checkbox(panel,L'ui.prop.freeze','mmdhl_prop_spawn_frozen',f.Body,s(28)) self.PropFrozen:Dock(TOP)
- if GetConVar('nativeloader_imported_model_normals') then
-  self.PropRTXNormals=checkbox(panel,L'ui.character.rtx_normals','nativeloader_imported_model_normals',f.Body,s(28)) self.PropRTXNormals:Dock(TOP)
-  self.PropRTXNormals:SetTooltip(L'ui.tooltip.rtx_normals')
- end
  self.PropGlossy=checkbox(panel,L'ui.prop.glossy','mmdhl_prop_specular',f.Body,s(28)) self.PropGlossy:Dock(TOP) self.PropGlossy:DockMargin(0,0,0,s(4))
  self.PropGlossy:SetTooltip(L'ui.tooltip.prop_glossy')
  -- What new placements collide with; placed props change from the context menu.

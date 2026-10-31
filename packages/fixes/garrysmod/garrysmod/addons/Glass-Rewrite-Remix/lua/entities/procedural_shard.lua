@@ -33,9 +33,12 @@ function ENT:SetupDataTables()
     self:NetworkVar("Vector", 0, "PhysScale")
     self:NetworkVar("Entity", 0, "ReferenceShard")
     self:NetworkVar("Entity", 1, "OriginalShard")
+    self:NetworkVar("Float", 0, "FadeStart")    -- when a loose piece's lifetime ran out (0: it has not)
 end
 
-local glass_expensive_shards = CreateConVar("rtx_glass_expensive_shards", 1, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Makes small glass shards collide with everything, which is more resource intensive.", 0, 1)
+-- Read by glass_debris.lua, which gives loose pieces their collision group.
+CreateConVar("rtx_glass_expensive_shards", 1, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Broken glass pieces also collide with each other (1, more physics work) or only with the world and props (0); players always pass through them.", 0, 1)
+CreateConVar("rtx_glass_debris_lifetime", 120, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Seconds broken glass pieces stay before they fade out (0 = until map cleanup or the 256-piece limit)", 0, 600)
 local show_cracks = CreateConVar("rtx_glass_show_cracks", 1, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Show visual cracks before glass breaks (1) or break immediately (0)", 0, 1)
 local crack_delay = CreateConVar("rtx_glass_crack_delay", 0.05, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Delay in seconds between showing cracks and breaking", 0.05, 1.0)
 local shard_count = CreateConVar("rtx_glass_shard_count", 12, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Controls number of glass shards (1=few, 7=many)", 1, 12)
@@ -44,6 +47,43 @@ local mass_factor = CreateConVar("rtx_glass_mass_factor", 0.8, {FCVAR_ARCHIVE, F
 local velocity_transfer = CreateConVar("rtx_glass_velocity_transfer", 2.0, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "How much impact velocity transfers to shards (0.5=less dramatic, 2.0=more)", 0.1, 3.0)
 local player_mass = CreateConVar("rtx_glass_player_mass", 80, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Player mass in kg for glass breaking calculations (50=light, 100=heavy)", 30, 150)
 local player_break_speed = CreateConVar("rtx_glass_player_break_speed", 80, {FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED}, "Minimum player speed to break glass (100=walking, 250=sprinting)", 50, 400)
+
+-- Loose pieces (ADR 0061) broke off a pane: map window debris and the fragments of any shard. They are
+-- interactive physics (glass_debris.lua), break again from damage or a hard impact until their
+-- fragments are dust, and fade out at the end of their lifetime.
+local TINY_RADIUS = 20          -- a fragment with a smaller bounding radius becomes GlassImpact dust
+local LOOSE_BREAK_SPEED = 500   -- impact speed that breaks a loose piece (a pane breaks above 300);
+                                -- at sv_gravity 600 a fall reaches it after about 210 units
+local DUST_PER_SPLIT = 3        -- GlassImpact effects for the dust of one split
+local DUST_PER_TICK = 24        -- an explosion over a pile breaks every piece in one tick
+local FADE_TIME = 1             -- seconds an expired piece takes to shrink away
+
+local function is_loose(ent)
+    return ent.RTX_MAP_DEBRIS or ent:GetOriginalShard():IsValid()
+end
+
+local dust_tick, dust_count = -1, 0
+local function glass_dust(pos)
+    local tick = engine.TickCount()
+    if tick != dust_tick then dust_tick, dust_count = tick, 0 end
+    if dust_count >= DUST_PER_TICK then return end
+    dust_count = dust_count + 1
+    local data = EffectData()
+    data:SetOrigin(pos)
+    util.Effect("GlassImpact", data)
+end
+
+-- Half the diagonal of a fragment's bounds, which BoundingRadius reports once it is a shard, and its centre.
+local function fragment_extent(tris)
+    local low, high = Vector(math.huge, math.huge, math.huge), Vector(-math.huge, -math.huge, -math.huge)
+    for _, vertex in ipairs(tris) do
+        local p = vertex.pos or vertex
+        low.x, low.y, low.z = math.min(low.x, p.x), math.min(low.y, p.y), math.min(low.z, p.z)
+        high.x, high.y, high.z = math.max(high.x, p.x), math.max(high.y, p.y), math.max(high.z, p.z)
+    end
+    if low.x > high.x then return 0, Vector() end
+    return (high - low):Length() * 0.5, (low + high) * 0.5
+end
 
 function ENT:BuildCollision(verts, pointer)
     local new_verts, offset = simplify_vertices(verts, self:GetPhysScale())
@@ -61,17 +101,12 @@ function ENT:BuildCollision(verts, pointer)
         if !phys:IsValid() then
             SafeRemoveEntity(self)
         else
-            local bounding = self:BoundingRadius()
-            if bounding < 40 and self:GetOriginalShard():IsValid() then
-                self:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
-                if glass_expensive_shards:GetBool() then self:SetCollisionGroup(COLLISION_GROUP_WORLD) end
-                if bounding < 20 then 
-                    -- glass effect
-                    local data = EffectData() data:SetOrigin(self:GetPos())
-                    util.Effect("GlassImpact", data)
-                    SafeRemoveEntity(self)
-                    return
-                end
+            -- A fragment too small to keep becomes dust (Split leaves most of these out already). Its
+            -- collision group comes from glass_debris.lua, like every loose piece's.
+            if self:GetOriginalShard():IsValid() and self:BoundingRadius() < TINY_RADIUS then
+                glass_dust(self:GetPos())
+                SafeRemoveEntity(self)
+                return
             end
             phys:SetMass(math.sqrt(phys:GetVolume()))
             phys:SetMaterial("glass")
@@ -117,6 +152,14 @@ if CLIENT then
     function ENT:Draw()
         local render_mesh = self.RENDER_MESH
         if !render_mesh or !render_mesh.Mesh or !render_mesh.Mesh:IsValid() then return end
+        -- A loose piece whose lifetime ran out shrinks away over FADE_TIME before the server removes it.
+        -- Only the transform changes: no mesh is built or freed while a queued frame may draw it.
+        local scale = 1
+        local fade = self:GetFadeStart()
+        if fade > 0 then
+            scale = math.Clamp(1 - (CurTime() - fade) / FADE_TIME, 0, 1)
+            if scale < 0.05 then return end
+        end
         local override = self:GetMaterial()
         if override != "" and override != self.drawn_material_name then
             self.drawn_material_name, self.drawn_material = override, Material(override)
@@ -125,7 +168,9 @@ if CLIENT then
         render.SetMaterial(override != "" and self.drawn_material or render_mesh.Material)
         render.SetColorModulation(color.r / 255, color.g / 255, color.b / 255)
         render.SetBlend(color.a / 255)
-        cam.PushModelMatrix(self:GetWorldTransformMatrix())
+        local matrix = self:GetWorldTransformMatrix()
+        if scale < 1 then matrix:Scale(Vector(scale, scale, scale)) end
+        cam.PushModelMatrix(matrix)
         render_mesh.Mesh:Draw()
         cam.PopModelMatrix()
         render.SetBlend(1)
@@ -213,9 +258,14 @@ else
         
         local convexes = {}
         local split_depth = shard_count:GetInt() -- Use console variable as base
+        local loose = is_loose(self)
         
-        -- If this is the first break of an original piece of glass, create more shards.
-        if not self:GetReferenceShard():IsValid() then
+        if loose then
+            -- A piece that already broke off cracks into a few fragments, so that it can be broken
+            -- again and again until its fragments are dust.
+            split_depth = math.max(2, math.ceil(split_depth / 4))
+        else
+            -- The first break of an original piece of glass creates more shards.
             split_depth = split_depth + math.random(2, 4) -- Add 2 to 4 extra "levels" of cracks.
         end
 
@@ -299,7 +349,20 @@ else
         local original_shard = self:GetOriginalShard():IsValid() and self:GetOriginalShard() or self
         local lastblock
         local valid_entity = {false}      -- table cuz i want pointers
+        local dust = 0
+        self.GLASS_BREAKING = true    -- its fragments take its place in the budget (glass_debris.lua)
+        self:EmitSound("Glass.Break")
         for k, physmesh in ipairs(convexes) do 
+            -- Every fragment has an original shard, so one below TINY_RADIUS would only be removed again in
+            -- BuildCollision: it becomes dust without an entity. An explosion over a pile breaks every piece
+            -- in one tick, and creating and dropping all their dust as entities could run out of edicts.
+            local radius, center = fragment_extent(physmesh[1])
+            if radius < TINY_RADIUS then
+                dust = dust + 1
+                if dust <= DUST_PER_SPLIT then glass_dust(self:LocalToWorld(center)) end
+                continue
+            end
+
             local block = ents.Create("procedural_shard")
             block:SetPos(pos)
             block:SetAngles(ang)
@@ -311,7 +374,9 @@ else
             block:SetMaterial(material)
             block:SetColor(color)
             block:SetRenderMode(rendermode)
-            block:BuildCollision(physmesh[1], valid_entity)   -- first thing in table is the triangles
+            local built = {false}
+            block:BuildCollision(physmesh[1], built)   -- first thing in table is the triangles
+            if built[1] then valid_entity[1] = true end
             block.IS_FUNNY_GLASS = self.IS_FUNNY_GLASS
             
             -- Inherit a portion of accumulated damage (shards are weaker)
@@ -322,7 +387,10 @@ else
             end
             
             local phys = block:GetPhysicsObject()
-            if phys:IsValid() then
+            if built[1] and phys:IsValid() then
+                -- A loose piece: interactive physics, the shared budget and the lifetime (glass_debris.lua).
+                if GlassRewriteDebris then GlassRewriteDebris.Add(block) end
+
                 -- Calculate realistic shard velocity based on impact
                 local shard_velocity = Vector(vel.x, vel.y, vel.z) -- Start with original glass velocity
                 local transfer_factor = velocity_transfer:GetFloat()
@@ -368,18 +436,18 @@ else
                 end
             end
 
-            if k == 1 then block:EmitSound("Glass.Break") end
-
-            -- weld it to other shards
-            if lastblock then
+            -- weld it to other shards (a pane's first break; the fragments of a loose piece stay apart)
+            if lastblock and !loose then
                 constraint.Weld(block, lastblock, 0, 0, 3000, true)
             end
-            lastblock = block
+            if built[1] then lastblock = block end
         end
 
         -- all shards have been removed because they are too small, remove the original
         if !valid_entity[1] then SafeRemoveEntity(self) return end
 
+        -- From here on a hidden placeholder, counted out of its original below (OnRemove must not again).
+        self.GLASS_SPLIT = true
         constraint.RemoveAll(self)
         self:GetPhysicsObject():EnableMotion(false)
         self:SetNotSolid(true)
@@ -407,6 +475,9 @@ else
         -- give clients 5 seconds to try and find shard
         timer.Simple(5, function()
             if !self:IsValid() then return end
+            -- A fragment that broke again is not needed after that: its fragments count towards the
+            -- original. The original stays hidden until its last fragment is gone (OnRemove).
+            if self:GetOriginalShard():IsValid() then SafeRemoveEntity(self) return end
             self:SetPos(Vector())
             self:SetAngles(Angle())
             self:SetNoDraw(true)
@@ -415,6 +486,9 @@ else
     end
 
     function ENT:OnTakeDamage(damage)
+        -- Defining OnTakeDamage replaces base_anim's, so bullets, blasts and melee move nothing unless the
+        -- entity applies their force itself (as GMod's own entities do). A frozen pane does not move.
+        self:TakePhysicsDamage(damage)
         if !self.CAN_BREAK or self.showing_cracks then return end
         local damagepos = damage:GetDamagePosition()
         if damagepos != Vector() then -- some physents are broken and have no damage position, so just set the damage to the center of the object
@@ -486,9 +560,15 @@ else
 
     function ENT:PhysicsCollide(data)
     	if self:IsPlayerHolding() then return end	--unbreakable if held
-        local speed_limit = self.IS_FUNNY_GLASS and -1 or 300
+        -- A loose piece lies where it fell: falling out of a window does not break it again, a hard hit does.
+        local loose = is_loose(self)
+        local speed_limit = self.IS_FUNNY_GLASS and -1 or (loose and LOOSE_BREAK_SPEED or 300)
     	if data.Speed > speed_limit and self.CAN_BREAK and !self.showing_cracks then
             local ho = data.HitObject
+            -- The pieces of a pile collide: two loose pieces never break each other. (HitObject is the other
+            -- physics object, so the check on it below never matches; the entity is HitEntity.)
+            local hit = data.HitEntity
+            if loose and IsValid(hit) and hit:GetClass() == "procedural_shard" and is_loose(hit) then return end
             if ho and ho:IsValid() and ho.GetClass and ho:GetClass() == "procedural_shard" and ho.CAN_BREAK then return end
 
             -- just some values that I thought looked nice
@@ -657,15 +737,29 @@ else
         end
     end
 
+    -- The end of a loose piece's lifetime (glass_debris.lua): clients shrink it away over FADE_TIME
+    -- (ENT:Draw), then it goes. It keeps moving meanwhile, and it no longer breaks.
+    function ENT:FadeOut()
+        if self.GLASS_FADING then return end
+        self.GLASS_FADING = true
+        self.CAN_BREAK = false
+        self:SetFadeStart(CurTime())
+        self:ForcePlayerDrop()
+        timer.Simple(FADE_TIME, function()
+            if IsValid(self) then self:Remove() end
+        end)
+    end
+
     function ENT:OnRemove()
-        if self.RTX_MAP_DEBRIS then return end
         local orig_shard = self:GetOriginalShard()
         if orig_shard and orig_shard:IsValid() then 
+            if self.GLASS_SPLIT then return end -- counted out when it broke
             orig_shard.SHARD_COUNT = orig_shard.SHARD_COUNT - 1
             if orig_shard.SHARD_COUNT < 1 then
                 SafeRemoveEntity(orig_shard)
             end
-        else    -- must be original shard, remove parent shards
+        elseif self.GLASS_SPLIT then    -- must be original shard, remove parent shards
+            -- (map debris and panes that never broke have none, and need no search)
             for k, v in ipairs(ents.FindByClass("procedural_shard")) do
                 if v.GetOriginalShard and v:GetOriginalShard() == self then
                     SafeRemoveEntity(v)
@@ -700,10 +794,10 @@ function ENT:Initialize(first)
             self.SHARD_COUNT = 0    -- it is the original shard
         end
 
-        -- remove fast & laggy interactions
+        -- remove fast & laggy interactions (map debris breaks again too, ADR 0061)
         timer.Simple(0.25, function()
-            if !IsValid(self) then return end
-            self.CAN_BREAK = not self.RTX_MAP_DEBRIS
+            if !IsValid(self) or self.GLASS_FADING or self.GLASS_BREAKING then return end
+            self.CAN_BREAK = true
         end)
 
         return 
