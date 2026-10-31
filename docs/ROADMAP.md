@@ -196,3 +196,11 @@ overrides, effective menu tiers, malformed adapter descriptions and the combined
 The earlier sandbox/HKCU validation limitation above belongs to the initial pass; the fix-pass
 validation record below in TESTING.md records the current full-access run. Integration, actual
 runtime option checks and GPU fault capture remain with the project manager.
+
+T4's independent-review fix pass is complete on its branch: missing or unsafe runtime build
+configurations stop before import; patch 0015 records all six omitted staged test sources, adds
+heap locality/driver totals/pending OMM counts and flushes an early crash marker under the existing
+single-handler gate. The Release rebuild imports only the changed `d3d9.dll`; all 27 runtime unit
+tests and the 1,008-file package check pass. Repository Release checks pass all 23 CTests and 333
+Python tests (two skips) with the unchanged guard executable relocated under `out/tmp` for its
+known long-path limitation. No game session was run; runtime GPU acceptance remains with Claude.

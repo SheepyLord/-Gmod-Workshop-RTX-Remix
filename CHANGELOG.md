@@ -50,8 +50,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
   It keeps a local `rtx-remix/logs/last_gpu_crash.json` for the next start; write failures leave the
   termination path intact. Micromap budget warnings recur at most once per minute per warning kind,
   with the number of suppressed repeats ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
-- Runtime rebuilds refresh the configure-time version label. A clean runtime source tree can build
-  without the fork's six missing, ignored optional test sources.
+- Runtime rebuilds refresh the configure-time version label and reject missing or non-Release
+  Meson configurations before compiling or importing. First-time setup configures once before the
+  two shader compilation passes. The six tests omitted from the original fork snapshot are now
+  recorded from its staged index and built without silent source guards.
+- The device-loss marker is written before the GPU crash-state recorder and Aftermath waits, with
+  heap locality, device-local driver totals, pending suppressed OMM counts and the same timestamp
+  as its log line. Windows flushes the temporary file to disk before replacing the old marker.
 
 ### R6 T6 (unreleased)
 

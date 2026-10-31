@@ -14,33 +14,41 @@ The existing VRAM API already collects the relevant counters. See
 ## Decision
 
 Patch 0015 owns a small `RtxMemoryDiagnostics` object in `DxvkObjects`. Both the VRAM API and
-diagnostic snapshots use its collector. Driver budget/use includes every heap; DXVK totals and the
-eight categories include device-local heaps, preserving the API's meaning. Samples are approximate
+diagnostic snapshots use its collector. Driver budget/use is recorded for every heap with a
+`device_local` boolean; the `driver` totals, DXVK totals and eight categories include device-local
+heaps, preserving the API's meaning. Samples are approximate
 host-side observations, without GPU synchronization or traversal of the texture cache.
 
 Emit one `[RTX Memory]` JSON line at each camera cut and at five-minute intervals on present.
 Repeated presents of the same frame emit no duplicate. Camera cuts do not postpone the periodic
-deadline. At device loss, the single handling thread collects once before the Aftermath wait and
-Sentry step, logs the snapshot at error level and writes schema 1 of interface I7 beside the runtime
-log. This precedes the wait in `handleDeviceLost`; the earlier `onGpuCrash` recorder/Aftermath work
-may already have run. The default path is `rtx-remix/logs/last_gpu_crash.json`;
+deadline. The first periodic deadline is five minutes after device creation. Camera-cut samples
+observe the outgoing scene at present, before its cut-driven teardown. At device loss,
+`handleDeviceLost` retains its single-handler gate and calls `onGpuCrash` behind that gate.
+The first work in `onGpuCrash` after its own guard collects once, writes schema 1 of interface I7
+beside the runtime log and logs the snapshot at error level, before the GPU crash-state recorder,
+either Aftermath wait and Sentry. The marker and log share the snapshot's timestamp, driver totals
+and pending suppressed OMM warning counts. The default path is `rtx-remix/logs/last_gpu_crash.json`;
 `DXVK_LOG_PATH` relocates both files.
-Write a temporary file, check flush/close, and atomically replace the previous marker. All failures
+Write a temporary file, check the write, `FlushFileBuffers` and close, and atomically replace the
+previous marker. All failures
 are best effort and cannot escape the diagnostic handler or change process termination.
 
 Keep separate steady-clock one-minute limits for the two OMM warnings on the device, so recreating
 the OMM manager at a camera cut cannot reset them. The first occurrence logs immediately. The next
 eligible occurrence includes the number of intervening suppressed repeats; an idle warning does
-not emit a separate summary. Rendering budgets and eviction behavior are unchanged.
+not emit a separate summary. A device-loss snapshot preserves the pending counts using atomic
+loads; the budget-dropped warning includes available bytes and the resulting budget. Rendering
+budgets and eviction behavior are unchanged.
 
 Do not add `VK_EXT_device_fault` in this patch. The required memory evidence does not need a new
 Vulkan device extension or another driver call after a loss. Aftermath remains the existing fault
 diagnostic mechanism, with its existing consent and configuration.
 
-The recorded fork tree also references five optional unit-test sources and one medium API test
-source which are absent from that tree (the local fork holds ignored copies). Guard only these
-targets when their sources are absent, keeping the remaining unit tests and API apps available.
-The clean rebuild must not silently depend on those unrecorded local files.
+Review correction: five unit-test sources and one medium API test source were missing from patch
+0001's snapshot because `.gitignore` excludes them. They are tracked additions in the user's fork's
+staged mid-merge index, not ignored local copies. Record all six staged blobs in patch 0015, read
+with `git show :<path>` without modifying that fork, and remove the silent existence guards.
+The clean rebuild must not depend on unrecorded local test sources.
 
 ## Consequences
 
