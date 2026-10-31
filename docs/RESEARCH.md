@@ -257,6 +257,24 @@ Engine.SetConVar attempts to enable client Lua. Evidence is under `out/multiplay
 This controlled session is not a universal VAC/server-policy guarantee. Final full-suite, package
 readback and publication results remain pending.
 
+RTXDebug 0.2.0 took "single-player" for its developer mutation gate from the client realm's Lua
+`game.SinglePlayer`, which a remote server's client scripts can replace; the server also replicates
+`sv_cheats`. 0.2.1 (R4) asks the engine instead. In the vanilla x64 engine.dll (5707088 bytes,
+SHA-256 d8f74db72412ffa91c1f01a633d108331145d0a7dff6cffabe1b67ed5abe4fcb), RTTI finds one
+`CEngineClient` vtable (RVA 0x39d048) and one `CNetChan` vtable (RVA 0x3e0150). Their slots match
+sourcesdk-minimal's `cdll_int.h` and `inetchannelinfo.h`: `CEngineClient` 21 `GetMaxClients` and 12
+`GetLocalPlayer` read client-state fields, 26 `IsInGame` and 27 `IsConnected` compare the signon
+state with 6 and 2, 72 `GetNetChannelInfo` returns the client state's channel pointer, 76
+`IsPlayingDemo` and 78 `IsPlayingTimeDemo` call the demo player at vtable offsets 0x30 and 0x40, and
+106 is `ClientCmd_Unrestricted`. `CNetChan` slots 0-9 match in order. Slots 1 `GetAddress` and 6
+`IsLoopback` both use the remote address at +0xC4, and `netadr_t::IsLoopback` is only
+`type == NA_LOOPBACK` (1), the engine's in-process loopback buffers: a connection to 127.0.0.1 or a
+LAN server is not loopback. Slot 8 `IsPlayback` is the same folded function as `IsPlayingDemo`. The
+header's last declarations do not match (slot 150, declared `IsDedicatedServer`, takes five
+arguments); RTXDebug does not call them. `Engine.World` reported `max_clients` 8 in probe 7's
+dedicated session and 1 in single-player (`out/multiplayer-evidence/probe7/debug-checks.json`,
+`out/multiplayer-evidence/singleplayer/checks.json`).
+
 ## Startup text and main-menu identity (requests 15 and 23)
 
 The launch text was hard-coded in runtime src/dxvk/imgui/dxvk_imgui_splash.cpp:88 and referred to

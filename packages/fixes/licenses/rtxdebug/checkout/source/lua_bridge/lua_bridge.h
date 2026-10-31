@@ -23,4 +23,9 @@ bool RunSnapshot(GarrysMod::Lua::ILuaBase* caller,
 // Quotes text as a Lua string literal for generated snapshot statements.
 std::string QuoteLua(const std::string& text);
 
+// True when lua is the Lua state that lua_shared reports for realm ("client",
+// "server" or "menu"). Read natively, not from the CLIENT/SERVER/MENU_DLL globals,
+// which any script in the state can reassign. False off the game thread.
+bool IsRealmState(GarrysMod::Lua::ILuaBase* lua, const char* realm);
+
 } // namespace RTXDebug::LuaBridge

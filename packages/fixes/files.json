@@ -542,10 +542,10 @@
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/debug-multiplayer",
     "remote": "https://github.com/SheepyLord/garrys-mod-rtx-debug-module.git",
-    "commit": "6105f0b545145dc7781f7ae94af76619c2a6e3d4",
+    "commit": "359b51bcd15eef18dfdb45482367ef43ffcf71c7",
     "dirty": false
    },
-   "imported": "2026-10-31T07:35:32+00:00"
+   "imported": "2026-10-31T12:23:18+00:00"
   },
   "source/debug/addon/lua/autorun/client/rtx_debug.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\debug-multiplayer\\addon\\lua\\autorun\\client\\rtx_debug.lua",
@@ -3738,12 +3738,12 @@
    "stored": "plain"
   },
   "modules/gmcl_rtxdebug_win64.dll": {
-   "size": 427008,
-   "sha256": "5bfdfdc5d0a524a25b8f2d1715d1d741d16706b0c81027241fff1ee07a2916a5",
-   "mtime_ns": 1793430497501709200,
+   "size": 428032,
+   "sha256": "73edd9156bd155e4d9cb70cd75f07da798364b89ea146326f983927218f58e91",
+   "mtime_ns": 1793449210960905700,
    "stored": "xz",
-   "stored_size": 170512,
-   "stored_sha256": "699980c8757e156edd940b25730b80c346499afac922ca38e529a9c19fbdd99c"
+   "stored_size": 171248,
+   "stored_sha256": "9e6ebf35e4c1532ad09d33f873bee337ff797be7ff0396dec6ed3c2b226a5fa3"
   },
   "modules/gmcl_RTXFixesBinary_win64.dll": {
    "size": 4848128,

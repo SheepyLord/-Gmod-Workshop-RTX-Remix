@@ -40,7 +40,8 @@ including on a multiplayer server with `sv_allowcslua 0`, once the RTX package's
 client bootstrap has loaded this addon. The addon loads the DLL with `require("rtxdebug")`.
 `RTXDebug.Status()` distinguishes the full developer mutation gate from the client rendering gate.
 Arbitrary Lua evaluation, engine/gameplay mutations, memory and detours still require local
-single-player, `sv_cheats 1` and `-insecure`. A remote server realm is unavailable locally.
+single-player, `sv_cheats 1` and `-insecure`. The module decides single-player from the engine
+client's own connection, never from Lua. A remote server realm is unavailable locally.
 
 ## Conventions
 
@@ -50,7 +51,21 @@ single-player, `sv_cheats 1` and `-insecure`. A remote server realm is unavailab
   `sv_cheats 1` and the `-insecure` launch option. Memory reads need it too.
   Restoring and listing this module's own changes do not, so they still work
   after `sv_cheats` is turned off.
-- Local Remix-only writes have their own gate: the module's live client realm, the game thread,
+- The mutation gate reads nothing from Lua (`source/session_policy.h`). Single-player means the
+  engine client is connected through the in-process loopback channel to the server this game runs,
+  with one player slot and no demo playing: `IVEngineClient::IsConnected`,
+  `GetNetChannelInfo()->IsLoopback()`, `GetMaxClients()` and `IsPlayingDemo()`. `-insecure` comes
+  from the process command line and `sv_cheats` from the cvar system. A remote server's client
+  scripts can replace `game.SinglePlayer`, and the server replicates `sv_cheats`, but it cannot
+  make the client's channel loopback.
+- Outside local single-player, read-only queries that could disclose information to a remote
+  server's client scripts are refused: `Interfaces.Resolve` and `Interfaces.FileExists`,
+  `Engine.ListConsole`, `Engine.GetConVar` for non-rendering convars (allowlist `IsRenderingConVar`
+  in `source/render_policy.h`: `rtx*`, `r_*`, `mat_*`, `cl_draw*`), and `Lua.Global`/`Lua.Hooks` for
+  any realm other than the module's own client state. The read-only client diagnostics and the
+  `rtx.*` rendering query/config surface a multiplayer RTX session uses stay available.
+- Local Remix-only writes have their own gate: the module's live client realm (the state that
+  lua_shared reports as the client's, not the `CLIENT_DLL`/`SERVER` globals), the game thread,
   and an available RemixConfig.SetConfigVariable function. Without the full developer gate,
   only `rtx.*` option keys are accepted. This does not change server cvars or enable Lua Eval.
 - Addresses and 64-bit values are hex strings, which Lua numbers cannot hold exactly.
@@ -67,8 +82,8 @@ The global table is `RTXDebug`:
 RTXDebug.Status()       -- process_id, gate inputs, can_configure_rendering, active change counts
 RTXDebug.RestoreAll()   -- undo every change below; returns counts and failures
 
-RTXDebug.Engine.ListConsole("mat_", 0, 200)      -- prefix, offset, limit (max 1000)
-RTXDebug.Engine.GetConVar("mat_queue_mode")
+RTXDebug.Engine.ListConsole("mat_", 0, 200)      -- local single-player only; prefix, offset, limit (max 1000)
+RTXDebug.Engine.GetConVar("mat_queue_mode")      -- rendering convars anywhere; other names local single-player only
 RTXDebug.Engine.SetConVar("mat_queue_mode", "0") -- gated; restored on RestoreAll/unload
 RTXDebug.Engine.RestoreConVar("mat_queue_mode")
 RTXDebug.Engine.ConVarOverrides()
@@ -78,15 +93,15 @@ RTXDebug.Engine.Entities("client", "prop_physics", 0, 200)
 RTXDebug.Engine.Entity("client", 1)              -- materials, submaterials, bodygroups, NW vars
 
 RTXDebug.Interfaces.Status()                     -- which Source interfaces are exported
-RTXDebug.Interfaces.Resolve("engine", "VEngineClient015")  -- address, vtable, vtable_rva
+RTXDebug.Interfaces.Resolve("engine", "VEngineClient015")  -- local single-player only; address, vtable, vtable_rva
 RTXDebug.Interfaces.Material("models/debug/debugwhite")    -- shader, flags, shader params
 RTXDebug.Interfaces.Materials("models/", 0, 200) -- loaded materials by prefix
-RTXDebug.Interfaces.FileExists("materials/debug/debugwhite.vmt", "GAME")
+RTXDebug.Interfaces.FileExists("materials/debug/debugwhite.vmt", "GAME")  -- local single-player only
 
 RTXDebug.Lua.Realms()
 RTXDebug.Lua.Eval("menu", "return collectgarbage('count')")  -- gated; {value, values, n}
-RTXDebug.Lua.Global("client", "RemixRenderCore._handlers")
-RTXDebug.Lua.Hooks("client", "Think")
+RTXDebug.Lua.Global("client", "RemixRenderCore._handlers")  -- other realms local single-player only
+RTXDebug.Lua.Hooks("client", "Think")                      -- other realms local single-player only
 RTXDebug.Lua.GCStats("client")
 
 RTXDebug.Remix.Vram()
@@ -136,7 +151,11 @@ differ: vstdlib's cvar iterator has a virtual destructor in front of its
 methods, so `ListConsole` uses its own iterator declaration, and
 `CMatSystemSurface::GetScreenSize` sits one slot later than `ISurfaceV30`
 declares it, so there is no VGUI surface query (`Engine.World` reports the
-screen size). Check new interface calls the same way before using them.
+screen size). Check new interface calls the same way before using them. The
+single-player check uses `CEngineClient` slots 21 (`GetMaxClients`), 27
+(`IsConnected`), 72 (`GetNetChannelInfo`) and 76 (`IsPlayingDemo`), and
+`CNetChan` slot 6 (`IsLoopback`, a test for address type `NA_LOOPBACK`), all
+where `sourcesdk-minimal` declares them.
 
 The `client_cmd` detour records calls to `IVEngineClient::ClientCmd` in a
 128-entry ring buffer (sequence, tick, thread, command text).
@@ -184,7 +203,11 @@ No network listener is opened.
 ## Tests
 
 `python tests/test_transport.py` checks the request protocol without starting
-GMod (`lupa` required; it uses LuaJIT when lupa has it).
+GMod (`lupa` required; it uses LuaJIT when lupa has it). `python -m unittest
+discover -s tests` also runs the external client's target-selection tests.
+`tests/render_policy_test.cpp` and `tests/session_policy_test.cpp` check the
+rendering and mutation gates: compile each with a C++17 compiler (for example
+`cl /std:c++17 /EHsc /W4`) and run it.
 
 ## Lifecycle
 
