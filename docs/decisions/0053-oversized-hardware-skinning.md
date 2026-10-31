@@ -82,7 +82,8 @@ payload digest `13f303982ed43e47bccf09847186bd3bb43477cb65dbbcb1c5534117cbae4ba3
 
 Final client 18232 passes secure dedicated server 37728 with the final DLL: full Airi rendering,
 first-person hands, cslua/cheats off, no insecure, renderer apply/restore and unsafe-command denials.
-CI/publication remain pending. [TESTING.md](../TESTING.md#oversized-hardware-skinning-item-24)
+The Workshop update completed and its archive matches every tested payload file.
+[TESTING.md](../TESTING.md#oversized-hardware-skinning-item-24)
 records the acceptance protocol and controlled results.
 
 ## Alternatives considered

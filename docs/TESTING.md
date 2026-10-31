@@ -53,7 +53,9 @@ Final client 18232 passes secure dedicated server 37728 with the final DLL: Airi
 the full model and first-person hands render, cslua/cheats stay off, unsafe commands remain denied,
 and rendering config/restore succeeds without config-file changes. Model content is mounted by
 the server-approved fixed probe; unrelated local Lua remains blocked. Records and the Source JPEG
-are under multiplayer-5e. CI/publication are pending. Preserve exact source/DLL and package hashes. See
+are under multiplayer-5e. The hidden Workshop update completed; published readback matches all
+998 tested payload files and the final DLL (published-review.json). Preserve exact source/DLL,
+package and CI receipts. See
 [ADR 0053](decisions/0053-oversized-hardware-skinning.md) for scope and provenance.
 
 ## Multiplayer bootstrap and RTXDebug

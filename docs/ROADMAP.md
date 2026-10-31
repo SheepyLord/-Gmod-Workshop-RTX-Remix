@@ -1,6 +1,6 @@
 # Roadmap
 
-QoL item 24 is **validated; publication in progress**. Airi's clothing fur,
+QoL item 24 is **done and published**. Airi's clothing fur,
 hair and shoes exceed the 32,768-vertex software-group limit. The final GPL native fix protects
 both dynamic and direct hardware entries; a shared scope also preserves smaller weighted meshes
 under the existing user-forced hardware mode. Default ordinary draws, rigid props, flex/eyes and
@@ -12,7 +12,9 @@ and exit zero. Final Release passes 20 CTests/277 Python tests (7 skips), includ
 GPL policy test. The reviewed 998-file GMA matches final source/DLL, with 28 changes and no
 removals. Final client 18232 also passes secure dedicated multiplayer, with Airi and first-person
 hands visible, unchanged cslua/cheat restrictions and successful debug rendering/deny probes.
-CI and publication remain pending. Policy and measured acceptance are in
+GitHub main includes release 4d9257c; hidden Workshop 3829070317 carries
+0.0.0-dev.20261031090927+39890cf1. The published archive matches all 998 tested payload files.
+Policy and measured acceptance are in
 [ADR 0053](decisions/0053-oversized-hardware-skinning.md) and
 [TESTING.md](TESTING.md#oversized-hardware-skinning-item-24).
 

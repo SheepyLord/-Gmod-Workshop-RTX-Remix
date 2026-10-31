@@ -723,7 +723,20 @@ unrelated local Lua blocked and the temporary API absent. Server-approved mounti
 the test model content: Airi reports 233 bones and renders with first-person hands visible.
 Rendering config/restore succeeds, unsafe Eval/cvar changes remain denied and config hashes stay
 unchanged. Evidence is multiplayer-5e and the matching debug-check record. Both owned games are
-closed and the video-registry snapshot restored with equal hashes. CI/publication are pending.
+closed and the video-registry snapshot restored with equal hashes.
 The main checkout's unrelated uncommitted changes are preserved; integration uses out/worktrees/pub24.
 The accepted
 policy is [ADR 0053](../decisions/0053-oversized-hardware-skinning.md).
+
+Released through clean integration commit 4d9257c7c3f4a9980c50ce7683d6d429f20eda20 and pushed
+to origin/main. Hidden distribution item 3829070317 now carries
+0.0.0-dev.20261031090927+39890cf1, payload digest
+13f303982ed43e47bccf09847186bd3bb43477cb65dbbcb1c5534117cbae4ba3. Published archive SHA-256 is
+088c4c4cf1da4d9e8faf3192c93ea69f880d98e0ede34eedbbd158da32b97376, 1837514493 bytes.
+Readback proves all 998 payload file records and the final DLL match the tested archive exactly.
+The publisher receipt is out/workshop/published.json; verification is
+out/oversized-skinning-evidence/published-review.json. The loader 0.9.0 bundle is
+out/rtx-final-delivery/gmod-native-loader-0.9.0+4d9257c7.zip. It contains the tested winmm.dll
+35e8ce7eee55193494a6283b70ecb7a40b4b48e0037824722bb836abb1741afa. CI results are retained
+with the final delivery record. No real game, RTX_c or user.conf was written; the existing main
+checkout edits remain byte-identical to their captured diff.
