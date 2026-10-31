@@ -9,8 +9,13 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 LANGUAGES = ('zh', 'zh-tw', 'ja', 'ko', 'fr', 'ru')
+# Every part the check must find: a part that silently disappears (a moved folder) is a problem.
+PARTS = ('bodygroup', 'destruction', 'material', 'material_help', 'motion', 'hotloader')
 PLACEHOLDER = re.compile(r'\{+\s*[A-Za-z_][A-Za-z_0-9]*\s*\}+')
 FORMAT = re.compile(r'%[-+ #0]*\d*(?:\.\d+)?[diouxXeEfFgGcs%]')
+HOTLOADER = 'packages/model-hotloader/mmd_hotloader'
+# Model Hotloader's L('key') renders the catalog phrase "mmdhl.<key>" (lua/mmdhl/i18n.lua, render()).
+HOTLOADER_LOOKUP = re.compile(r'''(?<![\w.:])L\s*\(?\s*(['"])([A-Za-z0-9_.]+)\1''')
 
 
 def luajit():
@@ -31,18 +36,45 @@ def read_catalogs(root=REPO, lua=None):
     for line in run.stdout.splitlines():
         part, language, key, value = json.loads(line)
         result.setdefault(part, {}).setdefault(language, {})[key] = value
-    for path in (root / 'packages/model-hotloader/mmd_hotloader/resource/localization').glob('*/mmdhl.properties'):
-        table = {}
-        for number, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
-            if not line.strip() or line.lstrip().startswith('#'):
-                continue
-            key, value = line.split('=', 1)
-            key, value = key.strip(), value.strip()
-            if key in table:
-                raise RuntimeError(f'{path}:{number}: duplicate key {key}')
-            table[key] = value
-        result.setdefault('hotloader', {})[path.parent.name] = table
+    for path in (root / HOTLOADER / 'resource/localization').glob('*/mmdhl.properties'):
+        result.setdefault('hotloader', {})[path.parent.name] = read_properties(path)
     return result
+
+
+def hotloader_lookups(root=REPO, english=None):
+    """Literal L('key') calls in Model Hotloader's Lua whose "mmdhl.<key>" the English catalog lacks.
+
+    Such a key shows as its raw name in the game (the R4 review found mmdhl.ui.character.rtx_normals on
+    the External Models tab). A literal that ends in "." is a prefix completed at run time: skipped."""
+    base = root / HOTLOADER
+    if english is None:
+        english = read_properties(base / 'resource/localization/en/mmdhl.properties')
+    problems = []
+    for path in sorted((base / 'lua').rglob('*.lua')):
+        for number, line in enumerate(path.read_text(encoding='utf-8', errors='replace').splitlines(), 1):
+            for match in HOTLOADER_LOOKUP.finditer(line):
+                key = match.group(2)
+                if not key.endswith('.') and 'mmdhl.' + key not in english:
+                    problems.append(f'hotloader: {path.relative_to(base).as_posix()}:{number}: '
+                                    f"L'{key}' has no mmdhl.{key} in the English catalog")
+    return problems
+
+
+def read_properties(path):
+    table = {}
+    for number, line in enumerate(path.read_text(encoding='utf-8-sig').splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        key, value = line.split('=', 1)
+        key, value = key.strip(), value.strip()
+        if key in table:
+            raise RuntimeError(f'{path}:{number}: duplicate key {key}')
+        table[key] = value
+    return table
+
+
+def missing_parts(catalogs):
+    return [f'{part}: catalog not found' for part in PARTS if part not in catalogs]
 
 
 def validate(catalogs, allowed):
@@ -57,6 +89,10 @@ def validate(catalogs, allowed):
             if language not in languages:
                 problems.append(f'{part}: missing language {language}')
         for language, table in languages.items():
+            if part == 'hotloader':
+                # render() looks every phrase up as mmdhl.<key>: a key without the prefix is never shown.
+                problems.extend(f'hotloader/{language}/{key}: unreachable, Model Hotloader looks phrases up as mmdhl.<key>'
+                                for key in table if not key.startswith('mmdhl.'))
             if language == 'en':
                 continue
             for key, source in english.items():
@@ -88,7 +124,8 @@ def main():
     args = parser.parse_args()
     catalogs = read_catalogs()
     allowed = json.loads((REPO / 'tools/addon_i18n_unchanged.json').read_text(encoding='utf-8'))
-    problems = validate(catalogs, allowed)
+    problems = missing_parts(catalogs) + validate(catalogs, allowed)
+    problems += hotloader_lookups(REPO, catalogs.get('hotloader', {}).get('en', {}))
     counts = {part: {language: len(table) for language, table in languages.items()}
               for part, languages in catalogs.items()}
     for part, languages in counts.items():
@@ -99,7 +136,10 @@ def main():
                                       ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     for problem in problems:
         print(problem)
-    print(f'{len(problems)} problems; real language-selection assertions passed')
+    if problems:
+        print(f'{len(problems)} problems')
+    else:
+        print('0 problems; real language-selection assertions passed')
     return bool(problems)
 
 
