@@ -5,16 +5,25 @@ local function denied(fn) local ok,err=pcall(fn) assert(not ok and tostring(err)
 CLIENT, SERVER, MENU_DLL = true, false, false
 if scenario=="realm_server" then CLIENT,SERVER=false,true end
 if scenario=="realm_menu" then CLIENT,MENU_DLL=false,true end
-__NATIVELOADER_RTX_GUARD_EARLY = scenario ~= "no_proof" and scenario ~= "verified_multiplayer"
-    and scenario ~= "cached_multiplayer" and scenario ~= "inherited_proof"
+local multiplayer = scenario=="verified_multiplayer" or scenario=="cached_multiplayer"
+__NATIVELOADER_RTX_GUARD_EARLY = not multiplayer and scenario~="no_proof" and scenario~="inherited_proof"
+    and scenario~="autorun"
+-- status.json as the loader writes it. Remote vanilla clients have none; an RTX-off start reports
+-- another outcome. The private multiplayer route never needs it.
+local statusText='{\n"schema":1,"loader_version":"0.10.1","utc":"2026-10-31T00:00:00.000Z","process_id":1,"startup_elapsed_ms":1.0,\n'
+    ..'"deployment":{"outcome":"unchanged"},\n"activation":{"outcome":"active","reason":"runtime gmod-rtx-remix 1.0.0"},\n"session":{}\n}\n'
+if multiplayer or scenario=="no_proof" or scenario=="inherited_proof" or scenario=="remote_initializer"
+    or scenario=="realm_server" or scenario=="realm_menu" then statusText=nil end
+if scenario=="inactive_start" then statusText=statusText:gsub('"outcome":"active"','"outcome":"inactive"') end
 local sentFiles=0
 function AddCSLuaFile() sentFiles=sentFiles+1 end
 local cv, playerMeta, cvMeta = {}, {}, {}
+local getBoolCalls=0
 function cvMeta:GetName() return self.name end
 function cvMeta:GetString() return self.value end
 function cvMeta:GetInt() return tonumber(self.value) or 0 end
 function cvMeta:GetFloat() return tonumber(self.value) or 0 end
-function cvMeta:GetBool() return tonumber(self.value) ~= 0 end
+function cvMeta:GetBool() getBoolCalls=getBoolCalls+1 return tonumber(self.value) ~= 0 end
 for _,name in ipairs({"SetInt","SetFloat","SetString","SetBool"}) do
     cvMeta[name]=function(self,value)
         self.value=type(value)=="boolean" and (value and "1" or "0") or tostring(value)
@@ -38,15 +47,22 @@ function RunConsoleCommand(...) commands[#commands+1]={...} return "run",... end
 function playerMeta:ConCommand(...) commands[#commands+1]={...} return "command",... end
 game={ConsoleCommand=function(...) commands[#commands+1]={...} return "console",... end}
 function FindMetaTable(name) if name=="Player" then return playerMeta elseif name=="ConVar" then return cvMeta end end
+local statusReads=0
 file={Read=function(name,realm)
+    if name=="native-loader/status.json" then eq(realm,"DATA") statusReads=statusReads+1 return statusText end
     eq(name,"cfg/nativeloader_session.cfg") eq(realm,"MOD")
     return 'mat_dxlevel "90"\nmat_queue_mode "0"\n'
 end}
 function ScrW() return 1920 end
 function ScrH() return 1080 end
 function IsValid(obj) return type(obj)=="table" and obj.valid==true end
-local messages={}
+local messages,errorReports={},{}
 function MsgN(text) messages[#messages+1]=text end
+function ErrorNoHaltWithStack(text) errorReports[#errorReports+1]=text end
+local now,frameCount=0,1
+function SysTime() return now end
+function FrameNumber() return frameCount end
+if scenario=="prerender_boundary" then FrameNumber=nil end
 IMAGE_FORMAT_DEFAULT=-1
 IMAGE_FORMAT_BGRA8888=12
 IMAGE_FORMAT_RGBA8888=0
@@ -70,18 +86,18 @@ function GetRenderTargetEx(name,w,h,size,depth,flags,rtflags,format)
     targets[name]=targets[name] or texture(name,w,h)
     return targets[name],"ex-return"
 end
-local created,mats={},{}
-local function material(shader) return {GetShader=function()return shader end} end
+local created,mats,shaderQueries={},{},0
+local function material(shader) return {GetShader=function()shaderQueries=shaderQueries+1 return shader end} end
 function CreateMaterial(name,shader,data) created[#created+1]={name,shader,data} return material(shader) end
 function Material(name) mats[#mats+1]=name return material(name=="bad_shader" and "screenspace_general" or "UnlitGeneric") end
-local depthCalls,quadCalls,setMaterialCalls,rtExCalls=0,0,0,0
+local depthCalls,quadCalls,setMaterialCalls,rtExCalls,targetQueries=0,0,0,0,0
 local currentRT, rtStack=nil,{}
 local cameraDepth,clipDepth,modelDepth=0,0,0
 local depthRange={0,0.1}
 render={}
 function render.PushRenderTarget(tex) rtStack[#rtStack+1]={value=currentRT} currentRT=tex return "push" end
 function render.PopRenderTarget() assert(#rtStack>0,"native RT underflow") currentRT=table.remove(rtStack).value end
-function render.GetRenderTarget() return currentRT end
+function render.GetRenderTarget() targetQueries=targetQueries+1 return currentRT end
 function render.SetRenderTarget(tex) currentRT=tex return "target" end
 function render.SetRenderTargetEx(index,tex) rtExCalls=rtExCalls+1 if index==0 then currentRT=tex end return "mrt",index,tex end
 function render.GetResolvedFullFrameDepth() depthCalls=depthCalls+1 return texture("depth",1,1) end
@@ -127,33 +143,40 @@ cvars={AddChangeCallback=function(name,fn,id)changes[name]={fn=fn,id=id}end}
 local postCalls=0
 function DrawBloom(...) postCalls=postCalls+1 return "bloom",... end
 halo={Render=function(...)postCalls=postCalls+1 return "halo",... end}
-local beforeCall,beforeRT,beforeMaterial=hook.Call,GetRenderTargetEx,CreateMaterial
-local cachedBadCalls,cachedGoodCalls=0,0
-local cachedBad,cachedInit,cachedObject,cachedObjectFn
+local beforeCall,beforeAdd,beforeRT,beforeMaterial=hook.Call,hook.Add,GetRenderTargetEx,CreateMaterial
+local beforeTimer,beforeCvars=timer.Create,cvars.AddChangeCallback
+local privateHook,privateEnvironment,temporaryAPI
+-- The verified bootstrap's private environment: the marker is raw-set there and nowhere else.
+privateHook=setmetatable({Add=function(...)return hook.Add(...)end},{__index=hook})
+privateEnvironment=setmetatable({hook=privateHook},{__index=_G,__newindex=_G})
+rawset(privateEnvironment,"NATIVELOADER_VERIFIED_MULTIPLAYER",true)
+local function ownedFunction(fn) return setfenv(fn,privateEnvironment) end
+local cachedOwnedCalls,cachedGoodCalls=0,0
+local cachedOwned,cachedCommunity,cachedInit,cachedObject,cachedObjectFn
 if scenario=="cached_multiplayer" then
-    cachedBad=function()
-        cachedBadCalls=cachedBadCalls+1
+    cachedOwned=ownedFunction(function()
+        cachedOwnedCalls=cachedOwnedCalls+1
         render.PushRenderTarget(texture("existing-late-hook",32,32))
-        error("existing render callback failure")
-    end
-    cachedInit=function()return "loading identity"end
+        error("existing owned render callback failure")
+    end)
+    cachedCommunity=function()return "server-delivered"end
+    cachedInit=ownedFunction(function()return "loading identity"end)
     cachedObject={valid=true}
-    cachedObjectFn=function(self,value)eq(self,cachedObject)eq(value,7)return false,2,nil,4,5,6,7 end
-    hook.Add("HUDPaint","already-registered",cachedBad)
+    cachedObjectFn=ownedFunction(function(self,value)eq(self,cachedObject)eq(value,7)return false,2,nil,4,5,6,7 end)
+    hook.Add("HUDPaint","already-registered",cachedOwned)
+    hook.Add("PostDrawHUD","server-hud",cachedCommunity)
     hook.Add("PostRender",cachedObject,cachedObjectFn)
     for _,event in ipairs({"Initialize","InitPostEntity","OnReloaded"}) do hook.Add(event,"loading",cachedInit) end
 end
-local privateHook,privateEnvironment,temporaryAPI
-if scenario=="verified_multiplayer" or scenario=="cached_multiplayer" or scenario=="inherited_proof" then
-    privateHook=setmetatable({Add=function(...)return hook.Add(...)end},{__index=hook})
-    privateEnvironment=setmetatable({hook=privateHook},{__index=_G,__newindex=_G})
-    if scenario=="verified_multiplayer" or scenario=="cached_multiplayer" then
-        rawset(privateEnvironment,"NATIVELOADER_VERIFIED_MULTIPLAYER",true)
+if multiplayer or scenario=="inherited_proof" then
+    if multiplayer then
         temporaryAPI=setmetatable({},{__index=function()error("temporary client API must not be consulted")end})
         __NATIVELOADER_CLIENT_API=temporaryAPI
     else
+        -- A global marker cannot authorize installation, nor can an inherited one.
         NATIVELOADER_VERIFIED_MULTIPLAYER=true
-        dofile(source) -- A global marker cannot authorize installation either.
+        dofile(source)
+        rawset(privateEnvironment,"NATIVELOADER_VERIFIED_MULTIPLAYER",nil)
     end
     local chunk=assert(loadfile(source))
     setfenv(chunk,privateEnvironment)
@@ -162,13 +185,14 @@ else
     dofile(source)
 end
 local guard=NativeLoaderRenderGuard
-if scenario=="no_proof" or scenario=="inherited_proof" or scenario=="realm_server" or scenario=="realm_menu" then
+if scenario=="no_proof" or scenario=="inherited_proof" or scenario=="realm_server" or scenario=="realm_menu"
+    or scenario=="remote_initializer" or scenario=="inactive_start" then
     eq(guard,nil) eq(createCount,0) eq(hook.Call,beforeCall) eq(GetRenderTargetEx,beforeRT) eq(CreateMaterial,beforeMaterial)
     eq(cv.mat_motion_blur_enabled:GetString(),"0")
     DrawBloom() halo.Render() eq(postCalls,2)
     RunConsoleCommand("mat_dxlevel","95") eq(#commands,1)
     eq(#messages,0)
-    eq(sentFiles,scenario=="realm_server" and 1 or 0)
+    eq(sentFiles,0,"the guard is never sent to clients by AddCSLuaFile")
     print("PASS "..scenario)
     return
 end
@@ -177,48 +201,63 @@ eq(guard.version,2)
 if scenario=="verified_multiplayer" then
     eq(__NATIVELOADER_RTX_GUARD_EARLY,false)
     eq(guard.installation,"verified multiplayer bootstrap")
+    eq(statusReads,0,"the private route does not consult status.json")
     eq(rawget(_G,"NATIVELOADER_VERIFIED_MULTIPLAYER"),nil,"proof remains private to the verified chunk")
     eq(__NATIVELOADER_CLIENT_API,temporaryAPI,"temporary API is neither used nor changed")
-    assert(hook.Call~=beforeCall,"global hook dispatcher must be protected")
+    eq(hook.Call,beforeCall,"the remote server's dispatcher stays unchanged")
     eq(rawget(privateHook,"Call"),nil,"no private proxy-only dispatcher replacement")
     local calls=0
-    local fn=function()calls=calls+1 error("verified MP callback failure")end
-    hook.Add("PostRender","mp-failure",fn)
+    local fn=ownedFunction(function()calls=calls+1 error("verified MP callback failure")end)
+    privateHook.Add("PostRender","mp-failure",fn)
     local registry=hook.GetTable()
-    hook.Call("PostRender") hook.Call("PostRender")
-    eq(calls,1) assert(registry.PostRender["mp-failure"]~=fn,"late render registration is intentionally wrapped")
+    assert(registry.PostRender["mp-failure"]~=fn,"owned late render registration is wrapped")
+    for _=1,4 do hook.Call("PostRender") end
+    eq(calls,3,"quarantined after three consecutive failures")
     eq(guard.late_render_wrappers,true)
-    eq(#guard.errors,1)
-    local installed=hook.Call
+    eq(#errorReports,1,"the original error is reported once per interval")
+    assert(errorReports[1]:find("verified MP callback failure",1,true))
+    -- Server-delivered callbacks, timers and cvar callbacks keep their identity and engine behaviour.
+    local server=function()error("server callback error")end
+    hook.Add("PostRender","server",server)
+    eq(registry.PostRender.server,server,"community registration unchanged")
+    assert(not pcall(hook.Call,"PostRender"),"a server error still propagates as in vanilla GMod")
+    hook.Remove("PostRender","server")
+    local serverTimer=function()error("server timer")end
+    timer.Create("server-timer",1,0,serverTimer) eq(timers["server-timer"],serverTimer)
+    local ownedTimer=ownedFunction(function()error("owned timer")end)
+    timer.Create("owned-timer",1,0,ownedTimer) assert(timers["owned-timer"]~=ownedTimer,"owned timer protected")
+    for _=1,3 do timers["owned-timer"]() end
+    local installed=hook.Add
     local again=assert(loadfile(source)) setfenv(again,privateEnvironment) again()
-    eq(hook.Call,installed) eq(createCount,1) eq(NativeLoaderRenderGuard,guard)
+    eq(hook.Add,installed) eq(createCount,1) eq(NativeLoaderRenderGuard,guard)
 elseif scenario=="cached_multiplayer" then
     eq(guard.installation,"verified multiplayer bootstrap") eq(guard.late_render_wrappers,true)
     local registry=hook.GetTable()
-    assert(registry.HUDPaint["already-registered"]~=cachedBad,"existing render entry wrapped")
+    assert(registry.HUDPaint["already-registered"]~=cachedOwned,"existing owned render entry wrapped")
+    eq(registry.PostDrawHUD["server-hud"],cachedCommunity,"existing server entry keeps its identity")
     for _,event in ipairs({"Initialize","InitPostEntity","OnReloaded"}) do
         eq(registry[event].loading,cachedInit,"loading identity retained for bootstrap replay")
     end
-    hook.Add("HUDPaint","healthy",function()cachedGoodCalls=cachedGoodCalls+1 end)
-    for _=1,3 do beforeCall("HUDPaint") end
-    eq(cachedBadCalls,1) eq(cachedGoodCalls,3) eq(#rtStack,0)
+    hook.Add("HUDPaint","healthy",ownedFunction(function()cachedGoodCalls=cachedGoodCalls+1 end))
+    for _=1,4 do beforeCall("HUDPaint") end
+    eq(cachedOwnedCalls,3) eq(cachedGoodCalls,4) eq(#rtStack,0)
     local laterBadCalls=0
-    local laterBad=function()laterBadCalls=laterBadCalls+1 error("future render callback failure")end
+    local laterBad=ownedFunction(function()laterBadCalls=laterBadCalls+1 error("future render callback failure")end)
     hook.Add("HUDPaint","later",laterBad)
-    beforeCall("HUDPaint") beforeCall("HUDPaint")
-    eq(laterBadCalls,1) eq(cachedGoodCalls,5)
+    for _=1,4 do beforeCall("HUDPaint") end
+    eq(laterBadCalls,3) eq(cachedGoodCalls,8)
     hook.Add("HUDPaint","later",laterBad) -- Same ID/function does not reset quarantine.
-    beforeCall("HUDPaint") eq(laterBadCalls,1) eq(cachedGoodCalls,6)
+    beforeCall("HUDPaint") eq(laterBadCalls,3) eq(cachedGoodCalls,9)
     local replaced=0
-    hook.Add("HUDPaint","later",function()replaced=replaced+1 end)
-    beforeCall("HUDPaint") eq(replaced,1) eq(cachedGoodCalls,7)
+    hook.Add("HUDPaint","later",ownedFunction(function()replaced=replaced+1 end))
+    beforeCall("HUDPaint") eq(replaced,1) eq(cachedGoodCalls,10)
     local result=pack(beforeCall("PostRender",nil,7))
     eq(result.n,6) eq(result[1],false) eq(result[2],2) eq(result[3],nil) eq(result[6],6)
-    local initFn=function()return "replay"end
+    local initFn=ownedFunction(function()return "replay"end)
     hook.Add("InitPostEntity","new-owned-init",initFn)
     eq(registry.InitPostEntity["new-owned-init"],initFn,"future owned init identity retained")
     cv.nativeloader_guard.value="0"
-    assert(not pcall(beforeCall,"HUDPaint")) eq(cachedBadCalls,2,"off bypasses late quarantine")
+    assert(not pcall(beforeCall,"HUDPaint")) eq(cachedOwnedCalls,4,"off bypasses late quarantine")
 elseif scenario=="install" then
     eq(guard.installation,"early")
     local call,rt=hook.Call,GetRenderTargetEx
@@ -230,6 +269,16 @@ elseif scenario=="install" then
     cv.nativeloader_guard.value="0"
     eq(DrawBloom(7),"bloom") eq(halo.Render(),"halo") eq(postCalls,2)
     eq(GetConVar("mat_motion_blur_enabled"):GetInt(),0)
+elseif scenario=="autorun" then
+    -- A local RTX start whose early view was unavailable installs from the companion autorun.
+    eq(guard.installation,"autorun") eq(statusReads,1)
+    assert(hook.Call~=beforeCall,"local dispatcher protected as in the early route")
+    eq(guard.late_render_wrappers,nil)
+    local fn=function()error("local addon error")end
+    hook.Add("HUDPaint","local",fn)
+    eq(hook.GetTable().HUDPaint["local"],fn,"local registrations keep their identity")
+    hook.Call("HUDPaint") eq(#guard.errors,1)
+    DrawBloom() eq(postCalls,0)
 elseif scenario=="pins" then
     RunConsoleCommand("mat_dxlevel","95") eq(#commands,0)
     cv.mat_dxlevel:SetInt(95) cv.mat_dxlevel:SetFloat(95) cv.mat_dxlevel:SetString("bogus") cv.mat_queue_mode:SetBool(true)
@@ -276,12 +325,16 @@ elseif scenario=="targets" then
     GetRenderTargetEx("literal",300,250,8,0,0,0,12)
     local shadow=GetRenderTargetEx("mmdhl_shadow_r32",1024,1024,RT_SIZE_NO_CHANGE,MATERIAL_RT_DEPTH_SEPARATE,14,0,27)
     eq(shadow.w,1024) eq(shadow.h,1024) eq(rtCalls[#rtCalls][8],27,"actual importer signature reaches native allocation")
+    -- The native API truncates fractional sizes, as stock code computing ScrW() / 3 relies on.
+    local third=GetRenderTarget("third",ScrW()/3.5,ScrH()/2.5) eq(rtCalls[#rtCalls][2],ScrW()/3.5,"original arguments forwarded")
+    assert(third,"fractional dimensions accepted")
+    GetRenderTargetEx("fractional",300.75,250.5,8,0,0,0,12)
     for i=1,30 do GetRenderTarget("importer_copy_"..i,2048,2048) end
     local before=#rtCalls
     for _,name in ipairs({"_rt_shadowdepthtexture_0","_RT_RESOLVEDFULLFRAMEDEPTH.changed","_rt_resolvedfullframedepthsky"}) do
         denied(function()GetRenderTargetEx(name,512,512,8,0,0,0,12)end)
     end
-    for _,value in ipairs({0,-2,math.huge,0/0,100000}) do denied(function()GetRenderTarget("bad",value,256)end) end
+    for _,value in ipairs({0,-2,math.huge,0/0,100000,0.5}) do denied(function()GetRenderTarget("bad",value,256)end) end
     denied(function()GetRenderTargetEx("badformat",128,128,8,0,0,0,9999)end)
     denied(function()GetRenderTargetEx("unknownlarge",128,128,8,0,0,0,2147483647)end)
     denied(function()GetRenderTargetEx("badsize",128,128,nil,0,0,0,12)end)
@@ -299,6 +352,11 @@ elseif scenario=="targets" then
     eq(render.SetRenderTargetEx(0,tex),"mrt")
     render.SetRenderTargetEx(0)
     local calls=rtExCalls denied(function()render.SetRenderTargetEx(1,tex)end) eq(rtExCalls,calls)
+    -- Clearing MRT slots 1-3 with nil is legal stock behaviour; other slots are not.
+    for slot=1,3 do eq(select(2,render.SetRenderTargetEx(slot,nil)),slot) end
+    eq(rtExCalls,calls+3)
+    for _,slot in ipairs({4,-1,1.5}) do denied(function()render.SetRenderTargetEx(slot,nil)end) end
+    eq(rtExCalls,calls+3)
 elseif scenario=="shaders" then
     denied(function()CreateMaterial("depth","DepthWrite",{})end)
     denied(function()CreateMaterial("fx","SCREENSPACE_GENERAL",{})end)
@@ -324,20 +382,58 @@ elseif scenario=="hooks" then
     local bad=function()calls=calls+1 error("C:/Users/private-person/secret.txt")end
     hook.Add("PostRender","bad",bad)
     local registry=hook.GetTable()
-    hook.Call("PostRender") hook.Call("PostRender")
-    eq(calls,1) eq(hook.GetTable(),registry) eq(registry.PostRender.bad,bad)
+    for _=1,5 do hook.Call("PostRender") end
+    eq(calls,3,"quarantine needs three consecutive failures") eq(hook.GetTable(),registry) eq(registry.PostRender.bad,bad)
+    eq(#errorReports,1,"original error reported once per interval")
+    assert(errorReports[1]:find("private-person",1,true),"the engine error output receives the original message")
+    for _,record in ipairs(guard.errors) do assert(not record.reason:find("private-person",1,true)) end
+    assert(guard.errors[#guard.errors].reason:find("quarantined",1,true))
     local good=function()return false,2,nil,4,5,6,7 end
     hook.Add("PostRender","bad",good)
     local values=pack(hook.Call("PostRender")) eq(values.n,6) eq(values[1],false) eq(values[3],nil) eq(values[6],6)
     eq(registry.PostRender.bad,good)
+    hook.Remove("PostRender","bad")
     local object={valid=true}
     local objectFn=function(self,a)eq(self,object)eq(a,"argument")end
     hook.Add("HUDPaint",object,objectFn) hook.Add("HUDPaint",{valid=false},function()error("invalid object")end)
     hook.Call("HUDPaint",nil,"argument") eq(hook.GetTable().HUDPaint[object],objectFn)
     local gm={RenderScene=function(self,a)eq(a,9)return "gm",nil,3 end}
     local result=pack(hook.Call("RenderScene",gm,9)) eq(result.n,3) eq(result[1],"gm")
+    -- A gamemode method is contained and reported, never quarantined (base GM:PostDrawViewModel draws the hands).
+    local hands=0
+    gm.PostDrawViewModel=function(self) hands=hands+1 if hands<=6 then error("hands failed") end return "hands" end
+    for _=1,6 do eq(select("#",hook.Call("PostDrawViewModel",gm)),0) end
+    eq(hook.Call("PostDrawViewModel",gm),"hands","gamemode method still runs after repeated failures") eq(hands,7)
+    -- A success resets the streak; failures spread further than the window apart never quarantine.
+    local flaky,flakyCalls=nil,0
+    flaky=function() flakyCalls=flakyCalls+1 if flakyCalls%3~=0 then error("intermittent") end end
+    hook.Add("PreDrawHUD","flaky",flaky)
+    for _=1,9 do hook.Call("PreDrawHUD") end
+    eq(flakyCalls,9,"intermittent failures are contained without quarantine")
+    local slowCalls=0
+    hook.Add("PostDrawHUD","slow",function()slowCalls=slowCalls+1 error("slow")end)
+    for _=1,4 do now=now+11 hook.Call("PostDrawHUD") end
+    eq(slowCalls,4,"failures outside the window do not accumulate")
+    hook.Call("PostDrawHUD") hook.Call("PostDrawHUD") hook.Call("PostDrawHUD")
+    eq(slowCalls,6,"three failures within the window quarantine")
+    -- Reports are rate-limited per callback and name the suppressed count.
+    local reportsBefore=#errorReports
+    now=now+11
+    hook.Add("PostDrawHUD","slow",function()error("slow again")end)
+    for _=1,3 do hook.Call("PostDrawHUD") end
+    eq(#errorReports,reportsBefore+1,"one report per callback per interval")
     hook.Add("UnrelatedEvent","bad",bad) assert(not pcall(hook.Call,"UnrelatedEvent"))
     for _,message in ipairs(messages) do assert(not message:find("private-person",1,true)) end
+elseif scenario=="report_caps" then
+    -- A flood of refusals from many sources cannot hide later error records.
+    for i=1,140 do
+        local spam=assert(loadstring('RunConsoleCommand("mat_dxlevel","95")', "@lua/autorun/spam"..i..".lua"))
+        spam()
+    end
+    eq(#guard.blocked,128)
+    hook.Add("HUDPaint","after-flood",function()error("after the flood")end)
+    hook.Call("HUDPaint")
+    eq(#guard.errors,1,"error records keep their own cap")
 elseif scenario=="cleanup" then
     local base,child=texture("base",128,128),texture("child",128,128)
     render.PushRenderTarget(base) cam.Start3D() render.PushCustomClipPlane() cam.PushModelMatrix()
@@ -442,16 +538,80 @@ elseif scenario=="nested_cleanup" then
     hook.Call("HUDPaint")
     eq(#rtStack,1) eq(currentRT,a) eq(#guard.cleanup_errors,0)
     render.PopRenderTarget() eq(#rtStack,0)
+elseif scenario=="leaks" then
+    -- The stock toolgun screen pushes an RT and a 2D camera, then calls the tool's DrawToolScreen
+    -- unprotected; a failing tool leaves both open in every frame.
+    local screen=texture("toolgun_screen",256,256)
+    local function toolScreen() render.PushRenderTarget(screen) cam.Start2D() error("DrawToolScreen failed") end
+    for _=1,40 do frameCount=frameCount+1 assert(not pcall(toolScreen)) end
+    render.PushRenderTarget(screen) cam.Start2D() cam.End2D() render.PopRenderTarget()
+    eq(#guard.blocked,0,"leaked unowned scopes never reach the tracked stack limit")
+    -- Forty broken ENT:Draw calls inside one frame leave unowned scopes that do not count either.
+    for _=1,40 do assert(not pcall(function()cam.Start3D2D() error("ENT:Draw failed")end)) end
+    cam.Start3D2D() cam.End3D2D()
+    eq(#guard.blocked,0)
+    -- A leaked unowned scope from an earlier frame is forgotten, so it cannot satisfy a later pop.
+    assert(not pcall(toolScreen)) frameCount=frameCount+1
+    denied(function()render.PopRenderTarget()end)
+    -- A protected callback's own scopes stay bounded and are unwound when it fails.
+    local depth=#rtStack
+    hook.Add("HUDPaint","runaway",function() for _=1,40 do render.PushRenderTarget(screen) end end)
+    hook.Call("HUDPaint")
+    eq(#rtStack,depth,"the failed callback's own pushes were unwound")
+    eq(guard.blocked[#guard.blocked].reason,"tracked stack limit")
+    hook.Remove("HUDPaint","runaway")
+    -- Thirty-two of the callback's own scopes are allowed, as before.
+    hook.Add("HUDPaint","deep",function() for _=1,32 do render.PushRenderTarget(screen) end for _=1,32 do render.PopRenderTarget() end end)
+    local blocked=#guard.blocked
+    hook.Call("HUDPaint") eq(#guard.blocked,blocked) eq(#rtStack,depth)
+elseif scenario=="prerender_boundary" then
+    -- Without FrameNumber, a top-level PreRender is the frame boundary.
+    local screen=texture("toolgun_screen",256,256)
+    local function toolScreen() render.PushRenderTarget(screen) cam.Start2D() error("DrawToolScreen failed") end
+    assert(not pcall(toolScreen))
+    render.PushRenderTarget(screen) render.PopRenderTarget()
+    hook.Add("PreRender","open",function()render.PushRenderTarget(screen)end)
+    hook.Add("PostRender","close",function()render.PopRenderTarget()end)
+    hook.Call("PreRender")
+    hook.Call("PostRender")
+    eq(#guard.blocked,0,"a Pre/Post scope survives the boundary it was opened after")
+    denied(function()cam.End2D()end)
+    denied(function()render.PopRenderTarget()end)
+elseif scenario=="hot_paths" then
+    -- hook.Call reads the switch only for the events it protects.
+    local reads=getBoolCalls
+    for _=1,50 do hook.Call("Think") hook.Call("Tick") end
+    eq(getBoolCalls,reads,"unprotected events never read the guard switch")
+    -- A protected callback that never touches render targets queries no entry target.
+    hook.Add("HUDPaint","plain",function()end)
+    local queries=targetQueries
+    for _=1,50 do hook.Call("HUDPaint") end
+    eq(targetQueries,queries,"entry render target recorded lazily")
+    -- Shader names are cached per material object.
+    local mat=Material("normal") local before=shaderQueries
+    for _=1,50 do render.SetMaterial(mat) end
+    eq(shaderQueries,before,"shader name cached when the material was loaded")
+    local fresh=material("UnlitGeneric")
+    for _=1,50 do render.SetMaterial(fresh) end
+    eq(shaderQueries,before+1,"one query for a new material object")
+    -- A target change still records and restores the entry target on failure.
+    local base,other=texture("base",64,64),texture("other",64,64)
+    render.SetRenderTarget(base)
+    hook.Add("PostRender","switch",function()render.SetRenderTarget(other)error("switch failed")end)
+    hook.Call("PostRender") eq(currentRT,base) eq(targetQueries,queries+1)
 elseif scenario=="callbacks" then
     local calls=0
     timer.Create("bad",1,0,function()calls=calls+1 error("bad")end)
-    timers.bad() timers.bad() eq(calls,1)
+    for _=1,5 do timers.bad() end eq(calls,3,"timer quarantine after three consecutive failures")
     timer.Simple(0,function(a)eq(a,8)return "ok",nil,3 end)
     local v=pack(timers.simple(8)) eq(v.n,3)eq(v[3],3)
     cvars.AddChangeCallback("unrelated",function(name,old,new)eq(name,"unrelated")eq(old,"0")eq(new,"1")return 9 end,"identifier")
     eq(changes.unrelated.id,"identifier") eq(changes.unrelated.fn("unrelated","0","1"),9)
+    local cvarCalls=0
+    cvars.AddChangeCallback("flaky",function()cvarCalls=cvarCalls+1 error("cvar")end)
+    changes.flaky.fn() changes.flaky.fn() eq(cvarCalls,2,"two failures do not quarantine")
     cv.nativeloader_guard.value="0"
-    assert(not pcall(timers.bad)) eq(calls,2,"off bypasses quarantine")
+    assert(not pcall(timers.bad)) eq(calls,4,"off bypasses quarantine")
 elseif scenario=="off" then
     GetRenderTargetEx("_rt_shadowdepthtexture_0",-99,-99,999,0,0,0,9999)
     CreateMaterial("depth","DepthWrite",{}) render.GetResolvedFullFrameDepth() render.SetRenderTargetEx(2)

@@ -1,32 +1,54 @@
 -- NATIVELOADER_RENDER_GUARD_V2
--- Verified early startup installs this after stock includes/init.lua; the separate
--- verified multiplayer bootstrap route may run after community/server autoruns.
--- Self-contained and idempotent. Lua containment is not native SEH/GPU fault recovery.
-if SERVER then if AddCSLuaFile then AddCSLuaFile() end return end
-if MENU_DLL then return end
+-- Verified early startup installs this after stock includes/init.lua. A local RTX start without
+-- that view installs it from this autorun instead, and the separate verified multiplayer bootstrap
+-- route may run after community/server autoruns. Self-contained and idempotent.
+-- Lua containment is not native SEH/GPU fault recovery.
+if SERVER or MENU_DLL then return end
 local environment = getfenv(1)
 local early = __NATIVELOADER_RTX_GUARD_EARLY == true
 local verifiedMultiplayer = environment ~= _G and rawget(environment, "NATIVELOADER_VERIFIED_MULTIPLAYER") == true
-if not early and not verifiedMultiplayer then return end
 if NativeLoaderRenderGuard and NativeLoaderRenderGuard.version == 2 then return end
--- Verified multiplayer chunks receive a scoped hook proxy. Replace the real
--- dispatcher, not a field written only into that chunk's private proxy.
+-- A listen host serves this file and its generated initializer to remote clients too. Outside the
+-- private multiplayer environment, install only where this machine's own loader reported an active
+-- RTX start: it rewrites status.json at every start, before any Lua runs.
+local function localRTXStart()
+    if not (file and file.Read) then return false end
+    local ok, text = pcall(file.Read, "native-loader/status.json", "DATA")
+    return ok and type(text) == "string" and text:find('\n"activation":{"outcome":"active"', 1, true) ~= nil
+end
+local installation
+if verifiedMultiplayer then installation = "verified multiplayer bootstrap"
+elseif localRTXStart() then installation = early and "early" or "autorun"
+else return end
+local late = installation == "verified multiplayer bootstrap"
+-- Verified multiplayer chunks receive a scoped hook proxy. Change the real
+-- hook table, not a field written only into that chunk's private proxy.
 local hook = _G.hook
 
 local enabled = CreateClientConVar("nativeloader_guard", "1", true, false,
     "Keep incompatible add-on rendering from undoing the RTX session")
-local state = {version = 2, installation = early and "early" or "verified multiplayer bootstrap",
+local playerMeta, convarMeta = FindMetaTable("Player"), FindMetaTable("ConVar")
+-- The native getter: the motion-blur read compatibility below wraps ConVar:GetBool.
+local getBool = convarMeta and convarMeta.GetBool
+local state = {version = 2, installation = installation,
     blocked = {}, errors = {}, cleanup_errors = {}, limitations = {
     "Lua errors only: native faults, GPU failures and infinite loops are not caught",
     "Unknown native state and partially built meshes cannot be universally restored",
     "Later API replacements or unwrapped native aliases can bypass these guards"}}
 NativeLoaderRenderGuard = state
-local function active() local on = enabled:GetBool() state.enabled = on return on end
+local function active()
+    local on
+    if getBool then on = getBool(enabled) else on = enabled:GetBool() end
+    state.enabled = on
+    return on
+end
 state.enabled_at_install = active()
 local function pack(...) return {n = select("#", ...), ...} end
-local getinfo, pcall, xpcall, unpack = debug.getinfo, pcall, xpcall, unpack
+local getinfo, traceback, pcall, xpcall, unpack = debug.getinfo, debug.traceback, pcall, xpcall, unpack
 local function finite(n) return type(n) == "number" and n == n and n > -math.huge and n < math.huge end
 local function integer(n) return finite(n) and n % 1 == 0 end
+-- Native size arguments are truncated toward zero, so ScrW() / 3 and similar sizes are valid.
+local function whole(n) if finite(n) then return n < 0 and math.ceil(n) or math.floor(n) end end
 local function virtual(s)
     s = tostring(s or "?"):gsub("\\", "/"):gsub("^@", "")
     local pos = s:find("/lua/", 1, true)
@@ -41,18 +63,30 @@ local function functionSource(fn)
     local info = type(fn) == "function" and getinfo(fn, "S")
     return virtual(info and info.source)
 end
-local told, reportCount = {}, 0
+local guardSource = getinfo(1, "S").source
+-- The first caller outside this guard and native frames, resolved only when a call is refused.
+local function externalCaller()
+    for level = 3, 32 do
+        local info = getinfo(level, "S")
+        if not info then break end
+        if info.what ~= "C" and info.source ~= guardSource then return virtual(info.source) end
+    end
+    return "<unknown>"
+end
+local told, reportCounts = {}, {}
 local function report(kind, api, reason, source)
     source = virtual(source)
     local key = kind .. "|" .. api .. "|" .. source .. "|" .. reason
-    if told[key] or reportCount >= 128 then return end
-    told[key], reportCount = true, reportCount + 1
+    local count = reportCounts[kind] or 0
+    -- Each category has its own cap, so a flood of refusals cannot hide later error records.
+    if told[key] or count >= 128 then return end
+    told[key], reportCounts[kind] = true, count + 1
     local list = state[kind]
     list[#list + 1] = {api = api, reason = reason, source = source}
     if MsgN then MsgN("[nativeloader] RTX guard: " .. api .. ": " .. reason .. " (" .. source .. ")") end
 end
 local function reject(api, reason, source)
-    report("blocked", api, reason, source)
+    report("blocked", api, reason, source or externalCaller())
     error("[nativeloader RTX guard] " .. api .. ": " .. reason, 3)
 end
 local function rejectNul(api, value, source)
@@ -149,7 +183,6 @@ if RunConsoleCommand then
         if checkTokens({name, ...}, source, 0) then return original(name, ...) end
     end
 end
-local playerMeta, convarMeta = FindMetaTable("Player"), FindMetaTable("ConVar")
 if playerMeta and playerMeta.ConCommand then
     local original = playerMeta.ConCommand
     playerMeta.ConCommand = function(self, command, ...)
@@ -217,7 +250,8 @@ local function checkTarget(api, name, w, h, sizeMode, format, source)
     if base:match("^_rt_shadowdepthtexture_") or base:match("^_rt_resolvedfullframedepth") then
         reject(api, "engine-owned shadow/depth target cannot be recreated by Lua in RTX", source)
     end
-    if not integer(w) or not integer(h) then reject(api, "target dimensions must be finite integers", source) end
+    w, h = whole(w), whole(h)
+    if not w or not h then reject(api, "target dimensions must be finite numbers", source) end
     if sizeMode ~= nil and not sizes[sizeMode] then reject(api, "unknown render-target size mode", source) end
     local fw, fh = w, h
     if fullFrame[sizeMode] then
@@ -265,12 +299,22 @@ if GetRenderTargetEx then
 end
 
 local unsupported = {depthwrite = true, screenspace_general = true, screenspace_general_dx9 = true}
+-- Shader names per material object: render.SetMaterial runs many times every frame.
+local shaderNames = setmetatable({}, {__mode = "k"})
+local function shaderMethod(mat) return mat.GetShader end
 local function shaderName(mat)
     if mat == nil then return end
-    local ok, method = pcall(function() return mat.GetShader end)
-    if not ok or type(method) ~= "function" then return end
-    local success, name = pcall(method, mat)
-    if success and type(name) == "string" then return name:lower() end
+    local name = shaderNames[mat]
+    if name ~= nil then return name or nil end
+    name = false
+    local ok, method = pcall(shaderMethod, mat)
+    if ok and type(method) == "function" then
+        local success, value = pcall(method, mat)
+        if success and type(value) == "string" then name = value:lower() end
+    end
+    local kind = type(mat)
+    if kind == "userdata" or kind == "table" then shaderNames[mat] = name end
+    return name or nil
 end
 if CreateMaterial then
     local original = CreateMaterial
@@ -289,7 +333,7 @@ if Material then
     Material = function(path, ...)
         if active() then rejectNul("Material", path, caller()) end
         local result = pack(original(path, ...))
-        if active() and unsupported[shaderName(result[1])] then reject("Material", "material requires an unsupported RTX shader", caller()) end
+        if unsupported[shaderName(result[1])] and active() then reject("Material", "material requires an unsupported RTX shader", caller()) end
         return unpack(result, 1, result.n)
     end
 end
@@ -299,7 +343,7 @@ for _, name in ipairs({"SetMaterial", "MaterialOverride", "BrushMaterialOverride
     local original = nativeRender[name]
     if original then
         render[name] = function(mat, ...)
-            if active() and unsupported[shaderName(mat)] then reject("render." .. name, "unsupported RTX shader draw", caller()) end
+            if unsupported[shaderName(mat)] and active() then reject("render." .. name, "unsupported RTX shader draw", caller()) end
             return original(mat, ...)
         end
     end
@@ -317,10 +361,64 @@ end
 -- Track only observed Lua pushes. Never guess native contexts or use mesh.End as an abort.
 local frame, busy = nil, 0
 local stacks = {rt = {}, camera = {}, clip = {}, model = {}}
+-- An entry is live while its owner, or one of the owner's callers, is a protected callback still running.
+local function live(action)
+    local owner = action.owner
+    while owner do
+        if owner.completed == nil then return true end
+        owner = owner.parent
+    end
+    return false
+end
+-- A push left open by code that failed outside a protected callback (the stock toolgun screen around
+-- a tool's DrawToolScreen, an ENT:Draw error between cam.Start3D2D and End3D2D) is never popped.
+-- At each frame boundary (a new FrameNumber, or PreRender where that is unavailable), forget the
+-- tracked entries no running callback owns. Native state is neither guessed nor popped: only the
+-- guard's own bookkeeping is resynchronized.
+local function resync()
+    for _, stack in pairs(stacks) do
+        local kept = 0
+        for i = 1, #stack do
+            local action = stack[i]
+            if live(action) then kept = kept + 1 stack[kept] = action else action.active = false end
+        end
+        for i = #stack, kept + 1, -1 do stack[i] = nil end
+    end
+end
+local frameNumber, seenFrame = FrameNumber, nil
+local function sync()
+    if not frameNumber then return end
+    local ok, now = pcall(frameNumber)
+    if ok and now ~= seenFrame then
+        if seenFrame ~= nil then resync() end
+        seenFrame = now
+    end
+end
+-- Only the running callback chain's own scopes count toward its limit; unowned leftovers never do.
+local function chainDepth(stack)
+    if not frame then return 0 end
+    local count = 0
+    for i = 1, #stack do if live(stack[i]) then count = count + 1 end end
+    return count
+end
+-- A protected callback's entry render target, recorded when it first changes render targets.
+local function noteTarget()
+    local f = frame
+    while f and f.haveTarget == nil do
+        if nativeRender.GetRenderTarget then f.haveTarget, f.target = pcall(nativeRender.GetRenderTarget)
+        else f.haveTarget = false end
+        f = f.parent
+    end
+end
+local function log(f)
+    local list = f.actions
+    if not list then list = {} f.actions = list end
+    return list
+end
 local function pushed(kind, undo, replay)
     local action = {stack = stacks[kind], owner = frame, undo = undo, replay = replay, active = true}
     action.stack[#action.stack + 1] = action
-    if frame then frame.actions[#frame.actions + 1] = action end
+    if frame then local list = log(frame) list[#list + 1] = action end
 end
 local function descendant(owner, ancestor)
     while owner do
@@ -337,8 +435,8 @@ local function popped(kind)
     -- If that later callback fails, retain the exact known RT push for replay.
     -- A descendant's scope was created after our entry and is already gone.
     if frame and action.owner ~= frame and not descendant(action.owner, frame) then
-        frame.actions[#frame.actions + 1] = {restore = action,
-            previous = stacks[kind][#stacks[kind]], depth = #stacks[kind]}
+        local list = log(frame)
+        list[#list + 1] = {restore = action, previous = stacks[kind][#stacks[kind]], depth = #stacks[kind]}
     end
 end
 local function invokeBusy(fn, ...)
@@ -353,10 +451,12 @@ local function pair(tbl, push, pop, kind, validate)
     if not first or not last then return end
     tbl[push] = function(...)
         if busy > 0 then return first(...) end
+        sync()
         if active() then
-            if #stacks[kind] >= 32 then reject(push, "tracked stack limit", caller()) end
-            if validate then validate(caller(), ...) end
+            if chainDepth(stacks[kind]) >= 32 then reject(push, "tracked stack limit") end
+            if validate then validate(nil, ...) end
         end
+        if kind == "rt" and frame then noteTarget() end
         local replay
         if kind == "rt" then
             local args = pack(...)
@@ -371,13 +471,15 @@ local function pair(tbl, push, pop, kind, validate)
     end
     tbl[pop] = function(...)
         if busy > 0 then return last(...) end
+        sync()
         if active() then
             local top = stacks[kind][#stacks[kind]]
-            if not top then reject(pop, "no tracked Lua push to pop", caller()) end
+            if not top then reject(pop, "no tracked Lua push to pop") end
             if frame and top.owner ~= frame and (not top.owner or not top.owner.completed) then
-                reject(pop, "protected callback cannot consume caller-owned state", caller())
+                reject(pop, "protected callback cannot consume caller-owned state")
             end
         end
+        if kind == "rt" and frame then noteTarget() end
         local result = pack(invokeBusy(last, ...))
         popped(kind)
         return unpack(result, 1, result.n)
@@ -402,13 +504,17 @@ local function viewValues(api, source, view)
         end
     end
 end
+local function dimensions(texture) return texture:Width(), texture:Height() end
+local validTextures = setmetatable({}, {__mode = "k"})
 local function targetValues(source, texture, x, y, w, h)
-    if texture ~= nil then
-        local ok, width, height = pcall(function() return texture:Width(), texture:Height() end)
+    if texture ~= nil and not validTextures[texture] then
+        local ok, width, height = pcall(dimensions, texture)
         if not ok or not finite(width) or not finite(height) or width <= 0 or height <= 0 then reject("PushRenderTarget", "invalid texture", source) end
+        local kind = type(texture)
+        if kind == "userdata" or kind == "table" then validTextures[texture] = true end
     end
-    for _, value in pairs({x = x, y = y, w = w, h = h}) do
-        if not finite(value) then reject("PushRenderTarget", "non-finite viewport", source) end
+    if (x ~= nil and not finite(x)) or (y ~= nil and not finite(y)) or (w ~= nil and not finite(w)) or (h ~= nil and not finite(h)) then
+        reject("PushRenderTarget", "non-finite viewport", source)
     end
     if (w and w <= 0) or (h and h <= 0) then reject("PushRenderTarget", "invalid explicit viewport", source) end
 end
@@ -423,7 +529,8 @@ end)
 pair(cam, "Start3D2D", "End3D2D", "camera")
 if nativeRender.SetRenderTarget then
     render.SetRenderTarget = function(texture, ...)
-        if active() then targetValues(caller(), texture) end
+        if active() then targetValues(nil, texture) end
+        if frame and busy == 0 then noteTarget() end
         local result = pack(nativeRender.SetRenderTarget(texture, ...))
         if frame and busy == 0 then frame.targetChanged = true end
         return unpack(result, 1, result.n)
@@ -431,10 +538,16 @@ if nativeRender.SetRenderTarget then
 end
 if nativeRender.SetRenderTargetEx then
     render.SetRenderTargetEx = function(index, texture, ...)
-        if active() and (not integer(index) or index ~= 0) then reject("render.SetRenderTargetEx", "MRT is unsupported by the RTX path", caller()) end
-        if active() then targetValues(caller(), texture) end
+        if active() then
+            if not integer(index) or index < 0 or index > 3 then reject("render.SetRenderTargetEx", "unknown render-target slot")
+            -- Clearing slots 1-3 with nil is how stock code ends MRT work; only binding them is refused.
+            elseif index ~= 0 and texture ~= nil then reject("render.SetRenderTargetEx", "MRT is unsupported by the RTX path")
+            else targetValues(nil, texture) end
+        end
+        local primary = index == 0 and frame ~= nil and busy == 0
+        if primary then noteTarget() end
         local result = pack(nativeRender.SetRenderTargetEx(index, texture, ...))
-        if frame and busy == 0 and index == 0 then frame.targetChanged = true end
+        if primary then frame.targetChanged = true end
         return unpack(result, 1, result.n)
     end
 end
@@ -451,60 +564,109 @@ if nativeRender.RenderView then
         return unpack(result, 2, result.n)
     end
 end
+local function sourceOf(f)
+    local source = f.source
+    if not source then source = functionSource(f.fn) f.source = source end
+    return source
+end
 local function cleanup(f)
+    local actions = f.actions
     busy = busy + 1
-    for i = #f.actions, 1, -1 do
-        local action = f.actions[i]
+    for i = actions and #actions or 0, 1, -1 do
+        local action = actions[i]
         if action.restore then
             local prior = action.restore
             if #prior.stack ~= action.depth or prior.stack[#prior.stack] ~= action.previous then
-                report("cleanup_errors", f.event, "tracked state changed before popped-scope restoration", f.source)
+                report("cleanup_errors", f.event, "tracked state changed before popped-scope restoration", sourceOf(f))
             elseif not prior.replay then
                 -- Camera/clip/matrix defaults and mutable arguments are not
                 -- enough to reconstruct an earlier native context safely.
-                report("cleanup_errors", f.event, "completed camera/clip/matrix pop cannot be safely replayed", f.source)
+                report("cleanup_errors", f.event, "completed camera/clip/matrix pop cannot be safely replayed", sourceOf(f))
             else
                 local ok = pcall(prior.replay)
                 if ok then prior.stack[#prior.stack + 1] = prior prior.active = true
-                else report("cleanup_errors", f.event, "popped render-target restoration failed", f.source) end
+                else report("cleanup_errors", f.event, "popped render-target restoration failed", sourceOf(f)) end
             end
         elseif action.active then
             if action.stack[#action.stack] == action then
                 local ok = pcall(action.undo)
                 if ok then table.remove(action.stack) action.active = false
-                else report("cleanup_errors", f.event, "tracked stack restoration failed", f.source) end
-            else report("cleanup_errors", f.event, "untracked state prevents stack restoration", f.source) end
+                else report("cleanup_errors", f.event, "tracked stack restoration failed", sourceOf(f)) end
+            else report("cleanup_errors", f.event, "untracked state prevents stack restoration", sourceOf(f)) end
         end
     end
     if f.targetChanged and f.haveTarget and nativeRender.SetRenderTarget then
         local ok = pcall(nativeRender.SetRenderTarget, f.target)
-        if not ok then report("cleanup_errors", f.event, "target restoration failed", f.source) end
+        if not ok then report("cleanup_errors", f.event, "target restoration failed", sourceOf(f)) end
     end
     busy = busy - 1
 end
-local function protectedCall(fn, event, ...)
-    local f = {event = event, source = functionSource(fn), actions = {}, parent = frame}
-    if nativeRender.GetRenderTarget then f.haveTarget, f.target = pcall(nativeRender.GetRenderTarget) end
-    local args = pack(...)
-    frame = f
-    local result = pack(xpcall(function() return fn(unpack(args, 1, args.n)) end, function(err) return tostring(err) end))
-    frame = f.parent
-    f.completed = result[1]
-    if not result[1] then
-        cleanup(f)
-        report("errors", event, "callback quarantined after a Lua error", f.source)
-        return false
+-- A failure prints the original error and its stack through the engine's own error output, at most
+-- once per callback every ten seconds; the guard's records keep virtual sources only. Three
+-- consecutive failures within ten seconds quarantine a hook, timer or cvar callback. Gamemode
+-- methods are never quarantined: base GM:PostDrawViewModel draws the hands for every weapon.
+local clock = SysTime or RealTime or os.clock
+local reportInterval, quarantineWindow, quarantineFailures = 10, 10, 3
+local failures = setmetatable({}, {__mode = "k"})
+local function printError(text)
+    if ErrorNoHaltWithStack then ErrorNoHaltWithStack(text)
+    elseif ErrorNoHalt then ErrorNoHalt(traceback(text, 3) .. "\n")
+    elseif MsgN then MsgN(traceback(text, 3)) end
+end
+local function failed(f, text)
+    local now = clock()
+    local record = failures[f.fn]
+    if not record then record = {streak = 0, first = now, suppressed = 0} failures[f.fn] = record end
+    if record.streak == 0 or now - record.first > quarantineWindow then record.streak, record.first = 1, now
+    else record.streak = record.streak + 1 end
+    if record.reported and now - record.reported < reportInterval then
+        record.suppressed = record.suppressed + 1
+        return
     end
+    local suppressed = record.suppressed
+    record.reported, record.suppressed = now, 0
+    pcall(printError, text)
+    report("errors", f.event, "Lua error contained; its message and stack are in the console", sourceOf(f))
+    if suppressed > 0 and MsgN then
+        MsgN("[nativeloader] RTX guard: " .. f.event .. ": " .. suppressed .. " further Lua errors from "
+            .. sourceOf(f) .. " since the last report")
+    end
+end
+-- The xpcall message handler runs where the error was raised, so the printed stack is the callback's.
+local function handler(err)
+    local text = tostring(err)
+    if frame then pcall(failed, frame, text) end
+    return text
+end
+local function quarantined(fn, event)
+    local record = failures[fn]
+    if not record or record.streak < quarantineFailures then return false end
+    report("errors", event, "callback quarantined after " .. quarantineFailures .. " consecutive Lua errors", functionSource(fn))
+    return true
+end
+local function settle(f, ok, ...)
+    frame = f.parent
+    f.completed = ok
+    if not ok then cleanup(f) return false end
+    local record = failures[f.fn]
+    if record then record.streak = 0 end
     -- Successful nested work is part of its active caller's chronological
     -- undo log. Failed children already cleaned their own log and must not
     -- replay those restores a second time if an ancestor subsequently fails.
-    if f.parent then
-        for i = 1, #f.actions do
-            f.parent.actions[#f.parent.actions + 1] = f.actions[i]
+    local parent, actions = f.parent, f.actions
+    if parent then
+        if actions then
+            local list = log(parent)
+            for i = 1, #actions do list[#list + 1] = actions[i] end
         end
-        if f.targetChanged then f.parent.targetChanged = true end
+        if f.targetChanged then parent.targetChanged = true end
     end
-    return true, unpack(result, 2, result.n)
+    return true, ...
+end
+local function protectedCall(fn, event, ...)
+    local f = {event = event, fn = fn, parent = frame}
+    frame = f
+    return settle(f, xpcall(fn, handler, ...))
 end
 local events = {Initialize = true, InitPostEntity = true, OnReloaded = true,
     PreRender = true, PostRender = true, RenderScene = true, RenderScreenspaceEffects = true,
@@ -514,41 +676,58 @@ local events = {Initialize = true, InitPostEntity = true, OnReloaded = true,
     HUDPaint = true, PreDrawHUD = true, PostDrawHUD = true, PostRenderVGUI = true,
     SetupWorldFog = true, SetupSkyboxFog = true, NeedsDepthPass = true,
     InitPostShaderlib = true, InitPostReconstruction = true, PreDrawReconstruction = true, PostDrawReconstruction = true}
-local originalCall, getHooks, quarantine = hook.Call, hook.GetTable, {}
-hook.Call = function(name, gm, ...)
-    if not active() or not events[name] then return originalCall(name, gm, ...) end
-    local entries = getHooks()[name]
-    local failed = quarantine[name]
-    if not failed then failed = setmetatable({}, {__mode = "k"}) quarantine[name] = failed end
-    for id, fn in pairs(entries or {}) do
-        if type(id) ~= "string" and not IsValid(id) then entries[id] = nil
-        elseif failed[id] ~= fn then
-            local result
-            if type(id) == "string" then result = pack(protectedCall(fn, name, ...))
-            else result = pack(protectedCall(fn, name, id, ...)) end
-            if not result[1] then failed[id] = fn
-            elseif result[2] ~= nil then return unpack(result, 2, 7) end
+local getHooks, quarantine = hook.GetTable, {}
+local function gamemodeResult(ok, ...) if ok then return ... end end
+if not late then
+    local originalCall = hook.Call
+    hook.Call = function(name, gm, ...)
+        if not events[name] or not active() then return originalCall(name, gm, ...) end
+        if name == "PreRender" and not frameNumber and frame == nil and busy == 0 then resync() end
+        local entries = getHooks()[name]
+        local stopped = quarantine[name]
+        if not stopped then stopped = setmetatable({}, {__mode = "k"}) quarantine[name] = stopped end
+        if entries then
+            for id, fn in pairs(entries) do
+                if type(id) ~= "string" and not IsValid(id) then entries[id] = nil
+                elseif stopped[id] ~= fn then
+                    local ok, a, b, c, d, e, g
+                    if type(id) == "string" then ok, a, b, c, d, e, g = protectedCall(fn, name, ...)
+                    else ok, a, b, c, d, e, g = protectedCall(fn, name, id, ...) end
+                    if not ok then
+                        if quarantined(fn, name) then stopped[id] = fn end
+                    elseif a ~= nil then return a, b, c, d, e, g end
+                end
+            end
         end
-    end
-    local fn = gm and gm[name]
-    if fn and failed[gm] ~= fn then
-        local result = pack(protectedCall(fn, name, gm, ...))
-        if not result[1] then failed[gm] = fn else return unpack(result, 2, result.n) end
+        local fn = gm and gm[name]
+        if fn then return gamemodeResult(protectedCall(fn, name, gm, ...)) end
     end
 end
 local function callback(fn, event)
-    local failed = false
+    local stopped = false
+    local function finish(ok, ...)
+        if ok then return ... end
+        if quarantined(fn, event) then stopped = true end
+    end
     return function(...)
         if not active() then return fn(...) end
-        if failed then return end
-        local result = pack(protectedCall(fn, event, ...))
-        if not result[1] then failed = true else return unpack(result, 2, result.n) end
+        if stopped then return end
+        return finish(protectedCall(fn, event, ...))
     end
 end
-if verifiedMultiplayer and not early then
-    -- The multiplayer engine may already hold the original hook.Call. Protect
-    -- registered render functions themselves in this late path. Loading-hook
-    -- identity stays intact for the verified bootstrap's InitPostEntity replay.
+-- In the verified multiplayer route the remote server's own Lua stays as it is (ADR 0052): only
+-- callbacks defined in the owned, hash-verified environments are protected, recognized by the
+-- private marker raw-set in their environment.
+local function owned(fn)
+    if type(fn) ~= "function" then return false end
+    local ok, env = pcall(getfenv, fn)
+    return ok and type(env) == "table" and env ~= _G and rawget(env, "NATIVELOADER_VERIFIED_MULTIPLAYER") == true
+end
+local function protects(fn) return type(fn) == "function" and (not late or owned(fn)) end
+if late then
+    -- The engine may already hold the original hook.Call. Protect owned render
+    -- functions themselves in this late path. Loading-hook identity stays intact
+    -- for the verified bootstrap's initialization replay.
     local loadingEvents = {Initialize = true, InitPostEntity = true, OnReloaded = true}
     local lateEvents, registrations = {}, {}
     for event in pairs(events) do
@@ -569,15 +748,13 @@ if verifiedMultiplayer and not early then
     for event, entries in pairs(getHooks()) do
         if lateEvents[event] and type(entries) == "table" then
             for id, fn in pairs(entries) do
-                if type(fn) == "function" then entries[id] = renderCallback(event, id, fn) end
+                if owned(fn) then entries[id] = renderCallback(event, id, fn) end
             end
         end
     end
     local originalAdd = hook.Add
     hook.Add = function(event, id, fn, ...)
-        if lateEvents[event] and id ~= nil and type(fn) == "function" then
-            fn = renderCallback(event, id, fn)
-        end
+        if lateEvents[event] and id ~= nil and owned(fn) then fn = renderCallback(event, id, fn) end
         return originalAdd(event, id, fn, ...)
     end
     state.late_render_wrappers = true
@@ -585,21 +762,21 @@ end
 if timer and timer.Create then
     local original = timer.Create
     timer.Create = function(id, delay, count, fn, ...)
-        if type(fn) == "function" then fn = callback(fn, "timer.Create") end
+        if protects(fn) then fn = callback(fn, "timer.Create") end
         return original(id, delay, count, fn, ...)
     end
 end
 if timer and timer.Simple then
     local original = timer.Simple
     timer.Simple = function(delay, fn, ...)
-        if type(fn) == "function" then fn = callback(fn, "timer.Simple") end
+        if protects(fn) then fn = callback(fn, "timer.Simple") end
         return original(delay, fn, ...)
     end
 end
 if cvars and cvars.AddChangeCallback then
     local original = cvars.AddChangeCallback
     cvars.AddChangeCallback = function(name, fn, id, ...)
-        if type(fn) == "function" then fn = callback(fn, "cvars.AddChangeCallback") end
+        if protects(fn) then fn = callback(fn, "cvars.AddChangeCallback") end
         return original(name, fn, id, ...)
     end
 end
