@@ -22,7 +22,7 @@ code and the ADRs; every finding below was checked again against the code before
 | # | Report | Cause | Done |
 |---|---|---|---|
 | U1 | Shooting a window on modern_house crashes the game | Every `procedural_shard` drawn through DrawModel + GetRenderMesh crashed on the material system's render thread (`studiorender.dll+0x6603b`, read of -1) with `mat_queue_mode 2`; the map-glass debris (ADR 0040) only made it reachable from map windows. Bisected in the field: no crash without the break hook, none with debris hidden, a crash from the add-on's own pane alone, none once shards draw their mesh themselves | Shards draw their own mesh; meshes a queued frame may use are retired for eight frames (`fcc7bb5`) |
-| U2 | The Motion importer tab is only a button and does not resemble the desktop importer | ADR 0049 added a launcher tab | The tab hosts the importer and the motion library in place, laid out like `GmodMMDMotionImporter.exe` (`r4-motion`) |
+| U2 | The Motion importer tab is only a button and does not resemble the desktop importer | ADR 0049 added a launcher tab | The tab hosts the importer and the Motion Manager in place, laid out like `GmodMMDMotionImporter.exe`, built by the add-on's own builders; the part was 20 days behind its add-on and had no in-game importer, so it now carries the add-on's main (fcd56f4) (`r4-motion`, ADR 0060) |
 | U3 | The toolgun's rolling text is still smeared | ADR 0046's redraw was a perspective draw into a render target, which Remix takes into its scene; only the path-traced screen was visible | Projected 2D overlay (ADR 0057, `9bfdbce`), sharp in the field |
 | U4 | External Models shows `mmdhl.ui.character.rtx_normals` | Two keys without the `mmdhl.` prefix in all seven catalogs | Prefixed; `check_addon_i18n.py` checks every literal lookup (`909d1d9`) |
 
@@ -46,7 +46,7 @@ Severity is this review's. "Fixed" means fixed with a regression test unless not
 | R4-12 | Legacy | med | A junctioned game folder failed every deployment, even with no legacy Remix | Fixed: links checked below the root only |
 | R4-13 | Legacy | med | Files adopted by an RTX-off deployment escaped the archive and could come back at uninstall | Fixed |
 | R4-14 | Legacy | low | `..` check could never fire; every move re-hashed the 1.5 GB payload | Fixed; re-hash limited to migration moves (0.75 s per update saved) |
-| R4-15 | Runtime | high | The outline-shell rule hid every opaque CW-culled draw: flipped view models, their hands, Seamless Portals faces | Fixed twice: the companion leaves the cull rule off by default (`nativeloader_ignore_outline_shells`); patch 0014 skips view models and mirrored draws |
+| R4-15 | Runtime | high | The outline-shell rule hid every opaque CW-culled draw: flipped view models, their hands, Seamless Portals faces | Fixed twice: the companion leaves the cull rule off by default (`nativeloader_ignore_outline_shells`, ADR 0059); patch 0014 skips view models and mirrored draws |
 | R4-16 | Runtime | med | 0008: Discard/Revert did nothing without a `user.conf`; an unreadable settings file became an empty saveable layer | Fixed (patch 0014) |
 | R4-17 | Runtime | low | Saves without retry; links replaced by plain files | Fixed (patch 0014) |
 | R4-18 | Companion | med | Primary shadows forced on 4 s after every map start, overriding Remix's saved setting (ADR 0044) | Fixed (`r4-companion`) |

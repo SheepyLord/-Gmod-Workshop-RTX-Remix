@@ -2595,6 +2595,32 @@ The final UI tour inspected 6,850 text elements across English and the six reque
   alignment. The final DLSS-G stages resolved frameGenerationType=1 and dlfg.enable=True, with
   fsrfg.enable=False; capture/draw counts advanced and no module error was logged.
 
+## R4 companion review facts (2026-10-31)
+
+From the RTX fixes' source (`H:\BACKUP_20260815\Modding\garrys-mod-rtx-remixed\source`, read only)
+and this repository:
+
+- `RemixMaterial.GetMaterialHashRevision()` returns nil whenever the native material-hash lookup is
+  unavailable: while a refresh runs, or after one failed (`d3d9_texture_tracker.cpp:794-801`). A
+  refresh fails when any cached texture has no hash yet (`:748-752`, `:780-784`) and runs at most
+  once a second (`:716-737`), so nil is common while textures load; the old outline module then
+  rescanned every cached material and re-read every hash on every frame.
+- `RemixMaterial.GetCachedMaterials()` lists the tracker's whole texture cache, every material drawn
+  (world brushes, decals and sprites too: `d3d9_texture_tracker.cpp:472-480`); it says nothing about
+  which entity uses a material.
+- `RemixMaterial.GetAllTextureHashes(name)` reads only that cache (`material_lua_bindings.cpp:644-690`,
+  `d3d9_texture_tracker.cpp:445-470`): a material has hashes only after it was drawn.
+- `RemixConfig.SetConfigVariable` prints a warning on every refused write (`config_lua_bindings.cpp:27-30`);
+  `RemixMaterial.TrackMaterial` warns for a name with no material or no `$basetexture`
+  (`material_lua_bindings.cpp:547-553`).
+- The runtime's `rtx.gmod.ignoreOutlineMeshes` defaults to `True` (NoSave; runtime patch 0014,
+  `rtx_model_layers.h`), so the companion sends `False` to keep the shell rule off.
+- `rtx_pseudoplayer` is created by the RTX fixes (`remixlua/cl/cl_rtx_misc.lua:3`, default 1), which
+  `autorun/cl_rtx.lua` includes while GMod runs `lua/autorun/`, before `lua/autorun/client/`: the
+  companion menu's own `CreateClientConVar("rtx_pseudoplayer", "0", ...)` never set the default.
+- Glass Rewrite's client asks for every shard once (an empty `SHARD_NETWORK` 1 s after
+  `InitPostEntity`, `networking.lua`) and for each new shard in its `Initialize`
+  (`procedural_shard.lua:716-719`); 256 shards of 300 vertices are about 920 KB.
 
 ## Layered alpha cutouts and outline meshes (2026-10-30)
 

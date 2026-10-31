@@ -55,6 +55,34 @@ Versions follow the loader's CMake project version once it ships; until then eve
   malicious insecure server could otherwise reach memory writes for a player launched with
   `-insecure`. Outside local single-player it no longer returns module addresses, file probes, the
   console list or non-rendering convars to server-sent Lua.
+- Outline suppression does bounded work per frame and hides only the outline materials of loaded
+  models: entities are looked at in turn (256 material slots per frame), texture hashes are looked up
+  for at most 16 names per frame and only for new names, names still without hashes (backing off) or
+  after Remix's hash revision changed; a missing revision or a refused write no longer causes
+  per-frame rescans or warnings, and a removed model's names are dropped. Map textures named
+  `*_outline` (stock `white_outline`, `black_outline`) are no longer hidden map-wide. The runtime's
+  front-cull shell rule is a separate, console-only opt-in, `nativeloader_ignore_outline_shells`
+  (default 0), so flipped view models, their hands and mirrored geometry render by default;
+  `nativeloader_ignore_outlines` keeps the name rule
+  ([ADR 0059](docs/decisions/0059-outline-shell-rule-opt-in.md)).
+- The RTX tab no longer turns the first-person player shadow (`rtx.playerModel.enablePrimaryShadows`)
+  back on at every map start: it is requested when the body proxy is turned on, and at start only
+  with `nativeloader_remix_reapply`, so a shadow turned off and saved in Alt+X stays off
+  ([ADR 0044](docs/decisions/0044-remix-settings-persistence.md)). The menu no longer defines
+  `rtx_pseudoplayer`; the RTX fixes own it (default 1).
+- Glass Rewrite paces shard data per player: a joiner's full resync goes out at about 16 KB per tick
+  instead of all at once (about 920 KB after 256 broken windows could overflow its reliable buffer),
+  is granted once per 30 s per player, and single-shard answers are deduplicated and capped per tick.
+- The first-person body proxy leaves out only a slot whose material cannot be copied (reported once)
+  instead of not drawing at all, reuses its pose snapshot and material list between draws and
+  registers each slot once; shared player materials whose legacy tags were removed are no longer
+  looked up every second.
+- `tools/remix_defaults.py` pins the 1-12 path bounces (ADR 0051) and the shipped layer is regenerated
+  from itself (`GarrysMod_RTX_c` is no longer a classic install); `tools/classic_defaults.py` has no
+  default reference. `tools/publish_workshop.py` counts `tools/companion_i18n.py`, `LICENSE`,
+  `third_party/gmod/LICENSE` and `.gitattributes` as package inputs (a change to one of them alone was
+  never published), and a fallback upload whose temporary folder cannot be removed yet is no longer
+  reported as failed (the next hook run uploaded it again).
 - Runtime patch 0014: Discard Changes and Revert All work without a `user.conf`; a settings file or
   the diagnostic preferences that exist but cannot be read at launch are never saved over; saves retry
   briefly held files, rewrite a linked target in place and show a failure; the outline-shell rule skips

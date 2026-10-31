@@ -1,7 +1,8 @@
 """Merges Remix config files into the one defaults layer a runtime package ships (ADR 0021). Later
 files win key by key, so passing the classic install's dxvk.conf, rtx.conf and user.conf in that order
-reproduces its precedence (user.conf over rtx.conf over dxvk.conf) in a single file. Reads only its
-inputs; writes the one output file."""
+reproduced its precedence (user.conf over rtx.conf over dxvk.conf) in a single file; the shipped layer
+(packages/runtime/layers/classic_remix_defaults.conf) is now regenerated from itself. A few options are
+pinned whatever the files say (PINNED). Reads only its inputs; writes the one output file."""
 import argparse
 import re
 import sys
@@ -67,6 +68,12 @@ GPU_DEPENDENT = {'rtx.frameGenerationType': '0', 'rtx.dlfg.enable': 'False', 'rt
 PLAYER_CATEGORIES = {'rtx.playerModelTextures': '', 'rtx.playerModelBodyTextures': '',
                      'rtx.playerModel.enableInPrimarySpace': 'False'}
 
+# Path bounces default to 1 to 12, as in the runtime's metadata and graphics presets (ADR 0051),
+# whatever the merged files say.
+PATH_BOUNCES = {'rtx.pathMinBounces': '1', 'rtx.pathMaxBounces': '12'}
+
+PINNED = GPU_DEPENDENT | PLAYER_CATEGORIES | PATH_BOUNCES
+
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -78,7 +85,7 @@ def main(argv=None) -> int:
         print('error: missing ' + ', '.join(missing), file=sys.stderr)
         return 1
     merged, origin = merge(args.inputs)
-    for key, value in (GPU_DEPENDENT | PLAYER_CATEGORIES).items():
+    for key, value in PINNED.items():
         merged[key] = value
         origin[key] = 'remix_defaults.py'
     header = ['# Remix defaults for the native loader package, merged by tools/remix_defaults.py (ADR 0021).',

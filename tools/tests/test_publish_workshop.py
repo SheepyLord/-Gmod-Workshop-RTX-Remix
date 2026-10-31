@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -135,6 +136,28 @@ class PublisherPreflightTests(unittest.TestCase):
                 pub.upload(self.config, self.gma, 'notes', self.log.append)
             self.assertEqual(run.call_count, 1)
         self.assertEqual(self.tool.read_bytes(), self.original)
+
+    def test_a_copy_still_held_after_a_good_upload_is_not_an_error(self):
+        # Review R4: removing the temporary folder failed while the copy was still held (Windows, a
+        # scanner), the error escaped upload() after a successful upload, published.json was not
+        # written, and the next hook run uploaded again.
+        handles = []
+
+        def run(command, **kwargs):
+            if Path(command[0]) == self.tool:
+                return self.done(pub.COMPAT_PREFLIGHT_ERROR)
+            handles.append(open(command[0], 'rb'))  # still open when the retry is over
+            return self.done('Success!')
+
+        try:
+            with mock.patch.object(pub.subprocess, 'run', side_effect=run), \
+                    mock.patch.object(pub, 'steam_api_ready', return_value=True):
+                self.assertEqual(pub.upload(self.config, self.gma, 'notes', self.log.append), 'Success!')
+            self.assertEqual(len(handles), 1)
+            self.assertTrue(any('could not be removed' in line for line in self.log), self.log)
+        finally:
+            for handle in handles:
+                handle.close()
 
     def test_failed_compatibility_upload_is_not_reported_as_success(self):
         with mock.patch.object(pub.subprocess, 'run', side_effect=[self.done(pub.COMPAT_PREFLIGHT_ERROR),
@@ -372,6 +395,41 @@ class HookTests(unittest.TestCase):
         self.assertFalse((hooks / 'post-commit').exists())
         self.assertEqual((hooks / 'post-merge').read_text(encoding='utf-8'), '#!/bin/sh\necho mine\n')
         self.assertFalse(hasattr(pub, 'install_source_hooks'))
+
+    def test_every_repository_file_a_packager_reads_is_a_publish_input(self):
+        # Review R4: tools/companion_i18n.py (it builds the shipped i18n_data.lua), LICENSE and
+        # third_party/gmod/LICENSE (shipped as notices) were not inputs, so a change to them did not
+        # change the fingerprint and was never published; nor was a change to .gitattributes, which
+        # sets the bytes a checkout gives /LICENSE and the guard (2026-10-31).
+        def covered(rel):
+            return any(rel == p or rel.startswith(p + '/') for p in pub.REPO_INPUTS)
+        read = set()
+        for builder in [*pub.BUILDERS.values(), 'tools/package_workshop.py', 'tools/companion_i18n.py']:
+            text = (REPO / builder).read_text(encoding='utf-8')
+            for module in re.findall(r'^(?:import|from)\s+(\w+)', text, re.M):
+                if (TOOLS / f'{module}.py').is_file():
+                    read.add(f'tools/{module}.py')
+            for parts in re.findall(r"os\.path\.join\(REPO((?:,\s*'[^']+')+)", text):
+                read.add('/'.join(re.findall(r"'([^']+)'", parts)))
+            for parts in re.findall(r"REPO((?:\s*/\s*'[^']+')+)", text):
+                read.add('/'.join(re.findall(r"'([^']+)'", parts)))
+        files = sorted(rel for rel in read if not rel.startswith('out/') and (REPO / rel).is_file())
+        for rel in ('tools/companion_i18n.py', 'LICENSE', 'third_party/gmod/LICENSE'):
+            self.assertIn(rel, files)  # what the review found missing is found by this scan
+        self.assertEqual([rel for rel in files if not covered(rel)], [])
+        self.assertIn('.gitattributes', pub.REPO_INPUTS)
+
+    def test_the_package_workflow_runs_for_every_publish_input(self):
+        # CI's package build (package.yml) must run when an input of the item changes.
+        text = (REPO / '.github' / 'workflows' / 'package.yml').read_text(encoding='utf-8')
+        patterns = re.findall(r"^\s*-\s*'([^']+)'", text.split('paths:', 1)[1].split('workflow_dispatch', 1)[0], re.M)
+
+        def triggers(path):
+            return any(re.fullmatch(re.escape(p).replace(r'\*\*', '.*').replace(r'\*', '[^/]*'), path)
+                       for p in patterns)
+        for rel in pub.REPO_INPUTS:
+            with self.subTest(rel=rel):
+                self.assertTrue(triggers(rel + '/x' if (REPO / rel).is_dir() else rel), rel)
 
     def test_the_parts_a_config_unpacks(self):
         config = {'parts': [{'name': 'a', 'build': 'package_runtime', 'args': ['--runtime', 'out/inputs/runtime/files']},

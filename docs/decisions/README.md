@@ -52,7 +52,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0044](0044-remix-settings-persistence.md) | Explicit GMod startup overrides, guarded numeric controls and atomic checked Remix saves | Accepted 2026-10-30 |
 | [0045](0045-diagnostic-consent-and-welcome.md) | Explicit saved diagnostic consent, legacy SDK archival and an interactive twelve-second welcome timeout | Accepted 2026-10-30 |
 | [0046](0046-toolgun-screen-after-upscaling.md) | Full-resolution live toolgun screen with private depth masking and a translated opt-out | Accepted 2026-10-30; mechanism superseded by [0057](0057-toolgun-screen-as-2d-overlay.md) |
-| [0047](0047-ignore-incompatible-model-outlines.md) | Default-on suppression of incompatible outline shells through transient owned options and a translated opt-out | Accepted 2026-10-30 |
+| [0047](0047-ignore-incompatible-model-outlines.md) | Default-on suppression of incompatible outline shells through transient owned options and a translated opt-out | Accepted 2026-10-30; the shell rule made an opt-in by [0059](0059-outline-shell-rule-opt-in.md) |
 | [0048](0048-layered-alpha-cutouts.md) | Reject transparent cutout candidates before ray commitment and keep cached acceleration opacity flags current | Accepted 2026-10-30 |
 | [0049](0049-importer-normals-material-labels-and-motion-access.md) | Additive imported-model geometry normals, original AME material labels/current-row handoff, and a dedicated VMD launcher | Accepted 2026-10-30; the launcher tab superseded by [0060](0060-motion-tab-hosts-the-importer.md) |
 | [0050](0050-startup-text-and-main-menu-diagnostics.md) | Editable localized project splash and local main-menu system/version/hash diagnostics | Accepted 2026-10-30 |
@@ -64,6 +64,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0056](0056-guard-and-startup-fallbacks.md) | A guard that cannot be prepared early never disables RTX (autorun fallback, kept-aside cache); the view's proof is local to the machine; the crashing opt-out stays vanilla; bootstrap and quarantine fixes | Accepted (R4) |
 | [0057](0057-toolgun-screen-as-2d-overlay.md) | The toolgun screen is redrawn as projected 2D triangles after upscaling, since Remix takes perspective draws into its scene | Accepted (R4) |
 | [0058](0058-gmpublish-preflight-fallback-recorded.md) | The gmpublish preflight fallback for a stale Steam process id, kept and bounded | Accepted (R4) |
+| [0059](0059-outline-shell-rule-opt-in.md) | The front-cull outline shell rule is an opt-in (`nativeloader_ignore_outline_shells`, default 0); `nativeloader_ignore_outlines` keeps only the name rule, for materials of loaded models; amends 0047 | Accepted (R4) |
 | [0060](0060-motion-tab-hosts-the-importer.md) | The Motion importer tab is the importer: the add-on's importer and Motion Manager built into the tab by its own builders (its windows use them too), in External Models' look | Accepted (R4) |
 
 ## Template

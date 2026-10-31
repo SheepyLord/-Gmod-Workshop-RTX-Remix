@@ -12,7 +12,7 @@ Numeric overrides have an explicit archived `<name>_enabled` flag, default 0. Th
 are initialized and synchronized under a write guard. Only an enabled, valid numeric edit sends a
 value. Existing numeric ConVars are retained but inactive until explicitly selected, because older
 widgets could turn an empty sentinel into an archived zero. Zero remains valid for brightness and
-purity; purity now matches Remix's 0–5 range. Draft defaults are 4 bounces, brightness 1 and purity 1.
+purity; purity now matches Remix's 0–5 range. Draft defaults are 12 bounces, brightness 1 and purity 1.
 An unset control displays this draft default without writing it. Invalid, non-finite and out-of-range
 values are not sent. Choices and booleans also reject invalid archived strings.
 
@@ -21,9 +21,13 @@ default to Remix. Its saved files take effect next start. The fog selection supp
 only after the preset was actually applied, through the `NativeLoaderRemixFogOverride` hook.
 
 Player models under RTX Remix / Rendering adds the archived rtx_pseudoplayer shadow toggle and
-rtx_pseudoplayer_offset_z height slider (-32 to 64 units). Enabling the proxy requests primary
-player shadows through RemixConfig, including at startup. Height affects only the proxy's render
-bones. Labels/help are in all six companion catalogs; user.conf is never written.
+rtx_pseudoplayer_offset_z height slider (-32 to 64 units). The RTX fixes own `rtx_pseudoplayer`:
+`cl_rtx_misc.lua` creates it with default 1 before this file runs, so the menu does not create it.
+Turning the proxy on requests `rtx.playerModel.enablePrimaryShadows = True` through RemixConfig (a
+change callback). At map start it is requested only with `nativeloader_remix_reapply` on, like the
+other overrides: otherwise a shadow the player turned off in Alt+X and saved stays off
+([ADR 0044](../../../../../docs/decisions/0044-remix-settings-persistence.md)). Height affects only
+the proxy's render bones. Labels/help are in all six companion catalogs; user.conf is never written.
 
 The companion's "RTX Remix" spawn-menu tab ([ADR 0022](../../../../../docs/decisions/0022-companion-rtx-session-guard.md)).
 Client only; it runs in RTX sessions (the companion ships in the RTX-only package). Its text is
@@ -92,5 +96,7 @@ Moved RTX panels and the companion panels use `i18n.PreparePanel` so long transl
 Rendering also contains a translated Toolgun screen panel. Its Keep toolgun text sharp checkbox
 controls `nativeloader_toolgun_screen` (default on); see [nativeloader_toolgun.lua](nativeloader_toolgun.lua.md).
 
-Model outlines has a default-on suppression control. It manages only the
-companion's nonpersistent native options; see [nativeloader_model_layers.lua](nativeloader_model_layers.lua.md).
+Model outlines has a default-on suppression control (`nativeloader_ignore_outlines`: outline
+materials of loaded models, by name). The runtime's front-cull shell rule is a separate, console-only
+opt-in (`nativeloader_ignore_outline_shells`, default 0; [ADR 0059](../../../../../docs/decisions/0059-outline-shell-rule-opt-in.md)).
+Both manage only the companion's nonpersistent native options; see [nativeloader_model_layers.lua](nativeloader_model_layers.lua.md).

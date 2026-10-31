@@ -5,6 +5,8 @@ local callbacks, timers, hooks, panels, categories = {}, {}, {}, {}, {}
 local imageWrites, draws, playerBoneWrites = 0, 0, 0
 local lighting, overrideCleared, pixelColor
 local inBoneCallback, drawErrors = false, {}
+local clock, translations, missingLookups, captureFails, overridden = 0, 0, 0, 0, {}
+RealTime = function() return clock end
 local function convar(name)
     return {GetBool = function() return values[name] ~= "0" and values[name] ~= "" end,
         GetFloat = function() return tonumber(values[name]) or 0 end,
@@ -30,8 +32,16 @@ function Angle(_, yaw)
 end
 local function boneMatrix()
     return {position = Vector(10, 20, 30), GetTranslation = function(self)
+        translations = translations + 1 -- a new Vector in the engine
         return Vector(self.position.x, self.position.y, self.position.z)
-    end, SetTranslation = function(self, position) self.position = position end}
+    end, SetTranslation = function(self, position) self.position = position end,
+    GetField = function(self, row, column)
+        assert(column == 4 and row >= 1 and row <= 3, "only the translation is read")
+        return row == 1 and self.position.x or row == 2 and self.position.y or self.position.z
+    end, SetField = function(self, row, column, value)
+        assert(column == 4 and row >= 1 and row <= 3, "only the translation is written")
+        if row == 1 then self.position.x = value elseif row == 2 then self.position.y = value else self.position.z = value end
+    end}
 end
 local player = {model = "player", skin = 0, alive = true, observer = 0, third = false,
     boneCount = 2, boneNames = {}, missingBones = {}}
@@ -76,7 +86,8 @@ local function texture(name)
 end
 local createdShaders = {}
 local function material(name)
-    return {GetName = function() return name end, IsError = function() return false end,
+    if name == "models/player/missing" then missingLookups = missingLookups + 1 end
+    return {GetName = function() return name end, IsError = function() return name == "models/player/missing" end,
         GetTexture = function() return texture(name) end,
         GetShader = function() return name:find("eyes", 1, true) and "Eyes_DX8" or "VertexLitGeneric" end,
         GetKeyValues = function() return {['$flags'] = 0x2100, ['$flags2'] = 1,
@@ -96,12 +107,18 @@ GetRenderTargetEx = texture
 local sequence = 0
 util = {CRC = function() sequence = sequence + 1; return tostring(sequence) end}
 render = setmetatable({ReadPixel = function() return 255, 255, 255 end,
-    Capture = function() return "PNG" end,
+    Capture = function()
+        if captureFails > 0 then captureFails = captureFails - 1 return nil end
+        return "PNG"
+    end,
     SuppressEngineLighting = function(v) lighting = v end,
     ModelMaterialOverride = function() overrideCleared = true end,
     MaterialOverrideByIndex = function(index, mat)
         if index == nil then overrideCleared = true; return end
-        assert(mat:GetName():find("^pseudoplayermaterial_v2_"), "shared material used on proxy")
+        local name = mat:GetName()
+        -- Private copies, or the proxy's own material that draws nothing for a slot it cannot copy.
+        assert(name:find("^pseudoplayermaterial_v2_") or name == "rtx_pseudoplayer_noslot", "shared material used on proxy")
+        overridden[index] = name
     end}, {__index = function() return function() end end})
 cam = {Start2D = function() end, End2D = function() end}
 surface = {SetDrawColor = function(r, g, b, a) pixelColor = {r, g, b, a} end, DrawRect = function() end}
@@ -221,13 +238,54 @@ proxy.boneNames, proxy.unusedBones, proxy.missingBones = {}, {}, {}
 assert(#drawErrors == 0, table.concat(drawErrors, "\n"))
 local copiesBeforeSkin = imageWrites
 player.skin = 1; proxy:Think(); proxy:Draw(); assert(imageWrites == copiesBeforeSkin + 1)
-proxy.sourceMaterials = {"models/player/eyes"}; proxy:Draw()
+-- The slot list is read twice a second, not per draw: the new list counts after that.
+proxy.sourceMaterials = {"models/player/eyes"}; clock = clock + 1; proxy:Draw()
+assert(proxy.RTXMaterials[1].name == "models/player/eyes")
 assert(createdShaders[proxy.RTXMaterials[1].material:GetName()] == "VertexLitGeneric")
 player.alive = false; proxy:Think(); assert(proxy.hidden)
 player.alive = true; player.third = true; proxy:Think(); assert(proxy.hidden)
 player.third = false; player.observer = 1; proxy:Think(); assert(proxy.hidden)
 player.observer = 0; player.viewEntity = {}; proxy:Think(); assert(proxy.hidden)
 player.viewEntity = nil; proxy:Think(); assert(not proxy.hidden)
+
+-- A slot without a private copy (no such material) leaves out only that slot, is reported once and
+-- is not tried again every frame. A draw reuses its pose snapshot, reads no material list and makes
+-- no translation vectors, and a categorized slot is not registered again.
+local say, lines = print, {}
+print = function(text) lines[#lines + 1] = tostring(text) end
+local registrations = 0
+RemixCategoryManager = {RegisterPlayerProxyMaterial = function() registrations = registrations + 1 return true end}
+local reads, getMaterials = 0, proxy.GetMaterials
+proxy.GetMaterials = function(self) reads = reads + 1 return getMaterials(self) end
+proxy.sourceMaterials = {"models/player/shared", "models/player/missing"}
+clock = clock + 1
+local drawsBefore, snapshot = draws, proxy.RTXBoneSnapshot
+proxy:Draw()
+local translationsBefore = translations
+for _ = 1, 29 do proxy:Draw() end
+print = say
+assert(draws == drawsBefore + 30, "a slot without a copy stopped the whole body")
+assert(missingLookups == 1, "a slot without a copy was tried again every frame")
+assert(#lines == 1 and lines[1]:find("models/player/missing", 1, true), "a slot without a copy was not reported once")
+assert(overridden[0]:find("^pseudoplayermaterial_v2_") and overridden[1] == "rtx_pseudoplayer_noslot",
+    "the other slot lost its copy, or the missing one drew its shared original")
+assert(proxy.RTXBoneSnapshot == snapshot, "the pose snapshot was rebuilt instead of reused")
+assert(reads == 1, "the material list was read on every draw")
+assert(registrations == 1, "a categorized slot was registered again on every draw")
+assert(translations == translationsBefore, "a draw made translation vectors")
+-- A failed capture is retried once, five seconds later.
+print = function(text) lines[#lines + 1] = tostring(text) end
+captureFails = 1
+proxy.sourceMaterials = {"models/player/shared", "models/player/late"}
+clock = clock + 1; proxy:Draw()
+assert(overridden[1] == "rtx_pseudoplayer_noslot" and #lines == 2, "a failed capture was not reported")
+clock = clock + 2; proxy:Draw()
+assert(overridden[1] == "rtx_pseudoplayer_noslot", "a failed capture was retried at once")
+clock = clock + 4; proxy:Draw()
+print = say
+assert(overridden[1]:find("^pseudoplayermaterial_v2_") and #lines == 2, "a failed capture was not retried later")
+proxy.GetMaterials, RemixCategoryManager = getMaterials, nil
+assert(#drawErrors == 0, table.concat(drawErrors, "\n"))
 proxy.failDraw = true; overrideCleared = false; proxy:Draw()
 assert(lighting == false and overrideCleared, "a failed body draw leaked render state into arms")
 assert(#drawErrors == 1 and drawErrors[1]:find("draw failure", 1, true),
@@ -236,7 +294,10 @@ values.rtx_pseudoplayer = "0"; proxy:Think(); assert(proxy.removed)
 
 RemixCategoryManager = {CATEGORY = {THIRD_PERSON_PLAYER_MODEL = 0x80000, THIRD_PERSON_PLAYER_BODY = 0x100000},
     SetMaterialCategory = function(name, flags) categories[name] = flags end}
+local sharedLookups, ragdollDrawn = {}, false
 RemixMaterial = {GetAllTextureHashes = function(name)
+        sharedLookups[name] = (sharedLookups[name] or 0) + 1
+        if name == "models/ragdoll/skin" then return ragdollDrawn and {"0x789"} or {} end
         return name:find("pending", 1, true) and {} or {"0x123", "0x456"}
     end, FindTexturesByName = function() return {{name = "models/player/shared"},
     {name = "pseudoplayermaterial_v2_test"}, {name = "pseudoplayermaterialtemp1"},
@@ -256,7 +317,9 @@ end
 function player:GetMaterials() return {'models/player/shared'} end
 function player:GetHands() return nil end
 _G.player = {GetAll = function() return {player} end}
-ents = {FindByClass = function() return {} end}
+-- A ragdoll whose shared skin is not drawn yet: no hashes until ragdollDrawn.
+local ragdoll = {GetModel = function() return "models/ragdoll.mdl" end, GetMaterials = function() return {"models/ragdoll/skin"} end}
+ents = {FindByClass = function(class) return class == "prop_ragdoll" and {ragdoll} or {} end}
 concommand = {Add = function(name, fn) callbacks[name] = fn end}
 timer = {Create = function(name, _, _, fn) timers[name] = fn end, Simple = function() end}
 dofile(categoryPath)
@@ -270,6 +333,19 @@ assert(not savedPlayerTags['0x123'] and nativeFlags['0x123'] == 0x1000,
     'saved shared-player tags were not removed while preserving unrelated categories')
 assert(not savedPlayerTags['0x456'] and nativeFlags['0x456'] == nil,
     'file-authored player tags without native bookkeeping were not migrated')
+-- Review R4: a shared material whose tags are off is done; one not drawn yet is looked up less and
+-- less often, and released once its hashes appear.
+local sharedBefore = sharedLookups["models/player/shared"]
+for _ = 1, 12 do clock = clock + 1; timers.RemixPseudoplayerCategory_ProxyScan() end
+assert(sharedLookups["models/player/shared"] == sharedBefore, "a released shared material was looked up every second")
+assert(sharedLookups["models/ragdoll/skin"] <= 5, "an undrawn shared material was looked up every second: "
+    .. sharedLookups["models/ragdoll/skin"])
+ragdollDrawn, savedPlayerTags['0x789'] = true, true
+for _ = 1, 6 do clock = clock + 1; timers.RemixPseudoplayerCategory_ProxyScan() end
+assert(not savedPlayerTags['0x789'], "a shared material drawn later kept its player tag")
+local ragdollLookups = sharedLookups["models/ragdoll/skin"]
+for _ = 1, 10 do clock = clock + 1; timers.RemixPseudoplayerCategory_ProxyScan() end
+assert(sharedLookups["models/ragdoll/skin"] == ragdollLookups, "a released shared material was looked up again")
 values.rtx_auto_categorize_pseudoplayer = "0"
 assert(not RemixCategoryManager.RegisterPlayerProxyMaterial("pseudoplayermaterial_v2_new"))
 
