@@ -70,4 +70,10 @@ bool consume_next_start(const std::filesystem::path& root) {
     throw;
   }
 }
+
+void reset_next_start(const std::filesystem::path& root) {
+  fs::refuse_links(root, kUsed);
+  const auto path = fs::join(root, kUsed);
+  if (fs::stat(path).exists) fs::win32().remove_file(path);
+}
 }  // namespace nl::gpu_diagnostics

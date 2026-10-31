@@ -39,3 +39,7 @@ out/m4-synthetic; no real game, runtime package input or player config is used.
 
 Also verifies that RTX-off does not consume next_start, a blocked dump-folder path preserves
 RTX and the pending request, and activation rollback restores a pre-existing dump destination.
+
+T1 review regressions also assert `next_start -> off -> next_start` re-arms the marker, invalid
+diagnostic values keep RTX active with diagnostics off, and a high run after low/medium omits
+the leftover tier.conf from both the effective layer list and DXVK_CONFIG_FILE.

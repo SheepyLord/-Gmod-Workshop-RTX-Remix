@@ -14,6 +14,8 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `test_activation.cpp` | Path/root, quoted/backslash command-line parsing and off-switch unit cases |
 | `test_backend.cpp` | Separate `nl_backend_tests` target: case/duplicate/assignment/quoted-path backend normalization, unchanged RTX-off and unrelated raw Unicode arguments, malformed operands, real W/A/PEB replacement and byte-exact nested rollback/refusal in the test process only |
 | `test_proxy.cpp` | Export/forwarding checks and temporary-host integration/rotation tests |
+| `test_runtime.cpp` | Applies the real activation code to the fake runtime: blocked/read-only low fallback and failed off-mode marker reset preserve RTX; no GPU reader required |
+| `../runtime.cpp` | Real activation implementation linked into `nl_proxy_tests` for the write-failure regressions |
 | `host.cpp` | Statically imports `timeGetTime`; writes the timestamped main marker |
 | `activation_probe.h`, `activation_probe.cpp` | M4 host probe: module/static/delay paths, environment, DLL directory, W/A/PEB command line; test-only TLS descriptor fault and hold mode |
 | `fixture_runtime.cpp`, `fixture_static.cpp`, `fixture_delay.cpp` | Packaged fake d3d9 with one static and one delay dependency; controlled DllMain failures for rollback tests |

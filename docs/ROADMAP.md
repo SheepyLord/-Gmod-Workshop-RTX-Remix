@@ -144,3 +144,10 @@ are ready for review, uncommitted at the project manager's instruction. Release 
 pass (23/23); the full Release gate is blocked only by 21 existing field-snapshot tests whose
 throwaway HKCU fixture creation is denied by this sandbox. Integration and real-runtime QA remain
 with the project manager; see the R6 T1 validation record in TESTING.md.
+
+T1 independent-review fix pass (2026-10-31): all seven findings addressed on `r6-t1-layers`, with
+regressions for fallback write failures, forgiving diagnostic config, off-mode rearm, unknown-GPU
+overrides, effective menu tiers, malformed adapter descriptions and the combined user-list budget.
+The earlier sandbox/HKCU validation limitation above belongs to the initial pass; the fix-pass
+validation record below in TESTING.md records the current full-access run. Integration, actual
+runtime option checks and GPU fault capture remain with the project manager.

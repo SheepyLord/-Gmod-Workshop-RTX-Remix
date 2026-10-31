@@ -61,3 +61,10 @@ claims one-start requests before runtime initialization. Failure to prepare diag
 that request. Environment rollback retains its existing semantics. `diagnostics.h`/`.cpp` preview
 the same tier plan using the menu hardware query; `ui/mainmenu.js`/`labels.json` show its tier/source
 in seven languages. The new non-English strings are agent-written and await review (ADR 0062).
+
+T1 review: failed built-in tier writes omit the layer and preserve RTX. An RTX start in diagnostic
+off mode removes the one-start marker best effort. `presentation::prepare_main_menu` prepares a
+menu from the effective plan after layer writes, or an inactive plan for vanilla fallback;
+`diagnostics::set_performance_tier` also checks the listed layer and ADR 0056 recipe gate for
+read-only previews. The JavaScript row requires a description and layer. High/classic settings
+have no tier row. The runtime's consent-controlled Sentry upload is unchanged.

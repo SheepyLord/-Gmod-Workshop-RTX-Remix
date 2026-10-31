@@ -323,7 +323,15 @@ def main():
         dumps.config['diagnostics']['gpu_crash_dumps'] = 'off'
         dumps.save()
         check(diagnostic_layer not in active(dumps, dumps.run())['activation']['layers']['dxvk'], 'off still lists diagnostics')
-        passed('GPU dumps: correct layer/path, next_start once, read-only preview, rearm, always and off; config preserved')
+        check(not marker.exists(), 'off did not rearm next_start')
+        dumps.config['diagnostics']['gpu_crash_dumps'] = 'next_start'
+        dumps.save()
+        config_bytes = (dumps.root / 'native-loader/config.json').read_bytes()
+        check(diagnostic_layer in active(dumps, dumps.run())['activation']['layers']['dxvk'], 'next_start -> off -> next_start did not capture again')
+        check(marker.is_file(), 'rearmed request did not consume its marker')
+        check(diagnostic_layer not in active(dumps, dumps.run())['activation']['layers']['dxvk'], 'rearmed request repeated')
+        check((dumps.root / 'native-loader/config.json').read_bytes() == config_bytes, 'off/rearm rewrote config')
+        passed('GPU dumps: correct layer/path, next_start once, read-only preview, manual and off-mode rearm, always/off; config preserved')
 
         blocked = Game('gpu-diagnostics-blocked')
         blocked.config['diagnostics'] = {'gpu_crash_dumps': 'next_start'}
@@ -347,9 +355,10 @@ def main():
         policy = Game('performance-policy')
         policy.config['remix'] = {'performance_tier': 'low'}
         policy.save()
-        low = active(policy, policy.run())['activation']['performance_tier']
-        if low['adapter']:  # non-NVIDIA CI machines keep their Auto path, even with an override
-            check(low['tier'] == 'low' and low['source'] == 'fallback', f'old package low fallback: {low}')
+        low_status = active(policy, policy.run())
+        low = low_status['activation']['performance_tier']
+        if not low_status['activation']['non_nvidia']:  # unknown GPU queries also honor an override
+            check(low['tier'] == 'low' and low['source'] == 'config', f'old package explicit low fallback: {low}')
             text = (policy.root / low['layer']).read_text(encoding='utf-8')
             check('rtx.opacityMicromap.cache.maxBudgetSizeMB = 512' in text, 'built-in fallback not written')
         else:
@@ -361,6 +370,12 @@ def main():
         check(any('remix.performance_tier' in note for note in invalid['activation']['notes']), 'invalid tier was not reported')
         log = (policy.root / 'native-loader/logs/loader.log').read_text(encoding='utf-8')
         check('activation.performance_tier=' in log and 'using auto' in log, 'tier or config note missing from bootstrap log')
+        policy.config['diagnostics'] = {'gpu_crash_dumps': True}
+        policy.save()
+        invalid_dumps = active(policy, policy.run())
+        check(diagnostic_layer not in invalid_dumps['activation']['layers']['dxvk'], 'invalid dump mode enabled diagnostics')
+        check(any('diagnostics.gpu_crash_dumps' in note and 'using off' in note for note in invalid_dumps['activation']['notes']),
+              'invalid dump mode did not recover with a note')
         passed('performance tier: fallback/non-NVIDIA behavior, CLI equality, invalid value note and bootstrap log')
 
         packaged = Game('performance-package', tier_package)
@@ -369,7 +384,13 @@ def main():
             packaged.save()
             status = active(packaged, packaged.run())
             tier = status['activation']['performance_tier']
-            if tier['adapter']:
+            if choice == 'high':
+                check('native-loader/remix/tier.conf' not in status['activation']['layers']['dxvk'], 'high run listed a stale low/medium tier.conf')
+                effective_env = {entry['name']: entry['value'] for entry in status['activation']['environment']['set']}
+                check('native-loader/remix/tier.conf' not in effective_env.get('DXVK_CONFIG_FILE', ''), 'high run passed stale tier.conf in the environment')
+                if not status['activation']['non_nvidia']:
+                    check((packaged.root / 'native-loader/remix/tier.conf').is_file(), 'high-run regression did not retain a leftover tier file')
+            if not status['activation']['non_nvidia']:
                 check(tier['tier'] == choice and tier['source'] == 'config', f'package tier override: {tier}')
                 check(bool(tier['layer']) == (choice != 'high'), f'package tier layer: {tier}')
                 if choice != 'high':

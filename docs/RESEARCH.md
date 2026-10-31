@@ -2864,3 +2864,18 @@ late diagnostics slot. Two package DXVK copies plus tier, diagnostics and root d
 140 characters (259-character budget). The one-start CREATE_NEW claim is at
 `loader/core/src/gpu_diagnostics.cpp:58,63`. The real runtime's effective options and GPU dumps
 remain unmeasured by this task; the fixture exercises loader behavior only.
+
+### R6 T1 independent-review corrections (2026-10-31)
+
+The local runtime fork at `6f2dbd79` routes Aftermath files into its existing Sentry GPU report:
+`src/dxvk/dxvk_instance.cpp:392` calls `queueGpuCrashReport`; `src/util/util_sentry.cpp:447-496`
+attaches the dump to the event and captures/flushes it, and `:858-863` applies the runtime's
+consent flow. Dumps written under the loader's local folder may therefore be uploaded when the
+player accepts Remix crash reporting. R6 does not alter that reporting policy.
+
+The two new DXVK paths and their commas add exactly 67 characters: tier.conf plus diagnostics.conf.
+Regression tests combine them with package copies and a user-supplied DXVK list at 259 (accepted)
+and 260 (warning that Remix ignores the list) characters. RTX 5090 D uses the consumer class rule;
+GTX 1080 Ti and RTX A2000 Laptop GPU use VRAM alone. The Laptop adjustment runs only after a
+consumer RTX class is recognized. Invalid UTF-16 descriptions can throw from filesystem UTF-8
+conversion; the startup adapter reader now keeps vendor/VRAM with an empty name instead.

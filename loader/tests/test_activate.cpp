@@ -412,6 +412,80 @@ TEST_CASE("activate: old packages use the low fallback and no medium tier layer"
   CHECK(activate::plan(foreign, config, none(), L"gmod.exe", uhd, nvidia).low_tier_fallback);
 }
 
+TEST_CASE("activate: GPU query failure honors config tiers and keeps config as the source") {
+  const auto gen = with_runtime("payload", base_remix());
+  config::Config config;
+  config.performance_tier = config::PerformanceTier::low;
+  for (const auto& gpus : {activate::GpuGet{}, activate::GpuGet([] { return std::vector<performance::Adapter>{}; })}) {
+    const auto p = activate::plan(gen, config, none(), L"gmod.exe", uhd, gpus);
+    CHECK(p.activate && p.low_tier_fallback && !p.non_nvidia);
+    CHECK(p.performance_tier.tier == performance::Tier::low);
+    CHECK(p.performance_tier.source == "config");
+    CHECK(p.performance_tier.layer == activate::kTierLayer);
+    CHECK(p.performance_tier.reason.find("GPU not read") != std::string::npos);
+  }
+  const auto nvidia = [] { return std::vector<performance::Adapter>{{activate::kNvidia, "RTX 5090", 32ull << 30}}; };
+  CHECK(activate::plan(gen, config, none(), L"gmod.exe", uhd, nvidia).performance_tier.source == "config");
+  const auto amd = [] { return std::vector<performance::Adapter>{{0x1002, "AMD", 8ull << 30}}; };
+  const auto non_nvidia = activate::plan(gen, config, none(), L"gmod.exe", uhd, amd);
+  CHECK(non_nvidia.non_nvidia && non_nvidia.performance_tier.layer.empty());
+  CHECK(non_nvidia.performance_tier.source == "config");
+  config.performance_tier = config::PerformanceTier::medium;
+  auto packaged = gen;
+  journal::File file;
+  file.package = "rtx-remix-runtime";
+  file.path = "payload/config/dxvk-tiers/medium.conf";
+  packaged.files.push_back(file);
+  CHECK(activate::plan(packaged, config, none(), L"gmod.exe", uhd).performance_tier.layer == activate::kTierLayer);
+}
+
+TEST_CASE("activate: a failed low fallback drops every stale tier entry and retains diagnostics and user layers") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/base.conf"};
+  config::Config config;
+  config.performance_tier = config::PerformanceTier::low;
+  config.gpu_crash_dumps = config::GpuCrashDumps::always;
+  const auto user = values({{"DXVK_CONFIG_FILE", std::string(activate::kTierLayer) + ",mine.conf,last.conf"}});
+  auto p = activate::plan(with_runtime("payload", remix), config, user, L"gmod.exe", uhd);
+  CHECK(p.low_tier_fallback);
+  activate::disable_performance_tier(p, "fallback write failed");
+  CHECK(p.activate && !p.low_tier_fallback && p.performance_tier.layer.empty());
+  CHECK((p.dxvk_layers == std::vector<std::string>{"native-loader/remix/dxvk-1.conf", std::string(gpu_diagnostics::kLayer), "mine.conf", "last.conf"}));
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "native-loader/remix/dxvk-1.conf,native-loader/remix/diagnostics.conf,mine.conf,last.conf");
+  CHECK(p.notes.back() == "fallback write failed");
+}
+
+TEST_CASE("activate: tier and diagnostic layers add 67 characters to the user's DXVK list budget") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/base.conf"};
+  config::Config config;
+  config.performance_tier = config::PerformanceTier::low;
+  config.gpu_crash_dumps = config::GpuCrashDumps::always;
+  const std::string base_prefix = "native-loader/remix/dxvk-1.conf,";
+  const std::string prefix = std::string(activate::kTierLayer) + ',' + base_prefix + std::string(gpu_diagnostics::kLayer) + ',';
+  CHECK(prefix.size() == base_prefix.size() + 67);
+  for (const std::size_t length : {259u, 260u}) {
+    const std::string user = "mine.conf," + std::string(length - prefix.size() - 10, 'x');
+    const auto p = activate::plan(with_runtime("payload", remix), config, values({{"DXVK_CONFIG_FILE", user}}), L"gmod.exe", uhd);
+    REQUIRE(env_value(p, "DXVK_CONFIG_FILE"));
+    CHECK(*env_value(p, "DXVK_CONFIG_FILE") == prefix + user);
+    CHECK(env_value(p, "DXVK_CONFIG_FILE")->size() == length);
+    CHECK(std::any_of(p.notes.begin(), p.notes.end(), [](const auto& note) { return note.find("DXVK_CONFIG_FILE is 260 characters") != std::string::npos; }) == (length == 260));
+  }
+}
+
+TEST_CASE("activate: malformed adapter names lose only the description") {
+  CHECK(activate::adapter_description(L"NVIDIA RTX 5090") == "NVIDIA RTX 5090");
+  CHECK(activate::adapter_description(L"GPU \u00e9") == "GPU \xc3\xa9");
+  const wchar_t invalid[] = {0xd800, 0};
+  const auto name = activate::adapter_description(invalid);
+  CHECK(name.empty());
+  const auto p = activate::plan(with_runtime("payload", base_remix()), {}, none(), L"gmod.exe", uhd,
+                               [&] { return std::vector<performance::Adapter>{{activate::kNvidia, name, 8ull << 30}}; });
+  CHECK(p.activate && p.low_tier_fallback && !p.non_nvidia);
+  CHECK(p.performance_tier.dedicated_vram_mib == 8192);
+}
+
 TEST_CASE("activate: next_start once and diagnostics failures keep package and user lists") {
   auto config = config::Config{};
   config.gpu_crash_dumps = config::GpuCrashDumps::next_start;

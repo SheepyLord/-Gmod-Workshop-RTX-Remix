@@ -259,3 +259,8 @@ and I2 serialization. `gpu_diagnostics.h` / `src/gpu_diagnostics.cpp` probe/prep
 state and atomically consume one-start requests. `activate` composes the two layer-priority slots;
 `loader/proxy/runtime.cpp` applies them, `status` and `loader/cli/nlctl.cpp` report them, and
 `loader/proxy/diagnostics.cpp` / `ui/mainmenu.js` show a localized menu tier preview (ADR 0062).
+
+T1 review separates `presentation::prepare_main_menu` so activation supplies its effective layer
+plan after writes, and vanilla fallback supplies an inactive plan. Core GPU diagnostics can reset
+the one-start marker on off-mode RTX starts. Proxy `test_runtime.cpp` applies the real activation
+code to fake DLLs to verify failed tier writes/reset attempts preserve RTX without a GPU reader.

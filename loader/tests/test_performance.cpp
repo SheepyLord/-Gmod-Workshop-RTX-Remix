@@ -13,6 +13,8 @@ TEST_CASE("performance: consumer RTX classes and VRAM choose the lower tier") {
   struct Example { const char* description; unsigned gib; Tier expected; };
   const Example examples[] = {
     {"NVIDIA GeForce RTX 5090", 32, Tier::high}, {"NVIDIA GeForce RTX 4090", 24, Tier::high},
+    {"NVIDIA GeForce RTX 5090 D", 32, Tier::high}, {"NVIDIA GeForce GTX 1080 Ti", 11, Tier::medium},
+    {"NVIDIA RTX A2000 Laptop GPU", 16, Tier::high},
     {"NVIDIA GeForce RTX 4080", 16, Tier::high}, {"NVIDIA GeForce RTX 4070 Ti Super", 16, Tier::medium},
     {"NVIDIA GeForce RTX 4070", 12, Tier::medium}, {"NVIDIA GeForce RTX 3080", 10, Tier::medium},
     {"NVIDIA GeForce RTX 4060 Ti", 16, Tier::low}, {"NVIDIA GeForce RTX 4060 Ti", 8, Tier::low},
@@ -49,10 +51,14 @@ TEST_CASE("performance: largest NVIDIA wins over integrated and other dedicated 
   const auto selected = nl::performance::classify(adapters, PerformanceTier::automatic);
   CHECK(selected.tier == Tier::high);
   CHECK(selected.adapter == "RTX 4090");
-  for (const auto mode : {PerformanceTier::automatic, PerformanceTier::low, PerformanceTier::high}) {
+  for (const auto mode : {PerformanceTier::automatic, PerformanceTier::low, PerformanceTier::medium, PerformanceTier::high}) {
     const auto empty = nl::performance::classify({}, mode);
     CHECK(!empty.nvidia && empty.layer.empty() && empty.adapter.empty());
-    CHECK(!nl::performance::classify({{0x1002, "AMD", 8ull << 30}}, mode).nvidia);
+    CHECK(empty.reason.find("GPU not read") != std::string::npos);
+    const auto amd = nl::performance::classify({{0x1002, "AMD", 8ull << 30}}, mode);
+    CHECK(!amd.nvidia && amd.layer.empty());
+    CHECK(empty.source == (mode == PerformanceTier::automatic ? "auto" : "config"));
+    CHECK(amd.source == empty.source);
   }
 }
 
@@ -62,6 +68,9 @@ TEST_CASE("performance: explicit override and I2 survive JSON quoting") {
     const auto selected = nl::performance::classify({{kNvidia, "RTX 4060 \"test\"", 8ull << 30}}, mode);
     CHECK(selected.tier == expected);
     CHECK(selected.source == "config");
+    const auto unknown = nl::performance::classify({}, mode);
+    CHECK(unknown.tier == expected && unknown.source == "config");
+    CHECK(unknown.reason.find("GPU not read") != std::string::npos);
     const auto parsed = nl::json::parse(nl::performance::serialize(selected));
     CHECK(parsed.as_object().size() == 6);
     CHECK(parsed.find("adapter")->as_string() == selected.adapter);

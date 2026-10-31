@@ -1,5 +1,6 @@
 #pragma once
-// Local, opt-in GPU crash diagnostics (ADR 0062). Never edits config.json or journal state.
+// Opt-in GPU crash diagnostics (ADR 0062). Never edits config.json or journal state. Remix may
+// upload the resulting dumps through Sentry when the player accepted its crash reporting.
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -21,4 +22,6 @@ std::string prepare(const std::filesystem::path& root);
 // Atomically claims next_start. False: another start already claimed it. An incomplete marker
 // also counts as consumed, so a crash during runtime initialization cannot enable a second start.
 bool consume_next_start(const std::filesystem::path& root);
+// Remove only the loader-owned marker on an RTX start in off mode. Caller handles failures as notes.
+void reset_next_start(const std::filesystem::path& root);
 }  // namespace nl::gpu_diagnostics

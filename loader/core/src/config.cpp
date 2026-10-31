@@ -96,11 +96,11 @@ Config parse(std::string_view json_text) {
     if (const Value* diagnostics = root.find("diagnostics")) {
       only_keys(*diagnostics, "diagnostics", {"gpu_crash_dumps"});
       if (const Value* dumps = diagnostics->find("gpu_crash_dumps")) {
-        const auto& mode = dumps->as_string("diagnostics.gpu_crash_dumps");
+        const std::string mode = dumps->is_string() ? dumps->as_string() : std::string{};
         if (mode == "off") c.gpu_crash_dumps = GpuCrashDumps::off;
         else if (mode == "next_start") c.gpu_crash_dumps = GpuCrashDumps::next_start;
         else if (mode == "always") c.gpu_crash_dumps = GpuCrashDumps::always;
-        else fail("diagnostics.gpu_crash_dumps must be \"off\", \"next_start\" or \"always\"");
+        else c.notes.push_back("diagnostics.gpu_crash_dumps must be off, next_start or always; using off");
       }
     }
     if (const Value* patches = root.find("patch_sets")) {

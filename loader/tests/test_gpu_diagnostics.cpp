@@ -41,7 +41,7 @@ TEST_CASE("GPU diagnostics: next_start is consumed once without changing config 
   CHECK(!gpu::consume_next_start(root));
   CHECK(nl::fs::stat(marker).mtime == time);
   CHECK(nl::fs::read_file(config, 4096) == text);
-  std::filesystem::remove(marker);  // documented player re-arm action
+  gpu::reset_next_start(root);  // an RTX start in off mode re-arms the next request
   CHECK(!gpu::probe(root).consumed);
   CHECK(gpu::consume_next_start(root));
   std::ofstream(marker, std::ios::binary | std::ios::trunc);  // interrupted marker write
@@ -72,5 +72,18 @@ TEST_CASE("GPU diagnostics: a blocked parent fails closed without touching confi
   std::ofstream(root / "native-loader") << "not a directory";
   CHECK_THROWS_AS(gpu::prepare(root), nl::fs::Error);
   CHECK(nl::fs::read_file(root / "native-loader", 4096) == "not a directory");
+  gpu::reset_next_start(root);  // no marker can exist below a file; reset changes nothing
+  std::filesystem::remove_all(root);
+}
+
+TEST_CASE("GPU diagnostics: resetting an absent marker writes nothing and never removes a directory") {
+  const auto root = nl::test::scratch_dir("gpu_diagnostics_reset");
+  gpu::reset_next_start(root);
+  CHECK(!std::filesystem::exists(root / "native-loader"));
+  const auto marker = nl::fs::join(root, gpu::kUsed);
+  std::filesystem::create_directories(marker);
+  std::ofstream(marker / "keep.txt") << "keep";
+  CHECK_THROWS_AS(gpu::reset_next_start(root), nl::fs::Error);
+  CHECK(nl::fs::read_file(marker / "keep.txt", 4096) == "keep");
   std::filesystem::remove_all(root);
 }
