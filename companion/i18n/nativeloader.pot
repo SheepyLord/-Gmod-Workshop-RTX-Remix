@@ -767,19 +767,16 @@ msgstr ""
 msgid "Model outlines"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:9
 msgid "Motion importer"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
-msgid "Open the VMD motion importer and motion library."
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:11
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:157
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:173
 msgid "Import VMD files and manage your motion library and playback."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
-msgid "Open motion importer"
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
+msgid "Open in window"
 msgstr ""

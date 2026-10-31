@@ -54,7 +54,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0046](0046-toolgun-screen-after-upscaling.md) | Full-resolution live toolgun screen with private depth masking and a translated opt-out | Accepted 2026-10-30; mechanism superseded by [0057](0057-toolgun-screen-as-2d-overlay.md) |
 | [0047](0047-ignore-incompatible-model-outlines.md) | Default-on suppression of incompatible outline shells through transient owned options and a translated opt-out | Accepted 2026-10-30 |
 | [0048](0048-layered-alpha-cutouts.md) | Reject transparent cutout candidates before ray commitment and keep cached acceleration opacity flags current | Accepted 2026-10-30 |
-| [0049](0049-importer-normals-material-labels-and-motion-access.md) | Additive imported-model geometry normals, original AME material labels/current-row handoff, and a dedicated VMD launcher | Accepted 2026-10-30 |
+| [0049](0049-importer-normals-material-labels-and-motion-access.md) | Additive imported-model geometry normals, original AME material labels/current-row handoff, and a dedicated VMD launcher | Accepted 2026-10-30; the launcher tab superseded by [0060](0060-motion-tab-hosts-the-importer.md) |
 | [0050](0050-startup-text-and-main-menu-diagnostics.md) | Editable localized project splash and local main-menu system/version/hash diagnostics | Accepted 2026-10-30 |
 | [0051](0051-path-bounce-defaults.md) | Default minimum/maximum path bounces to 1/12 while preserving explicit overrides | Accepted 2026-10-30 |
 | [0052](0052-scoped-rtx-multiplayer-bootstrap.md) | Verified RTX-owner multiplayer scripts and exact rendering recipe exception, preserving community Lua and unsafe debug gates | Accepted; amended by [0056](0056-guard-and-startup-fallbacks.md) |
@@ -64,6 +64,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0056](0056-guard-and-startup-fallbacks.md) | A guard that cannot be prepared early never disables RTX (autorun fallback, kept-aside cache); the view's proof is local to the machine; the crashing opt-out stays vanilla; bootstrap and quarantine fixes | Accepted (R4) |
 | [0057](0057-toolgun-screen-as-2d-overlay.md) | The toolgun screen is redrawn as projected 2D triangles after upscaling, since Remix takes perspective draws into its scene | Accepted (R4) |
 | [0058](0058-gmpublish-preflight-fallback-recorded.md) | The gmpublish preflight fallback for a stale Steam process id, kept and bounded | Accepted (R4) |
+| [0060](0060-motion-tab-hosts-the-importer.md) | The Motion importer tab is the importer: the add-on's importer and Motion Manager built into the tab by its own builders (its windows use them too), in External Models' look | Accepted (R4) |
 
 ## Template
 

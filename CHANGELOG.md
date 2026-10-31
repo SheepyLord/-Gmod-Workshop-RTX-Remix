@@ -20,6 +20,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **"Recalculate normals for RTX"** shows its label on the External Models tab: two Model Hotloader
   keys lacked the `mmdhl.` prefix in all seven catalogs. `check_addon_i18n.py` now checks every phrase
   Model Hotloader looks up.
+- **The Motion importer tab is the motion importer.** It used to hold one button opening the Motion
+  Manager. It now fills the tab like External Models: section buttons for the importer and the Motion
+  Manager, Open in window, and each section built in place by the add-on itself. The importer shows
+  the desktop importer's inputs in its order (body motion VMD, music, camera VMD, audio offset, the
+  motion metadata, face/flex VMDs) beside the bake, its options, the progress and the log; the Motion
+  Manager shows the library beside the selected motion's music, playback and build controls. Without
+  Model Hotloader's file access the importer says why, with Resolve. The floating windows,
+  `mmdvmd_import` and `mmdvmd_menu` use the same builders
+  ([ADR 0060](docs/decisions/0060-motion-tab-hosts-the-importer.md)).
+- **The RTX package carries the motion importer's current version (fcd56f4)**: in-game VMD import
+  (`mmdvmd_import`, the tool's Import Animation button), dances blending in from the T-pose, scene-cut
+  holds and the stage placement and movement options. The part had been imported from a clone stuck
+  at 318b054; this repository's translations are kept, with Traditional Chinese for the 98 new phrases
+  (machine-written, not yet reviewed by the user).
 - The legacy Remix migration never blocks the package: links in a former installation (Mount HL2
   RTX's) stay and are never followed; a junctioned game folder, a library under a mount point and a
   linked `d3d9.dll` no longer stop the apply; on another GMod build or beside an unknown edit Steam's

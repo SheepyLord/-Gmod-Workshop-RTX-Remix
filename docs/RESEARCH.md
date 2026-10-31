@@ -2670,3 +2670,36 @@ Measured on the user's install (RTX 5090, loader 0.10.0 and the published packag
 - **Minidumps and the declined prompt.** The dump of a crash is written to
   `rtx-remix\logs\.sentry-native\reports\<uuid>.dmp`; once the next start's prompt is answered No,
   Remix deletes it, so a test harness must copy it before that start.
+
+## The Motion importer tab and the bundled motion importer (2026-10-31, Claude)
+
+- **The part was behind its add-on.** `packages/character-motion-importer` was imported on
+  2026-10-30 from `H:\BACKUP_20260815\Modding\ipg\Gmod-Mmd-Motion-Importer`, a clone at 318b054
+  (2026-10-07). The add-on's `main` (`origin/main`, and the clone in
+  `C:\Users\matt-peng\Documents\Codex\2026-10-17\please-help-me-connect-claude-on\Gmod-Mmd-Motion-Importer`) is at fcd56f4 (2026-10-27).
+  7751327 there added the in-game importer: `cl_importer.lua` (1,005 lines: the window, Resolve,
+  the job in a coroutine at 12 ms a frame), `cl_import_bake.lua` (1,946: a Lua port of the native
+  baker), `cl_import_data.lua` (938: the bundled skeleton), `mmdvmd_import`, the tool's import button,
+  and 98 phrases in its eight languages (no Traditional Chinese). 810c0d1 and a03b7af added the
+  stage placement and movement options. So the RTX package shipped no in-game importer, and ADR 0049's
+  tab could only open the Motion Manager.
+- **Line endings.** The add-on's working tree has every Lua file with CRLF (`core.autocrlf`) except
+  `cl_camera.lua`, which is LF (40,354 bytes, the size of the blob). The part stores CRLF throughout.
+- **Catalogs after the upgrade:** 462 keys in each of the nine (`ar en es fr ja ko ru zh zh-tw`),
+  `tools/check_addon_i18n.py` 0 problems.
+- **When a creation tab is built.** Sandbox's `gamemodes/sandbox/gamemode/spawnmenu/creationmenu.lua`
+  (PoC install) creates a plain `Panel` per tab and, in `timer.Simple(0)`, calls the tab's function,
+  parents the returned panel to it and docks it `FILL`: at the start of the session and on every
+  `spawnmenu_reload`, not when the tab is first opened. Panels only think while visible, so the motion
+  tab builds its content in its first `Think` (as External Models does in `mmdhl/menu.lua`, waiting
+  for `mmdhl.CreateLibrary`), which also covers the add-on loading after the companion.
+- **External Models' look** (`mmdhl/ui.lua`): text `Color(31,43,58)`, muted `Color(93,109,127)`,
+  accent `Color(34,109,185)` (line 4); flat rounded button styles primary, success, warning, danger,
+  secondary, tab (lines 27-34, `draw.RoundedBox(4, ...)`, a selected tab filled with the accent); the
+  page `Color(246,248,251)` (line 141); the left column `clamp(width * 0.37, 260, 460)` scaled by
+  `ScrH()/1080` (line 865). `mmdhl.UI` exports these helpers, but only Model Hotloader uses it; the
+  motion importer's light theme copies the colours instead of depending on it.
+- **Hooks keyed by a panel.** GMod's `hook.Run` passes a non-string identifier as the first argument
+  and drops it once `IsValid` fails, so the builders key their hooks by their root panel: a closed
+  window or a rebuilt spawn menu drops them without `OnRemove` (the window still releases its hooks
+  and stops the music preview in `OnRemove`, as before).

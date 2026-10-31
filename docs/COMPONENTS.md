@@ -90,10 +90,14 @@ create-only root files by package_fixes.py. [test_presentation_ui.py](../tools/t
 checks assets and the actual UI script alongside the proxy C++ tests and runtime text-policy test.
 
 The companion's `nativeloader_imported_normals.lua` collects active imported-model hashes for an
-optional additive NoSave smooth-normal category. `nativeloader_motion_tab.lua` opens the existing
-motion manager from its own creation tab. These modules and AME's original-name/current-selection
+optional additive NoSave smooth-normal category. It and AME's original-name/current-selection
 behavior are checked offline by [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md)
-and its Lua harness.
+and its Lua harness. `nativeloader_motion_tab.lua` is the Motion importer creation tab: the bundled
+motion importer's in-game importer and Motion Manager, built into the tab by the add-on's own
+builders (`MMDVMDNPC.BuildMotionImporter`, `MMDVMDNPC.BuildMotionManager`, which its windows use
+too) in External Models' look ([ADR 0060](decisions/0060-motion-tab-hosts-the-importer.md));
+[test_motion_tab.py](../tools/tests/test_motion_tab.py.md) checks the tab, the builders and the
+windows under LuaJIT.
 
 Every component of the project: where it lives, what it does, and its status. Keep this file in
 sync when you add, rename or finish something ([`tools/check_repo.py`](../tools/check_repo.py.md)

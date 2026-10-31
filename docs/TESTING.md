@@ -281,10 +281,20 @@ changed by these checks. Full Release tests, input verification and the package 
 Requests 17, 19/19.1 and 20 use [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md):
 actual AME methods check original names, path identity, current-row handoff, canonical return and
 independent working stores. Complete companion modules check late hashes/APIs, shared hashes,
-overrides, props, preview/hand exclusions, toggles, removed models, API retry, translations and
-opening the existing motion manager. The runtime's dedicated test_model_layers checks NoSave
-routing and draw invalidation. No game is started, as the user explicitly waived that validation.
-Full Release checks, input verification and a reviewed package comparison remain required.
+overrides, props, preview/hand exclusions, toggles, removed models and API retry. The runtime's
+dedicated test_model_layers checks NoSave routing and draw invalidation. No game is started, as
+the user explicitly waived that validation. Full Release checks, input verification and a reviewed
+package comparison remain required.
+
+The Motion importer tab ([ADR 0060](decisions/0060-motion-tab-hosts-the-importer.md)) uses
+[test_motion_tab.py](../tools/tests/test_motion_tab.py.md): under LuaJIT and mocked Derma it loads
+the companion's tab and the shipped motion importer files (`sh_core.lua`'s catalogs, `cl_menu.lua`,
+`cl_import_data.lua`, `cl_import_bake.lua`, `cl_importer.lua`). It checks the tab waiting for the
+add-on, the importer's inputs in the desktop importer's order and its bake side, a file picked
+through a mocked Model Hotloader, the library's columns and actions, Open in window, the file-access
+notice, inputs shared between the tab and a window, the windows' old layout and console commands,
+and the fallback for an add-on without the builders. Pixels and the light theme's colours on real
+Derma need a look in the game.
 
 Player body regression: test_player_body.py executes the real entity, category registrar and menu
 using LuaJIT. It checks proxy-only offsets, white-texture isolation, legacy settings, model state,

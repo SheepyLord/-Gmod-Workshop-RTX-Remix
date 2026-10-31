@@ -767,19 +767,16 @@ msgstr "工具槍螢幕"
 msgid "Model outlines"
 msgstr "模型描邊"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:9
 msgid "Motion importer"
 msgstr "動作匯入工具"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
-msgid "Open the VMD motion importer and motion library."
-msgstr "開啟 VMD 動作匯入工具與動作庫。"
-
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:11
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:157
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:173
 msgid "Import VMD files and manage your motion library and playback."
 msgstr "匯入 VMD 檔案，管理動作庫與播放。"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
-msgid "Open motion importer"
-msgstr "開啟動作匯入工具"
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
+msgid "Open in window"
+msgstr "在視窗中開啟"

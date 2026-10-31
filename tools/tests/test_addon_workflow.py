@@ -1,4 +1,4 @@
-"""Offline behavior checks for imported normals, AME navigation and the motion launcher."""
+"""Offline behavior checks for imported normals and AME navigation (the motion tab: test_motion_tab.py)."""
 import os
 from pathlib import Path
 import shutil
@@ -36,6 +36,3 @@ class AddonWorkflowTests(unittest.TestCase):
 
     def test_imported_normals_lifecycle(self):
         self.run_lua('normals', REPO / 'companion/nativeloader/lua/autorun/client/nativeloader_imported_normals.lua')
-
-    def test_motion_tab_opens_existing_manager(self):
-        self.run_lua('motion', REPO / 'companion/nativeloader/lua/autorun/client/nativeloader_motion_tab.lua')
