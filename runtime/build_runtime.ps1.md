@@ -25,8 +25,9 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
    every patch, `git submodule update --init --recursive` (network: the fork's submodules), then what
    `base.json` adds: each `submodules` entry checked out at its `commit` and/or given its `patch`
    (`runtime\submodules\*.patch`, `git apply`), each of `clones` cloned from its `url` and checked out
-   at its `commit` (network). Then the fork's first-time setup, `build_dxvk.ps1 -BuildFlavour release
-   -BuildSubDir _CompRelease_x64 -Backend ninja -EnableTracy false`.
+   at its `commit` (network). After the source checks, the fork's first-time setup configures only:
+   `build_dxvk.ps1 -BuildFlavour release -BuildSubDir _CompRelease_x64 -Backend ninja
+   -EnableTracy false -WithShim $false -SkipApics $true -ConfigureOnly $true`.
 3. **Checks, for a new worktree and an existing one alike:** what is checked out must be exactly what
    `base.json` and the patches describe (R3-014), or it stops and lists every difference:
    - the commit's tree is the tree the patches make, applied to the base commit in a scratch index
@@ -40,9 +41,16 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
    The scratch index and objects live under `out\tmp` and borrow the repository's objects, so the
    fork's repository is only read. Submodules inside submodules are left as the build has them: in a
    worktree some of their `.git` files point nowhere, which stops `git submodule status` itself.
-4. Enters the MSVC environment (`tools\lib\VsDevEnv.psm1`), reconfigures Meson so the fork's
-   configure-time version string names the current source commit (including an existing build),
-   deletes the shader stamp
+4. An existing source tree must already have `_CompRelease_x64\meson-private\coredata.dat`;
+   a missing or empty build folder stops before Meson can configure its Debug/download defaults.
+   Enters the MSVC environment (`tools\lib\VsDevEnv.psm1`) and checks Meson's saved build options:
+   Release, Ninja, optimization 3, `b_vscrt=from_buildtype` or `md`, Tracy/shim off and
+   `download_apics=false`. Other settings stop the build before compilation or import. To configure
+   a prepared tree explicitly, run `python -m mesonbuild.mesonmain setup --buildtype release
+   --backend ninja -Denable_tracy=false -Dremix_with_shim=false -Ddownload_apics=false
+   <tree>\_CompRelease_x64 <tree>` (dependencies must already be available for an offline build).
+   Reconfigures an existing build so the fork's configure-time version string names the current
+   source commit. A first-time setup needs no second configure or upstream build pass. Deletes the shader stamp
    `_CompRelease_x64\src\dxvk\_built_shaders.txt`, and runs `meson compile` **twice**: ninja rebuilds
    shaders only while the stamp is missing, and the C++ that embeds them notices the new headers only
    on the next run ([RESEARCH.md](../docs/RESEARCH.md) section 29).

@@ -2479,8 +2479,10 @@ header, the time stamp's three copies in the debug directory, and one byte of th
   Chinese to Simplified Chinese; both gaps are corrected.
 - Runtime setup under this repository exposed delayed expansion consuming `!` in `update-deps.cmd`.
   Quoted paths and disabled delayed expansion fix it. Windows PowerShell 5.1 and Python 3.12 were used
-  for the verified runtime rebuild. The fresh runtime tree also needed seven ignored unit/app test
-  sources from the existing verified tree to finish Meson setup; these do not enter the runtime DLL.
+  for the verified runtime rebuild. The fresh runtime tree also needed seven unit/app test sources
+  omitted by the snapshot's ignore rules, read from the existing verified tree to finish Meson
+  setup; these do not enter the runtime DLL. R6's review below distinguishes staged additions from
+  untracked local copies.
 
 Evidence is under `out/translation-audit`; final commands and PoC results are in the
 [QoL report](handover/QoL-report.md).
@@ -2842,16 +2844,21 @@ and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
 
 ## R6 T4: runtime memory snapshots (2026-10-31)
 
-Source references below are to patch 0015 on the recorded fourteen-patch tree, implemented by
-`86ac49e9` in T4's isolated runtime clone. The user's fork checkout was not changed.
+Source references below are to patch 0015 on the recorded fourteen-patch tree. The review fixes
+supersede the initial runtime commit `86ac49e9`; the final identity is in
+[runtime/README.md](../runtime/README.md#r6-t4-rebuild-2026-10-31). The user's fork checkout was not changed.
 
-- `DxvkSubmissionQueue::handleDeviceLost` (`src/dxvk/dxvk_queue.cpp:407-432`) is shared by the submit
-  and fence-finish loss paths. Its single-handler gate allows one snapshot/marker at line 421,
-  before the Aftermath wait and Sentry processing. No GPU synchronization is added by diagnostics.
-  The earlier `onGpuCrash` recorder/Aftermath wait can precede this snapshot when enabled.
+- `DxvkSubmissionQueue::handleDeviceLost` (`src/dxvk/dxvk_queue.cpp:407`) is shared by the submit
+  and fence-finish loss paths (`:307`, `:357`).
+  It retains the single-handler gate and calls `onGpuCrash(reason)` inside it. The first diagnostic
+  work in `onGpuCrash` (`:148`) writes/logs the memory snapshot before the crash-state recorder and either
+  Aftermath wait. Another loss thread cannot reach Sentry/termination ahead of that write.
+  No GPU synchronization is added by diagnostics.
 - The VRAM API's collection previously lived in `rtx_fork_api_entry.cpp:864-893`. It now calls
-  `RtxMemoryDiagnostics::capture` at line 864. `rtx_memory_stats.cpp:29-57` collects all driver heaps
-  and sums DXVK allocations/use and eight categories only across device-local heaps. It does not
+  `RtxMemoryDiagnostics::capture` at line 864. `rtx_memory_stats.cpp` collects all driver heaps,
+  labels each with `device_local` (`:43`), and sums driver budget/use, DXVK allocations/use and eight
+  categories only across device-local heaps. The serialized `driver` totals are the API's
+  `driverBudgetBytes`/`driverAllocatedBytes`. It does not
   read the render-owned texture table; the API still adds its cache count separately.
 - `DxvkAdapter::getMemoryHeapInfo` (`dxvk_adapter.cpp:79-108`) queries physical-device memory
   properties, rather than waiting for GPU work. With `VK_EXT_memory_budget`, budget/use are driver
@@ -2859,21 +2866,28 @@ Source references below are to patch 0015 on the recorded fourteen-patch tree, i
   Snapshots preserve those semantics and are approximate cross-thread observations.
 - `RtxContext::onPresent` (`rtx_context.cpp:919`) polls a device-owned steady-clock schedule, giving
   one sample per cut frame and every five minutes while frames are presented. Camera cuts do not
-  reset the periodic deadline (`rtx_memory_stats_data.h:54-78`). A stopped render loop cannot log
-  a periodic sample.
+  reset the periodic deadline (`rtx_memory_stats_data.h`). The first deadline is five minutes
+  after device creation. Cut samples show the outgoing scene before the delayed cut-driven clear
+  (`rtx_scene_manager.cpp`, `m_enqueueDelayedClear`). A stopped render loop cannot log a periodic sample.
 - OMM is recreated at cuts (`rtx_scene_manager.cpp:3134-3152`), so its two one-minute warning limits
   belong to the device (`rtx_memory_stats.h`). The next eligible occurrence reports the suppressed
-  count; no background thread flushes idle warnings (`rtx_memory_stats.cpp:83-98`).
+  count; no background thread flushes idle warnings (`rtx_memory_stats.cpp`). Device-loss snapshots
+  also include both pending counts in `omm_suppressed`, read atomically across threads. The
+  budget-dropped warning prints available bytes and budget.
 - The crash marker uses the same `RtxFileSys::Logs` directory as `remix-dxvk.log`, including
-  `DXVK_LOG_PATH` (`src/util/util_filesys.h:65`). `rtx_memory_stats_data.cpp:69-95` checks a temporary
-  file's write, flush and close, then uses `MoveFileExW` replacement. A failed write keeps the old
-  marker; timestamps must be checked by the next-start reader. Logging and file failures cannot
-  unwind through `onDeviceLoss` (`rtx_memory_stats.cpp:69-81`).
-- The recorded fork tree lacks five unit-test sources that its Meson file names:
+  `DXVK_LOG_PATH` (`src/util/util_filesys.h:65`). `rtx_memory_stats_data.cpp:77-90` checks `WriteFile`,
+  `FlushFileBuffers` and `CloseHandle` on the temporary file before `MoveFileExW` replacement.
+  A failed write keeps the old marker; timestamps must be checked by the next-start reader.
+  The timestamp belongs to the captured snapshot, so the marker and log line match even if the
+  write crosses a second boundary. Logging and file failures cannot unwind through `onDeviceLoss`.
+- Patch 0001's snapshot omitted five unit-test sources that its Meson file names:
   `test_particle_system_schema.cpp`, `test_hot_reload.cpp`, `test_rtx_option_dynamic.cpp`,
   `test_gpu_profile.cpp`, `test_gpu_overrides.cpp`; and `apps/RemixAPI/remixapi_medium_test.cpp`.
-  They exist as ignored files in the local fork. Patch 0015 guards these optional targets when
-  absent; the clean build no longer consumes unrecorded local test sources.
+  All six are tracked, staged additions in the user's mid-merge fork index, not ignored local
+  copies. The `.gitignore:63` wildcard hid them from the snapshot operation. Patch 0015 now records
+  their staged bytes read with `git show :<path>` and removes the six silent source guards.
+  The five unit sources total 3,008 lines; the medium API app is another 377 lines. It is a
+  standalone GPU/rendering app, not one of Meson's registered CPU unit tests.
 - The development-only GPU crash trigger is real GPU work:
   `rtx_context.cpp:498-503` dispatches `metaGpuCrash()` after Ctrl+Shift+Alt+G when armed by
   `RTX_ENABLE_CRASH_HOTKEY=1` (`rtx_options.h:1092-1105`). It is compiled out without
@@ -2881,4 +2895,5 @@ Source references below are to patch 0015 on the recorded fourteen-patch tree, i
 - The fork's `scripts-common/install_file_in_dir.bat:2-12` enables delayed expansion before
   assigning its arguments; `install_usd_plugins.bat` also enables it around paths. A source path
   containing `!` is stripped during unit dependency staging. T4 used literal-path PowerShell
-  copies into its own unit build after that helper failed; the resulting 22-test suite passes.
+  copies into its own unit build after that helper failed. The initial 22-test suite passed; the
+  review build passes 27/27 with the five restored unit sources.

@@ -147,3 +147,11 @@ The runtime rebuild/import, all 22 runtime unit tests, deep input verification a
 package check are done. Repository Release checks pass 333 Python tests (two skips) and 22/23
 CTests; the remaining guard-cache long-path failure reproduces on unchanged `7759c43`, while all
 22 guard cases pass from a shorter executable path ([TESTING.md](TESTING.md#r6-t4-runtime-memory-diagnostics)).
+
+T4's independent-review fix pass is complete on its branch: missing or unsafe runtime build
+configurations stop before import; patch 0015 records all six omitted staged test sources, adds
+heap locality/driver totals/pending OMM counts and flushes an early crash marker under the existing
+single-handler gate. The Release rebuild imports only the changed `d3d9.dll`; all 27 runtime unit
+tests and the 1,008-file package check pass. Repository Release checks pass all 23 CTests and 333
+Python tests (two skips) with the unchanged guard executable relocated under `out/tmp` for its
+known long-path limitation. No game session was run; runtime GPU acceptance remains with Claude.

@@ -707,10 +707,15 @@ and the console shows no reliable-buffer overflow.
 
 Patch 0015 registers `test_memory_diagnostics` in the runtime's `unit_tests` target. Use its
 dedicated `_CompUnitTest_x64` build, as described by the fork's `.agents/skills/run-unit-tests`.
-The test needs no GPU: it checks first/one-minute warning timing, independent suppressed counts,
+The test needs no GPU: it checks first/one-minute warning timing, independent and pending suppressed counts,
 cut/present deduplication, a five-minute deadline unaffected by cuts, all heap/category fields,
-64-bit byte precision, replacement of an earlier crash marker, and preservation on write failure.
-The five optional fork tests whose sources are absent from the recorded tree are not registered.
+64-bit byte precision, heap locality and device-local driver totals, identical marker/log timestamps,
+replacement of an earlier crash marker, and preservation on write failure. It clears a stale
+`memory-fixture` at startup, including files left by an interrupted test.
+Patch 0015 also records the five previously omitted unit sources (GPU profile, GPU overrides,
+hot reload, dynamic options and particle schema) and the medium API app from the user's staged fork
+index. All six build without source guards; the five unit tests are registered in the 27-test suite.
+The medium API app is a separate GPU rendering executable, not a registered CPU unit test.
 
 For the runtime build, apply all fifteen patches and run
 `runtime\build_runtime.ps1 -Fork <own clone> -Worktree <verified tree>`. `-Verify` checks the tree
@@ -718,38 +723,67 @@ and SDK/submodule identities without building. T4 uses only preinstalled SDKs; A
 disabled and an offline resolver validates local Packman package/link identities before every
 dependency step. Run `python tools\inputs.py verify --part runtime --deep`,
 `python tools\build_package.py --require-nlctl` and `tools\test.ps1 -Config Release` after import.
+The build wrapper rejects a missing/empty build directory (no `meson-private/coredata.dat`) and
+saved configurations with Debug build type, Debug DLL CRT or APIC downloads enabled, before any
+setup/compile/import. The review exercised all five rejection cases and verified unchanged hashes
+for `base.json`, `packages/runtime/files.json` and the packaged DLL. First-time source setup is
+configure-only; the two shader passes run once through the common build path.
 
 The project manager's later authorized PoC acceptance (not performed by T4):
 
 1. At a map/camera cut, find one `[RTX Memory]` JSON line with `event:"camera_cut"`, the current
-   frame, every driver heap's budget/use, and DXVK's device-local totals/eight categories. Compare
+   frame, every driver heap's budget/use and `device_local` flag, device-local `driver` budget/use,
+   and DXVK's device-local totals/eight categories. Cut samples describe the outgoing scene before
+   its delayed teardown. Compare
    nearby values with `rtx_vram_stats`; they are sampled at different instants. Stay on the map for
-   five minutes and find `event:"periodic"` even if intervening cuts occurred.
+   five minutes after device creation and find `event:"periodic"` even if intervening cuts occurred.
 2. Under repeated OMM pressure, each warning kind logs immediately and then at most once every
    sixty seconds, including `suppressed repeats: N`. A cut that recreates OMM must not reset its
-   limit. Counts are emitted with the next eligible occurrence, not on an idle timer.
+   limit. Counts are emitted with the next eligible occurrence, not on an idle timer. A budget-drop
+   line includes available bytes and budget; a loss snapshot includes pending `omm_suppressed` counts.
 3. In a development build only, arm the crash hotkeys with process-local
    `RTX_ENABLE_CRASH_HOTKEY=1` (or the Development tab), then Ctrl+Shift+Alt+G invokes the runtime's
    GPU-crash shader. This ends the process. Check for `[RTX Memory]` with `event:"device_lost"`
-   before Sentry handling and a complete schema-1 `last_gpu_crash.json` beside the runtime log,
-   with UTC time and matching memory fields. The default folder is `rtx-remix/logs`; a process-local
+   before the GPU crash-state recorder, either Aftermath wait and Sentry handling, and a complete
+   schema-1 `last_gpu_crash.json` beside the runtime log, with identical UTC time and memory fields.
+   The default folder is `rtx-remix/logs`; a process-local
    `DXVK_LOG_PATH` relocates both. Repeat with an unwritable marker path: the original exit behavior
    must remain. No Remix `user.conf` edit is needed.
 
 These diagnostics do not determine the cause of a GPU fault. Aftermath tests and real device-loss
 handling still need a game session; the CPU test covers serialization and best-effort file writes.
 
-T4's dedicated unit build passed 22/22 tests. Its unit install helper mishandles `!` in paths;
+T4's initial dedicated unit build passed 22/22 tests; the review build passes 27/27 after restoring
+the five omitted unit tests. Its unit install helper mishandles `!` in paths;
 stage `d3d9.dll` and the two compiled USD plugins/resources into the unit test directory using
 literal-path PowerShell copies instead of the affected batch helpers. The runtime rebuild and
 `-Verify` pass, input verification reports zero problems, and the 1,008-file combined GMA passes
 the worktree's `nlctl` checks. Build identities and exact import commands are in
 [runtime/README.md](../runtime/README.md#r6-t4-rebuild-2026-10-31).
 
-`tools\test.ps1 -Config Release` was run both at the unchanged `7759c43` checkout and after T4.
+Before this review fix, `tools\test.ps1 -Config Release` was run both at the unchanged `7759c43`
+checkout and after T4.
 Both runs pass repository conventions, 333 Python tests (two skips), and 22 of 23 CTests, with the
 same sole failure: `nl_render_guard_tests`, `test_early.cpp:198`, calls `last_write_time` on its
 260-character generated cache path without an extended-length path. Copying the unchanged guard
 test executable to `out/tmp/nl_render_guard_tests.exe` passes all 22 guard cases. T4 leaves
 `loader/` unchanged. Receipts: `out/tmp/release-baseline.log`, `release-final.log` and
 `guard-short-path.log`.
+
+The review fix passes all 27 runtime unit tests and all six recovered sources compile without
+guards. Five rejected build configurations leave the runtime inputs unchanged; the verified
+Release rebuild imports only `d3d9.dll` (the two USD plugin hashes are unchanged), and the 1,008-file
+GMA passes `--require-nlctl`. The user's fork index hash and staged/working status remain unchanged.
+
+`tools\test.ps1 -Config Release` now passes repository conventions, all 23 CTests and 333 Python
+tests (two skips) using a session-local `ctest` wrapper for the known guard-path limitation. It
+copies the unchanged guard executable to `out/tmp/nl_render_guard_tests.exe`, verifies identical
+SHA-256, temporarily points that one generated CTest command at the copy, executes every registered
+test, and restores the generated command in `finally`. No loader or test source is changed. The
+plain long-path guard defect remains outside T4's allowed paths. A whole-worktree `subst` alias
+was unsuitable: `QueryFullProcessImageNameW` returns the real `H:` image path, so the deployment
+test's running-process comparison fails against an `R:` target. The alias was removed and the
+final suite ran under the real path. Receipts and the local wrapper are in `out/tmp`, prefixed
+`runtime-review-`: `release-tests.log`, `release-tests-drive-alias.log`, `test-short-guard.ps1`,
+`build-guards.log`, `unit-tests.log`, `inputs-verify.log`, `package-build.log` and `fork-unchanged.log`.
+The standalone medium API GPU app and an actual game/device-loss trigger were not launched.
