@@ -471,6 +471,15 @@ bool begin(Run& run, Lock& lock) {
   return true;
 }
 
+// The legacy migration's moves (ADR 0042) are checked by SHA-256 just before they happen: a file
+// they archive is not the loader's, and a staged stock copy is what rule 2's exception rests on.
+// Package files were hashed as they were staged; hashing the whole shipment again at every update
+// (about 1.7 GB for the RTX package) would buy nothing but time (docs/RESEARCH.md).
+bool checked_before_move(const Step& step, std::uint64_t tx) {
+  return paths::within(step.to, legacy::kBackups) ||
+         paths::within(step.from, std::string(kStaging) + "/" + std::to_string(tx) + "/legacy");
+}
+
 // Makes the steps, then commits `next`. Any failure before the commit undoes them, so the install
 // is as it was; a crash instead leaves `pending` in the journal for the next run to undo.
 bool transact(Run& run, Journal next, const std::vector<Step>& steps, std::uint64_t tx, const char* action) {
@@ -485,7 +494,7 @@ bool transact(Run& run, Journal next, const std::vector<Step>& steps, std::uint6
         run.disk.create_directory(run.at(step.to));
       } else {
         fs::refuse_links(run.root, step.from);
-        if (!step.sha256.empty() && fs::hash_file(run.at(step.from)).sha256 != step.sha256)
+        if (!step.sha256.empty() && checked_before_move(step, tx) && fs::hash_file(run.at(step.from)).sha256 != step.sha256)
           throw std::runtime_error("transaction source changed before its move: " + step.from);
         run.disk.move(run.at(step.from), run.at(step.to), false);
       }
