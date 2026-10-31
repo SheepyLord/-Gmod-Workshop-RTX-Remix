@@ -2,6 +2,14 @@
 
 ## R6 T2 evidence boundaries (2026-10-31)
 
+- The stock menu's [`lua/menu/mainmenu.lua`](https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/menu/mainmenu.lua#L23-L32)
+  quotes string arguments to `lua.Run` and exposes `pnlMainMenu:Call` through `QueueJavascript`
+  (lines 156-159, read 2026-10-31). R6 uses that bridge for bounded DATA reads and JSON-encodes parsed
+  results again; it never concatenates raw file text into executable JavaScript.
+- `loader/proxy/ui/mainmenu.js:30-63` validates creation-time tokens and a 30-second snapshot age,
+  consumes a RAM warning only while visible before the first map, and acknowledges it in the menu
+  Lua realm. `loader/core/src/memory.cpp:72-74` uses strict, overflow-safe 32-GiB/70-percent thresholds.
+
 - `loader/core/src/memory.cpp` dynamically resolves `K32GetProcessMemoryInfo` and
   `K32GetPerformanceInfo` from KERNEL32 and converts performance-info page counts to bytes. DXGI
   is loaded from System32 and queried through `IDXGIAdapter3::QueryVideoMemoryInfo`; no PSAPI/DXGI
@@ -16,6 +24,14 @@
   Session-start metadata uses an atomic rename without the deployment journal's
   write-through flushes; its loss after a power failure falls back to the older loader record.
   Empty/clean starts do not re-hash old archives; retention runs only when a new archive is saved.
+  A later measurement during concurrent Release checks averaged 1.145 ms, maximum 1.658 ms.
+
+- The long T2 worktree makes the unchanged early-guard idempotence test's cache path 261 characters.
+  `test_early.cpp:198` uses plain `std::filesystem::last_write_time` and fails there, despite the file
+  existing and system `LongPathsEnabled=1`. An archived, rebuilt original commit `7759c43` fails at
+  the same line; its identical executable passes when copied to the shorter worktree `out` path.
+  T2's Release check uses a local CMake output-directory override only for that test executable;
+  test sources and coverage are unchanged. No system setting or other worktree was changed.
 
 - Runtime fork `src/util/log/log.cpp:75-94` opens `remix-dxvk.log` with a plain `std::ofstream`:
   starting the runtime truncates it. R6's worker signals readiness only after the log copy/fallback

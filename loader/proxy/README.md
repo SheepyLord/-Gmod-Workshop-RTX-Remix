@@ -11,6 +11,12 @@ the installed bootstrap SHA-256 and deployed package versions/manifest hashes. `
 and its CMake embedding. An exact read redirect supplies a generated copy of control.Menu.js;
 the Steam file is unchanged. No account names, paths or network identifiers are displayed.
 
+R6's `ui/read_notices.lua` is an embedded, bounded, read-only menu bridge for this start's status
+and latest system commit. The panel localizes failure summaries/evidence folders and its RAM warning
+in seven languages. Status, menu data and memory snapshots share a PID/creation-time token to reject
+stale starts, including PID reuse. The warning is acknowledged in menu Lua, once before a map;
+no page-file or game setting is changed. The only displayed path is the relative evidence folder.
+
 X64 bootstrap, output `winmm.dll`: M1 forwarding/entry hook plus M4 startup deployment and activation.
 All 181 System32 export ordinals are forwarded by leaf
 MASM jumps through a table populated from the full System32 path. Named exports resolve by name;

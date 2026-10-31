@@ -1,8 +1,10 @@
 # Roadmap
 
-R6 T2 is in progress on `r6-t2-evidence`: previous-session evidence, bootstrap memory telemetry
-and the menu's commit warning. The bounded collector and startup/CLI report are implemented;
-the remaining work is tracked by [the T2 brief](handover/R6-T2-evidence-telemetry.md).
+R6 T2 implementation and automated validation are **done** on `r6-t2-evidence`: bounded previous-session
+evidence, startup/CLI reporting, bootstrap memory history, and seven-language failure/RAM notices.
+Release passes 24 CTests and 334 Python tests (two expected skips), with the pre-existing long-worktree
+guard-test path workaround documented in [TESTING](TESTING.md#r6-t2-local-evidence-and-telemetry).
+No game was launched; integration and game QA remain with Claude ([T2 brief](handover/R6-T2-evidence-telemetry.md)).
 
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and

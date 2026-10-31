@@ -11,6 +11,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - Preserve recovered CSV bytes before history rotation and retry samples skipped by temporary
   sharing/access errors. Empty, edited and unrecognized history stays intact.
 
+- Show the previous failure and local evidence folder in the home-menu panel. Warn once per start,
+  before the first map, when recent system commit is over 70 percent used or its limit is under
+  32 GiB; explain system-managed page files and closing other programs. Both notices follow all
+  seven menu languages and are included by Copy diagnostics.
 - Record local process/system/GPU memory every ten seconds by default; `diagnostics.memory_telemetry`
   (`"on"`/`"off"`) controls CSV history. Rotate about one to two hours across `memory.csv` and
   `memory.1.csv`, preserve edited history, and retain a latest-only system commit snapshot for the

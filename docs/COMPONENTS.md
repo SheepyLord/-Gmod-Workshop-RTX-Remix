@@ -1,5 +1,12 @@
 # Components
 
+R6 T2 adds [`nl::evidence`](../loader/core/include/nl/evidence.h),
+[`nl::memory`](../loader/core/include/nl/memory.h) and the bootstrap's
+[`telemetry.cpp`](../loader/proxy/telemetry.cpp): bounded local crash evidence, memory history and
+the latest system commit snapshot. [`read_notices.lua`](../loader/proxy/ui/read_notices.lua.md)
+supplies the main-menu panel's seven-language failure summary and once-per-start RAM warning;
+all reads and samples stay local ([ADR 0063](decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+
 `loader/guard/` prepares the verified client rendering guard's early stock-initializer read redirect;
 `loader/guard/tests/` exercises generated-file ownership, stock hashes, cache integrity and off switches.
 

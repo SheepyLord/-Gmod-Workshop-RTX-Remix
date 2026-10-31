@@ -18,6 +18,8 @@ struct System {
   unsigned threads = 0;
   std::uint64_t memory = 0;
   std::vector<GraphicsAdapter> graphics;
+  std::uint32_t process_id = 0;
+  std::string session_token;
 };
 System query_system();
 // Pure builder: no paths, account names, network identifiers or startup logs are exposed.

@@ -2,6 +2,7 @@
 #include "../client/catalog.h"
 #include "nl/fs.h"
 #include "nl/json.h"
+#include "nl/memory.h"
 #include "nl/sha256.h"
 #include "nl/version.h"
 
@@ -14,6 +15,8 @@
 namespace nl::proxy::diagnostics {
 System query_system() {
   System result;
+  result.process_id = GetCurrentProcessId();
+  result.session_token = memory::process_token();
   result.os = "Windows x64";
   using GetVersion = LONG(WINAPI*)(OSVERSIONINFOW*);
   const auto get_version = reinterpret_cast<GetVersion>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
@@ -79,7 +82,9 @@ std::string serialize(const System& system, std::string_view version, std::strin
     out += "{\"id\":" + json::quote(package.id) + ",\"version\":" + json::quote(package.version) +
            ",\"sha256\":" + json::quote(package.manifest_sha256) + '}';
   }
-  return out + "],\"client_bootstrap\":" + (client::native_bootstrap_present(generation) ? "true" : "false") + '}';
+  out += "],\"client_bootstrap\":" + std::string(client::native_bootstrap_present(generation) ? "true" : "false");
+  out += ",\"process_id\":" + std::to_string(system.process_id) + ",\"session_token\":" + json::quote(system.session_token);
+  return out + '}';
 }
 
 std::string collect(const std::filesystem::path& root, const journal::Generation& generation) {

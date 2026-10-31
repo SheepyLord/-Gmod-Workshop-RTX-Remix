@@ -11,6 +11,10 @@ user config lists and arguments, source removal versus outage, Workshop disable,
 progress (kept) versus an unsubscribe (removed, payload folder deleted; ADR 0025), lock/pending/
 recovery, second-instance gating, invalid journal, failed dependency/DllMain/SEH rollback,
 command-line refusal and explicit fallback arguments, cwd/layer checks and status uninstall.
+
+R6: uninstall removes generated status, preserving any latest-only memory snapshot as local
+diagnostics (including its atomic-write temporary after a short-lived host); the data folder is
+removed only when empty. Compares all retained memory diagnostic bytes before/after.
 The fixture host has a test-only TLS switch to invalidate a command-line descriptor before the hook.
 For [ADR 0056](../../../docs/decisions/0056-guard-and-startup-fallbacks.md), a catalog-verifiable
 `gmod-rtx-remix` development package (the runtime plus a synthetic client helper and V2 guard)

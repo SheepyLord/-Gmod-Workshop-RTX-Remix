@@ -2,11 +2,20 @@
 
 ## R6 memory diagnostics
 
+The generated main-menu view reads the current start's `status.json` and latest `memory.json`
+through a bounded, read-only Lua bridge. Status and menu data also carry the same `session_token`
+as the memory snapshot; both PID and creation time must match. Other-process/malformed records are
+ignored. Commit data older than 30 seconds (or over five seconds in the future) never warns. The
+warning appears only before the first map and is remembered for this start in menu Lua, without a
+new on-disk preference or any page-file/settings change. Failure summaries and the warning follow
+the panel's seven languages. A missing evidence folder is displayed explicitly as unavailable.
+
 | Path relative to the game root | Meaning |
 |---|---|
 | `native-loader/logs/memory.csv` | Current UTC/byte CSV history; a background worker samples immediately after evidence collection, then every ten seconds. |
 | `native-loader/logs/memory.1.csv` | Previous segment. Each segment holds at most 360 samples (one hour) and 256 KiB: about one to two hours across both files. |
 | `native-loader/logs/memory-index.json` | Schema marker `native_loader_memory: 1`, sizes and SHA-256 for `active` and `rotated` files. Hash checks protect edited/unowned CSVs. One extra flushed row or an interrupted rotation can recover after a crash. |
+| `native-loader/backup/edits/memory-<SHA-256>.csv` | Exact recovered content beyond the last receipt, preserved before adoption because a valid extra row might be a user edit. Not automatically deleted by history rotation. |
 | `garrysmod/data/native-loader/memory.json` | Latest-only system commit snapshot: schema 1, current-process `session_token` (PID plus process creation FILETIME), `time_utc`, `commit_total`, `commit_limit`, `warning`. Used by the home-menu warning; overwritten atomically. No process/GPU counters or history. |
 
 CSV columns are `time_utc`, `private_bytes`, `working_set_bytes`, `system_commit_bytes`,
@@ -22,7 +31,8 @@ The independent latest system commit observation remains available for the warni
 retaining history. The loader's global off switches, missing/invalid config and `enabled: false`
 start neither history nor the warning observer. No game/config/page-file changes, uploads or new DLL
 import dependencies. Existing diagnostics stay on uninstall. Locked, edited or unrecognized CSV
-history stops recording for that process and is kept; the menu commit snapshot continues.
+history is kept. Transient sharing/access errors skip that sample and retry at the next interval;
+edited or unrecognized history stops recording for that process. The menu commit snapshot continues.
 
 ## R6 local session evidence
 

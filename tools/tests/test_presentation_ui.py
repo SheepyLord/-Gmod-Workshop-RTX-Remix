@@ -1,5 +1,6 @@
 """Editable splash assets and the real main-menu UI without launching a game."""
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -8,9 +9,20 @@ import unittest
 
 REPO = Path(__file__).resolve().parents[2]
 LANGUAGES = ('en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'fr', 'ru')
+LUAJIT = shutil.which('luajit') or next((str(p) for p in [
+    Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs/LuaJIT/bin/luajit.exe'
+] if p.is_file()), None)
 
 
 class PresentationUITests(unittest.TestCase):
+    @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')
+    def test_mainmenu_local_notice_reader(self):
+        result = subprocess.run([LUAJIT, str(Path(__file__).with_name('menu_notices_harness.lua')),
+                                 str(REPO / 'loader/proxy/ui/read_notices.lua')],
+                                cwd=REPO, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS menu notices', result.stdout)
+
     def test_startup_text_languages_and_placeholders(self):
         for code in LANGUAGES:
             name = 'startup_message.txt' if code == 'en' else f'startup_message.{code}.txt'

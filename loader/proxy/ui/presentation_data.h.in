@@ -3,4 +3,5 @@
 namespace nl::proxy::presentation {
 inline constexpr std::string_view kDiagnosticsScript = R"NLUI(@NL_DIAGNOSTICS_SCRIPT@)NLUI";
 inline constexpr std::string_view kDiagnosticsLabels = R"NLUI(@NL_DIAGNOSTICS_LABELS@)NLUI";
+inline constexpr std::string_view kDiagnosticsNotices = R"NLUI(@NL_DIAGNOSTICS_NOTICES@)NLUI";
 }
