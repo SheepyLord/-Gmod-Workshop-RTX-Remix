@@ -36,8 +36,20 @@ if scenario:match('^model_reload_') then
     if scenario == 'model_reload_normal_false' then flag = false end
     local queue, delays, callbacks, errors = {}, {}, {}, {}
     local reloads, convarReads = 0, 0
+    -- The final reload switches queued rendering off for its flush (R4-28): mat_queue_mode, the
+    -- console commands, frames and the Think hook it waits on are mocked here.
+    local queueMode = scenario == 'model_reload_normal_queue_off' and '0' or '2'
+    local refused = scenario == 'model_reload_normal_queue_refused'
+    local commands, thinks, printed, reloadModes, frame = {}, {}, {}, {}, 100
     local env = setmetatable({NATIVELOADER_VERIFIED_MULTIPLAYER = flag}, {__index = _G})
+    env.FrameNumber = function() return frame end
+    env.print = function(text) printed[#printed + 1] = text end
+    env.RunConsoleCommand = function(name, value)
+        commands[#commands + 1] = name .. ' ' .. tostring(value)
+        if name == 'mat_queue_mode' and not refused then queueMode = value end
+    end
     env.GetConVar = function(name)
+        if name == 'mat_queue_mode' then return {GetString = function() return queueMode end} end
         equal(name, 'r_forcehwskin', 'model reload convar')
         convarReads = convarReads + 1
         if scenario == 'model_reload_verified_missing' then return nil end
@@ -46,18 +58,31 @@ if scenario:match('^model_reload_') then
             return '0'
         end}
     end
-    env.RTX_ReloadModelsAfterHardwareSkinningSettings = function() reloads = reloads + 1 end
+    env.RTX_ReloadModelsAfterHardwareSkinningSettings = function()
+        reloads = reloads + 1
+        reloadModes[reloads] = {mode = queueMode, frame = frame}
+    end
     env.ErrorNoHalt = function(reason) errors[#errors + 1] = reason end
     env.timer = {Simple = function(delay, fn)
         delays[#delays + 1] = delay
         queue[#queue + 1] = {delay = delay, fn = fn}
     end}
-    env.hook = {Add = function(event, name, fn)
-        equal(event, 'InitPostEntity', 'model reload hook event')
-        equal(name, 'RTXHardwareSkinning_FinalModelReload', 'model reload hook ID')
-        assert(callbacks[name] == nil, 'model reload hook registered twice')
-        callbacks[name] = fn
-    end}
+    env.hook = {
+        Add = function(event, name, fn)
+            equal(name, 'RTXHardwareSkinning_FinalModelReload', 'model reload hook ID')
+            if event == 'Think' then
+                thinks[name] = fn
+                return
+            end
+            equal(event, 'InitPostEntity', 'model reload hook event')
+            assert(callbacks[name] == nil, 'model reload hook registered twice')
+            callbacks[name] = fn
+        end,
+        Remove = function(event, name)
+            equal(event, 'Think', 'only the frame wait is removed')
+            thinks[name] = nil
+        end,
+    }
     local fn = assert(loadstring('local desiredForceHardwareSkinning = "0"\n' .. actual:sub(first, last - 1),
         '@actual-cl_rtx-model-reload'))
     setfenv(fn, env)()
@@ -86,7 +111,34 @@ if scenario:match('^model_reload_') then
         equal(delays[#delays], 1, 'final model reload delay')
     end
     drain()
-    equal(reloads, verified and 0 or 2, 'complete early/late model reload behavior')
+    local started, waited = frame, 0
+    while thinks.RTXHardwareSkinning_FinalModelReload do
+        waited = waited + 1
+        assert(waited <= 10, 'the final reload waits only a few frames')
+        frame = frame + 1
+        thinks.RTXHardwareSkinning_FinalModelReload()
+    end
+    if verified then
+        equal(#commands, 0, 'verified path never touches queued rendering')
+    elseif scenario == 'model_reload_normal_queue_off' then
+        equal(#commands, 0, 'queued rendering already off: nothing switched')
+        equal(waited, 0, 'flushed at once')
+    else
+        -- Queued rendering goes off before the flush and comes back as the player had it.
+        equal(table.concat(commands, ';'), 'mat_queue_mode 0;mat_queue_mode 2', 'switched off and back')
+        equal(queueMode, '2', 'the player value is back')
+        assert(waited >= 4, 'the flush waits frames for the material system to leave queued mode')
+    end
+    if refused then
+        equal(reloads, 1, 'a switch that did not take skips the final flush')
+        assert(printed[1] and printed[1]:find('skipped', 1, true), 'the skip is reported')
+    else
+        equal(reloads, verified and 0 or 2, 'complete early/late model reload behavior')
+        if not verified then
+            equal(reloadModes[2].mode, '0', 'the final flush runs with queued rendering off')
+            assert(reloadModes[2].frame - started >= 4 or waited == 0, 'the final flush waited its frames')
+        end
+    end
     equal(#errors, 0, 'no hardware restoration timeout')
     equal(NATIVELOADER_VERIFIED_MULTIPLAYER, nil, 'model reload marker did not leak globally')
     print('PASS ' .. scenario)

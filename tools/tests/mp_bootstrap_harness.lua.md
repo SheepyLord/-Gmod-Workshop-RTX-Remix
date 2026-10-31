@@ -22,7 +22,11 @@ read the actual cl_rtx.lua supplied as the third argument, extract only its hard
 reload section and execute it with queued timer/hook/convar mocks. Normal nil/false markers retain
 the initial zero-delay reload and final one-second reload, including a restored-convar retry. The
 verified late marker prevents both reloads and further retries with matching, mismatched or missing
-convars. No production implementation is copied into the fixture.
+convars. Two more (`model_reload_normal_queue_off`, `model_reload_normal_queue_refused`) and the normal
+ones check the final flush's queued-rendering switch (R4-28): `mat_queue_mode` goes to 0, the flush
+runs at least four frames later with it off, and the player's value comes back; already off, it
+flushes at once; a switch that does not take skips the flush and prints why. No production
+implementation is copied into the fixture.
 
 The normal-load scenarios set the global NATIVELOADER_RTX_NORMAL_LOAD before the initializer runs.
 As a listen host (IsListenServerHost) or with sv_allowcslua 1 it finishes with its reason, reads no
