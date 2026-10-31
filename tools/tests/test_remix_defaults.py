@@ -67,6 +67,30 @@ class RemixDefaultsTest(unittest.TestCase):
             self.assertIn(line, lines)
         self.assertNotIn('rtx.frameGenerationType = 1', lines)
 
+    def test_path_bounces_are_pinned_whatever_the_inputs_say(self):
+        # ADR 0051: 1 to 12. The classic install had other values; they were once typed into the
+        # shipped layer by hand, so a regeneration from the classic files would have lost them.
+        classic = self.write('user.conf', 'rtx.pathMaxBounces = 16\nrtx.pathMinBounces = 0\nrtx.qualityDLSS = 1\n')
+        out = self.root / 'defaults.conf'
+        self.assertEqual(rd.main([str(classic), '--out', str(out)]), 0)
+        values = rd.read_conf(out)
+        self.assertEqual((values['rtx.pathMinBounces'], values['rtx.pathMaxBounces']), ('1', '12'))
+        self.assertEqual(values['rtx.qualityDLSS'], '1')
+        # Pinned without any input naming them, too.
+        empty = self.write('rtx.conf', '# nothing\n')
+        self.assertEqual(rd.main([str(empty), '--out', str(out)]), 0)
+        self.assertEqual(rd.read_conf(out)['rtx.pathMaxBounces'], '12')
+
+    def test_the_packaged_layer_is_what_the_generator_makes_of_it(self):
+        # The shipped layer is regenerated from itself (remix_defaults.py.md): byte for byte the same,
+        # so no value in it is typed by hand where the generator would put another.
+        layer = REPO / 'packages' / 'runtime' / 'layers' / 'classic_remix_defaults.conf'
+        out = self.root / 'regenerated' / 'classic_remix_defaults.conf'
+        self.assertEqual(rd.main([str(layer), '--out', str(out)]), 0)
+        self.assertEqual(out.read_bytes(), layer.read_bytes())
+        for key, value in rd.PINNED.items():
+            self.assertEqual(rd.read_conf(layer)[key], value, key)
+
     def test_captured_player_categories_do_not_hide_shared_world_models(self):
         classic = self.write('classic.conf', 'rtx.playerModelTextures = 0xAA, 0xBB\n'
                              'rtx.playerModelBodyTextures = 0xCC\nrtx.decalTextures = 0xDD\n')

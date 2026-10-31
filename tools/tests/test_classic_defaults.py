@@ -55,6 +55,15 @@ class ClassicDefaultsTest(unittest.TestCase):
         self.assertEqual(cd.main(['--reference', str(self.root / 'ref'), '--out', str(out), '--check']), 1)
         self.assertEqual(cd.main(['--reference', str(self.root / 'nowhere'), '--out', str(out)]), 1)
 
+    def test_there_is_no_default_reference(self):
+        # GarrysMod_RTX_c holds this project's implementation since 2026-10-30 (AGENTS.md rule 1):
+        # read from it, the table would take this project's own settings for the classic ones.
+        out = self.root / 'classic_defaults.lua'
+        self.assertEqual(cd.main(['--out', str(out)]), 1)
+        self.assertEqual(cd.main(['--out', str(out), '--check']), 1)
+        self.assertFalse(out.exists())
+        self.assertFalse(hasattr(cd, 'REFERENCE'))
+
 
 if __name__ == '__main__':
     unittest.main()

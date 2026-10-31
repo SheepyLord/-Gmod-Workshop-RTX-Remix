@@ -9,6 +9,11 @@ it exists) and delete it.
   and net removals stay as `-` tokens.
 - A non-hash value replaces a set.
 - Captured player/body texture lists are omitted from the shipped defaults; unrelated world lists remain.
+- Frame generation stays off and path bounces are 1 to 12 whatever the inputs say (ADR 0037, ADR 0051),
+  also when no input names them.
+- The packaged layer, `packages\runtime\layers\classic_remix_defaults.conf`, regenerated from itself
+  comes out byte for byte the same, and holds every pinned value: nothing in it is typed by hand
+  where the generator would write another value (the 12/1 bounces once were).
 - `main` writes the layer with its header, and returns 1 for a missing input.
 
 No game, network or install is touched. Exit codes are unittest's.

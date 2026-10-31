@@ -1,6 +1,8 @@
-"""Writes the companion's table of classic RTX settings: the values the reference install (the user's
-classic RTX install, GarrysMod_RTX_c) saved for the RTX add-ons' console variables, which the
-companion applies once as first-run defaults (ADR 0020). Reads only; writes the one Lua file."""
+"""Writes the companion's table of classic RTX settings: the values a classic RTX install (one
+RTXLauncher set up) saved for the RTX add-ons' console variables, which the companion applies once as
+first-run defaults (ADR 0020). The table in the repository is the record of the user's classic install
+(GarrysMod_RTX_c, which holds this project's implementation since 2026-10-30), so there is no default
+reference: name a preserved classic install. Reads only; writes the one Lua file."""
 import argparse
 import datetime as _dt
 import re
@@ -8,7 +10,6 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-REFERENCE = Path(r'H:\SteamLibrary\steamapps\common\GarrysMod_RTX_c')
 OUT = REPO / 'companion' / 'nativeloader' / 'lua' / 'nativeloader' / 'classic_defaults.lua'
 # The RTX fixes (rtx_*), the Model Hotloader's RTX options (mhrtx_*), gm_br_rtx (brrtx_*), the fixes'
 # hardware-skinning variables and the Advanced MMD Animation Player's flashlight (mmd_vmd_npc_flashlight_*,
@@ -60,11 +61,15 @@ def generate(reference: Path, include: str = INCLUDE, exclude: str = EXCLUDE, ve
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--reference', type=Path, default=REFERENCE, help='the classic RTX install (read only)')
+    parser.add_argument('--reference', type=Path, help='a preserved classic RTX install (read only); required')
     parser.add_argument('--out', type=Path, default=OUT, help='the Lua table to write')
     parser.add_argument('--version', type=int, default=VERSION, help='table version (players get a new version once)')
     parser.add_argument('--check', action='store_true', help='exit 1 when --out differs from what would be written')
     args = parser.parse_args(argv)
+    if args.reference is None:
+        print('error: --reference is required: GarrysMod_RTX_c is no longer a classic install (AGENTS.md rule 1); '
+              'name a preserved classic install, or keep the table as it is', file=sys.stderr)
+        return 1
     try:
         text, counts = generate(args.reference, version=args.version)
     except FileNotFoundError as error:
