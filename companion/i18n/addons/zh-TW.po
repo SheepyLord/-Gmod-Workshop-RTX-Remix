@@ -154,7 +154,7 @@ msgid "Time between cracks appearing and glass breaking"
 msgstr "從裂紋出現到玻璃破碎的時間"
 
 #: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:69
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:244
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:248
 msgid "Shard Count"
 msgstr "碎片數量"
 
@@ -163,7 +163,7 @@ msgid "Number of pieces glass breaks into"
 msgstr "玻璃破碎後產生的碎片數量"
 
 #: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:72
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:252
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:256
 msgid "Velocity Transfer"
 msgstr "速度傳遞倍率"
 
@@ -171,77 +171,87 @@ msgstr "速度傳遞倍率"
 msgid "How forcefully glass fragments scatter"
 msgstr "控制玻璃碎片飛散的猛烈程度"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:77
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:75
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:264
+msgid "Debris lifetime (s)"
+msgstr "碎片保留時間(秒)"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:75
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:270
+msgid "Seconds broken pieces stay before they disappear (0 = keep until map cleanup or the 256-piece limit)"
+msgstr "破碎的玻璃碎片在消失前保留的秒數（0 = 一直保留，直到地圖清理或達到 256 塊上限）"
+
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:80
 msgid "Physics Settings"
 msgstr "物理設定"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:236
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:240
 msgid "Glass strength"
 msgstr "玻璃抗衝擊強度"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:87
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
 msgid "How much damage glass can take before breaking"
 msgstr "玻璃破碎前能承受的傷害量"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:93
 msgid "Mass Factor"
 msgstr "質量影響倍率"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:90
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:93
 msgid "How much object mass affects impact force"
 msgstr "物體質量對撞擊力的影響程度"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:95
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:98
 msgid "Player Collision"
 msgstr "玩家碰撞"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
 msgid "Player Mass (kg)"
 msgstr "玩家質量 (kg)"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:105
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
 msgid "Player mass for glass breaking calculations"
 msgstr "計算玻璃破碎時使用的玩家質量"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:111
 msgid "Min Break Speed"
 msgstr "最低撞碎速度"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:108
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:111
 msgid "Minimum player speed to break glass"
 msgstr "玩家撞碎玻璃所需的最低速度"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:113
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:116
 msgid "Advanced"
 msgstr "進階"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:124
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:127
 msgid "Detailed collisions for small glass shards (higher cost)"
 msgstr "小玻璃碎片使用完整碰撞（運算負擔較高）"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:139
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:142
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1545
 msgid "Reset to Defaults"
 msgstr "恢復預設值"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:148
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:151
 msgid "Test Settings"
 msgstr "測試設定"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:157
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:160
 msgid "Player Debug"
 msgstr "玩家除錯"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:196
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:200
 msgid "Settings reset to defaults!"
 msgstr "設定已恢復預設值！"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:203
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:207
 msgid "Settings"
 msgstr "設定"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:206
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:210
 msgid ""
 "Glass Rewrite Remixed\n"
 "Realistic glass destruction system"
@@ -249,27 +259,27 @@ msgstr ""
 "Glass Rewrite Remixed\n"
 "真實玻璃破碎系統"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:210
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:214
 msgid "Open Settings Panel"
 msgstr "開啟設定面板"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:215
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:219
 msgid "Debug Tools:"
 msgstr "除錯工具："
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:218
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:222
 msgid "Show Current Settings"
 msgstr "顯示當前設定"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:223
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:227
 msgid "Player Impact Analysis"
 msgstr "玩家撞擊分析"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:228
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:232
 msgid "Manual Controls:"
 msgstr "手動控制："
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:231
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/client/glass_spawnmenu.lua:235
 msgid "Show Cracks"
 msgstr "顯示裂紋"
 
@@ -285,29 +295,29 @@ msgstr "可破壞的樂趣"
 msgid "Spawn and damage it"
 msgstr "生成後對它造成傷害"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:469
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:543
 #, c-format
 msgid "Glass damage: %d / %d"
 msgstr "玻璃損傷：%d / %d"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:728
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:822
 msgid "Glass Shard"
 msgstr "玻璃碎片"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:790
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:884
 #, c-format
 msgid "Reset glass damage from %d to 0"
 msgstr "已將玻璃損傷從 %d 重置為 0"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:792
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:886
 msgid "Look at a glass shard to reset its damage"
 msgstr "看向玻璃碎片即可重置其損傷"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:797
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:891
 msgid "Opening Glass Settings Panel..."
 msgstr "正在開啟玻璃設定面板…"
 
-#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:798
+#: packages/fixes/garrysmod/garrysmod/addons/Glass-Rewrite-Remix/lua/entities/procedural_shard.lua:892
 msgid "Run glass_open_panel in the console or open RTX Remix > Water and glass > Settings in the spawn menu."
 msgstr "在主控台執行 glass_open_panel，或在物件清單中開啟 RTX Remix > 水與玻璃 > 設定。"
 

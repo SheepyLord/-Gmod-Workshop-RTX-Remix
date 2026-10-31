@@ -1,8 +1,8 @@
 -- GPL-2.0; part of Glass-Rewrite-Remix. Keep native map health, collisions and outputs intact.
+-- The pieces of a broken window are loose glass (glass_debris.lua, ADR 0061).
 local geometry = include("glass_map_geometry.lua")
-local tracked, debris = {}, {}
+local tracked = {}
 local epoch = 0
-local MAX_DEBRIS = 256
 local MODEL = "models/hunter/blocks/cube025x025x025.mdl"
 
 local function pose(pane, ent)
@@ -41,15 +41,8 @@ local function scatter(pane)
     local pieces = geometry.Fracture(pane.convexes, localImpact, desired)
     local transfer = GetConVar("rtx_glass_velocity_transfer")
     transfer = transfer and transfer:GetFloat() or 2
-    local expensive = GetConVar("rtx_glass_expensive_shards")
-    local active = {}
-    for _, ent in ipairs(debris) do if IsValid(ent) then active[#active + 1] = ent end end
-    debris = active
+    local registry = GlassRewriteDebris
     for _, mesh in ipairs(pieces) do
-        while #debris >= MAX_DEBRIS do
-            local oldest = table.remove(debris, 1)
-            if IsValid(oldest) then oldest:Remove() end
-        end
         local block = ents.Create("procedural_shard")
         if IsValid(block) then
             block.RTX_MAP_DEBRIS = true
@@ -63,15 +56,15 @@ local function scatter(pane)
             block:BuildCollision(mesh, success)
             local physics = block:GetPhysicsObject()
             if success[1] and IsValid(block) and IsValid(physics) then
-                -- Independent VPhysics pieces: no welds and no particle-only tiny-shard replacement.
-                block:SetCollisionGroup(expensive and expensive:GetBool() and COLLISION_GROUP_WORLD or COLLISION_GROUP_DEBRIS)
+                -- Independent VPhysics pieces: no welds, and a piece of any size stays until it breaks
+                -- again, its lifetime ends or the budget takes it. The registry makes it loose physics
+                -- (collision group, motion) and counts it with every other broken piece.
+                if registry then registry.Add(block) end
                 local impulse = (pane.force or Vector()) * (0.02 * transfer / math.max(physics:GetMass(), 1))
                 if impulse:LengthSqr() > 350 * 350 then impulse = impulse:GetNormalized() * 350 end
-                physics:EnableMotion(true)
                 physics:SetVelocity(pane.velocity + impulse + VectorRand() * (30 * transfer))
                 physics:AddAngleVelocity(VectorRand() * (120 * transfer))
                 physics:Wake()
-                debris[#debris + 1] = block
             else
                 SafeRemoveEntity(block)
             end
@@ -115,10 +108,8 @@ hook.Add("EntityRemoved", "rtx_map_glass", function(ent)
     timer.Simple(0, function() if tracked[index] == pane then tracked[index] = nil end end)
 end)
 hook.Add("PreCleanupMap", "rtx_map_glass", function()
-    epoch = epoch + 1
+    epoch = epoch + 1 -- the registry removes the pieces themselves
     tracked = {}
-    for _, ent in ipairs(debris) do if IsValid(ent) then ent:Remove() end end
-    debris = {}
 end)
 hook.Add("PostCleanupMap", "rtx_map_glass", function()
     for _, ent in ipairs(ents.FindByClass("func_breakable")) do track(ent) end
