@@ -2795,3 +2795,46 @@ Read in the PoC install's shipped Lua and the add-on (`packages/fixes/.../Glass-
   and 500 units/s after about 210 (`v^2 = 2gh`); map debris also leaves a window with the damage
   impulse, capped at 350 units/s, plus a random scatter of up to 60 units/s per axis at the default
   velocity transfer 2 (`rtx_map_glass.lua`).
+
+## The night sky line on modern_house (2026-10-31, Claude, R5)
+
+Measured in the field install on `modern_house` with [`night_sky_probe.lua`](../tools/qa/night_sky_probe.lua.md)
+and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
+
+- **What it was.** A straight-edged brownish haze over part of the night sky, stars faint inside it and
+  crisp outside, and in two views 15-20 s apart the whole scene in daylight. Remix's debug views
+  (below) showed no geometry in the sky at all; the haze ran along the edge of the previous view's
+  frustum, so it lived in the image's temporal history. Modern House RTX's `MHRTX_Settings` timer
+  (20 s, three times, started 3 s after the map: `lua/modern_house_rtx/cl_main.lua:320-328`) re-applies
+  its settings, its afternoon sun (`atmosphereSun`) among them; the companion, holding the player's
+  night, put it back on its 10 s `nativeloader_sky_owned` timer. Each daylight episode left the
+  history. In a tour after the third re-apply, and with the companion following the re-applies, all
+  views were clean, clouds on or off.
+- **Ruled out on the way:** the night sky image's seams (a CPU render of `evalStarMap`'s three layers
+  is seamless), the fixes' Custom 2D Skybox (`rtx_sky2d_enable 0` changed nothing; it draws only with
+  the world draw patched out), `r_skybox 0`, Modern House's mirrors, and the clouds' hex de-tiling
+  (the haze came with `rtx.atmosphere.cloudHexTilingEnable False` too, and went with it on once the
+  re-applies stopped).
+- **Sky draws in the physical sky.** With `rtx.skyMode 1` (Numos) `tryHandleSky` drops every draw whose
+  camera is Sky (`dxvk-remix-gmod src/dxvk/rtx_render/rtx_sky.h:85-89`); a draw is Sky when it carries
+  the Sky category: its colour texture is in `rtx.skyBoxTextures`, its viewport `minZ` reaches
+  `rtx.skyMinZThreshold`, or `rtx.skyAutoDetect` classifies it (`rtx_types.cpp:548-626`,
+  `rtx_camera_manager.cpp:111-118`). The modern_house skybox `sky_day02_03`'s face hashes (Remix's
+  `RemixMaterial.GetTextureHash`): lf `0x3A6D016CA2191AE0`, bk `0xA512403F9F80897C`, ft
+  `0x9225497508AC6197`, up `0x5D47E153E359F0B1`, dn `0x24CA07058BAA92B0` (rt returned 0); none is in
+  the package's list, auto-detection classifies them.
+- **Remix debug views from Lua.** `RemixConfig.SetConfigVariable("rtx.debugView.debugViewIdx", n)`
+  switches the view in a session (`GetConfigVariable` keeps returning `rtx.conf`'s value, 0); useful
+  indices (`src/dxvk/shaders/rtx/utility/debug_view_indices.h`): 271 primary depth, 277 geometry hash,
+  23 albedo, 22 material type, 166 stochastic alpha-blend background transparency, 876 the cloud
+  render target (black at night: its radiance is too dim to show).
+- **The clouds' temporal smoothing** blends each frame's cloud layer with a reprojected history
+  (`rtx.atmosphere.cloudHistoryWeight`, 0.92 by the comments) and drops history that is off-screen or
+  not from the previous frame (`src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh:948-1060`).
+  Which temporal pass kept the daylight longest was not isolated.
+- **The night sky image's galaxy band is wrapped three times** around the sky, so the Milky Way's core
+  shows three times (`evalStarMap`); an observation for the runtime, not changed.
+- **A start-up crash in NVIDIA's driver** in one of eleven field runs: an access violation reading
+  `0xffffffffffffffff` in `nvoglv64.dll+0xe622f8`, on a worker thread of Remix's `d3d9.dll` compiling
+  pipelines, about 4 s after the device was created (`out\qa-field\r5-sky\08-night-sky-debug-views`;
+  rerun clean). Recorded for the stability work.
