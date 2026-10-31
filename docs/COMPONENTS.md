@@ -251,3 +251,16 @@ protection and late-hash/proxy tracking. Native cutout traversal and acceleratio
 recorded in [ADR 0048](decisions/0048-layered-alpha-cutouts.md); outline behavior is in
 [ADR 0047](decisions/0047-ignore-incompatible-model-outlines.md). Client lifecycle coverage is
 [tools/tests/test_model_layers.py](../tools/tests/test_model_layers.py.md).
+
+## R6 T3 companion telemetry
+
+The client sampler [`nativeloader_vram.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_vram.lua.md)
+adds bounded local VRAM CSVs when the fixes expose the statistics API. Its archived
+`nativeloader_vram_telemetry` switch defaults on. Offline coverage is in
+[`test_companion_vram.py`](../tools/tests/test_companion_vram.py.md).
+
+The same task adds an optional I2 performance-tier line and a direct **Memory and stability** guide
+link in the RTX Remix tab. The player checklist is [STABILITY.md](STABILITY.md); the localized
+menu/guide contract is covered by
+[`test_companion_stability.py`](../tools/tests/test_companion_stability.py.md). The companion gettext
+namespace has 21 new agent-written messages in six non-English catalogs, with English as source.

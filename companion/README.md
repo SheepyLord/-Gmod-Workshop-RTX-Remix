@@ -12,6 +12,7 @@ the `.md` files, and adds the translations built from `i18n/`.
 | File | What |
 |---|---|
 | [`nativeloader/lua/autorun/client/nativeloader.lua`](nativeloader/lua/autorun/client/nativeloader.lua.md) | Prints the loader's start-up status (`status.json`) and RTX session results (`session.json`) to the console at client start and on `nativeloader_status` |
+| [`nativeloader/lua/autorun/client/nativeloader_vram.lua`](nativeloader/lua/autorun/client/nativeloader_vram.lua.md) | Samples Remix VRAM totals/categories every 30 seconds when the fixes expose the API; keeps two bounded local CSV segments, controlled by `nativeloader_vram_telemetry` |
 | [`nativeloader/lua/autorun/nativeloader_defaults.lua`](nativeloader/lua/autorun/nativeloader_defaults.lua.md) | First-run defaults: the classic RTX install's values for the RTX add-ons' settings, once, only where a setting is still at its default ([ADR 0020](../docs/decisions/0020-classic-rtx-settings-as-defaults.md)) |
 | [`nativeloader/lua/nativeloader/classic_defaults.lua`](nativeloader/lua/nativeloader/classic_defaults.lua.md) | The generated table of those values ([`tools/classic_defaults.py`](../tools/classic_defaults.py.md)) |
 | [`nativeloader/lua/autorun/_nativeloader_guard.lua`](nativeloader/lua/autorun/_nativeloader_guard.lua.md) | The RTX-session guard: session settings stay as set, no stock post-processing over the path-traced image ([ADR 0022](../docs/decisions/0022-companion-rtx-session-guard.md)) |

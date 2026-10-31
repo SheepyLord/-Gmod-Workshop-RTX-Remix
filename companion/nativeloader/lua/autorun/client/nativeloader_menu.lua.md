@@ -1,5 +1,14 @@
 # nativeloader_menu.lua
 
+R6 adds an optional performance-tier help line to **Start here**. It reads
+`garrysmod/data/native-loader/status.json` `activation.performance_tier` (interface I2), showing the
+translated tier/source, adapter description, dedicated VRAM in MiB and the configuration/restart
+instructions. Missing fields on older loaders, unreadable JSON, unsupported schemas and invalid
+tiers show no line. Missing adapter/memory uses an explicit unknown placeholder. It reads the report
+only when the panel opens and never applies a tier or writes settings. The adjacent **Memory and
+stability guide** button runs `nativeloader_stability_guide` to select that guide page directly.
+These strings use the companion gettext catalogs; new translations are agent-written.
+
 The maximum-bounce draft defaults to 12 and is bounded at 15, matching the runtime. It remains
 an opt-in numeric override: opening the panel cannot replace the user's saved Remix setting.
 

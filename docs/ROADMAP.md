@@ -1,5 +1,14 @@
 # Roadmap
 
+R6 T3 implementation (companion telemetry, tier display, translated stability guide and 2048 px
+publishing guidance) is complete, uncommitted for the project manager on `r6-t3-companion`; see
+[the task brief](handover/R6-T3-companion-docs.md). All 33 companion tests and both i18n checks pass;
+the Release build and all 23 CTests pass with a cache-only shorter executable output directory.
+The full Release gate is **blocked by the sandbox**: 21 existing registry-fixture setup failures
+and six existing publisher-test Git ownership errors. No failing tests were disabled. Integration,
+a full gate under the project manager's account, human translation review and game acceptance
+remain with the project manager; this task starts no game.
+
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.
