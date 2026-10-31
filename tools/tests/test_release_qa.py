@@ -125,6 +125,12 @@ class SettingsTests(unittest.TestCase):
         edited = self.write('e.vdf', '"CVars"\n{\n\t"gm_demo_icon"\t\t"0"\n}\n')
         problems = qa.settings_changes(before, edited)['problems']
         self.assertEqual(problems, ['"gm_demo_icon": \'1\' -> \'0\'', '"pp_bloom_passes": \'4\' -> None'])
+        # R5: a slider writing a convar back in the engine's %f form changes nothing.
+        hour = self.write('h.vdf', '"CVars"\n{\n\t"nativeloader_sky_hour"\t\t"0.00"\n\t"skin"\t\t"x"\n}\n')
+        rewritten = self.write('r.vdf', '"CVars"\n{\n\t"nativeloader_sky_hour"\t\t"0.000000"\n\t"skin"\t\t"x"\n}\n')
+        self.assertEqual(qa.settings_changes(hour, rewritten)['changed'], {})
+        moved = self.write('m.vdf', '"CVars"\n{\n\t"nativeloader_sky_hour"\t\t"2.130000"\n\t"skin"\t\t"y"\n}\n')
+        self.assertEqual(sorted(qa.settings_changes(hour, moved)['changed']), ['"nativeloader_sky_hour"', '"skin"'])
 
 
 class EvaluateOnlyTests(unittest.TestCase):
