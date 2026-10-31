@@ -1,6 +1,6 @@
 # Roadmap
 
-The requested multiplayer change is **implemented and validated; publication in progress**: loader 0.9.0 implements a verified RTX-owner
+The requested multiplayer change is **done**: loader 0.9.0 implements a verified RTX-owner
 script bootstrap without changing `sv_allowcslua`, removes the shipment's `-insecure` request and
 keeps other community scripts under engine permissions. RTXDebug separates local rendering
 configuration from commands requiring single-player, cheats and insecure mode. Offline validation
@@ -9,7 +9,8 @@ Prototype 7 joins a genuine 64-bit dedicated server with VAC secure mode active,
 cheats off and no `-insecure`; reconnect and a gm_construct/gm_flatgrass round trip pass. RTXDebug
 rendering apply/restore works, unsafe evaluation/cvar changes are denied and unrelated local Lua
 remains blocked. Full Release checks pass (19 CTests, 277 Python tests), and the reviewed GMA passes
-the same dedicated-server probes and a normal single-player launch. Publication is pending; no universal
+the same dedicated-server probes and a normal single-player launch. Main 64e9913 and both CI jobs
+are green; hidden Workshop 3829070317 carries 0.0.0-dev.20261031074244+74044194. No universal
 VAC/server-policy guarantee follows from this controlled session. The helper-bearing shipment
 requires loader >=0.9.0; a Workshop-only update cannot replace the installed bootstrap. Policy and acceptance
 criteria are in [ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md) and

@@ -8,6 +8,9 @@
 *.psm1  text eol=crlf
 *.sh    text eol=lf
 
+# This text is also packaged as the native client's notice; keep its bytes reproducible.
+/LICENSE text eol=lf
+
 # Vendored third-party code stays byte-identical to upstream (hashes in each README): no EOL conversion.
 third_party/** -text
 

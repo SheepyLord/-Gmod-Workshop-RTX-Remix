@@ -636,6 +636,20 @@ helper, debug module/companion, both GPL fixes and source/licence notices: 44 pa
 none removed. Packaged client 80444 passes the multiplayer probes; single-player client 39532
 loads through the normal engine path without insecure or a forced payload. Their records are under
 out/multiplayer-evidence/packaged and singleplayer. Both clients and the dedicated server were
-closed; the captured video registry export was restored and its hash matches. Publication is pending. This
+closed; the captured video registry export was restored and its hash matches. This
 controlled session does not promise compatibility with every VAC or server policy. No field
 install, `GarrysMod_RTX_c`, its backups or Remix `user.conf` was changed by the offline work.
+
+Published main 64e9913678a5a7f4f455e1e19d6f91bbac874e03; CI runs 41181659896 (loader) and
+41181659911 (package) both succeeded. Hidden distribution item 3829070317 now carries
+0.0.0-dev.20261031074244+74044194, digest
+5a2f679f7df4f95f0ab8e00e4cec42f6444c7b8a5304caa944d45829a139a850. Its 971-file payload matches
+the multiplayer-tested executable files exactly. The final source notice/path-alias metadata adds
+one non-executable source file; the main build also normalizes the MIT notice to LF. The root
+licence now has an explicit LF attribute to make that notice reproducible. Published readback is
+out/multiplayer-evidence/published-review.json; no files were removed.
+
+The tested loader bundle is out/mp-delivery/gmod-native-loader-0.9.0+64e99136.zip, with winmm.dll
+SHA-256 35e8ce7eee55193494a6283b70ecb7a40b4b48e0037824722bb836abb1741afa. Workshop cannot
+replace the bootstrap itself. RTXDebug's corresponding source, CLI, dependency notices and build
+provenance are included under rtx_debug/source. Main's native Release build is also refreshed.

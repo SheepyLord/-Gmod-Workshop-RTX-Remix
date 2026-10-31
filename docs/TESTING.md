@@ -53,7 +53,11 @@ and 277 Python tests (28 + 25 + 224; seven environment skips). The reviewed 970-
 the dedicated-server debug/boundary probes in PID 80444; single-player PID 39532 loads normally
 without insecure or a forced client payload. Archive readback verifies seven critical files,
 44 changed payload files and no removals. Evidence is under out/multiplayer-evidence/packaged,
-singleplayer and package-review.json. Publication is pending. Policy
+singleplayer and package-review.json. Both push CI workflows passed for main 64e9913. The published
+archive preserves every executable payload byte from the reviewed archive; its only difference
+from the final branch build is LF normalization of the MIT notice (published-review.json).
+The root licence now has an explicit LF attribute so future checkouts reproduce those notice bytes.
+Policy
 and install requirements are in [ADR 0052](decisions/0052-scoped-rtx-multiplayer-bootstrap.md).
 
 Requests 15 and 23 use [test_presentation_ui.py](../tools/tests/test_presentation_ui.py.md) for seven
