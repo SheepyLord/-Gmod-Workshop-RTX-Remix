@@ -48,6 +48,9 @@
         "remixbinary/LICENSE",
         "packages/fixes/LICENSE",
         "--add-to-addon",
+        "remixbinary/src/hw",
+        "packages/fixes/licenses/oversized-skinning",
+        "--add-to-addon",
         "rtx_debug/source",
         "packages/fixes/licenses/rtxdebug"
       ]

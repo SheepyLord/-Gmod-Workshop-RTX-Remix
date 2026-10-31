@@ -1,0 +1,826 @@
+diff --git a/source/HardwareSkinningHooks.cpp b/source/HardwareSkinningHooks.cpp
+index 792652e..ae2a343 100644
+--- a/source/HardwareSkinningHooks.cpp
++++ b/source/HardwareSkinningHooks.cpp
+@@ -6,6 +6,7 @@
+ #if defined(HWSKIN_PATCHES) && defined(_WIN64)
+ 
+ #include "HardwareSkinningHooks.h"
++#include "oversized_skinning_policy.h"
+ #include "e_utils.h"  
+ #include "cbase.h"
+ #include "optimize.h"
+@@ -280,6 +281,11 @@ static PerStripDrawState g_PerStripState = {};
+ // promoted from ordinary Source DX9 flex groups.
+ static thread_local studiomeshgroup_t* g_pCurrentDynamicFlexGroup = nullptr;
+ 
++// Automatic safety applies to this exact draw only, even when the user leaves
++// r_forcehwskin disabled. Nested/ordinary groups must not inherit that choice.
++static thread_local studiomeshgroup_t* g_automaticLargeMeshGroup = nullptr;
++static void ReportUnsafeAutomaticLargeMesh(const char* reason);
++
+ // The fixed-function Eyes_dx9 shader cannot consume Source's static
+ // delta-flex stream. Keep a scoped marker around forced hardware eye draws so
+ // the existing hardware draw detour can redirect only their outer static calls
+@@ -923,6 +929,108 @@ static void ResetD3D9BoneState(IDirect3DDevice9* pDevice) {
+     pDevice->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_DISABLE);
+ }
+ 
++struct AutomaticBlendDeclaration {
++    IDirect3DVertexDeclaration9* original;
++    IDirect3DVertexDeclaration9* converted;
++};
++static AutomaticBlendDeclaration g_automaticBlendDeclarations[16] = {};
++static unsigned int g_automaticBlendDeclarationCursor = 0;
++
++static void ReleaseAutomaticBlendDeclarations() {
++    for (AutomaticBlendDeclaration& entry : g_automaticBlendDeclarations) {
++        if (entry.converted) entry.converted->Release();
++        if (entry.original) entry.original->Release();
++        entry = {};
++    }
++    g_automaticBlendDeclarationCursor = 0;
++}
++
++static IDirect3DVertexDeclaration9* AutomaticBlendDeclarationFor(
++    IDirect3DDevice9* device, IDirect3DVertexDeclaration9* original,
++    const D3DVERTEXELEMENT9* elements)
++{
++    for (AutomaticBlendDeclaration& entry : g_automaticBlendDeclarations) {
++        if (entry.original == original) {
++            entry.converted->AddRef();
++            return entry.converted;
++        }
++    }
++    IDirect3DVertexDeclaration9* converted = nullptr;
++    if (FAILED(device->CreateVertexDeclaration(elements, &converted)) || !converted) return nullptr;
++    AutomaticBlendDeclaration& entry = g_automaticBlendDeclarations[
++        g_automaticBlendDeclarationCursor++ % 16];
++    if (entry.converted) entry.converted->Release();
++    if (entry.original) entry.original->Release();
++    // Retain the original too: its address cannot be recycled into a false hit.
++    original->AddRef();
++    entry.original = original;
++    entry.converted = converted;
++    converted->AddRef();
++    return converted;
++}
++
++static HRESULT DrawAutomaticLargeMeshDIP(
++    IDirect3DDevice9* device, D3DPRIMITIVETYPE type, INT baseVertex,
++    UINT minVertex, UINT vertices, UINT startIndex, UINT primitives)
++{
++    IDirect3DVertexDeclaration9* originalDeclaration = nullptr;
++    IDirect3DVertexDeclaration9* convertedDeclaration = nullptr;
++    bool declarationChanged = false;
++    HRESULT result = D3DERR_INVALIDCALL;
++    __try {
++        __try {
++            if (FAILED(device->GetVertexDeclaration(&originalDeclaration)) || !originalDeclaration) {
++                ReportUnsafeAutomaticLargeMesh("unavailable hardware vertex declaration");
++                __leave;
++            }
++            D3DVERTEXELEMENT9 elements[MAXD3DDECLLENGTH + 1];
++            UINT count = MAXD3DDECLLENGTH + 1;
++            if (FAILED(originalDeclaration->GetDeclaration(elements, &count)) ||
++                count > MAXD3DDECLLENGTH + 1) {
++                ReportUnsafeAutomaticLargeMesh("unreadable hardware vertex declaration");
++                __leave;
++            }
++            bool convert = false, haveIndices = false, unsupported = false;
++            for (UINT i = 0; i < count && elements[i].Type != D3DDECLTYPE_UNUSED; ++i) {
++                if (elements[i].Usage != D3DDECLUSAGE_BLENDINDICES) continue;
++                haveIndices = true;
++                if (elements[i].Type == D3DDECLTYPE_D3DCOLOR) {
++                    elements[i].Type = D3DDECLTYPE_UBYTE4;
++                    convert = true;
++                } else if (elements[i].Type != D3DDECLTYPE_UBYTE4) {
++                    unsupported = true;
++                }
++            }
++            if (unsupported || (!haveIndices && g_PerStripState.numBones > 1)) {
++                ReportUnsafeAutomaticLargeMesh("unsupported hardware blend-index layout");
++                __leave;
++            }
++            if (convert) {
++                convertedDeclaration = AutomaticBlendDeclarationFor(device, originalDeclaration, elements);
++                if (!convertedDeclaration) {
++                    ReportUnsafeAutomaticLargeMesh("could not create unswizzled blend-index declaration");
++                    __leave;
++                }
++                declarationChanged = true;
++                if (FAILED(device->SetVertexDeclaration(convertedDeclaration))) {
++                    ReportUnsafeAutomaticLargeMesh("could not bind unswizzled blend-index declaration");
++                    __leave;
++                }
++            }
++            // Already-UBYTE4 declarations pass through without a replacement.
++            result = g_OriginalDIP(device, type, baseVertex, minVertex, vertices, startIndex, primitives);
++        }
++        __finally {
++            if (declarationChanged) device->SetVertexDeclaration(originalDeclaration);
++            if (convertedDeclaration) convertedDeclaration->Release();
++            if (originalDeclaration) originalDeclaration->Release();
++        }
++    } __except(EXCEPTION_EXECUTE_HANDLER) {
++        ReportUnsafeAutomaticLargeMesh("exception drawing/restoring blend-index declaration");
++    }
++    return result;
++}
++
+ // ============================================================================
+ // DrawIndexedPrimitive (DIP) Vtable Hook
+ //
+@@ -1075,6 +1183,11 @@ static HRESULT STDMETHODCALLTYPE Hook_DrawIndexedPrimitive(
+         g_PerStripState.currentStripIndex++;
+     }
+     
++    if (g_automaticLargeMeshGroup && g_PerStripState.active &&
++        g_PerStripState.pGroup == g_automaticLargeMeshGroup) {
++        return DrawAutomaticLargeMeshDIP(pDevice, PrimitiveType, BaseVertexIndex,
++            MinVertexIndex, NumVertices, StartIndex, PrimitiveCount);
++    }
+     return g_OriginalDIP(pDevice, PrimitiveType, BaseVertexIndex,
+                           MinVertexIndex, NumVertices, StartIndex, PrimitiveCount);
+ }
+@@ -2059,6 +2172,121 @@ static void CachePromotedFlexGroupBoneBindings(
+ // Hook: R_StudioCreateSingleMesh
+ // Forces MESHGROUP_IS_HWSKINNED flag on mesh groups during creation
+ // ============================================================================
++struct AutomaticLargeMeshCertificate {
++    studiomeshgroup_t* group;
++    studiohdr_t* header;
++    IMesh* mesh;
++    OptimizedModel::StripHeader_t* strips;
++    int checksum;
++    unsigned long long fingerprint;
++    bool complete;
++};
++static AutomaticLargeMeshCertificate g_largeMeshCertificates[4096] = {};
++
++static AutomaticLargeMeshCertificate* LargeMeshCertificateSlot(studiomeshgroup_t* group, bool insert) {
++    const size_t first = (reinterpret_cast<uintptr_t>(group) >> 4) % 4096;
++    for (size_t i = 0; i < 4096; ++i) {
++        AutomaticLargeMeshCertificate& entry = g_largeMeshCertificates[(first + i) % 4096];
++        if (entry.group == group) return &entry;
++        if (!entry.group) return insert ? &entry : nullptr;
++    }
++    // A full table may forget an old certificate, never approve unknown data.
++    return insert ? &g_largeMeshCertificates[first] : nullptr;
++}
++
++static unsigned long long LargeMeshStripFingerprint(studiomeshgroup_t* group) {
++    unsigned long long hash = 1469598103934665603ULL;
++    const auto add = [&hash](int value) {
++        hash ^= static_cast<unsigned int>(value);
++        hash *= 1099511628211ULL;
++    };
++    add(group->m_NumVertices);
++    add(group->m_NumStrips);
++    for (int i = 0; i < group->m_NumStrips; ++i) {
++        OptimizedModel::StripHeader_t* strip = &group->m_pStripData[i];
++        add(strip->numVerts); add(strip->vertOffset);
++        add(strip->numBoneStateChanges);
++        if (strip->numBoneStateChanges < 0 || strip->numBoneStateChanges > MAX_D3D9_BONES) return 0;
++        for (int k = 0; k < strip->numBoneStateChanges; ++k) {
++            OptimizedModel::BoneStateChangeHeader_t* change = strip->pBoneStateChange(k);
++            add(change->hardwareID); add(change->newBoneID);
++        }
++    }
++    return hash;
++}
++
++static bool VtxStripPalettesAreComplete(
++    studiohdr_t* header, OptimizedModel::StripGroupHeader_t* source, studiomeshgroup_t* runtime)
++{
++    if (source->numVerts != runtime->m_NumVertices || source->numVerts <= 0 || source->numVerts > 65536 ||
++        source->numStrips != runtime->m_NumStrips || source->numStrips <= 0 || source->numStrips > 1024 ||
++        !runtime->m_pStripData) return false;
++    for (int i = 0; i < source->numStrips; ++i) {
++        OptimizedModel::StripHeader_t* strip = source->pStrip(i);
++        OptimizedModel::StripHeader_t* built = &runtime->m_pStripData[i];
++        if (strip->vertOffset < 0 || strip->numVerts <= 0 || strip->vertOffset > source->numVerts ||
++            strip->numVerts > source->numVerts - strip->vertOffset ||
++            strip->numBoneStateChanges < 0 || strip->numBoneStateChanges > MAX_D3D9_BONES ||
++            strip->numVerts != built->numVerts || strip->vertOffset != built->vertOffset ||
++            strip->numBoneStateChanges != built->numBoneStateChanges) return false;
++        OversizedSkinning::BoneSlotMask used, provided;
++        for (int v = 0; v < strip->numVerts; ++v) {
++            OptimizedModel::Vertex_t* vertex = source->pVertex(strip->vertOffset + v);
++            if (vertex->numBones == 0 || vertex->numBones > 3) return false;
++            for (int b = 0; b < vertex->numBones; ++b) {
++                if (!used.Add(static_cast<unsigned char>(vertex->boneID[b]))) return false;
++            }
++        }
++        for (int k = 0; k < strip->numBoneStateChanges; ++k) {
++            OptimizedModel::BoneStateChangeHeader_t* change = strip->pBoneStateChange(k);
++            OptimizedModel::BoneStateChangeHeader_t* builtChange = built->pBoneStateChange(k);
++            if (change->hardwareID != builtChange->hardwareID || change->newBoneID != builtChange->newBoneID)
++                return false;
++            if (change->newBoneID < 0) break;
++            if (change->newBoneID >= header->numbones || !provided.Add(change->hardwareID)) return false;
++        }
++        if (!OversizedSkinning::StripProvidesUsedSlots(used, provided)) return false;
++    }
++    return true;
++}
++
++static void CertifyAutomaticLargeMeshes(
++    studiohdr_t* header, mstudiomesh_t* mesh, int* vtxMesh, __int64 meshData)
++{
++    __try {
++        if (!header || !meshData) return;
++        const int groupCount = *reinterpret_cast<int*>(meshData);
++        studiomeshgroup_t* groups = *reinterpret_cast<studiomeshgroup_t**>(meshData + 8);
++        if (!groups || groupCount <= 0 || groupCount > MAX_VTX_STRIP_GROUPS) return;
++        for (int i = 0; i < groupCount; ++i) {
++            AutomaticLargeMeshCertificate* entry = LargeMeshCertificateSlot(&groups[i], false);
++            if (entry) entry->complete = false;
++        }
++        OptimizedModel::MeshHeader_t* vtx = reinterpret_cast<OptimizedModel::MeshHeader_t*>(vtxMesh);
++        if (!mesh || !vtx || vtx->numStripGroups != groupCount) return;
++        for (int i = 0; i < groupCount; ++i) {
++            OptimizedModel::StripGroupHeader_t* source = GetVtxStripGroup(vtx, header, i);
++            if (!source || !OversizedSkinning::NeedsHardwareProtection(source->numVerts, source->flags, mesh->numflexes))
++                continue;
++            AutomaticLargeMeshCertificate* entry = LargeMeshCertificateSlot(&groups[i], true);
++            *entry = {};
++            entry->group = &groups[i];
++            entry->header = header;
++            entry->mesh = groups[i].m_pMesh;
++            entry->strips = groups[i].m_pStripData;
++            entry->checksum = header->checksum;
++            entry->complete = VtxStripPalettesAreComplete(header, source, &groups[i]);
++            if (entry->complete) entry->fingerprint = LargeMeshStripFingerprint(&groups[i]);
++            if (HardwareSkinningDebugEnabled()) {
++                HWSKIN_DBG("[HWSkin] Oversized strip palette certificate: vertices=%d strips=%d complete=%d\n",
++                    source->numVerts, source->numStrips, entry->complete);
++            }
++        }
++    } __except(EXCEPTION_EXECUTE_HANDLER) {
++        ReportUnsafeAutomaticLargeMesh("exception certifying compiled strip palettes");
++    }
++}
++
+ Define_method_Hook(void*, R_StudioCreateSingleMesh, void*,
+     int* pStudioHdr,
+     __int64 pStudioLodData,
+@@ -2314,6 +2542,9 @@ Define_method_Hook(void*, R_StudioCreateSingleMesh, void*,
+         reinterpret_cast<studiohdr_t*>(pStudioHdr),
+         reinterpret_cast<mstudiomesh_t*>(pMesh), pMeshData);
+ 
++    CertifyAutomaticLargeMeshes(reinterpret_cast<studiohdr_t*>(pStudioHdr),
++        reinterpret_cast<mstudiomesh_t*>(pMesh), pVtxMesh, pMeshData);
++
+     return result;
+ }
+ 
+@@ -2560,6 +2791,196 @@ Define_method_Hook(void, R_StudioProcessFlexedMesh, void*,
+ // temporarily suppress those fallback flags and carry our D3D9 bone state into
+ // the separate dynamic-HW draw wrapper.
+ // ============================================================================
++struct AutomaticBonePaletteAccess {
++    IDirect3DDevice9* device;
++
++    bool ReadBlend(unsigned int& blend, unsigned int& indexed) {
++        DWORD oldBlend, oldIndexed;
++        if (FAILED(device->GetRenderState(D3DRS_VERTEXBLEND, &oldBlend)) ||
++            FAILED(device->GetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, &oldIndexed))) return false;
++        blend = oldBlend;
++        indexed = oldIndexed;
++        return true;
++    }
++    bool WriteBlend(unsigned int blend, unsigned int indexed) {
++        const HRESULT first = device->SetRenderState(D3DRS_VERTEXBLEND, blend);
++        const HRESULT second = device->SetRenderState(D3DRS_INDEXEDVERTEXBLENDENABLE, indexed);
++        return SUCCEEDED(first) && SUCCEEDED(second);
++    }
++    bool ReadMatrix(int index, D3DMATRIX& matrix) {
++        return SUCCEEDED(device->GetTransform(D3DTS_WORLDMATRIX(index), &matrix));
++    }
++    bool WriteMatrix(int index, const D3DMATRIX& matrix) {
++        return SUCCEEDED(device->SetTransform(D3DTS_WORLDMATRIX(index), &matrix));
++    }
++};
++
++static void ReportUnsafeAutomaticLargeMesh(const char* reason) {
++    static int reports = 0;
++    if (reports++ < 8) {
++        HWSKIN_ERROR("[HWSkin] Skipping oversized HW mesh without safe draw state: %s\n", reason);
++    }
++}
++
++// Determine every palette slot our existing upload/remap helpers can modify.
++// The engine's software guard must remain intact; unreadable/transient groups
++// are skipped rather than sent back through that unsafe fallback.
++static bool GetAutomaticLargeMeshPaletteCount(
++    studiohdr_t* header, matrix3x4_t* poses, studiomeshgroup_t* group, int& count)
++{
++    const bool oversized = group->m_NumVertices >= OversizedSkinning::SoftwareVertexLimit;
++    if (!header || !poses || !group->m_pMesh || !group->m_pStripData ||
++        header->numbones <= 0 || header->numbones > (oversized ? MAX_D3D9_BONES : 512) ||
++        group->m_NumVertices > 65536 || group->m_NumStrips <= 0 || group->m_NumStrips > 1024) return false;
++    if (oversized) {
++        AutomaticLargeMeshCertificate* certificate = LargeMeshCertificateSlot(group, false);
++        if (!certificate || !certificate->complete || certificate->header != header ||
++            certificate->mesh != group->m_pMesh || certificate->strips != group->m_pStripData ||
++            certificate->checksum != header->checksum ||
++            certificate->fingerprint != LargeMeshStripFingerprint(group)) return false;
++    }
++    count = header->numbones < MAX_D3D9_BONES ? header->numbones : MAX_D3D9_BONES;
++    ModelBoneRemapCache* cache = GetOrCreateBoneRemapCache(header);
++    if (!cache || cache->maxHwID < 0 || cache->maxHwID > MAX_D3D9_BONES) return false;
++    if (cache->maxHwID > count) count = cache->maxHwID;
++    bool haveFirstStripMapping = header->numbones == 1;
++    for (int i = 0; i < cache->maxHwID; ++i) {
++        if (cache->remapTable[i] >= 0 && cache->remapTable[i] < header->numbones)
++            haveFirstStripMapping = true;
++    }
++    for (int stripIndex = 0; stripIndex < group->m_NumStrips; ++stripIndex) {
++        OptimizedModel::StripHeader_t* strip = &group->m_pStripData[stripIndex];
++        if (strip->numBoneStateChanges < 0 || strip->numBoneStateChanges > MAX_D3D9_BONES) return false;
++        for (int i = 0; i < strip->numBoneStateChanges; ++i) {
++            OptimizedModel::BoneStateChangeHeader_t* change = strip->pBoneStateChange(i);
++            if (change->newBoneID < 0) break;
++            if (change->hardwareID < 0 || change->hardwareID >= MAX_D3D9_BONES ||
++                change->newBoneID >= header->numbones) return false;
++            if (change->hardwareID + 1 > count) count = change->hardwareID + 1;
++            if (stripIndex == 0) haveFirstStripMapping = true;
++        }
++    }
++    for (int bone = 0; bone < header->numbones; ++bone) {
++        for (int row = 0; row < 3; ++row) {
++            for (int column = 0; column < 4; ++column) {
++                if (!std::isfinite(poses[bone][row][column])) return false;
++            }
++        }
++    }
++    // Large automatic draws require a certified complete palette. Smaller
++    // user-forced draws retain the existing cache/skeleton-index fallback.
++    return !oversized || haveFirstStripMapping;
++}
++
++static bool UserForcedScopeHasSkinnedPose(void* studioRender) {
++    if (!g_bInRenderFinal) return false;
++    __try {
++        studiohdr_t* header = *(studiohdr_t**)((uintptr_t)studioRender + 0x108);
++        matrix3x4_t* poses = *(matrix3x4_t**)((uintptr_t)studioRender + 0xE8);
++        const int mode = GlobalConvars::r_hwskin_setbones ? GlobalConvars::r_hwskin_setbones->GetInt() : 0;
++        return header && poses && OversizedSkinning::UserForcedUploadSelected(header->numbones, mode);
++    } __except(EXCEPTION_EXECUTE_HANDLER) {
++        return false;
++    }
++}
++
++static int* DrawAutomaticLargeHardwareMesh(
++    void* studioRender, void* renderContext, void* mesh, studiomeshgroup_t* group,
++    float blend, IMaterial* material, int lod, HWSkinDrawDynamicMeshFn original)
++{
++    if (!g_bInRenderFinal || !g_pD3DDevice || !g_OriginalDIP || !renderContext || !material) {
++        ReportUnsafeAutomaticLargeMesh("missing render context, device or bone-draw hook");
++        return nullptr;
++    }
++
++    AutomaticBonePaletteAccess access = {g_pD3DDevice};
++    OversizedSkinning::BonePaletteSnapshot<D3DMATRIX, MAX_D3D9_BONES> palette = {};
++    const PerStripDrawState previousStripState = g_PerStripState;
++    studiomeshgroup_t* previousAutomaticGroup = g_automaticLargeMeshGroup;
++    studiomeshgroup_t* previousFlexGroup = g_pCurrentDynamicFlexGroup;
++    const int previousBoneCount = g_BONEDATA.bone_count;
++    const bool previousBoneActive = g_BONEDATA.active;
++    unsigned char* config = nullptr;
++    unsigned char oldConfig24 = 0, oldConfig25 = 0;
++    unsigned int oldGroupFlags = 0;
++    int* oldUniqueTriangles = nullptr;
++    bool configChanged = false, materialChanged = false, groupCaptured = false;
++    int* result = nullptr;
++
++    __try {
++        __try {
++            studiohdr_t* header = *(studiohdr_t**)((uintptr_t)studioRender + 0x108);
++            matrix3x4_t* poses = *(matrix3x4_t**)((uintptr_t)studioRender + 0xE8);
++            config = *(unsigned char**)((uintptr_t)studioRender + 0x08);
++            int paletteCount = 0;
++            const bool oversized = group->m_NumVertices >= OversizedSkinning::SoftwareVertexLimit;
++            if (config && OversizedSkinning::HasUnsafeStaticFallback(config[0x38], oversized)) {
++                ReportUnsafeAutomaticLargeMesh("unsupported static renderer fallback mode");
++                __leave;
++            }
++            if (!config || !GetAutomaticLargeMeshPaletteCount(header, poses, group, paletteCount) ||
++                !palette.Capture(access, paletteCount)) {
++                ReportUnsafeAutomaticLargeMesh("unavailable model, palette, strip data or D3D snapshot");
++                __leave;
++            }
++            oldGroupFlags = group->m_Flags;
++            oldUniqueTriangles = group->m_pUniqueTris;
++            groupCaptured = true;
++            oldConfig24 = config[0x24];
++            oldConfig25 = config[0x25];
++            configChanged = true;
++            config[0x24] &= static_cast<unsigned char>(~0x02);
++            config[0x25] &= static_cast<unsigned char>(~0x0B);
++            materialChanged = material->NeedsSoftwareSkinning();
++            if (materialChanged) material->SetMaterialVarFlag(MATERIAL_VAR_NEEDS_SOFTWARE_SKINNING, false);
++            g_automaticLargeMeshGroup = group;
++
++            static int automaticDrawReports = 0;
++            if (HardwareSkinningDebugEnabled() && automaticDrawReports++ < 32) {
++                HWSKIN_DBG("[HWSkin] Scoped HW safety draw: vertices=%d bones=%d "
++                    "flags=0x%X config24=0x%02X config25=0x%02X materialSW=%d\n",
++                    group->m_NumVertices, header->numbones, oldGroupFlags,
++                    oldConfig24, oldConfig25, materialChanged);
++            }
++            // Known non-flex HW data goes directly through the original HW
++            // branch; its inner hook uploads bones even if r_forcehwskin is 0.
++            result = original(studioRender, renderContext, mesh, group, 0, blend, material, lod);
++        }
++        __finally {
++            g_automaticLargeMeshGroup = previousAutomaticGroup;
++            g_pCurrentDynamicFlexGroup = previousFlexGroup;
++            g_PerStripState = previousStripState;
++            g_BONEDATA.bone_count = previousBoneCount;
++            g_BONEDATA.active = previousBoneActive;
++            __try {
++                if (groupCaptured) {
++                    group->m_Flags = oldGroupFlags;
++                    group->m_pUniqueTris = oldUniqueTriangles;
++                }
++                if (configChanged) {
++                    config[0x24] = oldConfig24;
++                    config[0x25] = oldConfig25;
++                }
++            } __except(EXCEPTION_EXECUTE_HANDLER) {
++                ReportUnsafeAutomaticLargeMesh("exception restoring renderer state");
++            }
++            __try {
++                if (materialChanged) material->SetMaterialVarFlag(MATERIAL_VAR_NEEDS_SOFTWARE_SKINNING, true);
++            } __except(EXCEPTION_EXECUTE_HANDLER) {
++                ReportUnsafeAutomaticLargeMesh("exception restoring material state");
++            }
++            __try {
++                if (!palette.Restore(access)) ReportUnsafeAutomaticLargeMesh("D3D state restoration failed");
++            } __except(EXCEPTION_EXECUTE_HANDLER) {
++                ReportUnsafeAutomaticLargeMesh("exception restoring D3D state");
++            }
++        }
++    } __except(EXCEPTION_EXECUTE_HANDLER) {
++        ReportUnsafeAutomaticLargeMesh("exception preparing or drawing model");
++    }
++    return result;
++}
++
+ int* HardwareSkinning_DrawDynamicMesh(
+     void* _this,
+     void* pRenderContext,
+@@ -2582,6 +3003,22 @@ int* HardwareSkinning_DrawDynamicMesh(
+         forcehwskin && g_bInRenderFinal && pGroup &&
+         (pGroup->m_Flags & MESHGROUP_IS_FLEXED);
+ 
++    bool automaticLargeMesh = false;
++    __try {
++        const bool userForcedEligible = forcehwskin && !HardwareSkinning_IsForcedEyeDraw() &&
++            UserForcedScopeHasSkinnedPose(_this);
++        automaticLargeMesh = pGroup && pMesh && OversizedSkinning::NeedsHardwareScope(
++            pGroup->m_NumVertices, pGroup->m_Flags,
++            reinterpret_cast<mstudiomesh_t*>(pMesh)->numflexes,
++            userForcedEligible, g_automaticLargeMeshGroup == pGroup);
++    } __except(EXCEPTION_EXECUTE_HANDLER) {
++        // Leave unclassified inputs on their existing path.
++    }
++    if (automaticLargeMesh) {
++        return DrawAutomaticLargeHardwareMesh(
++            _this, pRenderContext, pMesh, pGroup, r_blend, pMaterial, lod, original);
++    }
++
+     if (!forceFlexHardware) {
+         return original(
+             _this, pRenderContext, pMesh, pGroup, lighting, r_blend,
+@@ -2727,6 +3164,25 @@ int* HardwareSkinning_DrawDynamicMesh(
+ // GMod version takes 9 parameters (different from Source SDK's 5)
+ // Sets bone transforms via D3D9 fixed-function API for Remix to capture
+ // ============================================================================
++struct AutomaticStaticDrawContext {
++    F_StudioDrawGroupHWSkin entry;
++    __int64 bodyPartInfo;
++    unsigned int flags;
++    void* colorMeshInfo;
++};
++static thread_local AutomaticStaticDrawContext* g_automaticStaticDrawContext = nullptr;
++
++static int* ReenterAutomaticStaticDraw(
++    void* studioRender, void* renderContext, void*, studiomeshgroup_t* group,
++    int lighting, float blend, IMaterial* material, int)
++{
++    AutomaticStaticDrawContext* context = g_automaticStaticDrawContext;
++    if (!context || !context->entry) return nullptr;
++    return reinterpret_cast<int*>(static_cast<intptr_t>(context->entry(
++        studioRender, renderContext, context->bodyPartInfo, group,
++        lighting, blend, material, context->flags, context->colorMeshInfo)));
++}
++
+ Define_method_Hook(__int64, R_StudioDrawGroupHWSkin, void*,
+     void* pRenderContext,
+     __int64 bodyPartInfo,
+@@ -2737,6 +3193,38 @@ Define_method_Hook(__int64, R_StudioDrawGroupHWSkin, void*,
+     unsigned int flags,
+     void* pColorMeshInfo)
+ {
++    // The direct static entry has its own software fallback, without the
++    // dynamic entry's 32768-vertex guard. Cover both entries with the same
++    // borrowed-state scope. A dynamic->static call already carries this marker.
++    bool needsAutomaticScope = false;
++    __try {
++        const bool userForcedEligible = GlobalConvars::r_forcehwskin &&
++            GlobalConvars::r_forcehwskin->GetBool() && !HardwareSkinning_IsForcedEyeDraw() &&
++            UserForcedScopeHasSkinnedPose(_this);
++        needsAutomaticScope = pGroup && bodyPartInfo &&
++            OversizedSkinning::NeedsHardwareScope(
++                pGroup->m_NumVertices, pGroup->m_Flags,
++                reinterpret_cast<mstudiomesh_t*>(bodyPartInfo)->numflexes,
++                userForcedEligible, g_automaticLargeMeshGroup == pGroup);
++    } __except(EXCEPTION_EXECUTE_HANDLER) {
++        // Unclassified inputs retain their existing behavior.
++    }
++    if (needsAutomaticScope) {
++        AutomaticStaticDrawContext context = {
++            &R_StudioDrawGroupHWSkin_detour, bodyPartInfo, flags, pColorMeshInfo};
++        AutomaticStaticDrawContext* previous = g_automaticStaticDrawContext;
++        int* scopedResult = nullptr;
++        __try {
++            g_automaticStaticDrawContext = &context;
++            scopedResult = DrawAutomaticLargeHardwareMesh(
++                _this, pRenderContext, reinterpret_cast<void*>(bodyPartInfo), pGroup,
++                r_blend, reinterpret_cast<IMaterial*>(pMaterial), 0, ReenterAutomaticStaticDraw);
++        } __finally {
++            g_automaticStaticDrawContext = previous;
++        }
++        return static_cast<__int64>(reinterpret_cast<intptr_t>(scopedResult));
++    }
++
+     // Log first call
+     static bool s_firstCallLogged = false;
+     if (HardwareSkinningDebugEnabled() && !s_firstCallLogged) {
+@@ -2855,7 +3343,8 @@ Define_method_Hook(__int64, R_StudioDrawGroupHWSkin, void*,
+     
+     // Check if bone export is enabled and we have a D3D device
+     bool forcehwskin = GlobalConvars::r_forcehwskin && GlobalConvars::r_forcehwskin->GetBool();
+-    bool shouldSetBones = g_bInRenderFinal && g_pD3DDevice && forcehwskin;
++    const bool automaticLargeMesh = g_automaticLargeMeshGroup == pGroup && pGroup != nullptr;
++    bool shouldSetBones = g_bInRenderFinal && g_pD3DDevice && (forcehwskin || automaticLargeMesh);
+     bool forcedHwLighting = false; // Will be set to true for skinned meshes
+     
+     // Diagnostic logging (rate limited)
+@@ -2893,7 +3382,9 @@ Define_method_Hook(__int64, R_StudioDrawGroupHWSkin, void*,
+                 }
+             }
+             
+-            if (pStudioHdr && m_PoseToWorld && pStudioHdr->numbones > 1 && pStudioHdr->numbones <= 512) {
++            if (pStudioHdr && m_PoseToWorld &&
++                (pStudioHdr->numbones > 1 || (automaticLargeMesh && pStudioHdr->numbones == 1)) &&
++                pStudioHdr->numbones <= 512) {
+                 // Set bone transforms via D3D9 fixed-function API
+                 // Key: TRANSPOSE the matrices for D3D9 multi-bone format
+                 // If we have modelToWorld, apply full transform
+@@ -2904,7 +3395,7 @@ Define_method_Hook(__int64, R_StudioDrawGroupHWSkin, void*,
+                 int setBonesMode = traceSetBonesMode;
+                 
+                 bool doSetBones = false;
+-                if (setBonesMode == 1) {
++                if (automaticLargeMesh || setBonesMode == 1) {
+                     // Mode 1: set bones for all models
+                     doSetBones = true;
+                 } else if (setBonesMode > 1) {
+@@ -2977,6 +3468,12 @@ Define_method_Hook(__int64, R_StudioDrawGroupHWSkin, void*,
+         }
+     }
+     
++    if (automaticLargeMesh && !hookDoSetBones) {
++        if (usingTransientUniqueTris) pGroup->m_pUniqueTris = originalUniqueTris;
++        ReportUnsafeAutomaticLargeMesh("inner hardware draw could not upload bones");
++        return 0;
++    }
++
+     // Determine actual lighting to use
+     // Force LIGHTING_HARDWARE (0) for skinned meshes to ensure HW skinning path
+     int actualLighting = (forcedHwLighting) ? 0 : lighting;
+@@ -3518,6 +4015,10 @@ void HardwareSkinningHooks::Shutdown() {
+     try {
+         HWSKIN_DBG("[Hardware Skinning] Shutting down...\n");
+ 
++        ReleaseAutomaticBlendDeclarations();
++        g_automaticLargeMeshGroup = nullptr;
++        memset(g_largeMeshCertificates, 0, sizeof(g_largeMeshCertificates));
++
+         // Restore DrawIndexedPrimitive vtable hook
+         if (g_OriginalDIP && g_pD3DDevice) {
+             RestoreDIPVtableHook(g_pD3DDevice);
+diff --git a/source/oversized_skinning_policy.h b/source/oversized_skinning_policy.h
+new file mode 100644
+index 0000000..25f223e
+--- /dev/null
++++ b/source/oversized_skinning_policy.h
+@@ -0,0 +1,91 @@
++// SPDX-License-Identifier: GPL-2.0-only
++#pragma once
++#include <cstdint>
++
++namespace OversizedSkinning {
++
++// studiorender.dll's dynamic software path rejects this count inclusively.
++constexpr int SoftwareVertexLimit = 32768;
++constexpr unsigned int Flexed = 0x1;
++constexpr unsigned int HardwareSkinned = 0x2;
++constexpr unsigned int DeltaFlexed = 0x4;
++
++constexpr bool IsNonFlexHardwareGroup(unsigned int flags, int flexes) {
++    return (flags & HardwareSkinned) != 0 &&
++        (flags & (Flexed | DeltaFlexed)) == 0 && flexes == 0;
++}
++
++constexpr bool NeedsHardwareProtection(int vertices, unsigned int flags, int flexes) {
++    return vertices >= SoftwareVertexLimit && IsNonFlexHardwareGroup(flags, flexes);
++}
++
++constexpr bool NeedsHardwareScope(
++    int vertices, unsigned int flags, int flexes, bool userForcedEligible, bool alreadyScoped)
++{
++    return !alreadyScoped && vertices > 0 && IsNonFlexHardwareGroup(flags, flexes) &&
++        (userForcedEligible || vertices >= SoftwareVertexLimit);
++}
++
++constexpr bool HasUnsafeStaticFallback(unsigned char config38, bool oversized) {
++    return oversized && (config38 & 0x08) != 0;
++}
++
++constexpr bool UserForcedUploadSelected(int bones, int mode) {
++    return bones > 1 && bones <= 512 && (mode == 1 || mode == bones);
++}
++
++struct BoneSlotMask {
++    std::uint64_t words[4] = {};
++
++    bool Add(int slot) {
++        if (slot < 0 || slot >= 256) return false;
++        words[slot / 64] |= std::uint64_t(1) << (slot % 64);
++        return true;
++    }
++};
++
++// Only the strip's own assignments prove completeness. A mapping cached from
++// an earlier mesh can be stale when the user has hardware skinning disabled.
++inline bool StripProvidesUsedSlots(const BoneSlotMask& used, const BoneSlotMask& provided) {
++    for (int i = 0; i < 4; ++i) {
++        if ((used.words[i] & ~provided.words[i]) != 0) return false;
++    }
++    return true;
++}
++
++// Only the palette slots and blend states borrowed by the automatic draw are
++// restored. A full D3D state block would also roll back Source's material state.
++template<typename Matrix, int MaxMatrices>
++struct BonePaletteSnapshot {
++    Matrix matrices[MaxMatrices];
++    unsigned int vertexBlend;
++    unsigned int indexedBlend;
++    int count;
++    bool ready;
++
++    template<typename Access>
++    bool Capture(Access& access, int matrixCount) {
++        ready = false;
++        if (matrixCount <= 0 || matrixCount > MaxMatrices ||
++            !access.ReadBlend(vertexBlend, indexedBlend)) return false;
++        for (int i = 0; i < matrixCount; ++i) {
++            if (!access.ReadMatrix(i, matrices[i])) return false;
++        }
++        count = matrixCount;
++        ready = true;
++        return true;
++    }
++
++    template<typename Access>
++    bool Restore(Access& access) const {
++        if (!ready) return true;
++        bool restored = true;
++        for (int i = 0; i < count; ++i) {
++            if (!access.WriteMatrix(i, matrices[i])) restored = false;
++        }
++        if (!access.WriteBlend(vertexBlend, indexedBlend)) restored = false;
++        return restored;
++    }
++};
++
++} // namespace OversizedSkinning
+diff --git a/tests/oversized_skinning_test.cpp b/tests/oversized_skinning_test.cpp
+new file mode 100644
+index 0000000..2df5377
+--- /dev/null
++++ b/tests/oversized_skinning_test.cpp
+@@ -0,0 +1,84 @@
++// SPDX-License-Identifier: GPL-2.0-only
++#include "../source/oversized_skinning_policy.h"
++#include <cassert>
++#include <iostream>
++
++struct FakePalette {
++    int matrices[8] = {10, 11, 12, 13, 14, 15, 16, 17};
++    unsigned int blend = 2;
++    unsigned int indexed = 1;
++    int failRead = -1;
++    int writes = 0;
++    bool ReadBlend(unsigned int& b, unsigned int& i) { b = blend; i = indexed; return true; }
++    bool WriteBlend(unsigned int b, unsigned int i) { blend = b; indexed = i; ++writes; return true; }
++    bool ReadMatrix(int i, int& value) { value = matrices[i]; return i != failRead; }
++    bool WriteMatrix(int i, int value) { matrices[i] = value; ++writes; return true; }
++};
++
++int main() {
++    using OversizedSkinning::NeedsHardwareProtection;
++    for (int count : {-1, 0, 1, 32767}) assert(!NeedsHardwareProtection(count, 2, 0));
++    for (int count : {32768, 40509, 62049}) assert(NeedsHardwareProtection(count, 2, 0));
++    assert(!NeedsHardwareProtection(40509, 0, 0));
++    assert(!NeedsHardwareProtection(40509, 1, 0));
++    assert(!NeedsHardwareProtection(40509, 3, 0));
++    assert(!NeedsHardwareProtection(40509, 6, 0));
++    assert(!NeedsHardwareProtection(40509, 2, 1));
++    assert(!NeedsHardwareProtection(40509, 2, -1));
++
++    using OversizedSkinning::NeedsHardwareScope;
++    assert(!NeedsHardwareScope(7015, 2, 0, false, false));
++    assert(NeedsHardwareScope(7015, 2, 0, true, false));
++    assert(NeedsHardwareScope(40509, 2, 0, false, false));
++    assert(!NeedsHardwareScope(40509, 2, 0, true, true));
++    assert(!NeedsHardwareScope(7015, 0, 0, true, false));
++    assert(!NeedsHardwareScope(7015, 3, 1, true, false));
++    assert(!NeedsHardwareScope(0, 2, 0, true, false));
++    assert(OversizedSkinning::HasUnsafeStaticFallback(0x08, true));
++    assert(!OversizedSkinning::HasUnsafeStaticFallback(0x08, false));
++    assert(!OversizedSkinning::HasUnsafeStaticFallback(0x00, true));
++    assert(OversizedSkinning::UserForcedUploadSelected(233, 1));
++    assert(OversizedSkinning::UserForcedUploadSelected(43, 43));
++    assert(!OversizedSkinning::UserForcedUploadSelected(233, 0));
++    assert(!OversizedSkinning::UserForcedUploadSelected(233, -1));
++    assert(!OversizedSkinning::UserForcedUploadSelected(233, 43));
++    assert(!OversizedSkinning::UserForcedUploadSelected(1, 1));
++    assert(!OversizedSkinning::UserForcedUploadSelected(513, 1));
++
++    OversizedSkinning::BoneSlotMask used, provided, staleCache;
++    assert(used.Add(0) && used.Add(52) && used.Add(255));
++    assert(provided.Add(0) && provided.Add(52));
++    assert(staleCache.Add(255));
++    assert(!OversizedSkinning::StripProvidesUsedSlots(used, provided));
++    // A stale cache containing the missing slot cannot approve this strip.
++    assert(staleCache.words[3] != 0 &&
++        !OversizedSkinning::StripProvidesUsedSlots(used, provided));
++    assert(provided.Add(255));
++    assert(OversizedSkinning::StripProvidesUsedSlots(used, provided));
++    assert(!provided.Add(-1) && !provided.Add(256));
++
++    FakePalette device;
++    OversizedSkinning::BonePaletteSnapshot<int, 8> snapshot = {};
++    assert(snapshot.Capture(device, 4));
++    for (int i = 0; i < 4; ++i) device.matrices[i] = 100 + i;
++    device.blend = 0; device.indexed = 0;
++    assert(snapshot.Restore(device));
++    for (int i = 0; i < 8; ++i) assert(device.matrices[i] == 10 + i);
++    assert(device.blend == 2 && device.indexed == 1);
++    assert(snapshot.Capture(device, 4));
++    try {
++        device.matrices[0] = 900;
++        device.blend = 7;
++        throw 1;
++    } catch (...) {
++        assert(snapshot.Restore(device));
++    }
++    assert(device.matrices[0] == 10 && device.blend == 2);
++    const int priorWrites = device.writes;
++    device.failRead = 2;
++    assert(!snapshot.Capture(device, 4));
++    assert(snapshot.Restore(device) && device.writes == priorWrites);
++    assert(!snapshot.Capture(device, -1));
++    assert(!snapshot.Capture(device, 9));
++    std::cout << "PASS: oversized HW policy, complete per-strip palettes and borrowed state restoration\n";
++}
+diff --git a/tests/oversized_skinning_test.md b/tests/oversized_skinning_test.md
+new file mode 100644
+index 0000000..4a1dee2
+--- /dev/null
++++ b/tests/oversized_skinning_test.md
+@@ -0,0 +1,17 @@
++# Oversized skinning regression
++
++Compile oversized_skinning_test.cpp as a standalone C++17 executable. It loads
++the production policy and borrowed-palette snapshot helper without a game, GPU
++or Windows SDK. Assertions cover 32,767/32,768/40,509 vertices, invalid counts,
++hardware versus software groups, flex exclusion, palette/blend restoration,
++complete strip-local slot coverage (a stale cache cannot fill missing slots),
++user-forced small groups versus unchanged default/diagnostic-filter behavior, same-group nesting,
++the unsupported static-fallback guard, exception cleanup and incomplete-capture failure. Exit zero and a PASS line
++indicate success. Keep the executable and compiler outputs under the aggregate
++repository's ignored out directory.
++
++Runtime acceptance must exercise the same large non-flex HW group with
++r_forcehwskin both zero and one, then render ordinary models and arms to catch
++blend/palette leakage. The automatic path must not change the convar, must skip
++an eligible draw if its required state cannot be captured, and must leave all
++noneligible model groups and existing forced-flex behavior alone.

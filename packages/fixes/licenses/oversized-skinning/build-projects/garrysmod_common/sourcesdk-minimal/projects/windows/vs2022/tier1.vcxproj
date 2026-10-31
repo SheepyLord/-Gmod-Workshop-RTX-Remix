@@ -1,0 +1,433 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="ReleaseWithSymbols|x64">
+      <Configuration>ReleaseWithSymbols</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseWithSymbols|Win32">
+      <Configuration>ReleaseWithSymbols</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{EA6A6D10-567F-95C1-1F01-39218BD491F2}</ProjectGuid>
+    <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>tier1</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'">
+    <OutDir>x86_64\ReleaseWithSymbols\</OutDir>
+    <IntDir>x86_64\ReleaseWithSymbols\intermediate\tier1\</IntDir>
+    <TargetName>tier1</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>..\..\..\public;..\..\..\public\tier0;..\..\..\public\tier1;..\..\..\utils\lzma\C;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">
+    <OutDir>x86\ReleaseWithSymbols\</OutDir>
+    <IntDir>x86\ReleaseWithSymbols\intermediate\tier1\</IntDir>
+    <TargetName>tier1</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>..\..\..\public;..\..\..\public\tier0;..\..\..\public\tier1;..\..\..\utils\lzma\C;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>x86_64\Release\</OutDir>
+    <IntDir>x86_64\Release\intermediate\tier1\</IntDir>
+    <TargetName>tier1</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>..\..\..\public;..\..\..\public\tier0;..\..\..\public\tier1;..\..\..\utils\lzma\C;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>x86\Release\</OutDir>
+    <IntDir>x86\Release\intermediate\tier1\</IntDir>
+    <TargetName>tier1</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>..\..\..\public;..\..\..\public\tier0;..\..\..\public\tier1;..\..\..\utils\lzma\C;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>x86_64\Debug\</OutDir>
+    <IntDir>x86_64\Debug\intermediate\tier1\</IntDir>
+    <TargetName>tier1</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>..\..\..\public;..\..\..\public\tier0;..\..\..\public\tier1;..\..\..\utils\lzma\C;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>x86\Debug\</OutDir>
+    <IntDir>x86\Debug\intermediate\tier1\</IntDir>
+    <TargetName>tier1</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>..\..\..\public;..\..\..\public\tier0;..\..\..\public\tier1;..\..\..\utils\lzma\C;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4324;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;STRICT;TIER1_STATIC_LIB;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC64;PLATFORM_64BITS;WIN64;_WIN64;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\..\..\lib\public\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4324;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;STRICT;TIER1_STATIC_LIB;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\..\..\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4324;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;STRICT;TIER1_STATIC_LIB;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC64;PLATFORM_64BITS;WIN64;_WIN64;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\..\..\lib\public\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4324;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;STRICT;TIER1_STATIC_LIB;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\..\..\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4324;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;_CRT_NONSTDC_NO_WARNINGS;STRICT;TIER1_STATIC_LIB;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC64;PLATFORM_64BITS;WIN64;_WIN64;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\..\..\lib\public\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/NODEFAULTLIB:"libcmt" %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4324;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;_CRT_NONSTDC_NO_WARNINGS;STRICT;TIER1_STATIC_LIB;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\..\..\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/NODEFAULTLIB:"libcmt" %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\common\xbox\xboxstubs.h" />
+    <ClInclude Include="..\..\..\public\datamap.h" />
+    <ClInclude Include="..\..\..\public\tier1\appinstance.h" />
+    <ClInclude Include="..\..\..\public\tier1\bitbuf.h" />
+    <ClInclude Include="..\..\..\public\tier1\byteswap.h" />
+    <ClInclude Include="..\..\..\public\tier1\callqueue.h" />
+    <ClInclude Include="..\..\..\public\tier1\characterset.h" />
+    <ClInclude Include="..\..\..\public\tier1\checksum_crc.h" />
+    <ClInclude Include="..\..\..\public\tier1\checksum_md5.h" />
+    <ClInclude Include="..\..\..\public\tier1\checksum_sha1.h" />
+    <ClInclude Include="..\..\..\public\tier1\circularbuffer.h" />
+    <ClInclude Include="..\..\..\public\tier1\commandbuffer.h" />
+    <ClInclude Include="..\..\..\public\tier1\convar.h" />
+    <ClInclude Include="..\..\..\public\tier1\datamanager.h" />
+    <ClInclude Include="..\..\..\public\tier1\delegates.h" />
+    <ClInclude Include="..\..\..\public\tier1\diff.h" />
+    <ClInclude Include="..\..\..\public\tier1\exprevaluator.h" />
+    <ClInclude Include="..\..\..\public\tier1\fmtstr.h" />
+    <ClInclude Include="..\..\..\public\tier1\functors.h" />
+    <ClInclude Include="..\..\..\public\tier1\generichash.h" />
+    <ClInclude Include="..\..\..\public\tier1\iconvar.h" />
+    <ClInclude Include="..\..\..\public\tier1\interface.h" />
+    <ClInclude Include="..\..\..\public\tier1\interpolatedvar.h" />
+    <ClInclude Include="..\..\..\public\tier1\keyvalues.h" />
+    <ClInclude Include="..\..\..\public\tier1\keyvaluesjson.h" />
+    <ClInclude Include="..\..\..\public\tier1\kvpacker.h" />
+    <ClInclude Include="..\..\..\public\tier1\lerp_functions.h" />
+    <ClInclude Include="..\..\..\public\tier1\lzmaDecoder.h" />
+    <ClInclude Include="..\..\..\public\tier1\lzss.h" />
+    <ClInclude Include="..\..\..\public\tier1\mempool.h" />
+    <ClInclude Include="..\..\..\public\tier1\memstack.h" />
+    <ClInclude Include="..\..\..\public\tier1\miniprofiler_hash.h" />
+    <ClInclude Include="..\..\..\public\tier1\netadr.h" />
+    <ClInclude Include="..\..\..\public\tier1\processor_detect.h" />
+    <ClInclude Include="..\..\..\public\tier1\rangecheckedvar.h" />
+    <ClInclude Include="..\..\..\public\tier1\refcount.h" />
+    <ClInclude Include="..\..\..\public\tier1\smartptr.h" />
+    <ClInclude Include="..\..\..\public\tier1\sparsematrix.h" />
+    <ClInclude Include="..\..\..\public\tier1\stringpool.h" />
+    <ClInclude Include="..\..\..\public\tier1\strtools.h" />
+    <ClInclude Include="..\..\..\public\tier1\tier1.h" />
+    <ClInclude Include="..\..\..\public\tier1\tier1_logging.h" />
+    <ClInclude Include="..\..\..\public\tier1\timeutils.h" />
+    <ClInclude Include="..\..\..\public\tier1\tokenset.h" />
+    <ClInclude Include="..\..\..\public\tier1\uniqueid.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlbidirectionalset.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlblockmemory.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlbuffer.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlbufferutil.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlcommon.h" />
+    <ClInclude Include="..\..\..\public\tier1\utldict.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlenvelope.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlfixedmemory.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlhandletable.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlhash.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlhashtable.h" />
+    <ClInclude Include="..\..\..\public\tier1\utllinkedlist.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlmap.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlmemory.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlmultilist.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlpriorityqueue.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlqueue.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlrbtree.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlsoacontainer.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlsortvector.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlstack.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlstring.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlstringmap.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlstringtoken.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlsymbol.h" />
+    <ClInclude Include="..\..\..\public\tier1\utltscache.h" />
+    <ClInclude Include="..\..\..\public\tier1\utlvector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\tier1\NetAdr.cpp" />
+    <ClCompile Include="..\..\..\tier1\appinstance.cpp" />
+    <ClCompile Include="..\..\..\tier1\bitbuf.cpp" />
+    <ClCompile Include="..\..\..\tier1\byteswap.cpp" />
+    <ClCompile Include="..\..\..\tier1\characterset.cpp" />
+    <ClCompile Include="..\..\..\tier1\checksum_crc.cpp" />
+    <ClCompile Include="..\..\..\tier1\checksum_md5.cpp" />
+    <ClCompile Include="..\..\..\tier1\checksum_sha1.cpp" />
+    <ClCompile Include="..\..\..\tier1\circularbuffer.cpp" />
+    <ClCompile Include="..\..\..\tier1\commandbuffer.cpp" />
+    <ClCompile Include="..\..\..\tier1\convar.cpp" />
+    <ClCompile Include="..\..\..\tier1\datamanager.cpp" />
+    <ClCompile Include="..\..\..\tier1\diff.cpp" />
+    <ClCompile Include="..\..\..\tier1\exprevaluator.cpp" />
+    <ClCompile Include="..\..\..\tier1\generichash.cpp" />
+    <ClCompile Include="..\..\..\tier1\interface.cpp" />
+    <ClCompile Include="..\..\..\tier1\keyvalues.cpp" />
+    <ClCompile Include="..\..\..\tier1\keyvaluesjson.cpp" />
+    <ClCompile Include="..\..\..\tier1\kvpacker.cpp" />
+    <ClCompile Include="..\..\..\tier1\lzmaDecoder.cpp" />
+    <ClCompile Include="..\..\..\tier1\lzss.cpp" />
+    <ClCompile Include="..\..\..\tier1\memoverride_dummy.cpp" />
+    <ClCompile Include="..\..\..\tier1\mempool.cpp" />
+    <ClCompile Include="..\..\..\tier1\memstack.cpp" />
+    <ClCompile Include="..\..\..\tier1\miniprofiler_hash.cpp" />
+    <ClCompile Include="..\..\..\tier1\newbitbuf.cpp" />
+    <ClCompile Include="..\..\..\tier1\processor_detect.cpp" />
+    <ClCompile Include="..\..\..\tier1\rangecheckedvar.cpp" />
+    <ClCompile Include="..\..\..\tier1\sparsematrix.cpp" />
+    <ClCompile Include="..\..\..\tier1\splitstring.cpp" />
+    <ClCompile Include="..\..\..\tier1\stringpool.cpp" />
+    <ClCompile Include="..\..\..\tier1\strtools.cpp" />
+    <ClCompile Include="..\..\..\tier1\strtools_unicode.cpp" />
+    <ClCompile Include="..\..\..\tier1\tier1.cpp" />
+    <ClCompile Include="..\..\..\tier1\tier1_logging.cpp" />
+    <ClCompile Include="..\..\..\tier1\timeutils.cpp" />
+    <ClCompile Include="..\..\..\tier1\uniqueid.cpp" />
+    <ClCompile Include="..\..\..\tier1\utlbuffer.cpp" />
+    <ClCompile Include="..\..\..\tier1\utlbufferutil.cpp" />
+    <ClCompile Include="..\..\..\tier1\utlsoacontainer.cpp" />
+    <ClCompile Include="..\..\..\tier1\utlstring.cpp" />
+    <ClCompile Include="..\..\..\tier1\utlsymbol.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="LZMA.vcxproj">
+      <Project>{5945887C-457C-890D-EE68-6F10DA7E050F}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

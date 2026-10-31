@@ -1,0 +1,465 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="ReleaseWithSymbols|x64">
+      <Configuration>ReleaseWithSymbols</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseWithSymbols|Win32">
+      <Configuration>ReleaseWithSymbols</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{692C7C42-D58D-5950-5EFB-9F02CA5B900F}</ProjectGuid>
+    <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>gmcl_RTXFixesBinary</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>x86_64\ReleaseWithSymbols\</OutDir>
+    <IntDir>x86_64\ReleaseWithSymbols\intermediate\gmcl_RTXFixesBinary\</IntDir>
+    <TargetName>gmcl_RTXFixesBinary_win64</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <ExternalIncludePath>garrysmod_common\include;garrysmod_common\helpers\include;garrysmod_common\scanning\include;garrysmod_common\detouring\include;garrysmod_common\detouring\hde\include;garrysmod_common\detouring\minhook\include;garrysmod_common\sourcesdk-minimal\common;garrysmod_common\sourcesdk-minimal\game\shared;garrysmod_common\sourcesdk-minimal\public;garrysmod_common\sourcesdk-minimal\game\client;garrysmod_common\sourcesdk-minimal\public\tier0;garrysmod_common\sourcesdk-minimal\public\tier1;garrysmod_common\sourcesdk-minimal\public\tier2;garrysmod_common\sourcesdk-minimal\public\mathlib;garrysmod_common\helpers_extended\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>x86\ReleaseWithSymbols\</OutDir>
+    <IntDir>x86\ReleaseWithSymbols\intermediate\gmcl_RTXFixesBinary\</IntDir>
+    <TargetName>gmcl_RTXFixesBinary_win32</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <ExternalIncludePath>garrysmod_common\include;garrysmod_common\helpers\include;garrysmod_common\scanning\include;garrysmod_common\detouring\include;garrysmod_common\detouring\hde\include;garrysmod_common\detouring\minhook\include;garrysmod_common\sourcesdk-minimal\common;garrysmod_common\sourcesdk-minimal\game\shared;garrysmod_common\sourcesdk-minimal\public;garrysmod_common\sourcesdk-minimal\game\client;garrysmod_common\sourcesdk-minimal\public\tier0;garrysmod_common\sourcesdk-minimal\public\tier1;garrysmod_common\sourcesdk-minimal\public\tier2;garrysmod_common\sourcesdk-minimal\public\tier3;garrysmod_common\sourcesdk-minimal\public\mathlib;garrysmod_common\helpers_extended\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>x86_64\Release\</OutDir>
+    <IntDir>x86_64\Release\intermediate\gmcl_RTXFixesBinary\</IntDir>
+    <TargetName>gmcl_RTXFixesBinary_win64</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <ExternalIncludePath>garrysmod_common\include;garrysmod_common\helpers\include;garrysmod_common\scanning\include;garrysmod_common\detouring\include;garrysmod_common\detouring\hde\include;garrysmod_common\detouring\minhook\include;garrysmod_common\sourcesdk-minimal\common;garrysmod_common\sourcesdk-minimal\game\shared;garrysmod_common\sourcesdk-minimal\public;garrysmod_common\sourcesdk-minimal\game\client;garrysmod_common\sourcesdk-minimal\public\tier0;garrysmod_common\sourcesdk-minimal\public\tier1;garrysmod_common\sourcesdk-minimal\public\tier2;garrysmod_common\sourcesdk-minimal\public\mathlib;garrysmod_common\helpers_extended\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>x86\Release\</OutDir>
+    <IntDir>x86\Release\intermediate\gmcl_RTXFixesBinary\</IntDir>
+    <TargetName>gmcl_RTXFixesBinary_win32</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <ExternalIncludePath>garrysmod_common\include;garrysmod_common\helpers\include;garrysmod_common\scanning\include;garrysmod_common\detouring\include;garrysmod_common\detouring\hde\include;garrysmod_common\detouring\minhook\include;garrysmod_common\sourcesdk-minimal\common;garrysmod_common\sourcesdk-minimal\game\shared;garrysmod_common\sourcesdk-minimal\public;garrysmod_common\sourcesdk-minimal\game\client;garrysmod_common\sourcesdk-minimal\public\tier0;garrysmod_common\sourcesdk-minimal\public\tier1;garrysmod_common\sourcesdk-minimal\public\tier2;garrysmod_common\sourcesdk-minimal\public\tier3;garrysmod_common\sourcesdk-minimal\public\mathlib;garrysmod_common\helpers_extended\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>x86_64\Debug\</OutDir>
+    <IntDir>x86_64\Debug\intermediate\gmcl_RTXFixesBinary\</IntDir>
+    <TargetName>gmcl_RTXFixesBinary_win64</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <ExternalIncludePath>garrysmod_common\include;garrysmod_common\helpers\include;garrysmod_common\scanning\include;garrysmod_common\detouring\include;garrysmod_common\detouring\hde\include;garrysmod_common\detouring\minhook\include;garrysmod_common\sourcesdk-minimal\common;garrysmod_common\sourcesdk-minimal\game\shared;garrysmod_common\sourcesdk-minimal\public;garrysmod_common\sourcesdk-minimal\game\client;garrysmod_common\sourcesdk-minimal\public\tier0;garrysmod_common\sourcesdk-minimal\public\tier1;garrysmod_common\sourcesdk-minimal\public\tier2;garrysmod_common\sourcesdk-minimal\public\mathlib;garrysmod_common\helpers_extended\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>x86\Debug\</OutDir>
+    <IntDir>x86\Debug\intermediate\gmcl_RTXFixesBinary\</IntDir>
+    <TargetName>gmcl_RTXFixesBinary_win32</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <ExternalIncludePath>garrysmod_common\include;garrysmod_common\helpers\include;garrysmod_common\scanning\include;garrysmod_common\detouring\include;garrysmod_common\detouring\hde\include;garrysmod_common\detouring\minhook\include;garrysmod_common\sourcesdk-minimal\common;garrysmod_common\sourcesdk-minimal\game\shared;garrysmod_common\sourcesdk-minimal\public;garrysmod_common\sourcesdk-minimal\game\client;garrysmod_common\sourcesdk-minimal\public\tier0;garrysmod_common\sourcesdk-minimal\public\tier1;garrysmod_common\sourcesdk-minimal\public\tier2;garrysmod_common\sourcesdk-minimal\public\tier3;garrysmod_common\sourcesdk-minimal\public\mathlib;garrysmod_common\helpers_extended\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4324;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;STRICT;GMMODULE;RTXFIXESBINARY_CLIENT;IS_SERVERSIDE=false;GMOD_ALLOW_OLD_TYPES;GMOD_ALLOW_LIGHTUSERDATA;GMOD_MODULE_NAME="RTXFixesBinary";CLIENT_DLL;GMOD_USE_SOURCESDK;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC64;PLATFORM_64BITS;WIN64;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>source;public\include;source\advmat_rtx_bridge\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>tier0.lib;vstdlib.lib;ws2_32.lib;rpcrt4.lib;windowscodecs.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>garrysmod_common\sourcesdk-minimal\lib\public\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>x86_64\ReleaseWithSymbols\gmcl_RTXFixesBinary_win64.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4324;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;STRICT;GMMODULE;RTXFIXESBINARY_CLIENT;IS_SERVERSIDE=false;GMOD_ALLOW_OLD_TYPES;GMOD_ALLOW_LIGHTUSERDATA;GMOD_MODULE_NAME="RTXFixesBinary";CLIENT_DLL;GMOD_USE_SOURCESDK;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>source;public\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>tier0.lib;vstdlib.lib;ws2_32.lib;rpcrt4.lib;tier3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>garrysmod_common\sourcesdk-minimal\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>x86\ReleaseWithSymbols\gmcl_RTXFixesBinary_win32.lib</ImportLibrary>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4324;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;STRICT;GMMODULE;RTXFIXESBINARY_CLIENT;IS_SERVERSIDE=false;GMOD_ALLOW_OLD_TYPES;GMOD_ALLOW_LIGHTUSERDATA;GMOD_MODULE_NAME="RTXFixesBinary";CLIENT_DLL;GMOD_USE_SOURCESDK;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC64;PLATFORM_64BITS;WIN64;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>source;public\include;source\advmat_rtx_bridge\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>tier0.lib;vstdlib.lib;ws2_32.lib;rpcrt4.lib;windowscodecs.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>garrysmod_common\sourcesdk-minimal\lib\public\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>x86_64\Release\gmcl_RTXFixesBinary_win64.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4324;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NDEBUG;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;STRICT;GMMODULE;RTXFIXESBINARY_CLIENT;IS_SERVERSIDE=false;GMOD_ALLOW_OLD_TYPES;GMOD_ALLOW_LIGHTUSERDATA;GMOD_MODULE_NAME="RTXFixesBinary";CLIENT_DLL;GMOD_USE_SOURCESDK;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>source;public\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>tier0.lib;vstdlib.lib;ws2_32.lib;rpcrt4.lib;tier3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>garrysmod_common\sourcesdk-minimal\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>x86\Release\gmcl_RTXFixesBinary_win32.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4324;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;STRICT;GMMODULE;RTXFIXESBINARY_CLIENT;IS_SERVERSIDE=false;GMOD_ALLOW_OLD_TYPES;GMOD_ALLOW_LIGHTUSERDATA;GMOD_MODULE_NAME="RTXFixesBinary";CLIENT_DLL;GMOD_USE_SOURCESDK;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC64;PLATFORM_64BITS;WIN64;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>source;public\include;source\advmat_rtx_bridge\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>tier0.lib;vstdlib.lib;ws2_32.lib;rpcrt4.lib;windowscodecs.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>garrysmod_common\sourcesdk-minimal\lib\public\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>x86_64\Debug\gmcl_RTXFixesBinary_win64.lib</ImportLibrary>
+      <AdditionalOptions>/NODEFAULTLIB:"libcmt" %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4324;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;STRICT;GMMODULE;RTXFIXESBINARY_CLIENT;IS_SERVERSIDE=false;GMOD_ALLOW_OLD_TYPES;GMOD_ALLOW_LIGHTUSERDATA;GMOD_MODULE_NAME="RTXFixesBinary";CLIENT_DLL;GMOD_USE_SOURCESDK;RAD_TELEMETRY_DISABLED;NO_STRING_T;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;_DLL_EXT=.dll;WIN32;COMPILER_MSVC;COMPILER_MSVC32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>source;public\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>tier0.lib;vstdlib.lib;ws2_32.lib;rpcrt4.lib;tier3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>garrysmod_common\sourcesdk-minimal\lib\public;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>x86\Debug\gmcl_RTXFixesBinary_win32.lib</ImportLibrary>
+      <AdditionalOptions>/SAFESEH:NO /NODEFAULTLIB:"libcmt" %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="source\HardwareSkinningHooks.h" />
+    <ClInclude Include="source\TinyMathLib.h" />
+    <ClInclude Include="source\advmat_rtx_bridge\include\advmat_rtx_bridge\bridge.h" />
+    <ClInclude Include="source\advmat_rtx_bridge\include\advmat_rtx_bridge\lua_bindings.h" />
+    <ClInclude Include="source\advmat_rtx_bridge\src\internal.h" />
+    <ClInclude Include="source\culling_fixes.h" />
+    <ClInclude Include="source\culling_patches.h" />
+    <ClInclude Include="source\d3d9_texture_tracker.h" />
+    <ClInclude Include="source\e_utils.h" />
+    <ClInclude Include="source\globalconvars.h" />
+    <ClInclude Include="source\hash_collision_fixer.h" />
+    <ClInclude Include="source\material_hash_lookup.h" />
+    <ClInclude Include="source\material_owner_index.h" />
+    <ClInclude Include="source\material_pipeline\auto_categorisation\auto_categorisation.h" />
+    <ClInclude Include="source\material_pipeline\hash_collision_fixer\hash_collision_fixer.h" />
+    <ClInclude Include="source\material_pipeline\material_filter.h" />
+    <ClInclude Include="source\material_pipeline\material_pipeline.h" />
+    <ClInclude Include="source\material_pipeline\shader_fixes\shader_fixes.h" />
+    <ClInclude Include="source\material_pipeline\to_pbr\formats.h" />
+    <ClInclude Include="source\material_pipeline\to_pbr\to_pbr.h" />
+    <ClInclude Include="source\material_pipeline\to_pbr\usda.h" />
+    <ClInclude Include="source\material_pipeline\to_pbr\vtf.h" />
+    <ClInclude Include="source\memory_patcher.h" />
+    <ClInclude Include="source\model_draw_hook.h" />
+    <ClInclude Include="source\modelload_fixes.h" />
+    <ClInclude Include="source\patch_manager.h" />
+    <ClInclude Include="source\prop_fixes.h" />
+    <ClInclude Include="source\remixapi\bsp_geometry_manager.h" />
+    <ClInclude Include="source\remixapi\material_lua_bindings.h" />
+    <ClInclude Include="source\remixapi\remixapi.h" />
+    <ClInclude Include="source\remixapi\rtx_option_defaults.h" />
+    <ClInclude Include="source\startup_lua_bindings.h" />
+    <ClInclude Include="source\vtf_parser.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\HardwareSkinningHooks.cpp" />
+    <ClCompile Include="source\TinyMathLib.cpp" />
+    <ClCompile Include="source\advmat_rtx_bridge\src\bridge.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="source\advmat_rtx_bridge\src\filesystem_utils.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="source\advmat_rtx_bridge\src\lua_bindings.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="source\advmat_rtx_bridge\src\texture_ingest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="source\advmat_rtx_bridge\src\usda_writer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWithSymbols|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="source\culling_fixes.cpp" />
+    <ClCompile Include="source\culling_patches.cpp" />
+    <ClCompile Include="source\d3d9_texture_tracker.cpp" />
+    <ClCompile Include="source\e_utils.cpp" />
+    <ClCompile Include="source\globalconvars.cpp" />
+    <ClCompile Include="source\material_pipeline\auto_categorisation\auto_categorisation.cpp" />
+    <ClCompile Include="source\material_pipeline\hash_collision_fixer\hash_collision_fixer.cpp" />
+    <ClCompile Include="source\material_pipeline\material_pipeline.cpp" />
+    <ClCompile Include="source\material_pipeline\shader_fixes\shader_fixes.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\format_bftpseudopbr.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\format_exopbr.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\format_gpbr.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\format_mwbpbr.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\format_source.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\formats.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\to_pbr.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\usda.cpp" />
+    <ClCompile Include="source\material_pipeline\to_pbr\vtf.cpp" />
+    <ClCompile Include="source\memory_patcher.cpp" />
+    <ClCompile Include="source\model_draw_hook.cpp" />
+    <ClCompile Include="source\modelload_fixes.cpp" />
+    <ClCompile Include="source\module.cpp" />
+    <ClCompile Include="source\patch_manager.cpp" />
+    <ClCompile Include="source\prop_fixes.cpp" />
+    <ClCompile Include="source\remixapi\atmosphere_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\bsp_geometry_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\bsp_geometry_manager.cpp" />
+    <ClCompile Include="source\remixapi\camera_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\config_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\instance_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\light_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\material_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\mesh_lua_bindings.cpp" />
+    <ClCompile Include="source\remixapi\remixapi.cpp" />
+    <ClCompile Include="source\remixapi\resource_lua_bindings.cpp" />
+    <ClCompile Include="source\startup_lua_bindings.cpp" />
+    <ClCompile Include="source\vtf_parser.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="garrysmod_common\projects\windows\vs2022\lua_shared.vcxproj">
+      <Project>{5D4BA350-4903-E59D-B20A-BEF99EE17F8E}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\detouring\projects\windows\vs2022\detouring.vcxproj">
+      <Project>{76548795-E2BE-3B0C-2BFD-ECB197A61961}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\detouring\projects\windows\vs2022\minhook.vcxproj">
+      <Project>{5A9B3AC7-C67A-B962-CF92-44393BF11FC4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\detouring\projects\windows\vs2022\hde.vcxproj">
+      <Project>{967A880B-0284-887C-8BFF-9E7CF707947C}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\sourcesdk-minimal\projects\windows\vs2022\common.vcxproj">
+      <Project>{AEFEE3F6-9AA0-0ECD-835B-22216F9C951D}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\sourcesdk-minimal\projects\windows\vs2022\tier1.vcxproj">
+      <Project>{EA6A6D10-567F-95C1-1F01-39218BD491F2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\sourcesdk-minimal\projects\windows\vs2022\LZMA.vcxproj">
+      <Project>{5945887C-457C-890D-EE68-6F10DA7E050F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\sourcesdk-minimal\projects\windows\vs2022\tier2.vcxproj">
+      <Project>{EB6A6D10-577F-95C1-2001-39218CD491F2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\sourcesdk-minimal\projects\windows\vs2022\mathlib.vcxproj">
+      <Project>{C6DBFDB4-32BB-7C50-3BD3-0727A731E3B1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\projects\windows\vs2022\helpers_extended.vcxproj">
+      <Project>{E8EAB4F6-D4E3-D348-FD15-B9CDE96DB354}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\projects\windows\vs2022\helpers.vcxproj">
+      <Project>{F8D0E23C-64B0-61D8-6DC8-ECAED926C839}</Project>
+    </ProjectReference>
+    <ProjectReference Include="garrysmod_common\scanning\projects\windows\vs2022\scanning.vcxproj">
+      <Project>{1675544C-0242-AF57-2B5B-9DFF1787E4E5}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

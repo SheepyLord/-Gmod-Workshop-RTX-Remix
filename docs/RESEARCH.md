@@ -1,5 +1,99 @@
 # Research notes
 
+## Oversized Airi skinning groups (item 24)
+
+Read-only inspection of Workshop 3830665593, VRChat Airi(InuinuBone), identifies the reported
+40,509 vertices as the clothing-fur mesh in both `models/pm/airi_inuinubone_pm.mdl` and
+`models/npc/airi_inuinubone_npc.mdl`. The source archive `gmpublisher.gma` is 721,989,777 bytes,
+SHA-256 `d97ae9d34750e5ad86bcbd95cbd03c12dd1b009f6a5323265e8389ad202bf558`.
+Each model has 233 bones, 25 meshes, one compiled LOD and 329,678 LOD0 source vertices.
+
+The matching studiorender.dll, SHA-256
+`1dcb270dc9fa7186acd7ae2f66207416412ba1b7c606d7e65bf923d7152ce4b6`, contains the warning.
+Independent native inspection locates `R_StudioDrawDynamicMesh` at preferred address 0x18000FA20
+and its vertex-count comparison at 0x18000FB3A: groups below 0x8000 continue; groups at or above
+32,768 warn and return zero. This is a per-group software draw limit, not a total-model limit.
+Hiding the warning alone would retain the skipped draw. The direct hardware helper also has a
+software fallback, without the dynamic entry's equivalent capacity precheck. The later reported
+62,049-vertex fatal against a 32,768-vertex buffer therefore required protecting both entries.
+
+| Bodypart / mesh ID | MDL source vertices | VTX group vertices | Strips | Material variants |
+|---|---:|---:|---:|---|
+| Hair / 4 | 61,896 | 62,049 | 3 | Hair, Black, Gray, Brown, Blue, Pink, Green |
+| Clothes / 7 | 40,509 | 40,509 | 1 | Fuzz, Fuzz_B |
+| Shoes(L) / 19 | 33,422 | 33,422 | 1 | Shoes, Shoes_W |
+| Shoes(R) / 20 | 33,422 | 33,422 | 1 | Shoes, Shoes_W |
+
+All four groups occur in both player and NPC models, have compiled `STRIPGROUP_IS_HWSKINNED`
+data (flag 0x02) and zero MDL flexes. Hair's extra VTX vertices are palette duplicates; its
+original-mesh IDs cover exactly the 61,896 source vertices. Its three strips have 53, 53 and 41
+bone palette changes. Each shoe uses four distinct bones. The separate arms model totals 37,757
+vertices, but its largest group is 14,754, making it a useful control for group-based detection.
+
+Clothing bodypart 5, submodel `Clothes.smd`, mesh 0/global ID 7 uses Fuzz for skins 0–7 and Fuzz_B
+for skins 8–15. Its single strip has 169,398 indices/56,466 triangles and 25 palette changes.
+There are 8,219 one-bone, 24,313 two-bone and 7,977 three-bone vertices; every referenced bone
+exists and weights normalize within 0.001. Drawing without skinning would lose valid weighted
+deformation. Both Fuzz materials are VertexLitGeneric without software-skin directives, proxies
+or fallbacks. The archive has dx90.vtx data and no sw.vtx; that alone does not rule out a runtime
+software fallback. Runtime material flags/cvar state have not yet been measured by this asset pass.
+
+MDL/VVD/VTX entry CRCs, checksums, vertex ranges, bone ranges/counts and weight sums pass. The
+read-only parser did not execute add-on code or extract textures. Detailed evidence is in the
+main checkout's `out/oversized-skinning-evidence/asset-findings.md`, `model-inventory.json`,
+`mesh-summary.txt` and `validation.json`. REA warning/function references are
+`ev_4068803caf065f4700651d539889e94440552386c645bf4ccc14715ac3ce9006`,
+`ev_9dd106d75194ea64a06745f6cf72926983e7b756e91521a967a6ef699ce1360d` and
+`ev_d046b0940e7e634e8f2c8a5d20621e9fe39d7eb853c7fb667e15c719bc73df7e`.
+The implementation is native local commit `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`; the final
+gmcl_RTXFixesBinary_win64.dll SHA-256 is
+`5e626e34f412cd55e93a485cd1d777794b339a0cb7a5082935454b72fbc72db7`.
+The [source notice and pins](../packages/fixes/licenses/oversized-skinning/Source.md) include the
+complete changed source, generated projects, patches and GPL licence. They ship through the short
+add-on path `remixbinary/src/hw`; a deeper source path exceeded Windows staging limits.
+
+The automatic path applies only to already hardware-skinned, non-flex groups of at least 32,768
+vertices. Creation-time VTX validation requires every strip to assign every hardware bone slot it
+uses. A certificate plus runtime strip-data fingerprint rejects unknown/changed groups; cached
+palettes from other groups cannot prove missing assignments. The bounded certificate implementation
+starts at source/HardwareSkinningHooks.cpp:2175 in the shipped source. At DrawIndexedPrimitive,
+D3DCOLOR blend indices use a borrowed UBYTE4 declaration only when needed; a 16-entry cache holds
+original/converted COM references and releases them at shutdown. Palette, blend, config, material,
+group and bookkeeping state are restored with __finally, as is the original declaration.
+
+Both dynamic and direct entries now borrow that scope, preserving all nine arguments. A
+thread-local same-group marker prevents dynamic-to-direct re-entry from wrapping twice. An
+oversized group with unknown static-fallback config38 bit 0x08 is skipped safely. Existing
+user-forced hardware draws also need the scope for smaller non-flex, multi-bone groups inside
+RenderFinal when the legacy r_hwskin_setbones predicate selects them (mode 1 or matching bone
+count). Otherwise Source can CPU-pose a small group while native indexed upload transforms it
+again. Ordinary force0 draws, rigid single-bone props, flex and forced-eye paths remain unchanged.
+Complete certificates remain mandatory only for oversized groups. Small user-forced groups keep
+their existing remap/cache fallback and diagnostic mode selection; no stored cvar is changed.
+
+Baseline PM at `r_forcehwskin 0`/`mat_softwareskin 1`, without insecure, repeated all four warnings
+and lacked hair/shoes. The dynamic-only 0d4 prototype passed initial PM checks but missed the
+direct-entry fatal; it is superseded. The static-only 034 intermediate left smaller body meshes
+invisible under force1 and is also superseded. The 357 preview restored force1 PM skins 0/8,
+full body, hair, boots and visible arms without a fatal, then exited zero. Final 5e626e34 adds
+minor route/debug guards and passes cold default0 NPC skins 0/8 plus arms (`complete-default`).
+The actual final GMA also passes force1 PM skins 0/8 with full body and arms visible, no errors
+and exit zero (`complete-packaged`). Both the software warning and the later direct-fallback
+fatal are addressed; earlier dynamic-only/static-only passes are not the final acceptance record.
+
+An earlier packaged 0d4 client PID 3752 passed secure multiplayer with cslua/cheats off, rendering
+configuration apply/restore, denied unsafe commands, hands and the 233-bone Airi rendered. Content
+was mounted by normal server-approved game.MountGMA; no other add-on Lua was force-loaded. This
+earlier result does not establish final-DLL multiplayer acceptance, which remains pending.
+
+The final standalone policy CTest passes with Release /UNDEBUG assertions, including user-mode
+and unsupported-mode cases. Final `final-tests.log` passes 20 CTests/277 Python tests (7 skips).
+Reviewed GMA `0.0.0-dev.20261031090406+335c6f09` contains 998 files/1,837,514,493 bytes, payload digest
+`13f303982ed43e47bccf09847186bd3bb43477cb65dbbcb1c5534117cbae4ba3`.
+Readback matches the final DLL and corresponding source: 28 changes, no files removed and no user
+assets included. Final-DLL multiplayer (client PID 18232), CI and publication remain pending. See
+[ADR 0053](decisions/0053-oversized-hardware-skinning.md).
+
 ## Scoped RTX multiplayer loading (loader 0.9.0)
 
 The game has separate menu and client Lua states. The menu's `require("nlrtxclient")` must resolve
