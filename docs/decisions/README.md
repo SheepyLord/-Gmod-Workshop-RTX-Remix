@@ -60,6 +60,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0052](0052-scoped-rtx-multiplayer-bootstrap.md) | Verified RTX-owner multiplayer scripts and exact rendering recipe exception, preserving community Lua and unsafe debug gates | Accepted |
 | [0053](0053-oversized-hardware-skinning.md) | Share a scoped dynamic/direct hardware draw path for certified oversized groups and existing user-forced weighted draws | Accepted |
 | [0054](0054-rtx-rendering-startup-boundaries.md) | RTX-only process backend selection and verified early client guard, with bounded Lua rendering compatibility and explicit evidence limits | Accepted design; validation in progress |
+| [0055](0055-legacy-migration-never-blocks.md) | The legacy migration never blocks the package: unplannable migrations are notes, links stay, other builds keep Steam's files, adopted files are archived | Accepted |
 
 ## Template
 

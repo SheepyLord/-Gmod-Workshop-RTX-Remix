@@ -1,6 +1,6 @@
 # 0042: Archive an older Remix installation before deploying our shipment
 
-- Status: accepted
+- Status: accepted; superseded in part by [0055](0055-legacy-migration-never-blocks.md)
 - Date: 2026-10-30
 - Decision maker: the user, asking to back up and replace a previous Remix installation without
   assistance; use a new Xenthio installation for testing because RTX_c has already been replaced.
