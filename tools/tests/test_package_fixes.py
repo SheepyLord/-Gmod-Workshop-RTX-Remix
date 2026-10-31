@@ -108,7 +108,7 @@ DEBUG_ADDON_FILE = 'source/debug/addon/lua/autorun/client/rtx_debug.lua'
 FAKE_MOD = 'garrysmod/rtx-remix/mods/base_mod/textures/a.dds'
 EXPECTED_ROOTS = [
     'garrysmod/addons/Glass-Rewrite-Remix', 'garrysmod/addons/nativeloader', 'garrysmod/addons/niknaks',
-    'garrysmod/addons/remixbinary', 'garrysmod/addons/rtx_agent', 'garrysmod/data/remix_map_configs',
+    'garrysmod/addons/remixbinary', 'garrysmod/addons/rtx_agent', 'garrysmod/data/nativeloader_ui', 'garrysmod/data/remix_map_configs',
     'garrysmod/lua/bin/gmcl_RTXFixesBinary_win64.dll',
     'garrysmod/lua/bin/gmcl_rtxwater_win64.dll', 'rtx-remix/mods/base_mod', 'rtx-remix/mods/~gmod_topbr',
 ]
@@ -130,6 +130,8 @@ def companion_files():
     files = {'native/root/garrysmod/addons/nativeloader/' + p.relative_to(COMPANION).as_posix(): p
              for p in sorted(COMPANION.rglob('*')) if p.is_file() and p.suffix.lower() != '.md'}
     files.update({name: Path(source) for name, source in package_fixes.companion_catalog_sources().items()})
+    for path in (REPO / 'companion/presentation').glob('*.txt'):
+        files['native/root/garrysmod/data/nativeloader_ui/' + path.name] = path
     return files
 
 

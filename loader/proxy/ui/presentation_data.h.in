@@ -1,0 +1,6 @@
+#pragma once
+#include <string_view>
+namespace nl::proxy::presentation {
+inline constexpr std::string_view kDiagnosticsScript = R"NLUI(@NL_DIAGNOSTICS_SCRIPT@)NLUI";
+inline constexpr std::string_view kDiagnosticsLabels = R"NLUI(@NL_DIAGNOSTICS_LABELS@)NLUI";
+}

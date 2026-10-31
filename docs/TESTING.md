@@ -1,5 +1,13 @@
 # Testing
 
+Requests 15 and 23 use [test_presentation_ui.py](../tools/tests/test_presentation_ui.py.md) for seven
+template/catalog checks and the actual menu JavaScript in a Node DOM fixture. The proxy C++ suite
+checks private-path exclusion, JSON validation, generated read redirection and unchanged stock
+bytes. Runtime test_splash_message runs in the dedicated unit build and covers locale/path
+allowlisting, BOM/CRLF, repeated tokens, percent signs, missing/oversized/NUL/empty files and fallback.
+Hardware reads are best-effort and do not require an NVIDIA GPU. No real game or user config is
+changed by these checks. Full Release tests, input verification and the package comparison still run.
+
 Requests 17, 19/19.1 and 20 use [test_addon_workflow.py](../tools/tests/test_addon_workflow.py.md):
 actual AME methods check original names, path identity, current-row handoff, canonical return and
 independent working stores. Complete companion modules check late hashes/APIs, shared hashes,

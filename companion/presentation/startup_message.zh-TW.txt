@@ -1,0 +1,7 @@
+Garry's Mod RTX Remix
+按 {hotkey} 開啟 Remix 選單。
+
+專案與問題回報：
+https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix
+
+{seconds} 秒後關閉。

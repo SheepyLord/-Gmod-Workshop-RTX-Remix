@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "0afb29175569f1c87e44696e2847eec3d5f0567442a96b1b7379fc69d4c1a20d",
-  "built_from": "4888b042; verified eleven-patch tree 792332d699c71e6e6facdf216b6dbcffad424b65; incremental release C++ build -j 4, unchanged shader inputs/stamp reused",
+  "d3d9.dll": "f9827b35b533caa38c08caa117fb264fb8d18012e3682694e1c92e1faf67a26e",
+  "built_from": "d4921fcb; verified thirteen-patch tree 2a428382d4b65db3a5209df7e68ec1207d80367b; incremental release C++ build -j 4, unchanged shader inputs/stamp reused",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -65,6 +65,8 @@
    "patches/0009-Default-diagnostics-to-declined-and-make-the-welcome.patch": "d11d2f5fca8786d5b84dd4da3706313264a3b5febb987e4d071100d124b0edd6",
    "patches/0010-Resolve-layered-alpha-cutouts-during-traversal-and-i.patch": "36305e8fb74982a8a7baacdfec442bf49d95ac9a1563cf7c22fe9bf4892db6e8",
    "patches/0011-Keep-imported-model-smooth-normal-tags-transient-and.patch": "c9feae27cbfd6f13245b9a140f1ce2dc9244c8ebb94f98140fa7f4d90f37349a",
+   "patches/0012-Read-localized-project-splash-text-from-editable-bou.patch": "2f311fead7b454fe5aebaf6655c6db4dfb7b346c81113220d7248d0c533783d9",
+   "patches/0013-Default-to-minimum-one-and-maximum-twelve-path-bounc.patch": "63299c2773a2288c1aa35469eeca61dbbdb44bc6d900516bdb4a8f1b675e2f38",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

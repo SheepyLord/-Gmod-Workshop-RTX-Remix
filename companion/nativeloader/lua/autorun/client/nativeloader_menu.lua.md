@@ -1,5 +1,8 @@
 # nativeloader_menu.lua
 
+The maximum-bounce draft defaults to 12 and is bounded at 15, matching the runtime. It remains
+an opt-in numeric override: opening the panel cannot replace the user's saved Remix setting.
+
 Since ADR 0044, Remix's saved files take precedence at launch unless the player explicitly enables
 `nativeloader_remix_reapply` (default 0). Changes made in this panel still apply immediately during
 the session; use Remix's Save Settings in Alt+X to save them in its user layer. The panel shows its

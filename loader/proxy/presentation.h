@@ -27,10 +27,11 @@ struct Prepared {
 std::string make_archive(const gma::Index& original, const journal::Package& package, std::string_view workshop_item);
 // Throws when the expected stock menu implementation differs; no partial override is returned.
 std::string decorate_menu(std::string_view original, const std::vector<std::string>& workshop_items);
+std::string decorate_main_menu(std::string_view original, std::string_view diagnostics_json);
 
 // Validates each current Workshop source's package identity, creates content-addressed display
 // files below native-loader/presentation, and returns exact read redirects. Missing/changed sources,
 // links, and modified cache files are left alone and reported. Never changes a Steam/depot file.
-Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation);
+Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation, bool include_diagnostics = false);
 
 }  // namespace nl::proxy::presentation

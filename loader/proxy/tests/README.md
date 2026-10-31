@@ -8,7 +8,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 
 | File | Purpose |
 |---|---|
-| `test_presentation.cpp` | Display GMA CRC/index/metadata checks, inert payload, package identity and source-path refusal, cache edits preserved and stock menu marker validation |
+| `test_presentation.cpp` | Display GMA CRC/index/metadata checks, inert payload, package identity and source-path refusal, cache edits preserved, stock menu marker validation, private-path exclusion and generated main-menu diagnostics redirect |
 | `test_presentation_hooks.cpp` | Real filesystem fixture IAT: exact A/W read redirects and attribute sizes, unrelated/write-capable/OPEN_ALWAYS calls unchanged, edited caches refused, uninstall pass-through and cache traversal boundary |
 | `CMakeLists.txt` | C++ fixtures/tests, generated-export check, PowerShell installer CTest |
 | `test_activation.cpp` | Path/root, quoted/backslash command-line parsing and off-switch unit cases |

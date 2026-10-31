@@ -1,6 +1,6 @@
 # QoL report: complete interface translations
 
-Latest batch: [importer normals and add-on navigation](../decisions/0049-importer-normals-material-labels-and-motion-access.md).
+Latest batch: [startup text and menu diagnostics](../decisions/0050-startup-text-and-main-menu-diagnostics.md), plus [1/12 bounce defaults](../decisions/0051-path-bounce-defaults.md).
 
 2026-10-30. Implemented on `codex/translation-review`, from `main` at `7d79c12`.
 The user expanded the audit to every bundled add-on interface. The implementation is recorded in
@@ -529,3 +529,44 @@ Lua modules were read back and compared byte-for-byte with the reviewed sources;
 contains only intended runtime/add-on changes and removes nothing. A transient Windows sharing
 denial during the fixes-part folder rename passed on retry. Main's hooks update hidden item
 3829070317; out/workshop/published.json is the upload receipt.
+
+## Startup text, menu diagnostics and bounce defaults (2026-10-30)
+
+Requests 15 and 23: the top-left startup message now points to this repository. Edit
+companion/presentation/startup_message.txt (and the six suffixed translations) for project text.
+The package deploys create-only copies under garrysmod/data/nativeloader_ui, where user edits also
+persist. The runtime limits input, normalizes BOM/CRLF, substitutes hotkey/countdown tokens, renders
+literally and adds the selected template's font glyphs. Empty/oversized/NUL/missing files fall back.
+
+Loader 0.8.1 adds a main-menu home panel showing Windows version, CPU/logical threads, RAM,
+graphics adapters/VRAM, the engine's game version/branch, loader version/file SHA-256 and committed
+native add-on versions/manifest SHA-256. Hover and explicit Copy retain complete hashes. The panel
+uses text nodes, follows the menu language, hides in gameplay/other routes and performs no upload.
+It neither displays private paths nor reads console logs. Source/layout and labels are in
+loader/proxy/ui/mainmenu.js and labels.json. An exact read redirect supplies a generated stock-menu
+copy; Steam's file stays unchanged. The new panel requires the 0.8.1 bootstrap from the loader
+bundle; updating only the Workshop runtime cannot update a loaded winmm.dll. No field install was
+written, including GarrysMod_RTX_c and its backups.
+
+The latest bounce request supersedes the earlier four: maximum default 12, minimum 1. Runtime
+metadata, all quality presets, the packaged classic layer and the companion draft agree. The
+companion's upper limit is corrected to 15. Existing explicit overrides remain authoritative;
+the screenshot's User Settings 16 therefore requires a native reset to use the new default. No
+user.conf is edited. The lifecycle harness covers twelve, invalid sixteen and intentional eight.
+
+Final native source is d4921fcb, verified thirteen-patch tree
+2a428382d4b65db3a5209df7e68ec1207d80367b. The incremental release C++ build reused unchanged shader
+inputs/stamp. Its 395520000-byte d3d9.dll has SHA-256
+f9827b35b533caa38c08caa117fb264fb8d18012e3682694e1c92e1faf67a26e. The dedicated text-policy test,
+proxy C++ tests and Node/template tests pass. Evidence/build/package/CI records are under
+out/startup-diagnostics*. The initial package-path refusal was resolved within existing data-path
+rules; the protected loader report folder and Steam-file restrictions remain intact.
+
+Release validation passes 18 CTests and 270 Python tests (28 + 25 + 217; seven environment-dependent
+skips), the dedicated native text-policy suite and deep runtime input verification. The reviewed
+GMA is 0.0.0-dev.20261031060916+15568c26, digest
+5bde32ba91e25e1a8817cf33832fd0059c077f577ac6949b6c7a0b2e4bce0a4f. Readback confirms the final DLL,
+companion bounce control, all seven startup templates and the classic 12/1 layer. Ten intended
+payload files differ from the previous publication; none are removed. The bootstrap/UI sources are
+also built and checked separately, since winmm.dll is delivered in the loader bundle. No game was
+launched for this batch; validation used synthetic filesystem/DOM fixtures and CPU tests.

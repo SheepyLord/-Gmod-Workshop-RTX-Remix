@@ -15,7 +15,7 @@ LUAJIT = shutil.which('luajit') or next((str(p) for p in [
 class RemixSettingsTests(unittest.TestCase):
     def test_settings_lifecycle(self):
         menu = REPO / 'companion/nativeloader/lua/autorun/client/nativeloader_menu.lua'
-        for scenario in ('fresh', 'legacy', 'replay', 'edit', 'restart', 'invalid', 'reset'):
+        for scenario in ('fresh', 'legacy', 'replay', 'edit', 'restart', 'invalid', 'reset', 'bounce_defaults'):
             with self.subTest(scenario=scenario):
                 done = subprocess.run([LUAJIT, str(Path(__file__).with_name('remix_settings_harness.lua')),
                                        str(menu), scenario], capture_output=True, text=True, timeout=20)

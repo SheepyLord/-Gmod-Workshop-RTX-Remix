@@ -1,5 +1,11 @@
 # Components
 
+Loader 0.8.1's `loader/proxy/diagnostics.cpp` supplies local system/package identity data to the
+read-only main-menu presentation layer. `loader/proxy/ui/` holds the JavaScript, labels and CMake
+embedding template. `companion/presentation/` holds editable, localized startup text copied as
+create-only root files by package_fixes.py. [test_presentation_ui.py](../tools/tests/test_presentation_ui.py.md)
+checks assets and the actual UI script alongside the proxy C++ tests and runtime text-policy test.
+
 The companion's `nativeloader_imported_normals.lua` collects active imported-model hashes for an
 optional additive NoSave smooth-normal category. `nativeloader_motion_tab.lua` opens the existing
 motion manager from its own creation tab. These modules and AME's original-name/current-selection

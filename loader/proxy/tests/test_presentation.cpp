@@ -1,4 +1,5 @@
 #include "presentation.h"
+#include "diagnostics.h"
 
 #include "gma_fixture.h"
 #include "nl/fs.h"
@@ -76,6 +77,50 @@ Setup fixture(std::string_view name) {
 }
 
 }  // namespace
+
+TEST_CASE("main menu diagnostics contain hardware and package identity without private source paths") {
+  nl::proxy::diagnostics::System system;
+  system.os = "Windows x64";
+  system.cpu = "CPU \"quoted\" <script>literal</script>\n";
+  system.threads = 12;
+  system.memory = 32ull << 30;
+  system.graphics.push_back({"GPU", 8ull << 30});
+  nl::journal::Generation generation;
+  nl::journal::Package package;
+  package.id = "example";
+  package.version = "1.2.3+test";
+  package.manifest_sha256 = std::string(64, 'a');
+  package.location = "C:/private/location/not-for-display";
+  generation.packages.push_back(package);
+  const auto data = nl::proxy::diagnostics::serialize(system, "0.8.1", std::string(64, 'b'), generation);
+  const auto parsed = nl::json::parse(data);
+  CHECK(parsed.find("cpu")->as_string() == system.cpu);
+  CHECK(parsed.find("threads")->as_int() == 12);
+  CHECK(parsed.find("loader")->find("sha256")->as_string() == std::string(64, 'b'));
+  CHECK(data.find("private/location") == std::string::npos);
+  const std::string original = "function MenuController( $scope, $rootScope ) {}\n";
+  const auto decorated = p::decorate_main_menu(original, data);
+  CHECK(decorated.starts_with(original));
+  CHECK(decorated.find("native-loader-diagnostics") != std::string::npos);
+  CHECK_THROWS_AS(p::decorate_main_menu("changed menu", data), std::runtime_error);
+  CHECK_THROWS_AS(p::decorate_main_menu(original, "{};unexpected()"), std::runtime_error);
+  CHECK_THROWS_AS(p::decorate_main_menu(original, "[]"), std::runtime_error);
+}
+
+TEST_CASE("main menu diagnostics redirect only a generated copy and preserve the stock source") {
+  auto f = fixture("main_menu_diagnostics");
+  const auto main = nl::fs::join(f.root, "garrysmod/html/js/menu/control.Menu.js");
+  const std::string original = "function MenuController( $scope, $rootScope ) {}\n";
+  write(main, original);
+  write(nl::fs::join(f.root, "bin/win64/winmm.dll"), "synthetic bootstrap");
+  const auto prepared = p::prepare(f.root, f.generation, true);
+  REQUIRE(prepared.notes.empty());
+  REQUIRE(prepared.redirects.size() == 3);
+  CHECK(prepared.redirects[2].source == main);
+  CHECK(nl::fs::read_file(main, 65536) == original);
+  const auto decorated = nl::fs::read_file(prepared.redirects[2].replacement, 131072);
+  CHECK(decorated.find(nl::sha256::of("synthetic bootstrap")) != std::string::npos);
+}
 
 TEST_CASE("presentation: archive preserves metadata and contains only one inert whitelisted JSON file") {
   nl::gma::Index original;

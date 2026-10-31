@@ -1,5 +1,10 @@
 # Roadmap
 
+QoL requests 15 and 23 are **done**: project startup text and loader 0.8.1 main-menu diagnostics.
+The source/edit locations and bootstrap requirement are in [ADR 0050](decisions/0050-startup-text-and-main-menu-diagnostics.md).
+The latest bounce-default request uses maximum 12/minimum 1 across all default sources
+([ADR 0051](decisions/0051-path-bounce-defaults.md)).
+
 QoL requests 17, 19/19.1 and 20 are **done**: optional geometry normals for imported world models, AME original
 material labels and workspace selection handoff, and a dedicated motion-importer tab. Offline
 behavior checks cover the changes; the user explicitly waived in-game validation for this batch.

@@ -155,6 +155,10 @@ left out of the fixes repo.
 
 Tests: [tests/test_package_fixes.py](tests/test_package_fixes.py.md).
 
+When the companion is included, companion/presentation startup text is copied under
+garrysmod/data/nativeloader_ui with create-only policy, preserving user edits.
+These are plain localized runtime input files, not executable menu modifications.
+
 The generated companion table includes the bundled-interface catalogs in `companion/i18n/addons`.
 The newest `.po` timestamp is found recursively, so an add-on translation update participates in
 the generated file's version. Both namespaces must pass strict completeness checks.

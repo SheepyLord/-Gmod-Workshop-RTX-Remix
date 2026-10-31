@@ -257,7 +257,7 @@ void startup_cxx(StartupContext& context) noexcept {
     if (context.prepared.config.from_file && context.prepared.config.enabled && context.prepared.journal &&
         context.prepared.journal->current && !context.prepared.journal->pending) {
       try {
-        auto display = presentation::prepare(context.root, *context.prepared.journal->current);
+        auto display = presentation::prepare(context.root, *context.prepared.journal->current, true);
         for (auto& redirect : display.redirects) context.read_redirects.emplace_back(std::move(redirect.source), std::move(redirect.replacement));
         for (auto& note : display.notes) context.report.session.notes.push_back(std::move(note));
       } catch (const std::exception& error) {

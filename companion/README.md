@@ -1,5 +1,9 @@
 # companion
 
+Editable startup text is in [presentation/](presentation/README.md), outside the Lua add-on. The
+fixes packager deploys it as create-only runtime input. Main-menu diagnostics live in loader 0.8.1;
+edit loader/proxy/ui/mainmenu.js and its labels.json for that panel's layout and labels.
+
 The Lua companion: a normal GMod add-on that shows what the native loader did. It is not loaded from
 here; [`tools/package_fixes.py`](../tools/package_fixes.py.md) copies `nativeloader/` into the RTX
 fixes package as the add-on folder `garrysmod/addons/nativeloader` (kind `lua-addon`), leaving out
