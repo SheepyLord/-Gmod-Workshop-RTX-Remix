@@ -2893,3 +2893,46 @@ late diagnostics slot. Two package DXVK copies plus tier, diagnostics and root d
 140 characters (259-character budget). The one-start CREATE_NEW claim is at
 `loader/core/src/gpu_diagnostics.cpp:58,63`. The real runtime's effective options and GPU dumps
 remain unmeasured by this task; the fixture exercises loader behavior only.
+
+## R6 T4: runtime memory snapshots (2026-10-31)
+
+Source references below are to patch 0015 on the recorded fourteen-patch tree, implemented by
+`86ac49e9` in T4's isolated runtime clone. The user's fork checkout was not changed.
+
+- `DxvkSubmissionQueue::handleDeviceLost` (`src/dxvk/dxvk_queue.cpp:407-432`) is shared by the submit
+  and fence-finish loss paths. Its single-handler gate allows one snapshot/marker at line 421,
+  before the Aftermath wait and Sentry processing. No GPU synchronization is added by diagnostics.
+  The earlier `onGpuCrash` recorder/Aftermath wait can precede this snapshot when enabled.
+- The VRAM API's collection previously lived in `rtx_fork_api_entry.cpp:864-893`. It now calls
+  `RtxMemoryDiagnostics::capture` at line 864. `rtx_memory_stats.cpp:29-57` collects all driver heaps
+  and sums DXVK allocations/use and eight categories only across device-local heaps. It does not
+  read the render-owned texture table; the API still adds its cache count separately.
+- `DxvkAdapter::getMemoryHeapInfo` (`dxvk_adapter.cpp:79-108`) queries physical-device memory
+  properties, rather than waiting for GPU work. With `VK_EXT_memory_budget`, budget/use are driver
+  values; without it, budget is heap size and usage is DXVK's tracked heap allocation counter.
+  Snapshots preserve those semantics and are approximate cross-thread observations.
+- `RtxContext::onPresent` (`rtx_context.cpp:919`) polls a device-owned steady-clock schedule, giving
+  one sample per cut frame and every five minutes while frames are presented. Camera cuts do not
+  reset the periodic deadline (`rtx_memory_stats_data.h:54-78`). A stopped render loop cannot log
+  a periodic sample.
+- OMM is recreated at cuts (`rtx_scene_manager.cpp:3134-3152`), so its two one-minute warning limits
+  belong to the device (`rtx_memory_stats.h`). The next eligible occurrence reports the suppressed
+  count; no background thread flushes idle warnings (`rtx_memory_stats.cpp:83-98`).
+- The crash marker uses the same `RtxFileSys::Logs` directory as `remix-dxvk.log`, including
+  `DXVK_LOG_PATH` (`src/util/util_filesys.h:65`). `rtx_memory_stats_data.cpp:69-95` checks a temporary
+  file's write, flush and close, then uses `MoveFileExW` replacement. A failed write keeps the old
+  marker; timestamps must be checked by the next-start reader. Logging and file failures cannot
+  unwind through `onDeviceLoss` (`rtx_memory_stats.cpp:69-81`).
+- The recorded fork tree lacks five unit-test sources that its Meson file names:
+  `test_particle_system_schema.cpp`, `test_hot_reload.cpp`, `test_rtx_option_dynamic.cpp`,
+  `test_gpu_profile.cpp`, `test_gpu_overrides.cpp`; and `apps/RemixAPI/remixapi_medium_test.cpp`.
+  They exist as ignored files in the local fork. Patch 0015 guards these optional targets when
+  absent; the clean build no longer consumes unrecorded local test sources.
+- The development-only GPU crash trigger is real GPU work:
+  `rtx_context.cpp:498-503` dispatches `metaGpuCrash()` after Ctrl+Shift+Alt+G when armed by
+  `RTX_ENABLE_CRASH_HOTKEY=1` (`rtx_options.h:1092-1105`). It is compiled out without
+  `REMIX_DEVELOPMENT` and was not exercised by T4.
+- The fork's `scripts-common/install_file_in_dir.bat:2-12` enables delayed expansion before
+  assigning its arguments; `install_usd_plugins.bat` also enables it around paths. A source path
+  containing `!` is stripped during unit dependency staging. T4 used literal-path PowerShell
+  copies into its own unit build after that helper failed; the resulting 22-test suite passes.

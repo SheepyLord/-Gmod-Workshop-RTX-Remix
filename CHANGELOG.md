@@ -29,6 +29,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - Tester documentation explains VRAM/commit counters and HUD readings; the MMD PBR skill requires
   generating and publishing a 2048 px variant for 8 GB players and explains the cost of 4096 px maps.
 
+### R6 T4 (unreleased)
+
+- The runtime logs driver memory budgets/use for every heap and DXVK's device-local totals and
+  categories at camera cuts, every five minutes while presenting, and before device-loss reporting.
+  It keeps a local `rtx-remix/logs/last_gpu_crash.json` for the next start; write failures leave the
+  termination path intact. Micromap budget warnings recur at most once per minute per warning kind,
+  with the number of suppressed repeats ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
+- Runtime rebuilds refresh the configure-time version label. A clean runtime source tree can build
+  without the fork's six missing, ignored optional test sources.
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

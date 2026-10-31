@@ -23,14 +23,14 @@
    "imported": "2026-10-30T00:42:29+00:00"
   },
   "files/d3d9.dll": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\runtime-translations\\_CompRelease_x64\\src\\d3d9\\d3d9.dll",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t4-runtime\\out\\runtime-src\\_CompRelease_x64\\src\\d3d9\\d3d9.dll",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/runtime-translations",
-    "remote": "https://github.com/sambow23/dxvk-remix-gmod.git",
-    "commit": "6f2dbd79cfd907a29995435b6414896c6c2e4cf5",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t4-runtime/out/runtime-src",
+    "remote": "H:\\BACKUP_20260815\\Modding\\dxvk-remix-gmod",
+    "commit": "86ac49e9d87b12fc403f28fba4c9baf1634dd966",
     "dirty": false
    },
-   "imported": "2026-10-31T12:16:07+00:00"
+   "imported": "2026-10-31T22:47:45+00:00"
   },
   "layers/classic_remix_defaults.conf": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\startup-bounce-defaults.conf",
@@ -41,6 +41,16 @@
     "dirty": false
    },
    "imported": "2026-10-31T06:02:06+00:00"
+  },
+  "files/usd/plugins/RemixCategories/RemixCategories.dll": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t4-runtime\\out\\runtime-src\\_CompRelease_x64\\src\\usd-plugins\\RemixCategories\\RemixCategories.dll",
+   "git": null,
+   "imported": "2026-10-31T22:48:47+00:00"
+  },
+  "files/usd/plugins/RemixParticleSystem/RemixParticleSystem.dll": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t4-runtime\\out\\runtime-src\\_CompRelease_x64\\src\\usd-plugins\\RemixParticleSystem\\RemixParticleSystem.dll",
+   "git": null,
+   "imported": "2026-10-31T22:48:47+00:00"
   }
  },
  "files": {
@@ -123,12 +133,12 @@
    "stored_sha256": "9abbc646f44e7dd8345bb6d33949bd7f8ecbb97b96de9b0e50d785e1b31b6837"
   },
   "files/d3d9.dll": {
-   "size": 395531776,
-   "sha256": "40a50fd55e9a76943fb80861d6e6a0d2690f39e02a52515716f63cae80638f83",
-   "mtime_ns": 1793448791546228700,
+   "size": 395537408,
+   "sha256": "86983b5b51d4d758714fcf5d280129fac17924e89f0439fd75471c1ac1937cad",
+   "mtime_ns": 1793486653482734700,
    "stored": "xz",
-   "stored_size": 58330696,
-   "stored_sha256": "5506a4b6fce64cd88fd2462c383322c076b8f73770fbc8030d0439af3850e12c"
+   "stored_size": 58330852,
+   "stored_sha256": "c0382da0203a9af575d788d7ad971053cdae2e1bd715f8f23a9600224968e492"
   },
   "files/GFSDK_Aftermath_Lib.x64.dll": {
    "size": 9240728,
@@ -670,11 +680,11 @@
   },
   "files/usd/plugins/RemixCategories/RemixCategories.dll": {
    "size": 12800,
-   "sha256": "3278b47615b69cdbd0b07f215d50f0a73bf749980a769edda083c9fc6fe079a4",
-   "mtime_ns": 1793266354965055100,
+   "sha256": "f6974a716688746e3b09a5628380d246406b13fb6935420317bc0dc127ab8068",
+   "mtime_ns": 1793486444602308200,
    "stored": "xz",
-   "stored_size": 4988,
-   "stored_sha256": "4b38d53badc788960c1a270b5cbb791186d3d28ecbcafe42f8839d347a8001d2"
+   "stored_size": 5024,
+   "stored_sha256": "aa20329e0064fd558a5fb557fe22d09f40da9d02329a68046180d315265031b0"
   },
   "files/usd/plugins/RemixCategories/resources/plugInfo.json": {
    "size": 635,
@@ -690,11 +700,11 @@
   },
   "files/usd/plugins/RemixParticleSystem/RemixParticleSystem.dll": {
    "size": 12800,
-   "sha256": "9b2f55a2ef1770c4ee98f28fa8a1c42dee13a3328dc6f26a05c9dd7677810b76",
-   "mtime_ns": 1793266354967054700,
+   "sha256": "e0315c6a8c48344c31513fb44f08465487d7dbdf275e184f13cda3a2eaa1bb62",
+   "mtime_ns": 1793486443730262500,
    "stored": "xz",
-   "stored_size": 4980,
-   "stored_sha256": "e90783a164742ea6227c7662d5178a0bcf5c49b8a47733796bf235a21916b9e4"
+   "stored_size": 5016,
+   "stored_sha256": "f137f856420e7a636f06ae170acb5a1c6b917dcd649a010aef754fd6bc79f110"
   },
   "files/usd/plugins/RemixParticleSystem/resources/plugInfo.json": {
    "size": 501,

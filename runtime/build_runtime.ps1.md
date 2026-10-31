@@ -40,7 +40,9 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
    The scratch index and objects live under `out\tmp` and borrow the repository's objects, so the
    fork's repository is only read. Submodules inside submodules are left as the build has them: in a
    worktree some of their `.git` files point nowhere, which stops `git submodule status` itself.
-4. Enters the MSVC environment (`tools\lib\VsDevEnv.psm1`), deletes the shader stamp
+4. Enters the MSVC environment (`tools\lib\VsDevEnv.psm1`), reconfigures Meson so the fork's
+   configure-time version string names the current source commit (including an existing build),
+   deletes the shader stamp
    `_CompRelease_x64\src\dxvk\_built_shaders.txt`, and runs `meson compile` **twice**: ninja rebuilds
    shaders only while the stamp is missing, and the C++ that embeds them notices the new headers only
    on the next run ([RESEARCH.md](../docs/RESEARCH.md) section 29).

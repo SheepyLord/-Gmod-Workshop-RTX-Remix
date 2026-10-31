@@ -153,3 +153,17 @@ are ready for review, uncommitted at the project manager's instruction. Release 
 pass (23/23); the full Release gate is blocked only by 21 existing field-snapshot tests whose
 throwaway HKCU fixture creation is denied by this sandbox. Integration and real-runtime QA remain
 with the project manager; see the R6 T1 validation record in TESTING.md.
+
+## R6 T4: runtime memory diagnostics (2026-10-31)
+
+Proposal 8 is implemented on `r6-t4-runtime` as runtime patch 0015: shared VRAM collection, snapshots
+at cuts/five-minute intervals/device loss, a local schema-1 crash marker before Sentry and
+device-lifetime OMM warning limits ([ADR 0065](decisions/0065-runtime-memory-diagnostics.md)).
+Build/import and offline validation are recorded with the runtime in [runtime/README.md](../runtime/README.md).
+Camera-cut/driver sampling and induced device loss remain for the project manager's game QA;
+T4 does not launch Garry's Mod or modify an install.
+
+The runtime rebuild/import, all 22 runtime unit tests, deep input verification and the combined
+package check are done. Repository Release checks pass 333 Python tests (two skips) and 22/23
+CTests; the remaining guard-cache long-path failure reproduces on unchanged `7759c43`, while all
+22 guard cases pass from a shorter executable path ([TESTING.md](TESTING.md#r6-t4-runtime-memory-diagnostics)).

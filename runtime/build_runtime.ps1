@@ -162,6 +162,9 @@ if ($Verify) {
 # headers only on the next run: delete the stamp, build twice (RESEARCH.md section 29).
 Import-Module (Join-Path $repo 'tools\lib\VsDevEnv.psm1')
 Enter-VsDevEnv | Out-Null
+# The fork computes its version at configure time, so an existing build must notice the new commit.
+python -m mesonbuild.mesonmain setup --reconfigure $build $Worktree
+if ($LASTEXITCODE) { throw "meson reconfigure failed: $LASTEXITCODE" }
 Remove-Item -LiteralPath (Join-Path $build 'src\dxvk\_built_shaders.txt') -ErrorAction SilentlyContinue
 foreach ($pass in 1, 2) {
     python -m mesonbuild.mesonmain compile -C $build
