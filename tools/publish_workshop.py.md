@@ -63,10 +63,15 @@ The Modern House RTX package is a separate test item (3829275998), uploaded by h
    names, whose own script it then runs (R3-004: a push of `main` from a worktree on another branch had
    built that worktree's package). If no checkout has the commit checked out, nothing is published
    (exit 1, with the reason in the log). The build then checks again that `HEAD` is that commit.
-1. **Uncommitted changes.** It refuses when the packaging inputs in this repository have uncommitted
-   changes, which would otherwise go into the item: `companion/`, `packages/`, `tools/inputs.py`, the
-   four packagers, `package_workshop.py`, `gmapack.py`, `third_party/reshade` and `workshop.json`.
-   `--dry-run` and `--allow-dirty` skip this check.
+1. **Uncommitted changes.** It refuses when the packaging inputs in this repository (`REPO_INPUTS`)
+   have uncommitted changes, which would otherwise go into the item: `companion/`, `packages/`,
+   `tools/inputs.py`, the four packagers, `package_workshop.py`, `gmapack.py`, `companion_i18n.py`
+   (it builds the shipped `i18n_data.lua`), `third_party/reshade`, `LICENSE` and
+   `third_party/gmod/LICENSE` (shipped as notices), `.gitattributes` (it sets the bytes a checkout
+   gives `/LICENSE` and the guard) and `workshop.json`. Before review R4 the four after `gmapack.py`
+   were missing, and a change to them alone (`.gitattributes`, 2026-10-31) was never published.
+   `.github/workflows/package.yml` runs for each of them too. `--dry-run` and `--allow-dirty` skip
+   this check.
 2. **Lock.** Its state lives in the **main checkout's** `out\workshop`, whichever worktree runs it, so
    every worktree shares one record of what the item holds. Only one publish runs at a time: it holds
    an exclusive Windows lock on the first byte of `out\workshop\publish.lock` through an open handle for
@@ -127,7 +132,10 @@ captured, since Steam can print account identifiers. A successful probe permits 
 copy under this checkout's `out/tmp/gmpublish-preflight-*`; the vendor's original UGC upload,
 authentication, ownership and visibility behavior remain in place. The retry keeps the original game
 working directory, item, archive and change notes. The temporary executable and DLL are removed when
-the process exits. Steam's originals, registry, settings and running processes are never changed.
+the process exits; if the folder cannot be removed yet (the copy still held by Windows or a scanner),
+it is left in `out/tmp` and logged, and the upload still counts: before review R4 that error escaped
+after a successful upload, `published.json` was not written and the next hook run uploaded again.
+Steam's originals, registry, settings and running processes are never changed.
 Another vendor build fails closed until its exact code is reviewed and these guards are updated.
 
 ## Hooks (`--install-hooks`)
