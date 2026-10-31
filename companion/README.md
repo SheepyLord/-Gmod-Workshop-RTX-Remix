@@ -25,6 +25,7 @@ the `.md` files, and adds the translations built from `i18n/`.
 | [`i18n/`](i18n/README.md) | The translations as gettext files for people to review and edit: `nativeloader.pot` and one `.po` per language. Not part of the add-on: the RTX package's build writes them into it as `lua/nativeloader/i18n_data.lua` |
 | [`nativeloader/lua/autorun/client/nativeloader_toolgun.lua`](nativeloader/lua/autorun/client/nativeloader_toolgun.lua.md) | Redraws the live toolgun screen after upscaling with a separate depth mask for the gun and hands |
 | [`nativeloader/lua/autorun/client/nativeloader_model_layers.lua`](nativeloader/lua/autorun/client/nativeloader_model_layers.lua.md) | Suppresses recognized outline meshes through transient options while protecting shared ordinary textures |
+| [`nativeloader/lua/autorun/client/nativeloader_motion_tab.lua`](nativeloader/lua/autorun/client/nativeloader_motion_tab.lua.md) | The "Motion importer" spawn-menu tab: the bundled motion importer's in-game importer and Motion Manager, built into the tab by the add-on's own builders ([ADR 0060](../docs/decisions/0060-motion-tab-hosts-the-importer.md)) |
 
 M5: the status print. M6: the restart notice for Workshop package updates that Steam downloaded
 (`steamworks.FileInfo`, checked at client start and every 600 seconds).

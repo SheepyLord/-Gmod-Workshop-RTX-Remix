@@ -767,19 +767,16 @@ msgstr "Экран тулгана"
 msgid "Model outlines"
 msgstr "Контуры моделей"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:6
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:9
 msgid "Motion importer"
 msgstr "Импорт движений"
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:8
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:35
-msgid "Open the VMD motion importer and motion library."
-msgstr "Открыть импорт VMD и библиотеку движений."
-
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:11
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:157
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:173
 msgid "Import VMD files and manage your motion library and playback."
 msgstr "Импортируйте файлы VMD и управляйте библиотекой движений и воспроизведением."
 
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:23
-msgid "Open motion importer"
-msgstr "Открыть импорт движений"
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
+msgid "Open in window"
+msgstr "Открыть в окне"
