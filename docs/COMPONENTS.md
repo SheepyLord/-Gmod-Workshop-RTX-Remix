@@ -225,6 +225,12 @@ geometry helper preserve native brush behavior and create persistent networked d
 coverage lives in tools/tests/test_glass_map.py and glass_map_harness.lua
 ([ADR 0040](decisions/0040-native-map-glass-debris.md)).
 
+Broken glass is loose physics since R5 ([ADR 0061](decisions/0061-loose-glass-breaks-again-and-expires.md)):
+the part's `glass_debris.lua` registers every piece that breaks off, from map windows and from the
+add-on's own panes, gives it a collision group players pass through, counts it in one 256-piece
+oldest-first budget and fades it out after `rtx_glass_debris_lifetime` seconds (default 120, 0 keeps
+it); pieces break again until they are dust. The same harness runs the real entity code for it.
+
 The bundled Model Hotloader renderer now routes depth behavior by native shader-family detection.
 Coverage is in tools/tests/test_hotloader_depth.py and hotloader_depth_harness.lua; see
 [ADR 0041](decisions/0041-hotloader-remix-depth-materials.md).

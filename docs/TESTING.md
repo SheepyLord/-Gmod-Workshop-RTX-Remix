@@ -601,6 +601,25 @@ scripted breaks, resync a full pile, and clean up/rebreak. Read only that sessio
 The RTX run uses a fresh process-only DXVK_LOG_PATH under repository out/ for its logs and crash
 cache; it does not set the flag that grants automatic upload consent or edit Remix user.conf.
 
+### Loose broken glass (R5, ADR 0061)
+
+`test_glass_map.py` also runs the real `procedural_shard.lua` (converted from GLua by the runner's
+`glua_to_lua`, with `world_functions.lua`), the debris registry `glass_debris.lua` and the map
+controller over a mocked entity system whose VPhysics builds each convex hull from the points the
+entity passes, with timers on a mocked clock. Eight scenarios, each reported on its own: map debris
+and the add-on's fragments are moving `COLLISION_GROUP_WEAPON` physics (`DEBRIS` with
+`rtx_glass_expensive_shards 0`) that bullets push; map debris breaks again for two or more generations
+until only dust is left and no placeholder remains; fragments count in the 256-piece budget, oldest
+first; 450 units/s and another loose piece leave a piece whole, 700 units/s breaks it;
+`rtx_glass_debris_lifetime` (archived, replicated, default 120) fades pieces within a second of their
+time, younger fragments keep theirs, 0 keeps pieces for an hour; and the client's `Draw` shrinks an
+expired piece by its transform without building or freeing a mesh. Against the add-on before ADR 0061
+the map section's new collision-group check fails, and with it skipped all eight scenarios fail. In
+game (not run in R5): shoot, punt, pick up and blast debris on
+modern_house; players and NPCs pass through it while props collide; pieces shrink away after two
+minutes under Remix with `mat_queue_mode 2`; an explosion in a full pile; a second player on a listen
+server sees the same pieces.
+
 ### Hotloader shader-family routing
 
 `tools/tests/test_hotloader_depth.py` runs the actual shipped builders and DrawCarrier under LuaJIT,

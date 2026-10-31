@@ -2748,3 +2748,50 @@ Measured on the user's install (RTX 5090, loader 0.10.0 and the published packag
   `updated` 1793444864 for the 1793444836 in `appworkshop_4000.acf`, `size` 1222846336 for 1222846295
   (Evernight and March 7th; Robin, Guinaifen and the RTX package likewise); `fileid` was 0 and
   `installed` false. Compare such times with a tolerance of one step (`math.frexp`: 2^(exponent-24)).
+
+## Loose glass physics in GMod (2026-10-31, Claude, R5)
+
+Read in the PoC install's shipped Lua and the add-on (`packages/fixes/.../Glass-Rewrite-Remix`) for
+[ADR 0061](decisions/0061-loose-glass-breaks-again-and-expires.md):
+
+- **`COLLISION_GROUP_WORLD` collides with the world only.** It is what the No Collide tool's right
+  click sets (`gamemodes/sandbox/entities/weapons/gmod_tool/stools/nocollide.lua:76-82`; its text,
+  `resource/localization/en/tool.properties:234`: "Make an object have no collisions with anything but
+  the world") and the context menu's Disable Collisions (`lua/autorun/properties/collisions.lua:34`).
+  The add-on's `rtx_glass_expensive_shards 1` ("collide with everything", the default) put map debris
+  and small fragments there; 0 gave `COLLISION_GROUP_DEBRIS`.
+- **`COLLISION_GROUP_WEAPON` is GMod's group for props that must not collide with players** ("Don't
+  collide with the player": `gamemodes/sandbox/entities/entities/gmod_cameraprop.lua:38-39`,
+  `gamemodes/base/entities/entities/ragdoll_motion.lua:52-53`; also `prop_effect.lua:54`). TTT gives
+  corpses, "nonsolid to players, but can be picked up and shot", `COLLISION_GROUP_WEAPON` with
+  `ttt_ragdoll_collide 1` and `COLLISION_GROUP_DEBRIS_TRIGGER` otherwise
+  (`gamemodes/terrortown/gamemode/corpse.lua:368, 392-393`). Traces with `COLLISION_GROUP_NONE`
+  (bullets, the physgun, the gravity gun, `+use`) hit these groups.
+- **A SENT that defines `OnTakeDamage` reacts to no damage physically.** base_anim's server
+  `ENT:OnTakeDamage` is empty (`gamemodes/base/entities/entities/base_anim.lua:57-70`); GMod's own
+  entities call `self:TakePhysicsDamage(dmginfo)` in theirs ("React to physics damage",
+  `gamemodes/sandbox/entities/entities/gmod_light.lua:46-48`; `gmod_wheel.lua:59`, `gmod_thruster.lua:220`,
+  `lua/entities/sent_ball.lua:149-150`). `procedural_shard.lua`'s never did, so bullets and blasts did
+  not move shards.
+- **`CollisionData.HitObject` is a PhysObj** (no `GetClass`); the entity hit is `HitEntity`. The
+  add-on's "two breakable shards do not break each other" test reads `HitObject:GetClass` and never
+  matches, so a shard flying into a pane breaks it; its impact mass reads
+  `HitObject:GetPhysicsObject`, which does not exist either, so the mass of the other object is always
+  1. Both are left as they are (panes' behaviour and the rigidity tuning depend on them); ADR 0061
+  adds its own `HitEntity` check for two loose pieces.
+- **Clients have no physics copy of a shard.** `BuildCollision` runs on the server only (Split, the
+  spawn functions, the tool, `rtx_map_glass.lua`, `OnDuplicated`); the client's `Initialize` calls
+  `PhysicsInit` on an entity without a model, which fails. The client `Think` that freezes and pins a
+  physics copy (`procedural_shard.lua`) therefore never runs past its first check.
+- **The client never defines the crack functions.** `procedural_shard.lua` returns on the client
+  right after `UpdateTransmitState` (`if CLIENT then NLP(...) return end`), before `ShowCracks`,
+  `UpdateCrackMesh` and `DrawCracks`, so `GLASS_SHOW_CRACKS` finds no `ShowCracks` and no crack is ever
+  drawn. Found in R5, not changed.
+- **Split sizes.** A split makes `num_radial` (`random(max(2, d-1), d+2)`) plus `num_concentric`
+  (`random(d-2, d)`) planes for a depth `d`: 21-26 at the default `rtx_glass_shard_count 12` (a pane's
+  first break adds 2-4 to the depth), 3-8 at the loose-piece depth 3. Bounding radius 20 was already
+  the size below which a fragment is removed with GlassImpact (`BuildCollision`).
+- **Falls.** At `sv_gravity 600` a free fall reaches 300 units/s (a pane's break speed) after 75 units
+  and 500 units/s after about 210 (`v^2 = 2gh`); map debris also leaves a window with the damage
+  impulse, capped at 350 units/s, plus a random scatter of up to 60 units/s per axis at the default
+  velocity transfer 2 (`rtx_map_glass.lua`).
