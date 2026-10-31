@@ -18,6 +18,16 @@ failure remains a nonfatal note. Inactive/server/menu contexts stay unchanged. T
 suite has 20 passing cases, including foreign/legacy classifications; the latest native run passes
 all 22 CTest entries. Controlled live runs record the stock initializer read hit.
 
+R4 (loader 0.10.1, [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md)) amends this: a guard
+that cannot be prepared early no longer refuses RTX. Start-up notes why, and the companion's guard
+installs from its autorun (installation "autorun") when this machine's status.json reports an active
+start. The cache is named from its inputs and the generated block installs the guard only where that
+file exists locally (`BASE_PATH`), so a listen host's served view does nothing on remote clients; a
+changed cache file moves to `native-loader/backup/render-guard/`. With
+`patch_sets.allow_rtx_render_patches: false` and no `-insecure`, start-up stays vanilla with a reason
+(`client::render_recipes_refusal`), and `nlctl activation` says so. The multiplayer route protects
+only owned callbacks and leaves `hook.Call` alone; `loader/client/poll.h` bounds the module's polling.
+
 [`loader/proxy/backend.cpp`](../loader/proxy/backend.cpp) and the core command-line span/rewrite API
 normalize explicit alternate shader backends to stock D3D9 only during active RTX startup. All
 duplicates agree; unrelated raw arguments and RTX-off starts are preserved, and rollback restores
