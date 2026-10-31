@@ -18,6 +18,10 @@
 #include <string>
 #include <vector>
 
+namespace nl::legacy {
+struct Catalog;
+}
+
 namespace nl::deploy {
 
 struct Options {
@@ -27,6 +31,7 @@ struct Options {
   std::uint32_t exclude_process_id = 0;  // M4 ignores only itself, preserving the second-instance check
   bool keep_last_good = false;           // M4 only: an unusable still-allowlisted source cannot remove/replace current
   std::optional<std::filesystem::path> legacy_source;  // optional hash-verified stock recovery root
+  const legacy::Catalog* legacy_catalog = nullptr;     // tests: synthetic stock identities; default the built-in one
 };
 
 struct Change {

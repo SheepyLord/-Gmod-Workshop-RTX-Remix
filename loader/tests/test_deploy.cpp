@@ -6,6 +6,7 @@
 #include "nl/discovery.h"
 #include "nl/fs.h"
 #include "nl/journal.h"
+#include "nl/json.h"
 #include "nl/legacy_migrate.h"
 #include "nl/manifest.h"
 #include "nl/planner.h"
@@ -846,7 +847,290 @@ const Pkg kLua = {"test-lua", "1.0.0", "[\"lua-binary-module\"]",
                   ", \"root_files\": [{\"path\": \"garrysmod/lua/bin/gmcl_test_win64.dll\"}]",
                   {{"native/root/garrysmod/lua/bin/gmcl_test_win64.dll", "MZ-module"}}};
 
+// A runtime that also ships files into one of RTXLauncher's add-on folders, as the RTX package does.
+Pkg rtx_package(const std::string& version, const Files& addon_files) {
+  Pkg p = runtime(version, "new runtime " + version);
+  p.kinds = "[\"remix-runtime\", \"lua-addon\"]";
+  p.extra += ", \"root_files\": [{\"path\": \"garrysmod/addons/remixbinary\"}]";
+  for (const auto& [path, bytes] : addon_files) p.files["native/root/" + path] = bytes;
+  return p;
+}
+
+const char* const kRtxOff = R"({"schema":1,"allow":{"local":["garrysmod/addons/runtime.gma"]},"remix":{"enabled":false}})";
+
+// Directory junctions need no special rights; mklink is the simplest way to make one.
+bool junction(const sfs::path& link, const sfs::path& target) {
+  const std::string command = "cmd /c mklink /J \"" + link.string() + "\" \"" + target.string() + "\" >nul";
+  return std::system(command.c_str()) == 0;
+}
+
+// apply_at with a synthetic stock catalog and an explicit vanilla root (no Steam discovery).
+nl::deploy::Report apply_legacy(const sfs::path& root, const nl::legacy::Catalog& catalog, const sfs::path& vanilla,
+                                nl::fs::FileSystem* disk = nullptr, bool dry_run = false) {
+  const nl::config::Config config = nl::config::load(root);
+  const auto env = nl::discovery::environment_for(root, root / "no-steam");
+  nl::deploy::Options options = with(disk, dry_run);
+  options.legacy_catalog = &catalog;
+  options.legacy_source = vanilla;
+  return nl::deploy::apply(root, nl::planner::consider(nl::discovery::discover(config, env)), config,
+                           *nl::manifest::parse_version(nl::version()), options);
+}
+
+const std::string kBackupPatches = "backup_patches_20261030_120000/";
+
+// A former installation whose three replaced Steam files can be restored: the launcher's bytes in
+// place, stock copies in its backup_patches folder, beside the file (.bak) and in `vanilla`.
+void legacy_depot(const Game& g, const nl::test::legacy_fixture::Depot& depot, const sfs::path& vanilla) {
+  write_file(g.root / "bin" / "win64" / "d3d9.dll", nl::test::legacy_fixture::fixture());
+  write_file(g.root / "rtx.conf", "old RTX config");
+  for (const auto& [path, bytes] : depot.anchors) write_file(nl::fs::join(g.root, path), bytes);
+  for (const auto& [path, bytes] : depot.legacy) write_file(nl::fs::join(g.root, path), bytes);
+  write_file(nl::fs::join(g.root, kBackupPatches + "bin/win64/engine.dll"), depot.stock.at("bin/win64/engine.dll"));
+  write_file(nl::fs::join(g.root, "garrysmod/gamemodes/sandbox/logo.png.bak"), depot.stock.at("garrysmod/gamemodes/sandbox/logo.png"));
+  write_file(nl::fs::join(vanilla, "garrysmod/html/loading.png"), depot.stock.at("garrysmod/html/loading.png"));
+}
+
 }  // namespace
+
+TEST_CASE("deploy legacy: Steam's replaced files go back to verified stock bytes in the transaction") {
+  Game g("deploy_legacy_stock");
+  const auto depot = nl::test::legacy_fixture::depot();
+  const sfs::path vanilla = g.dir / "vanilla";
+  legacy_depot(g, depot, vanilla);
+  version_1(g);
+  const State before = snapshot(g.root);
+  const auto dry = apply_legacy(g.root, depot.catalog, vanilla, nullptr, true);
+  REQUIRE(dry.outcome == "planned");
+  CHECK(snapshot(g.root) == before);
+  for (const auto& [path, bytes] : depot.stock) CHECK(has_change(dry, "restore-stock", path));
+  const auto r = apply_legacy(g.root, depot.catalog, vanilla);
+  if (r.outcome != "deployed") std::printf("  stock: %s %s\n", r.outcome.c_str(), r.error.c_str());
+  REQUIRE(r.outcome == "deployed");
+  const std::string archive = "native-loader/backup/legacy/" + std::to_string(r.generation) + "/";
+  for (const auto& [path, bytes] : depot.stock) {
+    CHECK(has_change(r, "archive-legacy", path));
+    CHECK(has_change(r, "restore-stock", path));
+    CHECK(g.read(path) == bytes);
+    CHECK(g.read(archive + path) == depot.legacy.at(path));
+  }
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+  CHECK(g.read(archive + "rtx.conf") == "old RTX config");
+  CHECK(g.read(kBackupPatches + "bin/win64/engine.dll") == depot.stock.at("bin/win64/engine.dll"));  // recovery material stays
+  const auto manifest = nl::json::parse(g.read(archive + "manifest.json"));
+  std::size_t restored = 0;
+  for (const auto& file : manifest.find("files")->as_array()) {
+    if (const auto* sha = file.find("restored_stock_sha256")) {
+      ++restored;
+      CHECK(sha->as_string("sha") == nl::sha256::of(depot.stock.at(file.find("path")->as_string("path"))));
+    }
+  }
+  CHECK(restored == depot.stock.size());
+  for (const auto& [path, bytes] : depot.anchors) CHECK(g.read(path) == bytes);  // never written
+  CHECK(apply_legacy(g.root, depot.catalog, vanilla).operations == 0);  // migrated once, and only once
+  REQUIRE(nl::deploy::uninstall(g.root, with(nullptr)).ok());
+  for (const auto& [path, bytes] : depot.stock) CHECK(g.read(path) == bytes);  // uninstall restores no legacy file
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+}
+
+TEST_CASE("deploy legacy: without a verified stock copy the package deploys and the old installation waits for one") {
+  // RTXLauncher overwrote five Lua and image files without a backup: an in-place install has no
+  // vanilla copy of them until Steam verifies the game (or nlctl gets --legacy-source).
+  Game g("deploy_legacy_no_stock");
+  const auto depot = nl::test::legacy_fixture::depot();
+  const sfs::path vanilla = g.dir / "vanilla";
+  legacy_depot(g, depot, vanilla);
+  const std::string logo = "garrysmod/gamemodes/sandbox/logo.png";
+  sfs::remove(nl::fs::join(g.root, logo + ".bak"));
+  version_1(g);
+  const auto r = apply_legacy(g.root, depot.catalog, vanilla);
+  CHECK(r.outcome == "deployed");
+  CHECK(mentions(r.notes, "verified vanilla copy of " + logo));
+  CHECK(mentions(r.notes, "the next start tries again"));
+  CHECK(r.changes.end() == std::find_if(r.changes.begin(), r.changes.end(),
+                                        [](const nl::deploy::Change& c) { return c.action == "archive-legacy"; }));
+  CHECK(g.read("bin/win64/d3d9.dll") == nl::test::legacy_fixture::fixture());
+  for (const auto& [path, bytes] : depot.legacy) CHECK(g.read(path) == bytes);
+  CHECK(g.read("native-loader/packages/test-runtime/1.0.0_1/runtime/d3d9.dll") == "MZ-one");
+  write_file(nl::fs::join(g.root, logo + ".bak"), depot.stock.at(logo));  // a copy is available now
+  const auto next = apply_legacy(g.root, depot.catalog, vanilla);
+  CHECK(next.outcome == "deployed");
+  CHECK(has_change(next, "restore-stock", logo));
+  CHECK(g.read(logo) == depot.stock.at(logo));
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+}
+
+TEST_CASE("deploy legacy: a legacy file or stock copy changed just before its move stops the transaction") {
+  // These moves keep their SHA-256 check right before the move. The hook changes a file just before
+  // the second move of the run: the first is the journal's commit of the pending transaction.
+  Game g("deploy_legacy_changed");
+  const auto depot = nl::test::legacy_fixture::depot();
+  const sfs::path vanilla = g.dir / "vanilla";
+  legacy_depot(g, depot, vanilla);
+  version_1(g);
+  const auto changed_before_steps = [&](const sfs::path& file) {
+    int moves = 0;
+    nl::fs::Counting disk(g_fast, [&](std::uint64_t, std::string_view what) {
+      if (what == "move" && ++moves == 2) write_file(file, "changed at the last moment");
+    });
+    return apply_legacy(g.root, depot.catalog, vanilla, &disk);
+  };
+  const auto runtime_changed = changed_before_steps(g.root / "rtx.conf");
+  CHECK(runtime_changed.outcome == "failed");
+  CHECK(runtime_changed.error.find("changed before its move") != std::string::npos);
+  CHECK(g.read("rtx.conf") == "changed at the last moment");  // undone, and the changed file never archived
+  CHECK(g.has("bin/win64/d3d9.dll"));
+  CHECK(!g.has("native-loader/backup/legacy"));
+  CHECK(!g.journal().pending.has_value());
+  write_file(g.root / "rtx.conf", "old RTX config");
+  // The staged stock copy: transaction 2 now, since the failed one used up its number.
+  const auto stock_changed = changed_before_steps(nl::fs::join(g.root, "native-loader/staging/2/legacy/stock/bin/win64/engine.dll"));
+  CHECK(stock_changed.outcome == "failed");
+  CHECK(stock_changed.error.find("changed before its move") != std::string::npos);
+  CHECK(g.read("bin/win64/engine.dll") == depot.legacy.at("bin/win64/engine.dll"));
+  CHECK(!g.has("native-loader/backup/legacy"));
+  // Undisturbed, the next run migrates.
+  const auto r = apply_legacy(g.root, depot.catalog, vanilla);
+  CHECK(r.outcome == "deployed");
+  CHECK(g.read("bin/win64/engine.dll") == depot.stock.at("bin/win64/engine.dll"));
+}
+
+TEST_CASE("deploy legacy: links in the former installation stay in place and never stop the package") {
+  Game g("deploy_legacy_links");
+  write_file(g.root / "bin/win64/d3d9.dll", nl::test::legacy_fixture::fixture());
+  const std::string addon = "garrysmod/addons/mount-hl2rtx/";
+  write_file(nl::fs::join(g.root, addon + "addon.json"), "{}");
+  write_file(g.dir / "hl2rtx" / "models" / "headcrab.mdl", "another game's model");
+  // RTXLauncher's Mount HL2 RTX links mount-hl2rtx/models (and materials, maps) to Half-Life 2 RTX.
+  if (!junction(nl::fs::join(g.root, addon + "models"), g.dir / "hl2rtx" / "models")) {
+    std::printf("  (skipped: could not create a junction)\n");
+    return;
+  }
+  g.add("runtime.gma", rtx_package("1.0.0", {{"garrysmod/addons/remixbinary/lua/new.lua", "new"}}));
+  g.allow({"garrysmod/addons/runtime.gma"});
+  const auto r = apply_at(g.root);
+  if (r.outcome != "deployed") std::printf("  links: %s %s\n", r.outcome.c_str(), r.error.c_str());
+  CHECK(r.outcome == "deployed");
+  CHECK(has_change(r, "archive-legacy", "bin/win64/d3d9.dll"));
+  CHECK(has_change(r, "archive-legacy", addon + "addon.json"));
+  CHECK(mentions(r.notes, addon + "models"));
+  CHECK(g.read("garrysmod/addons/remixbinary/lua/new.lua") == "new");
+  CHECK(nl::fs::stat(nl::fs::join(g.root, addon + "models")).link);
+  CHECK(nl::fs::read_file(g.dir / "hl2rtx" / "models" / "headcrab.mdl", 64) == "another game's model");
+  CHECK(apply_at(g.root).operations == 0);
+  sfs::remove(nl::fs::join(g.root, addon + "models"));  // the junction, not its target
+}
+
+TEST_CASE("deploy legacy: a migration that cannot be planned leaves the old installation and deploys the package") {
+  Game g("deploy_legacy_unplanned");
+  const auto old_runtime = nl::test::legacy_fixture::fixture();
+  write_file(g.root / "bin/win64/d3d9.dll", old_runtime);
+  sfs::create_directories(g.dir / "elsewhere");
+  sfs::create_directories(g.root / "native-loader" / "backup");
+  // The archive's folder leads elsewhere, so no archive can be planned.
+  if (!junction(g.root / "native-loader" / "backup" / "legacy", g.dir / "elsewhere")) {
+    std::printf("  (skipped: could not create a junction)\n");
+    return;
+  }
+  version_1(g);
+  const auto r = apply_at(g.root);
+  if (r.outcome != "deployed") std::printf("  unplanned: %s %s\n", r.outcome.c_str(), r.error.c_str());
+  CHECK(r.outcome == "deployed");
+  CHECK(mentions(r.notes, "left as it is"));
+  CHECK(g.read("bin/win64/d3d9.dll") == old_runtime);
+  CHECK(g.read("native-loader/packages/test-runtime/1.0.0_1/runtime/d3d9.dll") == "MZ-one");
+  CHECK(sfs::is_empty(g.dir / "elsewhere"));
+  sfs::remove(g.root / "native-loader" / "backup" / "legacy");  // the junction, not its target
+  const auto next = apply_at(g.root);  // the next start migrates it
+  CHECK(next.outcome == "deployed");
+  CHECK(has_change(next, "archive-legacy", "bin/win64/d3d9.dll"));
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+}
+
+TEST_CASE("deploy legacy: a junctioned game root and a linked d3d9.dll deploy, and the root still migrates") {
+  Game g("deploy_legacy_linked_root");
+  version_1(g);
+  const sfs::path linked = g.dir / "GarrysMod";
+  if (!junction(linked, g.root)) {
+    std::printf("  (skipped: could not create a junction)\n");
+    return;
+  }
+  const auto first = apply_at(linked);
+  if (first.outcome != "deployed") std::printf("  linked root: %s %s\n", first.outcome.c_str(), first.error.c_str());
+  CHECK(first.outcome == "deployed");
+  // A d3d9.dll that is a link: never followed, not Remix, left alone.
+  sfs::create_directories(g.dir / "dxvk");
+  REQUIRE(junction(g.root / "bin" / "win64" / "d3d9.dll", g.dir / "dxvk"));
+  version_2(g);
+  const auto second = apply_at(linked);
+  if (second.outcome != "deployed") std::printf("  linked d3d9: %s %s\n", second.outcome.c_str(), second.error.c_str());
+  CHECK(second.outcome == "deployed");
+  CHECK(nl::fs::stat(g.root / "bin" / "win64" / "d3d9.dll").link);
+  sfs::remove(g.root / "bin" / "win64" / "d3d9.dll");  // the junction, not its target
+  // A symbolic link where Windows allows one without elevation (Developer Mode) or the test is elevated.
+  write_file(g.dir / "dxvk" / "d3d9.dll", nl::test::legacy_fixture::fixture());
+  if (CreateSymbolicLinkW((g.root / "bin" / "win64" / "d3d9.dll").c_str(), (g.dir / "dxvk" / "d3d9.dll").c_str(),
+                          SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+    version_1(g);
+    const auto third = apply_at(linked);
+    CHECK(third.outcome == "deployed");
+    CHECK(!has_change(third, "archive-legacy", "bin/win64/d3d9.dll"));
+    CHECK(nl::fs::stat(g.root / "bin" / "win64" / "d3d9.dll").link);
+    sfs::remove(g.root / "bin" / "win64" / "d3d9.dll");
+  } else {
+    std::printf("  (symbolic link part skipped: Windows error %lu)\n", GetLastError());
+  }
+  // A real legacy runtime below the junctioned root is found and archived through it.
+  write_file(g.root / "bin" / "win64" / "d3d9.dll", nl::test::legacy_fixture::fixture());
+  version_2(g);
+  const auto migrated = apply_at(linked);
+  CHECK(migrated.outcome == "deployed");
+  CHECK(has_change(migrated, "archive-legacy", "bin/win64/d3d9.dll"));
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+  sfs::remove(linked);
+}
+
+TEST_CASE("deploy legacy: files adopted before RTX was on are archived and become the loader's") {
+  // RTX off (or loader 0.7.0) adopts a legacy file that matches the package byte for byte. The
+  // migration must archive it all the same: left adopted, uninstall would leave it active, and a
+  // later version would take it over as an original that uninstall puts back.
+  Game g("deploy_legacy_adopted");
+  write_file(g.root / "bin/win64/d3d9.dll", nl::test::legacy_fixture::fixture());
+  const std::string same = "garrysmod/addons/remixbinary/lua/same.lua";
+  const std::string gone = "garrysmod/addons/remixbinary/lua/gone.lua";
+  write_file(nl::fs::join(g.root, same), "shared implementation");
+  write_file(nl::fs::join(g.root, gone), "dropped later");
+  g.add("runtime.gma", rtx_package("1.0.0", {{same, "shared implementation"}, {gone, "dropped later"}}));
+  write_file(g.root / "native-loader" / "config.json", kRtxOff);
+  REQUIRE(apply_at(g.root).ok());
+  REQUIRE(record_of(*g.journal().current, same) != nullptr);
+  REQUIRE(record_of(*g.journal().current, same)->adopted);
+  REQUIRE(record_of(*g.journal().current, gone)->adopted);
+  // RTX on with a version that no longer has gone.lua (so it is dropped, not placed).
+  g.add("runtime.gma", rtx_package("1.1.0", {{same, "shared implementation"}}));
+  g.allow({"garrysmod/addons/runtime.gma"});
+  const auto on = apply_at(g.root);
+  if (on.outcome != "deployed") std::printf("  adopted: %s %s\n", on.outcome.c_str(), on.error.c_str());
+  REQUIRE(on.outcome == "deployed");
+  const std::string archive = "native-loader/backup/legacy/" + std::to_string(on.generation) + "/";
+  CHECK(g.read(archive + same) == "shared implementation");
+  CHECK(g.read(archive + gone) == "dropped later");
+  CHECK(g.read(same) == "shared implementation");
+  CHECK(!g.has(gone));
+  REQUIRE(record_of(*g.journal().current, same) != nullptr);
+  CHECK(!record_of(*g.journal().current, same)->adopted);
+  CHECK(record_of(*g.journal().current, gone) == nullptr);
+  // A later version replaces the loader's copy; nothing of the former installation is an original.
+  g.add("runtime.gma", rtx_package("1.2.0", {{same, "newer implementation"}}));
+  const auto newer = apply_at(g.root);
+  CHECK(newer.outcome == "deployed");
+  CHECK(has_change(newer, "replace", same));
+  CHECK(g.journal().originals.empty());
+  REQUIRE(nl::deploy::uninstall(g.root, with(nullptr)).ok());
+  CHECK(!g.has(same));
+  CHECK(!g.has(gone));
+  CHECK(!g.has("bin/win64/d3d9.dll"));
+  CHECK(g.read(archive + same) == "shared implementation");
+}
 
 TEST_CASE("deploy: a file the loader adopted and later put back itself is the loader's after a rollback") {
   Game g("deploy_adopt_rollback");
@@ -1136,6 +1420,23 @@ TEST_CASE("deploy faults: an unsubscribe interrupted or failing at any change en
   const Command removal = [&w](const sfs::path& root, nl::fs::FileSystem* disk) { return w.apply(root, disk); };
   CHECK(interrupt_everywhere(g.dir / "kill", before, removal, 2) > 10);
   CHECK(fail_everywhere(g.dir / "fail", before, removal) > 10);
+}
+
+TEST_CASE("deploy faults: legacy stock restoration interrupted or failing at any change ends in the old or the new state") {
+  // Staged stock copies, depot moves and their undo, over a synthetic build (no game bytes).
+  Game g("deploy_faults_legacy_stock");
+  const auto depot = nl::test::legacy_fixture::depot();
+  const sfs::path vanilla = g.dir / "vanilla";
+  legacy_depot(g, depot, vanilla);
+  version_1(g);
+  const sfs::path before = g.dir / "before";
+  copy_tree(g.root, before);
+  // Every copy of the game reads the same vanilla root; its backup_patches and .bak copies travel with it.
+  const Command command = [&](const sfs::path& root, nl::fs::FileSystem* disk) {
+    return apply_legacy(root, depot.catalog, vanilla, disk);
+  };
+  CHECK(interrupt_everywhere(g.dir / "kill", before, command, 2) > 40);
+  CHECK(fail_everywhere(g.dir / "fail", before, command) > 40);
 }
 
 TEST_CASE("startup deployment: a late bad archive keeps all current packages without changing CLI behavior") {
