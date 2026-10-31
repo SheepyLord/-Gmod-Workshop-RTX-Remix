@@ -571,6 +571,12 @@ def config_content(args) -> tuple[dict, bytes]:
              "remix": {"enabled": args.remix == "on"}, "patch_sets": {"require_insecure": args.require_insecure == "yes"}}
     if getattr(args, "reshade", None):
         value["remix"]["reshade"] = args.reshade  # loader 0.5.0 (ADR 0028); left out, the loader's default (auto)
+    # Loader 0.11.0 (ADR 0062, 0063), each left out unless given: an older loader rejects these keys.
+    if getattr(args, "performance_tier", None):
+        value["remix"]["performance_tier"] = args.performance_tier
+    diagnostics = {key: getattr(args, key) for key in ("gpu_crash_dumps", "memory_telemetry") if getattr(args, key, None)}
+    if diagnostics:
+        value["diagnostics"] = diagnostics
     return value, json.dumps(value, indent=2).replace("\n", os.linesep).encode("utf-8")
 
 
@@ -998,6 +1004,12 @@ def main(argv=None) -> int:
         command.add_argument("--remix", choices=["on", "off"], default="on")
         command.add_argument("--reshade", choices=["auto", "on", "off"],
                              help="write remix.reshade (loader 0.5.0); left out by default")
+        command.add_argument("--performance-tier", choices=["auto", "high", "medium", "low"],
+                             help="write remix.performance_tier (loader 0.11.0); left out by default")
+        command.add_argument("--gpu-crash-dumps", choices=["off", "next_start", "always"],
+                             help="write diagnostics.gpu_crash_dumps (loader 0.11.0); left out by default")
+        command.add_argument("--memory-telemetry", choices=["on", "off"],
+                             help="write diagnostics.memory_telemetry (loader 0.11.0); left out by default")
         command.add_argument("--require-insecure", choices=["yes", "no"], default="yes")
         if name == "install":
             command.add_argument("--replace-config", action="store_true",

@@ -673,6 +673,13 @@ class InstallConfigTests(unittest.TestCase):
         code, record = main('--allow-local', 'b.gma', '--reshade', 'off', '--replace-config')
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(self.config.read_text(encoding='utf-8'))['remix'], {'enabled': True, 'reshade': 'off'})
+        self.assertNotIn('diagnostics', json.loads(self.config.read_text(encoding='utf-8')))  # older loaders reject it
+        code, record = main('--allow-local', 'b.gma', '--performance-tier', 'low', '--gpu-crash-dumps', 'next_start',
+                            '--memory-telemetry', 'off', '--replace-config')
+        self.assertEqual(code, 0)
+        written = json.loads(self.config.read_text(encoding='utf-8'))
+        self.assertEqual(written['remix'], {'enabled': True, 'performance_tier': 'low'})
+        self.assertEqual(written['diagnostics'], {'gpu_crash_dumps': 'next_start', 'memory_telemetry': 'off'})
 
 
 class PowerShellTests(unittest.TestCase):
