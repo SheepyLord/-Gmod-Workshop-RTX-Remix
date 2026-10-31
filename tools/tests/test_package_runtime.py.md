@@ -15,6 +15,11 @@ loader's path rules (shared cases with `nl::paths`); refusals that leave no part
 never touch a non-package folder; `--force`; a `.gma` with the same files in their original case,
 byte-identical when rebuilt.
 
+R6 optional tiers: medium/low payload paths, hashes, copied and archived bytes, inventory presence,
+unchanged schema/loader requirement, and absence from the unconditional layer lists. Refuses an
+unknown or repeated tier, missing/non-conf input, non-UTF-8 text, empty tiers, non-rtx assignments,
+malformed assignments and duplicate keys before writing any package output.
+
 Private files (R1-017): `user.conf`, a `.log`, `.env` and `*.env` (any case), `.dmp`, `.mdmp`, a
 file in `logs\` and one in `usd\Logs\`, and an `--rtx-conf` layer named `user.conf`. All are refused
 together and listed by package path, and nothing is written. With one exception missing, only that

@@ -9,6 +9,13 @@ and six existing publisher-test Git ownership errors. No failing tests were disa
 a full gate under the project manager's account, human translation review and game acceptance
 remain with the project manager; this task starts no game.
 
+R6 T6 is **in progress; PoC acceptance pending** (2026-10-31, branch `r6-t6-tiers`): optional
+medium/low runtime payloads, lossless mip removal and 4096-wide sky inputs are implemented.
+Release tests, deep input verification and the actual package build pass in the resumed user
+account. Game measurements await the field session closing: T6 must run only one game at a time
+and cannot close or change the field install. The two-map tier comparison and night-sky visual
+check remain required; [ADR 0064](decisions/0064-performance-tier-defaults.md) records candidate values.
+
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.

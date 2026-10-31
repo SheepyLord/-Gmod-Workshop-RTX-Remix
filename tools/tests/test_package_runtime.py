@@ -161,6 +161,47 @@ class PackageRuntimeTests(unittest.TestCase):
         code, _, _ = self.run_tool()
         self.assertEqual(code, 1)  # neither --out nor --gma
 
+    def test_tiers_are_hashed_payloads_but_not_unconditional_layers(self):
+        classic = self.write(self.root / 'classic.conf', b'rtx.pathMaxBounces = 12\n')
+        medium = self.write(self.root / 'medium.conf', b'# compute\nrtx.pathMaxBounces = 8\n')
+        low = self.write(self.root / 'low.conf', b'rtx.lowMemoryGpu = True\n')
+        out, gma = self.root / 'pkg', self.root / 'pkg.gma'
+        self.build('--out', out, '--gma', gma, '--dxvk-conf', classic,
+                   '--tier-conf', 'medium', medium, '--tier-conf', 'low', low)
+        manifest = self.manifest(out)
+        self.assertEqual(manifest['remix']['dxvk_conf_layers'], ['config/dxvk/01_classic.conf'])
+        self.assertEqual(manifest['remix']['rtx_conf_layers'], [])
+        self.assertEqual(manifest['requires_loader'], '>=0.1.0')
+        with gmapack.read_gma(str(gma)) as archive:
+            entries = {entry['name']: entry for entry in archive.files}
+            for tier, source in [('medium', medium), ('low', low)]:
+                path = 'native/payload/config/dxvk-tiers/%s.conf' % tier
+                data = source.read_bytes()
+                self.assertEqual(manifest['files'][path],
+                                 {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+                self.assertEqual((out / path).read_bytes(), data)
+                archive.fh.seek(entries[path]['offset'])
+                self.assertEqual(archive.fh.read(entries[path]['size']), data)
+                self.assertIn(path, Path(str(out) + '.inventory.txt').read_text())
+
+    def test_invalid_tiers_are_refused_before_writing(self):
+        valid = self.write(self.root / 'valid.conf', b'rtx.lowMemoryGpu = True\n')
+        cases = [
+            ['high', valid],
+            ['medium', valid, '--tier-conf', 'medium', valid],
+            ['low', self.write(self.root / 'bad.txt', valid.read_bytes())],
+            ['low', self.root / 'missing.conf'],
+        ]
+        for content in (b'dxvk.enableAftermath = True\n', b'rtx.a\n', b'rtx.a =\n', b'# empty\n',
+                        b'rtx.a = 1\nrtx.a = 2\n', b'\xff\n'):
+            cases.append(['low', self.write(self.root / ('bad%d.conf' % len(cases)), content)])
+        for args in cases:
+            code, _, err = self.run_tool('--out', self.root / 'bad', '--tier-conf', *args)
+            self.assertEqual(code, 1, err)
+            self.assertIn('--tier-conf', err)
+            self.assertFalse((self.root / 'bad').exists())
+        self.assertEqual(self.leftovers(), [])
+
     def test_runtime_paths_the_loader_refuses(self):
         # Names Windows itself would alter or treat as devices (trailing dots, con.txt) cannot be
         # created here; path_problem's unit cases below cover them.
