@@ -10,6 +10,11 @@ references in [materials.usda](../../garrysmod/rtx-remix/mods/~gmod_topbr/materi
 `colorSpace = "raw"`; its normal-map `encoding = 0` stays unchanged. BC7_UNORM (DXGI 98) keeps
 all four channels in linear space, including the existing normal-map encoding. There are no
 colour maps requiring an sRGB format in this set. Filenames, dimensions and mip counts remain.
+The mips themselves are not the originals: the encoder regenerated each chain from the top level.
+The fixes' writer rounds its 2x2 box average down at every level (`to_pbr.cpp:513`,
+`WriteTextureToDDS`) and nvtt rounds and filters differently, so the new lower mips are about 0.4
+codes per level higher (up to +3/255 at 1x1; the brick normal's mip 2 has RMSE 3.9 against 0.65 at
+mip 0). At a distance surfaces read very slightly rougher and normals tilt by about 1 degree.
 
 ## Encoder and import
 

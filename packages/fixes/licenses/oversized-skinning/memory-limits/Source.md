@@ -5,7 +5,8 @@ preceding [oversized-skinning build](../Source.md). The existing [COPYING](../CO
 [build-pins.json](build-pins.json) records the source, dependencies, toolchain and binary hashes.
 
 - Base: `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe` (the preceding packaged binary's source).
-- Change: `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`, branch `r6-no-memory-limits`.
+- Change: `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`, branch `codex/r6-no-memory-limits` of the
+  maintainer's fixes checkout.
 - DLL: 4,847,616 bytes, SHA-256 `cfcbdc95617f88ec3b002e47d35838376e77e5bba77023365a81927bbd04cfe0`.
 - Repository: https://github.com/SheepyLord/garrys-mod-rtx-remixed.git. This commit is local and
   unpushed; [no-memory-limits.patch](no-memory-limits.patch) preserves the complete commit.
@@ -27,16 +28,20 @@ would enter the User layer and could be persisted to `user.conf` by Remix Save.
 
 ## Rebuild and checks
 
-Follow the [preceding rebuild instructions](../Source.md#rebuild) to reconstruct the base if the
-local commit is unavailable, then apply `no-memory-limits.patch` with `git am`. Use the unchanged
+If the local commit is unavailable, follow the [preceding rebuild instructions](../Source.md#rebuild)
+to reconstruct the base, then either copy the four complete files under [source](source) over their
+checkout paths (the four native files are identical in d958da61 and b23c58fa), or first commit
+the reconstructed base with [UPSTREAM_README.md](../UPSTREAM_README.md) as its `README.md` (the
+patch's README hunk needs b23c58fa's README, which the public base does not have) and then apply
+`no-memory-limits.patch` with `git am`. Use the unchanged
 generated projects in [build-projects](../build-projects), the same recorded dependency revisions
 and `ReleaseWithSymbols|x64`, MSVC 14.44.35207, Windows SDK 10.0.26100.0. Build only
 `gmcl_RTXFixesBinary.vcxproj`, with `OutDir` and all scratch files below the aggregate worktree's
 `out/`. No software download is needed on the development machine.
 
-The earlier restricted attempt denied writes to the original fixes repository's `.git`. The source
-branch/worktree therefore lives in an offline shared clone at `out/fixes-origin.git` and
-`out/fixes-source` of the R6 T5 aggregate worktree; the original checkout and refs were not changed.
+The commit was made in an offline shared clone, because the restricted build environment could not
+write the original fixes repository's `.git`; it was then fetched into that repository as the branch
+above, and the PDB matching the shipped DLL is kept with the maintainer's build evidence.
 Recursive dependencies were archived from already-present local git objects at their pinned
 revisions. The baseline at the exact base commit and the changed DLL both built successfully.
 This is source equivalence plus a controlled rebuild, not byte-for-byte binary reproducibility:
