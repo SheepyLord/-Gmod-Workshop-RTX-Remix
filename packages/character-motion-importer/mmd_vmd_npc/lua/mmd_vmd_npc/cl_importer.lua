@@ -640,61 +640,49 @@ function Importer.Cancel()
 end
 
 -- ---------------------------------------------------------------------------
--- The importer window: the desktop importer's inputs, without the ones that
--- only make sense outside the game (the GMod folder, the preview and the
--- .gma export: Lua can write only into data/).
+-- The importer: the desktop importer's inputs, without the ones that only make
+-- sense outside the game (the GMod folder, the preview and the .gma export:
+-- Lua can write only into data/). BuildMotionImporter builds it into parent,
+-- for the window below (mmdvmd_import) or a host such as the RTX package's
+-- spawn-menu tab, and returns the panel it added. opts:
+--   theme          "window" (the default: Derma's look) or "light" (UIThemes)
+--   columns        true: the inputs on the left (body, music and camera files,
+--                  audio offset, metadata, face/flex files), and on the right
+--                  the bake and its cancel, the bake options, the progress and
+--                  the log, in the desktop importer's order
+--   onUnavailable  called when file access goes away while no import runs
+--                  (the window closes and explains); without it the panel
+--                  stays, with a notice, Resolve and its controls disabled
+-- Every built importer shows the same chosen files and settings (State).
 -- ---------------------------------------------------------------------------
-function MMDVMDNPC.OpenMotionImporter()
-    if not MMDVMDNPC.ImporterAvailability() then
-        MMDVMDNPC.OpenImporterResolve()
-        return
-    end
-    if IsValid(Importer.Frame) then
-        Importer.Frame:MakePopup()
-        Importer.Frame:MoveToFront()
-        return Importer.Frame
-    end
+local function ui_theme(name)
+    if MMDVMDNPC.UITheme then return MMDVMDNPC.UITheme(name) end
+    return { text = TEXT_COLOR, muted = MUTED_COLOR, warning = WARNING_COLOR }
+end
+
+-- The inputs changed: every built importer shows them again.
+local function changed()
+    State.version = (State.version or 0) + 1
+end
+
+function MMDVMDNPC.BuildMotionImporter(parent, opts)
+    opts = opts or {}
+    local theme = ui_theme(opts.theme)
+    local textColor, mutedColor, warningColor = theme.text, theme.muted, theme.warning
+    local columns = opts.columns == true
     if State.disableIK == nil then State.disableIK = cookie.GetNumber("mmdvmd_import_disable_ik", 0) == 1 end
     if State.unifyGround == nil then State.unifyGround = cookie.GetNumber("mmdvmd_import_unify_ground", 0) == 1 end
 
-    local frame = vgui.Create("DFrame")
-    Importer.Frame = frame
-    frame:SetTitle(L("mmd_vmd_npc.import.title"))
-    local width = math.min(scaled(1000), ScrW() - 40)
-    local height = math.min(scaled(820), ScrH() - 40)
-    frame:SetSize(width, height)
-    frame:SetSizable(true)
-    frame:SetMinWidth(math.min(scaled(640), width))
-    frame:SetMinHeight(math.min(scaled(480), height))
-    frame:Center()
-    frame:MakePopup()
+    local root = vgui.Create("DPanel", parent)
+    root:Dock(FILL)
+    root:SetPaintBackground(false)
+    root.MMDVMDNPCImporter = true
 
-    -- Bottom bar: progress and the two actions stay in view.
-    local bottom = vgui.Create("DPanel", frame)
-    bottom:Dock(BOTTOM)
-    bottom:SetTall(scaled(92))
-    bottom:SetPaintBackground(false)
-    bottom:DockPadding(scaled(6), scaled(6), scaled(6), 0)
-    local actions = vgui.Create("DPanel", bottom)
-    actions:Dock(BOTTOM)
-    actions:SetTall(scaled(40))
-    actions:SetPaintBackground(false)
-    local cancel = add_button(actions, L("mmd_vmd_npc.import.cancel"), function() Importer.Cancel() end)
-    cancel:Dock(RIGHT)
-    cancel:SetWide(scaled(170))
-    cancel:DockMargin(scaled(8), 0, 0, 0)
-    local bake = accent_button(actions, L("mmd_vmd_npc.import.bake"), Color(40, 140, 70), function() Importer.Start() end)
-    bake:Dock(FILL)
-    local progress = vgui.Create("DProgress", bottom)
-    progress:Dock(TOP)
-    progress:SetTall(scaled(16))
-    local status = add_label(bottom, L("mmd_vmd_npc.import.progress_idle"), SMALL_FONT, MUTED_COLOR)
-    status:Dock(TOP)
-    status:SetTall(scaled(22))
-
-    local scroll = vgui.Create("DScrollPanel", frame)
-    scroll:Dock(FILL)
-    scroll:GetCanvas():DockPadding(scaled(6), 0, scaled(10), scaled(6))
+    local function button(holder, text, onClick, style)
+        local made = add_button(holder, text, onClick)
+        if MMDVMDNPC.StyleButton then MMDVMDNPC.StyleButton(made, theme, style) end
+        return made
+    end
 
     local function top(panel, gap)
         panel:Dock(TOP)
@@ -702,16 +690,87 @@ function MMDVMDNPC.OpenMotionImporter()
         return panel
     end
 
-    top(add_label(scroll, L("mmd_vmd_npc.import.help"), SMALL_FONT, MUTED_COLOR, true))
+    -- Without file access a panel that stays says why, with Resolve (and
+    -- Model Hotloader's file access settings when it is turned off there).
+    local notice
+    if not opts.onUnavailable then
+        notice = top(vgui.Create("DPanel", root))
+        notice:SetPaintBackground(false)
+        notice:SetTall(scaled(30))
+        notice:DockMargin(0, 0, 0, scaled(8))
+        notice:SetVisible(false)
+        notice.Resolve = button(notice, L("mmd_vmd_npc.import.resolve"), function() MMDVMDNPC.OpenImporterResolve() end, "primary")
+        notice.Resolve:SetSize(scaled(110), scaled(30))
+        notice.Settings = button(notice, L("mmd_vmd_npc.import.file_access_settings"), function()
+            local FA = file_access()
+            if FA and isfunction(FA.OpenManager) then FA.OpenManager() end
+        end)
+        notice.Settings:SetSize(scaled(210), scaled(30))
+        notice.Text = add_label(notice, "", TEXT_FONT, warningColor, true)
+        notice.PerformLayout = function(self, w)
+            local x = w
+            for _, action in ipairs({ self.Resolve, self.Settings }) do
+                if action:IsVisible() then
+                    x = x - action:GetWide()
+                    action:SetPos(x, 0)
+                    x = x - scaled(6)
+                end
+            end
+            self.Text:SetPos(0, scaled(5))
+            self.Text:SetWide(math.max(scaled(40), x - scaled(6)))
+        end
+        -- The wrapped notice sets its own height; the row follows it.
+        notice.Think = function(self)
+            local need = math.max(scaled(30), self.Text:GetTall() + scaled(10))
+            if self:GetTall() ~= need then self:SetTall(need) end
+        end
+    end
+
+    -- The window: one scroll of inputs above a bar with the progress and the
+    -- two actions. Columns: the inputs scroll on the left, the bake side on
+    -- the right with the log taking what is left.
+    local inputs, side, bottom
+    if columns then
+        top(add_label(root, L("mmd_vmd_npc.import.help"), SMALL_FONT, mutedColor, true)):DockMargin(0, 0, 0, scaled(10))
+        local body = vgui.Create("DPanel", root)
+        body:Dock(FILL)
+        body:SetZPos(100)
+        body:SetPaintBackground(false)
+        inputs = vgui.Create("DScrollPanel", body)
+        inputs:Dock(LEFT)
+        inputs:GetCanvas():DockPadding(0, 0, scaled(10), scaled(6))
+        side = vgui.Create("DPanel", body)
+        side:Dock(FILL)
+        side:SetZPos(100)
+        side:SetPaintBackground(false)
+        side:DockMargin(scaled(16), 0, 0, 0)
+        body.PerformLayout = function(_, w)
+            local width = math.Clamp(math.floor(w * 0.5), math.min(scaled(360), w), math.max(scaled(360), math.floor(w * 0.6)))
+            if math.abs(inputs:GetWide() - width) > 1 then inputs:SetWide(width) end
+        end
+    else
+        -- Bottom bar: progress and the two actions stay in view.
+        bottom = vgui.Create("DPanel", root)
+        bottom:Dock(BOTTOM)
+        bottom:SetTall(scaled(92))
+        bottom:SetPaintBackground(false)
+        bottom:DockPadding(scaled(6), scaled(6), scaled(6), 0)
+        inputs = vgui.Create("DScrollPanel", root)
+        inputs:Dock(FILL)
+        inputs:GetCanvas():DockPadding(scaled(6), 0, scaled(10), scaled(6))
+        side = inputs
+        top(add_label(inputs, L("mmd_vmd_npc.import.help"), SMALL_FONT, mutedColor, true))
+    end
+
     -- Buttons that change the chosen files; a running import still reads them.
     local fileButtons = {}
 
     -- A field title with its Required/Optional badge, and its hint below.
-    local function field_header(text, required, hint)
-        local row = top(vgui.Create("DPanel", scroll), scaled(12))
+    local function field_header(canvas, text, required, hint, gap)
+        local row = top(vgui.Create("DPanel", canvas), gap or scaled(12))
         row:SetTall(scaled(24))
         row:SetPaintBackground(false)
-        local title = add_label(row, text, BOLD_FONT, TEXT_COLOR)
+        local title = add_label(row, text, BOLD_FONT, textColor)
         title:Dock(LEFT)
         title:SizeToContentsX(scaled(4))
         if required ~= nil then
@@ -722,29 +781,31 @@ function MMDVMDNPC.OpenMotionImporter()
             badge:Dock(LEFT)
             badge:DockMargin(scaled(8), scaled(3), 0, scaled(3))
             badge:SetWide(textWidth + scaled(16))
+            local optionalFill = theme.light and Color(218, 225, 233) or Color(70, 72, 76)
+            local optionalText = theme.light and textColor or Color(215, 215, 215)
             badge.Paint = function(_, w, h)
-                draw.RoundedBox(4, 0, 0, w, h, required and Color(31, 111, 235) or Color(70, 72, 76))
-                draw.SimpleText(badgeText, SMALL_FONT, w * 0.5, h * 0.5, required and color_white or Color(215, 215, 215), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                draw.RoundedBox(4, 0, 0, w, h, required and Color(31, 111, 235) or optionalFill)
+                draw.SimpleText(badgeText, SMALL_FONT, w * 0.5, h * 0.5, required and color_white or optionalText, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
         end
         if hint and hint ~= "" then
-            top(add_label(scroll, hint, SMALL_FONT, MUTED_COLOR, true), scaled(2))
+            top(add_label(canvas, hint, SMALL_FONT, mutedColor, true), scaled(2))
         end
     end
 
     -- Chosen file (read-only) with Browse and, for optional files, Clear.
-    local function file_line(onBrowse, onClear)
-        local row = top(vgui.Create("DPanel", scroll), scaled(4))
+    local function file_line(canvas, onBrowse, onClear)
+        local row = top(vgui.Create("DPanel", canvas), scaled(4))
         row:SetTall(scaled(30))
         row:SetPaintBackground(false)
         if onClear then
-            local clear = add_button(row, L("mmd_vmd_npc.import.clear"), onClear)
+            local clear = button(row, L("mmd_vmd_npc.import.clear"), onClear)
             clear:Dock(RIGHT)
             clear:SetWide(scaled(90))
             clear:DockMargin(scaled(6), 0, 0, 0)
             fileButtons[#fileButtons + 1] = clear
         end
-        local browse = add_button(row, L("mmd_vmd_npc.import.browse"), onBrowse)
+        local browse = button(row, L("mmd_vmd_npc.import.browse"), onBrowse)
         browse:Dock(RIGHT)
         browse:SetWide(scaled(110))
         browse:DockMargin(scaled(6), 0, 0, 0)
@@ -759,43 +820,48 @@ function MMDVMDNPC.OpenMotionImporter()
 
     local refresh_inputs
 
-    field_header(L("mmd_vmd_npc.import.body_vmd"), true, L("mmd_vmd_npc.import.body_vmd_hint"))
-    local bodyEntry = file_line(function()
+    field_header(inputs, L("mmd_vmd_npc.import.body_vmd"), true, L("mmd_vmd_npc.import.body_vmd_hint"), columns and 0 or nil)
+    local bodyEntry = file_line(inputs, function()
         pick("body", function(items)
             set_body(items[1])
             for i = 2, #items do release(items[i]) end
+            changed()
             refresh_inputs()
         end)
     end)
 
-    field_header(L("mmd_vmd_npc.import.music"), false, L("mmd_vmd_npc.import.music_hint"))
-    local musicEntry = file_line(function()
+    field_header(inputs, L("mmd_vmd_npc.import.music"), false, L("mmd_vmd_npc.import.music_hint"))
+    local musicEntry = file_line(inputs, function()
         pick("music", function(items)
             if State.music ~= items[1] then release(State.music) end
             State.music = items[1]
+            changed()
             refresh_inputs()
         end)
     end, function()
         release(State.music)
         State.music = nil
+        changed()
         refresh_inputs()
     end)
 
-    field_header(L("mmd_vmd_npc.import.camera_vmd"), false, L("mmd_vmd_npc.import.camera_vmd_hint"))
-    local cameraEntry = file_line(function()
+    field_header(inputs, L("mmd_vmd_npc.import.camera_vmd"), false, L("mmd_vmd_npc.import.camera_vmd_hint"))
+    local cameraEntry = file_line(inputs, function()
         pick("camera", function(items)
             if State.camera ~= items[1] then release(State.camera) end
             State.camera = items[1]
+            changed()
             refresh_inputs()
         end)
     end, function()
         release(State.camera)
         State.camera = nil
+        changed()
         refresh_inputs()
     end)
 
-    field_header(L("mmd_vmd_npc.import.audio_offset"), false, L("mmd_vmd_npc.import.audio_offset_hint"))
-    local offsetSlider = top(vgui.Create("DNumSlider", scroll), scaled(2))
+    field_header(inputs, L("mmd_vmd_npc.import.audio_offset"), false, L("mmd_vmd_npc.import.audio_offset_hint"))
+    local offsetSlider = top(vgui.Create("DNumSlider", inputs), scaled(2))
     offsetSlider:SetTall(scaled(30))
     offsetSlider:SetText(L("mmd_vmd_npc.import.audio_offset"))
     offsetSlider:SetMin(-5)
@@ -804,22 +870,26 @@ function MMDVMDNPC.OpenMotionImporter()
     offsetSlider:SetValue(tonumber(State.audioOffset) or 0)
     if IsValid(offsetSlider.Label) then
         offsetSlider.Label:SetFont(TEXT_FONT)
-        offsetSlider.Label:SetTextColor(TEXT_COLOR)
+        offsetSlider.Label:SetTextColor(textColor)
     end
     offsetSlider.OnValueChanged = function(_, value)
-        State.audioOffset = math.Clamp(tonumber(value) or 0, -5, 5)
+        local offset = math.Clamp(tonumber(value) or 0, -5, 5)
+        if offset ~= State.audioOffset then
+            State.audioOffset = offset
+            changed()
+        end
     end
 
     -- Motion metadata: the desktop importer's 7-field table, as a grid.
-    field_header(L("mmd_vmd_npc.import.motion_meta"), false, L("mmd_vmd_npc.import.motion_meta_hint"))
-    local grid = top(vgui.Create("DPanel", scroll), scaled(4))
+    field_header(inputs, L("mmd_vmd_npc.import.motion_meta"), false, L("mmd_vmd_npc.import.motion_meta_hint"))
+    local grid = top(vgui.Create("DPanel", inputs), scaled(4))
     grid:SetPaintBackground(false)
     grid:SetTall(scaled(110))
     local metaEntries, cells = {}, {}
     for _, field in ipairs(META_FIELDS) do
         local cell = vgui.Create("DPanel", grid)
         cell:SetPaintBackground(false)
-        local caption = add_label(cell, L("mmd_vmd_npc.import.meta." .. field), SMALL_FONT, TEXT_COLOR)
+        local caption = add_label(cell, L("mmd_vmd_npc.import.meta." .. field), SMALL_FONT, textColor)
         caption:Dock(TOP)
         caption:SetTall(scaled(20))
         local entry = vgui.Create("DTextEntry", cell)
@@ -829,44 +899,49 @@ function MMDVMDNPC.OpenMotionImporter()
         entry:SetTooltip(L("mmd_vmd_npc.import.meta." .. field .. "_tip"))
         caption:SetTooltip(L("mmd_vmd_npc.import.meta." .. field .. "_tip"))
         entry.OnValueChange = function(_, value)
-            State.meta[field] = tostring(value or "")
+            value = tostring(value or "")
+            if tostring(State.meta[field] or "") ~= value then
+                State.meta[field] = value
+                changed()
+            end
         end
         metaEntries[field] = entry
         cells[#cells + 1] = cell
     end
     grid.PerformLayout = function(self, w)
         local gap = scaled(8)
-        local columns = math.Clamp(math.floor((w + gap) / scaled(230)), 1, 4)
-        local cellWidth = math.floor((w - gap * (columns - 1)) / columns)
+        local count = math.Clamp(math.floor((w + gap) / scaled(230)), 1, 4)
+        local cellWidth = math.floor((w - gap * (count - 1)) / count)
         local cellHeight = scaled(50)
         for index, cell in ipairs(cells) do
-            local column = (index - 1) % columns
-            local row = math.floor((index - 1) / columns)
+            local column = (index - 1) % count
+            local row = math.floor((index - 1) / count)
             cell:SetPos(column * (cellWidth + gap), row * (cellHeight + gap))
             cell:SetSize(cellWidth, cellHeight)
         end
-        local rows = math.ceil(#cells / columns)
+        local rows = math.ceil(#cells / count)
         local tall = rows * cellHeight + (rows - 1) * gap
         if self:GetTall() ~= tall then self:SetTall(tall) end
     end
 
-    field_header(L("mmd_vmd_npc.import.flex_group"), false)
-    local flexList = top(vgui.Create("DListView", scroll), scaled(4))
+    field_header(inputs, L("mmd_vmd_npc.import.flex_group"), false)
+    local flexList = top(vgui.Create("DListView", inputs), scaled(4))
     flexList:SetTall(scaled(96))
     flexList:SetMultiSelect(true)
     flexList:AddColumn(L("mmd_vmd_npc.import.flex_column"))
-    local flexButtons = top(vgui.Create("DPanel", scroll), scaled(4))
+    local flexButtons = top(vgui.Create("DPanel", inputs), scaled(4))
     flexButtons:SetTall(scaled(30))
     flexButtons:SetPaintBackground(false)
-    local addFlex = add_button(flexButtons, L("mmd_vmd_npc.import.flex_add"), function()
+    local addFlex = button(flexButtons, L("mmd_vmd_npc.import.flex_add"), function()
         pick("flex", function(items)
             for _, item in ipairs(items) do State.flexes[#State.flexes + 1] = item end
+            changed()
             refresh_inputs()
         end)
     end)
     addFlex:Dock(LEFT)
     addFlex:SetWide(scaled(240))
-    local removeFlex = add_button(flexButtons, L("mmd_vmd_npc.import.flex_remove"), function()
+    local removeFlex = button(flexButtons, L("mmd_vmd_npc.import.flex_remove"), function()
         local drop = {}
         for _, line in ipairs(flexList:GetSelected() or {}) do
             if line.FlexItem then drop[line.FlexItem] = true end
@@ -876,6 +951,7 @@ function MMDVMDNPC.OpenMotionImporter()
             if drop[item] then release(item) else kept[#kept + 1] = item end
         end
         State.flexes = kept
+        changed()
         refresh_inputs()
     end)
     removeFlex:Dock(LEFT)
@@ -884,13 +960,33 @@ function MMDVMDNPC.OpenMotionImporter()
     fileButtons[#fileButtons + 1] = addFlex
     fileButtons[#fileButtons + 1] = removeFlex
 
-    field_header(L("mmd_vmd_npc.import.bake_options"), nil)
+    -- The bake and its cancel: the window's bottom bar, or the top of the
+    -- right side.
+    local actions = vgui.Create("DPanel", bottom or side)
+    actions:Dock(bottom and BOTTOM or TOP)
+    actions:SetTall(scaled(40))
+    actions:SetPaintBackground(false)
+    local cancel = button(actions, L("mmd_vmd_npc.import.cancel"), function() Importer.Cancel() end, "danger")
+    cancel:Dock(RIGHT)
+    cancel:SetWide(scaled(170))
+    cancel:DockMargin(scaled(8), 0, 0, 0)
+    local bake
+    if theme.light then
+        bake = button(actions, L("mmd_vmd_npc.import.bake"), function() Importer.Start() end, "success")
+        bake:SetFont(BOLD_FONT)
+    else
+        bake = accent_button(actions, L("mmd_vmd_npc.import.bake"), Color(40, 140, 70), function() Importer.Start() end)
+    end
+    bake:Dock(FILL)
+    bake:SetZPos(10)
+
+    field_header(side, L("mmd_vmd_npc.import.bake_options"), nil, nil, columns and scaled(14) or nil)
     local function option(text, tip, value, cookieName, onChange)
-        local check = top(vgui.Create("DCheckBoxLabel", scroll), scaled(6))
+        local check = top(vgui.Create("DCheckBoxLabel", side), scaled(6))
         check:SetTall(scaled(22))
         check:SetText(text)
         check:SetFont(TEXT_FONT)
-        check:SetTextColor(TEXT_COLOR)
+        check:SetTextColor(textColor)
         check:SetValue(value and 1 or 0)
         check:SetTooltip(tip)
         check.OnChange = function(_, checked)
@@ -899,17 +995,29 @@ function MMDVMDNPC.OpenMotionImporter()
         end
         return check
     end
-    option(L("mmd_vmd_npc.import.disable_foot_ik"), L("mmd_vmd_npc.import.disable_foot_ik_tip"), State.disableIK, "mmdvmd_import_disable_ik", function(value) State.disableIK = value end)
-    option(L("mmd_vmd_npc.import.unify_ground"), L("mmd_vmd_npc.import.unify_ground_tip"), State.unifyGround, "mmdvmd_import_unify_ground", function(value) State.unifyGround = value end)
+    local disableIK = option(L("mmd_vmd_npc.import.disable_foot_ik"), L("mmd_vmd_npc.import.disable_foot_ik_tip"), State.disableIK, "mmdvmd_import_disable_ik", function(value)
+        if State.disableIK ~= value then State.disableIK = value changed() end
+    end)
+    local unifyGround = option(L("mmd_vmd_npc.import.unify_ground"), L("mmd_vmd_npc.import.unify_ground_tip"), State.unifyGround, "mmdvmd_import_unify_ground", function(value)
+        if State.unifyGround ~= value then State.unifyGround = value changed() end
+    end)
 
-    field_header(L("mmd_vmd_npc.import.log_title"), nil)
+    local progress = vgui.Create("DProgress", bottom or side)
+    progress:Dock(TOP)
+    progress:SetTall(scaled(16))
+    if not bottom then progress:DockMargin(0, scaled(14), 0, 0) end
+    local status = add_label(bottom or side, L("mmd_vmd_npc.import.progress_idle"), SMALL_FONT, mutedColor)
+    status:Dock(TOP)
+    status:SetTall(scaled(22))
+
+    field_header(side, L("mmd_vmd_npc.import.log_title"), nil)
     local function output_line(caption)
-        local row = top(vgui.Create("DPanel", scroll), scaled(4))
+        local row = top(vgui.Create("DPanel", side), scaled(4))
         row:SetTall(scaled(26))
         row:SetPaintBackground(false)
-        local label = add_label(row, caption, SMALL_FONT, TEXT_COLOR)
-        label:Dock(LEFT)
-        label:SetWide(scaled(140))
+        local text = add_label(row, caption, SMALL_FONT, textColor)
+        text:Dock(LEFT)
+        text:SetWide(scaled(140))
         local entry = vgui.Create("DTextEntry", row)
         entry:Dock(FILL)
         entry:SetFont(SMALL_FONT)
@@ -918,24 +1026,37 @@ function MMDVMDNPC.OpenMotionImporter()
     end
     local motionOutput = output_line(L("mmd_vmd_npc.import.output_motion"))
     local musicOutput = output_line(L("mmd_vmd_npc.import.output_music"))
-    local logEntry = top(vgui.Create("DTextEntry", scroll), scaled(6))
-    logEntry:SetTall(scaled(180))
-    logEntry:SetMultiline(true)
-    logEntry:SetEditable(false)
-    logEntry:SetVerticalScrollbarEnabled(true)
-    logEntry:SetFont("DermaDefault")
-    local copyRow = top(vgui.Create("DPanel", scroll), scaled(4))
+    local logEntry = vgui.Create("DTextEntry", side)
+    local copyRow = vgui.Create("DPanel", side)
     copyRow:SetTall(scaled(30))
     copyRow:SetPaintBackground(false)
-    local copyLog = add_button(copyRow, L("mmd_vmd_npc.import.copy_log"), function()
+    local copyLog = button(copyRow, L("mmd_vmd_npc.import.copy_log"), function()
         local job = Importer.Job
         SetClipboardText(job and table.concat(job.log, "\n") or "")
     end)
     copyLog:Dock(RIGHT)
     copyLog:SetWide(scaled(140))
+    if columns then
+        -- The log takes the rest of the right side, Copy Log under it.
+        logEntry:Dock(FILL)
+        logEntry:SetZPos(100)
+        logEntry:DockMargin(0, scaled(6), 0, 0)
+        copyRow:Dock(BOTTOM)
+        copyRow:DockMargin(0, scaled(4), 0, 0)
+    else
+        top(logEntry, scaled(6))
+        logEntry:SetTall(scaled(180))
+        top(copyRow, scaled(4))
+    end
+    logEntry:SetMultiline(true)
+    logEntry:SetEditable(false)
+    logEntry:SetVerticalScrollbarEnabled(true)
+    logEntry:SetFont("DermaDefault")
 
+    local shownVersion, shownFlexes
     refresh_inputs = function()
-        if not IsValid(frame) then return end
+        if not IsValid(root) then return end
+        shownVersion = State.version
         bodyEntry:SetValue(item_text(State.body))
         musicEntry:SetValue(item_text(State.music))
         cameraEntry:SetValue(item_text(State.camera))
@@ -943,28 +1064,43 @@ function MMDVMDNPC.OpenMotionImporter()
             local value = tostring(State.meta[field] or "")
             if entry:GetValue() ~= value then entry:SetText(value) end
         end
-        flexList:Clear()
-        for _, item in ipairs(State.flexes) do
-            local line = flexList:AddLine(item_text(item))
-            line.FlexItem = item
+        local offset = tonumber(State.audioOffset) or 0
+        if math.abs((tonumber(offsetSlider:GetValue()) or 0) - offset) > 0.001 then offsetSlider:SetValue(offset) end
+        if disableIK:GetChecked() ~= (State.disableIK == true) then disableIK:SetChecked(State.disableIK == true) end
+        if unifyGround:GetChecked() ~= (State.unifyGround == true) then unifyGround:SetChecked(State.unifyGround == true) end
+        -- Rebuilding the list drops its selection: only when the files changed.
+        local flexes = {}
+        for index, item in ipairs(State.flexes) do flexes[index] = tostring(item) .. "\1" .. item_text(item) end
+        flexes = table.concat(flexes, "\2")
+        if flexes ~= shownFlexes then
+            shownFlexes = flexes
+            flexList:Clear()
+            for _, item in ipairs(State.flexes) do
+                local line = flexList:AddLine(item_text(item))
+                line.FlexItem = item
+            end
         end
     end
 
+    local available = MMDVMDNPC.ImporterAvailability() == true
     local shownLog = -1
     local function refresh_job()
-        if not IsValid(frame) then return end
+        if not IsValid(root) then return end
         local job = Importer.Job
         local running = Importer.Running()
-        bake:SetEnabled(not running)
+        local editable = available and not running
+        bake:SetEnabled(editable)
         cancel:SetEnabled(running and not job.cancelRequested)
-        for _, button in ipairs(fileButtons) do button:SetEnabled(not running) end
+        for _, fileButton in ipairs(fileButtons) do fileButton:SetEnabled(editable) end
         progress:SetFraction(job and job.progress or 0)
         if job then
             status:SetText(Importer.StatusText(job) .. (job.error and ("  " .. job.error) or ""))
-            status:SetTextColor(job.stage == "failed" and Color(255, 110, 100) or (job.stage == "complete" and Color(110, 220, 130) or MUTED_COLOR))
+            local failed = theme.error or Color(255, 110, 100)
+            local done = theme.success or Color(110, 220, 130)
+            status:SetTextColor(job.stage == "failed" and failed or (job.stage == "complete" and done or mutedColor))
         else
             status:SetText(L("mmd_vmd_npc.import.progress_idle"))
-            status:SetTextColor(MUTED_COLOR)
+            status:SetTextColor(mutedColor)
         end
         local result = job and job.result
         motionOutput:SetValue(result and result.path or "")
@@ -977,26 +1113,72 @@ function MMDVMDNPC.OpenMotionImporter()
         end
     end
 
-    hook.Add("MMDVMDNPCImporterUpdated", frame, function() refresh_job() end)
-    -- The elapsed time keeps counting between updates.
-    local baseThink = frame.Think
-    frame.Think = function(self)
-        if baseThink then baseThink(self) end
+    local function refresh_availability()
+        local ok, reason, code = MMDVMDNPC.ImporterAvailability()
+        available = ok == true
+        if notice then
+            notice:SetVisible(not available)
+            if not available then
+                notice.Text:SetText(code == "not_installed" and tostring(reason or "") or L("mmd_vmd_npc.import.unavailable_short"))
+                notice.Text:SetTooltip(tostring(reason or ""))
+                local FA = file_access()
+                notice.Settings:SetVisible(code == "disabled" and FA ~= nil and isfunction(FA.OpenManager))
+                notice:InvalidateLayout()
+            end
+        end
+        refresh_job()
+    end
+
+    hook.Add("MMDVMDNPCImporterUpdated", root, function() refresh_job() end)
+    hook.Add("MMDVMDNPCImportAvailabilityChanged", root, function()
+        refresh_availability()
+        -- File access went away (turned off, worker check failed): the window
+        -- explains; a panel that stays shows the notice.
+        if not available and not Importer.Running() and opts.onUnavailable then opts.onUnavailable() end
+    end)
+    -- The elapsed time keeps counting between updates, and inputs another
+    -- importer changed show here too.
+    root.Think = function(self)
         if Importer.Running() and (self.NextStatus or 0) <= SysTime() then
             self.NextStatus = SysTime() + 0.5
             status:SetText(Importer.StatusText())
         end
+        if shownVersion ~= State.version then refresh_inputs() end
     end
-    hook.Add("MMDVMDNPCImportAvailabilityChanged", frame, function()
-        if MMDVMDNPC.ImporterAvailability() then return end
-        -- File access went away (turned off, worker check failed): explain.
-        if not Importer.Running() then
+    refresh_inputs()
+    refresh_availability()
+    return root
+end
+
+function MMDVMDNPC.OpenMotionImporter()
+    if not MMDVMDNPC.ImporterAvailability() then
+        MMDVMDNPC.OpenImporterResolve()
+        return
+    end
+    if IsValid(Importer.Frame) then
+        Importer.Frame:MakePopup()
+        Importer.Frame:MoveToFront()
+        return Importer.Frame
+    end
+
+    local frame = vgui.Create("DFrame")
+    Importer.Frame = frame
+    frame:SetTitle(L("mmd_vmd_npc.import.title"))
+    local width = math.min(scaled(1000), ScrW() - 40)
+    local height = math.min(scaled(820), ScrH() - 40)
+    frame:SetSize(width, height)
+    frame:SetSizable(true)
+    frame:SetMinWidth(math.min(scaled(640), width))
+    frame:SetMinHeight(math.min(scaled(480), height))
+    frame:Center()
+    frame:MakePopup()
+    MMDVMDNPC.BuildMotionImporter(frame, {
+        onUnavailable = function()
+            if not IsValid(frame) then return end
             frame:Close()
             MMDVMDNPC.OpenImporterResolve()
-        end
-    end)
-    refresh_inputs()
-    refresh_job()
+        end,
+    })
     return frame
 end
 

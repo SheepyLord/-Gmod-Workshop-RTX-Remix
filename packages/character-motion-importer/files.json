@@ -51,6 +51,26 @@
     "dirty": false
    },
    "imported": "2026-10-31T12:53:45+00:00"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_menu.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-stage\\mmd_vmd_npc\\lua\\mmd_vmd_npc\\cl_menu.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "75450b724a2c7ab5f3a3e92cea3f18bb2e840ad6",
+    "dirty": false
+   },
+   "imported": "2026-10-31T13:18:57+00:00"
+  },
+  "mmd_vmd_npc/lua/mmd_vmd_npc/cl_importer.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r4-motion\\out\\motion-stage\\mmd_vmd_npc\\lua\\mmd_vmd_npc\\cl_importer.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r4-motion",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "75450b724a2c7ab5f3a3e92cea3f18bb2e840ad6",
+    "dirty": false
+   },
+   "imported": "2026-10-31T13:18:57+00:00"
   }
  },
  "files": {
@@ -105,15 +125,15 @@
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_importer.lua": {
-   "size": 42468,
-   "sha256": "5bc51de5c5cd4ee981f01125fdaa7e5caeeaf3babc5f79e67f7d6e8ce555a8a1",
-   "mtime_ns": 1793088241276987500,
+   "size": 50920,
+   "sha256": "8fa93c172c654adfc0ef0cafd431c5a0770ce713f84ab8517207d005c263a35c",
+   "mtime_ns": 1793452736918888400,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_menu.lua": {
-   "size": 256891,
-   "sha256": "692e32b0659fd252f6b2144b23cf8d880bd617880186ebe1ce13adff9b9d53f1",
-   "mtime_ns": 1793088241277987200,
+   "size": 270963,
+   "sha256": "9f2792b4cb6956d677349c021ffc74c4875c1d2000356b8551844a9914f3fdfa",
+   "mtime_ns": 1793452736918888400,
    "stored": "plain"
   },
   "mmd_vmd_npc/lua/mmd_vmd_npc/cl_radial.lua": {
