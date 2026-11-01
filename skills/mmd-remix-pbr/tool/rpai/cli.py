@@ -17,8 +17,6 @@ from pathlib import Path
 from . import __version__, config
 from .classify import CLASS_ID, class_params, classify
 from .hotloader import HotloaderAsset, load_asset
-from .pmx import PmxModel, read_pmx
-from .sourcemodel import load_compiled, remember, remembered
 
 
 def log(message: str = "") -> None:
@@ -33,6 +31,10 @@ def normalize_hash(value: str) -> str:
 
 class Context:
     def __init__(self, args):
+        # Parsing options and testing cached-map publishing do not need the PMX/hash dependencies.
+        from .pmx import PmxModel, read_pmx
+        from .sourcemodel import load_compiled, remember, remembered
+
         self.args = args
         self.pmx_path = Path(args.pmx).resolve()
         self.game_root, self.bridge = locate_game(getattr(args, "game_root", None))
@@ -58,7 +60,8 @@ class Context:
         own = config.model_presets(self.key)
         if own.exists():
             self.settings.merge_file(own)
-        for name in ("mod_name", "max_size", "upscaler", "height", "displacement", "emissive_intensity", "tile"):
+        for name in ("mod_name", "max_size", "upscaler", "height", "displacement", "emissive_intensity",
+                     "emissive_adaptive_intensity", "tile"):
             value = getattr(args, name, None)
             if value is not None:
                 setattr(self.settings, name, value)
@@ -384,6 +387,7 @@ def contact_sheet(ctx: Context, done: dict) -> None:
 def cmd_publish(ctx: Context) -> None:
     from . import dds, usda
 
+    adaptive_multiplier = config.emission_multiplier(ctx.settings.emissive_adaptive_intensity)
     hashes = ctx.read("hashes.json").get("textures", {})
     done = ctx.read("generated.json")
     if not done:
@@ -405,8 +409,14 @@ def cmd_publish(ctx: Context) -> None:
                 jobs.append((Path(png), dst, kind))
             rel[kind] = f"../textures/{ctx.key}/{dst.name}"
         emissive = info.get("emissive_scale", 0.0) * ctx.settings.emissive_intensity
+        # generated.json records rasterised classes, including region rules. Coverage is rounded
+        # to four decimals, so even a key whose coverage rounded to zero represents eye texels.
+        # Keep non-eye emitters fixed and reuse cached maps without a generate step.
+        adaptive = None
+        if "emissive" in rel and any(c in info.get("classes", {}) for c in ("sclera", "eye", "highlight")):
+            adaptive = usda.check_adaptive_intensity(emissive * adaptive_multiplier)
         for texture_hash in targets:
-            materials.append((normalize_hash(texture_hash), rel, emissive, info.get("subsurface")))
+            materials.append((normalize_hash(texture_hash), rel, emissive, info.get("subsurface"), adaptive))
     log(f"publishing {len(materials)} material override(s) to {mod_dir}")
     if jobs:
         log(f"encoding {len(jobs)} DDS file(s) with NVTT")
@@ -626,6 +636,9 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--displacement", type=float, help="Remix displace_in when height maps are used")
         p.add_argument("--emissive-intensity", type=float,
                        help="multiplier on the eye emission (default 1); takes effect on publish, no regeneration")
+        p.add_argument("--emissive-adaptive-intensity", type=config.emission_multiplier,
+                       help="eye adaptive/fallback intensity ratio per scene luminance (default 25); "
+                            "0 uses fixed emission; publish only, no regeneration")
         p.add_argument("--tile", type=int, help="inference tile size (default 512)")
         p.add_argument("--only", help="comma-separated texture keys or source file names")
         p.add_argument("--force", action="store_true", help="regenerate even if up to date")

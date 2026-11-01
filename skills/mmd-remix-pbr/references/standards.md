@@ -1,7 +1,9 @@
 # Material standards and the evidence behind them
 
-These values are the built-in defaults in `tool/rpai/classify.py`. Each one was set from an
-in-game measurement on this machine's Garry's Mod RTX. Change a standard only with a new full-body
+These class values are the built-in defaults in `tool/rpai/classify.py`, set from in-game
+measurements on this machine's Garry's Mod RTX. C-16's publish-time adaptive emission ratio below
+was tuned in game on Robin for the user's eye-brightness request.
+Change a standard only with a new full-body
 AABB and the user's decision (see `testing-protocol.md`). Per-model tweaks belong in
 `tool/presets/models/<model key>.json`, not in the defaults.
 
@@ -61,13 +63,64 @@ Anime faces are cel art; the goal is to keep the drawing, not to add physical de
 - **Mouth, teeth and tongue are as matte as the face.** At 0.12 the tongue mirrors the dark mouth
   cavity at grazing angles and its pink reads as shadow (patch 81 → 43).
 - **The eye white emits a little of its own colour.** It is grey in the socket at any roughness
-  (134 vs 134), and emission lifts it from 63–165 to 190–208, just under the cheek's 217. More would
-  glow in dark maps, because auto-exposure lifts emission relative to lit skin.
+  (134 vs 134), and emission lifts it from 63–165 to 190–208, just under the cheek's 217. This fixed
+  level remains the fallback; C-16 adds scene adaptation to address its auto-exposure conflict below.
 - **The iris stays mirror-smooth (0.06).** At 0.18 the bright light above veils it white (saturation
   0.47 vs 0.62), and 0.5 is no better.
 - **The catchlight mesh emits 0.6** and reads as pure white (208 → 254).
 - **The emissive map handles edges carefully.** It is not blurred at class borders, and its gutters
   repeat the nearest island edge, so mip levels never spread skin paint as a glowing rim.
+
+### Scene-adaptive eye emission (C-16, tuned 2026-10-31)
+
+Fixed emission is multiplied by the scene's exposure: it glows beside dimly lit skin in dark maps
+and loses its lift in bright scenes. For a published emissive map whose recorded rasterised classes
+include `sclera`, `eye` or `highlight`, rpai now writes `float inputs:emissive_adaptive_intensity`
+beside the unchanged `emissive_intensity`. A supporting runtime replaces fixed emission with
+`emissiveColor * emissive_adaptive_intensity * L_adapt`, using adapted scene luminance. Exposure
+approximately cancels that luminance while below its cap; at the cap the emission fades with the
+scene. This is a light floor, not a measured guarantee of a particular eye/cheek ratio.
+
+`--emissive-adaptive-intensity R` (also the top-level JSON setting `emissive_adaptive_intensity`)
+is a **ratio to the fallback USD intensity per unit luminance**, not a literal USD value. The writer
+sets `adaptive = fallback * R`. Default `R = 25` (tuned below); `0` writes an explicit
+opt-out and uses fixed emission. The existing `--emissive-intensity I` scales both modes.
+Non-eye emitters stay fixed; a cached entry with no class information gets no adaptive input.
+
+Derivation: `compose_maps` stores `M = C * w / S` in the emissive map, where `C` is linear albedo,
+`w` the class weight (sclera `0.025`) and `S` the strongest weight on that sheet. Publish writes
+fallback `F = S * I`, so the old emission is `M * F = C * w * I`. At mid exposure **1** the
+package's `rtx.autoExposure.targetAdaptedYf = 0.18` implies `L_mid = 0.18` (ignoring the small
+exposure noise term), so `A = F / 0.18` (`R = 1/0.18`) would reproduce the old level there:
+`M * A * L_mid = C * w * I`. The default is 4.5 times that reference, `R = 4.5 / 0.18 = 25`: a
+sheet with fallback `0.6` writes `A = 15`, one with fallback `0.04` writes `A = 1`. No class weights
+or textures change.
+
+Tuning (2026-10-31, PoC, Robin on gm_construct with
+[`eye_white_probe.lua`](../../../tools/qa/eye_white_probe.lua.md) and
+[`eye_white_patches.py`](../../../tools/qa/eye_white_patches.py.md)): the eye white's linear
+luminance over the cheek's, for fixed emission, then `R = 1/0.18`, then `R = 25`: noon 0.69, 0.62,
+0.98; golden hour (the face in shade) 0.52, 0.61, 1.38; dusk 0.88, 0.48, 0.77; night 46, 0.31, 0.70;
+a lamp-lit room 0.79 fixed and 1.04 at `R = 25`
+([ADR 0069](../../../docs/decisions/0069-tuned-adaptive-eye-emission.md)). The
+exposure-1 reference left the eye whites grey everywhere: the eyelids shade the recessed eye, so its
+lit part alone is about 0.4-0.5 of the cheek by day and 0.2 at night. One ratio cannot hold all
+conditions at 1, because the emission follows the frame's average light while the cheek follows its
+own (shade at golden hour, a low sun at dusk); 25 keeps the worst case smallest. Re-level a pack with
+`--emissive-adaptive-intensity` or `set_adaptive_emission.py --multiplier` when its eyes differ.
+
+This is a publish option because the current `--emissive-intensity` already re-levels the shared
+normalised map at that stage. A new per-class texture weight would require regeneration and could
+not give different adaptation ratios to classes sharing the same material input. The option works
+with existing `generated.json` class coverage, including region rules, and all previously seen hashes.
+Tune with `publish` only; use [`set_adaptive_emission.py`](../scripts/set_adaptive_emission.py.md) for
+already published packs (`--value` is literal USD intensity; `--multiplier` applies the ratio).
+
+Older runtimes ignore the new input and use the unchanged fixed fallback. On supporting runtimes,
+`rtx.adaptiveEmission.enable = False` or an adaptive input of `0` selects fixed emission. Runtime
+scale/clamps and disabled-auto-exposure fallback belong to the runtime; see
+[`C16-plan.md`](../../../docs/handover/C16-plan.md). Claude will measure bright, dim and night scenes
+on the PoC and tune this default; this content task performs no in-game validation.
 
 ## Why body skin is left to Remix (full-body AABB, 2026-10-25)
 

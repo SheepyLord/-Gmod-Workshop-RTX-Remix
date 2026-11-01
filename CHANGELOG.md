@@ -6,6 +6,25 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### C-16 (unreleased)
+
+- Anime characters' eye whites no longer glow at night or turn grey by day: with Robin's pack, the eye
+  white's luminance over the cheek's went from 0.52-0.88 by day and 46 at night to 0.77-1.38 by day,
+  0.70 at night and 1.04 in a lamp-lit room ([ADR 0069](docs/decisions/0069-tuned-adaptive-eye-emission.md)).
+- Opaque materials can opt into scene-adaptive emission with `emissive_adaptive_intensity`: it
+  follows auto exposure's scene luminance to steady eye-white brightness, with a fixed-intensity
+  fallback, configurable scale/clamps and luminance/exposure logs for tuning
+  ([ADR 0067](docs/decisions/0067-scene-adaptive-emission.md)).
+- The MMD PBR tool writes optional scene-adaptive eye emission alongside its fixed older-runtime
+  fallback. The publish-time ratio is tunable without regenerating textures; its default 25 was
+  tuned in game on Robin ([ADR 0069](docs/decisions/0069-tuned-adaptive-eye-emission.md)). A
+  byte-preserving script updates staged copies of existing packs, and character packaging verifies
+  that the published shader inputs survive unchanged
+  ([content decision](docs/decisions/0068-adaptive-eye-emission-publishing.md)).
+- QA: [`eye_white_probe.lua`](tools/qa/eye_white_probe.lua.md) photographs a Model Hotloader
+  character's face at noon, golden hour, dusk and night from one placed spawn point, and
+  [`eye_white_patches.py`](tools/qa/eye_white_patches.py.md) measures its eye whites against the cheek.
+
 ### Fixed (after R6)
 
 - The git hooks' background Workshop publish no longer opens a window for every step it runs; with

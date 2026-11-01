@@ -72,9 +72,25 @@ against the original Remix materials, using fixed screen patches (`docs/guinever
 Emission is the albedo's own colour times the class weight, so the iris glows gold and the eye white
 white. Class borders stay sharp, and gutters repeat the nearest island edge so mip levels never
 spread the sheet's skin paint as a glowing rim. The face material gets `enable_emission` and
-`emissive_intensity` (the strongest weight on the sheet). Emission is absolute, so in a dark map
-auto-exposure brightens it relative to the lit skin. `--emissive-intensity 0.7` (or 1.3) re-levels
-all of it at publish time, with no regeneration.
+`emissive_intensity` (the strongest weight on the sheet times the publish multiplier). Fixed
+emission glows relative to lit skin under dark-scene auto exposure and loses its lift in bright
+scenes. C-16 adds `float inputs:emissive_adaptive_intensity` on maps whose recorded classes include
+`sclera`, `eye` or `highlight`, keeping the fixed intensity as an older-runtime fallback.
+
+`--emissive-adaptive-intensity R` sets the adaptive/fallback ratio per unit adapted scene luminance
+(also a top-level JSON setting). The USD value is `fallback * R`. Default `R = 25`, tuned in game
+on Robin: at exposure 1 (adapted luminance at the package's target 0.18) the adaptive emission is 4.5x
+today's `linear albedo * class weight * --emissive-intensity`, which keeps the eye whites near the
+cheek by day and below it at night. For fallback 0.6 that writes 15; for 0.04 it writes 1.
+`0` opts out, and `--emissive-intensity 0.7` (or 1.3) scales both modes. These are publish-only
+options; cached maps are sufficient, with no regeneration. Non-eye emitters stay fixed. See
+[standards](../references/standards.md#scene-adaptive-eye-emission-c-16-tuned-2026-10-31).
+
+For a staged copy of an already published mod, use
+[`set_adaptive_emission.py`](../scripts/set_adaptive_emission.py.md) with `--multiplier` (per-material
+fallback ratio) or `--value` (literal USD input). It changes only emissive-map shader inputs and
+keeps all other bytes, including the fixed fallback. `package_characters.py` copies and checks
+the published layers byte for byte, carrying both inputs into the package.
 
 ### Body skin: left as Remix renders it
 
@@ -187,7 +203,9 @@ Commands, each taking the PMX path:
 
 Useful options: `--only "衣.png,髪.png"`, `--max-size 2048`, `--upscaler span` (about 40× faster,
 slightly softer), `--height --displacement 0.03` (POM height maps, off by default),
-`--emissive-intensity 0.7` (eye emission level, default 1), `--mod my_mod`, and `--settings tune.json`.
+`--emissive-intensity 0.7` (eye emission level, default 1),
+`--emissive-adaptive-intensity 25` (adaptive/fallback ratio, the default; `0` off),
+`--mod my_mod`, and `--settings tune.json`.
 
 For an **8 GB GPU audience**, generate and publish with `--max-size 2048` (or use `run` with that
 flag). A publish-only flag does not resize previously generated maps. Check per-texture size

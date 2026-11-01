@@ -1,5 +1,24 @@
 # Testing
 
+## C16-B adaptive eye emission (offline, 2026-10-31)
+
+`tools/tests/test_adaptive_emission.py` adds 17 standard-library tests for the USD writer,
+publish-time eye-class selection (including tiny regions rounded to zero coverage), settings and
+CLI validation, exposure-1 normalisation, explicit opt-out, legacy tuple compatibility, staged
+layer edits and package preservation. Edits cover insertion once, numeric updates, unchanged
+non-emissive shaders, BOM/CRLF/comments, dry-run byte/timestamp equality, idempotence, malformed
+layer preflight and range errors. Synthetic DDS encoding is mocked; scratch stays in `out/tmp`.
+
+`tools\test.ps1 -Config Release` passes: conventions, 24/24 CTests and 393 Python tests
+(340 tools, 28 gmapack, 25 Steam; two existing skips). No path workaround was needed. The focused
+17-test suite also passes after the rounded-coverage review fix. Log: `out/c16-b/release-tests.log`.
+The local pack demonstration in `out/c16-b/demonstration.json` records seven inserted inputs
+across four layers in copies of Robin, Evernight/March 7th and Guinaifen, verifies all 157 source
+files unchanged, and checks dry runs, repeat runs and preservation of every other copied byte.
+The copied packs and per-pack command logs are under `out/c16-b/` in this worktree. No game was
+launched, installed config edited or pack published. In-game brightness acceptance remains with
+Claude; the [default](decisions/0068-adaptive-eye-emission-publishing.md) is provisional.
+
 ## R6 unattended harness failures
 
 [`poc_session.py`](../tools/poc_session.py.md) now declines crash prompts on a background watchdog
@@ -1167,3 +1186,123 @@ all 23 CTests and 333 Python tests (two skips). It uses the same session-local C
 the known guard-cache path limitation; the copy's hash matches and the generated CTest command
 is restored afterward. No loader/test source changed. `runtime-review2-release-summary.json`
 records those checks beside `runtime-review2-release-tests.log` and the local wrapper.
+
+## C-16: scene-adaptive emission
+
+Task C16-A implements [ADR 0067](decisions/0067-scene-adaptive-emission.md) as runtime patch 0016.
+The isolated source is `8a5df5d8ef2e4529f20f7c07c195cb6dc3588afe`; its Release DLL is
+`remix-main+8a5df5d8`, 396,802,048 bytes, SHA-256
+`9906eec639b8768baf468daebb2f281c45f04754eaaf6cd60c0c5f7c883cc543`.
+The build and exact import commands are in [runtime/README.md](../runtime/README.md#c-16-rebuild-2026-10-31).
+
+The dedicated `_CompUnitTest_x64` build passes **28/28 runtime unit tests**, including the new
+`test_adaptive_emission`. It tests absent/authored USD inputs, default zero and 0..65504 clamping,
+CPU material identities, 64-byte GPU record size, half-float round trips with emission on/off,
+four subsurface indices including the invalid sentinel, unchanged preceding fields and restored
+DLSS RGB/alpha. Formula coverage includes feature off, input zero, fixed intensity zero, scale
+zero, both clamps, fallback and fallback clamping, inverted clamp bounds, approximate settled
+display brightness below the exposure cap and fading at the cap. The option documentation test
+passes after regenerating its five new option rows. Final receipts are
+`out/tmp/c16-unit-final-build.log` and `out/tmp/c16-unit-tests-final.log`.
+The existing config-save test's symbolic-link subcase is skipped by Windows error 1314; its other
+subcases pass. `out/tmp/c16-validation-summary.json` keeps test names/results/timings without
+Meson's inherited environment dump.
+
+The configured Release/Ninja build retains optimization 3 and the release DLL CRT, Tracy/shim off
+and `download_apics=false`; the wrapper performs both passes and imports one changed runtime file.
+No SDK or source downloads were needed. The prepared R6 tree was copied, including its configured
+builds, and only the local copy was changed. Relocating its Meson state was insufficient alone:
+694 shader dependency files per configuration also pointed at the old tree. The stale attempt was
+stopped before import. The real shader compile then exposed an unnecessary compatibility-header
+include/name collision; the final shared helper needs no such include. Failed attempts imported
+nothing. Final receipts use `c16-runtime-build.log`, `c16-verify-final.log` and
+`c16-shader-relocation.json` under `out/tmp`.
+
+Disassembled auto-exposure SPIR-V exposes the new output at binding 4 with stride 8; an opaque
+G-buffer variant exposes both new raytracing constants. Both newly compiled binaries appear
+byte-for-byte in the final DLL (`out/tmp/c16-embedded-shaders.json`), guarding against stale shader
+embedding. The fixes part's one MDL declaration was reimported as plain text, preserving its
+existing CRLF bytes outside the nine added lines. No other fixes asset changed.
+
+### Project manager GPU acceptance (not run by C16-A)
+
+- With Robin's opted-in pack, use fixed eye-white/cheek patches in the bright outdoor, dim interior
+  and night scenes from the [C-16 plan](handover/C16-plan.md): ratio about 0.85..1.05 after settling;
+  dark eye white must not exceed the cheek. Compare captures with identical cameras/settings.
+- Correlate `[RTX Adaptive Emission]` with those captures: source/sample frame and age, raw
+  `adapted_yf`, paired `exposure`, effective `luminance`, `scale` and `enabled`. A camera-cut record
+  intentionally describes the delayed sample used for that frame; allow exposure to settle too.
+  Check a five-minute interval record and disabled-auto-exposure fallback.
+- A material with no input or input zero retains fixed emission; feature off restores the fixed
+  fallback even with a positive input. Check zero fixed intensity plus positive adaptive input,
+  `enable_emission=false`, an emissive-blend material, Source eyes, decals and an SSS material with
+  adaptive emission. DLSS control masks must retain their prior RGB and alpha 1.
+- With auto exposure off, confirm fallback 0.18 by default and both clamp overrides. At the exposure
+  cap confirm emission fades with the logged scene Yf. Tune the default scale/clamps using that
+  evidence; the raw geometric mean is distinct from temporally smoothed exposure during cuts.
+
+C16-A never launches Garry's Mod, changes the user's fork, an install, Steam files/settings or a
+user configuration, or publishes anything. Actual GPU readback timing, cut/interval log sampling
+and visual brightness acceptance remain with Claude.
+
+### Project manager GPU acceptance (2026-10-31, Claude, PoC)
+
+The integration branch `c16-int` (C16-A and C16-B merged) built into the PoC: runtime
+`remix-main+8a5df5d8`, Robin's pack copied as the test mod `c16_robin` (it sorts before `pbr_robin`,
+so its materials win). [`eye_white_probe.lua`](../tools/qa/eye_white_probe.lua.md) on gm_construct,
+the player placed on one spawn point so every run frames Robin in the same pose and light,
+1920x1080, then [`eye_white_patches.py`](../tools/qa/eye_white_patches.py.md) (the eye white's linear
+luminance over the cheek's). "Fixed" is the same runtime with `rtx.adaptiveEmission.enable = False`
+in a temporary root `rtx.conf`, removed after each run.
+
+| run | noon | golden hour | dusk | night |
+|---|---|---|---|---|
+| `A-fixed-r1` (fixed 0.6) | 0.69 | 0.52 | 0.88 | 46.4 |
+| `B-adaptive-r1` (input 3.33, the provisional `1/0.18`) | 0.62 | 0.61 | 0.48 | 0.31 |
+| `B-adaptive-p4` (input 3.33, `rtx.adaptiveEmission.scale = 4`) | 0.94 | 1.28 | 0.73 | 0.64 |
+| `B-adaptive-v15` (input 15, ratio 25: the shipped default) | 0.98 | 1.38 | 0.77 | 0.70 |
+
+The interior, a lamp-lit room of the building east of the spawn (the player placed on
+(1227, -1669, -144) at angles (50, 45, 0), `NL_EYE_CONDITIONS` noon and night, boxes for that pose:
+`--patch sclera_ur=822,490,834,500 --patch sclera_lo=745,588,775,597 --patch skin=850,600,875,618`):
+fixed 0.79 by day and 0.84 at night (`A-fixed-room`), input 15 1.04 and 1.04 (`B-adaptive-room`). The
+lamps make day and night alike, and the room is not dark enough for the fixed glow.
+
+- Result against the plan's acceptance: the night glow is gone and the eye white stays below the
+  cheek in the dark (0.70; fixed 46); the interior is inside the band (1.04). Outdoors by day the
+  band is 0.77-1.38, not 0.85-1.05: the emission
+  follows the frame's average light while the cheek follows its own, so shade on the face (golden
+  hour) lifts the ratio and a low sun on the cheek (dusk) lowers it. Why one ratio cannot close that,
+  and why 25: [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md).
+- The runtime log's `[RTX Adaptive Emission]` lines: an `interval` record at start-up with
+  `source=fallback` (no readback yet), then `camera_cut` records with `source=auto_exposure`,
+  `age_frames=2`, `adapted_yf` 0.00046-0.00069 and `exposure` 16 (night, the cap), `enabled=0` in
+  the fixed runs and `enabled=1` in the others. The sky changes inside a run are not cuts, so the log
+  has no record per condition.
+- Placement matters: runs that started on other spawn points (`B-adaptive-s3`, `B-adaptive-s6`)
+  framed Robin differently and lit her differently (half the cheek luminance at night), so they are
+  not compared. The probe's `--console` placement reproduced the head position to 0.01 units.
+- Not covered: Source eyes, decals, an emissive-blend and an SSS material with the input (no such
+  asset on the PoC); auto exposure off. C16-A's unit tests cover the formula, fallback and packing for
+  those paths.
+
+Evidence: `out/qa-poc/c16/` (each run's shots, `console.log` and `remix-dxvk.log`; contact sheets
+`sheet-fixed-vs-v15.png`, `crops-r1-p4.png`).
+
+### Final offline gates
+
+- `runtime/build_runtime.ps1 -Fork <own source> -Worktree <own source> -Verify` matches all sixteen
+  patches, tree `1a6009a44590fe673282b7ceecf759548df646b8`, both submodule settings and both clones;
+  the built DLL hash matches the packaged record.
+- `python tools/inputs.py verify --part runtime --part fixes --deep` reports zero problems. Input
+  index comparison against the branch base confirms only `files/d3d9.dll` and the one MDL changed.
+  The DLL adds one 58,495,348-byte xz LFS object; no dependency/plugin binary was reimported.
+- `python tools/build_package.py --require-nlctl --json` passes this worktree's validator:
+  **1,023 files**, content digest
+  `b136a9d079ac48a76b3a9f9a8abbdedd07fda458e9530d9ec29a6766ccfccbce`.
+- Plain `tools/test.ps1 -Config Release` passes repository conventions, **24/24 CTests** and
+  **376 Python tests (two skips)**. The guard test passes at this worktree's actual path; the R6
+  relocation wrapper is unnecessary and was not used. No loader or loader-test source changed.
+
+Receipts: `out/tmp/c16-verify-final.log`, `c16-inputs-verify.log`, `c16-package-build.log`,
+`c16-release-tests-plain.log` and `c16-validation-summary.json`.

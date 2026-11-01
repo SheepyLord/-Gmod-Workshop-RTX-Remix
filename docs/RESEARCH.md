@@ -1,5 +1,73 @@
 # Research notes
 
+## C-16: in-game tuning of the eye whites (2026-10-31)
+
+- Client Lua may not run `lua_run`: `RunConsoleCommand("lua_run", ...)` prints
+  `[ERROR] RunConsoleCommand: Command is blocked! (lua_run)` (the first probe's console). The same
+  line sent as console text works: `poc_session.py --console` posts it with `WM_COPYDATA`
+  (`tools/poc_session.py:635-653`) after the map and before `--lua` files (`:1047-1051`); Source only
+  splits it at `;` and cuts it at `//`.
+- Model Hotloader's server ignores a requested position: `mmdhl/server.lua:143-149` spawns at the
+  player's eye trace (`HitPos + HitNormal * 3`, refused beyond 4096 units or on the sky), turned
+  toward the player (`settings.lua:35-41`). Client Lua removes what it spawned with
+  `mmdhl.Action("remove", nil, ent)` (`client.lua:173`, served at `server.lua:162`).
+- gm_construct's spawn points used: (831, 576), (952, -512) and (823, -210), all at z -143.08, yaw
+  180, pitch 0; the eye trace lands 3,250-3,460 units west on the field. The landing spot changes the
+  light, not only the framing: at (952, -512) Robin's cheek measured 0.0072 at night, at (831, 576)
+  0.0140. Placing the player on (831.235, 576, -143.08) at angles (0, 180, 0) reproduced the head
+  position to 0.01 units and the frame with no pixel shift.
+- Under Remix, `render.GetLightColor` returned 0 at every candidate interior point on gm_construct,
+  so it cannot rank how dim a room is. `util.IsInWorld` is server-only; on the client
+  `util.PointContents(pos)` without `CONTENTS_SOLID` stands in. A floor point under a full roof (no sky
+  straight up or 45 degrees up in eight directions) with walls on seven sides found 15 rooms within
+  6000 units of (831, 576); most are one building east of the spawn, floor z -144, ceiling 176-192
+  (for example (1227, -1669, -144), walls 267-700 units away). A looser test (sky only straight up)
+  picked (-1386, -2067, -128), an alley under an overhang, where the spawned ragdoll was not valid on
+  the client three seconds after `ready`.
+- The runtime's exposure (`auto_exposure.comp.slang:86,147-150`) is `0.18 / (Yf + 0.0032)`, capped
+  at `rtx.autoExposure.maxExposure` (16 in the package); patch 0016's `adapted_yf` is that frame's
+  centre-weighted geometric mean, while the exposure is smoothed (tau 0.15 s brightening, 0.75 s
+  darkening, `rtx_auto_exposure.h:132-144`). At night the log showed `adapted_yf` 0.00046-0.00069 at
+  exposure 16.
+- Patch 0016's packing is lossless in this fork: the DLSS control mask's alpha byte is always `0xff`
+  (`rtx_materials.h:982-986`), and the invalid subsurface index `SURFACE_INDEX_INVALID` is
+  `0x001FFFFF` (`common_binding_indices.h:162`), inside the 24 bits kept.
+- The eye white over the cheek (Robin, the probe's framing) is linear in the adaptive ratio in every
+  condition. Per `1/0.18` of ratio: noon 0.107, golden hour 0.223, dusk 0.083, night 0.11; the
+  intercepts (the eye's lit part alone) 0.51, 0.39, 0.40 and 0.20. Ratio 25 then gives 0.98, 1.38,
+  0.77 and 0.70 (measured; interpolation predicted 0.99, 1.39, 0.77, 0.70). Fixed emission gave 0.69,
+  0.52, 0.88 and 46 ([ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)).
+
+## C16-B: publishing scene-adaptive eye emission (2026-10-31)
+
+- `skills/mmd-remix-pbr/tool/rpai/compose.py:618-630` normalises the emissive map by its largest
+  class weight `S`; `cli.py:411-420` restores `S * I` at publish and now writes adaptive intensity
+  `(S * I) * R` for cached maps whose coverage includes `sclera`, `eye` or `highlight`. No maps
+  or class weights need regeneration. `config.py:59` sets provisional `R = 1 / 0.18`.
+  Class coverage at `cli.py:324` is rounded to four decimals, but its keys include every present
+  class, so publish tests key presence even when a tiny eye region's coverage rounded to zero.
+- `packages/runtime/layers/classic_remix_defaults.conf:59` sets `targetAdaptedYf = 0.18`
+  (`maxExposure = 16` at line 146). Using the C16 plan's exposure equation, mid exposure 1 gives
+  `L_mid = 0.18`, ignoring noise. Thus `M * (F / 0.18) * L_mid = M * F`: the old eye-white
+  `C * 0.025 * I` at that reference. This is a derivation, not an in-game brightness measurement.
+- Read-only PoC pack inventory: `pbr_robin/models/robin_r18_f9c3e4b4.usda:136-191` has three
+  emissive overrides (`203355325A5208A0`, `70EC49FA6891154F`, `06DDF9D48A2DC2B1`), all fallback
+  0.6. Evernight's `models/evernight_cf3eec2f.usda:64-69` has `596BBF16AC554B2E` at 0.6;
+  March 7th's `models/model_e2c25f9e.usda:50-55` has `175BEFCBA6AE4083` at 0.04. Guinaifen's
+  `models/new_mmd_model_1c2ed2fc.usda:93-123` has `4D84DF2D4E18DDE1` and `C8A78C7CF9EE33F2`
+  at 0.6. The different normalisations require a per-fallback ratio when migrating together.
+- Demonstrated `set_adaptive_emission.py --multiplier 5.555555555555555` on copies under
+  `out/c16-b/packs/`: seven inputs added across four model layers, values 3.33333333 (fallback
+  0.6) and 0.222222222 (fallback 0.04). All 157 original files (32/79/46 by pack) were hashed
+  before copying and after the demonstration; their hashes and modification times match.
+  Dry runs and repeat runs preserve every copied byte/timestamp; only the seven inserted lines
+  change layer bytes, with `mod.usda` touched for reload. Evidence: `out/c16-b/demonstration.json`
+  and per-pack command logs. No game was launched or install written.
+- `scripts/package_characters.py:74-78` within the skill copies and checks USD layers byte for
+  byte, retaining adaptive and fixed inputs. `scripts/set_adaptive_emission.py:44-118` masks
+  literals/comments and edits byte ranges; `:138-174` preflights every layer before writes,
+  reports changed material names and touches the existing root only after an actual edit.
+
 ## R6 T3: independent-review fixes (2026-10-31)
 
 - At base `7759c43`, `loader/core/src/config.cpp:52,78` permits neither a top-level `diagnostics`
@@ -3179,3 +3247,51 @@ exit 3489660927 (`0xCFFFFFFF`). That step's `remix-dxvk.log:990` records
 prompts inside startup/map waits and called `PrintWindow` synchronously; a GPU-crash dialog could
 therefore outlive those waits and block evidence capture. The R6 harness change checks the current
 run's log, watches prompts through exit and bounds capture/shutdown; regression tests use fakes.
+
+## C-16: scene-adaptive emission
+
+Runtime paths below refer to the isolated source built from `runtime/base.json` plus patches
+0001-0016; the source is under this task's `out/runtime-src`.
+
+- `src/dxvk/shaders/rtx/pass/tonemap/auto_exposure.comp.slang:143-170` computes the actual
+  geometric-mean Yf before the cone-noise division and exposure cap, then smooths exposure in log
+  space. Patch 0016 writes `(adaptedYf, exposure)` to an eight-byte buffer at `:170`. This preserves
+  the statistic in capped scenes instead of reconstructing it from exposure.
+- `src/dxvk/rtx_render/rtx_auto_exposure.cpp:78-122` checks completed readbacks at a minimum age of
+  two frames, selects the newest, clamps the effective luminance and logs the source frame/age,
+  Yf and exposure at cuts/five-minute intervals. `:260-264` queues a copy only into an idle slot.
+  `DxvkContext::copyBuffer` (`src/dxvk/dxvk_context.cpp:779-843`) records transfer/host access
+  barriers and tracks the destination as a GPU write. `DxvkResource::isInUse`
+  (`src/dxvk/dxvk_resource.h:38-43`) includes pending writes, so the CPU never reads or overwrites
+  an outstanding transfer. No wait or game-side readback stall is introduced.
+- `src/dxvk/shaders/rtx/pass/instance_definitions.h:142-143,167-168` limits material indices to
+  21 bits. The 32-bit subsurface index therefore has a free high byte. The opaque CPU packer
+  (`src/dxvk/rtx_render/rtx_materials.h:737-744,983-987`) also always sets DLSS mask alpha to 255.
+  Those bytes hold a split half-float, with the second XORed by 255 to preserve the legacy bytes
+  for input zero. Shared helpers live in `src/dxvk/shaders/rtx/utility/adaptive_emission.h`.
+  Shader accessors (`surface_material.h:110-120` in `concept/surface_material`) mask the index,
+  restore alpha and recover the half. Both the packed 64-byte record and the CPU object's
+  168-byte size are unchanged; the added CPU float consumes existing alignment space.
+- The new X-macro input (`src/dxvk/rtx_render/rtx_material_data.h:60`) participates in USD loading,
+  defaults, range sanitization, serialization and hashing. The GPU hash includes it at
+  `rtx_materials.h:873,910,946`; `rtx_remix_api.cpp` preserves it through texture preload and uses
+  zero for the unchanged public API, and terrain baking uses zero.
+- `src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_interaction.slangh:557-560,950-957`
+  covers the Source-eye override and general opaque evaluation. The latter keeps
+  `emissiveBlendOverrideInfluence` intact. The G-buffer decode at `:1035-1054` reads already
+  evaluated radiance; scaling it again would apply adaptation twice. Decals and polymorphic
+  conversions likewise carry evaluated radiance. Subsurface and RTXCR readers use decoded indices.
+- The runtime part's index has no `AperturePBR_Opacity.mdl`. The combined package carries one in
+  `packages/fixes/garrysmod/rtx-remix/mods/base_mod/breakable_glass/assets/remix_materials/`.
+  Its `AperturePBR_Opacity.mdl:162-170` now declares the input (zero default, 0..65504 hard range,
+  description); the MDL preview continues to use fixed intensity. This one plain-text input was
+  reimported through `tools/inputs.py`, without changing the other fixes inputs.
+- A copied configured tree also needs its shader `.d` files relocated. In
+  `scripts-common/compile_shaders.py:75-108,193-201`, timestamp checks follow those stored include
+  paths, so removing `_built_shaders.txt` alone can reuse old SPIR-V while reading the original
+  tree's unchanged includes. C-16 relocated 694 dependency files in each copied configuration.
+  The final Release log records actual shader compilation; disassembly confirms binding 4 and an
+  eight-byte `OutAdaptation` stride. `out/tmp/c16-embedded-shaders.json` proves the freshly compiled
+  5,888-byte auto-exposure SPIR-V and 74,616-byte opaque G-buffer SPIR-V occur byte-for-byte inside
+  the final DLL (offsets 380,900,976 and 12,898,160 respectively). No source or build output in the
+  R6 tree or the user's fork was changed.

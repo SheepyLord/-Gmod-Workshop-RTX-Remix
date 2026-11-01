@@ -36,7 +36,7 @@ def copy(src: Path, dst: Path) -> int:
     return src.stat().st_size
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -47,7 +47,7 @@ def main() -> None:
     p.add_argument("--no-raw", action="store_true", help="leave out the AI cache (saves ~300 MB per character)")
     p.add_argument("--no-tool", action="store_true")
     p.add_argument("--update", action="store_true", help="allow writing into a non-empty destination")
-    args = p.parse_args()
+    args = p.parse_args(argv)
 
     from rpai import usda
 
@@ -71,7 +71,11 @@ def main() -> None:
         if not layer.exists() or not (work / "generated.json").exists():
             raise SystemExit(f"{name}: {layer} or {work / 'generated.json'} is missing; publish the model first")
         text = layer.read_text(encoding="utf-8")
-        total += copy(layer, pkg_mod / "models" / layer.name)
+        packaged_layer = pkg_mod / "models" / layer.name
+        # Carry all shader inputs verbatim, including optional adaptive emission and its fallback.
+        total += copy(layer, packaged_layer)
+        if packaged_layer.read_bytes() != layer.read_bytes():
+            raise SystemExit(f"{name}: packaged USD differs from {layer}")
         refs = sorted(set(re.findall(r"@\.\./(textures/[^@]+)@", text)))
         size = sum(copy(live / rel, pkg_mod / rel) for rel in refs)
         total += size
@@ -132,6 +136,10 @@ Overrides are keyed by Remix texture hashes of the current Model Hotloader impor
 re-imported with changed textures, re-run `rpai run "<pmx>"` (the tool is in `tool/`). Copying
 `characters/<name>/raw` to `%USERPROFILE%\\.rpai\\work\\<model key>\\raw` skips the AI step when the source
 images are unchanged.
+
+Shader inputs are copied byte for byte, including `emissive_adaptive_intensity` when published.
+Runtimes with scene-adaptive emission use it for steadier eye brightness; older runtimes ignore it
+and keep the original `emissive_intensity` fallback. See `tool/README.md` for tuning.
 
 ## Contents
 
