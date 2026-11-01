@@ -1553,3 +1553,31 @@ setting changed. With that local setup, `tools/test.ps1 -Config Release` passes 
 Python tests (373 tools, 28 gmapack, 25 steam; two expected skips). The glass native target has 19
 cases and the actual Lua manager/probe harness passes 3,264 assertions. Receipt:
 `out/g1-native-fix/test-release-final.log`.
+
+## R7-C: one-way broken-glass interaction (2026-11-01)
+
+`tools/test.ps1 -Config Release` passes 25/25 CTests and 468 Python tests (415 tools, 28 gmapack,
+25 steam; two existing skips). The native glass target has 29 cases, ten added to G1's 19, covering
+one-way/sleeping/floor contacts, both piece collision layers, contact/blast/bullet/fall damage,
+convex area/thickness/minimum size/capacity, snapshot validation, nearest regions, raw binding
+tables and offline bounds. There are 68 glass Python cases, including 12 new scene/bullet/manager/
+QA harness cases and a real pane-to-bullet-interest regression. Existing deterministic pane tests
+remain in the full gate. Receipts: `out/r7-c/test-release-final.log`, CTest `LastTest.log`.
+
+The unmodified baseline reproduces the known guard MAX_PATH fixture failure. This worktree uses
+the existing local workaround, `out/r7-c/short-guard-output.cmake`, through the ignored build cache's
+`CMAKE_PROJECT_native_loader_INCLUDE`, moving only the guard test executable to the build's `g/`.
+Loader sources/tests, registered tests and tracked build settings remain unchanged.
+
+Three interleaved engine-double comparisons retain 2000 moving draws, four settled batches and
+500 visible moving draws. Starting/off/on moving means are 0.1857/0.1744/0.1826 ms; settled means
+0.0153/0.0127/0.0129 ms. These are CPU doubles, not RTX results. Native 2000-leaf steps measure
+0.3126/0.3195 ms off/on; warm 96-mirror/region sync 0.108 ms; ray 0.00102 ms; native can-split plus
+replacement 0.0197 ms mean/0.0344 p99. Two maximum-input shapes cost 2.644 ms before engine capture.
+Detailed samples, allocations, native baseline checks and limits are in the [report](handover/R7-C-report.md).
+
+Claude runs [the QA add-on](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md)'s 19-step `interact`
+sequence and on/off, NPC/ragdoll, budget/expiry, fallback and two-client checks. The unchanged field
+scene must retain G1 run 10's 25.31/113.22 ms falling and 9.74/16.39 ms settled mean/p99; repeat a
+noisy measurement and reject a repeatable slowdown. modern_house map glass must retain its G1
+behaviour. No game was launched and no install/package input was changed by R7-C.

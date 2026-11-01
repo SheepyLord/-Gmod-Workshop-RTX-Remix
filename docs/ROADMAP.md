@@ -1,5 +1,12 @@
 # Roadmap
 
+R7-C implementation and offline acceptance are **complete** on `r7-glass-interact` (2026-11-01):
+bounded one-way Source mirrors, follow-up damage/fracture, Source-clipped pellet rays, original
+descendant expiry, a seven-language per-player switch and the 19-step interaction QA sequence.
+Release passes 25 CTests (29 native glass cases) and 468 Python tests (two existing skips), with
+68 glass Python cases. Claude retains module import and real contact/two-client/RTX frame-parity
+acceptance; no game or install was touched. See [the report](handover/R7-C-report.md).
+
 R7-C is **in progress** on `r7-glass-interact` (2026-11-01): one-way Source mirrors, bounded local
 follow-up damage/fracture and bullet rays, a per-player setting and offline tests. Claude owns
 package import, integration and PoC contact/performance acceptance; no game is run by this task.

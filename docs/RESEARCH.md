@@ -3663,3 +3663,26 @@ PoC, 1920x1080 windowed, RTX on; runs under the main checkout's `out/qa-poc/g1/`
   in new geometry.
 - modern_house (run 11): the map alone runs at about 19 ms per frame here; 44 native glass panes; a
   window broken by rounds gives 203 pieces; a ragdoll burst 391 live, 25.83 / 161.8 ms while falling.
+
+## R7-C: one-way bodies and subsequent debris damage (2026-11-01)
+
+- `glass/native/world.cpp:124,223,401` confines body response to kinematic mirrors and coalesces hard
+  contact energy in a bounded atomic queue. Jolt sees Source's sampled transforms/masses; Source
+  receives nothing. Pair layers keep mirrors away from map/other mirrors and preserve piece-piece off.
+- `glass/addon/lua/nlglass/debris_scene.lua:129` extends only living mirrors eight units below their
+  feet. A generated native regression with an exact flat-bottomed hull failed to move thin floor
+  glass; the extension moves both large and minimum-size pieces while retaining the prescribed path.
+  This is an approximation requiring game tuning, not a change to Source movement/collision.
+- `world.cpp:465,505,526` prioritizes 32 live-piece regions near the eye, raycasts local glass and
+  transactionally bisects convex prisms. Polygon clipping preserves area and thickness; children
+  inherit point velocity. `debris.lua:247` stages one replacement/frame, budgeted oldest first;
+  `debris_expiry.lua` preserves the original deadline without scanning normal settled pieces.
+- [Facepunch's PostEntityFireBullets contract](https://wiki.facepunch.com/gmod/GM:PostEntityFireBullets)
+  supplies final per-pellet traces/damage, avoiding callback replacement or predicted duplicates.
+  `debris_bullets.lua:38` bounds inspection (256/s), forwarding (64/s globally, 16/s/firing entity),
+  recent interest and PVS. Source trace endpoints retain gameplay occlusion; there is no piece stream.
+- Offline feature costs on this machine: 96 warm native mirrors plus 2000-piece interest 0.108 ms,
+  ray 0.00102 ms mean, native can-split/replacement 0.0197 ms mean / 0.0344 p99; two maximum-input
+  shapes cost 2.644 ms, excluding engine extraction. These do not establish RTX frame parity.
+  See the [report](handover/R7-C-report.md) for repeat counts, starting/current comparisons, caps,
+  evidence paths, limitations and Claude's acceptance steps. G1 run 10 was read only.
