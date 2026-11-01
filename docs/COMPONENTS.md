@@ -1,5 +1,10 @@
 # Components
 
+R8-C review adds [an offline material-cost comparison](../tools/tests/bench_render_guard.py.md)
+under `tools/tests`. The self-contained companion guard now carries exact bundled virtual paths,
+checked against package indexes and companion/glass sources, and applies custom-shader policy at
+untrusted material bindings. Native loads add no guard VMT reads; no new runtime module is needed.
+
 R8-C keeps the verified guard in the existing companion autorun and early loader embedding path.
 It adds [eighteen authored call replays](../tools/tests/render_guard_addon_replays.lua.md) and
 [their Python driver](../tools/tests/test_render_guard_addons.py.md) under `tools/tests`, with no new

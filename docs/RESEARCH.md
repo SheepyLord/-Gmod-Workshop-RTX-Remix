@@ -1,5 +1,34 @@
 # Research notes
 
+## R8-C material review: loading, provenance and cost (2026-11-01)
+
+The fixes' `remixlua/cl/cl_fix_pbr_materials.lua:50-72,88` inspects native ExoPBR shader/texture
+fields after Material; inert objects lose those inputs. The hotloader's `mmdhl/client.lua:68-84`
+creates screenspace_general with mmdhl_vs20/mmdhl_ps20b and then sets its textures; blanket creation
+suppression breaks its immediate path. `loader/client/bootstrap.lua:169` compiles owned files with
+@lua/<path> labels, omitting add-on identity. The reviewed guard uses an exact 344-path snapshot
+checked against indexed package hashes plus companion/glass sources (no internal collisions after
+retired glass is excluded). Other mounted add-ons or forged labels can collide and bypass the
+material compatibility exemption; this does not authenticate Lua or grant native execution.
+
+There is no evidence establishing that merely loading/reading these materials caused the tester's
+crash. The known PoC loaded/exited normally; some shader warnings precede Lua. Native loading is
+therefore retained. The review removes all material VMT preflight; only status/session startup
+reads remain. Untrusted bindings inspect cached native shader/program fields. Entity bindings
+resolve once through native Material per live cached path; trusted bindings add no such resolution.
+
+In `out/r8-compat/material-cost.json`, three-run medians with a modeled 761-mount, 1 ms failed
+lookup show the prior guard taking 1,205.573 ms/1,200 mixed paths, 1,204.843 ms/repeated paths and
+1,214.444 ms/PNG+JPG icons: each batch makes 1,200 reads/913,200 modeled mount probes. The reviewed
+guard makes zero material-preflight reads/probes and takes 0.299, 0.247 and 0.909 ms respectively.
+Trusted new reads take 0.959 ms; first/repeat entity bindings 2.167/1.284 ms; fresh/repeat render
+bindings 2.700/2.213 ms. Plain loads make zero metadata queries; entity repeats add zero native
+resolutions or metadata queries. Windows QPC measures batch elapsed time with fake native objects;
+mount probes and 1 ms are explicit assumptions, not field measurements. Native cold I/O and GPU
+behavior remain unmeasured. Expected added guard VMT I/O is zero regardless of 761 mounts. See
+[the reproducible harness](../tools/tests/bench_render_guard.py.md) and
+[updated handover](handover/R8-C-report.md); the older preflight claims below describe the earlier implementation.
+
 ## R8-C: graphics add-ons, exact sources (2026-11-01)
 
 [The second audit](audits/R8-C-addon-compat.md) and [hash ledger](audits/R8-C-addon-compat.json)

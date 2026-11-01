@@ -311,6 +311,359 @@ do
         return setMeta(obj, meta)
     end
 end
+-- Exact bundled virtual paths, checked against the indexed package inputs/companion by tests.
+-- Source labels omit the add-on directory. This is a compatibility exemption, not authentication:
+-- a colliding file or forged chunk label can bypass these material filters (ADR 0086).
+do
+    local bundled = {}
+    for path in ([[
+lua/advanced_bodygroup_tool/cl_i18n.lua
+lua/advanced_bodygroup_tool/cl_uv_hide.lua
+lua/advanced_bodygroup_tool/cl_vertex_keep_editor.lua
+lua/advmat/cl_05_i18n.lua
+lua/advmat/cl_19_help_i18n.lua
+lua/advmat/cl_20_help.lua
+lua/advmat/cl_23_backend.lua
+lua/advmat/cl_27_rtx_bridge.lua
+lua/advmat/cl_28_rtx_enhance.lua
+lua/advmat/cl_29_rtx_normals.lua
+lua/advmat/cl_30_theme.lua
+lua/advmat/cl_31_windowux.lua
+lua/advmat/cl_40_store.lua
+lua/advmat/cl_41_rtx_store.lua
+lua/advmat/cl_50_apply.lua
+lua/advmat/cl_55_normalgen.lua
+lua/advmat/cl_56_texops.lua
+lua/advmat/cl_57_surfacegen.lua
+lua/advmat/cl_58_meshuv.lua
+lua/advmat/cl_59_assets.lua
+lua/advmat/cl_60_texpicker.lua
+lua/advmat/cl_61_import.lua
+lua/advmat/cl_65_rows.lua
+lua/advmat/cl_67_gendialog.lua
+lua/advmat/cl_68_surfacedialog.lua
+lua/advmat/cl_70_ui.lua
+lua/advmat/cl_71_rtx_source.lua
+lua/advmat/cl_72_canvas.lua
+lua/advmat/cl_73_modelview.lua
+lua/advmat/cl_74_texeditor.lua
+lua/advmat/cl_75_rtx_nodes.lua
+lua/advmat/cl_76_rtx_editor.lua
+lua/advmat/cl_78_vmtexport.lua
+lua/advmat/cl_80_browser.lua
+lua/advmat/cl_88_dispatch.lua
+lua/advmat/cl_90_probe.lua
+lua/advmat/sh_00_config.lua
+lua/advmat/sh_10_util.lua
+lua/advmat/sh_15_mmd.lua
+lua/advmat/sh_20_net.lua
+lua/advmat/sh_25_vmt.lua
+lua/advmat/sh_30_shaderdb.lua
+lua/advmat/sh_31_shaderdb_ext.lua
+lua/advmat/sh_35_matname.lua
+lua/advmat/sh_36_rtx_schema.lua
+lua/advmat/sh_40_gen.lua
+lua/advmat/sh_41_sel.lua
+lua/advmat/sh_42_gen_normal.lua
+lua/advmat/sh_43_texedit.lua
+lua/advmat/sh_44_gen_surface.lua
+lua/advmat/sh_45_assets.lua
+lua/advmat/sh_50_finalise.lua
+lua/advmat/sv_29_assets.lua
+lua/advmat/sv_30_store.lua
+lua/advmat/sv_31_rtx_store.lua
+lua/advmat/sv_32_rtx_tool.lua
+lua/advmat/sv_40_apply.lua
+lua/autorun/_nativeloader_guard.lua
+lua/autorun/advanced_bodygroup_tool.lua
+lua/autorun/advmat_loader.lua
+lua/autorun/bullet_break_simulator_loader.lua
+lua/autorun/cl_rtx.lua
+lua/autorun/client/cl_remix_portals.lua
+lua/autorun/client/cl_render_core.lua
+lua/autorun/client/hl2rtx_model_compat_viewmodels.lua
+lua/autorun/client/nativeloader.lua
+lua/autorun/client/nativeloader_guide.lua
+lua/autorun/client/nativeloader_imported_normals.lua
+lua/autorun/client/nativeloader_menu.lua
+lua/autorun/client/nativeloader_mmd_alpha.lua
+lua/autorun/client/nativeloader_model_layers.lua
+lua/autorun/client/nativeloader_motion_tab.lua
+lua/autorun/client/nativeloader_toolgun.lua
+lua/autorun/client/nativeloader_vram.lua
+lua/autorun/client/removehalo.lua
+lua/autorun/client/rtx_agent.lua
+lua/autorun/client/rtx_debug.lua
+lua/autorun/matdebug.lua
+lua/autorun/mmd_vmd_npc.lua
+lua/autorun/mmdhl.lua
+lua/autorun/nativeloader_defaults.lua
+lua/autorun/nativeloader_i18n.lua
+lua/autorun/nativeloader_sky.lua
+lua/autorun/nlglass.lua
+lua/autorun/poolrooms_rtx.lua
+lua/autorun/rtx_water.lua
+lua/autorun/server/hl2rtx_model_compat.lua
+lua/autorun/server/sv_portals_pvs.lua
+lua/autorun/server/sv_prop_teleport.lua
+lua/autorun/sh_detours.lua
+lua/autorun/sh_player_teleport.lua
+lua/autorun/sh_rtx.lua
+lua/autorun/sv_rtx.lua
+lua/autorun/tmc.lua
+lua/bullet_break_simulator/cl_10_i18n.lua
+lua/bullet_break_simulator/cl_20_filters.lua
+lua/bullet_break_simulator/cl_21_mdl_bodyparts.lua
+lua/bullet_break_simulator/cl_22_shape.lua
+lua/bullet_break_simulator/cl_25_profiler.lua
+lua/bullet_break_simulator/cl_29_mesh_preparation.lua
+lua/bullet_break_simulator/cl_30_overlay.lua
+lua/bullet_break_simulator/cl_32_mesh_persistence.lua
+lua/bullet_break_simulator/cl_39_material_safety.lua
+lua/bullet_break_simulator/cl_40_damage.lua
+lua/bullet_break_simulator/cl_90_settings.lua
+lua/bullet_break_simulator/sh_00_config.lua
+lua/bullet_break_simulator/sh_10_network.lua
+lua/bullet_break_simulator/sv_20_hits.lua
+lua/entities/gmod_lamp.lua
+lua/entities/gmod_light.lua
+lua/entities/mmdhl_attach_link.lua
+lua/entities/mmdhl_prop/cl_init.lua
+lua/entities/mmdhl_prop/init.lua
+lua/entities/mmdhl_prop/shared.lua
+lua/entities/mmdhl_ragdoll/cl_init.lua
+lua/entities/mmdhl_ragdoll/init.lua
+lua/entities/mmdhl_ragdoll/shared.lua
+lua/entities/mmdhl_ragdoll/tool_api.lua
+lua/entities/nlglass_pane/cl_init.lua
+lua/entities/nlglass_pane/init.lua
+lua/entities/nlglass_pane/shared.lua
+lua/entities/remix_rt_light/cl_init.lua
+lua/entities/remix_rt_light/init.lua
+lua/entities/remix_rt_light/shared.lua
+lua/entities/remix_sky_editor/cl_init.lua
+lua/entities/remix_sky_editor/init.lua
+lua/entities/remix_sky_editor/shared.lua
+lua/entities/rtx_pseudoplayer.lua
+lua/entities/rtx_pseudoweapon.lua
+lua/entities/seamless_portal/cl_init.lua
+lua/entities/seamless_portal/init.lua
+lua/entities/seamless_portal/sh_init.lua
+lua/includes/modules/niknaks.lua
+lua/mmd_vmd_npc/cl_camera.lua
+lua/mmd_vmd_npc/cl_flashlight.lua
+lua/mmd_vmd_npc/cl_import_bake.lua
+lua/mmd_vmd_npc/cl_import_data.lua
+lua/mmd_vmd_npc/cl_importer.lua
+lua/mmd_vmd_npc/cl_menu.lua
+lua/mmd_vmd_npc/cl_radial.lua
+lua/mmd_vmd_npc/sh_core.lua
+lua/mmd_vmd_npc/sv_cache.lua
+lua/mmd_vmd_npc/sv_commands.lua
+lua/mmdhl/actors.lua
+lua/mmdhl/bodygroups.lua
+lua/mmdhl/bone_mapper.lua
+lua/mmdhl/bone_mapper_rules.lua
+lua/mmdhl/bone_mapper_ui.lua
+lua/mmdhl/carrier.lua
+lua/mmdhl/client.lua
+lua/mmdhl/client_ragdolls.lua
+lua/mmdhl/collision_editor.lua
+lua/mmdhl/compat.lua
+lua/mmdhl/compatibility_policy.lua
+lua/mmdhl/debug.lua
+lua/mmdhl/entity_editor.lua
+lua/mmdhl/faceposer.lua
+lua/mmdhl/file_access.lua
+lua/mmdhl/first_person.lua
+lua/mmdhl/i18n.lua
+lua/mmdhl/installation.lua
+lua/mmdhl/installation_ui.lua
+lua/mmdhl/instances.lua
+lua/mmdhl/library.lua
+lua/mmdhl/materials.lua
+lua/mmdhl/menu.lua
+lua/mmdhl/names.lua
+lua/mmdhl/native_policy.lua
+lua/mmdhl/native_render.lua
+lua/mmdhl/native_tools.lua
+lua/mmdhl/performance.lua
+lua/mmdhl/persistence.lua
+lua/mmdhl/physics_editor.lua
+lua/mmdhl/physics_editor_ui.lua
+lua/mmdhl/physics_lod.lua
+lua/mmdhl/physics_profile.lua
+lua/mmdhl/physics_reset.lua
+lua/mmdhl/physics_settings.lua
+lua/mmdhl/player_copies.lua
+lua/mmdhl/props/collision.lua
+lua/mmdhl/props/editor.lua
+lua/mmdhl/props/library.lua
+lua/mmdhl/props/render.lua
+lua/mmdhl/props/server.lua
+lua/mmdhl/props/shared.lua
+lua/mmdhl/props/tool.lua
+lua/mmdhl/scene_sharing.lua
+lua/mmdhl/secondary_backend.lua
+lua/mmdhl/secondary_collision.lua
+lua/mmdhl/secondary_water.lua
+lua/mmdhl/server.lua
+lua/mmdhl/server_settings.lua
+lua/mmdhl/settings.lua
+lua/mmdhl/sharing.lua
+lua/mmdhl/terms.lua
+lua/mmdhl/ui.lua
+lua/mmdhl/workshop.lua
+lua/mmdhl/workshop_export.lua
+lua/nativeloader/classic_defaults.lua
+lua/nativeloader/i18n.lua
+lua/nativeloader/sky_model.lua
+lua/nativeloader/weather_presets.lua
+lua/niknaks/framework/sh_localbsp.lua
+lua/niknaks/modules/sh_bignumber.lua
+lua/niknaks/modules/sh_bitbuffer.lua
+lua/niknaks/modules/sh_bsp_brushes.lua
+lua/niknaks/modules/sh_bsp_entities.lua
+lua/niknaks/modules/sh_bsp_faces.lua
+lua/niknaks/modules/sh_bsp_leafs.lua
+lua/niknaks/modules/sh_bsp_module.lua
+lua/niknaks/modules/sh_bsp_pvspas.lua
+lua/niknaks/modules/sh_bsp_staticprops.lua
+lua/niknaks/modules/sh_bsp_trace.lua
+lua/niknaks/modules/sh_bsp_worldlights.lua
+lua/niknaks/modules/sh_color_extended.lua
+lua/niknaks/modules/sh_datapackage.lua
+lua/niknaks/modules/sh_datetime.lua
+lua/niknaks/modules/sh_enums.lua
+lua/niknaks/modules/sh_file_extended.lua
+lua/niknaks/modules/sh_hooks.lua
+lua/niknaks/modules/sh_linq_module.lua
+lua/niknaks/modules/sh_model_extended.lua
+lua/niknaks/modules/sh_randomizer.lua
+lua/niknaks/modules/sh_sound_module.lua
+lua/niknaks/modules/sh_timedelta.lua
+lua/niknaks/modules/sh_util_extended.lua
+lua/niknaks/submodules/ai/sh_file.lua
+lua/niknaks/submodules/ai/sh_map.lua
+lua/niknaks/submodules/ai/sh_node.lua
+lua/niknaks/submodules/ai/sh_pathfinder.lua
+lua/niknaks/submodules/sh_submodules.lua
+lua/nlglass/client.lua
+lua/nlglass/config.lua
+lua/nlglass/damage.lua
+lua/nlglass/debris.lua
+lua/nlglass/debris_batches.lua
+lua/nlglass/debris_bullets.lua
+lua/nlglass/debris_draw.lua
+lua/nlglass/debris_expiry.lua
+lua/nlglass/debris_fallback.lua
+lua/nlglass/debris_mesh.lua
+lua/nlglass/debris_scene.lua
+lua/nlglass/debris_view.lua
+lua/nlglass/fracture.lua
+lua/nlglass/geometry.lua
+lua/nlglass/i18n.lua
+lua/nlglass/i18n_data.lua
+lua/nlglass/menu.lua
+lua/nlglass/protocol.lua
+lua/nlglass/server.lua
+lua/nlglass/world.lua
+lua/patcher/addons/cl_mwbase.lua
+lua/patcher/cl_init.lua
+lua/patcher/cl_intercepts.lua
+lua/patcher/sh_core.lua
+lua/patcher/tests/cl_mwbase_dependency_tests.lua
+lua/patcher/tests/cl_patcher_core_tests.lua
+lua/patcher/tests/cl_patcher_intercepts_tests.lua
+lua/patcher/tests/cl_patcher_loader_tests.lua
+lua/poolrooms_rtx/cl_lights_data.lua
+lua/poolrooms_rtx/cl_main.lua
+lua/poolrooms_rtx/sh_config.lua
+lua/remixlua/cl/cl_fix_bft_materials.lua
+lua/remixlua/cl/cl_fix_pbr_materials.lua
+lua/remixlua/cl/cl_fix_refract_materials.lua
+lua/remixlua/cl/cl_fix_solid_color_materials.lua
+lua/remixlua/cl/cl_map_fixes.lua
+lua/remixlua/cl/cl_map_markers.lua
+lua/remixlua/cl/cl_material_inspector.lua
+lua/remixlua/cl/cl_material_pipeline.lua
+lua/remixlua/cl/cl_nonapi_flashlight.lua
+lua/remixlua/cl/cl_remove_detail_textures.lua
+lua/remixlua/cl/cl_rtx_light_updater.lua
+lua/remixlua/cl/cl_rtx_material_fixer.lua
+lua/remixlua/cl/cl_rtx_misc.lua
+lua/remixlua/cl/cl_rtx_settings.lua
+lua/remixlua/cl/cl_rtx_topbr_conversion.lua
+lua/remixlua/cl/customrender/cl_2d_skybox_renderer.lua
+lua/remixlua/cl/customrender/cl_build_progress.lua
+lua/remixlua/cl/customrender/cl_displacement_renderer.lua
+lua/remixlua/cl/customrender/cl_rtx_meshed_world_renderer.lua
+lua/remixlua/cl/customrender/cl_rtx_skybox_boundary_renderer.lua
+lua/remixlua/cl/customrender/cl_static_prop_renderer.lua
+lua/remixlua/cl/customrender/render_core.lua
+lua/remixlua/cl/remixapi/cl_physgun_color_sync.lua
+lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua
+lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua
+lua/remixlua/cl/remixapi/cl_remix_category_debug.lua
+lua/remixlua/cl/remixapi/cl_remix_flashlight.lua
+lua/remixlua/cl/remixapi/cl_remix_light_cmd.lua
+lua/remixlua/cl/remixapi/cl_remix_map_configs.lua
+lua/remixlua/cl/remixapi/debug_hash_hud.lua
+lua/remixlua/cl/remixapi/rtx_hash_lookup.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_maplight_animator.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua
+lua/remixlua/sh/sh_flashlight_override.lua
+lua/remixlua/sv/sv_nonapi_flashlight.lua
+lua/remixlua/sv/sv_remix_flashlight.lua
+lua/remixlua/sv/sv_remix_maplight_bridge.lua
+lua/remixlua/sv/sv_remove_entities.lua
+lua/remixlua/sv/sv_skybox_fix.lua
+lua/rtx_water/cl_bodies.lua
+lua/rtx_water/cl_core.lua
+lua/rtx_water/cl_data.lua
+lua/rtx_water/cl_menu.lua
+lua/rtx_water/cl_native.lua
+lua/rtx_water/cl_ripples.lua
+lua/rtx_water/cl_splash.lua
+lua/rtx_water/cl_surface.lua
+lua/rtx_water/sv_bullets.lua
+lua/tmc/init.lua
+lua/tmc/types.lua
+lua/unittest/niknaks/bignumber.lua
+lua/unittest/niknaks/bitbuffer.lua
+lua/unittest/niknaks/bsp.lua
+lua/unittest/niknaks/color.lua
+lua/unittest/niknaks/datetime.lua
+lua/unittest/niknaks/gunit_emmy.lua
+lua/unittest/niknaks/linq.lua
+lua/unittest/niknaks/main.lua
+lua/unittest/niknaks/timedelta.lua
+lua/weapons/gmod_tool/stools/advanced_bodygroup.lua
+lua/weapons/gmod_tool/stools/advmateditor.lua
+lua/weapons/gmod_tool/stools/mmd_vmd_npc.lua
+lua/weapons/gmod_tool/stools/mmdhl_prop.lua
+lua/weapons/gmod_tool/stools/portal_creator_tool.lua
+lua/weapons/gmod_tool/stools/portal_fitter_tool.lua
+lua/weapons/gmod_tool/stools/portal_resizer_tool.lua
+lua/weapons/gmod_tool/stools/procedural_glass_tool.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua
+lua/weapons/portal_gun.lua
+lua/weapons/weapon_mmdhl.lua
+    ]]):gmatch("%S+") do bundled[path] = true end
+    function policy.bundled(source) return bundled[source:lower():gsub(":%d+$", "")] == true end
+end
 local nativeRender = {}
 for name, value in pairs(render or {}) do nativeRender[name] = value end
 local nativeRT, nativeRTEx, nativeMaterial, nativeCreate = GetRenderTarget, GetRenderTargetEx, Material, CreateMaterial
@@ -509,58 +862,44 @@ function policy.shader(shader, data)
     return false
 end
 do
-    local decisions = {}
-    local function diskShader(path, depth)
-        if type(path) ~= "string" then return false end
-        local key = canonical(path):gsub("^materials/", "")
-        if decisions[key] ~= nil then return decisions[key] end
-        if depth > 8 or key:find("..", 1, true) or key:find("%z") then return true end
-        local ok, text = pcall(function() return file and file.Read and file.Read("materials/" .. key .. ".vmt", "GAME") end)
-        if not ok then return true end
-        if type(text) ~= "string" then return depth > 0 end
-        if #text > 1048576 then return true end
-        text = text:gsub("^\239\187\191", ""):gsub("/%*.-%*/", ""):gsub("//[^\r\n]*", "")
-        local shader = text:match('^%s*"([%w_]+)"') or text:match("^%s*([%w_]+)")
-        local denied = not shader or policy.shader(shader) or text:lower():find('"$pixshader"', 1, true) ~= nil
-            or text:lower():find('"$vertexshader"', 1, true) ~= nil or text:lower():find("%$pixshader%s") ~= nil
-            or text:lower():find("%$vertexshader%s") ~= nil or text:lower():find("_rt_resolvedfullframedepth", 1, true) ~= nil
-            or text:lower():find("_rt_shadowdepthtexture", 1, true) ~= nil
-        if shader and shader:lower() == "patch" then
-            local include = text:match('[Ii][Nn][Cc][Ll][Uu][Dd][Ee]"?%s+"([^"]+)"')
-            denied = not include or diskShader(include, depth + 1)
-        end
-        decisions[key] = denied
-        return denied
-    end
-    policy.diskShader = function(path) return diskShader(path, 0) end
-    if nativeCreate then
-        CreateMaterial = function(name, shader, data, ...)
-            if active() then
-                local source = caller()
-                if rejectNul("CreateMaterial", name, source) or rejectNul("CreateMaterial", shader, source)
-                    or policy.shader(shader, data) or policy.effect(source) then
-                    reject("CreateMaterial", "unsupported shader material is inert under RTX", source)
-                    return policy.inertMaterial()
+    local checks, creationHints = setmetatable({}, {__mode = "k"}), setmetatable({}, {__mode = "k"})
+    -- Inspect only at an untrusted binding. Loading/reading a material is native, including
+    -- ExoPBR/GPBR conversion and MMDHL's immediate shaders. No guard VMT/FS lookup is needed.
+    function policy.incompatibleMaterial(mat)
+        if mat == nil then return false end
+        if policy.inertMaterials[mat] or creationHints[mat] then return true end
+        if checks[mat] ~= nil then return checks[mat] end
+        local denied = policy.shader(shaderName(mat))
+        if not denied then
+            local ok, method = pcall(function() return mat.GetString end)
+            if ok and type(method) == "function" then
+                for _, key in ipairs({"$pixshader", "$vertexshader", "$basetexture"}) do
+                    local success, value = pcall(method, mat, key)
+                    if success and type(value) == "string" and value ~= "" then
+                        if key ~= "$basetexture" or policy.reserved(value) then denied = true break end
+                    end
                 end
             end
-            return nativeCreate(name, shader, data, ...)
+        end
+        checks[mat] = denied
+        return denied
+    end
+    if nativeCreate then
+        CreateMaterial = function(name, shader, data, ...)
+            local on = active()
+            if on and (rejectNul("CreateMaterial", name) or rejectNul("CreateMaterial", shader)) then
+                return policy.inertMaterial()
+            end
+            local result = pack(nativeCreate(name, shader, data, ...))
+            -- CreateMaterial caches by name: safe parameters on a later call cannot clear a hint.
+            if on and result[1] and policy.shader(shader, data) then creationHints[result[1]] = true end
+            return unpack(result, 1, result.n)
         end
     end
     if nativeMaterial then
         Material = function(path, ...)
-            if active() then
-                local source = caller()
-                if rejectNul("Material", path, source) or policy.effect(source) or diskShader(path, 0) then
-                    reject("Material", "unsupported disk shader skipped before native load", source)
-                    return policy.inertMaterial()
-                end
-            end
-            local result = pack(nativeMaterial(path, ...))
-            if active() and policy.shader(shaderName(result[1])) then
-                reject("Material", "unsupported cached/opaque shader material is inert", caller())
-                return policy.inertMaterial()
-            end
-            return unpack(result, 1, result.n)
+            if active() and rejectNul("Material", path) then return policy.inertMaterial() end
+            return nativeMaterial(path, ...)
         end
     end
     local meta = FindMetaTable("IMaterial")
@@ -572,15 +911,19 @@ do
                 local key, value = ...
                 if active() then
                     local source = caller()
-                    local denied = policy.inertMaterials[self] or policy.effect(source)
-                    if method == "SetShader" or method == "SetShaderAndParams" then
-                        denied = denied or policy.shader(key, value)
-                    elseif method == "SetTexture" or method == "SetString" then
-                        denied = denied or policy.inertTextures[value] or policy.reserved(value)
+                    local denied = policy.inertMaterials[self]
+                    if not policy.bundled(source) then
+                        denied = denied or policy.effect(source)
+                        if method == "SetShader" or method == "SetShaderAndParams" then
+                            denied = denied or policy.shader(key, value)
+                        elseif method == "SetTexture" or method == "SetString" then
+                            denied = denied or policy.inertTextures[value] or policy.reserved(value)
+                        end
                     end
                     if denied then reject("IMaterial." .. method, "incompatible material mutation ignored", source) return end
-                    shaderNames[self] = nil
                 end
+                shaderNames[self], checks[self] = nil, nil
+                if method == "SetShader" or method == "SetShaderAndParams" then creationHints[self] = nil end
                 return original(self, ...)
             end
         end
@@ -588,13 +931,29 @@ do
 end
 do
     local meta = FindMetaTable("Entity")
+    -- Resolve named bindings through the native material cache, including !CreateMaterial names.
+    -- Weak values and per-material decisions avoid extra lookups while the object is live.
+    local boundPaths = setmetatable({}, {__mode = "v"})
+    local function materialPath(path)
+        if type(path) ~= "string" or path == "" or not nativeMaterial then return false end
+        local mat = boundPaths[path]
+        if not mat then
+            mat = nativeMaterial(path:sub(1, 1) == "!" and path:sub(2) or path)
+            boundPaths[path] = mat
+        end
+        return policy.incompatibleMaterial(mat)
+    end
     for _, method in ipairs({"SetMaterial", "SetSubMaterial"}) do
         local original = meta and meta[method]
         if original then
             meta[method] = function(self, ...)
                 local path = method == "SetMaterial" and select(1, ...) or select(2, ...)
-                if active() and (policy.effect(caller()) or policy.diskShader(path)) then
-                    reject("Entity." .. method, "unsupported world/entity material replacement ignored", caller()) return
+                if active() then
+                    local source = caller()
+                    if rejectNul("Entity." .. method, path, source) then return end
+                    if not policy.bundled(source) and (policy.effect(source) or materialPath(path)) then
+                        reject("Entity." .. method, "unsupported world/entity material replacement ignored", source) return
+                    end
                 end
                 return original(self, ...)
             end
@@ -603,9 +962,12 @@ do
     local setMaterial = surface and surface.SetMaterial
     if setMaterial then
         surface.SetMaterial = function(mat, ...)
-            policy.surfaceInert = active() and (policy.inertMaterials[mat] or policy.shader(shaderName(mat)))
+            local on, source = active()
+            if on then source = caller() end
+            policy.surfaceInert = on and (policy.inertMaterials[mat] or
+                (not policy.bundled(source) and (policy.effect(source) or policy.incompatibleMaterial(mat))))
             if policy.surfaceInert then
-                reject("surface.SetMaterial", "unsupported RTX surface material", caller())
+                reject("surface.SetMaterial", "unsupported RTX surface material", source)
                 return setMaterial(policy.inertMaterial(), ...)
             end
             return setMaterial(mat, ...)
@@ -627,10 +989,13 @@ for _, name in ipairs({"SetMaterial", "MaterialOverride", "BrushMaterialOverride
     local original = nativeRender[name]
     if original then
         render[name] = function(mat, ...)
-            local denied = active() and (policy.inertMaterials[mat] or policy.shader(shaderName(mat)))
+            local on, source = active()
+            if on then source = caller() end
+            local denied = on and (policy.inertMaterials[mat] or
+                (not policy.bundled(source) and (policy.effect(source) or policy.incompatibleMaterial(mat))))
             if name == "SetMaterial" then policy.boundInert = denied end
             if denied then
-                reject("render." .. name, "unsupported RTX shader draw", caller())
+                reject("render." .. name, "unsupported RTX shader draw", source)
                 if name == "SetMaterial" then return original(policy.inertMaterial(), ...) end
                 return
             end

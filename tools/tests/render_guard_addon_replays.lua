@@ -39,25 +39,25 @@ return function(scenario, c)
             render.CopyTexture(r8_stock,r8_sky)
         ]])
         eq(r8_depth:GetName(),r8_stock:GetName(),"engine depth name preserved without recreation")
-        eq(#c.rtCalls,0) eq(stats().copy,0) eq(#c.created,0)
-        eq(r8_depthmat:GetShader(),"UnlitGeneric") noErrors()
+        eq(#c.rtCalls,0) eq(stats().copy,0) eq(#c.created,1)
+        eq(r8_depthmat:GetShader(),"DepthWrite","creation/inspection stays native") noErrors()
     elseif scenario == "r8_disk_shaders" then
-        -- Remote/opaque VMTs may not be readable. Known effect origins must not load them anyway.
+        -- Loading/reading is legal for every caller, including known effect sources.
         replay("autorun/client/worldpos.lua", [[Material("pp/opaque-deferred-material")]])
         replay("lifemod/render/modules/dof.lua", [[Material("pp/dof")]])
-        eq(#c.mats,0,"known effects skip native lookup even with no readable VMT")
-        c.vmtFiles["materials/pp/fxaa.vmt"]='"screenspace_general" { "$pixshader" "fxaa_high_ps30" }'
-        c.vmtFiles["materials/pp/patched.vmt"]='"Patch" { "include" "pp/fxaa.vmt" }'
-        c.vmtFiles["materials/pp/lux.vmt"]='"LUX_ScreenSpace_General" {}'
-        c.vmtFiles["materials/pp/cycle.vmt"]='"patch" { "include" "pp/cycle" }'
-        c.vmtFiles["materials/pp/missing.vmt"]='"Patch" { "include" "missing-include" }'
-        c.vmtFiles["materials/pp/bare.vmt"]='UnlitGeneric { $pixshader custom_ps30 }'
-        c.vmtFiles["materials/pp/bom.vmt"]='\239\187\191"DepthWrite" {}'
-        for _,path in ipairs({"pp/fxaa","pp/patched","pp/lux","pp/cycle","pp/missing","pp/bare","pp/bom"}) do
-            eq(Material(path):GetShader(),"UnlitGeneric")
+        eq(#c.mats,2,"known effects receive real native materials")
+        for _,shader in ipairs({"screenspace_general","screenspace_general_8tex","LUX_ScreenSpace_General","DepthWrite"}) do
+            local mat=c.material(shader)
+            c.nativeMaterials[shader]=mat
+            eq(Material(shader),mat,"native identity preserved")
+            assert(render.SetMaterial(mat)~=mat,"untrusted binding gets the inert stand-in")
+            render.DrawScreenQuad()
         end
-        eq(#c.mats,0,"custom shaders never reached native Material")
-        local mat=Material("normal") eq(#c.mats,1) eq(mat:GetShader(),"UnlitGeneric") noErrors()
+        -- Programs visible on an otherwise stock material are checked without parsing disk text.
+        local mat=c.material("UnlitGeneric",{["$pixshader"]="custom_ps30"})
+        assert(render.SetMaterial(mat)~=mat) eq(stats().quad,0)
+        local good=Material("normal") eq(render.SetMaterial(good),good) render.DrawScreenQuad()
+        eq(stats().quad,1) eq(stats().gameReads,0) noErrors()
     elseif scenario == "r8_effect_draws" then
         for _,path in ipairs({"postprocess/fxaa.lua","postprocess/ssdo.lua","postprocess/pp_ssr.lua"}) do
             replay(path, [[
@@ -93,9 +93,135 @@ return function(scenario, c)
         r8_world:SetString("$basetexture",GetRenderTarget("bad",0,0):GetName())
         eq(stats().mutation,0,"depth and inert textures cannot replace a world material through another caller")
         r8_world:SetFloat("$alpha",0.8) eq(stats().mutation,1,"legitimate material setter survives")
-        c.vmtFiles["materials/custom-world.vmt"]='"screenspace_general" {}'
+        c.nativeMaterials["custom-world"]=c.material("screenspace_general")
         r8_entity:SetMaterial("custom-world") eq(stats().entity,0)
         eq(r8_entity:SetSubMaterial(0,"normal"),"sub") eq(stats().entity,1) noErrors()
+    elseif scenario == "r8_pbr_readers" then
+        local exo=c.material("screenspace_general_8tex",{["$texture1"]="map/arm",["$texture2"]="map/normal"})
+        local gpbr=c.material("PBR",{["$mraotexture"]="model/mrao",["$basetexture"]="model/albedo"})
+        c.nativeMaterials["map/exo"],c.nativeMaterials["model/gpbr"]=exo,gpbr
+        for _,path in ipairs({"remixlua/cl/cl_fix_pbr_materials.lua","remixlua/cl/cl_rtx_topbr_conversion.lua"}) do
+            replay(path, [[
+                local exo,gpbr=Material("map/exo"),Material("model/gpbr")
+                assert(exo:GetShader()=="screenspace_general_8tex" and exo:GetString("$texture1")=="map/arm")
+                assert(gpbr:GetShader()=="PBR" and gpbr:GetString("$mraotexture")=="model/mrao")
+                exo:SetTexture("$basetexture",exo:GetString("$texture1"))
+                assert(render.MaterialOverride(exo)==exo)
+                r8_read_exo,r8_read_gpbr=exo,gpbr
+            ]])
+            eq(r8_read_exo,exo) eq(r8_read_gpbr,gpbr)
+        end
+        eq(stats().mutation,2) eq(stats().gameReads,0) eq(#c.guard.blocked,0) noErrors()
+    elseif scenario == "r8_hotloader_materials" then
+        replay("mmdhl/client.lua", [[
+            r8_immediate=CreateMaterial("mmdhl_v4_asset_1_surface","screenspace_general",{
+                ["$vertexshader"]="mmdhl_vs20",["$pixshader"]="mmdhl_ps20b"})
+            assert(r8_immediate:GetShader()=="screenspace_general")
+            assert(r8_immediate:GetString("$vertexshader")=="mmdhl_vs20")
+            r8_immediate:SetFloat("$c0_x",1)
+            assert(render.SetMaterial(r8_immediate)==r8_immediate)
+            render.DrawQuad()
+        ]])
+        eq(r8_immediate,c.nativeMaterials.mmdhl_v4_asset_1_surface)
+        eq(#c.created,1) eq(stats().quad,1) eq(stats().mutation,1) eq(#c.guard.blocked,0)
+        -- Trust belongs to the binding caller, never to the material's creator or load origin.
+        assert(render.SetMaterial(r8_immediate)~=r8_immediate) render.DrawQuad()
+        eq(stats().quad,1,"untrusted reuse of a trusted material remains inert") noErrors()
+    elseif scenario == "r8_bundled_paths" then
+        local file=assert(io.open(c.guardSource,"rb")) local text=file:read("*a") file:close()
+        local paths=assert(text:match("for path in %(%[%[(.-)%]%]%)"))
+        local count=0
+        r8_custom=c.material("screenspace_general_8tex",{["$pixshader"]="bundled_ps20b"})
+        r8_entity=setmetatable({},{__index=c.entityMeta})
+        for path in paths:gmatch("%S+") do
+            local fn=assert(loadstring([[
+                assert(render.SetMaterial(r8_custom)==r8_custom)
+                assert(render.MaterialOverride(r8_custom)==r8_custom)
+                assert(render.BrushMaterialOverride(r8_custom)==r8_custom)
+                assert(render.WorldMaterialOverride(r8_custom)==r8_custom)
+                assert(surface.SetMaterial(r8_custom)==r8_custom)
+                r8_entity:SetMaterial("custom") r8_entity:SetSubMaterial(0,"custom")
+                r8_custom:SetShaderAndParams("screenspace_general_8tex",{["$pixshader"]="bundled_ps20b"})
+                render.DrawQuad() surface.DrawTexturedRect(0,0,1,1)
+            ]],"@"..path))
+            assert(pcall(fn)) count=count+1
+        end
+        assert(count>300) eq(stats().quad,count) eq(stats().surface,count)
+        eq(stats().mutation,count) eq(stats().entity,2*count) eq(#c.guard.blocked,0)
+        eq(stats().gameReads,0) eq(#c.mats,0,"trusted entity bindings do no extra native lookup")
+        noErrors()
+    elseif scenario == "r8_source_collisions" then
+        r8_custom=c.material("screenspace_general")
+        -- Full physical add-on paths normalize to the exact mounted lua/... path.
+        local exact=assert(loadstring("assert(render.SetMaterial(r8_custom)==r8_custom)",
+            "@addons/mmd_hotloader/lua/mmdhl/client.lua")) exact()
+        for _,path in ipairs({"remixlua_evil/cl/fake.lua","autorun/client/nativeloader_fake.lua",
+            "mmdhl/client.lua.evil","thirdparty/mmdhl/client.lua","mmdhl/../client.lua"}) do
+            replay(path,[[assert(render.SetMaterial(r8_custom)~=r8_custom)]])
+        end
+        -- A different add-on using the identical virtual path is indistinguishable here.
+        replay("mmdhl/client.lua",[[assert(render.SetMaterial(r8_custom)==r8_custom)]])
+        eq(stats().gameReads,0) noErrors()
+    elseif scenario == "r8_material_mutations" then
+        local mat=CreateMaterial("custom-program","UnlitGeneric",{["$pixshader"]="ps30"})
+        assert(render.SetMaterial(mat)~=mat,"custom program hint survives a native fallback shader")
+        eq(CreateMaterial("custom-program","UnlitGeneric",{}),mat)
+        assert(render.SetMaterial(mat)~=mat,"name-cache reuse cannot erase an unsafe creation hint")
+        local normal=CreateMaterial("normal-program","UnlitGeneric",{})
+        eq(render.SetMaterial(normal),normal)
+        normal:SetString("$vertexshader","vs30")
+        assert(render.SetMaterial(normal)~=normal,"native parameter mutations invalidate cached decisions")
+        normal:SetUndefined("$irrelevant")
+        local entity=setmetatable({},{__index=c.entityMeta})
+        entity:SetMaterial("!custom-program") eq(stats().entity,0)
+        c.cv.nativeloader_guard.value="0"
+        eq(render.SetMaterial(mat),mat) entity:SetSubMaterial(0,"!custom-program")
+        eq(stats().entity,1) noErrors()
+    elseif scenario == "r8_material_cost" or scenario == "r8_material_bench" then
+        local function labelled(path,code)
+            return assert(loadstring("return function(paths) "..code.." end","@lua/"..path))()
+        end
+        local load=labelled("thirdparty/browser.lua",[[for _,p in ipairs(paths) do Material(p,"smooth") end]])
+        local trusted=labelled("remixlua/cl/cl_fix_pbr_materials.lua",[[for _,p in ipairs(paths) do Material(p) end]])
+        local bind=labelled("thirdparty/browser.lua",[[for _,p in ipairs(paths) do r8_entity:SetMaterial(p) end]])
+        local trustedBind=labelled("mmdhl/client.lua",[[for _,p in ipairs(paths) do r8_entity:SetMaterial(p) end]])
+        local paths,images,own={},{},{}
+        for i=1,1200 do
+            paths[i]="browser/"..i..({".png",".jpg",""})[(i-1)%3+1]
+            images[i]="icons/"..i..(i%2==0 and ".PNG" or ".jpg")
+            own[i]="models/own_"..i
+        end
+        r8_entity=setmetatable({},{__index=c.entityMeta})
+        local function measure(name,fn)
+            local before=stats() local loads=#c.mats local started=c.clock()
+            fn()
+            local elapsed=(c.clock()-started)*1000 local after=stats()
+            local reads=after.gameReads-before.gameReads
+            if scenario=="r8_material_cost" then eq(reads,0,name.." has no added guard disk reads") end
+            print(string.format('BENCH {"case":"%s","paths":1200,"elapsed_ms":%.6f,"file_reads":%d,"archive_probes":%d,"native_loads":%d,"shader_queries":%d,"string_queries":%d}',
+                name,elapsed,reads,after.archiveProbes-before.archiveProbes,#c.mats-loads,
+                after.shaderQueries-before.shaderQueries,after.stringQueries-before.stringQueries))
+            return after
+        end
+        measure("native_unique",function()for _,p in ipairs(paths) do c.nativeMaterial(p) end end)
+        measure("plain_unique",function()load(paths)end)
+        measure("plain_repeat",function()load(paths)end)
+        measure("images_unique",function()load(images)end)
+        measure("trusted_unique",function()trusted(own)end)
+        measure("entity_unique",function()bind(paths)end)
+        local before=stats() local loads=#c.mats
+        measure("entity_repeat",function()bind(paths)end)
+        if scenario=="r8_material_cost" then
+            eq(#c.mats,loads,"repeat names use the live native material cache")
+            eq(stats().shaderQueries,before.shaderQueries,"repeat bindings reuse per-material decisions")
+        end
+        measure("trusted_entity",function()trustedBind(own)end)
+        local objects={} for i=1,1200 do objects[i]=c.material("UnlitGeneric") end
+        measure("render_unique",function()for _,m in ipairs(objects)do render.SetMaterial(m)end end)
+        before=stats()
+        measure("render_repeat",function()for _,m in ipairs(objects)do render.SetMaterial(m)end end)
+        if scenario=="r8_material_cost" then eq(stats().shaderQueries,before.shaderQueries) end
+        noErrors()
     elseif scenario == "r8_quick_bloom" then
         replay("autorun/client/cl_bloom_config.lua", [[
             hook.Add("Initialize","CustomBloomSettings",function()

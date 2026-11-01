@@ -1,4 +1,7 @@
 """Replay audited graphics add-on API calls through the actual RTX guard, without add-on execution."""
+import hashlib
+import json
+import re
 import unittest
 
 import test_render_guard as render_guard
@@ -14,8 +17,26 @@ class AddonRenderGuardTests(unittest.TestCase):
     def test_gshader_engine_depth_recreation_and_copies(self):
         self.run_case("r8_gshader_depth")
 
-    def test_disk_shaders_patch_includes_cycles_and_lux_before_native_loading(self):
+    def test_native_material_reads_and_untrusted_shader_bindings_without_disk_preflight(self):
         self.run_case("r8_disk_shaders")
+
+    def test_fixes_pbr_readers_receive_real_exopbr_and_gpbr_materials(self):
+        self.run_case("r8_pbr_readers")
+
+    def test_hotloader_immediate_shaders_are_native_for_owned_draws(self):
+        self.run_case("r8_hotloader_materials")
+
+    def test_every_bundled_virtual_path_keeps_native_material_operations(self):
+        self.run_case("r8_bundled_paths")
+
+    def test_exact_source_collisions_and_lookalikes_have_documented_scope(self):
+        self.run_case("r8_source_collisions")
+
+    def test_custom_program_metadata_cached_names_and_mutations_keep_binding_checks(self):
+        self.run_case("r8_material_mutations")
+
+    def test_1200_distinct_image_material_and_repeat_paths_add_no_disk_reads(self):
+        self.run_case("r8_material_cost")
 
     def test_fxaa_ssdo_ssr_mrt_mesh_and_surface_draws(self):
         self.run_case("r8_effect_draws")
@@ -61,3 +82,30 @@ class AddonRenderGuardTests(unittest.TestCase):
 
     def test_native_allocator_lua_error_uses_existing_engine_texture(self):
         self.run_case("r8_allocator_failure")
+
+
+class BundledMaterialPathTests(unittest.TestCase):
+    def test_exemptions_are_exact_indexed_package_and_companion_virtual_paths(self):
+        repo = render_guard.REPO
+        expected = set()
+        for index in sorted((repo / "packages").glob("*/files.json")):
+            for rel, entry in json.loads(index.read_text(encoding="utf-8"))["files"].items():
+                if "/lua/" not in rel or not rel.endswith(".lua") or "/glass-rewrite-remix/" in rel.lower():
+                    continue
+                source = index.parent / rel
+                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), entry["sha256"], rel)
+                virtual = "lua/" + rel.split("/lua/", 1)[1].lower()
+                self.assertNotIn(virtual, expected, "bundled virtual path collision: " + rel)
+                expected.add(virtual)
+        for root in (repo / "companion/nativeloader/lua", repo / "glass/addon/lua"):
+            for source in root.rglob("*.lua"):
+                virtual = "lua/" + source.relative_to(root).as_posix().lower()
+                self.assertNotIn(virtual, expected, "bundled virtual path collision: " + str(source))
+                expected.add(virtual)
+        text = render_guard.GUARD.read_text(encoding="utf-8")
+        block = re.search(r"for path in \(\[\[(.*?)\]\]\)", text, re.S)
+        self.assertIsNotNone(block)
+        actual = block.group(1).split()
+        self.assertEqual(len(actual), len(set(actual)), "duplicate exemptions")
+        self.assertGreater(len(expected), 300)
+        self.assertEqual(set(actual), expected)

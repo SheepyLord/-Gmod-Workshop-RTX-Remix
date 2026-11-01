@@ -52,8 +52,22 @@ own 33rd scope is still refused and unwound. The hooks case keeps the original e
 of the guard's records and MsgN lines while the mocked engine error output receives it.
 
 R8 scenarios prefixed r8_ dispatch to [render_guard_addon_replays.lua](render_guard_addon_replays.lua.md)
-with shared fake-engine state and counters. Fixtures include VMT text, material/entity/projector
-metatables (including native projector removal), render/surface draws, copies and a failing native allocator. One r8_mp_ scenario runs
+with shared fake-engine state and counters. Fixtures include VMT text, cached native materials,
+material/entity/projector metatables (including native projector removal), render/surface draws,
+copies and a failing native allocator. Native bind doubles require material objects, so an invalid
+fallback cannot pass silently. One r8_mp_ scenario runs
 through the private late installation while invoking the pre-installation dispatcher. The harness
-never loads third-party Lua or starts a game. Current combined count: 40 methods/43 invocations.
+never loads third-party Lua or starts a game. Current combined count: 47 methods, including one
+static inventory/hash check, and 49 LuaJIT invocations (24 R8 replay scenarios).
 The MATERIAL_RT_DEPTH fixture uses the official shared=0, separate=1, none=2, only=3 constants.
+
+Material review scenarios check real ExoPBR/GPBR reading, hotloader custom-program creation/draws,
+all 344 exact bundled virtual paths, untrusted reuse, lookalike labels and the documented identical
+source-label collision. Native shader/program metadata is cached and invalidated on mutation.
+The r8_material_cost scenario asserts zero added file.Read calls across mixed paths, PNG/JPG,
+trusted calls, repeated misses and bindings. Entity repeats add no native resolution or metadata
+queries while objects remain live; trusted entity bindings add no resolution. An optional third
+argument models minimum milliseconds per failed VMT lookup across 761 mounts. The nonasserting
+r8_material_bench scenario permits comparison with an older guard; it emits BENCH JSON rows and
+uses QueryPerformanceCounter through LuaJIT FFI on Windows (os.clock elsewhere). See
+[bench_render_guard.py](bench_render_guard.py.md) for measurement scope and output.

@@ -31,8 +31,11 @@ gamemode method; per-category report caps; scopes leaked outside protected callb
 FrameNumber and PreRender boundaries; and the hot-path contracts (no switch read for unprotected
 events, lazy entry render target, cached shader names).
 
-R8 adds a separate eighteen-case suite in [test_render_guard_addons.py](test_render_guard_addons.py.md).
-Together the suites run 40 methods/43 scenario invocations. Existing refusal assertions now require
+R8 adds a separate 24-scenario suite plus an inventory/hash check in
+[test_render_guard_addons.py](test_render_guard_addons.py.md).
+Together the suites run 47 methods/49 LuaJIT scenario invocations and the static check. Material
+creation/reading stays native; unsupported bindings receive the fallback. Shader names are first
+queried at binding and then cached. Existing refusal assertions now require
 no escaped error and verify native-call counters; deliberate add-on errors still test containment,
 reporting and quarantine. The leaked-scope limit test balances ignored pushes/pops instead of
 relying on a guard-created exception to unwind a successful callback.

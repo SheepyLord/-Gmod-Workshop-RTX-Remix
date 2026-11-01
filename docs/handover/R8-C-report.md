@@ -5,6 +5,84 @@ Claude owns integration and real GPU/listen-server QA. No game was launched, no 
 file was changed, no package was imported/uploaded, and nothing was pushed, merged or tagged.
 The changes do not touch glass, runtime or the MMD alpha file.
 
+## Claude's pre-QA review: corrected material scope and measured cost
+
+The material policy now operates at **untrusted drawing/binding**, preserving native loading and
+inspection. Material/CreateMaterial return the real IMaterial, parameters, arguments and returns
+for all callers, including known effect sources (embedded NUL still gets a safe fallback). The
+PBR-reader replays at `remixlua/cl/cl_fix_pbr_materials.lua` and `cl_rtx_topbr_conversion.lua` read
+real ExoPBR/GPBR fields and can update/convert the material. `mmdhl/client.lua` creates, edits and
+binds its real screenspace_general/mmdhl_vs20/mmdhl_ps20b immediate material. An untrusted caller
+binding that same object still gets the inert stand-in; caller provenance is checked at use.
+Known effect draws, callbacks and world mutations stay inert.
+
+No evidence establishes that merely loading or reading these materials causes the reported
+Remix crash. The known PoC loaded/exited normally, and some shader warnings occur before Lua.
+Consequently VMT/Patch loading remains native, without a load-time interception claim. New LuaJIT
+regressions cover native reading/creation, all 344 package Lua virtual paths, untrusted use,
+custom-program cache hints and mutation invalidation. Only original authored API snippets run.
+
+The exact 344-path table is checked against indexed package paths/SHA-256 values plus current
+companion/glass Lua; retired Glass-Rewrite-Remix is excluded and there are no internal collisions.
+It covers the fixes, companion, nlglass, advanced material editor, bodygroup tools and motion
+importer as well as the hotloader. No substring/directory-wildcard trust or creator-wide material
+exemption is used. Existing target limits and critical pins remain.
+
+This is a **compatibility exemption, not source authentication**. Mounted and private-bootstrap
+Lua use `@lua/<path>` labels without the add-on directory (`loader/client/bootstrap.lua:169`).
+Another add-on at exactly `lua/mmdhl/client.lua`, or code compiling that exact chunk label, can
+impersonate the exemption and bind/mutate a custom shader, defeating these material filters.
+Lookalike names and traversal labels fail the exact match. Catalog verification proves shipped
+bytes, not which file won a virtual path at runtime. Already-running Lua could also replace the
+wrappers or turn off the guard. This grants no new Lua/native execution or package allowlisting.
+The collision regression demonstrates both the rejected lookalikes and the identical-label limit.
+
+All guard VMT file.Read calls are removed, including entity setters. Native shader/program
+metadata is inspected only at untrusted binding and cached with weak material keys. Entity-name
+bindings resolve through native Material, including `!CreateMaterial` names, once per live cached
+path; weak values permit collection. Repeats need no native resolution or metadata query while
+the object remains live. Trusted bindings skip both. Plain/trusted/image/repeat Material loads
+make zero guard disk reads or metadata queries. Only the existing status/session startup reads remain.
+
+Measured with [bench_render_guard.py](../../tools/tests/bench_render_guard.py.md), three fresh
+LuaJIT processes per guard and Windows QueryPerformanceCounter. The file.Read double models one
+complete failed scan of **761 mounts taking at least 1 ms**; native Material is a separate cached
+in-memory double. Mount probes are modeled, not real archive operations. Each row has 1,200 paths
+(mixed: 400 PNG/400 JPG/400 extensionless; icons: 600 PNG/600 JPG). Medians:
+
+| Workload | Before (60c2be5), ms | Reviewed, ms | Guard VMT reads, before / after |
+|---|---:|---:|---:|
+| Mixed new load paths | 1,205.573 | 0.299 | 1,200 / 0 |
+| Repeat those paths | 1,204.843 | 0.247 | 1,200 / 0 |
+| New PNG/JPG icons | 1,214.444 | 0.909 | 1,200 / 0 |
+| Trusted new reads | 1,212.085 | 0.959 | 1,200 / 0 |
+| First entity bindings | 1,210.206 | 2.167 | 1,200 / 0 |
+| Repeat entity bindings | 1,209.841 | 1.284 | 1,200 / 0 |
+| Trusted entity bindings | 1,211.365 | 0.939 | 1,200 / 0 |
+| Fresh render bindings | 1.143 | 2.700 | 0 / 0 |
+| Repeat render bindings | 0.664 | 2.213 | 0 / 0 |
+
+Each old lookup row adds 913,200 modeled mount probes; the revised rows add zero. The old missing
+root VMT branch was not cached, hence the repeated cost. Plain cases start with a warm fake native
+cache; icons/trusted loads create new fake objects. First entity bindings inspect 1,200 native
+objects; repeated ones add zero native resolutions and metadata queries. First render bindings
+use separate fresh objects; repeats add zero metadata queries. Source checking adds approximately
+1-2 microseconds per bind in this harness. Exact results are not a field FPS/startup prediction.
+
+**Expected in-game cost:** no additional guard VMT searches, independent of the number of mounted
+add-ons; plain loads add only switch/NUL checks, and bindings add cached metadata/source checks.
+Native cold Material/VMT/Patch/image loading still has its ordinary engine/VFS cost. A first
+untrusted entity name adds one native Material resolution; collection can require another later.
+Real engine, GPU and field-menu timings remain Claude's QA. Receipt:
+`out/r8-compat/material-cost.json`; reproduce with:
+
+```powershell
+python tools/tests/bench_render_guard.py --baseline-guard out/r8-compat/review-before-guard.lua --lookup-ms 1 --repeats 3 --out out/r8-compat/material-cost.json
+```
+
+The baseline evidence file is the guard extracted from commit 60c2be5. The regression uses the
+same 1,200-path workload, asserts counts rather than timing, and needs no delayed lookups to pass.
+
 ## What can crash or destabilize, and why
 
 The tester's crash is **not reproduced or diagnosed as one specific native fault**. Claude's
@@ -26,9 +104,9 @@ The concrete resource/state risks are:
 - GShader replaces engine resolved depth and Real CSM replaces eight live shadow targets. MRT
   attachment mismatches, depth-only work and color copies involving depth can enter unsupported
   native/D3D paths. A pcall cannot recover device loss, a native access violation or a driver fault.
-- VMT Material lookup can create custom shaders before a subsequent GetShader check. Deferred
-  reconstruction, world-mesh/lightmap builds and custom shader/RT material mutations can damage
-  world capture or draw over the path-traced image. Recursive views add another native reentry risk.
+- VMT Material lookup may produce shader-creation warnings, but there is no demonstrated load-only
+  crash. Deferred reconstruction, world-mesh/lightmap builds and custom shader/RT material mutations
+  can damage world capture or draw over the path-traced image. Recursive views add native reentry risk.
 - GShader's projector wrapper repeatedly nests a shared __index; its light wrapper replaces
   native userdata metatables and resets cached field tables. Those edits affect unrelated lights.
 - Real CSM spread shadows and deferred lightmap/world-lighting changes compete with RTX.
@@ -47,10 +125,10 @@ Keep the add-ons installed; a fresh RTX-off launch retains their original behavi
   own exact resolved-depth texture, a shared transparent UnlitGeneric IMaterial, false for the depth
   hook, or no values for ignored work. Initialization continues. Real add-on errors retain the existing
   bounded reporting/quarantine; a refusal never creates an error stack or quarantine.
-- Known effect-origin Material calls skip native loading even when a remote VMT is unreadable.
-  Preflight other disk VMTs and bounded Patch includes before native Material. Block unsupported shader
-  families/custom programs, cycles, missing includes and depth references. Filter draws/bindings,
-  copies, world/entity mutations, GShader builds, Life Mod module effects, Real CSM raster shadow
+- Material/CreateMaterial stay native, including known effect-origin calls. No guard VMT preflight
+  or post-load replacement remains. Filter unsupported shader families/custom programs at untrusted
+  draws/bindings, including named entity replacements. Exact bundled paths retain their material
+  behavior. Filter copies, world/entity mutations, GShader builds, Life Mod module effects, Real CSM raster shadow
   updates/world-lighting writes and Quick Bloom's two raster bloom writes. Ordinary UI, projectors,
   color copies, NikNaks atlases and supported R32F27/MMDHL calls remain usable.
 - Pin renderer/depth-resolution/MSAA/D3D9Ex settings. RT bounds include finite/native-truncated
@@ -72,19 +150,21 @@ is no new external binary/package input to import for this guard.
 
 ## Tests and evidence
 
-`tools/test.ps1 -Config Release` passes: **26 CTests, 488 Python tests, two existing symlink-related
-skips**. All guard LuaJIT scenarios execute: **40 unittest methods / 43 scenario invocations**,
-including **18 new add-on replay scenarios**. They execute the production guard with native-call
-spies and original minimal API snippets, never third-party add-on code or a real renderer.
+`tools/test.ps1 -Config Release` passes: **26 CTests, 495 Python tests, two existing symlink-related
+skips**. The guard suite has **47 unittest methods total: 49 LuaJIT scenario invocations and one
+static path/hash check**, including **24 add-on replay scenarios**. The Lua cases execute the
+production guard with native-call spies and original minimal API snippets, never third-party
+add-on code or a real renderer.
 
 Replays cover GShader's Initialize-to-InitReconstruction dispatch, FXAA/SSDO/SSR targets/materials/
 MRT/quads/copies, Quick Bloom Initialize, Real CSM's eight target upgrades/projectors, Life Mod's
-module dispatch/direct calls, NikNaks normal color atlases, VMT/Patch/LUX preflight, shared light
-metatables, name/byte limits, caller scopes, allocator Lua failure, cached multiplayer dispatch,
+module dispatch/direct calls, NikNaks normal color atlases, native shader loading and filtered
+bindings, shared light metatables, name/byte limits, caller scopes, allocator Lua failure, cached multiplayer dispatch,
 ordinary server errors and RTX-off delegation. Existing hook/cleanup/pin/off/proof regressions remain.
 GLua ITexture type labels, late enum rewrites, NULs and supported normal/R32F targets are controls.
 
-Local evidence: `out/r8-compat/release-test.log`, `out/r8-compat/release-final.log`, and the ignored
+Review evidence: `out/r8-compat/review-release.log` and `out/r8-compat/material-cost.json`.
+Earlier evidence: `out/r8-compat/release-test.log`, `out/r8-compat/release-final.log`, and the ignored
 analysis source copies. No GPU result or actual crash reproduction is inferred from these tests.
 
 ## QA for Claude: what each check must show
@@ -107,8 +187,14 @@ client Lua/native permissions to manufacture a pass. Use only owned fixture proc
    load and quit normally, the RTX image/world/hands must remain intact, and no named add-on or
    guard-made Lua error may occur. Initialization must finish beyond GShader's old worldpos failure.
    Expected capability notes replace the old errors; effects stay visually inert. Error/cleanup
-   records must stay empty for these paths. Shader-failure additions relative to baseline require
-   attribution to preload/native bypass or a failed check; a loaded map alone is not acceptance.
+   records must stay empty for these paths. Attribute shader-failure additions to allowed native
+   loading versus an unsafe draw reaching the backend; loading warnings alone are not a failed
+   binding check. A loaded map alone is not acceptance. Also run an ExoPBR/GPBR map/model conversion
+   and hotloader immediate preview with the guard enabled: original shader/texture fields must be
+   visible before conversion, converted materials must remain correct and immediate rendering must
+   use real materials. Exercise companion, glass, material-editor, bodygroup and motion tools.
+   Open the spawn menu/model browser and compare frame timings against baseline; no guard VMT reads
+   should appear. Offline timings above do not substitute for this field-size browser control.
 3. **Exercise resource/rebuild controls.** With Real CSM, select depth format 24, create its controller,
    enable spread/multiple cascades, change its depth-resolution slider and remove/recreate it.
    With GShader toggle reconstruction/format choices and enable FXAA/SSDO/SSR. Reserved upgrades,
@@ -150,9 +236,10 @@ python tools/poc_session.py --evidence out/qa-poc/r8/r8-c run --name gshader-con
 ## Limits and delivery
 
 Commits: `c809272` (exact-source audit/ADR 0086), `3f074ae` (guard and replay tests),
-`9dcaf0d` (projector-cache retirement), `83f0fe6` (ignored-pass caller state), plus the final
-handover/verification commit. Every commit ends with the requested Codex co-author trailer.
-Guard source SHA-256: `896dac746a94512adeeffdd95b4761f498854f4ebfa5d80d22a21a095eef34b1`.
+`9dcaf0d` (projector-cache retirement), `83f0fe6` (ignored-pass caller state), `60c2be5`
+(handover/verification), followed by this material-review correction. Every commit ends with
+the requested Codex co-author trailer.
+Guard source SHA-256: `6e6881431cbdbb93a4eaf14e725ca5aaa72391ab7a5115ab0583db3d56c04a93`.
 
 The original tester crash and driver/device behavior remain unverified on that hardware. A foreign
 server initializer can bypass the generated local early view, leaving the existing bootstrap later

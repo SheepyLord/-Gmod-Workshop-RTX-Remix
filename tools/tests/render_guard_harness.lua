@@ -1,4 +1,16 @@
-local source, scenario = ...
+local source, scenario, lookupMilliseconds = ...
+lookupMilliseconds = tonumber(lookupMilliseconds) or 0
+local measuredClock=os.clock
+if scenario=="r8_material_bench" or scenario=="r8_material_cost" then
+    local ffi=require("ffi")
+    if ffi.os=="Windows" then
+        ffi.cdef[[int QueryPerformanceCounter(int64_t*); int QueryPerformanceFrequency(int64_t*);]]
+        local kernel=ffi.load("kernel32") local counter,frequency=ffi.new("int64_t[1]"),ffi.new("int64_t[1]")
+        assert(kernel.QueryPerformanceFrequency(frequency)~=0)
+        local divisor=tonumber(frequency[0])
+        measuredClock=function()assert(kernel.QueryPerformanceCounter(counter)~=0)return tonumber(counter[0])/divisor end
+    end
+end
 local function eq(a,b,why) assert(a==b,(why or "")..": "..tostring(a).." ~= "..tostring(b)) end
 local function pack(...) return {n=select("#",...),...} end
 local function denied(fn) local ok,err=pcall(fn) assert(ok,tostring(err)) end -- refused calls return safely
@@ -61,9 +73,20 @@ game={ConsoleCommand=function(...) commands[#commands+1]={...} return "console",
 function FindMetaTable(name) if name=="Player" then return playerMeta elseif name=="ConVar" then return cvMeta elseif name=="Entity" then return entityMeta elseif name=="IMaterial" then return materialMeta elseif name=="ProjectedTexture" then return projectedMeta elseif name=="dlight_t" then return dlightMeta end end
 local statusReads=0
 local vmtFiles = {}
+local gameReads,archiveProbes=0,0
 file={Read=function(name,realm)
     if name=="native-loader/status.json" then eq(realm,"DATA") statusReads=statusReads+1 return statusText end
-    if realm=="GAME" then return vmtFiles[name] end
+    if realm=="GAME" then
+        gameReads=gameReads+1
+        if vmtFiles[name]==nil then
+            -- Model a failed search through 761 mounted add-ons with a minimum CPU lookup cost.
+            -- This deliberately measures added guard I/O separately from the engine's Material cache.
+            archiveProbes=archiveProbes+761
+            local untilTime=measuredClock()+lookupMilliseconds/1000
+            while measuredClock()<untilTime do end
+        end
+        return vmtFiles[name]
+    end
     eq(name,"cfg/nativeloader_session.cfg") eq(realm,"MOD")
     return 'mat_dxlevel "90"\nmat_queue_mode "0"\n'
 end}
@@ -104,14 +127,33 @@ function GetRenderTargetEx(name,w,h,size,depth,flags,rtflags,format)
     targets[name]=targets[name] or texture(name,w,h)
     return targets[name],"ex-return"
 end
-local created,mats,shaderQueries={},{},0
+local created,mats,shaderQueries,stringQueries={},{},0,0
+local nativeMaterials,materialRequests={},{}
 local mutationCalls=0
 for _,method in ipairs({"SetShader","SetShaderAndParams","SetTexture","SetString","SetInt","SetFloat","SetVector","SetMatrix","SetUndefined","Recompute"}) do
     materialMeta[method]=function(self,key,value) mutationCalls=mutationCalls+1 self[key or "recomputed"]=value or true end
 end
-local function material(shader) return setmetatable({GetShader=function()shaderQueries=shaderQueries+1 return shader end}, {__index=materialMeta}) end
-function CreateMaterial(name,shader,data) if name~="_nativeloader_inert_material_v1" then created[#created+1]={name,shader,data} end return material(shader) end
-function Material(name) mats[#mats+1]=name return material(name=="bad_shader" and "screenspace_general" or "UnlitGeneric") end
+local function material(shader,data)
+    return setmetatable({shader=shader,data=data or {},
+        GetShader=function(self)shaderQueries=shaderQueries+1 return self.shader end,
+        GetString=function(self,key)stringQueries=stringQueries+1 return self.data[key] end,
+        GetTexture=function(self,key)return self.data[key] end,
+        IsError=function()return false end}, {__index=materialMeta})
+end
+function materialMeta:SetShader(shader) mutationCalls=mutationCalls+1 self.shader=shader end
+function materialMeta:SetShaderAndParams(shader,data) mutationCalls=mutationCalls+1 self.shader=shader self.data=data or {} end
+function materialMeta:SetString(key,value) mutationCalls=mutationCalls+1 self.data[key]=value end
+function materialMeta:SetTexture(key,value) mutationCalls=mutationCalls+1 self.data[key]=value end
+function CreateMaterial(name,shader,data)
+    if name~="_nativeloader_inert_material_v1" then created[#created+1]={name,shader,data} end
+    nativeMaterials[name]=nativeMaterials[name] or material(shader,data)
+    return nativeMaterials[name]
+end
+function Material(name,...)
+    mats[#mats+1]=name materialRequests[#materialRequests+1]={name,...}
+    nativeMaterials[name]=nativeMaterials[name] or material(name=="bad_shader" and "screenspace_general" or "UnlitGeneric")
+    return nativeMaterials[name]
+end
 local depthCalls,quadCalls,setMaterialCalls,rtExCalls,targetQueries=0,0,0,0,0
 local currentRT, rtStack=nil,{}
 local cameraDepth,clipDepth,modelDepth=0,0,0
@@ -128,12 +170,18 @@ function render.CopyRenderTargetToTexture(...) copyCalls=copyCalls+1 return "cop
 function render.CopyTexture(...) copyCalls=copyCalls+1 return "copy-texture",... end
 function render.Clear() clearCalls=clearCalls+1 end
 function render.RedownloadAllLightmaps() depthCalls=depthCalls+1 return "reload" end
-function render.SetMaterial(mat) setMaterialCalls=setMaterialCalls+1 return mat end
-function render.MaterialOverride(mat) return mat end
+local function nativeMaterialArgument(mat)
+    assert(type(mat)=="table" and type(mat.GetShader)=="function","native binding needs an IMaterial")
+    return mat
+end
+function render.SetMaterial(mat) nativeMaterialArgument(mat) setMaterialCalls=setMaterialCalls+1 return mat end
+function render.MaterialOverride(mat) if mat~=nil then nativeMaterialArgument(mat) end return mat end
 function render.DrawScreenQuad() quadCalls=quadCalls+1 return "quad" end
 render.DrawQuad=render.DrawScreenQuad
 render.DrawSprite=render.DrawScreenQuad
-surface={SetMaterial=function(mat)return mat end,DrawTexturedRect=function()surfaceDraws=surfaceDraws+1 end}
+render.BrushMaterialOverride=render.MaterialOverride
+render.WorldMaterialOverride=render.MaterialOverride
+surface={SetMaterial=nativeMaterialArgument,DrawTexturedRect=function()surfaceDraws=surfaceDraws+1 end}
 surface.DrawTexturedRectUV=surface.DrawTexturedRect
 function render.DepthRange(a,b) depthRange={a,b} end
 function render.PushCustomClipPlane() clipDepth=clipDepth+1 end
@@ -174,6 +222,7 @@ local postCalls=0
 function DrawBloom(...) postCalls=postCalls+1 return "bloom",... end
 halo={Render=function(...)postCalls=postCalls+1 return "halo",... end}
 local beforeCall,beforeAdd,beforeRT,beforeMaterial=hook.Call,hook.Add,GetRenderTargetEx,CreateMaterial
+local beforeLoad=Material
 local beforeTimer,beforeCvars=timer.Create,cvars.AddChangeCallback
 local privateHook,privateEnvironment,temporaryAPI
 -- The verified bootstrap's private environment: the marker is raw-set there and nowhere else.
@@ -388,11 +437,11 @@ elseif scenario=="targets" then
     for _,slot in ipairs({4,-1,1.5}) do denied(function()render.SetRenderTargetEx(slot,nil)end) end
     eq(rtExCalls,calls+3)
 elseif scenario=="shaders" then
-    denied(function()CreateMaterial("depth","DepthWrite",{})end)
-    denied(function()CreateMaterial("fx","SCREENSPACE_GENERAL",{})end)
-    eq(#created,0,"no native CreateMaterial")
+    eq(CreateMaterial("depth","DepthWrite",{}):GetShader(),"DepthWrite")
+    eq(CreateMaterial("fx","SCREENSPACE_GENERAL",{}):GetShader(),"SCREENSPACE_GENERAL")
+    eq(#created,2,"native creation is preserved; unsafe bindings are filtered")
     denied(function()render.SetMaterial(material("screenspace_general"))end) eq(setMaterialCalls,1,"bound a transparent supported fallback")
-    denied(function()Material("bad_shader")end) eq(#mats,1,"disk loading gap is explicit")
+    eq(Material("bad_shader"):GetShader(),"screenspace_general") eq(#mats,1,"native loading is preserved")
     denied(function()render.GetResolvedFullFrameDepth()end)
     denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,1,"depth getter is legal; rebuild is inert")
     render.SetMaterial(Material("normal")) render.MaterialOverride(nil) render.DrawScreenQuad()
@@ -620,10 +669,10 @@ elseif scenario=="hot_paths" then
     -- Shader names are cached per material object.
     local mat=Material("normal") local before=shaderQueries
     for _=1,50 do render.SetMaterial(mat) end
-    eq(shaderQueries,before,"shader name cached when the material was loaded")
+    eq(shaderQueries,before+1,"shader name first queried at binding, then cached")
     local fresh=material("UnlitGeneric")
     for _=1,50 do render.SetMaterial(fresh) end
-    eq(shaderQueries,before+1,"one query for a new material object")
+    eq(shaderQueries,before+2,"one query for a new material object")
     -- A target change still records and restores the entry target on failure.
     local base,other=texture("base",64,64),texture("other",64,64)
     render.SetRenderTarget(base)
@@ -651,12 +700,16 @@ elseif scenario=="off" then
 elseif scenario:find("^r8_") then
     local context={eq=eq,texture=texture,material=material,guard=guard,cv=cv,vmtFiles=vmtFiles,rtCalls=rtCalls,
         created=created,mats=mats,messages=messages,errorReports=errorReports,rtStack=rtStack,
+        nativeMaterials=nativeMaterials,materialRequests=materialRequests,
+        nativeMaterial=beforeLoad,guardSource=source,
+        clock=measuredClock,
         projectedMeta=projectedMeta,entityMeta=entityMeta,beforeCall=beforeCall,changes=changes,timers=timers,
         ownedFunction=ownedFunction,
         failAllocator=function()allocatorFails=true end,
         stats=function()return {quad=quadCalls,copy=copyCalls,surface=surfaceDraws,mutation=mutationCalls,
             clear=clearCalls,entity=entityChanges,updates=ptUpdates,shadows=ptShadows,views=viewCalls,
-            fallback=fallbackRTCalls,rtEx=rtExCalls,camera=cameraDepth,currentRT=currentRT}end}
+            fallback=fallbackRTCalls,rtEx=rtExCalls,camera=cameraDepth,currentRT=currentRT,
+            gameReads=gameReads,archiveProbes=archiveProbes,shaderQueries=shaderQueries,stringQueries=stringQueries}end}
     dofile("tools/tests/render_guard_addon_replays.lua")(scenario,context)
 else error("unknown scenario "..tostring(scenario)) end
 print("PASS "..scenario)

@@ -6,6 +6,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- **R8-C material review:** keep native material loading, PBR inspection and the package's own
+  shader rendering; filter unsafe untrusted bindings instead. Exact bundled Lua paths exempt
+  material operations, with namespace-collision limits documented. Remove VMT preflight disk
+  reads entirely; add 1,200-path/image/repeat lookup regressions and an offline cost comparison.
+
 - **R8-C projector cleanup:** retire removed lights from GShader's exported caches and rebuild
   their indices while isolating its native metatable overrides; repeated CSM controller changes
   must not retain every removed projector.

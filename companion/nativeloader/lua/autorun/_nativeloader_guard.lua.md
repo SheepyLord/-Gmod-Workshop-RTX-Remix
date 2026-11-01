@@ -33,7 +33,8 @@ ErrorNoHaltWithStack or callback quarantine. Actual add-on/native API Lua errors
 | Invalid, oversized, unreviewed-format, cubemap, effect-owned or reserved shadow RT creation | Shared lazily created 1x1 RGBA8, depth-none engine ITexture; callers can use Width/Height/GetName normally |
 | Exact reserved _rt_resolvedfullframedepth name (case/extension normalized) | Source's own getter texture; no recreation/reconfiguration |
 | Allocator Lua error while creating the inert target | Reuse an engine screen-effect texture if available; not recovery from OOM/native/GPU failure |
-| DepthWrite, screenspace_general families, LUX families, custom pixel/vertex programs | Shared transparent UnlitGeneric engine IMaterial; its mutators are ignored |
+| Loading/creating/reading any material, including DepthWrite, screenspace_general, LUX and custom programs | Original native material, arguments and returns; embedded NUL still receives the safe fallback |
+| Untrusted render/surface binding of those shader families/programs | Shared transparent UnlitGeneric engine IMaterial; its mutators are ignored and associated draws stay inert |
 | Unsupported copy, MRT bind, material mutation, renderer reload, recursive/invalid view | No values, no native dispatch |
 | Audited rendering/reconstruction/world-building callbacks | Inert; Initialize and API-definition hooks can finish |
 | NeedsDepthPass | False, including filtered registrations reached by cached dispatchers |
@@ -47,13 +48,31 @@ Bounds: 16,384 per axis, 64 Mi pixels, estimated 128 MiB color bytes per new tar
 counts once. These estimates omit depth buffers/driver overhead/native allocations; they are not
 measured VRAM availability. Exhaustion gets the same shared fallback, never another named target.
 
-Known effect-origin Material calls return the inert material before any native/disk lookup, even
-when a remote VMT is opaque. Other Material preflight reads GAME materials/*.vmt without executing
-code, strips comments/BOM,
-checks shader/custom programs and follows at most eight Patch includes. Cycles, unreadable includes
-and unparseable/oversized VMTs become inert before native Material. Missing root files preserve
-native virtual/image/cached lookup; shaders visible only after that lookup are suppressed on return
-and binding. Native preloads and opaque lookups remain a load-time gap.
+Material and CreateMaterial remain native for all callers, including known effect sources. There
+is no evidence that loading/reading alone caused the tester's crash. PBR conversion needs the real
+ExoPBR/GPBR shader and texture parameters; MMDHL's immediate path creates its own custom programs.
+The guard never reads VMT text: plain/trusted/image/repeat loads add zero file.Read calls, and do
+not inspect shader metadata or caller paths. Only the existing status/session startup reads remain.
+
+Untrusted render/surface bindings inspect native GetShader and, if necessary, GetString for custom
+pixel/vertex programs or reserved base textures. Decisions and creation hints use weak material
+keys; material mutations invalidate cached decisions even while the switch is off. Custom creation
+hints survive native fallback shaders and later cached-name reuse with different parameters.
+Entity setters resolve their material path through native Material, including !CreateMaterial
+references, at the binding boundary. Weak-valued path entries avoid repeat native resolutions
+while the material is live. Normal native cold loading, missing-material errors and VMT/Patch
+parsing remain the engine's responsibility; Lua does not claim native load-time fault prevention.
+
+The guard embeds 344 exact package Lua virtual paths. A test verifies the table against indexed
+package paths/SHA-256 values plus companion/glass Lua, excludes the retired glass add-on and checks
+internal collisions. Bindings and material mutations from these paths bypass the new material
+policy; target/cvar/scope protections remain. Tests replay every path, including both fixes PBR
+readers, the hotloader, companion, nlglass, advanced material editor, bodygroup tools and motion
+importer. Untrusted reuse of a material made by one of these callers still encounters the filter.
+There are no prefix/wildcard exemptions. Source labels omit the add-on directory, so a different
+add-on at an identical virtual path, or code forging that chunk label, can bypass material filters.
+Catalog hashes verify shipped bytes, not the runtime source label. This is a compatibility rule,
+not authentication or a native permission; details and collision consequences are in ADR 0086.
 
 Depth/inert textures cannot be bound or copied. Non-nil MRT slots 1-3 are refused, so mismatched MRT
 attachments never reach native. Valid slot zero, nil MRT clears, normal color copies and fresh
@@ -123,7 +142,10 @@ This autorun has no process exit code.
 [The LuaJIT harness](../../../../tools/tests/render_guard_harness.lua.md) executes this complete
 production file with fake engine functions. [R8 call replays](../../../../tools/tests/render_guard_addon_replays.lua.md)
 use original minimal snippets reproducing eight add-ons' calls, never third-party add-on code.
-Forty unittest methods invoke 43 scenarios (18 added for R8). They prove CPU policy/contract behavior,
+Forty-seven unittest methods cover 49 LuaJIT scenario invocations and the static path-inventory
+check (24 replay scenarios for R8). The [offline cost harness](../../../../tools/tests/bench_render_guard.py.md)
+measures 1,200 distinct and repeated paths against a modeled slow 761-mount lookup.
+These checks prove CPU policy/contract behavior,
 not a GPU/native-fault fix. Foreign remote initializers, earlier native aliases, later API overrides,
 direct registry mutations, unknown shaders, native modules, infinite loops and driver failures
 remain explicit limits. See Claude's QA procedure in the R8-C report after integration.
