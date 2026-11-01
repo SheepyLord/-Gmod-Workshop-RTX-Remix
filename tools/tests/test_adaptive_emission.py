@@ -80,14 +80,16 @@ class WriterTests(ScratchTests):
         self.assertEqual(path.read_text().count('float inputs:emissive_adaptive_intensity ='), 1)
 
     def test_mid_exposure_preserves_class_weights_for_different_atlases(self):
-        # compose normalises the map by its largest class weight S, then publish restores S*I.
+        # compose normalises the map by its largest class weight S, then publish restores S*I: at
+        # exposure 1 (L 0.18) every class and atlas gets the same factor over its old fixed level.
         ratio = config.Settings().emissive_adaptive_intensity
+        self.assertEqual(ratio, 25.0)  # ADR 0069: 4.5x the old level at exposure 1
         for weight, scale, level in ((0.025, 0.6, 1), (0.025, 0.04, 0.7), (0.04, 0.04, 1), (0.6, 0.6, 1)):
             colour = 0.8
             texel = colour * weight / scale
             fixed = texel * scale * level
             adaptive = texel * (scale * level * ratio) * 0.18
-            self.assertAlmostEqual(adaptive, fixed)
+            self.assertAlmostEqual(adaptive, 4.5 * fixed)
 
     def publish(self, generated, multiplier=None):
         settings = config.Settings(emissive_intensity=0.7)
@@ -124,8 +126,8 @@ class WriterTests(ScratchTests):
         }
         text = self.publish(generated)
         self.assertEqual(text.count('float inputs:emissive_adaptive_intensity ='), 8)  # two hashes per sheet
-        self.assertEqual(text.count('emissive_adaptive_intensity = 2.33333333'), 6)
-        self.assertEqual(text.count('emissive_adaptive_intensity = 0.155555556'), 2)
+        self.assertEqual(text.count('emissive_adaptive_intensity = 10.5\n'), 6)  # 0.6 * 0.7 * 25
+        self.assertEqual(text.count('emissive_adaptive_intensity = 0.7\n'), 2)  # 0.04 * 0.7 * 25
         self.assertIn('float inputs:emissive_intensity = 0.42', text)
 
     def test_publish_zero_disables_adaptation(self):

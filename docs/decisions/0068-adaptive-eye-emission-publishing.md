@@ -1,6 +1,7 @@
 # 0068: Publish scene-adaptive eye emission without regenerating maps
 
-- Status: Accepted 2026-10-31 for C16-B; numeric default provisional, awaiting in-game tuning
+- Status: Accepted 2026-10-31 for C16-B; the provisional numeric default is superseded by
+  [0069](0069-tuned-adaptive-eye-emission.md) (2026-10-31, tuned in game)
 - Decided by: the user's C16-B brief and approved C16 plan; publish-option implementation by Codex
 
 ## Context

@@ -7,10 +7,10 @@ regenerating or reading textures. Uses only Python's standard library and the bu
 
 ```powershell
 # Work on a staged copy. Preview first; omit --dry-run to apply.
-python skills/mmd-remix-pbr/scripts/set_adaptive_emission.py --mod out/pbr_robin --value 3.33333333 --dry-run
+python skills/mmd-remix-pbr/scripts/set_adaptive_emission.py --mod out/pbr_robin --value 15 --dry-run
 
-# Preserve each material's old level at exposure 1 (including different atlas normalisations).
-python skills/mmd-remix-pbr/scripts/set_adaptive_emission.py --mod out/pbr_robin --multiplier 5.555555555555555
+# rpai's tuned ratio on each material's own fallback, so different atlas normalisations stay.
+python skills/mmd-remix-pbr/scripts/set_adaptive_emission.py --mod out/pbr_robin --multiplier 25
 
 # Explicitly opt out on supporting runtimes; older runtimes already use the unchanged fallback.
 python skills/mmd-remix-pbr/scripts/set_adaptive_emission.py --mod out/pbr_robin --value 0
@@ -22,7 +22,7 @@ Pass exactly one mode:
 - `--multiplier R`: set each adaptive input to its existing `float inputs:emissive_intensity * R`.
   Requires one explicit finite, non-negative fallback per selected shader. `R` must be finite and
   non-negative, and every result must fit 0..65504. This matches rpai's publish option. A fallback
-  of 0.6 becomes 3.33333333 at the provisional ratio `1/0.18`; 0.04 becomes 0.222222222.
+  of 0.6 becomes 15 at rpai's default ratio 25 ([ADR 0069](../../../docs/decisions/0069-tuned-adaptive-eye-emission.md)); 0.04 becomes 1.
 
 ## Inputs and outputs
 
@@ -55,5 +55,5 @@ No textures, game, Steam files, `user.conf`, network or rpai work cache are used
 ## Exit codes
 
 0 on success, including no changes; 1 for an I/O or unsupported/malformed layer error (printed on
-stderr); 2 for invalid CLI arguments. See [standards](../references/standards.md) for the provisional
-default's derivation and [runtime notes](../references/runtime-notes.md) for compatibility.
+stderr); 2 for invalid CLI arguments. See [standards](../references/standards.md) for the default's
+derivation and in-game tuning and [runtime notes](../references/runtime-notes.md) for compatibility.

@@ -1,5 +1,43 @@
 # Research notes
 
+## C-16: in-game tuning of the eye whites (2026-10-31)
+
+- Client Lua may not run `lua_run`: `RunConsoleCommand("lua_run", ...)` prints
+  `[ERROR] RunConsoleCommand: Command is blocked! (lua_run)` (the first probe's console). The same
+  line sent as console text works: `poc_session.py --console` posts it with `WM_COPYDATA`
+  (`tools/poc_session.py:635-653`) after the map and before `--lua` files (`:1047-1051`); Source only
+  splits it at `;` and cuts it at `//`.
+- Model Hotloader's server ignores a requested position: `mmdhl/server.lua:143-149` spawns at the
+  player's eye trace (`HitPos + HitNormal * 3`, refused beyond 4096 units or on the sky), turned
+  toward the player (`settings.lua:35-41`). Client Lua removes what it spawned with
+  `mmdhl.Action("remove", nil, ent)` (`client.lua:173`, served at `server.lua:162`).
+- gm_construct's spawn points used: (831, 576), (952, -512) and (823, -210), all at z -143.08, yaw
+  180, pitch 0; the eye trace lands 3,250-3,460 units west on the field. The landing spot changes the
+  light, not only the framing: at (952, -512) Robin's cheek measured 0.0072 at night, at (831, 576)
+  0.0140. Placing the player on (831.235, 576, -143.08) at angles (0, 180, 0) reproduced the head
+  position to 0.01 units and the frame with no pixel shift.
+- Under Remix, `render.GetLightColor` returned 0 at every candidate interior point on gm_construct,
+  so it cannot rank how dim a room is. `util.IsInWorld` is server-only; on the client
+  `util.PointContents(pos)` without `CONTENTS_SOLID` stands in. A floor point under a full roof (no sky
+  straight up or 45 degrees up in eight directions) with walls on seven sides found 15 rooms within
+  6000 units of (831, 576); most are one building east of the spawn, floor z -144, ceiling 176-192
+  (for example (1227, -1669, -144), walls 267-700 units away). A looser test (sky only straight up)
+  picked (-1386, -2067, -128), an alley under an overhang, where the spawned ragdoll was not valid on
+  the client three seconds after `ready`.
+- The runtime's exposure (`auto_exposure.comp.slang:86,147-150`) is `0.18 / (Yf + 0.0032)`, capped
+  at `rtx.autoExposure.maxExposure` (16 in the package); patch 0016's `adapted_yf` is that frame's
+  centre-weighted geometric mean, while the exposure is smoothed (tau 0.15 s brightening, 0.75 s
+  darkening, `rtx_auto_exposure.h:132-144`). At night the log showed `adapted_yf` 0.00046-0.00069 at
+  exposure 16.
+- Patch 0016's packing is lossless in this fork: the DLSS control mask's alpha byte is always `0xff`
+  (`rtx_materials.h:982-986`), and the invalid subsurface index `SURFACE_INDEX_INVALID` is
+  `0x001FFFFF` (`common_binding_indices.h:162`), inside the 24 bits kept.
+- The eye white over the cheek (Robin, the probe's framing) is linear in the adaptive ratio in every
+  condition. Per `1/0.18` of ratio: noon 0.107, golden hour 0.223, dusk 0.083, night 0.11; the
+  intercepts (the eye's lit part alone) 0.51, 0.39, 0.40 and 0.20. Ratio 25 then gives 0.98, 1.38,
+  0.77 and 0.70 (measured; interpolation predicted 0.99, 1.39, 0.77, 0.70). Fixed emission gave 0.69,
+  0.52, 0.88 and 46 ([ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)).
+
 ## C16-B: publishing scene-adaptive eye emission (2026-10-31)
 
 - `skills/mmd-remix-pbr/tool/rpai/compose.py:618-630` normalises the emissive map by its largest

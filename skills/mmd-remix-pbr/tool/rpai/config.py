@@ -53,10 +53,11 @@ class Settings:
     # Multiplies every class's emissive weight at publish time, so emission can
     # be re-levelled in game without regenerating any map.
     emissive_intensity: float = 1.0
-    # Ratio to the fallback USD intensity, per unit of adapted scene luminance.
-    # At exposure 1, L_adapt = targetAdaptedYf = 0.18: preserve today's eye level.
-    # Publish-only (also for cached maps); 0 writes an explicit opt-out.
-    emissive_adaptive_intensity: float = 1.0 / 0.18
+    # Ratio to the fallback USD intensity, per unit of adapted scene luminance. 25 = 4.5 / 0.18:
+    # 4.5x the old eye level at exposure 1, tuned in game on Robin (C-16, ADR 0069) so the eye
+    # whites sit near the cheek by day and below it at night. Publish-only (also for cached maps);
+    # 0 writes an explicit opt-out.
+    emissive_adaptive_intensity: float = 25.0
     tile: int = 512
     presets: dict = field(default_factory=dict)  # class name -> overrides of classify.CLASSES
     # Per texture (source file name or sha16 key): {"max_size": N or "source"}, "normal_map",

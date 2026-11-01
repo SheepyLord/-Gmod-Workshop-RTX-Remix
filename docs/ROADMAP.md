@@ -117,14 +117,16 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | R4 | **done** (2026-10-31, Claude; loader 0.10.1, [review](handover/R4-review.md), field release run there) | Review of Codex Astra's QoL batch (loader 0.6.0 to 0.10.0, runtime patches 0005-0013, the GPL native changes, the companion and add-on Lua, tools and CI), fixes with tests, a field QA run on the user's install, the agent skills in [skills/](../skills/README.md), a GitHub release | Every finding triaged with a reason, accepted ones fixed and tested; the field install runs the release; `main`, the Workshop item and the release agree |
 | R5 | **done** (2026-10-31, Claude, `r5-qol` with `r5-glass` and `r5-stability`, merged into `main` as `cff3c67`; [handover](handover/R5-qol.md), [stability proposal](handover/R5-stability-proposal.md); field QA passed on the published package) | The user's QoL report: the night sky line on modern_house, broken glass that is inert, never breaks again and never goes, Workshop model packs that must always provide their models, the RTX normals checkbox, the content pack skill's checks, and a proposal (not implemented) for stability on machines with little memory | Each item fixed and tested, checked in the game; the stability proposal handed to the user |
 | R6 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md), [report](handover/R6-report.md); loader 0.11.0; PoC release QA, tier measurements and the field map-load check passed) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
-| C-16 | **in progress** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
+| C-16 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md), [report](handover/C16-report.md); measured and tuned on the PoC, [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
-C-16 content (C16-B, 2026-10-31): the PBR writer, staged-pack migration and package preservation
-are implemented on `c16-content`, with offline regression tests and demonstrated copies of Robin,
-Evernight/March 7th and Guinaifen. The ratio is provisional (`1/0.18` at exposure 1);
-[ADR 0068](decisions/0068-adaptive-eye-emission-publishing.md) records the derivation. Runtime
-integration, in-game measurements, tuning and publication remain with Claude; C-16 stays in progress.
+C-16 (2026-10-31): the runtime's scene-adaptive emission (C16-A) and the PBR writer, staged-pack
+migration and package preservation (C16-B) are integrated. Measured on the PoC with Robin, the eye
+white over the cheek went from 0.52-0.88 by day and 46 at night (fixed emission) to 0.77-1.38 by day,
+0.70 at night and 1.04 in a lamp-lit room, with the ratio tuned to 25
+([ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md), superseding
+[ADR 0068](decisions/0068-adaptive-eye-emission-publishing.md)'s provisional `1/0.18`). The packs:
+[report](handover/C16-report.md#packs).
 
 ## Risks being watched
 

@@ -158,10 +158,10 @@ Details and evidence: `references/standards.md`. In short:
   - `--emissive-intensity` re-levels all eye emission at publish time, with no regeneration.
   - C-16: emissive maps carrying `sclera`, `eye` or `highlight` also get
     `emissive_adaptive_intensity`. `--emissive-adaptive-intensity` is its ratio to the fixed fallback
-    per unit scene luminance (provisional default `1/0.18`, matching today's emission at exposure 1;
-    `0` opts out). This counteracts auto-exposure's dark-scene glow and bright-scene greying.
-    The fixed intensity stays for older runtimes. Claude will tune the default in game; derivation
-    and limits are in `references/standards.md`. No texture regeneration is needed.
+    per unit scene luminance (default `25`, tuned in game on Robin: eye whites near the cheek by
+    day, below it at night; `0` opts out). This counteracts auto-exposure's dark-scene glow and
+    bright-scene greying. The fixed intensity stays for older runtimes. Derivation, measurements and
+    limits are in `references/standards.md`. No texture regeneration is needed.
 - **Body skin: left as Remix renders it** (`original: 1`). A skin-only sheet gets no override; skin
   on a shared sheet gets roughness 0.7, flat, original colours. De-lighting (`delight`) is opt-in
   only, and subsurface scattering (`sss` class field) is not standard: on runtime `c6b48ed1` it
@@ -185,7 +185,7 @@ Details and evidence: `references/standards.md`. In short:
 | `--settings f.json` | extra settings, repeatable |
 | `--no-prune` | keep old DDS files (variants, A/B) |
 | `--emissive-intensity 0.7` | eye emission level |
-| `--emissive-adaptive-intensity 5.555555555555555` | adaptive/fallback ratio per scene luminance (publish only; `0` disables) |
+| `--emissive-adaptive-intensity 25` | adaptive/fallback ratio per scene luminance (the default; publish only; `0` disables) |
 | `--no-live` | skip the in-game query (earlier verified hashes are kept) |
 | `--max-size`, `--upscaler span` | size cap; faster, softer upscale |
 | `--height --displacement 0.03` | height maps for POM (off by default) |
@@ -193,7 +193,7 @@ Details and evidence: `references/standards.md`. In short:
 | `python scripts/abtest.py capture ...` | AABB capture of variant layers (restores everything after) |
 | `python scripts/abtest.py metrics <run> --baseline A` | noise, change, detail-kept tables and comparison sheets |
 | `python scripts/package_characters.py --dest <dir> --character name=key[=pmx] ...` | package characters |
-| `python scripts/set_adaptive_emission.py --mod <copy> --multiplier 5.555555555555555 --dry-run` | preview adaptive emission in an existing pack; omit `--dry-run` to apply |
+| `python scripts/set_adaptive_emission.py --mod <copy> --multiplier 25 --dry-run` | preview adaptive emission in an existing pack; omit `--dry-run` to apply |
 | `python scripts/recolour_skin.py --src <sheet> --ref <images> --out <png> --pmx <pmx> --materials 0,1` | skin tone matched to a reference (on request only), used through a per-texture `albedo_source` |
 
 Run the scripts with the rpai venv Python (`%USERPROFILE%\.rpai\venv\Scripts\python.exe`). They put

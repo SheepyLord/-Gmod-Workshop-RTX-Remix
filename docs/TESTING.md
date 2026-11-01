@@ -1245,6 +1245,50 @@ C16-A never launches Garry's Mod, changes the user's fork, an install, Steam fil
 user configuration, or publishes anything. Actual GPU readback timing, cut/interval log sampling
 and visual brightness acceptance remain with Claude.
 
+### Project manager GPU acceptance (2026-10-31, Claude, PoC)
+
+The integration branch `c16-int` (C16-A and C16-B merged) built into the PoC: runtime
+`remix-main+8a5df5d8`, Robin's pack copied as the test mod `c16_robin` (it sorts before `pbr_robin`,
+so its materials win). [`eye_white_probe.lua`](../tools/qa/eye_white_probe.lua.md) on gm_construct,
+the player placed on one spawn point so every run frames Robin in the same pose and light,
+1920x1080, then [`eye_white_patches.py`](../tools/qa/eye_white_patches.py.md) (the eye white's linear
+luminance over the cheek's). "Fixed" is the same runtime with `rtx.adaptiveEmission.enable = False`
+in a temporary root `rtx.conf`, removed after each run.
+
+| run | noon | golden hour | dusk | night |
+|---|---|---|---|---|
+| `A-fixed-r1` (fixed 0.6) | 0.69 | 0.52 | 0.88 | 46.4 |
+| `B-adaptive-r1` (input 3.33, the provisional `1/0.18`) | 0.62 | 0.61 | 0.48 | 0.31 |
+| `B-adaptive-p4` (input 3.33, `rtx.adaptiveEmission.scale = 4`) | 0.94 | 1.28 | 0.73 | 0.64 |
+| `B-adaptive-v15` (input 15, ratio 25: the shipped default) | 0.98 | 1.38 | 0.77 | 0.70 |
+
+The interior, a lamp-lit room of the building east of the spawn (the player placed on
+(1227, -1669, -144) at angles (50, 45, 0), `NL_EYE_CONDITIONS` noon and night, boxes for that pose:
+`--patch sclera_ur=822,490,834,500 --patch sclera_lo=745,588,775,597 --patch skin=850,600,875,618`):
+fixed 0.79 by day and 0.84 at night (`A-fixed-room`), input 15 1.04 and 1.04 (`B-adaptive-room`). The
+lamps make day and night alike, and the room is not dark enough for the fixed glow.
+
+- Result against the plan's acceptance: the night glow is gone and the eye white stays below the
+  cheek in the dark (0.70; fixed 46); the interior is inside the band (1.04). Outdoors by day the
+  band is 0.77-1.38, not 0.85-1.05: the emission
+  follows the frame's average light while the cheek follows its own, so shade on the face (golden
+  hour) lifts the ratio and a low sun on the cheek (dusk) lowers it. Why one ratio cannot close that,
+  and why 25: [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md).
+- The runtime log's `[RTX Adaptive Emission]` lines: an `interval` record at start-up with
+  `source=fallback` (no readback yet), then `camera_cut` records with `source=auto_exposure`,
+  `age_frames=2`, `adapted_yf` 0.00046-0.00069 and `exposure` 16 (night, the cap), `enabled=0` in
+  the fixed runs and `enabled=1` in the others. The sky changes inside a run are not cuts, so the log
+  has no record per condition.
+- Placement matters: runs that started on other spawn points (`B-adaptive-s3`, `B-adaptive-s6`)
+  framed Robin differently and lit her differently (half the cheek luminance at night), so they are
+  not compared. The probe's `--console` placement reproduced the head position to 0.01 units.
+- Not covered: Source eyes, decals, an emissive-blend and an SSS material with the input (no such
+  asset on the PoC); auto exposure off. C16-A's unit tests cover the formula, fallback and packing for
+  those paths.
+
+Evidence: `out/qa-poc/c16/` (each run's shots, `console.log` and `remix-dxvk.log`; contact sheets
+`sheet-fixed-vs-v15.png`, `crops-r1-p4.png`).
+
 ### Final offline gates
 
 - `runtime/build_runtime.ps1 -Fork <own source> -Worktree <own source> -Verify` matches all sixteen

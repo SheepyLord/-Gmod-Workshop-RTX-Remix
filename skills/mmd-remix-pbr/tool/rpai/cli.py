@@ -637,7 +637,7 @@ def main(argv: list[str] | None = None) -> None:
         p.add_argument("--emissive-intensity", type=float,
                        help="multiplier on the eye emission (default 1); takes effect on publish, no regeneration")
         p.add_argument("--emissive-adaptive-intensity", type=config.emission_multiplier,
-                       help="eye adaptive/fallback intensity ratio per scene luminance (default 1/0.18); "
+                       help="eye adaptive/fallback intensity ratio per scene luminance (default 25); "
                             "0 uses fixed emission; publish only, no regeneration")
         p.add_argument("--tile", type=int, help="inference tile size (default 512)")
         p.add_argument("--only", help="comma-separated texture keys or source file names")

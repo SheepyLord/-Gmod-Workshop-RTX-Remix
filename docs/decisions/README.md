@@ -73,7 +73,8 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0065](0065-runtime-memory-diagnostics.md) | Shared runtime VRAM snapshots at cuts, five-minute intervals and device loss; atomic local crash marker and device-lifetime OMM warning limits | Accepted 2026-10-31 (R6 T4) |
 | [0066](0066-fixes-memory-limits-compatibility.md) | Remove the fixes' startup memory-limit call; preserve the Lua API as a documented no-op with one notice and no configuration writes | Accepted 2026-10-31 (R6 T5) |
 | [0067](0067-scene-adaptive-emission.md) | Optional opaque emission follows adapted scene Yf through a nonblocking readback and shared constants; keep the 64-byte material record and fixed fallback | Accepted 2026-10-31 (C-16) |
-| [0068](0068-adaptive-eye-emission-publishing.md) | Publish-time eye adaptive/fallback ratio; byte-preserving staged-pack updates and package verification | Accepted 2026-10-31 (C16-B); default provisional |
+| [0068](0068-adaptive-eye-emission-publishing.md) | Publish-time eye adaptive/fallback ratio; byte-preserving staged-pack updates and package verification | Accepted 2026-10-31 (C16-B); default superseded by 0069 |
+| [0069](0069-tuned-adaptive-eye-emission.md) | The adaptive eye emission ratio tuned in game: 25 (4.5x the old level at exposure 1); one ratio for every condition | Accepted 2026-10-31 (C-16, Claude, for the user's eye-white request) |
 
 ## Template
 

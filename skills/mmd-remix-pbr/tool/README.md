@@ -78,13 +78,13 @@ scenes. C-16 adds `float inputs:emissive_adaptive_intensity` on maps whose recor
 `sclera`, `eye` or `highlight`, keeping the fixed intensity as an older-runtime fallback.
 
 `--emissive-adaptive-intensity R` sets the adaptive/fallback ratio per unit adapted scene luminance
-(also a top-level JSON setting). The USD value is `fallback * R`. Default `R = 1/0.18`, about
-5.555556: at exposure 1, adapted luminance is the package's target 0.18, so the adaptive emission
-matches today's `linear albedo * class weight * --emissive-intensity`. For fallback 0.6 that writes
-3.33333333; for 0.04 it writes 0.222222222. This default is provisional and awaits in-game tuning.
+(also a top-level JSON setting). The USD value is `fallback * R`. Default `R = 25`, tuned in game
+on Robin: at exposure 1 (adapted luminance at the package's target 0.18) the adaptive emission is 4.5x
+today's `linear albedo * class weight * --emissive-intensity`, which keeps the eye whites near the
+cheek by day and below it at night. For fallback 0.6 that writes 15; for 0.04 it writes 1.
 `0` opts out, and `--emissive-intensity 0.7` (or 1.3) scales both modes. These are publish-only
 options; cached maps are sufficient, with no regeneration. Non-eye emitters stay fixed. See
-[standards](../references/standards.md#scene-adaptive-eye-emission-c-16-provisional-2026-10-31).
+[standards](../references/standards.md#scene-adaptive-eye-emission-c-16-tuned-2026-10-31).
 
 For a staged copy of an already published mod, use
 [`set_adaptive_emission.py`](../scripts/set_adaptive_emission.py.md) with `--multiplier` (per-material
@@ -204,7 +204,7 @@ Commands, each taking the PMX path:
 Useful options: `--only "衣.png,髪.png"`, `--max-size 2048`, `--upscaler span` (about 40× faster,
 slightly softer), `--height --displacement 0.03` (POM height maps, off by default),
 `--emissive-intensity 0.7` (eye emission level, default 1),
-`--emissive-adaptive-intensity 5.555555555555555` (adaptive/fallback ratio, default `1/0.18`; `0` off),
+`--emissive-adaptive-intensity 25` (adaptive/fallback ratio, the default; `0` off),
 `--mod my_mod`, and `--settings tune.json`.
 
 For an **8 GB GPU audience**, generate and publish with `--max-size 2048` (or use `run` with that

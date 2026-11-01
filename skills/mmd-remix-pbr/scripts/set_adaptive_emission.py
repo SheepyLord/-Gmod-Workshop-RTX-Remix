@@ -1,7 +1,7 @@
 """Set scene-adaptive emission in a published rpai mod without rebuilding textures.
 
-    python set_adaptive_emission.py --mod out/pbr_robin --value 3.33333333 --dry-run
-    python set_adaptive_emission.py --mod out/pbr_robin --multiplier 5.55555556
+    python set_adaptive_emission.py --mod out/pbr_robin --value 15 --dry-run
+    python set_adaptive_emission.py --mod out/pbr_robin --multiplier 25
 
 --value is the literal USD input; --multiplier scales each shader's existing fallback intensity.
 Only emissive-map shaders inside mat_<HASH> materials in ASCII .usda layers are edited.
@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--value", type=check_value, help="literal USD intensity, 0..65504 (0 disables adaptation)")
     mode.add_argument("--multiplier", type=emission_multiplier,
-                      help="multiply each existing emissive_intensity; use 5.55555556 for exposure 1")
+                      help="multiply each existing emissive_intensity; rpai's default ratio is 25")
     parser.add_argument("--dry-run", action="store_true", help="report planned edits; write and touch nothing")
     args = parser.parse_args(argv)
     try:
