@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A second pass bounds breaks at 200 annealed / 300 tempered pieces, including large and
+  repeatedly hit map windows. Small impact rings and large far pieces remain; tempered grids
+  evenly cover the pane without exceeding their budget or dropping glass area.
+
 - G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
   cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
   state. Player sweeps include scripted base velocity, and blast impulses follow deferred native

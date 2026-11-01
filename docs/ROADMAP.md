@@ -1,5 +1,9 @@
 # Roadmap
 
+G1-A second fix pass (2026-11-01, `g1-lua-fix2`) is in progress: bounded break density is
+implemented and offline tested; lit cracks, the 250-unit/s contact default and lower client
+break cost follow. Integration, packaging and game acceptance remain with Claude.
+
 G1-A's integration fix pass is **complete offline** on `g1-lua-fix` (2026-11-01): all eleven
 items in [the brief](handover/G1-fix-pass.md) are implemented, with 45 glass tests and before-failing
 regressions. Release passes 25 CTests and 448 Python tests (two existing skips). Near-cap fracture

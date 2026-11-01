@@ -50,12 +50,32 @@ Native windows keep engine health: our accumulated damage controls their visual 
 
 Each cracking hit establishes 8–16 seeded rays and polygonal rings with spacing that grows
 outward. Only cells in its contact neighbourhood subdivide; repeated hits reuse those cuts.
-Live cells and their complete subdivision groups are retained. Above the 512-cell limit, complete
+Live cells and their complete subdivision groups are retained. Above the 200-cell annealed limit, complete
 old groups far from the new hit return to their exact convex parent. Groups containing a released
 cell cannot coarsen, so holes never refill. Eight active centres describe crack growth; a new distant
 hit reclaims a distant slot while keeping its actual location. Old distant cracks may simplify.
 A pathological perforated pane with no room to refine/coarsen releases its remaining glass at the
 current hit. A 100-impact generated probe reaches the cap without that fallback.
+
+The second pass lowers the active topology budget to **200 annealed / 300 tempered** cells,
+within the unchanged 512-cell snapshot ceiling ([ADR 0076](../docs/decisions/0076-glass-bounded-break-density.md)).
+Annealed cuts keep small inner rings and use fewer large far cells when the outer ring budget
+is exhausted; complete distant groups coarsen before new cuts exceed 200. Tempered divides the
+full pane bounds into near-square tiles with at most 300 rows times columns, including narrow
+panes. No pieces are discarded and their total area is preserved.
+
+Whole-break counts below use piece size 8, seed 171, thickness/strength 1, a centre or a corner
+2 units inside each edge. `Fresh / damaged` means an untouched pane versus 24 prior spatial
+visual-only hits, as an engine-owned window can receive before its native break:
+
+| Pane | Annealed centre | Annealed corner | Tempered centre / corner |
+|---|---:|---:|---:|
+| 96x64 | 89 / 160 | 52 / 197 | 96 / 96 |
+| 256x128 | 116 / 170 | 63 / 184 | 300 / 300 |
+| 128x256 | 116 / 151 | 65 / 182 | 300 / 300 |
+
+The cap also applies to partial breakouts and repeated hits, rather than trimming the debris
+list after fracture. The density harness checks piece sizes 4/8/64 and extreme aspect ratios.
 
 All coordinates use a 1/1024 wire grid, an integer Park–Miller generator, an integer circle table
 and integer square roots. Hull/Clip merge vertices closer than 1/256 before sending any piece to

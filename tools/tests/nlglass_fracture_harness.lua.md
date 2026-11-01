@@ -1,5 +1,11 @@
 # nlglass_fracture_harness.lua
 
+Second-pass `density` covers centre/corner hits on 96x64, 256x128 and 128x256 panes, plus
+8192x1, 1x8192 and 8192x8192 extremes, both kinds and piece sizes 4/8/64. It checks the live
+200/300-cell bounds after 24 spatial hits, full-break counts and area conservation; prints fresh
+and pre-damaged counts at default spacing. The regression fails on ad3ed46. The coarsen/timing
+probes now use the kind's lower active topology cap; 512 remains the snapshot wire ceiling.
+
 Fix-pass modes `cap_local`, `weak`, `incremental`, `tempered_spider`, `tiny_edges`, `border` fail
 against the original 3096b2e modules. `coarsen` drives 100 separated impacts to the 512-cell cap;
 `hole_coarsen` proves complete-group coarsening cannot refill an existing opening. `tiny_edges`

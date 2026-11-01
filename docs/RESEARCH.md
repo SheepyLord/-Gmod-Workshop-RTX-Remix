@@ -1,5 +1,25 @@
 # Research notes
 
+## G1-A second pass: break density (2026-11-01)
+
+- `glass/addon/lua/nlglass/fracture.lua:7` defines kind-specific active caps (200 annealed,
+  300 tempered) within MAX_CELLS=512. `rings` stretches only the final outer ring when its
+  ray/ring product exhausts the budget; `uniform` bounds its row/column product explicitly.
+  `Apply` coarsens before assigning refined cells, so every release is bounded without losing
+  area. Repeated radius queries no longer build unused tile polygons.
+- `tools/tests/nlglass_fracture_harness.lua density` fails on ad3ed46 and passes after the fix.
+  At spacing 8, seed 171 and a 2-unit corner inset, annealed fresh/damaged whole-break counts
+  are 89/160 centre and 52/197 corner (96x64), 116/170 and 63/184 (256x128), 116/151 and
+  65/182 (128x256). Damaged means 24 prior 180,000-energy spatial visual-only native hits.
+  Tempered counts are 96, 300 and 300 at either location, fresh or damaged. The harness also
+  checks 8192x1, 1x8192, 8192x8192, spacings 4/8/64 and conserved total area.
+- Local pre-change handler baseline: 502 prepared cells, 40 samples, client break mean/p99
+  14.5843/23.7406 ms. This differs from the first-pass handover's earlier machine/load sample;
+  both measure mocked engine calls, not live frame time. Lower-cap pure-fracture means over
+  80 samples (164 cells): hit 0.4183, repeat 0.0652, break 0.1389 ms versus local baseline
+  0.6187/0.0805/0.5113 ms at 502 cells. Evidence stays in this worktree's ignored
+  `out/g1-lua-fix2/`. No game or install was changed.
+
 ## G1-A client/update fix pass: final offline evidence (2026-11-01)
 
 - Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),

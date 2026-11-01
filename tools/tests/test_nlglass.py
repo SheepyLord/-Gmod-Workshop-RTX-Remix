@@ -38,6 +38,9 @@ class FractureTests(unittest.TestCase):
     def test_tempered_full_uniform_shatter(self):
         self.run_case('tempered')
 
+    def test_break_density_bounds_for_large_panes_and_accumulated_hits(self):
+        self.run_case('density')
+
     def test_bounded_merged_impacts_and_late_join_replay(self):
         self.run_case('bounded')
 
