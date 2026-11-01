@@ -39,6 +39,23 @@ TEST_CASE("glass convex bisection preserves area thickness and minimum size over
   CHECK(split_polygon(outline_xy(fixture::box(4,4)),8)[0].empty());
   CHECK(split_polygon(outline_xy(fixture::box(32,1)),4)[0].empty());
 }
+TEST_CASE("glass collision flags default to objects and ragdolls and filter each target independently") {
+  World w(8,0);ready(w);w.set_interaction(true);
+  CHECK(w.stats().collision_flags==(Objects|Ragdolls));
+  std::vector<SceneBody> rows;
+  for(unsigned i=0;i<4;++i) { auto b=mirror(i+1,{float(i)*50,0,32});b.kind=1u<<i;rows.push_back(b); }
+  w.sync_bodies(rows,1.0/60);CHECK(w.stats().scene_bodies==2);
+  for(unsigned flags=0;flags<16;++flags) {
+    w.set_collision_flags(flags);CHECK(w.stats().scene_bodies==0);
+    w.sync_bodies(rows,1.0/60);
+    unsigned expected=0;
+    for(unsigned i=0;i<4;++i)if(flags&(1u<<i)) { ++expected;CHECK((w.scene_pose(i+1).position-rows[i].position).length()<.001f); }
+    CHECK(w.stats().scene_bodies==expected);
+  }
+  CHECK_THROWS_AS(w.set_collision_flags(16),Error);
+  rows[0].kind=3;CHECK_THROWS_AS(w.sync_bodies(rows,1.0/60),Error);
+  w.set_interaction(false);CHECK(w.stats().scene_bodies==0);
+}
 TEST_CASE("glass Source mirrors push sleeping pieces but never yield to them") {
   World w(8,0);ready(w);w.set_interaction(true);w.set_collide(false);
   const auto id=w.spawn(fixture::box(8,8,1),{0,0,32},{},{},{});

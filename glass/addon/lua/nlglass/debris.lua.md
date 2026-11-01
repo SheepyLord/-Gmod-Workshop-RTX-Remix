@@ -69,3 +69,5 @@ The fast-body fix adds `scene_examined`, `scene_fast_candidates`, `scene_fast_bo
 prop leaves the pile; current `scene_bodies` can already be zero at the screenshot. Native
 `scene_sweeps`, `scene_sweep_hits` and `scene_sweep_limited` are cumulative for the world and must
 be compared before/after. Think/step dispatch, falling-piece draws and batching are unchanged.
+
+R8-G always enables map/piece collision and reads the archived Source collision mask from debris_settings.lua. At idle worker boundaries it updates optional SetCollisionFlags and passes the mask to scene capture. Stats adds collision_flags. The interaction master stays independent.

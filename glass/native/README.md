@@ -152,3 +152,5 @@ These are client CPU hook costs; `Spawn`/fracture outside Think and GPU time are
 [the manager fields](../addon/lua/nlglass/debris.lua.md) for sampling/reset details. Existing
 sleep tuning remains 0.35 s with a 0.06 m/s point-velocity threshold; rendering optimization does
 not force bodies asleep in flight. Game targets remain with Claude.
+
+R8-G: SetCollisionFlags(mask) accepts 0?15 (objects=1, ragdolls=2, living players=4, living NPCs/NextBots=8), default 3. Changes clear mirrors at an idle boundary. SyncBodies row 8 tags one category; omitted tags remain objects for older Lua. Stats adds collision_flags. Native validates tags/masks before mutation and excludes disabled categories; Lua also filters before extraction. The manager always enables map/piece collision.

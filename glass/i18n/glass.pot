@@ -10,97 +10,117 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:43
+#: addon/lua/nlglass/menu.lua:58
 msgid "Server settings require an administrator."
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:44
+#: addon/lua/nlglass/menu.lua:59
 msgid "Map windows"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:45
+#: addon/lua/nlglass/menu.lua:60
 msgid "Spawned glass"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:46
+#: addon/lua/nlglass/menu.lua:61
 msgid "Kind, strength and piece size apply to new panes; clean up the map to replace its windows."
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:47
+#: addon/lua/nlglass/menu.lua:62
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
 msgid "Glass strength"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:48
+#: addon/lua/nlglass/menu.lua:63
 msgid "Show cracks"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:53
+#: addon/lua/nlglass/menu.lua:68
 msgid "Piece size"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:54
+#: addon/lua/nlglass/menu.lua:69
 msgid "Velocity transfer"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:55
+#: addon/lua/nlglass/menu.lua:70
 msgid "Player break speed"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:56
+#: addon/lua/nlglass/menu.lua:71
 msgid "Default: 250 units/s; walking stays below this threshold."
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:57
+#: addon/lua/nlglass/menu.lua:72
 msgid "Player / NPC mass (kg)"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:58
+#: addon/lua/nlglass/menu.lua:73
 msgid "Broken pieces are local to you and collide with the map and other pieces."
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:59
+#: addon/lua/nlglass/menu.lua:74
 msgid "Debris lifetime (s; 0 = until cleanup)"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:60
+#: addon/lua/nlglass/menu.lua:75
 msgid "Debris budget"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:61
-msgid "Pieces collide with each other"
-msgstr ""
-
-#: addon/lua/nlglass/menu.lua:62
+#: addon/lua/nlglass/menu.lua:76
 msgid "Bodies and damage affect broken pieces"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:63
-msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
+#: addon/lua/nlglass/menu.lua:77
+msgid "Bullets, melee, blasts and falls move or break your pieces. Glass never pushes back."
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:64
-msgid "Reset to Defaults"
-msgstr ""
-
-#: addon/lua/nlglass/menu.lua:75
 #: addon/lua/nlglass/menu.lua:78
+msgid "Collide with (map and other pieces always enabled)"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:79
+msgid "Objects (props and physics objects)"
+msgstr ""
+
 #: addon/lua/nlglass/menu.lua:80
-msgid "Glass settings"
+msgid "Ragdolls"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:81
+msgid "Living players"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:82
+msgid "Living NPCs and NextBots"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:83
+msgid "Default: objects and ragdolls; living entities pass through your pieces."
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:84
+msgid "Reset to Defaults"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:95
+#: addon/lua/nlglass/menu.lua:98
+#: addon/lua/nlglass/menu.lua:100
+msgid "Glass settings"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:102
 msgid "Glass pane"
 msgstr ""
 

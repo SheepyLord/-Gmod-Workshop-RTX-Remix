@@ -59,11 +59,11 @@ local function api()
     return {ReadRegions=function()return {{{-100,-100,-100},{100,100,100}},{{-50,-50,-50},{150,150,150}}}end,
         SyncBodies=function(rows,dt)check(dt>=.001 and dt<=.25,"bounded sample time");return #rows end}
 end
-local function capture(S,n,dt)
+local function capture(S,n,dt,flags)
     local out
     local previous=n.SyncBodies
     n.SyncBodies=function(rows,dt)out=rows;return previous(rows,dt)end
-    S.Capture(n,dt or .016);n.SyncBodies=previous;return out
+    S.Capture(n,dt or .016,flags or 15);n.SyncBodies=previous;return out
 end
 if scenario=="sceneperf" then
     local ffi=require("ffi")
@@ -136,7 +136,24 @@ elseif scenario=="scene_fast_replay" or scenario=="scene_fast_crowded_replay" th
     print("REPLAY_END")
 elseif scenario:match("^scene") then
     local S=dofile(root.."/nlglass/debris_scene.lua") local n=api()
-    if scenario=="scene_kinds" then
+    if scenario=="scene_flags" then
+        local actor, npc, bot = entity("player"), entity("npc_citizen"), entity("nextbot")
+        local rag, prop = entity("prop_ragdoll",nil,{phys()}), entity("prop_physics",nil,{phys()})
+        local clientRag = entity("class C_ClientRagdoll",nil,{phys()})
+        nearby={actor,npc,bot,rag,prop,clientRag};player={GetAll=function()return {actor}end}
+        for flags=0,15 do
+            local rows=capture(S,n,.016,flags) or {}
+            local expected=0
+            for _, k in ipairs({4,8,8,2,1,2}) do if math.floor(flags/k)%2==1 then expected=expected+1 end end
+            check(#rows==expected,"independent collision category filtering mask "..flags)
+            for _,row in ipairs(rows)do check(math.floor(flags/row[8])%2==1,"snapshot tags match the filter")end
+        end
+        S.Reset();local rows=capture(S,n,.016,3)
+        check(#rows==3,"default excludes all living hulls and shadow physics")
+        actor.alive=false;npc.alive=false;bot.alive=false
+        now=now+.11;rows=capture(S,n,.016,15)
+        for _,row in ipairs(rows)do check(row[8]~=4 and row[8]~=8,"dead actors cannot keep living mirrors")end
+    elseif scenario=="scene_kinds" then
         local player=entity("player",nil,{phys()})
         local npc=entity("npc_citizen",nil,{phys()})
         local rag=entity("prop_ragdoll",nil,{phys(Vector(0,0,8)),phys(Vector(0,0,16)),phys(Vector(0,0,24))})

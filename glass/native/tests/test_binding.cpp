@@ -108,6 +108,13 @@ TEST_CASE("glass binding validates scene ray damage and split APIs with balanced
   auto row=Value::array({num(1),vector(40,0,32),vector(),vector(4,4,8),num(85),Value{},vector()});
   auto rows=Value::array({row});CHECK(m.call("SyncBodies",{rows,num(.016)})[0].n==1);
   CHECK(failure(m.call("SyncBodies",{Value::array({row,row}),num(.016)})));
+  CHECK(failure(m.call("SetCollisionFlags",{num(16)})));
+  CHECK(failure(m.call("SetCollisionFlags",{num(1.5)})));
+  (*row.table)["n8"]=num(3);CHECK(failure(m.call("SyncBodies",{rows,num(.016)})));
+  (*row.table)["n8"]=num(4);CHECK(m.call("SyncBodies",{rows,num(.016)})[0].n==0);
+  CHECK(m.call("SetCollisionFlags",{num(4)})[0].b);
+  CHECK(m.call("SyncBodies",{rows,num(.016)})[0].n==1);
+  CHECK(m.call("SetCollisionFlags",{num(3)})[0].b);(*row.table)["n8"]=num(1);
   (*row.table)["n6"]=Value::array({hull()});CHECK(m.call("SyncBodies",{rows,num(.016)})[0].type==Type::Number);
   (*row.table)["n7"]=num(0);CHECK(failure(m.call("SyncBodies",{rows,num(.016)})));
   CHECK(m.call("ReadRegions")[0].type==Type::Table);CHECK(m.call("ReadDamage")[0].type==Type::Bool);

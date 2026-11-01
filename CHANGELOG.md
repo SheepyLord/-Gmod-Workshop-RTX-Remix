@@ -6,6 +6,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R8-G: glass gains independent Source collision checkboxes (objects/ragdolls on, living actors off), a one-time archived-setting migration and always-on map/piece contact; the interaction master remains independent ([ADR 0085](docs/decisions/0085-glass-load-collision-and-hits.md)).
+
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 
 - **Transparent MMD materials show under RTX** (the user: Columbina's blindfold rendered black, only

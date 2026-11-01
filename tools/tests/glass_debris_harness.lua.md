@@ -44,3 +44,5 @@ there is no native module load or game access.
 
 A slow-vector double also makes the measured 0.6 ms preparation allowance stop before the
 1,800-vertex hard cap; an injected 2.5 ms upload is retained in Stats after quiet frames.
+
+R8-G collision_settings checks the archived one-time migration, explicit mask/master preservation, reload and always-on map/piece contacts.

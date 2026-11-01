@@ -4,6 +4,18 @@ local S = { bodies = 0, candidates = 0, queries = 0, capture_ms = 0, capture_pea
 local candidates, regions, states, serial, nextDiscovery = {}, {}, {}, 0, 0
 local MAX_BODIES, MAX_ENTITIES, MAX_BONES, MAX_EXAMINED = 96, 128, 24, 512
 local LOOKAHEAD, MAX_SWEEP, FAST_SPEED = .25, 192, 160
+local currentFlags = 3
+local function kind(e)
+    if e:IsPlayer() then return e:Alive() and 4 or 0 end
+    if (e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health() > 0 then return 8 end
+    local class = e:GetClass()
+    return ((e.IsRagdoll and e:IsRagdoll()) or class == "prop_ragdoll" or class == "class C_ClientRagdoll" or
+        class == "class C_HL2MPRagdoll" or class == "client_ragdoll") and 2 or 1
+end
+local function allowed(e)
+    local k = kind(e)
+    return k > 0 and math.floor(currentFlags / k) % 2 == 1
+end
 -- Source vectors are engine objects: every component read calls into the engine. Each vector is
 -- read once and the region tests run on plain numbers. Discovery may test 512 bodies against 32
 -- regions; with vectors that cost milliseconds in game (PoC, 2026-11-01).
@@ -47,7 +59,7 @@ local function discover(api)
         S.examined = S.examined + 1
         if seen[e] or not IsValid(e) or not e.WorldSpaceAABB then return end
         seen[e] = true
-        if e:IsWorld() or e:GetClass():match("^nlglass_") then return end
+        if e:IsWorld() or e:GetClass():match("^nlglass_") or not allowed(e) then return end
         local lo, hi = e:WorldSpaceAABB()
         local lx, ly, lz = components(lo, 131072)
         local hx, hy, hz = components(hi, 131072)
@@ -113,8 +125,14 @@ function S.Reset()
     S.bodies, S.candidates, S.queries, S.cooks, S.capture_ms, S.capture_peak_ms = 0, 0, 0, 0, 0, 0
     S.examined, S.fast_candidates, S.fast_bodies, S.fast_boxes, S.peak_bodies = 0, 0, 0, 0, 0
 end
-function S.Capture(api, dt)
+function S.Capture(api, dt, flags)
     local start, now = SysTime(), CurTime()
+    flags = flags or 3
+    if flags ~= currentFlags then currentFlags, nextDiscovery = flags, 0 end
+    if flags == 0 then
+        if S.bodies > 0 then api.SyncBodies({}, .016) end
+        S.Reset();return 0
+    end
     if now >= nextDiscovery then discover(api);nextDiscovery = now + .1 end
     if #candidates == 0 and S.bodies == 0 then
         S.cooks, S.capture_ms = 0, (SysTime() - start) * 1000
@@ -160,7 +178,7 @@ function S.Capture(api, dt)
         local radius = math.sqrt(hx * hx + hy * hy + hz * hz)
         if not near(px - radius, py - radius, pz - radius, px + radius, py + radius, pz + radius, sx, sy, sz) then return end
         keep[e] = keep[e] or {};keep[e][slot] = old
-        rows[#rows + 1] = {old.key, position, angles, half, math.max(.01, math.min(50000, mass)), shape, velocity}
+        rows[#rows + 1] = {old.key, position, angles, half, math.max(.01, math.min(50000, mass)), shape, velocity, kind(e)}
         if fast then
             fastBodies = fastBodies + 1
             if fresh and IsValid(phys) then S.fast_boxes = S.fast_boxes + 1 end
@@ -168,7 +186,7 @@ function S.Capture(api, dt)
     end
     for _, e in ipairs(candidates) do
         if #rows >= MAX_BODIES then break end
-        if IsValid(e) and e.WorldSpaceAABB and not e:IsWorld() and not e:GetClass():match("^nlglass_") then
+        if IsValid(e) and e.WorldSpaceAABB and not e:IsWorld() and not e:GetClass():match("^nlglass_") and allowed(e) then
             local lo, hi = e:WorldSpaceAABB()
             local lx, ly, lz = components(lo, 131072)
             local hx, hy, hz = components(hi, 131072)

@@ -38,6 +38,21 @@ local function kind(panel,text,name)
         box:ChooseOptionID(default(name)=="tempered" and 2 or 1) box.OnSelect=callback
     end
 end
+local function collision(panel, text, flag)
+    local box = panel:CheckBox(L(text))
+    local cv = GetConVar("rtx_glass_debris_collide_with")
+    local function checked() return math.floor(cv:GetInt() / flag) % 2 == 1 end
+    box:SetValue(checked() and 1 or 0)
+    box.OnChange = function(_, on)
+        local was = checked()
+        if on ~= was then RunConsoleCommand("rtx_glass_debris_collide_with", tostring(cv:GetInt() + (on and flag or -flag))) end
+    end
+    local think = box.Think
+    box.Think = function(self)
+        if think then think(self) end
+        if self:GetChecked() ~= checked() then self:SetValue(checked() and 1 or 0) end
+    end
+end
 function NLGlass.BuildSettings(panel)
     panel.NLGlassResetters={}
     panel:Help(L("Server settings require an administrator."))
@@ -58,9 +73,14 @@ function NLGlass.BuildSettings(panel)
     panel:Help(L("Broken pieces are local to you and collide with the map and other pieces."))
     panel:Help(L("Debris lifetime (s; 0 = until cleanup)")) panel:NumSlider("","rtx_glass_debris_lifetime",0,600,0)
     panel:Help(L("Debris budget")) panel:NumSlider("","rtx_glass_debris_budget",100,8192,0)
-    panel:CheckBox(L("Pieces collide with each other"),"rtx_glass_debris_collide")
     panel:CheckBox(L("Bodies and damage affect broken pieces"),"rtx_glass_debris_interact")
-    panel:Help(L("Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."))
+    panel:Help(L("Bullets, melee, blasts and falls move or break your pieces. Glass never pushes back."))
+    panel:Help(L("Collide with (map and other pieces always enabled)"))
+    collision(panel,N("Objects (props and physics objects)"),1)
+    collision(panel,N("Ragdolls"),2)
+    collision(panel,N("Living players"),4)
+    collision(panel,N("Living NPCs and NextBots"),8)
+    panel:Help(L("Default: objects and ragdolls; living entities pass through your pieces."))
     local reset=panel:Button(L("Reset to Defaults"))
     reset.DoClick=function()
         for _,s in ipairs(C.Debris) do RunConsoleCommand(s[1],s[2]) end

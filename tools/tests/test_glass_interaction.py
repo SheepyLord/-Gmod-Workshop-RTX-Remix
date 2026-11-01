@@ -17,6 +17,9 @@ class GlassInteractionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('interaction ' + case + ' OK', result.stdout)
 
+    def test_collision_flags_default_living_exclusion_and_independent_categories(self):
+        self.run_case('scene_flags')
+
     def test_living_hulls_ragdoll_bones_prop_shapes_and_physics_replacement(self):
         self.run_case('scene_kinds')
 
@@ -67,6 +70,9 @@ class GlassInteractionTests(unittest.TestCase):
 
     def test_damage_bursts_adopt_children_at_one_replacement_per_frame(self):
         self.run_manager('interaction_manager')
+
+    def test_archived_collision_migration_preserves_mask_and_master_once(self):
+        self.run_manager('collision_settings')
 
     def test_oldest_first_budget_minimum_size_refusal_and_one_piece_budget(self):
         self.run_manager('interaction_budget')

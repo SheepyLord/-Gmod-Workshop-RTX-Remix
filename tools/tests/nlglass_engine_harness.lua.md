@@ -69,3 +69,5 @@ Output: assertion diagnostics and `engine <scenario> OK`. Side effects exist onl
 (network outboxes, collision meshes, sounds, UI controls, debris calls). No filesystem writes,
 game launch, install mutation or network connection. Exit 0 passes; Lua assertions exit nonzero.
 The bridge test proves input routing, not the engine's actual Hammer output semantics.
+
+R8-G settings panels have 16 controls, including four category bits and a synchronized mask. Reset stays local for non-admins.

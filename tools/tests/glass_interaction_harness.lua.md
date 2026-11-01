@@ -27,3 +27,5 @@ shape caps, removals, final trace/PVS forwarding, unchanged weapon callbacks, am
 buckets, expired/cleaned interest and receive-only clients. No game, native module, installed assets,
 network or files are changed. Exit 0 prints an assertion count; assertion/Lua errors exit nonzero.
 The replay emits only text to stdout and takes no installed assets.
+
+R8-G scene_flags checks all 16 masks, default living exclusion, live/dead classification, NextBots and client ragdolls; capture rows carry their native category.

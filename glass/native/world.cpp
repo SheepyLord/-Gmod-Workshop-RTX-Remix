@@ -154,6 +154,7 @@ struct World::Impl {
   std::array<std::pair<unsigned,std::uint32_t>,kMaxDamageEvents> damage_slots{};
   std::atomic<unsigned> damage_count{0},damage_dropped{0};
   unsigned scene_moves=0,scene_cooks=0,ray_hits=0,splits=0;
+  unsigned collision_flags=Objects|Ragdolls;
   unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
   bool interaction=false;
   std::vector<unsigned> free;
@@ -447,12 +448,17 @@ void World::set_interaction(bool enabled) {
   w.physics->SetContactListener(enabled?&w.contacts:nullptr);
   if(!enabled) { w.clear_scene();(void)take_damage(); }
 }
+void World::set_collision_flags(unsigned flags) {
+  need(flags<=15,"invalid collision flags");auto& w=idle();
+  if(w.collision_flags!=flags) { w.collision_flags=flags;w.clear_scene(); }
+}
 unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_dt) {
   auto& w=idle();need(w.ready,"world is not ready");
   need(bodies.size()<=kMaxSceneBodies && std::isfinite(sample_dt) && sample_dt>=.001 && sample_dt<=.25,"invalid scene count/timestep");
   unsigned cooks=0;
   for(std::size_t i=0;i<bodies.size();++i) {
     const auto& s=bodies[i];
+    need(s.kind==Objects || s.kind==Ragdolls || s.kind==Players || s.kind==NPCs,"invalid scene kind");
     need(s.key && s.position.valid() && s.angles.valid(36000) && s.velocity.valid(100000) && s.half.valid(1024) &&
       s.half.x>=.05f && s.half.y>=.05f && s.half.z>=.05f && std::isfinite(s.mass) && s.mass>=.01f && s.mass<=50000,"invalid scene body");
     for(std::size_t j=0;j<i;++j)need(bodies[j].key!=s.key,"duplicate scene key");
@@ -470,9 +476,10 @@ unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_d
   Impl::SweepBudget sweep_budget;
   for(auto& m:w.mirrors)if(m.key) {
     m.seen=false;
-    if(std::none_of(bodies.begin(),bodies.end(),[&](const SceneBody& s) { return s.key==m.key; })) { w.destroy(m.body);m=Impl::Mirror{}; }
+    if(std::none_of(bodies.begin(),bodies.end(),[&](const SceneBody& s) { return s.key==m.key && (s.kind&w.collision_flags); })) { w.destroy(m.body);m=Impl::Mirror{}; }
   }
   for(const auto& s:bodies) {
+    if(!(s.kind&w.collision_flags))continue;
     auto it=std::find_if(w.mirrors.begin(),w.mirrors.end(),[&](const auto& m) { return m.key==s.key; });
     const bool fresh=it==w.mirrors.end();
     if(fresh)it=std::find_if(w.mirrors.begin(),w.mirrors.end(),[](const auto& m) { return !m.key; });
@@ -698,7 +705,7 @@ Stats World::stats() const {
   for(const auto& m:w.mirrors)if(m.key) { ++s.scene_bodies;if(w.physics->GetBodyInterfaceNoLock().IsActive(m.body))--s.awake; }
   s.scene_moves=w.scene_moves;s.scene_cooks=w.scene_cooks;s.damage_dropped=w.damage_dropped.load();
   s.scene_sweeps=w.scene_sweeps;s.scene_sweep_hits=w.scene_sweep_hits;s.scene_sweep_limited=w.scene_sweep_limited;
-  s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;
+  s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;s.collision_flags=w.collision_flags;
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
   s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;

@@ -299,6 +299,19 @@ if arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffp
     bench("moving_culled",240)
     D.Shutdown();return
 end
+if arg[3]=="collision_settings" then
+    local D=setup("interaction")
+    check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==3,"objects and ragdolls default on; living off")
+    set("interact",0);set("collide",0);set("collide_with",9);set("collision_version",0)
+    include("nlglass/debris_settings.lua")
+    check(GetConVar("rtx_glass_debris_collide"):GetInt()==1 and GetConVar("rtx_glass_debris_collision_version"):GetInt()==1,"old piece switch retires once")
+    check(GetConVar("rtx_glass_debris_interact"):GetInt()==0 and GetConVar("rtx_glass_debris_collide_with"):GetInt()==9,"migration preserves explicit new mask and master off")
+    set("collide_with",12);include("nlglass/debris_settings.lua")
+    check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==12,"reload preserves later choices")
+    D.Spawn(frame,fragments(1));for _=1,5 do tick()end
+    check(api.collide==true,"map and piece collisions always enabled")
+    D.Shutdown();print("interaction manager collision_settings OK");return
+end
 if arg[3] and arg[3]:match("^interaction_") then
     local function big(n)
         local t=fragments(n)

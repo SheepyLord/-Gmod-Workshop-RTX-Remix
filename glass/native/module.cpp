@@ -133,6 +133,9 @@ void push_vector(ILuaBase* l,V3 v) {
 LUA_FUNCTION_STATIC(SetInteraction) { return guarded(LUA,[&] {
   need(LUA->IsType(1,Type::Bool),"expected interaction boolean");active(LUA).set_interaction(LUA->GetBool(1));return success(LUA);
 }); }
+LUA_FUNCTION_STATIC(SetCollisionFlags) { return guarded(LUA,[&] {
+  active(LUA).set_collision_flags(integer(LUA,1,0,15));return success(LUA);
+}); }
 LUA_FUNCTION_STATIC(SyncBodies) { return guarded(LUA,[&] {
   auto& w=active(LUA);need(LUA->IsType(1,Type::Table),"expected scene snapshot");
   const int count=LUA->ObjLen(1);need(count>=0 && count<=static_cast<int>(kMaxSceneBodies),"scene body limit");
@@ -154,7 +157,9 @@ LUA_FUNCTION_STATIC(SyncBodies) { return guarded(LUA,[&] {
         s.convexes.push_back(std::move(h));
       }
     }
-    LUA->Pop();get(LUA,row,7);s.velocity=vector(LUA,-1,100000);LUA->Pop(2);bodies.push_back(std::move(s));
+    LUA->Pop();get(LUA,row,7);s.velocity=vector(LUA,-1,100000);LUA->Pop();
+    get(LUA,row,8);if(!LUA->IsType(-1,Type::Nil))s.kind=integer(LUA,-1,1,8);
+    LUA->Pop(2);bodies.push_back(std::move(s));
   }
   LUA->PushNumber(w.sync_bodies(bodies,dt));return 1;
 }); }
@@ -234,6 +239,7 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("scene_bodies",s.scene_bodies);add("scene_moves",s.scene_moves);add("scene_cooks",s.scene_cooks);
   add("scene_sweeps",s.scene_sweeps);add("scene_sweep_hits",s.scene_sweep_hits);add("scene_sweep_limited",s.scene_sweep_limited);
   add("damage_dropped",s.damage_dropped);add("ray_hits",s.ray_hits);add("splits",s.splits);
+  add("collision_flags",s.collision_flags);
   LUA->PushBool(s.interaction);set(LUA,1,"interaction");
   LUA->PushBool(s.ready);set(LUA,1,"ready");LUA->PushBool(s.busy);set(LUA,1,"busy");return success(LUA);
 }); }
@@ -252,7 +258,7 @@ GMOD_MODULE_OPEN() {
       {"Init",Init},{"LoadMap",LoadMap},{"AddModel",AddModel},{"AddProp",AddProp},{"FinishWorld",FinishWorld},
       {"BeginLoadMap",BeginLoadMap},{"PollLoadMap",PollLoadMap},{"BeginFinishWorld",BeginFinishWorld},{"PollFinishWorld",PollFinishWorld},
       {"BeginStep",BeginStep},{"PollStep",PollStep},
-      {"SetInteraction",SetInteraction},{"SyncBodies",SyncBodies},{"ReadRegions",ReadRegions},
+      {"SetInteraction",SetInteraction},{"SetCollisionFlags",SetCollisionFlags},{"SyncBodies",SyncBodies},{"ReadRegions",ReadRegions},
       {"ReadDamage",ReadDamage},{"Ray",Ray},{"Split",Split},{"CanSplit",CanSplit},
       {"Spawn",Spawn},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
       {"Step",Step},{"ReadPoses",ReadPoses},{"IsSleeping",IsSleeping},{"Stats",ReadStats},{"Clear",Clear},{"Shutdown",Shutdown}};

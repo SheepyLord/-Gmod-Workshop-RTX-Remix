@@ -1,5 +1,7 @@
 # Roadmap
 
+R8-G is in progress on `r8-glass`: falling-load mitigation, client Source collision flags and persistent follow-up bullet/melee hits; offline regression/measurement and Claude's PoC QA are required ([brief](handover/R8-G-glass.md)).
+
 R7 (the user's report of 2026-11-01) is **done** (2026-11-01, loader 0.12.0):
 
 - **Mask.** Columbina's mask renders as in MMD under RTX: runtime patch 0017 adds a texture category

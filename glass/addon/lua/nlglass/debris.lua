@@ -9,11 +9,11 @@ local individual = include("nlglass/debris_draw.lua")
 local view = include("nlglass/debris_view.lua")
 local scene = include("nlglass/debris_scene.lua")
 local expiry = include("nlglass/debris_expiry.lua")
+local collisionFlags = include("nlglass/debris_settings.lua")
 local D = {}
 NLGlassDebris = D
 local lifetime = CreateClientConVar("rtx_glass_debris_lifetime", "120", true, false, "Broken glass lifetime; 0 keeps it until cleanup", 0, 86400)
 local budget = CreateClientConVar("rtx_glass_debris_budget", "2000", true, false, "Maximum broken glass pieces", 0, 8192)
-local collide = CreateClientConVar("rtx_glass_debris_collide", "1", true, false, "Broken glass pieces collide with each other", 0, 1)
 local interact = CreateClientConVar("rtx_glass_debris_interact", "1", true, false, "Source bodies and follow-up damage affect your broken glass", 0, 1)
 local interactionAvailable, knownInteraction = false, false
 local rays, damageQueue, damageByID = {}, {}, {}
@@ -26,7 +26,7 @@ local first, last, serial, count = 1, 0, 0, 0
 local backend, nativeCapacity, fallbackUnavailable = "none", 0, false
 local nativeStats = {}
 local metrics = { live = 0, moving = 0, sleeping = 0, merged = 0, batches = 0, rebuilds = 0, pending = 0 }
-local knownCollide = collide:GetBool()
+local knownFlags = -1
 local stopped = false
 local function window() return { values = {}, cursor = 1, count = 0, sum = 0, peak = 0, last = 0 } end
 local thinkTime, drawTime, drawCalls = window(), window(), window()
@@ -234,6 +234,7 @@ function D.Stats()
     metrics.draw_calls, metrics.draw_calls_avg = drawCalls.last, drawCalls.sum / math.max(1, drawCalls.count)
     metrics.think_samples, metrics.draw_samples = thinkTime.count, drawTime.count
     metrics.worker_busy = stepBusy
+    metrics.collision_flags = knownFlags
     metrics.interaction, metrics.interaction_available = knownInteraction, interactionAvailable
     metrics.scene_bodies, metrics.scene_candidates, metrics.scene_queries = scene.bodies, scene.candidates, scene.queries
     metrics.capture_ms, metrics.scene_cooks = scene.capture_ms, scene.cooks
@@ -329,8 +330,9 @@ local function nativeTick()
     for id in pairs(removals) do world.api.Remove(id);poses[id], removals[id] = nil, nil end
     local cv = GetConVar("sv_gravity")
     local ok, reason = world.api.SetGravity(cv and cv:GetFloat() or 600)
-    if ok and knownCollide ~= collide:GetBool() then
-        knownCollide = collide:GetBool();ok, reason = world.api.SetCollide(knownCollide)
+    if ok and knownFlags ~= collisionFlags:GetInt() then
+        knownFlags = clamp(collisionFlags:GetInt(), 0, 15)
+        if world.api.SetCollisionFlags then ok, reason = world.api.SetCollisionFlags(knownFlags) end
     end
     if not ok then failed(reason);return end
     if interactionAvailable and knownInteraction ~= interact:GetBool() then
@@ -383,7 +385,7 @@ local function nativeTick()
         fractures()
         if backend ~= "jolt" then return end
         if count > 0 then
-            sceneMoved, reason = scene.Capture(world.api, stepElapsed)
+            sceneMoved, reason = scene.Capture(world.api, stepElapsed, knownFlags)
             if sceneMoved == nil then failed(reason);return end
         elseif scene.bodies > 0 then world.api.SyncBodies({}, .016);scene.Reset() end
     end
@@ -428,7 +430,7 @@ local function think()
     world.Tick()
     if world.state == "ready" and backend ~= "jolt" then
         backend = "jolt"
-        world.api.SetCollide(collide:GetBool())
+        world.api.SetCollide(true)
         interactionAvailable = type(world.api.SetInteraction) == "function" and type(world.api.SyncBodies) == "function" and
             type(world.api.ReadRegions) == "function" and type(world.api.ReadDamage) == "function" and
             type(world.api.Ray) == "function" and type(world.api.Split) == "function" and type(world.api.CanSplit) == "function"
