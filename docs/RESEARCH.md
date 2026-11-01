@@ -61,6 +61,64 @@
   0.6187/0.0805/0.5113 ms at 502 cells. Evidence stays in this worktree's ignored
   `out/g1-lua-fix2/`. No game or install was changed.
 
+## G1-B second pass: final offline receipt (2026-11-01)
+
+- Final matched QPC samples (`out/g1-native-fix2/render-before-final.log` / `render-after-final.log`):
+  moving Think+draw means 0.1623 -> 0.1650 ms with all 2,000 pieces visible; mixed visibility
+  0.1349 -> 0.1144 ms (2,000 -> 500 draws); settled 0.0155 -> 0.0119 ms (15 -> four draws).
+  Settling allocates 41,795 -> 14,220 KiB with GC stopped, including 288,000 -> 47,952 Vector
+  and 144,000 -> zero Angle constructions. The mocks omit real engine-call and GPU cost.
+- Source anchors: `debris_mesh.lua:59` mutates shared transformed vertices; `debris_batches.lua:5`
+  bounds upload/preparation work, `:102` stages rebuild/retirement and `:133` culls settled areas;
+  `debris_draw.lua:19` groups individual draws; `debris_view.lua:25` tests spheres and projected
+  size using camera depth; `debris.lua:196` publishes the manager's rolling metrics. All are
+  under `glass/addon/lua/nlglass`. A slow-vector double yields before the count cap, and a 2.5 ms
+  upload injection remains in the peak statistic after quiet frames.
+- Release passes 25 CTests/448 Python tests (two existing skips) after the already documented
+  local guard-output shortening; 19 native glass cases pass. The unchanged native test drops
+  4,000 colliding pieces to sleep in 11.0167 simulated seconds with zero contact overflows;
+  settled core step+poses averages 0.00165 ms. It runs alongside the full test suite, not a game.
+  Separate final Lua manager/probe checks pass 14,576 assertions. No game frame target is claimed.
+
+## G1-B second pass: moving draw work and attribution (2026-11-01)
+
+- `debris_draw.lua` maintains individual material groups; a fully visible 2,000-piece mock frame
+  binds once instead of 2,000 times. Across 240 frames, setters fall from 1,440,000 to 962,000
+  (two pose setters per piece/update plus one initial scale setter). Repeated draw passes with
+  unchanged poses perform no matrix writes. No per-piece Vector/Angle/Matrix is constructed by
+  either warmed draw path; the change avoids engine calls and culls work rather than claiming
+  the original draw path allocated those userdata every frame.
+- `debris_view.lua` uses the render view, numeric Source basis and conservative sphere bounds;
+  the controlled mixed scene retains 500 of 2,000 pieces, rejecting rear, beyond-8192-unit and
+  distant subpixel pieces. It submits 500 rather than 2,000 draws. Engine doubles make material
+  and matrix calls effectively free: fully-visible Think+draw **increases** from 0.132 to 0.164 ms
+  with culling/instrumentation, while mixed visibility falls from 0.129 to 0.115 ms. This does not
+  measure the reduced real-engine binding/GPU cost and does not prove the <20 ms game target.
+- `debris.lua` records 120-frame Think/draw means, last and peak samples; draw passes sharing
+  FrameNumber accumulate before publication. Injecting 1.25 ms Think work and 0.4 ms/mesh for two
+  two-mesh passes produces exactly 1.25 ms Think, 1.6 ms draw and four calls/frame. Rebuild and
+  upload peaks survive quiet frames. These fields separate hook work from asynchronous Jolt;
+  Spawn/fracture outside Think and GPU time are explicitly excluded.
+
+## G1-B second pass: pile allocation and draw findings (2026-11-01)
+
+- Read-only game receipts: `out/qa-poc/g1/03-qa/console.log:657,660,662` in the main checkout
+  report 678 sleeping pieces/40 batches at 8.71 ms mean, 2,000 live/1,453 moving at 33.83 ms
+  (Jolt 1.5816 ms), then 2,000 sleeping/388 batches at 11.91 ms mean, p99 28.95 ms. These
+  frame spikes cannot be attributed precisely from those aggregate logs alone.
+- Before the second pass, `debris_batches.lua` grouped 256-unit XYZ cells by material **and
+  color**, uploaded at most 6,000 vertices, and `debris_mesh.lua:57` called `LocalToWorld`
+  twice per transformed vertex. A controlled 2,000-quad/50-location LuaJIT sample allocates
+  41,624 KiB while settling, including 288,000 Vector and 144,000 Angle constructions.
+  This is a concrete source of later GC pressure; engine/Remix spikes still need game attribution.
+- Consolidating into offset 1024-unit cells by material, with vertex colors preserved and one
+  shared 24,000-record upload pool, reduces the same sample from 15 to four settled draws and
+  to 14,209 KiB allocated, 47,952 Vector constructions and **zero** Angle constructions while
+  settling. A warmed rebuild allocates no vertex vectors. The color/grid-zero regression puts
+  all 2,000 pieces into four draws in one area. Source-basis position/normal comparisons pass.
+  GPU releases now spread across frames; transforms have count and measured time caps. These
+  measurements use engine/physics doubles, QPC and stopped GC; actual uploads/GPU costs are absent.
+
 ## G1-A client/update fix pass: final offline evidence (2026-11-01)
 
 - Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),

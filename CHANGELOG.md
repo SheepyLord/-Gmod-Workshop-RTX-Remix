@@ -21,6 +21,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
   repeatedly hit map windows. Small impact rings and large far pieces remain; tempered grids
   evenly cover the pane without exceeding their budget or dropping glass area.
 
+- G1-B debris draws bind material once per group, reuse matrices after pose/scale changes, and
+  cull outside the current view, beyond 8192 units or below a distant subpixel threshold.
+  `NLGlassDebris.Stats()` reports averaged Think/draw milliseconds, peaks, draw calls per frame,
+  culled pieces and pile upload timings for game QA.
+
+- G1-B second pass consolidates settled glass into larger material-based areas and 24,000-vertex
+  meshes. Bounded reusable upload scratch replaces temporary transformed vertices; timed rebuilds
+  and staged GPU-resource retirement reduce allocation/rebuild bursts
+  ([ADR 0076](docs/decisions/0076-glass-pile-consolidation.md)).
+
 - G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
   cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
   state. Player sweeps include scripted base velocity, and blast impulses follow deferred native
