@@ -81,6 +81,8 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 ## Template
 
+- [0074: Incoming body contact and quiet map outputs](0074-glass-contact-and-quiet-map-outputs.md)
+
 ```markdown
 # NNNN: Title
 

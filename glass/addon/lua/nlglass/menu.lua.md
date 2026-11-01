@@ -1,5 +1,7 @@
 # menu.lua
 
+The debris budget slider caps at 8,192, matching the debris manager's convar/native limit.
+
 Translated glass settings page and glass_open_panel command.
 
 Client-only bootstrap include after I18n. Retains Utilities > Glass Rewrite Remixed / GlassSettings, so the companion relocates it to RTX Remix > Water and glass, and registers a standalone scrollable window. Reads replicated convars, debounces admin setting requests and binds G1-B client debris settings. Reset applies player defaults and asks the server to reset gameplay defaults for admins. No native/private debris access or direct disk writes.

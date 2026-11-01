@@ -1,5 +1,9 @@
 # test_nlglass.py
 
+Includes G1-A fix-pass regressions for oriented body contact, pre-movement player collision,
+independent client convars, engine-effect-free map output routing, weak native last impacts,
+blast ordering and the matching debris-budget bound.
+
 G1-A unit/integration acceptance under LuaJIT, invoked by `tools/test.ps1`:
 
 ```powershell

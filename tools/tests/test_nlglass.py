@@ -116,3 +116,24 @@ class EngineTests(unittest.TestCase):
 
     def test_failed_collision_breaks_with_pieces_and_no_placeholder_blocker(self):
         self.run_case('collision_failure')
+
+    def test_body_contact_requires_approach_outline_and_plane_proximity(self):
+        self.run_case('body_contact')
+
+    def test_pre_movement_player_sweep_uses_incoming_velocity(self):
+        self.run_case('player_move')
+
+    def test_replicated_settings_exist_in_an_independent_client(self):
+        self.run_case('client_settings')
+
+    def test_native_map_output_bridge_has_no_engine_shatter(self):
+        self.run_case('map_outputs')
+
+    def test_native_records_weak_last_impact(self):
+        self.run_case('last_impact')
+
+    def test_blast_impulse_follows_its_new_debris(self):
+        self.run_case('blast_order')
+
+    def test_budget_slider_matches_convar_bound(self):
+        self.run_case('budget')

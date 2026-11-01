@@ -62,14 +62,21 @@ function D.FromCollision(r,data)
     if relative:LengthSqr()<1 and data.Speed and data.Speed>0 then relative=-(data.HitNormal or Vector(0,0,1))*data.Speed end
     return D.Normalize(r,data.HitPos,relative,0.5*D.Mass(hitter,phys)*relative:LengthSqr(),"blunt",hitter,hitter)
 end
-function D.FromBody(r,body)
+function D.FromBody(r,body,velocity,point)
     if not valid(body) or not (body:IsPlayer() or body:IsNPC() or body:IsVehicle()) then return end
-    local velocity=body:GetVelocity()
+    velocity=velocity or body:GetVelocity()
     if velocity:LengthSqr()<1 then return end
     local normal=G.WorldVector(r.frame,{0,0,1})
-    if math.abs(velocity:Dot(normal))<C.Number("rtx_glass_player_break_speed",180) then return end
-    local point=body:WorldSpaceCenter()
+    local speed=velocity:Dot(normal)
+    if math.abs(speed)<C.Number("rtx_glass_player_break_speed",180) then return end
+    point=point or body:WorldSpaceCenter()
     local p=G.LocalPoint(r.frame,point)
+    if p.z*speed>0 then return end -- departing from the body's side of the pane
+    local mins,maxs=body:GetCollisionBounds()
+    local half=(maxs-mins)*0.5
+    local n=WorldToLocal(normal,angle_zero,Vector(),body:GetAngles())
+    local width=math.abs(n.x)*half.x+math.abs(n.y)*half.y+math.abs(n.z)*half.z
+    if math.abs(p.z)>r.state.def.thickness*0.5+width+1/32 then return end
     -- Touch uses an expanded trigger bound: a player wholly in a hole must not hit ghost glass.
     local inGlass=false
     for _,poly in ipairs(F.Remaining(r.state)) do

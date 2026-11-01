@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A fix pass: require actual approaching body contact; use incoming player movement to catch
+  a stopped-by-collision runner; create replicated settings in both realms; dispatch captured map
+  OnBreak outputs without engine shatter; record weak native hits, push blasts after their new
+  debris and match the settings budget slider to 8,192. Offline regressions cover each path.
+
 - The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
   references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
   the new MIT glass part is assembled separately by G1 integration.

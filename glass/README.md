@@ -12,7 +12,7 @@ The add-on draws glass with `models/props_combine/health_charger_glass`, the mat
 | `autorun/nlglass.lua` | Shared bootstrap, downloads of client Lua, six size/kind spawn presets |
 | `entities/nlglass_pane/shared.lua`, `init.lua`, `cl_init.lua` | Pane entity, frozen collision, damage callbacks, property-only duplication/save restore |
 | `nlglass/fracture.lua` | Plain Lua deterministic convex subdivision, support connectivity, cracks and piece velocities |
-| `nlglass/config.lua` | Shared setting names, defaults and ranges; server convars |
+| `nlglass/config.lua` | Shared setting names, defaults and ranges; replicated convars in both realms |
 | `nlglass/geometry.lua` | Frames, convex outlines from brush surfaces/physics, validation, collision points, render triangles |
 | `nlglass/damage.lua` | Single impact representation for damage, collisions, bodies and fallback breaks |
 | `nlglass/protocol.lua` | Bounded snapshot and compact impact encoding |
@@ -31,7 +31,10 @@ Every script has a sidecar describing inputs, outputs and effects. `addon/LICENS
 See [ADR 0071](../docs/decisions/0071-glass-impact-model.md). Energies are gameplay units:
 `0.5 * mass_kg * relative_speed_units_per_second²` for physics, players, NPCs and vehicles.
 `CollisionData.HitObject` supplies the real PhysObj mass. Player/NPC fallback mass is 85 kg;
-body contacts require at least 180 units/s towards the pane normal. Contacts are event-driven and
+body contacts require at least 180 units/s toward the plane from the body's side, a centre within
+remaining glass and actual plane proximity (half thickness plus oriented body half width).
+Players also use a pre-movement hull sweep, retaining incoming velocity before collision stops it.
+Contacts are event-driven and
 deferred out of physics callbacks; there is no server Think/Tick scan of idle panes.
 
 A 96×64, thickness-1 annealed pane at strength 1 has a 450,000 breaking threshold and a 36,000
@@ -85,16 +88,19 @@ changing health, solid state, render material or engine outputs. Irregular non-c
 windows and moving brush behaviour need game QA; unsupported geometry remains the engine's pane.
 
 For a replaced `func_breakable_surf`, the original brush remains hidden with collision disabled.
-Its targetname and Hammer output bindings remain on that entity. The first actual breakout fires
-its `Shatter` input at normalized centre with a radius covering the original window, passing through
-attacker/caller. The bridge bypasses our own input interception once; further script `Break`/`Shatter`
+Its targetname and Hammer output bindings remain on that entity. The first actual breakout mirrors
+captured raw `OnBreak` map keys to an unused native `OnUser1`–`OnUser4` channel and fires `FireUser`
+once on the original, keeping Source's target/parameter/delay/count and activator/caller handling.
+It never sends engine `Shatter`/`Break` to that brush (those play sound and emit engine shards).
+Further script `Break`/`Shatter`
 inputs on the original route to the replacement. Removing an unbroken replacement restores the
 original's visibility/collision. Restored panes retain their original brush link; duplicates become
 independent panes and cannot steal that link.
 
-**This is an engine-input bridge, not a guarantee of every map's outputs.** The actual engine's
-`OnBreak`/`OnShatter`/completion outputs, output ordering and hidden-brush behaviour must be checked
-by Claude in game. The offline harness proves routing and once-only dispatch. Per-engine-cell
+**The native output bridge needs in-game validation.** Capture requires the original map key
+callbacks (Lua hot reload cannot recover them); four occupied user channels disable the bridge
+with a diagnostic. Runtime output changes outside those callbacks cannot be mirrored.
+The offline harness proves raw routing and once-only dispatch. Per-engine-cell
 partial-shatter logic, old brush health/damage filters and output history do not track the new
 annealed hole state. If the original was removed by map logic, its output bindings cannot be fired.
 Save/dupe keeps outline, thickness, kind and strength; broken state/output history need not persist.

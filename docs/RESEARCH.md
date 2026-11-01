@@ -1,5 +1,24 @@
 # Research notes
 
+## G1-A contact and hidden-surface output investigation (2026-11-01)
+
+- In the read-only `out/qa-poc/g1/02-qa/console.log`, the 40-pane falling scene reports mean
+  17.66 ms, p99 292.93 ms; empty 8.33 ms, settled 8.88 ms, all on the 64-piece VPhysics fallback.
+  The QA player step supplies 500 units/s toward an upright 64×96 pane but leaves it intact.
+  `tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua` sets that velocity before the mover stops it;
+  `glass/addon/lua/entities/nlglass_pane/init.lua` previously relied only on Touch/GetVelocity.
+  This explains a missed incoming velocity path; actual callback timing still requires game QA.
+- [Facepunch SetupMove](https://wiki.facepunch.com/gmod/GM:SetupMove) runs before engine movement.
+  [EntityKeyValue](https://wiki.facepunch.com/gmod/GM:EntityKeyValue) captures repeated output keys;
+  [GetKeyValues](https://wiki.facepunch.com/gmod/Entity:GetKeyValues) does not expose all keys;
+  [TriggerOutput](https://wiki.facepunch.com/gmod/ENTITY:TriggerOutput) is a scripted-base helper,
+  not direct access to the native brush's output objects.
+- [Valve func_breakablesurf.cpp](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/server/func_breakablesurf.cpp)
+  lines 562–579 play PhysBreakSound and fire inherited OnBreak. InputShatter (668–715) calls
+  Die and ShatterPane. NoDraw cannot suppress these events. The surface datadesc (143–172) adds
+  no OnShatter output. The replacement now mirrors captured OnBreak keys to an unused native user
+  channel, preserving raw parameter/delay/count strings instead of requesting engine fracture.
+
 ## G1-A glass: offline executable evidence (2026-10-31)
 
 - `glass/addon/lua/nlglass/damage.lua:58` reads `CollisionData.HitObject` as the PhysObj itself,

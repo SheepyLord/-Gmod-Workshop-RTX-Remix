@@ -30,7 +30,9 @@ local function realm(server)
     e.SERVER,e.CLIENT=server,not server
     e.Vector,e.Color,e.Angle=Vector,Color,function() return zero end
     e.angle_zero,e.color_white=zero,Color(255,255,255)
-    e.LocalToWorld,e.WorldToLocal=LocalToWorld,WorldToLocal
+    e.transforms,e.classLookups,e.matrices=0,0,0
+    e.LocalToWorld=function(...) e.transforms=e.transforms+1 return LocalToWorld(...) end
+    e.WorldToLocal=WorldToLocal
     e.IsValid=valid e.math=setmetatable({Clamp=clamp},{__index=math})
     e.FCVAR_ARCHIVE,e.FCVAR_REPLICATED,e.FCVAR_NOTIFY=1,2,4
     e.MOVETYPE_NONE,e.SOLID_VPHYSICS,e.TRANSMIT_ALWAYS,e.RENDERGROUP_TRANSLUCENT=0,6,2,1
@@ -38,7 +40,8 @@ local function realm(server)
     e.TOP,e.FILL=1,5
     e.tick,e.time=100,10 e.queue={} e.out={} e.receivers={} e.cvars={}
     function e.CurTime() return e.time end
-    e.engine={TickCount=function() return e.tick end}
+    e.engine={TickCount=function() return e.tick end,TickInterval=function() return 1/66 end}
+    e.MASK_PLAYERSOLID=123
     e.file={Exists=function(path) local f=io.open(root.."/"..path,"r") if f then f:close() return true end return false end}
     e.file.Find=function(pattern)
         if pattern=="nlglass/debris*.lua" then return {"debris.lua","debris_render.lua"} end
@@ -60,7 +63,12 @@ local function realm(server)
         function c:GetInt() return math.floor(self:GetFloat()) end
         e.cvars[name]=c return c
     end
-    e.CreateConVar,e.CreateClientConVar=convar,convar
+    e.CreateConVar=function(name,value,flags,help,lo,hi)
+        local old=e.cvars[name]
+        if old then return old end
+        local c=convar(name,value) c.flags,c.lo,c.hi=flags,lo,hi return c
+    end
+    e.CreateClientConVar=convar
     function e.GetConVar(name) return e.cvars[name] end
     e.commands={}
     function e.RunConsoleCommand(name,value) e.commands[#e.commands+1]={name,value} convar(name,value) end
@@ -80,7 +88,8 @@ local function realm(server)
     function e.run(name,...)
         for _,f in pairs(e.hooks[name] or {}) do local r=f(...) if r~=nil then return r end end
     end
-    e.util={AddNetworkString=function() end,Effect=function() e.effects=(e.effects or 0)+1 end}
+    e.util={AddNetworkString=function() end,Effect=function() e.effects=(e.effects or 0)+1 end,
+        TraceHull=function(t) e.lastTrace=t return e.traceResult or {Hit=false} end}
     e.gameevent={Listen=function(name) check(name=="break_breakable","engine break event subscribed") end}
     e.Entity=function(i) return entities[i] end e.Player=function(id) return entities[id] end
     e.LocalPlayer=function() return e.player end
@@ -141,7 +150,10 @@ local function realm(server)
             function c:ChooseOptionID(index) self.selected=index end
             self.controls[#self.controls+1]=c return c
         end
-        p.NumSlider,p.CheckBox,p.ComboBox,p.Button=control,control,control,control
+        function p:NumSlider(label,cvar,lo,hi,decimals)
+            local c=control(self,label,cvar) c.lo,c.hi,c.decimals=lo,hi,decimals return c
+        end
+        p.CheckBox,p.ComboBox,p.Button=control,control,control
         return p
     end
     e.panel=panel
@@ -153,12 +165,14 @@ local function realm(server)
         return {BuildFromTriangles=function(self,t) self.triangles=t e.meshBuilds=e.meshBuilds+1 end,
             Draw=function() e.meshDraws=e.meshDraws+1 end,Destroy=function() e.meshDestroys=e.meshDestroys+1 end}
     end
-    e.Matrix=function() return {SetTranslation=function(_,p) e.drawOrigin=p end,SetAngles=function() end} end
-    e.cam={PushModelMatrix=function() end,PopModelMatrix=function() end}
+    e.Matrix=function() e.matrices=e.matrices+1 return {SetTranslation=function(self,p) self.origin=p end,SetAngles=function() end} end
+    e.cam={PushModelMatrix=function(m) e.drawOrigin=m.origin end,PopModelMatrix=function() end}
+    e.EyePos=function() return e.eye or Vector(0,0,150) end
+    e.EyeVector=function() return e.look or Vector(0,0,-1) end
     e.render={SetMaterial=function() end,SetBlend=function() end,SetColorModulation=function() end}
-    e.debris={} e.impulses={} e.clears=0
-    e.NLGlassDebris=setmetatable({Spawn=function(frame,pieces) e.debris[#e.debris+1]={frame=frame,pieces=pieces} end,
-        Impulse=function(o,r,s) e.impulses[#e.impulses+1]={o,r,s} end,Clear=function() e.clears=e.clears+1 end,
+    e.debris={} e.impulses={} e.events={} e.clears=0
+    e.NLGlassDebris=setmetatable({Spawn=function(frame,pieces) e.debris[#e.debris+1]={frame=frame,pieces=pieces} e.events[#e.events+1]="spawn" end,
+        Impulse=function(o,r,s) e.impulses[#e.impulses+1]={o,r,s} e.events[#e.events+1]="impulse" end,Clear=function() e.clears=e.clears+1 end,
         Count=function() return #e.debris end,Backend=function() return "none" end,
         Prepare=function() e.prepares=(e.prepares or 0)+1 end},
         {__index=function(_,key) error("private debris API accessed: "..key) end})
@@ -178,12 +192,13 @@ local function newEntity(class,options)
     end})
     entities[ent.id]=ent return ent
 end
-function E:GetClass() return self.class end function E:EntIndex() return self.id end
+function E:GetClass() sv.classLookups=sv.classLookups+1 return self.class end function E:EntIndex() return self.id end
 function E:GetPhysicsObject() return self.phys end
 function E:GetPos() return self.pos end function E:SetPos(v) self.pos=v end
 function E:GetAngles() return self.angles end function E:SetAngles(v) self.angles=v end
 function E:GetColor() return self.color end function E:SetColor(v) self.color=v end
 function E:GetVelocity() return self.velocity end function E:WorldSpaceCenter() return self.pos end
+function E:GetCollisionBounds() return Vector(-16,-16,-16),Vector(16,16,16) end
 function E:LocalToWorld(p) return LocalToWorld(p,zero,self.pos,self.angles) end
 function E:GetBrushSurfaces() return self.surfaces end
 function E:SetModel(m) self.model=m end function E:GetModel() return self.model end
@@ -193,6 +208,7 @@ function E:SetTrigger(v) self.trigger=v end function E:UseTriggerBounds(v) self.
 function E:EnableCustomCollisions(v) self.custom=v end function E:CollisionRulesChanged() self.collisionChanged=true end
 function E:PhysicsDestroy() self.phys=nil end
 function E:Fire(name,value,delay,activator,caller) self.inputs[#self.inputs+1]={name,value,delay,activator,caller} end
+function E:SetKeyValue(key,value) self.keys=self.keys or {} self.keys[#self.keys+1]={key,value} sv.run("EntityKeyValue",self,key,value) end
 function E:IsPlayer() return self.flags.player end function E:IsNPC() return self.flags.npc end function E:IsVehicle() return self.flags.vehicle end
 function E:IsAdmin() return self.admin end function E:CheckLimit() return self.limit~=false end
 function E:SetCreator(p) self.creator=p end function E:AddCount() end
@@ -281,7 +297,7 @@ elseif scenario=="collision" then
 elseif scenario=="bodies" then
     for _,flag in ipairs({"player","npc","vehicle"}) do
         local ent,r=pane()
-        local body=newEntity(flag,{velocity=Vector(0,0,200),flags={[flag]=true}})
+        local body=newEntity(flag,{pos=Vector(0,0,-16),velocity=Vector(0,0,200),flags={[flag]=true}})
         if flag=="vehicle" then body.phys=physics(900) end
         local impact=D.FromBody(r,body)
         near(impact.energy,0.5*(flag=="vehicle" and 900 or 85)*200^2,"body mass")
@@ -325,12 +341,10 @@ elseif scenario=="map" then
     check(r.frame.sourceMaterial=="glass/source_window","brush material recorded")
     local p=r.entity
     for i=1,3 do p:OnTakeDamage(damage(sv.DMG_BULLET,15)) end
-    check(#ent.inputs==1 and ent.inputs[1][1]=="Shatter","first hole fires original Shatter input")
-    local input=ent.inputs[1]
-    check(sv.run("AcceptInput",ent,input[1],input[4],input[5])==nil,"engine logic bridge bypasses proxy input")
+    check(#ent.inputs==0,"surface with no captured outputs does not invoke engine fracture")
     check(#F.Remaining(r.state)>0,"partial pane survives logic bridge")
     check(sv.run("AcceptInput",ent,"Break")==true,"map target Break routed to visible pane")
-    check(#ent.inputs==1,"map outputs bridge only once")
+    check(#ent.inputs==0,"no engine shatter on later breaks")
 elseif scenario=="collision_mesh" then
     local ent,r=pane()
     check(#ent.convexes==1 and ent.phys.motion==false,"intact frozen VPhysics")
@@ -374,7 +388,7 @@ elseif scenario=="blast_cleanup" then
     local ent,r=pane()
     local grenade=newEntity("grenade",{pos=Vector(1,2,3)})
     local d=damage(sv.DMG_BLAST,100,Vector(),grenade)
-    sv.run("EntityTakeDamage",grenade,d) ent:OnTakeDamage(d) S.Blast(d)
+    sv.run("EntityTakeDamage",grenade,d) ent:OnTakeDamage(d) S.Blast(d) sv.flush()
     network(cl,1)
     check(#cl.impulses==1 and #cl.debris>0,"one blast event per explosion/tick plus pieces")
     sv.tick=sv.tick+1 S.Blast(d)
@@ -475,6 +489,61 @@ elseif scenario=="tool_menu" then
     local changes=0
     for _,packet in ipairs(cl.out) do if packet.name=="nlglass_setting" then changes=changes+1 sv.deliver(packet,owner) end end
     check(changes==1 and panel.controls[3].value==1 and panel.controls[1].selected==1,"reset cancels queued edits and refreshes controls")
+elseif scenario=="body_contact" then
+    local ent,r=pane()
+    local body=newEntity("player",{pos=Vector(0,0,16),velocity=Vector(0,0,200),flags={player=true}})
+    check(not D.FromBody(r,body),"jumping away from a horizontal pane must not break it")
+    body.velocity=Vector(0,0,-200) check(D.FromBody(r,body),"approaching body within its half width contacts glass")
+    body.pos=Vector(0,0,17) check(not D.FromBody(r,body),"outside half thickness plus body half width")
+    r.frame.angles=angle(Vector(0,1,0),Vector(0,0,1),Vector(1,0,0))
+    body.pos=Vector(60,0,0) body.velocity=Vector(-500,0,0)
+    check(not D.FromBody(r,body),"rotated trigger AABB is not a plane contact")
+    body.pos=Vector(16,0,0) check(D.FromBody(r,body),"rotated actual contact")
+    body.pos=Vector(16,100,0) check(not D.FromBody(r,body),"outside pane outline")
+elseif scenario=="player_move" then
+    local ent,r=pane() ent.angles=angle(Vector(0,1,0),Vector(0,0,1),Vector(1,0,0))
+    local ply=newEntity("player",{pos=Vector(21,0,0),flags={player=true}})
+    local mv={GetOrigin=function() return ply.pos end,GetVelocity=function() return Vector(-500,0,0) end}
+    sv.traceResult={Hit=true,Entity=ent,Fraction=0.6,HitPos=Vector(16.5,0,0)}
+    sv.run("SetupMove",ply,mv) sv.flush()
+    check(r.state.revision==1 and #F.Remaining(r.state)<#r.state.cells,"pre-movement 500 units/s contact breaks upright pane despite stopped body velocity")
+    check(sv.lastTrace.filter==ply and sv.lastTrace.mask==sv.MASK_PLAYERSOLID,"player sweep respects intervening solids")
+elseif scenario=="client_settings" then
+    local remote=realm(false) remote.include("autorun/nlglass.lua")
+    for _,s in ipairs(remote.NLGlass.Config.Settings) do
+        local cv=remote.GetConVar(s[1]) check(cv and cv.flags==7,"replicated setting exists in independent client realm: "..s[1])
+    end
+    remote.cvars.rtx_glass_show_cracks.value="0"
+    local ent,r=pane() ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) network(remote,1)
+    local cr=remote.NLGlass.Client.records[r.id]
+    local draws=remote.meshDraws remote.run("PostDrawTranslucentRenderables",false,false)
+    check(remote.meshDraws-draws==1 and cr.cracks,"client crack setting controls rendering")
+    remote.cvars.rtx_glass_strength.value="2.5" remote.cvars.rtx_glass_map_kind.value="tempered"
+    local panel=remote.panel() remote.NLGlass.BuildSettings(panel)
+    check(panel.controls[3].value==2.5 and panel.controls[1].choices[2][3],"menu reads actual replicated values")
+elseif scenario=="map_outputs" then
+    local ent=brush("func_breakable_surf")
+    local output="door,Open,,0.25,1"
+    sv.run("EntityKeyValue",ent,"OnBreak",output)
+    sv.run("EntityKeyValue",ent,"OnUser4","light,TurnOn,,0,-1")
+    S.ReplaceSurface(ent) local r=S.surfaces[ent]
+    for i=1,3 do r.entity:OnTakeDamage(damage(sv.DMG_BULLET,15)) end
+    check(#ent.inputs==1 and ent.inputs[1][1]:match("^FireUser[123]$"),"map outputs fire via an unused native user channel, without Shatter/Break sound or effects")
+    check(ent.keys and ent.keys[#ent.keys][2]==output,"raw map output and native delay/count syntax preserved")
+    S.Impact(r,D.Fallback(r),true) check(#ent.inputs==1,"map output dispatch is once only")
+elseif scenario=="last_impact" then
+    local ent=brush() local r=S.TrackNative(ent)
+    sv.run("EntityTakeDamage",ent,damage(sv.DMG_BULLET,0.001,Vector(20,0,0)))
+    check(r.lastImpact and r.lastImpact.x==20 and r.lastImpact.energy==12,"native records the last hit even below crack floor")
+elseif scenario=="blast_order" then
+    local ent,r=pane() local grenade=newEntity("grenade",{pos=Vector(1,2,3)})
+    local d=damage(sv.DMG_BLAST,100,Vector(),grenade)
+    sv.run("EntityTakeDamage",grenade,d) ent:OnTakeDamage(d) S.Blast(d)
+    sv.flush() network(cl,1)
+    check(cl.events[1]=="spawn" and cl.events[#cl.events]=="impulse" and #cl.impulses==1,"deduplicated blast push follows newly spawned pane pieces")
+elseif scenario=="budget" then
+    local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
+    check(panel.controls[10].hi==8192,"budget slider respects the debris convar's 8192 cap")
 else error("unknown scenario "..tostring(scenario)) end
 check(not sv.hooks.Think and not sv.hooks.Tick,"no server per-tick pane polling")
 print("engine "..scenario.." OK")

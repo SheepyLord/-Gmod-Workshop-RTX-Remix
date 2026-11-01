@@ -2,6 +2,16 @@
 local S={records={},byEntity={},surfaces={},epoch=0,nextID=0}
 local F,G,D,P,C=NLGlass.Fracture,NLGlass.Geometry,NLGlass.Damage,NLGlass.Protocol,NLGlass.Config
 NLGlass.Server=S
+-- Native output objects are not exposed by GetKeyValues/TriggerOutput. Capture the raw repeated
+-- map keys and let the original entity's unused OnUser channel keep Source's I/O semantics.
+S.outputs=setmetatable({},{__mode="k"})
+hook.Add("EntityKeyValue","NLGlass.Outputs",function(ent,key,value)
+    if ent:GetClass()~="func_breakable_surf" then return end
+    key=string.lower(key)
+    if key~="onbreak" and not key:match("^onuser[1-4]$") then return end
+    local o=S.outputs[ent] or {breaks={},users={}} S.outputs[ent]=o
+    if key=="onbreak" then o.breaks[#o.breaks+1]=value else o.users[tonumber(key:sub(-1))]=true end
+end)
 for _,name in ipairs({"nlglass_state","nlglass_hit","nlglass_remove","nlglass_blast","nlglass_sync","nlglass_clear","nlglass_setting"}) do util.AddNetworkString(name) end
 local function send(target) if target then net.Send(target) else net.Broadcast() end end
 function S.Snapshot(r,target)
@@ -75,21 +85,26 @@ function S.Collision(r)
 end
 local function originalOutput(r,impact)
     if r.outputFired or not IsValid(r.original) then return end
-    r.outputFired=true r.bridgePending=true
-    -- Keep the actual brush to dispatch its Hammer outputs/targetname. Source's Shatter input is
-    -- normalized x/y plus a radius; the original's invisible engine fracture is only a logic bridge.
-    local radius=1
-    for _,p in ipairs(r.state.def.outline) do radius=math.max(radius,math.abs(p[1])+math.abs(p[2])) end
-    r.original:Fire("Shatter","0.5 0.5 "..math.ceil(radius*2),0,IsValid(impact.attacker) and impact.attacker or r.entity,r.entity)
+    r.outputFired=true
+    local o=S.outputs[r.original]
+    if not o or #o.breaks==0 then return end
+    local channel
+    for i=4,1,-1 do if not o.users[i] then channel=i break end end
+    if not channel then
+        ErrorNoHalt("[NLGlass] map OnBreak bridge unavailable: all four OnUser outputs are in use\n")
+        return
+    end
+    for _,value in ipairs(o.breaks) do r.original:SetKeyValue("OnUser"..channel,value) end
+    r.original:Fire("FireUser"..channel,"",0,IsValid(impact.attacker) and impact.attacker or r.original,r.original)
 end
 function S.Impact(r,impact,forceAll)
     if not r or r.broken or r.epoch~=S.epoch or S.records[r.id]~=r then return false end
     S.Refresh(r)
+    r.lastImpact=impact -- native engine health may break on a hit too weak to show cracks
     local old={id=r.id,entityIndex=r.entityIndex,native=r.native,frame=r.frame,localOrigin=r.localOrigin,localAngles=r.localAngles,
         state={def=r.state.def,impacts=r.state.impacts,damage=r.state.damage,revision=r.state.revision,all=r.state.all}}
     local pieces,accepted,broke=F.Apply(r.state,impact,forceAll,r.native)
     if not accepted then return false end
-    r.lastImpact=impact
     net.Start("nlglass_hit") net.WriteUInt(r.id,32) net.WriteUInt(old.state.revision,32)
     net.WriteBool(broke) if broke then P.WriteRecord(old) end
     P.WriteImpact(impact) net.WriteBool(forceAll or false) net.WriteBool(r.native) net.Broadcast()
@@ -122,15 +137,30 @@ function S.Contact(entity,data)
     -- Source prohibits destroying/rebuilding a physics object during its collision callback.
     timer.Simple(0,function() if IsValid(entity) then S.Impact(r,impact) end end)
 end
-function S.Body(entity,body)
+function S.Body(entity,body,velocity,point)
     local r=S.byEntity[entity]
     if not r then return end
     S.Refresh(r)
     local stamp=engine.TickCount()
     if r.contacts[body] and stamp-r.contacts[body]<6 then return end
-    local impact=D.FromBody(r,body)
+    local impact=D.FromBody(r,body,velocity,point)
     if impact then r.contacts[body]=stamp timer.Simple(0,function() if IsValid(entity) then S.Impact(r,impact) end end) end
 end
+-- Touch can arrive after the player mover has clipped the velocity against frozen VPhysics.
+-- Sweep the moving player's real hull before that clipping; no scan/tick work for idle panes.
+hook.Add("SetupMove","NLGlass.PlayerContact",function(ply,mv)
+    if not next(S.records) then return end
+    local velocity=mv:GetVelocity()
+    if velocity:LengthSqr()<math.max(1,C.Number("rtx_glass_player_break_speed",180)^2) then return end
+    local mins,maxs=ply:GetCollisionBounds()
+    local origin=mv:GetOrigin()
+    local tr=util.TraceHull({start=origin,endpos=origin+velocity*engine.TickInterval(),mins=mins,maxs=maxs,
+        filter=ply,mask=MASK_PLAYERSOLID})
+    if tr.Hit and S.byEntity[tr.Entity] then
+        local point=origin+velocity*(engine.TickInterval()*tr.Fraction)+(mins+maxs)*0.5
+        S.Body(tr.Entity,ply,velocity,point)
+    end
+end)
 S.blasts={}
 function S.Blast(dmg)
     local tick=engine.TickCount()
@@ -146,8 +176,13 @@ function S.Blast(dmg)
     if not reported and not IsValid(inflictor) then key="unattributed" end
     if S.blasts[key] then return end
     S.blasts[key]=true
-    net.Start("nlglass_blast") net.WriteVector(origin)
-    net.WriteFloat(math.Clamp(dmg:GetDamage()*4,64,2048)) net.WriteFloat(math.Clamp(dmg:GetDamage()*6,50,900)) net.Broadcast()
+    local radius,speed=math.Clamp(dmg:GetDamage()*4,64,2048),math.Clamp(dmg:GetDamage()*6,50,900)
+    local epoch=S.epoch
+    timer.Simple(0,function()
+        if epoch~=S.epoch then return end
+        net.Start("nlglass_blast") net.WriteVector(origin)
+        net.WriteFloat(radius) net.WriteFloat(speed) net.Broadcast()
+    end)
 end
 function S.NativeBreak(r,breaker)
     if not r or r.broken or r.epoch~=S.epoch then return end
@@ -208,7 +243,6 @@ hook.Add("AcceptInput","NLGlass.Input",function(ent,input,activator,caller)
     input=string.lower(input)
     if input~="break" and input~="shatter" then return end
     local surface=S.surfaces[ent]
-    if surface and surface.bridgePending and input=="shatter" and caller==surface.entity then surface.bridgePending=false return end
     local r=S.byEntity[ent] or surface or S.TrackNative(ent)
     if not r then return end
     S.Refresh(r)

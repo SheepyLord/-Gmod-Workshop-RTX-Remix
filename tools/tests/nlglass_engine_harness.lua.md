@@ -1,5 +1,11 @@
 # nlglass_engine_harness.lua
 
+Fix-pass scenarios: `body_contact`, `player_move`, `client_settings`, `map_outputs`, `last_impact`,
+`blast_order`, `budget`. Each fails against the 3096b2e add-on. They cover departing/distant/rotated
+bodies, a 500-unit/s pre-movement contact with stopped entity velocity, independent replicated
+client convars, raw once-only native output mirroring without Shatter, weak native impact recording,
+blast-after-spawn ordering and the 8,192 slider limit.
+
 Runs the actual G1-A bootstrap, server, protocol, entity, tool, catalogs, menu and client modules in
 isolated mocked server/client Lua environments. `NLGlassDebris` is a stub exposing only the plan's
 public API; no G1-B code, native module or game process is used.

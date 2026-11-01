@@ -1,5 +1,9 @@
 # Roadmap
 
+G1-A's post-integration fix pass is **in progress** on `g1-lua-fix` (2026-11-01). Contact,
+replicated settings, quiet map output routing and small server/menu fixes pass offline regressions;
+incremental bounded fracture, client cost/culling and targeted synchronization are next.
+
 G1-A is **implemented and passes offline acceptance** on `g1-lua` (2026-11-01): original MIT panes,
 unified impacts/strength, bounded deterministic annealed/tempered fracture, synchronized growing
 cracks, remaining frozen collision/prediction, map input bridging, late join, cleanup, property-only
