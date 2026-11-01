@@ -1,5 +1,10 @@
 # Roadmap
 
+R7-A started 2026-11-01 on `r7-alpha`: scoped MMD alpha texture semantics and transient Model
+Hotloader registration ([brief](handover/R7-A-mmd-alpha.md), [ADR 0080](decisions/0080-mmd-alpha-texture-category.md)).
+Claude owns runtime import, integration and the mask/ramp/map-glass game acceptance; this worktree
+does not launch or deploy to the game.
+
 G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
 Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
 (whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed
