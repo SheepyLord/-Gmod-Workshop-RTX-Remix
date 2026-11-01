@@ -25,6 +25,9 @@ so the next agent has the full story without the chat transcripts.
 | G1 glass overhaul | [G1-plan.md](G1-plan.md) | two briefs: [G1-A Lua](G1-A-lua.md), [G1-B native](G1-B-native.md) | (to come) | Codex (gpt-6.1-sol); Claude as project manager | `g1-lua`, `g1-native` in `out/worktrees` |
 | R1 whole-repo review | [R1-handover.md](R1-handover.md) | [R1-codex-prompt.md](R1-codex-prompt.md) | [R1-report.md](R1-report.md) (Codex), [triage](R1-triage.md) (Claude) | Codex; triage and fixes by Claude | report on `r1-review`; fixes on `r1-fixes`, both in `H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\r1-review`, from `main` after `8f8a540`; merged into `main` 2026-10-28 |
 
+G1-B implementation/offline validation is complete: [G1-B report](G1-B-report.md). G1-A and Claude's
+integration/game acceptance remain separate from that native/debris report.
+
 ## Rules for briefs
 
 - Self-contained for someone who has read [AGENTS.md](../../AGENTS.md) and nothing else.

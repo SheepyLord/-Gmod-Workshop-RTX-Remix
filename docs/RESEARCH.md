@@ -2,6 +2,15 @@
 
 ## G1-B: dedicated glass world and offline measurements (2026-10-31)
 
+- Final QA refinement (2026-11-01): the 4,000-piece benchmark now reserves **8192** bodies, exactly
+  as the manager does, rather than reserving only 4000. With that reserve it still slept in
+  **11.0167 simulated seconds**: spawn **42.35 ms**, simulation **6.384 s wall / 31.281 s process
+  CPU**, fixed-step **9.657 ms mean / 17.063 ms maximum**, settled step+poses **0.1225 ms**.
+  The fixture uses axis-aligned rectangular shards and zero initial spin/velocity. These are
+  core-test figures, not game/rendering figures; evidence is `out/native-tests-qa.log`. Compressed
+  `sprp` tests now exercise both directory-length conventions, and the displacement fixture also
+  verifies omission of an authored hole. The earlier 4000-reserve measurements below are retained.
+
 - Pinned Jolt `v5.3.0`: the only downloaded archive was
   `https://codeload.github.com/jrouwe/JoltPhysics/zip/refs/tags/v5.3.0`, SHA-256
   `ee47dbd3de026829bc9734eeed960118c3d0a1a61b16e172009731a407d1466a`. All 444 vendored

@@ -31,8 +31,10 @@ TEST_CASE("glass BSP imports only world brushes displacements and solid sprp ins
   file=fixture::room();fixture::u32(file,8+18*16,0xfffffff0u);CHECK_THROWS_AS(read_bsp(file),Error);
   file.resize(100);CHECK_THROWS_AS(read_bsp(file),Error);
   // World nodes never pull in a brush belonging only to an entity model.
-  file=fixture::room();const auto leaf_offset=std::size_t(file[8+10*16])|(std::size_t(file[9+10*16])<<8);
+  file=fixture::room();const auto leaf_offset=fixture::read_u32(file,8+10*16);
   fixture::u16(file,leaf_offset+26,1);CHECK(read_bsp(file).brushes.size()==1);
+  file=fixture::room();fixture::u16(file,fixture::read_u32(file,8+48*16),0);
+  CHECK(read_bsp(file).triangles.size()==31); // An authored displacement hole remains a hole.
 }
 TEST_CASE("glass BSP decodes Source LZMA collision lumps and refuses bad compression") {
   auto file=fixture::room();
@@ -46,6 +48,20 @@ TEST_CASE("glass BSP decodes Source LZMA collision lumps and refuses bad compres
   file.insert(file.end(),lump.begin(),lump.end());CHECK(read_bsp(file).brushes.size()==5);
   fixture::u32(file,offset+13,128*1024*1024);CHECK_THROWS_AS(read_bsp(file),Error);
   fixture::u32(file,offset+13,65536);file.pop_back();CHECK_THROWS_AS(read_bsp(file),Error);
+  // Same raw-encoder settings, generated from fixture::room's 300-byte sprp payload.
+  const fixture::Buffer prop_packed{0x00,0x00,0x80,0x3c,0x8a,0x42,0xe3,0x86,0xa4,0xd3,0xcd,0x1a,0xc8,0x16,0x7a,0x8d,
+    0x78,0x9f,0xf1,0x8a,0xae,0x23,0x9c,0x9c,0xb3,0xb5,0x56,0x69,0xe5,0xb6,0x9e,0x69,0xbf,0x55,0xdd,0xa4,0x4d,0x66,
+    0xdf,0xe1,0x82,0x51,0xcd,0xc6,0x2b,0x8a,0xe5,0x5a,0x5f,0x3b,0x99,0x7c,0xca,0x47,0x24,0xc7,0x3a,0x03,0x86,0xff,
+    0xff,0xf3,0xb2,0x00,0x00};
+  for(bool original_length:{false,true}) {
+    file=fixture::room();const auto directory=fixture::read_u32(file,8+35*16), at=static_cast<unsigned>(file.size());
+    fixture::Buffer compressed(17);fixture::u32(compressed,0,0x414d5a4c);fixture::u32(compressed,4,300);
+    fixture::u32(compressed,8,static_cast<unsigned>(prop_packed.size()));compressed[12]=0x5d;fixture::u32(compressed,13,65536);
+    compressed.insert(compressed.end(),prop_packed.begin(),prop_packed.end());file.insert(file.end(),compressed.begin(),compressed.end());
+    fixture::u16(file,directory+8,1);fixture::u32(file,directory+12,at);
+    fixture::u32(file,directory+16,original_length?300:static_cast<unsigned>(compressed.size()));
+    const auto map=read_bsp(file);REQUIRE(map.props.size()==1);CHECK(map.props[0].scale==1.5f);
+  }
 }
 TEST_CASE("glass BSP deterministic damaged-fixture sweep remains bounded") {
   const auto seed=fixture::room();std::uint32_t rng=78394;
@@ -107,7 +123,7 @@ TEST_CASE("glass overfull contact tables report failure instead of terminating")
 }
 TEST_CASE("glass benchmark 4000 colliding pieces settle within 15 simulated seconds 30 wall and 120 CPU seconds") {
   constexpr unsigned number=4000,steps=900;
-  World w(number);w.load_map(fixture::room());w.finish();
+  World w(kMaxBudget);w.load_map(fixture::room());w.finish();
   const auto hull=fixture::box(2,2,.3f);const auto begin=std::chrono::steady_clock::now();
   for(unsigned i=0;i<number;++i)w.spawn(hull,{float(i%40)*5-100,float((i/40)%25)*5-62,float(i/1000)*16+32},{},{},{});
   const auto spawned=std::chrono::steady_clock::now();const double cpu=cpu_seconds();double worst=0,total=0;unsigned settled_at=steps;
@@ -116,7 +132,7 @@ TEST_CASE("glass benchmark 4000 colliding pieces settle within 15 simulated seco
     if(s.awake==0) { settled_at=i+1;break; }
   }
   const auto wall=std::chrono::duration<double>(std::chrono::steady_clock::now()-spawned).count();
-  std::cout<<"G1-B benchmark: pieces="<<number<<" workers="<<w.stats().workers<<" settled_sim_s="<<settled_at/60.0
+  std::cout<<"G1-B benchmark: pieces="<<number<<" capacity="<<kMaxBudget<<" workers="<<w.stats().workers<<" settled_sim_s="<<settled_at/60.0
     <<" awake="<<w.stats().awake<<" spawn_s="<<std::chrono::duration<double>(spawned-begin).count()
     <<" simulation_wall_s="<<wall<<" simulation_cpu_s="<<cpu_seconds()-cpu<<" mean_step_ms="<<total/settled_at<<" max_step_ms="<<worst<<'\n';
   CHECK(w.stats().live==number);CHECK(w.stats().awake==0);CHECK(wall<30);CHECK(cpu_seconds()-cpu<120);

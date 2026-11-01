@@ -6,6 +6,9 @@
 
 namespace nl::glass::fixture {
 using Buffer=std::vector<std::uint8_t>;
+inline unsigned read_u32(const Buffer& b,std::size_t at) {
+  return unsigned(b.at(at))|(unsigned(b.at(at+1))<<8)|(unsigned(b.at(at+2))<<16)|(unsigned(b.at(at+3))<<24);
+}
 inline void u32(Buffer& b,std::size_t at,std::uint32_t v) {
   if(b.size()<at+4)b.resize(at+4);for(unsigned i=0;i<4;++i)b[at+i]=static_cast<std::uint8_t>(v>>(i*8));
 }

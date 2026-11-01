@@ -1,5 +1,11 @@
 # Testing
 
+G1-B final fixture refinement (2026-11-01): the benchmark uses the manager's 8192-body reserve
+while dropping 4000 shards; the same 11 native cases additionally verify compressed `sprp` with
+both packed/original directory lengths and displacement holes. The LuaJIT manager/probe harness
+passes 523 assertions. Latest reserve-matched measurements and retained earlier figures are in
+the G1-B RESEARCH entry below; none establishes game frame-time acceptance.
+
 G1-B offline validation (2026-10-31, `g1-native`): `tools/test.ps1 -Config Release` includes
 `nl_glass_tests` (11 cases in one CTest target) and `tools/tests/test_glass_debris.py` (the real
 Lua manager, map-import glue and new QA probe under LuaJIT engine doubles). The native fixtures
