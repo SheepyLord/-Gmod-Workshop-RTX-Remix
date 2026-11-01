@@ -4,6 +4,9 @@ Static library holding the loader logic that does not depend on running inside `
 bootstrap DLL, the `nlctl` CLI and the unit tests all use the same code. M2 built archives,
 manifests, discovery and planning; M3 added deployment; M4 added activation.
 
+R7-B replaces the memory percentage warning with strict 18 GiB free-commit / 24 GiB total
+thresholds derived from saved R6 sessions; see [the measurements](../../docs/RESEARCH.md#r7-b-commit-headroom-from-the-saved-r6-runs-2026-11-01).
+
 | File | Purpose |
 |---|---|
 | `include/nl/performance.h`, `src/performance.cpp` | Pure R6 adapter/class/VRAM tier classification and interface I2 serialization (ADR 0062) |

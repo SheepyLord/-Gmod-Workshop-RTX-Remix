@@ -1,5 +1,8 @@
 # menu_diagnostics_harness.js
 
+R7-B checks the full RTX package version/hash alongside a single content-package count,
+with zero/one/four content packages in all seven languages, both displayed and copied.
+
 Node standard-library test of the complete mainmenu.js in a small DOM/engine fixture. Checks
 text-only insertion of hostile-looking values, full hashes on hover/copy, no automatic outbound
 action, explicit project link, language/version updates, menu-home-only visibility and idempotent

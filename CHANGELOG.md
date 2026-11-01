@@ -6,6 +6,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R7-B diagnostics
+
+- The menu warns below 18 GiB free system commit or a 24 GiB total limit, replacing the
+  percentage warning that incorrectly flagged 64.0 / 90.6 GiB. The RTX package keeps its
+  version/hash row; other enabled content packages become one count in the panel and copied text.
+
 ### G1 (unreleased)
 
 - Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes

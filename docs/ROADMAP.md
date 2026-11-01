@@ -1,5 +1,9 @@
 # Roadmap
 
+R7-B is **in progress** on `r7-crash-diag` (2026-11-01): a post-exit crash report from an
+external observer, a map-headroom memory warning and a compact content add-on count. This task
+does offline checks only; Claude retains PoC acceptance ([brief](handover/R7-B-crash-diagnostics.md)).
+
 G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
 Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
 (whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed

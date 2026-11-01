@@ -1,5 +1,13 @@
 # Testing
 
+## R7-B: diagnostics boundaries and content count
+
+`loader/tests/test_memory.cpp` checks exact 18 GiB free / 24 GiB total boundaries,
+64.0 / 90.6 GiB, high usage with sufficient free commit, over-limit counters, zero limits
+and unsigned overflow. `tools/tests/menu_diagnostics_harness.js` checks that only
+`gmod-rtx-remix` retains its version/hash and other deployed packages form one localized count
+in the panel and clipboard, including zero content packages and all seven languages.
+
 ## G1 integration: game QA on the PoC (Claude, 2026-11-01)
 
 The QA add-on [`tools/qa/nlglass_qa`](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md) is copied

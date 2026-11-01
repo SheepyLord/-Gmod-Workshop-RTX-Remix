@@ -1,5 +1,9 @@
 # loader/proxy
 
+R7-B keeps the full `gmod-rtx-remix` identity row and counts the other deployed content packages
+in one localized line, including in copied diagnostics. The seven catalogs describe the new
+18 GiB free-commit / 24 GiB total memory thresholds.
+
 R6: `startup.cpp` starts the local evidence collector outside loader lock, overlaps copying with
 planning and activation, waits for the old Remix log before loading its DLL, and joins the remaining
 dump work before writing `previous_session` to status. Failures are diagnostic notes, never an
