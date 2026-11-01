@@ -221,3 +221,15 @@ Python/Meson after the repository's MSVC environment; a configure-only scratch b
 All 27 runtime unit tests, deep input verification, the 1,008-file package check and repository
 Release checks pass (23 CTests, 333 Python tests, two skips; the same short guard-test path).
 T2's integration reader ignores the additional I7 fields; loader code remains unchanged.
+
+## C-16 A: scene-adaptive emission runtime (2026-10-31)
+
+Completed on `c16-runtime` as patch 0016: optional opaque `emissive_adaptive_intensity`, the actual
+auto-exposure scene Yf through a nonblocking readback ring and shared raytracing constants, unchanged
+64-byte material records, fixed fallback, five options, cut/interval observations and the shipped
+MDL declaration ([ADR 0067](decisions/0067-scene-adaptive-emission.md)).
+The Release runtime is rebuilt/imported; all 28 runtime unit tests, deep input verification, the
+1,023-file package check and repository Release checks pass (24 CTests, 376 Python tests, two skips).
+Integration, actual GPU readback/log acceptance and Robin eye-white brightness measurements/tuning
+remain with Claude under the [C-16 plan](handover/C16-plan.md). C16-A runs no game and touches no
+install, user configuration or upstream fork; see [TESTING.md](TESTING.md#c-16-scene-adaptive-emission).

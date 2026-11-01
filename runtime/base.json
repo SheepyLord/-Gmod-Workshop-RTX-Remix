@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "c40f28e4371f7525dce01afad7316ae3efeabb2099c7ec19fe1df5dc3706ac19",
-  "built_from": "HEAD 024a9866 (with what the rest of this record names)",
+  "d3d9.dll": "9906eec639b8768baf468daebb2f281c45f04754eaaf6cd60c0c5f7c883cc543",
+  "built_from": "HEAD -> c16-runtime 8a5df5d8 (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -69,6 +69,7 @@
    "patches/0013-Default-to-minimum-one-and-maximum-twelve-path-bounc.patch": "63299c2773a2288c1aa35469eeca61dbbdb44bc6d900516bdb4a8f1b675e2f38",
    "patches/0014-Never-save-over-unread-settings-retry-saves-and-keep.patch": "224ae520a1e48cde66971dbe3a62225de41892aabf7c19a30f929193a4e76413",
    "patches/0015-Record-GPU-memory-snapshots-and-rate-limit-micromap-.patch": "56700eb053458d29647713db8a90950a05eb7bec4b8f2b7cc208a5f50d9c5f93",
+   "patches/0016-Add-scene-adaptive-opaque-emission.patch": "f90458cad21d1a984009797962d8f9816126344a97358a4a9eba1231dc61b001",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

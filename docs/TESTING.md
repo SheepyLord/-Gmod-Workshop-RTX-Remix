@@ -1167,3 +1167,79 @@ all 23 CTests and 333 Python tests (two skips). It uses the same session-local C
 the known guard-cache path limitation; the copy's hash matches and the generated CTest command
 is restored afterward. No loader/test source changed. `runtime-review2-release-summary.json`
 records those checks beside `runtime-review2-release-tests.log` and the local wrapper.
+
+## C-16: scene-adaptive emission
+
+Task C16-A implements [ADR 0067](decisions/0067-scene-adaptive-emission.md) as runtime patch 0016.
+The isolated source is `8a5df5d8ef2e4529f20f7c07c195cb6dc3588afe`; its Release DLL is
+`remix-main+8a5df5d8`, 396,802,048 bytes, SHA-256
+`9906eec639b8768baf468daebb2f281c45f04754eaaf6cd60c0c5f7c883cc543`.
+The build and exact import commands are in [runtime/README.md](../runtime/README.md#c-16-rebuild-2026-10-31).
+
+The dedicated `_CompUnitTest_x64` build passes **28/28 runtime unit tests**, including the new
+`test_adaptive_emission`. It tests absent/authored USD inputs, default zero and 0..65504 clamping,
+CPU material identities, 64-byte GPU record size, half-float round trips with emission on/off,
+four subsurface indices including the invalid sentinel, unchanged preceding fields and restored
+DLSS RGB/alpha. Formula coverage includes feature off, input zero, fixed intensity zero, scale
+zero, both clamps, fallback and fallback clamping, inverted clamp bounds, approximate settled
+display brightness below the exposure cap and fading at the cap. The option documentation test
+passes after regenerating its five new option rows. Final receipts are
+`out/tmp/c16-unit-final-build.log` and `out/tmp/c16-unit-tests-final.log`.
+The existing config-save test's symbolic-link subcase is skipped by Windows error 1314; its other
+subcases pass. `out/tmp/c16-validation-summary.json` keeps test names/results/timings without
+Meson's inherited environment dump.
+
+The configured Release/Ninja build retains optimization 3 and the release DLL CRT, Tracy/shim off
+and `download_apics=false`; the wrapper performs both passes and imports one changed runtime file.
+No SDK or source downloads were needed. The prepared R6 tree was copied, including its configured
+builds, and only the local copy was changed. Relocating its Meson state was insufficient alone:
+694 shader dependency files per configuration also pointed at the old tree. The stale attempt was
+stopped before import. The real shader compile then exposed an unnecessary compatibility-header
+include/name collision; the final shared helper needs no such include. Failed attempts imported
+nothing. Final receipts use `c16-runtime-build.log`, `c16-verify-final.log` and
+`c16-shader-relocation.json` under `out/tmp`.
+
+Disassembled auto-exposure SPIR-V exposes the new output at binding 4 with stride 8; an opaque
+G-buffer variant exposes both new raytracing constants. Both newly compiled binaries appear
+byte-for-byte in the final DLL (`out/tmp/c16-embedded-shaders.json`), guarding against stale shader
+embedding. The fixes part's one MDL declaration was reimported as plain text, preserving its
+existing CRLF bytes outside the nine added lines. No other fixes asset changed.
+
+### Project manager GPU acceptance (not run by C16-A)
+
+- With Robin's opted-in pack, use fixed eye-white/cheek patches in the bright outdoor, dim interior
+  and night scenes from the [C-16 plan](handover/C16-plan.md): ratio about 0.85..1.05 after settling;
+  dark eye white must not exceed the cheek. Compare captures with identical cameras/settings.
+- Correlate `[RTX Adaptive Emission]` with those captures: source/sample frame and age, raw
+  `adapted_yf`, paired `exposure`, effective `luminance`, `scale` and `enabled`. A camera-cut record
+  intentionally describes the delayed sample used for that frame; allow exposure to settle too.
+  Check a five-minute interval record and disabled-auto-exposure fallback.
+- A material with no input or input zero retains fixed emission; feature off restores the fixed
+  fallback even with a positive input. Check zero fixed intensity plus positive adaptive input,
+  `enable_emission=false`, an emissive-blend material, Source eyes, decals and an SSS material with
+  adaptive emission. DLSS control masks must retain their prior RGB and alpha 1.
+- With auto exposure off, confirm fallback 0.18 by default and both clamp overrides. At the exposure
+  cap confirm emission fades with the logged scene Yf. Tune the default scale/clamps using that
+  evidence; the raw geometric mean is distinct from temporally smoothed exposure during cuts.
+
+C16-A never launches Garry's Mod, changes the user's fork, an install, Steam files/settings or a
+user configuration, or publishes anything. Actual GPU readback timing, cut/interval log sampling
+and visual brightness acceptance remain with Claude.
+
+### Final offline gates
+
+- `runtime/build_runtime.ps1 -Fork <own source> -Worktree <own source> -Verify` matches all sixteen
+  patches, tree `1a6009a44590fe673282b7ceecf759548df646b8`, both submodule settings and both clones;
+  the built DLL hash matches the packaged record.
+- `python tools/inputs.py verify --part runtime --part fixes --deep` reports zero problems. Input
+  index comparison against the branch base confirms only `files/d3d9.dll` and the one MDL changed.
+  The DLL adds one 58,495,348-byte xz LFS object; no dependency/plugin binary was reimported.
+- `python tools/build_package.py --require-nlctl --json` passes this worktree's validator:
+  **1,023 files**, content digest
+  `b136a9d079ac48a76b3a9f9a8abbdedd07fda458e9530d9ec29a6766ccfccbce`.
+- Plain `tools/test.ps1 -Config Release` passes repository conventions, **24/24 CTests** and
+  **376 Python tests (two skips)**. The guard test passes at this worktree's actual path; the R6
+  relocation wrapper is unnecessary and was not used. No loader or loader-test source changed.
+
+Receipts: `out/tmp/c16-verify-final.log`, `c16-inputs-verify.log`, `c16-package-build.log`,
+`c16-release-tests-plain.log` and `c16-validation-summary.json`.
