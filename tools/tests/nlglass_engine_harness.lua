@@ -673,6 +673,11 @@ elseif scenario=="walk_run" then
         sv.traceResult={Hit=true,Entity=ent,Fraction=0,HitPos=ply.pos}
         sv.run("SetupMove",ply,mv) sv.flush()
         check((r.state.revision>0)==(speed>=250),"movement sweep keeps walking glass intact and breaks for running")
+        -- the player's physics shadow reports a collision too; it must follow the same rule
+        local ent2,r2=pane() ent2.angles=ent.angles S.Refresh(r2)
+        ply.phys=physics(85,ply.velocity)
+        ent2:PhysicsCollide({HitEntity=ply,HitObject=ply.phys,TheirOldVelocity=ply.velocity,HitPos=Vector(0.5,0,0)}) sv.flush()
+        check((r2.state.revision>0)==(speed>=250),"a player's shadow collision keeps walking glass intact at speed "..speed)
     end
     cl.player=ply local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[7].value==250,"menu displays the shared default")

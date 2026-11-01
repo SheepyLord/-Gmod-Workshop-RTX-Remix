@@ -14,9 +14,16 @@ each waiting for the client to report its screenshot, and prints `NL_QA <step>` 
 2. A 400-damage round at a corner of one pane and at the centre of another, in flight and settled.
 3. Twelve 8-damage rounds at one point of a 256x128 pane (weak hits must add up).
 4. A thrown oil drum (700 units/s), 5. a thrown ragdoll (650 units/s).
-6. The player walks, then 7. runs, into a 64x96 pane from 160 units away: the player's own movement
-   with forward (and sprint) held through a `SetupMove` hook for 1.6 s; prints whether the pane is still
-   there and the top speed reached (a walk must leave it whole, a run must break it).
+6. The player walks, then 7. runs, into a 64x96 pane from 160 units away: the player's own movement,
+   with forward (and sprint) held in the user command for 1.6 s by a `StartCommand` hook that both realms
+   run (GMod takes the run speed from the command's buttons, so changing the move data alone keeps the
+   walk speed); prints whether the pane entity is still there, the impacts the glass server accepted
+   on it, the share of glass left and the top speed reached. A walk must leave it whole (no impact,
+   100 % left), a run must break it. The entity alone proves nothing: annealed glass keeps its frame
+   after a breakout. The impacts are counted by wrapping `NLGlass.Server.Impact`, the one entry point
+   of every cause.
+
+`nlglass_qa contact` runs only steps 6 and 7.
 8. An explosion in front of a pane, 9. four rounds into a tempered pane, then a blast at it, 10. a
    scripted `Break` input.
 11. Performance: the empty field for 6 s, 50 panes broken by blasts (frame times over 4 s while they

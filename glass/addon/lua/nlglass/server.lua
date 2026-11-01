@@ -129,6 +129,9 @@ function S.Contact(entity,data)
     if not r then return end
     local hitter=data.HitEntity
     if not hitter then return end
+    -- A player's or NPC's physics shadow collides too: bodies follow the break-speed rule, never the
+    -- prop energy rule (85 kg at a 200 units/s walk is far above the breaking energy).
+    if IsValid(hitter) and (hitter:IsPlayer() or hitter:IsNPC()) then return S.Body(entity,hitter,data.TheirOldVelocity) end
     S.Refresh(r)
     local stamp=engine.TickCount()
     if r.contacts[hitter]==stamp then return end

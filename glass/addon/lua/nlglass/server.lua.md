@@ -4,6 +4,9 @@ The pre-movement player sweep uses the shared 250-unit/s default/fallback contac
 
 Player contact also uses a pre-movement hull trace in SetupMove, with incoming movement velocity;
 this includes GetBaseVelocity (the QA SetVelocity push), just as the engine's mover does.
+A physics collision whose hitter is a player or NPC (their physics shadow) goes through the same
+body rule and its speed gate, never the prop energy rule: 85 kg at a 200-unit/s walk is several
+times the breaking energy, so in game a walk broke out part of a pane before this (G1 QA run 07).
 Idle panes have no polling. All hits record the native pane's last impact before crack filtering.
 Deduplicated blast messages are deferred until after synchronous pane break messages.
 

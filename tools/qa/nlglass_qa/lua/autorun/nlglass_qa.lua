@@ -2,6 +2,14 @@
 -- removed. `nlglass_qa [field|map]` (server, host only) runs break causes against glass and a
 -- performance scene; the client frames each step and prints NL_SHOT for poc_session.py --lua-shots.
 local NET_VIEW, NET_NEXT = "nlglass_qa_view", "nlglass_qa_next"
+-- The walk and run steps hold the player's own keys: forward (and sprint), facing west. Both realms run it,
+-- so prediction agrees; GMod picks the run speed from the user command's buttons, not from the move data.
+hook.Add("StartCommand", "nlglass_qa_walk", function(ply, cmd)
+    if CurTime() > ply:GetNW2Float("nlglass_qa_move_until", 0) then return end
+    local sprint = ply:GetNW2Bool("nlglass_qa_sprint", false)
+    cmd:ClearMovement() cmd:SetViewAngles(Angle(0, 180, 0)) cmd:SetForwardMove(10000)
+    cmd:SetButtons(bit.bor(IN_FORWARD, sprint and IN_SPEED or 0))
+end)
 if SERVER then
     util.AddNetworkString(NET_VIEW) util.AddNetworkString(NET_NEXT)
     local steps, index, owner = {}, 0, nil
@@ -33,7 +41,26 @@ if SERVER then
         for i = 0, p:GetPhysicsObjectCount() - 1 do local o = p:GetPhysicsObjectNum(i) if IsValid(o) then o:SetVelocity(velocity) o:Wake() end end
         return p
     end
-    local function add(fn) steps[#steps + 1] = fn end
+    local tags = {}
+    local function add(fn, tag) steps[#steps + 1] = fn tags[#steps] = tag end
+    -- accepted impacts per pane id, counted around the glass server's one entry point
+    local S, impacts = nil, {}
+    local function watch()
+        S = NLGlass.Server
+        if S.NLGlassQAImpact then return end
+        S.NLGlassQAImpact = S.Impact
+        S.Impact = function(r, impact, forceAll)
+            local ok, pieces = S.NLGlassQAImpact(r, impact, forceAll)
+            if ok then impacts[r.id] = (impacts[r.id] or 0) + 1 end
+            return ok, pieces
+        end
+    end
+    local function left(id)
+        local r, F = id and S.records[id], NLGlass.Fracture
+        if not r then return 0 end
+        local area = 0 for _, poly in ipairs(F.Remaining(r.state)) do area = area + F.Area(poly) end
+        return area / F.Area(r.state.def.outline)
+    end
     local function field()
         local A = ORIGIN + Vector(-220, 0, 52)
         -- 1. bullets: one round cracks, more grow the cracks, then the pane breaks
@@ -58,17 +85,14 @@ if SERVER then
         -- forward held (and sprint for the run) from 160 units away, facing the pane
         local function walk(label, sprint)
             add(function() clear() local e = pane(A + Vector(0, 0, -16), "annealed", 64, 96)
+                local id = S.byEntity[e] and S.byEntity[e].id
                 owner:SetPos(Vector(A.x + 160, A.y, ORIGIN.z)) owner:SetEyeAngles(Angle(0, 180, 0)) owner:SetVelocity(-owner:GetVelocity())
                 owner.NLGlassQASpeed = 0
-                local stop = CurTime() + 1.6
-                hook.Add("SetupMove", "nlglass_qa_walk", function(ply, mv)
-                    if ply ~= owner then return end
-                    if CurTime() > stop then hook.Remove("SetupMove", "nlglass_qa_walk") return end
-                    mv:SetMoveAngles(Angle(0, 180, 0)) mv:SetForwardSpeed(10000) mv:SetSideSpeed(0)
-                    mv:SetButtons(bit.bor(mv:GetButtons(), IN_FORWARD, sprint and IN_SPEED or 0))
-                end)
-                timer.Simple(1.7, function() say("%s: pane valid %s, speed reached %.0f", label, tostring(IsValid(e)), owner.NLGlassQASpeed or 0) view(label, A, 0.1) end)
-            end)
+                owner:SetNW2Bool("nlglass_qa_sprint", sprint) owner:SetNW2Float("nlglass_qa_move_until", CurTime() + 1.6)
+                -- annealed glass keeps its frame after a breakout: count impacts and the glass left, not only the entity
+                timer.Simple(1.7, function() say("%s: pane valid %s, impacts %d, glass left %.0f%%, speed reached %.0f", label, tostring(IsValid(e)),
+                    impacts[id] or 0, left(id) * 100, owner.NLGlassQASpeed or 0) view(label, A, 0.1) end)
+            end, "contact")
         end
         hook.Add("Move", "nlglass_qa_speed", function(ply, mv) if ply == owner then ply.NLGlassQASpeed = math.max(ply.NLGlassQASpeed or 0, mv:GetVelocity():Length2D()) end end)
         walk("walk", false) walk("run", true)
@@ -133,8 +157,12 @@ if SERVER then
         if IsValid(ply) and not ply:IsListenServerHost() then return end
         owner = IsValid(ply) and ply or player.GetAll()[1]
         if not IsValid(owner) then return end
-        steps, index = {}, 0
+        steps, tags, index = {}, {}, 0
+        watch()
         if args[1] == "map" then map() else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
+        if args[1] == "contact" then -- only the walk and run steps
+            local only = {} for i, fn in ipairs(steps) do if tags[i] == "contact" then only[#only + 1] = fn end end steps = only
+        end
         say("start %s, %d steps", args[1] or "field", #steps) timer.Simple(1, nextStep)
     end)
     return
