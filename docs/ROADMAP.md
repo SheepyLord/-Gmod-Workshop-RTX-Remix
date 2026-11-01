@@ -21,6 +21,16 @@ R7-C is **in progress** on `r7-glass-interact` (2026-11-01): one-way Source mirr
 follow-up damage/fracture and bullet rays, a per-player setting and offline tests. Claude owns
 package import, integration and PoC contact/performance acceptance; no game is run by this task.
 
+R7-A started 2026-11-01 on `r7-alpha`: scoped MMD alpha texture semantics and transient Model
+Hotloader registration ([brief](handover/R7-A-mmd-alpha.md), [ADR 0081](decisions/0081-mmd-alpha-texture-category.md)).
+Claude owns runtime import, integration and the mask/ramp/map-glass game acceptance; this worktree
+does not launch or deploy to the game.
+
+R7-A implementation and the isolated runtime build finished 2026-11-01: 29 fork unit tests and
+16 companion scenarios pass. Release native/Python checks pass; the packaged-runtime provenance
+gate remains pending the prohibited import or approval of separate unimported-build validation.
+Claude's import/integration and GPU acceptance remain open; see the [R7-A report](handover/R7-A-report.md).
+
 G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
 Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
 (whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed

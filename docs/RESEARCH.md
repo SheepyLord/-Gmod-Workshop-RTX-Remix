@@ -3781,3 +3781,34 @@ PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r
   shapes cost 2.644 ms, excluding engine extraction. These do not establish RTX frame parity.
   See the [report](handover/R7-C-report.md) for repeat counts, starting/current comparisons, caps,
   evidence paths, limitations and Claude's acceptance steps. G1 run 10 was read only.
+
+## R7-A: Model Hotloader alpha, 2026-11-01
+
+- Read-only verification of Columbina's existing PoC `materials-v5.gma` confirms
+  `materials/mmd/275705586db7e069/yan_zhao_16.vmt` binds
+  `mmd/t/2c7b2c8505cc6a6e`, with `$alphatest 1`, `$alphatestreference .5`,
+  `$allowalphatocoverage 1`, `$translucent 0`, `$vertexalpha 0`. The registered public name
+  therefore need not match the texture's own path. Both are in `mmd/`; shared `mmdhl/scmi`
+  normal/lightwarp/phong textures are not base-texture candidates.
+- The imported hotloader's `lua/mmdhl/native_render.lua:122` builds the soft recipe with the
+  source base texture; lines 150-156 bind that texture to the blended copy and create an opaque
+  core only outside Remix. Lines 165-166 put decoded metadata in `mmdhl.assets`. Discovering
+  those public material paths covers the current Remix soft pass without changing the add-on.
+- Claude's supplied `out/qa-poc/r7/04-ramp/console.log:610` reports
+  `VertexLitGeneric_DX7`, and line 614 reports `UnlitGeneric_DX6`. The supplied
+  `03-columbina/shot-01-noon.png` visibly has the lattice shadow without its surface;
+  `05-columbina-thr05/shot-01-noon.png` has white lattice bars and open holes. These are existing
+  observations, not a game run by R7-A.
+- In the applied runtime, `opaque_surface_material_interaction.slangh:803` calls the shared
+  opacity evaluator after texture/vertex operations; `bake_opacity_micromap.comp.slang:131` calls
+  that same evaluator for OMM baking. This is the common point at which promoting coverage to
+  1 affects both lighting/visibility and micromap classification. Primary-only threshold changes
+  leave indirect opacity throughput and visibility attenuation at the old partial value.
+- The GPU surface's `data13.z` uses bits 0-15 for existing texture/eye flags and bits 17-18 for
+  texgen. Patch 0017 uses bit 16 plus bits 19-30 for MMD alpha and the fixed-point cutoff; the
+  256-byte CPU packing contract remains unchanged. `AlphaState` grows from 9 to 12 explicitly
+  initialized bytes. Rearranging explicit OMM hash padding retains the 128-byte hash-source
+  contract, with materialHash at byte 88 and no implicit padding.
+- The existing ADR 0048 BLAS path compares cached geometry flags, combines shared geometry as
+  opaque only when every instance is opaque, and rebuilds on incompatible flags. R7-A does not
+  mark a partly opaque mesh fully opaque: only the sampled final coverage is promoted.

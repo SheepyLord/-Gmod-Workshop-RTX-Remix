@@ -20,6 +20,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
   bullets, blasts, heavy/fast bodies and falls, with a per-player interaction switch
   ([ADR 0084](docs/decisions/0084-glass-one-way-interaction.md)). Game acceptance remains with Claude.
 
+- R7-A: scope Model Hotloader character alpha to a new runtime texture category: exact default-0.5 cutout reference, opaque blended coverage at or above the cutoff, matching shadows/indirect/micromaps, and bounded transient companion hash registration ([ADR 0081](docs/decisions/0081-mmd-alpha-texture-category.md)); runtime import and game acceptance stay with Claude.
+
 ### G1 (unreleased)
 
 - Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes

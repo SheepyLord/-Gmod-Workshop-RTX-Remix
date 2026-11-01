@@ -13,6 +13,8 @@ param(
     [string] $Worktree,
     # Build only; leave packages\runtime and runtime\base.json as they are.
     [switch] $NoImport,
+    # Bound memory use while compiling the large runtime translation units.
+    [ValidateRange(1, 64)] [int] $Jobs = 4,
     # Check the worktree against runtime\base.json and the patches, show its built d3d9.dll; build nothing.
     [switch] $Verify
 )
@@ -190,7 +192,7 @@ if (-not $needsSetup) {
 }
 Remove-Item -LiteralPath (Join-Path $build 'src\dxvk\_built_shaders.txt') -ErrorAction SilentlyContinue
 foreach ($pass in 1, 2) {
-    python -m mesonbuild.mesonmain compile -C $build
+    python -m mesonbuild.mesonmain compile -C $build --jobs $Jobs
     if ($LASTEXITCODE) { throw "meson compile (pass $pass) failed: $LASTEXITCODE" }
 }
 $sha = (Get-FileHash $dll -Algorithm SHA256).Hash.ToLower()

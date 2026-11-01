@@ -320,3 +320,11 @@ Source snapshots), `debris_bullets.lua` (bounded final server pellet traces) and
 switch. `tools/tests/glass_interaction_harness.lua` / `test_glass_interaction.py` cover the integration;
 `tools/qa/nlglass_qa` adds the `interact` sequence and `tools/qa/nlglass_interaction_start.lua` starts it.
 See [the report](handover/R7-C-report.md) and [native API](../glass/native/README.md).
+
+R7-A adds the companion's
+[`nativeloader_mmd_alpha.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_mmd_alpha.lua.md):
+bounded discovery of loaded Model Hotloader character materials and transient Remix texture tags,
+joined with the saved MMD-alpha category by runtime patch 0017. Its LuaJIT lifecycle/budget tests
+live in [`companion/tests`](../companion/tests/test_mmd_alpha.py.md). The existing
+[`tools/qa/alpha_probe.lua`](../tools/qa/alpha_probe.lua.md) can temporarily tag its own ramp/plate
+textures for Claude's game comparison, restoring the previous transient list afterwards.
