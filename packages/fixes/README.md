@@ -6,6 +6,17 @@ source under `licenses/` are reserved documentation, excluded from the payload i
 builder includes the existing `licenses/oversized-skinning/` tree in the remixbinary add-on as its
 native source bundle, including the R6 change below.
 
+## R8-B Backrooms native candidate (pending import)
+
+The local source commit `7094baf6edf6797fd5c3f0b58ca668f9307b4906` ports the Backrooms
+model-miss cache, lazy model-transform read and optional PAS visibility onto the packaged R6
+source, preserving its oversized-skinning and memory-limit protections. It adds validation,
+owned visibility restoration at module close and offline production-code regressions. The
+existing remixbinary Lua already provides the add-on's lighting API and patch synchronization.
+The DLL/PDB are built under `out/`; Claude imports the DLL after review. The package index and
+binary inputs are unchanged by R8-B. See [source, pins, hashes and rebuild notes](licenses/oversized-skinning/backrooms/Source.md).
+This layer is inside the already bundled `licenses/oversized-skinning/` source tree.
+
 ## R6 T5 memory-limit compatibility
 
 The current module uses fixes source commit `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`, a single

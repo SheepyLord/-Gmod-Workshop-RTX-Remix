@@ -1,0 +1,41 @@
+{
+  "evidence": "static source and registration review; no Lua/game/renderer execution",
+  "addon_revision": "e4d548d90a814c8e927d2569674c4dacc5185b8a",
+  "native_revision": "7094baf6edf6797fd5c3f0b58ca668f9307b4906",
+  "required_native_globals": {
+    "RemixLight": [
+      "CreateDisk",
+      "CreateRect",
+      "CreateSphere",
+      "DestroyLight"
+    ],
+    "RemixConfig": [
+      "GetConfigVariable",
+      "SetConfigVariable"
+    ]
+  },
+  "provided_by_package_lua": [
+    "native module require",
+    "periodic RTX_SyncPatches",
+    "Light2RTX.Clear",
+    "rtx_api_map_lights_autospawn",
+    "RTXReady_RTXLightUpdater",
+    "RTXReady_DynamicLightUpdater",
+    "RTXReady_RenderLightUpdaters"
+  ],
+  "visibility_switch": "rtx_patch_vis_pas (new native DLL; default 0); existing RTX_SyncPatches global",
+  "matching_lua_change_needed": false,
+  "material_collector": "package already reads MDL materials without invoking mesh extraction",
+  "light_counts": {
+    "gm_br_complex": {
+      "rect": 1201,
+      "disk": 74,
+      "sphere": 407
+    },
+    "gm_br_pitfalls": {
+      "rect": 1998,
+      "disk": 165,
+      "sphere": 524
+    }
+  }
+}
