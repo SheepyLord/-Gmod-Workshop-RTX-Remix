@@ -1,5 +1,46 @@
 # Research notes
 
+## G1-A glass: offline executable evidence (2026-10-31)
+
+- `glass/addon/lua/nlglass/damage.lua:58` reads `CollisionData.HitObject` as the PhysObj itself,
+  including `GetMass`; relative velocity uses `TheirOldVelocity - OurOldVelocity`. The mocked
+  PhysObj deliberately has no `GetPhysicsObject`. A 120 kg hitter at relative 180 units/s produces
+  1,944,000 game energy, identically for a prop and ragdoll. `:65` admits moving players, NPCs and
+  vehicles, excludes slow/tangential contacts and tests the remaining polygons to avoid ghost hits
+  in holes. The server defers physics reconstruction outside PhysicsCollide callbacks.
+- `glass/addon/lua/nlglass/fracture.lua:87` supplies the tunable 450,000 reference breaking threshold
+  (96×64, thickness 1, annealed, strength 1), 8% crack threshold and 3.5× tempered threshold. The
+  pure LuaJIT probe `out/g1-a/fracture-smoke.lua`, seed 100, returns 58 cells after a 180,000-energy
+  centre hit, 86 visible crack segments then 109 after the second hit; the third releases 40 cells
+  and leaves 18 in the frame. Their full area sums to 6144. These are synthetic energy/geometry
+  measurements, not observed damage from the game's pistol.
+- `fracture.lua:2`, `:233` cap impacts at eight and cells at 512; nearest-centre merging preserves
+  energy and the seed/cuts. Snapshot replay and fresh-process outputs match. The pure harness
+  disables global random, sin/cos and sqrt; no libm call controls tessellation. Crack edges from
+  the first hit occur in the final cells. Shared-edge connectivity releases unsupported islands
+  and keeps support across an edge subdivided by another cut.
+- `glass/addon/lua/nlglass/protocol.lua:3` encodes an impact in 148 bits (19 rounded-up bytes):
+  24-bit x/y at 1/1024 units, 31-bit energy/seed, two-bit kind, three signed 12-bit directions.
+  With pane ID, revision and three flags, the ordinary event is 215 bits (27 bytes). Breaks carry
+  the prior bounded state; a test deliberately misses the create packet and removes the entity
+  before client replay, yet all pieces reach the debris stub. Late join creates no old debris.
+- `glass/addon/lua/nlglass/client.lua:17` mirrors remaining frozen convexes for prediction, attaches
+  after late entity networking and rejects an index reused by an unrelated class. The wire carries
+  entity-local frame offsets, so delayed client poses do not introduce a permanent geometry offset.
+- `glass/addon/lua/nlglass/server.lua:76` retains the original hidden/non-solid surface brush and
+  fires one covering Shatter input on first breakout; the harness proves bypass/routing and that
+  a partial pane remains. It does **not** prove Source's Hammer output semantics for a hidden brush.
+  Native `func_breakable` retains engine health/collision; `:152` sends pieces once across break
+  events/removal, using last damage, breaker pose/velocity or a nominal centre impact. `:241`
+  invalidates pending native removals during cleanup. Restored panes keep their output bridge;
+  duplicates do not take it from the original.
+- The companion relocates category `Glass Rewrite Remixed` to Water and glass
+  (`companion/nativeloader/lua/autorun/client/nativeloader_menu.lua:20`). G1 retains that category
+  and `GlassSettings` (`glass/addon/lua/nlglass/menu.lua:72`) plus `glass_open_panel` and
+  `rtx_glass_player_break_speed`, avoiding an orphaned settings page. Non-English MIT catalogs are
+  newly agent-written and await human review. Actual weapon tuning, engine outputs, prediction,
+  Remix frosting and the 50-window performance baseline remain game acceptance.
+
 ## C-16: in-game tuning of the eye whites (2026-10-31)
 
 - Client Lua may not run `lua_run`: `RunConsoleCommand("lua_run", ...)` prints

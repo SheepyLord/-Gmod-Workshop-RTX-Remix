@@ -1,0 +1,131 @@
+# MIT; translations written for G1.
+# Translations of the GMod native loader glass (the RTX Remix tab, the guide).
+# Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader glass\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: addon/lua/nlglass/menu.lua:32
+#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
+msgid "Annealed glass"
+msgstr "フロートガラス"
+
+#: addon/lua/nlglass/menu.lua:33
+#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
+msgid "Tempered glass"
+msgstr "強化ガラス"
+
+#: addon/lua/nlglass/menu.lua:43
+msgid "Server settings require an administrator."
+msgstr "サーバー設定の変更には管理者権限が必要です。"
+
+#: addon/lua/nlglass/menu.lua:44
+msgid "Map windows"
+msgstr "マップの窓"
+
+#: addon/lua/nlglass/menu.lua:45
+msgid "Spawned glass"
+msgstr "生成するガラス"
+
+#: addon/lua/nlglass/menu.lua:46
+msgid "Kind, strength and piece size apply to new panes; clean up the map to replace its windows."
+msgstr "種類・強度・破片サイズは新しいガラスに適用されます。マップの窓にはマップのクリーンアップ後に適用されます。"
+
+#: addon/lua/nlglass/menu.lua:47
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Glass strength"
+msgstr "ガラスの強度"
+
+#: addon/lua/nlglass/menu.lua:48
+msgid "Show cracks"
+msgstr "ひびを表示"
+
+#: addon/lua/nlglass/menu.lua:53
+msgid "Piece size"
+msgstr "破片のサイズ"
+
+#: addon/lua/nlglass/menu.lua:54
+msgid "Velocity transfer"
+msgstr "速度の伝達率"
+
+#: addon/lua/nlglass/menu.lua:55
+msgid "Player break speed"
+msgstr "体当たりで割れる速度"
+
+#: addon/lua/nlglass/menu.lua:56
+msgid "Player / NPC mass (kg)"
+msgstr "プレイヤー／NPC の質量（kg）"
+
+#: addon/lua/nlglass/menu.lua:57
+msgid "Broken pieces are local to you and collide with the map and other pieces."
+msgstr "破片は各クライアントでシミュレートされ、マップと他の破片に衝突します。"
+
+#: addon/lua/nlglass/menu.lua:58
+msgid "Debris lifetime (s; 0 = until cleanup)"
+msgstr "破片の寿命（秒、0＝クリーンアップまで）"
+
+#: addon/lua/nlglass/menu.lua:59
+msgid "Debris budget"
+msgstr "破片数の上限"
+
+#: addon/lua/nlglass/menu.lua:60
+msgid "Pieces collide with each other"
+msgstr "破片同士が衝突"
+
+#: addon/lua/nlglass/menu.lua:61
+msgid "Reset to Defaults"
+msgstr "初期設定に戻す"
+
+#: addon/lua/nlglass/menu.lua:72
+#: addon/lua/nlglass/menu.lua:75
+#: addon/lua/nlglass/menu.lua:77
+msgid "Glass settings"
+msgstr "ガラスの設定"
+
+#: addon/lua/nlglass/menu.lua:79
+msgid "Glass pane"
+msgstr "ガラス板"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:8
+msgid "Glass tool"
+msgstr "ガラスツール"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:9
+msgid "Convert a prop to a convex glass pane, or create a pane."
+msgstr "プロップを凸形のガラス板に変換、またはガラス板を作成します。"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:10
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:76
+msgid "Left: convert a prop or reset the kind and strength of a pane"
+msgstr "左クリック：プロップを変換、またはガラスの種類と強度を再設定"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:11
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:77
+msgid "Right: create a pane at the surface"
+msgstr "右クリック：表面にガラス板を作成"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:78
+msgid "Props become a flat convex envelope; complex shapes are simplified."
+msgstr "プロップは平面の凸包になります。複雑な形状は簡略化されます。"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:79
+msgid "Glass kind"
+msgstr "ガラスの種類"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Width"
+msgstr "幅"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Height"
+msgstr "高さ"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Thickness"
+msgstr "厚さ"

@@ -1,5 +1,15 @@
 # Roadmap
 
+G1-A is **implemented and passes offline acceptance** on `g1-lua` (2026-11-01): original MIT panes,
+unified impacts/strength, bounded deterministic annealed/tempered fracture, synchronized growing
+cracks, remaining frozen collision/prediction, map input bridging, late join, cleanup, property-only
+save/dupe, tool/presets and seven-language settings. The existing companion settings destination is
+retained. All 23 new G1 cases pass; Release passes 24 CTests and 425 Python tests (two existing skips).
+G1-B integration, package assembly, real engine outputs/weapon tuning/material/prediction checks and
+the old/new 50-window/pile performance measurements remain with Claude. No game was launched and no
+game install, Steam settings, user.conf or Workshop item was changed. See [implementation](../glass/README.md)
+and [the G1 brief](handover/G1-A-lua.md).
+
 R6 harness failure handling is **done with offline validation** on `r6-harness` (2026-10-31): whole-run crash-prompt
 watchdog, device-loss/continuous-hang detection, bounded capture and exit, retained evidence and
 explicit release-QA reasons. Validation uses fake games/windows only; game acceptance stays with

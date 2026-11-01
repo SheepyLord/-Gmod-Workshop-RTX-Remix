@@ -1,5 +1,12 @@
 # Components
 
+G1-A adds the original MIT [`glass/addon`](../glass/README.md): scripted panes, a pure deterministic
+fracture module, shared damage/strength, bounded network state, map adapters, frozen remaining-cell
+collision, cached client cracks/panes, tool/presets and translated settings. G1-B supplies debris via
+the plan's public API. [`tools/glass_i18n.py`](../tools/glass_i18n.py.md) builds separate MIT catalogs
+with the companion's parser/escaping. [`test_nlglass.py`](../tools/tests/test_nlglass.py.md) runs the
+real modules under LuaJIT with mocked engine APIs; no game or native debris module is required.
+
 R6 T6 adds [`tools/sky/drop_top_mip.py`](../tools/sky/drop_top_mip.py.md), a standard-library DDS
 mip-removal tool, with generated-fixture coverage in
 [`tools/tests/test_drop_top_mip.py`](../tools/tests/test_drop_top_mip.py.md). The runtime packager's

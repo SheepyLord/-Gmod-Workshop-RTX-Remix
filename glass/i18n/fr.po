@@ -1,0 +1,131 @@
+# MIT; translations written for G1.
+# Translations of the GMod native loader glass (the RTX Remix tab, the guide).
+# Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
+msgid ""
+msgstr ""
+"Project-Id-Version: GMod native loader glass\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: addon/lua/nlglass/menu.lua:32
+#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
+msgid "Annealed glass"
+msgstr "Verre recuit"
+
+#: addon/lua/nlglass/menu.lua:33
+#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
+msgid "Tempered glass"
+msgstr "Verre trempé"
+
+#: addon/lua/nlglass/menu.lua:43
+msgid "Server settings require an administrator."
+msgstr "Les réglages du serveur nécessitent les droits administrateur."
+
+#: addon/lua/nlglass/menu.lua:44
+msgid "Map windows"
+msgstr "Vitres de la carte"
+
+#: addon/lua/nlglass/menu.lua:45
+msgid "Spawned glass"
+msgstr "Vitres créées"
+
+#: addon/lua/nlglass/menu.lua:46
+msgid "Kind, strength and piece size apply to new panes; clean up the map to replace its windows."
+msgstr "Le type, la résistance et la taille des éclats concernent les nouvelles vitres. Nettoyez la carte pour remplacer ses fenêtres."
+
+#: addon/lua/nlglass/menu.lua:47
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Glass strength"
+msgstr "Résistance du verre"
+
+#: addon/lua/nlglass/menu.lua:48
+msgid "Show cracks"
+msgstr "Afficher les fissures"
+
+#: addon/lua/nlglass/menu.lua:53
+msgid "Piece size"
+msgstr "Taille des éclats"
+
+#: addon/lua/nlglass/menu.lua:54
+msgid "Velocity transfer"
+msgstr "Transfert de vitesse"
+
+#: addon/lua/nlglass/menu.lua:55
+msgid "Player break speed"
+msgstr "Vitesse de bris par contact"
+
+#: addon/lua/nlglass/menu.lua:56
+msgid "Player / NPC mass (kg)"
+msgstr "Masse joueur / PNJ (kg)"
+
+#: addon/lua/nlglass/menu.lua:57
+msgid "Broken pieces are local to you and collide with the map and other pieces."
+msgstr "Les éclats sont simulés sur votre client et heurtent la carte et les autres éclats."
+
+#: addon/lua/nlglass/menu.lua:58
+msgid "Debris lifetime (s; 0 = until cleanup)"
+msgstr "Durée des éclats (s ; 0 = nettoyage)"
+
+#: addon/lua/nlglass/menu.lua:59
+msgid "Debris budget"
+msgstr "Nombre maximal d’éclats"
+
+#: addon/lua/nlglass/menu.lua:60
+msgid "Pieces collide with each other"
+msgstr "Collision entre éclats"
+
+#: addon/lua/nlglass/menu.lua:61
+msgid "Reset to Defaults"
+msgstr "Rétablir les valeurs par défaut"
+
+#: addon/lua/nlglass/menu.lua:72
+#: addon/lua/nlglass/menu.lua:75
+#: addon/lua/nlglass/menu.lua:77
+msgid "Glass settings"
+msgstr "Réglages du verre"
+
+#: addon/lua/nlglass/menu.lua:79
+msgid "Glass pane"
+msgstr "Vitre"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:8
+msgid "Glass tool"
+msgstr "Outil verre"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:9
+msgid "Convert a prop to a convex glass pane, or create a pane."
+msgstr "Convertit un objet en vitre convexe ou crée une vitre."
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:10
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:76
+msgid "Left: convert a prop or reset the kind and strength of a pane"
+msgstr "Clic gauche : convertir un objet ou redéfinir le type et la résistance"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:11
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:77
+msgid "Right: create a pane at the surface"
+msgstr "Clic droit : créer une vitre sur la surface"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:78
+msgid "Props become a flat convex envelope; complex shapes are simplified."
+msgstr "Les objets deviennent une enveloppe convexe plane ; les formes complexes sont simplifiées."
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:79
+msgid "Glass kind"
+msgstr "Type de verre"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Width"
+msgstr "Largeur"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Height"
+msgstr "Hauteur"
+
+#: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
+msgid "Thickness"
+msgstr "Épaisseur"

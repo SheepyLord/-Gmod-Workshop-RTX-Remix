@@ -1,5 +1,11 @@
 # test_package_fixes.py
 
+G1 adds a fixture-backed exclusion regression: the retired Glass-Rewrite-Remix folder is absent
+from the archive/manifest, while the glass VMT and Remix replacement remain. Every packaged
+translation is compared to the original catalog with only glass-exclusive phrases removed;
+shared phrases and GPL license are preserved, and retired source references are absent.
+Filtered catalog scratch is under `out/tmp`; the source catalogs remain unchanged.
+
 Also verifies the optional verified-client bootstrap's journaled SHA-256/root, required licence
 notices and refusal when the companion is excluded.
 

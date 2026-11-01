@@ -6,6 +6,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### G1 (unreleased)
+
+- The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
+  references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
+  the new MIT glass part is assembled separately by G1 integration.
+
+- A new MIT glass add-on implements server-owned convex panes, one damage pipeline for bullets,
+  melee, blasts, props/ragdolls and bodies, synchronized growing cracks, deterministic radial/ring
+  annealed holes and full tempered shatter. Remaining cells supply frozen server/client collision;
+  debris uses G1-B's client API. Map glass, late join, cleanup, property-only saves/duplicates, the
+  glass tool, spawn presets and seven-language settings are covered by offline LuaJIT tests.
+  Actual game/material/output and performance acceptance remains with G1 integration
+  ([implementation and defaults](glass/README.md), [damage decision](docs/decisions/0071-glass-impact-model.md)).
+
 ### C-16 (unreleased)
 
 - Anime characters' eye whites no longer glow at night or turn grey by day: with Robin's pack, the eye

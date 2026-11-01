@@ -10,6 +10,7 @@ See package_fixes.py.md for the options, outputs and exit codes."""
 
 import argparse
 import datetime
+import functools
 import hashlib
 import json
 import os
@@ -39,6 +40,8 @@ MAIN_MODULE = 'gmcl_RTXFixesBinary_win64.dll'
 MODULES = (MAIN_MODULE, 'gmcl_rtxwater_win64.dll')
 DEBUG_MODULE = 'gmcl_rtxdebug_win64.dll'
 DEBUG_ADDON = 'rtx_debug'
+# G1 owns the replacement. Keep Remix's glass materials and every other fixes add-on/mod.
+RETIRED_ADDONS = {'glass-rewrite-remix'}
 CLIENT_BOOTSTRAP = 'gmsv_nlrtxclient_win64.dll'
 SHADER_DLL = 'stdshader_dx6.dll'
 # Folders the fixes rewrite at run time (the ToPBR converter writes its results and its generation
@@ -369,7 +372,7 @@ def build(args):
     known = {name.lower(): name for name in addons}
     if COMPANION_NAME in known:
         raise PackageError('the fixes have an add-on named %s, which is the companion\'s name' % known[COMPANION_NAME])
-    excluded = set()
+    excluded = {name.lower() for name in addons if name.lower() in RETIRED_ADDONS}
     for name in args.exclude_addon:
         if name.lower() not in known and name.lower() != COMPANION_NAME:
             raise PackageError('--exclude-addon %s: no such add-on (%s)' % (name, ', '.join(addons + [COMPANION_NAME])))
@@ -552,11 +555,62 @@ def build(args):
 
 
 def companion_catalog_sources():
-    """Keep the GPL-derived interface text's editable sources and license with the generated table."""
+    """Ship editable GPL catalogs without the retired glass-only phrases or their source references.
+    Unrelated translations stay byte-identical. The original source catalogs are never modified."""
     prefix = 'native/root/garrysmod/addons/nativeloader/resource/bundled-translations/'
     names = ['COPYING', 'README.md', 'unchanged.json', companion_i18n.POT]
     names += [language + '.po' for language in companion_i18n.LANGUAGES]
-    return {prefix + name: os.path.join(companion_i18n.ADDON_I18N, name) for name in names}
+    scratch = os.path.join(REPO, 'out', 'tmp', 'fixes-catalogs-%d' % os.getpid())
+    os.makedirs(scratch, exist_ok=True)
+    removed = retired_glass_phrases()
+    found = {}
+    for name in names:
+        source = os.path.join(companion_i18n.ADDON_I18N, name)
+        if name.endswith(('.po', '.pot')):
+            with open(source, encoding='utf-8') as fh:
+                lines = fh.readlines()
+            entries = companion_i18n.read_po(source)
+            kept = []
+            for index, entry in enumerate(entries):
+                end = entries[index + 1]['line'] - 1 if index + 1 < len(entries) else len(lines)
+                if entry['msgid'] not in removed:
+                    kept.extend(line for line in lines[entry['line'] - 1:end]
+                                if not (line.startswith('#:') and '/glass-rewrite-remix/' in line.lower()))
+            text = ''.join(kept)
+        elif name == 'unchanged.json':
+            with open(source, encoding='utf-8') as fh:
+                data = json.load(fh)
+            text = json.dumps({lang: [s for s in words if s not in removed] for lang, words in data.items()},
+                              ensure_ascii=False, indent=2) + '\n'
+        else:
+            found[prefix + name] = source
+            continue
+        target = os.path.join(scratch, name)
+        with open(target, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(text)
+        stat_info = os.stat(source)
+        os.utime(target, (stat_info.st_atime, stat_info.st_mtime))
+        found[prefix + name] = target
+    return found
+
+
+@functools.lru_cache(maxsize=1)
+def retired_glass_phrases():
+    """Phrases used only by the retired add-on. Shared phrases still belong to the other add-ons."""
+    return frozenset(text for text, refs in companion_i18n.extract(companion_i18n.PACKAGES, companion_i18n.ADDON_MARKED)
+                     if refs and all('/glass-rewrite-remix/' in ref.lower() for ref in refs))
+
+
+def fixes_translation_text():
+    """Validate the complete sources, then omit glass-only entries from the bundled namespace."""
+    tables = companion_i18n.check(complete=True)
+    addons = companion_i18n.check_addons(complete=True)
+    removed = retired_glass_phrases()
+    addons = {lang: {s: t for s, t in table.items() if s not in removed} for lang, table in addons.items()}
+    text = companion_i18n.build_text(tables)
+    return (text.rstrip()[:-1] +
+            '    -- Bundled interface catalog: GPL-2.0; source and COPYING are in resource/bundled-translations/.\n' +
+            '    ["addons"] = ' + companion_i18n.build_text(addons).split('return ', 1)[1].rstrip() + ',\n}\n')
 
 
 def companion_translations():
@@ -567,7 +621,8 @@ def companion_translations():
     os.makedirs(scratch, exist_ok=True)
     path = os.path.join(scratch, 'companion-i18n-%d.lua' % os.getpid())
     try:
-        companion_i18n.build(path)
+        with open(path, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(fixes_translation_text())
     except companion_i18n.I18nError as error:
         raise PackageError('the companion translations (companion/i18n) do not check: %s' % error)
     sources = [os.path.join(folder, name) for folder, _, names in os.walk(companion_i18n.I18N)

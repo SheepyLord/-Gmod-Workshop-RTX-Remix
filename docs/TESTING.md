@@ -1,5 +1,37 @@
 # Testing
 
+## G1-A glass (offline)
+
+Validation on `g1-lua` (2026-11-01): `tools\test.ps1 -Config Release` exits 0, conventions pass,
+24/24 CTests pass and 425 Python tests pass with two pre-existing skips (372 tools, 28 gmapack,
+25 Steam). All 23 new G1 tests execute under the existing LuaJIT installation. Both full runs pass;
+the final receipt is `out/g1-a/release-final.log`. The latest focused suite also passes after the
+join-hook/resynchronization assertions. Only this worktree and its `out/` were written.
+
+[`test_nlglass.py`](../tools/tests/test_nlglass.py.md) adds 23 cases: a pure LuaJIT fracture harness
+and actual server/client add-on modules under mocked GMod APIs, with only NLGlassDebris stubbed.
+It covers bullets/buckshot/melee/crush, blast dedup and impulses, real prop/ragdoll PhysObj mass and
+relative velocity, moving players/NPCs/vehicles, scripted break, native recorded/breaker/nominal
+fallbacks, duplicate event/removal suppression and cleanup epochs. State tests check typed wire
+fields (including real float32 conversion), two-client replay, late join before and after breakout,
+a break with no create packet, delayed entity networking and unrelated entity-index reuse.
+
+Fracture cases compare identical states and fresh processes with global RNG/trigonometry/sqrt
+disabled, corner/centre location, near/far cell area and velocity, accumulated crack growth and
+old cracks becoming final cell edges, uniform tempered shatter, bounded/merged impacts, area
+conservation, supported frame cells and falling islands. Integration checks remaining server/client
+collision, collision failure becoming a full break, rotated triangular brush geometry/material,
+surface input bridging, property-only save/dupe and output ownership, tool limits/CPPI, companion
+settings relocation, admin setting authorization/injection refusal/reset, every Lua file compiling
+without GLua conversion and all six non-English MIT catalogs matching generated data.
+
+The fixes packager adds a separate fixture-backed exclusion test: only the retired glass add-on and
+its exclusive catalog phrases/references disappear; other translations and the glass VMT/Remix
+replacement stay. Full original catalog validation remains enabled. No test launches Garry's Mod,
+loads the native debris module or writes either game install. Claude owns package/native integration,
+real map outputs, two-client visual/prediction acceptance, actual weapon/body tuning, materials under
+Remix and the original/new 50-window/pile performance measurements.
+
 ## C16-B adaptive eye emission (offline, 2026-10-31)
 
 `tools/tests/test_adaptive_emission.py` adds 17 standard-library tests for the USD writer,
