@@ -1,4 +1,4 @@
-# 0074: Isolate glass collision failures and bound client preparation work
+# 0073: Isolate glass collision failures and bound client preparation work
 
 - Status: Accepted 2026-11-01 (G1-B fix pass, implementation authority delegated by the user).
 - Amends [0072](0072-glass-debris-world-and-batching.md); implements the native section of

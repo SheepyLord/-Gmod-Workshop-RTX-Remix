@@ -1,8 +1,8 @@
-# 0075: Prepare and step glass off the client thread; stage settled pile replacements
+# 0078: Prepare and step glass off the client thread; stage settled pile replacements
 
 - Status: Accepted 2026-11-01 (G1-B fix pass, implementation delegated by the user).
 - Amends the stepping, memory and batching choices in [0072](0072-glass-debris-world-and-batching.md).
-  Collision corrections are recorded in [0074](0074-glass-native-fix-pass.md).
+  Collision corrections are recorded in [0073](0073-glass-native-fix-pass.md).
 
 ## Context
 

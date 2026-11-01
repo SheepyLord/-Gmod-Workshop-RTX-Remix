@@ -29,7 +29,7 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - G1-B second pass consolidates settled glass into larger material-based areas and 24,000-vertex
   meshes. Bounded reusable upload scratch replaces temporary transformed vertices; timed rebuilds
   and staged GPU-resource retirement reduce allocation/rebuild bursts
-  ([ADR 0076](docs/decisions/0076-glass-pile-consolidation.md)).
+  ([ADR 0079](docs/decisions/0079-glass-pile-consolidation.md)).
 
 - G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
   cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
@@ -48,7 +48,7 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 - G1-B performance fix pass: prepare maps and step Jolt on a polled worker; consume changed poses,
   avoid full settled-piece scans, retain old pile chunks through staged rebuilds, allocate scratch
-  from demand and continue safely when Jolt's contact tables fill ([ADR 0075](docs/decisions/0075-glass-background-work-and-staged-piles.md)).
+  from demand and continue safely when Jolt's contact tables fill ([ADR 0078](docs/decisions/0078-glass-background-work-and-staged-piles.md)).
 
 - G1-B fix pass: skip/count refused brush and prop convexes without losing Jolt for the whole map;
   clip brush hulls in double precision, correct displacement indexing and retain ordinary terrain

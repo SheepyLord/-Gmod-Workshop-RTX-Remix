@@ -1,7 +1,7 @@
-# 0076: Consolidate glass piles with shared scratch and staged resource retirement
+# 0079: Consolidate glass piles with shared scratch and staged resource retirement
 
 - Status: Accepted 2026-11-01 (G1-B second pass, implementation delegated by the user).
-- Amends settled batching in [0075](0075-glass-background-work-and-staged-piles.md).
+- Amends settled batching in [0078](0078-glass-background-work-and-staged-piles.md).
 
 ## Context
 

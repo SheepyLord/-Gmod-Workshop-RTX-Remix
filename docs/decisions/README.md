@@ -80,10 +80,10 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0070](0070-glass-overhaul.md) | A glass system of our own (MIT) replacing Glass-Rewrite-Remix; server-authoritative panes with cracks and impact-following fracture; broken glass cosmetic, in a dedicated Jolt world on each client; annealed and tempered glass | Accepted 2026-10-31 (G1, the user) |
 | [0071](0071-glass-impact-model.md) | G1-A game-energy defaults, bounded deterministic impacts/cuts, remaining-cell collision and map-output input bridge | Accepted 2026-10-31 as implementation defaults under 0070; numerical tuning and engine output acceptance pending |
 | [0072](0072-glass-debris-world-and-batching.md) | Bounded glass world import, reusable poses and area batching; module limits and conservative Source fallback | Accepted 2026-10-31 (G1-B implementation) |
-| [0074](0074-glass-native-fix-pass.md) | Isolate refused glass collision shapes; correct displacement indexing and tags; bound client preparation | Accepted 2026-11-01 (G1-B fix pass) |
-| [0075](0075-glass-background-work-and-staged-piles.md) | Background map preparation and stepping; active pose queues, nonfatal contact saturation, lazy scratch and incremental pile replacement | Accepted 2026-11-01 (G1-B fix pass) |
-| [0076](0076-glass-pile-consolidation.md) | Larger material-based settled areas, shared vertex scratch, timed rebuilding and deferred GPU resource retirement | Accepted 2026-11-01 (G1-B second pass) |
-| [0077](0077-glass-visibility-and-frame-costs.md) | Material-group individual rendering, cached matrices, current-view/distance/subpixel culling and measured per-frame manager costs | Accepted 2026-11-01 (G1-B second pass) |
+| [0073](0073-glass-native-fix-pass.md) | Isolate refused glass collision shapes; correct displacement indexing and tags; bound client preparation | Accepted 2026-11-01 (G1-B fix pass) |
+| [0078](0078-glass-background-work-and-staged-piles.md) | Background map preparation and stepping; active pose queues, nonfatal contact saturation, lazy scratch and incremental pile replacement | Accepted 2026-11-01 (G1-B fix pass) |
+| [0079](0079-glass-pile-consolidation.md) | Larger material-based settled areas, shared vertex scratch, timed rebuilding and deferred GPU resource retirement | Accepted 2026-11-01 (G1-B second pass) |
+| [0080](0080-glass-visibility-and-frame-costs.md) | Material-group individual rendering, cached matrices, current-view/distance/subpixel culling and measured per-frame manager costs | Accepted 2026-11-01 (G1-B second pass) |
 
 ## Template
 

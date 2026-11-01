@@ -124,8 +124,8 @@ Native CTest measurements also remain in `out/build/win64-release/Testing/Tempor
 
 Package all owned `debris*.lua` helpers, including the new `debris_draw.lua` and `debris_view.lua`,
 and their existing dependencies. G1-A's autorun already AddCSLuaFile-globs them. No G1-A API or
-native ABI change is required. Decisions are [0076](../decisions/0076-glass-pile-consolidation.md)
-and [0077](../decisions/0077-glass-visibility-and-frame-costs.md); field descriptions are in
+native ABI change is required. Decisions are [0079](../decisions/0079-glass-pile-consolidation.md)
+and [0080](../decisions/0080-glass-visibility-and-frame-costs.md); field descriptions are in
 [the manager documentation](../../glass/addon/lua/nlglass/debris.lua.md).
 
 The normal Release build also produces `out/build/win64-release/glass/native/gmcl_nlglass_win64.dll`

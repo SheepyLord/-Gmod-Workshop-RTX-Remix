@@ -1,7 +1,7 @@
-# 0077: Reduce individual glass draw work and report its frame cost
+# 0080: Reduce individual glass draw work and report its frame cost
 
 - Status: Accepted 2026-11-01 (G1-B second pass, implementation delegated by the user).
-- Complements [0076](0076-glass-pile-consolidation.md); native ABI, collision and sleep tuning stay
+- Complements [0079](0079-glass-pile-consolidation.md); native ABI, collision and sleep tuning stay
   as recorded in [0072](0072-glass-debris-world-and-batching.md).
 
 ## Context

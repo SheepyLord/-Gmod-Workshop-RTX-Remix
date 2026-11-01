@@ -107,8 +107,8 @@ before freeing resources. All worker results/errors cross the guarded binding on
 `nlglass/debris_batches.lua` helper. The existing autorun's `debris*.lua` AddCSLuaFile glob serves
 it already. **Package the DLL and B Lua helpers together.** G1-A's files and glass/README.md were
 not edited. Details are in [the native README](../../glass/native/README.md), companion script
-docs and [ADRs 0074](../decisions/0074-glass-native-fix-pass.md) /
-[0075](../decisions/0075-glass-background-work-and-staged-piles.md).
+docs and [ADRs 0073](../decisions/0073-glass-native-fix-pass.md) /
+[0078](../decisions/0078-glass-background-work-and-staged-piles.md).
 
 Artifact: `out/build/win64-release/glass/native/gmcl_nlglass_win64.dll` (1,428,480 bytes), PDB
 16,166,912 bytes. DLL SHA-256:
