@@ -187,3 +187,9 @@ class EngineTests(unittest.TestCase):
 
     def test_record_server_and_client_hit_and_break_timings(self):
         self.run_case('client_timings')
+
+    def test_cracks_use_lit_material_and_thin_both_face_geometry(self):
+        self.run_case('lit_cracks')
+
+    def test_default_and_reset_allow_walking_but_break_for_running(self):
+        self.run_case('walk_run')

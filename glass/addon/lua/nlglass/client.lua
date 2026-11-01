@@ -4,7 +4,7 @@ if previous and previous.Clear then previous.Clear() end
 local V={records={},byIndex={},syncTimes={},DRAW_DISTANCE=8192}
 NLGlass.Client=V
 local F,G,P=NLGlass.Fracture,NLGlass.Geometry,NLGlass.Protocol
-local frost=CreateMaterial("nlglass_frost","UnlitGeneric",{["$basetexture"]="models/debug/debugwhite",
+local frost=CreateMaterial("nlglass_frost_lit","VertexLitGeneric",{["$basetexture"]="models/debug/debugwhite",
     ["$translucent"]="1",["$alpha"]="0.65",["$color"]="[0.65 0.72 0.76]",["$nocull"]="1"})
 local showCracks=GetConVar("rtx_glass_show_cracks")
 local function destroy(r)

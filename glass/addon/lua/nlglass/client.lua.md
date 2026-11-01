@@ -1,5 +1,9 @@
 # client.lua
 
+Crack strips use the lit VertexLitGeneric shader and a white base texture, without selfillum.
+The distinct nlglass_frost_lit name prevents Lua refresh from reusing the former unlit shader.
+Geometry remains thin and has outward normals on both pane faces; dark/night Remix QA remains.
+
 Fix pass: prefer an already matching revision instead of building a break's pre-snapshot. A
 recovery pre-state is stored without a build; apply the hit then build final meshes/collision once.
 Pending weak hits keep geometry; unchanged cells reuse the pane mesh. Native glass retains engine

@@ -166,7 +166,9 @@ local function realm(server)
     e.panel=panel
     e.sound={Play=function() e.sounds=(e.sounds or 0)+1 end}
     e.EffectData=function() return {SetOrigin=function() end,SetNormal=function() end} end
-    e.Material=function(name) return name end e.CreateMaterial=function(name) return name end
+    e.materials={}
+    e.Material=function(name) return name end
+    e.CreateMaterial=function(name,shader,parameters) e.materials[name]={shader=shader,parameters=parameters} return name end
     e.meshBuilds=0 e.meshDraws=0 e.meshDestroys=0
     e.Mesh=function()
         return {BuildFromTriangles=function(self,t) self.triangles=t e.meshBuilds=e.meshBuilds+1 end,
@@ -305,10 +307,10 @@ elseif scenario=="collision" then
 elseif scenario=="bodies" then
     for _,flag in ipairs({"player","npc","vehicle"}) do
         local ent,r=pane()
-        local body=newEntity(flag,{pos=Vector(0,0,-16),velocity=Vector(0,0,200),flags={[flag]=true}})
+        local body=newEntity(flag,{pos=Vector(0,0,-16),velocity=Vector(0,0,400),flags={[flag]=true}})
         if flag=="vehicle" then body.phys=physics(900) end
         local impact=D.FromBody(r,body)
-        near(impact.energy,0.5*(flag=="vehicle" and 900 or 85)*200^2,"body mass")
+        near(impact.energy,0.5*(flag=="vehicle" and 900 or 85)*400^2,"body mass")
         ent:Touch(body) ent:Touch(body) sv.flush()
         check(r.state.revision==1,"body contact deduplicated")
         network(cl,1) check(#cl.debris>0,"body has pieces")
@@ -501,9 +503,9 @@ elseif scenario=="tool_menu" then
     check(changes==1 and panel.controls[3].value==1 and panel.controls[1].selected==1,"reset cancels queued edits and refreshes controls")
 elseif scenario=="body_contact" then
     local ent,r=pane()
-    local body=newEntity("player",{pos=Vector(0,0,16),velocity=Vector(0,0,200),flags={player=true}})
+    local body=newEntity("player",{pos=Vector(0,0,16),velocity=Vector(0,0,400),flags={player=true}})
     check(not D.FromBody(r,body),"jumping away from a horizontal pane must not break it")
-    body.velocity=Vector(0,0,-200) check(D.FromBody(r,body),"approaching body within its half width contacts glass")
+    body.velocity=Vector(0,0,-400) check(D.FromBody(r,body),"approaching body within its half width contacts glass")
     body.pos=Vector(0,0,17) check(not D.FromBody(r,body),"outside half thickness plus body half width")
     r.frame.angles=angle(Vector(0,1,0),Vector(0,0,1),Vector(1,0,0))
     body.pos=Vector(60,0,0) body.velocity=Vector(-500,0,0)
@@ -631,6 +633,40 @@ elseif scenario=="target_sync" then
     check(#sv.out==before+1 and sv.out[#sv.out].tokens[1][2]==r.id,"server resync sends only that pane")
     mismatch(r2) request=cl.out[#cl.out] before=#sv.out sv.deliver(request,cl.player)
     check(#sv.out==before+1 and sv.out[#sv.out].tokens[1][2]==r2.id,"different panes can resync in the same frame")
+elseif scenario=="lit_cracks" then
+    local ent,r=pane() ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) network(cl,1)
+    local material=cl.materials.nlglass_frost_lit or cl.materials.nlglass_frost
+    check(material and material.shader=="VertexLitGeneric","cracks use a lit shader under Remix")
+    check(material.parameters["$basetexture"]=="models/debug/debugwhite" and material.parameters["$selfillum"]~="1","white non-emissive crack base")
+    local cr=cl.NLGlass.Client.records[r.id]
+    local front,back=0,0
+    for _,v in ipairs(cr.cracks.triangles) do
+        near(math.abs(v.pos.z),0.515,"thin strip sits just outside the pane face")
+        near(v.normal.z,v.pos.z>0 and 1 or -1,"lit normal follows its face")
+        if v.pos.z>0 then front=front+1 else back=back+1 end
+    end
+    check(front>0 and front==back,"cracks remain on both faces")
+    for i=1,#cr.cracks.triangles,6 do
+        local a,b=cr.cracks.triangles[i].pos,cr.cracks.triangles[i+5].pos
+        check((a-b):LengthSqr()<=0.201^2,"crack strips stay thin")
+    end
+elseif scenario=="walk_run" then
+    check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250,"default contact threshold separates walking and running")
+    local ply=newEntity("player",{pos=Vector(16,0,0),flags={player=true},admin=true})
+    for _,speed in ipairs({200,249,250,400}) do
+        local ent,r=pane() ent.angles=angle(Vector(0,1,0),Vector(0,0,1),Vector(1,0,0))
+        S.Refresh(r) ply.velocity=Vector(-speed,0,0)
+        check((D.FromBody(r,ply)~=nil)==(speed>=250),"normal contact threshold at speed "..speed)
+        local mv={GetOrigin=function() return ply.pos end,GetVelocity=function() return ply.velocity end}
+        sv.traceResult={Hit=true,Entity=ent,Fraction=0,HitPos=ply.pos}
+        sv.run("SetupMove",ply,mv) sv.flush()
+        check((r.state.revision>0)==(speed>=250),"movement sweep keeps walking glass intact and breaks for running")
+    end
+    cl.player=ply local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
+    check(panel.controls[7].value==250,"menu displays the shared default")
+    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[12].DoClick()
+    sv.deliver(cl.out[#cl.out],ply)
+    check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250 and panel.controls[7].value==250,"Reset to Defaults restores 250 in server and menu")
 elseif scenario=="client_timings" then
     local ent,r=pane()
     r.state=F.New(S.Definition({{-128,-64},{128,-64},{128,64},{-128,64}},1,"annealed",1))

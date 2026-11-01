@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A crack strips use a lit shader and white texture so Remix can shade them in dark scenes.
+  Body contact defaults to 250 units/s, above walking and below running; menu guidance is
+  translated and Reset to Defaults restores the new threshold. Archived choices remain intact.
+
 - G1-A second pass bounds breaks at 200 annealed / 300 tempered pieces, including large and
   repeatedly hit map windows. Small impact rings and large far pieces remain; tempered grids
   evenly cover the pane without exceeding their budget or dropping glass area.

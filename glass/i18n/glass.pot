@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:81
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:81
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr ""
@@ -59,36 +59,40 @@ msgid "Player break speed"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:56
-msgid "Player / NPC mass (kg)"
+msgid "Default: 250 units/s; walking stays below this threshold."
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:57
-msgid "Broken pieces are local to you and collide with the map and other pieces."
+msgid "Player / NPC mass (kg)"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:58
-msgid "Debris lifetime (s; 0 = until cleanup)"
+msgid "Broken pieces are local to you and collide with the map and other pieces."
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:59
-msgid "Debris budget"
+msgid "Debris lifetime (s; 0 = until cleanup)"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:60
-msgid "Pieces collide with each other"
+msgid "Debris budget"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:61
+msgid "Pieces collide with each other"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:62
 msgid "Reset to Defaults"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:72
-#: addon/lua/nlglass/menu.lua:75
-#: addon/lua/nlglass/menu.lua:77
+#: addon/lua/nlglass/menu.lua:73
+#: addon/lua/nlglass/menu.lua:76
+#: addon/lua/nlglass/menu.lua:78
 msgid "Glass settings"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:79
+#: addon/lua/nlglass/menu.lua:80
 msgid "Glass pane"
 msgstr ""
 

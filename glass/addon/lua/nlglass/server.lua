@@ -151,7 +151,7 @@ end
 hook.Add("SetupMove","NLGlass.PlayerContact",function(ply,mv)
     if not next(S.records) then return end
     local velocity=mv:GetVelocity()+ply:GetBaseVelocity()
-    if velocity:LengthSqr()<math.max(1,C.Number("rtx_glass_player_break_speed",180)^2) then return end
+    if velocity:LengthSqr()<math.max(1,C.Number("rtx_glass_player_break_speed",250)^2) then return end
     local mins,maxs=ply:GetCollisionBounds()
     local origin=mv:GetOrigin()
     local tr=util.TraceHull({start=origin,endpos=origin+velocity*engine.TickInterval(),mins=mins,maxs=maxs,

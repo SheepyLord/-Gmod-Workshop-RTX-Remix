@@ -1,5 +1,8 @@
 # config.lua
 
+The player/body contact-speed default is 250 units/s, between default walking (200) and running
+(400). Existing archived values are respected. Menu/server Reset to Defaults uses this same table.
+
 Creates the same replicated gameplay convars in both realms, so a remote client can receive and
 read the server's values. These remain server/admin settings; debris controls belong to G1-B.
 

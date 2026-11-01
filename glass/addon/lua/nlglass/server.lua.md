@@ -1,5 +1,7 @@
 # server.lua
 
+The pre-movement player sweep uses the shared 250-unit/s default/fallback contact-speed gate.
+
 Player contact also uses a pre-movement hull trace in SetupMove, with incoming movement velocity;
 this includes GetBaseVelocity (the QA SetVelocity push), just as the engine's mover does.
 Idle panes have no polling. All hits record the native pane's last impact before crack filtering.

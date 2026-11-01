@@ -1,5 +1,9 @@
 # nlglass_engine_harness.lua
 
+Second-pass `lit_cracks` captures material shader/parameters and checks non-emissive lit strips,
+matching outward normals, thin widths and both faces. `walk_run` checks 200/249/250/400-unit/s
+normal contacts, pre-movement sweeps, menu display and admin reset to the shared default 250.
+
 Fix-pass scenarios: `body_contact`, `player_move`, `client_settings`, `map_outputs`, `last_impact`,
 `blast_order`, `budget`. Each fails against the 3096b2e add-on. They cover departing/distant/rotated
 bodies, a 500-unit/s pre-movement contact with stopped entity velocity, independent replicated

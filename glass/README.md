@@ -31,7 +31,7 @@ Every script has a sidecar describing inputs, outputs and effects. `addon/LICENS
 See [ADR 0071](../docs/decisions/0071-glass-impact-model.md). Energies are gameplay units:
 `0.5 * mass_kg * relative_speed_units_per_second²` for physics, players, NPCs and vehicles.
 `CollisionData.HitObject` supplies the real PhysObj mass. Player/NPC fallback mass is 85 kg;
-body contacts require at least 180 units/s toward the plane from the body's side, a centre within
+body contacts require at least 250 units/s toward the plane from the body's side, a centre within
 remaining glass and actual plane proximity (half thickness plus oriented body half width).
 Players also use a pre-movement hull sweep, retaining incoming movement plus base velocity
 (including the QA `SetVelocity` push) before collision stops it. Player/NPC hulls stay axis aligned;
@@ -44,7 +44,8 @@ crack threshold. All positive weak energy accumulates; there is no visible crack
 `min(8% of threshold, 36,000)`. The breaking threshold scales with thickness squared, strength, square root of area (reference
 6144 units², minimum scale 0.35), and 3.5 for tempered. DamageInfo energy is damage × 12,000 for
 bullets/buckshot/crush, × 16,000 for other blunt damage, × 20,000 for blast. Thus a 15-damage pistol
-hit cracks, three such hits break a region, and an 85 kg body at 200 units/s supplies 1,700,000.
+hit cracks, three such hits break a region, and an 85 kg running body at 400 units/s supplies 6,800,000.
+Walking at 200 units/s stays below the default contact-speed gate.
 These are tunable game defaults, not engineering strength predictions. Thickness is in Source units.
 Native windows keep engine health: our accumulated damage controls their visual cracks only.
 
@@ -90,6 +91,11 @@ Complete groups and immutable cell arrays let snapshots retain pre-break state w
 history. Server collision rebuilds only at breakout; clients mirror remaining convexes for prediction.
 No convex covers a hole. A physics-build failure releases the remaining glass with pieces.
 See [ADR 0075](../docs/decisions/0075-incremental-glass-topology.md).
+
+Cracks use `VertexLitGeneric` and the white `models/debug/debugwhite` base texture, with no
+self-illumination. They keep the 0.10/0.065-unit half widths and outward normals on both faces.
+The material name `nlglass_frost_lit` also avoids reusing an old unlit material after Lua refresh.
+Remix should shade the strips with the scene; a dark room/night check remains part of game QA.
 
 Near pieces receive the impact direction with squared distance falloff and seeded spin. Far pieces
 have little or no initial velocity and fall in G1-B's gravity. A scripted break releases the whole
@@ -159,7 +165,7 @@ agent-written and await human review. Long slider/combo labels use full-width he
 | `rtx_glass_show_cracks` | `1` | Draw cracks; gameplay damage still accumulates when off |
 | `rtx_glass_piece_size` | `8` | 4–64 units; minimum tile/ring spacing for new panes |
 | `rtx_glass_velocity_transfer` | `1` | 0–3 impact velocity multiplier for new panes |
-| `rtx_glass_player_break_speed` | `180` | Minimum normal contact speed, 0–1000 |
+| `rtx_glass_player_break_speed` | `250` | Minimum normal contact speed, 0–1000; walking 200 stays below it, running 400 exceeds it |
 | `rtx_glass_player_mass` | `85` | 1–500 kg fallback where no valid physics mass exists |
 | `rtx_glass_debris_lifetime` | `120` | G1-B: seconds, 0 until cleanup |
 | `rtx_glass_debris_budget` | `2000` | G1-B: live pieces per player |
@@ -167,6 +173,7 @@ agent-written and await human review. Long slider/combo labels use full-width he
 
 Reset to Defaults resets client debris settings and, for an admin, server settings. Existing panes
 retain their material properties; map cleanup applies new kind/strength/size settings to map windows.
+Previously archived speed choices are retained; Reset to Defaults restores the new 250-unit/s gate.
 Spawn presets are 48×48, 96×64 and 128×128, each annealed or tempered. The existing glass tool name
 is retained: left-click converts a prop into a flat convex envelope or resets an existing pane's kind
 and strength; right-click makes a pane at a surface. Complex volumetric props are simplified, rather

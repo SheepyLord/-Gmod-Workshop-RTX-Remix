@@ -1,5 +1,17 @@
 # Research notes
 
+## G1-A second pass: lit cracks and walking (2026-11-01)
+
+- `glass/addon/lua/nlglass/client.lua:7` creates `nlglass_frost_lit` with VertexLitGeneric and
+  `models/debug/debugwhite`, no selfillum. A new name avoids the existing material cache after
+  Lua refresh. The `lit_cracks` mock checks the shader and strips at z=±0.515 for thickness 1,
+  outward normals, equal front/back vertices and full width at most 0.20 units. Whether Remix
+  shades those strips correctly at night/in a dark room remains a real renderer check.
+- `config.lua:7` now defaults the replicated contact speed to 250; `damage.lua:72` and
+  `server.lua:155` use the same fallback. The `walk_run` harness checks contacts/sweeps at
+  200/249 (no damage) and 250/400 (damage), menu value and admin reset to 250. Existing archived
+  values remain user choices. The menu help and six MIT catalogs include the default guidance.
+
 ## G1-A second pass: break density (2026-11-01)
 
 - `glass/addon/lua/nlglass/fracture.lua:7` defines kind-specific active caps (200 annealed,
