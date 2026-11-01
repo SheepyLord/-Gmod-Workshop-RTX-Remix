@@ -76,6 +76,17 @@ class RuleTests(unittest.TestCase):
         self.assertTrue(any('after the toolgun' in p for p in qa.check_probe('session', errors)))
         self.assertTrue(any('no render guard' in p for p in qa.check_probe('session', 'NL_QA_GUARD {"missing":true}\n')))
 
+    def test_device_loss_and_hangs_fail_even_if_the_record_claims_a_normal_quit(self):
+        for changes, expected in (({'device_lost': True}, 'GPU device lost'),
+                                  ({'hung_seconds': 20.5}, 'game window hung for 20.5 s')):
+            with self.subTest(changes=changes):
+                self.assertIn(expected, qa.check_record(dict(GOOD_RECORD, **changes)))
+                failed = dict(GOOD_RECORD, failed='bounded shutdown', **changes)
+                self.assertIn(expected, qa.check_record(failed))
+        named = dict(GOOD_RECORD, normal_quit=False, exit=0xCFFFFFFF,
+                     exit_name='Windows closed a not-responding program')
+        self.assertTrue(any(named['exit_name'] in p for p in qa.check_record(named)))
+
     def test_spawnmenu_and_glass_rules(self):
         self.assertEqual(qa.check_probe('spawnmenu', 'NL_QA_TABS ["#spawnmenu.content_tab"]\n'), [])
         self.assertEqual(qa.check_probe('spawnmenu', 'NL_QA_TABS []\nNL_QA_TAB_MISSING motion_importer\n'),
@@ -170,6 +181,33 @@ class EvaluateOnlyTests(unittest.TestCase):
         spawnmenu, glass = summary['sessions']
         self.assertTrue(any('crash minidumps' in p for p in spawnmenu['problems']), spawnmenu)
         self.assertEqual(glass['problems'], ['no recorded run'])
+
+    def test_device_loss_and_hang_reasons_and_exit_names_reach_the_summary_and_console(self):
+        history = [self.record('01-session', GOOD_SESSION_CONSOLE, device_lost=True,
+                               failed='GPU device lost (VK_ERROR_DEVICE_LOST in remix-dxvk.log)',
+                               normal_quit=False, exit=0x60D0DEAD, exit_hex='0x60D0DEAD', exit_name='Remix GPU-crash exit'),
+                   self.record('02-spawnmenu', 'NL_QA_TABS []\n', hung_seconds=20.5,
+                               normal_quit=False, exit=0xCFFFFFFF, exit_hex='0xCFFFFFFF',
+                               exit_name='Windows closed a not-responding program')]
+        (self.evidence / 'session.json').write_text(json.dumps(history), encoding='utf-8')
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = qa.main(['--root', str(self.evidence), '--evidence', str(self.evidence), '--evaluate-only',
+                            '--only', 'session,spawnmenu'])
+        summary = json.loads((self.evidence / 'qa-summary.json').read_text(encoding='utf-8'))
+        self.assertEqual(code, 1)
+        self.assertFalse(summary['passed'])
+        device, hung = summary['sessions']
+        self.assertTrue(device['device_lost'])
+        self.assertEqual(device['exit_hex'], '0x60D0DEAD')
+        self.assertEqual(device['exit_name'], 'Remix GPU-crash exit')
+        self.assertIn('GPU device lost', device['problems'])
+        self.assertEqual(hung['hung_seconds'], 20.5)
+        self.assertEqual(hung['exit_name'], 'Windows closed a not-responding program')
+        self.assertIn('game window hung for 20.5 s', hung['problems'])
+        self.assertIn('GPU device lost', output.getvalue())
+        self.assertIn('game window hung for 20.5 s', output.getvalue())
+        self.assertIn('Windows closed a not-responding program', output.getvalue())
 
 
 if __name__ == '__main__':

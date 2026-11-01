@@ -57,6 +57,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### Changed (R6, for developers)
 
+- `poc_session.py` watches crash prompts throughout each run, detects GPU loss and persistent window
+  hangs, bounds captures and shutdown, keeps the evidence, and names known crash exits;
+  `release_qa.py` reports device loss and hangs explicitly in its output and JSON summary.
 - Activation lists the tier layer and the non-NVIDIA layer first in `DXVK_CONFIG_FILE` (the first
   file wins for `rtx.*`) and the GPU diagnostics layer last (its `dxvk.enableAftermath*` keys: the
   last file wins for `dxvk.*`); an older package without tier files gets a built-in `low` fallback.

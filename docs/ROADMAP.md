@@ -1,5 +1,10 @@
 # Roadmap
 
+R6 harness failure handling is **done with offline validation** on `r6-harness` (2026-10-31): whole-run crash-prompt
+watchdog, device-loss/continuous-hang detection, bounded capture and exit, retained evidence and
+explicit release-QA reasons. Validation uses fake games/windows only; game acceptance stays with
+the project manager ([testing note](TESTING.md#r6-unattended-harness-failures)).
+
 R6 T3 implementation (companion telemetry, tier display, translated stability guide and 2048 px
 publishing guidance) was committed as `a28d6b6` on `r6-t3-companion`; see
 [the task brief](handover/R6-T3-companion-docs.md). Its independent-review fix pass covers older-loader
