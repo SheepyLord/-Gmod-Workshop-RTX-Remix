@@ -24,6 +24,7 @@ struct Stats {
   std::size_t temp_reserved_bytes=0,temp_peak_bytes=0;
   unsigned pose_visits=0;
   unsigned scene_bodies=0,scene_moves=0,scene_cooks=0,damage_dropped=0,ray_hits=0,splits=0;
+  unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
   bool interaction=false;
   double step_ms=0, dropped_seconds=0;
   bool ready=false,busy=false;

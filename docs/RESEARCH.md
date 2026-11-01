@@ -3812,3 +3812,22 @@ PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r
 - The existing ADR 0048 BLAS path compares cached geometry flags, combines shared geometry as
   opaque only when every instance is opaque, and rebuilds on incompatible flags. R7-A does not
   mark a partly opaque mesh fully opaque: only the sampled final coverage is promoted.
+
+## R7-C: fast-body discovery and thin-floor contact (2026-11-01)
+
+- Read-only PoC evidence `out/qa-poc/r7/11-interact/console.log:656–662` shows the 30 kg drum
+  crossing nine settled pieces with zero movement/body splits. `debris_scene.lua:12,27,57` now
+  widens spatial discovery before testing a 0.25 s/192-unit velocity sweep, inspects at most 512
+  entries and prioritizes fast bodies before truncating to 128 candidates/96 mirrors. Fast cold
+  physics boxes bypass mesh extraction until slowing (`glass/addon/lua/nlglass/debris_scene.lua:128`).
+- Earlier Lua capture alone still fails the real Jolt sleeping-floor-box replay. Jolt's
+  `third_party/jolt/Jolt/Physics/PhysicsSystem.cpp:1564` limits CCD to dynamic bodies. Native
+  `glass/native/world.cpp:236` now sweeps actual mirror translations against glass, with 16 casts,
+  eight hits/cast and 64 transfers/snapshot; mirrors still follow Source exactly. The regression
+  fails on the starting executable even with earlier captured rows, and passes with both fixes.
+- Three interleaved offline comparisons: crowded Lua capture 0.1563 -> 0.1959 ms mean; warm native
+  96 mirrors/regions 0.06035 -> 0.05966 ms; single fast box native sync 0.0011–0.0033 ms mean;
+  the 96-mirror/128-leaf, 64-transfer stress snapshot 0.0693 ms median. The unchanged 4000-piece
+  benchmark settles in 11.0167 simulated seconds, with identical scratch use/zero overflows.
+  These are doubles/generated rooms, not game frames; detailed costs and limits are in the
+  [fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).

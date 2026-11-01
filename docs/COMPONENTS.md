@@ -1,5 +1,9 @@
 # Components
 
+R7-C's fast-body fix adds [`glass/native/tests/scene_replay.cpp`](../glass/native/tests/scene_replay.cpp):
+an offline generated-pile executable fed by the real Lua capture harness in `tools/tests`. Scene
+capture prioritizes approaching bodies and native snapshot sync adds bounded one-way shape sweeps.
+
 R7-B extends [`loader/proxy`](../loader/proxy/README.md) with `observer.h` / `observer.cpp`
 (a guarded external rundll32 observer) and `exit_report.h` / `exit_report.cpp` (localized messages).
 [`loader/core`](../loader/core/README.md) shares exit classification/archival with next-start

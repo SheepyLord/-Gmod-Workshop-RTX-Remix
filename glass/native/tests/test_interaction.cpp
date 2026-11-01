@@ -67,6 +67,52 @@ TEST_CASE("glass moving Source body generates follow-up damage and teleports do 
   body.position={800,0,32};CHECK(w.sync_bodies({body},1.0/60)==0);
   CHECK((w.scene_pose(1).position-body.position).length()<.001f);
 }
+TEST_CASE("glass fast box sweeps push a sleeping floor pile at one or two frame snapshot intervals") {
+  for(float speed:{650.0f,3600.0f})for(double dt:{1.0/60,1.0/30})for(bool collide:{false,true}) {
+    World w(16);ready(w);w.set_interaction(true);w.set_collide(collide);
+    for(int x=-1;x<=1;++x)for(int y=-1;y<=1;++y)
+      w.spawn(fixture::box(16,16,.25f),{float(x)*34,float(y)*34,8},{},{},{},8);
+    for(unsigned i=0;i<180;++i)w.step(1.0/60);
+    const auto initial=w.poses();REQUIRE(initial.size()==9);for(const auto& p:initial)REQUIRE(p.sleeping);
+    auto box=mirror(1,{-210,0,4});box.half={4,4,4};box.mass=30;box.velocity={speed,0,0};
+    bool moved=false,damaged=false;double total=0,peak=0;
+    for(unsigned i=0;i<36;++i) {
+      box.position.x=-210+float(i*dt)*speed;
+      const auto start=std::chrono::steady_clock::now();w.sync_bodies({box},dt);const auto elapsed=ms(start);
+      total+=elapsed;peak=std::max(peak,elapsed);w.step(dt);
+      CHECK((w.scene_pose(1).position-box.position).length()<.01f);
+      for(const auto& p:w.poses())for(const auto& old:initial)if(p.id==old.id) {
+        const auto d=p.position-old.position;if(d.x*d.x+d.y*d.y>4)moved=true;
+      }
+      for(const auto& e:w.take_damage())if(e.kinds&SourceBody)damaged=true;
+    }
+    CHECK(moved);CHECK(damaged);CHECK(w.stats().scene_sweep_hits>0);
+    std::cout<<"R7-C fast box speed="<<speed<<" dt="<<dt<<" collide="<<collide
+      <<" sync_mean_ms="<<total/36<<" sync_max_ms="<<peak<<'\n';
+  }
+}
+TEST_CASE("glass mirror sweeps cap casts hits and leaf damage without casting teleports or disabled scenes") {
+  World w(128,0);ready(w);w.set_interaction(true);w.set_collide(false);
+  for(unsigned line=0;line<16;++line)for(unsigned i=0;i<8;++i)
+    w.spawn(fixture::box(2,2,.5f),{float(i)*8-28,float(line)*24,32},{},{},{},8);
+  for(unsigned i=0;i<40;++i)w.step(1.0/60);(void)w.poses();
+  std::vector<SceneBody> scene;
+  for(unsigned i=0;i<96;++i) { auto b=mirror(i+1,{-90,float(i%16)*24,32});b.velocity={600,0,0};scene.push_back(b); }
+  w.sync_bodies(scene,1.0/60);w.step(1.0/60);
+  const auto before=w.stats();CHECK(before.scene_sweeps==16);CHECK(before.scene_sweep_limited==80);
+  for(auto& b:scene)b.position.x=20;
+  const auto start=std::chrono::steady_clock::now();w.sync_bodies(scene,1.0/60);const auto elapsed=ms(start);
+  auto after=w.stats();CHECK(after.scene_sweeps-before.scene_sweeps<=16);
+  CHECK(after.scene_sweep_hits==64);CHECK(after.scene_sweep_limited>before.scene_sweep_limited);
+  CHECK(w.take_damage().empty());w.step(1.0/60);w.step(1.0/60); // Publish a non-initial interpolated leaf pose.
+  bool leaf_moved=false;for(const auto& p:w.poses())if(p.position.x>32)leaf_moved=true;CHECK(leaf_moved);
+  for(const auto& b:scene)CHECK((w.scene_pose(b.key).position-b.position).length()<.001f);
+  for(auto& b:scene)b.position.x=1020;
+  w.sync_bodies(scene,1.0/60);CHECK(w.stats().scene_sweeps==after.scene_sweeps);
+  w.set_interaction(false);w.sync_bodies(scene,1.0/60);
+  CHECK(w.stats().scene_sweeps==after.scene_sweeps);CHECK(w.stats().scene_bodies==0);
+  std::cout<<"R7-C sweep cap bodies=96 pieces=128 hits="<<after.scene_sweep_hits<<" sync_ms="<<elapsed<<'\n';
+}
 TEST_CASE("glass walking hull moves a thin floor piece without lifting or slowing the Source mirror") {
   for(float half:{16.0f,4.0f}) {
     World w(8);ready(w);w.set_interaction(true);

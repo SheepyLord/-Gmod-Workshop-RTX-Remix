@@ -14,6 +14,7 @@ Jolt 5.3.0 is statically linked from [the pinned source](../../third_party/jolt/
 | `tests/test_glass.cpp` | Parser, hull, boundary, lifecycle, interpolation and 4,000-piece benchmark tests |
 | `tests/test_interaction.cpp` | One-way kinematics, contact/bullet/blast/fall damage, convex area/minimum-size/capacity tests and bounded-cost benchmarks |
 | `tests/import_probe.cpp` | Read-only offline map counts/timings; run `nl_glass_import_probe <map.bsp>` explicitly, never via CTest |
+| `tests/scene_replay.cpp` | Replays actual Lua capture rows from stdin into a generated sleeping nine-piece pile; checks movement/damage, prescribed mirror trajectories and the disabled control |
 | `tests/fake_lua.h`, `tests/test_binding.cpp` | Strict stack-based `ILuaBase` double executing the actual exported callbacks, including realm refusal and reused pose tables |
 
 All API vectors use Source coordinates (Z up), one unit = 0.0254 metres. Angles are Source
@@ -104,6 +105,31 @@ has evicted its oldest piece. Cause bits are bullet=1, blast=2, Source body=4, f
 New statistics: `interaction`, `scene_bodies`, `scene_moves`, `scene_cooks`, `damage_dropped`,
 `ray_hits`, `splits`. Scene masses are clamped to .01–50,000 kg, half extents to .05–1024 units;
 snapshots reject duplicate/zero keys, malformed convexes and nonfinite input before mutation.
+
+The R7-C fast-body fix sweeps each mirror's **actual sampled translation**, before the worker is
+dispatched. Jolt's CCD deliberately excludes kinematics (`PhysicsSystem.cpp`'s `body.IsDynamic()`
+gate); discovery alone can still leave a thin floor piece pinned or tunneled through. Native shape
+casts against the glass layers transfer only closing normal velocity to pieces and queue the same
+body damage energy as contacts. No predicted pose is used and the mirror still reaches its exact
+Source target. Rotation-only changes, motion below 160 units/s and >128-unit teleport corrections
+are not swept. Off performs no sweep. Piece-piece collision off still permits mirror interaction.
+
+Per snapshot: at most **16 casts, eight unique hits/cast, 64 body visits and 64 hit callbacks/cast,
+and 64 distinct kicked pieces total**; fixed collector/budget buffers introduce no heap buffer. Closing speed
+must reach 160 units/s; velocity transfer caps at 2000 units/s. Damage uses the existing minimum-size,
+mass and energy gates. Saturation drops cosmetic contacts and increments `scene_sweep_limited`.
+`scene_sweeps` and `scene_sweep_hits` count cumulative casts/transfers. These are count limits;
+Jolt's bounded shape queries cannot be preempted. No falling solver, sleep, renderer or batching
+setting changes. The only added work runs in Source snapshot sync when a mirror translates fast.
+
+After `tools/build.ps1 -Config Release`, the Python glass interaction test feeds real Lua rows to
+`out/build/win64-release/glass/native/nl_glass_scene_replay.exe [--off]` through stdin. Input is up
+to 120 `frame dt count` records, each followed by `count` numeric rows:
+`key x y z pitch yaw roll halfX halfY halfZ mass velX velY velZ` (boxes, <=96 rows).
+Exit 0 requires a settled nine-piece fixture, unchanged mirror targets, and movement plus body
+damage when enabled; `--off` requires zero movement/damage. No files, installed assets or game are
+used. Native tests separately cover 650/3600-unit/s boxes at 60/30 Hz, both glass layers, caps,
+minimum-size movement, teleports and disabling. Offline timings are in the R7-C report.
 
 Import statistics include `brushes` (considered solid world brushes), `skipped_brushes` (clipping),
 `refused_brushes`, `refused_convexes`, `refused_meshes` (Jolt cooking) and `skipped_props`.

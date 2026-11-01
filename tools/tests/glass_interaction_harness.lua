@@ -45,7 +45,7 @@ local function entity(kind,position,bodies)
         GetCollisionBounds=function()return Vector(-16,-16,0),Vector(16,16,72)end,
         OBBMins=function()return Vector(-8,-4,-4)end,OBBMaxs=function()return Vector(8,4,4)end,
         GetPos=function(self)return self.position end,GetAngles=function(self)return self.angles end,
-        GetVelocity=function()return Vector(100,0,0)end,GetSolid=function()return 6 end,
+        GetVelocity=function(self)return self.velocity or Vector(100,0,0)end,GetSolid=function()return 6 end,
         GetPhysicsObjectCount=function(self)return #self.bodies end,
         GetPhysicsObjectNum=function(self,i)return self.bodies[i+1]end,
         SetPos=forbid,SetVelocity=forbid,TakeDamage=forbid,SetAngles=forbid}
@@ -57,13 +57,82 @@ local function api()
     return {ReadRegions=function()return {{{-100,-100,-100},{100,100,100}},{{-50,-50,-50},{150,150,150}}}end,
         SyncBodies=function(rows,dt)check(dt>=.001 and dt<=.25,"bounded sample time");return #rows end}
 end
-local function capture(S,n)
+local function capture(S,n,dt)
     local out
     local previous=n.SyncBodies
     n.SyncBodies=function(rows,dt)out=rows;return previous(rows,dt)end
-    S.Capture(n,.016);n.SyncBodies=previous;return out
+    S.Capture(n,dt or .016);n.SyncBodies=previous;return out
 end
-if scenario:match("^scene") then
+if scenario=="sceneperf" then
+    local ffi=require("ffi")
+    ffi.cdef[[int QueryPerformanceCounter(int64_t *); int QueryPerformanceFrequency(int64_t *);]]
+    local counter,frequency=ffi.new("int64_t[1]"),ffi.new("int64_t[1]")
+    assert(ffi.C.QueryPerformanceFrequency(frequency)~=0)
+    local period=1/tonumber(frequency[0])
+    function SysTime()ffi.C.QueryPerformanceCounter(counter);return tonumber(counter[0])*period end
+    local function bench(label,count,fast)
+        local S=dofile(root.."/nlglass/debris_scene.lua");local n=api();nearby={};now=0
+        n.ReadRegions=function()return count==0 and {} or {{{-100,-100,-100},{100,100,100}}}end
+        for i=1,count do
+            local p=phys(Vector(0,80,64));local e=entity("prop_physics",p.position,{p});e.velocity=vector_origin
+            nearby[#nearby+1]=e
+        end
+        if fast then
+            local p=nearby[#nearby].bodies[1];p.position,p.velocity=Vector(-210,0,4),Vector(650,0,0)
+            nearby[#nearby].position,nearby[#nearby].velocity=p.position,p.velocity
+        end
+        for i=1,80 do now=i/60;S.Capture(n,1/60)end
+        collectgarbage("collect")
+        local total,times=0,{}
+        for i=1,1200 do
+            now=now+1/60;local start=SysTime();S.Capture(n,1/60)
+            local elapsed=(SysTime()-start)*1000;total=total+elapsed;times[#times+1]=elapsed
+        end
+        table.sort(times)
+        print(string.format("R7-C capture %s n=1200 mean_ms=%.6f p99_ms=%.6f max_ms=%.6f bodies=%d candidates=%d examined=%s",
+            label,total/1200,times[1188],times[1200],S.bodies,S.candidates,tostring(S.examined)))
+    end
+    bench("empty",0);bench("warm96",96);bench("priority512",512,true)
+elseif scenario=="scene_fast_replay" or scenario=="scene_fast_crowded_replay" then
+    -- Real spatial query semantics: unlike the classification doubles, distant entities are absent.
+    -- Feed these exact capture rows to Jolt in test_glass_interaction.py, including empty frames.
+    local S=dofile(root.."/nlglass/debris_scene.lua")
+    local n=api();n.ReadRegions=function()return {{{-146,-146,-96},{146,146,100}}}end
+    ents.FindInBox=function(lo,hi)
+        queries=queries+1;local found={}
+        for _,e in ipairs(nearby)do
+            local a,b=e:WorldSpaceAABB()
+            if a.x<=hi.x and b.x>=lo.x and a.y<=hi.y and b.y>=lo.y and a.z<=hi.z and b.z>=lo.z then found[#found+1]=e end
+        end
+        return found
+    end
+    local speed=scenario=="scene_fast_replay" and 3600 or 650
+    local dt=tonumber(arg[3]) or 1/60
+    local p=phys(Vector(-210,0,4));p.velocity=Vector(speed,0,0)
+    -- Fast bodies must not wait for or spend time in expensive engine mesh extraction.
+    p.GetMeshConvexes=function()cooks=cooks+1;error("fast mirror must use its box before convex extraction")end
+    local e=entity("prop_physics",p.position,{p});e.velocity=p.velocity
+    if scenario=="scene_fast_crowded_replay" then
+        for _=1,120 do
+            local slow=entity("prop_dynamic",Vector(0,120,64));slow.velocity=vector_origin
+            nearby[#nearby+1]=slow
+        end
+    end
+    nearby[#nearby+1]=e
+    print("REPLAY_BEGIN")
+    for tick=0,35 do
+        now=tick*dt;p.position=Vector(-210+speed*now,0,4);e.position=p.position
+        local rows=capture(S,n,dt) or {}
+        check(cooks==0,"fast capture never calls slow mesh extraction")
+        print(string.format("frame %.9f %d",dt,#rows))
+        for _,r in ipairs(rows)do
+            check(r[6]==nil,"replay contains immediate boxes, no slow convex extraction")
+            print(string.format("%d %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f %.9f",
+                r[1],r[2].x,r[2].y,r[2].z,r[3].p,r[3].y,r[3].r,r[4].x,r[4].y,r[4].z,r[5],r[7].x,r[7].y,r[7].z))
+        end
+    end
+    print("REPLAY_END")
+elseif scenario:match("^scene") then
     local S=dofile(root.."/nlglass/debris_scene.lua") local n=api()
     if scenario=="scene_kinds" then
         local player=entity("player",nil,{phys()})
@@ -96,7 +165,7 @@ if scenario:match("^scene") then
         check(S.candidates==128 and #rows==96 and cooks>=1 and cooks<=2,"candidate/body/new-shape caps")
         check(rows[1][5]==85,"nearby players take priority over a saturated generic entity prefix")
         check(rows[24][1] and rows[25][1],"per-ragdoll bone cap permits other entities")
-        check(queries==1,"full candidate cap prevents additional spatial queries")
+        check(queries==2 and S.examined==512,"bounded priority prefix prevents additional candidate inspection")
         n.ReadRegions=function()return {}end;now=.2;rows=capture(S,n)
         check(#rows==0 and S.bodies==0,"no live regions means no Source capture")
         S.Reset();check(S.bodies==0 and S.candidates==0,"cleanup clears cached owners")
@@ -112,6 +181,25 @@ if scenario:match("^scene") then
         check(#rows==4 and rows[1][3].y==45 and rows[2][2].z==11,"remote ragdoll follows bone hitboxes")
         check(rows[3][3].y==90,"nonphysics object uses an oriented box")
         check(rows[4][6]==nil and rows[4][4].x==4,"malformed physics convexes retain a coarse box")
+    elseif scenario=="scene_sweep_bounds" then
+        local function moving(x,v)
+            local p=phys(Vector(x,0,4));p.velocity=Vector(v,0,0)
+            local e=entity("prop_physics",p.position,{p});e.velocity=p.velocity
+            return e,p
+        end
+        local incoming,p=moving(-260,650)
+        local away=moving(-260,-650)
+        local distant=moving(-450,100000)
+        nearby={away,distant,incoming}
+        local rows=capture(S,n)
+        check(#rows==1 and rows[1][2].x==-260 and rows[1][6]==nil and cooks==0,"sweep sees incoming body but rejects away/distant bodies; no early kick or cooking")
+        check(S.fast_candidates==1 and S.fast_bodies==1 and S.fast_boxes==1 and S.peak_bodies==1,"fast capture telemetry")
+        local key=rows[1][1]
+        incoming.position,p.position=Vector(),Vector();incoming.velocity,p.velocity=Vector(),Vector();now=.02
+        rows=capture(S,n)
+        check(rows[1][1]==key and rows[1][6]~=nil and cooks==1,"slow mirror upgrades its original box within the ordinary cooking budget")
+        check(S.fast_boxes==1 and S.fast_bodies==0,"upgrade keeps identity and does not count another fast box")
+        S.Reset();check(S.fast_boxes==0 and S.peak_bodies==0 and S.examined==0,"reset clears fast capture counters")
     else error("unknown scene case") end
 else
     SERVER,CLIENT=true,false

@@ -1663,3 +1663,19 @@ sequence and on/off, NPC/ragdoll, budget/expiry, fallback and two-client checks.
 scene must retain G1 run 10's 25.31/113.22 ms falling and 9.74/16.39 ms settled mean/p99; repeat a
 noisy measurement and reject a repeatable slowdown. modern_house map glass must retain its G1
 behaviour. No game was launched and no install/package input was changed by R7-C.
+
+## R7-C: fast-body fix pass (2026-11-01)
+
+`r7-glass-fix` passes all 31 native glass cases and 70 glass Python cases. The new regression
+feeds actual Lua snapshots into a generated sleeping nine-piece Jolt pile: 650-unit/s crowded
+and 3600-unit/s between-discovery crossings, at 60/30 Hz, must move/damage pieces while mirror
+targets stay exact. Both fail on the starting implementation; all disabled controls stay inert.
+Native cases cover both collision layers, 16-cast/64-transfer caps, leaf movement, teleports and off.
+
+The Release run passes 26/26 CTests and 470 Python tests (417 tools, 28 gmapack, 25 steam; two
+existing skips). Its conventions step fails only on three existing links to absent
+`docs/handover/R7-A-mmd-alpha.md`. A minimal redirect is prepared under ignored `out` pending
+scope clarification; no checks or tracked build settings were relaxed. No guard-path workaround
+is needed here. Receipts: `out/r7-glass-fix/test-release.log`, `glass-final.log`, `native-final.log`.
+Measured costs, evidence, bounds and Claude's unchanged field/drum QA are in the
+[fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
