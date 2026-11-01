@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-B fix pass: skip/count refused brush and prop convexes without losing Jolt for the whole map;
+  clip brush hulls in double precision, correct displacement indexing and retain ordinary terrain
+  triangles whose SURFACE bit is absent.
+
 - The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
   references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
   the new MIT glass part is assembled separately by G1 integration.

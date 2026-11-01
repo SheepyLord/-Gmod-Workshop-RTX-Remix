@@ -1356,3 +1356,13 @@ Evidence: `out/qa-poc/c16/` (each run's shots, `console.log` and `remix-dxvk.log
 
 Receipts: `out/tmp/c16-verify-final.log`, `c16-inputs-verify.log`, `c16-package-build.log`,
 `c16-release-tests-plain.log` and `c16-validation-summary.json`.
+
+## G1-B fix pass: offline map probe
+
+`out/build/win64-release/glass/native/nl_glass_import_probe.exe <map.bsp>` opens only the named
+file for reading, validates the same 256 MiB bound, and prints considered/clipped/skipped/refused
+brushes, displacement triangles, prop metadata, static bodies and parse/build timings. It does not
+extract client model collision, write fixtures or start a game. Exit 0 means a usable finished world;
+1 means refusal/read failure; 2 means missing argument. CTest never reads an installed map.
+Generated regressions cover 62-sided clipping, Jolt-refused brush/prop convexes, ordinary triangle
+tags without SURFACE, explicit REMOVE holes and asymmetric displacement indexing.

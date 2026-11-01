@@ -1,5 +1,9 @@
 # Roadmap
 
+G1-B fix pass is **in progress** on `g1-native-fix` (2026-11-01): offline gm_construct reproduced
+the game's refused-hull failure. Shape isolation and displacement corrections pass generated tests;
+frame cost, incremental pile rebuilding and background import are being addressed before Claude's QA.
+
 G1-A is **implemented and passes offline acceptance** on `g1-lua` (2026-11-01): original MIT panes,
 unified impacts/strength, bounded deterministic annealed/tempered fracture, synchronized growing
 cracks, remaining frozen collision/prediction, map input bridging, late join, cleanup, property-only

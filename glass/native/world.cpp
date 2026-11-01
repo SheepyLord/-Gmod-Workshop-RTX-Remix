@@ -73,7 +73,7 @@ JPH::RefConst<JPH::Shape> hull_shape(const Hull& hull,bool glass) {
   JPH::Array<JPH::Vec3> points;points.reserve(hull.size());for(auto p:hull)points.push_back(jvec(p));
   JPH::ConvexHullShapeSettings settings(points,glass?.0005f:.001f);
   settings.mHullTolerance=.00005f;settings.mDensity=2500; // ordinary soda-lime glass, kg/m^3
-  const auto result=settings.Create();need(!result.HasError(),"Jolt refused convex hull");return result.Get();
+  const auto result=settings.Create();return result.HasError()?nullptr:result.Get();
 }
 }
 struct World::Impl {
@@ -98,6 +98,7 @@ struct World::Impl {
   std::uint32_t next_id=1;
   bool collide=true,loaded=false,ready=false;
   unsigned workers=1,substeps=0,brushes=0,skipped_brushes=0;
+  unsigned refused_brushes=0,refused_convexes=0,refused_meshes=0,skipped_props=0;
   std::size_t model_points=0;
   float gravity=600;
   double accumulator=0,step_ms=0,dropped=0;
@@ -152,10 +153,14 @@ World::World(unsigned budget,float gravity) {
 World::~World()=default;
 std::vector<StaticProp> World::load_map(std::span<const std::uint8_t> bytes) {
   auto& w=*impl_;w.clear_all();
+  w.brushes=w.skipped_brushes=w.refused_brushes=w.refused_convexes=w.refused_meshes=w.skipped_props=0;
   try {
     auto map=read_bsp(bytes);
-    w.brushes=static_cast<unsigned>(map.brushes.size());w.skipped_brushes=map.skipped_brushes;
-    for(const auto& hull:map.brushes)w.add_static(hull_shape(hull,false));
+    w.brushes=map.considered_brushes;w.skipped_brushes=map.skipped_brushes;
+    for(const auto& hull:map.brushes) {
+      const auto shape=hull_shape(hull,false);
+      if(shape)w.add_static(shape);else ++w.refused_brushes;
+    }
     // Split displacement meshes into bounded batches. Make both sides solid for cosmetic debris.
     for(std::size_t first=0;first<map.triangles.size();first+=8192) {
       JPH::TriangleList triangles;
@@ -165,36 +170,39 @@ std::vector<StaticProp> World::load_map(std::span<const std::uint8_t> bytes) {
         triangles.emplace_back(a,b,c);triangles.emplace_back(a,c,b);
       }
       JPH::MeshShapeSettings settings(triangles);const auto result=settings.Create();
-      need(!result.HasError(),"Jolt refused displacement mesh");w.add_static(result.Get());
+      if(result.HasError())++w.refused_meshes;else w.add_static(result.Get());
     }
-    need(!w.statics.empty(),"BSP has no usable world collision");
     w.loaded=true;return std::move(map.props);
   } catch(...) { w.clear_all();throw; }
 }
-void World::add_model(const std::string& name,const std::vector<Hull>& convexes) {
+bool World::add_model(const std::string& name,const std::vector<Hull>& convexes) {
   auto& w=*impl_;need(w.loaded && !w.ready,"map must be loaded and unfinished");
   need(!name.empty() && name.size()<=128 && convexes.size()>0 && convexes.size()<=128,"invalid prop model/convex count");
   need(!w.models.contains(name) && w.models.size()<2048,"duplicate/too many collision models");
   JPH::StaticCompoundShapeSettings settings;std::size_t points=0;
   for(const auto& hull:convexes) {
     points+=hull.size();need(w.model_points+points<=kMaxMapPoints,"prop collision point limit");
-    settings.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),hull_shape(hull,false));
+    const auto shape=hull_shape(hull,false);
+    if(shape)settings.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),shape);else ++w.refused_convexes;
   }
-  const auto result=settings.Create();need(!result.HasError(),"Jolt refused static-prop compound");
-  w.models.emplace(name,result.Get());w.model_points+=points;
+  w.model_points+=points;
+  if(settings.mSubShapes.empty())return false;
+  const auto result=settings.Create();if(result.HasError())return false;
+  w.models.emplace(name,result.Get());return true;
 }
-void World::add_prop(const std::string& model,V3 position,V3 a,float scale) {
+bool World::add_prop(const std::string& model,V3 position,V3 a,float scale) {
   auto& w=*impl_;need(w.loaded && !w.ready,"map must be loaded and unfinished");
   need(position.valid() && a.valid(36000) && std::isfinite(scale) && scale>0 && scale<=16,"invalid prop transform");
-  const auto it=w.models.find(model);need(it!=w.models.end(),"unknown prop collision model");
+  const auto it=w.models.find(model);if(it==w.models.end()) { ++w.skipped_props;return false; }
   if(scale==1)w.add_static(it->second,position,a);
   else {
     const auto result=JPH::ScaledShapeSettings(it->second,JPH::Vec3::sReplicate(scale)).Create();
-    need(!result.HasError(),"invalid scaled prop shape");w.add_static(result.Get(),position,a);
+    if(result.HasError()) { ++w.skipped_props;return false; }w.add_static(result.Get(),position,a);
   }
+  return true;
 }
 void World::finish() {
-  auto& w=*impl_;need(w.loaded,"no imported world");w.physics->OptimizeBroadPhase();w.ready=true;
+  auto& w=*impl_;need(w.loaded && !w.statics.empty(),"BSP has no usable world collision");w.physics->OptimizeBroadPhase();w.ready=true;
 }
 std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin) {
   auto& w=*impl_;need(w.ready,"world is not ready");
@@ -203,6 +211,7 @@ std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin
   // A hull must remain close to its local origin; huge off-centre inputs are not debris.
   for(auto p:hull)need(p.valid(1024),"piece hull exceeds 1024 local units");
   const auto shape=hull_shape(hull,true);
+  need(shape!=nullptr,"Jolt refused piece hull");
   JPH::BodyCreationSettings settings(shape,jvec(position),rotation(a),JPH::EMotionType::Dynamic,w.collide?1:2);
   settings.mFriction=.65f;settings.mRestitution=.025f;settings.mLinearDamping=.15f;settings.mAngularDamping=.35f;
   settings.mMaxLinearVelocity=200;settings.mMaxAngularVelocity=100;
@@ -283,6 +292,8 @@ Stats World::stats() const {
   s.live=static_cast<unsigned>(w.ids.size());s.awake=w.physics->GetNumActiveBodies(JPH::EBodyType::RigidBody);
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
-  s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;return s;
+  s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;
+  s.refused_brushes=w.refused_brushes;s.refused_convexes=w.refused_convexes;s.refused_meshes=w.refused_meshes;s.skipped_props=w.skipped_props;
+  return s;
 }
 }

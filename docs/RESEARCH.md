@@ -3385,3 +3385,21 @@ Runtime paths below refer to the isolated source built from `runtime/base.json` 
   5,888-byte auto-exposure SPIR-V and 74,616-byte opaque G-buffer SPIR-V occur byte-for-byte inside
   the final DLL (offsets 380,900,976 and 12,898,160 respectively). No source or build output in the
   R6 tree or the user's fork was changed.
+
+## G1-B fix pass: real-map collision findings (2026-11-01)
+
+- Read-only gm_construct probe (36,735,656 bytes): baseline considered 2,095 brushes, clipped
+  2,092, skipped 3; Jolt refused one hull and aborted the entire world in 55.38 ms. Double clipping
+  reduces the maximum hull from 46 to 24 vertices; cooking skips/counts the one remaining refusal.
+  The corrected world has 2,094 static bodies (2,091 brush bodies + three terrain mesh batches),
+  20,992 displacement triangles, four prop metadata entries (not cooked by the offline probe).
+  Initial corrected parse/build: 46.98 ms, standalone parse 14.25 ms. Evidence stays under this
+  worktree's ignored `out/g1-native-fix/`; QA logs 01-qa and 02-qa were read only.
+- The installed map's displacement tags are 6 (20,801), 2 (122), 0 (69): **zero** SURFACE bits.
+  Requiring bit 0 silently discarded all terrain. The local Source SDK reference's
+  `public/bspfile.h:624-629` names SURFACE/WALKABLE/BUILDABLE/REMOVE (bits 0/1/2/5).
+  Import now omits only REMOVE-tagged triangles; generated tests cover tags 0, 2, 6 and holes.
+- The same local reference's `public/builddisp.cpp:1918-1994` interpolates rows along 0->1 and
+  columns along 0->3 (`ndx = i * postSpacing + j`); our parser had those swapped. The uneven
+  generated fixture now asserts a raised vertex at (200,210,1.25), never its transposed position.
+  This was read for format facts only; no GPL implementation was copied.

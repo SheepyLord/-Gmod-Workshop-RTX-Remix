@@ -21,6 +21,17 @@ TEST_CASE("glass hulls refuse flat nonfinite and unbounded input") {
   std::vector<Plane> p{{{1,0,0},1},{{-1,0,0},1},{{0,1,0},1},{{0,-1,0},1},{{0,0,1},1},{{0,0,-1},1}};
   CHECK(brush_hull(p).size()==8);p.pop_back();CHECK(brush_hull(p).empty());
 }
+TEST_CASE("glass high-sided brush clips and deduplicates in double precision") {
+  std::vector<Plane> p{{{0,0,1},64},{{0,0,-1},64}};
+  for(unsigned i=0;i<62;++i) {
+    const double a=i*6.283185307179586/62;
+    const V3 n{static_cast<float>(std::cos(a)),static_cast<float>(std::sin(a)),0};
+    p.push_back({n,128+n.dot({12000,-3000,0})});
+  }
+  const auto h=brush_hull(p);REQUIRE(h.size()==124);CHECK(valid_hull(h));
+  World w(1);w.load_map(fixture::room());CHECK(w.add_model("prism",{h}));w.finish();
+  CHECK(w.stats().refused_convexes==0);
+}
 TEST_CASE("glass BSP imports only world brushes displacements and solid sprp instances") {
   for(auto v:{19u,20u,21u}) {
     const auto map=read_bsp(fixture::room(v));CHECK(map.brushes.size()==5);CHECK(map.triangles.size()==32);
@@ -33,15 +44,40 @@ TEST_CASE("glass BSP imports only world brushes displacements and solid sprp ins
   // World nodes never pull in a brush belonging only to an entity model.
   file=fixture::room();const auto leaf_offset=fixture::read_u32(file,8+10*16);
   fixture::u16(file,leaf_offset+26,1);CHECK(read_bsp(file).brushes.size()==1);
-  file=fixture::room();fixture::u16(file,fixture::read_u32(file,8+48*16),0);
+  file=fixture::room();fixture::u16(file,fixture::read_u32(file,8+48*16),1u<<5);
   CHECK(read_bsp(file).triangles.size()==31); // An authored displacement hole remains a hole.
+}
+TEST_CASE("glass displacement fast index goes to corner three and ordinary tags need no surface bit") {
+  auto file=fixture::room();const auto tags=fixture::read_u32(file,8+48*16);
+  for(unsigned i=0;i<32;++i)fixture::u16(file,tags+i*2,i%3==0?0:i%3==1?2:6);
+  const auto map=read_bsp(file);CHECK(map.triangles.size()==32);
+  bool raised=false,mirrored=false;
+  for(const auto& t:map.triangles)for(auto p:{t.a,t.b,t.c}) {
+    if((p-V3{200,210,1.25f}).length()<.001f)raised=true;
+    if((p-V3{210,200,1.25f}).length()<.001f)mirrored=true;
+  }
+  CHECK(raised);CHECK(!mirrored);
 }
 TEST_CASE("glass BSP skips a brush that cannot become a hull, not the map") {
   auto file=fixture::room();const auto brushes=fixture::read_u32(file,8+18*16);
   fixture::u32(file,brushes+4,3); // brush 0 keeps a valid side range but has only three sides
   const auto map=read_bsp(file);CHECK(map.brushes.size()==4);CHECK(map.skipped_brushes==1);CHECK(map.considered_brushes==5);
   for(unsigned i=1;i<5;++i)fixture::u32(file,brushes+i*12+4,3);
-  CHECK_THROWS_AS(read_bsp(file),Error); // nothing usable: refused, so the manager falls back
+  CHECK(read_bsp(file).brushes.empty()); // displacement/props can still supply collision
+  World w(1);w.load_map(file);w.finish();CHECK(w.stats().ready);
+  fixture::u32(file,12+26*16,0);fixture::u32(file,12+35*16,0);
+  w.load_map(file);CHECK_THROWS_AS(w.finish(),Error); // genuinely no collision: fallback
+}
+TEST_CASE("glass Jolt-refused brush and prop convex are counted without disabling usable collision") {
+  // Small enough to fail Jolt's initial-triangle area threshold, but a finite 3D hull in Source units.
+  const auto tiny=fixture::box(.002f,.002f,.002f);REQUIRE(valid_hull(tiny));
+  auto file=fixture::room();const auto planes=fixture::read_u32(file,8+1*16);
+  for(unsigned i=0;i<6;++i)fixture::f32(file,planes+i*20+12,.002f);
+  World w(4);w.load_map(file);
+  CHECK(w.stats().skipped_brushes==0);CHECK(w.stats().refused_brushes==1);
+  CHECK(w.add_model("mixed",{tiny,fixture::box()}));CHECK(!w.add_model("tiny",{tiny}));
+  CHECK(w.stats().refused_convexes==2);CHECK(w.add_prop("mixed",{},{}));CHECK(!w.add_prop("tiny",{},{}));
+  w.finish();CHECK(w.stats().ready);CHECK(w.stats().statics==6);CHECK(w.stats().skipped_props==1);
 }
 TEST_CASE("glass BSP decodes Source LZMA collision lumps and refuses bad compression") {
   auto file=fixture::room();

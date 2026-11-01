@@ -11,6 +11,7 @@ Jolt 5.3.0 is statically linked from [the pinned source](../../third_party/jolt/
 | `module.cpp` | Client-only `ILuaBase` binding, raw table access, numeric/type validation and exception-to-result boundary |
 | `tests/fixture.h` | Generated synthetic room, displacement and static-prop BSP; no game files |
 | `tests/test_glass.cpp` | Parser, hull, boundary, lifecycle, interpolation and 4,000-piece benchmark tests |
+| `tests/import_probe.cpp` | Read-only offline map counts/timings; run `nl_glass_import_probe <map.bsp>` explicitly, never via CTest |
 | `tests/fake_lua.h`, `tests/test_binding.cpp` | Strict stack-based `ILuaBase` double executing the actual exported callbacks, including realm refusal and reused pose tables |
 
 All API vectors use Source coordinates (Z up), one unit = 0.0254 metres. Angles are Source
@@ -28,9 +29,13 @@ excess time is discarded and counted, preventing a catch-up spiral.
 
 Import accepts VBSP 19, 20 and 21 (including the L4D2 reordered directory). It traverses model 0's
 node/leaf tree, imports only its referenced brushes, and clips their plane halfspaces to convex
-hulls. Contents use `MASK_SOLID_BRUSHONLY` (`0x400b`: solid/window/grate/moveable); player and
+hulls in double precision, deduplicated before float conversion. Individual unusable/refused brush
+and prop convex shapes are skipped and counted; only an empty finished world falls back.
+Contents use `MASK_SOLID_BRUSHONLY` (`0x400b`: solid/window/grate/moveable); player and
 monster clips, water and entity brush models are excluded. Displacement powers 2-4 become two-sided
-triangle meshes, with authored triangle holes omitted. `sprp` versions 4-11 return solid model
+triangle meshes: columns run toward corner 3, rows toward corner 1. REMOVE-tagged triangles
+(bit 5) are omitted; SURFACE bit 0 is not required (gm_construct sets it on no triangles).
+`sprp` versions 4-11 return solid model
 instances, including v11 uniform scale; Lua supplies each unique model's collision convexes.
 Models with no client collision are skipped. Moving props, players, dynamic brush entities and
 other gameplay bodies never enter this world. Unknown/malformed collision data leaves an empty
@@ -43,8 +48,8 @@ unready world; the manager logs once and chooses fallback.
 |---|---|
 | `Init` | `(budget, gravity)` -> true; replaces any prior world |
 | `LoadMap` | `(bspBytes)` -> array of `{model, position={x,y,z}, angles={pitch,yaw,roll}, solid, scale}` |
-| `AddModel` | `(name, convexes)` -> true; unique model's array of hull point arrays |
-| `AddProp` | `(name, position, angles, scale)` -> true; instance of a supplied collision model |
+| `AddModel` | `(name, convexes)` -> boolean; true if any convex survived cooking |
+| `AddProp` | `(name, position, angles, scale)` -> boolean; missing/refused model instance is skipped |
 | `FinishWorld` | `()` -> true; optimize the static broadphase, enable spawning |
 | `Spawn` | `(hullPoints, position, angles, velocity, spin)` -> unique nonzero id |
 | `Remove` | `(id)` -> boolean; stale ids return false, never alias a new body |
@@ -62,3 +67,6 @@ cap at +/-131072, angles/spin at +/-36000, velocity components at +/-100000, gra
 `ReadPoses` does not construct tables or Vector/Angle userdata: the manager allocates one row on
 spawn and mutates its own drawing objects. It writes active pieces and one final pose when a piece
 sleeps; consume only the returned number of changed ids. Reused native buffers are reserved up front.
+
+Import statistics include `brushes` (considered solid world brushes), `skipped_brushes` (clipping),
+`refused_brushes`, `refused_convexes`, `refused_meshes` (Jolt cooking) and `skipped_props`.

@@ -19,6 +19,6 @@ struct Map {
 };
 // Parses only little-endian Source VBSP 19-21; never reads a path or any engine memory.
 // A bad/unsupported file throws Error and callers discard the whole map. Single brushes that cannot
-// become a hull are skipped and counted; a map is refused when most of its brushes fail.
+// become a hull are skipped and counted; World::finish refuses maps with no usable collision.
 Map read_bsp(std::span<const std::uint8_t> bytes);
 }

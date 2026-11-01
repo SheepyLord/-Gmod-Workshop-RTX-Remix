@@ -69,16 +69,15 @@ function W.Begin(budget, gravity)
             for model in pairs(models) do
                 local convexes = collision(model)
                 if convexes then
-                    local added, err = W.api.AddModel(model, convexes)
-                    -- A supplied but rejected hull indicates incomplete import: use fallback.
-                    must(added, err)
-                    models[model] = true
+                    local added = W.api.AddModel(model, convexes)
+                    models[model] = added == true
+                    if not added then W.skipped = W.skipped + 1 end
                 else W.skipped = W.skipped + 1 end
                 n = n + 1
                 if n % 2 == 0 then coroutine.yield() end
             end
             for i, prop in ipairs(props) do
-                if models[prop.model] then must(W.api.AddProp(prop.model, prop.position, prop.angles, prop.scale)) end
+                if models[prop.model] then W.api.AddProp(prop.model, prop.position, prop.angles, prop.scale) end
                 if i % 64 == 0 then coroutine.yield() end
             end
             must(W.api.FinishWorld())

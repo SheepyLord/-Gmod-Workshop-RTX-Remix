@@ -31,3 +31,7 @@ target_include_directories(nl_glass_tests SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/th
 target_link_libraries(nl_glass_tests PRIVATE nl_glass nl_build_options)
 add_test(NAME nl_glass_tests COMMAND nl_glass_tests)
 set_tests_properties(nl_glass_tests PROPERTIES TIMEOUT 180)
+
+# Deliberate read-only probe; never runs against an installed map as part of CTest.
+add_executable(nl_glass_import_probe tests/import_probe.cpp)
+target_link_libraries(nl_glass_import_probe PRIVATE nl_glass nl_build_options)

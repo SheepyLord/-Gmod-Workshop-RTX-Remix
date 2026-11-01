@@ -86,11 +86,11 @@ LUA_FUNCTION_STATIC(AddModel) { return guarded(LUA,[&] {
   const int count=LUA->ObjLen(2);need(count>0 && count<=128,"prop model requires 1-128 convexes");
   std::vector<Hull> convexes;convexes.reserve(count);
   for(int i=1;i<=count;++i) { get(LUA,2,i);convexes.push_back(hull(LUA,-1));LUA->Pop(); }
-  w.add_model(model,convexes);return success(LUA);
+  LUA->PushBool(w.add_model(model,convexes));return 1;
 }); }
 LUA_FUNCTION_STATIC(AddProp) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto model=string(LUA,1,128);const auto p=vector(LUA,2,kCoordinateLimit),a=vector(LUA,3,36000,true);
-  w.add_prop(model,p,a,static_cast<float>(number(LUA,4,.001,16)));return success(LUA);
+  LUA->PushBool(w.add_prop(model,p,a,static_cast<float>(number(LUA,4,.001,16))));return 1;
 }); }
 LUA_FUNCTION_STATIC(FinishWorld) { return guarded(LUA,[&] { active(LUA).finish();return success(LUA); }); }
 LUA_FUNCTION_STATIC(Spawn) { return guarded(LUA,[&] {
@@ -133,6 +133,8 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("live",s.live);add("awake",s.awake);add("statics",s.statics);add("models",s.models);add("workers",s.workers);
   add("substeps",s.substeps);add("step_ms",s.step_ms);add("dropped_seconds",s.dropped_seconds);
   add("brushes",s.brushes);add("skipped_brushes",s.skipped_brushes);
+  add("refused_brushes",s.refused_brushes);add("refused_convexes",s.refused_convexes);
+  add("refused_meshes",s.refused_meshes);add("skipped_props",s.skipped_props);
   LUA->PushBool(s.ready);set(LUA,1,"ready");return success(LUA);
 }); }
 LUA_FUNCTION_STATIC(Clear) { return guarded(LUA,[&] { active(LUA).clear();return success(LUA); }); }
