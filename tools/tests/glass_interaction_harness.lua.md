@@ -12,6 +12,10 @@ candidates) implement spatial box queries and emit the actual captured rows betw
 the snapshot interval (1/60 or 1/30 seconds). Fast physics mesh extraction must not be called.
 The Python test passes those rows to Jolt; this Lua harness does not pretend to simulate contacts.
 
+`SysTime` is the harness's Source clock (`CurTime`), which only the cases advance, so the capture's
+wall-clock budgets (the second shape cook within 0.5 ms) never depend on the machine: on a loaded
+2-vCPU CI runner, `os.clock` (wall time on Windows) once deferred a cook and failed `scene_flags`.
+
 `sceneperf` prints 1200-sample QueryPerformanceCounter timings after 80 warm frames: empty,
 96 warm bodies and a 512-entry priority prefix. Timings include real capture code with engine
 doubles and a native-sync double; no real engine query, native sync, Remix or GPU costs.

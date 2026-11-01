@@ -17,7 +17,10 @@ function isangle(v) return getmetatable(v)==A end
 function isnumber(v) return type(v)=="number" end
 function IsValid(v) return type(v)=="table" and v.valid==true end
 function CurTime() return now end
-function SysTime() return os.clock() end
+-- Harness time is the Source clock the cases advance, never this machine's: capture budgets such as
+-- debris_scene.lua's 0.5 ms second-shape cook must not race the CPU (os.clock is wall time on
+-- Windows; a loaded CI runner deferred a cook). sceneperf alone measures QueryPerformanceCounter.
+function SysTime() return now end
 angle_zero,vector_origin,SOLID_NONE=Angle(),Vector(),0
 function LocalToWorld(p,_,o,a)
     local c,s=math.cos(math.rad(a.y)),math.sin(math.rad(a.y))

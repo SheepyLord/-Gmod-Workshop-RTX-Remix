@@ -4061,3 +4061,12 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
   snapshot clock, including a .045 s snapshot (2/60 of its motion done, the rest kept for the next step).
   The `substeps==4` check in `test_glass.cpp` had the same race and now pins 1000. Without the fix the
   pinned cases fail on an idle machine (108 and 10 misses).
+- **The same race in the Lua scene harness.** Main's run 41359603305 also failed the Python test
+  `test_collision_flags_default_living_exclusion_and_independent_categories` at
+  `glass_interaction_harness.lua:157` ("flag changes resend cold native shapes"). `debris_scene.lua:170`
+  cooks a second shape in one snapshot only while the capture has taken under 0.5 ms, and the harness's
+  `SysTime` was `os.clock()`, which is wall time on Windows. A simulated clock that gains 1 ms per call
+  reproduces the failure on Linux (0.3 ms passes), and only `scene_flags` depends on it. The harness now
+  answers `SysTime` with its Source clock, as `glass_debris_harness.lua` already did. `sceneperf` still
+  measures QueryPerformanceCounter, and the game's budget is unchanged: a slow frame cooks that shape in
+  the next snapshot.
