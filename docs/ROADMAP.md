@@ -1,5 +1,10 @@
 # Roadmap
 
+R8-C is **in progress** on `r8-compat` (2026-11-01): reinvestigate GShader and the named graphics
+add-ons, replace guard-created errors with safe fallbacks, and document inert effects under RTX.
+Eight exact source archives are indexed in [the second audit](audits/R8-C-addon-compat.md); Claude
+retains GPU and two-client acceptance. No game or install is changed by this task.
+
 R7 (the user's report of 2026-11-01) is **done** (2026-11-01, loader 0.12.0):
 
 - **Mask.** Columbina's mask renders as in MMD under RTX: runtime patch 0017 adds a texture category

@@ -1,5 +1,23 @@
 # Research notes
 
+## R8-C: graphics add-ons, exact sources (2026-11-01)
+
+[The second audit](audits/R8-C-addon-compat.md) and [hash ledger](audits/R8-C-addon-compat.json)
+index 86 Lua/VMT files and 856 candidate API lines across eight exact installed Workshop archives.
+Every indexed file matches its archive-entry CRC and SHA-256; source bodies remain in ignored
+`out/r8-compat/src`. This is a static inventory, not an execution count. Quick Bloom is now exact: its
+only client autorun writes two bloom cvars in Initialize. Life Mod legacy decoding is bounded and
+its declared-length GMA passes all 98 entry CRCs and aggregate CRC 374141b9.
+
+Claude's existing r8/07-gshader console contains 26 failed-shader lines, an intentional guard error
+at bumps_building.lua:35 and one at worldpos.lua:27 through !!shaderlib.lua:800. The map loads/exits
+normally there; the tester's crash is not reproduced. Raw RGBA32323232F29 is a documented Source
+format, but the guard's old enum snapshot predates GShader exporting it. That false diagnostic is
+separate from backend support: D3D9Ex dependencies, reserved target replacement, MRT/depth copies,
+world-mesh reconstruction and shared light-metatable edits remain concrete capability risks.
+[ADR 0086](decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md) makes the incompatible
+work inert with real engine-backed fallbacks; it does not claim native/GPU fault recovery.
+
 ## R7-B: external exit diagnostics (2026-11-01)
 
 The final text review caught lossy catalog generation through Windows PowerShell 5.1's

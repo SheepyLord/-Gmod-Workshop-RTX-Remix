@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- **R8-C graphics compatibility:** adopt non-throwing render-guard fallbacks and keep GShader-style
+  screen effects inert under RTX; preserve ordinary rendering and fresh RTX-off sessions
+  ([ADR 0086](docs/decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md)).
+
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 
 - **Transparent MMD materials show under RTX** (the user: Columbina's blindfold rendered black, only
