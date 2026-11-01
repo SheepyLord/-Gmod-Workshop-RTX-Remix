@@ -3962,3 +3962,45 @@ SWEP traces/stock swings, keeps the wider line/hull result (stock fists use that
 re-clips a containing Source box before the native sphere cast. Numeric region loops remain.
 Primary three-run offline costs and all limits are in [the R8-G report](handover/R8-G-report.md);
 raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claimed from doubles.
+
+## R8: noise on Model Hotloader characters after R7 (2026-11-01, Claude)
+
+- **What discards history.** `geometry_resolver.slangh` (fork, `e9460a14`) sets
+  `discardRRHistory = surface.hasMaterialChanged || (animated water and the option)`; the pixel then
+  writes the DLSS-RR disocclusion value `log(10000)` (RR) or uses the alternate disocclusion threshold
+  (NRD) into `PrimaryDisocclusionThresholdMix`. Remix's debug view 128, "Primary Alternate Disocclusion
+  Threshold", shows that buffer: white where history is thrown away. `DXVK_RTX_DEBUG_VIEW_INDEX=128` in
+  the game's environment turns it on for a whole session; `poc_session.py` passes its environment on.
+- **Patch 0017's comparison.** `InstanceManager::updateInstance` set `hasMaterialChanged` also when the
+  instance's stored `surface.alphaState` differed from the new draw's in `isMmdAlpha` or the cutoff.
+  That stored state is written by `mergeInstanceHeuristics` for a later draw of the same frame (the
+  "opaqueness takes priority" merge), and a new instance starts with a default (untagged) state; only
+  these two writes exist (`rtx_instance_manager.cpp:954`, `:1149`). The material-hash comparison next to
+  it was guarded by `m_materialHash != kEmptyHash`; the alpha comparison was not.
+- **Measured on the PoC** (Robin face up on gm_construct, pinned camera, share of the frame centre
+  that discards history): G1 runtime 0.0 %; R7 runtime with the companion 37.1 %; R7 with the companion
+  stopped before the spawn 0.0 %; R7 with Robin's 166 materials tracked but nothing tagged 0.0 %; R7 with
+  Robin's 15 texture hashes tagged by hand 31.4 %; patch 0018 0.0 %. Frame-to-frame difference inside the
+  character's surfaces (two consecutive shots, DLSS on): R7 shows a grain over dress, arms and hands
+  that G1 and patch 0018 do not (`out/qa-poc/r8/noise-compare.png`).
+- **API notes.** `RemixConfig.GetConfigVariable` returns an empty string for the hash-set option
+  `rtx.gmod.mmdAlphaTexturesForSession`. Setting it to `""` or to a single dummy hash at runtime did not
+  remove tags already applied in these runs (the character stayed white), while adding hashes took effect
+  within seconds; treat runtime removal from that set as unreliable.
+- **Unit tests.** The fork's Release build includes `tests/rtx/unit`; run them with
+  `python -m mesonbuild.mesonmain test -C _CompRelease_x64 --no-rebuild` inside `Enter-VsDevEnv`. Tests
+  that load `d3d9.dll` (`test_remix_categories`) need the runtime's NVIDIA/USD DLLs next to
+  `_CompRelease_x64\src\d3d9\d3d9.dll`; staged from a deployed runtime folder, all 29 pass.
+
+## R8 integration: two facts from the game (2026-11-01, Claude)
+
+- **`net.WriteVector` is compressed.** Each vector takes 3-66 bits (per component a presence bit, then
+  integer and fractional coordinate bits), so a region of a vector and a 32-bit float takes 35-98 bits. A
+  receiver that requires 128 bits per region refuses every real message; glass interest did until R8
+  (PoC `21-glass-r8`: forwarded hits 0 → 1/6 after the fix).
+- **Session cheat variables in the field.** `r_forcehwlight` (created by `gmcl_RTXFixesBinary`, flags 0,
+  default 0) breaks GPU-skinned characters only together with `mat_softwareskin 0`: on the PoC, with
+  `sv_cheats 1` and `mat_softwareskin 1`, a Lua `r_forcehwlight 1` left Kleiner, Alyx and a citizen right
+  (`18-vanilla-control`); R3-016 saw the break once `sv_cheats` had gone 1 → 0 and reset the cheat
+  variable. The field's own `autoexec.cfg` line `r_forcehwlight 1` never applies (the variable does not
+  exist yet when it runs).

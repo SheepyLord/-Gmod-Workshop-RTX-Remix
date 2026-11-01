@@ -1,5 +1,13 @@
 # Roadmap
 
+R8 (the user's report after R7, 2026-11-01) is **done**: the character noise R7's runtime patch caused
+is gone (patch 0018); vanilla characters stay out of bind pose (the Backrooms add-on no longer forces
+`r_forcehwlight 1`, and the guard pins it); graphics add-ons such as GShader Library get safe fallbacks
+instead of guard-made Lua errors, with their screen-space effects inert under RTX; falling glass costs
+11-12 ms instead of 26-29 ms; glass has collision levels with living entities off; bullets and melee break
+fractured glass at any time; the Backrooms work's native fixes are in the fixes DLL. Each was checked on
+the PoC. See [the report](handover/R8-report.md).
+
 R8-C's pre-QA review corrections are **complete offline** (2026-11-01):
 native material loads/readers, exact bundled-caller exemptions and binding-only shader checks replace
 the earlier material preflight. The 1,200-path harness proves zero added VMT reads, including icons
@@ -251,6 +259,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | C-16 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md), [report](handover/C16-report.md); measured and tuned on the PoC, [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
 | G1 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [report](handover/G1-report.md), [ADR 0070](decisions/0070-glass-overhaul.md); every cause, walking and running, map glass and the 50-pane scene checked on the PoC, the old system measured as the baseline; irregular breaks at the user's request) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
 | R7 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R7-plan.md), [report](handover/R7-report.md); loader 0.12.0, ADRs 0081-0084; each point checked on the PoC) | The user's report of 2026-11-01: transparent materials that render black (Columbina's mask), a report when a crash ends the game, broken glass pushed and broken by players, props, ragdolls, bullets, blasts and falls (one way), and the diagnostics' memory warning and add-on list | Each point checked on the PoC; published |
+| R8 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R8-plan.md), [report](handover/R8-report.md); runtime patch 0018, ADRs 0085-0086; each point checked on the PoC) | The user's report after R7: character noise from the alpha fix, vanilla graphics add-ons under RTX (GShader Library), the falling-glass cost, glass collision levels, follow-up hits on fractured glass, the Backrooms work's fixes, vanilla characters in bind pose again | Each point checked on the PoC; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
 C-16 (2026-10-31): the runtime's scene-adaptive emission (C16-A) and the PBR writer, staged-pack
