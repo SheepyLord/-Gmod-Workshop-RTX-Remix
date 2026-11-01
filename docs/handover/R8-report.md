@@ -99,6 +99,32 @@ The Backrooms add-on's field copy no longer sets `r_forcehwlight` (the old file 
 A field game launched by another project's tool (`ipg\zzz_34\tools\kafka_runtime.py`) was running at
 22:07 UTC; it was left alone and the check waited (the user then closed all games).
 
+## After the report: "Not Responding" during long loads (loader 0.12.1)
+
+The user confirmed the game still drew and its menu updated while Windows called the window
+unresponsive, and asked for it to stop. `8a24a9c` makes the loader turn off Windows' window ghosting
+for the game process at start-up. The game window still hangs during a load, but Windows no longer
+hides it behind a greyed "(Not Responding)" copy that offers to close the game.
+`NATIVE_LOADER_WINDOW_GHOSTING=1` keeps the old behaviour. The bootstrap still imports only KERNEL32.
+`poc_session.py` takes `--hang-grace` in place of the one-off runner. Release suite: 26 of 26 CTests
+(KERNEL32-only imports included), 506 Python tests (skips as before), "All checks passed". Workshop item unchanged (`unchanged-inputs`).
+Loader `0.12.1+8a24a9ca` is in the field; `0.12.0`'s DLL, PDB, receipt and config are in
+`out/field-backup/2026-11-01-r8-ghosting`.
+
+A watcher (`out/r8-ghosting/ghost_watch.py`) polled the game window with `IsHungAppWindow` and listed
+top-level `Ghost` windows. While the window was hung, it invalidated it every 5 s; this sends no
+message.
+
+| Run | Loader | Hang episodes (longest) | Ghost windows |
+|---|---|---|---|
+| PoC `a-kept`: gm_construct, 25 s Lua stall, `NATIVE_LOADER_WINDOW_GHOSTING=1` | 0.12.1 | 2 (20.1 s) | 2 |
+| PoC `b-fixed`: the same stall | 0.12.1 | 1 (20.1 s) | **0** |
+| Field `02-br-complex-kept`: gm_br_complex, 765 add-ons, `=1` | 0.12.1 | 5 (8.0 s) | 5 |
+| Field `01-br-complex`: the same load | 0.12.1 | 6 (12.1 s) | **0** |
+
+Every field run mounted the Workshop and loaded the map (29.8-37.7 s this time; minutes earlier the same
+day, with colder caches) and quit normally. Evidence: `out/r8-ghosting/poc` and `out/qa-field/r8-ghost`.
+
 ## Open issues
 
 - The tester's GShader crash is not reproduced; untested GShader effects stay inert by the generic rule.
