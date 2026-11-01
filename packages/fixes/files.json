@@ -636,6 +636,16 @@
     "dirty": false
    },
    "imported": "2026-10-31T23:05:37+00:00"
+  },
+  "garrysmod/rtx-remix/mods/base_mod/breakable_glass/assets/remix_materials/AperturePBR_Opacity.mdl": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\c16-runtime\\out\\c16-mdl\\AperturePBR_Opacity.mdl",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/c16-runtime",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "02f8f742d58db0cdf9d6b3f80e72ec2e6787d7c0",
+    "dirty": false
+   },
+   "imported": "2026-11-01T04:27:28+00:00"
   }
  },
  "files": {
@@ -2444,9 +2454,9 @@
    "stored": "plain"
   },
   "garrysmod/rtx-remix/mods/base_mod/breakable_glass/assets/remix_materials/AperturePBR_Opacity.mdl": {
-   "size": 22667,
-   "sha256": "c7b8645f9bf3e6a63aad3f4fb90491c666196ffc0755f33cfeee9abb803f7f22",
-   "mtime_ns": 1792912214053257200,
+   "size": 23174,
+   "sha256": "241019a3b064b247c144d5f9ee3c46970e784c380f38bb7e93a9b24e7d427348",
+   "mtime_ns": 1793507248609481300,
    "stored": "plain"
   },
   "garrysmod/rtx-remix/mods/base_mod/breakable_glass/assets/remix_materials/AperturePBR_SpriteSheet.mdl": {

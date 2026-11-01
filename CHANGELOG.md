@@ -6,6 +6,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### C-16 (unreleased)
+
+- Opaque materials can opt into scene-adaptive emission with `emissive_adaptive_intensity`: it
+  follows auto exposure's scene luminance to steady eye-white brightness, with a fixed-intensity
+  fallback, configurable scale/clamps and luminance/exposure logs for tuning
+  ([ADR 0067](docs/decisions/0067-scene-adaptive-emission.md)). In-game tuning remains with Claude.
+
 ### Fixed (after R6)
 
 - The git hooks' background Workshop publish no longer opens a window for every step it runs; with

@@ -159,6 +159,15 @@ export material AperturePBR_Opacity(
     anno::in_group("Emission")
   ]],
 
+  uniform float emissive_adaptive_intensity = 0.f
+  [[
+    anno::enable_if("enable_emission == true"),
+    anno::display_name("Scene-Adaptive Emissive Intensity"),
+    anno::hard_range(0.0, 65504.0),
+    anno::description("In RTX Remix, values above zero replace Emissive Intensity with this value times the adapted scene luminance and rtx.adaptiveEmission.scale. Zero or a disabled feature uses Emissive Intensity. MDL previews retain the fixed intensity."),
+    anno::in_group("Emission")
+  ]],
+
   // -------------------- SPRITE SHEET ----------------------
   uniform int sprite_sheet_fps = 0
   [[

@@ -36,6 +36,25 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).
 
+Patch `0016-Add-scene-adaptive-opaque-emission` adds optional `emissive_adaptive_intensity`
+([ADR 0067](../docs/decisions/0067-scene-adaptive-emission.md)). The geometric-mean scene Yf and
+paired exposure use a three-slot, nonblocking readback ring (eligible after two frames), then the
+shared raytracing constants. The half-float material input occupies the unused high subsurface-index
+byte and constant DLSS-alpha byte; the 64-byte material record stays unchanged, and input zero
+preserves its previous bytes. Both opaque and Source-eye evaluation use the new intensity helper;
+already evaluated interactions keep their radiance. Texture preload preserves the new USD value;
+public API materials and baked terrain retain a zero adaptive input.
+
+The feature defaults on for positive inputs; `rtx.adaptiveEmission.scale` defaults to 1,
+`minLuminance` to 0, `maxLuminance` to 64, and `fallbackLuminance` to 0.18. Fallback is used when
+auto exposure is off or before a completed readback exists. The zero lower clamp permits fading
+in darkness. `[RTX Adaptive Emission]` logs the raw Yf, paired exposure, effective luminance,
+sample frame/age, scale and enablement at cuts and five-minute intervals. These are the real
+geometric mean and smoothed exposure; transition brightness is still affected by exposure's
+0.15/0.75-second integrator. The combined package's only `AperturePBR_Opacity.mdl` lives in the fixes
+part's breakable-glass assets, and declares the input with default 0 and range 0..65504; the runtime
+part itself has no MDL. Its MDL preview retains fixed emission.
+
 The built runtime itself, `d3d9.dll` and NVIDIA's DLLs, lives in `packages\runtime\files` (Git LFS), so
 building the RTX package needs neither the fork nor its SDKs. Only a change to the runtime does.
 
@@ -114,3 +133,48 @@ Local second-review receipts are under `out/tmp`, prefixed `runtime-review2-`: `
 `unit-tests.log`, `unit-summary.json`, `verify.log`, `import.json`, `inputs-verify.log`, `package-build.log`,
 `release-tests.log`, `release-summary.json` and `test-short-guard.ps1`. The first review's receipts retain the
 `runtime-review-` prefix.
+
+## C-16 rebuild (2026-10-31)
+
+The isolated source commit is `8a5df5d8ef2e4529f20f7c07c195cb6dc3588afe`, tree
+`1a6009a44590fe673282b7ceecf759548df646b8`: base `c6b48ed1` plus patches 0001-0016.
+The completed build uses x64 Release, MSVC 19.44.35228, Meson 1.12.1, Ninja with four jobs,
+optimization 3, the release DLL CRT, Tracy/shim off and `download_apics=false`.
+Build identity: `remix-main+8a5df5d8`. The DLL is 396,802,048 bytes, SHA-256
+`9906eec639b8768baf468daebb2f281c45f04754eaaf6cd60c0c5f7c883cc543`.
+
+The R6 source, git metadata, configured builds and local dependency bytes were copied under this
+worktree's `out/runtime-src`; thirty SDK junctions resolve to the already installed Packman
+versions. Both saved Meson configurations and 694 shader dependency files in each were relocated
+to this copy. When reusing another configured tree, relocate the shader `.d` paths too: their
+timestamp checks otherwise keep following the old includes even after the shader stamp is removed.
+The process-local offline resolver from R6 validates existing SDK links and cannot download.
+
+`build_runtime.ps1` runs its source/configuration checks, reconfigures the version, and completes
+both compile passes. `out/tmp/c16-runtime-build.log` records real shader compilation.
+`out/tmp/c16-embedded-shaders.json` confirms the newly compiled auto-exposure and opaque G-buffer
+SPIR-V are embedded in the DLL. The dedicated unit configuration passes all 28 tests, including
+`test_adaptive_emission` and the regenerated `RtxOptions.md` check. Game/GPU acceptance and
+eye-white tuning remain with Claude; no game or install was touched.
+
+Exact runtime import, invoked by `build_runtime.ps1` from this worktree:
+
+```powershell
+python tools/inputs.py import runtime --file 'H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\c16-runtime\out\runtime-src\_CompRelease_x64\src\d3d9\d3d9.dll=files/d3d9.dll'
+```
+
+The MDL declaration is the only other imported input (plain text):
+
+```powershell
+python tools/inputs.py import fixes --file 'out/c16-mdl/AperturePBR_Opacity.mdl=garrysmod/rtx-remix/mods/base_mod/breakable_glass/assets/remix_materials/AperturePBR_Opacity.mdl'
+```
+
+Local evidence is under `out/tmp/c16-*`: build/verification logs, saved Release options, shader
+relocation and embedded-shader receipts, final runtime unit build/tests, MDL import, package and
+repository checks. See [TESTING.md](../docs/TESTING.md#c-16-scene-adaptive-emission) for final gate
+results and the project manager's GPU acceptance cases.
+
+Final offline gates pass: exact source verification, deep input verification (zero problems),
+the 1,023-file combined package's `--require-nlctl` validation, and plain
+`tools/test.ps1 -Config Release` (24 CTests; 376 Python tests, two skips). The guard test needs no
+path workaround here. Only the DLL's new 58,495,348-byte xz LFS object consumes binary storage.

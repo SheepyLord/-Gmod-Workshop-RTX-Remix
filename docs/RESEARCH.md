@@ -3179,3 +3179,51 @@ exit 3489660927 (`0xCFFFFFFF`). That step's `remix-dxvk.log:990` records
 prompts inside startup/map waits and called `PrintWindow` synchronously; a GPU-crash dialog could
 therefore outlive those waits and block evidence capture. The R6 harness change checks the current
 run's log, watches prompts through exit and bounds capture/shutdown; regression tests use fakes.
+
+## C-16: scene-adaptive emission
+
+Runtime paths below refer to the isolated source built from `runtime/base.json` plus patches
+0001-0016; the source is under this task's `out/runtime-src`.
+
+- `src/dxvk/shaders/rtx/pass/tonemap/auto_exposure.comp.slang:143-170` computes the actual
+  geometric-mean Yf before the cone-noise division and exposure cap, then smooths exposure in log
+  space. Patch 0016 writes `(adaptedYf, exposure)` to an eight-byte buffer at `:170`. This preserves
+  the statistic in capped scenes instead of reconstructing it from exposure.
+- `src/dxvk/rtx_render/rtx_auto_exposure.cpp:78-122` checks completed readbacks at a minimum age of
+  two frames, selects the newest, clamps the effective luminance and logs the source frame/age,
+  Yf and exposure at cuts/five-minute intervals. `:260-264` queues a copy only into an idle slot.
+  `DxvkContext::copyBuffer` (`src/dxvk/dxvk_context.cpp:779-843`) records transfer/host access
+  barriers and tracks the destination as a GPU write. `DxvkResource::isInUse`
+  (`src/dxvk/dxvk_resource.h:38-43`) includes pending writes, so the CPU never reads or overwrites
+  an outstanding transfer. No wait or game-side readback stall is introduced.
+- `src/dxvk/shaders/rtx/pass/instance_definitions.h:142-143,167-168` limits material indices to
+  21 bits. The 32-bit subsurface index therefore has a free high byte. The opaque CPU packer
+  (`src/dxvk/rtx_render/rtx_materials.h:737-744,983-987`) also always sets DLSS mask alpha to 255.
+  Those bytes hold a split half-float, with the second XORed by 255 to preserve the legacy bytes
+  for input zero. Shared helpers live in `src/dxvk/shaders/rtx/utility/adaptive_emission.h`.
+  Shader accessors (`surface_material.h:110-120` in `concept/surface_material`) mask the index,
+  restore alpha and recover the half. Both the packed 64-byte record and the CPU object's
+  168-byte size are unchanged; the added CPU float consumes existing alignment space.
+- The new X-macro input (`src/dxvk/rtx_render/rtx_material_data.h:60`) participates in USD loading,
+  defaults, range sanitization, serialization and hashing. The GPU hash includes it at
+  `rtx_materials.h:873,910,946`; `rtx_remix_api.cpp` preserves it through texture preload and uses
+  zero for the unchanged public API, and terrain baking uses zero.
+- `src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_interaction.slangh:557-560,950-957`
+  covers the Source-eye override and general opaque evaluation. The latter keeps
+  `emissiveBlendOverrideInfluence` intact. The G-buffer decode at `:1035-1054` reads already
+  evaluated radiance; scaling it again would apply adaptation twice. Decals and polymorphic
+  conversions likewise carry evaluated radiance. Subsurface and RTXCR readers use decoded indices.
+- The runtime part's index has no `AperturePBR_Opacity.mdl`. The combined package carries one in
+  `packages/fixes/garrysmod/rtx-remix/mods/base_mod/breakable_glass/assets/remix_materials/`.
+  Its `AperturePBR_Opacity.mdl:162-170` now declares the input (zero default, 0..65504 hard range,
+  description); the MDL preview continues to use fixed intensity. This one plain-text input was
+  reimported through `tools/inputs.py`, without changing the other fixes inputs.
+- A copied configured tree also needs its shader `.d` files relocated. In
+  `scripts-common/compile_shaders.py:75-108,193-201`, timestamp checks follow those stored include
+  paths, so removing `_built_shaders.txt` alone can reuse old SPIR-V while reading the original
+  tree's unchanged includes. C-16 relocated 694 dependency files in each copied configuration.
+  The final Release log records actual shader compilation; disassembly confirms binding 4 and an
+  eight-byte `OutAdaptation` stride. `out/tmp/c16-embedded-shaders.json` proves the freshly compiled
+  5,888-byte auto-exposure SPIR-V and 74,616-byte opaque G-buffer SPIR-V occur byte-for-byte inside
+  the final DLL (offsets 380,900,976 and 12,898,160 respectively). No source or build output in the
+  R6 tree or the user's fork was changed.
