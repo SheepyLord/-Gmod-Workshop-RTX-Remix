@@ -26,7 +26,7 @@
   var last = '';
   var previous, commit, warningVisible = false, warningChecked = false, noticesLoaded = false, everInGame = false;
   var requestedAt = 0, noticeAttempts = 0;
-  var failures = ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'crash'];
+  var failures = ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'likely_out_of_memory', 'crash'];
   function requestNotices() {
     if (!data.session_token || !window.NativeLoaderReadNotices || !window.lua || !window.lua.Run) return;
     if ((warningChecked || everInGame) && noticesLoaded || noticeAttempts >= 120) return;

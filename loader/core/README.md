@@ -7,6 +7,11 @@ manifests, discovery and planning; M3 added deployment; M4 added activation.
 R7-B replaces the memory percentage warning with strict 18 GiB free-commit / 24 GiB total
 thresholds derived from saved R6 sessions; see [the measurements](../../docs/RESEARCH.md#r7-b-commit-headroom-from-the-saved-r6-runs-2026-11-01).
 
+R7-B also extends `include/nl/evidence.h` / `src/evidence.cpp` with exit-code classification,
+fresh same-session commit inference, an external-observer `finish`, receipted exit-report JSON
+and a clean/abnormal end marker reused at the next start. A per-root mutex serializes collectors;
+exact start-marker bytes reject changed or different sessions. This code has no Windows UI.
+
 | File | Purpose |
 |---|---|
 | `include/nl/performance.h`, `src/performance.cpp` | Pure R6 adapter/class/VRAM tier classification and interface I2 serialization (ADR 0062) |

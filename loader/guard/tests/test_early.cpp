@@ -199,15 +199,18 @@ TEST_CASE("early guard: repeated preparation reuses one unchanged cache entry") 
   Fixture f("early_guard_idempotent");
   const auto first = f.prepare();
   REQUIRE(first.has_value());
-  const auto prior = fs::last_write_time(first->replacement) - std::chrono::seconds(10);
-  fs::last_write_time(first->replacement, prior);
-  const auto marked_time = fs::last_write_time(first->replacement);
+  // Nested worktrees can push the generated cache name past MAX_PATH. Use the same extended
+  // path form as the production filesystem helpers, including for the timestamp setter.
+  const fs::path extended(nl::fs::long_path(first->replacement));
+  const auto prior = fs::last_write_time(extended) - std::chrono::seconds(10);
+  fs::last_write_time(extended, prior);
+  const auto marked_time = fs::last_write_time(extended);
   const auto bytes = read(first->replacement);
   const auto second = f.prepare();
   REQUIRE(second.has_value());
   CHECK(second->replacement == first->replacement);
   CHECK(read(second->replacement) == bytes);
-  CHECK(fs::last_write_time(second->replacement) == marked_time);
+  CHECK(fs::last_write_time(extended) == marked_time);
   CHECK(nl::fs::list(f.cache_path()).size() == 1);
 }
 

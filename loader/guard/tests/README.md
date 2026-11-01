@@ -1,5 +1,8 @@
 # loader/guard/tests
 
+The idempotent-cache timestamp check uses the production extended-length path helper,
+so it also runs in nested worktrees whose generated cache names exceed Windows MAX_PATH.
+
 `test_early.cpp` exercises the production `guard::append_client_guard` and `guard::prepare`
 functions using generated initializer, Lua guard and module bytes in synthetic game folders under
 the test executable's scratch directory. `CMakeLists.txt` builds `nl_render_guard_tests` with the

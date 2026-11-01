@@ -5,7 +5,7 @@ add_test(NAME nl_backend_tests COMMAND nl_backend_tests)
 
 add_executable(nl_proxy_tests
   ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp test_presentation.cpp test_presentation_hooks.cpp
-  test_runtime.cpp ../runtime.cpp ../modules.cpp)
+  test_runtime.cpp test_exit_report.cpp ../runtime.cpp ../modules.cpp)
 target_include_directories(nl_proxy_tests PRIVATE ../../tests)
 target_link_libraries(nl_proxy_tests PRIVATE nl_proxy_logic nl_proxy_presentation nl_build_options)
 target_compile_definitions(nl_proxy_tests PRIVATE
@@ -33,6 +33,11 @@ add_test(NAME nl_telemetry_integration
     --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>" --nlctl "$<TARGET_FILE:nlctl>"
     --scratch "${PROJECT_SOURCE_DIR}/out/tmp/telemetry-$<CONFIG>")
 set_tests_properties(nl_telemetry_integration PROPERTIES TIMEOUT 90)
+add_test(NAME nl_exit_observer_integration
+  COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/observer_integration.py"
+    --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>"
+    --scratch "${PROJECT_SOURCE_DIR}/out/tmp/observer-$<CONFIG>")
+set_tests_properties(nl_exit_observer_integration PROPERTIES TIMEOUT 180)
 
 add_library(nl_m4_static SHARED fixture_static.cpp)
 add_library(nl_m4_delay SHARED fixture_delay.cpp)
@@ -86,3 +91,8 @@ add_test(NAME nl_session_integration
     --runtime "$<TARGET_FILE_DIR:nl_m4_runtime>" --fixtures "$<TARGET_FILE_DIR:nl_m5_engine>"
     --scratch "${PROJECT_SOURCE_DIR}/out/tmp/m5-session-$<CONFIG>" --config "$<CONFIG>")
 set_tests_properties(nl_session_integration PROPERTIES TIMEOUT 240)
+
+# Legacy synthetic hosts test unrelated startup/deployment behavior and deliberately terminate.
+# The dedicated observer integration opts into quiet JSON reporting instead.
+set_tests_properties(nl_proxy_tests nl_telemetry_integration nl_activation_integration nl_session_integration
+  PROPERTIES ENVIRONMENT "NATIVE_LOADER_EXIT_REPORT=off")

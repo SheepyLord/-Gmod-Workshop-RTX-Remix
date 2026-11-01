@@ -868,6 +868,7 @@ def step_run(args) -> dict:
     arguments += args.post
     environment = dict(os.environ)
     environment.pop("NATIVE_LOADER_DISABLE", None)
+    environment["NATIVE_LOADER_EXIT_REPORT"] = "quiet"  # keep JSON/evidence; no post-exit loader window
     environment.pop("RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES", None)  # would grant upload consent
     record = {"step": "run", "name": args.name, "root": str(root), "started": now(), "arguments": arguments}
     # This start declines the crash-report prompt of an earlier crash, and Remix then deletes the report:

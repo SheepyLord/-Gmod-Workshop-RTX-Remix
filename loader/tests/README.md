@@ -5,6 +5,11 @@ Unit tests for [`nl_core`](../core/README.md), registered with CTest and run by
 self-registering harness. M1's proxy tests compile `test_main.cpp` too, so keep both files
 backward compatible.
 
+R7-B adds ten `test_evidence.cpp` exit cases: concrete/generic status precedence, fatal zero
+exits, recent commit inference and CSV fallback, clean silence, archived JSON, next-start reuse,
+stale/different/edited markers, malformed metadata and retention of edited reports. Existing
+R6 evidence cases continue to cover bounded copying and original-source preservation.
+
 | File | Purpose |
 |---|---|
 | `test_performance.cpp` | R6 tiers: required RTX models, laptops, exact byte thresholds, unknown names, multi-adapter selection, overrides and interface I2 JSON |

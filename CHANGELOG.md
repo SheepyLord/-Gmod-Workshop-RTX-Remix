@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R7-B diagnostics
 
+- An external observer from the same `winmm.dll` reports abnormal exits after the game closes,
+  with localized reasons/advice, exit codes and a receipted JSON evidence report. The next start
+  reuses the conclusion, including clean exits. `NATIVE_LOADER_EXIT_REPORT=quiet` keeps automated
+  sessions window-free; a read-only preview can show every reason without causing a crash.
 - The menu warns below 18 GiB free system commit or a 24 GiB total limit, replacing the
   percentage warning that incorrectly flagged 64.0 / 90.6 GiB. The RTX package keeps its
   version/hash row; other enabled content packages become one count in the panel and copied text.

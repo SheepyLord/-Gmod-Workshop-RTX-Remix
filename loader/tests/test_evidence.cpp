@@ -1,6 +1,7 @@
 #include "nl/evidence.h"
 #include "nl/fs.h"
 #include "nl/json.h"
+#include "nl/memory.h"
 #include "nl/status.h"
 #include "nl_test.h"
 #include <windows.h>
@@ -31,6 +32,151 @@ std::size_t folders(const fs::path& root) {
   if (fs::exists(path)) for (const auto& entry : fs::directory_iterator(path)) if (entry.is_directory()) ++count;
   return count;
 }
+}
+
+TEST_CASE("evidence exit: NTSTATUS and Win32 failures, normal quits and generic codes") {
+  for (const auto code : {0xC0000017u, 0xC000012Du, 8u, 14u})
+    CHECK(e::classify({}, {}, false, false, e::Exit{code}) == "out_of_memory");
+  for (const auto code : {0xC0000005u, 0xC0000409u, 0xC00000FDu, 0xE06D7363u, 1u, 259u, 42u})
+    CHECK(e::classify({}, {}, false, false, e::Exit{code}) == "crash");
+  CHECK(e::classify({}, {}, false, false, e::Exit{0, true}) == "clean");
+  CHECK(e::classify("VK_ERROR_DEVICE_LOST (nonfatal log noise)", {}, false, false, e::Exit{0}) == "clean");
+  CHECK(e::classify("RTX: Terminating application", {}, false, false, e::Exit{1, true}) == "clean");
+  CHECK(e::classify("RTX: Terminating application", {}, false, false, e::Exit{0xC0000005u}) == "crash");
+  CHECK(!e::needs_report("clean")); CHECK(!e::needs_report("unknown")); CHECK(e::needs_report("crash"));
+}
+
+TEST_CASE("evidence exit: concrete failures outrank generic exit codes and memory inference") {
+  CHECK(e::classify("Exiting after GPU device loss", {}, false, false, e::Exit{0}) == "device_lost");
+  CHECK(e::classify({}, R"({"event":"device_lost"})", false, false, e::Exit{0}) == "device_lost");
+  CHECK(e::classify("Memory allocation failed", {}, false, false, e::Exit{1, true}) == "allocation_failed");
+  CHECK(e::classify("Exception on CS thread", {}, false, false, e::Exit{1, true}) == "cs_exception");
+  CHECK(e::classify("Exiting after GPU device loss", {}, false, false, e::Exit{0xC0000017u}) == "out_of_memory");
+  CHECK(e::classify({}, {}, true, false, e::Exit{1, true}) == "crash");
+  CHECK(e::classify({}, {}, true, true, e::Exit{1, true}) == "out_of_memory");
+  CHECK(e::classify({}, {}, false, false, e::Exit{1, true}) == "likely_out_of_memory");
+  CHECK(e::classify({}, {}, false, false, e::Exit{0xC00000FDu, true}) == "crash");
+}
+
+TEST_CASE("evidence exit: archived JSON and next start reuse one conclusion without duplicate archives") {
+  const auto root = nl::test::scratch_dir("evidence_exit_reuse");
+  const auto start = e::now_filetime() - 10000000;
+  e::collect(root, start, 701);
+  write(root, "rtx-remix/logs/remix-dxvk.log", "Exiting after GPU device loss\n");
+  const auto result = e::finish(root, start, 701, 1, "701-123", true);
+  CHECK(result.notes.empty()); CHECK(result.previous.reason == "device_lost");
+  REQUIRE(!result.previous.folder.empty());
+  const auto report = nl::json::parse(nl::fs::read_file(nl::fs::join(root, result.previous.folder) / "exit-report.json", 4096));
+  CHECK(report.find("exit_code")->as_int() == 1); CHECK(report.find("process_id")->as_int() == 701);
+  CHECK(report.find("dialog_suppressed")->as_bool()); CHECK(report.find("abnormal")->as_bool());
+  CHECK(report.find("previous_session")->find("folder")->as_string() == result.previous.folder);
+  const auto next = e::collect(root, e::now_filetime() + 10000000, 702);
+  CHECK(next.notes.empty()); CHECK(next.previous.reason == result.previous.reason);
+  CHECK(next.previous.folder == result.previous.folder); CHECK(folders(root) == 1);
+  CHECK(nl::fs::read_file(root / "rtx-remix/logs/remix-dxvk.log", 4096) == "Exiting after GPU device loss\n");
+  fs::remove_all(root);
+}
+
+TEST_CASE("evidence exit: normal exits make no report and later clean starts do not evict crash evidence") {
+  const auto root = nl::test::scratch_dir("evidence_exit_clean");
+  const auto start = e::now_filetime() - 10000000;
+  e::collect(root, start, 703);
+  write(root, "rtx-remix/logs/remix-dxvk.log", "ordinary RTX session with no shutdown marker\n");
+  write(root, "native-loader/logs/gpu/shaderDebugInfo/healthy.nvdbg", "shader debug data");
+  const auto result = e::finish(root, start, 703, 0, "703-123", true);
+  CHECK(result.notes.empty()); CHECK(result.previous.reason == "clean"); CHECK(result.previous.folder.empty());
+  CHECK(folders(root) == 0);
+  const auto next = e::collect(root, e::now_filetime(), 704);
+  CHECK(next.previous.reason == "clean"); CHECK(next.previous.folder.empty()); CHECK(folders(root) == 0);
+  fs::remove_all(root);
+}
+
+TEST_CASE("evidence exit: fresh dumps and bounded OOM scans work without a Remix log") {
+  for (const auto text : {"generic crash dump", "OUT OF MEMORY!"}) {
+    const auto root = nl::test::scratch_dir("evidence_exit_dump");
+    const auto start = e::now_filetime() - 10000000;
+    e::collect(root, start, 705);
+    write(root, "crashes/fresh.dmp", text);
+    const auto result = e::finish(root, start, 705, 0, "705-123", true);
+    CHECK(result.previous.reason == (std::string_view(text).starts_with("OUT") ? "out_of_memory" : "crash"));
+    REQUIRE(!result.previous.folder.empty());
+    CHECK(fs::exists(nl::fs::join(root, result.previous.folder) / "exit-report.json"));
+    fs::remove_all(root);
+  }
+}
+
+TEST_CASE("evidence exit: last commit sample requires the same token, freshness and near-limit bytes") {
+  for (unsigned i = 0; i < 7; ++i) {
+    const auto root = nl::test::scratch_dir("evidence_exit_commit");
+    const auto now = e::now_filetime(), start = now - 600000000;
+    e::collect(root, start, 706);
+    nl::memory::Sample sample;
+    sample.time_utc = e::utc(i == 2 ? now - 310000000 : i == 3 ? now + 600000000 : now);
+    sample.commit_limit = 90ull << 30;
+    sample.commit_total = *sample.commit_limit - (512ull << 20) - (i == 4 ? 1 : 0);
+    if (i == 5) sample.commit_limit = 0;
+    nl::memory::write_commit(root, sample, i == 1 ? "old-token" : "706-123");
+    const auto result = e::finish(root, start, 706, i == 6 ? 0 : 1, "706-123", true);
+    CHECK(result.previous.reason == (i == 0 ? "likely_out_of_memory" : i == 6 ? "clean" : "crash"));
+    fs::remove_all(root);
+  }
+}
+
+TEST_CASE("evidence exit: a complete recent CSV sample can supply commit evidence without the snapshot") {
+  const auto root = nl::test::scratch_dir("evidence_exit_csv");
+  const auto now = e::now_filetime(), start = now - 600000000;
+  e::collect(root, start, 707);
+  nl::memory::Sample sample; sample.time_utc = e::utc(now);
+  sample.commit_limit = 32ull << 30; sample.commit_total = *sample.commit_limit;
+  write(root, nl::memory::kCsv, std::string(nl::memory::csv_header()) + nl::memory::csv_line(sample) + "partial,row");
+  const auto result = e::finish(root, start, 707, 1, "707-123", true);
+  CHECK(result.notes.empty()); CHECK(result.previous.reason == "likely_out_of_memory");
+  fs::remove_all(root);
+}
+
+TEST_CASE("evidence exit: stale sources and changed session records cannot report another game") {
+  const auto root = nl::test::scratch_dir("evidence_exit_identity");
+  const auto now = e::now_filetime(), start = now - 10000000;
+  e::collect(root, start, 708);
+  write(root, "rtx-remix/logs/remix-dxvk.log", "Exiting after GPU device loss\n");
+  stamp(root / "rtx-remix/logs/remix-dxvk.log", start - 1);
+  const auto ended = e::finish(root, start, 708, 1, "708-123", true);
+  CHECK(ended.previous.reason == "crash");
+  const auto duplicate = e::finish(root, start, 708, 1, "708-123", true);
+  CHECK(!duplicate.notes.empty()); CHECK(!e::needs_report(duplicate.previous.reason)); CHECK(folders(root) == 1);
+  e::collect(root, now, 709);
+  const auto marker = nl::fs::read_file(nl::fs::join(root, e::kStart), 4096);
+  CHECK(!e::needs_report(e::finish(root, start, 708, 0xC0000017u, "708-123", true).previous.reason));
+  CHECK(nl::fs::read_file(nl::fs::join(root, e::kStart), 4096) == marker);
+  write(root, e::kStart, marker + " ");
+  CHECK(!e::needs_report(e::finish(root, now, 709, 1, "709-123", true).previous.reason));
+  CHECK(nl::fs::read_file(nl::fs::join(root, e::kStart), 4096) == marker + " ");
+  fs::remove_all(root);
+}
+
+TEST_CASE("evidence exit: malformed end metadata falls back to the original collector") {
+  const auto root = nl::test::scratch_dir("evidence_exit_malformed");
+  write(root, e::kStart, "{\"start_filetime\":1,\"end\":{\"previous_session\":{}}}");
+  const auto result = e::collect(root, e::now_filetime(), 710);
+  CHECK(result.notes.empty()); CHECK(result.previous.reason == "unknown");
+  fs::remove_all(root);
+}
+
+TEST_CASE("evidence exit: retention preserves an edited exit report and removes only intact reports") {
+  const auto root = nl::test::scratch_dir("evidence_exit_retention");
+  const auto start = e::now_filetime() - 10000000;
+  e::collect(root, start, 711);
+  const auto ended = e::finish(root, start, 711, 0xC0000017u, "711-123", true);
+  REQUIRE(!ended.previous.folder.empty());
+  const auto path = ended.previous.folder + "/exit-report.json";
+  const auto original = nl::fs::read_file(nl::fs::join(root, path), 4096);
+  write(root, path, "user's diagnosis\n");
+  e::Limits limits; limits.sessions = 0;
+  e::retain(root, limits);
+  CHECK(folders(root) == 1); CHECK(nl::fs::read_file(nl::fs::join(root, path), 4096) == "user's diagnosis\n");
+  write(root, path, original);
+  e::retain(root, limits); CHECK(folders(root) == 0);
+  fs::remove_all(root);
 }
 
 TEST_CASE("evidence: every class, optional structured fields and specific failures beat generic exits") {

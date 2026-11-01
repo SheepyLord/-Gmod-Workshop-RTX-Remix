@@ -153,7 +153,7 @@ function notice(reason = 'device_lost', warning = false) {
       commit_total: (warning ? 50 : 16) * 1073741824, commit_limit: 64 * 1073741824, warning}};
 }
 for (const [code, catalog] of Object.entries(labels)) {
-  for (const reason of ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'crash']) {
+  for (const reason of ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'likely_out_of_memory', 'crash']) {
     const view = noticeCase(code);
     assert.equal(view.requests.length, 1);
     assert.deepEqual(view.requests[0], ['read-local-notices', '123-456', 123]);

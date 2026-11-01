@@ -1,5 +1,27 @@
 # Research notes
 
+## R7-B: external exit diagnostics (2026-11-01)
+
+The same built proxy works inside System32 `rundll32.exe` with its DllMain loader guard.
+The synthetic integration covers 23 cases, including a genuinely separate sleeping observer,
+an inherited restricted game handle, process/path/creation/parent validation, exit before JSON
+and observer termination afterward. The actual exception/OOM/driver failures are simulated
+exit codes/logs, not resource exhaustion. The bootstrap remains KERNEL32-only; MessageBoxW
+is resolved dynamically after exit. No executable is extracted or downloaded.
+
+`loader/proxy/observer.cpp` starts/validates/waits; `loader/proxy/exit_report.cpp` selects and
+formats the seven catalogs. `loader/core/src/evidence.cpp` shares `classify` and archive copying
+between exit and startup. The end marker lets the next collector reuse the same reason/folder,
+and prevents clean sessions without a Remix shutdown marker from filling the five-archive queue.
+Fresh `.nvdbg` shader-debug information is copied as context but no longer proves a crash;
+actual GPU dumps use `.nv-gpudmp` (the fork's writer is recorded in runtime patch 0001).
+
+Memory inference is deliberately narrower than the map warning: <=512 MiB free commit in a
+sample <=30 seconds old, tied to the same process token (snapshot) or start/end interval (CSV),
+and only for a generic nonzero exit without stronger evidence. The reason is
+`likely_out_of_memory`; concrete exceptions keep their exception classification/code. A zero
+exit stays clean unless a fresh fatal Remix message/marker or actual crash artifact exists.
+
 ## R7-B: commit headroom from the saved R6 runs (2026-11-01)
 
 Read-only reanalysis of the main checkout's `out/qa-poc/r6/tiers*/<run>/memory.csv`;

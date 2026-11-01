@@ -1,4 +1,5 @@
 #include "bootstrap.h"
+#include "observer.h"
 #include <cstdint>
 #include <cstring>
 
@@ -109,6 +110,7 @@ bool install_hook() noexcept {
 }
 
 void attach(HMODULE module) noexcept {
+  if (observer::host()) return;  // rundll32 runs only the exported observer/preview, never the loader
   resolve_exports();
   const auto exe_length = GetModuleFileNameW(nullptr, g_bootstrap.exe, kPathCapacity);
   const auto dll_length = GetModuleFileNameW(module, g_bootstrap.module, kPathCapacity);

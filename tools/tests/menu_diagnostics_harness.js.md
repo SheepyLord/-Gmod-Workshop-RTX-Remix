@@ -2,6 +2,7 @@
 
 R7-B checks the full RTX package version/hash alongside a single content-package count,
 with zero/one/four content packages in all seven languages, both displayed and copied.
+The failure-summary loop includes the explicitly uncertain `likely_out_of_memory` reason.
 
 Node standard-library test of the complete mainmenu.js in a small DOM/engine fixture. Checks
 text-only insertion of hostile-looking values, full hashes on hover/copy, no automatic outbound

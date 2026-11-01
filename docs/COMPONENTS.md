@@ -1,5 +1,11 @@
 # Components
 
+R7-B extends [`loader/proxy`](../loader/proxy/README.md) with `observer.h` / `observer.cpp`
+(a guarded external rundll32 observer) and `exit_report.h` / `exit_report.cpp` (localized messages).
+[`loader/core`](../loader/core/README.md) shares exit classification/archival with next-start
+diagnostics. [`loader/proxy/tests`](../loader/proxy/tests/README.md) adds real observer integration
+using synthetic hosts; `tools/poc_session.py` suppresses only the observer window for automation.
+
 G1-A adds the original MIT [`glass/addon`](../glass/README.md): scripted panes, a pure deterministic
 fracture module, shared damage/strength, bounded network state, map adapters, frozen remaining-cell
 collision, cached client cracks/panes, tool/presets and translated settings. G1-B supplies debris via

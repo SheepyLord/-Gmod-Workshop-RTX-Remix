@@ -8,6 +8,8 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 
 | File | Purpose |
 |---|---|
+| `test_exit_report.cpp` | Quiet switch, language precedence/aliases, localized advice for all six reasons and known exception-code labels in all seven catalogs |
+| `observer_integration.py` | Real System32 rundll32 observer against generated synthetic hosts: process waiting, chosen exit statuses, all evidence sources, quiet reports, clean silence, manual invocation rejection, loader off switches and non-game/Chromium gates ([usage](observer_integration.py.md)) |
 | `telemetry_integration.py` | R6 real worker in a copied synthetic host: flushed ten-second samples, default/on/off/disabled policy, old CSV archived before new sampling and `nlctl status` text/JSON ([usage](telemetry_integration.py.md)) |
 | `test_presentation.cpp` | Display GMA CRC/index/metadata checks, inert payload, package identity and source-path refusal, cache edits preserved, stock menu marker validation, private-path exclusion and generated main-menu diagnostics redirect |
 | `test_presentation_hooks.cpp` | Real filesystem fixture IAT: exact A/W read redirects and attribute sizes, unrelated/write-capable/OPEN_ALWAYS calls unchanged, edited caches refused, uninstall pass-through and cache traversal boundary |
@@ -34,6 +36,11 @@ Run all tests through `tools/build.ps1`, or select `nl_backend_tests`, `nl_proxy
 the built proxy. Tests never launch or modify a real game. Host scratch directories live under
 the CMake binary directory (`loader/proxy/tests/scratch`); installer roots live only in `out/`.
 Neither test writes generated executables to the system temporary directory.
+
+R7-B adds `nl_exit_observer_integration` (23 synthetic scenarios). Other process-host CTests
+set `NATIVE_LOADER_EXIT_REPORT=off` because they deliberately terminate hosts while testing
+unrelated deployment behavior; the dedicated observer test uses `quiet` to exercise real JSON
+reporting. The three pure formatting/localization cases live in `nl_proxy_tests`.
 If antivirus blocks the newly built DLL, tests must fail with the OS error; no exclusions, security
 settings or alternate loading paths are added by the tests.
 

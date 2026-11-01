@@ -1,5 +1,54 @@
 # Testing
 
+## R7-B: exit observer and read-only previews
+
+`nl_exit_observer_integration` runs the real DLL export in System32 `rundll32.exe`, with a
+copied synthetic host as its parent, under this worktree's `out/tmp/observer-Release`.
+It waits on the actual observer handle, verifies no report before host exit, checks the JSON
+after exit and checks that the quiet observer terminates. The 23 cases cover clean/zero-noise
+exits, no-memory/commit-limit statuses, access violation, fail-fast, stack overflow, C++ exception,
+Remix device loss (including exit 0), allocation failure, CS exception, GPU JSON, fresh dumps,
+OOM dump text, recent commit inference and seven disabled/non-game cases. No game or runtime
+is run; statuses are simulated with `TerminateProcess`, not actual resource exhaustion.
+
+The formatting unit cases cover all seven catalogs and language precedence. The core evidence
+cases check next-start agreement, original files unchanged, no duplicate archives, changed
+markers rejected, freshness, CSV fallback, exact near-limit boundaries and edited reports kept.
+The existing import test still requires **KERNEL32 only**, including delay imports.
+
+Claude's visual PoC check, after installing this branch's built DLL by the normal reviewed
+workflow (this task never changes an install):
+
+```powershell
+$dll = 'H:\SteamLibrary\steamapps\common\GarrysMod_PoC\bin\win64\winmm.dll'
+# Each invocation shows one OK dialog, reads config.cfg for the game language, and writes nothing.
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" out_of_memory
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" likely_out_of_memory
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" device_lost
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" allocation_failed
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" cs_exception
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" crash
+# Optional second argument selects any catalog: en, zh-CN, zh-TW, ja, ko, fr, ru.
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" device_lost zh-CN
+```
+
+The preview uses a representative code (`0xC0000017` for OOM, `0xC0000005` for unknown
+crash, `1` otherwise) and the sessions parent folder. It creates no fake report/end marker.
+It is silent if `NATIVE_LOADER_EXIT_REPORT=quiet` is inherited; use a normal shell for visual QA.
+For the real exit path, `loader.log` must say `exit observer ready: pid=...` before the game
+entry point. A chosen OOM status `0xC0000017`, commit-limit status `0xC000012D`, or exception
+status can simulate failure without exhausting memory. A device-loss fixture needs the fresh
+fatal log line or GPU marker. Leave actual forced-game exits to Claude's PoC QA session.
+
+After an abnormal exit, read `native-loader/logs/sessions/<UTC>-<pid>-<reason>/exit-report.json`.
+It contains the exit code, process identity/token, start/end times, suppression flag and
+`previous_session` reason/folder. `session-start.json` has matching `end` metadata; clean exits
+have only that marker, no report or window. The next start's status points to the same folder.
+Archives retain R6's five intact folders / 200 MiB limits, including the report receipt.
+`NATIVE_LOADER_EXIT_REPORT=quiet` suppresses only our window and is forced by `poc_session.py`.
+`off` skips observation for unrelated synthetic tests. Neither changes Remix consent.
+Do not use Remix's consent-granting automation variable.
+
 ## R7-B: diagnostics boundaries and content count
 
 `loader/tests/test_memory.cpp` checks exact 18 GiB free / 24 GiB total boundaries,
