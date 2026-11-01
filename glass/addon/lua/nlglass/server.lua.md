@@ -1,5 +1,9 @@
 # server.lua
 
+R7-C: after an authoritative impact actually releases pieces, register its bounded recent-break
+region with `NLGlass.Bullets` (when present). Cracking hits register nothing. This supplies the
+server's bounded final-pellet forwarding without any moving-piece server state.
+
 The pre-movement player sweep uses the shared 250-unit/s default/fallback contact-speed gate.
 
 Player contact also uses a pre-movement hull trace in SetupMove, with incoming movement velocity;

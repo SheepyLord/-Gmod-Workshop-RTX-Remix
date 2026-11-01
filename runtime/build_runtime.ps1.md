@@ -15,6 +15,7 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
 | `-Fork` | A clone of the fork named in [`base.json`](base.json). Only a worktree of it is created or built; its own checkouts are left alone |
 | `-Worktree` | Where the patched tree is built. Default `<Fork>\.claude\worktrees\nl-runtime` |
 | `-NoImport` | Build only; `packages\runtime` and `base.json` stay as they are |
+| `-Jobs` | Maximum concurrent Ninja jobs (default 4), to bound C++ compiler memory use; the fork's shader helper retains its separate internal parallelism |
 | `-Verify` | Only the checks of step 3, then the built `d3d9.dll`'s size and SHA-256; builds and writes nothing |
 
 ## What it does

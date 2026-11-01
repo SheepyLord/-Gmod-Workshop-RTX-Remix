@@ -26,7 +26,7 @@
   var last = '';
   var previous, commit, warningVisible = false, warningChecked = false, noticesLoaded = false, everInGame = false;
   var requestedAt = 0, noticeAttempts = 0;
-  var failures = ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'crash'];
+  var failures = ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'likely_out_of_memory', 'crash'];
   function requestNotices() {
     if (!data.session_token || !window.NativeLoaderReadNotices || !window.lua || !window.lua.Run) return;
     if ((warningChecked || everInGame) && noticesLoaded || noticeAttempts >= 120) return;
@@ -110,10 +110,13 @@
     }
     row(labels.game, game);
     row(labels.loader, data.loader.version + ' · ' + hash(data.loader.sha256, labels), data.loader.sha256);
-    if (!data.packages.length) row(labels.package, labels.none);
+    var contentCount = 0;
     data.packages.forEach(function (item) {
-      row(labels.package + ' (' + item.id + ')', item.version + ' · ' + hash(item.sha256, labels), item.sha256);
+      if (item.id === 'gmod-rtx-remix')
+        row(labels.package + ' (' + item.id + ')', item.version + ' · ' + hash(item.sha256, labels), item.sha256);
+      else contentCount++;
     });
+    row(labels.content_addons, labels.content_enabled.replace('{count}', String(contentCount)));
     copyButton.textContent = labels.copy;
     copyButton.onclick = function () {
       if (window.lua && window.lua.Run) window.lua.Run('SetClipboardText( %s )', lines.join('\n'));

@@ -112,6 +112,12 @@ Settings (native-loader\config.json)
 After a crash
 -------------
 
+- Loader 0.12.0 starts a separate observer from winmm.dll. After an abnormal game exit it shows
+  one message with the known or likely reason, what to try, the exit code and the evidence folder,
+  in your game language. Remix's own crash prompt finishes first. A normal quit shows nothing.
+  The evidence folder also holds exit-report.json, and the next start shows the same conclusion.
+  For unattended runs, set NATIVE_LOADER_EXIT_REPORT=quiet to keep the JSON report without a window.
+  Set it to off only to skip the observer entirely. These switches never grant crash-dump consent.
 - Loader 0.11.0 keeps what a session left behind before the next start overwrites it: Remix's
   log, the crash dumps already on your disk and the memory history, copied into
   native-loader\logs\sessions (the last five sessions, at most 200 MB). Nothing is uploaded, and the

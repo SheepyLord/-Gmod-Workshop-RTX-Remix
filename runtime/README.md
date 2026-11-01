@@ -32,6 +32,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0013-Default-to-minimum-...` | Default path bounces to 1/12 consistently across graphics presets and option metadata ([ADR 0051](../docs/decisions/0051-path-bounce-defaults.md)) |
 | `0014-Never-save-over-unread-...` | A missing user.conf/rtx.conf reloads as empty, so Discard Changes works on a fresh profile; a file that exists but could not be read blocks Save, export and the diagnostic choices until it is read; saves retry briefly held files, rewrite links in place and show failures; the outline rule spares view models, mirrored geometry and replacements with their own culling ([ADR 0044](../docs/decisions/0044-remix-settings-persistence.md), [ADR 0047](../docs/decisions/0047-ignore-incompatible-model-outlines.md)) |
 | `0015-Record-GPU-memory-...` | Share the bounded VRAM collector with heap locality, driver totals and category snapshots at cuts, five-minute intervals and device loss; log the escaped queue reason first, then flush/replace `last_gpu_crash.json` through a per-process temporary with two brief retries, before the crash recorder, Aftermath and Sentry; rate-limit OMM warnings, report free VRAM/previous budget/use/thresholds at a budget drop and preserve pending counts at loss; record the six test sources omitted from the fork snapshot, without silent guards ([ADR 0065](../docs/decisions/0065-runtime-memory-diagnostics.md)) |
+| `0017-Apply-scoped-MMD-alpha-...` | Join saved and transient Model Hotloader texture tags, use an exact default-0.5 cutout reference, and promote blended coverage at the cutoff in shared ray/OMM evaluation; include cutoff/category in OMM identity and material-history invalidation ([ADR 0081](../docs/decisions/0081-mmd-alpha-texture-category.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).
@@ -59,6 +60,12 @@ The built runtime itself, `d3d9.dll` and NVIDIA's DLLs, lives in `packages\runti
 building the RTX package needs neither the fork nor its SDKs. Only a change to the runtime does.
 
 ## Changing the runtime
+
+R7-A's branch build is deliberately **not imported**: the task forbids package edits.
+Its new DLL, source identity, additional USD schema resource and test/provenance gate status are
+recorded in the [R7-A report](../docs/handover/R7-A-report.md). Until Claude imports it during
+integration (or separately approves unimported-build validation), the existing repository
+provenance convention rejects patch 0017 against the older `packaged` record.
 
 1. Make the change in the fork worktree `build_runtime.ps1` uses (or any tree at `base.json`'s commit
    with the patches applied), and commit it there.

@@ -1,5 +1,59 @@
 # Roadmap
 
+R7 (the user's report of 2026-11-01) is **done** (2026-11-01, loader 0.12.0):
+
+- **Mask.** Columbina's mask renders as in MMD under RTX: runtime patch 0017 adds a texture category
+  for Model Hotloader textures, and the companion fills it, soft copies included.
+- **Exit report.** An observer outside the game reports why it ended (out of memory, device lost,
+  crash), with the evidence folder.
+- **Diagnostics.** The memory warning needs a real shortage of map headroom, and the panel counts
+  the content add-ons.
+- **Glass.** Players, NPCs, props, ragdolls, bullets, blasts and landings push and break broken glass,
+  one way.
+
+Each point was checked on the PoC. Integration fixed four things the game found: soft-copy tracking,
+the dialog's path style, the body search's frame cost and the boxes of client physics bodies. See
+[the report](handover/R7-report.md).
+
+R7-C's fast-body fix is implemented on `r7-glass-fix` from `7b49de9` (2026-11-01): bounded swept
+discovery, immediate/prioritized fast boxes, and capped one-way mirror sweeps. The real Lua-to-Jolt
+sleeping-pile regression fails before and passes after at 650/3600 units/s and 60/30 Hz. All 31
+native glass and 70 glass Python cases pass. The broader run passes 26 CTests/470 Python tests,
+but the top-level gate still flags three pre-existing links to the missing R7-A brief; scope
+clarification is pending for a minimal redirect. Claude retains PoC drum/frame-parity acceptance.
+See [the fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
+
+R7-B implementation and offline acceptance are **complete** on `r7-crash-diag` (2026-11-01):
+the embedded external exit observer, seven-language reports/previews, revised commit warning
+and content add-on count. Release passes 26 CTests and 455 Python tests (two expected skips);
+23 observer scenarios and a real, automatically acknowledged French dialog use synthetic hosts.
+Claude retains actual PoC acceptance and integration; see [the report](handover/R7-B-report.md).
+
+R7-B is **in progress** on `r7-crash-diag` (2026-11-01): a post-exit crash report from an
+external observer, a map-headroom memory warning and a compact content add-on count. This task
+does offline checks only; Claude retains PoC acceptance ([brief](handover/R7-B-crash-diagnostics.md)).
+
+R7-C implementation and offline acceptance are **complete** on `r7-glass-interact` (2026-11-01):
+bounded one-way Source mirrors, follow-up damage/fracture, Source-clipped pellet rays, original
+descendant expiry, a seven-language per-player switch and the 19-step interaction QA sequence.
+Release passes 25 CTests (29 native glass cases) and 468 Python tests (two existing skips), with
+68 glass Python cases. Claude retains module import and real contact/two-client/RTX frame-parity
+acceptance; no game or install was touched. See [the report](handover/R7-C-report.md).
+
+R7-C is **in progress** on `r7-glass-interact` (2026-11-01): one-way Source mirrors, bounded local
+follow-up damage/fracture and bullet rays, a per-player setting and offline tests. Claude owns
+package import, integration and PoC contact/performance acceptance; no game is run by this task.
+
+R7-A started 2026-11-01 on `r7-alpha`: scoped MMD alpha texture semantics and transient Model
+Hotloader registration ([brief](handover/R7-A-mmd-alpha.md), [ADR 0081](decisions/0081-mmd-alpha-texture-category.md)).
+Claude owns runtime import, integration and the mask/ramp/map-glass game acceptance; this worktree
+does not launch or deploy to the game.
+
+R7-A implementation and the isolated runtime build finished 2026-11-01: 29 fork unit tests and
+16 companion scenarios pass. Release native/Python checks pass; the packaged-runtime provenance
+gate remains pending the prohibited import or approval of separate unimported-build validation.
+Claude's import/integration and GPU acceptance remain open; see the [R7-A report](handover/R7-A-report.md).
+
 G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
 Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
 (whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed
@@ -173,7 +227,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | R6 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md), [report](handover/R6-report.md); loader 0.11.0; PoC release QA, tier measurements and the field map-load check passed) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
 | C-16 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md), [report](handover/C16-report.md); measured and tuned on the PoC, [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
 | G1 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [report](handover/G1-report.md), [ADR 0070](decisions/0070-glass-overhaul.md); every cause, walking and running, map glass and the 50-pane scene checked on the PoC, the old system measured as the baseline; irregular breaks at the user's request) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
-| R7 | **in progress** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R7-plan.md)) | The user's report of 2026-11-01: transparent materials that render black (Columbina's mask), a report when a crash ends the game, broken glass pushed and broken by players, props, ragdolls, bullets, blasts and falls (one way), and the diagnostics' memory warning and add-on list | Each point checked on the PoC; published |
+| R7 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R7-plan.md), [report](handover/R7-report.md); loader 0.12.0, ADRs 0081-0084; each point checked on the PoC) | The user's report of 2026-11-01: transparent materials that render black (Columbina's mask), a report when a crash ends the game, broken glass pushed and broken by players, props, ragdolls, bullets, blasts and falls (one way), and the diagnostics' memory warning and add-on list | Each point checked on the PoC; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
 C-16 (2026-10-31): the runtime's scene-adaptive emission (C16-A) and the PBR writer, staged-pack

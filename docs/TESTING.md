@@ -1,5 +1,87 @@
 # Testing
 
+## R7-B: exit observer and read-only previews
+
+Offline acceptance passed: 26 CTests and 455 Python tests (two expected skips), recorded in
+`out/r7-b/release-verified.log`. A separate Win32 window probe in `out/r7-b/dialog-probe.json`
+verified one visible French message after a synthetic exit, its exception/evidence text, and
+observer termination after OK. It did not launch GMod or interact with a Remix consent prompt.
+
+`nl_exit_observer_integration` runs the real DLL export in System32 `rundll32.exe`, with a
+copied synthetic host as its parent, under this worktree's `out/tmp/observer-Release`.
+It waits on the actual observer handle, verifies no report before host exit, checks the JSON
+after exit and checks that the quiet observer terminates. The 23 cases cover clean/zero-noise
+exits, no-memory/commit-limit statuses, access violation, fail-fast, stack overflow, C++ exception,
+Remix device loss (including exit 0), allocation failure, CS exception, GPU JSON, fresh dumps,
+OOM dump text, recent commit inference and seven disabled/non-game cases. No game or runtime
+is run; statuses are simulated with `TerminateProcess`, not actual resource exhaustion.
+
+The formatting unit cases cover all seven catalogs and language precedence. The core evidence
+cases check next-start agreement, original files unchanged, no duplicate archives, changed
+markers rejected, freshness, CSV fallback, exact near-limit boundaries and edited reports kept.
+The existing import test still requires **KERNEL32 only**, including delay imports.
+
+Claude's visual PoC check, after installing this branch's built DLL by the normal reviewed
+workflow (this task never changes an install):
+
+```powershell
+$dll = 'H:\SteamLibrary\steamapps\common\GarrysMod_PoC\bin\win64\winmm.dll'
+# Each invocation shows one OK dialog, reads config.cfg for the game language, and writes nothing.
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" out_of_memory
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" likely_out_of_memory
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" device_lost
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" allocation_failed
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" cs_exception
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" crash
+# Optional second argument selects any catalog: en, zh-CN, zh-TW, ja, ko, fr, ru.
+& "$env:SystemRoot\System32\rundll32.exe" "${dll},NativeLoaderExitPreview" device_lost zh-CN
+```
+
+The preview uses a representative code (`0xC0000017` for OOM, `0xC0000005` for unknown
+crash, `1` otherwise) and the sessions parent folder. It creates no fake report/end marker.
+It is silent if `NATIVE_LOADER_EXIT_REPORT=quiet` is inherited; use a normal shell for visual QA.
+For the real exit path, `loader.log` must say `exit observer ready: pid=...` before the game
+entry point. A chosen OOM status `0xC0000017`, commit-limit status `0xC000012D`, or exception
+status can simulate failure without exhausting memory. A device-loss fixture needs the fresh
+fatal log line or GPU marker. Leave actual forced-game exits to Claude's PoC QA session.
+
+After an abnormal exit, read `native-loader/logs/sessions/<UTC>-<pid>-<reason>/exit-report.json`.
+It contains the exit code, process identity/token, start/end times, suppression flag and
+`previous_session` reason/folder. `session-start.json` has matching `end` metadata; clean exits
+have only that marker, no report or window. The next start's status points to the same folder.
+Archives retain R6's five intact folders / 200 MiB limits, including the report receipt.
+`NATIVE_LOADER_EXIT_REPORT=quiet` suppresses only our window and is forced by `poc_session.py`.
+`off` skips observation for unrelated synthetic tests. Neither changes Remix consent.
+Do not use Remix's consent-granting automation variable.
+
+## R7-B: diagnostics boundaries and content count
+
+`loader/tests/test_memory.cpp` checks exact 18 GiB free / 24 GiB total boundaries,
+64.0 / 90.6 GiB, high usage with sufficient free commit, over-limit counters, zero limits
+and unsigned overflow. `tools/tests/menu_diagnostics_harness.js` checks that only
+`gmod-rtx-remix` retains its version/hash and other deployed packages form one localized count
+in the panel and clipboard, including zero content packages and all seven languages.
+
+## R7-A: scoped MMD alpha (2026-11-01)
+
+Runtime patch 0017 passes all 29 fork Release unit tests, including alpha promotion at equality,
+cutoff clamping/packing, unchanged untagged/replacement/forced-cutout behavior, category snapshot
+lifetimes and OMM cache identity. Generated options and USD category schema checks pass. The
+NoImport build and exact source verification succeed; eight representative compiled SPIR-V
+binaries are verified embedded in `d3d9.dll`.
+
+`python -m unittest discover -s companion/tests -v` passes 16 LuaJIT scenarios for real companion
+registration, late resources/APIs, tracking and write retries, revisions/fallback refresh, hash
+validation/deduplication, removal and a 4,096-part lookup-budget fixture. The optional category
+mode in `tools/qa/alpha_probe.lua` passes LuaJIT syntax compilation.
+
+`tools/test.ps1 -Config Release` passes all 25 CTests and 455 Python tests (two skips), but exits 1
+only because `check_repo.py` requires the newly patched runtime to be imported. R7-A forbids that
+import and changes outside its assigned checker scope; no packaged provenance was falsified.
+The PM must resolve that gate during integration. Existing game evidence was read, and no game
+session or installation change was performed. Artifacts, receipts, limits and the PM's mask/ramp,
+OMM/ray-mode and unaffected-map-glass acceptance cases are in the [R7-A report](handover/R7-A-report.md).
+
 ## G1 integration: game QA on the PoC (Claude, 2026-11-01)
 
 The QA add-on [`tools/qa/nlglass_qa`](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md) is copied
@@ -1553,3 +1635,47 @@ setting changed. With that local setup, `tools/test.ps1 -Config Release` passes 
 Python tests (373 tools, 28 gmapack, 25 steam; two expected skips). The glass native target has 19
 cases and the actual Lua manager/probe harness passes 3,264 assertions. Receipt:
 `out/g1-native-fix/test-release-final.log`.
+
+## R7-C: one-way broken-glass interaction (2026-11-01)
+
+`tools/test.ps1 -Config Release` passes 25/25 CTests and 468 Python tests (415 tools, 28 gmapack,
+25 steam; two existing skips). The native glass target has 29 cases, ten added to G1's 19, covering
+one-way/sleeping/floor contacts, both piece collision layers, contact/blast/bullet/fall damage,
+convex area/thickness/minimum size/capacity, snapshot validation, nearest regions, raw binding
+tables and offline bounds. There are 68 glass Python cases, including 12 new scene/bullet/manager/
+QA harness cases and a real pane-to-bullet-interest regression. Existing deterministic pane tests
+remain in the full gate. Receipts: `out/r7-c/test-release-final.log`, CTest `LastTest.log`.
+
+The unmodified baseline reproduces the known guard MAX_PATH fixture failure. This worktree uses
+the existing local workaround, `out/r7-c/short-guard-output.cmake`, through the ignored build cache's
+`CMAKE_PROJECT_native_loader_INCLUDE`, moving only the guard test executable to the build's `g/`.
+Loader sources/tests, registered tests and tracked build settings remain unchanged.
+
+Three interleaved engine-double comparisons retain 2000 moving draws, four settled batches and
+500 visible moving draws. Starting/off/on moving means are 0.1857/0.1744/0.1826 ms; settled means
+0.0153/0.0127/0.0129 ms. These are CPU doubles, not RTX results. Native 2000-leaf steps measure
+0.3126/0.3195 ms off/on; warm 96-mirror/region sync 0.108 ms; ray 0.00102 ms; native can-split plus
+replacement 0.0197 ms mean/0.0344 p99. Two maximum-input shapes cost 2.644 ms before engine capture.
+Detailed samples, allocations, native baseline checks and limits are in the [report](handover/R7-C-report.md).
+
+Claude runs [the QA add-on](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md)'s 19-step `interact`
+sequence and on/off, NPC/ragdoll, budget/expiry, fallback and two-client checks. The unchanged field
+scene must retain G1 run 10's 25.31/113.22 ms falling and 9.74/16.39 ms settled mean/p99; repeat a
+noisy measurement and reject a repeatable slowdown. modern_house map glass must retain its G1
+behaviour. No game was launched and no install/package input was changed by R7-C.
+
+## R7-C: fast-body fix pass (2026-11-01)
+
+`r7-glass-fix` passes all 31 native glass cases and 70 glass Python cases. The new regression
+feeds actual Lua snapshots into a generated sleeping nine-piece Jolt pile: 650-unit/s crowded
+and 3600-unit/s between-discovery crossings, at 60/30 Hz, must move/damage pieces while mirror
+targets stay exact. Both fail on the starting implementation; all disabled controls stay inert.
+Native cases cover both collision layers, 16-cast/64-transfer caps, leaf movement, teleports and off.
+
+The Release run passes 26/26 CTests and 470 Python tests (417 tools, 28 gmapack, 25 steam; two
+existing skips). Its conventions step fails only on three existing links to absent
+`docs/handover/R7-A-mmd-alpha.md`. A minimal redirect is prepared under ignored `out` pending
+scope clarification; no checks or tracked build settings were relaxed. No guard-path workaround
+is needed here. Receipts: `out/r7-glass-fix/test-release.log`, `glass-final.log`, `native-final.log`.
+Measured costs, evidence, bounds and Claude's unchanged field/drum QA are in the
+[fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).

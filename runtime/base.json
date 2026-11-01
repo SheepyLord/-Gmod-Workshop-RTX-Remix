@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "9906eec639b8768baf468daebb2f281c45f04754eaaf6cd60c0c5f7c883cc543",
-  "built_from": "HEAD -> c16-runtime 8a5df5d8 (with what the rest of this record names)",
+  "d3d9.dll": "50856d6205a7ab44580d2940d6fe9bc4926946380c73efd41eda70953d915f4a",
+  "built_from": "HEAD e9460a14 (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -70,6 +70,7 @@
    "patches/0014-Never-save-over-unread-settings-retry-saves-and-keep.patch": "224ae520a1e48cde66971dbe3a62225de41892aabf7c19a30f929193a4e76413",
    "patches/0015-Record-GPU-memory-snapshots-and-rate-limit-micromap-.patch": "56700eb053458d29647713db8a90950a05eb7bec4b8f2b7cc208a5f50d9c5f93",
    "patches/0016-Add-scene-adaptive-opaque-emission.patch": "f90458cad21d1a984009797962d8f9816126344a97358a4a9eba1231dc61b001",
+   "patches/0017-Apply-scoped-MMD-alpha-consistently-to-ray-materials.patch": "e89d4ba576cfcd373bb400a317e70ba09779d7312a373a9dd2dcbec78fc1c838",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

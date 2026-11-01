@@ -1,7 +1,7 @@
 -- G1 QA add-on (never shipped): copied into a test install's garrysmod/addons for one session, then
 -- removed. `nlglass_qa [field|map]` (server, host only) runs break causes against glass and a
 -- performance scene; the client frames each step and prints NL_SHOT for poc_session.py --lua-shots.
-local NET_VIEW, NET_NEXT = "nlglass_qa_view", "nlglass_qa_next"
+local NET_VIEW, NET_NEXT, NET_FIXTURE = "nlglass_qa_view", "nlglass_qa_next", "nlglass_qa_fixture"
 -- The walk and run steps hold the player's own keys: forward (and sprint), facing west. Both realms run it,
 -- so prediction agrees; GMod picks the run speed from the user command's buttons, not from the move data.
 hook.Add("StartCommand", "nlglass_qa_walk", function(ply, cmd)
@@ -11,7 +11,7 @@ hook.Add("StartCommand", "nlglass_qa_walk", function(ply, cmd)
     cmd:SetButtons(bit.bor(IN_FORWARD, sprint and IN_SPEED or 0))
 end)
 if SERVER then
-    util.AddNetworkString(NET_VIEW) util.AddNetworkString(NET_NEXT)
+    util.AddNetworkString(NET_VIEW) util.AddNetworkString(NET_NEXT) util.AddNetworkString(NET_FIXTURE)
     local steps, index, owner = {}, 0, nil
     local ORIGIN = Vector(831.235, 576, -143.08) -- gm_construct, open field to the west
     local function say(fmt, ...) print(string.format("NL_QA " .. fmt, ...)) end
@@ -139,6 +139,79 @@ if SERVER then
         end)
         add(function() send("old_settled", eye, look, 15) timer.Simple(15, function() say("old settled: %d shard entities", shards()) end) end)
     end
+    -- R7-C: deliberately large client pieces distinguish follow-up fracture from merely moving
+    -- minimum-size G1 tiles. They use the real public manager/Jolt path, never a forced native split.
+    local function interact()
+        local A = ORIGIN + Vector(-220, 0, 2)
+        local function fixture(kind)
+            clear()
+            owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0))
+            net.Start(NET_FIXTURE) net.WriteString(kind) net.WriteVector(A) net.Send(owner)
+            if NLGlass.Bullets then NLGlass.Bullets.Mark(A, 768) end
+        end
+        add(function()
+            clear();local e = pane(A + Vector(0, 0, 50))
+            timer.Simple(.5, function() shoot(e:GetPos(), 400) view("interact_real_pane", A, 3) end)
+        end)
+        add(function()
+            shoot(A, 40, A + Vector(0, 0, 120))
+            say("real pane follow-up: forwarded rays %s (no client fixture interest was registered)", tostring(NLGlass.Bullets and NLGlass.Bullets.sent))
+            view("interact_real_followup", A, 1)
+        end)
+        -- Empty traversal gives a Source movement control for the identical walk through the pile.
+        local function walk(label, kind, sprint)
+            add(function() fixture(kind);view(label .. "_before", A, 2.5) end)
+            add(function()
+                owner:SetPos(Vector(A.x + 110, A.y, ORIGIN.z)) owner:SetVelocity(-owner:GetVelocity())
+                owner:SetEyeAngles(Angle(0, 180, 0));owner.NLGlassQASpeed = 0
+                local health = owner:Health()
+                owner:SetNW2Bool("nlglass_qa_sprint", sprint) owner:SetNW2Float("nlglass_qa_move_until", CurTime() + 1.3)
+                timer.Simple(1.4, function()
+                    say("%s: Source x %.2f, passed %s, peak speed %.1f, health %d -> %d", label, owner:GetPos().x,
+                        tostring(owner:GetPos().x < A.x - 60), owner.NLGlassQASpeed or 0, health, owner:Health())
+                    view(label, A, .1)
+                end)
+            end)
+        end
+        hook.Add("Move", "nlglass_qa_speed", function(ply, mv)
+            if ply == owner then ply.NLGlassQASpeed = math.max(ply.NLGlassQASpeed or 0, mv:GetVelocity():Length2D()) end
+        end)
+        walk("interact_empty_walk", "empty", false)
+        walk("interact_walk", "pile", false)
+        walk("interact_run", "pile", true)
+        add(function() fixture("slab");view("interact_ragdoll_before", A, 2.5) end)
+        add(function()
+            throw("models/Humans/Group01/male_07.mdl", "prop_ragdoll", A + Vector(0, 0, 150), Vector(0, 0, -120))
+            say("ragdoll dropped onto a settled slab");view("interact_ragdoll", A, 2)
+        end)
+        add(function() fixture("pile");view("interact_prop_before", A, 2.5) end)
+        add(function()
+            -- From just above the ground: A is the pane centre's height, so a drum thrown from there flew over the pile.
+            local p = throw("models/props_c17/oildrum001.mdl", "prop_physics", Vector(A.x + 140, A.y, ORIGIN.z + 30), Vector(-650, 0, -60))
+            say("prop sent onto the pile, Source mass %.1f", p:GetPhysicsObject():GetMass());view("interact_prop", A, 1.3)
+        end)
+        add(function() fixture("slab");view("interact_bullet_before", A, 2.5) end)
+        add(function()
+            shoot(A, 40, A + Vector(0, 0, 120));say("one real Source bullet down into the local slab")
+            view("interact_bullet", A, .8)
+        end)
+        add(function() fixture("slab");view("interact_blast_before", A, 2.5) end)
+        add(function()
+            -- A damageable Source prop away from the slab supplies the engine's blast callback.
+            local anchor = throw("models/props_c17/oildrum001.mdl", "prop_physics", A + Vector(0, 150, 32), vector_origin)
+            anchor:GetPhysicsObject():EnableMotion(false)
+            util.BlastDamage(owner, owner, A + Vector(0, 0, 24), 260, 150)
+            say("real Source blast, damageable witness prop 150 units away");view("interact_blast", A, 1.3)
+        end)
+        add(function() fixture("fall");say("large local slab falling 256 units, no applied damage")
+            view("interact_fall", A + Vector(0, 0, 70), 2) end)
+        add(function() view("interact_fall_settled", A, 3) end)
+        add(function()
+            fixture("empty")
+            say("interaction cleanup: fixtures removed; compare field falling/settled cost with G1 run 10")
+            view("interact_cleanup", A, .2)
+        end)
+    end
     local function map()
         local panes = {}
         for _, e in ipairs(ents.FindByClass("func_breakable")) do
@@ -183,7 +256,8 @@ if SERVER then
         if not IsValid(owner) then return end
         steps, tags, index = {}, {}, 0
         watch()
-        if args[1] == "map" then map() elseif args[1] == "old" then old() else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
+        if args[1] == "map" then map() elseif args[1] == "old" then old() elseif args[1] == "interact" then interact()
+        else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
         if args[1] == "contact" then -- only the walk and run steps
             local only = {} for i, fn in ipairs(steps) do if tags[i] == "contact" then only[#only + 1] = fn end end steps = only
         end
@@ -193,6 +267,25 @@ if SERVER then
 end
 -- client: frame the step, report the broken-glass manager, measure frame times, print NL_SHOT
 local camera, frames
+net.Receive(NET_FIXTURE, function()
+    local kind, at = net.ReadString(), net.ReadVector()
+    local d = NLGlassDebris
+    if not d then print("NL_QA interaction fixture FAILED: missing manager");return end
+    d.Clear()
+    local list = {}
+    local function piece(x, y, width, height)
+        list[#list + 1] = {poly = {{x - width / 2, y - height / 2}, {x + width / 2, y - height / 2},
+            {x + width / 2, y + height / 2}, {x - width / 2, y + height / 2}}, thickness = .5,
+            velocity = vector_origin, spin = vector_origin, seed = #list + 1}
+    end
+    if kind == "pile" then for x = -1, 1 do for y = -1, 1 do piece(x * 34, y * 34, 32, 32) end end
+    elseif kind == "slab" or kind == "fall" then piece(0, 0, 96, 64) end
+    if #list > 0 then
+        d.Spawn({origin = at + Vector(0, 0, kind == "fall" and 256 or 8), angles = angle_zero,
+            material = "models/props_combine/health_charger_glass", color = Color(255, 255, 255)}, list)
+    end
+    print("NL_QA interaction fixture " .. kind .. " pieces " .. #list .. " | requires interact=1, piece_size=8, Jolt")
+end)
 hook.Add("CalcView", "nlglass_qa", function() if camera then return {origin = camera[1], angles = camera[2], fov = 70, drawviewer = true} end end)
 hook.Add("HUDShouldDraw", "nlglass_qa", function() if camera then return false end end)
 hook.Add("PostRender", "nlglass_qa", function() if frames then frames[#frames + 1] = FrameTime() end end)
@@ -214,6 +307,16 @@ local function stats(label)
         f(s.draw_calls_avg), tostring(s.culled_pieces), f(s.rebuild_peak_ms),
         f(n.step_ms), tostring(n.awake), tostring(n.brushes), tostring(n.skipped_brushes),
         tostring(n.refused_brushes), tostring(n.statics), tostring(n.models)))
+    print(string.format("NL_QA interaction %s enabled %s available %s mirrors %s candidates %s queries %s capture_ms %s" ..
+        " capture_peak %s split_ms %s split_peak %s splits %s bullet %s blast %s body %s fall %s pending %s rays %s ray_hits %s dropped %s/%s/%s",
+        label, tostring(s.interaction), tostring(s.interaction_available), tostring(s.scene_bodies), tostring(s.scene_candidates),
+        tostring(s.scene_queries), f(s.capture_ms), f(s.capture_peak_ms), f(s.split_ms), f(s.split_peak_ms), tostring(s.splits), tostring(s.splits_bullet),
+        tostring(s.splits_blast), tostring(s.splits_body), tostring(s.splits_fall), tostring(s.damage_pending),
+        tostring(s.ray_pending), tostring(n.ray_hits), tostring(s.damage_dropped), tostring(s.rays_dropped), tostring(n.damage_dropped)))
+    print(string.format("NL_QA fast bodies %s peak %s boxes %s candidates %s examined %s sweeps %s hits %s limited %s",
+        tostring(s.scene_fast_bodies), tostring(s.scene_peak_bodies), tostring(s.scene_fast_boxes),
+        tostring(s.scene_fast_candidates), tostring(s.scene_examined), tostring(n.scene_sweeps),
+        tostring(n.scene_sweep_hits), tostring(n.scene_sweep_limited)))
 end
 local pending
 net.Receive(NET_VIEW, function()

@@ -111,7 +111,8 @@ LUA_FUNCTION_STATIC(PollFinishWorld) { return guarded(LUA,[&] { LUA->PushBool(ac
 LUA_FUNCTION_STATIC(Spawn) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto points=hull(LUA,1);const auto p=vector(LUA,2,kCoordinateLimit),a=vector(LUA,3,36000,true);
   const auto v=vector(LUA,4,100000),spin=vector(LUA,5,36000);
-  LUA->PushNumber(w.spawn(points,p,a,v,spin));return 1;
+  const float minimum=LUA->Top()>=6?static_cast<float>(number(LUA,6,4,64)):4;
+  LUA->PushNumber(w.spawn(points,p,a,v,spin,minimum));return 1;
 }); }
 LUA_FUNCTION_STATIC(Remove) { return guarded(LUA,[&] { LUA->PushBool(active(LUA).remove(id(LUA)));return 1; }); }
 LUA_FUNCTION_STATIC(Impulse) { return guarded(LUA,[&] {
@@ -124,6 +125,80 @@ LUA_FUNCTION_STATIC(SetCollide) { return guarded(LUA,[&] {
 }); }
 LUA_FUNCTION_STATIC(SetGravity) { return guarded(LUA,[&] {
   active(LUA).set_gravity(static_cast<float>(number(LUA,1,0,10000)));return success(LUA);
+}); }
+void push_vector(ILuaBase* l,V3 v) {
+  l->CreateTable();const double values[]{v.x,v.y,v.z};
+  for(unsigned i=0;i<3;++i) { l->PushNumber(values[i]);set(l,-2,i+1); }
+}
+LUA_FUNCTION_STATIC(SetInteraction) { return guarded(LUA,[&] {
+  need(LUA->IsType(1,Type::Bool),"expected interaction boolean");active(LUA).set_interaction(LUA->GetBool(1));return success(LUA);
+}); }
+LUA_FUNCTION_STATIC(SyncBodies) { return guarded(LUA,[&] {
+  auto& w=active(LUA);need(LUA->IsType(1,Type::Table),"expected scene snapshot");
+  const int count=LUA->ObjLen(1);need(count>=0 && count<=static_cast<int>(kMaxSceneBodies),"scene body limit");
+  const auto dt=number(LUA,2,.001,.25);std::vector<SceneBody> bodies;bodies.reserve(count);unsigned cooks=0;
+  for(int i=1;i<=count;++i) {
+    get(LUA,1,i);need(LUA->IsType(-1,Type::Table),"expected scene row");const int row=LUA->Top();SceneBody s;
+    get(LUA,row,1);s.key=integer(LUA,-1,1,0xffffffffu);LUA->Pop();
+    get(LUA,row,2);s.position=vector(LUA,-1,kCoordinateLimit);LUA->Pop();
+    get(LUA,row,3);s.angles=vector(LUA,-1,36000,true);LUA->Pop();
+    get(LUA,row,4);s.half=vector(LUA,-1,1024);LUA->Pop();
+    get(LUA,row,5);s.mass=static_cast<float>(number(LUA,-1,.01,50000));LUA->Pop();
+    get(LUA,row,6);
+    if(!LUA->IsType(-1,Type::Nil)) {
+      need(LUA->IsType(-1,Type::Table) && ++cooks<=2,"scene cooking budget exceeded");
+      const auto n=LUA->ObjLen(-1);need(n>0 && n<=8,"scene convex count limit");const int convexes=LUA->Top();
+      unsigned points=0;
+      for(int j=1;j<=n;++j) {
+        get(LUA,convexes,j);auto h=hull(LUA,-1);LUA->Pop();points+=static_cast<unsigned>(h.size());need(points<=512,"scene point limit");
+        s.convexes.push_back(std::move(h));
+      }
+    }
+    LUA->Pop();get(LUA,row,7);s.velocity=vector(LUA,-1,100000);LUA->Pop(2);bodies.push_back(std::move(s));
+  }
+  LUA->PushNumber(w.sync_bodies(bodies,dt));return 1;
+}); }
+LUA_FUNCTION_STATIC(ReadRegions) { return guarded(LUA,[&] {
+  const auto focus=LUA->Top()?vector(LUA,1,kCoordinateLimit):V3{};
+  const auto regions=active(LUA).regions(focus);LUA->CreateTable();unsigned i=0;
+  for(const auto& r:regions) {
+    LUA->CreateTable();push_vector(LUA,r.minimum);set(LUA,-2,1);push_vector(LUA,r.maximum);set(LUA,-2,2);set(LUA,-2,++i);
+  }
+  return 1;
+}); }
+LUA_FUNCTION_STATIC(ReadDamage) { return guarded(LUA,[&] {
+  const auto events=active(LUA).take_damage();if(events.empty()) { LUA->PushBool(false);return 1; }
+  LUA->CreateTable();unsigned i=0;
+  for(const auto& e:events) {
+    LUA->CreateTable();LUA->PushNumber(e.id);set(LUA,-2,1);LUA->PushNumber(e.energy);set(LUA,-2,2);
+    LUA->PushNumber(e.kinds);set(LUA,-2,3);set(LUA,-2,++i);
+  }
+  return 1;
+}); }
+LUA_FUNCTION_STATIC(Ray) { return guarded(LUA,[&] {
+  auto& w=active(LUA);const auto from=vector(LUA,1,kCoordinateLimit),to=vector(LUA,2,kCoordinateLimit);
+  const float energy=static_cast<float>(number(LUA,3,0,1e9)),speed=static_cast<float>(number(LUA,4,0,2000));
+  LUA->PushNumber(w.ray(from,to,energy,speed));return 1;
+}); }
+LUA_FUNCTION_STATIC(Split) { return guarded(LUA,[&] {
+  auto& w=active(LUA);const auto token=id(LUA);const auto minimum=static_cast<float>(number(LUA,2,4,64));
+  const auto fragments=w.split(token,minimum);if(fragments.empty()) { LUA->PushBool(false);return 1; }
+  LUA->CreateTable();unsigned i=0;
+  for(const auto& f:fragments) {
+    LUA->CreateTable();LUA->PushNumber(f.id);set(LUA,-2,"id");LUA->PushNumber(f.thickness);set(LUA,-2,"thickness");
+    push_vector(LUA,f.position);set(LUA,-2,"position");push_vector(LUA,f.angles);set(LUA,-2,"angles");
+    push_vector(LUA,f.velocity);set(LUA,-2,"velocity");push_vector(LUA,f.spin);set(LUA,-2,"spin");
+    LUA->CreateTable();unsigned vertex=0;
+    for(auto p:f.polygon) {
+      LUA->CreateTable();LUA->PushNumber(p.x);set(LUA,-2,1);LUA->PushNumber(p.y);set(LUA,-2,2);set(LUA,-2,++vertex);
+    }
+    set(LUA,-2,"poly");set(LUA,-2,++i);
+  }
+  return 1;
+}); }
+LUA_FUNCTION_STATIC(CanSplit) { return guarded(LUA,[&] {
+  auto& w=active(LUA);const auto token=id(LUA);const float minimum=static_cast<float>(number(LUA,2,4,64));
+  LUA->PushBool(w.can_split(token,minimum));return 1;
 }); }
 LUA_FUNCTION_STATIC(Step) { return guarded(LUA,[&] { active(LUA).step(number(LUA,1,0,10));return success(LUA); }); }
 LUA_FUNCTION_STATIC(BeginStep) { return guarded(LUA,[&] { active(LUA).begin_step(number(LUA,1,0,10));return success(LUA); }); }
@@ -156,6 +231,10 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("pair_overflows",s.pair_overflows);add("constraint_overflows",s.constraint_overflows);
   add("temp_reserved_bytes",static_cast<double>(s.temp_reserved_bytes));add("temp_peak_bytes",static_cast<double>(s.temp_peak_bytes));
   add("pose_visits",s.pose_visits);
+  add("scene_bodies",s.scene_bodies);add("scene_moves",s.scene_moves);add("scene_cooks",s.scene_cooks);
+  add("scene_sweeps",s.scene_sweeps);add("scene_sweep_hits",s.scene_sweep_hits);add("scene_sweep_limited",s.scene_sweep_limited);
+  add("damage_dropped",s.damage_dropped);add("ray_hits",s.ray_hits);add("splits",s.splits);
+  LUA->PushBool(s.interaction);set(LUA,1,"interaction");
   LUA->PushBool(s.ready);set(LUA,1,"ready");LUA->PushBool(s.busy);set(LUA,1,"busy");return success(LUA);
 }); }
 LUA_FUNCTION_STATIC(Clear) { return guarded(LUA,[&] { active(LUA).clear();return success(LUA); }); }
@@ -173,6 +252,8 @@ GMOD_MODULE_OPEN() {
       {"Init",Init},{"LoadMap",LoadMap},{"AddModel",AddModel},{"AddProp",AddProp},{"FinishWorld",FinishWorld},
       {"BeginLoadMap",BeginLoadMap},{"PollLoadMap",PollLoadMap},{"BeginFinishWorld",BeginFinishWorld},{"PollFinishWorld",PollFinishWorld},
       {"BeginStep",BeginStep},{"PollStep",PollStep},
+      {"SetInteraction",SetInteraction},{"SyncBodies",SyncBodies},{"ReadRegions",ReadRegions},
+      {"ReadDamage",ReadDamage},{"Ray",Ray},{"Split",Split},{"CanSplit",CanSplit},
       {"Spawn",Spawn},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
       {"Step",Step},{"ReadPoses",ReadPoses},{"IsSleeping",IsSleeping},{"Stats",ReadStats},{"Clear",Clear},{"Shutdown",Shutdown}};
     for(const auto& [name,fn]:functions) { LUA->PushCFunction(fn);set(LUA,-2,name); }

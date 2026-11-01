@@ -1,5 +1,15 @@
 # Components
 
+R7-C's fast-body fix adds [`glass/native/tests/scene_replay.cpp`](../glass/native/tests/scene_replay.cpp):
+an offline generated-pile executable fed by the real Lua capture harness in `tools/tests`. Scene
+capture prioritizes approaching bodies and native snapshot sync adds bounded one-way shape sweeps.
+
+R7-B extends [`loader/proxy`](../loader/proxy/README.md) with `observer.h` / `observer.cpp`
+(a guarded external rundll32 observer) and `exit_report.h` / `exit_report.cpp` (localized messages).
+[`loader/core`](../loader/core/README.md) shares exit classification/archival with next-start
+diagnostics. [`loader/proxy/tests`](../loader/proxy/tests/README.md) adds real observer integration
+using synthetic hosts; `tools/poc_session.py` suppresses only the observer window for automation.
+
 G1-A adds the original MIT [`glass/addon`](../glass/README.md): scripted panes, a pure deterministic
 fracture module, shared damage/strength, bounded network state, map adapters, frozen remaining-cell
 collision, cached client cracks/panes, tool/presets and translated settings. G1-B supplies debris via
@@ -306,3 +316,19 @@ T1 review separates `presentation::prepare_main_menu` so activation supplies its
 plan after writes, and vanilla fallback supplies an inactive plan. Core GPU diagnostics can reset
 the one-start marker on off-mode RTX starts. Proxy `test_runtime.cpp` applies the real activation
 code to fake DLLs to verify failed tier writes/reset attempts preserve RTX without a GPU reader.
+
+R7-C extends `glass/native/` with `fracture.h/.cpp` (convex bisection) and
+`tests/test_interaction.cpp`, and `glass/addon/lua/nlglass/` with `debris_scene.lua` (read-only bounded
+Source snapshots), `debris_bullets.lua` (bounded final server pellet traces) and `debris_expiry.lua`
+(descendant lifetime). The existing manager stages render replacement and exposes the per-player
+switch. `tools/tests/glass_interaction_harness.lua` / `test_glass_interaction.py` cover the integration;
+`tools/qa/nlglass_qa` adds the `interact` sequence and `tools/qa/nlglass_interaction_start.lua` starts it.
+See [the report](handover/R7-C-report.md) and [native API](../glass/native/README.md).
+
+R7-A adds the companion's
+[`nativeloader_mmd_alpha.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_mmd_alpha.lua.md):
+bounded discovery of loaded Model Hotloader character materials and transient Remix texture tags,
+joined with the saved MMD-alpha category by runtime patch 0017. Its LuaJIT lifecycle/budget tests
+live in [`companion/tests`](../companion/tests/test_mmd_alpha.py.md). The existing
+[`tools/qa/alpha_probe.lua`](../tools/qa/alpha_probe.lua.md) can temporarily tag its own ramp/plate
+textures for Claude's game comparison, restoring the previous transient list afterwards.

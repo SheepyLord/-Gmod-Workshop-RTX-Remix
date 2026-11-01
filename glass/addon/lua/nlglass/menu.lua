@@ -59,6 +59,8 @@ function NLGlass.BuildSettings(panel)
     panel:Help(L("Debris lifetime (s; 0 = until cleanup)")) panel:NumSlider("","rtx_glass_debris_lifetime",0,600,0)
     panel:Help(L("Debris budget")) panel:NumSlider("","rtx_glass_debris_budget",100,8192,0)
     panel:CheckBox(L("Pieces collide with each other"),"rtx_glass_debris_collide")
+    panel:CheckBox(L("Bodies and damage affect broken pieces"),"rtx_glass_debris_interact")
+    panel:Help(L("Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."))
     local reset=panel:Button(L("Reset to Defaults"))
     reset.DoClick=function()
         for _,s in ipairs(C.Debris) do RunConsoleCommand(s[1],s[2]) end

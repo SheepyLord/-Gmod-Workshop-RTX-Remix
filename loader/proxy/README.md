@@ -1,5 +1,20 @@
 # loader/proxy
 
+R7-B: `observer.h` / `observer.cpp` start a System32 rundll32 host from this same DLL, pin the
+game with an inherited restricted handle, validate its identity and wait outside the game.
+`bootstrap.cpp` explicitly bypasses all loader work in that host. `exit_report.h` /
+`exit_report.cpp` select the game/Windows language and format reason, advice, exception code
+and evidence folder from the existing seven catalogs. Both observer and read-only preview
+exports end in `W`; rundll32 calls them with Unicode arguments. User32 loads only after exit.
+The embedding concatenates label-file lines as adjacent raw literals to stay below MSVC's
+single-literal size limit with the full UTF-8 text intact.
+See [ADR 0083](../../docs/decisions/0083-external-exit-observer-from-the-proxy.md) and
+[the preview/QA steps](../../docs/TESTING.md#r7-b-exit-observer-and-read-only-previews).
+
+R7-B keeps the full `gmod-rtx-remix` identity row and counts the other deployed content packages
+in one localized line, including in copied diagnostics. The seven catalogs describe the new
+18 GiB free-commit / 24 GiB total memory thresholds.
+
 R6: `startup.cpp` starts the local evidence collector outside loader lock, overlaps copying with
 planning and activation, waits for the old Remix log before loading its DLL, and joins the remaining
 dump work before writing `previous_session` to status. Failures are diagnostic notes, never an

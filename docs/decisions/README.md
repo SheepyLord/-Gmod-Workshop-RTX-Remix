@@ -6,6 +6,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 | # | Decision | Status |
 |---|---|---|
+| [0081](0081-mmd-alpha-texture-category.md) | Scoped MMD alpha cutoff and opaque blend coverage, joined transient character texture tags | Accepted 2026-11-01 |
 | [0077](0077-glass-client-build-queue.md) | Coalesce remaining-pane client builds across bounded later frames and share extrusion positions | Accepted 2026-11-01 |
 | [0076](0076-glass-bounded-break-density.md) | Bound live annealed topology to 200 and tempered shatter to 300 before releasing pieces | Accepted 2026-11-01 |
 | [0001](0001-bootstrap-winmm-proxy.md) | The bootstrap is a `winmm.dll` proxy that works at the EXE entry point | Accepted 2026-10-27 |
@@ -86,6 +87,13 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0080](0080-glass-visibility-and-frame-costs.md) | Material-group individual rendering, cached matrices, current-view/distance/subpixel culling and measured per-frame manager costs | Accepted 2026-11-01 (G1-B second pass) |
 
 ## Template
+
+- [0083: An external exit observer from the proxy DLL](0083-external-exit-observer-from-the-proxy.md)
+
+- [0082: Map commit headroom and a compact content summary](0082-map-commit-headroom-and-addon-summary.md)
+
+- [0084: One-way broken-glass interaction](0084-glass-one-way-interaction.md) — accepted R7-C;
+  supersedes 0070's map/piece-only contact rule, retaining authoritative pane fracture.
 
 - [0074: Incoming body contact and quiet map outputs](0074-glass-contact-and-quiet-map-outputs.md)
 - [0075: Incremental glass topology](0075-incremental-glass-topology.md)

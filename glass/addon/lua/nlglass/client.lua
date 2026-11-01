@@ -170,7 +170,10 @@ net.Receive("nlglass_hit",function()
     V.QueueBuild(r,broke)
     V.Pose(r)
     if #pieces>0 then
-        for _,piece in ipairs(pieces) do piece.velocity=G.WorldVector(r.frame,piece.velocity) piece.spin=G.WorldVector(r.frame,piece.spin) end
+        for _,piece in ipairs(pieces) do
+            piece.velocity=G.WorldVector(r.frame,piece.velocity) piece.spin=G.WorldVector(r.frame,piece.spin)
+            piece.minimum_size=r.state.def.piece_size
+        end
         if NLGlassDebris then NLGlassDebris.Spawn(r.frame,pieces) end
         local point=G.WorldPoint(r.frame,Vector(impact.x,impact.y,0))
         sound.Play("physics/glass/glass_sheet_break"..(impact.seed%3+1)..".wav",point,75,100)

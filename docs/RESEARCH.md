@@ -1,5 +1,76 @@
 # Research notes
 
+## R7-B: external exit diagnostics (2026-11-01)
+
+The final text review caught lossy catalog generation through Windows PowerShell 5.1's
+ASCII native-pipeline encoding (code page 20127): original UTF-8 labels survived, while new
+non-ASCII text became `?`. A before-failing Python catalog check and embedded C++ message
+checks now reject it. Writing the catalog through a UTF-8 source file restored the text;
+the full catalog then exceeded MSVC's 16 KiB single-literal limit. CMake now concatenates
+adjacent raw literals at existing label-file line boundaries, preserving the bytes. The
+native French dialog probe is repeated against that corrected embedded catalog, not merely
+against the source JSON.
+
+Final Release gate: 26/26 CTests (36.50 s) and 455 Python tests (28 gmapack, 25 steam,
+402 tools; two expected fixture skips). `out/r7-b/release-verified.log` records the pass.
+A separate native-window probe (`out/r7-b/dialog-probe.json`) observed exactly one visible
+French dialog after a synthetic access-violation exit, checked the title/body/code/folder,
+acknowledged only that observer's OK button and verified its process then exited. Its
+`+gmod_language fr` correctly beat the synthetic config's archived Japanese setting. This
+does not exercise GMod, Remix's own prompt or a real resource fault.
+
+The final parallel native run measured empty evidence collection at 1.379 ms mean / 4.073 ms
+maximum over 30 starts (an earlier isolated run: 0.484 / 0.676 ms). Startup's observer handshake
+has a separate 3 s readiness bound, not included in those collector numbers. The first full gate
+exposed the existing `loader/guard/tests/test_early.cpp` unprefixed timestamp path over MAX_PATH;
+using `fs::long_path` for its timestamp getter/setter removes the need for a local build-output
+path workaround. The fixture still proves that repeated preparation does not rewrite the cache.
+
+The same built proxy works inside System32 `rundll32.exe` with its DllMain loader guard.
+The synthetic integration covers 23 cases, including a genuinely separate sleeping observer,
+an inherited restricted game handle, process/path/creation/parent validation, exit before JSON
+and observer termination afterward. The actual exception/OOM/driver failures are simulated
+exit codes/logs, not resource exhaustion. The bootstrap remains KERNEL32-only; MessageBoxW
+is resolved dynamically after exit. No executable is extracted or downloaded.
+
+`loader/proxy/observer.cpp` starts/validates/waits; `loader/proxy/exit_report.cpp` selects and
+formats the seven catalogs. `loader/core/src/evidence.cpp` shares `classify` and archive copying
+between exit and startup. The end marker lets the next collector reuse the same reason/folder,
+and prevents clean sessions without a Remix shutdown marker from filling the five-archive queue.
+Fresh `.nvdbg` shader-debug information is copied as context but no longer proves a crash;
+actual GPU dumps use `.nv-gpudmp` (the fork's writer is recorded in runtime patch 0001).
+
+Memory inference is deliberately narrower than the map warning: <=512 MiB free commit in a
+sample <=30 seconds old, tied to the same process token (snapshot) or start/end interval (CSV),
+and only for a generic nonzero exit without stronger evidence. The reason is
+`likely_out_of_memory`; concrete exceptions keep their exception classification/code. A zero
+exit stays clean unless a fresh fatal Remix message/marker or actual crash artifact exists.
+
+## R7-B: commit headroom from the saved R6 runs (2026-11-01)
+
+Read-only reanalysis of the main checkout's `out/qa-poc/r6/tiers*/<run>/memory.csv`;
+no game or new measurement session was started. Each CSV includes earlier sessions, so the
+last bootstrap sample with private bytes below 256 MiB identifies the current session's start.
+The damaged `tiers-pinned/04-house-auto-pin` snapshot has no such sample and is excluded.
+These are whole-start-to-map differences, deliberately conservative for a warning at the menu;
+system commit includes other programs and ten-second sampling can miss transient peaks.
+
+| Saved R6 sessions | Peak process private GiB | Added system commit GiB |
+|---|---:|---:|
+| `tiers/01-construct-auto` | 11.669 | 16.184 |
+| `tiers/11-construct-medium`, `12-construct-auto` | 11.922, 12.434 | 12.669, 13.212 |
+| `tiers/04-house-auto`, `05-house-medium`, `06-house-low` | 11.600, 11.153, 10.959 | 12.530, 12.089, 11.886 |
+| `tiers-pinned/07-construct-auto-pin`, `08-construct-medium-pin`, `09-construct-low-pin` | 11.688, 11.433, 11.303 | 12.640, 13.623, 12.194 |
+| `tiers-pinned/10-house-low-pin-b8` | 10.899 | 16.015 |
+
+Across the 24 usable runs, added commit spans 11.074-16.184 GiB. The runtime's GPU
+snapshots and the tier comparison in [ADR 0064](decisions/0064-performance-tier-defaults.md#poc-measurements-2026-10-31)
+measure VRAM, not CPU commit; lower tiers do not justify a dramatically smaller system reserve.
+`loader/core/src/memory.cpp` therefore warns strictly below 18 GiB free commit, or a
+24 GiB total limit. This is a conservative heuristic (about 1.8 GiB above the largest
+sampled increase), not a map-fit guarantee. Unknown limits do not warn; subtraction saturates.
+64.0 / 90.6 GiB leaves 26.6 GiB and stays quiet. The small-limit floor replaces R6's 32 GiB floor.
+
 ## G1-A second pass: client build cost (2026-11-01)
 
 - Full Release gate exits 0: repo conventions, 25/25 CTests (48.67 s), and 453 Python tests
@@ -3663,3 +3734,128 @@ PoC, 1920x1080 windowed, RTX on; runs under the main checkout's `out/qa-poc/g1/`
   in new geometry.
 - modern_house (run 11): the map alone runs at about 19 ms per frame here; 44 native glass panes; a
   window broken by rounds gives 203 pieces; a ragdoll burst 391 live, 25.83 / 161.8 ms while falling.
+
+## R7: alpha in GMod RTX (2026-11-01, Claude)
+
+PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r7/`.
+
+- **GMod RTX draws models with Source's fixed-function shaders**: `Material(...):GetShader()` returns
+  `VertexLitGeneric_DX7` and `UnlitGeneric_DX6` although `mat_dxlevel` is 90.
+- **Alpha-tested lit materials cut at about 0.7.** Plates with a 16-band alpha ramp (`04-ramp`): every
+  `VertexLitGeneric` alpha-test variant (`$alphatestreference .5`, `.2`, with or without
+  `$allowalphatocoverage` or `$vertexcolor`) shows only the top bands; `UnlitGeneric` near 0.5. The runtime
+  takes the draw's `D3DRS_ALPHAREF` (`src/d3d9/d3d9_rtx_utils.cpp` `setLegacyMaterialState`), so Source's
+  DX7 path sends a fixed reference, not `$alphatestreference`.
+- **Blended draws are opaque only above `rtx.stochasticAlphaBlendOpacityThreshold`** (0.79 in
+  `packages/runtime/layers/classic_remix_defaults.conf`, 0.95 the runtime default) and a stochastic dither
+  below. A blended opacity in (`resolveTransparencyThreshold`, that threshold] is skipped by primary rays
+  (`shaders/rtx/algorithm/resolve.slangh`, the stochastic early out), while visibility rays attenuate by
+  `1 - opacity` (`shaders/rtx/algorithm/visibility.slangh`).
+- **Model Hotloader's soft alpha** (`mmdhl_soft_alpha`, default on) draws triangles with partly transparent
+  texels blended in the opaque pass under Remix (`native_render.lua`). Columbina's mask (bars 0.65, panes
+  0.26) therefore vanished and shadowed her face (`03-columbina`); a root `rtx.conf` threshold of 0.5 drew it
+  as in MMD (`05-columbina-thr05`).
+- `SetMaterial` on a client-side model did not change what drew in this setup (`01-plates`); a
+  `RenderOverride` with `render.MaterialOverride` did (`02-plates`).
+- A field game started without `-console` ignored `WM_CLOSE` on its `Valve001` window for 45 s.
+
+## R7-C: one-way bodies and subsequent debris damage (2026-11-01)
+
+- `glass/native/world.cpp:124,223,401` confines body response to kinematic mirrors and coalesces hard
+  contact energy in a bounded atomic queue. Jolt sees Source's sampled transforms/masses; Source
+  receives nothing. Pair layers keep mirrors away from map/other mirrors and preserve piece-piece off.
+- `glass/addon/lua/nlglass/debris_scene.lua:129` extends only living mirrors eight units below their
+  feet. A generated native regression with an exact flat-bottomed hull failed to move thin floor
+  glass; the extension moves both large and minimum-size pieces while retaining the prescribed path.
+  This is an approximation requiring game tuning, not a change to Source movement/collision.
+- `world.cpp:465,505,526` prioritizes 32 live-piece regions near the eye, raycasts local glass and
+  transactionally bisects convex prisms. Polygon clipping preserves area and thickness; children
+  inherit point velocity. `debris.lua:247` stages one replacement/frame, budgeted oldest first;
+  `debris_expiry.lua` preserves the original deadline without scanning normal settled pieces.
+- [Facepunch's PostEntityFireBullets contract](https://wiki.facepunch.com/gmod/GM:PostEntityFireBullets)
+  supplies final per-pellet traces/damage, avoiding callback replacement or predicted duplicates.
+  `debris_bullets.lua:38` bounds inspection (256/s), forwarding (64/s globally, 16/s/firing entity),
+  recent interest and PVS. Source trace endpoints retain gameplay occlusion; there is no piece stream.
+- Offline feature costs on this machine: 96 warm native mirrors plus 2000-piece interest 0.108 ms,
+  ray 0.00102 ms mean, native can-split/replacement 0.0197 ms mean / 0.0344 p99; two maximum-input
+  shapes cost 2.644 ms, excluding engine extraction. These do not establish RTX frame parity.
+  See the [report](handover/R7-C-report.md) for repeat counts, starting/current comparisons, caps,
+  evidence paths, limitations and Claude's acceptance steps. G1 run 10 was read only.
+
+## R7-A: Model Hotloader alpha, 2026-11-01
+
+- Read-only verification of Columbina's existing PoC `materials-v5.gma` confirms
+  `materials/mmd/275705586db7e069/yan_zhao_16.vmt` binds
+  `mmd/t/2c7b2c8505cc6a6e`, with `$alphatest 1`, `$alphatestreference .5`,
+  `$allowalphatocoverage 1`, `$translucent 0`, `$vertexalpha 0`. The registered public name
+  therefore need not match the texture's own path. Both are in `mmd/`; shared `mmdhl/scmi`
+  normal/lightwarp/phong textures are not base-texture candidates.
+- The imported hotloader's `lua/mmdhl/native_render.lua:122` builds the soft recipe with the
+  source base texture; lines 150-156 bind that texture to the blended copy and create an opaque
+  core only outside Remix. Lines 165-166 put decoded metadata in `mmdhl.assets`. Discovering
+  those public material paths covers the current Remix soft pass without changing the add-on.
+- Claude's supplied `out/qa-poc/r7/04-ramp/console.log:610` reports
+  `VertexLitGeneric_DX7`, and line 614 reports `UnlitGeneric_DX6`. The supplied
+  `03-columbina/shot-01-noon.png` visibly has the lattice shadow without its surface;
+  `05-columbina-thr05/shot-01-noon.png` has white lattice bars and open holes. These are existing
+  observations, not a game run by R7-A.
+- In the applied runtime, `opaque_surface_material_interaction.slangh:803` calls the shared
+  opacity evaluator after texture/vertex operations; `bake_opacity_micromap.comp.slang:131` calls
+  that same evaluator for OMM baking. This is the common point at which promoting coverage to
+  1 affects both lighting/visibility and micromap classification. Primary-only threshold changes
+  leave indirect opacity throughput and visibility attenuation at the old partial value.
+- The GPU surface's `data13.z` uses bits 0-15 for existing texture/eye flags and bits 17-18 for
+  texgen. Patch 0017 uses bit 16 plus bits 19-30 for MMD alpha and the fixed-point cutoff; the
+  256-byte CPU packing contract remains unchanged. `AlphaState` grows from 9 to 12 explicitly
+  initialized bytes. Rearranging explicit OMM hash padding retains the 128-byte hash-source
+  contract, with materialHash at byte 88 and no implicit padding.
+- The existing ADR 0048 BLAS path compares cached geometry flags, combines shared geometry as
+  opaque only when every instance is opaque, and rebuilds on incompatible flags. R7-A does not
+  mark a partly opaque mesh fully opaque: only the sampled final coverage is promoted.
+
+## R7-C: fast-body discovery and thin-floor contact (2026-11-01)
+
+- Read-only PoC evidence `out/qa-poc/r7/11-interact/console.log:656–662` shows the 30 kg drum
+  crossing nine settled pieces with zero movement/body splits. `debris_scene.lua:12,27,57` now
+  widens spatial discovery before testing a 0.25 s/192-unit velocity sweep, inspects at most 512
+  entries and prioritizes fast bodies before truncating to 128 candidates/96 mirrors. Fast cold
+  physics boxes bypass mesh extraction until slowing (`glass/addon/lua/nlglass/debris_scene.lua:128`).
+- Earlier Lua capture alone still fails the real Jolt sleeping-floor-box replay. Jolt's
+  `third_party/jolt/Jolt/Physics/PhysicsSystem.cpp:1564` limits CCD to dynamic bodies. Native
+  `glass/native/world.cpp:236` now sweeps actual mirror translations against glass, with 16 casts,
+  eight hits/cast and 64 transfers/snapshot; mirrors still follow Source exactly. The regression
+  fails on the starting executable even with earlier captured rows, and passes with both fixes.
+- Three interleaved offline comparisons: crowded Lua capture 0.1563 -> 0.1959 ms mean; warm native
+  96 mirrors/regions 0.06035 -> 0.05966 ms; single fast box native sync 0.0011–0.0033 ms mean;
+  the 96-mirror/128-leaf, 64-transfer stress snapshot 0.0693 ms median. The unchanged 4000-piece
+  benchmark settles in 11.0167 simulated seconds, with identical scratch use/zero overflows.
+  These are doubles/generated rooms, not game frames; detailed costs and limits are in the
+  [fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
+
+## R7 integration: glass capture in the game (2026-11-01, Claude)
+
+- **Vector reads.** Reading a component of a Source `Vector` from client Lua costs **35.3 ns** in
+  game: 100,000 reads of `v.x`, against 0.5 ns for a Lua local (PoC, `out/qa-poc/r7/25-probe`).
+  R7-C's region test read every bound through vectors. 512 bodies that miss 32 regions took
+  **3.128 ms** that way, and **0.300 ms** with the same test on plain numbers.
+  - At 10 Hz, the 50-pane field scene's manager think rose from 0.02 ms (interaction off, run 21)
+    to 0.49 ms (on, run 24) with nothing moving, with think peaks of 18.6 and 26.4 ms.
+  - The offline doubles are plain Lua tables and cannot show this cost.
+- **`PhysObj:GetAABB()` is in the object's own frame.** A client prop (`ents.CreateClientProp`, the
+  oil drum) at 831, 400, −100, angles 0, 37, 20, reported −14, −14, 0 .. 14, 14, 45.
+  - Server props have no physics object on the client: the drum, the couches, the table and the
+    companion doll all give an invalid `GetPhysicsObject()` there. Capture uses their oriented
+    `OBBMins`/`OBBMaxs` box.
+  - Client ragdolls and client props do have one. Capture took their local box as world bounds, so
+    the boxes landed near the map origin and the region test dropped them.
+- **After the fix.** Frame mean / p99 in ms, manager think in brackets. Same build, interaction off
+  (run 27), then on (run 28):
+
+  | Scene | Interaction off | Interaction on |
+  |---|---|---|
+  | Before the panes | 8.96 / 12.81 (0.02) | 8.85 / 16.58 (0.18) |
+  | While 2,000 pieces fall | 26.28 / 134.30 (1.79) | 28.60 / 134.33 (2.61) |
+  | Settled | 9.17 / 14.66 (0.02) | 9.32 / 17.25 (0.26) |
+
+  G1 run 10, the old baseline: 25.31 / 113.22 ms falling and 9.74 / 16.39 ms settled. The falling
+  p99 is the second-worst of about 150 frames: 113, 134 and 142 ms across runs 10, 27 and 21.

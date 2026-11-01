@@ -2,6 +2,7 @@
 return {
     ["zh-CN"] = {
         ["Annealed glass"] = "退火玻璃",
+        ["Bodies and damage affect broken pieces"] = "物体和伤害影响碎玻璃",
         ["Broken pieces are local to you and collide with the map and other pieces."] = "碎片仅在你的客户端模拟，与地图和其他碎片碰撞。",
         ["Convert a prop to a convex glass pane, or create a pane."] = "将物件转换为凸形玻璃板，或创建玻璃板。",
         ["Debris budget"] = "碎片数量上限",
@@ -20,6 +21,7 @@ return {
         ["Pieces collide with each other"] = "碎片互相碰撞",
         ["Player / NPC mass (kg)"] = "玩家／NPC 质量（kg）",
         ["Player break speed"] = "玩家撞碎速度",
+        ["Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."] = "玩家、道具、子弹、爆炸和坠落会推动或击碎你看到的碎片。玻璃不会反向推挤物体。",
         ["Props become a flat convex envelope; complex shapes are simplified."] = "物件将转换为平面的凸包；复杂形状会简化。",
         ["Reset to Defaults"] = "恢复默认设置",
         ["Right: create a pane at the surface"] = "右键：在表面创建玻璃板",
@@ -33,6 +35,7 @@ return {
     },
     ["zh-TW"] = {
         ["Annealed glass"] = "退火玻璃",
+        ["Bodies and damage affect broken pieces"] = "物體和傷害影響碎玻璃",
         ["Broken pieces are local to you and collide with the map and other pieces."] = "碎片僅在你的用戶端模擬，與地圖和其他碎片碰撞。",
         ["Convert a prop to a convex glass pane, or create a pane."] = "將物件轉換為凸形玻璃板，或建立玻璃板。",
         ["Debris budget"] = "碎片數量上限",
@@ -51,6 +54,7 @@ return {
         ["Pieces collide with each other"] = "碎片互相碰撞",
         ["Player / NPC mass (kg)"] = "玩家／NPC 質量（kg）",
         ["Player break speed"] = "玩家撞碎速度",
+        ["Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."] = "玩家、物件、子彈、爆炸和墜落會推動或擊碎你看到的碎片。玻璃不會反向推擠物體。",
         ["Props become a flat convex envelope; complex shapes are simplified."] = "物件將轉換為平面的凸包；複雜形狀會簡化。",
         ["Reset to Defaults"] = "還原預設值",
         ["Right: create a pane at the surface"] = "右鍵：在表面建立玻璃板",
@@ -64,6 +68,7 @@ return {
     },
     ["ja"] = {
         ["Annealed glass"] = "フロートガラス",
+        ["Bodies and damage affect broken pieces"] = "物体やダメージがガラス片に影響する",
         ["Broken pieces are local to you and collide with the map and other pieces."] = "破片は各クライアントでシミュレートされ、マップと他の破片に衝突します。",
         ["Convert a prop to a convex glass pane, or create a pane."] = "プロップを凸形のガラス板に変換、またはガラス板を作成します。",
         ["Debris budget"] = "破片数の上限",
@@ -82,6 +87,7 @@ return {
         ["Pieces collide with each other"] = "破片同士が衝突",
         ["Player / NPC mass (kg)"] = "プレイヤー／NPC の質量（kg）",
         ["Player break speed"] = "体当たりで割れる速度",
+        ["Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."] = "プレイヤー、プロップ、弾丸、爆発、落下でガラス片が動いたり砕けたりします。ガラス片が物体を押し返すことはありません。",
         ["Props become a flat convex envelope; complex shapes are simplified."] = "プロップは平面の凸包になります。複雑な形状は簡略化されます。",
         ["Reset to Defaults"] = "初期設定に戻す",
         ["Right: create a pane at the surface"] = "右クリック：表面にガラス板を作成",
@@ -95,6 +101,7 @@ return {
     },
     ["ko"] = {
         ["Annealed glass"] = "일반 유리",
+        ["Bodies and damage affect broken pieces"] = "물체와 피해가 유리 파편에 영향",
         ["Broken pieces are local to you and collide with the map and other pieces."] = "파편은 각 클라이언트에서 시뮬레이션되며 맵과 다른 파편에 충돌합니다.",
         ["Convert a prop to a convex glass pane, or create a pane."] = "프롭을 볼록한 유리판으로 바꾸거나 유리판을 만듭니다.",
         ["Debris budget"] = "파편 수 제한",
@@ -113,6 +120,7 @@ return {
         ["Pieces collide with each other"] = "파편끼리 충돌",
         ["Player / NPC mass (kg)"] = "플레이어 / NPC 질량 (kg)",
         ["Player break speed"] = "플레이어 충돌 파괴 속도",
+        ["Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."] = "플레이어, 소품, 총알, 폭발 및 낙하로 유리 파편이 움직이거나 부서집니다. 유리 파편은 물체를 밀어내지 않습니다.",
         ["Props become a flat convex envelope; complex shapes are simplified."] = "프롭을 평평한 볼록 외곽선으로 바꿉니다. 복잡한 모양은 단순화됩니다.",
         ["Reset to Defaults"] = "기본값으로 초기화",
         ["Right: create a pane at the surface"] = "오른쪽 클릭: 표면에 유리판 생성",
@@ -126,6 +134,7 @@ return {
     },
     ["fr"] = {
         ["Annealed glass"] = "Verre recuit",
+        ["Bodies and damage affect broken pieces"] = "Les objets et les dégâts affectent les débris",
         ["Broken pieces are local to you and collide with the map and other pieces."] = "Les éclats sont simulés sur votre client et heurtent la carte et les autres éclats.",
         ["Convert a prop to a convex glass pane, or create a pane."] = "Convertit un objet en vitre convexe ou crée une vitre.",
         ["Debris budget"] = "Nombre maximal d’éclats",
@@ -144,6 +153,7 @@ return {
         ["Pieces collide with each other"] = "Collision entre éclats",
         ["Player / NPC mass (kg)"] = "Masse joueur / PNJ (kg)",
         ["Player break speed"] = "Vitesse de bris par contact",
+        ["Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."] = "Joueurs, objets, balles, explosions et chutes déplacent ou brisent vos débris. Le verre ne repousse jamais les objets.",
         ["Props become a flat convex envelope; complex shapes are simplified."] = "Les objets deviennent une enveloppe convexe plane ; les formes complexes sont simplifiées.",
         ["Reset to Defaults"] = "Rétablir les valeurs par défaut",
         ["Right: create a pane at the surface"] = "Clic droit : créer une vitre sur la surface",
@@ -157,6 +167,7 @@ return {
     },
     ["ru"] = {
         ["Annealed glass"] = "Обычное стекло",
+        ["Bodies and damage affect broken pieces"] = "Тела и урон воздействуют на осколки",
         ["Broken pieces are local to you and collide with the map and other pieces."] = "Осколки рассчитываются на вашем клиенте и сталкиваются с картой и друг с другом.",
         ["Convert a prop to a convex glass pane, or create a pane."] = "Преобразует проп в выпуклую стеклянную панель или создаёт новую.",
         ["Debris budget"] = "Лимит осколков",
@@ -175,6 +186,7 @@ return {
         ["Pieces collide with each other"] = "Столкновения между осколками",
         ["Player / NPC mass (kg)"] = "Масса игрока / NPC (кг)",
         ["Player break speed"] = "Скорость для разбивания телом",
+        ["Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."] = "Игроки, предметы, пули, взрывы и падения сдвигают или разбивают ваши осколки. Стекло не толкает тела в ответ.",
         ["Props become a flat convex envelope; complex shapes are simplified."] = "Пропы превращаются в плоскую выпуклую оболочку; сложные формы упрощаются.",
         ["Reset to Defaults"] = "Восстановить настройки",
         ["Right: create a pane at the surface"] = "ПКМ: создать панель на поверхности",

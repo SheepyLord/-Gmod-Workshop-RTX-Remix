@@ -1,5 +1,10 @@
 # nlglass_engine_harness.lua
 
+R7-C expects the additional per-player interaction control and verifies its six translated labels
+(English is the source text) and reset default alongside the existing server settings/permission tests.
+`debris_interest` exercises the real server/fracture path and checks that only released pieces
+register a bounded recent-break region.
+
 Second-pass `lit_cracks` captures material shader/parameters and checks non-emissive lit strips,
 matching outward normals, thin widths and both faces. `walk_run` checks 200/249/250/400-unit/s
 normal contacts, pre-movement sweeps, menu display and admin reset to the shared default 250;

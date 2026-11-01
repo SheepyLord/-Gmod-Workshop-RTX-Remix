@@ -6,7 +6,8 @@ C.Settings = {
     {"rtx_glass_piece_size", "8", 4, 64}, {"rtx_glass_velocity_transfer", "1", 0, 3},
     {"rtx_glass_player_break_speed", "250", 0, 1000}, {"rtx_glass_player_mass", "85", 1, 500},
 }
-C.Debris = {{"rtx_glass_debris_lifetime","120"},{"rtx_glass_debris_budget","2000"},{"rtx_glass_debris_collide","1"}}
+C.Debris = {{"rtx_glass_debris_lifetime","120"},{"rtx_glass_debris_budget","2000"},{"rtx_glass_debris_collide","1"},
+    {"rtx_glass_debris_interact","1"}}
 for _,s in ipairs(C.Settings) do
     CreateConVar(s[1],s[2],FCVAR_ARCHIVE+FCVAR_REPLICATED+FCVAR_NOTIFY,"Native loader glass setting",s[3],s[4])
 end

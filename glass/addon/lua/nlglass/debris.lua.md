@@ -7,6 +7,8 @@ Client module included by G1-A's client initializer. Defines `NLGlassDebris` wit
 - `Prepare()`: starts background map preparation ahead of the first break. Pieces arriving during
   preparation or a worker step stay drawn at their last known pose, bounded by the player budget.
 - `Impulse(origin, radius, speed)`: radial velocity kick; wakes and unbatches affected pieces.
+- `Ray(from, to, damage)`: validated server pellet trace; queues at most 32 for 0.5 s and applies
+  at most eight/frame, only with native interaction available and the local setting enabled.
 - `Clear`, `Count`, `Backend` (`jolt`, `vphysics`, `none`); cleanup keeps the imported map.
 - `Stats`: reused QA counts and native statistics. Adds `worker_busy`, `pose_updates` and
   `rebuild_vertices`, `rebuild_ms`, `upload_ms`, `rebuild_pool_vertices` and `retiring_meshes`
@@ -45,3 +47,25 @@ frame publishes on the next frame. `draw_calls` is that completed frame's calls,
 and `culled_pieces` its running skipped-piece count. `think_samples`/`draw_samples` cap at 120.
 Timings cover only the manager hooks (including its rebuild/upload work), not fracture/network
 handlers or GPU time; `Spawn` outside Think is not included. Counters use reused numeric rings.
+
+R7-C adds archived per-player `rtx_glass_debris_interact` (default 1). Native capability detection
+lets older modules retain G1 behaviour. At idle worker boundaries, the setting enables/disables
+mirrors/contact damage, drains bounded ray/damage queues and captures Source through `debris_scene`.
+Coalesce at most 64 damage records; replace at most one convex parent with two fragments/frame,
+stopping stale work after 0.75 ms. Mesh/cooking calls are indivisible. Minimum size comes from the
+original pane's `minimum_size` metadata, or the current setting for other API callers. The oldest remaining
+piece is evicted if the extra child needs budget. Minimum-size/one-piece-budget refusals keep motion.
+`debris_expiry` retains original expiration across generations without scanning normal settled glass.
+Off clears mirrors/interaction queues while keeping G1 blast push, life, budgets, collision and draws.
+
+Statistics add `interaction`, `interaction_available`, `scene_bodies`, `scene_candidates`,
+`scene_queries`, `capture_ms`, `capture_peak_ms`, `scene_cooks`, `split_ms`, `split_peak_ms`, `splits`, `splits_bullet`, `splits_blast`,
+`splits_body`, `splits_fall`, `damage_pending`, `ray_pending`, `damage_dropped`, `rays_dropped`.
+Capture includes native snapshot/cooking time; split includes bounded mesh builds. Native stats
+provide cumulative ray hits, splits and dropped contact events. Clear resets manager counters.
+
+The fast-body fix adds `scene_examined`, `scene_fast_candidates`, `scene_fast_bodies`,
+`scene_fast_boxes` and `scene_peak_bodies` from `debris_scene`. They preserve evidence after a fast
+prop leaves the pile; current `scene_bodies` can already be zero at the screenshot. Native
+`scene_sweeps`, `scene_sweep_hits` and `scene_sweep_limited` are cumulative for the world and must
+be compared before/after. Think/step dispatch, falling-piece draws and batching are unchanged.

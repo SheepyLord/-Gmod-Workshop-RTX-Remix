@@ -6,6 +6,36 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
+
+- **Transparent MMD materials show under RTX** (the user: Columbina's blindfold rendered black, only
+  its shadow showed). Model Hotloader draws partly transparent texels blended; Remix skipped a blended
+  opacity below 0.79 in primary rays while still shadowing by it, and Source's fixed-function path
+  alpha-tests lit models at about 0.7. A runtime texture category gives Model Hotloader textures MMD's
+  rule: an alpha test at 0.5, and blended opacity at or above 0.5 solid in every ray type, below it the
+  existing blend. The companion fills it at runtime from the hotloader's public materials and its soft
+  copies (a part drawn only through its soft copy, like the mask, has no hash under its public name).
+  Map glass and other blended surfaces are unchanged
+  ([ADR 0081](docs/decisions/0081-mmd-alpha-texture-category.md), runtime patch 0017).
+- **A message after a crash.** An external observer from the same `winmm.dll` reports an abnormal
+  exit once the game has closed, with the reason (out of memory, GPU device lost, allocation failure,
+  rendering-thread exception, crash), advice, the exit code and the evidence folder, in seven
+  languages; the next start reuses its conclusion. `NATIVE_LOADER_EXIT_REPORT=quiet` keeps automated
+  sessions window-free ([ADR 0083](docs/decisions/0083-external-exit-observer-from-the-proxy.md)).
+- **Diagnostics.** The memory warning needs less than 18 GiB of free commit or a commit limit under
+  24 GiB (64.0 / 90.6 GiB no longer warns); the panel lists `gmod-rtx-remix` in full and counts the
+  other enabled add-ons ([ADR 0082](docs/decisions/0082-map-commit-headroom-and-addon-summary.md)).
+- **Broken glass reacts to the world, one way.** Players, NPCs, props and ragdolls push and break
+  pieces; bullets, blasts and hard landings break them; nothing pushes back. Fast props are found by
+  swept bounds and swept against the pieces. A per-player switch turns it off
+  ([ADR 0084](docs/decisions/0084-glass-one-way-interaction.md)). Found in game at integration: the
+  search for nearby bodies tests regions on plain numbers (a Source vector component costs 35 ns per
+  read; 512 bodies against 32 regions went from 3.13 to 0.30 ms), and a client physics body's coarse
+  box takes the body's pose (`PhysObj:GetAABB` is in the object's own frame, so client ragdolls and
+  props were placed near the map origin and dropped).
+- Decision records numbered in parallel were renumbered at integration: R7-A's MMD alpha record is
+  0081 (it had used G1's 0080), R7-C's interaction record 0084 (R7-B kept 0082 and 0083).
+
 ### G1 (unreleased)
 
 - Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes

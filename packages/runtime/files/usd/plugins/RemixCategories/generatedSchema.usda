@@ -139,4 +139,9 @@ class "RemixInstanceCategoryAPI" (
         displayGroup = "Remix Categories"
         displayName = "Legacy Emissive"
     )
+    bool remix_category:mmd_alpha = 0 (
+        doc = "Textures using MMD alpha: a fixed cutout reference and opaque blended texels at or above mmdAlphaCutoff. Explicit replacement alpha and forced cutouts take precedence."
+        displayGroup = "Remix Categories"
+        displayName = "MMD Alpha"
+    )
 }

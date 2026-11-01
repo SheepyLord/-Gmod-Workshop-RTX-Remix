@@ -1,16 +1,31 @@
 #pragma once
 #include "bsp.h"
+#include "fracture.h"
 #include <memory>
 #include <future>
 
 namespace nl::glass {
 struct Pose { std::uint32_t id; V3 position,angles; bool sleeping; };
+constexpr unsigned kMaxSceneBodies=96,kMaxDamageEvents=64,kMaxRegions=32;
+enum DamageKind : unsigned { Bullet=1,Blast=2,SourceBody=4,Fall=8 };
+struct DamageEvent { std::uint32_t id; float energy; unsigned kinds; };
+struct SceneBody {
+  std::uint32_t key=0;
+  V3 position,angles,half,velocity;
+  float mass=85;
+  std::vector<Hull> convexes; // optional: supplied only on creation/physics-shape replacement
+};
+struct Region { V3 minimum,maximum; };
+struct Fragment { std::uint32_t id=0; Hull polygon; float thickness=1; V3 position,angles,velocity,spin; };
 struct Stats {
   unsigned live=0, awake=0, statics=0, models=0, workers=0, substeps=0, brushes=0, skipped_brushes=0;
   unsigned refused_brushes=0, refused_convexes=0, refused_meshes=0, skipped_props=0;
   unsigned contact_overflows=0, manifold_overflows=0, pair_overflows=0, constraint_overflows=0;
   std::size_t temp_reserved_bytes=0,temp_peak_bytes=0;
   unsigned pose_visits=0;
+  unsigned scene_bodies=0,scene_moves=0,scene_cooks=0,damage_dropped=0,ray_hits=0,splits=0;
+  unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
+  bool interaction=false;
   double step_ms=0, dropped_seconds=0;
   bool ready=false,busy=false;
 };
@@ -29,12 +44,20 @@ public:
   void finish();
   void begin_finish();
   bool poll_finish();
-  std::uint32_t spawn(const Hull& hull,V3 position,V3 angles,V3 velocity,V3 spin);
+  std::uint32_t spawn(const Hull& hull,V3 position,V3 angles,V3 velocity,V3 spin,float minimum_size=4);
   bool remove(std::uint32_t id);
   void clear(); // pieces only; retain the imported map
   void impulse(V3 origin,float radius,float speed);
   void set_collide(bool enabled);
   void set_gravity(float gravity);
+  void set_interaction(bool enabled);
+  unsigned sync_bodies(const std::vector<SceneBody>& bodies,double sample_dt);
+  std::vector<Region> regions(V3 focus={}) const;
+  std::vector<DamageEvent> take_damage();
+  std::uint32_t ray(V3 from,V3 to,float energy,float speed);
+  std::vector<Fragment> split(std::uint32_t id,float minimum_size);
+  bool can_split(std::uint32_t id,float minimum_size) const;
+  Pose scene_pose(std::uint32_t key) const; // read-only; also proves one-way motion in tests
   void step(double dt);
   void begin_step(double dt);
   bool poll_step();
