@@ -13,10 +13,13 @@ each waiting for the client to report its screenshot, and prints `NL_QA <step>` 
    and three seconds later.
 2. A 400-damage round at a corner of one pane and at the centre of another, in flight and settled.
 3. Twelve 8-damage rounds at one point of a 256x128 pane (weak hits must add up).
-4. A thrown oil drum (700 units/s), 5. a thrown ragdoll (650 units/s), 6. the player pushed into a
-   64x96 pane (500 units/s; prints whether the pane is still there 0.6 s later), 7. an explosion in front
-   of a pane, 8. four rounds into a tempered pane, then a blast at it, 9. a scripted `Break` input.
-10. Performance: the empty field for 6 s, 50 panes broken by blasts (frame times over 4 s while they
+4. A thrown oil drum (700 units/s), 5. a thrown ragdoll (650 units/s).
+6. The player walks, then 7. runs, into a 64x96 pane from 160 units away: the player's own movement
+   with forward (and sprint) held through a `SetupMove` hook for 1.6 s; prints whether the pane is still
+   there and the top speed reached (a walk must leave it whole, a run must break it).
+8. An explosion in front of a pane, 9. four rounds into a tempered pane, then a blast at it, 10. a
+   scripted `Break` input.
+11. Performance: the empty field for 6 s, 50 panes broken by blasts (frame times over 4 s while they
     fall), then 15 s later.
 
 `map` (a map with native `func_breakable` glass, such as modern_house): the nearest glass pane to the

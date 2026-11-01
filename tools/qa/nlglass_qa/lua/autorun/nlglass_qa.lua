@@ -54,10 +54,24 @@ if SERVER then
             say("prop thrown, mass %.1f", p:GetPhysicsObject():GetMass()) view("prop_physics", A, 0.6) end) end)
         add(function() clear() pane(A) timer.Simple(0.5, function() throw("models/Humans/Group01/male_07.mdl", "prop_ragdoll", A + Vector(90, 0, 0), Vector(-650, 0, 40))
             say("ragdoll thrown") view("prop_ragdoll", A, 0.6) end) end)
-        -- 6. a running player
-        add(function() clear() local e = pane(A + Vector(0, 0, -16), "annealed", 64, 96)
-            timer.Simple(0.5, function() owner:SetPos(Vector(A.x + 70, A.y, ORIGIN.z)) owner:SetVelocity(Vector(-500, 0, 0)) say("player runs")
-                timer.Simple(0.6, function() say("player: pane valid %s", tostring(IsValid(e))) end) view("player", A, 0.8) end) end)
+        -- 6. walking into a pane leaves it whole, 7. running into one breaks it: the player's own movement,
+        -- forward held (and sprint for the run) from 160 units away, facing the pane
+        local function walk(label, sprint)
+            add(function() clear() local e = pane(A + Vector(0, 0, -16), "annealed", 64, 96)
+                owner:SetPos(Vector(A.x + 160, A.y, ORIGIN.z)) owner:SetEyeAngles(Angle(0, 180, 0)) owner:SetVelocity(-owner:GetVelocity())
+                owner.NLGlassQASpeed = 0
+                local stop = CurTime() + 1.6
+                hook.Add("SetupMove", "nlglass_qa_walk", function(ply, mv)
+                    if ply ~= owner then return end
+                    if CurTime() > stop then hook.Remove("SetupMove", "nlglass_qa_walk") return end
+                    mv:SetMoveAngles(Angle(0, 180, 0)) mv:SetForwardSpeed(10000) mv:SetSideSpeed(0)
+                    mv:SetButtons(bit.bor(mv:GetButtons(), IN_FORWARD, sprint and IN_SPEED or 0))
+                end)
+                timer.Simple(1.7, function() say("%s: pane valid %s, speed reached %.0f", label, tostring(IsValid(e)), owner.NLGlassQASpeed or 0) view(label, A, 0.1) end)
+            end)
+        end
+        hook.Add("Move", "nlglass_qa_speed", function(ply, mv) if ply == owner then ply.NLGlassQASpeed = math.max(ply.NLGlassQASpeed or 0, mv:GetVelocity():Length2D()) end end)
+        walk("walk", false) walk("run", true)
         -- 7. an explosion, 8. tempered: rounds, then a blast, 9. a scripted break
         add(function() clear() pane(A) timer.Simple(0.5, function() util.BlastDamage(owner, owner, A + Vector(40, 10, 0), 200, 120) say("blast") view("blast", A, 0.4) end) end)
         add(function() clear() local e = pane(A, "tempered") steps.e = e
