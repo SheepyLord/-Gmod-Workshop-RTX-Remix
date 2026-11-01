@@ -101,10 +101,11 @@ writer is not identified: every test checked writes only to its own scratch fold
 runs of the same suite on `r6-int` did not touch the field. Until it is found, check the field's
 `gmod.exe` (size 1,042,256, version "Garry's Mod") before field QA.
 
-## Questions for the user
+## The user's answers (2026-10-31)
 
-- Should the field `gmod.exe` incident get a task of its own (find the writer, make the suite unable to
-  write into a real install)?
-- Should the recurring `nvlddmkm` 153 device loss get a task of its own (Aftermath dumps through
-  `diagnostics.gpu_crash_dumps`, then the dump read with NVIDIA's tools)?
-- Should R2 map the classic layer's 15 obsolete options to their current names?
+- The field loader may be replaced without a backup: main's 0.11.0 build was installed with
+  `install-loader.ps1 -ReplaceUntracked`, so the receipt matches the DLL again.
+- The recurring `nvlddmkm` 153 device loss is **deferred**: do not work on it until the user asks.
+- R2 maps the classic layer's 15 obsolete options to their current options (see the roadmap's R2 row).
+- Still open: whether the field `gmod.exe` incident gets a task of its own (find the writer, make the
+  suite unable to write into a real install).
