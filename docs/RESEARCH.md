@@ -4024,6 +4024,10 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
   function at run time, as `activate.cpp` does for user32, so the bootstrap's import table stays
   KERNEL32-only. PoC run `b-fixed` (loader 0.12.1, the same stall): hung for 20.1 s, three invalidations,
   **no ghost window**, a normal quit; loader note `window ghosting off`.
+- **In the field, with the player's saved video settings** (`out/qa-field/r8-ghost`, gm_br_complex, 765
+  add-ons): with `NATIVE_LOADER_WINDOW_GHOSTING=1`, 5 hang episodes (longest 8.0 s) and 5 ghosts; with
+  the fix, 6 episodes (longest 12.1 s) and none. The Workshop mount and map load took 29.8-37.7 s in these
+  runs, against minutes earlier the same day.
 
 ## R8 CI: glass mirrors behind dropped catch-up steps (2026-11-01, Claude)
 
