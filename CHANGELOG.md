@@ -8,6 +8,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R8 (unreleased; [plan](docs/handover/R8-plan.md))
 
+- **Backrooms native fixes prepared for import (R8-B).** A pinned RTXFixesBinary rebuild caches
+  genuinely missing SW VTX files per map, reads model transforms only for consumers, and offers
+  optional PAS visibility so the room next door remains in the ray-traced scene. The reviewed
+  port retains oversized-skinning and memory-limit safeguards, validates visibility memory and
+  restores owned offsets at module close. Source and offline regressions are bundled; the
+  existing Lua lighting API is compatible. Claude owns the DLL import and game acceptance
+  ([source record](packages/fixes/licenses/oversized-skinning/backrooms/Source.md)).
+
 - **No more noise on Model Hotloader characters** (the user: frame-to-frame noise since the alpha fix,
   worst with DLSS). R7's runtime patch marked a tagged character's material as changed every frame (it
   compared a state that a later draw of the same frame, or a new instance, had replaced), so the

@@ -1,0 +1,104 @@
+{
+  "license": "GPL-2.0",
+  "status": "candidate built and committed locally; Claude must import the DLL",
+  "repository": "https://github.com/SheepyLord/garrys-mod-rtx-remixed.git",
+  "base_commit": "a2c8dbc5e00e3effe49a8de9609dd1b8af34d552",
+  "source_commit": "7094baf6edf6797fd5c3f0b58ca668f9307b4906",
+  "source_branch": "codex/r8-backrooms-native",
+  "upstream_backrooms_branch": "claude/rtx-remix-map-enhancement-bda9ac",
+  "ported_from": {
+    "6b4794f": "6b4794f82613b24f6596d7eeb37b1ab0e95389af",
+    "62f4af0": "62f4af017727ae5c924df3a22e86f25672dfdff1",
+    "e4d548d": "e4d548d90a814c8e927d2569674c4dacc5185b8a"
+  },
+  "model_loader_prerequisite": "672ada9993dada7a6a54350a73a2a14f76db5758",
+  "native_changes": [
+    "source/HardwareSkinningHooks.cpp",
+    "source/culling_patches.cpp",
+    "source/culling_patches.h",
+    "source/modelload_fixes.cpp",
+    "source/module.cpp",
+    "source/vis_pas_policy.h"
+  ],
+  "dependencies": {
+    "garrysmod_common": "a854f237b79087826aa9a98a05de5e0d2b4502b6",
+    "garrysmod_common/detouring": "3e0b0388f6d886f6c44038ce537871b5397e9468",
+    "garrysmod_common/detouring/minhook": "e2a49551a5c8b372cb962720997dc5c43df6b4b9",
+    "garrysmod_common/premake/premake-export-compile-commands": "d22b7d1c86b0ca453fdde2ac731627f0b947f636",
+    "garrysmod_common/scanning": "d505081818ebd418af1966be64c09998babc6483",
+    "garrysmod_common/sourcesdk-minimal": "61bf02ea6eaedcabf66784dfb0e54c9e3feefdcc"
+  },
+  "dependency_validation": "2334 pinned tracked dependency files compared to local git blobs (allowing CRLF normalization); 59 omitted build/template files restored from local objects; no downloads",
+  "configuration": "ReleaseWithSymbols|x64",
+  "toolchain": {
+    "msbuild": "VS 2022 Build Tools v143",
+    "msvc": "14.44.35207",
+    "windows_sdk": "10.0.26100.0"
+  },
+  "build_command": "MSBuild.exe gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:OutDir=<fixes-worktree>/out/r8-module/",
+  "build_history": "full /t:Rebuild, followed by the same command after the final model/PAS safeguards; only the fixes project and its library references were built",
+  "projects": "../build-projects (unchanged; prepared dependency tree copied from oversized-native)",
+  "project_hashes": {
+    "garrysmod_common/detouring/projects/windows/vs2022/detouring.vcxproj": "283649c8a2cff8848c586f6ac0b698580bf9dcf6ec4afaf7d1fffac029e7cc98",
+    "garrysmod_common/detouring/projects/windows/vs2022/hde.vcxproj": "1e4fddc0777ea01008d245bc3a232a132564d9a65f7687f7dd8fb54fe3adee24",
+    "garrysmod_common/detouring/projects/windows/vs2022/minhook.vcxproj": "85a6011bbeccb804f4f139bcf4b53088cad76453377c917d74dbdec5c43d33fc",
+    "garrysmod_common/project_templates/debugging_linux.vcxproj": "af4c7e259657ba8a48d448bebb06e5b32cf34c399a299fc442f65c1673c9ce88",
+    "garrysmod_common/project_templates/debugging_linux_x86_64.vcxproj": "508e261cd691543156efe75ce3a67f097305cb5997bb62de723fb5b3b98df47b",
+    "garrysmod_common/projects/windows/vs2022/helpers.vcxproj": "8caba092e5e68c30a73e9ddfa6c808d7187d1460250bf8b2583c7b2262f195c6",
+    "garrysmod_common/projects/windows/vs2022/helpers_extended.vcxproj": "46079bf7126fc84a38bfe6699b8b6cb55e8a1d1c15d12489d108b198be3f5182",
+    "garrysmod_common/projects/windows/vs2022/lua_shared.vcxproj": "64e02c1b2516c7a549eee1dafaafaf1cfcc8b5f5f89aaaff4f6ca4d11f12280c",
+    "garrysmod_common/scanning/projects/windows/vs2022/scanning.vcxproj": "bdae43995f6d5038a036e6c869d12732c5f046e8e5161717cce2918161e8d634",
+    "garrysmod_common/sourcesdk-minimal/projects/windows/vs2022/common.vcxproj": "4628066330074259c85f44cf7ec4c6b9e5cc229d966237507b57af0d2c6b8e79",
+    "garrysmod_common/sourcesdk-minimal/projects/windows/vs2022/LZMA.vcxproj": "e7725787e59c391a9502f711496a2453b75f1bdf641cbd11371c6965e9b66af4",
+    "garrysmod_common/sourcesdk-minimal/projects/windows/vs2022/mathlib.vcxproj": "644ab68301e8faa42a01dd3a9926da4e02a6cf92c9529a5b05ad53f0efeb4a97",
+    "garrysmod_common/sourcesdk-minimal/projects/windows/vs2022/tier1.vcxproj": "a0acd067774b2335827c825bb5a0eacefd2011f24efbf604cfd62d7edbb957f3",
+    "garrysmod_common/sourcesdk-minimal/projects/windows/vs2022/tier2.vcxproj": "f586c28bfd14b8b0873a5b6667adbbd92560e93ffad0f254b00cde91601b268f",
+    "gmcl_RTXFixesBinary.vcxproj": "2a52f3afc1a29013dd1ddd4b45d5f6610d9476b85accd77c6e47949487b118c6"
+  },
+  "intermediates": "generated per-project defaults below r8-fixes-native (which is under aggregate out/); TEMP/TMP below out/",
+  "binary": {
+    "path": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r8-fixes-native\\out\\r8-module\\gmcl_RTXFixesBinary_win64.dll",
+    "size": 4864512,
+    "sha256": "18e1ebc75ac96099211205203bb6ed58cdc8d8b1c7390cee62607ec5124d9f42"
+  },
+  "symbols": {
+    "path": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r8-fixes-native\\out\\r8-module\\gmcl_RTXFixesBinary_win64.pdb",
+    "size": 40153088,
+    "sha256": "822d9356ca8900e599f3a84087cff82ab963dfdc3e14c6a5f26c145335759554"
+  },
+  "previous_binary": {
+    "size": 4847616,
+    "sha256": "cfcbdc95617f88ec3b002e47d35838376e77e5bba77023365a81927bbd04cfe0"
+  },
+  "preserved_files": {
+    "source/oversized_skinning_policy.h": "cc17a3c7efa314930f3d5bf765a6916d30d3e6120662a91419ebe001f4ddcb40",
+    "tests/oversized_skinning_test.cpp": "f1dccf088630e4cd7e142ebd0d2828d478e1a22bfc3268c56738daa6ef5a9b56",
+    "source/remixapi/remixapi.cpp": "f708f5972e0d7ecc9fe30b694bed4ec4dd322ea02fa59747d98772e2a60eceb5",
+    "source/remixapi/remixapi.h": "b1e4d31aba49fc2dc467386f9d6292fd6293ca1c74eaecf341bddb5fb363dfb9",
+    "source/remixapi/resource_lua_bindings.cpp": "32cca0818a7ccb771183c7087300a55c635b408571aa240e5a59093059e2f0f9",
+    "tests/test_memory_limits.py": "f1f225a765ff9cac02f9223d63a10d513cfed82bf992e1679896c4cadf2e7818"
+  },
+  "checks": {
+    "native_backrooms": "PASS: 3 production-code C++17 /W4 /WX /UNDEBUG harnesses",
+    "oversized_skinning": "PASS: policy, complete strip palettes, scoped state restoration, diagnostic filters; assertions enabled",
+    "memory_limits": "PASS: actual production methods; 8000 concurrent calls, disconnected API, Lua valid/invalid calls; one log, zero writes",
+    "pe": "PASS: x64; normal/delay imports and named exports unchanged; unsupported resource key strings absent",
+    "lua_api": "PASS: static source/registration check; no matching package Lua change required",
+    "patch_reconstruction": "PASS: clean application to a2c8dbc5; every changed/new file equals the built source after CRLF normalization",
+    "game_qa": "not run; prohibited for R8-B; Claude owns integration"
+  },
+  "files": {
+    "backrooms-native.patch": "21b008cb1af4fa085c6dd0567a6dc4ffea6d2cffa18fc85aec68d0335dcfd278",
+    "dependency-verification.json": "18711b7243c7ce49ab5185f67a0beec283f2b9f405f54933b50f438f4a37a12c",
+    "lua-api-check.json": "6205ba635e67964d46ef342a25803885f7f71ce8b3de0e8ef56320f7b855cf01",
+    "pe-check.json": "6ef8ffa9037950b8eef107e528b907aaa0856785473f39c8d4495493e3c38c11",
+    "source/culling_patches.cpp": "d54c47271747e68ec539bb9a16e1561ee63b0e94d09f6678de97bc9ce7ac88b0",
+    "source/culling_patches.h": "dd65087706e1843c6d07ba12d04ed838d902db8f8a5867fbb7a979fd2d086d86",
+    "source/HardwareSkinningHooks.cpp": "19d436eb847107be5dddb22e8c4b25363d39b13ac76be855a7d9f3d11de07475",
+    "source/modelload_fixes.cpp": "47f04705c129598d396290f056ad54df64564befc48824972f33b5e6a8fb47b1",
+    "source/module.cpp": "0b9b3caed2661c01b65a6241c16ab4a43f3808ed9d37279ce531a994e8baa67f",
+    "source/vis_pas_policy.h": "15d484290ab2fb08435e9017443820ee7cdfef679b7e5c30d5be095bc8ecf50a",
+    "tests/test_backrooms_native.py": "39117e4322ec94689c69b681cc8b9e3e71a9271cb1b597a51b161b44681ad677",
+    "tests/test_backrooms_native.py.md": "d32bd7d2b3353b0236ae0f7cd2bde7548ff7c011a8327668479910bdf6ebd1b0"
+  }
+}

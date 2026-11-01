@@ -1,5 +1,24 @@
 # Testing
 
+## R8-B: Backrooms native port
+
+The candidate fixes commit `7094baf6edf6797fd5c3f0b58ca668f9307b4906` passed three
+offline production-code harnesses with MSVC C++17 `/W4 /WX /UNDEBUG`: model-miss cache and
+malformed-file fallback (8,000 concurrent hits), lazy transforms (nested draws, nine arguments,
+failed reads and SEH restoration), and PAS bounds/ownership/lifecycle (1,000 reversible toggles,
+maximum clusters, protected/freed memory and module unload). The unchanged oversized-skinning
+and memory-limit tests passed too; normal/delay imports and exports match the packaged DLL.
+`tools/test.ps1 -Config Release` passed: 26 CTests, 470 Python tests (two expected skips),
+and repo conventions. No provenance exemption was needed; Claude's DLL import is still pending.
+
+Run [the new harness](../packages/fixes/licenses/oversized-skinning/backrooms/tests/test_backrooms_native.py.md)
+in an x64 developer shell, with outputs and TEMP/TMP below `out/`. Its packaged source copy is
+sufficient for that harness. The fake engine/filesystem tests do not establish an installed
+CM_Vis signature match or rendered acceptance. Claude's integration checks must cover both
+Backrooms maps, PAS/PVS/all transitions across cluster boundaries, light creation and cleanup,
+ordinary-map return, oversized and small model/arms draws with force-hardware off/on, and RTX off.
+Exact QA steps and the aggregate Release result: [R8-B report](handover/R8-B-report.md).
+
 ## R7-B: exit observer and read-only previews
 
 Offline acceptance passed: 26 CTests and 455 Python tests (two expected skips), recorded in

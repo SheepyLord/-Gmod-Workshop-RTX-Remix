@@ -1,5 +1,33 @@
 # Research notes
 
+## R8-B: Backrooms native port (2026-11-01)
+
+Fixes source `7094baf6edf6797fd5c3f0b58ca668f9307b4906` is based on packaged `a2c8dbc5`.
+The Backrooms branch ends at `e4d548d`; 6b4794f's model-miss cache also needs the model-loader
+hunk from `672ada9`. Its original `GetVtxFileChecksum` returns zero for missing, truncated and
+zero-checksum files: treating all three as absence suppresses a valid lower mount. The port
+reports genuine open failure separately (`source/modelload_fixes.cpp:418`, `:503`, `:519`),
+keeps malformed-file fallback and caps the mutex-protected cache at 65,536 paths. Shutdown
+clears it at `:1499`; hardware-cache flushes keep it. SDK `filesystem.h:515` specifies that a null
+path ID searches all paths; null/all-path misses and GAME misses therefore have separate keys.
+
+The lazy transform is consumed by bone upload at `source/HardwareSkinningHooks.cpp:3179`
+and `:3525`, including the protected automatic oversized path with force-hardware off; per-strip
+state resolves at `:3618`. Nested studio draws preserve pending/cached state at `:3751`.
+`source/culling_patches.cpp:408` validates the unique executable CM_Vis locator and engine-relative
+globals; `:446` validates the vis lump and offset table. SDK `bspfile.h:85` and `:91` define
+65,536 clusters and 16 MiB of visibility. `:475` restores still-owned PVS offsets at module close;
+default-off synchronization does not read the vis table. PAS uses existing engine vis streams,
+not a new BSP decoder. It cannot change a separate multiplayer server's visibility decisions.
+
+Offline checks passed: three production-code harnesses, existing oversized-skinning and
+memory-limit tests, unchanged PE imports/exports, 2,334 pinned dependency files and a clean
+patch reconstruction. DLL size is 4,864,512 bytes (16,896 above the packaged R6 DLL).
+Static add-on/API review found 1,682 lights in gm_br_complex and 2,687 in gm_br_pitfalls;
+package Lua already provides the native lighting globals, Light2RTX clearing and updater hooks,
+and packaged NikNaks has PASForOrigin. No game/frame-time measurement was made in R8-B.
+Details and exact hashes: [corresponding source](../packages/fixes/licenses/oversized-skinning/backrooms/Source.md).
+
 ## R7-B: external exit diagnostics (2026-11-01)
 
 The final text review caught lossy catalog generation through Windows PowerShell 5.1's
