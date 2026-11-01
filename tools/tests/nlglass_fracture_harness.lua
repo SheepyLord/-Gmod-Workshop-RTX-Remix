@@ -271,5 +271,36 @@ elseif mode=="density" then
             end
         end
     end
+elseif mode=="irregular" then
+    -- The user (2026-11-01): breaks were always an octagon. Ray count, spacing and the ring radius
+    -- of every ray now vary by seed; pieces stay convex, the area is kept and a seed repeats exactly.
+    local counts,uneven,whole={},0,96*64
+    local function convex(poly)
+        for i,a in ipairs(poly) do
+            local b,c=poly[i%#poly+1],poly[(i+1)%#poly+1]
+            if (b[1]-a[1])*(c[2]-b[2])-(b[2]-a[2])*(c[1]-b[1])<-1e-9 then return false end
+        end
+        return F.Area(poly)>0
+    end
+    for seed=1,24 do
+        local s=F.New(definition())
+        F.Apply(s,hit(0,0,180000,seed*7919)) -- cracks only: the first ring's triangles stay
+        counts[s.impacts[1].rays]=true
+        local low,high=math.huge,0
+        for _,c in ipairs(s.cells) do if c.tags[1]==1 then for _,p in ipairs(c.poly) do
+            local d=math.sqrt(p[1]^2+p[2]^2) if d>0.01 then low,high=math.min(low,d),math.max(high,d) end
+        end end end
+        if high/low>1.1 then uneven=uneven+1 end
+        local broken,again=F.New(definition()),F.New(definition())
+        local pieces=F.Apply(broken,hit(5,-3,600000,seed*7919))
+        check(encode(pieces)==encode(F.Apply(again,hit(5,-3,600000,seed*7919))),"a seed repeats its break exactly")
+        local area=0
+        for _,p in ipairs(pieces) do check(convex(p.poly),"pieces stay convex") area=area+F.Area(p.poly) end
+        for _,poly in ipairs(F.Remaining(broken)) do check(convex(poly),"remaining cells stay convex") area=area+F.Area(poly) end
+        near(area,whole,0.5,"pieces and remaining glass keep the pane's area")
+    end
+    local n=0 for _ in pairs(counts) do n=n+1 end
+    check(n>=4,"breaks use several ray counts, not always eight")
+    check(uneven>=18,"rays carry their own ring radii: the first ring is not a regular polygon")
 else error("unknown fracture scenario "..tostring(mode)) end
 print("fracture "..mode.." OK")

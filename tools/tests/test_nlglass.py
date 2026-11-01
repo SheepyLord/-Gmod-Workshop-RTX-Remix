@@ -35,6 +35,9 @@ class FractureTests(unittest.TestCase):
     def test_impact_location_size_velocity_and_rebreaking(self):
         self.run_case('pattern')
 
+    def test_breaks_vary_ray_count_spacing_and_ring_radii(self):
+        self.run_case('irregular')
+
     def test_tempered_full_uniform_shatter(self):
         self.run_case('tempered')
 
@@ -193,6 +196,9 @@ class EngineTests(unittest.TestCase):
 
     def test_default_and_reset_allow_walking_but_break_for_running(self):
         self.run_case('walk_run')
+
+    def test_old_add_on_contact_and_transfer_settings_reset_once(self):
+        self.run_case('settings_migration')
 
     def test_client_queue_coalesces_limits_and_cancels_builds(self):
         self.run_case('build_queue')

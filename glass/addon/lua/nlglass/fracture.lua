@@ -106,7 +106,9 @@ function F.Threshold(def)
 end
 function F.CrackFloor(def) return min(36000,max(1,floor(F.Threshold(def)*0.08))) end
 
--- Integer circle, linearly interpolated. Rays jitter in angle, but their ordering cannot cross.
+-- Integer circle, linearly interpolated. Rays split the turn at uneven seeded gaps, so their
+-- ordering cannot cross, and every ray has its own seeded ring radii: holes and crack rings come out
+-- as irregular polygons with a varying number of sides, not one regular shape.
 local circle = {{1024,0},{946,392},{724,724},{392,946},{0,1024},{-392,946},{-724,724},{-946,392},
     {-1024,0},{-946,-392},{-724,-724},{-392,-946},{0,-1024},{392,-946},{724,-724},{946,-392}}
 local function direction(t)
@@ -133,16 +135,28 @@ local function rings(def, hit)
 end
 
 local function tiles(def, hit)
-    local out, dirs, random = {}, {}, F.Generator(hit.seed)
+    local out, dirs, gaps, reach, random = {}, {}, {}, {}, F.Generator(hit.seed)
     local offset = random(16384)
-    for i = 1, hit.rays do dirs[i] = direction(offset + floor((i-1)*16384/hit.rays) + random(400)-200) end
+    -- Gap weights 7..13: the widest wedge stays under 100 degrees (6 rays), so the outer ring's
+    -- chords still reach past the frame and every tile stays convex.
+    local total, at = 0, 0
+    for i = 1, hit.rays do gaps[i] = 7 + random(7) total = total + gaps[i] end
+    for i = 1, hit.rays do dirs[i] = direction(offset + floor(at*16384/total)) at = at + gaps[i] end
     local radii = rings(def, hit)
+    -- Inner ring radii vary by a fifth per ray; consecutive radii grow at least 1.55 times, so a
+    -- ray's rings stay ordered. The outer ring keeps its full radius and covers the pane.
+    for i = 1, hit.rays do
+        local r = {0}
+        for k = 2, #radii do r[k] = k < #radii and snap(radii[k]*(800 + random(401))/1000) or radii[k] end
+        reach[i] = r
+    end
     local function point(d, r) return {snap(hit.x+d[1]*r/1024), snap(hit.y+d[2]*r/1024)} end
     for ring = 2, #radii do
         for i, d in ipairs(dirs) do
-            local e = dirs[i % #dirs+1]
-            local poly = {point(d, radii[ring-1]), point(d, radii[ring]), point(e, radii[ring])}
-            if ring > 2 then poly[#poly+1] = point(e, radii[ring-1]) end
+            local j = i % #dirs+1
+            local e = dirs[j]
+            local poly = {point(d, reach[i][ring-1]), point(d, reach[i][ring]), point(e, reach[j][ring])}
+            if ring > 2 then poly[#poly+1] = point(e, reach[j][ring-1]) end
             out[#out+1] = {poly=poly, ring=ring-1}
         end
     end
@@ -380,8 +394,9 @@ function F.Apply(state, impact, forceAll, watchOnly)
     if #hits==0 or dist>1 then
         nearest=#hits<F.MAX_IMPACTS and #hits+1 or furthest
         if hits[nearest] then state.retiredEnergy=min(2147483647,state.retiredEnergy+hits[nearest].energy) end
+        -- 6..10 rays by the seed, two more per 120,000 energy: no fixed number of sides
         hits[nearest]={x=snap(impact.x),y=snap(impact.y),energy=0,seed=impact.seed,
-            rays=clamp(8+floor(accumulated/120000)*2,8,16),kind=impact.kind,hole=0,dx=impact.dx,dy=impact.dy,dz=impact.dz}
+            rays=clamp(6+F.Generator(impact.seed+7)(5)+floor(accumulated/120000)*2,6,16),kind=impact.kind,hole=0,dx=impact.dx,dy=impact.dy,dz=impact.dz}
         local cleared={}
         for _,c in ipairs(cells) do
             if c.tags[nearest] then local tags=copyTags(c.tags) tags[nearest]=nil cleared[#cleared+1]=cell(c.poly,tags,c.id)
@@ -435,7 +450,12 @@ function F.Apply(state, impact, forceAll, watchOnly)
     if broke and not whole then local radii=rings(state.def,hit) holeRadius=radii[hit.hole+1] or 0 end
     for i,c in ipairs(cells) do
         local near=(c.center[1]-impact.x)^2+(c.center[2]-impact.y)^2<=holeRadius*holeRadius
-        if whole or (broke and ((c.tags[nearest] or math.huge)<=hit.hole or (not c.tags[nearest] and near))) then removed[#removed+1]=c
+        local ring=c.tags[nearest] or math.huge
+        -- A ragged edge: about a third of the next ring's cells go too, chosen by seed and cell id;
+        -- never a large one or one along the frame (a long wedge out to the edge looks wrong).
+        local ragged=broke and not whole and ring==hit.hole+1 and F.Generator(hit.seed+(c.id or i)*7919)(3)==0
+            and F.Area(c.poly)<=(state.def.piece_size*2.5)^2 and not touches(c.poly,state.def.outline)
+        if whole or ragged or (broke and (ring<=hit.hole or (not c.tags[nearest] and near))) then removed[#removed+1]=c
         else candidates[#candidates+1]=c end
     end
     if broke and not whole then

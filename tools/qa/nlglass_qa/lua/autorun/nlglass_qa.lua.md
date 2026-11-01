@@ -24,6 +24,12 @@ each waiting for the client to report its screenshot, and prints `NL_QA <step>` 
    of every cause.
 
 `nlglass_qa contact` runs only steps 6 and 7.
+
+`old` (gm_construct, with the package from before G1, whose fixes part still carries Glass-Rewrite-Remix):
+the performance scene of step 11 with the old system, for the before/after comparison: 50 96x64
+`procedural_shard` panes built the way that add-on's map replacement builds one (its block model scaled
+to the pane), broken by the same blasts; prints the number of shard entities while they fall and 15 s
+later. Start it with a client Lua that runs `nlglass_qa old`.
 8. An explosion in front of a pane, 9. four rounds into a tempered pane, then a blast at it, 10. a
    scripted `Break` input.
 11. Performance: the empty field for 6 s, 50 panes broken by blasts (frame times over 4 s while they

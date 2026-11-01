@@ -1,5 +1,10 @@
 # nlglass_fracture_harness.lua
 
+G1 integration `irregular` (the user: breaks were always an octagon): over 24 seeds, breaks must use
+at least four ray counts and at least 18 must have uneven first-ring radii (max/min above 1.1); each
+break repeats exactly for its seed, every piece and remaining cell is convex and their areas add up
+to the pane's. It fails on 8536d87 (always eight rays, one radius per ring).
+
 Second-pass `density` covers centre/corner hits on 96x64, 256x128 and 128x256 panes, plus
 8192x1, 1x8192 and 8192x8192 extremes, both kinds and piece sizes 4/8/64. It checks the live
 200/300-cell bounds after 24 spatial hits, full-break counts and area conservation; prints fresh

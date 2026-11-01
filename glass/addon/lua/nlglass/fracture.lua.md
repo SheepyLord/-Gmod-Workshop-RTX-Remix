@@ -1,5 +1,13 @@
 # fracture.lua
 
+G1 integration (the user, 2026-11-01: breaks were always an octagon): a new hit takes 6–10 rays by
+its seed (two more per 120,000 energy, at most 16), splits the turn at seeded gap weights 7–13 (the
+widest wedge stays under 100 degrees, so tiles stay convex and the outer ring covers the pane) and
+gives every ray its own inner ring radii, 0.8–1.2 of the ring's (consecutive radii grow at least
+1.55 times, so a ray's rings stay ordered). A break also releases about a third of the next ring's
+cells (seeded by cell ID) that are small (at most 2.5 piece sizes squared) and do not lie along the
+frame: a ragged hole edge. All of it is integer-seeded, identical on server and clients.
+
 Second pass: CellLimit caps live annealed topology at 200 and tempered shatter at 300 (also
 bounded by the 512-cell wire ceiling). Complete distant groups coarsen before refinement can
 exceed the kind's cap. Radial cuts retain their small inner rings and stretch the final far ring

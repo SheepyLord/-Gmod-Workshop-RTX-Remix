@@ -2,7 +2,12 @@
 
 Second-pass `lit_cracks` captures material shader/parameters and checks non-emissive lit strips,
 matching outward normals, thin widths and both faces. `walk_run` checks 200/249/250/400-unit/s
-normal contacts, pre-movement sweeps, menu display and admin reset to the shared default 250.
+normal contacts, pre-movement sweeps, menu display and admin reset to the shared default 250;
+since G1 integration also a player's physics-shadow collision at each speed (it took the prop
+energy rule before, so a walk broke glass). `settings_migration` pre-creates the values
+Glass-Rewrite-Remix archived under shared names (contact speed 80, velocity transfer 2, player mass
+80), then checks the first start resets only the first two, records the migration and keeps a later
+choice; it fails on 8536d87.
 
 Fix-pass scenarios: `body_contact`, `player_move`, `client_settings`, `map_outputs`, `last_impact`,
 `blast_order`, `budget`. Each fails against the 3096b2e add-on. They cover departing/distant/rotated

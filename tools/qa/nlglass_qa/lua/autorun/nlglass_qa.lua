@@ -46,8 +46,8 @@ if SERVER then
     -- accepted impacts per pane id, counted around the glass server's one entry point
     local S, impacts = nil, {}
     local function watch()
-        S = NLGlass.Server
-        if S.NLGlassQAImpact then return end
+        S = NLGlass and NLGlass.Server
+        if not S or S.NLGlassQAImpact then return end
         S.NLGlassQAImpact = S.Impact
         S.Impact = function(r, impact, forceAll)
             local ok, pieces = S.NLGlassQAImpact(r, impact, forceAll)
@@ -115,6 +115,30 @@ if SERVER then
         end)
         add(function() send("perf_settled", eye, look, 15) end)
     end
+    -- the performance scene with the old system (Glass-Rewrite-Remix, in the package before G1): the same 50
+    -- 96x64 panes, built the way its map replacement builds one, and the same blasts; only for the baseline
+    local function old()
+        local eye, look = ORIGIN + Vector(0, 0, 80), ORIGIN + Vector(-400, 0, 20)
+        local function shards() return #ents.FindByClass("procedural_shard") end
+        add(function() owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(10, 180, 0)) send("old_empty", eye, look, 6) end)
+        add(function()
+            local list, cube = {}, "models/hunter/blocks/cube025x025x025.mdl"
+            for i = 0, 9 do for j = 0, 4 do
+                local b = ents.Create("procedural_shard")
+                b:SetPhysModel(cube) b:SetPhysScale(Vector(1, 48, 32) / 5.90625)
+                b:SetPos(ORIGIN + Vector(-300 - j * 70, -360 + i * 80, 52)) b:SetAngles(angle_zero) b:Spawn()
+                b:BuildCollision(util.GetModelMeshes(cube)[1].triangles)
+                if IsValid(b:GetPhysicsObject()) then b:GetPhysicsObject():EnableMotion(false) end
+                list[#list + 1] = b
+            end end
+            timer.Simple(1, function()
+                for k, e in ipairs(list) do timer.Simple(k * 0.03, function() if IsValid(e) then util.BlastDamage(owner, owner, e:GetPos() + Vector(30, 0, 0), 90, 200) end end) end
+                say("old: %d panes broken", #list) send("old_falling", eye, look, 4)
+                timer.Simple(4, function() say("old falling: %d shard entities", shards()) end)
+            end)
+        end)
+        add(function() send("old_settled", eye, look, 15) timer.Simple(15, function() say("old settled: %d shard entities", shards()) end) end)
+    end
     local function map()
         local panes = {}
         for _, e in ipairs(ents.FindByClass("func_breakable")) do
@@ -159,7 +183,7 @@ if SERVER then
         if not IsValid(owner) then return end
         steps, tags, index = {}, {}, 0
         watch()
-        if args[1] == "map" then map() else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
+        if args[1] == "map" then map() elseif args[1] == "old" then old() else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
         if args[1] == "contact" then -- only the walk and run steps
             local only = {} for i, fn in ipairs(steps) do if tags[i] == "contact" then only[#only + 1] = fn end end steps = only
         end

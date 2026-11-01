@@ -49,8 +49,13 @@ Walking at 200 units/s stays below the default contact-speed gate.
 These are tunable game defaults, not engineering strength predictions. Thickness is in Source units.
 Native windows keep engine health: our accumulated damage controls their visual cracks only.
 
-Each cracking hit establishes 8–16 seeded rays and polygonal rings with spacing that grows
-outward. Only cells in its contact neighbourhood subdivide; repeated hits reuse those cuts.
+Each cracking hit establishes 6–16 seeded rays (6–10 by its seed, two more per 120,000 energy) at
+uneven seeded angles, and rings with spacing that grows outward; every ray has its own seeded ring
+radii (within a fifth of the ring's), so holes and crack rings are irregular polygons, never one
+regular shape (the user, 2026-11-01: breaks were always an octagon). When a pane breaks, about a
+third of the next ring's small interior cells go with the hole, giving it a ragged edge. Everything
+is seeded, so all players still get the same pieces. Only cells in its contact neighbourhood
+subdivide; repeated hits reuse those cuts.
 Live cells and their complete subdivision groups are retained. Above the 200-cell annealed limit, complete
 old groups far from the new hit return to their exact convex parent. Groups containing a released
 cell cannot coarsen, so holes never refill. Eight active centres describe crack growth; a new distant
@@ -184,7 +189,11 @@ agent-written and await human review. Long slider/combo labels use full-width he
 
 Reset to Defaults resets client debris settings and, for an admin, server settings. Existing panes
 retain their material properties; map cleanup applies new kind/strength/size settings to map windows.
-Previously archived speed choices are retained; Reset to Defaults restores the new 250-unit/s gate.
+Glass-Rewrite-Remix archived `rtx_glass_player_break_speed` (its default 100) and
+`rtx_glass_velocity_transfer` (2) with other meanings, and GMod restores archived values, so the
+first start of this system resets those two once (`rtx_glass_settings_version` records it); later
+choices are retained. Without that, a walk at 200 units/s broke glass in game. Reset to Defaults
+restores the 250-unit/s gate.
 Spawn presets are 48×48, 96×64 and 128×128, each annealed or tempered. The existing glass tool name
 is retained: left-click converts a prop into a flat convex envelope or resets an existing pane's kind
 and strength; right-click makes a pane at a surface. Complex volumetric props are simplified, rather

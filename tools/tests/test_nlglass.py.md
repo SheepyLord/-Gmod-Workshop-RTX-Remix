@@ -5,6 +5,12 @@ and thin panes and all three tested piece sizes. Lit crack strips and walking/ru
 reset cases are covered in the engine harness. Deferred/coalesced client builds, cancellation,
 late attachment and shared render/collision extrusion are covered. The module now runs 50 tests.
 
+G1 integration (in-game findings): a player's physics-shadow collision follows the walk/run speed
+rule (`walk_run`), the values Glass-Rewrite-Remix archived under shared setting names are reset
+once and later choices kept (`settings_migration`), and fracture patterns vary in ray count,
+spacing and per-ray ring radii with a ragged hole edge (`irregular` in the fracture harness).
+The module now runs 52 tests.
+
 Includes G1-A fix-pass regressions for oriented body contact, pre-movement player collision,
 independent client convars, engine-effect-free map output routing, weak native last impacts,
 blast ordering and the matching debris-budget bound.

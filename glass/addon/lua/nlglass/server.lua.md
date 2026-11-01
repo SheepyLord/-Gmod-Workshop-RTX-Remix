@@ -4,6 +4,10 @@ The pre-movement player sweep uses the shared 250-unit/s default/fallback contac
 
 Player contact also uses a pre-movement hull trace in SetupMove, with incoming movement velocity;
 this includes GetBaseVelocity (the QA SetVelocity push), just as the engine's mover does.
+On load it resets, once, the two settings Glass-Rewrite-Remix archived under the same names with
+other meanings (`rtx_glass_player_break_speed` 100, `rtx_glass_velocity_transfer` 2): GMod restores
+archived values, so with them a 200-unit/s walk broke glass (G1 QA run 08, an 80 left in the PoC's
+`server.vdf`). The archived `rtx_glass_settings_version` 1 records it; later choices are kept.
 A physics collision whose hitter is a player or NPC (their physics shadow) goes through the same
 body rule and its speed gate, never the prop energy rule: 85 kg at a 200-unit/s walk is several
 times the breaking energy, so in game a walk broke out part of a pane before this (G1 QA run 07).

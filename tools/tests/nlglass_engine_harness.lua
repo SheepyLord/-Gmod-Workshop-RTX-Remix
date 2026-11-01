@@ -244,6 +244,9 @@ function E:PhysicsInitMultiConvex(convexes)
     self.phys=physics() return true
 end
 sv.ents.Create=function(class) return newEntity(class) end
+if scenario=="settings_migration" then -- what Glass-Rewrite-Remix archived under the shared names
+    for name,value in pairs({rtx_glass_player_break_speed="80",rtx_glass_velocity_transfer="2",rtx_glass_player_mass="80"}) do sv.CreateConVar(name,value) end
+end
 sv.include("autorun/nlglass.lua")
 local downloads={} for _,name in ipairs(sv.sentFiles) do downloads[name]=true end
 check(downloads["nlglass/debris_render.lua"] and downloads["nlglass/world_cache.lua"],"G1-B supporting files are served to remote clients")
@@ -684,6 +687,15 @@ elseif scenario=="walk_run" then
     sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[12].DoClick()
     sv.deliver(cl.out[#cl.out],ply)
     check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250 and panel.controls[7].value==250,"Reset to Defaults restores 250 in server and menu")
+elseif scenario=="settings_migration" then
+    local function value(name) return sv.GetConVar(name):GetFloat() end
+    check(value("rtx_glass_player_break_speed")==80,"archived values are restored when the convar is created")
+    sv.flush()
+    check(value("rtx_glass_player_break_speed")==250 and value("rtx_glass_velocity_transfer")==1,"the old add-on's contact speed and velocity transfer are reset once")
+    check(value("rtx_glass_player_mass")==80,"a setting with the same meaning keeps its archived value")
+    check(value("rtx_glass_settings_version")==1,"the migration is recorded")
+    sv.RunConsoleCommand("rtx_glass_player_break_speed","300") S.MigrateSettings()
+    check(value("rtx_glass_player_break_speed")==300,"a later choice survives the next start")
 elseif scenario=="build_queue" then
     local V=cl.NLGlass.Client
     local ent,r=pane() network(cl,1)

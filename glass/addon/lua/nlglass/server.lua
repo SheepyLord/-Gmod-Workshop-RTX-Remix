@@ -13,6 +13,18 @@ hook.Add("EntityKeyValue","NLGlass.Outputs",function(ent,key,value)
     if key=="onbreak" then o.breaks[#o.breaks+1]=value else o.users[tonumber(key:sub(-1))]=true end
 end)
 for _,name in ipairs({"nlglass_state","nlglass_hit","nlglass_remove","nlglass_blast","nlglass_sync","nlglass_clear","nlglass_setting"}) do util.AddNetworkString(name) end
+-- Glass-Rewrite-Remix archived two of these names with other meanings (contact speed 100, velocity
+-- transfer 2) and GMod restores archived values, so a walk would break glass. Reset them once;
+-- rtx_glass_settings_version records it, and later choices are kept.
+CreateConVar("rtx_glass_settings_version","0",FCVAR_ARCHIVE,"Native loader glass: settings migration done")
+function S.MigrateSettings()
+    if GetConVar("rtx_glass_settings_version"):GetInt()>=1 then return end
+    for _,s in ipairs(C.Settings) do
+        if s[1]=="rtx_glass_player_break_speed" or s[1]=="rtx_glass_velocity_transfer" then RunConsoleCommand(s[1],s[2]) end
+    end
+    RunConsoleCommand("rtx_glass_settings_version","1")
+end
+timer.Simple(0,S.MigrateSettings)
 local function send(target) if target then net.Send(target) else net.Broadcast() end end
 function S.Snapshot(r,target)
     S.Refresh(r)
