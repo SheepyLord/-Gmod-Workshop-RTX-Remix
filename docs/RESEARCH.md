@@ -3403,3 +3403,51 @@ Runtime paths below refer to the isolated source built from `runtime/base.json` 
   columns along 0->3 (`ndx = i * postSpacing + j`); our parser had those swapped. The uneven
   generated fixture now asserts a raised vertex at (200,210,1.25), never its transposed position.
   This was read for format facts only; no GPL implementation was copied.
+
+## G1-B fix pass: background work and pile cost (2026-11-01)
+
+- `glass/native/world.cpp` now snapshots Jolt's old/new active IDs across an update, uses exclusive
+  NoLock body access and a dense pose queue, and counts contact/manifold/pair/constraint saturation
+  instead of throwing. A generated 128-body overlap saturates the cache and remains ready; the
+  ordinary 4,000-body benchmark reports zero overflows. A measured 4 ms catch-up budget permits at
+  least one step and at most four, discarding whole excess steps. At 4,000 bodies a .25-second
+  dispatch ran one substep and counted .233333 dropped seconds.
+- Same-machine pre-fix core baseline: 4,000 live / 8,192 slots, eight workers, 11.0167 simulated
+  seconds to sleep, 2.706 s wall / 18.797 s process CPU, 4.094 ms mean / 7.380 ms max active step,
+  .0640 ms settled step+poses. Corrected synchronous diagnostic: 11.0167 seconds to sleep,
+  3.295 s wall / 22.703 s CPU, 4.983 ms mean / 7.874 ms max, .00162 ms settled. Active worker
+  throughput did **not** improve in that comparison; moving it off the client thread is the material
+  change. Async dispatch averaged .0134 ms (max .0605); polls averaged .00296 ms (max .0203), while
+  the worker averaged 5.434 ms/update. These are native-only measurements, not game frame times.
+- `Init(8192)`/map cooking now reserve **zero simulation scratch**, rather than 144 MiB. The first
+  active step sizes scratch to live demand and observed peak with a non-aborting fallback. Pair /
+  contact capacities are max(1024,budget*8) / max(1024,budget*4). The 4,000-body test held 34 MiB
+  scratch and peaked at 30,234,553 requested bytes (28.83 MiB). Doubling contact capacity used
+  56 MiB with no useful throughput gain, so the smaller bounded table is retained.
+- `module.cpp` Begin/Poll entry points copy BSP bytes before a worker parses/cooks them, and
+  asynchronously optimize the final broadphase and step physics. Busy access refuses immediately;
+  Stats returns a pre-dispatch snapshot. Cleanup/shutdown joins before freeing the world. Generated
+  core and actual binding callbacks cover pending polls, no concurrent mutation, worker exceptions,
+  teardown while importing/stepping and foreign realms.
+- Read-only gm_construct final probe: 2,095 considered / 2,092 clipped brushes, 3 clipping skips,
+  1 Jolt refusal, 20,992 triangles, zero refused mesh batches, four prop records, 2,094 static bodies.
+  Standalone parse 15.98 ms, Init .91 ms, parse+cook+finish 53.62 ms. Async enqueue including the
+  36,735,656-byte copy took 4.80 ms; maximum poll 1.41 ms; total 78.11 ms. The VFS read still runs
+  on the engine thread; this offline probe excludes it and excludes engine prop model extraction.
+- LuaJIT mocked-physics comparison of the original 3096b2e helpers against corrected helpers:
+  4,000 active manager Think calls .165 -> .135 ms mean; settled .130 -> .026 ms. These include
+  the same mock pose filling but exclude real physics, engine mesh uploads and rendering. Spawn
+  still constructed all 4,000 meshes in 108 -> 111 ms CPU in this synthetic burst; initial mesh
+  creation is not claimed to be cheap. Settled chunk count grows from 3 to 25 in this deliberately
+  single-area pile, bounding replacement/wake work. Ordinary game piles span multiple areas.
+- `debris_batches.lua` transforms up to 1,800 vertices/frame, accumulating at most 6,000 per mesh
+  and uploading one mesh/frame. Valid old chunks remain until the complete replacement exists;
+  wake/removal hides only its affected chunk. New arrivals request a later snapshot; removals cancel
+  stale staging; failed GPU builds retain old geometry. The Lua harness covers stale unchanged pose
+  rows, staged replacements, upload failure/retry, busy-world queues and complete mesh cleanup.
+
+- Final import polling additionally releases its large owned BSP buffer on the worker before
+  publishing completion (`World::begin_load`), avoiding a client-side deallocation stall. Final
+  gm_construct receipt: synchronous parse/cook/finish 46.60 ms; async owned-copy enqueue 3.79 ms,
+  max poll .0069 ms, total 76.12 ms. Geometry counts are unchanged. An unchanged pile area now
+  leaves the rebuild work set entirely; only dirty/staged areas enter Think.

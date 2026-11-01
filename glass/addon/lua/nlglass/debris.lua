@@ -4,12 +4,16 @@ if NLGlassDebris and NLGlassDebris.Shutdown then NLGlassDebris.Shutdown() end
 local geometry = include("nlglass/debris_mesh.lua")
 local fallback = include("nlglass/debris_fallback.lua")
 local world = include("nlglass/world.lua")
+local batches = include("nlglass/debris_batches.lua")
 local D = {}
 NLGlassDebris = D
 local lifetime = CreateClientConVar("rtx_glass_debris_lifetime", "120", true, false, "Broken glass lifetime; 0 keeps it until cleanup", 0, 86400)
 local budget = CreateClientConVar("rtx_glass_debris_budget", "2000", true, false, "Maximum broken glass pieces", 0, 8192)
 local collide = CreateClientConVar("rtx_glass_debris_collide", "1", true, false, "Broken glass pieces collide with each other", 0, 1)
-local pieces, order, poses, changed, areas = {}, {}, {}, {}, {}
+local pieces, order, poses, changed = {}, {}, {}, {}
+local natives, pending, individual, shrinking, removals, impulses = {}, {}, {}, {}, {}, {}
+local stepBusy, stepElapsed, expiryCursor, knownLife = false, 0, 1, -1
+local nativeMoving = 0
 local first, last, serial, count = 1, 0, 0, 0
 local backend, nativeCapacity, fallbackUnavailable = "none", 0, false
 local nativeStats = {}
@@ -22,23 +26,22 @@ local function limit()
     local n = math.floor(clamp(budget:GetInt(), 0, 8192))
     return world.state == "failed" and math.min(n, fallback.limit) or math.min(n, nativeCapacity > 0 and nativeCapacity or 8192)
 end
-local function invalidate(area)
-    if not area then return end
-    for _, mesh in ipairs(area.meshes) do mesh:Destroy() end
-    area.meshes, area.included = {}, {}
-    if not area.dirty then area.due = RealTime() + .1 end
-    area.dirty = true
-end
 local function unmerge(piece)
-    local area = piece.area
-    if area then area.members[piece.id] = nil; invalidate(area); piece.area = nil end
+    batches.Remove(piece, individual)
+    individual[piece.id] = piece
 end
 local function erase(piece)
     unmerge(piece)
-    if piece.native then world.api.Remove(piece.native); poses[piece.native] = nil end
+    if piece.native then
+        if not piece.nativeSleeping then nativeMoving = nativeMoving - 1 end
+        natives[piece.native] = nil
+        if stepBusy then removals[piece.native] = true
+        else world.api.Remove(piece.native);poses[piece.native] = nil end
+    end
     fallback.Remove(piece)
     if piece.mesh then piece.mesh:Destroy() end
-    pieces[piece.id], count = nil, count - 1
+    pieces[piece.id], pending[piece.id], individual[piece.id], shrinking[piece.id] = nil, nil, nil, nil
+    count = count - 1
 end
 local function oldest()
     while first <= last do
@@ -50,50 +53,14 @@ local function trim(target)
     while count > target do local p = oldest();if not p then break end;erase(p) end
 end
 local function merge(piece)
-    if piece.area then return end
-    local p, c = piece.position, piece.color
-    local key = math.floor(p.x / 256) .. "/" .. math.floor(p.y / 256) .. "/" .. math.floor(p.z / 256) .. ":" ..
-        piece.materialName .. ":" .. c.r .. "/" .. c.g .. "/" .. c.b .. "/" .. c.a
-    local area = areas[key]
-    if not area then
-        area = {members = {}, included = {}, meshes = {}, material = piece.material, key = key}
-        areas[key] = area
-    end
-    piece.area, area.members[piece.id] = area, piece
-    invalidate(area)
-end
-local function rebuild()
-    local now, rebuilt = RealTime(), 0
-    for key, area in pairs(areas) do
-        if not next(area.members) then
-            invalidate(area);areas[key] = nil
-        elseif area.dirty and now >= area.due and rebuilt < 2 then
-            local vertices, included, meshes = {}, {}, {}
-            local ok = pcall(function()
-                for id, p in pairs(area.members) do
-                    if #vertices + #p.geometry.vertices > 60000 then
-                        meshes[#meshes + 1] = geometry.Build(vertices, area.material);vertices = {}
-                    end
-                    geometry.Transformed(p, vertices);included[id] = true
-                end
-                if #vertices > 0 then meshes[#meshes + 1] = geometry.Build(vertices, area.material) end
-            end)
-            if ok then
-                area.meshes, area.included, area.dirty = meshes, included, false
-                metrics.rebuilds = metrics.rebuilds + 1
-            else
-                for _, mesh in ipairs(meshes) do mesh:Destroy() end
-                area.due = now + 1
-            end
-            rebuilt = rebuilt + 1
-        end
-    end
+    if not piece.shrink then batches.Add(piece) end
 end
 local function physics(piece)
     if backend == "jolt" then
         local id = world.api.Spawn(piece.geometry.hull, piece.position, piece.angles, piece.velocity, piece.spin)
         if not id then return false end
-        piece.native = id
+        piece.native, natives[id] = id, piece
+        piece.nativeSleeping, nativeMoving = false, nativeMoving + 1
         poses[id] = {piece.position.x, piece.position.y, piece.position.z, piece.angles.p, piece.angles.y, piece.angles.r, false}
         return true
     elseif backend == "vphysics" then return fallback.Spawn(piece) end
@@ -103,12 +70,14 @@ local function failed(reason)
     world.Fail(reason)
     fallbackUnavailable = type(ents.CreateClientProp) ~= "function"
     backend = fallbackUnavailable and "none" or "vphysics"
+    stepBusy, removals, impulses = false, {}, {}
     trim(limit())
     for _, p in pairs(pieces) do
-        if p.native then poses[p.native] = nil;p.native = nil end
-        unmerge(p);p.sleeping, p.pending = false, false
+        if p.native then poses[p.native], natives[p.native] = nil, nil;p.native = nil end
+        unmerge(p);p.sleeping, p.pending, pending[p.id] = false, false, nil
         if not fallback.Spawn(p) then erase(p) end
     end
+    nativeMoving = 0
 end
 local function ensure()
     if world.state == "new" then
@@ -154,9 +123,9 @@ function D.Spawn(frame, fragments)
                 local ok, mesh = pcall(geometry.Build, g.vertices, material)
                 if ok then
                     piece.mesh = mesh
-                    pieces[serial], count = piece, count + 1
+                    pieces[serial], individual[serial], count = piece, piece, count + 1
                     last = last + 1;order[last] = serial
-                    if world.state == "loading" then piece.pending = true
+                    if world.state == "loading" or stepBusy then piece.pending, pending[piece.id] = true, piece
                     elseif not physics(piece) then erase(piece) end
                 end
             end
@@ -173,8 +142,9 @@ function D.Impulse(origin, radius, speed)
     if stopped or not validVector(origin, 131072) or not isnumber(radius) or not isnumber(speed) or radius ~= radius or speed ~= speed or
         radius <= 0 or radius > 131072 or speed < 0 or speed > 100000 then return end
     if backend == "jolt" then
-        local ok, reason = world.api.Impulse(origin, radius, speed)
-        if not ok then failed(reason) end
+        -- Queue engine-independent mutations while a worker owns the world. Bound the event queue.
+        if #impulses >= 64 then table.remove(impulses, 1) end
+        impulses[#impulses + 1] = {Vector(origin.x, origin.y, origin.z), radius, speed}
     elseif backend == "vphysics" then
         for _, p in pairs(pieces) do fallback.Impulse(p, origin, radius, speed) end
     end
@@ -191,10 +161,13 @@ function D.Impulse(origin, radius, speed)
     end
 end
 function D.Clear()
-    for _, piece in pairs(pieces) do erase(piece) end
-    pieces, order, poses, changed, areas = {}, {}, {}, {}, {}
-    first, last, count = 1, 0, 0
-    if world.state == "ready" then world.api.Clear() end
+    -- Cleanup is the one lifecycle boundary allowed to join an in-flight physics step.
+    if world.state == "ready" then world.api.Clear();stepBusy = false end
+    for _, piece in pairs(pieces) do piece.native = nil;erase(piece) end
+    batches.Clear()
+    pieces, order, poses, changed = {}, {}, {}, {}
+    natives, pending, individual, shrinking, removals, impulses = {}, {}, {}, {}, {}, {}
+    first, last, count, expiryCursor, stepElapsed, nativeMoving = 1, 0, 0, 1, 0, 0
 end
 function D.Count() return count end
 function D.Backend() return backend end
@@ -206,79 +179,116 @@ function D.Stats()
         else metrics.moving = metrics.moving + 1 end
         if p.area and p.area.included[p.id] then metrics.merged = metrics.merged + 1 end
     end
-    for _, area in pairs(areas) do metrics.batches = metrics.batches + #area.meshes end
+    metrics.batches, metrics.merged = batches.Count()
+    metrics.rebuilds, metrics.rebuild_vertices = batches.rebuilds, batches.vertices
+    metrics.worker_busy = stepBusy
     if backend == "jolt" then world.api.Stats(nativeStats) end
     metrics.backend, metrics.native, metrics.skipped_models = backend, nativeStats, world.skipped
     return metrics
 end
 function D.Shutdown() D.Clear();world.Shutdown();stopped, backend = true, "none" end
+local function nativeTick()
+    stepElapsed = math.min(.25, stepElapsed + math.min(FrameTime(), .25))
+    if stepBusy then
+        local done, reason = world.api.PollStep()
+        if done == nil then failed(reason);return end
+        if not done then return end
+        stepBusy = false
+    end
+    for id in pairs(removals) do world.api.Remove(id);poses[id], removals[id] = nil, nil end
+    local cv = GetConVar("sv_gravity")
+    local ok, reason = world.api.SetGravity(cv and cv:GetFloat() or 600)
+    if ok and knownCollide ~= collide:GetBool() then
+        knownCollide = collide:GetBool();ok, reason = world.api.SetCollide(knownCollide)
+    end
+    if not ok then failed(reason);return end
+    for _, event in ipairs(impulses) do
+        ok, reason = world.api.Impulse(event[1], event[2], event[3])
+        if not ok then failed(reason);return end
+    end
+    impulses = {}
+    local spawned = 0
+    for id, p in pairs(pending) do
+        p.pending, pending[id] = false, nil
+        if not physics(p) then erase(p) end
+        spawned = spawned + 1
+        if spawned >= 128 then break end
+    end
+    local n
+    n, reason = world.api.ReadPoses(poses, changed)
+    if n == nil then failed(reason);return end
+    metrics.pose_updates = n
+    for i = 1, n do
+        local id = changed[i]
+        local p = natives[id]
+        if p then
+            local row = poses[id]
+            if p.nativeSleeping ~= row[7] then nativeMoving = nativeMoving + (row[7] and -1 or 1) end
+            p.nativeSleeping = row[7]
+            p.position:SetUnpacked(row[1], row[2], row[3]);p.angles:SetUnpacked(row[4], row[5], row[6])
+            if p.sleeping and not row[7] then unmerge(p) end
+            p.sleeping = row[7]
+            if p.sleeping then merge(p) end
+        end
+    end
+    if nativeMoving == 0 then stepElapsed = 0;return end -- a fully settled world needs no worker dispatch
+    ok, reason = world.api.BeginStep(stepElapsed)
+    stepElapsed = 0
+    if not ok then failed(reason);return end
+    stepBusy = true
+end
+local function age()
+    local life, now = clamp(lifetime:GetFloat(), 0, 86400), CurTime()
+    if life ~= knownLife then
+        for _, p in pairs(shrinking) do p.shrink = nil;if p.sleeping then merge(p) end end
+        shrinking, expiryCursor, knownLife = {}, first, life
+    end
+    if life > 0 then
+        -- Birth order is monotonic. Only the final-second cohort needs per-frame lifetime work.
+        expiryCursor = math.max(expiryCursor, first)
+        while expiryCursor <= last do
+            local p = pieces[order[expiryCursor]]
+            if p and p.born + life - now >= 1 then break end
+            if p then unmerge(p);shrinking[p.id] = p end
+            expiryCursor = expiryCursor + 1
+        end
+        for _, p in pairs(shrinking) do
+            local remaining = p.born + life - now
+            if remaining <= 0 then erase(p) else p.shrink = remaining end
+        end
+    end
+end
 local function think()
     if stopped then return end
     world.Tick()
     if world.state == "ready" and backend ~= "jolt" then
         backend = "jolt"
         world.api.SetCollide(collide:GetBool())
-        for _, p in pairs(pieces) do
-            if p.pending then p.pending = false;if not physics(p) then erase(p) end end
-        end
     elseif world.state == "failed" and backend ~= "vphysics" and not fallbackUnavailable then failed(world.reason) end
     trim(limit())
-    if backend == "jolt" then
-        local cv = GetConVar("sv_gravity")
-        local ok, reason = world.api.SetGravity(cv and cv:GetFloat() or 600)
-        if ok and knownCollide ~= collide:GetBool() then
-            knownCollide = collide:GetBool();ok, reason = world.api.SetCollide(knownCollide)
-        end
-        if ok then ok, reason = world.api.Step(math.min(FrameTime(), .25)) end
-        if ok then ok, reason = world.api.ReadPoses(poses, changed) end
-        if not ok then failed(reason)
-        else
-            -- Native ids and manager ids differ after reuse and fallback; a direct native lookup is kept below.
-            for _, p in pairs(pieces) do
-                if p.native then
-                    local row = poses[p.native]
-                    if not row[7] or not p.sleeping then
-                        p.position:SetUnpacked(row[1], row[2], row[3]);p.angles:SetUnpacked(row[4], row[5], row[6])
-                    end
-                    if p.sleeping and not row[7] then unmerge(p) end
-                    p.sleeping = row[7]
-                end
-            end
-        end
+    if backend == "jolt" then nativeTick()
     elseif backend == "vphysics" then
         for _, p in pairs(pieces) do
             local asleep = p.sleeping
             if not fallback.Update(p) then erase(p)
-            elseif asleep and not p.sleeping then unmerge(p) end
+            elseif asleep and not p.sleeping then unmerge(p)
+            elseif p.sleeping then merge(p) end
         end
     end
-    local life, now = clamp(lifetime:GetFloat(), 0, 86400), CurTime()
-    for _, p in pairs(pieces) do
-        local remaining = life > 0 and p.born + life - now or math.huge
-        if remaining <= 0 then erase(p)
-        elseif remaining < 1 then unmerge(p);p.shrink = remaining
-        else p.shrink = nil;if p.sleeping then merge(p) end end
-    end
-    rebuild()
-    -- Compact the FIFO occasionally, keeping memory proportional to the live budget.
+    age()
+    batches.Tick(individual)
     if first > 8192 or last > 32768 then
         local compact = {}
         for i = first, last do if pieces[order[i]] then compact[#compact + 1] = order[i] end end
-        order, first, last = compact, 1, #compact
+        order, first, last, expiryCursor = compact, 1, #compact, 1
     end
 end
 hook.Add("Think", "NLGlass.Debris", think)
 hook.Add("PostDrawTranslucentRenderables", "NLGlass.Debris", function(depth, sky)
     if stopped or depth or sky then return end
-    for _, area in pairs(areas) do
-        render.SetMaterial(area.material)
-        for _, mesh in ipairs(area.meshes) do mesh:Draw() end
-    end
-    for _, p in pairs(pieces) do
-        -- A piece still waiting for the map import is drawn where it broke off, so it never vanishes.
-        if not (p.area and p.area.included[p.id]) then
-            render.SetMaterial(p.material);geometry.Draw(p, p.shrink or 1)
-        end
+    batches.Draw()
+    for _, p in pairs(individual) do
+        render.SetMaterial(p.material);geometry.Draw(p, p.shrink or 1)
     end
 end)
 hook.Add("PreCleanupMap", "NLGlass.Debris", D.Clear)

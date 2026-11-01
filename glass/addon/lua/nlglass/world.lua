@@ -61,8 +61,14 @@ function W.Begin(budget, gravity)
         if not size or size < 1036 or size > 256 * 1024 * 1024 then error("map missing or larger than 256 MiB", 0) end
         local bytes = file.Read(path, "GAME")
         if type(bytes) ~= "string" or #bytes ~= size then error("cannot read map from GAME", 0) end
-        local props = must(W.api.LoadMap(bytes))
+        must(W.api.BeginLoadMap(bytes))
         W.task = coroutine.create(function()
+            local props, err
+            repeat
+                props, err = W.api.PollLoadMap()
+                if props == nil then error(err or "map import failed", 0) end
+                if props == false then coroutine.yield() end
+            until props ~= false
             local models = {}
             for _, prop in ipairs(props) do models[prop.model] = false end
             local n = 0
@@ -80,7 +86,13 @@ function W.Begin(budget, gravity)
                 if models[prop.model] then W.api.AddProp(prop.model, prop.position, prop.angles, prop.scale) end
                 if i % 64 == 0 then coroutine.yield() end
             end
-            must(W.api.FinishWorld())
+            must(W.api.BeginFinishWorld())
+            local done, reason
+            repeat
+                done, reason = W.api.PollFinishWorld()
+                if done == nil then error(reason or "world finish failed", 0) end
+                if not done then coroutine.yield() end
+            until done
             W.state = "ready"
         end)
     end)

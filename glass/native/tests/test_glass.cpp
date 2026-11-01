@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <thread>
 #include <windows.h>
 
 using namespace nl::glass;
@@ -118,6 +119,7 @@ TEST_CASE("glass BSP deterministic damaged-fixture sweep remains bounded") {
 TEST_CASE("glass world validates bounds and map failure clears static collision") {
   CHECK_THROWS_AS(World(0),Error);CHECK_THROWS_AS(World(kMaxBudget+1),Error);
   World w(2);const auto room=fixture::room();auto props=w.load_map(room);
+  CHECK(w.stats().temp_reserved_bytes==0); // neither Init nor map import reserves simulation scratch
   w.add_model(props[0].model,{fixture::box(16,16,32)});
   w.add_prop(props[0].model,props[0].position,props[0].angles,props[0].scale);w.finish();
   CHECK(w.stats().statics==7);CHECK(w.stats().workers>=1 && w.stats().workers<=8);
@@ -143,6 +145,38 @@ TEST_CASE("glass poses interpolate source angles sleep once and wake on impulse"
   CHECK(poses[0].position.z>-.5f && poses[0].position.z<4);
   CHECK(w.poses().empty());w.impulse({0,0,0},1000,100);w.step(1.0/60);CHECK(!w.sleeping(id));CHECK(w.poses().size()==1);
 }
+TEST_CASE("glass pose queue visits only changed bodies and safely reuses removed slots") {
+  World w(kMaxBudget);w.load_map(fixture::room());w.finish();
+  auto id=w.spawn(fixture::box(),{0,0,32},{},{},{});
+  CHECK(w.poses().size()==1);CHECK(w.stats().pose_visits==1);
+  CHECK(w.remove(id));CHECK(w.poses().empty());CHECK(w.stats().pose_visits==0);
+  id=w.spawn(fixture::box(),{0,0,32},{},{},{});
+  for(unsigned i=0;i<600 && !w.sleeping(id);++i)w.step(1.0/60);
+  REQUIRE(w.sleeping(id));CHECK(w.poses().size()==1);CHECK(w.poses().empty());CHECK(w.stats().pose_visits==0);
+  w.set_gravity(100);CHECK(w.poses().size()==1);w.set_collide(false);CHECK(w.poses().size()==1);
+  CHECK(w.stats().temp_reserved_bytes<48*1024*1024);
+}
+TEST_CASE("glass asynchronous import finish and steps poll safely and exclude concurrent mutation") {
+  World w(8);w.begin_load(fixture::room());CHECK(w.stats().busy);
+  CHECK_THROWS_AS(w.spawn(fixture::box(),{},{},{},{}),Error);
+  std::vector<StaticProp> props;
+  auto poll=[&](auto fn) {
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);
+    while(!fn()) {
+      if(std::chrono::steady_clock::now()>deadline)throw Error("worker poll timeout");
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  };
+  poll([&] { return w.poll_load(props); });CHECK(props.size()==1);CHECK(!w.stats().busy);
+  w.begin_finish();poll([&] { return w.poll_finish(); });CHECK(w.stats().ready);
+  const auto id=w.spawn(fixture::box(),{0,0,32},{},{},{});
+  w.begin_step(1.0/60);CHECK(w.stats().busy);CHECK_THROWS_AS(w.remove(id),Error);
+  poll([&] { return w.poll_step(); });CHECK(!w.stats().busy);CHECK(w.poses().size()==1);
+  w.begin_step(1.0/60);w.clear();CHECK(w.stats().live==0); // lifecycle joins pending work
+  w.begin_load({});CHECK_THROWS_AS(poll([&] { return w.poll_load(props); }),Error);
+  CHECK(!w.stats().ready);CHECK(!w.stats().busy);
+  w.begin_load(fixture::room()); // destructor joins even if caller never polls
+}
 TEST_CASE("glass displacement and scaled static prop actually support falling shards") {
   World w(4);const auto props=w.load_map(fixture::room());
   w.add_model(props[0].model,{fixture::box(16,16,32)});w.add_prop(props[0].model,props[0].position,props[0].angles,props[0].scale);w.finish();
@@ -155,10 +189,12 @@ TEST_CASE("glass displacement and scaled static prop actually support falling sh
     else CHECK(p.position.z>1.1f && p.position.z<3);
   }
 }
-TEST_CASE("glass overfull contact tables report failure instead of terminating") {
+TEST_CASE("glass overfull contact tables count saturation and keep the world running") {
   World w(128);w.load_map(fixture::room());w.finish();
   for(unsigned i=0;i<128;++i)w.spawn(fixture::box(),{0,0,32},{},{},{});
-  CHECK_THROWS_AS(w.step(1.0/60),Error);
+  w.step(1.0/60);CHECK(w.stats().contact_overflows>0);CHECK(w.stats().ready);
+  CHECK(w.stats().manifold_overflows+w.stats().pair_overflows+w.stats().constraint_overflows>0);
+  CHECK(w.poses().size()==128);w.step(1.0/60);CHECK(w.stats().live==128);
   w.clear();CHECK(w.stats().live==0);
   w.set_collide(false);
   for(unsigned i=0;i<128;++i)w.spawn(fixture::box(),{0,0,32},{},{},{});
@@ -177,8 +213,33 @@ TEST_CASE("glass benchmark 4000 colliding pieces settle within 15 simulated seco
   const auto wall=std::chrono::duration<double>(std::chrono::steady_clock::now()-spawned).count();
   std::cout<<"G1-B benchmark: pieces="<<number<<" capacity="<<kMaxBudget<<" workers="<<w.stats().workers<<" settled_sim_s="<<settled_at/60.0
     <<" awake="<<w.stats().awake<<" spawn_s="<<std::chrono::duration<double>(spawned-begin).count()
-    <<" simulation_wall_s="<<wall<<" simulation_cpu_s="<<cpu_seconds()-cpu<<" mean_step_ms="<<total/settled_at<<" max_step_ms="<<worst<<'\n';
+    <<" simulation_wall_s="<<wall<<" simulation_cpu_s="<<cpu_seconds()-cpu<<" mean_step_ms="<<total/settled_at<<" max_step_ms="<<worst
+    <<" scratch_reserved="<<w.stats().temp_reserved_bytes<<" scratch_peak="<<w.stats().temp_peak_bytes
+    <<" contact_overflows="<<w.stats().contact_overflows<<'\n';
   CHECK(w.stats().live==number);CHECK(w.stats().awake==0);CHECK(wall<30);CHECK(cpu_seconds()-cpu<120);
   const auto idle=std::chrono::steady_clock::now();for(unsigned i=0;i<120;++i) { w.step(1.0/60);(void)w.poses(); }
   std::cout<<"G1-B settled step+poses mean_ms="<<std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-idle).count()/120<<'\n';
+}
+TEST_CASE("glass asynchronous step dispatch and polling at 4000 bodies leave the caller free") {
+  World w(kMaxBudget);w.load_map(fixture::room());w.finish();
+  const auto hull=fixture::box(2,2,.3f);
+  for(unsigned i=0;i<4000;++i)w.spawn(hull,{float(i%40)*5-100,float((i/40)%25)*5-62,float(i/1000)*16+32},{},{},{});
+  double dispatch=0,poll=0,max_dispatch=0,max_poll=0,worker=0;unsigned calls=0;
+  for(unsigned frame=0;frame<120;++frame) {
+    const auto a=std::chrono::steady_clock::now();w.begin_step(1.0/60);const auto b=std::chrono::steady_clock::now();
+    const auto ms=std::chrono::duration<double,std::milli>(b-a).count();dispatch+=ms;max_dispatch=std::max(max_dispatch,ms);
+    for(;;) {
+      const auto c=std::chrono::steady_clock::now();const bool done=w.poll_step();const auto d=std::chrono::steady_clock::now();
+      const auto elapsed=std::chrono::duration<double,std::milli>(d-c).count();poll+=elapsed;max_poll=std::max(max_poll,elapsed);++calls;
+      if(done)break;
+      std::this_thread::sleep_for(std::chrono::milliseconds(1)); // stand in for unrelated game work
+    }
+    (void)w.poses();worker+=w.stats().step_ms;
+  }
+  CHECK(w.stats().live==4000);CHECK(w.stats().ready);
+  // Exercise catch-up limiting under a measured load; it always runs at least one fixed update.
+  w.step(.25);CHECK(w.stats().substeps>=1 && w.stats().substeps<=4);CHECK(w.stats().dropped_seconds>0);
+  std::cout<<"G1-B asynchronous 4000: dispatch_mean_ms="<<dispatch/120<<" dispatch_max_ms="<<max_dispatch
+    <<" poll_mean_ms="<<poll/calls<<" poll_max_ms="<<max_poll<<" worker_step_mean_ms="<<worker/120
+    <<" capped_substeps="<<w.stats().substeps<<" dropped_s="<<w.stats().dropped_seconds<<'\n';
 }

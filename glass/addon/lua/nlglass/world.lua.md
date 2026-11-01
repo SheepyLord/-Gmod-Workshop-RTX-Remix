@@ -1,11 +1,13 @@
 # world.lua
 
 Client helper included by `debris.lua`; returns a world-state controller. `Begin(budget, gravity)`
-requires `nlglass`, reads only `maps/<map>.bsp` from `GAME` after a 256 MiB size check, and passes its
-bytes to the module. Thus mounted Workshop maps use the game's normal virtual filesystem.
-`Tick()` imports two unique prop collision models or 64 instances per frame through a coroutine.
+requires `nlglass`, reads only `maps/<map>.bsp` from `GAME` after a 256 MiB size check, and passes
+an owned copy to `BeginLoadMap`. Lua's VFS read and the bounded byte copy remain on the client
+thread; BSP parsing and static-world cooking run on a module worker. `Tick` polls without waiting,
+then extracts two unique prop collision models or adds 64 instances per frame through a coroutine.
+The final broadphase optimization also uses `BeginFinishWorld`/`PollFinishWorld` on a worker.
 Temporary `ClientsideModel` objects use `PhysicsInit`/`GetMeshConvexes` and are always removed.
-No collision, over-complex or native-refused model collision is skipped and counted. Individual
-refused convexes/instances never disable the world; structural BSP failures or no usable collision
-at finish select fallback. `Must`, `Fail` and `Shutdown` are internal helpers. Failure logs once per map
-and releases the native world. No disk writes, network traffic or server code; no process exit code.
+Missing, over-complex or refused models/convexes/instances are skipped and counted. A structural
+BSP error or a finished map without any usable collision selects fallback and logs once per map.
+`Must`, `Fail`, `Shutdown` are internal helpers; shutdown joins workers before releasing their
+world, and resets for the next client realm. No disk writes, network or server code; no exit code.

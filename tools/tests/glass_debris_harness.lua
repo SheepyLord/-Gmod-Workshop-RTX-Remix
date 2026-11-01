@@ -33,6 +33,7 @@ function WorldToLocal(p,a,o,b) return p-o,Angle(a.p-b.p,a.y-b.y,a.r-b.r) end
 SERVER,CLIENT=false,true
 SOLID_VPHYSICS,MOVETYPE_VPHYSICS,COLLISION_GROUP_WORLD,RENDERGROUP_OTHER=6,6,20,10
 local clock,dt,convars,events,meshes,entities,draws,logCount,reads,api,mode
+local failMesh = false
 local function phys()
     return {valid=true,asleep=false,impulses=0,SetMaterial=function() end,SetMass=function() end,
         SetVelocity=function() end,AddAngleVelocity=function() end,Wake=function(self) self.asleep=false end,
@@ -59,6 +60,7 @@ function FrameTime() return dt end
 function Material(name) return {name=name} end
 function Mesh(material)
     local m={material=material,valid=true,BuildFromTriangles=function(self,v)
+        if failMesh then failMesh=false;error("injected GPU build refusal") end
         check(#v%3==0 and #v<=60000,"bounded triangle mesh");self.vertices=v
     end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false end,
     Draw=function(self)check(self.valid,"never draw destroyed mesh");draws=draws+1 end}
@@ -85,37 +87,71 @@ function LocalPlayer() return {valid=true,GetEyeTrace=function()return {HitPos=V
 local function makeapi()
     local n={bodies={},next=0,imports=0,clears=0,models=0,props=0}
     function n.Init(budget,gravity) check(budget==8192 and gravity==600,"one bounded reserve at map start");return true end
-    function n.LoadMap(bytes)
+    function n.BeginLoadMap(bytes)
         check(#bytes==1036,"BSP bytes passed from GAME");n.imports=n.imports+1
+        n.importWaits=1;return true
+    end
+    function n.PollLoadMap()
+        if n.importWaits>0 then n.importWaits=n.importWaits-1;return false end
         if mode=="badmap" then return nil,"unsupported BSP" end
         return {{model="models/solid.mdl",position={0,0,0},angles={0,0,0},scale=1},
             {model="models/solid.mdl",position={1,0,0},angles={0,0,0},scale=1},
             {model="models/missing.mdl",position={0,0,0},angles={0,0,0},scale=1}}
     end
-    function n.AddModel(_,convexes) check(#convexes==1 and #convexes[1]==8,"deduplicated prop collision");n.models=n.models+1;return true end
+    function n.LoadMap(bytes) -- also permits a before/after run against the original manager
+        n.BeginLoadMap(bytes)
+        local props,err
+        repeat props,err=n.PollLoadMap() until props~=false
+        return props,err
+    end
+    function n.AddModel(_,convexes)
+        check(#convexes==1 and #convexes[1]==8,"deduplicated prop collision")
+        if mode=="refusedmodel" then return false end
+        n.models=n.models+1;return true
+    end
     function n.AddProp() n.props=n.props+1;return true end
+    function n.BeginFinishWorld() return true end
+    function n.PollFinishWorld() return true end
     function n.FinishWorld() return true end
     function n.Spawn(_,pos,angles)
+        check(not n.running,"spawn never touches in-flight world")
         n.next=n.next+1;n.bodies[n.next]={position=pos,angles=angles,asleep=false,dirty=true};return n.next
     end
-    function n.Remove(id) n.bodies[id]=nil;return true end
-    function n.Clear() n.bodies={};n.clears=n.clears+1;return true end
-    function n.Shutdown() n.bodies={};return true end
-    function n.SetGravity() return true end
-    function n.SetCollide(value) n.collide=value;return true end
-    function n.Step() if n.failStep then return nil,"contact budget" end;return true end
+    function n.Remove(id) check(not n.running,"remove never touches in-flight world");n.bodies[id]=nil;return true end
+    function n.Clear() n.running=false;n.bodies={};n.clears=n.clears+1;return true end
+    function n.Shutdown() n.running=false;n.bodies={};return true end
+    function n.SetGravity() check(not n.running,"gravity only between steps");return true end
+    function n.SetCollide(value) check(not n.running,"collide only between steps");n.collide=value;return true end
+    function n.BeginStep()
+        check(not n.running,"one worker step at a time");n.running=true;n.waits=n.delayStep or 0;return true
+    end
+    function n.PollStep()
+        check(n.running,"poll a started step")
+        if n.waits>0 then n.waits=n.waits-1;return false end
+        n.running=false
+        if n.failStep then return nil,"internal update failure" end
+        return true
+    end
+    function n.Step() return true end
     function n.ReadPoses(rows,changed)
+        check(not n.running,"poses only after worker completes")
         local count=0
         for id,b in pairs(n.bodies)do
             if not b.asleep or b.dirty then
                 local r=assert(rows[id],"preallocated pose record")
                 r[1],r[2],r[3],r[4],r[5],r[6],r[7]=b.position.x,b.position.y,b.position.z,b.angles.p,b.angles.y,b.angles.r,b.asleep
                 b.dirty=false;count=count+1;changed[count]=id
+            elseif n.poisonUnchanged then
+                -- Deliberately stale/poisoned rows outside the returned changed list must be ignored.
+                rows[id][1],rows[id][7]=99999,false
             end
         end
         return count
     end
-    function n.Impulse() for _,b in pairs(n.bodies)do b.asleep,b.dirty=false,true end;n.impulses=(n.impulses or 0)+1;return true end
+    function n.Impulse()
+        check(not n.running,"impulse only between steps")
+        for _,b in pairs(n.bodies)do b.asleep,b.dirty=false,true end;n.impulses=(n.impulses or 0)+1;return true
+    end
     function n.Stats(out) out.live=0;for _ in pairs(n.bodies)do out.live=out.live+1 end;return true end
     return n
 end
@@ -151,6 +187,22 @@ local function settle()
     for _,e in ipairs(entities)do e.physics.asleep=true end
     tick(.01);tick(.11);tick(.11)
 end
+if arg[3]=="perf" then
+    local D=setup("jolt");set("budget",4000);set("lifetime",0)
+    local begin=os.clock();D.Spawn(frame,fragments(4000))
+    local spawned=(os.clock()-begin)*1000
+    for _=1,100 do tick() end
+    begin=os.clock();for _=1,200 do tick() end
+    local active=(os.clock()-begin)*5
+    for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+    for _=1,200 do tick() end
+    begin=os.clock();for _=1,1000 do tick() end
+    local settled=(os.clock()-begin)
+    local s=D.Stats()
+    print(string.format("G1-B Lua benchmark pieces=%d spawn_cpu_ms=%.3f active_mean_ms=%.4f settled_mean_ms=%.4f merged=%d batches=%d",
+        D.Count(),spawned,active,settled,s.merged,s.batches))
+    D.Shutdown();return
+end
 local D=setup("jolt")
 set("budget",3);D.Spawn(frame,fragments(3));check(D.Count()==3 and D.Stats().pending==3,"pending import queues bounded pieces")
 tick();tick();tick()
@@ -159,10 +211,10 @@ check(draw()==3,"moving pieces use individual meshes")
 check(#meshes[1].vertices==36,"both faces and four edges of a quad")
 settle();check(D.Stats().merged==3 and D.Stats().batches==1 and draw()==1,"settled area draws one merged mesh")
 local rebuilds=D.Stats().rebuilds;tick(.2);check(D.Stats().rebuilds==rebuilds,"unchanged area never rebuilt")
-D.Impulse(Vector(10,10,20),32,100);check(api.impulses==1 and draw()==3,"impulse invalidates static batch immediately")
-tick();check(D.Stats().sleeping==0,"native wake reaches manager")
+D.Impulse(Vector(10,10,20),32,100);check(draw()==3,"impulse invalidates affected static chunk immediately")
+tick();check(api.impulses==1 and D.Stats().sleeping==0,"queued native wake reaches manager")
 set("budget",2);tick();check(D.Count()==2 and api.bodies[1]==nil,"budget drops oldest first")
-settle();D.Spawn(frame,fragments(1));check(D.Count()==2 and api.bodies[2]==nil,"spawning evicts oldest and invalidates batch")
+settle();D.Spawn(frame,fragments(1));tick();check(D.Count()==2 and api.bodies[2]==nil,"spawning evicts oldest and invalidates batch")
 set("budget",8);D.Spawn(frame,fragments(6));tick();check(D.Count()==8 and reads==1 and api.imports==1,"increasing budget never reimports map")
 set("lifetime",0);tick(500);check(D.Count()==8,"zero lifetime lasts until cleanup")
 D.Clear();check(D.Count()==0 and api.clears==1,"Clear removes native bodies and merged geometry")
@@ -186,7 +238,7 @@ D.Spawn(frame,fragments(10));check(D.Count()==2 and logCount==1,"failure logs on
 events.PreCleanupMap();check(D.Count()==0,"fallback Clear removes client props")
 for _,e in ipairs(entities)do check(not e.valid,"no fallback entity leaked") end
 
-D=setup("badmap");D.Spawn(frame,fragments(3));tick();D.Spawn(frame,fragments(1))
+D=setup("badmap");D.Spawn(frame,fragments(3));tick();tick();D.Spawn(frame,fragments(1))
 check(D.Backend()=="vphysics" and reads==1 and logCount==1,"failed map imports once and falls back")
 D=setup("none");D.Spawn(frame,fragments(3));tick();check(D.Backend()=="none" and D.Count()==0,"no physics backend creates no pieces")
 D=setup("jolt");set("budget",0);D.Spawn(frame,fragments(3));check(D.Count()==0 and reads==0,"budget zero avoids native startup")
@@ -195,12 +247,61 @@ D.Spawn(frame,{{poly={{0,0},{1,0},{2,0}},thickness=1},{poly={{0,0},{1,0},{1,1}},
 check(D.Count()==0,"degenerate and nonfinite polygons refused")
 D.Spawn({origin=Vector(0/0,0,0),angles=Angle()},fragments(1));check(D.Count()==0,"nonfinite frame refused")
 D.Shutdown()
+
+D=setup("refusedmodel");D.Prepare();tick();tick();tick()
+check(D.Backend()=="jolt" and D.Stats().skipped_models==2 and api.props==0 and logCount==0,
+    "refused prop model is counted without failing the imported world")
+D.Shutdown()
+
+D=setup("jolt");set("budget",600);set("lifetime",0)
+D.Spawn(frame,fragments(2));tick();tick();tick();settle()
+local oldBatch=meshes[#meshes]
+local revision=D.Stats().rebuilds
+api.poisonUnchanged=true;tick()
+check(D.Stats().pose_updates==0 and D.Stats().merged==2 and draw()==1,
+    "unchanged pose rows are ignored and fully sleeping worlds do not dispatch workers")
+api.poisonUnchanged=false
+D.Spawn(frame,fragments(1));tick()
+for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+tick();failMesh=true;tick(.11)
+check(oldBatch.valid and D.Stats().merged==2,"failed replacement retains old valid pile geometry")
+tick(1.1)
+check(not oldBatch.valid and D.Stats().merged==3,"failed replacement retries and swaps only after success")
+oldBatch,revision=meshes[#meshes],D.Stats().rebuilds
+D.Spawn(frame,fragments(500))
+for _=1,10 do tick() end
+check(D.Stats().pending==0,"large arrivals are bounded and drained across frames")
+for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+tick();tick(.11)
+check(oldBatch.valid and D.Stats().rebuilds==revision,"old valid pile remains during incremental replacement")
+local frames=0
+repeat
+    tick();frames=frames+1
+    check(D.Stats().rebuild_vertices<=1800,"pile transformation work is capped per frame")
+until D.Stats().rebuilds>revision or frames>30
+check(frames>1 and frames<=30 and not oldBatch.valid and D.Stats().merged==503,
+    "large pile replaces old meshes atomically after bounded work across frames")
+local batchCount=D.Stats().batches
+api.bodies[1].asleep,api.bodies[1].dirty=false,true;tick()
+check(draw()<200 and draw()>batchCount,"waking one piece hides only its small chunk, never the whole pile")
+api.delayStep=3;tick()
+local oldCount=D.Count()
+D.Spawn(frame,fragments(3));D.Impulse(Vector(10,10,20),32,10);set("budget",400)
+tick();tick()
+check(D.Count()==400 and D.Backend()=="jolt" and D.Stats().pending==3,
+    "spawn removal and impulse queue while worker polls pending without touching Jolt")
+for _=1,10 do tick() end
+check(D.Count()==400 and D.Stats().pending==0 and api.impulses==1,"deferred mutations drain after completion")
+events.PreCleanupMap();check(D.Count()==0,"cleanup joins in-flight work and releases all stages")
+for _,m in ipairs(meshes)do check(not m.valid,"no old or staging mesh leaks after cleanup") end
+D.Shutdown()
+
 if arg[2] then
     -- Execute the real performance probe too: settings restore, lifecycle and cancellation.
     D=setup("jolt");set("budget",7);set("lifetime",12)
     for _,cv in pairs(convars)do cv.GetString=function(self)return tostring(self.value)end end
     NL_GLASS_PROBE_COUNT,NL_GLASS_PROBE_SECONDS,NL_GLASS_PROBE_ORIGIN=4,5,Vector()
-    dofile(arg[2]);tick(.1);tick(.1);tick(.1);tick(2.1);tick(5.1);tick(5.1);tick(10.1)
+    dofile(arg[2]);tick(.1);tick(.1);tick(.1);tick(.1);tick(2.1);tick(5.1);tick(5.1);tick(10.1);tick(10.1)
     check(NLGlassDebrisProbe==nil and D.Count()==0,"probe completes and clears cosmetic pieces")
     check(convars.rtx_glass_debris_budget.value==7 and convars.rtx_glass_debris_lifetime.value==12,"probe restores temporary convars")
     dofile(arg[2]);set("lifetime",23);NLGlassDebrisProbe.Cancel()

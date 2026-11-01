@@ -28,3 +28,9 @@ player's intervening edits. `NLGlassDebrisProbe.Cancel()` stops early and does t
 No disk, Steam, launch-option, network or package writes. Lua prints an error and stops if the
 manager/player is missing or the backend never initializes within 60 seconds; success prints
 `NL_GLASS_PROBE done`. No process exit code is used inside the game.
+
+Fix-pass reports add worker-busy/pending/changed-pose/rebuild-vertex counts, considered/skipped/
+refused collision shapes, contact-cache saturation, scratch reserve/peak MiB and discarded catch-up
+time. Physics and map cooking run asynchronously; confirm `backend=jolt`, pending drains, a settled
+scene has moving=0, and overflow counts remain stable in ordinary piles. Retain empty/falling/settled
+frame percentiles, visible pile wake/removal checks and real terrain/prop collision checks for Claude.

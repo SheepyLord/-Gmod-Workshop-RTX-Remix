@@ -2,6 +2,8 @@
 #include "fixture.h"
 #include "nl_test.h"
 #include <limits>
+#include <chrono>
+#include <thread>
 
 extern "C" int gmod13_open(lua_State*);
 extern "C" int gmod13_close(lua_State*);
@@ -41,6 +43,9 @@ TEST_CASE("glass binding validates every boundary without Lua errors or metameth
   const auto bsp=nl::glass::fixture::room();const Value bytes=Value::text(std::string(bsp.begin(),bsp.end()));
   auto result=m.call("LoadMap",{bytes});REQUIRE(result.size()==1);CHECK(result[0].type==Type::Table);
   CHECK(failure(m.call("AddModel",{Value::text("model"),Value::object()})));
+  const auto flat=Value::array({vector(0,0,0),vector(1,0,0),vector(1,1,0),vector(0,1,0)});
+  CHECK(m.call("AddModel",{Value::text("mixed"),Value::array({flat,hull()})})[0].b);
+  const auto cooking=Value::object();m.call("Stats",{cooking});CHECK(cooking.table->at("srefused_convexes").n==1);
   CHECK(m.call("FinishWorld")[0].b);
   CHECK(failure(m.call("Step",{num(-1)})));CHECK(failure(m.call("Step",{num(std::numeric_limits<double>::infinity())})));
   CHECK(failure(m.call("SetCollide",{num(1)})));CHECK(failure(m.call("IsSleeping",{num(1.2)})));
@@ -70,4 +75,28 @@ TEST_CASE("glass module refuses nonclient and foreign realms") {
   CHECK(gmod13_open(&f)==1);CHECK(foreign.at(-1).type==Type::Nil);
   const auto fn=client.api.table->at("sInit").f;foreign.stack={num(2),num(600)};
   CHECK(fn(&f)==2);CHECK(foreign.at(-2).type==Type::Nil);
+}
+TEST_CASE("glass binding background operations return pending results and propagate worker errors") {
+  Module m;CHECK(m.call("Init",{num(16),num(600)})[0].b);
+  CHECK(failure(m.call("PollLoadMap")));CHECK(failure(m.call("PollStep")));CHECK(failure(m.call("PollFinishWorld")));
+  CHECK(failure(m.call("BeginLoadMap",{num(1)})));CHECK(failure(m.call("BeginStep",{num(-1)})));
+  const auto bsp=nl::glass::fixture::room();const Value bytes=Value::text(std::string(bsp.begin(),bsp.end()));
+  CHECK(m.call("BeginLoadMap",{bytes})[0].b);
+  CHECK(failure(m.call("BeginLoadMap",{bytes}))); // no second worker may mutate the world
+  const auto stats=Value::object();m.call("Stats",{stats});CHECK(stats.table->at("sbusy").b);
+  auto poll=[&](const char* name) {
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);
+    for(;;) {
+      auto v=m.call(name);
+      if(v[0].type!=Type::Bool || v[0].b)return v;
+      if(std::chrono::steady_clock::now()>deadline)throw std::runtime_error("binding worker timeout");
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  };
+  CHECK(poll("PollLoadMap")[0].type==Type::Table);
+  CHECK(m.call("BeginFinishWorld")[0].b);CHECK(poll("PollFinishWorld")[0].b);
+  CHECK(m.call("BeginStep",{num(1.0/60)})[0].b);CHECK(failure(m.call("SetGravity",{num(600)})));
+  CHECK(poll("PollStep")[0].b);
+  CHECK(m.call("BeginLoadMap",{Value::text("bad map")})[0].b);CHECK(failure(poll("PollLoadMap")));
+  CHECK(m.call("BeginLoadMap",{bytes})[0].b);CHECK(m.call("Shutdown")[0].b); // joins safely
 }
