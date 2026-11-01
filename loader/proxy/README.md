@@ -6,6 +6,8 @@ game with an inherited restricted handle, validate its identity and wait outside
 `exit_report.cpp` select the game/Windows language and format reason, advice, exception code
 and evidence folder from the existing seven catalogs. Both observer and read-only preview
 exports end in `W`; rundll32 calls them with Unicode arguments. User32 loads only after exit.
+The embedding concatenates label-file lines as adjacent raw literals to stay below MSVC's
+single-literal size limit with the full UTF-8 text intact.
 See [ADR 0083](../../docs/decisions/0083-external-exit-observer-from-the-proxy.md) and
 [the preview/QA steps](../../docs/TESTING.md#r7-b-exit-observer-and-read-only-previews).
 

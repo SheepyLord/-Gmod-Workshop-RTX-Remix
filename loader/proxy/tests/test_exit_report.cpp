@@ -24,11 +24,13 @@ TEST_CASE("exit report: every reason has localized advice, evidence and exceptio
   constexpr std::array reasons{"out_of_memory", "likely_out_of_memory", "device_lost", "allocation_failed", "cs_exception", "crash"};
   for (const auto language : {"en", "zh-CN", "zh-TW", "ja", "ko", "fr", "ru"}) {
     CHECK(!r::title(language).empty());
+    CHECK(r::title(language).find('?') == std::string::npos);
     if (std::string_view(language) != "en") CHECK(r::title(language) != r::title("en"));
     for (const auto reason : reasons) {
       const nl::evidence::PreviousSession previous{reason, {}, "native-loader/logs/sessions/test"};
       const auto text = r::message(previous, 0xC0000005u, root, language);
       CHECK(text.size() > 100); CHECK(text.find("0xC0000005") != text.npos);
+      CHECK(text.find('?') == text.npos);
       CHECK(text.find("sessions") != text.npos); CHECK(text.find("{count}") == text.npos);
       for (const auto code : {0xC0000409u, 0xC00000FDu, 0xE06D7363u})
         CHECK(!r::message(previous, code, root, language).empty());

@@ -41,6 +41,8 @@ R7-B adds `nl_exit_observer_integration` (23 synthetic scenarios). Other process
 set `NATIVE_LOADER_EXIT_REPORT=off` because they deliberately terminate hosts while testing
 unrelated deployment behavior; the dedicated observer test uses `quiet` to exercise real JSON
 reporting. The three pure formatting/localization cases live in `nl_proxy_tests`.
+Those cases also reject lossy question-mark replacements in the embedded messages. The Python
+catalog check rejects both those replacements and U+FFFD before CMake embedding.
 If antivirus blocks the newly built DLL, tests must fail with the OS error; no exclusions, security
 settings or alternate loading paths are added by the tests.
 

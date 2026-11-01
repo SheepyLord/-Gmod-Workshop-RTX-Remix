@@ -8,6 +8,9 @@ target_include_directories(nl_proxy_logic PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(nl_proxy_logic PUBLIC nl_core PRIVATE nl_build_options)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ui/mainmenu.js" NL_DIAGNOSTICS_SCRIPT)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ui/labels.json" NL_DIAGNOSTICS_LABELS)
+# MSVC limits a single literal to 16 KiB. Keep the seven UTF-8 catalogs byte-identical by
+# concatenating raw literals at existing line boundaries (the combined data remains small).
+string(REPLACE "\n" "\n)NLUI\"\nR\"NLUI(" NL_DIAGNOSTICS_LABELS "${NL_DIAGNOSTICS_LABELS}")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ui/read_notices.lua" NL_DIAGNOSTICS_NOTICES)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/mainmenu.js ui/labels.json)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/read_notices.lua)

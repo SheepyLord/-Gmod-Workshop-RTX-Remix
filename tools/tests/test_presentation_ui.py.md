@@ -1,5 +1,8 @@
 # test_presentation_ui.py
 
+R7-B rejects replacement question marks and U+FFFD in every catalog value, catching lossy
+Windows shell encodings before apparently complete translated catalogs reach the embedded DLL.
+
 Offline checks for all seven startup templates, supported placeholders/project URL, complete
 seven-language main-menu labels, and the real JavaScript UI in Node, including the multiplayer
 bootstrap trigger with and without the diagnostics overlay. Run with tools/test.ps1 or unittest
