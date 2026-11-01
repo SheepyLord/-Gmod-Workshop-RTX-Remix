@@ -8,9 +8,11 @@ Jolt 5.3.0 is statically linked from [the pinned source](../../third_party/jolt/
 | `geometry.h` | Source-unit geometry, input limits and hull validation |
 | `bsp.h`, `bsp.cpp` | Bounded little-endian VBSP reader, LZMA collision lumps, world brushes, displacement triangles and static-prop metadata |
 | `world.h`, `world.cpp` | Separate Jolt world, worker pool, pieces, fixed stepping, interpolated poses, sleep/wake and budgets |
+| `fracture.h`, `fracture.cpp` | Convex XY outlines, equal-area binary clipping, centroids and extrusion for follow-up splits |
 | `module.cpp` | Client-only `ILuaBase` binding, raw table access, numeric/type validation and exception-to-result boundary |
 | `tests/fixture.h` | Generated synthetic room, displacement and static-prop BSP; no game files |
 | `tests/test_glass.cpp` | Parser, hull, boundary, lifecycle, interpolation and 4,000-piece benchmark tests |
+| `tests/test_interaction.cpp` | One-way kinematics, contact/bullet/blast/fall damage, convex area/minimum-size/capacity tests and bounded-cost benchmarks |
 | `tests/import_probe.cpp` | Read-only offline map counts/timings; run `nl_glass_import_probe <map.bsp>` explicitly, never via CTest |
 | `tests/fake_lua.h`, `tests/test_binding.cpp` | Strict stack-based `ILuaBase` double executing the actual exported callbacks, including realm refusal and reused pose tables |
 
@@ -48,6 +50,14 @@ Models with no client collision are skipped. Moving props, players, dynamic brus
 other gameplay bodies never enter this world. Unknown/malformed collision data leaves an empty
 unready world; the manager logs once and chooses fallback.
 
+R7-C extends the world with read-only Source snapshots under [ADR 0082](../../docs/decisions/0082-glass-one-way-interaction.md).
+Source bodies enter as at most 96 kinematic mirrors, on their own collision layer; they touch
+pieces only. Their transform is controlled exclusively by snapshots. Source never receives any
+response, and mirror IDs cannot alias piece IDs. Active mirror bodies are excluded from piece pose
+queues/statistics. With interaction off the contact listener is detached. With it on, the listener
+ignores piece-piece damage, rejects minimum-size pieces early and records only hard contacts in a
+64-entry, per-piece-coalescing atomic queue; workers never allocate or call Lua in contact callbacks.
+
 `require("nlglass")` exposes global `nlglass` (also returned from module open). Functions return
 `nil, reason` for refused input/failure, without `ThrowError`, metamethods or engine calls from workers:
 
@@ -64,6 +74,12 @@ unready world; the manager logs once and chooses fallback.
 | `Remove` | `(id)` -> boolean; stale ids return false, never alias a new body |
 | `Impulse` | `(origin, radius, speed)` -> true; radial speed falloff, independent of mass |
 | `SetCollide`, `SetGravity` | `(boolean)` / `(Source units/s²)` -> true; wake pieces when changed |
+| `SetInteraction` | `(boolean)` -> true; enables contact damage/mirrors, or removes both and clears damage |
+| `SyncBodies` | `(rows, sampleDt)` -> number moving/new; each row `{key, position, angles, halfExtents, mass, optionalConvexes, velocity}`; 96 rows, 2 new shapes/snapshot, 8 convexes/512 points per shape |
+| `ReadRegions` | `()` -> at most 32 `{minimum, maximum}` arrays around live glass; no regions when empty |
+| `Ray` | `(from, to, energy, kickSpeed)` -> nearest piece id or 0; endpoints must already be Source-clipped |
+| `ReadDamage` | `()` -> false when empty, else up to 64 `{pieceId, energy, causeBits}`; drains safely between steps |
+| `CanSplit`, `Split` | `(pieceId, minimumSize)` -> boolean / false or two `{id, poly, thickness, position, angles, velocity, spin}` fragments replacing the parent |
 | `Step` | `(dtSeconds)` -> true; synchronous core/test compatibility; invalid inputs return nil/reason |
 | `BeginStep`, `PollStep` | `(dtSeconds)` -> true / `()` -> false while pending, then true; manager uses these to keep physics off the client thread |
 | `ReadPoses` | `(posesById, changedIds)` -> count; writes existing rows `{x,y,z,pitch,yaw,roll,sleeping}` and changed ids `[1..count]` |
@@ -77,6 +93,17 @@ cap at +/-131072, angles/spin at +/-36000, velocity components at +/-100000, gra
 `ReadPoses` does not construct tables or Vector/Angle userdata: the manager allocates one row on
 spawn and mutates its own drawing objects. It writes active pieces and one final pose when a piece
 sleeps; consume only the returned number of changed ids. Reused native buffers are reserved up front.
+
+`Spawn` also accepts an optional sixth minimum-size argument (4–64, default 4). It only affects
+follow-up fracture eligibility. `Split` preserves area/thickness, recentres child hulls and inherits
+linear plus angular point velocity. Two private staging slots allow rollback of refused replacements;
+completed operations never exceed capacity. A full native world refuses splitting until the manager
+has evicted its oldest piece. Cause bits are bullet=1, blast=2, Source body=4, fall=8.
+`scene_pose` is a read-only C++ test accessor, never exposed to the game Lua API.
+
+New statistics: `interaction`, `scene_bodies`, `scene_moves`, `scene_cooks`, `damage_dropped`,
+`ray_hits`, `splits`. Scene masses are clamped to .01–50,000 kg, half extents to .05–1024 units;
+snapshots reject duplicate/zero keys, malformed convexes and nonfinite input before mutation.
 
 Import statistics include `brushes` (considered solid world brushes), `skipped_brushes` (clipping),
 `refused_brushes`, `refused_convexes`, `refused_meshes` (Jolt cooking) and `skipped_props`.

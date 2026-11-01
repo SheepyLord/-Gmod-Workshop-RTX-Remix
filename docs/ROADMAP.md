@@ -1,5 +1,9 @@
 # Roadmap
 
+R7-C is **in progress** on `r7-glass-interact` (2026-11-01): one-way Source mirrors, bounded local
+follow-up damage/fracture and bullet rays, a per-player setting and offline tests. Claude owns
+package import, integration and PoC contact/performance acceptance; no game is run by this task.
+
 G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
 Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
 (whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed

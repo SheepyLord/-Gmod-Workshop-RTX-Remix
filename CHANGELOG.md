@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R7-C: local broken glass gains one-way Source body contacts and bounded follow-up fracture from
+  bullets, blasts, heavy/fast bodies and falls, with a per-player interaction switch
+  ([ADR 0082](docs/decisions/0082-glass-one-way-interaction.md)). Game acceptance remains with Claude.
+
 ### G1 (unreleased)
 
 - Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes
