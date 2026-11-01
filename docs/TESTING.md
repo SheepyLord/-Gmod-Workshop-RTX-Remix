@@ -1,5 +1,25 @@
 # Testing
 
+## R7-A: scoped MMD alpha (2026-11-01)
+
+Runtime patch 0017 passes all 29 fork Release unit tests, including alpha promotion at equality,
+cutoff clamping/packing, unchanged untagged/replacement/forced-cutout behavior, category snapshot
+lifetimes and OMM cache identity. Generated options and USD category schema checks pass. The
+NoImport build and exact source verification succeed; eight representative compiled SPIR-V
+binaries are verified embedded in `d3d9.dll`.
+
+`python -m unittest discover -s companion/tests -v` passes 16 LuaJIT scenarios for real companion
+registration, late resources/APIs, tracking and write retries, revisions/fallback refresh, hash
+validation/deduplication, removal and a 4,096-part lookup-budget fixture. The optional category
+mode in `tools/qa/alpha_probe.lua` passes LuaJIT syntax compilation.
+
+`tools/test.ps1 -Config Release` passes all 25 CTests and 455 Python tests (two skips), but exits 1
+only because `check_repo.py` requires the newly patched runtime to be imported. R7-A forbids that
+import and changes outside its assigned checker scope; no packaged provenance was falsified.
+The PM must resolve that gate during integration. Existing game evidence was read, and no game
+session or installation change was performed. Artifacts, receipts, limits and the PM's mask/ramp,
+OMM/ray-mode and unaffected-map-glass acceptance cases are in the [R7-A report](handover/R7-A-report.md).
+
 ## G1 integration: game QA on the PoC (Claude, 2026-11-01)
 
 The QA add-on [`tools/qa/nlglass_qa`](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md) is copied

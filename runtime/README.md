@@ -61,6 +61,12 @@ building the RTX package needs neither the fork nor its SDKs. Only a change to t
 
 ## Changing the runtime
 
+R7-A's branch build is deliberately **not imported**: the task forbids package edits.
+Its new DLL, source identity, additional USD schema resource and test/provenance gate status are
+recorded in the [R7-A report](../docs/handover/R7-A-report.md). Until Claude imports it during
+integration (or separately approves unimported-build validation), the existing repository
+provenance convention rejects patch 0017 against the older `packaged` record.
+
 1. Make the change in the fork worktree `build_runtime.ps1` uses (or any tree at `base.json`'s commit
    with the patches applied), and commit it there.
 2. Export the series again into `patches\`, replacing the old files:
