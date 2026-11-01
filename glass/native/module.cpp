@@ -114,6 +114,16 @@ LUA_FUNCTION_STATIC(Spawn) { return guarded(LUA,[&] {
   const float minimum=LUA->Top()>=6?static_cast<float>(number(LUA,6,4,64)):4;
   LUA->PushNumber(w.spawn(points,p,a,v,spin,minimum));return 1;
 }); }
+LUA_FUNCTION_STATIC(SpawnGroup) { return guarded(LUA,[&] {
+  auto& w=active(LUA);need(LUA->IsType(1,Type::Table),"expected group hulls");
+  const auto n=LUA->ObjLen(1);need(n>=2 && n<=8,"group hull count limit");
+  std::vector<Hull> hulls;std::size_t points=0;
+  for(int i=1;i<=n;++i) {
+    get(LUA,1,i);auto h=hull(LUA,-1);LUA->Pop();points+=h.size();need(points<=512,"group point limit");hulls.push_back(std::move(h));
+  }
+  const auto p=vector(LUA,2,kCoordinateLimit),a=vector(LUA,3,36000,true),v=vector(LUA,4,100000),spin=vector(LUA,5,36000);
+  LUA->PushNumber(w.spawn_group(hulls,p,a,v,spin));return 1;
+}); }
 LUA_FUNCTION_STATIC(Remove) { return guarded(LUA,[&] { LUA->PushBool(active(LUA).remove(id(LUA)));return 1; }); }
 LUA_FUNCTION_STATIC(Impulse) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto origin=vector(LUA,1,kCoordinateLimit);
@@ -266,7 +276,7 @@ GMOD_MODULE_OPEN() {
       {"BeginStep",BeginStep},{"PollStep",PollStep},
       {"SetInteraction",SetInteraction},{"SetCollisionFlags",SetCollisionFlags},{"SyncBodies",SyncBodies},{"ReadRegions",ReadRegions},
       {"ReadDamage",ReadDamage},{"Ray",Ray},{"Melee",MeleeCast},{"Split",Split},{"CanSplit",CanSplit},
-      {"Spawn",Spawn},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
+      {"Spawn",Spawn},{"SpawnGroup",SpawnGroup},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
       {"Step",Step},{"ReadPoses",ReadPoses},{"IsSleeping",IsSleeping},{"Stats",ReadStats},{"Clear",Clear},{"Shutdown",Shutdown}};
     for(const auto& [name,fn]:functions) { LUA->PushCFunction(fn);set(LUA,-2,name); }
     LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);LUA->PushString("nlglass");LUA->Push(-3);LUA->RawSet(-3);LUA->Pop();

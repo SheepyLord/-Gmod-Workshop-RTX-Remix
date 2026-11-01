@@ -8,7 +8,10 @@ function F.Spawn(piece)
         ent:SetNoDraw(true)
         ent:SetPos(piece.position)
         ent:SetAngles(piece.angles)
-        ent:PhysicsInitConvex(piece.geometry.hull)
+        if piece.geometry.hulls then
+            if not ent.PhysicsInitMultiConvex then error("client compound physics unavailable",0) end
+            ent:PhysicsInitMultiConvex(piece.geometry.hulls)
+        else ent:PhysicsInitConvex(piece.geometry.hull) end
         if ent.EnableCustomCollisions then ent:EnableCustomCollisions(true) end
         ent:SetMoveType(MOVETYPE_VPHYSICS)
         ent:SetSolid(SOLID_VPHYSICS)

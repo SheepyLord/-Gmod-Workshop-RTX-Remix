@@ -48,7 +48,28 @@ function M.Geometry(poly, thickness, color)
         add(p, -half, normal); add(b, half, normal); add(p, half, normal)
     end
     return {vertices = vertices, hull = hull, center = Vector(cx, cy, 0), radius = math.sqrt(radius2),
-        mass = area / 2 * thickness * .0254 ^ 3 * 2500}
+        mass = area / 2 * thickness * .0254 ^ 3 * 2500, area = area / 2}
+end
+function M.Group(fragments, color)
+    local parts,mass,cx,cy,area={},0,0,0,0
+    for _,f in ipairs(fragments) do
+        local g=M.Geometry(f.poly,f.thickness,color)
+        if not g then return end
+        parts[#parts+1]=g;mass=mass+g.mass;area=area+g.area
+        cx,cy=cx+g.center.x*g.mass,cy+g.center.y*g.mass
+    end
+    cx,cy=cx/mass,cy/mass
+    local vertices,hulls,radius={}, {},0
+    for _,g in ipairs(parts) do
+        local dx,dy=g.center.x-cx,g.center.y-cy
+        radius=math.max(radius,math.sqrt(dx*dx+dy*dy)+g.radius)
+        for _,v in ipairs(g.vertices) do
+            v.pos:SetUnpacked(v.pos.x+dx,v.pos.y+dy,v.pos.z);vertices[#vertices+1]=v
+        end
+        for _,p in ipairs(g.hull) do p:SetUnpacked(p.x+dx,p.y+dy,p.z) end
+        hulls[#hulls+1]=g.hull
+    end
+    return {vertices=vertices,hulls=hulls,center=Vector(cx,cy,0),radius=radius,mass=mass,area=area}
 end
 function M.Build(vertices, material)
     local mesh = Mesh(material)

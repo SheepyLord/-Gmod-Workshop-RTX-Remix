@@ -103,6 +103,9 @@ TEST_CASE("glass binding background operations return pending results and propag
 TEST_CASE("glass binding validates scene ray damage and split APIs with balanced raw tables") {
   Module m;m.call("Init",{num(4),num(0)});
   const auto bsp=nl::glass::fixture::room();m.call("LoadMap",{Value::text(std::string(bsp.begin(),bsp.end()))});m.call("FinishWorld");
+  CHECK(failure(m.call("SpawnGroup",{Value::array({hull()}),vector(),vector(),vector(),vector()})));
+  const auto group=m.call("SpawnGroup",{Value::array({hull(),hull()}),vector(100,0,32),vector(),vector(),vector()})[0];
+  CHECK(group.type==Type::Number);CHECK(!m.call("CanSplit",{group,num(4)})[0].b);m.call("Remove",{group});
   CHECK(failure(m.call("SetInteraction",{num(1)})));CHECK(m.call("SetInteraction",{Value::boolean(true)})[0].b);
   CHECK(failure(m.call("SyncBodies",{num(1),num(.016)})));
   auto row=Value::array({num(1),vector(40,0,32),vector(),vector(4,4,8),num(85),Value{},vector()});

@@ -10,6 +10,7 @@ local view = include("nlglass/debris_view.lua")
 local scene = include("nlglass/debris_scene.lua")
 local expiry = include("nlglass/debris_expiry.lua")
 local collisionFlags = include("nlglass/debris_settings.lua")
+local detail = include("nlglass/debris_detail.lua")
 local D = {}
 NLGlassDebris = D
 local lifetime = CreateClientConVar("rtx_glass_debris_lifetime", "120", true, false, "Broken glass lifetime; 0 keeps it until cleanup", 0, 86400)
@@ -23,6 +24,10 @@ local natives, pending, shrinking, removals, impulses = {}, {}, {}, {}, {}
 local stepBusy, stepElapsed, expiryCursor, knownLife = false, 0, 1, -1
 local nativeMoving = 0
 local first, last, serial, count = 1, 0, 0, 0
+local represented, queuedWeight, queuedCount = 0, 0, 0
+local creation, createFirst, createLast, createFrame = {}, 1, 0, -1
+local demand, demandStamp = 0, 0
+local blastHistory,blastSerial={},0
 local backend, nativeCapacity, fallbackUnavailable = "none", 0, false
 local nativeStats = {}
 local metrics = { live = 0, moving = 0, sleeping = 0, merged = 0, batches = 0, rebuilds = 0, pending = 0 }
@@ -68,6 +73,7 @@ local function erase(piece)
     individual.Remove(piece)
     pieces[piece.id], pending[piece.id], shrinking[piece.id] = nil, nil, nil
     count = count - 1
+    represented = represented - (piece.weight or 1)
 end
 local function oldest()
     while first <= last do
@@ -76,14 +82,17 @@ local function oldest()
     end
 end
 local function trim(target)
-    while count > target do local p = oldest();if not p then break end;erase(p) end
+    while represented > target do local p = oldest();if not p then break end;erase(p) end
 end
 local function merge(piece)
     if not piece.shrink then batches.Add(piece) end
 end
 local function physics(piece)
     if backend == "jolt" then
-        local id = world.api.Spawn(piece.geometry.hull, piece.position, piece.angles, piece.velocity, piece.spin, piece.minimumSize or 8)
+        local g = piece.geometry
+        local id
+        if g.hulls then id = world.api.SpawnGroup(g.hulls, piece.position, piece.angles, piece.velocity, piece.spin)
+        else id = world.api.Spawn(g.hull, piece.position, piece.angles, piece.velocity, piece.spin, piece.minimumSize or 8) end
         if not id then return false end
         piece.native, natives[id] = id, piece
         piece.nativeSleeping, nativeMoving = false, nativeMoving + 1
@@ -119,6 +128,19 @@ local function finite(n, max) return isnumber(n) and n == n and math.abs(n) <= m
 local function validVector(v, max)
     return isvector(v) and finite(v.x, max) and finite(v.y, max) and finite(v.z, max)
 end
+local function popCreation()
+    local q=creation[createFirst]
+    if q then
+        creation[createFirst],createFirst=nil,createFirst+1
+        queuedWeight,queuedCount=queuedWeight-q.weight,queuedCount-1
+    end
+    if createFirst>createLast then creation,createFirst,createLast={},1,0 end
+    if createFirst>8192 then
+        local compact={};for i=createFirst,createLast do compact[#compact+1]=creation[i] end
+        creation,createFirst,createLast=compact,1,#compact
+    end
+    return q
+end
 function D.Spawn(frame, fragments)
     if stopped then return end
     if type(frame) ~= "table" or type(fragments) ~= "table" or not isvector(frame.origin) or not isangle(frame.angles) then return end
@@ -136,31 +158,88 @@ function D.Spawn(frame, fragments)
     local material = Material(materialName)
     local size = GetConVar("rtx_glass_piece_size")
     local minimumSize = clamp(size and size:GetFloat() or 8, 4, 64)
-    -- Ignore excess input before constructing meshes. The retained fragments are the newest ones.
+    local valid={}
     for i = math.max(1, #fragments - max + 1), #fragments do
         local f = fragments[i]
         if type(f) == "table" and (f.velocity == nil or validVector(f.velocity, 100000)) and
             (f.spin == nil or validVector(f.spin, 36000)) then
-            local g = geometry.Geometry(f.poly, f.thickness, color)
-            if g then
-                trim(max - 1)
-                local position, a = LocalToWorld(g.center, angle_zero, frame.origin, frame.angles)
-                serial = serial + 1
-                local piece = {id = serial, geometry = g, position = position, angles = a, velocity = f.velocity or vector_origin,
-                    spin = f.spin or vector_origin, born = CurTime(), color = color, material = material, materialName = materialName,
-                    matrix = Matrix(), scale = Vector(1, 1, 1), poseDirty = true, sleeping = false, mass = g.mass}
-                piece.minimumSize = finite(f.minimum_size, 64) and f.minimum_size >= 4 and f.minimum_size or minimumSize
-                local ok, mesh = pcall(geometry.Build, g.vertices, material)
-                if ok then
-                    piece.mesh = mesh
-                    pieces[serial], count = piece, count + 1;individual.Add(piece)
-                    last = last + 1;order[last] = serial
-                    if world.state == "loading" or stepBusy then piece.pending, pending[piece.id] = true, piece
-                    elseif not physics(piece) then erase(piece) end
-                end
-            end
+            valid[#valid+1]=f
         end
     end
+    local now=CurTime();demand=math.max(0,demand-math.max(0,now-demandStamp)*256)+#valid;demandStamp=now
+    local eye
+    if EyePos then
+        local focus=EyePos()
+        if validVector(focus,131072) then
+            local p=WorldToLocal(focus,angle_zero,frame.origin,frame.angles);eye={p.x,p.y,p.z}
+        end
+    end
+    local coarse=world.api and world.api.SpawnGroup and (demand>192 or nativeMoving>256)
+    local packed=detail.Pack(valid,1,#valid,coarse,eye)
+    local context={origin=frame.origin,angles=frame.angles,color=color,material=material,materialName=materialName,
+        minimum=minimumSize,born=now,blastSerial=blastSerial}
+    for _,q in ipairs(packed) do
+        q.weight,q.context=#q.parts,context
+        while queuedWeight+q.weight>max do if not popCreation() then break end end
+        trim(math.max(0,max-queuedWeight-q.weight))
+        createLast=createLast+1;creation[createLast]=q
+        queuedWeight,queuedCount=queuedWeight+q.weight,queuedCount+1
+        metrics.creation_peak_pending=math.max(metrics.creation_peak_pending or 0,queuedCount)
+        if q.weight>1 then metrics.grouped_fragments=(metrics.grouped_fragments or 0)+q.weight end
+    end
+    metrics.creation_pending=queuedCount
+end
+local function buildCreation()
+    if createFrame==fallbackFrame then return end
+    createFrame=fallbackFrame
+    local before,made,vertices=SysTime(),0,0
+    while queuedCount>0 and made<12 and vertices<8192 do
+        local nextQ=creation[createFirst];local estimated=0
+        for _,part in ipairs(nextQ.parts) do estimated=estimated+12*#part.poly-12 end
+        if made>0 and vertices+estimated>8192 then break end
+        local q=popCreation();local c,f=q.context,q.parts[1]
+        local life=lifetime:GetFloat()
+        if life<=0 or CurTime()-c.born<life then
+            local g=q.weight>1 and geometry.Group(q.parts,c.color) or geometry.Geometry(f.poly,f.thickness,c.color)
+            if g then
+                local position,a=LocalToWorld(g.center,angle_zero,c.origin,c.angles)
+                serial=serial+1
+                local velocity,spin=f.velocity or vector_origin,f.spin or vector_origin
+                if q.weight>1 then
+                    velocity,spin=Vector(),Vector()
+                    for _,part in ipairs(q.parts) do
+                        velocity=velocity+(part.velocity or vector_origin)/q.weight
+                        spin=spin+(part.spin or vector_origin)/q.weight
+                    end
+                end
+                local px,py,pz,kicks=position.x,position.y,position.z,0
+                for i=#blastHistory,1,-1 do
+                    local e=blastHistory[i];if e[1]<=c.blastSerial then break end
+                    local dx,dy,dz=px-e[2],py-e[3],pz-e[4];local distance=math.sqrt(dx*dx+dy*dy+dz*dz)
+                    if distance<e[5] then
+                        local direction=distance>.001 and Vector(dx/distance,dy/distance,dz/distance) or Vector(0,0,1)
+                        velocity=velocity+direction*(e[6]*(1-distance/e[5]));kicks=kicks+1
+                        if kicks==8 then break end
+                    end
+                end
+                local p={id=serial,geometry=g,position=position,angles=a,velocity=velocity,spin=spin,weight=q.weight,
+                    born=CurTime(),ageBorn=c.born,color=c.color,material=c.material,materialName=c.materialName,
+                    matrix=Matrix(),scale=Vector(1,1,1),poseDirty=true,sleeping=false,mass=g.mass,
+                    minimumSize=finite(f.minimum_size,64) and f.minimum_size>=4 and f.minimum_size or c.minimum}
+                local ok,mesh=pcall(geometry.Build,g.vertices,c.material)
+                if ok then
+                    p.mesh=mesh;pieces[p.id],count,represented=p,count+1,represented+q.weight
+                    last=last+1;order[last]=p.id;individual.Add(p);expiry.Add(p)
+                    if not physics(p) then erase(p) end
+                end
+                vertices=vertices+#g.vertices
+            end
+        end
+        made=made+1
+        if SysTime()-before>=.00075 then break end
+    end
+    metrics.created_last,metrics.creation_ms=made,(SysTime()-before)*1000
+    metrics.creation_peak_ms=math.max(metrics.creation_peak_ms or 0,metrics.creation_ms)
 end
 -- Server-supplied, Source-clipped pellet traces. Queue at most 32 and apply at most eight per frame.
 function D.Ray(from, to, damage, radius)
@@ -180,6 +259,11 @@ end
 function D.Impulse(origin, radius, speed)
     if stopped or not validVector(origin, 131072) or not isnumber(radius) or not isnumber(speed) or radius ~= radius or speed ~= speed or
         radius <= 0 or radius > 131072 or speed < 0 or speed > 100000 then return end
+    blastSerial=blastSerial+1
+    if queuedCount>0 then
+        if #blastHistory==64 then table.remove(blastHistory,1) end
+        blastHistory[#blastHistory+1]={blastSerial,origin.x,origin.y,origin.z,radius,speed}
+    else blastHistory={} end
     if backend == "jolt" then
         -- Queue engine-independent mutations while a worker owns the world. Bound the event queue.
         if #impulses >= 64 then table.remove(impulses, 1) end
@@ -208,13 +292,17 @@ function D.Clear()
     pieces, order, poses, changed = {}, {}, {}, {}
     natives, pending, shrinking, removals, impulses = {}, {}, {}, {}, {}
     rays, damageQueue, damageByID, damageFirst, damageLast = {}, {}, {}, 1, 0
-    for _, key in ipairs({"splits", "splits_bullet", "splits_blast", "splits_body", "splits_fall", "split_ms", "split_peak_ms", "damage_dropped", "rays_dropped"}) do metrics[key] = 0 end
+    creation,createFirst,createLast,createFrame={},1,0,-1
+    represented,queuedWeight,queuedCount,demand,demandStamp=0,0,0,0,0
+    blastHistory,blastSerial={},0
+    for _, key in ipairs({"splits", "splits_bullet", "splits_blast", "splits_body", "splits_fall", "splits_melee", "split_ms", "split_peak_ms", "damage_dropped", "rays_dropped",
+        "created_last","creation_ms","creation_peak_ms","creation_peak_pending","grouped_fragments"}) do metrics[key] = 0 end
     thinkTime, drawTime, drawCalls = window(), window(), window()
     currentFrame, currentDrawTime, currentDrawCalls = nil, 0, 0
     metrics.culled_pieces, metrics.draw_calls_current = 0, 0
     first, last, count, expiryCursor, stepElapsed, nativeMoving = 1, 0, 0, 1, 0, 0
 end
-function D.Count() return count end
+function D.Count() return count + queuedCount end
 function D.Backend() return backend end
 function D.Stats()
     metrics.live, metrics.moving, metrics.sleeping, metrics.pending, metrics.batches, metrics.merged = count, 0, 0, 0, 0, 0
@@ -225,6 +313,8 @@ function D.Stats()
         if p.area and p.area.included[p.id] then metrics.merged = metrics.merged + 1 end
     end
     metrics.batches, metrics.merged = batches.Count()
+    metrics.fragments,metrics.creation_pending,metrics.creation_fragments=represented,queuedCount,queuedWeight
+    metrics.pending=metrics.pending+queuedCount
     metrics.rebuilds, metrics.rebuild_vertices = batches.rebuilds, batches.vertices
     metrics.rebuild_ms, metrics.upload_ms = batches.tick_ms or 0, batches.upload_ms or 0
     metrics.rebuild_peak_ms, metrics.upload_peak_ms = batches.tick_peak_ms or 0, batches.upload_peak_ms or 0
@@ -271,12 +361,12 @@ local function fractures()
         if parent and limit() >= 2 and world.api.CanSplit(parent.native, parent.minimumSize) then
             -- The parent is being replaced. Evict the oldest *remaining* piece for the extra child.
             -- Temporarily skip a parent at the head, so a hit cannot simply erase it at budget.
-            if count >= limit() then
+            if represented+queuedWeight >= limit() then
                 local victim = oldest()
                 if victim == parent then
                     victim = oldest();first = first - 1;order[first] = parent.id
                 end
-                if victim then erase(victim) end
+                if victim then erase(victim) else popCreation() end
             end
             if pieces[parent.id] then
                 local children, err = world.api.Split(parent.native, parent.minimumSize)
@@ -295,7 +385,7 @@ local function fractures()
                                 material = parent.material, materialName = parent.materialName, color = parent.color,
                                 matrix = Matrix(), scale = Vector(1, 1, 1), poseDirty = true, sleeping = false,
                                 born = CurTime(), ageBorn = parent.ageBorn or parent.born, minimumSize = parent.minimumSize, mass = g.mass}
-                            pieces[p.id], natives[p.native], count, nativeMoving = p, p, count + 1, nativeMoving + 1
+                            pieces[p.id], natives[p.native], count, nativeMoving,represented = p, p, count + 1, nativeMoving + 1,represented+1
                             poses[p.native] = {p.position.x, p.position.y, p.position.z, p.angles.p, p.angles.y, p.angles.r, false}
                             last = last + 1;order[last] = p.id;individual.Add(p);expiry.Add(p)
                         else world.api.Remove(f.id) end
@@ -368,6 +458,7 @@ local function nativeTick()
         spawned = spawned + 1
         if spawned >= 128 then break end
     end
+    buildCreation()
     local n
     n, reason = world.api.ReadPoses(poses, changed)
     if n == nil then failed(reason);return end
@@ -432,6 +523,7 @@ end
 local function think()
     if stopped then return end
     local before = SysTime()
+    metrics.created_last,metrics.creation_ms=0,0
     fallbackFrame = fallbackFrame + 1;advanceFrame()
     world.Tick()
     if world.state == "ready" and backend ~= "jolt" then
@@ -441,9 +533,11 @@ local function think()
             type(world.api.ReadRegions) == "function" and type(world.api.ReadDamage) == "function" and
             type(world.api.Ray) == "function" and type(world.api.Split) == "function" and type(world.api.CanSplit) == "function"
     elseif world.state == "failed" and backend ~= "vphysics" and not fallbackUnavailable then failed(world.reason) end
-    trim(limit())
+    trim(math.max(0,limit()-queuedWeight))
+    while queuedWeight>limit() do if not popCreation() then break end end
     if backend == "jolt" then nativeTick()
     elseif backend == "vphysics" then
+        buildCreation()
         for _, p in pairs(pieces) do
             local asleep = p.sleeping
             if not fallback.Update(p) then erase(p)

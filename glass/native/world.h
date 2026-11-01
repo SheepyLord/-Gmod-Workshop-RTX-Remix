@@ -49,6 +49,7 @@ public:
   void begin_finish();
   bool poll_finish();
   std::uint32_t spawn(const Hull& hull,V3 position,V3 angles,V3 velocity,V3 spin,float minimum_size=4);
+  std::uint32_t spawn_group(const std::vector<Hull>& hulls,V3 position,V3 angles,V3 velocity,V3 spin);
   bool remove(std::uint32_t id);
   void clear(); // pieces only; retain the imported map
   void impulse(V3 origin,float radius,float speed);

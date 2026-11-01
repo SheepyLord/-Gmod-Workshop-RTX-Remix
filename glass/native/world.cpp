@@ -109,7 +109,7 @@ struct World::Impl {
     unsigned queued=no_queue;
     std::uint64_t seen=0;
     float mass=0,thickness=1,threshold=0;
-    bool splittable=false;
+    bool splittable=false,grouped=false;
     std::atomic<float> damage{0};
     std::atomic<unsigned> kinds{0};
     std::atomic<bool> damage_queued{false};
@@ -293,7 +293,7 @@ struct World::Impl {
     const auto id=physics->GetBodyInterfaceNoLock().CreateAndAddBody(settings,JPH::EActivation::Activate);
     need(!id.IsInvalid(),"piece allocation failed");const auto index=free.back();const auto token=next_id++;
     try { ids.emplace(token,index); }catch(...) { destroy(id);throw; }
-    free.pop_back();auto& p=pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);
+    free.pop_back();auto& p=pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);p.grouped=false;
     p.before=p.after=rotation(a);p.asleep=false;p.dirty=true;p.damage=0;p.kinds=0;p.damage_queued=false;
     const auto size=shape->GetLocalBounds().GetSize()/kMetres;
     p.thickness=size.GetZ();p.mass=shape->GetMassProperties().mMass;
@@ -405,6 +405,27 @@ std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin
   const auto shape=hull_shape(hull,true);
   need(shape!=nullptr,"Jolt refused piece hull");
   return w.create(shape,position,a,velocity,spin,minimum_size);
+}
+std::uint32_t World::spawn_group(const std::vector<Hull>& hulls,V3 position,V3 a,V3 velocity,V3 spin) {
+  auto& w=idle();need(w.ready,"world is not ready");
+  need(hulls.size()>=2 && hulls.size()<=8,"group hull count limit");
+  need(position.valid() && a.valid(36000) && velocity.valid(100000) && spin.valid(36000),"invalid group transform/velocity");
+  need(w.ids.size()<w.capacity && w.next_id!=0,"piece budget/identifier exhausted");
+  std::size_t points=0;
+  for(const auto& hull:hulls) {
+    need(valid_hull(hull),"invalid group hull");points+=hull.size();
+    for(auto p:hull)need(p.valid(1024),"group hull exceeds local bounds");
+  }
+  need(points<=512,"group point limit");
+  JPH::StaticCompoundShapeSettings settings;
+  for(const auto& hull:hulls) {
+    const auto shape=hull_shape(hull,true);need(shape!=nullptr,"Jolt refused group hull");
+    settings.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),shape);
+  }
+  const auto result=settings.Create();need(!result.HasError(),"Jolt refused group");
+  const auto id=w.create(result.Get(),position,a,velocity,spin);
+  auto* p=w.find(id);p->grouped=true;p->splittable=false;
+  return id;
 }
 bool World::remove(std::uint32_t id) {
   auto& w=idle();auto* p=w.find(id);if(!p)return false;
@@ -607,6 +628,7 @@ unsigned World::melee(V3 from,V3 to,float energy,float speed,float radius) {
 }
 bool World::can_split(std::uint32_t id,float minimum_size) const {
   auto& w=idle();auto* p=w.find(id);if(!p)return false;
+  if(p->grouped)return false; // adaptive rigid groups keep exact sub-hulls and respond by moving.
   const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
   const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
   Hull points;points.reserve(shape->GetNumPoints());
@@ -615,7 +637,7 @@ bool World::can_split(std::uint32_t id,float minimum_size) const {
 }
 std::vector<Fragment> World::split(std::uint32_t id,float minimum_size) {
   auto& w=idle();need(std::isfinite(minimum_size) && minimum_size>=4 && minimum_size<=64,"invalid minimum piece size");
-  auto* p=w.find(id);if(!p || w.ids.size()>=w.capacity)return {};
+  auto* p=w.find(id);if(!p || p->grouped || w.ids.size()>=w.capacity)return {};
   auto& bi=w.physics->GetBodyInterfaceNoLock();const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
   const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
   Hull points;points.reserve(shape->GetNumPoints());

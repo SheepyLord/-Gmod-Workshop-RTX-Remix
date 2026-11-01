@@ -86,6 +86,15 @@ class GlassInteractionTests(unittest.TestCase):
     def test_archived_collision_migration_preserves_mask_and_master_once(self):
         self.run_manager('collision_settings')
 
+    def test_break_bursts_spread_creation_without_busy_access_or_expiry_extension(self):
+        self.run_manager('load_queue')
+
+    def test_adaptive_detail_keeps_exact_area_all_parts_and_nearby_detail(self):
+        self.run_manager('load_area')
+
+    def test_real_50_pane_fractures_keep_budget_while_cutting_rigid_instances(self):
+        self.run_manager('load_manager')
+
     def test_oldest_first_budget_minimum_size_refusal_and_one_piece_budget(self):
         self.run_manager('interaction_budget')
 

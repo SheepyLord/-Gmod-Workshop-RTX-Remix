@@ -6,6 +6,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R8-G falling load: spread mesh/body creation across frames and group crowded, distant fragments into exact compound bodies/combined meshes. Keep nearby detail and every retained original polygon; charge original fragments to the budget, inherit expiry and preserve queued blast pushes. No forced sleeps or solver changes.
+
 - R8-G melee coalescing retains the final wider SWEP trace (including fists), instead of letting its preceding line consume the swing; solid-start traces are rejected.
 
 - R8-G: bullets and melee now reach renewable per-client live-piece interest instead of an expiring old pane location. Stock crowbar/stunstick swings and short trace-based SWEP melee push or split pieces through a bounded Source-clipped native sweep. No weapon callbacks or Source response change.

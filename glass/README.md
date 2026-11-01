@@ -277,3 +277,5 @@ Claude's game checks. All game evidence was read only; only this worktree and it
 
 The second-pass full Release gate passes 25 CTests and 453 Python tests (two existing skips),
 including all 50 glass cases. Evidence is in `out/g1-lua-fix2/release.log` in this worktree.
+
+R8-G adds renewable client hit interest, stock and trace-SWEP melee, Source collision categories (objects/ragdolls default on; living actors off), and bounded deferred construction/adaptive distant rigid groups. Full detail stays near the eye. Every retained original polygon/sub-hull stays intact in a group; pane holes and server collision remain authoritative. Groups move on subsequent hits; fine pieces retain secondary fracture. Budgets count original fragments, not just grouped bodies. See [ADR 0085](../docs/decisions/0085-glass-load-collision-and-hits.md) and [R8-G QA](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md). Earlier statements above about unchanged falling performance describe R7, before R8-G.

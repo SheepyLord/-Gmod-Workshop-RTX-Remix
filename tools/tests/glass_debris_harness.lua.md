@@ -48,3 +48,5 @@ A slow-vector double also makes the measured 0.6 ms preparation allowance stop b
 R8-G collision_settings checks the archived one-time migration, explicit mask/master preservation, reload and always-on map/piece contacts.
 
 R8-G interaction_rays also checks native melee dispatch and malformed radius/range rejection in the shared expiring queue.
+
+R8-G load_queue checks receipt without mesh/body allocation, the 12-item/time allowance, worker exclusion, original expiry, queued blast inheritance, budget changes and cleanup. load_area checks 160 real annealed/tempered full/partial breaks for exact polygon/front-triangle area, no missing/duplicate input, geometry bounds and preserved nearby detail. load_manager replays 50 real fractures over 1.5 seconds, keeping the original 2000-fragment budget with fewer than 600 rigid instances. loadperf measures the same path against preserved starting helpers. Warm renderperf/off/on modes remain comparable; preparation now drains before timing. All are engine/physics doubles, never game timings.

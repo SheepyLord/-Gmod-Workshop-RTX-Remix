@@ -4,3 +4,5 @@
 against this worktree's G1-B sources. The standard `tools/test.ps1` includes it. Requires LuaJIT at
 PATH or the repository's documented local installation; skips explicitly if absent. No downloads,
 game launches or install writes. Captures stdout/stderr and asserts success; exit 0 passes, 1 fails.
+
+The real manager now queues construction; the harness drains this queue before marking fixtures asleep or timing a warm scene. No synthetic immediate-spawn assumption is retained.
