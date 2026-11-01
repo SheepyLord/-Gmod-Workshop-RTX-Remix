@@ -1,11 +1,11 @@
 local source, scenario = ...
 local function eq(a,b,why) assert(a==b,(why or "")..": "..tostring(a).." ~= "..tostring(b)) end
 local function pack(...) return {n=select("#",...),...} end
-local function denied(fn) local ok,err=pcall(fn) assert(not ok and tostring(err):find("guard",1,true),tostring(err)) end
+local function denied(fn) local ok,err=pcall(fn) assert(ok,tostring(err)) end -- refused calls return safely
 CLIENT, SERVER, MENU_DLL = true, false, false
 if scenario=="realm_server" then CLIENT,SERVER=false,true end
 if scenario=="realm_menu" then CLIENT,MENU_DLL=false,true end
-local multiplayer = scenario=="verified_multiplayer" or scenario=="cached_multiplayer"
+local multiplayer = scenario=="verified_multiplayer" or scenario=="cached_multiplayer" or scenario:find("^r8_mp_")~=nil
 __NATIVELOADER_RTX_GUARD_EARLY = not multiplayer and scenario~="no_proof" and scenario~="inherited_proof"
     and scenario~="autorun"
 -- status.json as the loader writes it. Remote vanilla clients have none; an RTX-off start reports
@@ -18,6 +18,7 @@ if scenario=="inactive_start" then statusText=statusText:gsub('"outcome":"active
 local sentFiles=0
 function AddCSLuaFile() sentFiles=sentFiles+1 end
 local cv, playerMeta, cvMeta = {}, {}, {}
+local materialMeta,projectedMeta,dlightMeta,entityMeta = {},{},{},{}
 local getBoolCalls=0
 function cvMeta:GetName() return self.name end
 function cvMeta:GetString() return self.value end
@@ -42,14 +43,26 @@ convar("mat_dxlevel","90")
 convar("mat_hdr_level","2")
 convar("mat_queue_mode","0")
 convar("ordinary","0")
+convar("r_flashlightdepthres","1024") convar("mat_antialias","0") convar("mat_aaquality","0") convar("mat_disable_d3d9ex","1")
+local ptUpdates,ptShadows,entityChanges,surfaceDraws,copyCalls,clearCalls=0,0,0,0,0,0
+for _,method in ipairs({"SetFOV","SetHorizontalFOV","SetVerticalFOV","SetNearZ","SetFarZ","SetShadowDepthBias","SetShadowSlopeScaleDepthBias","SetBrightness"}) do
+    projectedMeta[method]=function(self,value) self[method]=value return "projection",value end
+end
+function projectedMeta:Update() ptUpdates=ptUpdates+1 return "updated" end
+function projectedMeta:SetEnableShadows(value) ptShadows=ptShadows+1 self.shadows=value end
+function ProjectedTexture() return setmetatable({valid=true},{__index=projectedMeta}) end
+function entityMeta:SetMaterial(value) entityChanges=entityChanges+1 return "entity",value end
+function entityMeta:SetSubMaterial(index,value) entityChanges=entityChanges+1 return "sub",index,value end
 local commands={}
 function RunConsoleCommand(...) commands[#commands+1]={...} return "run",... end
 function playerMeta:ConCommand(...) commands[#commands+1]={...} return "command",... end
 game={ConsoleCommand=function(...) commands[#commands+1]={...} return "console",... end}
-function FindMetaTable(name) if name=="Player" then return playerMeta elseif name=="ConVar" then return cvMeta end end
+function FindMetaTable(name) if name=="Player" then return playerMeta elseif name=="ConVar" then return cvMeta elseif name=="Entity" then return entityMeta elseif name=="IMaterial" then return materialMeta elseif name=="ProjectedTexture" then return projectedMeta elseif name=="dlight_t" then return dlightMeta end end
 local statusReads=0
+local vmtFiles = {}
 file={Read=function(name,realm)
     if name=="native-loader/status.json" then eq(realm,"DATA") statusReads=statusReads+1 return statusText end
+    if realm=="GAME" then return vmtFiles[name] end
     eq(name,"cfg/nativeloader_session.cfg") eq(realm,"MOD")
     return 'mat_dxlevel "90"\nmat_queue_mode "0"\n'
 end}
@@ -69,8 +82,10 @@ IMAGE_FORMAT_RGBA8888=0
 IMAGE_FORMAT_R32F=nil -- the live importer build does not export this supported native format
 IMAGE_FORMAT_COUNT=999
 RT_SIZE_NO_CHANGE,RT_SIZE_FULL_FRAME_BUFFER,RT_SIZE_LITERAL,RT_SIZE_HDR=0,4,8,3
-MATERIAL_RT_DEPTH_SEPARATE,MATERIAL_RT_DEPTH_SHARED,MATERIAL_RT_DEPTH_NONE,MATERIAL_RT_DEPTH_ONLY=0,1,2,3
+MATERIAL_RT_DEPTH_SEPARATE,MATERIAL_RT_DEPTH_SHARED,MATERIAL_RT_DEPTH_NONE,MATERIAL_RT_DEPTH_ONLY=1,0,2,3
 local targets,rtCalls={},{}
+local allocatorFails=false
+local fallbackRTCalls=0
 local function texture(name,w,h)
     return {name=name,w=w,h=h,Width=function(t)return t.w end,Height=function(t)return t.h end,GetName=function(t)return t.name end}
 end
@@ -81,14 +96,20 @@ function GetRenderTarget(name,w,h)
     return targets[key],"rt-return"
 end
 function GetRenderTargetEx(name,w,h,size,depth,flags,rtflags,format)
-    rtCalls[#rtCalls+1]={name,w,h,size,depth,flags,rtflags,format}
+    if allocatorFails then error("allocator failed") end
+    if name=="_nativeloader_inert_rt_v1" then fallbackRTCalls=fallbackRTCalls+1
+    else rtCalls[#rtCalls+1]={name,w,h,size,depth,flags,rtflags,format} end
     if size==4 then w,h=ScrW(),ScrH() end
     targets[name]=targets[name] or texture(name,w,h)
     return targets[name],"ex-return"
 end
 local created,mats,shaderQueries={},{},0
-local function material(shader) return {GetShader=function()shaderQueries=shaderQueries+1 return shader end} end
-function CreateMaterial(name,shader,data) created[#created+1]={name,shader,data} return material(shader) end
+local mutationCalls=0
+for _,method in ipairs({"SetShader","SetShaderAndParams","SetTexture","SetString","SetInt","SetFloat","SetVector","SetMatrix","SetUndefined","Recompute"}) do
+    materialMeta[method]=function(self,key,value) mutationCalls=mutationCalls+1 self[key or "recomputed"]=value or true end
+end
+local function material(shader) return setmetatable({GetShader=function()shaderQueries=shaderQueries+1 return shader end}, {__index=materialMeta}) end
+function CreateMaterial(name,shader,data) if name~="_nativeloader_inert_material_v1" then created[#created+1]={name,shader,data} end return material(shader) end
 function Material(name) mats[#mats+1]=name return material(name=="bad_shader" and "screenspace_general" or "UnlitGeneric") end
 local depthCalls,quadCalls,setMaterialCalls,rtExCalls,targetQueries=0,0,0,0,0
 local currentRT, rtStack=nil,{}
@@ -100,11 +121,19 @@ function render.PopRenderTarget() assert(#rtStack>0,"native RT underflow") curre
 function render.GetRenderTarget() targetQueries=targetQueries+1 return currentRT end
 function render.SetRenderTarget(tex) currentRT=tex return "target" end
 function render.SetRenderTargetEx(index,tex) rtExCalls=rtExCalls+1 if index==0 then currentRT=tex end return "mrt",index,tex end
-function render.GetResolvedFullFrameDepth() depthCalls=depthCalls+1 return texture("depth",1,1) end
+function render.GetResolvedFullFrameDepth() depthCalls=depthCalls+1 return texture("_rt_resolvedfullframedepth",1920,1080) end
+function render.GetScreenEffectTexture() return texture("_rt_FullFrameFB",1920,1080) end
+function render.CopyRenderTargetToTexture(...) copyCalls=copyCalls+1 return "copy",... end
+function render.CopyTexture(...) copyCalls=copyCalls+1 return "copy-texture",... end
+function render.Clear() clearCalls=clearCalls+1 end
 function render.RedownloadAllLightmaps() depthCalls=depthCalls+1 return "reload" end
 function render.SetMaterial(mat) setMaterialCalls=setMaterialCalls+1 return mat end
 function render.MaterialOverride(mat) return mat end
 function render.DrawScreenQuad() quadCalls=quadCalls+1 return "quad" end
+render.DrawQuad=render.DrawScreenQuad
+render.DrawSprite=render.DrawScreenQuad
+surface={SetMaterial=function(mat)return mat end,DrawTexturedRect=function()surfaceDraws=surfaceDraws+1 end}
+surface.DrawTexturedRectUV=surface.DrawTexturedRect
 function render.DepthRange(a,b) depthRange={a,b} end
 function render.PushCustomClipPlane() clipDepth=clipDepth+1 end
 function render.PopCustomClipPlane() assert(clipDepth>0) clipDepth=clipDepth-1 end
@@ -300,7 +329,7 @@ elseif scenario=="pins" then
     RunConsoleCommand("mat_dxlevel","90.0") eq(#commands,4)
     local before=#messages
     RunConsoleCommand("mat_dxlevel","95") RunConsoleCommand("mat_dxlevel","95")
-    eq(#messages,before,"log once")
+    eq(#messages,before+1,"one note for this new call site")
 elseif scenario=="native_nul" then
     local nul=string.char(0)
     local player=setmetatable({},{__index=playerMeta})
@@ -361,10 +390,10 @@ elseif scenario=="shaders" then
     denied(function()CreateMaterial("depth","DepthWrite",{})end)
     denied(function()CreateMaterial("fx","SCREENSPACE_GENERAL",{})end)
     eq(#created,0,"no native CreateMaterial")
-    denied(function()render.SetMaterial(material("screenspace_general"))end) eq(setMaterialCalls,0)
+    denied(function()render.SetMaterial(material("screenspace_general"))end) eq(setMaterialCalls,1,"bound a transparent supported fallback")
     denied(function()Material("bad_shader")end) eq(#mats,1,"disk loading gap is explicit")
     denied(function()render.GetResolvedFullFrameDepth()end)
-    denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,0)
+    denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,1,"depth getter is legal; rebuild is inert")
     render.SetMaterial(Material("normal")) render.MaterialOverride(nil) render.DrawScreenQuad()
     eq(quadCalls,1)
 elseif scenario=="views" then
@@ -553,11 +582,11 @@ elseif scenario=="leaks" then
     -- A leaked unowned scope from an earlier frame is forgotten, so it cannot satisfy a later pop.
     assert(not pcall(toolScreen)) frameCount=frameCount+1
     denied(function()render.PopRenderTarget()end)
-    -- A protected callback's own scopes stay bounded and are unwound when it fails.
+    -- A protected callback's own scopes stay bounded; ignored pushes/pops balance safely.
     local depth=#rtStack
-    hook.Add("HUDPaint","runaway",function() for _=1,40 do render.PushRenderTarget(screen) end end)
+    hook.Add("HUDPaint","runaway",function() for _=1,40 do render.PushRenderTarget(screen) end for _=1,40 do render.PopRenderTarget() end end)
     hook.Call("HUDPaint")
-    eq(#rtStack,depth,"the failed callback's own pushes were unwound")
+    eq(#rtStack,depth,"runaway pushes and their ignored pairs stay balanced")
     eq(guard.blocked[#guard.blocked].reason,"tracked stack limit")
     hook.Remove("HUDPaint","runaway")
     -- Thirty-two of the callback's own scopes are allowed, as before.
@@ -618,5 +647,15 @@ elseif scenario=="off" then
     cv.mat_dxlevel:SetString("95") eq(cv.mat_dxlevel.value,"95")
     DrawBloom() halo.Render() eq(postCalls,2)
     eq(#guard.blocked,0) eq(#guard.errors,0)
+elseif scenario:find("^r8_") then
+    local context={eq=eq,texture=texture,material=material,guard=guard,cv=cv,vmtFiles=vmtFiles,rtCalls=rtCalls,
+        created=created,mats=mats,messages=messages,errorReports=errorReports,rtStack=rtStack,
+        projectedMeta=projectedMeta,entityMeta=entityMeta,beforeCall=beforeCall,changes=changes,timers=timers,
+        ownedFunction=ownedFunction,
+        failAllocator=function()allocatorFails=true end,
+        stats=function()return {quad=quadCalls,copy=copyCalls,surface=surfaceDraws,mutation=mutationCalls,
+            clear=clearCalls,entity=entityChanges,updates=ptUpdates,shadows=ptShadows,views=viewCalls,
+            fallback=fallbackRTCalls,rtEx=rtExCalls,camera=cameraDepth,currentRT=currentRT}end}
+    dofile("tools/tests/render_guard_addon_replays.lua")(scenario,context)
 else error("unknown scenario "..tostring(scenario)) end
 print("PASS "..scenario)

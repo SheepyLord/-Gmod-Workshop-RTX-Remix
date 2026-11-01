@@ -10,7 +10,7 @@ or user config is needed; subprocesses only read repository fixtures and print r
 tests prove Lua policy/contracts, not recovery from native SEH, GPU faults or loops. Exit zero
 means success; a failed assertion or subprocess error makes unittest exit nonzero.
 
-The NUL scenario checks native C-string boundaries before dispatch. The stack-ownership scenario
+Refused calls now return safely (ADR 0086); the NUL scenario checks native C-string boundaries before dispatch. The stack-ownership scenario
 checks unowned/active-parent protection, successful Pre/Post balancing, recorded RT restoration
 after an error, and explicit reporting when a popped completed camera cannot be safely replayed.
 Nested cleanup also checks chronological action propagation from successful children, without
@@ -30,3 +30,9 @@ message and quarantine only after three consecutive failures within ten seconds,
 gamemode method; per-category report caps; scopes leaked outside protected callbacks at
 FrameNumber and PreRender boundaries; and the hot-path contracts (no switch read for unprotected
 events, lazy entry render target, cached shader names).
+
+R8 adds a separate eighteen-case suite in [test_render_guard_addons.py](test_render_guard_addons.py.md).
+Together the suites run 40 methods/43 scenario invocations. Existing refusal assertions now require
+no escaped error and verify native-call counters; deliberate add-on errors still test containment,
+reporting and quarantine. The leaked-scope limit test balances ignored pushes/pops instead of
+relying on a guard-created exception to unwind a successful callback.

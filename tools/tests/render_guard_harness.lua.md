@@ -3,7 +3,7 @@
 Runs the actual self-contained early guard with mocked native interfaces. Arguments are guard
 source and scenario; test_render_guard.py invokes it through LuaJIT. Checks no mutation without
 verified early/native-client RTX proof, idempotence, immediate
-off switch, legacy PostFX/motion-blur behavior, typed/multi-command pins, early enum snapshots,
+off switch, legacy PostFX/motion-blur behavior, typed/multi-command pins, reviewed numeric enums,
 reserved/invalid allocations, normal texture UI and importer copies, unsupported shaders/depth/MRT,
 sequential and nested views, hook registry/function identity, object self and return values,
 quarantine, timer/cvar callback arguments and private diagnostics. Embedded-NUL console names,
@@ -17,7 +17,7 @@ deterministic.
 
 The multiplayer fixture executes the actual source in a non-global environment with the native
 bootstrap's raw verified marker and a scoped hook proxy with its own Add forwarding function.
-It requires the real global dispatcher to stay unchanged, protects only functions whose
+It requires the real global dispatcher to stay unchanged in the late route, protects only functions whose
 environment is that private one (server callbacks, timers and their errors keep vanilla
 behaviour), retains loading-hook identity, does not consult the temporary catalog API or
 status.json, and reports its later installation provenance. Early-mode registry identity stays
@@ -50,3 +50,10 @@ DrawToolScreen) over forty frames and forty failing ENT:Draw scopes in one frame
 never refused, scopes from earlier frames cannot satisfy a later pop, and a protected callback's
 own 33rd scope is still refused and unwound. The hooks case keeps the original error message out
 of the guard's records and MsgN lines while the mocked engine error output receives it.
+
+R8 scenarios prefixed r8_ dispatch to [render_guard_addon_replays.lua](render_guard_addon_replays.lua.md)
+with shared fake-engine state and counters. Fixtures include VMT text, material/entity/projector
+metatables, render/surface draws, copies and a failing native allocator. One r8_mp_ scenario runs
+through the private late installation while invoking the pre-installation dispatcher. The harness
+never loads third-party Lua or starts a game. Current combined count: 40 methods/43 invocations.
+The MATERIAL_RT_DEPTH fixture uses the official shared=0, separate=1, none=2, only=3 constants.
