@@ -14,6 +14,7 @@ discovered by the Remix menu's "Rescan Mods & Reload USD Stage" or a restart.
 
 from __future__ import annotations
 
+import math
 import os
 from pathlib import Path
 
@@ -37,8 +38,15 @@ def atomic_write(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
+def check_adaptive_intensity(value: float) -> float:
+    """Validate the runtime's finite 0..65504 material-input range."""
+    if not math.isfinite(value) or not 0 <= value <= 65504:
+        raise ValueError("emissive_adaptive_intensity must be finite and in 0..65504")
+    return value
+
+
 def material_block(texture_hash: str, maps: dict[str, str], displacement: float, emissive_intensity: float = 0.0,
-                   subsurface: dict | None = None) -> str:
+                   subsurface: dict | None = None, emissive_adaptive_intensity: float | None = None) -> str:
     """maps: kind -> asset path relative to the model layer; subsurface: {"radius_scale", "radius"} or None."""
     name = texture_hash.upper().replace("0X", "")
     lines = [
@@ -67,6 +75,9 @@ def material_block(texture_hash: str, maps: dict[str, str], displacement: float,
         # constant is not written (this runtime rejects color3f values anyway).
         lines.append("                bool inputs:enable_emission = 1")
         lines.append(f"                float inputs:emissive_intensity = {emissive_intensity:g}")
+        if emissive_adaptive_intensity is not None:
+            adaptive = check_adaptive_intensity(emissive_adaptive_intensity)
+            lines.append(f"                float inputs:emissive_adaptive_intensity = {adaptive:.9g}")
     if subsurface and "albedo" in maps:
         # Diffusion-profile scattering only renders on an opaque material with the skin colour as
         # transmittance (measured on Guinevere's forearm; README "Subsurface scattering").
@@ -86,8 +97,9 @@ def material_block(texture_hash: str, maps: dict[str, str], displacement: float,
 
 
 def write_model_layer(path: Path, materials: list[tuple], displacement: float, comment: str) -> None:
-    """materials: (texture hash, kind -> asset path, emissive intensity[, subsurface])."""
-    blocks = "\n\n".join(material_block(m[0], m[1], displacement, m[2], m[3] if len(m) > 3 else None)
+    """materials: (texture hash, maps, fallback intensity[, subsurface[, adaptive intensity]])."""
+    blocks = "\n\n".join(material_block(m[0], m[1], displacement, m[2], m[3] if len(m) > 3 else None,
+                                        m[4] if len(m) > 4 else None)
                          for m in materials)
     text = (
         "#usda 1.0\n(\n"

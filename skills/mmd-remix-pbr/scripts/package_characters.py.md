@@ -17,6 +17,12 @@ Layout:
 The destination must be empty or new, unless --update is given. Every referenced DDS is checked
 against the live mod after copying.
 
+Published USD layers are copied and checked **byte for byte**, preserving all shader inputs,
+including `emissive_adaptive_intensity` and the older-runtime `emissive_intensity` fallback.
+The generated README explains both modes. Packaging does not add or tune emission: publish the
+desired ratio first, or use [set_adaptive_emission.py](set_adaptive_emission.py.md) on a staged mod.
+The Python entry point also accepts an argument list for offline tests.
+
 Part of the `mmd-remix-pbr` skill ([SKILL.md](../SKILL.md)); the full method and every option are in [tool/README.md](../tool/README.md).
 
 Run with the rpai venv's Python (`%USERPROFILE%\.rpai\venv\Scripts\python.exe`).

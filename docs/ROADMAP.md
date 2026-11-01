@@ -120,6 +120,12 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | C-16 | **in progress** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
+C-16 content (C16-B, 2026-10-31): the PBR writer, staged-pack migration and package preservation
+are implemented on `c16-content`, with offline regression tests and demonstrated copies of Robin,
+Evernight/March 7th and Guinaifen. The ratio is provisional (`1/0.18` at exposure 1);
+[ADR 0068](decisions/0068-adaptive-eye-emission-publishing.md) records the derivation. Runtime
+integration, in-game measurements, tuning and publication remain with Claude; C-16 stays in progress.
+
 ## Risks being watched
 
 QoL requests 21–22 and 3–4 are implemented and validated: explicit diagnostic opt-in and welcome

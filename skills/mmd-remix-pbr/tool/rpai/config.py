@@ -8,6 +8,7 @@ DLLs fail to load from long paths (WinError 206), and work files are large.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from dataclasses import dataclass, field, replace
@@ -34,6 +35,14 @@ ROUGHNESS_MODEL = MODELS / "pbrify" / "1x-PBRify_RoughnessV2.pth"
 HEIGHT_MODEL = MODELS / "pbrify" / "1x-PBRify_Height.pth"
 
 
+def emission_multiplier(value: str | float) -> float:
+    """A publish-time multiplier; reject NaN/infinity as well as negative levels."""
+    number = float(value)
+    if not math.isfinite(number) or number < 0:
+        raise ValueError("emission multiplier must be finite and non-negative")
+    return number
+
+
 @dataclass
 class Settings:
     mod_name: str = "ai_pbr"
@@ -44,6 +53,10 @@ class Settings:
     # Multiplies every class's emissive weight at publish time, so emission can
     # be re-levelled in game without regenerating any map.
     emissive_intensity: float = 1.0
+    # Ratio to the fallback USD intensity, per unit of adapted scene luminance.
+    # At exposure 1, L_adapt = targetAdaptedYf = 0.18: preserve today's eye level.
+    # Publish-only (also for cached maps); 0 writes an explicit opt-out.
+    emissive_adaptive_intensity: float = 1.0 / 0.18
     tile: int = 512
     presets: dict = field(default_factory=dict)  # class name -> overrides of classify.CLASSES
     # Per texture (source file name or sha16 key): {"max_size": N or "source"}, "normal_map",

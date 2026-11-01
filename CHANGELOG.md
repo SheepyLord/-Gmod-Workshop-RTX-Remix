@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### C-16 (unreleased)
+
+- The MMD PBR tool writes optional scene-adaptive eye emission alongside its fixed older-runtime
+  fallback. The publish-time ratio is tunable without regenerating textures (provisional default
+  `1/0.18`, matching the old level at exposure 1). A byte-preserving script updates staged copies
+  of existing packs, and character packaging verifies that the published shader inputs survive
+  unchanged. Runtime integration and in-game tuning remain with Claude
+  ([content decision](docs/decisions/0068-adaptive-eye-emission-publishing.md)).
+
 ### Fixed (after R6)
 
 - The git hooks' background Workshop publish no longer opens a window for every step it runs; with
