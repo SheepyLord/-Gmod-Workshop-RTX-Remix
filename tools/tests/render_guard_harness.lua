@@ -49,6 +49,7 @@ for _,method in ipairs({"SetFOV","SetHorizontalFOV","SetVerticalFOV","SetNearZ",
     projectedMeta[method]=function(self,value) self[method]=value return "projection",value end
 end
 function projectedMeta:Update() ptUpdates=ptUpdates+1 return "updated" end
+function projectedMeta:Remove() self.valid=false return "removed" end
 function projectedMeta:SetEnableShadows(value) ptShadows=ptShadows+1 self.shadows=value end
 function ProjectedTexture() return setmetatable({valid=true},{__index=projectedMeta}) end
 function entityMeta:SetMaterial(value) entityChanges=entityChanges+1 return "entity",value end

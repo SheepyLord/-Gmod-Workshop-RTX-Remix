@@ -66,7 +66,8 @@ module-origin APIs are also filtered because its own dispatcher invokes methods 
 world/mesh builds and Real CSM's raster shadow Update/enable work are inert. Normal NikNaks color
 atlases and ordinary projected lights pass. The two GShader lighting wrappers receive private
 FindMetaTable/debug metatable copies with per-object readback, preventing shared native __index
-nesting and cached-light resets from editing native tables. Source labels are compatibility policy,
+nesting and cached-light resets from editing native tables. Native Remove retires the public
+GShader projector-cache entries and rebuilds their indices, avoiding retained removed lamps. Source labels are compatibility policy,
 not trusted identity; renamed code needs fresh evidence.
 
 ## Session pins and stock helpers

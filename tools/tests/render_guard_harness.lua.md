@@ -53,7 +53,7 @@ of the guard's records and MsgN lines while the mocked engine error output recei
 
 R8 scenarios prefixed r8_ dispatch to [render_guard_addon_replays.lua](render_guard_addon_replays.lua.md)
 with shared fake-engine state and counters. Fixtures include VMT text, material/entity/projector
-metatables, render/surface draws, copies and a failing native allocator. One r8_mp_ scenario runs
+metatables (including native projector removal), render/surface draws, copies and a failing native allocator. One r8_mp_ scenario runs
 through the private late installation while invoking the pre-installation dispatcher. The harness
 never loads third-party Lua or starts a game. Current combined count: 40 methods/43 invocations.
 The MATERIAL_RT_DEPTH fixture uses the official shared=0, separate=1, none=2, only=3 constants.

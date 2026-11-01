@@ -182,6 +182,7 @@ return function(scenario, c)
     elseif scenario == "r8_light_wrappers" then
         r8_lamp=ProjectedTexture()
         local before=debug.getmetatable(r8_lamp)
+        local remove=c.projectedMeta.Remove
         replay("autorun/!!projected_texture_wrapper.lua", [[
             local meta=FindMetaTable("ProjectedTexture")
             meta.Remove=function()error("should stay private")end
@@ -190,7 +191,7 @@ return function(scenario, c)
             debug.setmetatable(r8_lamp,changed)
             assert(debug.getmetatable(r8_lamp)==changed,"the wrapper must read back its own private edits")
         ]])
-        eq(debug.getmetatable(r8_lamp),before) eq(c.projectedMeta.Remove,nil)
+        eq(debug.getmetatable(r8_lamp),before) eq(c.projectedMeta.Remove,remove)
         replay("autorun/!!dynamic_light_wrapper.lua", [[
             local meta=FindMetaTable("dlight_t") meta.__newindex=function()error("private")end
             local fields={brightness=0}
@@ -203,6 +204,12 @@ return function(scenario, c)
             assert(fields.brightness==2)
         ]])
         eq(FindMetaTable("dlight_t").__newindex,nil) r8_lamp:Update() eq(stats().updates,1) noErrors()
+        local a,b,d=ProjectedTexture(),ProjectedTexture(),ProjectedTexture()
+        ENV_PROJTEXS={a,b,d} ENV_PROJTEXS_I={[10]=1,[20]=2,[30]=3} ptCache={[a]=10,[b]=20,[d]=30}
+        eq(a:Remove(),"removed") eq(#ENV_PROJTEXS,2) eq(ENV_PROJTEXS[1],b)
+        eq(ENV_PROJTEXS_I[20],1) eq(ENV_PROJTEXS_I[30],2) eq(ptCache[a],nil)
+        b:Remove() eq(#ENV_PROJTEXS,1) eq(ENV_PROJTEXS[1],d) eq(ENV_PROJTEXS_I[30],1)
+        d:Remove() eq(#ENV_PROJTEXS,0) eq(next(ENV_PROJTEXS_I),nil)
     elseif scenario == "r8_mp_callbacks" then
         eq(c.guard.installation,"verified multiplayer bootstrap")
         replay("autorun/!!shaderlib.lua", [[

@@ -11,7 +11,7 @@ SSR, NikNaks, Quick Bloom, Real CSM and Life Mod. Provenance and limitations are
 
 Assertions check initialization continuing, real texture/material fallbacks, no native custom
 shader load, no unsafe copy/MRT/draw, world/material preservation, private light-metatable
-readback, memory/name limits, balanced ignored scopes, normal controls, cached multiplayer
+readback and repeated projector-cache retirement, memory/name limits, balanced ignored scopes, normal controls, cached multiplayer
 dispatch and unrelated server error behavior. Renderer-disabled calls delegate to the originals.
 No file/config writes, game launch, GPU calls, network, Steam or Workshop changes occur. A failed
 assertion raises in the harness process; its nonzero exit fails unittest. GPU/real multiplayer

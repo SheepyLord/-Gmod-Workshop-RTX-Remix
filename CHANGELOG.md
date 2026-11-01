@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- **R8-C projector cleanup:** retire removed lights from GShader's exported caches and rebuild
+  their indices while isolating its native metatable overrides; repeated CSM controller changes
+  must not retain every removed projector.
+
 - **R8-C graphics compatibility:** adopt non-throwing render-guard fallbacks and keep GShader-style
   screen effects inert under RTX; preserve ordinary rendering and fresh RTX-off sessions
   ([ADR 0086](docs/decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md)).

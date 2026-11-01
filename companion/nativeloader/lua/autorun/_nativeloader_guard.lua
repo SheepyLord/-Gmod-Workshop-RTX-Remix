@@ -329,6 +329,33 @@ function policy.reserved(name)
 end
 do
     local meta = FindMetaTable("ProjectedTexture")
+    local remove = meta and meta.Remove
+    if remove then
+        meta.Remove = function(self, ...)
+            local result = pack(remove(self, ...))
+            if active() then
+                -- GShader's Remove replacement lives in its private copy. Retire its public
+                -- caches here instead, otherwise that list retains every removed native lamp.
+                local lights, indices, cache = rawget(_G, "ENV_PROJTEXS"), rawget(_G, "ENV_PROJTEXS_I"), rawget(_G, "ptCache")
+                if type(lights) == "table" and type(indices) == "table" and type(cache) == "table" then
+                    rawset(cache, self, nil)
+                    local count, kept = #lights, 0
+                    for i = 1, count do
+                        local light = rawget(lights, i)
+                        local ok, valid = pcall(IsValid, light)
+                        if light ~= self and ok and valid then kept = kept + 1 rawset(lights, kept, light) end
+                    end
+                    for i = kept + 1, count do rawset(lights, i, nil) end
+                    for id in pairs(indices) do rawset(indices, id, nil) end
+                    for i = 1, kept do
+                        local id = rawget(cache, rawget(lights, i))
+                        if id ~= nil then rawset(indices, id, i) end
+                    end
+                end
+            end
+            return unpack(result, 1, result.n)
+        end
+    end
     for _, method in ipairs({"Update", "SetEnableShadows", "SetFOV", "SetHorizontalFOV", "SetVerticalFOV",
         "SetNearZ", "SetFarZ", "SetShadowDepthBias", "SetShadowSlopeScaleDepthBias", "SetBrightness"}) do
         local original = meta and meta[method]
