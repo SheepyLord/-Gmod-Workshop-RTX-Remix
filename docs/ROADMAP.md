@@ -10,6 +10,14 @@ the old/new 50-window/pile performance measurements remain with Claude. No game 
 game install, Steam settings, user.conf or Workshop item was changed. See [implementation](../glass/README.md)
 and [the G1 brief](handover/G1-A-lua.md).
 
+G1-B implementation and offline acceptance are **done** on `g1-native` (2026-10-31): Jolt 5.3.0,
+the native glass world/module, bounded BSP import, debris rendering/batching and Source fallback,
+with generated-fixture native tests and a LuaJIT manager/probe harness. Release passes 25 CTests
+and 402 Python tests (two expected fixture skips). Four thousand colliding shards sleep in 11.02
+simulated seconds; settled core step/pose cost is 0.091 ms on this machine. Packaging, real-map
+collision/material checks and Remix frame-time acceptance remain with Claude; see
+[the module README](../glass/native/README.md) and [testing](TESTING.md).
+
 R6 harness failure handling is **done with offline validation** on `r6-harness` (2026-10-31): whole-run crash-prompt
 watchdog, device-loss/continuous-hang detection, bounded capture and exit, retained evidence and
 explicit release-QA reasons. Validation uses fake games/windows only; game acceptance stays with

@@ -41,6 +41,55 @@
   newly agent-written and await human review. Actual weapon tuning, engine outputs, prediction,
   Remix frosting and the 50-window performance baseline remain game acceptance.
 
+## G1-B: dedicated glass world and offline measurements (2026-10-31)
+
+- Final QA refinement (2026-11-01): the 4,000-piece benchmark now reserves **8192** bodies, exactly
+  as the manager does, rather than reserving only 4000. With that reserve it still slept in
+  **11.0167 simulated seconds**: spawn **42.35 ms**, simulation **6.384 s wall / 31.281 s process
+  CPU**, fixed-step **9.657 ms mean / 17.063 ms maximum**, settled step+poses **0.1225 ms**.
+  The fixture uses axis-aligned rectangular shards and zero initial spin/velocity. These are
+  core-test figures, not game/rendering figures; evidence is `out/native-tests-qa.log`. Compressed
+  `sprp` tests now exercise both directory-length conventions, and the displacement fixture also
+  verifies omission of an authored hole. The earlier 4000-reserve measurements below are retained.
+
+- Pinned Jolt `v5.3.0`: the only downloaded archive was
+  `https://codeload.github.com/jrouwe/JoltPhysics/zip/refs/tags/v5.3.0`, SHA-256
+  `ee47dbd3de026829bc9734eeed960118c3d0a1a61b16e172009731a407d1466a`. All 444 vendored
+  upstream files were compared directly against the archive and matched; our README is separate.
+- Source's collision-lump LZMA wrapper is treated as 17 bytes: `LZMA`, original size, packed size,
+  five decoder properties; it is not the loader's 13-byte standalone LZMA header. The reader limits
+  expanded sizes and dictionary before calling the existing SDK decoder
+  (`glass/native/bsp.cpp:36`). Generated compressed-leaf and damaged-input tests cover this path.
+- The importer traverses model 0's world tree, rather than importing the brush lump wholesale:
+  nodes are 32 bytes, leaves v0/v1 are 56/32 bytes, models 48 bytes, brushes 12 bytes and sides
+  8 bytes. `0x400b` selects solid/window/grate/moveable contents; playerclip/water/entity-only
+  brushes are excluded (`glass/native/bsp.cpp:78`). Displacement records are 176 bytes, vertices
+  20 bytes, faces 56 bytes; surface-tagged triangles from powers 2-4 collide on both sides
+  (`glass/native/bsp.cpp:121`, `glass/native/world.cpp`). These are offline-supported layouts;
+  real mounted-map compatibility remains game QA, not a claim that every Source derivative works.
+- `sprp` origin/angles/model/solidity use byte offsets 0/12/24/30; supported records have strides
+  56-80 bytes (v4-11), with v11 uniform scale at 76. Compressed child lumps can advertise packed
+  or original directory length (`glass/native/bsp.cpp:169`). The generated fixture includes a
+  scaled solid prop and a non-solid decoration; native tests also drop bodies onto that prop and
+  onto the generated displacement, proving collision rather than just parser counts.
+- Jolt's fixed-only `TempAllocatorImpl` explicitly calls `std::abort()` on exhaustion
+  (`third_party/jolt/Jolt/Core/TempAllocator.h`); this module uses
+  `TempAllocatorImplWithMallocFallback` instead. Main physics/contact capacities remain bounded
+  and contact overflow is a controlled error; a 128-body overlapping fixture tests both overflow
+  and the piece-collision-off filter (`glass/native/tests/test_glass.cpp`).
+- Release, Ryzen 9 9950X3D (16 cores/32 hardware threads), eight Jolt workers: 4,000 4x4x0.6-unit
+  shards in four layers, against each other and the generated room, all slept after **11.0167 s
+  simulated**. Isolated final implementation run: **42.67 ms spawn**, **5.531 s simulation wall**,
+  **28.766 s process CPU** (`GetProcessTimes`, sum over all threads), **8.367 ms mean / 13.596 ms
+  maximum fixed step**. Once asleep, 120 calls to step plus pose output averaged **0.0908 ms**.
+  Test bounds are 15 simulated seconds, 30 wall seconds and 120 process CPU seconds. This is a
+  physics/core measurement, with no game or Remix draw cost (`glass/native/tests/test_glass.cpp`,
+  evidence `out/native-tests-impl.log`).
+- The `ILuaBase` double executes the actual callbacks and refuses metamethod/engine-call paths;
+  `ReadPoses` creates no Lua tables or Vector/Angle userdata. The real Lua manager/probe execute
+  under LuaJIT with mocks, including cleanup, batch invalidation and preserving edits made during
+  a probe's temporary convar override (`tools/tests/glass_debris_harness.lua`).
+
 ## C-16: in-game tuning of the eye whites (2026-10-31)
 
 - Client Lua may not run `lua_run`: `RunConsoleCommand("lua_run", ...)` prints

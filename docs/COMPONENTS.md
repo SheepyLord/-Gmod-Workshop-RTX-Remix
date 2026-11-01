@@ -7,6 +7,12 @@ the plan's public API. [`tools/glass_i18n.py`](../tools/glass_i18n.py.md) builds
 with the companion's parser/escaping. [`test_nlglass.py`](../tools/tests/test_nlglass.py.md) runs the
 real modules under LuaJIT with mocked engine APIs; no game or native debris module is required.
 
+G1-B: [`glass/native`](../glass/native/README.md) builds the dedicated Jolt client module and native
+tests; [`third_party/jolt`](../third_party/jolt/README.md) holds the pinned MIT library.
+[`debris.lua`](../glass/addon/lua/nlglass/debris.lua.md), `debris_mesh.lua`, `debris_fallback.lua`
+and `world.lua` implement the agreed client debris API, static import, rendering and fallback.
+The LuaJIT manager harness lives in `tools/tests`; the performance probe lives in `tools/qa`.
+
 R6 T6 adds [`tools/sky/drop_top_mip.py`](../tools/sky/drop_top_mip.py.md), a standard-library DDS
 mip-removal tool, with generated-fixture coverage in
 [`tools/tests/test_drop_top_mip.py`](../tools/tests/test_drop_top_mip.py.md). The runtime packager's

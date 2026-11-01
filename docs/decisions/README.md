@@ -77,6 +77,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0069](0069-tuned-adaptive-eye-emission.md) | The adaptive eye emission ratio tuned in game: 25 (4.5x the old level at exposure 1); one ratio for every condition | Accepted 2026-10-31 (C-16, Claude, for the user's eye-white request) |
 | [0070](0070-glass-overhaul.md) | A glass system of our own (MIT) replacing Glass-Rewrite-Remix; server-authoritative panes with cracks and impact-following fracture; broken glass cosmetic, in a dedicated Jolt world on each client; annealed and tempered glass | Accepted 2026-10-31 (G1, the user) |
 | [0071](0071-glass-impact-model.md) | G1-A game-energy defaults, bounded deterministic impacts/cuts, remaining-cell collision and map-output input bridge | Accepted 2026-10-31 as implementation defaults under 0070; numerical tuning and engine output acceptance pending |
+| [0072](0072-glass-debris-world-and-batching.md) | Bounded glass world import, reusable poses and area batching; module limits and conservative Source fallback | Accepted 2026-10-31 (G1-B implementation) |
 
 ## Template
 
