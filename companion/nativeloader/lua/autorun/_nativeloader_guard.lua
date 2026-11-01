@@ -108,6 +108,10 @@ for line in session:gmatch("[^\r\n]+") do
     if name then pinned[name:lower()] = value end
 end
 pinned.mat_motion_blur_enabled = pinned.mat_motion_blur_enabled or "0"
+-- r_forcehwlight 1 sends every model Source skins on the GPU through fixed-function hardware
+-- skinning, which gives Remix no bones: player models and other vanilla characters draw in bind
+-- pose around the pelvis (R3-016: Modern House RTX; R8: a Backrooms map add-on). No Lua may set it.
+pinned.r_forcehwlight = "0"
 for _, name in ipairs({"mat_dxlevel", "mat_hdr_level"}) do
     local value = GetConVar(name)
     if value then pinned[name] = pinned[name] or value:GetString() end
@@ -121,7 +125,7 @@ local function exempt(s)
     return s:find("remixbinary", 1, true) or s:find("remixlua", 1, true) or s:find("nativeloader", 1, true)
 end
 local criticalPins = {mat_dxlevel = true, mat_hdr_level = true, r_flashlightdepthres = true,
-    mat_antialias = true, mat_aaquality = true, mat_disable_d3d9ex = true}
+    mat_antialias = true, mat_aaquality = true, mat_disable_d3d9ex = true, r_forcehwlight = true}
 local function allowPin(name, value, source, query)
     if not active() then return true end
     local key = tostring(name or ""):lower()
@@ -554,11 +558,14 @@ lua/nlglass/damage.lua
 lua/nlglass/debris.lua
 lua/nlglass/debris_batches.lua
 lua/nlglass/debris_bullets.lua
+lua/nlglass/debris_detail.lua
 lua/nlglass/debris_draw.lua
 lua/nlglass/debris_expiry.lua
 lua/nlglass/debris_fallback.lua
+lua/nlglass/debris_melee.lua
 lua/nlglass/debris_mesh.lua
 lua/nlglass/debris_scene.lua
+lua/nlglass/debris_settings.lua
 lua/nlglass/debris_view.lua
 lua/nlglass/fracture.lua
 lua/nlglass/geometry.lua

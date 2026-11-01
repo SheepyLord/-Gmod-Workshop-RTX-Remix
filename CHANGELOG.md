@@ -14,6 +14,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
   denoisers and DLSS Ray Reconstruction discarded its history on every pixel. Patch 0018 compares the
   first draws of consecutive frames only. Remix's disocclusion debug view showed the whole character
   white before and none after.
+- **Vanilla characters in bind pose again** (the user: player models and other non-Model-Hotloader
+  characters had broken bones and meshes again). The Backrooms map add-on (`gm_br_rtx`, installed in the
+  field the same day) forced `r_forcehwlight 1` on its maps, R3-016's cause: GPU-skinned meshes reach
+  Remix without bones. The add-on no longer sets it (fixes clone, branch
+  `claude/rtx-remix-map-enhancement-bda9ac`, `98d7682`; the field copy updated, the old one backed up),
+  and the RTX guard now pins `r_forcehwlight` at 0 against every Lua caller.
 - **R8-C graphics compatibility:** adopt non-throwing render-guard fallbacks and keep GShader-style
   screen effects inert under RTX; preserve ordinary rendering and fresh RTX-off sessions
   ([ADR 0086](docs/decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md)).

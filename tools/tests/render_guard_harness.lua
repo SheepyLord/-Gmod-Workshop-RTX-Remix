@@ -56,6 +56,7 @@ convar("mat_hdr_level","2")
 convar("mat_queue_mode","0")
 convar("ordinary","0")
 convar("r_flashlightdepthres","1024") convar("mat_antialias","0") convar("mat_aaquality","0") convar("mat_disable_d3d9ex","1")
+convar("r_forcehwlight","0")
 local ptUpdates,ptShadows,entityChanges,surfaceDraws,copyCalls,clearCalls=0,0,0,0,0,0
 for _,method in ipairs({"SetFOV","SetHorizontalFOV","SetVerticalFOV","SetNearZ","SetFarZ","SetShadowDepthBias","SetShadowSlopeScaleDepthBias","SetBrightness"}) do
     projectedMeta[method]=function(self,value) self[method]=value return "projection",value end
@@ -380,6 +381,15 @@ elseif scenario=="pins" then
     local before=#messages
     RunConsoleCommand("mat_dxlevel","95") RunConsoleCommand("mat_dxlevel","95")
     eq(#messages,before+1,"one note for this new call site")
+    -- r_forcehwlight stays 0 for every Lua caller, the fixes' own Lua included (R3-016, R8).
+    local issued=#commands
+    RunConsoleCommand("r_forcehwlight","1") cv.r_forcehwlight:SetInt(1) cv.r_forcehwlight:SetString("1")
+    local mapAddon=assert(loadstring('local cv=GetConVar("r_forcehwlight") pcall(cv.SetString,cv,"1")', "@lua/autorun/br_rtx.lua"))
+    mapAddon()
+    local fixesLua=assert(loadstring('RunConsoleCommand("r_forcehwlight","1")', "@lua/remixlua/cl/settings.lua"))
+    fixesLua()
+    eq(cv.r_forcehwlight.value,"0","no Lua turns hardware lighting on") eq(#commands,issued)
+    RunConsoleCommand("r_forcehwlight","0") eq(#commands,issued+1,"setting it to 0 stays allowed")
 elseif scenario=="native_nul" then
     local nul=string.char(0)
     local player=setmetatable({},{__index=playerMeta})

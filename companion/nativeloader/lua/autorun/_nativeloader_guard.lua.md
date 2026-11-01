@@ -94,6 +94,10 @@ not trusted identity; renamed code needs fresh evidence.
 RunConsoleCommand, Player:ConCommand, game.ConsoleCommand and typed ConVar setters enforce pins.
 DX/HDR, r_flashlightdepthres, mat_antialias, mat_aaquality and mat_disable_d3d9ex keep the declared
 session value or captured native value. The critical pins have no source-name exemption.
+`r_forcehwlight` is a critical pin at 0: set to 1, it sends every model Source skins on the GPU
+through fixed-function hardware skinning, which gives Remix no bones, so player models and other
+vanilla characters draw in bind pose around the pelvis (R3-016: Modern House RTX; R8: the
+Backrooms map add-on). A player can still type it into the console.
 Quick Bloom's two raster bloom writes and Real CSM's competing raster-world lighting writes are
 ignored. Existing noncritical source exemptions and motion-blur read compatibility remain.
 
