@@ -186,7 +186,8 @@ if SERVER then
         end)
         add(function() fixture("pile");view("interact_prop_before", A, 2.5) end)
         add(function()
-            local p = throw("models/props_c17/oildrum001.mdl", "prop_physics", A + Vector(120, 0, 28), Vector(-650, 0, 20))
+            -- From just above the ground: A is the pane centre's height, so a drum thrown from there flew over the pile.
+            local p = throw("models/props_c17/oildrum001.mdl", "prop_physics", Vector(A.x + 140, A.y, ORIGIN.z + 30), Vector(-650, 0, -60))
             say("prop sent onto the pile, Source mass %.1f", p:GetPhysicsObject():GetMass());view("interact_prop", A, 1.3)
         end)
         add(function() fixture("slab");view("interact_bullet_before", A, 2.5) end)
