@@ -284,7 +284,8 @@ else
             net.ReadUInt=function()return count or 1 end
             net.ReadVector=function()return center end
             net.ReadFloat=function()return radius or 600 end
-            receivers.nlglass_debris_interest(bits or (6+(count or 1)*128),ply)
+            -- As in game: a compressed vector (3-66 bits) and a 32-bit float per region.
+            receivers.nlglass_debris_interest(bits or (6+(count or 1)*(54+32)),ply)
         end
         interest(a,Vector());interest(b,Vector(10000,0,0))
         check(B.HasInterest() and B.clients[a] and B.clients[b],"each client owns a separate bounded interest lease")
@@ -301,6 +302,8 @@ else
         now=132;interest(a,Vector(10000,0,0));local before=#sends;fire();check(#sends==before,"displaced local piles replace their old regions")
         now=140;fire();check(#sends==before and not B.HasInterest(),"lost leases expire and stop forwarding")
         interest(a,Vector(),33,600,4200);check(not B.clients[a],"too many regions refused")
+        interest(a,Vector(),1,600,6+35);check(B.clients[a] and #B.clients[a].regions==1,"the smallest real update (a zero vector) is accepted")
+        B.clients[a]=nil;interest(a,Vector(),1,600,6+34);check(not B.clients[a],"an update shorter than one region is refused")
         interest(a,Vector(0/0,0,0));check(not B.clients[a],"nonfinite regions refused")
         interest(a,Vector());local saved=B.clients[a];interest(a,Vector(10000,0,0))
         check(B.clients[a]==saved,"rapid interest updates cannot replace an accepted lease")

@@ -230,10 +230,11 @@ if SERVER then
             owner:SetPos(Vector(A.x+8,A.y,ORIGIN.z));owner:SetVelocity(-owner:GetVelocity())
             local angle=(A+Vector(10,10,0)-owner:GetShootPos()):Angle()
             owner:SetEyeAngles(angle)
-            timer.Simple(.6,function()
+            -- After the weapon's deploy animation (a pistol cannot fire for about a second after SelectWeapon).
+            timer.Simple(1.5,function()
                 local beforeHits,beforeMelee=NLGlass.Bullets.sent,NLGlass.Melee.sent
                 owner:SetNW2Angle("nlglass_qa_attack_angle",angle)
-                owner:SetNW2Float("nlglass_qa_attack_until",CurTime()+.22)
+                owner:SetNW2Float("nlglass_qa_attack_until",CurTime()+.4)
                 say("%s: real %s input",label,class)
                 timer.Simple(.6,function() say("%s: forwarded hit delta %d, melee delta %d",label,
                     NLGlass.Bullets.sent-beforeHits,NLGlass.Melee.sent-beforeMelee)end)

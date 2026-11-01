@@ -51,7 +51,9 @@ net.Receive(INTEREST, function(bits, ply)
         if retained>=128 then return end
     end
     local count = net.ReadUInt(6)
-    if count > 32 or bits < 6 + count * 128 then return end
+    -- net.WriteVector compresses each vector to 3-66 bits; with the 32-bit radius a region takes
+    -- 35-98 bits. A 128-bit bound refused every real update (PoC, R8 run 14-glass-r8).
+    if count > 32 or bits < 6 + count * 35 then return end
     local regions = {}
     for i = 1, count do
         local x,y,z = numbers(net.ReadVector());local radius = net.ReadFloat()
