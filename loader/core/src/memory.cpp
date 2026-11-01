@@ -70,7 +70,12 @@ void preserve_recovered(const std::filesystem::path& root, std::string_view text
 }  // namespace
 
 bool commit_warning(std::uint64_t used, std::uint64_t limit) noexcept {
-  return limit && (limit < (32ull << 30) || used > limit / 10 * 7 + limit % 10 * 7 / 10);
+  // R6 map sessions: 11.07-16.18 GiB added system commit from bootstrap to a loaded map
+  // (all tiers; see RESEARCH.md, R7-B). Reserve 18 GiB including transient/OS margin.
+  // Lower tiers mostly save VRAM, so do not promise a smaller CPU commit requirement.
+  // A 24 GiB total floor leaves room for Windows alongside that conservative reserve.
+  if (!limit) return false;  // counter unavailable
+  return limit < (24ull << 30) || limit - std::min(used, limit) < (18ull << 30);
 }
 std::string process_token() {
   FILETIME created{}, exited{}, kernel{}, user{};

@@ -35,16 +35,21 @@ TEST_CASE("memory: byte columns, UTC format, unavailable counters and unsafe tim
   CHECK_THROWS_AS(m::csv_line(empty), std::runtime_error);
 }
 
-TEST_CASE("memory: warning thresholds are strictly below 32 GiB or above 70 percent") {
+TEST_CASE("memory: map headroom and small-limit boundaries, without percentage false alarms") {
   CHECK(!m::commit_warning(0, 0));
-  CHECK(m::commit_warning(0, (32ull << 30) - 1));
-  CHECK(!m::commit_warning(0, 32ull << 30));
+  CHECK(m::commit_warning(0, (24ull << 30) - 1));
+  CHECK(!m::commit_warning(0, 24ull << 30));
   constexpr auto limit = 40ull << 30;
-  CHECK(!m::commit_warning(limit * 7 / 10, limit));
-  CHECK(m::commit_warning(limit * 7 / 10 + 1, limit));
+  CHECK(!m::commit_warning(limit - (18ull << 30), limit));
+  CHECK(m::commit_warning(limit - (18ull << 30) + 1, limit));
+  CHECK(!m::commit_warning(64ull << 30, (906ull << 30) / 10));
+  CHECK(!m::commit_warning(80ull << 30, 100ull << 30));
+  CHECK(m::commit_warning(7ull << 30, 24ull << 30));
+  CHECK(m::commit_warning(limit, limit));
   CHECK(m::commit_warning(limit + 1, limit));
   const auto maximum = std::numeric_limits<std::uint64_t>::max();
-  CHECK(!m::commit_warning(maximum / 10 * 7, maximum));
+  CHECK(!m::commit_warning(maximum - (18ull << 30), maximum));
+  CHECK(m::commit_warning(maximum - (18ull << 30) + 1, maximum));
   CHECK(m::commit_warning(maximum, maximum));
 }
 

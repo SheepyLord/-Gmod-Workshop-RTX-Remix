@@ -87,6 +87,10 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 ## Template
 
+- [0083: An external exit observer from the proxy DLL](0083-external-exit-observer-from-the-proxy.md)
+
+- [0082: Map commit headroom and a compact content summary](0082-map-commit-headroom-and-addon-summary.md)
+
 - [0074: Incoming body contact and quiet map outputs](0074-glass-contact-and-quiet-map-outputs.md)
 - [0075: Incremental glass topology](0075-incremental-glass-topology.md)
 

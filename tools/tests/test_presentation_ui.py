@@ -41,6 +41,9 @@ class PresentationUITests(unittest.TestCase):
         for code in LANGUAGES:
             self.assertEqual(set(labels[code]), set(labels['en']))
             self.assertTrue(all(value.strip() for value in labels[code].values()))
+            for key, value in labels[code].items():
+                self.assertNotIn('?', value, f'{code}/{key}: lossy catalog encoding')
+                self.assertNotIn('\ufffd', value, f'{code}/{key}: invalid UTF-8 replacement')
 
     @unittest.skipUnless(shutil.which('node'), 'Node.js is not installed')
     def test_mainmenu_behavior(self):

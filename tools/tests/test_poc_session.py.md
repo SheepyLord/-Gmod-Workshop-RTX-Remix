@@ -1,5 +1,8 @@
 # test_poc_session.py
 
+R7-B verifies that launches force `NATIVE_LOADER_EXIT_REPORT=quiet`, overriding an inherited
+`off`, so post-exit evidence stays enabled without an unattended dialog.
+
 Unit tests for [`poc_session.py`](../poc_session.py.md), without a game. `subprocess.Popen`,
 `console()`, the window and module lookups and the clock are mocked, so no game is ever started and
 the session clock is simulated. Watchdog/capture tests use short real thread waits with bounded

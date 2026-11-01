@@ -6,6 +6,12 @@ optionally loads a save and pins the camera, takes screenshots of the game windo
 loaded modules, ends the game with a normal `quit`, collects the logs, and uninstalls again. Each step
 appends a record to `<evidence>\session.json` and writes its files to `<evidence>\<step name>\`.
 
+R7-B: every launched session inherits `NATIVE_LOADER_EXIT_REPORT=quiet`. The external loader
+observer saves its `exit-report.json` under `native-loader/logs/sessions/<session>/` after an
+abnormal exit, without a window. Remix's own prompt is still declined by the watchdog; this
+switch never grants upload consent. `NATIVE_LOADER_EXIT_REPORT=off` is available for synthetic
+test hosts that do not need the observer at all. It is deliberately overridden to `quiet` here.
+
 ```powershell
 $e = 'out\poc-sessions\example'
 python tools\poc_session.py --evidence $e install --allow-local out\packages\runtime-a.gma --remix on

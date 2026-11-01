@@ -25,7 +25,8 @@ const body = document.body;
 const data = {os: 'Windows 11 x64', cpu: '<img src=x onerror=unexpected()>', threads: 24,
   memory: 64 * 1073741824, graphics: [{name: 'GPU', memory: 16 * 1073741824}],
   loader: {version: '0.8.1', sha256: 'a'.repeat(64)},
-  packages: [{id: 'example', version: '1.2.3+build', sha256: 'b'.repeat(64)}]};
+  packages: [{id: 'gmod-rtx-remix', version: '1.2.3+build', sha256: 'b'.repeat(64)},
+    ...Array.from({length: 4}, (_, i) => ({id: 'content-' + i, version: '9.8.7', sha256: 'c'.repeat(64)}))]};
 const window = {NativeLoaderDiagnostics: data, NativeLoaderDiagnosticLabels: labels,
   location: {hash: '#/'}, setInterval: fn => { tick = fn; }, lua: {Run: (...args) => calls.push(args)}};
 const gScope = {Version: '2026.10.20', Branch: 'x86-64', Language: 'en', InGame: false};
@@ -42,6 +43,25 @@ button.onclick();
 assert.equal(calls[0][0], 'SetClipboardText( %s )');
 assert(calls[0][1].includes('a'.repeat(64)) && calls[0][1].includes('b'.repeat(64)));
 assert(calls[0][1].includes('2026.10.20'));
+assert(calls[0][1].includes(labels.en.content_addons + ': ' + labels.en.content_enabled.replace('{count}', '4')));
+assert(!calls[0][1].includes('content-') && !calls[0][1].includes('9.8.7') && !calls[0][1].includes('c'.repeat(64)));
+assert(all(panel).some(item => item.textContent === labels.en.content_enabled.replace('{count}', '4')));
+for (const [code, catalog] of Object.entries(labels)) {
+  for (const count of [0, 1, 4]) {
+    const doc = makeDocument(), copied = [];
+    const packages = [data.packages[0], ...data.packages.slice(1, 1 + count)];
+    const win = {NativeLoaderDiagnostics: {...data, packages}, NativeLoaderDiagnosticLabels: labels,
+      location: {hash: '#/'}, setInterval() {}, lua: {Run: (...args) => copied.push(args)}};
+    vm.runInNewContext(source, {window: win, document: doc, gScope: {...gScope, Language: code}});
+    const nodes = all(doc.body);
+    assert.equal(nodes.filter(item => item.textContent === catalog.content_addons + ': ').length, 1);
+    assert(nodes.some(item => item.textContent === catalog.content_enabled.replace('{count}', String(count))));
+    nodes.find(item => item.tag === 'button').onclick();
+    assert(copied[0][1].includes(catalog.content_addons + ': ' + catalog.content_enabled.replace('{count}', String(count))));
+    assert(copied[0][1].includes('b'.repeat(64)) && !copied[0][1].includes('c'.repeat(64)));
+    assert(!copied[0][1].includes('content-'));
+  }
+}
 const link = all(panel).find(item => item.tag === 'a');
 link.onclick({preventDefault() {}});
 assert.equal(calls[1][0], 'gui.OpenURL( %s )');
@@ -133,7 +153,7 @@ function notice(reason = 'device_lost', warning = false) {
       commit_total: (warning ? 50 : 16) * 1073741824, commit_limit: 64 * 1073741824, warning}};
 }
 for (const [code, catalog] of Object.entries(labels)) {
-  for (const reason of ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'crash']) {
+  for (const reason of ['device_lost', 'cs_exception', 'allocation_failed', 'out_of_memory', 'likely_out_of_memory', 'crash']) {
     const view = noticeCase(code);
     assert.equal(view.requests.length, 1);
     assert.deepEqual(view.requests[0], ['read-local-notices', '123-456', 123]);

@@ -3,6 +3,7 @@
 #include "presentation.h"
 #include "runtime.h"
 #include "telemetry.h"
+#include "observer.h"
 #include "early.h"
 #include "../client/catalog.h"
 #include "nl/activate.h"
@@ -287,6 +288,10 @@ void startup_cxx(StartupContext& context) noexcept {
           return evidence::collect(root, start, process, [ready] { ready->set_value(); });
         });
         context.evidence_log_ready = std::move(signal);
+        // Bind the external observer to the recorded session before loading any runtime code.
+        // It remains alive if this process cannot allocate, fail-fasts or overflows its stack.
+        context.evidence_log_ready.wait();
+        context.report.session.notes.push_back(observer::start(start));
       } catch (const std::exception& error) {
         context.report.session.notes.push_back(std::string("previous session evidence worker unavailable: ") + error.what());
       }

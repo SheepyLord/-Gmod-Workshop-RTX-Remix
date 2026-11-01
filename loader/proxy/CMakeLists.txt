@@ -8,17 +8,20 @@ target_include_directories(nl_proxy_logic PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(nl_proxy_logic PUBLIC nl_core PRIVATE nl_build_options)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ui/mainmenu.js" NL_DIAGNOSTICS_SCRIPT)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ui/labels.json" NL_DIAGNOSTICS_LABELS)
+# MSVC limits a single literal to 16 KiB. Keep the seven UTF-8 catalogs byte-identical by
+# concatenating raw literals at existing line boundaries (the combined data remains small).
+string(REPLACE "\n" "\n)NLUI\"\nR\"NLUI(" NL_DIAGNOSTICS_LABELS "${NL_DIAGNOSTICS_LABELS}")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ui/read_notices.lua" NL_DIAGNOSTICS_NOTICES)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/mainmenu.js ui/labels.json)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/read_notices.lua)
 configure_file(ui/presentation_data.h.in "${CMAKE_CURRENT_BINARY_DIR}/generated/presentation_data.h" @ONLY)
-add_library(nl_proxy_presentation STATIC presentation.cpp diagnostics.cpp)
+add_library(nl_proxy_presentation STATIC presentation.cpp diagnostics.cpp exit_report.cpp)
 target_include_directories(nl_proxy_presentation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(nl_proxy_presentation PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(nl_proxy_presentation PUBLIC nl_core nl_client_catalog PRIVATE nl_build_options)
 
 configure_file(version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
-add_library(nl_winmm SHARED bootstrap.cpp startup.cpp runtime.cpp modules.cpp telemetry.cpp generated/thunks.asm
+add_library(nl_winmm SHARED bootstrap.cpp startup.cpp runtime.cpp modules.cpp telemetry.cpp observer.cpp generated/thunks.asm
   generated/winmm.def "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 set_target_properties(nl_winmm PROPERTIES OUTPUT_NAME winmm)
 target_link_libraries(nl_winmm PRIVATE nl_proxy_logic nl_proxy_presentation nl_core nl_build_options)

@@ -19,7 +19,8 @@ struct Sample {
   std::optional<std::uint64_t> commit_total, commit_limit, available_ram;
   std::optional<std::uint64_t> gpu_local_usage, gpu_local_budget, gpu_nonlocal_usage, gpu_nonlocal_budget;
 };
-// A zero limit means the query failed. Both thresholds are strict, with overflow-safe arithmetic.
+// Warn below 18 GiB free commit or a 24 GiB total limit (R7-B); equality is sufficient.
+// A zero limit means the query failed. Saturating subtraction avoids wraparound.
 bool commit_warning(std::uint64_t used, std::uint64_t limit) noexcept;
 std::string process_token();
 class Sampler {

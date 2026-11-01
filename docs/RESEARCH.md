@@ -1,5 +1,76 @@
 # Research notes
 
+## R7-B: external exit diagnostics (2026-11-01)
+
+The final text review caught lossy catalog generation through Windows PowerShell 5.1's
+ASCII native-pipeline encoding (code page 20127): original UTF-8 labels survived, while new
+non-ASCII text became `?`. A before-failing Python catalog check and embedded C++ message
+checks now reject it. Writing the catalog through a UTF-8 source file restored the text;
+the full catalog then exceeded MSVC's 16 KiB single-literal limit. CMake now concatenates
+adjacent raw literals at existing label-file line boundaries, preserving the bytes. The
+native French dialog probe is repeated against that corrected embedded catalog, not merely
+against the source JSON.
+
+Final Release gate: 26/26 CTests (36.50 s) and 455 Python tests (28 gmapack, 25 steam,
+402 tools; two expected fixture skips). `out/r7-b/release-verified.log` records the pass.
+A separate native-window probe (`out/r7-b/dialog-probe.json`) observed exactly one visible
+French dialog after a synthetic access-violation exit, checked the title/body/code/folder,
+acknowledged only that observer's OK button and verified its process then exited. Its
+`+gmod_language fr` correctly beat the synthetic config's archived Japanese setting. This
+does not exercise GMod, Remix's own prompt or a real resource fault.
+
+The final parallel native run measured empty evidence collection at 1.379 ms mean / 4.073 ms
+maximum over 30 starts (an earlier isolated run: 0.484 / 0.676 ms). Startup's observer handshake
+has a separate 3 s readiness bound, not included in those collector numbers. The first full gate
+exposed the existing `loader/guard/tests/test_early.cpp` unprefixed timestamp path over MAX_PATH;
+using `fs::long_path` for its timestamp getter/setter removes the need for a local build-output
+path workaround. The fixture still proves that repeated preparation does not rewrite the cache.
+
+The same built proxy works inside System32 `rundll32.exe` with its DllMain loader guard.
+The synthetic integration covers 23 cases, including a genuinely separate sleeping observer,
+an inherited restricted game handle, process/path/creation/parent validation, exit before JSON
+and observer termination afterward. The actual exception/OOM/driver failures are simulated
+exit codes/logs, not resource exhaustion. The bootstrap remains KERNEL32-only; MessageBoxW
+is resolved dynamically after exit. No executable is extracted or downloaded.
+
+`loader/proxy/observer.cpp` starts/validates/waits; `loader/proxy/exit_report.cpp` selects and
+formats the seven catalogs. `loader/core/src/evidence.cpp` shares `classify` and archive copying
+between exit and startup. The end marker lets the next collector reuse the same reason/folder,
+and prevents clean sessions without a Remix shutdown marker from filling the five-archive queue.
+Fresh `.nvdbg` shader-debug information is copied as context but no longer proves a crash;
+actual GPU dumps use `.nv-gpudmp` (the fork's writer is recorded in runtime patch 0001).
+
+Memory inference is deliberately narrower than the map warning: <=512 MiB free commit in a
+sample <=30 seconds old, tied to the same process token (snapshot) or start/end interval (CSV),
+and only for a generic nonzero exit without stronger evidence. The reason is
+`likely_out_of_memory`; concrete exceptions keep their exception classification/code. A zero
+exit stays clean unless a fresh fatal Remix message/marker or actual crash artifact exists.
+
+## R7-B: commit headroom from the saved R6 runs (2026-11-01)
+
+Read-only reanalysis of the main checkout's `out/qa-poc/r6/tiers*/<run>/memory.csv`;
+no game or new measurement session was started. Each CSV includes earlier sessions, so the
+last bootstrap sample with private bytes below 256 MiB identifies the current session's start.
+The damaged `tiers-pinned/04-house-auto-pin` snapshot has no such sample and is excluded.
+These are whole-start-to-map differences, deliberately conservative for a warning at the menu;
+system commit includes other programs and ten-second sampling can miss transient peaks.
+
+| Saved R6 sessions | Peak process private GiB | Added system commit GiB |
+|---|---:|---:|
+| `tiers/01-construct-auto` | 11.669 | 16.184 |
+| `tiers/11-construct-medium`, `12-construct-auto` | 11.922, 12.434 | 12.669, 13.212 |
+| `tiers/04-house-auto`, `05-house-medium`, `06-house-low` | 11.600, 11.153, 10.959 | 12.530, 12.089, 11.886 |
+| `tiers-pinned/07-construct-auto-pin`, `08-construct-medium-pin`, `09-construct-low-pin` | 11.688, 11.433, 11.303 | 12.640, 13.623, 12.194 |
+| `tiers-pinned/10-house-low-pin-b8` | 10.899 | 16.015 |
+
+Across the 24 usable runs, added commit spans 11.074-16.184 GiB. The runtime's GPU
+snapshots and the tier comparison in [ADR 0064](decisions/0064-performance-tier-defaults.md#poc-measurements-2026-10-31)
+measure VRAM, not CPU commit; lower tiers do not justify a dramatically smaller system reserve.
+`loader/core/src/memory.cpp` therefore warns strictly below 18 GiB free commit, or a
+24 GiB total limit. This is a conservative heuristic (about 1.8 GiB above the largest
+sampled increase), not a map-fit guarantee. Unknown limits do not warn; subtraction saturates.
+64.0 / 90.6 GiB leaves 26.6 GiB and stays quiet. The small-limit floor replaces R6's 32 GiB floor.
+
 ## G1-A second pass: client build cost (2026-11-01)
 
 - Full Release gate exits 0: repo conventions, 25/25 CTests (48.67 s), and 453 Python tests

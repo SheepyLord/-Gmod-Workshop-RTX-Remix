@@ -205,10 +205,12 @@ class StepRunTests(unittest.TestCase):
         before = tree(self.root)
         with mock.patch.object(ps, 'game_processes', return_value=[]), \
                 mock.patch.object(ps, 'terminate', return_value=[]), \
-                mock.patch.object(ps.subprocess, 'Popen', return_value=FakeGame(running=False)), \
+                mock.patch.object(ps.subprocess, 'Popen', return_value=FakeGame(running=False)) as launch, \
+                mock.patch.dict(os.environ, {'NATIVE_LOADER_EXIT_REPORT': 'off'}), \
                 mock.patch.object(ps.time, 'sleep'):
             record = ps.step_run(run_args(self.root, self.evidence, reference=True))
         self.assertTrue(record['early_exit'])
+        self.assertEqual(launch.call_args.kwargs['env']['NATIVE_LOADER_EXIT_REPORT'], 'quiet')
         self.assertEqual(user.read_text(encoding='utf-8'), 'USER DATA')
         self.assertEqual(tree(self.root), before)
 
