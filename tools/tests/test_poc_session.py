@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -189,6 +190,12 @@ class StepRunTests(unittest.TestCase):
         base = scratch(self, 'poc-session-run-')
         self.root, self.evidence = base / 'game', base / 'evidence'
         (self.root / 'garrysmod').mkdir(parents=True)
+        # Every window and prompt in these session tests is fake, including background lookups.
+        for name, value in (('window_hung', False), ('crash_prompts', []),
+                            ('console_window', None), ('game_window', None)):
+            patch = mock.patch.object(ps, name, return_value=value)
+            patch.start()
+            self.addCleanup(patch.stop)
 
     def test_a_reference_run_writes_nothing_into_the_game_folder(self):
         # R1-015's repro: an existing garrysmod/data/nl_session/ is the user's and stays as it is.
@@ -214,7 +221,7 @@ class StepRunTests(unittest.TestCase):
             log.write_text('Clientside Lua startup!\n', encoding='utf-8')
             return game
 
-        def console(hwnd, command, attempts=6):
+        def console(hwnd, command, attempts=6, check=None):
             sent.append(command)
             self.assertFalse(data.exists(), 'something was written under garrysmod/data')
             if command.startswith('lua_run_cl RunString((NL_S:gsub('):
@@ -249,7 +256,7 @@ class StepRunTests(unittest.TestCase):
             log.write_text('Clientside Lua startup!\n', encoding='utf-8')
             return game
 
-        def console(hwnd, command, attempts=6):
+        def console(hwnd, command, attempts=6, check=None):
             sent.append(command)
             if command.endswith('"nl_session_fps")'):
                 with open(log, 'a', encoding='utf-8') as handle:
@@ -286,7 +293,7 @@ class StepRunTests(unittest.TestCase):
             log.write_text('Clientside Lua startup!\n', encoding='utf-8')
             return game
 
-        def console(hwnd, command, attempts=6):
+        def console(hwnd, command, attempts=6, check=None):
             sent.append(command)
             text = None
             if command.endswith('"nl_session_lua1")'):
@@ -342,7 +349,7 @@ class StepRunTests(unittest.TestCase):
                     with open(log, 'a', encoding='utf-8') as handle:
                         handle.write('Addons have changes - remounting\nMounted 752 of 755 workshop addons!\n')
 
-            def console(hwnd, command, attempts=6):
+            def console(hwnd, command, attempts=6, check=None):
                 sent.append((clock.now, command))
                 if command.startswith('map '):
                     with open(log, 'a', encoding='utf-8') as handle:
@@ -379,7 +386,8 @@ class StepRunTests(unittest.TestCase):
         sent = []
         prompts = [[101], [102]]  # the question, then the notice that replaces it
         with mock.patch.object(ps, 'crash_prompts', side_effect=lambda pid: prompts.pop(0) if prompts else []), \
-                mock.patch.object(ps.user32, 'SendMessageW', side_effect=lambda h, m, w, l: sent.append((h, m, w))):
+                mock.patch.object(ps.user32, 'SendMessageTimeoutW',
+                                  side_effect=lambda h, m, w, *a: sent.append((h, m, w)) or 1):
             self.assertEqual(ps.decline_crash_prompts(4242), 2)
         self.assertEqual(sent, [(101, ps.WM_COMMAND, ps.IDNO), (102, ps.WM_COMMAND, ps.IDOK)])
         self.assertNotIn(6, [command for _, _, command in sent])  # IDYES
@@ -387,6 +395,7 @@ class StepRunTests(unittest.TestCase):
         clock, game = Clock(), FakeGame()
         log = self.root / 'garrysmod' / 'console.log'
         waits = {'n': 0}
+        answered = threading.Event()
 
         def launch(*_, **__):
             log.write_text('', encoding='utf-8')
@@ -396,18 +405,26 @@ class StepRunTests(unittest.TestCase):
             waits['n'] += 1
             if waits['n'] == 3:
                 log.write_text('Clientside Lua startup!\n', encoding='utf-8')
+                answered.set()
                 return 1
             return 0
 
-        def console(hwnd, command, attempts=6):
+        def console(hwnd, command, attempts=6, check=None):
             if command == 'quit':
                 game.quit()
             return True
 
+        def sleep(seconds):
+            # Synchronize with the real watchdog thread, rather than depend on thread scheduling
+            # while the session's fake clock races through its map timeout.
+            self.assertTrue(answered.wait(2))
+            clock.sleep(seconds)
+
         with mock.patch.object(ps, 'game_processes', return_value=[]), \
                 mock.patch.object(ps, 'terminate', return_value=[]), \
                 mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
-                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps.time, 'sleep', sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'WATCHDOG_INTERVAL', 0.001), \
                 mock.patch.object(ps, 'decline_crash_prompts', side_effect=decline), \
                 mock.patch.object(ps, 'console', side_effect=console), \
                 mock.patch.object(ps, 'console_window', return_value=7), \
@@ -457,7 +474,7 @@ class StepRunTests(unittest.TestCase):
             log.write_text('Mounted 755 of 755 workshop addons!\n', encoding='utf-8')
             return game
 
-        def console(hwnd, command, attempts=6):
+        def console(hwnd, command, attempts=6, check=None):
             events.append(command)
             if command == 'map gm_construct':
                 with open(log, 'a', encoding='utf-8') as handle:
@@ -505,7 +522,7 @@ class StepRunTests(unittest.TestCase):
                 with open(log, 'a', encoding='utf-8') as handle:
                     handle.write('Addons have changes - remounting\nMounted 752 of 755 workshop addons!\n')
 
-        def console(hwnd, command, attempts=6):
+        def console(hwnd, command, attempts=6, check=None):
             sent.append((clock.now, command))
             if command == 'map gm_construct':
                 self.assertIn('Mounted 752 of 755', log.read_text(encoding='utf-8'))
@@ -588,9 +605,404 @@ class StepRunTests(unittest.TestCase):
             record = ps.step_run(run_args(self.root, self.evidence, timeout=1))
         self.assertTrue(game.killed)
         self.assertEqual(terminated[0], {2001: L + 10, 2002: L + 30})
-        self.assertEqual((record['exit'], record['normal_quit']), ('terminated', False))
+        self.assertEqual((record['exit'], record['normal_quit']), (1, False))
+        self.assertEqual(record['terminated_processes'], [12345, 2001, 2002])
         self.assertEqual(record['not_ours'], [9876])
         self.assertEqual(alive, {3001, 9876})
+
+    def test_device_loss_aborts_the_steps_and_bounds_shutdown_but_keeps_evidence(self):
+        clock, game = Clock(), FakeGame()
+        log = self.root / 'garrysmod' / 'console.log'
+        remix = self.root / 'rtx-remix' / 'logs' / 'remix-dxvk.log'
+        reports = remix.parent / '.sentry-native' / 'reports'
+        reports.mkdir(parents=True)
+
+        def launch(*_, **__):
+            log.write_text('Clientside Lua startup!\n', encoding='utf-8')
+            remix.write_text('runtime started\n', encoding='utf-8')
+            return game
+
+        def sleep(seconds):
+            clock.sleep(seconds)
+            if clock.now >= 1002 and 'VK_ERROR_DEVICE_LOST' not in remix.read_text(encoding='utf-8'):
+                with remix.open('a', encoding='utf-8') as handle:
+                    handle.write('DxvkSubmissionQueue: Command submission failed: VK_ERROR_DEVICE_LOST\n')
+                (reports / 'gpu.dmp').write_bytes(b'GPU crash evidence')
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'console') as console, mock.patch.object(ps, 'screenshot') as shot, \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'modules_of', return_value=[]):
+            record = ps.step_run(run_args(self.root, self.evidence, change_map='modern_house',
+                                         mount_workshop=['123'], camera=[0] * 6, fps=30, lua=['unused.lua'],
+                                         screenshots=1, settle=300))
+        self.assertTrue(record['device_lost'])
+        self.assertTrue(record['map_loaded'])
+        self.assertIn('VK_ERROR_DEVICE_LOST', record['failed'])
+        self.assertEqual(record['failure_exit_wait_seconds'], ps.FAILURE_EXIT_TIMEOUT)
+        self.assertLessEqual(clock.now, 1002 + ps.FAILURE_EXIT_TIMEOUT + 3)
+        self.assertTrue(game.killed)
+        self.assertEqual(record['terminated_processes'], [game.pid])
+        self.assertEqual(record['exit'], 1)
+        self.assertFalse(record['normal_quit'])
+        console.assert_not_called()
+        shot.assert_not_called()
+        step = self.evidence / 'run'
+        self.assertEqual((step / 'console.log').read_text(encoding='utf-8'), 'Clientside Lua startup!\n')
+        self.assertIn('VK_ERROR_DEVICE_LOST', (step / 'remix-dxvk.log').read_text(encoding='utf-8'))
+        self.assertEqual((step / 'crash-reports' / 'reports-gpu.dmp').read_bytes(), b'GPU crash evidence')
+        self.assertTrue((step / 'modules.json').exists())
+
+    def test_watchdog_declines_a_live_crash_prompt_during_the_exit_grace(self):
+        clock, game, answered, allow_prompt = Clock(), FakeGame(), threading.Event(), threading.Event()
+        remix = self.root / 'rtx-remix' / 'logs' / 'remix-dxvk.log'
+        reports = remix.parent / '.sentry-native' / 'reports'
+        reports.mkdir(parents=True)
+        dump = reports / 'gpu.dmp'
+
+        def launch(*_, **kwargs):
+            self.assertNotIn('RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES', kwargs['env'])
+            (self.root / 'garrysmod' / 'console.log').write_text('Clientside Lua startup!\n', encoding='utf-8')
+            remix.write_text('runtime started\n', encoding='utf-8')
+            return game
+
+        def decline(pid):
+            self.assertEqual(pid, game.pid)
+            if not allow_prompt.is_set():
+                return 0
+            dump.unlink()  # Remix deletes this run's report when the answer arrives.
+            game.returncode = 0x60D0DEAD
+            answered.set()
+            return 1
+
+        def sleep(seconds):
+            clock.sleep(seconds)
+            if clock.now >= 1001 and 'device loss' not in remix.read_text(encoding='utf-8'):
+                remix.write_text('Exiting after GPU device loss\n', encoding='utf-8')
+                dump.write_bytes(b'live crash')
+            if allow_prompt.is_set():
+                self.assertTrue(answered.wait(2))
+
+        original_wait_exit = ps.wait_exit
+
+        def wait_exit(process, seconds, check=None):
+            if seconds == ps.FAILURE_EXIT_TIMEOUT:
+                allow_prompt.set()  # the prompt appears only during the post-failure exit grace
+            return original_wait_exit(process, seconds, check)
+
+        with mock.patch.dict(os.environ, {'RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES': '1'}), \
+                mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'WATCHDOG_INTERVAL', 0.001), \
+                mock.patch.object(ps, 'wait_exit', side_effect=wait_exit), \
+                mock.patch.object(ps, 'crash_prompts', side_effect=lambda pid: [99] if allow_prompt.is_set() else []), \
+                mock.patch.object(ps, 'decline_crash_prompts', side_effect=decline), \
+                mock.patch.object(ps, 'console') as console, mock.patch.object(ps, 'screenshot') as shot:
+            record = ps.step_run(run_args(self.root, self.evidence, settle=300))
+        self.assertFalse(game.killed)
+        self.assertTrue(record['map_loaded'])
+        self.assertEqual(record['exit'], 0x60D0DEAD)
+        self.assertEqual(record['exit_hex'], '0x60D0DEAD')
+        self.assertEqual(record['exit_name'], ps.EXIT_NAMES[0x60D0DEAD])
+        self.assertEqual(record['declined_crash_prompts'], 1)
+        self.assertEqual(record['crash_reports'], ['reports-gpu.dmp'])
+        self.assertEqual((self.evidence / 'run' / 'crash-reports' / 'reports-gpu.dmp').read_bytes(), b'live crash')
+        console.assert_not_called()
+        shot.assert_not_called()
+
+    def test_a_hung_window_fails_after_the_grace_without_console_or_capture(self):
+        clock, game = Clock(), FakeGame()
+
+        def launch(*_, **__):
+            (self.root / 'garrysmod' / 'console.log').write_text('Clientside Lua startup!\n', encoding='utf-8')
+            return game
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'window_hung', return_value=True), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'modules_of', return_value=[]), \
+                mock.patch.object(ps, 'console') as console, mock.patch.object(ps, 'screenshot') as shot:
+            record = ps.step_run(run_args(self.root, self.evidence, settle=300, screenshots=1))
+        self.assertEqual(record['hung_seconds'], ps.HANG_GRACE)
+        self.assertIn('hung for', record['failed'])
+        self.assertNotIn('device_lost', record)
+        self.assertEqual(record['failure_exit_wait_seconds'], ps.FAILURE_EXIT_TIMEOUT)
+        self.assertLessEqual(clock.now, 1000 + ps.HANG_GRACE + ps.FAILURE_EXIT_TIMEOUT + 3)
+        self.assertTrue(game.killed)
+        console.assert_not_called()
+        shot.assert_not_called()
+
+    def test_main_keeps_the_failure_record_and_returns_failure(self):
+        record = {'step': 'run', 'name': 'crash', 'failed': 'GPU device lost', 'device_lost': True}
+        with mock.patch.object(ps, 'step_run', return_value=record), contextlib.redirect_stdout(io.StringIO()):
+            code = ps.main(['--root', str(self.root), '--evidence', str(self.evidence), 'run', '--name', 'crash'])
+        self.assertEqual(code, 1)
+        history = json.loads((self.evidence / 'session.json').read_text(encoding='utf-8'))
+        self.assertTrue(history[-1]['device_lost'])
+
+    def test_capture_timeout_uses_bounded_cleanup_and_still_collects_logs(self):
+        clock, game = Clock(), FakeGame()
+
+        def launch(*_, **__):
+            (self.root / 'garrysmod' / 'console.log').write_text('Clientside Lua startup!\n', encoding='utf-8')
+            return game
+
+        with mock.patch.object(ps, 'game_processes', return_value=[]), \
+                mock.patch.object(ps, 'terminate', return_value=[]), \
+                mock.patch.object(ps.subprocess, 'Popen', side_effect=launch), \
+                mock.patch.object(ps.time, 'sleep', clock.sleep), mock.patch.object(ps.time, 'monotonic', clock.monotonic), \
+                mock.patch.object(ps, 'console_window', return_value=7), \
+                mock.patch.object(ps, 'game_window', return_value=9), \
+                mock.patch.object(ps, 'modules_of', return_value=[]), \
+                mock.patch.object(ps, 'console') as console, \
+                mock.patch.object(ps, 'screenshot', side_effect=ps.Failure('screenshot timed out after 5 s')):
+            record = ps.step_run(run_args(self.root, self.evidence, screenshots=1))
+        self.assertIn('screenshot timed out', record['failed'])
+        self.assertEqual(record['failure_exit_wait_seconds'], ps.FAILURE_EXIT_TIMEOUT)
+        self.assertTrue(game.killed)
+        self.assertTrue((self.evidence / 'run' / 'console.log').is_file())
+        console.assert_not_called()
+
+
+class WatchdogTests(unittest.TestCase):
+    def test_a_failed_dump_retry_does_not_damage_an_already_preserved_copy(self):
+        base = scratch(self, 'poc-dump-retry-')
+        source = base / 'game' / 'rtx-remix' / 'logs' / '.sentry-native' / 'reports'
+        target = base / 'evidence'
+        source.mkdir(parents=True)
+        (source / 'gpu.dmp').write_bytes(b'complete dump')
+        self.assertEqual(ps.keep_crash_reports(base / 'game', target), ['reports-gpu.dmp'])
+
+        def interrupted_copy(src, dst):
+            Path(dst).write_bytes(b'partial')
+            raise OSError('dump is still being written')
+
+        errors = []
+        with mock.patch.object(ps.shutil, 'copy2', side_effect=interrupted_copy):
+            self.assertEqual(ps.keep_crash_reports(base / 'game', target, errors), [])
+        self.assertEqual((target / 'reports-gpu.dmp').read_bytes(), b'complete dump')
+        self.assertEqual(sorted(p.name for p in target.iterdir()), ['reports-gpu.dmp'])
+        self.assertTrue(any('still being written' in error for error in errors))
+
+    def test_background_polling_continues_after_an_error_and_stops_when_the_game_exits(self):
+        base, game, answered = scratch(self, 'poc-watchdog-'), FakeGame(), threading.Event()
+        calls = []
+
+        def decline(pid):
+            calls.append(pid)
+            if len(calls) == 1:
+                raise OSError('temporary window lookup failure')
+            if len(calls) == 3:
+                game.quit()
+                answered.set()
+            return 1
+
+        with mock.patch.object(ps, 'WATCHDOG_INTERVAL', 0.001), \
+                mock.patch.object(ps, 'crash_prompts', return_value=[]), \
+                mock.patch.object(ps, 'decline_crash_prompts', side_effect=decline):
+            watchdog = ps.CrashPromptWatchdog(game, base / 'game', base / 'evidence')
+            watchdog.start()
+            try:
+                self.assertTrue(answered.wait(2))
+                watchdog.thread.join(2)
+                self.assertFalse(watchdog.thread.is_alive())
+            finally:
+                watchdog.close()
+        self.assertEqual(calls, [game.pid] * 3)
+        self.assertEqual(watchdog.answered, 2)
+        self.assertIn('temporary window lookup failure', watchdog.errors)
+
+    def test_close_interrupts_the_watchdog_wait_without_waiting_for_another_tick(self):
+        base, game, called = scratch(self, 'poc-watchdog-stop-'), FakeGame(), threading.Event()
+        with mock.patch.object(ps, 'crash_prompts', return_value=[]), \
+                mock.patch.object(ps, 'decline_crash_prompts', side_effect=lambda pid: called.set() or 1):
+            watchdog = ps.CrashPromptWatchdog(game, base / 'game', base / 'evidence')
+            watchdog.start()
+            try:
+                self.assertTrue(called.wait(2))
+            finally:
+                watchdog.close()
+        self.assertFalse(watchdog.thread.is_alive())
+        self.assertIsNone(game.poll())
+        self.assertEqual(watchdog.answered, 1)
+
+    def test_a_stuck_prompt_has_a_bounded_send_and_is_not_counted_as_answered(self):
+        with mock.patch.object(ps, 'crash_prompts', return_value=[99]), \
+                mock.patch.object(ps.user32, 'SendMessageTimeoutW', return_value=0) as send:
+            self.assertEqual(ps.decline_crash_prompts(12345), 0)
+        self.assertEqual([call.args[2] for call in send.call_args_list], [ps.IDNO, ps.IDOK])
+        for call in send.call_args_list:
+            self.assertEqual(call.args[4:6], (ps.SMTO_ABORTIFHUNG, 1000))
+
+
+class HealthTests(unittest.TestCase):
+    def setUp(self):
+        self.log = scratch(self, 'poc-health-') / 'remix-dxvk.log'
+        self.clock, self.record, self.game = Clock(), {}, FakeGame()
+
+    def health(self, before=''):
+        return ps.RunHealth(self.game, self.log, before, self.record)
+
+    def test_device_loss_markers_in_a_new_log_are_detected_even_after_the_process_exits(self):
+        self.game.returncode = 0x60D0DEAD
+        for marker in ('VK_ERROR_DEVICE_LOST', 'Exiting after GPU device loss'):
+            with self.subTest(marker=marker):
+                self.log.write_text('error: ' + marker + '\n', encoding='utf-8')
+                with self.assertRaisesRegex(ps.Failure, 'GPU device lost'):
+                    self.health().check()
+                self.assertTrue(self.record['device_lost'])
+                self.assertEqual(self.record['device_lost_marker'], marker)
+
+    def test_an_old_marker_is_ignored_but_new_appended_or_rewritten_markers_are_detected(self):
+        before = 'previous run: VK_ERROR_DEVICE_LOST\n'
+        health = self.health(before)
+        with mock.patch.object(ps, 'console_window', return_value=None), \
+                mock.patch.object(ps, 'game_window', return_value=None):
+            for text in (before, before + 'new run is healthy\n'):
+                self.log.write_bytes(text.encode('utf-8'))
+                health.check()
+                self.assertNotIn('device_lost', self.record)
+            for text in (before + 'new run: VK_ERROR_DEVICE_LOST\n',
+                         'new run\n' * 20 + 'Exiting after GPU device loss\n'):
+                self.log.write_bytes(text.encode('utf-8'))
+                with self.assertRaises(ps.Failure):
+                    health.check()
+
+    def test_a_short_map_stall_recovers_and_resets_the_continuous_hang_grace(self):
+        health = self.health()
+        hung = [True]
+        with mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \
+                mock.patch.object(ps.time, 'sleep', self.clock.sleep), \
+                mock.patch.object(ps, 'window_hung', side_effect=lambda hwnd: hung[0]):
+            health.check(7)
+            self.clock.sleep(12)
+            health.check(7)
+            hung[0] = False
+            health.before_window(7)
+            hung[0] = True
+            health.check(7)
+            self.clock.sleep(19.5)
+            health.check(7)
+            self.assertNotIn('hung_seconds', self.record)
+            self.clock.sleep(0.5)
+            with self.assertRaisesRegex(ps.Failure, 'hung for 20.0 s'):
+                health.check(7)
+        self.assertEqual(self.record['hung_seconds'], 20)
+
+    def test_window_operations_wait_out_a_normal_load_instead_of_sending_to_a_hung_window(self):
+        with mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \
+                mock.patch.object(ps.time, 'sleep', self.clock.sleep), \
+                mock.patch.object(ps, 'window_hung', side_effect=lambda hwnd: self.clock.now < 1012):
+            self.health().before_window(7)
+        self.assertEqual(self.clock.now, 1012)
+        self.assertNotIn('hung_seconds', self.record)
+
+    def test_console_retry_checks_health_after_a_ten_second_send_stalls(self):
+        health, calls, hung = self.health(), [], [False]
+
+        def send(*args):
+            calls.append(args)
+            self.clock.sleep(10)
+            hung[0] = True
+            return 0
+
+        with mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \
+                mock.patch.object(ps.time, 'sleep', self.clock.sleep), \
+                mock.patch.object(ps, 'window_hung', side_effect=lambda hwnd: hung[0]), \
+                mock.patch.object(ps.user32, 'SendMessageTimeoutW', side_effect=send):
+            with self.assertRaisesRegex(ps.Failure, 'hung for'):
+                ps.console(7, 'map modern_house', check=health.before_window)
+        self.assertEqual(len(calls), 1)  # no retry once a continuous hang is confirmed
+        self.assertEqual(self.clock.now, 1030)
+
+    def test_window_hung_uses_the_nonblocking_windows_query(self):
+        with mock.patch.object(ps.user32, 'IsHungAppWindow', side_effect=[1, 0]) as hung:
+            self.assertTrue(ps.window_hung(7))
+            self.assertFalse(ps.window_hung(7))
+        self.assertEqual(hung.call_args_list, [mock.call(7), mock.call(7)])
+
+    def test_a_temporarily_locked_log_does_not_disable_hang_detection(self):
+        health = self.health()
+        with mock.patch.object(ps, 'read_shared', side_effect=PermissionError('log locked')), \
+                mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \
+                mock.patch.object(ps, 'window_hung', return_value=True):
+            health.check(7)
+            self.clock.sleep(ps.HANG_GRACE)
+            with self.assertRaisesRegex(ps.Failure, 'hung for'):
+                health.check(7)
+        self.assertIn('log locked', self.record['remix_log_read_error'])
+
+    def test_known_exit_codes_have_names_even_when_windows_reports_a_signed_code(self):
+        for code, meaning in ps.EXIT_NAMES.items():
+            for reported in (code, code - 2**32):
+                with self.subTest(code=reported):
+                    record = {'exit': reported, 'normal_quit': True}
+                    ps.describe_exit(record)
+                    self.assertEqual(record['exit'], reported)
+                    self.assertEqual(record['exit_hex'], f'0x{code:08X}')
+                    self.assertEqual(record['exit_name'], meaning)
+                    self.assertFalse(record['normal_quit'])
+                    self.assertEqual(record.get('device_lost', False), code == 0x60D0DEAD)
+        for code in (0, 1, None):
+            record = {'exit': code}
+            ps.describe_exit(record)
+            self.assertNotIn('exit_name', record)
+
+
+class ScreenshotTests(unittest.TestCase):
+    def test_no_capture_or_console_send_is_attempted_on_a_known_hung_window(self):
+        with mock.patch.object(ps, 'window_hung', return_value=True), \
+                mock.patch.object(ps, 'capture_window') as capture, \
+                mock.patch.object(ps.user32, 'SendMessageTimeoutW') as send:
+            with self.assertRaisesRegex(ps.Failure, 'hung game window'):
+                ps.screenshot(7, Path('unused.png'))
+            self.assertFalse(ps.console(7, 'quit'))
+        capture.assert_not_called()
+        send.assert_not_called()
+
+    def test_a_capture_that_freezes_after_the_check_times_out_and_never_writes_late(self):
+        base = scratch(self, 'poc-capture-')
+        release, finished = threading.Event(), threading.Event()
+        image = mock.Mock()
+
+        def capture(hwnd):
+            try:
+                release.wait(2)
+                return image, {'method': 'fake PrintWindow'}
+            finally:
+                finished.set()
+
+        with mock.patch.object(ps, 'window_hung', return_value=False), \
+                mock.patch.object(ps, 'SCREENSHOT_TIMEOUT', 0.02), \
+                mock.patch.object(ps, 'capture_window', side_effect=capture):
+            try:
+                with self.assertRaisesRegex(ps.Failure, 'screenshot timed out'):
+                    ps.screenshot(7, base / 'late.png')
+            finally:
+                release.set()
+                self.assertTrue(finished.wait(2))
+        image.save.assert_not_called()
+        self.assertFalse((base / 'late.png').exists())
+
+    def test_a_completed_capture_is_saved_and_capture_errors_are_reported(self):
+        destination = scratch(self, 'poc-capture-ok-') / 'shot.png'
+        image = mock.Mock()
+        with mock.patch.object(ps, 'window_hung', return_value=False), \
+                mock.patch.object(ps, 'capture_window', return_value=(image, {'method': 'fake'})):
+            self.assertEqual(ps.screenshot(7, destination), {'file': 'shot.png', 'method': 'fake'})
+        image.save.assert_called_once_with(destination)
+        with mock.patch.object(ps, 'window_hung', return_value=False), \
+                mock.patch.object(ps, 'capture_window', side_effect=OSError('capture failed')):
+            with self.assertRaisesRegex(ps.Failure, 'capture failed'):
+                ps.screenshot(7, destination)
 
 
 class InstallConfigTests(unittest.TestCase):

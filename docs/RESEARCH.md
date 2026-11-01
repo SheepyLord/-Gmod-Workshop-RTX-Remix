@@ -3166,3 +3166,14 @@ conversion; the startup adapter reader now keeps vendor/VRAM with an empty name 
   a field allowlist. Unknown `device_local`, `driver`, `omm_suppressed` and `reason` fields are
   ignored. Its existing `loader/tests/test_evidence.cpp:36-52` checks a minimal device-loss marker,
   optional/unrelated fields and malformed JSON. No loader code or tests changed in this T4 pass.
+
+### R6 harness device-loss freeze (2026-10-31)
+
+Read-only PM evidence in the main checkout's `out/qa-poc/r6/tiers-pinned/session.json`, record
+`04-house-auto-pin`, starts at `2026-11-01T00:52:47Z` and finishes at `02:48:47Z`: 6,960 seconds
+(1 h 56 min), with `map_loaded: true`, `seconds_to_map: 7.5`, failed mount/map/camera/FPS steps and
+exit 3489660927 (`0xCFFFFFFF`). That step's `remix-dxvk.log:990` records
+`DxvkSubmissionQueue: Command submission failed: VK_ERROR_DEVICE_LOST`. The old harness only declined
+prompts inside startup/map waits and called `PrintWindow` synchronously; a GPU-crash dialog could
+therefore outlive those waits and block evidence capture. The R6 harness change checks the current
+run's log, watches prompts through exit and bounds capture/shutdown; regression tests use fakes.

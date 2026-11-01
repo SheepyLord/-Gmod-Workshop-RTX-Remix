@@ -26,5 +26,8 @@ Covers:
 - **`--evaluate-only`.** The latest run of each session is checked (an earlier failed run of the same
   session does not count), `qa-summary.json` is written, and the exit code is 0; a crash with kept
   minidumps or a session with no recorded run fails the summary with exit code 1.
+- **R6 device loss/hangs.** Either flag fails even if the record claims a normal quit; a `failed`
+  record still reports those causes. `--evaluate-only` retains both reasons and numeric/hex/named
+  exits in `qa-summary.json`, prints the explicit failure reasons, and returns 1.
 
 Side effects: the temporary folders, removed afterwards. Exit code: unittest's (0 when all pass).

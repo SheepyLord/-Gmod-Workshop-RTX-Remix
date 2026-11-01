@@ -85,15 +85,38 @@ dropped, so before a save or the camera the script waits until `console.log` has
     `quiet_before_map`, `seconds_to_workshop` and `map_command`.
   - **Crash-report prompts are declined.** The start after a crash shows the Remix runtime's "RTX Remix
     Crash Report" question (upload crash data?) and sometimes a notice after it; unanswered, they held
-    the run until its timeout. While it waits for the Workshop and the map, the run answers every such
-    message box in its own game process with No (`IDNO`), then OK (`IDOK`), by button id so any Windows
-    language works (record: `declined_crash_prompts`). It never answers Yes, and never sets
-    `RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES`, which would grant upload consent.
+    the run until its timeout. A background watchdog checks every second from launch through the
+    process's exit, including console sends, screenshots, settle/probe waits and shutdown. It answers
+    message boxes in its own game process with No (`IDNO`), then OK (`IDOK`), by button id so any Windows
+    language works (record: `declined_crash_prompts`, successful sends only). Each answer has a 1 s
+    `SendMessageTimeoutW` limit with `SMTO_ABORTIFHUNG`. It never answers Yes, and removes any inherited
+    `RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES` from the game's environment: that flag grants upload
+    consent. The watchdog's stop wait is bounded at 3 s; errors are kept as `crash_watchdog_errors`.
   - **Crash minidumps are kept.** Declined, Remix deletes the reports, the only evidence of a crash
     (in R4 a PoC crash lost its dump this way). So before the launch the run copies every `*.dmp` under
     `rtx-remix\logs\.sentry-native` into `<step>\crash-reports-before\` (record:
     `crash_reports_before`), and after a run without a normal quit into `<step>\crash-reports\`
-    (`crash_reports`). A dump in a subfolder is named `<subfolder>-<name>.dmp`.
+    (`crash_reports`). The watchdog also copies available dumps before declining a live crash prompt,
+    since that answer can delete this run's reports. Those copies remain listed even if the source
+    disappears before the final collection. A locked or disappearing dump does not prevent log
+    collection; copy errors are recorded and copies retried on the next prompt check and at shutdown.
+    Copies replace the evidence file atomically, so an interrupted retry preserves an earlier copy.
+    A dump in a subfolder is named `<subfolder>-<name>.dmp`.
+  - **Device loss and persistent hangs fail promptly.** Health checks throughout the run look for
+    `VK_ERROR_DEVICE_LOST` or `Exiting after GPU device loss` in this run's
+    `rtx-remix\logs\remix-dxvk.log` (`device_lost: true`, `device_lost_marker`). The pre-launch log
+    text is excluded if the file is unchanged or appended; a truncated/replaced log is read anew.
+    A temporarily locked log is retried (`remix_log_read_error`) while window checks continue.
+    `IsHungAppWindow` checks the game window without sending a message. A continuously unresponsive
+    window gets a 20 s grace (`hung_seconds` only after that grace); recovery resets the timer, so
+    shorter map-load stalls do not fail. Before console sends and captures, the run waits out such a
+    stall without touching the hung window. All long waits poll health at most every 0.5 s; an already
+    active console send retains its 10 s limit and checks health before retrying.
+    On failure the record keeps `failed` and `normal_quit: false`, skips all remaining game operations,
+    and gives Remix up to 60 s to exit while the prompt watchdog continues. It then uses the existing
+    process ownership and creation-time checks to stop only this run's game/helpers. Records include
+    `failure_exit_wait_seconds`, `terminated_processes` when forced, and the actual numeric `exit`
+    (also for forced exits). Logs, modules already observed and available crash reports are collected.
   - **`--menu-shot`** (with `--workshop` and a map) saves `menu.png` of the main menu once the Workshop
     is mounted, before the map is asked for: the loader's diagnostics panel, the native add-on cards
     and the startup text are only there (record: `menu_screenshot`).
@@ -131,7 +154,10 @@ dropped, so before a save or the camera the script waits until `console.log` has
   `seconds`, `fps`, `median_ms`, `p99_ms` and `max_ms`. A game window without focus sleeps between
   frames (`engine_no_focus_sleep`), so a performance run also sends `--console "engine_no_focus_sleep 0"`
   and `--console "fps_max 0"`. Then it saves `--screenshots` PNGs of the client area (`PrintWindow` with `PW_RENDERFULLCONTENT`,
-  so the window need not be in front; a screen grab if that comes back black), lists the modules,
+  so the window need not be in front; a screen grab if that comes back black). Capture refuses an
+  already hung window and runs in a daemon worker with a 5 s timeout to cover a freeze racing the
+  health check. Only the caller saves the returned image, so a timed-out worker cannot write a late
+  screenshot. A capture error/timeout uses the same bounded failure cleanup. The run lists the modules,
   sends `quit` and waits for the exit (`--quit-timeout`); if that fails the game and its helpers are
   terminated and the record says so (`normal_quit: false`). Only what this run started is ended: the
   `gmod.exe` it launched (through its own process handle) and every `gmod.exe` from the same install
@@ -144,6 +170,9 @@ dropped, so before a save or the camera the script waits until `console.log` has
   `console.log` text and, unless `--reference`, `loader.log`, `status.json` and `session.json`, and
   the Remix log when this run wrote one; the record names the map, `mat_dxlevel`, the `d3d9.dll` and
   `stdshader_dx6.dll` that were loaded, and the start-up outcome.
+  Numeric exits also have `exit_hex`; known exits have `exit_name`: `0x60D0DEAD` is Remix's GPU-crash
+  exit (also sets `device_lost`), and `0xCFFFFFFF` means Windows closed a not-responding program.
+  Both force `normal_quit: false` and a failed record even if a console quit had been requested.
 - `--reference`: for an install that is only read (the classic RTX install): its `console.log` is
   read from where it ended before the launch and never moved, and the loader's files are not looked
   for. The game itself still writes what it always writes (its logs, `config.cfg` when it quits).
@@ -174,6 +203,8 @@ PowerShell then cannot find `Get-FileHash`, which `install-loader.ps1` needs.
 ## Requirements and exit codes
 
 Windows, Python 3.10+, Pillow (screenshots only), a built loader (`tools\build.ps1`). Exit 0 when the
-step completed (a run whose game failed still completes: read its record), 1 when it was refused.
+step completes without `failed`, 1 when refused or when the record has `failed` (including device loss,
+a persistent hang, capture failure, or either named crash exit). Other non-normal quits still require
+reading `normal_quit` in the record; [`qa/release_qa.py`](qa/release_qa.py.md) rejects them.
 
 Tests: [tests/test_poc_session.py](tests/test_poc_session.py.md) (no game is started).

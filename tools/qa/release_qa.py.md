@@ -39,6 +39,13 @@ recorded no status error and finished its probe (`NL_SHOT_DONE`). A session that
 the minidumps `poc_session.py` kept (`crash-reports\`), and new Remix crash reports under
 `rtx-remix\logs\.sentry-native` during the run fail the summary too.
 
+`device_lost` or a recorded `hung_seconds` fails even if a record claims a normal quit. The summary
+line and `qa-summary.json`'s `problems` explicitly say `GPU device lost` or `game window hung for N s`;
+each session also retains `device_lost`, `hung_seconds`, `exit`, `exit_hex` and `exit_name` from the
+harness. Known exits name Remix's GPU crash (`0x60D0DEAD`) and Windows closing a not-responding program
+(`0xCFFFFFFF`). The harness gives short window stalls a 20 s grace and failures a 60 s exit wait,
+then stops only its own classified processes while preserving the evidence.
+
 Around the sessions it records the SHA-256 of `user.conf`, `rtx.conf`, the loader's `winmm.dll`,
 `winmm.pdb`, `native-loader\config.json` and `bootstrap-install.json`, and of
 `reg export HKCU\Software\Valve\Source\garrysmod` (kept as `before-registry.reg` / `after-registry.reg`).
@@ -49,7 +56,8 @@ client convars add-ons archive) at a normal quit, so those two are copied before
 engine's `%f` form (`0.00` becoming `0.000000` is no change, R5). A new key, such as an add-on version's new convar, is only reported.
 A changed or removed value fails in `client.vdf`, and in `config.cfg` for `mat_queue_mode`, which a session
 switches off for a moment and must put back (R4-28).
-Crash prompts at a start are declined by `poc_session.py` (never accepted).
+Crash prompts throughout each run are declined by `poc_session.py`'s background watchdog (never
+accepted); live crash dumps are copied before those answers can remove them.
 
 **Writes:** the evidence folder (sessions, `qa-summary.json`, the copies above). **Changes in the game
 install:** only what the game itself does in a session (its logs, `config.cfg`).

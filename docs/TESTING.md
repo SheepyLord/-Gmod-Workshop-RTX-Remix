@@ -1,5 +1,23 @@
 # Testing
 
+## R6 unattended harness failures
+
+[`poc_session.py`](../tools/poc_session.py.md) now declines crash prompts on a background watchdog
+throughout a run, preserves live crash dumps before answering, and aborts in-game work on a new Remix
+device-loss marker or a window continuously hung for 20 s. Short load stalls may recover; captures
+have a 5 s timeout. After failure Remix gets 60 s to exit before only this run's game/helpers are
+stopped. Evidence records `failed`, `device_lost`/`hung_seconds`, numeric/hex/named exits and any forced
+termination; release QA prints those causes and retains them in `qa-summary.json`. Focused tests are
+`cd tools; python -m unittest tests.test_poc_session tests.test_release_qa -v`: fake processes/windows
+and log files cover the watchdog, stale-log exclusion, hang recovery, capture races, bounded exit
+and `0x60D0DEAD` / `0xCFFFFFFF` names. No game launch is needed.
+
+Validation on `r6-harness`: all 54 focused tests pass. `tools\test.ps1 -Config Release` exits 0:
+repository conventions, 24/24 CTests and 375 Python tests (322 tools, 28 gmapack and 25 steam;
+two expected skips). No render-guard path workaround was needed. Receipts are this worktree's
+`out/r6-harness/focused-tests.log` and `release-tests.log`. No game was launched, and neither game
+install was modified; live device-loss acceptance remains with the project manager.
+
 ## R6 companion VRAM sampler
 
 [`test_companion_vram.py`](../tools/tests/test_companion_vram.py.md) exercises the actual companion
