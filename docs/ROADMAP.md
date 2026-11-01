@@ -1,5 +1,11 @@
 # Roadmap
 
+R7-B implementation and offline acceptance are **complete** on `r7-crash-diag` (2026-11-01):
+the embedded external exit observer, seven-language reports/previews, revised commit warning
+and content add-on count. Release passes 26 CTests and 455 Python tests (two expected skips);
+23 observer scenarios and a real, automatically acknowledged French dialog use synthetic hosts.
+Claude retains actual PoC acceptance and integration; see [the report](handover/R7-B-report.md).
+
 R7-B is **in progress** on `r7-crash-diag` (2026-11-01): a post-exit crash report from an
 external observer, a map-headroom memory warning and a compact content add-on count. This task
 does offline checks only; Claude retains PoC acceptance ([brief](handover/R7-B-crash-diagnostics.md)).

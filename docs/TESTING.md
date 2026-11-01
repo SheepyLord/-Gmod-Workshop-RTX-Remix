@@ -2,6 +2,11 @@
 
 ## R7-B: exit observer and read-only previews
 
+Offline acceptance passed: 26 CTests and 455 Python tests (two expected skips), recorded in
+`out/r7-b/release-verified.log`. A separate Win32 window probe in `out/r7-b/dialog-probe.json`
+verified one visible French message after a synthetic exit, its exception/evidence text, and
+observer termination after OK. It did not launch GMod or interact with a Remix consent prompt.
+
 `nl_exit_observer_integration` runs the real DLL export in System32 `rundll32.exe`, with a
 copied synthetic host as its parent, under this worktree's `out/tmp/observer-Release`.
 It waits on the actual observer handle, verifies no report before host exit, checks the JSON

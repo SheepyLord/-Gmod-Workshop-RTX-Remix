@@ -2,6 +2,30 @@
 
 ## R7-B: external exit diagnostics (2026-11-01)
 
+The final text review caught lossy catalog generation through Windows PowerShell 5.1's
+ASCII native-pipeline encoding (code page 20127): original UTF-8 labels survived, while new
+non-ASCII text became `?`. A before-failing Python catalog check and embedded C++ message
+checks now reject it. Writing the catalog through a UTF-8 source file restored the text;
+the full catalog then exceeded MSVC's 16 KiB single-literal limit. CMake now concatenates
+adjacent raw literals at existing label-file line boundaries, preserving the bytes. The
+native French dialog probe is repeated against that corrected embedded catalog, not merely
+against the source JSON.
+
+Final Release gate: 26/26 CTests (36.50 s) and 455 Python tests (28 gmapack, 25 steam,
+402 tools; two expected fixture skips). `out/r7-b/release-verified.log` records the pass.
+A separate native-window probe (`out/r7-b/dialog-probe.json`) observed exactly one visible
+French dialog after a synthetic access-violation exit, checked the title/body/code/folder,
+acknowledged only that observer's OK button and verified its process then exited. Its
+`+gmod_language fr` correctly beat the synthetic config's archived Japanese setting. This
+does not exercise GMod, Remix's own prompt or a real resource fault.
+
+The final parallel native run measured empty evidence collection at 1.379 ms mean / 4.073 ms
+maximum over 30 starts (an earlier isolated run: 0.484 / 0.676 ms). Startup's observer handshake
+has a separate 3 s readiness bound, not included in those collector numbers. The first full gate
+exposed the existing `loader/guard/tests/test_early.cpp` unprefixed timestamp path over MAX_PATH;
+using `fs::long_path` for its timestamp getter/setter removes the need for a local build-output
+path workaround. The fixture still proves that repeated preparation does not rewrite the cache.
+
 The same built proxy works inside System32 `rundll32.exe` with its DllMain loader guard.
 The synthetic integration covers 23 cases, including a genuinely separate sleeping observer,
 an inherited restricted game handle, process/path/creation/parent validation, exit before JSON
