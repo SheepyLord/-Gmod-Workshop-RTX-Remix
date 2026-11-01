@@ -5,6 +5,14 @@ Registers Model Hotloader character base-texture hashes with the runtime's MMD a
 provides the public `mmd/<16 hex digits>/<part>` material names. Soft copies, depth copies and
 public parts share the same textures, so they inherit the category without editing any material.
 
+A part whose every texel is partly transparent (Columbina's lattice mask) is drawn only through the
+hotloader's soft copy, so its public material is never bound and the runtime reports no hash for it
+(PoC run `14-mask-diag`, 2026-11-01: empty for the public and the soft material). When a part's material
+gives no hash, its base texture gets a wrapper (`nativeloader_mmd_alpha_<texture>`, `UnlitGeneric`),
+tracked and drawn once as a 1x1 quad into the screen-effect render target in `PostRender` (at most four
+per frame), the way the category manager finds chrome hashes; the wrapper's hash is the texture's.
+Wrapper lookups count against the same 16-lookup frame budget.
+
 Runs automatically on client `Think`. `nativeloader_mmd_alpha_status` prints its material count and
 last accepted list. There is no new setting: this is the scoped correction to Model Hotloader
 alpha, with no reason for a translated opt-out. The runtime also accepts a manually saved

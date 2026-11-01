@@ -11,7 +11,7 @@ LUAJIT = shutil.which('luajit') or next((str(p) for p in [
 ] if p.is_file()), None)
 SCENARIOS = ('normal', 'no_api', 'late_hash', 'late_material', 'fallback', 'invalid_hash',
              'nil_revision', 'no_tracking', 'retry', 'new_asset', 'prune', 'revision', 'bounded', 'namespace',
-             'late_api', 'track_retry')
+             'late_api', 'track_retry', 'soft_only', 'soft_only_budget')
 
 
 @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')

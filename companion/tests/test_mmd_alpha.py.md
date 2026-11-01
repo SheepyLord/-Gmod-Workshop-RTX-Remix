@@ -3,7 +3,9 @@
 Runs LuaJIT scenarios against the real companion script: registration, missing/late APIs and
 resources, fallback exclusion, invalid/duplicate hashes, late assets, removal, revision and
 fallback refresh, refused writes, tracking compatibility, generated-name filtering and the
-16-lookup frame budget with 4,096 parts.
+16-lookup frame budget with 4,096 parts; `soft_only` (a part drawn only through its soft copy gets a
+tracked off-screen wrapper and is tagged; fails on the code before the wrapper) and `soft_only_budget`
+(512 such parts stay within the budget).
 
 Usage: `python -m unittest discover -s companion/tests -v` from the repository root. Inputs are
 the companion and harness sources and an installed LuaJIT (PATH or the standard local install).

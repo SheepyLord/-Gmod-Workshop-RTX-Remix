@@ -9,6 +9,40 @@ local names, list, cursor, epoch = {}, {}, 1, 0
 local assets, assetKey, parts, partIndex, nextSweep = nil, nil, nil, 1, 0
 local revision, nextPoll, dirty, published = nil, 0, true, ""
 local sent, writeAt, writeDelay, nextPublish = nil, 0, 1, 0
+-- A part whose every texel is partly transparent (Columbina's lattice mask) is drawn only through the
+-- hotloader's soft copy, so its public material is never bound and the runtime learns no hash for it.
+-- Such a texture gets a tracked wrapper bound once off-screen, as the category manager does for chrome.
+local WRAPS_PER_FRAME = 4
+local wrappers, pendingWraps = {}, {}
+local function wrapperOf(textureName)
+    local wrap = wrappers[textureName]
+    if wrap ~= nil then return wrap or nil end
+    if not isfunction(CreateMaterial) or not isfunction(RemixMaterial.TrackMaterial) then return end
+    local name = "nativeloader_mmd_alpha_" .. textureName:gsub("[^%w]", "_")
+    local ok, mat = pcall(CreateMaterial, name, "UnlitGeneric", {["$basetexture"] = textureName, ["$vertexcolor"] = 1, ["$vertexalpha"] = 1})
+    if not ok or not mat then wrappers[textureName] = false return end
+    wrap = {name = name, material = mat}
+    wrappers[textureName], pendingWraps[#pendingWraps + 1] = wrap, wrap
+    return wrap
+end
+local function bindWrappers()
+    if #pendingWraps == 0 or not istable(RemixMaterial) or not isfunction(RemixMaterial.TrackMaterial) then return end
+    render.PushRenderTarget(render.GetScreenEffectTexture(0))
+    cam.Start2D()
+    for _ = 1, math.min(WRAPS_PER_FRAME, #pendingWraps) do
+        local wrap = table.remove(pendingWraps, 1)
+        -- Track immediately before the draw: the hash is recorded when the render thread consumes it.
+        if RemixMaterial.TrackMaterial(wrap.name) ~= false then
+            surface.SetDrawColor(255, 255, 255, 255)
+            surface.SetMaterial(wrap.material)
+            surface.DrawTexturedRect(0, 0, 1, 1)
+        else
+            pendingWraps[#pendingWraps + 1] = wrap
+        end
+    end
+    cam.End2D()
+    render.PopRenderTarget()
+end
 
 local function normalize(name)
     if not isstring(name) then return end
@@ -70,31 +104,41 @@ local function hashesOf(state)
     if not state.tracked and isfunction(RemixMaterial.TrackMaterial) then
         state.tracked = RemixMaterial.TrackMaterial(state.name) ~= false
     end
-    local hashes = {}
-    for _, hash in ipairs(RemixMaterial.GetAllTextureHashes(state.name) or {}) do
-        local digits = isstring(hash) and hash:match("^0[xX](%x+)$")
-        if digits and #digits <= 16 then
-            digits = digits:lower():gsub("^0+", "")
-            if digits ~= "" then hashes["0x" .. string.rep("0", 16 - #digits) .. digits] = true end
+    local hashes, found, calls = {}, false, 1
+    local function collect(list)
+        for _, hash in ipairs(list or {}) do
+            local digits = isstring(hash) and hash:match("^0[xX](%x+)$")
+            if digits and #digits <= 16 then
+                digits = digits:lower():gsub("^0+", "")
+                if digits ~= "" then hashes["0x" .. string.rep("0", 16 - #digits) .. digits], found = true, true end
+            end
         end
+    end
+    collect(RemixMaterial.GetAllTextureHashes(state.name))
+    if not found then
+        local wrap = wrapperOf(textureName)
+        if wrap then calls = 2 collect(RemixMaterial.GetAllTextureHashes(wrap.name)) end
     end
     local values = {}
     for hash in pairs(hashes) do values[#values + 1] = hash end
-    if #values == 0 then return end
+    if #values == 0 then return nil, calls end
     table.sort(values)
-    return table.concat(values, ", ")
+    return table.concat(values, ", "), calls
 end
 local function lookUp(now)
     if now >= nextPoll then
         nextPoll = now + POLL
         revision = isfunction(RemixMaterial.GetMaterialHashRevision) and RemixMaterial.GetMaterialHashRevision() or nil
     end
+    local budget = LOOKUPS
     for _ = 1, math.min(LOOKUPS, #list) do
+        if budget <= 0 then break end
         if cursor > #list then cursor = 1 end
         local state = list[cursor]
         cursor = cursor + 1
         if now >= state.retry or (revision ~= nil and state.revision ~= revision) then
-            local hashes = hashesOf(state)
+            local hashes, calls = hashesOf(state)
+            budget = budget - (calls or 0)
             if hashes ~= state.hashes then state.hashes, dirty = hashes, true end
             state.revision = revision
             if hashes then
@@ -134,6 +178,7 @@ local function sync()
     end
 end
 hook.Add("Think", "nativeloader_mmd_alpha", sync)
+hook.Add("PostRender", "nativeloader_mmd_alpha", bindWrappers)
 concommand.Add("nativeloader_mmd_alpha_status", function()
     print(string.format("[nativeloader] MMD alpha: %d materials; %s=%s", #list, OPTION, sent or "pending"))
 end)
