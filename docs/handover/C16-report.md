@@ -66,10 +66,12 @@ model layers changed, and `check_pack.py --deep` gives the same warnings as befo
 The RTX package with the runtime went to 3829070317 with the merge (`0.0.0-dev.20261101052452+2768a059`,
 the content digest tested on the PoC). Players get both at the next start after Steam has fetched them.
 
-On the field install, rpai's own `rtx-remix\mods\ai_pbr` also holds Evernight's and March 7th's layers
-(fixed emission, 0.6 and 0.04). Remix takes a material from the first mod that has it, and `ai_pbr`
-sorts before `pbr_evernight_march7th`, so there those two keep the fixed emission until `ai_pbr` gets
-the input too (a field change, for the user to ask for). Robin and Guinaifen are only in their packs.
+On the field install, rpai's own `rtx-remix\mods\ai_pbr` also holds Evernight's and March 7th's layers.
+Remix takes a material from the first mod that has it, and `ai_pbr` sorts before
+`pbr_evernight_march7th`, so at the user's request (2026-10-31, no backup wanted) those two layers got
+the input too, with `set_adaptive_emission.py --multiplier 25` (Evernight 15, March 7th 1; otherwise
+byte-identical, no game started). rpai's next publish writes the same values by default. Robin and
+Guinaifen are only in their packs.
 
 ## Tests
 
