@@ -1,5 +1,9 @@
 # Roadmap
 
+G1-B is **in progress** on `g1-native`: a dedicated Jolt broken-glass client module, map import,
+debris manager and offline tests, per [the brief](handover/G1-B-native.md). Packaging and game
+acceptance belong to Claude; this task uses only its worktree and starts no game.
+
 R6 harness failure handling is **done with offline validation** on `r6-harness` (2026-10-31): whole-run crash-prompt
 watchdog, device-loss/continuous-hang detection, bounded capture and exit, retained evidence and
 explicit release-QA reasons. Validation uses fake games/windows only; game acceptance stays with

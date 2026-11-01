@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### G1 (unreleased)
+
+- Vendor Jolt Physics 5.3.0 (MIT) for the dedicated client-side broken-glass world (G1-B).
+
 ### C-16 (unreleased)
 
 - Anime characters' eye whites no longer glow at night or turn grey by day: with Robin's pack, the eye
