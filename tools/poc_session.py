@@ -42,7 +42,10 @@ PARTIAL_MOUNT_GRACE = 20.0
 LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 WATCHDOG_INTERVAL = 1.0
-HANG_GRACE = 20.0
+# Map loads, the RTX fixes' model reloads and a cold shader cache keep the window unresponsive for
+# tens of seconds (console sends already allow 60 s); a lost GPU ends the run through its log marker
+# at once, so this grace only has to catch a real deadlock.
+HANG_GRACE = 120.0
 FAILURE_EXIT_TIMEOUT = 60.0
 SCREENSHOT_TIMEOUT = 5.0
 DEVICE_LOST = re.compile(r"VK_ERROR_DEVICE_LOST|Exiting after GPU device loss")

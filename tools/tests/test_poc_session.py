@@ -889,13 +889,13 @@ class HealthTests(unittest.TestCase):
             health.before_window(7)
             hung[0] = True
             health.check(7)
-            self.clock.sleep(19.5)
+            self.clock.sleep(ps.HANG_GRACE - 0.5)
             health.check(7)
             self.assertNotIn('hung_seconds', self.record)
             self.clock.sleep(0.5)
-            with self.assertRaisesRegex(ps.Failure, 'hung for 20.0 s'):
+            with self.assertRaisesRegex(ps.Failure, f'hung for {ps.HANG_GRACE:.1f} s'):
                 health.check(7)
-        self.assertEqual(self.record['hung_seconds'], 20)
+        self.assertEqual(self.record['hung_seconds'], ps.HANG_GRACE)
 
     def test_window_operations_wait_out_a_normal_load_instead_of_sending_to_a_hung_window(self):
         with mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \
@@ -921,7 +921,7 @@ class HealthTests(unittest.TestCase):
             with self.assertRaisesRegex(ps.Failure, 'hung for'):
                 ps.console(7, 'map modern_house', check=health.before_window)
         self.assertEqual(len(calls), 1)  # no retry once a continuous hang is confirmed
-        self.assertEqual(self.clock.now, 1030)
+        self.assertEqual(self.clock.now, 1010 + ps.HANG_GRACE)  # the 10 s send, then the whole grace
 
     def test_window_hung_uses_the_nonblocking_windows_query(self):
         with mock.patch.object(ps.user32, 'IsHungAppWindow', side_effect=[1, 0]) as hung:

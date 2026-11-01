@@ -4,7 +4,7 @@
 
 [`poc_session.py`](../tools/poc_session.py.md) now declines crash prompts on a background watchdog
 throughout a run, preserves live crash dumps before answering, and aborts in-game work on a new Remix
-device-loss marker or a window continuously hung for 20 s. Short load stalls may recover; captures
+device-loss marker or a window continuously hung for 120 s. Short load stalls may recover; captures
 have a 5 s timeout. After failure Remix gets 60 s to exit before only this run's game/helpers are
 stopped. Evidence records `failed`, `device_lost`/`hung_seconds`, numeric/hex/named exits and any forced
 termination; release QA prints those causes and retains them in `qa-summary.json`. Focused tests are

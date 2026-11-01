@@ -43,7 +43,7 @@ the minidumps `poc_session.py` kept (`crash-reports\`), and new Remix crash repo
 line and `qa-summary.json`'s `problems` explicitly say `GPU device lost` or `game window hung for N s`;
 each session also retains `device_lost`, `hung_seconds`, `exit`, `exit_hex` and `exit_name` from the
 harness. Known exits name Remix's GPU crash (`0x60D0DEAD`) and Windows closing a not-responding program
-(`0xCFFFFFFF`). The harness gives short window stalls a 20 s grace and failures a 60 s exit wait,
+(`0xCFFFFFFF`). The harness gives window stalls (map loads, model reloads) a 120 s grace and failures a 60 s exit wait,
 then stops only its own classified processes while preserving the evidence.
 
 Around the sessions it records the SHA-256 of `user.conf`, `rtx.conf`, the loader's `winmm.dll`,
