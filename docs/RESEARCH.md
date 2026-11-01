@@ -4024,3 +4024,40 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
   function at run time, as `activate.cpp` does for user32, so the bootstrap's import table stays
   KERNEL32-only. PoC run `b-fixed` (loader 0.12.1, the same stall): hung for 20.1 s, three invalidations,
   **no ghost window**, a normal quit; loader note `window ghosting off`.
+
+## R8 CI: glass mirrors behind dropped catch-up steps (2026-11-01, Claude)
+
+- **Symptom.** `build.yml` failed on four of the five pushes to `main` after the R7 merge (runs
+  41308841564, 41347922720, 41354364348 and 41355549858; 41357362175 passed), each time in
+  `nl_glass_tests` with a few misses of `test_interaction.cpp:166` (three, and two, in the logs read):
+  the Source mirror within .01 units of the synced box after `step`. Two of those runs also failed
+  `nl_exit_observer_integration` separately: its loader log had no `exit observer ready` note (the
+  loader waits 3 s for the observer, `loader/proxy/observer.cpp:175`). This fix does not cover that.
+- **The runner.** This private repository's `windows-2022` runner has 2 vCPUs: `hardware_concurrency()`
+  is 2, so `world.cpp:181` starts one Jolt worker (the G1-B benchmark line reads `workers=1`), and
+  CTest runs `nl_glass_tests` beside five other tests. Pinning a local run's affinity to two cores
+  leaves `hardware_concurrency()`, and so eight workers, unchanged.
+- **Cause: the 4 ms catch-up budget, not the worker count.** `step_impl` always runs one 1/60 s substep
+  and further catch-up substeps only while the measured `elapsed + last_fixed_ms` stays under 4 ms
+  (`world.cpp:704`); a whole step still due is discarded (`dropped_seconds`). At dt 1/30 a first substep
+  over about 2 ms, such as a preempted thread on a busy machine, dropped the second, and the mirror's
+  kinematic interpolation (`m.remaining`, the snapshot interval; `world.cpp:708`) stopped halfway.
+- **Reproduced on Linux** (clang 18 with the module's Jolt options, the unchanged test file, under the
+  git-ignored `out/repro-glass`): pinned to one CPU that a busy loop shares, one to four misses per
+  run, with two workers. Each was a 1/30 s frame with `substeps` 1, `step_ms` 4.2-6.2 and 1/60 s dropped,
+  and the miss was exactly half a frame: 650/60 = 10.83 or 3600/60 = 60 units. There were none unloaded.
+- **The game hit it too.** The add-on syncs and steps with one interval (`debris_scene.lua:246`,
+  `debris.lua:495`), so a loaded 30 FPS client takes the same path. With every catch-up step dropped
+  (budget 0, 36 snapshots at 30 Hz), the old code left the mirror a whole frame behind (21.67 units
+  at 650 units/s). It moved the mirror at twice Source's speed in simulated time, and the next sweep
+  counted the backlog as speed. At 3600 units/s the backlog took every second snapshot over the
+  128-unit teleport limit (`world.cpp:544`): 18 of 36 snapshots were never swept.
+- **Fix.** Discarded catch-up time now moves each mirror through the same share of its sampled motion
+  as a pose correction (`skip_mirrors`, `world.cpp:288`); the snapshot's sweep had already covered that
+  path. Budget 0: no lag, and 36 of 36 snapshots swept. Contended runs at the default 4 ms: one to six
+  drops per run and no misses (before: one miss per drop).
+- **Tests stop racing the clock.** `World::set_catch_up_budget` (C++ only, 0-1000 ms) lets a test run
+  every catch-up step (1000) or drop every one (0). The fast-box case runs both. A new case checks the
+  snapshot clock, including a .045 s snapshot (2/60 of its motion done, the rest kept for the next step).
+  The `substeps==4` check in `test_glass.cpp` had the same race and now pins 1000. Without the fix the
+  pinned cases fail on an idle machine (108 and 10 misses).

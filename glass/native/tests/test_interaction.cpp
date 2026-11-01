@@ -151,8 +151,10 @@ TEST_CASE("glass moving Source body generates follow-up damage and teleports do 
   CHECK((w.scene_pose(1).position-body.position).length()<.001f);
 }
 TEST_CASE("glass fast box sweeps push a sleeping floor pile at one or two frame snapshot intervals") {
-  for(float speed:{650.0f,3600.0f})for(double dt:{1.0/60,1.0/30})for(bool collide:{false,true}) {
-    World w(16);ready(w);w.set_interaction(true);w.set_collide(collide);
+  // Pinned catch-up budgets, never this machine's speed: every substep runs (1000 ms), or a starved
+  // client drops every catch-up step (0 ms). A 2-vCPU CI runner dropped some at the default 4 ms.
+  for(float speed:{650.0f,3600.0f})for(double dt:{1.0/60,1.0/30})for(bool collide:{false,true})for(double budget:{1000.0,0.0}) {
+    World w(16);ready(w);w.set_interaction(true);w.set_collide(collide);w.set_catch_up_budget(budget);
     for(int x=-1;x<=1;++x)for(int y=-1;y<=1;++y)
       w.spawn(fixture::box(16,16,.25f),{float(x)*34,float(y)*34,8},{},{},{},8);
     for(unsigned i=0;i<180;++i)w.step(1.0/60);
@@ -170,9 +172,26 @@ TEST_CASE("glass fast box sweeps push a sleeping floor pile at one or two frame 
       for(const auto& e:w.take_damage())if(e.kinds&SourceBody)damaged=true;
     }
     CHECK(moved);CHECK(damaged);CHECK(w.stats().scene_sweep_hits>0);
-    std::cout<<"R7-C fast box speed="<<speed<<" dt="<<dt<<" collide="<<collide
+    if(budget==0 && dt>1.0/60)CHECK(std::abs(w.stats().dropped_seconds-.6)<1e-6); // all 36 catch-up steps
+    std::cout<<"R7-C fast box speed="<<speed<<" dt="<<dt<<" collide="<<collide<<" catch_up_ms="<<budget
       <<" sync_mean_ms="<<total/36<<" sync_max_ms="<<peak<<'\n';
   }
+}
+TEST_CASE("glass dropped catch-up steps keep Source mirrors on the snapshot clock") {
+  World w(4,0);ready(w);w.set_interaction(true);w.set_catch_up_budget(0);
+  auto body=mirror(3,{0,0,32});w.sync_bodies({body},1.0/60);w.step(1.0/60);
+  for(unsigned i=1;i<=8;++i) { // 1/30 s snapshots: one substep runs, one is dropped, Source still wins.
+    body.position.x=float(i)*20;w.sync_bodies({body},1.0/30);
+    const auto dropped=w.stats().dropped_seconds;w.step(1.0/30);
+    CHECK(w.stats().substeps==1);CHECK(std::abs(w.stats().dropped_seconds-dropped-1.0/60)<1e-9);
+    CHECK((w.scene_pose(3).position-body.position).length()<.001f);
+  }
+  // .045 s: 1/60 runs and 1/60 drops, so the mirror covers 2/60 of 45 units; .0117 s stays queued.
+  body.position.x+=45;w.sync_bodies({body},.045);w.step(.045);
+  CHECK(std::abs(w.scene_pose(3).position.x-(160+45*float(2.0/60/.045)))<.01f);
+  w.step(1.0/60);CHECK((w.scene_pose(3).position-body.position).length()<.001f);
+  CHECK_THROWS_AS(w.set_catch_up_budget(-1),Error);CHECK_THROWS_AS(w.set_catch_up_budget(1001),Error);
+  CHECK_THROWS_AS(w.set_catch_up_budget(std::numeric_limits<double>::quiet_NaN()),Error);
 }
 TEST_CASE("glass mirror sweeps cap casts hits and leaf damage without casting teleports or disabled scenes") {
   World w(128,0);ready(w);w.set_interaction(true);w.set_collide(false);

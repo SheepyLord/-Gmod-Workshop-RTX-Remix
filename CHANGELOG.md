@@ -35,6 +35,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
   (the server required 128 bits per region; `net.WriteVector` sends 3-66), so bullets reached pieces only
   for 2 s after a break; a bullet now carries 60,000 energy per damage point (pistol rounds split whole
   slabs); crowbar, stunstick, fists and trace-based melee SWEPs are forwarded.
+- **Glass mirrors keep up with Source when a step runs long** (CI red on `main` since R7). When the
+  glass world's 4 ms catch-up budget dropped a substep, the mirror of a Source body stopped halfway
+  through its motion and fed the backlog into the next snapshot as extra speed: a 30 FPS client that
+  dropped every catch-up step pushed glass at twice the real speed and left every second snapshot of a
+  very fast body unswept. The 2-vCPU CI runner failed `nl_glass_tests` on it. Dropped time now moves
+  mirrors as a pose correction, and the native tests pin the budget (`World::set_catch_up_budget`, C++
+  only) instead of racing the clock.
 - **The Backrooms work's native fixes in the RTX fixes DLL**: a cache of models without a SW VTX, lazy model
   transforms and default-off PAS visibility for the room next door, ported onto the packaged fixes source
   (corresponding source in `packages/fixes/licenses/oversized-skinning/backrooms/`).

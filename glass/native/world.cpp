@@ -174,7 +174,7 @@ struct World::Impl {
   std::uint64_t epoch=0;
   std::size_t model_points=0;
   float gravity=600;
-  double accumulator=0,step_ms=0,dropped=0,last_fixed_ms=0;
+  double accumulator=0,step_ms=0,dropped=0,last_fixed_ms=0,catch_up_ms=4;
 
   Impl(unsigned budget,float g):registry(runtime()),pieces(budget+2),capacity(budget),gravity(g) {
     const unsigned hw=std::thread::hardware_concurrency();
@@ -280,6 +280,20 @@ struct World::Impl {
       p.asleep=false;p.dirty=true;queue(slot);budget.kicked[budget.count++]=id;++scene_sweep_hits;
       const float speed=closing/kMetres,mass=std::min(m.mass,p.mass*8);
       damage(slot,.5f*mass*speed*speed,SourceBody);
+    }
+  }
+  // Discarded catch-up time never reaches Jolt, but Source still moved. Finish that part of each
+  // mirror's sampled motion as a pose correction (the sync sweep already covered the path). A mirror
+  // left behind would carry the backlog into the next snapshot as extra speed for its sweep and push.
+  void skip_mirrors(float seconds) {
+    auto& bi=physics->GetBodyInterfaceNoLock();
+    for(auto& m:mirrors)if(m.key && m.remaining>0) {
+      if(seconds>=m.remaining)bi.SetPositionAndRotation(m.body,m.target,m.rotation,JPH::EActivation::DontActivate);
+      else {
+        const float t=seconds/m.remaining;const auto p=bi.GetPosition(m.body);
+        bi.SetPositionAndRotation(m.body,p+(m.target-p)*t,bi.GetRotation(m.body).SLERP(m.rotation,t),JPH::EActivation::DontActivate);
+      }
+      m.remaining=std::max(0.0f,m.remaining-seconds);
     }
   }
   std::uint32_t create(JPH::RefConst<JPH::Shape> shape,V3 position,V3 a,V3 velocity,V3 spin,float minimum_size=4) {
@@ -663,6 +677,10 @@ std::vector<Fragment> World::split(std::uint32_t id,float minimum_size) {
 void World::step(double dt) {
   (void)idle();step_impl(dt);
 }
+void World::set_catch_up_budget(double milliseconds) {
+  need(std::isfinite(milliseconds) && milliseconds>=0 && milliseconds<=1000,"catch-up budget must be 0-1000 ms");
+  idle().catch_up_ms=milliseconds;
+}
 void World::begin_step(double dt) {
   auto& w=idle();need(w.ready,"world is not ready");need(std::isfinite(dt) && dt>=0 && dt<=10,"invalid timestep");
   snapshot_=stats();stepping_=std::async(std::launch::async,[this,dt] { step_impl(dt); });
@@ -681,8 +699,9 @@ void World::step_impl(double dt) {
   while(w.accumulator+1e-9>=fixed && w.substeps<4) {
     const auto tick=std::chrono::steady_clock::now();
     const double elapsed=std::chrono::duration<double,std::milli>(tick-start).count();
-    // Always permit one fixed update; additional catch-up steps must fit a measured 4 ms budget.
-    if(w.substeps && elapsed+w.last_fixed_ms>4)break;
+    // Always permit one fixed update; additional catch-up steps must fit a measured 4 ms budget
+    // (C++ tests pin it, so their results never depend on how fast the machine steps).
+    if(w.substeps && elapsed+w.last_fixed_ms>=w.catch_up_ms)break;
     if(w.interaction) {
       auto& bi=w.physics->GetBodyInterfaceNoLock();
       for(auto& m:w.mirrors)if(m.key) {
@@ -734,7 +753,11 @@ void World::step_impl(double dt) {
     w.accumulator=std::max(0.0,w.accumulator-fixed);++w.substeps;
     w.last_fixed_ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-tick).count();
   }
-  if(w.accumulator>=fixed) { const auto discard=std::floor(w.accumulator/fixed)*fixed;w.accumulator-=discard;w.dropped+=discard; }
+  // Only a missed budget leaves a whole step due (same tolerance as the loop): drop it, never queue it.
+  if(w.accumulator+1e-9>=fixed) {
+    const auto discard=std::floor((w.accumulator+1e-9)/fixed)*fixed;
+    w.accumulator=std::max(0.0,w.accumulator-discard);w.dropped+=discard;w.skip_mirrors(static_cast<float>(discard));
+  }
   w.step_ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
 }
 std::span<const Pose> World::poses() {

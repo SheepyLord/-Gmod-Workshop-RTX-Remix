@@ -66,6 +66,9 @@ public:
   bool can_split(std::uint32_t id,float minimum_size) const;
   Pose scene_pose(std::uint32_t key) const; // read-only; also proves one-way motion in tests
   void step(double dt);
+  // C++ tests only (never exposed to the game Lua API): the wall-clock limit for catch-up substeps,
+  // 4 ms by default. 0 drops every catch-up step and 1000 runs them all, so tests never race the clock.
+  void set_catch_up_budget(double milliseconds);
   void begin_step(double dt);
   bool poll_step();
   std::span<const Pose> poses(); // awake pieces + one final pose per sleep transition, reused storage

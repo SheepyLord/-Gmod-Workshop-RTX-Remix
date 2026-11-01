@@ -128,7 +128,8 @@ TEST_CASE("glass world validates bounds and map failure clears static collision"
   CHECK_THROWS_AS(w.spawn(h,{},{},{},{}),Error);CHECK_THROWS_AS(w.step(-1),Error);
   CHECK_THROWS_AS(w.impulse({},-1,10),Error);CHECK_THROWS_AS(w.set_gravity(-1),Error);
   CHECK_THROWS_AS(w.sleeping(0),Error);CHECK(!w.remove(0));CHECK(w.remove(a));CHECK(!w.remove(a));
-  const auto c=w.spawn(h,{0,0,32},{},{},{});CHECK(c!=a);w.set_collide(false);w.step(1);
+  const auto c=w.spawn(h,{0,0,32},{},{},{});CHECK(c!=a);w.set_collide(false);
+  w.set_catch_up_budget(1000);w.step(1); // the four-substep cap, not this machine's 4 ms budget
   CHECK(w.stats().substeps==4);CHECK(w.stats().dropped_seconds>.9);
   w.clear();CHECK(w.stats().live==0 && w.stats().ready);
   CHECK_THROWS_AS(w.load_map({}),Error);CHECK(!w.stats().ready && w.stats().statics==0);

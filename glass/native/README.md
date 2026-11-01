@@ -35,7 +35,9 @@ body/pair/contact limits bound work. Pair/contact capacities are `max(1024,budge
 Cache saturation increments per-kind counters and continues Jolt's safe partial-contact update.
 Substeps are 1/60 s, capped at four per dispatch and by a measured 4 ms catch-up budget (one update
 always runs, even when it exceeds 4 ms). Excess whole steps are discarded/counted; fractional time
-is retained for interpolation. Completely sleeping worlds skip physics updates.
+is retained for interpolation. Completely sleeping worlds skip physics updates. Source mirrors are not
+left behind by discarded time: each covers that share of its sampled motion as a pose correction, so it
+ends every dispatch on the latest snapshot ([RESEARCH.md](../../docs/RESEARCH.md#r8-ci-glass-mirrors-behind-dropped-catch-up-steps-2026-11-01-claude)).
 
 Import accepts VBSP 19, 20 and 21 (including the L4D2 reordered directory). It traverses model 0's
 node/leaf tree, imports only its referenced brushes, and clips their plane halfspaces to convex
@@ -100,7 +102,8 @@ follow-up fracture eligibility. `Split` preserves area/thickness, recentres chil
 linear plus angular point velocity. Two private staging slots allow rollback of refused replacements;
 completed operations never exceed capacity. A full native world refuses splitting until the manager
 has evicted its oldest piece. Cause bits are bullet=1, blast=2, Source body=4, fall=8.
-`scene_pose` is a read-only C++ test accessor, never exposed to the game Lua API.
+`scene_pose` is a read-only C++ test accessor, never exposed to the game Lua API; so is
+`set_catch_up_budget` (0-1000 ms, default 4), which tests pin at 0 or 1000 instead of racing the clock.
 
 New statistics: `interaction`, `scene_bodies`, `scene_moves`, `scene_cooks`, `damage_dropped`,
 `ray_hits`, `splits`. Scene masses are clamped to .01–50,000 kg, half extents to .05–1024 units;
@@ -128,8 +131,9 @@ to 120 `frame dt count` records, each followed by `count` numeric rows:
 `key x y z pitch yaw roll halfX halfY halfZ mass velX velY velZ` (boxes, <=96 rows).
 Exit 0 requires a settled nine-piece fixture, unchanged mirror targets, and movement plus body
 damage when enabled; `--off` requires zero movement/damage. No files, installed assets or game are
-used. Native tests separately cover 650/3600-unit/s boxes at 60/30 Hz, both glass layers, caps,
-minimum-size movement, teleports and disabling. Offline timings are in the R7-C report.
+used. Native tests separately cover 650/3600-unit/s boxes at 60/30 Hz with every catch-up step run or
+dropped, both glass layers, caps, minimum-size movement, teleports and disabling. Offline timings are
+in the R7-C report.
 
 Import statistics include `brushes` (considered solid world brushes), `skipped_brushes` (clipping),
 `refused_brushes`, `refused_convexes`, `refused_meshes` (Jolt cooking) and `skipped_props`.
