@@ -1,5 +1,37 @@
 # Testing
 
+## G1-A fix pass: final client and Release checks
+
+Release passes **25 CTests and 448 Python tests** (two existing skips), including 45 glass tests.
+The eleven fix items have before-failing probes against 3096b2e; outputs are in this worktree's
+`out/g1a/`. The original main-checkout `out/qa-poc/g1/` evidence was inspected without edits.
+
+`nlglass_engine_harness.lua ... client_timings` prepares the same 100 impacts, then restores a fresh
+server/client state for each of 40 samples (493/502 cells before/after). Initial snapshot/build
+is outside timing. Actual Lua mesh/convex generation runs; engine APIs/transport/debris are mocked.
+
+| Handler | Before mean/p99 ms | After mean/p99 ms |
+|---|---:|---:|
+| Server hit | 14.29 / 39.55 | 5.30 / 16.47 |
+| Server break | 18.93 / 37.84 | 10.36 / 25.07 |
+| Client hit | 45.32 / 73.61 | 27.78 / 52.19 |
+| Client break | 84.15 / 118.35 | 23.74 / 46.52 |
+
+Final pure-fracture means (80 samples): 0.8426 ms new hit, 0.0961 ms repeat, 0.6749 ms break;
+p99 2.6709/0.6155/1.9264 ms. These CPU probes do not predict live game frame times. Client
+regressions also count one physics build and at most one pane/crack pair per break, no weak-hit
+build, zero stationary draw allocations/transforms/class queries, distance/eye-plane culling,
+one readiness push and per-pane repair. Player contact includes the QA base-velocity impulse;
+blast ordering includes deferred native removals.
+
+Claude's remaining game checks: ordinary running and the scripted 500-unit/s upright contact;
+departing horizontal/distant rotated bodies; many later hits at the cell cap; pistol rounds on
+large/thick panes and cumulative weak damage; small tempered spiderweb then full shatter; no border
+cracks; real Hammer OnBreak targets/activator/caller/delay/count with no duplicate engine effects;
+late join/two-client cracks and holes, collision prediction, moving panes and conservative culling;
+Jolt after G1-B's fixes and the 40/50-pane falling/settled scene against empty/classic baselines.
+Check all-four-OnUser and missing-key/hot-refresh bridge limitations documented in ADR 0074.
+
 ## G1-A fix pass: incremental fracture
 
 The plain LuaJIT harness runs cap-location, weak-energy/floor, local tempered spiderweb, perimeter,

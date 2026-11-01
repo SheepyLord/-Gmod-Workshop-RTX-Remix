@@ -169,3 +169,18 @@ class EngineTests(unittest.TestCase):
 
     def test_near_cap_topology_snapshot_and_following_break(self):
         self.run_case('topology')
+
+    def test_client_builds_once_per_break_and_skips_weak_geometry(self):
+        self.run_case('client_build')
+
+    def test_client_caches_transforms_and_culls_distant_or_rear_panes(self):
+        self.run_case('draw_cull')
+
+    def test_single_initial_state_push_after_client_readiness(self):
+        self.run_case('initial_sync')
+
+    def test_revision_mismatch_resyncs_only_one_pane(self):
+        self.run_case('target_sync')
+
+    def test_record_server_and_client_hit_and_break_timings(self):
+        self.run_case('client_timings')

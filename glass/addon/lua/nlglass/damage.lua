@@ -74,7 +74,8 @@ function D.FromBody(r,body,velocity,point)
     if p.z*speed>0 then return end -- departing from the body's side of the pane
     local mins,maxs=body:GetCollisionBounds()
     local half=(maxs-mins)*0.5
-    local n=WorldToLocal(normal,angle_zero,Vector(),body:GetAngles())
+    -- Players/NPCs use an axis-aligned movement hull; eye/yaw angles do not rotate that hull.
+    local n=body:IsVehicle() and WorldToLocal(normal,angle_zero,Vector(),body:GetAngles()) or normal
     local width=math.abs(n.x)*half.x+math.abs(n.y)*half.y+math.abs(n.z)*half.z
     if math.abs(p.z)>r.state.def.thickness*0.5+width+1/32 then return end
     -- Touch uses an expanded trigger bound: a player wholly in a hole must not hit ghost glass.

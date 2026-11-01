@@ -1,5 +1,37 @@
 # Research notes
 
+## G1-A client/update fix pass: final offline evidence (2026-11-01)
+
+- Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),
+  `server.lua:151` (incoming/base-velocity sweep), `server.lua:286` (targeted sync), all under
+  `glass/addon/lua/nlglass/`. Fracture anchors there: `fracture.lua:104` (capped crack floor),
+  `:258`/`:286` (complete-group coarsening/local refinement), `:343`/`:451` (apply/crack caches).
+  Client anchors: `client.lua:22`/`:50`/`:162` (pose cache/build/draw), `protocol.lua:13` (snapshot).
+
+- `glass/addon/lua/nlglass/client.lua` retains matrices/entity validation and refreshes transforms
+  only after a pose change. The draw harness checks 20 frames with zero new Matrix, LocalToWorld
+  or class calls; far/rear panes are skipped. A break builds prediction physics once and at most
+  one pane/crack mesh pair. Pending weak energy builds neither. Initial sync is client-ready only;
+  a mismatch requests one pane and two different panes can repair in the same frame.
+- The corrected 40-sample handler benchmark restores fresh server/client records before each
+  sample (so stale revisions cannot short-circuit later samples). Same 100 preparation hits,
+  493/502 cells before/after. Mean ms before/after: server hit 14.2875/5.3019; server break
+  18.9326/10.3577; client hit 45.3190/27.7840; client break 84.1545/23.7365. p99 ms:
+  39.5452/16.4711; 37.8406/25.0744; 73.6096/52.1866; 118.3529/46.5227 respectively.
+  These include Lua mesh/convex construction and mock overhead/GC, not actual engine/GPU physics,
+  transport, debris/Jolt or Remix. They do not establish game frame-rate acceptance.
+- Final pure-fracture 80-sample means: new hit 0.8426 ms, repeat 0.0961 ms, break 0.6749 ms;
+  p99 2.6709/0.6155/1.9264 ms. Existing before means were 12.5675/13.6601/14.5538 ms.
+- [Entity:SetVelocity](https://wiki.facepunch.com/gmod/Entity:SetVelocity) sets base velocity,
+  added to player movement; [GetBaseVelocity](https://wiki.facepunch.com/gmod/Entity:GetBaseVelocity)
+  exposes it. The QA runner's scripted push needs this in addition to CMoveData velocity. Tests
+  cover ordinary incoming motion with stopped entity velocity and zero movement velocity with a
+  500-unit/s base impulse. The old logs have no Touch/velocity trace, so exact engine callback
+  timing is still a game check. Native-removal blast order is separately tested with deferred breaks.
+- Full `tools/test.ps1 -Config Release`: 25 CTests, 448 Python tests (28 gmapack, 25 steam,
+  395 tools; two existing skips), including 45 G1-A glass cases. Output and before-failure/timing
+  evidence are under this worktree's ignored `out/g1a/`; original QA evidence was read only.
+
 ## G1-A incremental fracture probes (2026-11-01)
 
 - `tools/tests/nlglass_fracture_harness.lua` now reproduces lost hit location at the fourth

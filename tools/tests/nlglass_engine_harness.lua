@@ -1,6 +1,13 @@
 -- MIT. Execute the actual G1-A server, wire protocol, entity, tool, menu and client with GMod mocks.
 local root,scenario=arg[1],arg[2]
 local ffi=require("ffi")
+local now=os.clock
+if ffi.os=="Windows" then
+    ffi.cdef("int QueryPerformanceCounter(int64_t*); int QueryPerformanceFrequency(int64_t*);")
+    local tick,freq=ffi.new("int64_t[1]"),ffi.new("int64_t[1]")
+    ffi.C.QueryPerformanceFrequency(freq) local frequency=tonumber(freq[0])
+    now=function() ffi.C.QueryPerformanceCounter(tick) return tonumber(tick[0])/frequency end
+end
 local function check(v,msg) assert(v,msg) end
 local function near(a,b,msg) assert(math.abs(a-b)<0.01,(msg or "near")..": "..a.." / "..b) end
 local Vec={} Vec.__index=Vec
@@ -198,6 +205,7 @@ function E:GetPos() return self.pos end function E:SetPos(v) self.pos=v end
 function E:GetAngles() return self.angles end function E:SetAngles(v) self.angles=v end
 function E:GetColor() return self.color end function E:SetColor(v) self.color=v end
 function E:GetVelocity() return self.velocity end function E:WorldSpaceCenter() return self.pos end
+function E:GetBaseVelocity() return self.baseVelocity or Vector() end
 function E:GetCollisionBounds() return Vector(-16,-16,-16),Vector(16,16,16) end
 function E:LocalToWorld(p) return LocalToWorld(p,zero,self.pos,self.angles) end
 function E:GetBrushSurfaces() return self.surfaces end
@@ -364,7 +372,8 @@ elseif scenario=="network" then
     check(#cl.debris==0 and #F.Cracks(cl.NLGlass.Client.records[r.id].state)>0,"networked cracks without debris")
     local late=realm(false) late.cvars=sv.cvars late.ents=sv.ents late.include("autorun/nlglass.lua")
     late.player=newEntity("player",{flags={player=true}})
-    sv.run("PlayerInitialSpawn",late.player) sv.flush() late.deliver(sv.out[#sv.out])
+    late.net.Start("nlglass_sync") late.net.WriteUInt(0,32) late.net.SendToServer()
+    sv.deliver(late.out[#late.out],late.player) late.deliver(sv.out[#sv.out])
     check(sv.out[#sv.out].target==late.player,"actual join hook targets the joining player")
     local lr=late.NLGlass.Client.records[r.id]
     check(lr.state.damage==360000 and #lr.state.impacts==1 and #late.debris==0,"late join receives accumulated history")
@@ -376,7 +385,8 @@ elseif scenario=="network" then
         local other=late.debris[1].pieces[i]
         near(piece.poly[1][1],other.poly[1][1],"two-client polygon") near(piece.velocity.z,other.velocity.z,"two-client velocity")
     end
-    late.net.Start("nlglass_sync") late.net.SendToServer()
+    sv.time=sv.time+3
+    late.net.Start("nlglass_sync") late.net.WriteUInt(r.id,32) late.net.SendToServer()
     sv.deliver(late.out[#late.out],late.player) late.deliver(sv.out[#sv.out])
     local sent=#sv.out sv.deliver(late.out[#late.out],late.player)
     check(#sv.out==sent,"read-only resync is rate limited")
@@ -500,6 +510,8 @@ elseif scenario=="body_contact" then
     check(not D.FromBody(r,body),"rotated trigger AABB is not a plane contact")
     body.pos=Vector(16,0,0) check(D.FromBody(r,body),"rotated actual contact")
     body.pos=Vector(16,100,0) check(not D.FromBody(r,body),"outside pane outline")
+    body.angles=angle(Vector(0.707,0.707,0),Vector(-0.707,0.707,0),Vector(0,0,1))
+    body.pos=Vector(20,0,0) check(not D.FromBody(r,body),"player yaw does not enlarge its axis-aligned movement hull")
 elseif scenario=="player_move" then
     local ent,r=pane() ent.angles=angle(Vector(0,1,0),Vector(0,0,1),Vector(1,0,0))
     local ply=newEntity("player",{pos=Vector(21,0,0),flags={player=true}})
@@ -509,6 +521,11 @@ elseif scenario=="player_move" then
     local area=0 for _,poly in ipairs(F.Remaining(r.state)) do area=area+F.Area(poly) end
     check(r.state.revision==1 and area<6144,"pre-movement 500 units/s contact breaks upright pane despite stopped body velocity")
     check(sv.lastTrace.filter==ply and sv.lastTrace.mask==sv.MASK_PLAYERSOLID,"player sweep respects intervening solids")
+    local ent2,r2=pane() ent2.angles=ent.angles
+    ply.baseVelocity=Vector(-500,0,0) mv.GetVelocity=function() return Vector() end
+    sv.traceResult.Entity=ent2 sv.run("SetupMove",ply,mv) sv.flush()
+    area=0 for _,poly in ipairs(F.Remaining(r2.state)) do area=area+F.Area(poly) end
+    check(r2.state.revision==1 and area<6144,"SetVelocity base impulse is included before engine movement")
 elseif scenario=="client_settings" then
     local remote=realm(false) remote.include("autorun/nlglass.lua")
     for _,s in ipairs(remote.NLGlass.Config.Settings) do
@@ -542,6 +559,10 @@ elseif scenario=="blast_order" then
     sv.run("EntityTakeDamage",grenade,d) ent:OnTakeDamage(d) S.Blast(d)
     sv.flush() network(cl,1)
     check(cl.events[1]=="spawn" and cl.events[#cl.events]=="impulse" and #cl.impulses==1,"deduplicated blast push follows newly spawned pane pieces")
+    local native=brush() local nr=S.TrackNative(native)
+    local start=#sv.out+1 sv.tick=sv.tick+1
+    sv.run("EntityTakeDamage",native,d) native:Remove() sv.flush() network(cl,start)
+    check(nr.broken and cl.events[#cl.events-1]=="spawn" and cl.events[#cl.events]=="impulse","blast push also follows a native removal's deferred break")
 elseif scenario=="budget" then
     local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[10].hi==8192,"budget slider respects the debris convar's 8192 cap")
@@ -561,6 +582,80 @@ elseif scenario=="topology" then
     for i,p in ipairs(pieces) do
         near(p.poly[1][1],cl.debris[1].pieces[i].poly[1][1],"snapshot piece x")
         near(p.poly[1][2],cl.debris[1].pieces[i].poly[1][2],"snapshot piece y")
+    end
+elseif scenario=="client_build" then
+    local ent,r=pane() network(cl,1)
+    for i=1,2 do local start=#sv.out+1 ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) network(cl,start) end
+    local start=#sv.out+1 ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
+    local physicsBuilds,meshBuilds=ent.physicsBuilds,cl.meshBuilds
+    network(cl,start)
+    check(ent.physicsBuilds==physicsBuilds+1,"one prediction-physics build per break message")
+    check(cl.meshBuilds-meshBuilds<=2,"one pane/crack mesh build per break message, no pre-state build")
+    local spawned=#cl.debris cl.deliver(sv.out[start])
+    check(#cl.debris==spawned,"repeated break packet never scatters the same pieces twice")
+    local ent2,r2=pane() start=#sv.out+1 S.Snapshot(r2) network(cl,start)
+    physicsBuilds,meshBuilds=ent2.physicsBuilds,cl.meshBuilds
+    start=#sv.out+1 ent2:OnTakeDamage(damage(sv.DMG_BULLET,0.001)) network(cl,start)
+    check(ent2.physicsBuilds==physicsBuilds and cl.meshBuilds==meshBuilds,"pending weak energy does not rebuild geometry or collision")
+elseif scenario=="draw_cull" then
+    local ent,r=pane() ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
+    pane("annealed",Vector(20000,0,0)) pane("annealed",Vector(0,0,500))
+    network(cl,1) cl.run("PostDrawTranslucentRenderables",false,false)
+    local transforms,matrices,lookups,draws=cl.transforms,cl.matrices,sv.classLookups,cl.meshDraws
+    for i=1,20 do cl.run("PostDrawTranslucentRenderables",false,false) end
+    check(cl.transforms==transforms and cl.matrices==matrices and sv.classLookups==lookups,"stationary draw has no LocalToWorld, new Matrix or class lookup")
+    check(cl.meshDraws-draws==40,"far and behind-camera panes are skipped")
+    ent:SetPos(Vector(10,0,0)) cl.run("PostDrawTranslucentRenderables",false,false)
+    check(cl.transforms==transforms+1,"moving pane refreshes its transform once")
+elseif scenario=="initial_sync" then
+    local a=pane() local b=pane()
+    local remote=realm(false) remote.ents=sv.ents remote.include("autorun/nlglass.lua")
+    remote.player=newEntity("player",{flags={player=true}})
+    local before=#sv.out sv.run("PlayerInitialSpawn",remote.player) sv.flush()
+    check(#sv.out==before,"joining player is sent no premature duplicate push")
+    remote.run("InitPostEntity") remote.run("InitPostEntity") remote.flush()
+    check(#remote.out==1,"client readiness requests initial state once")
+    sv.deliver(remote.out[1],remote.player)
+    check(#sv.out-before==2,"one initial push contains both panes once")
+elseif scenario=="target_sync" then
+    local a,r=pane() local b,r2=pane() network(cl,1)
+    cl.player=newEntity("player",{flags={player=true}})
+    local function mismatch(record)
+        sv.net.Start("nlglass_hit") sv.net.WriteUInt(record.id,32) sv.net.WriteUInt(100,32) sv.net.WriteBool(false)
+        sv.NLGlass.Protocol.WriteImpact({x=0,y=0,energy=180000,seed=81,kind="sharp",dx=0,dy=0,dz=1})
+        sv.net.WriteBool(false) sv.net.WriteBool(false) sv.net.Broadcast() cl.deliver(sv.out[#sv.out])
+    end
+    mismatch(r) local request=cl.out[#cl.out]
+    check(request.tokens[1] and request.tokens[1][2]==r.id,"revision mismatch names just the affected pane")
+    local before=#sv.out sv.deliver(request,cl.player)
+    check(#sv.out==before+1 and sv.out[#sv.out].tokens[1][2]==r.id,"server resync sends only that pane")
+    mismatch(r2) request=cl.out[#cl.out] before=#sv.out sv.deliver(request,cl.player)
+    check(#sv.out==before+1 and sv.out[#sv.out].tokens[1][2]==r2.id,"different panes can resync in the same frame")
+elseif scenario=="client_timings" then
+    local ent,r=pane()
+    r.state=F.New(S.Definition({{-128,-64},{128,-64},{128,64},{-128,64}},1,"annealed",1))
+    for i=1,100 do F.Apply(r.state,{x=(i*37)%240-120,y=(i*19)%112-56,energy=180000,seed=900+i,kind="sharp",dx=0,dy=0,dz=1},false,true) end
+    local base=r.state base.damage=0
+    print("prepared_cells="..#base.cells)
+    local times={server_hit={},server_break={},client_hit={},client_break={}}
+    local function clientPackets(start)
+        for i=start,#sv.out do cl.deliver(sv.out[i]) end
+    end
+    for sample=1,40 do
+        cl.NLGlass.Client.Clear() cl.debris={} sv.out={}
+        r.state=F.Restore(base.def,base.impacts,base.damage,base.revision,base.all,base.cells,base.pending,base.retiredEnergy,base.groups,base.nextCellID)
+        S.Snapshot(r) cl.deliver(sv.out[#sv.out])
+        for _,which in ipairs({"hit","break"}) do
+            local start=#sv.out+1 local t=now()
+            S.Impact(r,{x=0,y=0,energy=which=="hit" and 180000 or 1200000,seed=81,kind="sharp",dx=0,dy=0,dz=1})
+            local values=times["server_"..which] values[#values+1]=(now()-t)*1000
+            t=now() clientPackets(start)
+            values=times["client_"..which] values[#values+1]=(now()-t)*1000
+        end
+    end
+    for _,name in ipairs({"server_hit","server_break","client_hit","client_break"}) do
+        local values=times[name] table.sort(values) local sum=0 for _,v in ipairs(values) do sum=sum+v end
+        print(string.format("%s n=%d mean_ms=%.4f p99_ms=%.4f",name,#values,sum/#values,values[math.ceil(#values*.99)]))
     end
 else error("unknown scenario "..tostring(scenario)) end
 check(not sv.hooks.Think and not sv.hooks.Tick,"no server per-tick pane polling")

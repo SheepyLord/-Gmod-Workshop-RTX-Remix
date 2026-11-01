@@ -189,6 +189,11 @@ elseif mode=="coarsen" then
     check(peak>450,"probe actually reaches the cell cap")
     check(encode(F.Remaining(s))==encode(F.Remaining(copy(s))),"near-cap coarsening snapshot")
     print("peak_cells="..peak.." area_error="..math.abs(area-32768))
+    local dense=F.New(d)
+    for i=1,200 do
+        local pieces=F.Apply(dense,hit((i*37)%31-15,(i*19)%31-15,180000,1700+i),false,true)
+        check(not dense.all and #pieces==0 and #dense.cells<=512,"dense visual cuts never shatter engine-owned glass")
+    end
 elseif mode=="hole_coarsen" then
     local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
     local s=F.New(d) local pieces=F.Apply(s,hit(0,0,1200000,88))

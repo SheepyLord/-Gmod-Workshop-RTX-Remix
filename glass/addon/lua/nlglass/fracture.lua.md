@@ -8,6 +8,10 @@ support connectivity runs once only when glass is released. Snapshot returns an 
 Restore accepts cells, pending/retired energy, groups and nextCellID after the original arguments.
 Tempered pieces are generated only at shatter; pre-break cracks are small local spiderwebs.
 Hull/Clip collapse adjacent vertices closer than 1/256; crack edges omit the pane perimeter.
+Remaining/Cracks/Snapshot arrays are read-only to callers. Repeated hits preserve the cell array
+identity so clients can reuse pane meshes. If dense cuts on a still-intact engine-owned pane
+cannot coarsen enough, simplify its visual topology and refine the actual latest contact; native
+health never causes an early cosmetic shatter.
 
 Pure Lua 5.1 deterministic fracture and support connectivity.
 

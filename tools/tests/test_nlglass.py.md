@@ -8,6 +8,10 @@ Fracture regressions cover local hits beyond the old cap, weak energy/floor, rev
 tempered spiderwebs, 1/256 edge merging, perimeter omission, complete-group coarsening with holes,
 bounded topology snapshots and repeatable near-cap timing output.
 
+Client cases count per-message builds and stationary drawing calls, test distance/eye-plane
+culling, one readiness sync and targeted pane repair, and record 40-sample server/client handler
+timings. The full module currently runs 45 tests, including catalog/compilation checks.
+
 G1-A unit/integration acceptance under LuaJIT, invoked by `tools/test.ps1`:
 
 ```powershell

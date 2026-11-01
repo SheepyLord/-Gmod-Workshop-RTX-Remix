@@ -1,5 +1,13 @@
 # Roadmap
 
+G1-A's integration fix pass is **complete offline** on `g1-lua-fix` (2026-11-01): all eleven
+items in [the brief](handover/G1-fix-pass.md) are implemented, with 45 glass tests and before-failing
+regressions. Release passes 25 CTests and 448 Python tests (two existing skips). Near-cap fracture
+means are 0.84 ms new hit, 0.10 ms repeat, 0.67 ms break; real frame-time acceptance remains open.
+Claude still combines G1-B's fixes and checks player contact, map outputs/effects, weak-hit and
+tempered visuals, two clients/prediction and the 40/50-pane scene in game. No game was launched,
+no install changed, no G1-B file edited and no package, upload, push, merge or tag was made.
+
 G1-A's post-integration fix pass is **in progress** on `g1-lua-fix` (2026-11-01). Contact,
 replicated settings, quiet map output routing and small server/menu fixes pass offline regressions;
 incremental bounded fracture, client cost/culling and targeted synchronization are next.

@@ -22,13 +22,24 @@ hole exclusion, forced breaks without an initial snapshot, native health ownersh
 breaker / nominal fallback, once-only surface output bridging, remaining frozen convexes, actual
 typed packets with float32 fields, two-client replay, late join, cached mesh drawing, deduplicated
 explosion impulses, cleanup epochs, property-only restore/dupe, tool CPPI/limits, translations,
-
-`topology` additionally round-trips a near-cap pane's live cells/coarsening groups through the typed
-wire mock, checks the message-size bound and compares the next break's polygons on server/client.
 admin authorization, injection refusal and reset (including queued edits), rotated triangular brush
 frames/material objects, surviving cleanup panes, delayed client entities, reused index safety and
 collision-build failure. Engine callback order and object liveness can be
 controlled in memory. It asserts no server Think/Tick hooks are installed.
+
+`topology` round-trips near-cap live cells/coarsening groups through the typed wire mock, checks
+message size and compares the next break's polygons. `client_build` counts one physics build and
+one mesh pair per break, no weak-hit rebuild and no repeated-packet debris. `draw_cull` counts
+zero stationary Matrix/LocalToWorld/class calls, verifies distance/eye-plane culling and a moving
+pose update. `initial_sync`/`target_sync` check one readiness push and independent per-pane repair.
+The contact probe includes the QA SetVelocity base impulse and player yaw; blast ordering also
+covers an engine-native removal deferred after damage.
+
+`client_timings` prepares 100 hits, restores a fresh near-cap server/client state before each of
+40 samples, and measures actual server/client hit/break handlers with QueryPerformanceCounter.
+Client reset and initial snapshot/build are outside timing. The Lua mesh/convex work is real;
+engine APIs, transport, debris simulation and renderer submission are mocks. It reports mean/p99
+milliseconds; these numbers do not predict GMod/Remix frame times.
 
 Output: assertion diagnostics and `engine <scenario> OK`. Side effects exist only in mocked tables
 (network outboxes, collision meshes, sounds, UI controls, debris calls). No filesystem writes,

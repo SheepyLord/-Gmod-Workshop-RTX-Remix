@@ -203,8 +203,10 @@ local function cell(poly,tags,id) return {poly=poly,tags=tags or {},id=id,center
 local function copyTags(tags)
     local out={} for i=1,F.MAX_IMPACTS do out[i]=tags[i] end return out
 end
-local function cache(state)
-    state.polys={} for _,c in ipairs(state.cells) do state.polys[#state.polys+1]=c.poly end
+local function cache(state,topologyChanged)
+    if not state.polys or topologyChanged~=false then
+        state.polys={} for _,c in ipairs(state.cells) do state.polys[#state.polys+1]=c.poly end
+    end
     state.cracks=nil state.visualRevision=state.revision
 end
 local function uniform(def)
@@ -285,10 +287,11 @@ local function refine(def,cells,groups,nextID,hit,slot,radius)
     local cuts=tiles(def,hit)
     for _,tile in ipairs(cuts) do tile.bounds=bounds(tile.poly) end
     local near={hit.x-radius,hit.y-radius,hit.x+radius,hit.y+radius}
-    local out,newGroups={},{}
+    local out,newGroups,changed={},{},false
     for _,g in ipairs(groups) do newGroups[#newGroups+1]=g end
     for _,c in ipairs(cells) do
         if c.tags[slot] or not overlap(c.bounds,near) then out[#out+1]=c else
+            changed=true
             local children={}
             for _,tile in ipairs(cuts) do if overlap(c.bounds,tile.bounds) then
                 local poly=F.Clip(c.poly,tile.poly)
@@ -306,6 +309,7 @@ local function refine(def,cells,groups,nextID,hit,slot,radius)
             for _,child in ipairs(children) do out[#out+1]=child end
         end
     end
+    if not changed then return cells,groups,nextID end
     return out,newGroups,nextID
 end
 
@@ -387,7 +391,14 @@ function F.Apply(state, impact, forceAll, watchOnly)
         if #refined>F.MAX_CELLS then
             -- A pane with too many non-convex hole boundaries cannot be coarsened exactly. Release
             -- the remaining bounded topology rather than moving a hit or creating invisible glass.
-            whole,broke=true,true
+            if watchOnly then
+                -- An engine-owned pane is still whole: simplify its purely visual cuts and
+                -- rebuild the latest contact instead of inventing an early native shatter.
+                nextID=nextID+1
+                cells,groups={cell(state.def.outline,{},nextID)},{}
+                refined,newGroups,newID=refine(state.def,cells,groups,nextID,hit,nearest,state.def.piece_size)
+                cells,groups,nextID=refined,newGroups,newID
+            else whole,broke=true,true end
         else cells,groups,nextID=refined,newGroups,newID end
     elseif whole then cells=uniform(state.def) end
     if broke then
@@ -428,10 +439,12 @@ function F.Apply(state, impact, forceAll, watchOnly)
                 velocity={impact.dx*speed,impact.dy*speed,impact.dz*speed},
                 spin={(rng(361)-180)*falloff,(rng(361)-180)*falloff,rng(241)-120},seed=impact.seed+i}
     end
+    if not broke then candidates=cells end
+    local changed=candidates~=state.cells
     state.impacts,state.cells,state.all=hits,candidates,whole or #candidates==0
     state.groups=whole and {} or (broke and prune(candidates,groups) or groups)
     state.nextCellID=nextID
-    cache(state)
+    cache(state,changed)
     return pieces,true,broke
 end
 

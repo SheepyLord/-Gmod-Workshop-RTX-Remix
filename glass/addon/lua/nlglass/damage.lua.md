@@ -3,6 +3,7 @@
 Body contacts require inward normal velocity, a projected centre in remaining glass and plane
 distance within half thickness plus the body's oriented half width (1/32-unit contact tolerance).
 The player mover can supply its incoming velocity and swept contact centre before collision stops it.
+Movement hulls for players/NPCs stay axis aligned; vehicles use their actual oriented bounds.
 
 Every damage cause normalized to a pane-local impact.
 

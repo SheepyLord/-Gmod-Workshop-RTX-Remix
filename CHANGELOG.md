@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
+  cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
+  state. Player sweeps include scripted base velocity, and blast impulses follow deferred native
+  breaks. All fix-pass items have before-failing regressions; the full Release gate passes.
+
 - G1-A fracture now refines locally and coarsens complete distant groups under its 512-cell cap,
   preserving hit locations and existing holes. Weak hits accumulate under a capped crack floor;
   tempered glass shows local spiderwebs before full shatter. Cached topology/snapshots remove full

@@ -150,7 +150,7 @@ end
 -- Sweep the moving player's real hull before that clipping; no scan/tick work for idle panes.
 hook.Add("SetupMove","NLGlass.PlayerContact",function(ply,mv)
     if not next(S.records) then return end
-    local velocity=mv:GetVelocity()
+    local velocity=mv:GetVelocity()+ply:GetBaseVelocity()
     if velocity:LengthSqr()<math.max(1,C.Number("rtx_glass_player_break_speed",180)^2) then return end
     local mins,maxs=ply:GetCollisionBounds()
     local origin=mv:GetOrigin()
@@ -179,9 +179,13 @@ function S.Blast(dmg)
     local radius,speed=math.Clamp(dmg:GetDamage()*4,64,2048),math.Clamp(dmg:GetDamage()*6,50,900)
     local epoch=S.epoch
     timer.Simple(0,function()
-        if epoch~=S.epoch then return end
-        net.Start("nlglass_blast") net.WriteVector(origin)
-        net.WriteFloat(radius) net.WriteFloat(speed) net.Broadcast()
+        -- Native removal and physics callbacks also defer their break one turn. Queue after
+        -- those callbacks, so their own pieces exist before the explosion impulse arrives.
+        timer.Simple(0,function()
+            if epoch~=S.epoch then return end
+            net.Start("nlglass_blast") net.WriteVector(origin)
+            net.WriteFloat(radius) net.WriteFloat(speed) net.Broadcast()
+        end)
     end)
 end
 function S.NativeBreak(r,breaker)
@@ -280,12 +284,16 @@ hook.Add("PostCleanupMap","NLGlass.Map",scan)
 -- Restored saves/duplicates register fresh intact states through the entity's restore method.
 hook.Add("PostRestore","NLGlass.Restore",scan)
 net.Receive("nlglass_sync",function(_,ply)
-    if not IsValid(ply) or (ply.NLGlassSyncAt or -10)>CurTime()-2 then return end
-    ply.NLGlassSyncAt=CurTime()
-    for _,r in pairs(S.records) do S.Refresh(r) S.Snapshot(r,ply) end
-end)
-hook.Add("PlayerInitialSpawn","NLGlass.Join",function(ply)
-    timer.Simple(2,function() if IsValid(ply) then for _,r in pairs(S.records) do S.Snapshot(r,ply) end end end)
+    if not IsValid(ply) then return end
+    local id=net.ReadUInt(32)
+    local window=ply.NLGlassSyncWindow
+    if not window or window.at<CurTime()-2 then window={at=CurTime(),count=0,ids={}} ply.NLGlassSyncWindow=window end
+    if window.count>=16 or window.ids[id] then return end
+    window.count=window.count+1 window.ids[id]=true
+    if id==0 then
+        for _,r in pairs(S.records) do S.Snapshot(r,ply) end
+    elseif S.records[id] then S.Snapshot(S.records[id],ply)
+    else net.Start("nlglass_remove") net.WriteUInt(id,32) net.Send(ply) end
 end)
 net.Receive("nlglass_setting",function(_,ply)
     if not IsValid(ply) or not ply:IsAdmin() then return end
