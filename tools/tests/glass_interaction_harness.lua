@@ -230,6 +230,7 @@ else
         Start=function(name,unreliable)message={name=name,unreliable=unreliable,fields={}}end,
         WriteVector=function(v)message.fields[#message.fields+1]=v end,
         WriteFloat=function(v)message.fields[#message.fields+1]=v end,
+        WriteUInt=function(v)message.fields[#message.fields+1]=v end,
         Send=function(r)message.recipients=r;sends[#sends+1]=message end,SendToServer=forbid,Broadcast=forbid}
     util={AddNetworkString=function()end}
     function RecipientFilter()
@@ -247,7 +248,7 @@ else
         B.Mark(Vector(0,5000,0));fire();check(#sends==0,"rays outside recent glass regions stay local to Source")
         B.Mark(Vector());fire();check(#sends==1,"nearby bullet reaches glass clients")
         local m=sends[1]
-        check(m.unreliable and m.name=="nlglass_debris_ray" and #m.fields==3,"bounded unreliable trace payload")
+        check(m.unreliable and m.name=="nlglass_debris_hit" and #m.fields==4,"bounded unreliable trace payload")
         check(m.fields[2].x==100 and m.fields[3]==15,"ray ends at Source's actual hit, with pellet damage")
         check(#m.recipients.pvs==1 and m.recipients.players[1]==shooter,"PVS plus shooter, never broadcast")
         check(data.Callback==original,"weapon callback remains unchanged")
@@ -269,14 +270,93 @@ else
         B.Clear();B.Mark(Vector(5000,0,0))
         local inspected=0
         B.regions[1].origin=setmetatable({}, {__index=function(_,key)inspected=inspected+1;return key=="x" and 5000 or 0 end})
+        local beforeFilters=filters
         for _=1,300 do fire()end
-        check(inspected==64*3,"distant rejected pellets still obey the region-inspection burst cap")
+        check(inspected==0 and filters-beforeFilters==64,"bounded region inspection uses numbers, never Source components")
+    elseif scenario=="bullets_interest" then
+        local a,b=entity("player"),entity("player")
+        local function interest(ply,center,count,radius,bits)
+            net.ReadUInt=function()return count or 1 end
+            net.ReadVector=function()return center end
+            net.ReadFloat=function()return radius or 600 end
+            receivers.nlglass_debris_interest(bits or (6+(count or 1)*128),ply)
+        end
+        interest(a,Vector());interest(b,Vector(10000,0,0))
+        check(B.HasInterest() and B.clients[a] and B.clients[b],"each client owns a separate bounded interest lease")
+        for i=1,65 do
+            now=i*2;interest(a,Vector());interest(b,Vector(10000,0,0))
+            if i==30 or i==65 then
+                local before=#sends;fire()
+                check(#sends==before+1,"renewed live-piece interest survives 60 and 130 seconds")
+                local seenA,seenB=false,false
+                for _,p in ipairs(sends[#sends].recipients.players)do seenA=seenA or p==a;seenB=seenB or p==b end
+                check(seenA and not seenB and #sends[#sends].recipients.pvs==0,"only the client whose local pieces overlap receives a long-lived hit")
+            end
+        end
+        now=132;interest(a,Vector(10000,0,0));local before=#sends;fire();check(#sends==before,"displaced local piles replace their old regions")
+        now=140;fire();check(#sends==before and not B.HasInterest(),"lost leases expire and stop forwarding")
+        interest(a,Vector(),33,600,4200);check(not B.clients[a],"too many regions refused")
+        interest(a,Vector(0/0,0,0));check(not B.clients[a],"nonfinite regions refused")
+        interest(a,Vector());local saved=B.clients[a];interest(a,Vector(10000,0,0))
+        check(B.clients[a]==saved,"rapid interest updates cannot replace an accepted lease")
+        now=142;interest(a,Vector(),0);check(#B.clients[a].regions==0,"explicit empty interest clears local demand")
+    elseif scenario:match("^melee_") then
+        local w={valid=true,Primary={Damage=31},nextFire=0,class="weapon_crowbar",GetClass=function(self)return self.class end,
+            GetHoldType=function()return "melee2"end,GetNextPrimaryFire=function(self)return self.nextFire end}
+        shooter.GetActiveWeapon=function()return w end;shooter.GetShootPos=function()return Vector()end
+        shooter.GetAimVector=function()return Vector(1,0,0)end
+        IN_ATTACK,IN_ATTACK2,PLAYERANIMEVENT_ATTACK_PRIMARY,PLAYERANIMEVENT_ATTACK_SECONDARY=1,2,0,1
+        local command={KeyDown=function(_,key)return key==IN_ATTACK end}
+        local lastData,lastResult
+        util.TraceLine=function(data)
+            lastData=data;lastResult={HitPos=data.endpos,StartPos=data.start,Hit=false}
+            if scenario=="melee_swep" then lastResult.HitPos=Vector(30,0,0);lastResult.Hit=true end
+            return lastResult
+        end
+        util.TraceHull=util.TraceLine
+        B.Mark(Vector());local M=dofile(root.."/nlglass/debris_melee.lua")
+        if scenario=="melee_stock" then
+            hooks.StartCommand(shooter,command);check(#sends==0,"ready command alone is not a swing")
+            now=.02;w.nextFire=.5;hooks.StartCommand(shooter,command)
+            check(#sends==1 and sends[1].fields[4]==6,"successful stock crowbar swing forwards a bounded volume")
+            hooks.DoAnimationEvent(shooter,PLAYERANIMEVENT_ATTACK_PRIMARY)
+            check(#sends==1,"animation and cooldown observations do not duplicate a stock swing")
+            now=.6;w.class="weapon_stunstick";w.nextFire=0;hooks.StartCommand(shooter,command)
+            now=.62;w.nextFire=1;hooks.StartCommand(shooter,command)
+            check(#sends==2 and sends[2].fields[3]==40,"stunstick uses its own melee damage")
+        else
+            w.class="weapon_trace_melee";hooks.StartCommand(shooter,command)
+            local input={start=Vector(),endpos=Vector(90,0,0),filter=shooter,mins=Vector(-8,-8,-8),maxs=Vector(8,8,8)}
+            local result=util.TraceHull(input)
+            check(result==lastResult and lastData==input and result.HitPos.x==30,"SWEP receives the same real trace object and input")
+            check(#sends==1 and sends[1].fields[2].x==30 and sends[1].fields[4]==8,"actual SWEP hull trace is clipped by Source, including misses through glass")
+            util.TraceLine(input);check(#sends==1,"duplicate melee traces in the same swing are coalesced")
+            now=.8;util.TraceLine(input);check(#sends==1,"traces outside an attack window do not become melee")
+            now=.9;hooks.StartCommand(shooter,command);input.endpos=Vector(10000,0,0);util.TraceLine(input)
+            check(#sends==1,"unrelated long traces are ignored")
+        end
+        M.Stop();local observed=M.observed
+        util.TraceLine({start=Vector(),endpos=Vector(50,0,0),filter=shooter})
+        check(M.observed==observed,"stop restores trace adapters without gameplay writes")
+    elseif scenario=="bullets_client_interest" then
+        CLIENT,SERVER=true,false;local updates=0
+        net.SendToServer=function()updates=updates+1 end
+        local C=dofile(root.."/nlglass/debris_bullets.lua")
+        local reads=0;local n={ReadRegions=function()reads=reads+1;return {{{0,0,0},{512,512,512}}}end}
+        C.Update(n,false);check(updates==0 and reads==0,"empty clients send no demand")
+        C.Update(n,true);check(updates==1 and reads==1,"first live pieces register immediately")
+        for i=1,60 do now=i*.01;C.Update(n,true)end
+        check(updates==1,"interest polling is cheap between two-second refreshes")
+        now=61;C.Update(n,true);check(updates==2,"settled long-lived pieces renew their lease")
+        C.Update(n,false);check(updates==3 and reads==2,"cleanup/master off sends an empty update without querying pieces")
+        C.Update(n,false);check(updates==3,"empty update is not repeated")
     elseif scenario=="bullets_client" then
         CLIENT,SERVER=true,false;NLGlassDebris={Ray=function(...)_G.got={...}end}
         dofile(root.."/nlglass/debris_bullets.lua")
         local read=0;net.ReadVector=function()read=read+1;return read==1 and data.Trace.StartPos or data.Trace.HitPos end
         net.ReadFloat=function()return 15 end
-        receivers.nlglass_debris_ray()
+        net.ReadUInt=function()return 0 end
+        receivers.nlglass_debris_hit()
         check(got[1].x==-100 and got[2].x==100 and got[3]==15,"client routes one authoritative trace without predicted duplication")
         check(#sends==0,"client sends no interaction network requests")
     else error("unknown bullet case") end

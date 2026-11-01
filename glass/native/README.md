@@ -154,3 +154,5 @@ sleep tuning remains 0.35 s with a 0.06 m/s point-velocity threshold; rendering 
 not force bodies asleep in flight. Game targets remain with Claude.
 
 R8-G: SetCollisionFlags(mask) accepts 0?15 (objects=1, ragdolls=2, living players=4, living NPCs/NextBots=8), default 3. Changes clear mirrors at an idle boundary. SyncBodies row 8 tags one category; omitted tags remain objects for older Lua. Stats adds collision_flags. Native validates tags/masks before mutation and excludes disabled categories; Lua also filters before extraction. The manager always enables map/piece collision.
+
+R8-G Melee(from,to,energy,kickSpeed,radius) casts a 1-16-unit sphere over at most 256 Source units. A fixed collector visits at most 64 bodies/64 hit callbacks and transfers velocity/damage to at most eight distinct pieces. Minimum-size pieces still move; large pieces queue cause bit 16. No Source query/response occurs here: Lua supplies Source-clipped endpoints. Stats adds cumulative melee_hits and melee_limited. Tests include a sleeping pile older than 120 seconds, both movement/fracture paths, bounds, disabling and the actual raw-table binding.

@@ -46,3 +46,5 @@ A slow-vector double also makes the measured 0.6 ms preparation allowance stop b
 1,800-vertex hard cap; an injected 2.5 ms upload is retained in Stats after quiet frames.
 
 R8-G collision_settings checks the archived one-time migration, explicit mask/master preservation, reload and always-on map/piece contacts.
+
+R8-G interaction_rays also checks native melee dispatch and malformed radius/range rejection in the shared expiring queue.

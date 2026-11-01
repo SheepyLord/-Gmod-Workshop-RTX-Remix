@@ -29,3 +29,5 @@ network or files are changed. Exit 0 prints an assertion count; assertion/Lua er
 The replay emits only text to stdout and takes no installed assets.
 
 R8-G scene_flags checks all 16 masks, default living exclusion, live/dead classification, NextBots and client ragdolls; capture rows carry their native category.
+
+R8-G adds long-lived per-client interest/lease validation, actual client refresh/empty-update cadence, stock swing cooldown/animation coalescing, and read-only Source-clipped SWEP trace regressions. Existing bullet tests use the new bounded payload and verify numeric region tests.

@@ -56,6 +56,26 @@ TEST_CASE("glass collision flags default to objects and ragdolls and filter each
   rows[0].kind=3;CHECK_THROWS_AS(w.sync_bodies(rows,1.0/60),Error);
   w.set_interaction(false);CHECK(w.stats().scene_bodies==0);
 }
+TEST_CASE("glass melee wakes old piles fractures large pieces and bounds a crowded sweep") {
+  World w(64,0);ready(w);w.set_interaction(true);
+  const auto large=w.spawn(fixture::box(16,16,.5f),{0,0,32},{},{},{},8);
+  const auto leaf=w.spawn(fixture::box(2,2,.5f),{0,28,32},{},{},{},8);
+  for(unsigned i=0;i<7800;++i)w.step(1.0/60); // >120 seconds; age never disables a local hit.
+  REQUIRE(w.sleeping(large));REQUIRE(w.sleeping(leaf));
+  CHECK(w.melee({-50,0,32},{50,0,32},400000,500,6)==1);
+  auto events=w.take_damage();REQUIRE(events.size()==1);CHECK(events[0].id==large && events[0].kinds==Melee);
+  CHECK(w.split(large,8).size()==2);
+  CHECK(w.melee({-50,28,32},{50,28,32},400000,500,6)==1);
+  CHECK(w.take_damage().empty());CHECK(!w.sleeping(leaf)); // minimum size still moves.
+  w.clear();
+  for(unsigned i=0;i<32;++i)w.spawn(fixture::box(1,1,.5f),{float(i)*3,0,32},{},{},{},8);
+  CHECK(w.melee({-20,0,32},{120,0,32},400000,500,8)<=8);
+  CHECK(w.stats().melee_limited>0);
+  const auto hits=w.stats().melee_hits;w.set_interaction(false);
+  CHECK(w.melee({-20,0,32},{120,0,32},400000,500,8)==0);CHECK(w.stats().melee_hits==hits);
+  CHECK_THROWS_AS(w.melee({},{300,0,0},1000,100,8),Error);
+  CHECK_THROWS_AS(w.melee({},{100,0,0},1000,100,17),Error);
+}
 TEST_CASE("glass Source mirrors push sleeping pieces but never yield to them") {
   World w(8,0);ready(w);w.set_interaction(true);w.set_collide(false);
   const auto id=w.spawn(fixture::box(8,8,1),{0,0,32},{},{},{});

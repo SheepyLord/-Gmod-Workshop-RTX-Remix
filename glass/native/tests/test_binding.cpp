@@ -123,6 +123,8 @@ TEST_CASE("glass binding validates scene ray damage and split APIs with balanced
   CHECK(failure(m.call("Spawn",{large,vector(0,0,32),vector(),vector(),vector(),num(0)})));
   const auto id=m.call("Spawn",{large,vector(0,0,32),vector(),vector(),vector(),num(4)})[0];
   CHECK(failure(m.call("Ray",{vector(),vector(),num(-1),num(10)})));
+  CHECK(failure(m.call("Melee",{vector(),vector(100,0,0),num(1000),num(100),num(17)})));
+  CHECK(m.call("Melee",{vector(-100,0,32),vector(100,0,32),num(180000),num(600),num(6)})[0].n==1);
   CHECK(m.call("Ray",{vector(-100,0,32),vector(100,0,32),num(180000),num(600)})[0].n==id.n);
   CHECK(m.call("ReadDamage")[0].type==Type::Table);CHECK(m.call("ReadDamage")[0].type==Type::Bool);
   CHECK(m.call("CanSplit",{id,num(4)})[0].b);

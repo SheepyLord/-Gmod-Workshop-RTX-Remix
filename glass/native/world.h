@@ -7,7 +7,7 @@
 namespace nl::glass {
 struct Pose { std::uint32_t id; V3 position,angles; bool sleeping; };
 constexpr unsigned kMaxSceneBodies=96,kMaxDamageEvents=64,kMaxRegions=32;
-enum DamageKind : unsigned { Bullet=1,Blast=2,SourceBody=4,Fall=8 };
+enum DamageKind : unsigned { Bullet=1,Blast=2,SourceBody=4,Fall=8,Melee=16 };
 enum CollisionTarget : unsigned { Objects=1,Ragdolls=2,Players=4,NPCs=8 };
 struct DamageEvent { std::uint32_t id; float energy; unsigned kinds; };
 struct SceneBody {
@@ -27,6 +27,7 @@ struct Stats {
   unsigned pose_visits=0;
   unsigned scene_bodies=0,scene_moves=0,scene_cooks=0,damage_dropped=0,ray_hits=0,splits=0;
   unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
+  unsigned melee_hits=0,melee_limited=0;
   bool interaction=false;
   unsigned collision_flags=Objects|Ragdolls;
   double step_ms=0, dropped_seconds=0;
@@ -59,6 +60,7 @@ public:
   std::vector<Region> regions(V3 focus={}) const;
   std::vector<DamageEvent> take_damage();
   std::uint32_t ray(V3 from,V3 to,float energy,float speed);
+  unsigned melee(V3 from,V3 to,float energy,float speed,float radius);
   std::vector<Fragment> split(std::uint32_t id,float minimum_size);
   bool can_split(std::uint32_t id,float minimum_size) const;
   Pose scene_pose(std::uint32_t key) const; // read-only; also proves one-way motion in tests

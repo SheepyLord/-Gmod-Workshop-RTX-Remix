@@ -163,12 +163,13 @@ function D.Spawn(frame, fragments)
     end
 end
 -- Server-supplied, Source-clipped pellet traces. Queue at most 32 and apply at most eight per frame.
-function D.Ray(from, to, damage)
+function D.Ray(from, to, damage, radius)
+    radius = radius or 0
     if stopped or not interact:GetBool() or count == 0 or backend ~= "jolt" or not interactionAvailable or
         not validVector(from, 131072) or not validVector(to, 131072) or not finite(damage, 10000) or damage <= 0 or
-        (to - from):LengthSqr() > 131072 ^ 2 then return end
+        not finite(radius, 16) or radius < 0 or (to - from):LengthSqr() > (radius > 0 and 256 or 131072) ^ 2 then return end
     if #rays == 32 then table.remove(rays, 1);metrics.rays_dropped = (metrics.rays_dropped or 0) + 1 end
-    rays[#rays + 1] = {from, to, damage, CurTime() + .5}
+    rays[#rays + 1] = {from, to, damage, CurTime() + .5, radius}
 end
 -- Start the map import ahead of the first break (a map with glass, a spawned pane), so the first
 -- pieces do not wait for the world while the player looks at them.
@@ -300,7 +301,7 @@ local function fractures()
                         else world.api.Remove(f.id) end
                     end
                     metrics.splits = (metrics.splits or 0) + 1
-                    for i, kind in ipairs({"bullet", "blast", "body", "fall"}) do
+                    for i, kind in ipairs({"bullet", "blast", "body", "fall", "melee"}) do
                         if math.floor(event[3] / 2 ^ (i - 1)) % 2 == 1 then
                             metrics["splits_" .. kind] = (metrics["splits_" .. kind] or 0) + 1
                         end
@@ -340,6 +341,9 @@ local function nativeTick()
         rays, damageQueue, damageByID, damageFirst, damageLast = {}, {}, {}, 1, 0;scene.Reset()
         if not ok then failed(reason);return end
     end
+    if NLGlass and NLGlass.Bullets and NLGlass.Bullets.Update then
+        NLGlass.Bullets.Update(world.api, knownInteraction and count > 0)
+    end
     for i = 1, #impulses do
         local event = impulses[i]
         ok, reason = world.api.Impulse(event[1], event[2], event[3])
@@ -350,7 +354,9 @@ local function nativeTick()
         for _ = 1, math.min(8, #rays) do
             local r = table.remove(rays, 1)
             if r[4] >= CurTime() then
-                ok, reason = world.api.Ray(r[1], r[2], math.min(1e9, r[3] * 12000), clamp(r[3] * 20, 80, 1200))
+                if r[5] > 0 and world.api.Melee then
+                    ok, reason = world.api.Melee(r[1], r[2], math.min(1e9, r[3] * 16000), clamp(r[3] * 20, 80, 1200), r[5])
+                else ok, reason = world.api.Ray(r[1], r[2], math.min(1e9, r[3] * 12000), clamp(r[3] * 20, 80, 1200)) end
                 if ok == nil then failed(reason);return end
             end
         end

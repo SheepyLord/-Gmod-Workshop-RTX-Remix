@@ -13,6 +13,7 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
 #include <atomic>
@@ -155,6 +156,7 @@ struct World::Impl {
   std::atomic<unsigned> damage_count{0},damage_dropped{0};
   unsigned scene_moves=0,scene_cooks=0,ray_hits=0,splits=0;
   unsigned collision_flags=Objects|Ragdolls;
+  unsigned melee_hits=0,melee_limited=0;
   unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
   bool interaction=false;
   std::vector<unsigned> free;
@@ -573,6 +575,36 @@ std::uint32_t World::ray(V3 from,V3 to,float energy,float speed) {
   bi.ActivateBody(p.body);bi.SetLinearVelocity(p.body,bi.GetLinearVelocity(p.body)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
   w.damage(slot,energy,Bullet);++w.ray_hits;return p.id;
 }
+unsigned World::melee(V3 from,V3 to,float energy,float speed,float radius) {
+  need(from.valid() && to.valid() && (to-from).length()<=256 && std::isfinite(energy) && energy>=0 && energy<=1e9 &&
+    std::isfinite(speed) && speed>=0 && speed<=2000 && std::isfinite(radius) && radius>=1 && radius<=16,"invalid debris melee");
+  auto& w=idle();if(!w.interaction || (to-from).length()<.001f)return 0;
+  struct Collector final:JPH::CastShapeCollector {
+    std::array<JPH::BodyID,8> hits;unsigned count=0,visits=0,bodies=0;bool limited=false;
+    void OnBody(const JPH::Body&) override { if(++bodies==64) { limited=true;ForceEarlyOut(); } }
+    void AddHit(const JPH::ShapeCastResult& hit) override {
+      if(count==8 || visits==64)return;
+      if(++visits==64) { limited=true;ForceEarlyOut(); }
+      for(unsigned i=0;i<count;++i)if(hits[i]==hit.mBodyID2)return;
+      hits[count++]=hit.mBodyID2;
+      if(count==8) { limited=true;ForceEarlyOut(); }
+    }
+  } collector;
+  class Pieces final:public JPH::ObjectLayerFilter { bool ShouldCollide(JPH::ObjectLayer l) const override { return l==1 || l==2; } } filter;
+  const JPH::SphereShape shape(radius*kMetres);
+  const JPH::RShapeCast cast(&shape,JPH::Vec3::sReplicate(1),JPH::RMat44::sTranslation(jvec(from)),jvec(to-from));
+  JPH::ShapeCastSettings settings;
+  w.physics->GetNarrowPhaseQueryNoLock().CastShape(cast,settings,JPH::RVec3::sZero(),collector,{},filter);
+  auto& bi=w.physics->GetBodyInterfaceNoLock();const auto kick=jvec((to-from)*(speed/(to-from).length()));
+  for(unsigned i=0;i<collector.count;++i) {
+    const auto id=collector.hits[i];const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(id);
+    const auto slot=static_cast<unsigned>(body->GetUserData()-1);auto& p=w.pieces[slot];
+    bi.ActivateBody(id);bi.SetLinearVelocity(id,bi.GetLinearVelocity(id)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
+    w.damage(slot,energy,Melee);
+  }
+  w.melee_hits+=collector.count;if(collector.limited)++w.melee_limited;
+  return collector.count;
+}
 bool World::can_split(std::uint32_t id,float minimum_size) const {
   auto& w=idle();auto* p=w.find(id);if(!p)return false;
   const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
@@ -706,6 +738,7 @@ Stats World::stats() const {
   s.scene_moves=w.scene_moves;s.scene_cooks=w.scene_cooks;s.damage_dropped=w.damage_dropped.load();
   s.scene_sweeps=w.scene_sweeps;s.scene_sweep_hits=w.scene_sweep_hits;s.scene_sweep_limited=w.scene_sweep_limited;
   s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;s.collision_flags=w.collision_flags;
+  s.melee_hits=w.melee_hits;s.melee_limited=w.melee_limited;
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
   s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;

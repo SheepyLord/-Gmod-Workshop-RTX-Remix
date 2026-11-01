@@ -71,3 +71,5 @@ prop leaves the pile; current `scene_bodies` can already be zero at the screensh
 be compared before/after. Think/step dispatch, falling-piece draws and batching are unchanged.
 
 R8-G always enables map/piece collision and reads the archived Source collision mask from debris_settings.lua. At idle worker boundaries it updates optional SetCollisionFlags and passes the mask to scene capture. Stats adds collision_flags. The interaction master stays independent.
+
+R8-G Ray(from,to,damage,radius=0) shares the 32-entry/0.5-second/eight-casts-per-frame queue for bullets and melee. Radius 1-16 uses optional native Melee, with a 256-unit range cap; old modules fall back to a line kick. Idle boundaries renew actual local interest, including fully sleeping scenes. Splits add cause bit 16 (melee).

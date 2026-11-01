@@ -171,6 +171,11 @@ LUA_FUNCTION_STATIC(ReadRegions) { return guarded(LUA,[&] {
   }
   return 1;
 }); }
+LUA_FUNCTION_STATIC(MeleeCast) { return guarded(LUA,[&] {
+  auto& w=active(LUA);const auto from=vector(LUA,1,kCoordinateLimit),to=vector(LUA,2,kCoordinateLimit);
+  const auto energy=static_cast<float>(number(LUA,3,0,1e9)),speed=static_cast<float>(number(LUA,4,0,2000));
+  LUA->PushNumber(w.melee(from,to,energy,speed,static_cast<float>(number(LUA,5,1,16))));return 1;
+}); }
 LUA_FUNCTION_STATIC(ReadDamage) { return guarded(LUA,[&] {
   const auto events=active(LUA).take_damage();if(events.empty()) { LUA->PushBool(false);return 1; }
   LUA->CreateTable();unsigned i=0;
@@ -240,6 +245,7 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("scene_sweeps",s.scene_sweeps);add("scene_sweep_hits",s.scene_sweep_hits);add("scene_sweep_limited",s.scene_sweep_limited);
   add("damage_dropped",s.damage_dropped);add("ray_hits",s.ray_hits);add("splits",s.splits);
   add("collision_flags",s.collision_flags);
+  add("melee_hits",s.melee_hits);add("melee_limited",s.melee_limited);
   LUA->PushBool(s.interaction);set(LUA,1,"interaction");
   LUA->PushBool(s.ready);set(LUA,1,"ready");LUA->PushBool(s.busy);set(LUA,1,"busy");return success(LUA);
 }); }
@@ -259,7 +265,7 @@ GMOD_MODULE_OPEN() {
       {"BeginLoadMap",BeginLoadMap},{"PollLoadMap",PollLoadMap},{"BeginFinishWorld",BeginFinishWorld},{"PollFinishWorld",PollFinishWorld},
       {"BeginStep",BeginStep},{"PollStep",PollStep},
       {"SetInteraction",SetInteraction},{"SetCollisionFlags",SetCollisionFlags},{"SyncBodies",SyncBodies},{"ReadRegions",ReadRegions},
-      {"ReadDamage",ReadDamage},{"Ray",Ray},{"Split",Split},{"CanSplit",CanSplit},
+      {"ReadDamage",ReadDamage},{"Ray",Ray},{"Melee",MeleeCast},{"Split",Split},{"CanSplit",CanSplit},
       {"Spawn",Spawn},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
       {"Step",Step},{"ReadPoses",ReadPoses},{"IsSleeping",IsSleeping},{"Stats",ReadStats},{"Clear",Clear},{"Shutdown",Shutdown}};
     for(const auto& [name,fn]:functions) { LUA->PushCFunction(fn);set(LUA,-2,name); }

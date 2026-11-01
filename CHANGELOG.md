@@ -6,6 +6,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R8-G: bullets and melee now reach renewable per-client live-piece interest instead of an expiring old pane location. Stock crowbar/stunstick swings and short trace-based SWEP melee push or split pieces through a bounded Source-clipped native sweep. No weapon callbacks or Source response change.
+
 - R8-G: glass gains independent Source collision checkboxes (objects/ragdolls on, living actors off), a one-time archived-setting migration and always-on map/piece contact; the interaction master remains independent ([ADR 0085](docs/decisions/0085-glass-load-collision-and-hits.md)).
 
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))

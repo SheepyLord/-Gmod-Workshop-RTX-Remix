@@ -193,6 +193,9 @@ local function makeapi()
             if id then n.bodies[id].asleep,n.bodies[id].dirty=false,true end
             return id or 0
         end
+        function n.Melee(...)
+            n.melees=(n.melees or 0)+1;return n.Ray(...)
+        end
         function n.CanSplit(id) return not n.refuseSplit and n.bodies[id] and not n.bodies[id].leaf end
         function n.Split(id,minimum)
             check(not n.running and minimum>=4,"split only between steps with a minimum-size floor")
@@ -370,6 +373,12 @@ if arg[3] and arg[3]:match("^interaction_") then
         tick(1);check(api.rays==8,"expired cosmetic rays are discarded")
         D.Ray(Vector(0/0,0,0),Vector(),15);D.Ray(Vector(),Vector(),-1)
         check(D.Stats().ray_pending<=16,"malformed input never grows the ray queue")
+        for _=1,4 do tick()end
+        D.Ray(Vector(-10,0,20),Vector(100,0,20),25,6);tick()
+        check(api.melees==1,"server melee volume uses the native bounded cast")
+        local before=D.Stats().ray_pending
+        D.Ray(Vector(),Vector(300,0,0),25,6);D.Ray(Vector(),Vector(50,0,0),25,17)
+        check(D.Stats().ray_pending==before,"malformed melee distance/radius refused before queuing")
     elseif arg[3]=="interaction_qa" then
         local receivers, commands, timers = {}, {}, {}
         local text, at = "slab", Vector(50,50,10)
