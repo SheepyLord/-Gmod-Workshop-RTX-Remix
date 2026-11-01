@@ -56,7 +56,7 @@ convar("mat_hdr_level","2")
 convar("mat_queue_mode","0")
 convar("ordinary","0")
 convar("r_flashlightdepthres","1024") convar("mat_antialias","0") convar("mat_aaquality","0") convar("mat_disable_d3d9ex","1")
-convar("r_forcehwlight","0")
+convar("r_forcehwlight","0") convar("r_novis","1")
 local ptUpdates,ptShadows,entityChanges,surfaceDraws,copyCalls,clearCalls=0,0,0,0,0,0
 for _,method in ipairs({"SetFOV","SetHorizontalFOV","SetVerticalFOV","SetNearZ","SetFarZ","SetShadowDepthBias","SetShadowSlopeScaleDepthBias","SetBrightness"}) do
     projectedMeta[method]=function(self,value) self[method]=value return "projection",value end
@@ -89,7 +89,7 @@ file={Read=function(name,realm)
         return vmtFiles[name]
     end
     eq(name,"cfg/nativeloader_session.cfg") eq(realm,"MOD")
-    return 'mat_dxlevel "90"\nmat_queue_mode "0"\n'
+    return 'mat_dxlevel "90"\nmat_queue_mode "0"\nr_novis "1"\n'
 end}
 function ScrW() return 1920 end
 function ScrH() return 1080 end
@@ -390,6 +390,13 @@ elseif scenario=="pins" then
     fixesLua()
     eq(cv.r_forcehwlight.value,"0","no Lua turns hardware lighting on") eq(#commands,issued)
     RunConsoleCommand("r_forcehwlight","0") eq(#commands,issued+1,"setting it to 0 stays allowed")
+    -- A map remaster may scope r_novis to its map, through pcall too; other add-ons keep the session value.
+    local other=assert(loadstring('local cv=GetConVar("r_novis") pcall(cv.SetString,cv,"0")', "@lua/autorun/some_addon.lua"))
+    other() eq(cv.r_novis.value,"1","an ordinary add-on keeps the session's r_novis")
+    local remaster=assert(loadstring('local cv=GetConVar("r_novis") pcall(cv.SetString,cv,"0")', "@lua/autorun/br_rtx.lua"))
+    remaster() eq(cv.r_novis.value,"0","an RTX map remaster scopes r_novis to its map")
+    local remasterHw=assert(loadstring('local cv=GetConVar("r_forcehwlight") pcall(cv.SetString,cv,"1")', "@lua/br_rtx/cl_main.lua"))
+    remasterHw() eq(cv.r_forcehwlight.value,"0","critical pins hold for remasters too")
 elseif scenario=="native_nul" then
     local nul=string.char(0)
     local player=setmetatable({},{__index=playerMeta})

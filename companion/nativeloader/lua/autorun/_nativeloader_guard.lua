@@ -126,9 +126,17 @@ local function exempt(s)
 end
 local criticalPins = {mat_dxlevel = true, mat_hdr_level = true, r_flashlightdepthres = true,
     mat_antialias = true, mat_aaquality = true, mat_disable_d3d9ex = true, r_forcehwlight = true}
+-- RTX map remasters (lua/autorun/<name>_rtx.lua and lua/<name>_rtx/, such as the Backrooms' br_rtx.lua)
+-- scope the engine's visibility to their own maps: gm_br_complex draws at about 13 ms with r_novis 0 and
+-- the fixes' PAS patch, but ran at 9 FPS with the session's r_novis 1 (R8 field check). They may set that
+-- pin only; critical pins stay enforced.
+local function remaster(source)
+    return source:match("^lua/autorun/[%w_]+_rtx%.lua") ~= nil or source:match("^lua/[%w_]+_rtx/") ~= nil
+end
 local function allowPin(name, value, source, query)
     if not active() then return true end
     local key = tostring(name or ""):lower()
+    if key == "r_novis" and remaster(source) then return true end
     local csm = source:find("lua/realcsm/", 1, true) == 1 or source:find("lua/entities/edit_csm/", 1, true) == 1
         or source:find("lua/autorun/realcsm_client.lua", 1, true) == 1
     if csm and value ~= nil and (key == "r_ambientlightingonly" or key == "r_lightstyle" or key == "r_radiosity"
@@ -231,7 +239,10 @@ if convarMeta then
         local original = convarMeta[method]
         if original and getName then
             convarMeta[method] = function(self, value, ...)
-                if allowPin(getName(self), value, caller(), false) then return original(self, value, ...) end
+                -- pcall(cv.SetString, cv, value) puts a native frame first; name the Lua caller instead.
+                local source = caller()
+                if source:sub(1, 13) == "<dynamic Lua>" then source = externalCaller() end
+                if allowPin(getName(self), value, source, false) then return original(self, value, ...) end
             end
         end
     end
