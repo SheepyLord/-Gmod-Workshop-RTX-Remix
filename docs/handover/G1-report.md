@@ -118,7 +118,9 @@ bursts the second pane (391 live, 25.83 / 161.8 ms while falling, Jolt 1.01 ms).
 52 glass tests under LuaJIT (`tools/tests/test_nlglass.py`): the real fracture and an engine harness
 with GMod stubs, including the integration regressions `irregular`, `settings_migration` and the
 shadow collision in `walk_run`, each failing on the code before it. G1-B's native tests (19 cases) and
-debris harness. Full suite: FULL_SUITE.
+debris harness. Full suite (`tools\test.ps1 -Config Release`, on `g1-int` before the merge):
+conventions, 25/25 CTests, 455 Python tests (28 gmapack, 25 steam, 402 tools; two existing skips);
+`build_package.py --require-nlctl` validates the package.
 
 ## Open issues
 
