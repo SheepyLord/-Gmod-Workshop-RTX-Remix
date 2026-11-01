@@ -103,9 +103,12 @@ local function stats(label)
     local sum = 0 for _, t in ipairs(times) do sum = sum + t end
     local mean = #times > 0 and sum / #times or 0
     local p99 = #times > 0 and times[math.max(1, math.ceil(#times * 0.99))] or 0
-    print(string.format("NL_QA client %s backend %s live %s moving %s sleeping %s batches %s frames %d mean_ms %.2f p99_ms %.2f",
+    local n = s.native or {}
+    print(string.format("NL_QA client %s backend %s live %s moving %s sleeping %s batches %s frames %d mean_ms %.2f p99_ms %.2f" ..
+        " | jolt step_ms %s awake %s brushes %s skipped %s statics %s models %s",
         label, d and d.Backend() or "missing", tostring(s.live), tostring(s.moving), tostring(s.sleeping), tostring(s.batches),
-        #times, mean * 1000, p99 * 1000))
+        #times, mean * 1000, p99 * 1000, tostring(n.step_ms), tostring(n.awake), tostring(n.brushes), tostring(n.skipped_brushes),
+        tostring(n.statics), tostring(n.models)))
 end
 local pending
 net.Receive(NET_VIEW, function()

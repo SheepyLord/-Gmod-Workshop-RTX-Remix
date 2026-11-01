@@ -5,7 +5,7 @@
 namespace nl::glass {
 struct Pose { std::uint32_t id; V3 position,angles; bool sleeping; };
 struct Stats {
-  unsigned live=0, awake=0, statics=0, models=0, workers=0, substeps=0;
+  unsigned live=0, awake=0, statics=0, models=0, workers=0, substeps=0, brushes=0, skipped_brushes=0;
   double step_ms=0, dropped_seconds=0;
   bool ready=false;
 };

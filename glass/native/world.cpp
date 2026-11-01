@@ -97,7 +97,7 @@ struct World::Impl {
   std::vector<Pose> output;
   std::uint32_t next_id=1;
   bool collide=true,loaded=false,ready=false;
-  unsigned workers=1,substeps=0;
+  unsigned workers=1,substeps=0,brushes=0,skipped_brushes=0;
   std::size_t model_points=0;
   float gravity=600;
   double accumulator=0,step_ms=0,dropped=0;
@@ -154,6 +154,7 @@ std::vector<StaticProp> World::load_map(std::span<const std::uint8_t> bytes) {
   auto& w=*impl_;w.clear_all();
   try {
     auto map=read_bsp(bytes);
+    w.brushes=static_cast<unsigned>(map.brushes.size());w.skipped_brushes=map.skipped_brushes;
     for(const auto& hull:map.brushes)w.add_static(hull_shape(hull,false));
     // Split displacement meshes into bounded batches. Make both sides solid for cosmetic debris.
     for(std::size_t first=0;first<map.triangles.size();first+=8192) {
@@ -281,6 +282,7 @@ Stats World::stats() const {
   const auto& w=*impl_;Stats s;
   s.live=static_cast<unsigned>(w.ids.size());s.awake=w.physics->GetNumActiveBodies(JPH::EBodyType::RigidBody);
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
-  s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;return s;
+  s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
+  s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;return s;
 }
 }

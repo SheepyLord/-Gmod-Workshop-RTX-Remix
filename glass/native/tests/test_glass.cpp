@@ -36,6 +36,13 @@ TEST_CASE("glass BSP imports only world brushes displacements and solid sprp ins
   file=fixture::room();fixture::u16(file,fixture::read_u32(file,8+48*16),0);
   CHECK(read_bsp(file).triangles.size()==31); // An authored displacement hole remains a hole.
 }
+TEST_CASE("glass BSP skips a brush that cannot become a hull, not the map") {
+  auto file=fixture::room();const auto brushes=fixture::read_u32(file,8+18*16);
+  fixture::u32(file,brushes+4,3); // brush 0 keeps a valid side range but has only three sides
+  const auto map=read_bsp(file);CHECK(map.brushes.size()==4);CHECK(map.skipped_brushes==1);CHECK(map.considered_brushes==5);
+  for(unsigned i=1;i<5;++i)fixture::u32(file,brushes+i*12+4,3);
+  CHECK_THROWS_AS(read_bsp(file),Error); // nothing usable: refused, so the manager falls back
+}
 TEST_CASE("glass BSP decodes Source LZMA collision lumps and refuses bad compression") {
   auto file=fixture::room();
   // Generated from the same 32-byte v1 leaf (first brush=0, count=6), with Python's raw

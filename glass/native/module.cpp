@@ -132,6 +132,7 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   auto add=[&](const char* key,double v) { LUA->PushNumber(v);set(LUA,1,key); };
   add("live",s.live);add("awake",s.awake);add("statics",s.statics);add("models",s.models);add("workers",s.workers);
   add("substeps",s.substeps);add("step_ms",s.step_ms);add("dropped_seconds",s.dropped_seconds);
+  add("brushes",s.brushes);add("skipped_brushes",s.skipped_brushes);
   LUA->PushBool(s.ready);set(LUA,1,"ready");return success(LUA);
 }); }
 LUA_FUNCTION_STATIC(Clear) { return guarded(LUA,[&] { active(LUA).clear();return success(LUA); }); }

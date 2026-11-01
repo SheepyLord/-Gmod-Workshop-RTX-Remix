@@ -14,9 +14,11 @@ struct Map {
   std::vector<Hull> brushes;
   std::vector<Triangle> triangles;
   std::vector<StaticProp> props;
-  unsigned skipped_brushes = 0;
+  unsigned considered_brushes = 0; // solid world brushes looked at
+  unsigned skipped_brushes = 0;    // of those, the ones that could not become a hull
 };
 // Parses only little-endian Source VBSP 19-21; never reads a path or any engine memory.
-// A bad/unsupported file throws Error. Callers discard the whole map, never a partial world.
+// A bad/unsupported file throws Error and callers discard the whole map. Single brushes that cannot
+// become a hull are skipped and counted; a map is refused when most of its brushes fail.
 Map read_bsp(std::span<const std::uint8_t> bytes);
 }

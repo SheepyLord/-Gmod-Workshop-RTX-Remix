@@ -7,7 +7,7 @@ function ENT:Initialize()
     local w,h=preset.width or 96,preset.height or 64
     local def=self.NLGlassDefinition or S.Definition({{-w/2,-h/2},{w/2,-h/2},{w/2,h/2},{-w/2,h/2}},1,
         preset.kind or NLGlass.Config.Kind("rtx_glass_spawn_kind"))
-    local frame=self.NLGlassFrame or {origin=self:GetPos(),angles=self:GetAngles(),material="rtx/replace_me/glassmat",color=self:GetColor()}
+    local frame=self.NLGlassFrame or {origin=self:GetPos(),angles=self:GetAngles(),material="models/props_combine/health_charger_glass",color=self:GetColor()}
     self.NLGlassDefinition=NLGlass.Geometry.ValidDefinition(def)
     if not self.NLGlassDefinition then self:Remove() return end
     local r=S.Register(self,frame,self.NLGlassDefinition)

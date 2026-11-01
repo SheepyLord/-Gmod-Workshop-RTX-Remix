@@ -3,7 +3,7 @@
 An original MIT add-on replaces Glass-Rewrite-Remix. One frozen server entity represents each
 convex pane; broken pieces exist only in G1-B's client debris world. This worktree implements G1-A.
 Combine it with G1-B before packaging or game acceptance. No GPL code or material files were copied.
-The add-on references the fixes part's existing `rtx/replace_me/glassmat` material and Remix replacement.
+The add-on draws glass with `models/props_combine/health_charger_glass`, the material the old add-on used, which the fixes part's Remix mod `base_mod/breakable_glass` replaces with translucent PBR glass (texture hash `C0C4BC4C02DBDF70`).
 
 ## Files
 

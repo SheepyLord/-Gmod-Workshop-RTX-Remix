@@ -103,16 +103,20 @@ void read_brushes(Reader& r, Map& out) {
     // MASK_SOLID_BRUSHONLY: solid, window, grate, moveable; not player/monster clip or water.
     if(!used[b] || !(u32(brushes,b*12+8)&0x400b))continue;
     const auto first=u32(brushes,b*12), number=u32(brushes,b*12+4);
-    need(number>=4 && number<=64 && first<=ns && number<=ns-first,"BSP brush side range/limit");
+    need(first<=ns && number<=ns-first,"BSP brush side range");
+    ++out.considered_brushes;
+    // A brush that cannot become a hull (too few or many sides, a bad plane, a sliver) is skipped:
+    // real maps carry a few (gm_construct does), and one lost brush costs less than the whole world.
+    if(number<4 || number>64) { ++out.skipped_brushes;continue; }
     work+=std::size_t(number)*number;need(work<=32*1024*1024,"BSP brush clipping work limit");
-    std::vector<Plane> p;
+    std::vector<Plane> p;bool usable=true;
     for(unsigned j=0;j<number;++j) {
       const auto index=u16(sides,(first+j)*8);need(index<np,"BSP brush plane index");
       const auto n=vec(planes,index*20); const auto d=f32(planes,index*20+12), len=n.length();
-      need(len>.99f && len<1.01f && std::abs(d)<=kCoordinateLimit,"invalid BSP brush plane");
+      if(!(len>.99f && len<1.01f && std::abs(d)<=kCoordinateLimit)) { usable=false;break; }
       p.push_back({n*(1/len),d/len});
     }
-    auto hull=brush_hull(p);
+    auto hull=usable?brush_hull(p):Hull{};
     if(hull.empty()) { ++out.skipped_brushes;continue; }
     total+=hull.size();need(total<=kMaxMapPoints && out.brushes.size()<kMaxStaticBodies,"BSP brush geometry limit");
     out.brushes.push_back(std::move(hull));
@@ -253,7 +257,8 @@ Hull brush_hull(const std::vector<Plane>& planes) {
 Map read_bsp(std::span<const std::uint8_t> bytes) {
   Reader reader(bytes);Map map;
   read_brushes(reader,map);read_displacements(reader,map);read_props(reader,map);
-  need(map.skipped_brushes==0,"BSP contains degenerate/unbounded solid brushes");
+  // Skipped brushes are tolerated; a map whose brushes mostly fail is probably misread, so it is refused.
+  need(!map.brushes.empty() && map.skipped_brushes*2<=map.considered_brushes,"BSP solid brushes mostly unusable");
   return map;
 }
 }

@@ -7,20 +7,20 @@
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/g1-int",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "cbd73dc9a7b043ef402525646d4fc1cad4eb2403",
+    "commit": "f1f2953d3e8a8ea8fac3f9c14ae91f543e122668",
     "dirty": false
    },
-   "imported": "2026-11-01T07:16:02+00:00"
+   "imported": "2026-11-01T07:39:41+00:00"
   }
  },
  "files": {
   "bin/gmcl_nlglass_win64.dll": {
-   "size": 1355776,
-   "sha256": "fe1d6cc9e878bb57a2311686c7063d305c5c95dbbcbf6af347622d0d0a9b4b4a",
-   "mtime_ns": 1793517299009498700,
+   "size": 1356288,
+   "sha256": "8f82dfcd7e34265169a2bf9f1eab32624b6459ec0c90a8a47c9f87b2cbea00a6",
+   "mtime_ns": 1793518726763214800,
    "stored": "xz",
-   "stored_size": 497032,
-   "stored_sha256": "b6d6da6ca66adb009f52c0cdcad00126b99c3b8ae491e7b532037ee9ea190060"
+   "stored_size": 497164,
+   "stored_sha256": "8582093849993a4e358c09ada320c1133f1b8624883045ce710f435b036a4031"
   }
  }
 }

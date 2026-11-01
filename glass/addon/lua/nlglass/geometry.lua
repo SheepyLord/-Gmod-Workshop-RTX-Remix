@@ -112,7 +112,7 @@ function G.FromEntity(ent,physicsOnly)
     local u=(ent:LocalToWorld(localOrigin+best.u)-worldOrigin):GetNormalized()
     local n=(ent:LocalToWorld(localOrigin+best.n)-worldOrigin):GetNormalized()
     local angles=u:AngleEx(n)
-    local frame={origin=worldOrigin,angles=angles,material="rtx/replace_me/glassmat",color=ent:GetColor(),
+    local frame={origin=worldOrigin,angles=angles,material="models/props_combine/health_charger_glass",color=ent:GetColor(),
         sourceMaterial=best.face.material}
     local outline={}
     local projection=physicsOnly and samples or best.face.points

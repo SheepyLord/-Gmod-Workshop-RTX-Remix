@@ -15,7 +15,7 @@ function P.WriteRecord(r)
     net.WriteUInt(r.id,32) net.WriteUInt(r.entityIndex or 0,16) net.WriteBool(r.native or false)
     net.WriteVector(r.frame.origin) net.WriteAngle(r.frame.angles)
     net.WriteVector(r.localOrigin or Vector()) net.WriteAngle(r.localAngles or angle_zero)
-    net.WriteString(r.frame.material or "rtx/replace_me/glassmat") net.WriteString(r.frame.sourceMaterial or "")
+    net.WriteString(r.frame.material or "models/props_combine/health_charger_glass") net.WriteString(r.frame.sourceMaterial or "")
     local c=r.frame.color or color_white
     net.WriteUInt(c.r,8) net.WriteUInt(c.g,8) net.WriteUInt(c.b,8) net.WriteUInt(c.a,8)
     net.WriteUInt(#d.outline,5)

@@ -59,7 +59,7 @@ local function spawn(number)
                 thickness = .6, velocity = Vector(), spin = Vector(), seed = j + layer * perLayer}
         end
         D.Spawn({origin = origin + Vector(0, 0, 32 + layer * 16), angles = angle_zero,
-            material = "rtx/replace_me/glassmat"}, fragments)
+            material = "models/props_combine/health_charger_glass"}, fragments)
     end
 end
 D.Clear()
