@@ -71,9 +71,33 @@ conflicts, rebuilt with the recorded pins (`18e1ebc7...`) and imported. The pack
 
 ## Tests and field
 
-TESTS
+`tools\test.ps1 -Config Release` on `r8-int` before each merge (part 1; parts 2 and 3 on the final
+tree): 26 of 26 CTests, 504 Python tests (two skipped, as before), "All checks passed". The runtime
+fork's unit tests: 29 of 29, with the new MMD alpha history cases (`test_remix_categories` needs the
+runtime's DLLs staged next to the built `d3d9.dll`). The guard's 47 tests include the `r_forcehwlight`
+pin (refused for every Lua caller), the remaster `r_novis` exemption through `pcall` and the merged trusted
+paths; the glass interaction tests size interest messages as the game does.
 
-FIELD
+Published three times from `main`: part 1 `e8602be` as `0.0.0-dev.20261101203841+06aebd23` (the noise
+fix), part 2 `7156baf` as `0.0.0-dev.20261101215410+29d7ea98`, part 3 `a663f85` as
+`0.0.0-dev.20261101220757+bd6ea7cd`. The field loader stays `0.12.0+74536d3c` (no loader change in R8).
+The Backrooms add-on's field copy no longer sets `r_forcehwlight` (the old file in
+`out/field-backup/2026-11-01-r8`). Field sessions (`out/qa-field/r8`):
+
+- `gm_br_complex` with part 2 (`03-backrooms`): 1682 lights created, the PAS switch on, `r_forcehwlight` 0,
+  but 9 FPS: the guard kept the session's `r_novis 1` against the remaster (150 refused retries), which part
+  3 fixes. The map takes minutes to load with the user's 765 add-ons; `poc_session.py`'s 120 s hang grace
+  and 300 s map wait cut two attempts short (`02-backrooms`, `07-backrooms`), and a one-off runner
+  (`out/qa-field/r8/long_load_session.py`, 900 s) plus `--timeout 900` got through.
+- `gm_br_complex` with part 3 (`08-backrooms`): `r_novis 1 -> 0` applied once, "the PVS of 2273 clusters is
+  their PAS", 1682 lights with 172 on around the camera, **25.1 FPS (median 39 ms, p99 73 ms) instead of 9**;
+  Kleiner and Alyx player-model ragdolls and a citizen render right; quit normally.
+- During those loads the window shows "Not Responding" while the menu and Remix still draw: GMod's main
+  thread does not pump window messages while it remounts the add-ons and loads the map. The user's 21:02
+  session ended with `0xCFFFFFFF` (Windows closed it as not responding), probably during such a load.
+
+A field game launched by another project's tool (`ipg\zzz_34\tools\kafka_runtime.py`) was running at
+22:07 UTC; it was left alone and the check waited (the user then closed all games).
 
 ## Open issues
 
