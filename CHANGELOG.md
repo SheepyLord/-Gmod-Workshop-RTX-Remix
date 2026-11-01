@@ -8,6 +8,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes
+  6–16 rays at uneven seeded angles, every ray has its own ring radii, and a break also drops a few
+  small cells at the hole's edge. Still seeded, so every player sees the same pieces.
+- Walking into glass no longer breaks it, for two reasons found in game. The player's physics
+  shadow reported a collision that took the prop energy rule (85 kg at 200 units/s is far above
+  the breaking energy); bodies now always use the 250-unit/s contact speed. And Glass-Rewrite-Remix
+  archived `rtx_glass_player_break_speed` (default 100) and `rtx_glass_velocity_transfer` (2) under
+  the names this system reuses; the first start resets those two once and keeps later choices.
+- The RTX package gains its eleventh part, `glass`: the MIT add-on (`nlglass`) with the Jolt
+  licence and the `gmcl_nlglass_win64.dll` module, replacing Glass-Rewrite-Remix
+  ([report](docs/handover/G1-report.md)).
+- G1-B's decision records 0074–0077 are now 0073 and 0078–0080: the parallel tasks had used the
+  same numbers.
+
 - G1-A break handlers defer/coalesce remaining-pane meshes and prediction collision to later
   client frames, bounded to two builds/frame with a soft 1 ms budget. Shared extrusion/vertices
   cut duplicate geometry work. Whole breaks and cleanup cancel stale work; pieces still spawn

@@ -1,5 +1,11 @@
 # Roadmap
 
+G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
+Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
+(whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed
+walking breaking glass (archived settings of the old add-on, reset once; shadow contact) and made
+breaks irregular at the user's request. See [the report](handover/G1-report.md).
+
 G1-A second-pass implementation and offline validation are complete on `g1-lua-fix2`: all four
 items are implemented, with 200/300-piece bounds, lit cracks, walking below the 250-unit/s default
 and deferred/coalesced client builds. Release passes 25 CTests and 453 Python tests (two existing
@@ -166,7 +172,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | R5 | **done** (2026-10-31, Claude, `r5-qol` with `r5-glass` and `r5-stability`, merged into `main` as `cff3c67`; [handover](handover/R5-qol.md), [stability proposal](handover/R5-stability-proposal.md); field QA passed on the published package) | The user's QoL report: the night sky line on modern_house, broken glass that is inert, never breaks again and never goes, Workshop model packs that must always provide their models, the RTX normals checkbox, the content pack skill's checks, and a proposal (not implemented) for stability on machines with little memory | Each item fixed and tested, checked in the game; the stability proposal handed to the user |
 | R6 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md), [report](handover/R6-report.md); loader 0.11.0; PoC release QA, tier measurements and the field map-load check passed) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
 | C-16 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md), [report](handover/C16-report.md); measured and tuned on the PoC, [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
-| G1 | **in progress** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [ADR 0070](decisions/0070-glass-overhaul.md)) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
+| G1 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [report](handover/G1-report.md), [ADR 0070](decisions/0070-glass-overhaul.md); every cause, walking and running, map glass and the 50-pane scene checked on the PoC, the old system measured as the baseline; irregular breaks at the user's request) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
 C-16 (2026-10-31): the runtime's scene-adaptive emission (C16-A) and the PBR writer, staged-pack

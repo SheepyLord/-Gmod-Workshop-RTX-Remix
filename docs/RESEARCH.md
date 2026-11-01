@@ -3637,3 +3637,29 @@ Runtime paths below refer to the isolated source built from `runtime/base.json` 
   gm_construct receipt: synchronous parse/cook/finish 46.60 ms; async owned-copy enqueue 3.79 ms,
   max poll .0069 ms, total 76.12 ms. Geometry counts are unchanged. An unchanged pile area now
   leaves the rebuild work set entirely; only dirty/staged areas enter Think.
+
+## G1 integration: glass in the game (2026-11-01, Claude)
+
+PoC, 1920x1080 windowed, RTX on; runs under the main checkout's `out/qa-poc/g1/`.
+
+- **GMod takes the run speed from the user command's buttons.** A server `SetupMove` hook that adds
+  `IN_FORWARD | IN_SPEED` to the move data and sets `SetMaxClientSpeed`/`SetMaxSpeed` to the run speed
+  still tops out at the walk speed, 200 units/s (run 06). A `StartCommand` hook in both realms that
+  sets the command's buttons and forward move reaches 400 (run 07).
+- **Archived Lua convars outlive their add-on.** GMod keeps them in `garrysmod/cfg/server.vdf` (server
+  realm) and `client.vdf` (client realm) and restores a value when a later add-on creates a convar of
+  the same name, over that add-on's default. The PoC still had Glass-Rewrite-Remix's
+  `rtx_glass_player_break_speed "80"`, `rtx_glass_velocity_transfer "2.000000"`, `rtx_glass_rigidity`,
+  `rtx_glass_shard_count` and others; with the new system the 80 let a 200-unit/s walk break glass
+  (run 08: one impact, 14 % of the pane left). After the one-time reset (run 10) the file holds 250,
+  1 and `rtx_glass_settings_version "1"`, and the walk leaves the pane whole.
+- **50 panes broken by blasts, same view** (frame mean / p99): old system (run 12, published package
+  `0.0.0-dev.20261101052452+2768a059`) empty 8.87 / 10.20 ms, falling 18.18 / 109.13 ms with 361 shard
+  entities, settled 10.89 / 14.49 ms with 302; new system (run 10) before 8.75 / 11.77 ms (787 settled
+  pieces present), falling 25.31 / 113.22 ms (2,000 live, 1,236 moving; manager 1.69 ms think, 6.99 ms
+  draw; Jolt step 1.50 ms), settled 9.74 / 16.39 ms (62 batches; manager 0.16 ms).
+- One annealed 96x64 pane breaking into 161 pieces gives a 62 ms frame (run 10 `bullet_break` p99),
+  while its fracture costs about 0.7 ms offline: most of the spike is piece creation or Remix taking
+  in new geometry.
+- modern_house (run 11): the map alone runs at about 19 ms per frame here; 44 native glass panes; a
+  window broken by rounds gives 203 pieces; a ragdoll burst 391 live, 25.83 / 161.8 ms while falling.

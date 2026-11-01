@@ -1,5 +1,28 @@
 # Testing
 
+## G1 integration: game QA on the PoC (Claude, 2026-11-01)
+
+The QA add-on [`tools/qa/nlglass_qa`](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md) is copied
+into the PoC's `garrysmod/addons` for the session and removed afterwards; the PoC's
+`native-loader/config.json` allows the package under test as a local `.gma`. From the main checkout:
+
+```powershell
+python tools\poc_session.py --evidence out\qa-poc\g1 run --name 10-field --addons --map gm_construct --width 1920 --height 1080 --lua out\worktrees\g1-int\tools\qa\nlglass_qa_start.lua --lua-shots 900 --extra=-insecure
+python tools\poc_session.py --evidence out\qa-poc\g1 run --name 11-map --addons --map gm_construct --mount-workshop 3495468649 --change-map modern_house --width 1920 --height 1080 --lua out\worktrees\g1-int\tools\qa\nlglass_qa_start.lua --lua-shots 600 --extra=-insecure
+```
+
+`nlglass_qa contact` runs only the walk and run steps; `nlglass_qa old` runs the 50-pane scene with
+Glass-Rewrite-Remix (the package before G1, `local: []`), for the before/after frame times. Each step
+prints `NL_QA` lines (server verdicts; client frame times, the manager's per-frame costs and Jolt's
+counters) and one screenshot. Read the verdicts, not only the entity: the walk/run verdict counts the
+impacts the glass server accepted and the share of glass left, because annealed glass keeps its frame
+after a breakout. Results and the history of runs 01-12: [G1 report](handover/G1-report.md).
+
+Check an install's `garrysmod/cfg/server.vdf` before reading contact results: values archived by
+an earlier add-on under the same convar name override new defaults (the PoC had
+`rtx_glass_player_break_speed` 80 from Glass-Rewrite-Remix); the glass system now resets its two
+affected settings once.
+
 ## G1-A second fix pass: density, lit cracks, walking and client cost
 
 `tools\test.ps1 -Config Release` exits 0: conventions pass, **25/25 CTests** pass (48.67 s),
