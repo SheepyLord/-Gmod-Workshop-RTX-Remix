@@ -20,6 +20,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - The device-loss marker is written before the GPU crash-state recorder and Aftermath waits, with
   heap locality, device-local driver totals, pending suppressed OMM counts and the same timestamp
   as its log line. Windows flushes the temporary file to disk before replacing the old marker.
+- Budget-drop warnings report free VRAM, the previous budget, OMM use and both free-VRAM limits
+  instead of two zero counters. Device-loss logs and markers include the queue reason; marker saves
+  use per-process temporary files, retry brief Windows sharing/access conflicts for up to two 10 ms
+  sleeps, and remove failed temporary writes. Fresh runtime setup calls Python's Meson directly
+  after loading the repository's MSVC environment.
 
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 

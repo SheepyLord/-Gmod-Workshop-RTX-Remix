@@ -24,20 +24,27 @@ Repeated presents of the same frame emit no duplicate. Camera cuts do not postpo
 deadline. The first periodic deadline is five minutes after device creation. Camera-cut samples
 observe the outgoing scene at present, before its cut-driven teardown. At device loss,
 `handleDeviceLost` retains its single-handler gate and calls `onGpuCrash` behind that gate.
-The first work in `onGpuCrash` after its own guard collects once, writes schema 1 of interface I7
-beside the runtime log and logs the snapshot at error level, before the GPU crash-state recorder,
+The bridge notification precedes `onGpuCrash`, the crash recorder and Aftermath waits (GMod x64's
+inactive bridge returns false immediately); the gate prevents a second loss thread from terminating
+the process during `dumpCrashState`.
+The first work in `onGpuCrash` after its own guard collects once, logs the snapshot at error level
+and writes schema 1 of interface I7 beside the runtime log, before the GPU crash-state recorder,
 either Aftermath wait and Sentry. The marker and log share the snapshot's timestamp, driver totals
-and pending suppressed OMM warning counts. The default path is `rtx-remix/logs/last_gpu_crash.json`;
+and pending suppressed OMM warning counts, plus the queue's optional JSON-escaped `reason` string.
+The default path is `rtx-remix/logs/last_gpu_crash.json`;
 `DXVK_LOG_PATH` relocates both files.
-Write a temporary file, check the write, `FlushFileBuffers` and close, and atomically replace the
-previous marker. All failures
+Write `last_gpu_crash.<pid>.tmp`, check the write, `FlushFileBuffers` and close, and atomically replace
+the previous marker. Retry replacement on Windows sharing/access errors up to three attempts with
+two 10 ms sleeps, then delete the temporary file on a write or replacement failure. The log is
+attempted first, and a log failure does not prevent the marker attempt. All failures
 are best effort and cannot escape the diagnostic handler or change process termination.
 
 Keep separate steady-clock one-minute limits for the two OMM warnings on the device, so recreating
 the OMM manager at a camera cut cannot reset them. The first occurrence logs immediately. The next
 eligible occurrence includes the number of intervening suppressed repeats; an idle warning does
 not emit a separate summary. A device-loss snapshot preserves the pending counts using atomic
-loads; the budget-dropped warning includes available bytes and the resulting budget. Rendering
+loads; the budget-dropped warning includes free VRAM, the previous budget, current OMM use and
+the hard/soft free-VRAM thresholds, captured before free VRAM is invalidated. Rendering
 budgets and eviction behavior are unchanged.
 
 Do not add `VK_EXT_device_fault` in this patch. The required memory evidence does not need a new
@@ -57,9 +64,10 @@ The marker is overwritten only on a later device loss; its UTC timestamp determi
 No uploads or consent changes are added. The runtime still exits on device loss and these counters
 do not identify the fault's cause. A stopped presentation loop cannot produce periodic samples.
 
-CPU-only tests cover timing, suppressed counts, JSON integer precision, marker replacement and
-failure preservation. Real driver memory sampling, camera-cut integration and induced GPU loss
-require the project manager's later game checks; T4 does not launch the game.
+CPU-only tests cover timing, suppressed counts, nonzero budget-drop counters, JSON integer precision
+and reason escaping, per-process temporary files, marker replacement, bounded sharing retries,
+failure preservation and temporary-file cleanup. Real driver memory sampling, camera-cut integration
+and induced GPU loss require the project manager's later game checks; T4 does not launch the game.
 
 ## Alternatives considered
 

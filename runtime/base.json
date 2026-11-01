@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "d6d676750bbbfe602c6d7920d104f7d05646696a3b8b9dc76b8297f62257fb5b",
-  "built_from": "HEAD 29546f35 (with what the rest of this record names)",
+  "d3d9.dll": "c40f28e4371f7525dce01afad7316ae3efeabb2099c7ec19fe1df5dc3706ac19",
+  "built_from": "HEAD 024a9866 (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -68,7 +68,7 @@
    "patches/0012-Read-localized-project-splash-text-from-editable-bou.patch": "2f311fead7b454fe5aebaf6655c6db4dfb7b346c81113220d7248d0c533783d9",
    "patches/0013-Default-to-minimum-one-and-maximum-twelve-path-bounc.patch": "63299c2773a2288c1aa35469eeca61dbbdb44bc6d900516bdb4a8f1b675e2f38",
    "patches/0014-Never-save-over-unread-settings-retry-saves-and-keep.patch": "224ae520a1e48cde66971dbe3a62225de41892aabf7c19a30f929193a4e76413",
-   "patches/0015-Record-GPU-memory-snapshots-and-rate-limit-micromap-.patch": "f255366ef062482de6c5d5157b98dd73606f122c74925a2e81ea3b8c91727850",
+   "patches/0015-Record-GPU-memory-snapshots-and-rate-limit-micromap-.patch": "56700eb053458d29647713db8a90950a05eb7bec4b8f2b7cc208a5f50d9c5f93",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

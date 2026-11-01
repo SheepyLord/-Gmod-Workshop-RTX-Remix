@@ -709,8 +709,10 @@ Patch 0015 registers `test_memory_diagnostics` in the runtime's `unit_tests` tar
 dedicated `_CompUnitTest_x64` build, as described by the fork's `.agents/skills/run-unit-tests`.
 The test needs no GPU: it checks first/one-minute warning timing, independent and pending suppressed counts,
 cut/present deduplication, a five-minute deadline unaffected by cuts, all heap/category fields,
-64-bit byte precision, heap locality and device-local driver totals, identical marker/log timestamps,
-replacement of an earlier crash marker, and preservation on write failure. It clears a stale
+64-bit byte precision, heap locality and device-local driver totals, nonzero free-VRAM/previous-budget/
+use/hard-limit/soft-limit warning values, identical marker/log timestamps and escaped reasons,
+per-process temporary files, replacement of an earlier crash marker, bounded sharing retries,
+temporary-file cleanup and preservation on write/replacement failure. It clears a stale
 `memory-fixture` at startup, including files left by an interrupted test.
 Patch 0015 also records the five previously omitted unit sources (GPU profile, GPU overrides,
 hot reload, dynamic options and particle schema) and the medium API app from the user's staged fork
@@ -727,7 +729,8 @@ The build wrapper rejects a missing/empty build directory (no `meson-private/cor
 saved configurations with Debug build type, Debug DLL CRT or APIC downloads enabled, before any
 setup/compile/import. The review exercised all five rejection cases and verified unchanged hashes
 for `base.json`, `packages/runtime/files.json` and the packaged DLL. First-time source setup is
-configure-only; the two shader passes run once through the common build path.
+configure-only through `python -m mesonbuild.mesonmain setup` after `Enter-VsDevEnv`, without the
+fork helper's separate vswhere/PATH lookup; the two shader passes run once through the common build path.
 
 The project manager's later authorized PoC acceptance (not performed by T4):
 
@@ -740,12 +743,16 @@ The project manager's later authorized PoC acceptance (not performed by T4):
 2. Under repeated OMM pressure, each warning kind logs immediately and then at most once every
    sixty seconds, including `suppressed repeats: N`. A cut that recreates OMM must not reset its
    limit. Counts are emitted with the next eligible occurrence, not on an idle timer. A budget-drop
-   line includes available bytes and budget; a loss snapshot includes pending `omm_suppressed` counts.
+   line includes free VRAM, the previous budget, OMM use and the hard/soft free-VRAM thresholds in
+   bytes; those values are captured before free VRAM is invalidated. A loss snapshot includes pending
+   `omm_suppressed` counts.
 3. In a development build only, arm the crash hotkeys with process-local
    `RTX_ENABLE_CRASH_HOTKEY=1` (or the Development tab), then Ctrl+Shift+Alt+G invokes the runtime's
    GPU-crash shader. This ends the process. Check for `[RTX Memory]` with `event:"device_lost"`
    before the GPU crash-state recorder, either Aftermath wait and Sentry handling, and a complete
-   schema-1 `last_gpu_crash.json` beside the runtime log, with identical UTC time and memory fields.
+   schema-1 `last_gpu_crash.json` beside the runtime log, with identical UTC time, memory fields and
+   optional escaped queue `reason`. The bridge is notified before diagnostics; the log is attempted
+   before the marker write and its short file-replacement retries.
    The default folder is `rtx-remix/logs`; a process-local
    `DXVK_LOG_PATH` relocates both. Repeat with an unwritable marker path: the original exit behavior
    must remain. No Remix `user.conf` edit is needed.
@@ -787,3 +794,25 @@ final suite ran under the real path. Receipts and the local wrapper are in `out/
 `runtime-review-`: `release-tests.log`, `release-tests-drive-alias.log`, `test-short-guard.ps1`,
 `build-guards.log`, `unit-tests.log`, `inputs-verify.log`, `package-build.log` and `fork-unchanged.log`.
 The standalone medium API GPU app and an actual game/device-loss trigger were not launched.
+
+The second review configured `out/tmp/runtime-review2-setup` offline with the wrapper's direct
+Python/Meson setup command, without compiling runtime targets. All 95 saved build options match
+`_CompRelease_x64`; the scratch folder was then removed. The comparison receipt retains the
+Release/Ninja/optimization/CRT/Tracy/shim/APIC values and Meson's three compiler-probe objects
+(`out/tmp/runtime-review2-setup-comparison.json`). The focused diagnostics test also exercises a
+locked destination: two 10 ms replacement retries preserve the old marker, remove this process's
+temporary file and leave a foreign process's temporary file intact.
+
+The second-review rebuild uses `remix-main+024a9866` and passes all 27 runtime unit tests, including
+the stale-fixture rerun. The existing config-save test's symbolic-link subcase is skipped by Windows
+error 1314 (the process lacks that privilege); the other subcases pass. Runtime source verification,
+deep input verification (zero problems), and the 1,008-file package's `--require-nlctl` check pass.
+Only `d3d9.dll` was imported; the two USD plugin hashes and the six recorded test-source blobs are
+unchanged. Second-review receipts use the `out/tmp/runtime-review2-` prefix; `unit-summary.json`
+retains only names, results, exit codes and timings.
+
+Second-review repository validation also passes `tools\test.ps1 -Config Release`: conventions,
+all 23 CTests and 333 Python tests (two skips). It uses the same session-local CTest wrapper for
+the known guard-cache path limitation; the copy's hash matches and the generated CTest command
+is restored afterward. No loader/test source changed. `runtime-review2-release-summary.json`
+records those checks beside `runtime-review2-release-tests.log` and the local wrapper.

@@ -67,9 +67,12 @@ Detection (T1), at RTX activation, through DXGI (`graphics_adapters()` already e
   `garrysmod\data\native-loader\vram.csv` (T3, the companion).
 - **I7, `rtx-remix\logs\last_gpu_crash.json` (T4 writes, T2 reads when present):**
   `{"schema": 1, "time_utc": "...", "event": "device_lost", "frame": <int>,
-  "heaps": [{"index": <int>, "budget": <bytes>, "usage": <bytes>}],
-  "dxvk": {"allocated": <bytes>, "used": <bytes>}, "categories": {"<name>": <bytes>}}`. Every field
-  optional for the reader.
+  "heaps": [{"index": <int>, "budget": <bytes>, "usage": <bytes>, "device_local": <bool>}],
+  "driver": {"budget": <bytes>, "usage": <bytes>},
+  "dxvk": {"allocated": <bytes>, "used": <bytes>}, "categories": {"<name>": <bytes>},
+  "omm_suppressed": {"budget_dropped": <int>, "allocation_denied": <int>}, "reason": "<queue loss reason>"}`.
+  Every field optional for the reader. Driver totals, DXVK totals and categories cover device-local
+  heaps; `reason` is an optional JSON-escaped string.
 
 ## The tasks
 

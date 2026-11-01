@@ -2851,13 +2851,16 @@ supersede the initial runtime commit `86ac49e9`; the final identity is in
 - `DxvkSubmissionQueue::handleDeviceLost` (`src/dxvk/dxvk_queue.cpp:407`) is shared by the submit
   and fence-finish loss paths (`:307`, `:357`).
   It retains the single-handler gate and calls `onGpuCrash(reason)` inside it. The first diagnostic
-  work in `onGpuCrash` (`:148`) writes/logs the memory snapshot before the crash-state recorder and either
-  Aftermath wait. Another loss thread cannot reach Sentry/termination ahead of that write.
+  work in `onGpuCrash` (`:148`) logs/writes the memory snapshot with the supplied queue reason before
+  the crash-state recorder and either Aftermath wait. The bridge notification precedes it and
+  returns immediately on the inactive GMod x64 bridge. Another loss thread cannot reach
+  Sentry/termination while the first is recording crash state.
   No GPU synchronization is added by diagnostics.
 - The VRAM API's collection previously lived in `rtx_fork_api_entry.cpp:864-893`. It now calls
   `RtxMemoryDiagnostics::capture` at line 864. `rtx_memory_stats.cpp` collects all driver heaps,
-  labels each with `device_local` (`:43`), and sums driver budget/use, DXVK allocations/use and eight
-  categories only across device-local heaps. The serialized `driver` totals are the API's
+  bounds the heap loop by the snapshot array's size, labels each with `device_local` (`:43`), and
+  sums driver budget/use, DXVK allocations/use and eight categories only across device-local heaps.
+  The serialized `driver` totals are the API's
   `driverBudgetBytes`/`driverAllocatedBytes`. It does not
   read the render-owned texture table; the API still adds its cache count separately.
 - `DxvkAdapter::getMemoryHeapInfo` (`dxvk_adapter.cpp:79-108`) queries physical-device memory
@@ -2873,13 +2876,21 @@ supersede the initial runtime commit `86ac49e9`; the final identity is in
   belong to the device (`rtx_memory_stats.h`). The next eligible occurrence reports the suppressed
   count; no background thread flushes idle warnings (`rtx_memory_stats.cpp`). Device-loss snapshots
   also include both pending counts in `omm_suppressed`, read atomically across threads. The
-  budget-dropped warning prints available bytes and budget.
+  budget-dropped branch runs only after its budget is zero, so `getAvailable()` and the new budget
+  carry no information there. It now passes `m_vidmemFreeSize`, `m_prevBudget`, `m_used` and the
+  hard/soft free-VRAM limits to `logOmmBudgetDropped`, before invalidating the free-VRAM sample
+  (`rtx_opacity_micromap_manager.cpp:175-195`). The warning names all five values and their byte units.
 - The crash marker uses the same `RtxFileSys::Logs` directory as `remix-dxvk.log`, including
-  `DXVK_LOG_PATH` (`src/util/util_filesys.h:65`). `rtx_memory_stats_data.cpp:77-90` checks `WriteFile`,
-  `FlushFileBuffers` and `CloseHandle` on the temporary file before `MoveFileExW` replacement.
+  `DXVK_LOG_PATH` (`src/util/util_filesys.h:65`). `rtx_memory_stats_data.cpp` checks `WriteFile`,
+  `FlushFileBuffers` and `CloseHandle` on `last_gpu_crash.<pid>.tmp` before `MoveFileExW` replacement.
+  Sharing violations/access denial receive at most three replacement attempts and two 10 ms sleeps;
+  write/replacement failure deletes that process's temporary file. A different process's temporary
+  file is left alone. `onDeviceLoss` logs first and still attempts the marker if logging throws.
   A failed write keeps the old marker; timestamps must be checked by the next-start reader.
   The timestamp belongs to the captured snapshot, so the marker and log line match even if the
-  write crosses a second boundary. Logging and file failures cannot unwind through `onDeviceLoss`.
+  write crosses a second boundary. The optional `reason` appears identically in the log and marker,
+  with quotes, backslashes and control bytes JSON-escaped. Logging and file failures cannot unwind
+  through `onDeviceLoss`.
 - Patch 0001's snapshot omitted five unit-test sources that its Meson file names:
   `test_particle_system_schema.cpp`, `test_hot_reload.cpp`, `test_rtx_option_dynamic.cpp`,
   `test_gpu_profile.cpp`, `test_gpu_overrides.cpp`; and `apps/RemixAPI/remixapi_medium_test.cpp`.
@@ -2897,3 +2908,13 @@ supersede the initial runtime commit `86ac49e9`; the final identity is in
   containing `!` is stripped during unit dependency staging. T4 used literal-path PowerShell
   copies into its own unit build after that helper failed. The initial 22-test suite passed; the
   review build passes 27/27 with the five restored unit sources.
+- The second review's offline scratch setup uses the same direct Python/Meson command as
+  `runtime/build_runtime.ps1` after `Enter-VsDevEnv`. All 95 recorded build options match the real
+  `_CompRelease_x64`, including optimization 3 and the release DLL CRT. Only Meson's compiler
+  probes ran; no runtime targets compiled. The scratch folder was deleted after comparison
+  (`out/tmp/runtime-review2-setup-comparison.json`).
+- T2's reader on integration commit `1dc93125` (`loader/core/src/evidence.cpp:188-202`) parses the
+  marker and reads only a string `event`; its JSON parser stores arbitrary object members without
+  a field allowlist. Unknown `device_local`, `driver`, `omm_suppressed` and `reason` fields are
+  ignored. Its existing `loader/tests/test_evidence.cpp:36-52` checks a minimal device-loss marker,
+  optional/unrelated fields and malformed JSON. No loader code or tests changed in this T4 pass.
