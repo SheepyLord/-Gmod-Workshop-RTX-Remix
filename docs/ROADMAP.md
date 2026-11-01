@@ -1,5 +1,12 @@
 # Roadmap
 
+G1-B fix-pass implementation and offline checks are **done** on `g1-native-fix` (2026-11-01):
+gm_construct imports despite isolated bad hulls, terrain indexing/tags are corrected, preparation
+and stepping run on polled workers, active/changed pose queues and staged pile chunks reduce client
+work, and cache saturation stays nonfatal. Release passes 25 CTests and 426 Python tests with the
+documented local guard-output path workaround. Real map/prop contacts, responsive first breaks and
+Remix frame-time acceptance stay with Claude; see [the fix report](handover/G1-B-fix-report.md).
+
 G1-B fix pass is **in progress** on `g1-native-fix` (2026-11-01): offline gm_construct reproduced
 the game's refused-hull failure. Shape isolation and displacement corrections pass generated tests;
 frame cost, incremental pile rebuilding and background import are being addressed before Claude's QA.

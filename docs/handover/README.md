@@ -28,6 +28,10 @@ so the next agent has the full story without the chat transcripts.
 G1-B implementation/offline validation is complete: [G1-B report](G1-B-report.md). G1-A and Claude's
 integration/game acceptance remain separate from that native/debris report.
 
+G1-B's post-game fix pass is complete for implementation/offline checks:
+[G1-B fix report](G1-B-fix-report.md), branch `g1-native-fix`. Integration/game acceptance remains
+with Claude; the report includes real-map import counts and before/after timing limits.
+
 ## Rules for briefs
 
 - Self-contained for someone who has read [AGENTS.md](../../AGENTS.md) and nothing else.
