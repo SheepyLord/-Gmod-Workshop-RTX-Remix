@@ -1,5 +1,20 @@
 # Roadmap
 
+R7 (the user's report of 2026-11-01) is **done** (2026-11-01, loader 0.12.0):
+
+- **Mask.** Columbina's mask renders as in MMD under RTX: runtime patch 0017 adds a texture category
+  for Model Hotloader textures, and the companion fills it, soft copies included.
+- **Exit report.** An observer outside the game reports why it ended (out of memory, device lost,
+  crash), with the evidence folder.
+- **Diagnostics.** The memory warning needs a real shortage of map headroom, and the panel counts
+  the content add-ons.
+- **Glass.** Players, NPCs, props, ragdolls, bullets, blasts and landings push and break broken glass,
+  one way.
+
+Each point was checked on the PoC. Integration fixed four things the game found: soft-copy tracking,
+the dialog's path style, the body search's frame cost and the boxes of client physics bodies. See
+[the report](handover/R7-report.md).
+
 R7-C's fast-body fix is implemented on `r7-glass-fix` from `7b49de9` (2026-11-01): bounded swept
 discovery, immediate/prioritized fast boxes, and capped one-way mirror sweeps. The real Lua-to-Jolt
 sleeping-pile regression fails before and passes after at 650/3600 units/s and 60/30 Hz. All 31
@@ -212,7 +227,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | R6 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md), [report](handover/R6-report.md); loader 0.11.0; PoC release QA, tier measurements and the field map-load check passed) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
 | C-16 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md), [report](handover/C16-report.md); measured and tuned on the PoC, [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
 | G1 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [report](handover/G1-report.md), [ADR 0070](decisions/0070-glass-overhaul.md); every cause, walking and running, map glass and the 50-pane scene checked on the PoC, the old system measured as the baseline; irregular breaks at the user's request) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
-| R7 | **in progress** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R7-plan.md)) | The user's report of 2026-11-01: transparent materials that render black (Columbina's mask), a report when a crash ends the game, broken glass pushed and broken by players, props, ragdolls, bullets, blasts and falls (one way), and the diagnostics' memory warning and add-on list | Each point checked on the PoC; published |
+| R7 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R7-plan.md), [report](handover/R7-report.md); loader 0.12.0, ADRs 0081-0084; each point checked on the PoC) | The user's report of 2026-11-01: transparent materials that render black (Columbina's mask), a report when a crash ends the game, broken glass pushed and broken by players, props, ragdolls, bullets, blasts and falls (one way), and the diagnostics' memory warning and add-on list | Each point checked on the PoC; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
 C-16 (2026-10-31): the runtime's scene-adaptive emission (C16-A) and the PBR writer, staged-pack

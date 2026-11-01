@@ -3831,3 +3831,31 @@ PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r
   benchmark settles in 11.0167 simulated seconds, with identical scratch use/zero overflows.
   These are doubles/generated rooms, not game frames; detailed costs and limits are in the
   [fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
+
+## R7 integration: glass capture in the game (2026-11-01, Claude)
+
+- **Vector reads.** Reading a component of a Source `Vector` from client Lua costs **35.3 ns** in
+  game: 100,000 reads of `v.x`, against 0.5 ns for a Lua local (PoC, `out/qa-poc/r7/25-probe`).
+  R7-C's region test read every bound through vectors. 512 bodies that miss 32 regions took
+  **3.128 ms** that way, and **0.300 ms** with the same test on plain numbers.
+  - At 10 Hz, the 50-pane field scene's manager think rose from 0.02 ms (interaction off, run 21)
+    to 0.49 ms (on, run 24) with nothing moving, with think peaks of 18.6 and 26.4 ms.
+  - The offline doubles are plain Lua tables and cannot show this cost.
+- **`PhysObj:GetAABB()` is in the object's own frame.** A client prop (`ents.CreateClientProp`, the
+  oil drum) at 831, 400, −100, angles 0, 37, 20, reported −14, −14, 0 .. 14, 14, 45.
+  - Server props have no physics object on the client: the drum, the couches, the table and the
+    companion doll all give an invalid `GetPhysicsObject()` there. Capture uses their oriented
+    `OBBMins`/`OBBMaxs` box.
+  - Client ragdolls and client props do have one. Capture took their local box as world bounds, so
+    the boxes landed near the map origin and the region test dropped them.
+- **After the fix.** Frame mean / p99 in ms, manager think in brackets. Same build, interaction off
+  (run 27), then on (run 28):
+
+  | Scene | Interaction off | Interaction on |
+  |---|---|---|
+  | Before the panes | 8.96 / 12.81 (0.02) | 8.85 / 16.58 (0.18) |
+  | While 2,000 pieces fall | 26.28 / 134.30 (1.79) | 28.60 / 134.33 (2.61) |
+  | Settled | 9.17 / 14.66 (0.02) | 9.32 / 17.25 (0.26) |
+
+  G1 run 10, the old baseline: 25.31 / 113.22 ms falling and 9.74 / 16.39 ms settled. The falling
+  p99 is the second-worst of about 150 frames: 113, 134 and 142 ms across runs 10, 27 and 21.

@@ -112,7 +112,7 @@ Settings (native-loader\config.json)
 After a crash
 -------------
 
-- This build starts a separate observer from winmm.dll. After an abnormal game exit it shows
+- Loader 0.12.0 starts a separate observer from winmm.dll. After an abnormal game exit it shows
   one message with the known or likely reason, what to try, the exit code and the evidence folder,
   in your game language. Remix's own crash prompt finishes first. A normal quit shows nothing.
   The evidence folder also holds exit-report.json, and the next start shows the same conclusion.
