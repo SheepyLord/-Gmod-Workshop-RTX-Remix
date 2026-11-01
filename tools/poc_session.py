@@ -460,8 +460,9 @@ class CrashPromptWatchdog:
 class RunHealth:
     """Cooperative checks between all run steps; never sends a message to test responsiveness."""
 
-    def __init__(self, process, remix_log: Path, remix_before: str, record: dict):
+    def __init__(self, process, remix_log: Path, remix_before: str, record: dict, hang_grace: float = HANG_GRACE):
         self.process, self.remix_log, self.remix_before, self.record = process, remix_log, remix_before, record
+        self.hang_grace = hang_grace
         self.hung_since: dict[int, float] = {}
 
     def check(self, hwnd: int | None = None) -> None:
@@ -485,14 +486,14 @@ class RunHealth:
         if hwnd and window_hung(hwnd):
             since = self.hung_since.setdefault(hwnd, time.monotonic())
             seconds = time.monotonic() - since
-            if seconds >= HANG_GRACE:
+            if seconds >= self.hang_grace:
                 self.record["hung_seconds"] = round(seconds, 1)
                 raise Failure(f"game window hung for {seconds:.1f} s")
         else:
             self.hung_since.pop(hwnd, None)
 
     def before_window(self, hwnd: int) -> None:
-        """Waits out a short load stall, or fails after HANG_GRACE; no sends or capture while hung."""
+        """Waits out a short load stall, or fails after the hang grace; no sends or capture while hung."""
         while True:
             self.check(hwnd)
             if self.process.poll() is not None:
@@ -998,7 +999,7 @@ def step_run(args) -> dict:
     process = subprocess.Popen([str(root / "bin" / "win64" / "gmod.exe"), *arguments], cwd=str(root), env=environment,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     record["pid"] = process.pid
-    health = RunHealth(process, remix_log, remix_before, record)
+    health = RunHealth(process, remix_log, remix_before, record, args.hang_grace)
     watchdog = CrashPromptWatchdog(process, root, evidence)
     modules = []
     watchdog.start()
@@ -1244,6 +1245,9 @@ def main(argv=None) -> int:
     run.add_argument("--no-window", action="store_true",
                      help="leave out -windowed -w -h: the game's saved video settings (and the loader) decide")
     run.add_argument("--timeout", type=int, default=300, help="seconds to wait for the map")
+    run.add_argument("--hang-grace", type=float, default=HANG_GRACE, metavar="SECONDS",
+                     help=f"seconds the game window may stay hung before the run fails (default {HANG_GRACE:g}); "
+                          "a big map with hundreds of Workshop add-ons can stall for minutes")
     run.add_argument("--settle", type=int, default=20, help="seconds after the map before screenshots")
     run.add_argument("--screenshots", type=int, default=1)
     run.add_argument("--shot-interval", type=float, default=2.0)

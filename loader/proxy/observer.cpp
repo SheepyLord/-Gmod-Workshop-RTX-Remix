@@ -176,6 +176,21 @@ std::string start(std::uint64_t session_start) noexcept {
     return std::string(wait == WAIT_OBJECT_0 ? "exit observer ready: pid=" : "exit observer not ready: pid=") + std::to_string(process.dwProcessId);
   } catch (const std::exception&) { return "exit observer: initialization failed"; }
 }
+std::string disable_window_ghosting() noexcept {
+  try {
+    wchar_t value[8]{};
+    const auto size = GetEnvironmentVariableW(L"NATIVE_LOADER_WINDOW_GHOSTING", value, 8);
+    if (exit_report::keep_window_ghosting(size && size < 8 ? fs::utf8(std::filesystem::path(value)) : ""))
+      return "window ghosting kept (NATIVE_LOADER_WINDOW_GHOSTING=1)";
+    // As in show(): the import table stays KERNEL32-only. user32 stays loaded; the game loads it anyway.
+    const auto user32 = LoadLibraryExW(L"user32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    using Disable = void(WINAPI*)();
+    const auto disable = user32 ? reinterpret_cast<Disable>(GetProcAddress(user32, "DisableProcessWindowsGhosting")) : nullptr;
+    if (!disable) return "window ghosting unchanged: DisableProcessWindowsGhosting unavailable";
+    disable();
+    return "window ghosting off: long loads no longer show the window as Not Responding";
+  } catch (const std::exception&) { return "window ghosting unchanged"; }
+}
 }  // namespace nl::proxy::observer
 
 extern "C" __declspec(dllexport) void CALLBACK NativeLoaderObserveW(HWND, HINSTANCE, LPWSTR command, int) {

@@ -114,8 +114,10 @@ dropped, so before a save or the camera the script waits until `console.log` has
     text is excluded if the file is unchanged or appended; a truncated/replaced log is read anew.
     A temporarily locked log is retried (`remix_log_read_error`) while window checks continue.
     `IsHungAppWindow` checks the game window without sending a message. A continuously unresponsive
-    window gets a 120 s grace (`hung_seconds` only after that grace); recovery resets the timer, so
-    shorter map-load stalls do not fail. Before console sends and captures, the run waits out such a
+    window gets a 120 s grace (`--hang-grace <seconds>` changes it; `hung_seconds` only after that
+    grace); recovery resets the timer, so shorter map-load stalls do not fail. A big map with hundreds
+    of Workshop add-ons stalls for minutes (R8: gm_br_complex with 765 add-ons in the field), so such a
+    run takes `--hang-grace 900` and a longer `--timeout`. Before console sends and captures, the run waits out such a
     stall without touching the hung window. All long waits poll health at most every 0.5 s; an already
     active console send retains its 10 s limit and checks health before retrying.
     On failure the record keeps `failed` and `normal_quit: false`, skips all remaining game operations,

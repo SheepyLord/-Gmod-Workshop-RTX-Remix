@@ -6,7 +6,8 @@ is gone (patch 0018); vanilla characters stay out of bind pose (the Backrooms ad
 instead of guard-made Lua errors, with their screen-space effects inert under RTX; falling glass costs
 11-12 ms instead of 26-29 ms; glass has collision levels with living entities off; bullets and melee break
 fractured glass at any time; the Backrooms work's native fixes are in the fixes DLL. Each was checked on
-the PoC. See [the report](handover/R8-report.md).
+the PoC. See [the report](handover/R8-report.md). Afterwards, loader 0.12.1 stops Windows from marking
+the game window "Not Responding" during long loads (the user's report from the field).
 
 R8-C's pre-QA review corrections are **complete offline** (2026-11-01):
 native material loads/readers, exact bundled-caller exemptions and binding-only shader checks replace

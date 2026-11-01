@@ -295,6 +295,7 @@ void startup_cxx(StartupContext& context) noexcept {
       } catch (const std::exception& error) {
         context.report.session.notes.push_back(std::string("previous session evidence worker unavailable: ") + error.what());
       }
+      context.report.session.notes.push_back(observer::disable_window_ghosting());
     }
     if (context.prepared.config.from_file && context.prepared.config.enabled && context.prepared.journal &&
         context.prepared.journal->current && !context.prepared.journal->pending) {

@@ -11,6 +11,11 @@ single-literal size limit with the full UTF-8 text intact.
 See [ADR 0083](../../docs/decisions/0083-external-exit-observer-from-the-proxy.md) and
 [the preview/QA steps](../../docs/TESTING.md#r7-b-exit-observer-and-read-only-previews).
 
+R8: `observer::disable_window_ghosting()` turns Windows' window ghosting off in the game process
+at start-up, so long loads no longer replace the game window with a "Not Responding" copy. Like
+`activate.cpp`, it loads user32 at run time, so the import table stays KERNEL32-only.
+`exit_report::keep_window_ghosting()` reads the opt-out, `NATIVE_LOADER_WINDOW_GHOSTING=1`.
+
 R7-B keeps the full `gmod-rtx-remix` identity row and counts the other deployed content packages
 in one localized line, including in copied diagnostics. The seven catalogs describe the new
 18 GiB free-commit / 24 GiB total memory thresholds.

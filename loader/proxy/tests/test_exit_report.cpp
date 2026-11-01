@@ -7,6 +7,10 @@ TEST_CASE("exit report: automation quiet is explicit and does not imply consent"
   CHECK(r::quiet("quiet")); CHECK(r::quiet("QUIET"));
   CHECK(!r::quiet("")); CHECK(!r::quiet("1")); CHECK(!r::quiet("off")); CHECK(!r::quiet("quiet "));
 }
+TEST_CASE("window ghosting stays on only when asked") {
+  CHECK(r::keep_window_ghosting("1"));
+  CHECK(!r::keep_window_ghosting("")); CHECK(!r::keep_window_ghosting("0")); CHECK(!r::keep_window_ghosting("true"));
+}
 TEST_CASE("exit report: game language overrides Windows and aliases follow the seven catalogs") {
   CHECK(r::language("gmod_language \"zh-cn\"\n", {}, "en-US") == "zh-CN");
   CHECK(r::language("gmod_language \"fr\"\n", "ja", "ru-RU") == "ja");

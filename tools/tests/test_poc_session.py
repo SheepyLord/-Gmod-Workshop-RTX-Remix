@@ -52,7 +52,7 @@ def run_args(root, evidence, **changes):
                   width=1280, height=720, workshop=False, addons=False, extra=[], players=1, map='gm_construct',
                   post=[], timeout=30, load_save=None, change_map=None, mount_workshop=None, console=[], camera=None,
                   hide_hud=False, no_window=False, fps=None, lua=[], lua_shots=None, menu_shot=False,
-                  settle=0, screenshots=0, shot_interval=0, quit_timeout=5)
+                  settle=0, screenshots=0, shot_interval=0, quit_timeout=5, hang_grace=ps.HANG_GRACE)
     values.update(changes)
     return SimpleNamespace(**values)
 
@@ -750,6 +750,18 @@ class StepRunTests(unittest.TestCase):
         history = json.loads((self.evidence / 'session.json').read_text(encoding='utf-8'))
         self.assertTrue(history[-1]['device_lost'])
 
+    def test_the_hang_grace_option_reaches_the_run(self):
+        graces = []
+
+        def run(args):
+            graces.append(args.hang_grace)
+            return {'step': 'run', 'name': args.name}
+
+        with mock.patch.object(ps, 'step_run', side_effect=run), contextlib.redirect_stdout(io.StringIO()):
+            for extra in ([], ['--hang-grace', '900']):
+                ps.main(['--root', str(self.root), '--evidence', str(self.evidence), 'run', '--name', 'long', *extra])
+        self.assertEqual(graces, [ps.HANG_GRACE, 900.0])
+
     def test_capture_timeout_uses_bounded_cleanup_and_still_collects_logs(self):
         clock, game = Clock(), FakeGame()
 
@@ -898,6 +910,19 @@ class HealthTests(unittest.TestCase):
             with self.assertRaisesRegex(ps.Failure, f'hung for {ps.HANG_GRACE:.1f} s'):
                 health.check(7)
         self.assertEqual(self.record['hung_seconds'], ps.HANG_GRACE)
+
+    def test_a_longer_hang_grace_waits_out_a_long_load(self):
+        health = ps.RunHealth(self.game, self.log, '', self.record, 900.0)
+        with mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \
+                mock.patch.object(ps.time, 'sleep', self.clock.sleep), \
+                mock.patch.object(ps, 'window_hung', return_value=True):
+            health.check(7)
+            self.clock.sleep(899)
+            health.check(7)
+            self.assertNotIn('hung_seconds', self.record)
+            self.clock.sleep(1)
+            with self.assertRaisesRegex(ps.Failure, 'hung for 900.0 s'):
+                health.check(7)
 
     def test_window_operations_wait_out_a_normal_load_instead_of_sending_to_a_hung_window(self):
         with mock.patch.object(ps.time, 'monotonic', self.clock.monotonic), \

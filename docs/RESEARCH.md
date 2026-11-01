@@ -4004,3 +4004,23 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
   (`18-vanilla-control`); R3-016 saw the break once `sv_cheats` had gone 1 → 0 and reset the cheat
   variable. The field's own `autoexec.cfg` line `r_forcehwlight 1` never applies (the variable does not
   exist yet when it runs).
+
+## R8 follow-up: "Not Responding" during long loads (2026-11-01, Claude)
+
+- **What the user saw.** During a long field load the game still drew and its menu updated, yet Windows
+  marked the window "Not Responding". GMod's main thread reads no window messages while it remounts
+  Workshop add-ons or loads a map: gm_br_complex with 765 add-ons takes minutes. `IsHungAppWindow`
+  turns true once a window's thread has gone 5 s without reading messages. Windows then hides the window
+  behind a **ghost**: a top-level window of class `Ghost`, owned by `dwm.exe` on this Windows 11 build
+  (26300), with the game's title and, once marked, " (Not Responding)". The ghost offers to close the
+  program; 0xCFFFFFFF is the exit code of a program closed that way.
+- **The ghost needs no input.** On the PoC (`out/r8-ghosting/poc`, run `a-kept`, with
+  `NATIVE_LOADER_WINDOW_GHOSTING=1`), a 25 s client-Lua busy loop made the window hung for 20.1 s. A
+  ghost was there 0.25 s after `IsHungAppWindow` turned true, before the watcher's first invalidation.
+  A 2.3 s hang during start-up had a "(Not Responding)" ghost too.
+- **`DisableProcessWindowsGhosting`** (user32, no arguments) turns ghosting off for the calling process
+  for the rest of its life. `IsHungAppWindow` still reports the hang, so `poc_session.py`'s hang grace
+  works unchanged. The loader calls it at start-up, before the engine creates its window. It resolves the
+  function at run time, as `activate.cpp` does for user32, so the bootstrap's import table stays
+  KERNEL32-only. PoC run `b-fixed` (loader 0.12.1, the same stall): hung for 20.1 s, three invalidations,
+  **no ghost window**, a normal quit; loader note `window ghosting off`.

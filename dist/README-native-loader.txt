@@ -109,6 +109,15 @@ Settings (native-loader\config.json)
   For example, the low tier:
   { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "performance_tier": "low" } }
 
+Long loads
+----------
+
+- A big map, or hundreds of Workshop add-ons being mounted, can keep the game busy for minutes.
+  Loader 0.12.1 stops Windows from greying out the window and adding "(Not Responding)" to its
+  title meanwhile: the game is still working, and Remix and the menu keep drawing. A game that
+  really froze no longer offers "Close the program"; end gmod.exe in Task Manager instead.
+  Set NATIVE_LOADER_WINDOW_GHOSTING=1 to keep Windows' usual behaviour.
+
 After a crash
 -------------
 

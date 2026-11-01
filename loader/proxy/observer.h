@@ -9,4 +9,9 @@ bool host() noexcept;
 // Called outside loader lock, after the session start record is ready and before runtime load.
 // Returns a diagnostic note, including the observer PID; failures never prevent game startup.
 std::string start(std::uint64_t session_start) noexcept;
+// Windows marks a window "Not Responding" (and offers to close it) once its thread stops pumping
+// messages for 5 s. GMod's does through Workshop remounts and big map loads, while Remix and the menu
+// still draw (R8: minutes for gm_br_complex with 765 add-ons). Turns that ghosting off for this process
+// unless NATIVE_LOADER_WINDOW_GHOSTING=1. Returns a diagnostic note; never fails startup.
+std::string disable_window_ghosting() noexcept;
 }  // namespace nl::proxy::observer

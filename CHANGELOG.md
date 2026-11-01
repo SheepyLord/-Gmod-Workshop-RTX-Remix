@@ -38,6 +38,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **The Backrooms work's native fixes in the RTX fixes DLL**: a cache of models without a SW VTX, lazy model
   transforms and default-off PAS visibility for the room next door, ported onto the packaged fixes source
   (corresponding source in `packages/fixes/licenses/oversized-skinning/backrooms/`).
+- **The game window no longer turns "Not Responding" during long loads** (the user: the game still drew
+  and the menu updated while Windows called the window unresponsive). GMod's main thread stops reading
+  window messages while it remounts Workshop add-ons or loads a big map, minutes for gm_br_complex with
+  765 add-ons, so after 5 s Windows replaced the window with a greyed copy offering to close it. Loader
+  0.12.1 turns that window ghosting off for the game process (user32 loaded at run time; the bootstrap
+  still imports only KERNEL32); `NATIVE_LOADER_WINDOW_GHOSTING=1` keeps it. `tools\poc_session.py` takes
+  `--hang-grace <seconds>` for such loads.
 
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 

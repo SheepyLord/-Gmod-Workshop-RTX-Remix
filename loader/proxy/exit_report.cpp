@@ -34,6 +34,7 @@ bool quiet(std::string_view environment) noexcept {
   }
   return true;
 }
+bool keep_window_ghosting(std::string_view environment) noexcept { return environment == "1"; }
 std::string command_language(std::wstring_view command) {
   const auto args = cmdline::tokenize(command);
   std::string result;
