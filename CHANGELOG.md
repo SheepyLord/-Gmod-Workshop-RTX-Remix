@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R8 (unreleased; [plan](docs/handover/R8-plan.md))
+
+- **No more noise on Model Hotloader characters** (the user: frame-to-frame noise since the alpha fix,
+  worst with DLSS). R7's runtime patch marked a tagged character's material as changed every frame (it
+  compared a state that a later draw of the same frame, or a new instance, had replaced), so the
+  denoisers and DLSS Ray Reconstruction discarded its history on every pixel. Patch 0018 compares the
+  first draws of consecutive frames only. Remix's disocclusion debug view showed the whole character
+  white before and none after.
+
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 
 - **Transparent MMD materials show under RTX** (the user: Columbina's blindfold rendered black, only
