@@ -1,5 +1,11 @@
 # nlglass_engine_harness.lua
 
+Fix-pass scenarios: `body_contact`, `player_move`, `client_settings`, `map_outputs`, `last_impact`,
+`blast_order`, `budget`. Each fails against the 3096b2e add-on. They cover departing/distant/rotated
+bodies, a 500-unit/s pre-movement contact with stopped entity velocity, independent replicated
+client convars, raw once-only native output mirroring without Shatter, weak native impact recording,
+blast-after-spawn ordering and the 8,192 slider limit.
+
 Runs the actual G1-A bootstrap, server, protocol, entity, tool, catalogs, menu and client modules in
 isolated mocked server/client Lua environments. `NLGlassDebris` is a stub exposing only the plan's
 public API; no G1-B code, native module or game process is used.
@@ -20,6 +26,20 @@ admin authorization, injection refusal and reset (including queued edits), rotat
 frames/material objects, surviving cleanup panes, delayed client entities, reused index safety and
 collision-build failure. Engine callback order and object liveness can be
 controlled in memory. It asserts no server Think/Tick hooks are installed.
+
+`topology` round-trips near-cap live cells/coarsening groups through the typed wire mock, checks
+message size and compares the next break's polygons. `client_build` counts one physics build and
+one mesh pair per break, no weak-hit rebuild and no repeated-packet debris. `draw_cull` counts
+zero stationary Matrix/LocalToWorld/class calls, verifies distance/eye-plane culling and a moving
+pose update. `initial_sync`/`target_sync` check one readiness push and independent per-pane repair.
+The contact probe includes the QA SetVelocity base impulse and player yaw; blast ordering also
+covers an engine-native removal deferred after damage.
+
+`client_timings` prepares 100 hits, restores a fresh near-cap server/client state before each of
+40 samples, and measures actual server/client hit/break handlers with QueryPerformanceCounter.
+Client reset and initial snapshot/build are outside timing. The Lua mesh/convex work is real;
+engine APIs, transport, debris simulation and renderer submission are mocks. It reports mean/p99
+milliseconds; these numbers do not predict GMod/Remix frame times.
 
 Output: assertion diagnostics and `engine <scenario> OK`. Side effects exist only in mocked tables
 (network outboxes, collision meshes, sounds, UI controls, debris calls). No filesystem writes,

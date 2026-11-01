@@ -47,6 +47,35 @@ class FractureTests(unittest.TestCase):
     def test_scripted_nominal_break_always_has_pieces(self):
         self.run_case('forced')
 
+    def test_hits_beyond_cell_and_history_caps_keep_their_location(self):
+        self.run_case('cap_local')
+
+    def test_weak_energy_accumulates_and_pistol_crack_floor_is_capped(self):
+        self.run_case('weak')
+
+    def test_incremental_cells_and_revision_caches(self):
+        self.run_case('incremental')
+
+    def test_tempered_cracks_are_local_spiderwebs(self):
+        self.run_case('tempered_spider')
+
+    def test_clipping_merges_tiny_edges(self):
+        self.run_case('tiny_edges')
+
+    def test_cracks_exclude_the_pane_perimeter(self):
+        self.run_case('border')
+
+    def test_one_hundred_hits_coarsen_old_rings_and_preserve_area(self):
+        self.run_case('coarsen')
+
+    def test_coarsening_cannot_fill_old_holes(self):
+        self.run_case('hole_coarsen')
+
+    def test_record_hit_and_break_timings(self):
+        output = self.run_case('timings')
+        self.assertIn('hit n=80 mean_ms=', output)
+        self.assertIn('break n=80 mean_ms=', output)
+
 
 class GlassCatalogTests(unittest.TestCase):
     def test_complete_mit_catalogs_and_exact_generated_shipping_data(self):
@@ -116,3 +145,42 @@ class EngineTests(unittest.TestCase):
 
     def test_failed_collision_breaks_with_pieces_and_no_placeholder_blocker(self):
         self.run_case('collision_failure')
+
+    def test_body_contact_requires_approach_outline_and_plane_proximity(self):
+        self.run_case('body_contact')
+
+    def test_pre_movement_player_sweep_uses_incoming_velocity(self):
+        self.run_case('player_move')
+
+    def test_replicated_settings_exist_in_an_independent_client(self):
+        self.run_case('client_settings')
+
+    def test_native_map_output_bridge_has_no_engine_shatter(self):
+        self.run_case('map_outputs')
+
+    def test_native_records_weak_last_impact(self):
+        self.run_case('last_impact')
+
+    def test_blast_impulse_follows_its_new_debris(self):
+        self.run_case('blast_order')
+
+    def test_budget_slider_matches_convar_bound(self):
+        self.run_case('budget')
+
+    def test_near_cap_topology_snapshot_and_following_break(self):
+        self.run_case('topology')
+
+    def test_client_builds_once_per_break_and_skips_weak_geometry(self):
+        self.run_case('client_build')
+
+    def test_client_caches_transforms_and_culls_distant_or_rear_panes(self):
+        self.run_case('draw_cull')
+
+    def test_single_initial_state_push_after_client_readiness(self):
+        self.run_case('initial_sync')
+
+    def test_revision_mismatch_resyncs_only_one_pane(self):
+        self.run_case('target_sync')
+
+    def test_record_server_and_client_hit_and_break_timings(self):
+        self.run_case('client_timings')

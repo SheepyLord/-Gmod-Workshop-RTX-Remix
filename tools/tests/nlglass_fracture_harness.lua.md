@@ -1,5 +1,14 @@
 # nlglass_fracture_harness.lua
 
+Fix-pass modes `cap_local`, `weak`, `incremental`, `tempered_spider`, `tiny_edges`, `border` fail
+against the original 3096b2e modules. `coarsen` drives 100 separated impacts to the 512-cell cap;
+`hole_coarsen` proves complete-group coarsening cannot refill an existing opening. `tiny_edges`
+also checks generated edges over 180 seeds. `timings` prepares a near-cap pane and reports 80
+new hits, repeats and breaks (mean/p99 milliseconds, QueryPerformanceCounter on Windows).
+Preparation is outside the timed section; this is pure fracture CPU cost, not engine/Remix cost.
+The coarsen case also drives 200 dense visual-only hits, ensuring engine-owned glass never
+generates an early cosmetic shatter under geometry pressure.
+
 Runs the actual MIT fracture module under plain LuaJIT, without GMod globals. Invoked by
 [test_nlglass.py](test_nlglass.py.md), or directly:
 

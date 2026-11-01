@@ -1,8 +1,8 @@
 # Native loader glass (G1)
 
 An original MIT add-on replaces Glass-Rewrite-Remix. One frozen server entity represents each
-convex pane; broken pieces exist only in G1-B's client debris world. This worktree implements G1-A.
-Combine it with G1-B before packaging or game acceptance. No GPL code or material files were copied.
+convex pane; broken pieces exist only in G1-B's client debris world. This is G1-A's integration fix pass.
+Combine it with G1-B's fix pass before packaging/game acceptance. No GPL code or material files were copied.
 The add-on draws glass with `models/props_combine/health_charger_glass`, the material the old add-on used, which the fixes part's Remix mod `base_mod/breakable_glass` replaces with translucent PBR glass (texture hash `C0C4BC4C02DBDF70`).
 
 ## Files
@@ -12,7 +12,7 @@ The add-on draws glass with `models/props_combine/health_charger_glass`, the mat
 | `autorun/nlglass.lua` | Shared bootstrap, downloads of client Lua, six size/kind spawn presets |
 | `entities/nlglass_pane/shared.lua`, `init.lua`, `cl_init.lua` | Pane entity, frozen collision, damage callbacks, property-only duplication/save restore |
 | `nlglass/fracture.lua` | Plain Lua deterministic convex subdivision, support connectivity, cracks and piece velocities |
-| `nlglass/config.lua` | Shared setting names, defaults and ranges; server convars |
+| `nlglass/config.lua` | Shared setting names, defaults and ranges; replicated convars in both realms |
 | `nlglass/geometry.lua` | Frames, convex outlines from brush surfaces/physics, validation, collision points, render triangles |
 | `nlglass/damage.lua` | Single impact representation for damage, collisions, bodies and fallback breaks |
 | `nlglass/protocol.lua` | Bounded snapshot and compact impact encoding |
@@ -24,44 +24,52 @@ The add-on draws glass with `models/props_combine/health_charger_glass`, the mat
 
 Every script has a sidecar describing inputs, outputs and effects. `addon/LICENSE` is MIT;
 [i18n/](i18n/README.md) holds independent MIT catalogs. G1-B owns `nlglass/debris*.lua`,
-`nlglass/world*.lua` and `native/`, absent on the G1-A branch.
+`nlglass/world*.lua` and `native/`; this fix pass does not edit those files.
 
 ## Damage and fracture
 
 See [ADR 0071](../docs/decisions/0071-glass-impact-model.md). Energies are gameplay units:
 `0.5 * mass_kg * relative_speed_units_per_second²` for physics, players, NPCs and vehicles.
 `CollisionData.HitObject` supplies the real PhysObj mass. Player/NPC fallback mass is 85 kg;
-body contacts require at least 180 units/s towards the pane normal. Contacts are event-driven and
+body contacts require at least 180 units/s toward the plane from the body's side, a centre within
+remaining glass and actual plane proximity (half thickness plus oriented body half width).
+Players also use a pre-movement hull sweep, retaining incoming movement plus base velocity
+(including the QA `SetVelocity` push) before collision stops it. Player/NPC hulls stay axis aligned;
+vehicles use their oriented half widths.
+Contacts are event-driven and
 deferred out of physics callbacks; there is no server Think/Tick scan of idle panes.
 
 A 96×64, thickness-1 annealed pane at strength 1 has a 450,000 breaking threshold and a 36,000
-crack threshold. Threshold scales with thickness squared, strength, square root of area (reference
+crack threshold. All positive weak energy accumulates; there is no visible crack until it reaches
+`min(8% of threshold, 36,000)`. The breaking threshold scales with thickness squared, strength, square root of area (reference
 6144 units², minimum scale 0.35), and 3.5 for tempered. DamageInfo energy is damage × 12,000 for
 bullets/buckshot/crush, × 16,000 for other blunt damage, × 20,000 for blast. Thus a 15-damage pistol
 hit cracks, three such hits break a region, and an 85 kg body at 200 units/s supplies 1,700,000.
 These are tunable game defaults, not engineering strength predictions. Thickness is in Source units.
 Native windows keep engine health: our accumulated damage controls their visual cracks only.
 
-The first accepted hit establishes 8–16 seeded rays, more for higher initial energy, and homothetic
-polygonal rings whose spacing grows outward. Convex clipping gives small cells near the hit and
-larger cells far away. Subsequent spatially separate hits subdivide the existing cuts; repeated
-nearby hits grow their crack extent without moving the original cuts. Annealed breakout removes
-whole inner rings and any cells no longer connected along an edge to the frame. Later breaks grow
-holes; an impact in retained glass can establish another centre. Tempered uses a nearly uniform
-grid and releases the whole pane at its higher threshold.
+Each cracking hit establishes 8–16 seeded rays and polygonal rings with spacing that grows
+outward. Only cells in its contact neighbourhood subdivide; repeated hits reuse those cuts.
+Live cells and their complete subdivision groups are retained. Above the 512-cell limit, complete
+old groups far from the new hit return to their exact convex parent. Groups containing a released
+cell cannot coarsen, so holes never refill. Eight active centres describe crack growth; a new distant
+hit reclaims a distant slot while keeping its actual location. Old distant cracks may simplify.
+A pathological perforated pane with no room to refine/coarsen releases its remaining glass at the
+current hit. A 100-impact generated probe reaches the cap without that fallback.
 
-All fracture coordinates use a 1/1024-unit grid, an integer Park–Miller generator, an integer circle
-table and integer square roots. No global random generator, trigonometry or libm square roots affect
-the cells. Impact history is bounded at eight slots, merging into the nearest when full; a ninth cut
-or a cut that would exceed 512 cells also merges. Merging retains the old cut's location/seed, a
-deliberate limit on very heavily damaged panes. Tempered adapts its minimum piece size to keep a
-large pane below the cell bound. Strength/settings are quantized before networking.
+All coordinates use a 1/1024 wire grid, an integer Park–Miller generator, an integer circle table
+and integer square roots. Hull/Clip merge vertices closer than 1/256 before sending any piece to
+G1-B's mesh builder. No global random generator, trigonometry or libm roots affect the cells.
+Tempered glass starts as one intact convex, shows a small spiderweb near impacts and generates a
+bounded uniform grid only when the whole pane shatters. Its grid is never rendered as cracks.
 
-Cracks use the same cell edges as the eventual pieces. Their visible extent grows with accumulated
-energy; sharp hits thicken the fine central/radial geometry into a hole mark. Thin frosted strips sit
-on both pane faces. Meshes rebuild only when state changes. The server rebuilds VPhysics only when
-glass breaks out; clients mirror remaining convexes for prediction, including late entity creation.
-No convex covers an opening. A physics-build failure falls back to a full cosmetic break.
+Cracks use cell edges, excluding the pane's original border. Their visible extent grows with
+energy; thin frosted strips sit on both faces. Remaining polygons and cracks are cached. Support
+connectivity uses shared edges and runs once per breakout, never on an ordinary cracking hit.
+Complete groups and immutable cell arrays let snapshots retain pre-break state without recomputing
+history. Server collision rebuilds only at breakout; clients mirror remaining convexes for prediction.
+No convex covers a hole. A physics-build failure releases the remaining glass with pieces.
+See [ADR 0075](../docs/decisions/0075-incremental-glass-topology.md).
 
 Near pieces receive the impact direction with squared distance falloff and seeded spin. Far pieces
 have little or no initial velocity and fall in G1-B's gravity. A scripted break releases the whole
@@ -70,13 +78,25 @@ otherwise the pane centre with nominal energy. Cleanup suppresses pending native
 
 ## State and map logic
 
-The server sends a pane definition/frame once, then 19-byte impact payloads (27 bytes including pane
-ID, revision and flags). A breaking event additionally contains the preceding bounded state, so a removed/not-yet
-transmitted entity cannot swallow its pieces. There is no mesh or per-piece networking. A joining
-player gets the current bounded impacts, holes, seed, energy and revision; restoring them creates
-cracks/collision, with no historical debris replay. A client requests resynchronization on a missing
-revision. The only client-to-server routes are a rate-limited read-only sync and validated admin
-setting changes. Other add-ons' native damage hooks are not suppressed.
+The server sends a pane definition/frame once, then compact impact events (27 bytes including
+ID/revision/flags). Breaks also carry their pre-state so a missing or already removed entity cannot
+swallow pieces. Snapshots include bounded live pane topology and complete subdivision groups,
+sharing vertex coordinates; a 501-cell probe uses 16,721 bytes. Restore resumes that topology
+without history replay or historical debris. This is pane state only: no moving piece/pose stream
+or per-piece server entities. Settings remain validated server/admin changes.
+
+Initial state uses one client-readiness request from `InitPostEntity`, with a zero-delay request
+only for Lua refresh. A missing revision requests just that pane ID; the server replies with its
+snapshot or removal, deduplicating IDs and allowing 16 requests per two-second window. There is
+no second PlayerInitialSpawn push. A matching client state applies a break directly; a recovery
+snapshot is stored without a build, then its final state builds once. Weak pending hits keep
+geometry and collision; unchanged cells retain the pane mesh. Cached meshes/cracks update by
+revision and prediction physics rebuilds only on initial attachment or breakout.
+
+Each pane caches its validated entity, Matrix, material, tint and bounds. Only a pose change calls
+LocalToWorld and updates that Matrix; a stationary draw has no new Matrix/transform/class lookup.
+Panes beyond 8,192 units plus radius, or wholly behind the current eye plane, are skipped.
+Reused entity indices are checked on attachment instead of every frame.
 
 Map startup, newly created map brushes, cleanup and save restore are covered. Surface geometry uses
 the largest valid brush face, its convex outline and original material metadata; rendering uses the
@@ -85,16 +105,19 @@ changing health, solid state, render material or engine outputs. Irregular non-c
 windows and moving brush behaviour need game QA; unsupported geometry remains the engine's pane.
 
 For a replaced `func_breakable_surf`, the original brush remains hidden with collision disabled.
-Its targetname and Hammer output bindings remain on that entity. The first actual breakout fires
-its `Shatter` input at normalized centre with a radius covering the original window, passing through
-attacker/caller. The bridge bypasses our own input interception once; further script `Break`/`Shatter`
+Its targetname and Hammer output bindings remain on that entity. The first actual breakout mirrors
+captured raw `OnBreak` map keys to an unused native `OnUser1`–`OnUser4` channel and fires `FireUser`
+once on the original, keeping Source's target/parameter/delay/count and activator/caller handling.
+It never sends engine `Shatter`/`Break` to that brush (those play sound and emit engine shards).
+Further script `Break`/`Shatter`
 inputs on the original route to the replacement. Removing an unbroken replacement restores the
 original's visibility/collision. Restored panes retain their original brush link; duplicates become
 independent panes and cannot steal that link.
 
-**This is an engine-input bridge, not a guarantee of every map's outputs.** The actual engine's
-`OnBreak`/`OnShatter`/completion outputs, output ordering and hidden-brush behaviour must be checked
-by Claude in game. The offline harness proves routing and once-only dispatch. Per-engine-cell
+**The native output bridge needs in-game validation.** Capture requires the original map key
+callbacks (Lua hot reload cannot recover them); four occupied user channels disable the bridge
+with a diagnostic. Runtime output changes outside those callbacks cannot be mirrored.
+The offline harness proves raw routing and once-only dispatch. Per-engine-cell
 partial-shatter logic, old brush health/damage filters and output history do not track the new
 annealed hole state. If the original was removed by map logic, its output bindings cannot be fired.
 Save/dupe keeps outline, thickness, kind and strength; broken state/output history need not persist.
@@ -151,7 +174,8 @@ Frame `origin`/`angles` map pane-local x/y to the pane and z to its normal using
 `material` is a VMT path, `color` a Color. Each piece has CCW `poly = {{x,y},...}`, `thickness`,
 world `velocity` and `spin` Vectors, and integer `seed`; it spans z ± thickness/2. Blast messages
 are deduplicated by explosion origin/inflictor and tick (unattributed blasts coalesce per tick), then
-call `Impulse`. No private debris/world API, native API or server broken-glass entity is used.
+call `Impulse` after synchronous and one-turn deferred breaks, so the blast also pushes the pane's
+own new pieces. No private debris/world API, native API or server broken-glass entity is used.
 
 ## Validation
 
@@ -161,3 +185,10 @@ Run `python -m unittest tests.test_nlglass -v` from `tools/`, then `tools\test.p
 Neither starts a game. Claude owns G1-B integration, package assembly, PoC game/map-output/Remix
 visual checks, two real clients, collision prediction, body-contact tuning and the 50-window/pile
 performance comparison against the original system. No game install or Workshop is touched here.
+
+The G1-A fix pass passes 45 glass tests and the full Release gate (25 CTests, 448 Python tests,
+two existing skips). Each fix-pass item has a regression that fails against 3096b2e. Generated
+probes reach 512 cells across 100 separated impacts, preserve an old hole, check 36,015 edges
+across 180 seeds and exercise 200 dense visual-only native hits. See [testing](../docs/TESTING.md)
+for before/after pure-fracture and mocked server/client timings. Real game contact timing,
+Hammer output semantics, two clients and Remix performance are still acceptance checks.

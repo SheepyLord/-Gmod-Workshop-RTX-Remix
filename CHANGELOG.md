@@ -8,6 +8,21 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
+  cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
+  state. Player sweeps include scripted base velocity, and blast impulses follow deferred native
+  breaks. All fix-pass items have before-failing regressions; the full Release gate passes.
+
+- G1-A fracture now refines locally and coarsens complete distant groups under its 512-cell cap,
+  preserving hit locations and existing holes. Weak hits accumulate under a capped crack floor;
+  tempered glass shows local spiderwebs before full shatter. Cached topology/snapshots remove full
+  history replay; clipped vertices merge below 1/256 and cracks omit the window perimeter.
+
+- G1-A fix pass: require actual approaching body contact; use incoming player movement to catch
+  a stopped-by-collision runner; create replicated settings in both realms; dispatch captured map
+  OnBreak outputs without engine shatter; record weak native hits, push blasts after their new
+  debris and match the settings budget slider to 8,192. Offline regressions cover each path.
+
 - The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
   references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
   the new MIT glass part is assembled separately by G1 integration.

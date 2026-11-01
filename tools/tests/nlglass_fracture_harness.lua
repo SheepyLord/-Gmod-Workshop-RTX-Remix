@@ -17,7 +17,7 @@ local function hit(x,y,energy,seed)
     return {x=x or 0,y=y or 0,energy=energy or 180000,seed=seed or 171,kind="sharp",dx=0,dy=0,dz=1}
 end
 local function copy(s)
-    return F.Restore(s.def,s.impacts,s.damage,s.revision,s.all)
+    return F.Restore(s.def,s.impacts,s.damage,s.revision,s.all,s.cells,s.pending,s.retiredEnergy,s.groups,s.nextCellID)
 end
 local mode=arg[2]
 if mode=="determinism" then
@@ -38,7 +38,7 @@ elseif mode=="strength" then
     local def=definition()
     near(F.Threshold(def),450000,1,"reference threshold")
     local s=F.New(def)
-    local p,accepted=F.Apply(s,hit(0,0,100)) check(not accepted and #s.impacts==0,"sub-crack hit ignored")
+    local p,accepted=F.Apply(s,hit(0,0,100)) check(#F.Cracks(s)==0,"sub-crack hit has no visible crack")
     p,accepted=F.Apply(s,hit()) check(accepted and #p==0,"pistol cracks without breaking")
     local initialCracks=F.Cracks(s)
     local first=#initialCracks check(first>0,"first crack visible")
@@ -67,7 +67,9 @@ elseif mode=="pattern" then
     local x,y=average(pc) near(x,0,5) near(y,0,5)
     x,y=average(pe) check(x<-20 and y<-10,"corner breakout follows corner")
     local small,large,ns,nl=0,0,0,0
-    for _,c in ipairs(center.cells) do
+    local sized={} for _,c in ipairs(center.cells) do sized[#sized+1]=c end
+    for _,p in ipairs(pc) do sized[#sized+1]={poly=p.poly,center=F.Center(p.poly)} end
+    for _,c in ipairs(sized) do
         local d=c.center[1]^2+c.center[2]^2
         if d<64 then small=small+F.Area(c.poly) ns=ns+1 elseif d>900 then large=large+F.Area(c.poly) nl=nl+1 end
     end
@@ -82,8 +84,11 @@ elseif mode=="pattern" then
     local before=#remaining
     local p=F.Apply(center,hit(36,20,800000,912))
     check(#p>0,"later hit breaks out retained cells")
-    local area=0 for _,c in ipairs(center.cells) do area=area+F.Area(c.poly) end
-    near(area,6144,1,"subdivision conserves pane area")
+    local area=0
+    for _,poly in ipairs(F.Remaining(center)) do area=area+F.Area(poly) end
+    for _,piece in ipairs(pc) do area=area+F.Area(piece.poly) end
+    for _,piece in ipairs(p) do area=area+F.Area(piece.poly) end
+    near(area,6144,2,"subdivision conserves remaining plus released area")
     check(encode(pc)~=encode(pe),"different impact has different cells")
 elseif mode=="tempered" then
     local s=F.New(definition("tempered"))
@@ -102,7 +107,7 @@ elseif mode=="bounded" then
         local restored=copy(s)
         check(encode(F.Remaining(s))==encode(F.Remaining(restored)),"bounded history replay")
     end
-    local total=0 for _,h in ipairs(s.impacts) do total=total+h.energy end
+    local total=(s.retiredEnergy or 0)+(s.pending or 0) for _,h in ipairs(s.impacts) do total=total+h.energy end
     check(total==1500000,"full impact slots merge energy instead of dropping damage")
 elseif mode=="connectivity" then
     local d=definition()
@@ -117,5 +122,125 @@ elseif mode=="forced" then
         local p=F.Apply(s,hit(0,0,1),true)
         check(#p>0 and #F.Remaining(s)==0,"nominal forced break always produces pieces")
     end
+elseif mode=="cap_local" then
+    local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
+    local s=F.New(d)
+    local locations={{-110,-45},{-70,40},{-30,-40},{20,45},{60,-40},{110,40},{-100,20},{80,15},{0,0},{40,-15},{-40,10},{100,-40}}
+    for i,p in ipairs(locations) do
+        F.Apply(s,hit(p[1],p[2],180000,171+i),false,true)
+        local found=false
+        for _,h in ipairs(s.impacts) do if (h.x-p[1])^2+(h.y-p[2])^2<=1 then found=true end end
+        check(found,"new impact keeps its own centre beyond the cell/history cap: "..i)
+        check(#s.cells<=F.MAX_CELLS,"local refinement stays bounded")
+    end
+    local point=locations[#locations]
+    local pieces=F.Apply(s,hit(point[1],point[2],1200000,800))
+    local closest=math.huge
+    for _,p in ipairs(pieces) do local c=F.Center(p.poly) closest=math.min(closest,(c[1]-point[1])^2+(c[2]-point[2])^2) end
+    check(closest<64,"late breakout is at the actual hit, not an old centre")
+    check(encode(F.Remaining(s))==encode(F.Remaining(copy(s))),"coarsened topology survives a snapshot")
+elseif mode=="weak" then
+    local s=F.New(definition())
+    for i=1,8 do F.Apply(s,hit(0,0,4000,50+i)) check(#F.Cracks(s)==0,"no crack before weak hits reach floor") end
+    F.Apply(s,hit(0,0,4000,60))
+    check(#F.Cracks(s)>0 and s.damage==36000,"sub-floor energy accumulates into a crack")
+    for _,size in ipairs({{256,128,1},{128,128,2}}) do
+        local d=definition() d.outline={{0,0},{size[1],0},{size[1],size[2]},{0,size[2]}} d.thickness=size[3]
+        local pane=F.New(d) F.Apply(pane,hit(20,20,60000,71))
+        check(#F.Cracks(pane)>0,"five-damage pistol round cracks ordinary large/thick glass")
+    end
+elseif mode=="incremental" then
+    local s=F.New(definition()) F.Apply(s,hit())
+    local clips,clip=0,F.Clip
+    F.Clip=function(...) clips=clips+1 return clip(...) end
+    F.Apply(s,hit())
+    check(clips==0,"repeated hit reuses existing cells without whole-history clipping")
+    check(F.Remaining(s)==F.Remaining(s) and F.Cracks(s)==F.Cracks(s),"remaining/cracks cached by revision")
+elseif mode=="tempered_spider" then
+    local s=F.New(definition("tempered")) F.Apply(s,hit())
+    for _,line in ipairs(F.Cracks(s)) do
+        local a,b=line[1],line[2]
+        check(a[1]^2+a[2]^2<700 and b[1]^2+b[2]^2<700,"tempered cracks are a small local spiderweb, never the pane grid")
+    end
+elseif mode=="tiny_edges" then
+    local p=F.Clip({{0,0},{10,0},{10,10},{0,10}},{{0,0},{1/1024,0},{10,10},{0,10}})
+    check(p,"clipped polygon remains usable")
+    for i,a in ipairs(p) do local b=p[i%#p+1] check((a[1]-b[1])^2+(a[2]-b[2])^2>=(1/256)^2,"clip merges vertices closer than 1/256") end
+    local tested=0
+    for seed=1,180 do
+        local s=F.New(definition()) F.Apply(s,hit((seed*37)%90-45,(seed*19)%60-30,180000,seed),false,true)
+        for _,c in ipairs(s.cells) do for i,a in ipairs(c.poly) do
+            local b=c.poly[i%#c.poly+1] tested=tested+1
+            check((a[1]-b[1])^2+(a[2]-b[2])^2>=(1/256)^2,"generated piece has no short mesh-rejected edge")
+        end end
+    end
+    print("generated_edges="..tested)
+elseif mode=="coarsen" then
+    local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
+    local s=F.New(d) local peak=0
+    for i=1,100 do
+        F.Apply(s,hit((i*37)%240-120,(i*19)%112-56,80000,900+i),false,true)
+        check(not s.all,"bounded unbroken history coarsens instead of losing the pane")
+        check(#s.cells<=512,"coarsened cell budget") peak=math.max(peak,#s.cells)
+        check(#s.groups<#s.cells,"subdivision history is bounded by live cells")
+    end
+    local area=0 for _,poly in ipairs(F.Remaining(s)) do area=area+F.Area(poly) end
+    near(area,32768,4,"coarsening conserves unbroken area within clipping grid tolerance")
+    check(peak>450,"probe actually reaches the cell cap")
+    check(encode(F.Remaining(s))==encode(F.Remaining(copy(s))),"near-cap coarsening snapshot")
+    print("peak_cells="..peak.." area_error="..math.abs(area-32768))
+    local dense=F.New(d)
+    for i=1,200 do
+        local pieces=F.Apply(dense,hit((i*37)%31-15,(i*19)%31-15,180000,1700+i),false,true)
+        check(not dense.all and #pieces==0 and #dense.cells<=512,"dense visual cuts never shatter engine-owned glass")
+    end
+elseif mode=="hole_coarsen" then
+    local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
+    local s=F.New(d) local pieces=F.Apply(s,hit(0,0,1200000,88))
+    check(#pieces>0,"probe starts with a real hole")
+    for i=1,100 do F.Apply(s,hit((i*37)%240-120,(i*19)%112-56,80000,900+i),false,true) end
+    check(not s.all and #s.cells<=512,"perforated pane remains bounded")
+    for _,piece in ipairs(pieces) do
+        local p=F.Center(piece.poly)
+        for _,poly in ipairs(F.Remaining(s)) do
+            local inside=true
+            for i,a in ipairs(poly) do local b=poly[i%#poly+1]
+                if (b[1]-a[1])*(p[2]-a[2])-(b[2]-a[2])*(p[1]-a[1])<=0 then inside=false break end
+            end
+            check(not inside,"coarsening never fills an old hole")
+        end
+    end
+elseif mode=="border" then
+    local s=F.New(definition()) F.Apply(s,hit(45,28,300000,901))
+    for _,line in ipairs(F.Cracks(s)) do
+        local a,b=line[1],line[2]
+        check(not (a[1]==b[1] and math.abs(a[1])==48) and not (a[2]==b[2] and math.abs(a[2])==32),"pane perimeter is not a crack")
+    end
+elseif mode=="timings" then
+    local now=os.clock
+    local ffi=require("ffi")
+    if ffi.os=="Windows" then
+        ffi.cdef("int QueryPerformanceCounter(int64_t*); int QueryPerformanceFrequency(int64_t*);")
+        local tick,freq=ffi.new("int64_t[1]"),ffi.new("int64_t[1]")
+        ffi.C.QueryPerformanceFrequency(freq) local frequency=tonumber(freq[0])
+        now=function() ffi.C.QueryPerformanceCounter(tick) return tonumber(tick[0])/frequency end
+    end
+    local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
+    local base=F.New(d)
+    for i=1,100 do F.Apply(base,hit((i*37)%240-120,(i*19)%112-56,180000,900+i),false,true) end
+    print("prepared_cells="..#base.cells)
+    check(#base.cells>=450,"timing probe actually measures near the cap")
+    local hits,repeats,breaks={},{},{}
+    for run=1,80 do
+        local s=copy(base)
+        local start=now() F.Apply(s,hit(0,0,180000,55),false,true) hits[#hits+1]=(now()-start)*1000
+        start=now() F.Apply(s,hit(0,0,180000,55),false,true) repeats[#repeats+1]=(now()-start)*1000
+        start=now() F.Apply(s,hit(0,0,600000,56)) breaks[#breaks+1]=(now()-start)*1000
+    end
+    local function report(name,values)
+        table.sort(values) local sum=0 for _,v in ipairs(values) do sum=sum+v end
+        print(string.format("%s n=%d mean_ms=%.4f p99_ms=%.4f",name,#values,sum/#values,values[math.ceil(#values*.99)]))
+    end
+    report("hit",hits) report("repeat",repeats) report("break",breaks)
 else error("unknown fracture scenario "..tostring(mode)) end
 print("fracture "..mode.." OK")

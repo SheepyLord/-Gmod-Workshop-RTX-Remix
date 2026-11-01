@@ -1,5 +1,72 @@
 # Research notes
 
+## G1-A client/update fix pass: final offline evidence (2026-11-01)
+
+- Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),
+  `server.lua:151` (incoming/base-velocity sweep), `server.lua:286` (targeted sync), all under
+  `glass/addon/lua/nlglass/`. Fracture anchors there: `fracture.lua:104` (capped crack floor),
+  `:258`/`:286` (complete-group coarsening/local refinement), `:343`/`:451` (apply/crack caches).
+  Client anchors: `client.lua:22`/`:50`/`:162` (pose cache/build/draw), `protocol.lua:13` (snapshot).
+
+- `glass/addon/lua/nlglass/client.lua` retains matrices/entity validation and refreshes transforms
+  only after a pose change. The draw harness checks 20 frames with zero new Matrix, LocalToWorld
+  or class calls; far/rear panes are skipped. A break builds prediction physics once and at most
+  one pane/crack mesh pair. Pending weak energy builds neither. Initial sync is client-ready only;
+  a mismatch requests one pane and two different panes can repair in the same frame.
+- The corrected 40-sample handler benchmark restores fresh server/client records before each
+  sample (so stale revisions cannot short-circuit later samples). Same 100 preparation hits,
+  493/502 cells before/after. Mean ms before/after: server hit 14.2875/5.3019; server break
+  18.9326/10.3577; client hit 45.3190/27.7840; client break 84.1545/23.7365. p99 ms:
+  39.5452/16.4711; 37.8406/25.0744; 73.6096/52.1866; 118.3529/46.5227 respectively.
+  These include Lua mesh/convex construction and mock overhead/GC, not actual engine/GPU physics,
+  transport, debris/Jolt or Remix. They do not establish game frame-rate acceptance.
+- Final pure-fracture 80-sample means: new hit 0.8426 ms, repeat 0.0961 ms, break 0.6749 ms;
+  p99 2.6709/0.6155/1.9264 ms. Existing before means were 12.5675/13.6601/14.5538 ms.
+- [Entity:SetVelocity](https://wiki.facepunch.com/gmod/Entity:SetVelocity) sets base velocity,
+  added to player movement; [GetBaseVelocity](https://wiki.facepunch.com/gmod/Entity:GetBaseVelocity)
+  exposes it. The QA runner's scripted push needs this in addition to CMoveData velocity. Tests
+  cover ordinary incoming motion with stopped entity velocity and zero movement velocity with a
+  500-unit/s base impulse. The old logs have no Touch/velocity trace, so exact engine callback
+  timing is still a game check. Native-removal blast order is separately tested with deferred breaks.
+- Full `tools/test.ps1 -Config Release`: 25 CTests, 448 Python tests (28 gmapack, 25 steam,
+  395 tools; two existing skips), including 45 G1-A glass cases. Output and before-failure/timing
+  evidence are under this worktree's ignored `out/g1a/`; original QA evidence was read only.
+
+## G1-A incremental fracture probes (2026-11-01)
+
+- `tools/tests/nlglass_fracture_harness.lua` now reproduces lost hit location at the fourth
+  separated impact against 3096b2e, sub-floor energy loss, full tempered grid cracks, a 1/1024
+  clipped edge and border cracks. All fail before the fix and pass after it. The 180-seed edge
+  probe checks 36,015 generated edges at or above 1/256. The 100-hit coarsening probe peaks at
+  512 cells with area error 0.01414 on a 32,768-unit² pane; another preserves an existing hole.
+- The same 80-sample high-resolution near-cap workload (100 preparation hits outside timing)
+  measured before/after mean new-hit 12.5675/1.1596 ms, repeat 13.6601/0.1359 ms and break
+  14.5538/0.8603 ms. Before/after p99: hit 20.8927/2.7537, repeat 23.7746/1.4296, break
+  23.1292/3.1285 ms. Prepared cell counts: 493/502. These are LuaJIT fracture CPU times;
+  no GMod, native debris, physics initialization, rendering or network transport is measured.
+- `tools/tests/nlglass_engine_harness.lua topology` round-trips 501 live cells and 47 complete
+  subdivision groups in 16,721 bytes, then compares the next break's polygons. Remaining/crack
+  caches avoid repeated support passes; only a breakout needs adjacency/support traversal.
+
+## G1-A contact and hidden-surface output investigation (2026-11-01)
+
+- In the read-only `out/qa-poc/g1/02-qa/console.log`, the 40-pane falling scene reports mean
+  17.66 ms, p99 292.93 ms; empty 8.33 ms, settled 8.88 ms, all on the 64-piece VPhysics fallback.
+  The QA player step supplies 500 units/s toward an upright 64×96 pane but leaves it intact.
+  `tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua` sets that velocity before the mover stops it;
+  `glass/addon/lua/entities/nlglass_pane/init.lua` previously relied only on Touch/GetVelocity.
+  This explains a missed incoming velocity path; actual callback timing still requires game QA.
+- [Facepunch SetupMove](https://wiki.facepunch.com/gmod/GM:SetupMove) runs before engine movement.
+  [EntityKeyValue](https://wiki.facepunch.com/gmod/GM:EntityKeyValue) captures repeated output keys;
+  [GetKeyValues](https://wiki.facepunch.com/gmod/Entity:GetKeyValues) does not expose all keys;
+  [TriggerOutput](https://wiki.facepunch.com/gmod/ENTITY:TriggerOutput) is a scripted-base helper,
+  not direct access to the native brush's output objects.
+- [Valve func_breakablesurf.cpp](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/server/func_breakablesurf.cpp)
+  lines 562–579 play PhysBreakSound and fire inherited OnBreak. InputShatter (668–715) calls
+  Die and ShatterPane. NoDraw cannot suppress these events. The surface datadesc (143–172) adds
+  no OnShatter output. The replacement now mirrors captured OnBreak keys to an unused native user
+  channel, preserving raw parameter/delay/count strings instead of requesting engine fracture.
+
 ## G1-A glass: offline executable evidence (2026-10-31)
 
 - `glass/addon/lua/nlglass/damage.lua:58` reads `CollisionData.HitObject` as the PhysObj itself,
