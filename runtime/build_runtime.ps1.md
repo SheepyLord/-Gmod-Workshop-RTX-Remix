@@ -25,9 +25,10 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
    every patch, `git submodule update --init --recursive` (network: the fork's submodules), then what
    `base.json` adds: each `submodules` entry checked out at its `commit` and/or given its `patch`
    (`runtime\submodules\*.patch`, `git apply`), each of `clones` cloned from its `url` and checked out
-   at its `commit` (network). After the source checks, the fork's first-time setup configures only:
-   `build_dxvk.ps1 -BuildFlavour release -BuildSubDir _CompRelease_x64 -Backend ninja
-   -EnableTracy false -WithShim $false -SkipApics $true -ConfigureOnly $true`.
+   at its `commit` (network). After the source checks and `Enter-VsDevEnv`, first-time setup calls
+   Meson directly through Python, without the fork helper's vswhere/PATH lookup:
+   `python -m mesonbuild.mesonmain setup --buildtype release --backend ninja
+   -Denable_tracy=false -Dremix_with_shim=false -Ddownload_apics=false <build> <tree>`.
 3. **Checks, for a new worktree and an existing one alike:** what is checked out must be exactly what
    `base.json` and the patches describe (R3-014), or it stops and lists every difference:
    - the commit's tree is the tree the patches make, applied to the base commit in a scratch index
@@ -72,3 +73,10 @@ Checked 2026-10-29 with `-Verify` against the fork worktree `remix-i18n` (branch
 alone left out (NVAPI R615, the RTXDI changes, the DLSS and SHARC clones; RESEARCH.md section 31),
 which `base.json` now records. A build in a new worktree (step 2) needs the network and has not been
 run since.
+
+Checked again for R6 T4's second review (2026-10-31): the direct Python/Meson setup command above
+configures a scratch folder under this worktree's `out/tmp` with all 95 saved build options equal
+to the existing `_CompRelease_x64`. Only Meson's compiler probes run; no runtime target is compiled.
+The scratch folder is deleted after comparison. The receipt is
+`out/tmp/runtime-review2-setup-comparison.json`. Source worktree creation and dependency cloning
+were not repeated; the check used the existing fully prepared clone and its offline SDK resolver.

@@ -38,9 +38,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   32 GiB, and explains page files and closing other programs.
 - **The runtime says what memory looked like when the GPU was lost.** Its log reports driver
   budgets and use for every heap at camera cuts, every five minutes and at a device loss, and
-  `rtx-remix\logs\last_gpu_crash.json` keeps the last device loss's numbers for the next start.
-  Repeated micromap budget warnings appear at most once a minute, with a count
-  ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
+  `rtx-remix\logs\last_gpu_crash.json` keeps the last device loss's numbers and how it was
+  detected for the next start. Repeated micromap budget warnings appear at most once a minute,
+  with a count, and a dropped micromap budget says how much VRAM was free and what the limits
+  were ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
 - **A Memory and stability page in the guide** (all seven languages; the new translations are
   agent-written and marked for review) and a [player checklist](docs/STABILITY.md): settings for
   8 GB cards and 16 GB of RAM, reading memory during a session, and what to send after a crash.
@@ -61,7 +62,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   `status.json` reports `activation.performance_tier` and `previous_session`; a wrong diagnostics
   value costs only that diagnostic (a note), never the loader.
 - `runtime\build_runtime.ps1` refuses a missing or non-Release Meson configuration before building
-  or importing; patch 0015 records the six unit-test sources the fork snapshot had left out.
+  or importing, and a fresh setup calls Python's Meson directly in the repository's MSVC
+  environment; patch 0015 records the six unit-test sources the fork snapshot had left out. The
+  crash marker is written through a per-process temporary file, with two short retries.
 - `tools\tests\test_runtime_tiers.py` checks every tier key's name, type and range against the
   patched runtime; `tools\sky\drop_top_mip.py` removes a DDS top mip losslessly. The classic layer
   still holds 15 keys this runtime no longer has (old exposure, local tonemap and bloom options,

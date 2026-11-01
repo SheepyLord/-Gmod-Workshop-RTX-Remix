@@ -5,14 +5,16 @@ Subject: [PATCH] Record GPU memory snapshots and rate-limit micromap budget
  logs
 
 Share the VRAM collector with device-local driver totals and heap locality.
-Write and log the same timestamped snapshot at cuts, five-minute intervals
-and device loss, including pending micromap warning counts. Flush the crash
-marker before replacement, before the recorder, Aftermath and Sentry, under
-the existing single-handler gate. Keep the original termination behavior.
+Log the snapshot before writing the flushed marker, before the recorder,
+Aftermath and Sentry, under the existing single-handler gate. Preserve the
+queue reason with JSON escaping and use process-specific marker temporaries,
+two short replacement retries and failure cleanup.
 
+Report free VRAM, the previous OMM budget, use and both thresholds when the
+budget drops to zero. Bound the heap collector by its snapshot array.
 Record the six test sources omitted from the snapshot using the user fork's
-staged index (git show :<path>), read only. Build them without silent guards.
-Cover serialization, warning counts, timing and stale/failed-write fixtures.
+staged index, read only. Build them without silent guards. Cover warning
+counts and values, scheduling, reason escaping and stale/failed markers.
 
 Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
 ---
@@ -23,20 +25,20 @@ Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
  src/dxvk/meson.build                          |    4 +
  src/dxvk/rtx_render/rtx_context.cpp           |    1 +
  src/dxvk/rtx_render/rtx_fork_api_entry.cpp    |   38 +-
- src/dxvk/rtx_render/rtx_memory_stats.cpp      |  102 ++
- src/dxvk/rtx_render/rtx_memory_stats.h        |   44 +
- src/dxvk/rtx_render/rtx_memory_stats_data.cpp |  111 ++
- src/dxvk/rtx_render/rtx_memory_stats_data.h   |  109 ++
- .../rtx_opacity_micromap_manager.cpp          |    4 +-
+ src/dxvk/rtx_render/rtx_memory_stats.cpp      |  103 ++
+ src/dxvk/rtx_render/rtx_memory_stats.h        |   45 +
+ src/dxvk/rtx_render/rtx_memory_stats_data.cpp |  175 +++
+ src/dxvk/rtx_render/rtx_memory_stats_data.h   |  119 ++
+ .../rtx_opacity_micromap_manager.cpp          |    5 +-
  .../apps/RemixAPI/remixapi_medium_test.cpp    |  377 +++++
  tests/rtx/unit/meson.build                    |    5 +
  tests/rtx/unit/test_gpu_overrides.cpp         |  393 +++++
  tests/rtx/unit/test_gpu_profile.cpp           |  296 ++++
  tests/rtx/unit/test_hot_reload.cpp            | 1265 +++++++++++++++++
- tests/rtx/unit/test_memory_diagnostics.cpp    |  113 ++
+ tests/rtx/unit/test_memory_diagnostics.cpp    |  159 +++
  .../rtx/unit/test_particle_system_schema.cpp  |  143 ++
  tests/rtx/unit/test_rtx_option_dynamic.cpp    |  911 ++++++++++++
- 20 files changed, 3912 insertions(+), 33 deletions(-)
+ 20 files changed, 4035 insertions(+), 33 deletions(-)
  create mode 100644 src/dxvk/rtx_render/rtx_memory_stats.cpp
  create mode 100644 src/dxvk/rtx_render/rtx_memory_stats.h
  create mode 100644 src/dxvk/rtx_render/rtx_memory_stats_data.cpp
@@ -102,14 +104,14 @@ index f37f2949..1167d3a4 100644
      DxvkPipelineManager               m_pipelineManager;
  
 diff --git a/src/dxvk/dxvk_queue.cpp b/src/dxvk/dxvk_queue.cpp
-index 4618915d..2fa6cfb3 100644
+index 4618915d..d71bf8e3 100644
 --- a/src/dxvk/dxvk_queue.cpp
 +++ b/src/dxvk/dxvk_queue.cpp
 @@ -145,6 +145,8 @@ namespace dxvk {
        return;
      }
  
-+    m_device->getCommon()->metaMemoryDiagnostics().onDeviceLoss();
++    m_device->getCommon()->metaMemoryDiagnostics().onDeviceLoss(reason);
 +
      // The submission queue is destroyed and its threads are joined before the
      // device's common objects, so the scene manager and recorder are alive here.
@@ -247,10 +249,10 @@ index d0ba3d4c..b69853a5 100644
        static_cast<uint32_t>(device->getCommon()->getTextureManager().getTextureTable().size());
 diff --git a/src/dxvk/rtx_render/rtx_memory_stats.cpp b/src/dxvk/rtx_render/rtx_memory_stats.cpp
 new file mode 100644
-index 00000000..3f437039
+index 00000000..d00affc1
 --- /dev/null
 +++ b/src/dxvk/rtx_render/rtx_memory_stats.cpp
-@@ -0,0 +1,102 @@
+@@ -0,0 +1,103 @@
 +/*
 +* Copyright (c) 2026 native-loader contributors. All rights reserved.
 +*
@@ -291,7 +293,7 @@ index 00000000..3f437039
 +      DxvkMemoryStats::RTXAccelerationStructure, DxvkMemoryStats::RTXOpacityMicromap,
 +      DxvkMemoryStats::RTXMaterialTexture, DxvkMemoryStats::RTXRenderTarget
 +    };
-+    for (uint32_t i = 0; i < heaps.heapCount; ++i) {
++    for (uint32_t i = 0; i < heaps.heapCount && i < snapshot.heaps.size(); ++i) {
 +      const auto& heap = heaps.heaps[i];
 +      const bool deviceLocal = (heap.heapFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
 +      snapshot.heaps[i] = {heap.memoryBudget, heap.memoryAllocated, deviceLocal};
@@ -322,12 +324,15 @@ index 00000000..3f437039
 +    }
 +  }
 +
-+  void RtxMemoryDiagnostics::onDeviceLoss() const noexcept {
++  void RtxMemoryDiagnostics::onDeviceLoss(const char* reason) const noexcept {
 +    try {
 +      const auto snapshot = capture();
-+      // Preserve the marker even when formatting or emitting the log fails.
-+      const bool written = snapshot.writeCrashReport(util::RtxFileSys::path(util::RtxFileSys::Logs));
-+      Logger::err(str::format("[RTX Memory] ", snapshot.toJson("device_lost")));
++      try {
++        Logger::err(str::format("[RTX Memory] ", snapshot.toJson("device_lost", reason)));
++      } catch (...) {
++        // A failed log must not prevent the best-effort marker write.
++      }
++      const bool written = snapshot.writeCrashReport(util::RtxFileSys::path(util::RtxFileSys::Logs), reason);
 +      if (!written) {
 +        Logger::err("[RTX Memory] Could not write last_gpu_crash.json");
 +      }
@@ -336,29 +341,27 @@ index 00000000..3f437039
 +    }
 +  }
 +
-+  void RtxMemoryDiagnostics::logOmmBudget(bool allocationDenied, uint64_t requested, uint64_t available, uint64_t budget) {
-+    const auto suppressed = m_ommWarnings[allocationDenied ? 1 : 0].record(MemoryLogThrottle::Clock::now());
-+    if (!suppressed) {
-+      return;
++  void RtxMemoryDiagnostics::logOmmBudgetDropped(const OmmBudgetDrop& budget) {
++    if (const auto suppressed = m_ommWarnings[0].record(MemoryLogThrottle::Clock::now())) {
++      Logger::info(budget.toLog(*suppressed));
 +    }
-+    if (allocationDenied) {
++  }
++
++  void RtxMemoryDiagnostics::logOmmAllocationDenied(uint64_t requested, uint64_t available, uint64_t budget) {
++    if (const auto suppressed = m_ommWarnings[1].record(MemoryLogThrottle::Clock::now())) {
 +      Logger::info(str::format("[RTX Opacity Micromap] Out of memory budget. Requested: ", requested,
 +                              " bytes. Free: ", available, " bytes, Budget: ", budget,
 +                              " bytes (suppressed repeats: ", *suppressed, ")"));
-+    } else {
-+      Logger::info(str::format("[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0.",
-+                              " Free: ", available, " bytes, Budget: ", budget, " bytes",
-+                              " (suppressed repeats: ", *suppressed, ")"));
 +    }
 +  }
 +
 +}
 diff --git a/src/dxvk/rtx_render/rtx_memory_stats.h b/src/dxvk/rtx_render/rtx_memory_stats.h
 new file mode 100644
-index 00000000..d6676f50
+index 00000000..e04dddc0
 --- /dev/null
 +++ b/src/dxvk/rtx_render/rtx_memory_stats.h
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,45 @@
 +/*
 +* Copyright (c) 2026 native-loader contributors. All rights reserved.
 +*
@@ -393,8 +396,9 @@ index 00000000..d6676f50
 +
 +    MemorySnapshot capture() const;
 +    void onFrame(bool cameraCut) noexcept;
-+    void onDeviceLoss() const noexcept;
-+    void logOmmBudget(bool allocationDenied, uint64_t requested, uint64_t available, uint64_t budget);
++    void onDeviceLoss(const char* reason = nullptr) const noexcept;
++    void logOmmBudgetDropped(const OmmBudgetDrop& budget);
++    void logOmmAllocationDenied(uint64_t requested, uint64_t available, uint64_t budget);
 +
 +  private:
 +    MemoryLogSchedule m_schedule;
@@ -405,10 +409,10 @@ index 00000000..d6676f50
 +}
 diff --git a/src/dxvk/rtx_render/rtx_memory_stats_data.cpp b/src/dxvk/rtx_render/rtx_memory_stats_data.cpp
 new file mode 100644
-index 00000000..dee113f5
+index 00000000..b3b45d28
 --- /dev/null
 +++ b/src/dxvk/rtx_render/rtx_memory_stats_data.cpp
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,175 @@
 +/*
 +* Copyright (c) 2026 native-loader contributors. All rights reserved.
 +*
@@ -440,11 +444,42 @@ index 00000000..dee113f5
 +
 +#ifdef _WIN32
 +#include <windows.h>
++#else
++#include <unistd.h>
 +#endif
 +
 +namespace dxvk {
 +
-+  std::string MemorySnapshot::toJson(const char* event) const {
++  namespace {
++    void writeJsonString(std::ostream& stream, const char* text) {
++      constexpr char kHex[] = "0123456789abcdef";
++      stream << '"';
++      for (; *text; ++text) {
++        const auto c = static_cast<unsigned char>(*text);
++        if (c == '"' || c == '\\') {
++          stream << '\\' << static_cast<char>(c);
++        } else if (c < 0x20) {
++          stream << "\\u00" << kHex[c >> 4] << kHex[c & 0xf];
++        } else {
++          stream << static_cast<char>(c);
++        }
++      }
++      stream << '"';
++    }
++  }
++
++  std::string OmmBudgetDrop::toLog(uint64_t suppressed) const {
++    std::ostringstream stream;
++    stream.imbue(std::locale::classic());
++    stream << "[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."
++           << " Free VRAM: " << freeVram << " bytes, Previous budget: " << previousBudget
++           << " bytes, Used: " << used << " bytes, Hard free-VRAM limit: " << hardFreeVramLimit
++           << " bytes, Soft free-VRAM limit: " << softFreeVramLimit
++           << " bytes (suppressed repeats: " << suppressed << ')';
++    return stream.str();
++  }
++
++  std::string MemorySnapshot::toJson(const char* event, const char* reason) const {
 +    const std::time_t timestamp = std::chrono::system_clock::to_time_t(time);
 +    std::tm utc {};
 +#ifdef _WIN32
@@ -476,15 +511,25 @@ index 00000000..dee113f5
 +      stream << '"' << kCategoryNames[i] << "\":" << categories[i];
 +    }
 +    stream << "},\"omm_suppressed\":{\"budget_dropped\":" << ommBudgetDroppedSuppressed
-+           << ",\"allocation_denied\":" << ommAllocationDeniedSuppressed << "}}";
++           << ",\"allocation_denied\":" << ommAllocationDeniedSuppressed << '}';
++    if (reason) {
++      stream << ",\"reason\":";
++      writeJsonString(stream, reason);
++    }
++    stream << '}';
 +    return stream.str();
 +  }
 +
-+  bool MemorySnapshot::writeCrashReport(const std::filesystem::path& directory) const noexcept {
++  bool MemorySnapshot::writeCrashReport(const std::filesystem::path& directory, const char* reason) const noexcept {
 +    try {
-+      const auto temporary = directory / "last_gpu_crash.json.tmp";
++#ifdef _WIN32
++      const auto processId = GetCurrentProcessId();
++#else
++      const auto processId = getpid();
++#endif
++      const auto temporary = directory / ("last_gpu_crash." + std::to_string(processId) + ".tmp");
 +      const auto destination = directory / "last_gpu_crash.json";
-+      const auto json = toJson("device_lost") + '\n';
++      const auto json = toJson("device_lost", reason) + '\n';
 +#ifdef _WIN32
 +      if (json.size() > MAXDWORD) {
 +        return false;
@@ -497,22 +542,45 @@ index 00000000..dee113f5
 +      const bool complete = WriteFile(file, json.data(), static_cast<DWORD>(json.size()), &written, nullptr)
 +                         && written == json.size() && FlushFileBuffers(file);
 +      const bool closed = CloseHandle(file) != 0;
-+      return complete && closed
-+          && MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
++      if (complete && closed) {
++        // A scanner may briefly hold the old marker; limit added sleeps to 20 ms.
++        constexpr uint32_t kAttempts = 3;
++        for (uint32_t attempt = 0; attempt < kAttempts; ++attempt) {
++          if (MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++            return true;
++          }
++          const DWORD error = GetLastError();
++          if (attempt + 1 == kAttempts || (error != ERROR_SHARING_VIOLATION && error != ERROR_ACCESS_DENIED)) {
++            break;
++          }
++          Sleep(10);
++        }
++      }
++      DeleteFileW(temporary.c_str());
++      return false;
 +#else
 +      std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
 +      stream << json;
 +      stream.flush();
 +      if (!stream) {
++        stream.close();
++        std::error_code error;
++        std::filesystem::remove(temporary, error);
 +        return false;
 +      }
 +      stream.close();
 +      if (!stream) {
++        std::error_code error;
++        std::filesystem::remove(temporary, error);
 +        return false;
 +      }
 +      std::error_code error;
 +      std::filesystem::rename(temporary, destination, error);
-+      return !error;
++      if (!error) {
++        return true;
++      }
++      std::filesystem::remove(temporary, error);
++      return false;
 +#endif
 +    } catch (...) {
 +      return false;
@@ -522,10 +590,10 @@ index 00000000..dee113f5
 +}
 diff --git a/src/dxvk/rtx_render/rtx_memory_stats_data.h b/src/dxvk/rtx_render/rtx_memory_stats_data.h
 new file mode 100644
-index 00000000..c5406f32
+index 00000000..d8238c1c
 --- /dev/null
 +++ b/src/dxvk/rtx_render/rtx_memory_stats_data.h
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,119 @@
 +/*
 +* Copyright (c) 2026 native-loader contributors. All rights reserved.
 +*
@@ -606,6 +674,16 @@ index 00000000..c5406f32
 +    std::optional<uint32_t> m_lastFrame;
 +  };
 +
++  struct OmmBudgetDrop {
++    uint64_t freeVram;
++    uint64_t previousBudget;
++    uint64_t used;
++    uint64_t hardFreeVramLimit;
++    uint64_t softFreeVramLimit;
++
++    std::string toLog(uint64_t suppressed) const;
++  };
++
 +  struct MemorySnapshot {
 +    struct Heap {
 +      uint64_t budget = 0;
@@ -630,30 +708,31 @@ index 00000000..c5406f32
 +    uint64_t ommAllocationDeniedSuppressed = 0;
 +    std::array<uint64_t, CategoryCount> categories {};
 +
-+    std::string toJson(const char* event) const;
-+    bool writeCrashReport(const std::filesystem::path& directory) const noexcept;
++    std::string toJson(const char* event, const char* reason = nullptr) const;
++    bool writeCrashReport(const std::filesystem::path& directory, const char* reason = nullptr) const noexcept;
 +  };
 +
 +}
 diff --git a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
-index 9d49c51a..55e5bc68 100644
+index 9d49c51a..17375bab 100644
 --- a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
 +++ b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
-@@ -187,7 +187,7 @@ namespace dxvk {
+@@ -187,7 +187,8 @@ namespace dxvk {
      }
    
      if (m_budget != m_prevBudget && m_budget == 0) {
 -      ONCE(Logger::info("[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."));
-+      m_device->getCommon()->metaMemoryDiagnostics().logOmmBudget(false, 0, getAvailable(), m_budget);
++      m_device->getCommon()->metaMemoryDiagnostics().logOmmBudgetDropped(
++        {m_vidmemFreeSize, m_prevBudget, m_used, hardMinFreeVidmemToNotAllocate, softMinFreeVidmemToNotAllocate});
      }
  
      // Invalidate m_vidmemFreeSize to make sure we use it only when it was set at the end of the frame again
-@@ -196,7 +196,7 @@ namespace dxvk {
+@@ -196,7 +197,7 @@ namespace dxvk {
  
    bool OpacityMicromapMemoryManager::allocate(VkDeviceSize size) {
      if (size > getAvailable()) {
 -      ONCE(Logger::info(str::format("[RTX Opacity Micromap] Out of memory budget. Requested: ", size, " bytes. Free: ", getAvailable(), " bytes, Budget: ", getBudget(), " bytes")));
-+      m_device->getCommon()->metaMemoryDiagnostics().logOmmBudget(true, size, getAvailable(), getBudget());
++      m_device->getCommon()->metaMemoryDiagnostics().logOmmAllocationDenied(size, getAvailable(), getBudget());
        return false;
      }
  
@@ -3028,10 +3107,10 @@ index 00000000..fded82f8
 +}
 diff --git a/tests/rtx/unit/test_memory_diagnostics.cpp b/tests/rtx/unit/test_memory_diagnostics.cpp
 new file mode 100644
-index 00000000..acc62bd2
+index 00000000..44c765cb
 --- /dev/null
 +++ b/tests/rtx/unit/test_memory_diagnostics.cpp
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,159 @@
 +/*
 +* Copyright (c) 2026 native-loader contributors. All rights reserved.
 +*
@@ -3061,6 +3140,12 @@ index 00000000..acc62bd2
 +#include <iterator>
 +#include <limits>
 +
++#ifdef _WIN32
++#include <windows.h>
++#else
++#include <unistd.h>
++#endif
++
 +int main(int argc, char** argv) {
 +  using namespace dxvk;
 +  using namespace std::chrono;
@@ -3086,6 +3171,13 @@ index 00000000..acc62bd2
 +  check(warning.record(start + minutes(1)) == 2, "The next warning reports the suppressed count");
 +  check(warning.suppressed() == 0, "An emitted count must no longer be pending");
 +  check(warning.record(start + minutes(3)) == 0, "An idle interval must not invent repeats");
++
++  const OmmBudgetDrop budgetDrop {111, 222, 333, 444, 555};
++  check(budgetDrop.toLog(7) ==
++        "[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."
++        " Free VRAM: 111 bytes, Previous budget: 222 bytes, Used: 333 bytes, Hard free-VRAM limit: 444 bytes,"
++        " Soft free-VRAM limit: 555 bytes (suppressed repeats: 7)",
++        "A dropped budget must log free VRAM, the previous budget, use and both thresholds instead of zeros");
 +
 +  MemoryLogSchedule schedule(start);
 +  check(!schedule.update(0, false, start), "Do not sample every frame");
@@ -3120,15 +3212,30 @@ index 00000000..acc62bd2
 +  check(json.find("9007199254740993") != std::string::npos, "Heap bytes must not round through a floating point number");
 +  check(json.find("\"opacity_micromap\":18446744073709551615") != std::string::npos, "Category bytes must retain all 64 bits");
 +  check(json.find("\"app_texture\":0") != std::string::npos, "Zero categories must be present");
++  check(json.find("\"reason\"") == std::string::npos, "The loss reason is optional");
++  const char* reason = "queue \"submit\"\\lost\n\r\t\b\f\x01";
++  const auto reasonJson = snapshot.toJson("device_lost", reason);
++  check(reasonJson.find("\"reason\":\"queue \\\"submit\\\"\\\\lost\\u000a\\u000d\\u0009\\u0008\\u000c\\u0001\"") != std::string::npos,
++        "A supplied loss reason must escape quotes, backslashes and every control byte");
 +
 +  const auto report = directory / "last_gpu_crash.json";
-+  const auto temporary = directory / "last_gpu_crash.json.tmp";
++#ifdef _WIN32
++  const auto processId = GetCurrentProcessId();
++#else
++  const auto processId = getpid();
++#endif
++  const auto temporary = directory / ("last_gpu_crash." + std::to_string(processId) + ".tmp");
++  const auto otherTemporary = directory / ("last_gpu_crash." + std::to_string(processId) + "9.tmp");
++  {
++    std::ofstream other(otherTemporary);
++    other << "another process's pending marker";
++  }
 +  const auto read = [&] {
 +    std::ifstream stream(report, std::ios::binary);
 +    return std::string(std::istreambuf_iterator<char>(stream), {});
 +  };
-+  check(snapshot.writeCrashReport(directory), "Write the first crash marker");
-+  check(read() == json + '\n', "The log and marker must share their timestamp and all memory fields");
++  check(snapshot.writeCrashReport(directory, reason), "Write the first crash marker");
++  check(read() == reasonJson + '\n', "The log and marker must share their timestamp, memory fields and escaped reason");
 +  check(read().find("\"frame\":42") != std::string::npos, "The marker must contain the snapshot");
 +  snapshot.frame = 43;
 +  check(snapshot.writeCrashReport(directory), "Replace the previous marker atomically");
@@ -3140,6 +3247,24 @@ index 00000000..acc62bd2
 +  check(read() == previous, "A failed write must preserve the previous marker");
 +  check(!snapshot.writeCrashReport(directory / "missing"), "An unavailable log directory must fail without throwing");
 +  std::filesystem::remove(temporary);
++#ifdef _WIN32
++  const HANDLE held = CreateFileW(report.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++  check(held != INVALID_HANDLE_VALUE, "Hold the previous marker open without delete sharing");
++  snapshot.frame = 44;
++  const auto beforeRetries = steady_clock::now();
++  check(!snapshot.writeCrashReport(directory, reason), "An exhausted sharing-violation retry must fail without throwing");
++  check(steady_clock::now() - beforeRetries >= milliseconds(20), "A held marker must receive two brief replacement retries");
++  check(read() == previous, "Exhausted replacement retries must preserve the previous marker");
++  check(!std::filesystem::exists(temporary), "A failed replacement must delete this process's temporary file");
++  check(CloseHandle(held) != 0, "Release the held marker");
++  check(snapshot.writeCrashReport(directory, reason), "A released marker must be replaceable");
++#endif
++  {
++    std::ifstream other(otherTemporary);
++    const std::string contents(std::istreambuf_iterator<char>(other), {});
++    check(contents == "another process's pending marker", "A write must not truncate or remove another process's temporary file");
++  }
++  std::filesystem::remove(otherTemporary);
 +  std::filesystem::remove(report);
 +  std::filesystem::remove(directory);
 +  std::cout << "Memory diagnostics tests passed\n";

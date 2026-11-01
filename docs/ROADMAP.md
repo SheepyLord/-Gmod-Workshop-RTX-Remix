@@ -205,3 +205,12 @@ single-handler gate. The Release rebuild imports only the changed `d3d9.dll`; al
 tests and the 1,008-file package check pass. Repository Release checks pass all 23 CTests and 333
 Python tests (two skips) with the unchanged guard executable relocated under `out/tmp` for its
 known long-path limitation. No game session was run; runtime GPU acceptance remains with Claude.
+
+T4's second-review fix pass is complete: budget-drop logs retain free VRAM, the previous budget,
+use and thresholds; crash markers/logs preserve the escaped queue reason, use PID-specific
+temporaries and two short replacement retries, and bound heap snapshots. Fresh setup invokes
+Python/Meson after the repository's MSVC environment; a configure-only scratch build matches all
+95 Release options and was removed. The single Release rebuild imports only `d3d9.dll`.
+All 27 runtime unit tests, deep input verification, the 1,008-file package check and repository
+Release checks pass (23 CTests, 333 Python tests, two skips; the same short guard-test path).
+T2's integration reader ignores the additional I7 fields; loader code remains unchanged.

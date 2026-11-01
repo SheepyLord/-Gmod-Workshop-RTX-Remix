@@ -165,11 +165,9 @@ if (-not $needsSetup -and -not (Test-Path -LiteralPath (Join-Path $build 'meson-
 Import-Module (Join-Path $repo 'tools\lib\VsDevEnv.psm1')
 Enter-VsDevEnv | Out-Null
 if ($needsSetup) {
-    Push-Location $Worktree
-    try {
-        & .\build_dxvk.ps1 -BuildFlavour $base.flavour -BuildSubDir $base.build_dir -Backend ninja -EnableTracy false -WithShim $false -SkipApics $true -ConfigureOnly $true
-        if ($LASTEXITCODE) { throw "runtime setup failed: $LASTEXITCODE" }
-    } finally { Pop-Location }
+    python -m mesonbuild.mesonmain setup --buildtype release --backend ninja `
+        -Denable_tracy=false -Dremix_with_shim=false -Ddownload_apics=false $build $Worktree
+    if ($LASTEXITCODE) { throw "runtime setup failed: $LASTEXITCODE" }
 }
 # Never import a Debug CRT build, or allow a reconfigure to enable APIC downloads implicitly.
 $buildOptionsJson = @(python -m mesonbuild.mesonmain introspect --buildoptions $build)
