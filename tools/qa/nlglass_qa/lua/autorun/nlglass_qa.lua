@@ -153,10 +153,14 @@ local function stats(label)
     local mean = #times > 0 and sum / #times or 0
     local p99 = #times > 0 and times[math.max(1, math.ceil(#times * 0.99))] or 0
     local n = s.native or {}
+    local function f(v) return type(v) == "number" and string.format("%.2f", v) or tostring(v) end
     print(string.format("NL_QA client %s backend %s live %s moving %s sleeping %s batches %s frames %d mean_ms %.2f p99_ms %.2f" ..
+        " | manager think_ms %s draw_ms %s think_peak %s draw_peak %s draws %s culled %s rebuild_peak %s" ..
         " | jolt step_ms %s awake %s brushes %s skipped %s refused %s statics %s models %s",
         label, d and d.Backend() or "missing", tostring(s.live), tostring(s.moving), tostring(s.sleeping), tostring(s.batches),
-        #times, mean * 1000, p99 * 1000, tostring(n.step_ms), tostring(n.awake), tostring(n.brushes), tostring(n.skipped_brushes),
+        #times, mean * 1000, p99 * 1000, f(s.think_ms), f(s.draw_ms), f(s.think_peak_ms), f(s.draw_peak_ms),
+        f(s.draw_calls_avg), tostring(s.culled_pieces), f(s.rebuild_peak_ms),
+        f(n.step_ms), tostring(n.awake), tostring(n.brushes), tostring(n.skipped_brushes),
         tostring(n.refused_brushes), tostring(n.statics), tostring(n.models)))
 end
 local pending
