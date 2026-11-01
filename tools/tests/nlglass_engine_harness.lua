@@ -155,7 +155,7 @@ local function realm(server)
         function p:Help(text) self.texts[#self.texts+1]=text end
         local function control(self,label,cvar)
             local c={label=label,cvar=cvar,choices={}}
-            function c:SetValue(value) self.value=value end function c:SetEnabled(value) self.enabled=value end
+            function c:SetValue(value) self.value=value end function c:GetChecked() return self.value==1 end function c:SetEnabled(value) self.enabled=value end
             function c:AddChoice(text,value,selected) self.choices[#self.choices+1]={text,value,selected} end
             function c:ChooseOptionID(index) self.selected=index end
             self.controls[#self.controls+1]=c return c
@@ -500,8 +500,8 @@ elseif scenario=="tool_menu" then
     for _,lang in ipairs({"zh-CN","zh-TW","ja","ko","fr","ru"}) do
         cl.CreateConVar("gmod_language",lang)
         check(cl.NLGlass.I18n.L("Glass strength")~="Glass strength","translated menu "..lang)
-        local panel=cl.panel() cl.NLGlass.BuildSettings(panel) check(#panel.controls==13,"complete settings page")
-        check(panel.controls[12].cvar=="rtx_glass_debris_interact" and panel.controls[12].label~="Bodies and damage affect broken pieces","translated local interaction checkbox "..lang)
+        local panel=cl.panel() cl.NLGlass.BuildSettings(panel) check(#panel.controls==16,"complete settings page")
+        check(panel.controls[11].cvar=="rtx_glass_debris_interact" and panel.controls[11].label~="Bodies and damage affect broken pieces","translated local interaction checkbox "..lang)
     end
     local function settingPacket(index,value)
         cl.net.Start("nlglass_setting") cl.net.WriteUInt(index,4) cl.net.WriteString(value) cl.net.SendToServer()
@@ -516,7 +516,7 @@ elseif scenario=="tool_menu" then
     cl.out={}
     local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     panel.controls[3].OnValueChanged(panel.controls[3],7)
-    panel.controls[13].DoClick() cl.flush()
+    panel.controls[16].DoClick() cl.flush()
     check(cl.GetConVar("rtx_glass_debris_interact"):GetInt()==1,"reset restores local interaction default")
     local changes=0
     for _,packet in ipairs(cl.out) do if packet.name=="nlglass_setting" then changes=changes+1 sv.deliver(packet,owner) end end
@@ -524,7 +524,7 @@ elseif scenario=="tool_menu" then
     cl.player=outsider
     local localPanel=cl.panel() cl.NLGlass.BuildSettings(localPanel)
     cl.RunConsoleCommand("rtx_glass_debris_interact","0") local before=#cl.out
-    localPanel.controls[13].DoClick() cl.flush()
+    localPanel.controls[16].DoClick() cl.flush()
     check(cl.GetConVar("rtx_glass_debris_interact"):GetInt()==1 and #cl.out==before,
         "non-admin resets only their local interaction setting without a server request")
 elseif scenario=="body_contact" then
@@ -703,7 +703,7 @@ elseif scenario=="walk_run" then
     end
     cl.player=ply local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[7].value==250,"menu displays the shared default")
-    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[13].DoClick()
+    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[16].DoClick()
     sv.deliver(cl.out[#cl.out],ply)
     check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250 and panel.controls[7].value==250,"Reset to Defaults restores 250 in server and menu")
 elseif scenario=="settings_migration" then

@@ -9,3 +9,5 @@ This is a runtime Lua module, not a process: it has no exit code. Engine/load er
 R7-C also includes shared `debris_bullets.lua` before server/client setup. Its post-bullet observer
 is server-only; clients only receive clipped rays. The existing debris-file rule serves all new
 scene/expiry/bullet helpers to remote clients.
+
+R8-G also includes debris_melee.lua after the shared hit router; its observers run only on the server.

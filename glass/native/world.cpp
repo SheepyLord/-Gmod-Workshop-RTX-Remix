@@ -13,6 +13,7 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
 #include <atomic>
@@ -108,7 +109,7 @@ struct World::Impl {
     unsigned queued=no_queue;
     std::uint64_t seen=0;
     float mass=0,thickness=1,threshold=0;
-    bool splittable=false;
+    bool splittable=false,grouped=false;
     std::atomic<float> damage{0};
     std::atomic<unsigned> kinds{0};
     std::atomic<bool> damage_queued{false};
@@ -154,6 +155,8 @@ struct World::Impl {
   std::array<std::pair<unsigned,std::uint32_t>,kMaxDamageEvents> damage_slots{};
   std::atomic<unsigned> damage_count{0},damage_dropped{0};
   unsigned scene_moves=0,scene_cooks=0,ray_hits=0,splits=0;
+  unsigned collision_flags=Objects|Ragdolls;
+  unsigned melee_hits=0,melee_limited=0;
   unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
   bool interaction=false;
   std::vector<unsigned> free;
@@ -290,7 +293,7 @@ struct World::Impl {
     const auto id=physics->GetBodyInterfaceNoLock().CreateAndAddBody(settings,JPH::EActivation::Activate);
     need(!id.IsInvalid(),"piece allocation failed");const auto index=free.back();const auto token=next_id++;
     try { ids.emplace(token,index); }catch(...) { destroy(id);throw; }
-    free.pop_back();auto& p=pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);
+    free.pop_back();auto& p=pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);p.grouped=false;
     p.before=p.after=rotation(a);p.asleep=false;p.dirty=true;p.damage=0;p.kinds=0;p.damage_queued=false;
     const auto size=shape->GetLocalBounds().GetSize()/kMetres;
     p.thickness=size.GetZ();p.mass=shape->GetMassProperties().mMass;
@@ -403,6 +406,27 @@ std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin
   need(shape!=nullptr,"Jolt refused piece hull");
   return w.create(shape,position,a,velocity,spin,minimum_size);
 }
+std::uint32_t World::spawn_group(const std::vector<Hull>& hulls,V3 position,V3 a,V3 velocity,V3 spin) {
+  auto& w=idle();need(w.ready,"world is not ready");
+  need(hulls.size()>=2 && hulls.size()<=8,"group hull count limit");
+  need(position.valid() && a.valid(36000) && velocity.valid(100000) && spin.valid(36000),"invalid group transform/velocity");
+  need(w.ids.size()<w.capacity && w.next_id!=0,"piece budget/identifier exhausted");
+  std::size_t points=0;
+  for(const auto& hull:hulls) {
+    need(valid_hull(hull),"invalid group hull");points+=hull.size();
+    for(auto p:hull)need(p.valid(1024),"group hull exceeds local bounds");
+  }
+  need(points<=512,"group point limit");
+  JPH::StaticCompoundShapeSettings settings;
+  for(const auto& hull:hulls) {
+    const auto shape=hull_shape(hull,true);need(shape!=nullptr,"Jolt refused group hull");
+    settings.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),shape);
+  }
+  const auto result=settings.Create();need(!result.HasError(),"Jolt refused group");
+  const auto id=w.create(result.Get(),position,a,velocity,spin);
+  auto* p=w.find(id);p->grouped=true;p->splittable=false;
+  return id;
+}
 bool World::remove(std::uint32_t id) {
   auto& w=idle();auto* p=w.find(id);if(!p)return false;
   const auto index=w.ids.at(id);w.unqueue(index);w.destroy(p->body);p->id=0;p->damage_queued=false;p->damage=0;p->kinds=0;
@@ -447,12 +471,17 @@ void World::set_interaction(bool enabled) {
   w.physics->SetContactListener(enabled?&w.contacts:nullptr);
   if(!enabled) { w.clear_scene();(void)take_damage(); }
 }
+void World::set_collision_flags(unsigned flags) {
+  need(flags<=15,"invalid collision flags");auto& w=idle();
+  if(w.collision_flags!=flags) { w.collision_flags=flags;w.clear_scene(); }
+}
 unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_dt) {
   auto& w=idle();need(w.ready,"world is not ready");
   need(bodies.size()<=kMaxSceneBodies && std::isfinite(sample_dt) && sample_dt>=.001 && sample_dt<=.25,"invalid scene count/timestep");
   unsigned cooks=0;
   for(std::size_t i=0;i<bodies.size();++i) {
     const auto& s=bodies[i];
+    need(s.kind==Objects || s.kind==Ragdolls || s.kind==Players || s.kind==NPCs,"invalid scene kind");
     need(s.key && s.position.valid() && s.angles.valid(36000) && s.velocity.valid(100000) && s.half.valid(1024) &&
       s.half.x>=.05f && s.half.y>=.05f && s.half.z>=.05f && std::isfinite(s.mass) && s.mass>=.01f && s.mass<=50000,"invalid scene body");
     for(std::size_t j=0;j<i;++j)need(bodies[j].key!=s.key,"duplicate scene key");
@@ -470,9 +499,10 @@ unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_d
   Impl::SweepBudget sweep_budget;
   for(auto& m:w.mirrors)if(m.key) {
     m.seen=false;
-    if(std::none_of(bodies.begin(),bodies.end(),[&](const SceneBody& s) { return s.key==m.key; })) { w.destroy(m.body);m=Impl::Mirror{}; }
+    if(std::none_of(bodies.begin(),bodies.end(),[&](const SceneBody& s) { return s.key==m.key && (s.kind&w.collision_flags); })) { w.destroy(m.body);m=Impl::Mirror{}; }
   }
   for(const auto& s:bodies) {
+    if(!(s.kind&w.collision_flags))continue;
     auto it=std::find_if(w.mirrors.begin(),w.mirrors.end(),[&](const auto& m) { return m.key==s.key; });
     const bool fresh=it==w.mirrors.end();
     if(fresh)it=std::find_if(w.mirrors.begin(),w.mirrors.end(),[](const auto& m) { return !m.key; });
@@ -566,8 +596,39 @@ std::uint32_t World::ray(V3 from,V3 to,float energy,float speed) {
   bi.ActivateBody(p.body);bi.SetLinearVelocity(p.body,bi.GetLinearVelocity(p.body)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
   w.damage(slot,energy,Bullet);++w.ray_hits;return p.id;
 }
+unsigned World::melee(V3 from,V3 to,float energy,float speed,float radius) {
+  need(from.valid() && to.valid() && (to-from).length()<=256 && std::isfinite(energy) && energy>=0 && energy<=1e9 &&
+    std::isfinite(speed) && speed>=0 && speed<=2000 && std::isfinite(radius) && radius>=1 && radius<=16,"invalid debris melee");
+  auto& w=idle();if(!w.interaction || (to-from).length()<.001f)return 0;
+  struct Collector final:JPH::CastShapeCollector {
+    std::array<JPH::BodyID,8> hits;unsigned count=0,visits=0,bodies=0;bool limited=false;
+    void OnBody(const JPH::Body&) override { if(++bodies==64) { limited=true;ForceEarlyOut(); } }
+    void AddHit(const JPH::ShapeCastResult& hit) override {
+      if(count==8 || visits==64)return;
+      if(++visits==64) { limited=true;ForceEarlyOut(); }
+      for(unsigned i=0;i<count;++i)if(hits[i]==hit.mBodyID2)return;
+      hits[count++]=hit.mBodyID2;
+      if(count==8) { limited=true;ForceEarlyOut(); }
+    }
+  } collector;
+  class Pieces final:public JPH::ObjectLayerFilter { bool ShouldCollide(JPH::ObjectLayer l) const override { return l==1 || l==2; } } filter;
+  const JPH::SphereShape shape(radius*kMetres);
+  const JPH::RShapeCast cast(&shape,JPH::Vec3::sReplicate(1),JPH::RMat44::sTranslation(jvec(from)),jvec(to-from));
+  JPH::ShapeCastSettings settings;
+  w.physics->GetNarrowPhaseQueryNoLock().CastShape(cast,settings,JPH::RVec3::sZero(),collector,{},filter);
+  auto& bi=w.physics->GetBodyInterfaceNoLock();const auto kick=jvec((to-from)*(speed/(to-from).length()));
+  for(unsigned i=0;i<collector.count;++i) {
+    const auto id=collector.hits[i];const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(id);
+    const auto slot=static_cast<unsigned>(body->GetUserData()-1);auto& p=w.pieces[slot];
+    bi.ActivateBody(id);bi.SetLinearVelocity(id,bi.GetLinearVelocity(id)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
+    w.damage(slot,energy,Melee);
+  }
+  w.melee_hits+=collector.count;if(collector.limited)++w.melee_limited;
+  return collector.count;
+}
 bool World::can_split(std::uint32_t id,float minimum_size) const {
   auto& w=idle();auto* p=w.find(id);if(!p)return false;
+  if(p->grouped)return false; // adaptive rigid groups keep exact sub-hulls and respond by moving.
   const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
   const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
   Hull points;points.reserve(shape->GetNumPoints());
@@ -576,7 +637,7 @@ bool World::can_split(std::uint32_t id,float minimum_size) const {
 }
 std::vector<Fragment> World::split(std::uint32_t id,float minimum_size) {
   auto& w=idle();need(std::isfinite(minimum_size) && minimum_size>=4 && minimum_size<=64,"invalid minimum piece size");
-  auto* p=w.find(id);if(!p || w.ids.size()>=w.capacity)return {};
+  auto* p=w.find(id);if(!p || p->grouped || w.ids.size()>=w.capacity)return {};
   auto& bi=w.physics->GetBodyInterfaceNoLock();const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
   const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
   Hull points;points.reserve(shape->GetNumPoints());
@@ -698,7 +759,8 @@ Stats World::stats() const {
   for(const auto& m:w.mirrors)if(m.key) { ++s.scene_bodies;if(w.physics->GetBodyInterfaceNoLock().IsActive(m.body))--s.awake; }
   s.scene_moves=w.scene_moves;s.scene_cooks=w.scene_cooks;s.damage_dropped=w.damage_dropped.load();
   s.scene_sweeps=w.scene_sweeps;s.scene_sweep_hits=w.scene_sweep_hits;s.scene_sweep_limited=w.scene_sweep_limited;
-  s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;
+  s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;s.collision_flags=w.collision_flags;
+  s.melee_hits=w.melee_hits;s.melee_limited=w.melee_limited;
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
   s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;

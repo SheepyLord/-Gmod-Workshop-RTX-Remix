@@ -25,6 +25,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
   their indices while isolating its native metatable overrides; repeated CSM controller changes
   must not retain every removed projector.
 
+- R8-G also spreads budget eviction's GPU resource release: retired individual meshes disappear immediately and are destroyed at most 16 per frame, with full cleanup at lifecycle boundaries.
+
+- R8-G adds delayed real-weapon/collision QA and reproducible offline measurements. Equipped weapons and bone followers cannot bypass living-off contact settings; nearby detail follows the actual render camera.
+
+- R8-G boundary fixes: recook retained Source shapes after changing collision categories, and initialize melee state when an animation arrives before the first command; discard deferred work across cleanup.
+
+- R8-G falling load: spread mesh/body creation across frames and group crowded, distant fragments into exact compound bodies/combined meshes. Keep nearby detail and every retained original polygon; charge original fragments to the budget, inherit expiry and preserve queued blast pushes. No forced sleeps or solver changes.
+
+- R8-G melee coalescing retains the final wider SWEP trace (including fists), instead of letting its preceding line consume the swing; solid-start traces are rejected.
+
+- R8-G: bullets and melee now reach renewable per-client live-piece interest instead of an expiring old pane location. Stock crowbar/stunstick swings and short trace-based SWEP melee push or split pieces through a bounded Source-clipped native sweep. No weapon callbacks or Source response change.
+
+- R8-G: glass gains independent Source collision checkboxes (objects/ragdolls on, living actors off), a one-time archived-setting migration and always-on map/piece contact; the interaction master remains independent ([ADR 0085](docs/decisions/0085-glass-load-collision-and-hits.md)).
+
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 
 - **Transparent MMD materials show under RTX** (the user: Columbina's blindfold rendered black, only

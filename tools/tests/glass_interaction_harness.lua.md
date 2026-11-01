@@ -27,3 +27,18 @@ shape caps, removals, final trace/PVS forwarding, unchanged weapon callbacks, am
 buckets, expired/cleaned interest and receive-only clients. No game, native module, installed assets,
 network or files are changed. Exit 0 prints an assertion count; assertion/Lua errors exit nonzero.
 The replay emits only text to stdout and takes no installed assets.
+
+R8-G scene_flags checks all 16 masks, default living exclusion, live/dead classification, NextBots and client ragdolls; capture rows carry their native category.
+
+R8-G adds long-lived per-client interest/lease validation, actual client refresh/empty-update cadence, stock swing cooldown/animation coalescing, and read-only Source-clipped SWEP trace regressions. Existing bullet tests use the new bounded payload and verify numeric region tests.
+
+The SWEP scenario also exercises stock fists' delayed line-then-hull pattern: one message keeps
+the larger hull and the mean of the configured HitDamage range. Trace results remain unchanged.
+
+Additional boundary regressions cover animation-before-command initialization and resending cooked shapes after a collision-mask change.
+
+The all-mask regression also includes an equipped weapon, a dropped pickup and a living actor's bone follower: equipment/shadow contacts cannot bypass living-off flags.
+
+The melee scenario additionally proves that conservative Source re-clipping shortens the forwarded endpoint while preserving the SWEP result, rejects solid starts, and bounds extra clipping queries even when no recipient region overlaps.
+
+The SWEP regression mutates the returned vectors before the deferred send and verifies that the owned observation and the weapon's mutated result remain independent.

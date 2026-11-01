@@ -1,4 +1,4 @@
-# MIT; translations written for G1.
+# MIT; translations written for G1 and R8.
 # Translations of the GMod native loader glass (the RTX Remix tab, the guide).
 # Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
 msgid ""
@@ -10,97 +10,117 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "Verre recuit"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "Verre trempé"
 
-#: addon/lua/nlglass/menu.lua:43
+#: addon/lua/nlglass/menu.lua:58
 msgid "Server settings require an administrator."
 msgstr "Les réglages du serveur nécessitent les droits administrateur."
 
-#: addon/lua/nlglass/menu.lua:44
+#: addon/lua/nlglass/menu.lua:59
 msgid "Map windows"
 msgstr "Vitres de la carte"
 
-#: addon/lua/nlglass/menu.lua:45
+#: addon/lua/nlglass/menu.lua:60
 msgid "Spawned glass"
 msgstr "Vitres créées"
 
-#: addon/lua/nlglass/menu.lua:46
+#: addon/lua/nlglass/menu.lua:61
 msgid "Kind, strength and piece size apply to new panes; clean up the map to replace its windows."
 msgstr "Le type, la résistance et la taille des éclats concernent les nouvelles vitres. Nettoyez la carte pour remplacer ses fenêtres."
 
-#: addon/lua/nlglass/menu.lua:47
+#: addon/lua/nlglass/menu.lua:62
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
 msgid "Glass strength"
 msgstr "Résistance du verre"
 
-#: addon/lua/nlglass/menu.lua:48
+#: addon/lua/nlglass/menu.lua:63
 msgid "Show cracks"
 msgstr "Afficher les fissures"
 
-#: addon/lua/nlglass/menu.lua:53
+#: addon/lua/nlglass/menu.lua:68
 msgid "Piece size"
 msgstr "Taille des éclats"
 
-#: addon/lua/nlglass/menu.lua:54
+#: addon/lua/nlglass/menu.lua:69
 msgid "Velocity transfer"
 msgstr "Transfert de vitesse"
 
-#: addon/lua/nlglass/menu.lua:55
+#: addon/lua/nlglass/menu.lua:70
 msgid "Player break speed"
 msgstr "Vitesse de bris par contact"
 
-#: addon/lua/nlglass/menu.lua:56
+#: addon/lua/nlglass/menu.lua:71
 msgid "Default: 250 units/s; walking stays below this threshold."
 msgstr "Par défaut : 250 unités/s ; la marche reste sous ce seuil."
 
-#: addon/lua/nlglass/menu.lua:57
+#: addon/lua/nlglass/menu.lua:72
 msgid "Player / NPC mass (kg)"
 msgstr "Masse joueur / PNJ (kg)"
 
-#: addon/lua/nlglass/menu.lua:58
+#: addon/lua/nlglass/menu.lua:73
 msgid "Broken pieces are local to you and collide with the map and other pieces."
 msgstr "Les éclats sont simulés sur votre client et heurtent la carte et les autres éclats."
 
-#: addon/lua/nlglass/menu.lua:59
+#: addon/lua/nlglass/menu.lua:74
 msgid "Debris lifetime (s; 0 = until cleanup)"
 msgstr "Durée des éclats (s ; 0 = nettoyage)"
 
-#: addon/lua/nlglass/menu.lua:60
+#: addon/lua/nlglass/menu.lua:75
 msgid "Debris budget"
 msgstr "Nombre maximal d’éclats"
 
-#: addon/lua/nlglass/menu.lua:61
-msgid "Pieces collide with each other"
-msgstr "Collision entre éclats"
-
-#: addon/lua/nlglass/menu.lua:62
+#: addon/lua/nlglass/menu.lua:76
 msgid "Bodies and damage affect broken pieces"
 msgstr "Les objets et les dégâts affectent les débris"
 
-#: addon/lua/nlglass/menu.lua:63
-msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
-msgstr "Joueurs, objets, balles, explosions et chutes déplacent ou brisent vos débris. Le verre ne repousse jamais les objets."
+#: addon/lua/nlglass/menu.lua:77
+msgid "Bullets, melee, blasts and falls move or break your pieces. Glass never pushes back."
+msgstr "Les balles, coups de mêlée, explosions et chutes déplacent ou brisent les morceaux. Le verre ne repousse jamais les entités."
 
-#: addon/lua/nlglass/menu.lua:64
+#: addon/lua/nlglass/menu.lua:78
+msgid "Collide with (map and other pieces always enabled)"
+msgstr "Collisions avec (carte et autres morceaux toujours actifs)"
+
+#: addon/lua/nlglass/menu.lua:79
+msgid "Objects (props and physics objects)"
+msgstr "Objets (accessoires et objets physiques)"
+
+#: addon/lua/nlglass/menu.lua:80
+msgid "Ragdolls"
+msgstr "Corps articulés"
+
+#: addon/lua/nlglass/menu.lua:81
+msgid "Living players"
+msgstr "Joueurs vivants"
+
+#: addon/lua/nlglass/menu.lua:82
+msgid "Living NPCs and NextBots"
+msgstr "PNJ et NextBots vivants"
+
+#: addon/lua/nlglass/menu.lua:83
+msgid "Default: objects and ragdolls; living entities pass through your pieces."
+msgstr "Par défaut : objets et ragdolls ; les entités vivantes traversent vos morceaux."
+
+#: addon/lua/nlglass/menu.lua:84
 msgid "Reset to Defaults"
 msgstr "Rétablir les valeurs par défaut"
 
-#: addon/lua/nlglass/menu.lua:75
-#: addon/lua/nlglass/menu.lua:78
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:95
+#: addon/lua/nlglass/menu.lua:98
+#: addon/lua/nlglass/menu.lua:100
 msgid "Glass settings"
 msgstr "Réglages du verre"
 
-#: addon/lua/nlglass/menu.lua:82
+#: addon/lua/nlglass/menu.lua:102
 msgid "Glass pane"
 msgstr "Vitre"
 

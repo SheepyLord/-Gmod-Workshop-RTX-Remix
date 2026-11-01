@@ -17,3 +17,9 @@ body damage; every kinematic target stays exact. The same rows with interaction 
 Both scenarios fail before the fix (zero moved pieces/body hits). The replay test prefers Release,
 then Debug, and skips only when neither executable is built; the full gate builds it first.
 No game launches, install writes, network or package imports. Exit status follows unittest.
+
+R8-G adds scene_flags and collision_settings LuaJIT scenarios; uses no game or installs.
+
+R8-G adds bullets_interest, bullets_client_interest, melee_stock and melee_swep scenarios. Together they check delayed two-client routing, lease expiry/renewal and real observed melee without modifying weapons.
+
+R8-G also runs load_queue, load_area and load_manager: bounded burst construction, area/near-detail preservation and the real-fracture 50-pane replay.

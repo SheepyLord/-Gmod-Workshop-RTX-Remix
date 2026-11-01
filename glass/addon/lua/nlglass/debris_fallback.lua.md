@@ -8,3 +8,5 @@ inter-piece contact is unavailable in this fallback, so the collide convar appli
 destroys only this helper's client entity. Initialization failure returns false. No files, server
 entities or networking, and no process exit code. The manager draws the same glass meshes on both
 backends. Requires the stock hunter plate model for the temporary client prop.
+
+R8-G runtime-failure migration can retain grouped geometry via PhysicsInitMultiConvex when available. If unavailable/refused, that cosmetic piece is dropped safely. The ordinary missing-module path plans no groups; the shared budget still caps at 64 original fragments. No nil hull is passed to PhysicsInitConvex.
