@@ -306,3 +306,11 @@ T1 review separates `presentation::prepare_main_menu` so activation supplies its
 plan after writes, and vanilla fallback supplies an inactive plan. Core GPU diagnostics can reset
 the one-start marker on off-mode RTX starts. Proxy `test_runtime.cpp` applies the real activation
 code to fake DLLs to verify failed tier writes/reset attempts preserve RTX without a GPU reader.
+
+R7-A adds the companion's
+[`nativeloader_mmd_alpha.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_mmd_alpha.lua.md):
+bounded discovery of loaded Model Hotloader character materials and transient Remix texture tags,
+joined with the saved MMD-alpha category by runtime patch 0017. Its LuaJIT lifecycle/budget tests
+live in [`companion/tests`](../companion/tests/test_mmd_alpha.py.md). The existing
+[`tools/qa/alpha_probe.lua`](../tools/qa/alpha_probe.lua.md) can temporarily tag its own ramp/plate
+textures for Claude's game comparison, restoring the previous transient list afterwards.

@@ -16,3 +16,11 @@ prints `NL_SHOT_DONE`. The default variants are `a_hotloader` (Model Hotloader's
 and `h_opaque`; the globals `NL_ALPHA_VARIANTS` and `NL_ALPHA_CENTER` replace them.
 
 Side effects: the session's weather and sky time; client-side models only. Exit codes: none (game Lua).
+
+R7-A category comparison: set `NL_ALPHA_MMD = true` in the session Lua prelude to tag the plates'
+texture hashes through the NoSave `rtx.gmod.mmdAlphaTexturesForSession` list. The probe joins the
+pre-existing list, retries late hashes every 0.25 seconds, prints the cutoff and accepted hashes,
+and restores the list when `nl_shot_taken` ends the probe. It never changes the saved category,
+the global stochastic threshold or any file. The default leaves category settings alone. Use
+independent processes for untagged/tagged comparisons; a shared fixture texture tags every variant.
+The actual-character list is printed by `nativeloader_mmd_alpha_status`.
