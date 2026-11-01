@@ -90,8 +90,8 @@
   TLAS always uses BUILD (`:1946-1951`), as does the one-time intersection BLAS (`:296-312`).
   Expect rebuild/allocation work per affected BLAS, not an invalid UPDATE. Timing remains unmeasured.
   PoC tuning question: class-limited low on an RTX 3060 12 GB or 4060 Ti 16 GB still gets the top-mip
-  drop despite its larger memory. Keep the candidate unchanged until detail/memory and Automatic
-  switch costs are measured.
+  drop despite its larger memory. On modern_house the switch saved about 226 MiB of replacement
+  textures (ADR 0064); it stays, and following the VRAM tier instead needs a loader change.
 - **The sky LOD argument is conditional.**
   `src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh:408-439` uses real texture width/height.
   Halving them subtracts one from
@@ -111,7 +111,9 @@
   The source's `RtxOptions.md` SHA-256 is
   `4a457a8d1e3bb6dbf00efe05720fd9c8c4ea8621509fa72c6621313eb685cc57`. This avoids inventing
   runtime support for old high-tier keys while rejecting any new or misspelt tier key.
-- PoC measurements of the tiers are pending; the values are candidates.
+- PoC measurements of the tiers (2026-10-31, 4K, RTX 5090): medium and low 5-9 % faster than high,
+  170-750 MiB less VRAM, identical pinned runs within 4.5 %; low now uses 8 bounces. Numbers and
+  method in ADR 0064.
   [ADR 0064](decisions/0064-performance-tier-defaults.md) records the tuning and acceptance checks;
   run-specific history is in the [handover status](handover/R6-T6-performance-tiers.md#status).
 

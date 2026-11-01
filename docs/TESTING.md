@@ -114,11 +114,11 @@ Real-asset verification: regenerate the three `_4096.dds` files with
 combined package's generated manifest/inventory must contain both tier payloads and all three
 smaller skies, while its default DXVK layer list still contains only classic/compiler layers.
 
-PoC acceptance is pending: candidate values need two-map tier frame-time/VRAM/visual comparisons,
-normal/narrow-FOV sky checks (including 4K nebula detail), and class-limited low on cards above
-8 GiB with `lowMemoryGpu` and an Automatic-preset flip. Source inspection proves changed BLAS
-flags rebuild safely; its timing and texture-detail cost still need measurement. ADR 0064 gives
-the lasting acceptance criteria; run-specific evidence belongs in the
+The PoC measurements (2026-10-31: both maps, each tier, unpinned and pinned cameras, 4K) and how
+they were taken are in ADR 0064. Repeat them with `poc_session.py config --performance-tier <tier>`
+and `run --fps 30 --camera <view> --width 3840 --height 2160`, checking the runtime log's
+"Effective RtxOption values". Still open: a zoomed sky, an 8 GB card, and class-limited low on a
+card above 8 GiB with `lowMemoryGpu` and an Automatic-preset flip. Run-specific evidence belongs in the
 [handover status](handover/R6-T6-performance-tiers.md#status).
 
 The review-fix validation passes 23 focused T6 tests, deep verification of all ten input parts,

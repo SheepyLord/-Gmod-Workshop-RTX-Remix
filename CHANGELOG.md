@@ -11,11 +11,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **Remix settings that fit your graphics card.** At each RTX start the loader picks a performance
   tier for the NVIDIA card with the most video memory. `high` keeps the package's settings, tuned on
   an RTX 5090. `medium` (10 to 12 GB, or an x70 model) and `low` (8 GB, or an x50/x60 model; a laptop
-  GPU counts one step lower) use fewer light bounces (8 and 4 instead of 12), a lighter neural
+  GPU counts one step lower) use fewer light bounces (8 instead of 12), a lighter neural
   radiance cache and smaller memory budgets: micromaps, sky probe, volumetric fog grid and terrain
   atlas; `low` also uses Remix's low-memory mode and 4096-pixel night-sky images. Settings saved in
   Remix's menu still win. `"remix": { "performance_tier": ... }` in `config.json` picks a tier
-  yourself; the RTX Remix tab's Start here page shows the tier and why
+  yourself; the RTX Remix tab's Start here page shows the tier and why. Measured at 4K on an RTX
+  5090: medium and low are 5-9 percent faster than high and use 170-750 MiB less video memory
   ([ADR 0062](docs/decisions/0062-loader-layers-performance-tiers-and-gpu-dumps.md),
   [ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
 - **On AMD and Intel, Remix's own preset for your GPU takes effect.** The loader's Remix settings

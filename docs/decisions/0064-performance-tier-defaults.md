@@ -1,7 +1,7 @@
 # 0064: Package performance tiers and smaller night-sky images
 
-- Status: R6's tier/storage decision accepted 2026-10-31; tuning values below are **provisional,
-  awaiting PoC measurements**. Do not treat T6 as accepted for integration yet.
+- Status: accepted 2026-10-31. The values were measured on the PoC the same day (below); low's
+  bounce cap changed from the candidate 4 to 8 on that evidence.
 - Decided by: the user's R6 performance/stability request and the choices in
   [R6-plan.md](../handover/R6-plan.md). Amends [0051](0051-path-bounce-defaults.md) only for the
   conditional lower tiers; high keeps the classic 1–12 bounce defaults.
@@ -15,11 +15,11 @@ kind or loader requirement changes. Old loaders retain classic settings. R6 T1 s
 before the classic layer; user `rtx.conf` and `user.conf` still have priority. Hardware detection
 and the config override belong to T1, not the packager.
 
-Candidate values, relative to classic plus the packaged runtime's defaults:
+Values, relative to classic plus the packaged runtime's defaults:
 
 | Key (`rtx.` prefix) | High | Medium | Low | Cost / expected saving |
 |---|---|---|---|---|
-| `pathMaxBounces` | 12 | 8 | 4 | Bound query paths; mirror/transmission chains lose light beyond the cap unless NRC already terminated the path |
+| `pathMaxBounces` | 12 | 8 | 8 | Bound query paths; mirror/transmission chains lose light beyond the cap unless NRC already terminated the path. Low's candidate 4 measured no faster than 8 |
 | `neuralRadianceCache.qualityPreset` | 2 (Ultra) | 1 (High) | 0 (Medium) | Fewer training records and bounces, coarser cache; less responsive/detailed indirect light |
 | `skyProbeSide` | 2048 | 1024 | 1024 | Probe storage 96 to 24 MiB: 72 MiB less |
 | `volumetrics.froxelGridResolutionScale` | 4 | 8 | 8 | About a quarter of the XY froxels; preserve 48 depth slices; coarser fog |
@@ -46,7 +46,8 @@ was found and measured to be universally harmful, so none changes.
 The bounce cap does not itself query NRC: `integrator_indirect.slangh:860-885` handles NRC's own
 termination before stopping at `pathMaxBounces`. NRC's `maxPathVertices` is the training bounce
 count (`rtx_neural_radiance_cache.cpp:697`), not a guarantee that a capped query path gets cached
-light. Long mirror/transmission chains can lose light beyond the cap; evaluate this in PoC images.
+light. Long mirror/transmission chains can lose light beyond the cap. That is why the cap buys
+little speed (most paths end earlier) and why low keeps medium's 8.
 
 `lowMemoryGpu` halves the OMM percentage (`rtx_opacity_micromap_manager.cpp:162-173`), drops the
 top streamed replacement-texture mip (`rtx_texture_manager.cpp:1623`) and adds
@@ -62,10 +63,10 @@ not an in-game performance measurement. References are to the patched R6 T4 runt
 `29546f3566a676a1318b799fb8ddd01b2a110058`; C++ paths are under `src/dxvk/rtx_render/` and the
 integrator is under `src/dxvk/shaders/rtx/algorithm/`.
 
-For PoC tuning, should class-limited low on an RTX 3060 12 GB or 4060 Ti 16 GB retain
-`lowMemoryGpu`? It drops replacement detail even though those cards are not memory-limited by
-the tier's VRAM rule. Leave it true for now; measure its detail/memory trade-off and the cost of
-switching to Automatic before changing the candidate.
+Class-limited low on an RTX 3060 12 GB or 4060 Ti 16 GB keeps `lowMemoryGpu`, and so drops
+replacement-texture detail its memory does not need. On modern_house the switch saved about 226 MiB
+of replacement textures on this machine. Making it follow the VRAM tier instead of the class tier
+needs a loader change (the tier is one file); it is left for a later round.
 
 ## Night-sky files: measured bytes, derived GPU storage
 
@@ -100,20 +101,40 @@ also includes FOV and clamped total mip bias (`rtx_atmosphere.cpp:2914-2916,2934
 the missing level. The 160 MiB texel saving is real, but a three-image medium switch is a visual
 tuning question, not a byte-identical 4K substitution.
 
-## PoC measurements pending
+## PoC measurements (2026-10-31)
 
-The values are candidates: **no frame-time, VRAM, visual or stability result is claimed**. The six
-required map/tier runs, night-sky comparison and 8 GB hardware validation remain open. The offline
-size arithmetic above is not a substitute. Follow the
-[T6 brief](../handover/R6-T6-performance-tiers.md#3-measure-poc). Until T1 is available, temporarily place the
-tier's lines in the PoC root `rtx.conf`, restoring it after each run. Use identical cameras,
-1280 × 720 output, ReShade off, 60 s settling, `--fps 30`, `fps_max 0` and
-`engine_no_focus_sleep 0`; sample `rtx_vram_stats` after settling as well as before quitting. On
-modern_house mount 3495468649 and change map as in the brief. Compare high/low night skies at
-normal and zoomed FOV, including 4K nebula detail and the candidate medium three-image switch,
-changing only the resolution for the sky-only comparison. Record warm
-repeats: a single shader-cold frame-time sample is insufficient. Revisit the candidate bounce/NRC
-choices if lighting degrades or gains are within run-to-run noise.
+Loader 0.11.0 and package `0.0.0-dev.20261101000826+26fd9323` on the PoC, RTX 5090 (32 GB), each
+tier forced with `remix.performance_tier` and checked in the runtime log's "Effective RtxOption
+values" section. 3840 x 2160 windowed, so the GPU is the limit (not the brief's 1280 x 720), 45 s
+settling, then 30 s of frame times (`poc_session.py run --fps 30`, `fps_max 0`), `rtx_vram_stats`
+just before the timing. Two passes from the spawn view (gm_construct has several spawn points, so its
+unpinned runs saw different views), then a set with the camera pinned (gm_construct
+695.387,288.343,-79.08 yaw 180; modern_house 80,928,544.92, mounted from 3495468649). Identical
+pinned runs still differed by up to 4.5 %, so differences below that are not resolved.
+
+| Pinned view, 4K | High | Medium | Low |
+|---|---|---|---|
+| modern_house fps | 53.6 | 56.3, 55.8 (+4.6 %) | 58.1, 55.6 (+6.0 %) |
+| gm_construct fps | 96.5 | 104.9 (+8.7 %) | 105.0 (+8.8 %) |
+| modern_house driver VRAM (MiB) | 6,676 | 6,134-6,486 | 5,921-5,953 |
+| gm_construct driver VRAM (MiB) | 8,160 | 7,989 | 7,777 |
+
+The two unpinned passes agree (modern_house: high 52.1/52.6, medium 54.7/55.8, low 55.0/57.4 fps).
+Medium's saving is mostly render targets, 1,272 to 1,058 MiB (sky probe and fog grid). Low adds the
+night sky, exactly 160 MiB, and on modern_house `lowMemoryGpu` cut replacement textures from 738 to
+352 MiB (about 226 MiB beyond the sky); on gm_construct it saved nothing visible.
+
+Low with the candidate 4 bounces was not faster than medium. With 8 bounces (a temporary root
+`rtx.conf`, which outranks the tier layer) low ran at 55.9 fps on pinned modern_house, inside the
+4-bounce runs' 55.6-58.1; a second 8-bounce run overlapped Windows File History and Discord and was
+discarded. Low therefore uses 8. Screenshots of the three tiers look alike on both maps at a glance;
+a native-4K crop of the nebula shows low's 4096 sky almost identical to high's at a 90 degree FOV.
+Not measured: an 8 or 12 GB card, a zoomed FOV on the sky, frame generation.
+
+Stability: one high-tier session (classic settings) lost the device seven seconds after
+gm_construct loaded: two `nvlddmkm` event 153 entries, then `VK_ERROR_DEVICE_LOST` on queue
+submission with 8.6 of 32.9 GB in use (`last_gpu_crash.json`). The same driver event pair appears six
+times on 2026-10-29/30. The tiers do not address that fault; R6's evidence collection recorded it.
 
 ## Reproduction and offline validation
 

@@ -9,11 +9,12 @@ skill validation and the full Release gate pass with the user's access (288 tool
 23 CTests; the unchanged guard passes from a shorter executable path). Integration, human
 translation review and game acceptance remain with the project manager; this task started no game.
 
-R6 T6 is **in progress; PoC acceptance pending** (2026-10-31, branch `r6-t6-tiers`): optional
+R6 T6 is **done** (2026-10-31, branch `r6-t6-tiers`, measured in the R6 integration): optional
 medium/low runtime payloads, lossless mip removal and 4096-wide sky inputs are implemented.
 Tier options have source-pinned validation and the DDS fixtures cover every accepted format.
-PoC frame-time, VRAM and visual measurements are pending; values remain candidates. The two-map
-tier comparison, class-limited low-memory trade-off and night-sky checks remain required;
+On the PoC at 4K on an RTX 5090, medium and low run 5-9 % faster than high and use 170-750 MiB
+less VRAM; low takes medium's 8 bounces, since 4 measured no faster. An 8 GB card, a zoomed sky
+and the class-limited low-memory trade-off remain unmeasured;
 [ADR 0064](decisions/0064-performance-tier-defaults.md) records the source-verified consequences
 and why medium retains the original skies.
 

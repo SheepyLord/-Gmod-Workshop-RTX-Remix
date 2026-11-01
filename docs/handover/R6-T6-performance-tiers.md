@@ -150,3 +150,11 @@ Validation passed:
 Not done: PoC frame-time/VRAM/visual measurements and tuning changes to class-limited low or
 medium's skies, deferred to the PM as instructed. No pushes, merges, tags, main commits, Workshop
 uploads, downloads, game launches, external-fork edits or game/install/user-setting writes.
+
+### PM measurements (2026-10-31)
+
+Claude measured the tiers in the R6 integration on the PoC (loader 0.11.0, 4K, RTX 5090): medium and
+low run 5-9 % faster than high and use 170-750 MiB less VRAM; low's candidate 4 bounces measured no
+faster than 8, so low now uses 8. Numbers and method are in
+[ADR 0064](../decisions/0064-performance-tier-defaults.md#poc-measurements-2026-10-31); the evidence is
+in the main checkout's `out/qa-poc/r6/tiers`, `tiers-pinned` and `shots`.
