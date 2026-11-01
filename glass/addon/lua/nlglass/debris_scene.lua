@@ -4,23 +4,32 @@ local S = { bodies = 0, candidates = 0, queries = 0, capture_ms = 0, capture_pea
 local candidates, regions, states, serial, nextDiscovery = {}, {}, {}, 0, 0
 local MAX_BODIES, MAX_ENTITIES, MAX_BONES, MAX_EXAMINED = 96, 128, 24, 512
 local LOOKAHEAD, MAX_SWEEP, FAST_SPEED = .25, 192, 160
-local queryMargin = Vector(MAX_SWEEP, MAX_SWEEP, MAX_SWEEP)
-local function finite(v, bound)
-    return isvector(v) and v.x == v.x and v.y == v.y and v.z == v.z and
-        math.abs(v.x) <= bound and math.abs(v.y) <= bound and math.abs(v.z) <= bound
-end
-local function near(lo, hi, velocity)
-    local x, y, z = 0, 0, 0
-    if finite(velocity, 100000) then
-        local scale = LOOKAHEAD
-        local speed2 = velocity:LengthSqr()
-        if speed2 * scale * scale > MAX_SWEEP * MAX_SWEEP then scale = MAX_SWEEP / math.sqrt(speed2) end
-        x, y, z = velocity.x * scale, velocity.y * scale, velocity.z * scale
+-- Source vectors are engine objects: every component read calls into the engine. Each vector is
+-- read once and the region tests run on plain numbers. Discovery may test 512 bodies against 32
+-- regions; with vectors that cost milliseconds in game (PoC, 2026-11-01).
+local function components(v, bound)
+    if not isvector(v) then return end
+    local x, y, z = v.x, v.y, v.z
+    if x == x and y == y and z == z and math.abs(x) <= bound and math.abs(y) <= bound and math.abs(z) <= bound then
+        return x, y, z
     end
-    for _, r in ipairs(regions) do
-        if lo.x + math.min(0, x) <= r[2].x and hi.x + math.max(0, x) >= r[1].x and
-            lo.y + math.min(0, y) <= r[2].y and hi.y + math.max(0, y) >= r[1].y and
-            lo.z + math.min(0, z) <= r[2].z and hi.z + math.max(0, z) >= r[1].z then return true end
+end
+local function finite(v, bound) return components(v, bound) ~= nil end
+-- The bounded travel within the lookahead, and the squared speed (0 for an unusable velocity).
+local function sweep(velocity)
+    local x, y, z = components(velocity, 100000)
+    if not x then return 0, 0, 0, 0 end
+    local speed2, scale = x * x + y * y + z * z, LOOKAHEAD
+    if speed2 * scale * scale > MAX_SWEEP * MAX_SWEEP then scale = MAX_SWEEP / math.sqrt(speed2) end
+    return x * scale, y * scale, z * scale, speed2
+end
+local function near(lx, ly, lz, hx, hy, hz, sx, sy, sz)
+    if sx < 0 then lx = lx + sx else hx = hx + sx end
+    if sy < 0 then ly = ly + sy else hy = hy + sy end
+    if sz < 0 then lz = lz + sz else hz = hz + sz end
+    for i = 1, #regions do
+        local r = regions[i]
+        if lx <= r[4] and hx >= r[1] and ly <= r[5] and hy >= r[2] and lz <= r[6] and hz >= r[3] then return true end
     end
     return false
 end
@@ -31,20 +40,21 @@ local function discover(api)
     if type(raw) ~= "table" then return end
     local seen, fast, actors, other = {}, {}, {}, {}
     for i = 1, math.min(32, #raw) do
-        local r = raw[i]
-        local lo, hi = Vector(unpack(r[1])), Vector(unpack(r[2]))
-        regions[#regions + 1] = {lo, hi}
+        local lo, hi = raw[i][1], raw[i][2]
+        regions[#regions + 1] = {lo[1], lo[2], lo[3], hi[1], hi[2], hi[3]}
     end
     local function consider(e)
         S.examined = S.examined + 1
-        if not IsValid(e) or seen[e] or not e.WorldSpaceAABB then return end
+        if seen[e] or not IsValid(e) or not e.WorldSpaceAABB then return end
         seen[e] = true
         if e:IsWorld() or e:GetClass():match("^nlglass_") then return end
         local lo, hi = e:WorldSpaceAABB()
-        local velocity = e:GetVelocity()
-        if not finite(lo, 131072) or not finite(hi, 131072) or not near(lo, hi, velocity) then return end
-        local bucket = finite(velocity, 100000) and velocity:LengthSqr() >= FAST_SPEED * FAST_SPEED and fast or
-            (e:IsPlayer() and actors or other)
+        local lx, ly, lz = components(lo, 131072)
+        local hx, hy, hz = components(hi, 131072)
+        if not lx or not hx then return end
+        local sx, sy, sz, speed2 = sweep(e:GetVelocity())
+        if not near(lx, ly, lz, hx, hy, hz, sx, sy, sz) then return end
+        local bucket = speed2 >= FAST_SPEED * FAST_SPEED and fast or (e:IsPlayer() and actors or other)
         if #bucket < MAX_ENTITIES then bucket[#bucket + 1] = e end
     end
     -- Scan only a bounded spatial prefix, but rank before truncating it: slow shapes/bones must
@@ -59,7 +69,8 @@ local function discover(api)
             S.queries = S.queries + 1
             -- The query must reach outside the unswept regions, or the velocity filter never
             -- sees an approaching body. Only the filter's bounded sweep can retain it.
-            for _, e in ipairs(ents.FindInBox(r[1] - queryMargin, r[2] + queryMargin)) do
+            for _, e in ipairs(ents.FindInBox(Vector(r[1] - MAX_SWEEP, r[2] - MAX_SWEEP, r[3] - MAX_SWEEP),
+                Vector(r[4] + MAX_SWEEP, r[5] + MAX_SWEEP, r[6] + MAX_SWEEP))) do
                 consider(e)
                 if S.examined == MAX_EXAMINED or #fast == MAX_ENTITIES then break end
             end
@@ -95,8 +106,7 @@ local function convexes(phys)
     return out
 end
 local function halfBounds(lo, hi)
-    local h = (hi - lo) * .5
-    return Vector(math.max(.05, h.x), math.max(.05, h.y), math.max(.05, h.z))
+    return Vector(math.max(.05, (hi.x - lo.x) * .5), math.max(.05, (hi.y - lo.y) * .5), math.max(.05, (hi.z - lo.z) * .5))
 end
 function S.Reset()
     candidates, regions, states, serial, nextDiscovery = {}, {}, {}, 0, 0
@@ -115,13 +125,15 @@ function S.Capture(api, dt)
     local actorMass = massSetting and math.max(1, math.min(500, massSetting:GetFloat())) or 85
     local function add(e, slot, position, angles, half, mass, velocity, phys)
         if #rows >= MAX_BODIES or not finite(position, 131072) or not finite(half, 1024) or not finite(velocity, 100000) then return end
-        if not isangle(angles) or angles.p ~= angles.p or angles.y ~= angles.y or angles.r ~= angles.r or
-            math.max(math.abs(angles.p), math.abs(angles.y), math.abs(angles.r)) > 36000 then return end
+        if not isangle(angles) then return end
+        local ap, ay, ar = angles.p, angles.y, angles.r
+        if ap ~= ap or ay ~= ay or ar ~= ar or math.max(math.abs(ap), math.abs(ay), math.abs(ar)) > 36000 then return end
         if not isnumber(mass) or mass ~= mass then return end
         local old = states[e] and states[e][slot]
         -- IsValid comes before PhysObj equality: comparing a destroyed Source object can throw.
         if old and old.phys and (not IsValid(old.phys) or not IsValid(phys) or old.phys ~= phys) then old = nil end
-        local fresh, fast = not old, velocity:LengthSqr() >= FAST_SPEED * FAST_SPEED
+        local sx, sy, sz, speed2 = sweep(velocity)
+        local fresh, fast = not old, speed2 >= FAST_SPEED * FAST_SPEED
         if fresh then serial = serial + 1;old = {key = serial, phys = phys} end
         local shape
         -- Fast cold bodies enter as boxes in this snapshot. Do not stall first contact on
@@ -132,15 +144,21 @@ function S.Capture(api, dt)
         end
         if IsValid(phys) then
             if old.custom then position, angles = phys:GetPos(), phys:GetAngles()
-            elseif phys.GetAABB then
+            elseif phys.GetAABB and phys.LocalToWorld then
+                -- GetAABB is in the object's own frame (a client prop at 831,400,-100 reported
+                -- -14,-14,0 .. 14,14,45; PoC, 2026-11-01): the box takes the object's pose.
                 local lo, hi = phys:GetAABB()
-                if finite(lo, 131072) and finite(hi, 131072) then position, half, angles = (lo + hi) * .5, halfBounds(lo, hi), angle_zero end
+                if finite(lo, 131072) and finite(hi, 131072) then
+                    position, half, angles = phys:LocalToWorld((lo + hi) * .5), halfBounds(lo, hi), phys:GetAngles()
+                end
             end
         end
-        if not finite(position, 131072) or not finite(half, 1024) then return end
+        local px, py, pz = components(position, 131072)
+        local hx, hy, hz = components(half, 1024)
+        if not px or not hx then return end
         -- World AABBs are checked before this function. Per-bone shapes receive an extra coarse test.
-        local radius = half:Length()
-        if not near(position - Vector(radius, radius, radius), position + Vector(radius, radius, radius), velocity) then return end
+        local radius = math.sqrt(hx * hx + hy * hy + hz * hz)
+        if not near(px - radius, py - radius, pz - radius, px + radius, py + radius, pz + radius, sx, sy, sz) then return end
         keep[e] = keep[e] or {};keep[e][slot] = old
         rows[#rows + 1] = {old.key, position, angles, half, math.max(.01, math.min(50000, mass)), shape, velocity}
         if fast then
@@ -152,7 +170,9 @@ function S.Capture(api, dt)
         if #rows >= MAX_BODIES then break end
         if IsValid(e) and e.WorldSpaceAABB and not e:IsWorld() and not e:GetClass():match("^nlglass_") then
             local lo, hi = e:WorldSpaceAABB()
-            if finite(lo, 131072) and finite(hi, 131072) and near(lo, hi, e:GetVelocity()) then
+            local lx, ly, lz = components(lo, 131072)
+            local hx, hy, hz = components(hi, 131072)
+            if lx and hx and near(lx, ly, lz, hx, hy, hz, sweep(e:GetVelocity())) then
                 local living = (e:IsPlayer() and e:Alive()) or ((e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health() > 0)
                 if living then
                     local a, b = e:GetCollisionBounds()
@@ -165,11 +185,12 @@ function S.Capture(api, dt)
                     local n = e.GetPhysicsObjectCount and e:GetPhysicsObjectCount() or 0
                     local hasPhysics = false
                     if n > 0 then
+                        local half = halfBounds(lo, hi)
                         for i = 0, math.min(n, MAX_BONES) - 1 do
                             local phys = e:GetPhysicsObjectNum(i)
                             if IsValid(phys) then
                                 hasPhysics = true
-                                add(e, i, phys:GetPos(), phys:GetAngles(), halfBounds(lo, hi), phys:GetMass(), phys:GetVelocity(), phys)
+                                add(e, i, phys:GetPos(), phys:GetAngles(), half, phys:GetMass(), phys:GetVelocity(), phys)
                             end
                         end
                     end

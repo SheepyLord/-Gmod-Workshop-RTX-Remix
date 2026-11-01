@@ -29,7 +29,9 @@ local function phys(position)
     return setmetatable({valid=true,position=position or Vector(),angles=Angle(),mass=30,velocity=Vector(),
         GetPos=function(self) return self.position end,GetAngles=function(self) return self.angles end,
         GetMass=function(self) return self.mass end,GetVelocity=function(self) return self.velocity end,
-        GetAABB=function(self) return self.position-Vector(4,4,4),self.position+Vector(4,4,4) end,
+        -- As in game: PhysObj:GetAABB is in the object's own frame, LocalToWorld places it.
+        GetAABB=function() return Vector(-4,-4,-4),Vector(4,4,4) end,
+        LocalToWorld=function(self,v) return (LocalToWorld(v,angle_zero,self.position,self.angles)) end,
         GetMeshConvexes=function()
             cooks=cooks+1;local t={}
             for _,x in ipairs({-4,4})do for _,y in ipairs({-4,4})do for _,z in ipairs({-4,4})do t[#t+1]={pos=Vector(x,y,z)}end end end
@@ -175,12 +177,13 @@ elseif scenario:match("^scene") then
         rag.GetHitBoxBounds=function()return Vector(-2,-2,-6),Vector(2,2,6)end
         rag.GetBoneMatrix=function(_,bone)return {GetTranslation=function()return Vector(0,0,bone)end,GetAngles=function()return Angle(0,45,0)end}end
         local prop=entity("prop_dynamic");prop.angles=Angle(0,90,0)
-        local bad=phys();bad.GetMeshConvexes=function()return {{ {pos=Vector(0/0,0,0)} }}end
+        local bad=phys(Vector(20,0,0));bad.angles=Angle(0,30,0);bad.GetMeshConvexes=function()return {{ {pos=Vector(0/0,0,0)} }}end
         nearby={rag,prop,entity("prop_physics",nil,{bad})}
         local rows=capture(S,n)
         check(#rows==4 and rows[1][3].y==45 and rows[2][2].z==11,"remote ragdoll follows bone hitboxes")
         check(rows[3][3].y==90,"nonphysics object uses an oriented box")
         check(rows[4][6]==nil and rows[4][4].x==4,"malformed physics convexes retain a coarse box")
+        check(rows[4][2].x==20 and rows[4][3].y==30,"a coarse box takes its physics object's world pose")
     elseif scenario=="scene_sweep_bounds" then
         local function moving(x,v)
             local p=phys(Vector(x,0,4));p.velocity=Vector(v,0,0)

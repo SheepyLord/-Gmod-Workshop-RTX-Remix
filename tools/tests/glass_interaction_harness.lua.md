@@ -16,6 +16,11 @@ The Python test passes those rows to Jolt; this Lua harness does not pretend to 
 96 warm bodies and a 512-entry priority prefix. Timings include real capture code with engine
 doubles and a native-sync double; no real engine query, native sync, Remix or GPU costs.
 
+The physics-object double returns `GetAABB` in its own frame and places it with `LocalToWorld`, as the
+game does; `scene_fallback` checks that a coarse box takes its body's world position and yaw, and
+`scene_sweep_bounds` that a fast box sits at the body (both fail on capture code that used the AABB as
+world bounds).
+
 Source doubles forbid all position, velocity, force and damage writes and whole-map scans. Checks
 living/shadow classification, per-bone ragdolls, stale physics identity, fallback shapes, spatial/body/
 shape caps, removals, final trace/PVS forwarding, unchanged weapon callbacks, ammo metadata, token
