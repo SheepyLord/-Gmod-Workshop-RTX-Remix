@@ -14,8 +14,8 @@ patched copy of GMod managed by RTXLauncher.
 
 - How it works: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - What each component does: [docs/COMPONENTS.md](docs/COMPONENTS.md)
-- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0-M7, R1, R3, R4 (reviews, fixes, the QoL round's review and field QA; loader 0.10.1) and R5 (the user's QoL report; a stability proposal awaiting the user's decisions) done; R2 (field parity with the classic install) in progress**)
-- Picking up a milestone from another agent: [docs/handover/](docs/handover/README.md) (your brief is there; the latest round is [R5-qol.md](docs/handover/R5-qol.md), after [R4-review.md](docs/handover/R4-review.md) and [QoL-handover.md](docs/handover/QoL-handover.md))
+- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0-M7, R1, R3, R4 (reviews, fixes, the QoL round's review and field QA; loader 0.10.1), R5 (the user's QoL report) and R6 (performance tiers and stability evidence; loader 0.11.0) done; R2 (field parity with the classic install) in progress**)
+- Picking up a milestone from another agent: [docs/handover/](docs/handover/README.md) (your brief is there; the latest round is [R6-report.md](docs/handover/R6-report.md), after [R5-qol.md](docs/handover/R5-qol.md) and [R4-review.md](docs/handover/R4-review.md))
 - Why it is built this way: [docs/decisions/](docs/decisions/README.md)
 - Facts gathered about GMod, Remix and the existing RTX tooling: [docs/RESEARCH.md](docs/RESEARCH.md)
 - This machine (installs, toolchain): [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)
