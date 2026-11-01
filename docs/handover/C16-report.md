@@ -59,9 +59,17 @@ model layers changed, and `check_pack.py --deep` gives the same warnings as befo
 
 | Item | Package | Change | State |
 |---|---|---|---|
-| 3829892354 | `robin-rtx` `0.0.0-dev.202611010515+3a6d9e61` | Robin's three face materials 0.6 -> input 15; the archive's description brought up to the current rules (it now names the RTX package and says GMod cannot mount the item) | rebuilt |
-| 3830769477 | `evernight-march7th-rtx` `0.0.0-dev.202611010518+103fde9b` | Evernight 0.6 -> 15, March 7th 0.04 -> 1 | rebuilt |
+| 3829892354 | `robin-rtx` `0.0.0-dev.202611010515+3a6d9e61` | Robin's three face materials 0.6 -> input 15; the archive's description brought up to the current rules (it now names the RTX package and says GMod cannot mount the item) | uploaded 2026-11-01 (`gmpublish update`, hidden; Steam sent 2.9 MB of changed content) |
+| 3830769477 | `evernight-march7th-rtx` `0.0.0-dev.202611010518+103fde9b` | Evernight 0.6 -> 15, March 7th 0.04 -> 1 | uploaded 2026-11-01 (hidden; 2.4 MB) |
 | 3829348717 | `guinaifen-rtx` | two face materials 0.6 -> 15 | waits for the user: `check_pack.py` refuses its older display name `Guinaifen (桂乃芬)` (the ASCII-name rule from R5) |
+
+The RTX package with the runtime went to 3829070317 with the merge (`0.0.0-dev.20261101052452+2768a059`,
+the content digest tested on the PoC). Players get both at the next start after Steam has fetched them.
+
+On the field install, rpai's own `rtx-remix\mods\ai_pbr` also holds Evernight's and March 7th's layers
+(fixed emission, 0.6 and 0.04). Remix takes a material from the first mod that has it, and `ai_pbr`
+sorts before `pbr_evernight_march7th`, so there those two keep the fixed emission until `ai_pbr` gets
+the input too (a field change, for the user to ask for). Robin and Guinaifen are only in their packs.
 
 ## Tests
 
