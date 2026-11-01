@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:81
+#: addon/lua/nlglass/menu.lua:83
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "Verre recuit"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:81
+#: addon/lua/nlglass/menu.lua:83
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "Verre trempé"
@@ -83,16 +83,24 @@ msgid "Pieces collide with each other"
 msgstr "Collision entre éclats"
 
 #: addon/lua/nlglass/menu.lua:62
+msgid "Bodies and damage affect broken pieces"
+msgstr "Les objets et les dégâts affectent les débris"
+
+#: addon/lua/nlglass/menu.lua:63
+msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
+msgstr "Joueurs, objets, balles, explosions et chutes déplacent ou brisent vos débris. Le verre ne repousse jamais les objets."
+
+#: addon/lua/nlglass/menu.lua:64
 msgid "Reset to Defaults"
 msgstr "Rétablir les valeurs par défaut"
 
-#: addon/lua/nlglass/menu.lua:73
-#: addon/lua/nlglass/menu.lua:76
+#: addon/lua/nlglass/menu.lua:75
 #: addon/lua/nlglass/menu.lua:78
+#: addon/lua/nlglass/menu.lua:80
 msgid "Glass settings"
 msgstr "Réglages du verre"
 
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:82
 msgid "Glass pane"
 msgstr "Vitre"
 

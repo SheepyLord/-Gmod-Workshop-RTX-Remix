@@ -462,20 +462,34 @@ Pose World::scene_pose(std::uint32_t key) const {
   }
   throw Error("unknown scene key");
 }
-std::vector<Region> World::regions() const {
+std::vector<Region> World::regions(V3 focus) const {
+  need(focus.valid(),"invalid scene focus");
   const auto& w=idle();std::vector<Region> out;out.reserve(kMaxRegions);
   std::array<std::array<int,3>,kMaxRegions> cells{};
+  std::array<float,kMaxRegions> scores{};
   for(const auto& p:w.pieces)if(p.id) {
     const auto* b=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p.body);
     const auto c=vec(b->GetPosition());const std::array<int,3> key{int(std::floor(c.x/512)),int(std::floor(c.y/512)),int(std::floor(c.z/512))};
     std::size_t index=0;while(index<out.size() && cells[index]!=key)++index;
+    const V3 delta{(key[0]+.5f)*512-focus.x,(key[1]+.5f)*512-focus.y,(key[2]+.5f)*512-focus.z};
+    const auto score=delta.dot(delta);bool replace=false;
+    if(index==kMaxRegions) {
+      const auto furthest=std::max_element(scores.begin(),scores.end());
+      if(score>=*furthest)continue;
+      index=static_cast<std::size_t>(furthest-scores.begin());replace=true;
+    }
     const auto bounds=b->GetWorldSpaceBounds();const auto lo=vec(bounds.mMin)-V3{96,96,96},hi=vec(bounds.mMax)+V3{96,96,96};
-    if(index==out.size()) { if(index==kMaxRegions)continue;cells[index]=key;out.push_back({lo,hi}); }
+    if(replace) { cells[index]=key;scores[index]=score;out[index]={lo,hi}; }
+    else if(index==out.size()) { cells[index]=key;scores[index]=score;out.push_back({lo,hi}); }
     else {
       auto& r=out[index];r.minimum={std::min(r.minimum.x,lo.x),std::min(r.minimum.y,lo.y),std::min(r.minimum.z,lo.z)};
       r.maximum={std::max(r.maximum.x,hi.x),std::max(r.maximum.y,hi.y),std::max(r.maximum.z,hi.z)};
     }
   }
+  std::sort(out.begin(),out.end(),[focus](const Region& a,const Region& b) {
+    const auto da=(a.minimum+a.maximum)*.5f-focus,db=(b.minimum+b.maximum)*.5f-focus;
+    return da.dot(da)<db.dot(db);
+  });
   return out;
 }
 std::vector<DamageEvent> World::take_damage() {

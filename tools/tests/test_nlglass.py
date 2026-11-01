@@ -143,6 +143,9 @@ class EngineTests(unittest.TestCase):
     def test_tool_permissions_settings_translations_admin_route_and_reset(self):
         self.run_case('tool_menu')
 
+    def test_actual_pane_break_registers_bullet_interest_but_weak_hits_do_not(self):
+        self.run_case('debris_interest')
+
     def test_rotated_irregular_brush_material_and_restored_output_ownership(self):
         self.run_case('geometry')
 

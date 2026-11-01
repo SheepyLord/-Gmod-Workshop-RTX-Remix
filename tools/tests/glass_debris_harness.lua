@@ -102,7 +102,7 @@ end
 function GetConVar(name) return convars[name] end
 function RunConsoleCommand(name,value) convars[name].value=tonumber(value) end
 function math.Clamp(value,low,high) return math.max(low,math.min(high,value)) end
-function SysTime() return arg[3]=="renderperf" and wallclock() or clock+workClock end
+function SysTime() return (arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffperf") and wallclock() or clock+workClock end
 function LocalPlayer() return {valid=true,GetEyeTrace=function()return {HitPos=Vector()}end} end
 local function makeapi()
     local n={bodies={},next=0,imports=0,clears=0,models=0,props=0}
@@ -133,9 +133,9 @@ local function makeapi()
     function n.BeginFinishWorld() return true end
     function n.PollFinishWorld() return true end
     function n.FinishWorld() return true end
-    function n.Spawn(_,pos,angles)
+    function n.Spawn(_,pos,angles,velocity,spin,minimum)
         check(not n.running,"spawn never touches in-flight world")
-        n.next=n.next+1;n.bodies[n.next]={position=pos,angles=angles,asleep=false,dirty=true};return n.next
+        n.next=n.next+1;n.bodies[n.next]={position=pos,angles=angles,asleep=false,dirty=true,minimum=minimum};return n.next
     end
     function n.Remove(id) check(not n.running,"remove never touches in-flight world");n.bodies[id]=nil;return true end
     function n.Clear() n.running=false;n.bodies={};n.clears=n.clears+1;return true end
@@ -174,6 +174,40 @@ local function makeapi()
         for _,b in pairs(n.bodies)do b.asleep,b.dirty=false,true end;n.impulses=(n.impulses or 0)+1;return true
     end
     function n.Stats(out) out.live=0;for _ in pairs(n.bodies)do out.live=out.live+1 end;return true end
+    if mode=="interaction" or mode=="interactionperf" then
+        function n.SetInteraction(value)
+            check(not n.running,"interaction changes only between worker steps");n.interaction=value
+            if not value then n.damage=nil;n.scene={} end
+            return true
+        end
+        function n.ReadRegions() check(not n.running,"interest reads only between steps");return {} end
+        function n.SyncBodies(rows)
+            check(not n.running,"scene snapshots never touch a busy world");n.scene=rows;n.captures=(n.captures or 0)+1;return 0
+        end
+        function n.ReadDamage()
+            check(not n.running,"damage drained after workers join");local out=n.damage;n.damage=nil;return out or false
+        end
+        function n.Ray()
+            check(not n.running,"ray only between steps");n.rays=(n.rays or 0)+1
+            local id=next(n.bodies)
+            if id then n.bodies[id].asleep,n.bodies[id].dirty=false,true end
+            return id or 0
+        end
+        function n.CanSplit(id) return not n.refuseSplit and n.bodies[id] and not n.bodies[id].leaf end
+        function n.Split(id,minimum)
+            check(not n.running and minimum>=4,"split only between steps with a minimum-size floor")
+            if not n.CanSplit(id) then return false end
+            local parent=n.bodies[id];n.bodies[id]=nil;n.splits=(n.splits or 0)+1
+            local out={}
+            for _,dx in ipairs({-8,8})do
+                n.next=n.next+1;local pos=parent.position+Vector(dx,0,0)
+                n.bodies[n.next]={position=pos,angles=parent.angles,asleep=false,dirty=true,leaf=true}
+                out[#out+1]={id=n.next,poly={{-8,-16},{8,-16},{8,16},{-8,16}},thickness=.3,
+                    position={pos.x,pos.y,pos.z},angles={parent.angles.p,parent.angles.y,parent.angles.r},velocity={400,0,0},spin={0,0,30}}
+            end
+            return out
+        end
+    end
     return n
 end
 local function setup(which)
@@ -226,9 +260,10 @@ if arg[3]=="perf" then
         D.Count(),spawned,active,settled,s.merged,s.batches))
     D.Shutdown();return
 end
-if arg[3]=="renderperf" then
+if arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffperf" then
     -- Same manager, mock physics and camera for before/after comparisons. No engine/GPU timings.
-    local D=setup("jolt");set("budget",2000);set("lifetime",0)
+    local D=setup(arg[3]~="renderperf" and "interactionperf" or "jolt");set("budget",2000);set("lifetime",0)
+    if arg[3]=="interactionoffperf" then set("interact",0) end
     for i=0,49 do
         D.Spawn({origin=Vector(128+(i%10)*72,128+math.floor(i/10)*72,32),angles=Angle(),material=frame.material},fragments(40))
     end
@@ -263,6 +298,82 @@ if arg[3]=="renderperf" then
     end
     bench("moving_culled",240)
     D.Shutdown();return
+end
+if arg[3] and arg[3]:match("^interaction_") then
+    local function big(n)
+        local t=fragments(n)
+        for _,f in ipairs(t)do f.poly={{-16,-16},{16,-16},{16,16},{-16,16}} end
+        return t
+    end
+    local D=setup("interaction");set("budget",8);set("lifetime",0);D.Spawn(frame,big(4))
+    for _=1,6 do tick()end
+    check(D.Stats().interaction and D.Stats().interaction_available,"new module enables the local default")
+    if arg[3]=="interaction_manager" then
+        api.damage={{1,180000,1},{2,180000,2},{3,180000,4},{4,180000,8}}
+        tick();check(api.splits==1 and D.Count()==5 and D.Stats().damage_pending==3,"one replacement per frame under burst damage")
+        for _=1,5 do tick()end
+        local s=D.Stats()
+        check(api.splits==4 and D.Count()==8 and s.damage_pending==0,"bounded queue eventually services all original parents")
+        check(s.splits_bullet==1 and s.splits_blast==1 and s.splits_body==1 and s.splits_fall==1,"all damage causes reach render replacements")
+        check(not api.bodies[1] and not api.bodies[4],"removed parent ids never alias descendants")
+        draw();D.Clear();check(D.Count()==0 and not next(api.bodies),"cleanup removes adopted native children and their render meshes")
+    elseif arg[3]=="interaction_budget" then
+        D.Clear();set("budget",3);D.Spawn(frame,big(3));for _=1,3 do tick()end
+        local oldestID=api.next-2;local retained=api.next-1;local target=api.next
+        api.damage={{target,180000,1}};tick()
+        check(D.Count()==3 and not api.bodies[oldestID] and api.bodies[retained],"follow-up split keeps the budget and evicts the oldest first")
+        local before=D.Count();api.refuseSplit=true;api.damage={{retained,180000,1}};tick()
+        check(D.Count()==before and api.bodies[retained],"a minimum-size refusal cannot evict other glass")
+        D.Clear();D.Spawn(frame,big(3));for _=1,3 do tick()end
+        oldestID=api.next-2;retained=api.next;local nextOldest=api.next-1
+        api.refuseSplit=false;api.damage={{oldestID,180000,1}};local splitBefore=api.splits;tick()
+        check(D.Count()==3 and api.splits==splitBefore+1 and not api.bodies[nextOldest] and api.bodies[retained],
+            "the oldest damaged parent is replaced, evicting the oldest remaining piece")
+        set("budget",1);tick();local id=next(api.bodies);api.refuseSplit=false;api.damage={{id,180000,1}};tick()
+        check(D.Count()==1 and api.bodies[id],"a one-piece budget still permits motion without deleting a struck piece")
+    elseif arg[3]=="interaction_lifetime" then
+        D.Clear();set("budget",8);set("lifetime",5);D.Spawn(frame,big(1));for _=1,3 do tick()end
+        local parent=api.next
+        tick(2);D.Spawn(frame,big(1));tick();local newer=api.next
+        api.damage={{parent,180000,1}};tick();check(D.Count()==3,"split produces two descendants beside newer ordinary glass")
+        tick(3.05);check(D.Count()==1 and api.bodies[newer],"descendants expire at their original parent's deadline despite newer insertion order")
+        D.Clear();set("lifetime",5);D.Spawn(frame,big(1));for _=1,3 do tick()end
+        parent=api.next;tick(2);api.damage={{parent,180000,1}};tick()
+        set("lifetime",8);tick(3.1);check(D.Count()==2,"lengthening lifetime rebuilds descendant deadlines")
+        tick(3.1);check(D.Count()==0,"extended original deadline eventually expires both descendants")
+    elseif arg[3]=="interaction_off" then
+        api.delayStep=1;tick();D.Ray(Vector(-10,0,20),Vector(100,0,20),15)
+        local before=api.rays or 0
+        set("interact",0);tick();tick();tick()
+        check(not api.interaction and (api.rays or 0)==before and D.Stats().ray_pending==0,"off waits for a worker boundary and discards queued interaction")
+        local captures=api.captures or 0
+        D.Impulse(Vector(10,10,20),64,400);for _=1,4 do tick()end
+        check(api.impulses==1 and (api.captures or 0)==captures,"off preserves G1 blast pushes without Source capture")
+        set("interact",1);for _=1,4 do tick()end;check(api.interaction,"per-player setting can re-enable interaction")
+    elseif arg[3]=="interaction_rays" then
+        for _=1,40 do D.Ray(Vector(-10,0,20),Vector(100,0,20),15)end
+        check(D.Stats().ray_pending==32 and D.Stats().rays_dropped==8,"client ray queue bound retains newest messages")
+        tick();check(api.rays==8 and D.Stats().ray_pending==24,"at most eight raycasts per frame")
+        tick(1);check(api.rays==8,"expired cosmetic rays are discarded")
+        D.Ray(Vector(0/0,0,0),Vector(),15);D.Ray(Vector(),Vector(),-1)
+        check(D.Stats().ray_pending<=16,"malformed input never grows the ray queue")
+    elseif arg[3]=="interaction_qa" then
+        local receivers, commands, timers = {}, {}, {}
+        local text, at = "slab", Vector(50,50,10)
+        net={Receive=function(name,fn)receivers[name]=fn end,ReadString=function()return text end,
+            ReadVector=function()return at end,ReadAngle=function()return Angle()end,ReadFloat=function()return .1 end}
+        timer={Simple=function(_,fn)timers[#timers+1]=fn end}
+        concommand={Add=function(name,fn)commands[name]=fn end}
+        dofile("tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua")
+        receivers.nlglass_qa_fixture();check(D.Count()==1,"QA fixture goes through the real public Spawn/Clear path")
+        for _=1,3 do tick()end
+        text="qa_probe";receivers.nlglass_qa_view()
+        for _,fn in ipairs(timers)do fn()end
+        check(commands.nl_shot_taken~=nil,"QA screenshot reply remains registered")
+        D.Clear();local f=big(1);f[1].minimum_size=16;D.Spawn(frame,f)
+        check(api.bodies[api.next].minimum==16,"API minimum-size metadata reaches the native Spawn boundary")
+    else error("unknown manager interaction case") end
+    D.Shutdown();print("interaction manager "..arg[3].." OK ("..checks.." assertions)");return
 end
 local D=setup("jolt")
 set("budget",3);D.Spawn(frame,fragments(3));check(D.Count()==3 and D.Stats().pending==3,"pending import queues bounded pieces")

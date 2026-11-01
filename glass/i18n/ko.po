@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:81
+#: addon/lua/nlglass/menu.lua:83
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "일반 유리"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:81
+#: addon/lua/nlglass/menu.lua:83
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "강화 유리"
@@ -83,16 +83,24 @@ msgid "Pieces collide with each other"
 msgstr "파편끼리 충돌"
 
 #: addon/lua/nlglass/menu.lua:62
+msgid "Bodies and damage affect broken pieces"
+msgstr "물체와 피해가 유리 파편에 영향"
+
+#: addon/lua/nlglass/menu.lua:63
+msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
+msgstr "플레이어, 소품, 총알, 폭발 및 낙하로 유리 파편이 움직이거나 부서집니다. 유리 파편은 물체를 밀어내지 않습니다."
+
+#: addon/lua/nlglass/menu.lua:64
 msgid "Reset to Defaults"
 msgstr "기본값으로 초기화"
 
-#: addon/lua/nlglass/menu.lua:73
-#: addon/lua/nlglass/menu.lua:76
+#: addon/lua/nlglass/menu.lua:75
 #: addon/lua/nlglass/menu.lua:78
+#: addon/lua/nlglass/menu.lua:80
 msgid "Glass settings"
 msgstr "유리 설정"
 
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:82
 msgid "Glass pane"
 msgstr "유리판"
 

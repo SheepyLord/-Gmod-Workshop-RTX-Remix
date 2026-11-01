@@ -46,8 +46,8 @@ triangle meshes: columns run toward corner 3, rows toward corner 1. REMOVE-tagge
 (bit 5) are omitted; SURFACE bit 0 is not required (gm_construct sets it on no triangles).
 `sprp` versions 4-11 return solid model
 instances, including v11 uniform scale; Lua supplies each unique model's collision convexes.
-Models with no client collision are skipped. Moving props, players, dynamic brush entities and
-other gameplay bodies never enter this world. Unknown/malformed collision data leaves an empty
+Models with no client collision are skipped. The static import contains no moving props, players
+or other gameplay bodies. Unknown/malformed collision data leaves an empty
 unready world; the manager logs once and chooses fallback.
 
 R7-C extends the world with read-only Source snapshots under [ADR 0082](../../docs/decisions/0082-glass-one-way-interaction.md).
@@ -76,7 +76,7 @@ ignores piece-piece damage, rejects minimum-size pieces early and records only h
 | `SetCollide`, `SetGravity` | `(boolean)` / `(Source units/s²)` -> true; wake pieces when changed |
 | `SetInteraction` | `(boolean)` -> true; enables contact damage/mirrors, or removes both and clears damage |
 | `SyncBodies` | `(rows, sampleDt)` -> number moving/new; each row `{key, position, angles, halfExtents, mass, optionalConvexes, velocity}`; 96 rows, 2 new shapes/snapshot, 8 convexes/512 points per shape |
-| `ReadRegions` | `()` -> at most 32 `{minimum, maximum}` arrays around live glass; no regions when empty |
+| `ReadRegions` | `(optionalFocus)` -> at most 32 `{minimum, maximum}` arrays around live glass, prioritizing cells closest to the viewer; no regions when empty |
 | `Ray` | `(from, to, energy, kickSpeed)` -> nearest piece id or 0; endpoints must already be Source-clipped |
 | `ReadDamage` | `()` -> false when empty, else up to 64 `{pieceId, energy, causeBits}`; drains safely between steps |
 | `CanSplit`, `Split` | `(pieceId, minimumSize)` -> boolean / false or two `{id, poly, thickness, position, angles, velocity, spin}` fragments replacing the parent |

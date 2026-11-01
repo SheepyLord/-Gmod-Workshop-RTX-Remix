@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:81
+#: addon/lua/nlglass/menu.lua:83
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "Обычное стекло"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:81
+#: addon/lua/nlglass/menu.lua:83
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "Закалённое стекло"
@@ -83,16 +83,24 @@ msgid "Pieces collide with each other"
 msgstr "Столкновения между осколками"
 
 #: addon/lua/nlglass/menu.lua:62
+msgid "Bodies and damage affect broken pieces"
+msgstr "Тела и урон воздействуют на осколки"
+
+#: addon/lua/nlglass/menu.lua:63
+msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
+msgstr "Игроки, предметы, пули, взрывы и падения сдвигают или разбивают ваши осколки. Стекло не толкает тела в ответ."
+
+#: addon/lua/nlglass/menu.lua:64
 msgid "Reset to Defaults"
 msgstr "Восстановить настройки"
 
-#: addon/lua/nlglass/menu.lua:73
-#: addon/lua/nlglass/menu.lua:76
+#: addon/lua/nlglass/menu.lua:75
 #: addon/lua/nlglass/menu.lua:78
+#: addon/lua/nlglass/menu.lua:80
 msgid "Glass settings"
 msgstr "Настройки стекла"
 
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:82
 msgid "Glass pane"
 msgstr "Стеклянная панель"
 

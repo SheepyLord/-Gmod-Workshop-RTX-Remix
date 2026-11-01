@@ -159,7 +159,8 @@ LUA_FUNCTION_STATIC(SyncBodies) { return guarded(LUA,[&] {
   LUA->PushNumber(w.sync_bodies(bodies,dt));return 1;
 }); }
 LUA_FUNCTION_STATIC(ReadRegions) { return guarded(LUA,[&] {
-  const auto regions=active(LUA).regions();LUA->CreateTable();unsigned i=0;
+  const auto focus=LUA->Top()?vector(LUA,1,kCoordinateLimit):V3{};
+  const auto regions=active(LUA).regions(focus);LUA->CreateTable();unsigned i=0;
   for(const auto& r:regions) {
     LUA->CreateTable();push_vector(LUA,r.minimum);set(LUA,-2,1);push_vector(LUA,r.maximum);set(LUA,-2,2);set(LUA,-2,++i);
   }

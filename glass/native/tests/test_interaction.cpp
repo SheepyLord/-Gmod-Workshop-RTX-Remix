@@ -40,7 +40,7 @@ TEST_CASE("glass convex bisection preserves area thickness and minimum size over
   CHECK(split_polygon(outline_xy(fixture::box(32,1)),4)[0].empty());
 }
 TEST_CASE("glass Source mirrors push sleeping pieces but never yield to them") {
-  World w(8,0);ready(w);w.set_interaction(true);
+  World w(8,0);ready(w);w.set_interaction(true);w.set_collide(false);
   const auto id=w.spawn(fixture::box(8,8,1),{0,0,32},{},{},{});
   for(unsigned i=0;i<40;++i)w.step(1.0/60);REQUIRE(w.sleeping(id));(void)w.poses();
   auto body=mirror(19,{-40,0,32});w.sync_bodies({body},1.0/60);
@@ -66,6 +66,23 @@ TEST_CASE("glass moving Source body generates follow-up damage and teleports do 
   const auto events=w.take_damage();REQUIRE(!events.empty());CHECK(events[0].kinds&SourceBody);CHECK(events[0].energy>=12000);
   body.position={800,0,32};CHECK(w.sync_bodies({body},1.0/60)==0);
   CHECK((w.scene_pose(1).position-body.position).length()<.001f);
+}
+TEST_CASE("glass walking hull moves a thin floor piece without lifting or slowing the Source mirror") {
+  for(float half:{16.0f,4.0f}) {
+    World w(8);ready(w);w.set_interaction(true);
+    const auto id=w.spawn(fixture::box(half,half,.25f),{0,0,2},{},{},{},8);
+    for(unsigned i=0;i<180;++i)w.step(1.0/60);REQUIRE(w.sleeping(id));(void)w.poses();
+    // Same 8-unit sole skirt as capture: Source feet stay at z=0, mirror bottom at -8.
+    auto actor=mirror(7,{-80,0,32});actor.half={16,16,40};actor.velocity={200,0,0};
+    bool contact=false,moved=false;
+    for(unsigned i=0;i<50;++i) {
+      actor.position.x=-80+float(i)*200/60;w.sync_bodies({actor},1.0/60);w.step(1.0/60);
+      CHECK((w.scene_pose(7).position-actor.position).length()<.001f);
+      for(const auto& hit:w.take_damage())if(hit.id==id && (hit.kinds&SourceBody))contact=true;
+      for(const auto& pose:w.poses())if(pose.id==id && std::abs(pose.position.x)>2)moved=true;
+    }
+    CHECK(moved);CHECK(contact==(half>4));CHECK(w.stats().live==1);
+  }
 }
 TEST_CASE("glass falls blasts and bullets deliver bounded deduplicated damage events") {
   World w(128);ready(w);w.set_interaction(true);
@@ -120,6 +137,9 @@ TEST_CASE("glass piece interest regions exclude an empty world and remain capped
   for(unsigned i=0;i<64;++i)w.spawn(fixture::box(),{float(i)*1000,0,32},{},{},{});
   const auto regions=w.regions();CHECK(regions.size()==kMaxRegions);
   for(const auto& r:regions)CHECK(r.maximum.x-r.minimum.x<210);
+  const auto nearby=w.regions({63000,0,32});bool last=false,first=false;
+  for(const auto& r:nearby) { if(r.minimum.x<63000 && r.maximum.x>63000)last=true;if(r.minimum.x<0 && r.maximum.x>0)first=true; }
+  CHECK(last);CHECK(!first); // Distant old glass cannot starve the player's current pile.
 }
 TEST_CASE("glass interaction benchmark bounds scene capture raycasts and dormant floor contacts") {
   for(bool enabled:{false,true}) {
@@ -131,12 +151,31 @@ TEST_CASE("glass interaction benchmark bounds scene capture raycasts and dormant
     if(!enabled)continue;
     std::vector<SceneBody> scene;
     for(unsigned i=0;i<kMaxSceneBodies;++i)scene.push_back(mirror(i+1,{float(i%16)*24-200,float(i/16)*40-120,64}));
+    const auto cold=std::chrono::steady_clock::now();w.sync_bodies(scene,1.0/60);const double cold_ms=ms(cold);
     const auto begin=std::chrono::steady_clock::now();
     for(unsigned i=0;i<120;++i) { (void)w.regions();w.sync_bodies(scene,1.0/60); }
     const double scene_ms=ms(begin)/120;
     const auto rays=std::chrono::steady_clock::now();
     for(unsigned i=0;i<640;++i)(void)w.ray({-600,float(i%25)*12-150,2},{600,float(i%25)*12-150,2},180000,300);
-    std::cout<<"R7-C bounds bodies="<<scene.size()<<" regions_sync_mean_ms="<<scene_ms<<" ray_mean_ms="<<ms(rays)/640<<'\n';
+    const double ray_ms=ms(rays)/640;
+    Hull rounded;
+    for(unsigned i=0;i<64;++i) {
+      const double a=i*6.283185307179586/64;
+      rounded.push_back({float(4*std::cos(a)),float(4*std::sin(a)),i%2?4.0f:-4.0f});
+    }
+    scene[0].convexes=scene[1].convexes=std::vector<Hull>(8,rounded);
+    const auto cook=std::chrono::steady_clock::now();w.sync_bodies(scene,1.0/60);const double cook_ms=ms(cook);
+    std::cout<<"R7-C bounds bodies="<<scene.size()<<" cold_boxes_ms="<<cold_ms<<" regions_sync_mean_ms="<<scene_ms
+      <<" ray_mean_ms="<<ray_ms<<" two_512_point_shapes_ms="<<cook_ms<<'\n';
     CHECK(w.stats().scene_bodies==kMaxSceneBodies);CHECK(w.stats().live==2000);
   }
+  World w(8,0);ready(w);std::vector<double> times;double total=0;
+  for(unsigned i=0;i<120;++i) {
+    const auto id=w.spawn(fixture::box(16,12,.5f),{0,0,32},{},{400,0,0},{0,0,180},8);
+    const auto begin=std::chrono::steady_clock::now();CHECK(w.can_split(id,8));const auto parts=w.split(id,8);
+    const auto elapsed=ms(begin);total+=elapsed;times.push_back(elapsed);
+    REQUIRE(parts.size()==2);for(const auto& child:parts)w.remove(child.id);
+  }
+  std::sort(times.begin(),times.end());
+  std::cout<<"R7-C split can+replace mean_ms="<<total/times.size()<<" p99_ms="<<times[118]<<" max_ms="<<times.back()<<'\n';
 }

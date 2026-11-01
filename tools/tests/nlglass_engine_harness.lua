@@ -470,6 +470,17 @@ elseif scenario=="collision_failure" then
     local ent=newEntity("nlglass_pane") ent.failPhysics=true ent:Spawn()
     check(not valid(ent) and ent.notSolid,"failed collision never leaves a placeholder blocker")
     network(cl,1) check(#cl.debris==1 and #cl.debris[1].pieces>0,"collision failure becomes a full break with pieces")
+elseif scenario=="debris_interest" then
+    local marked={}
+    sv.NLGlass.Bullets={Mark=function(origin,radius)marked[#marked+1]={origin,radius}end}
+    local ent,r=pane()
+    S.Impact(r,D.FromDamage(r,damage(sv.DMG_BULLET,1)))
+    check(#marked==0,"weak pane impacts do not register bullet interest")
+    S.Impact(r,D.Fallback(r),true)
+    check(#marked==1 and marked[1][2]>=768 and marked[1][2]<=2048,"a real pane breakout registers bounded debris bullet interest")
+    cl.GetConVar("rtx_glass_piece_size").value="64" network(cl)
+    check(#cl.debris>0 and cl.debris[#cl.debris].pieces[1].minimum_size==r.state.def.piece_size,
+        "follow-up size floor comes from the pane, even after the global setting changes")
 elseif scenario=="tool_menu" then
     sv.TOOL={} sv.include("weapons/gmod_tool/stools/procedural_glass_tool.lua") local tool=sv.TOOL
     local owner=newEntity("player",{flags={player=true},admin=true})
@@ -489,7 +500,8 @@ elseif scenario=="tool_menu" then
     for _,lang in ipairs({"zh-CN","zh-TW","ja","ko","fr","ru"}) do
         cl.CreateConVar("gmod_language",lang)
         check(cl.NLGlass.I18n.L("Glass strength")~="Glass strength","translated menu "..lang)
-        local panel=cl.panel() cl.NLGlass.BuildSettings(panel) check(#panel.controls==12,"complete settings page")
+        local panel=cl.panel() cl.NLGlass.BuildSettings(panel) check(#panel.controls==13,"complete settings page")
+        check(panel.controls[12].cvar=="rtx_glass_debris_interact" and panel.controls[12].label~="Bodies and damage affect broken pieces","translated local interaction checkbox "..lang)
     end
     local function settingPacket(index,value)
         cl.net.Start("nlglass_setting") cl.net.WriteUInt(index,4) cl.net.WriteString(value) cl.net.SendToServer()
@@ -504,10 +516,17 @@ elseif scenario=="tool_menu" then
     cl.out={}
     local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     panel.controls[3].OnValueChanged(panel.controls[3],7)
-    panel.controls[12].DoClick() cl.flush()
+    panel.controls[13].DoClick() cl.flush()
+    check(cl.GetConVar("rtx_glass_debris_interact"):GetInt()==1,"reset restores local interaction default")
     local changes=0
     for _,packet in ipairs(cl.out) do if packet.name=="nlglass_setting" then changes=changes+1 sv.deliver(packet,owner) end end
     check(changes==1 and panel.controls[3].value==1 and panel.controls[1].selected==1,"reset cancels queued edits and refreshes controls")
+    cl.player=outsider
+    local localPanel=cl.panel() cl.NLGlass.BuildSettings(localPanel)
+    cl.RunConsoleCommand("rtx_glass_debris_interact","0") local before=#cl.out
+    localPanel.controls[13].DoClick() cl.flush()
+    check(cl.GetConVar("rtx_glass_debris_interact"):GetInt()==1 and #cl.out==before,
+        "non-admin resets only their local interaction setting without a server request")
 elseif scenario=="body_contact" then
     local ent,r=pane()
     local body=newEntity("player",{pos=Vector(0,0,16),velocity=Vector(0,0,400),flags={player=true}})
@@ -684,7 +703,7 @@ elseif scenario=="walk_run" then
     end
     cl.player=ply local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[7].value==250,"menu displays the shared default")
-    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[12].DoClick()
+    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[13].DoClick()
     sv.deliver(cl.out[#cl.out],ply)
     check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250 and panel.controls[7].value==250,"Reset to Defaults restores 250 in server and menu")
 elseif scenario=="settings_migration" then

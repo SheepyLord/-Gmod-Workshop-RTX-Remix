@@ -51,7 +51,7 @@ public:
   void set_gravity(float gravity);
   void set_interaction(bool enabled);
   unsigned sync_bodies(const std::vector<SceneBody>& bodies,double sample_dt);
-  std::vector<Region> regions() const;
+  std::vector<Region> regions(V3 focus={}) const;
   std::vector<DamageEvent> take_damage();
   std::uint32_t ray(V3 from,V3 to,float energy,float speed);
   std::vector<Fragment> split(std::uint32_t id,float minimum_size);
