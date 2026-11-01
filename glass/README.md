@@ -141,6 +141,7 @@ convars. Omit script `.lua.md` sidecars when assembling the add-on payload. G1-A
 NLGlassDebris.Spawn(frame, pieces)
 NLGlassDebris.Impulse(origin, radius, speed)
 NLGlassDebris.Clear()
+NLGlassDebris.Prepare() -- integration: called when the client first learns of a pane
 ```
 
 The original breakable surface brushes remain as hidden, non-solid logic entities. The debris

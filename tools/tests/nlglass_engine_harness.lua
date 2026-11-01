@@ -45,7 +45,11 @@ local function realm(server)
         if pattern=="nlglass/world*.lua" then return {"world.lua","world_cache.lua"} end
         return {}
     end
-    function e.include(path) return assert(setfenv(assert(loadfile(root.."/"..path)),e))() end
+    function e.include(path)
+        -- G1-B's manager has its own harness (glass_debris_harness.lua); here the public-API stub stands in.
+        if path:match("^nlglass/debris") or path:match("^nlglass/world") then return nil end
+        return assert(setfenv(assert(loadfile(root.."/"..path)),e))()
+    end
     e.sentFiles={}
     function e.AddCSLuaFile(path) e.sentFiles[#e.sentFiles+1]=path end
     local function convar(name,value)
@@ -155,7 +159,8 @@ local function realm(server)
     e.debris={} e.impulses={} e.clears=0
     e.NLGlassDebris=setmetatable({Spawn=function(frame,pieces) e.debris[#e.debris+1]={frame=frame,pieces=pieces} end,
         Impulse=function(o,r,s) e.impulses[#e.impulses+1]={o,r,s} end,Clear=function() e.clears=e.clears+1 end,
-        Count=function() return #e.debris end,Backend=function() return "none" end},
+        Count=function() return #e.debris end,Backend=function() return "none" end,
+        Prepare=function() e.prepares=(e.prepares or 0)+1 end},
         {__index=function(_,key) error("private debris API accessed: "..key) end})
     return e
 end

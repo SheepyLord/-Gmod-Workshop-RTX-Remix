@@ -1,0 +1,26 @@
+{
+ "schema": 1,
+ "part": "glass",
+ "origins": {
+  "bin/gmcl_nlglass_win64.dll": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\g1-int\\out\\build\\win64-release\\glass\\native\\gmcl_nlglass_win64.dll",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/g1-int",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "cbd73dc9a7b043ef402525646d4fc1cad4eb2403",
+    "dirty": false
+   },
+   "imported": "2026-11-01T07:16:02+00:00"
+  }
+ },
+ "files": {
+  "bin/gmcl_nlglass_win64.dll": {
+   "size": 1355776,
+   "sha256": "fe1d6cc9e878bb57a2311686c7063d305c5c95dbbcbf6af347622d0d0a9b4b4a",
+   "mtime_ns": 1793517299009498700,
+   "stored": "xz",
+   "stored_size": 497032,
+   "stored_sha256": "b6d6da6ca66adb009f52c0cdcad00126b99c3b8ae491e7b532037ee9ea190060"
+  }
+ }
+}

@@ -165,6 +165,26 @@
         "mmd_vmd_npc/LICENSE",
         "packages/character-motion-importer/LICENSE"
       ]
+    },
+    {
+      "name": "glass",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "rtx-glass",
+        "--requires-remix",
+        "--addon-as",
+        "nlglass",
+        "glass/addon",
+        "--add-to-addon",
+        "nlglass/LICENSE",
+        "glass/addon/LICENSE",
+        "--add-to-addon",
+        "nlglass/licenses/jolt/LICENSE",
+        "third_party/jolt/LICENSE",
+        "--lua-bin",
+        "out/inputs/glass/bin/gmcl_nlglass_win64.dll"
+      ]
     }
   ],
   "gmpublish": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_PoC\\bin\\win64\\gmpublish.exe"

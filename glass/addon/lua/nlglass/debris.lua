@@ -163,6 +163,12 @@ function D.Spawn(frame, fragments)
         end
     end
 end
+-- Start the map import ahead of the first break (a map with glass, a spawned pane), so the first
+-- pieces do not wait for the world while the player looks at them.
+function D.Prepare()
+    if stopped or budget:GetInt() <= 0 then return end
+    ensure()
+end
 function D.Impulse(origin, radius, speed)
     if stopped or not validVector(origin, 131072) or not isnumber(radius) or not isnumber(speed) or radius ~= radius or speed ~= speed or
         radius <= 0 or radius > 131072 or speed < 0 or speed > 100000 then return end
@@ -269,7 +275,8 @@ hook.Add("PostDrawTranslucentRenderables", "NLGlass.Debris", function(depth, sky
         for _, mesh in ipairs(area.meshes) do mesh:Draw() end
     end
     for _, p in pairs(pieces) do
-        if not p.pending and not (p.area and p.area.included[p.id]) then
+        -- A piece still waiting for the map import is drawn where it broke off, so it never vanishes.
+        if not (p.area and p.area.included[p.id]) then
             render.SetMaterial(p.material);geometry.Draw(p, p.shrink or 1)
         end
     end

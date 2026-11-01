@@ -42,6 +42,7 @@ tools\workflow.ps1 -Package                    # the same after the Release chec
 | `advanced-bodygroup-tool` | `!advanced_bodygroup_tool\` | `ipg\!advanced_bodygroup_tool` | - |
 | `procedural-bodygroup-destruction` | `!gmod_bullet_break_simulator\` | `SheepyLord/-gmod_bullet_break_simulator` | - |
 | `character-motion-importer` | `mmd_vmd_npc\` | `SheepyLord/Gmod-Mmd-Motion-Importer` | MIT (`LICENSE`) |
+| `glass` | `bin\gmcl_nlglass_win64.dll`, the broken-glass Jolt module; the add-on itself is read from `glass/addon` ([README](glass/README.md)) | `out\build\win64-release\glass\native` (this repository) | MIT; Jolt Physics MIT (`third_party/jolt`) |
 
 Only the files a part's package holds are stored, plus the few its packager reads without shipping
 them (`autoexec.cfg`; the file `--addon-file` replaces): the add-ons' repositories hold gigabytes of

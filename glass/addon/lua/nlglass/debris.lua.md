@@ -4,6 +4,9 @@ Client module included by G1-A's client initializer. Defines `NLGlassDebris` wit
 
 - `Spawn(frame, pieces)`: frame origin/angles/material/optional color, convex CCW pane-local
   polygons, thickness, world velocity and world spin (degrees/s); keeps the newest within budget.
+- `Prepare()`: starts the map import ahead of the first break (G1-A's client calls it when it learns
+  of a pane, so the world is usually ready before anything breaks). Pieces that arrive while the import
+  still runs are drawn where they broke off until physics takes them.
 - `Impulse(origin, radius, speed)`: radial, linearly attenuated velocity kick; wakes and unbatches.
 - `Clear()`, `Count()`, `Backend()` (`jolt`, `vphysics`, `none`). Cleanup keeps map collision cached.
 - `Stats()` is a QA extension returning a reused table with live/moving/sleeping/pending/merged counts,

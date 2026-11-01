@@ -125,6 +125,7 @@ code calls only this:
 NLGlassDebris.Spawn(frame, pieces)
 NLGlassDebris.Impulse(origin, radius, speed) -- an explosion: pieces within radius pushed away, up to speed
 NLGlassDebris.Clear()                        -- map cleanup
+NLGlassDebris.Prepare()                      -- integration: import the map before the first break
 NLGlassDebris.Count()                        -- live pieces
 NLGlassDebris.Backend()                      -- "jolt", "vphysics" (fallback) or "none"
 ```

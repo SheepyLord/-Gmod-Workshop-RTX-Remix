@@ -60,6 +60,8 @@ function V.Store(r)
     local old=V.records[r.id]
     if old then destroy(old) end
     V.records[r.id]=r V.Build(r)
+    -- A map or session with glass: have the broken-glass world ready before the first break.
+    if NLGlassDebris and NLGlassDebris.Prepare then NLGlassDebris.Prepare() end
     return r
 end
 local function sync()
