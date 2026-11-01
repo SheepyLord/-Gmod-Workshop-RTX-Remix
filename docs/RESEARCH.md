@@ -18,6 +18,16 @@ world-mesh reconstruction and shared light-metatable edits remain concrete capab
 [ADR 0086](decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md) makes the incompatible
 work inert with real engine-backed fallbacks; it does not claim native/GPU fault recovery.
 
+R8-C final offline checks pass 26 CTests and 488 Python tests (two existing symlink skips), with
+40 guard methods/43 LuaJIT invocations including 18 new replay cases. Repeated GShader light
+acquisition needs readback of its private metatable edits; returning a fresh native-table clone
+on every call would reset the wrong __index table. The harness checks that readback and simulates
+GLua ITexture type labels. Isolating GShader's native Remove override also requires retiring its exported projector-cache entries
+and rebuilding their indices; the replay removes several lamps in sequence and requires an empty
+cache afterward. No actual game, GPU or third-party Lua was executed. The new policy's
+[harness and QA receipt](handover/R8-C-report.md) explicitly separates these results from the
+original tester crash and foreign-initializer startup gap.
+
 ## R7-B: external exit diagnostics (2026-11-01)
 
 The final text review caught lossy catalog generation through Windows PowerShell 5.1's

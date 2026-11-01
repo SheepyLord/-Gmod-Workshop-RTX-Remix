@@ -1,5 +1,23 @@
 # Testing
 
+## R8-C: non-throwing graphics compatibility (offline, 2026-11-01)
+
+`tools/test.ps1 -Config Release` passes 26 CTests and 488 Python tests (two existing symlink-related
+skips). The combined `test_render_guard*.py` suites have 40 methods/43 LuaJIT invocations, including
+18 new authored API replays for the eight exact Workshop sources. They execute the real guard,
+never third-party add-on Lua or the game. Native-call counters check safe fallbacks, no shader
+load before preflight, no incompatible MRT/depth copies/draws, continued setup, preserved world/
+caller state, private light-metatable readback and repeated projector-cache retirement, normal
+NikNaks/R32F controls, memory quotas,
+GLua ITexture labels, cached remote dispatch, unrelated server errors and guard-off delegation.
+The existing proof, return/identity, cleanup, actual-error quarantine and off tests remain.
+
+Local receipts are `out/r8-compat/release-test.log` and `out/r8-compat/release-final.log`. These are
+CPU contracts, not GPU or native-crash reproduction. Claude's required six-map-load SP add-on
+matrix, two-map listen-server/second-client matrix, transitions, early/late/vanilla-client route
+checks and RTX-off controls are specified with expected outcomes in
+[the report](handover/R8-C-report.md#qa-for-claude-what-each-check-must-show).
+
 ## R7-B: exit observer and read-only previews
 
 Offline acceptance passed: 26 CTests and 455 Python tests (two expected skips), recorded in
