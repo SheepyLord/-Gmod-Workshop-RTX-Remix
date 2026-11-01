@@ -1,5 +1,24 @@
 # Research notes
 
+## G1-B second pass: pile allocation and draw findings (2026-11-01)
+
+- Read-only game receipts: `out/qa-poc/g1/03-qa/console.log:657,660,662` in the main checkout
+  report 678 sleeping pieces/40 batches at 8.71 ms mean, 2,000 live/1,453 moving at 33.83 ms
+  (Jolt 1.5816 ms), then 2,000 sleeping/388 batches at 11.91 ms mean, p99 28.95 ms. These
+  frame spikes cannot be attributed precisely from those aggregate logs alone.
+- Before the second pass, `debris_batches.lua` grouped 256-unit XYZ cells by material **and
+  color**, uploaded at most 6,000 vertices, and `debris_mesh.lua:57` called `LocalToWorld`
+  twice per transformed vertex. A controlled 2,000-quad/50-location LuaJIT sample allocates
+  41,624 KiB while settling, including 288,000 Vector and 144,000 Angle constructions.
+  This is a concrete source of later GC pressure; engine/Remix spikes still need game attribution.
+- Consolidating into offset 1024-unit cells by material, with vertex colors preserved and one
+  shared 24,000-record upload pool, reduces the same sample from 15 to four settled draws and
+  to 14,209 KiB allocated, 47,952 Vector constructions and **zero** Angle constructions while
+  settling. A warmed rebuild allocates no vertex vectors. The color/grid-zero regression puts
+  all 2,000 pieces into four draws in one area. Source-basis position/normal comparisons pass.
+  GPU releases now spread across frames; transforms have count and measured time caps. These
+  measurements use engine/physics doubles, QPC and stopped GC; actual uploads/GPU costs are absent.
+
 ## G1-A client/update fix pass: final offline evidence (2026-11-01)
 
 - Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),

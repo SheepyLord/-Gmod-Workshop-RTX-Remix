@@ -16,3 +16,12 @@ the unused second argument) runs a 4,000-piece mocked-physics CPU benchmark inst
 `luajit tools/tests/glass_debris_harness.lua glass/addon/lua skip perf`. It prints spawn, active and
 settled manager CPU times and final batch counts. It can run against an old copy of the Lua helpers
 for a controlled comparison. This excludes actual Jolt, engine mesh upload and Remix drawing.
+
+Second-pass regressions check pooled transforms against the complete Source basis, tint/alpha
+updates, 2,000 tinted pieces across zero in four consolidated draws, bounded/shared scratch,
+zero new vertex vectors on a warmed rebuild, deferred retirement and complete cleanup.
+`skip renderperf` runs moving/settling/settled samples with 2,000 quads in a 50-pane footprint.
+It uses Windows QueryPerformanceCounter through LuaJIT FFI, stops GC during each 240-frame sample
+to count allocations, and prints manager Think+draw mean/p99/max, allocations, userdata/transform,
+matrix-write/material-call counts and final draw counts. GC restarts after every sample; only
+stdout is written. Timings use mocks and do not establish a game or GPU performance result.

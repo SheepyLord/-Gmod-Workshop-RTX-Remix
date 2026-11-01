@@ -9,7 +9,8 @@ Client module included by G1-A's client initializer. Defines `NLGlassDebris` wit
 - `Impulse(origin, radius, speed)`: radial velocity kick; wakes and unbatches affected pieces.
 - `Clear`, `Count`, `Backend` (`jolt`, `vphysics`, `none`); cleanup keeps the imported map.
 - `Stats`: reused QA counts and native statistics. Adds `worker_busy`, `pose_updates` and
-  `rebuild_vertices` (copy values if retaining a sample).
+  `rebuild_vertices`, `rebuild_ms`, `upload_ms`, `rebuild_pool_vertices` and `retiring_meshes`
+  (copy values if retaining a sample). Upload timing measures the engine call on the client.
 - `Shutdown`: releases all resources; also called before re-inclusion.
 
 Creates archived per-player client convars: `rtx_glass_debris_lifetime` (120 seconds, 0 until

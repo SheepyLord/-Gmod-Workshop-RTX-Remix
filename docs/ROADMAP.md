@@ -1,5 +1,10 @@
 # Roadmap
 
+G1-B's second fix pass is **in progress** on `g1-native-fix2` (2026-11-01). The supplied game
+evidence leaves settled draw count, moving-piece Lua work and manager instrumentation open.
+Consolidated areas/shared vertex scratch and offline regression measurements are implemented;
+moving draw optimization and the full Release gate follow. Claude owns the real-game targets.
+
 G1-A's integration fix pass is **complete offline** on `g1-lua-fix` (2026-11-01): all eleven
 items in [the brief](handover/G1-fix-pass.md) are implemented, with 45 glass tests and before-failing
 regressions. Release passes 25 CTests and 448 Python tests (two existing skips). Near-cap fracture

@@ -181,6 +181,8 @@ function D.Stats()
     end
     metrics.batches, metrics.merged = batches.Count()
     metrics.rebuilds, metrics.rebuild_vertices = batches.rebuilds, batches.vertices
+    metrics.rebuild_ms, metrics.upload_ms = batches.tick_ms or 0, batches.upload_ms or 0
+    metrics.rebuild_pool_vertices, metrics.retiring_meshes = #batches.pool, batches.retireLast - batches.retireFirst + 1
     metrics.worker_busy = stepBusy
     if backend == "jolt" then world.api.Stats(nativeStats) end
     metrics.backend, metrics.native, metrics.skipped_models = backend, nativeStats, world.skipped

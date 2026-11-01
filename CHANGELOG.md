@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-B second pass consolidates settled glass into larger material-based areas and 24,000-vertex
+  meshes. Bounded reusable upload scratch replaces temporary transformed vertices; timed rebuilds
+  and staged GPU-resource retirement reduce allocation/rebuild bursts
+  ([ADR 0076](docs/decisions/0076-glass-pile-consolidation.md)).
+
 - G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
   cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
   state. Player sweeps include scripted base velocity, and blast impulses follow deferred native

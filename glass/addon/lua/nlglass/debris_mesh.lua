@@ -20,11 +20,12 @@ function M.Geometry(poly, thickness, color)
     end
     if area < .0001 then return nil end -- counter-clockwise, nondegenerate
     cx, cy = cx / (3 * area), cy / (3 * area)
-    local points, hull, vertices = {}, {}, {}
+    local points, hull, vertices, radius2 = {}, {}, {}, 0
     local half = thickness / 2
     for _, p in ipairs(poly) do
         local x, y = (p.x or p[1]) - cx, (p.y or p[2]) - cy
         if math.abs(x) > 1024 or math.abs(y) > 1024 then return nil end
+        radius2 = math.max(radius2, x * x + y * y + half * half)
         points[#points + 1] = Vector(x, y, 0)
         hull[#hull + 1], hull[#hull + 2] = Vector(x, y, -half), Vector(x, y, half)
     end
@@ -46,7 +47,8 @@ function M.Geometry(poly, thickness, color)
         add(p, -half, normal); add(b, -half, normal); add(b, half, normal)
         add(p, -half, normal); add(b, half, normal); add(p, half, normal)
     end
-    return {vertices = vertices, hull = hull, center = Vector(cx, cy, 0), mass = area / 2 * thickness * .0254 ^ 3 * 2500}
+    return {vertices = vertices, hull = hull, center = Vector(cx, cy, 0), radius = math.sqrt(radius2),
+        mass = area / 2 * thickness * .0254 ^ 3 * 2500}
 end
 function M.Build(vertices, material)
     local mesh = Mesh(material)
@@ -54,11 +56,26 @@ function M.Build(vertices, material)
     if not ok then mesh:Destroy(); error(reason, 0) end
     return mesh
 end
-function M.Transformed(piece, out)
+function M.Transformed(piece, out, pool)
+    -- One basis per piece, rather than two LocalToWorld calls (and discarded Angle userdata)
+    -- for every vertex. The upload owns copies; this bounded scratch can be reused afterwards.
+    local a, o = piece.angles, piece.position
+    local pitch, yaw, roll = math.rad(a.p), math.rad(a.y), math.rad(a.r)
+    local cp, sp, cy, sy, cr, sr = math.cos(pitch), math.sin(pitch), math.cos(yaw), math.sin(yaw), math.cos(roll), math.sin(roll)
+    local xx, xy, xz = cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr
+    local yx, yy, yz = sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr
+    local zx, zy, zz = -sp, cp * sr, cp * cr
+    local cursor = #out
     for _, v in ipairs(piece.geometry.vertices) do
-        local p = LocalToWorld(v.pos, angle_zero, piece.position, piece.angles)
-        local normal = LocalToWorld(v.normal, angle_zero, vector_origin, piece.angles)
-        out[#out + 1] = vertex(p, normal, v.u, v.v, piece.color)
+        cursor = cursor + 1
+        local dest = pool[cursor]
+        if not dest then dest = vertex(Vector(), Vector(), 0, 0, piece.color);pool[cursor] = dest end
+        local p, n = v.pos, v.normal
+        dest.pos:SetUnpacked(o.x + xx * p.x + xy * p.y + xz * p.z,
+            o.y + yx * p.x + yy * p.y + yz * p.z, o.z + zx * p.x + zy * p.y + zz * p.z)
+        dest.normal:SetUnpacked(xx * n.x + xy * n.y + xz * n.z,
+            yx * n.x + yy * n.y + yz * n.z, zx * n.x + zy * n.y + zz * n.z)
+        dest.u, dest.v, dest.color, out[cursor] = v.u, v.v, piece.color, dest
     end
 end
 function M.Draw(piece, scale)

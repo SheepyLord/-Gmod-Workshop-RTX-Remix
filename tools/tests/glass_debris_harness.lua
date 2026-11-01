@@ -1,11 +1,18 @@
 -- Executes the MIT G1-B manager and helpers with strict engine doubles, without a game.
 local base = assert(arg[1])
+local ffi=require("ffi")
+ffi.cdef[[int QueryPerformanceCounter(int64_t *); int QueryPerformanceFrequency(int64_t *);]]
+local counter,frequency=ffi.new("int64_t[1]"),ffi.new("int64_t[1]")
+assert(ffi.C.QueryPerformanceFrequency(frequency)~=0)
+local period=1/tonumber(frequency[0])
+local function wallclock() ffi.C.QueryPerformanceCounter(counter);return tonumber(counter[0])*period end
 local checks = 0
 local function check(value, message) checks = checks + 1; assert(value, message) end
 local V, A = {}, {}
+local calls={vectors=0,angles=0,matrices=0,matrixWrites=0,materials=0,transforms=0}
 V.__index, A.__index = V, A
-function Vector(x,y,z) return setmetatable({x=x or 0,y=y or 0,z=z or 0},V) end
-function Angle(p,y,r) return setmetatable({p=p or 0,y=y or 0,r=r or 0},A) end
+function Vector(x,y,z) calls.vectors=calls.vectors+1;return setmetatable({x=x or 0,y=y or 0,z=z or 0},V) end
+function Angle(p,y,r) calls.angles=calls.angles+1;return setmetatable({p=p or 0,y=y or 0,r=r or 0},A) end
 function V.__add(a,b) return Vector(a.x+b.x,a.y+b.y,a.z+b.z) end
 function V.__sub(a,b) return Vector(a.x-b.x,a.y-b.y,a.z-b.z) end
 function V.__mul(a,b) return Vector(a.x*b,a.y*b,a.z*b) end
@@ -24,6 +31,7 @@ function isangle(v) return getmetatable(v)==A end
 function Color(r,g,b,a) return {r=r,g=g,b=b,a=a or 255} end
 vector_origin,angle_zero,color_white=Vector(),Angle(),Color(255,255,255)
 function LocalToWorld(p,a,o,b) -- Full Source pitch/yaw/roll basis, used to validate transformed meshes.
+    calls.transforms=calls.transforms+1
     local pch,yaw,roll=math.rad(b.p),math.rad(b.y),math.rad(b.r)
     local cp,sp,cy,sy,cr,sr=math.cos(pch),math.sin(pch),math.cos(yaw),math.sin(yaw),math.cos(roll),math.sin(roll)
     return o+Vector(cy*cp*p.x+(cy*sp*sr-sy*cr)*p.y+(cy*sp*cr+sy*sr)*p.z,
@@ -61,17 +69,19 @@ function Material(name) return {name=name} end
 function Mesh(material)
     local m={material=material,valid=true,BuildFromTriangles=function(self,v)
         if failMesh then failMesh=false;error("injected GPU build refusal") end
-        check(#v%3==0 and #v<=60000,"bounded triangle mesh");self.vertices=v
+        check(#v%3==0 and #v<=60000,"bounded triangle mesh");self.vertexCount=#v
     end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false end,
     Draw=function(self)check(self.valid,"never draw destroyed mesh");draws=draws+1 end}
     meshes[#meshes+1]=m;return m
 end
 function Matrix()
-    return {SetTranslation=function(self,v)self.position=v end,SetAngles=function(self,v)self.angles=v end,
-        SetScale=function(self,v)self.scale=v.x end}
+    calls.matrices=calls.matrices+1
+    return {SetTranslation=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.position=v end,
+        SetAngles=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.angles=v end,
+        SetScale=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.scale=v.x end}
 end
 cam={PushModelMatrix=function(matrix) _G.lastScale=matrix.scale end,PopModelMatrix=function()end}
-render={SetMaterial=function()end}
+render={SetMaterial=function()calls.materials=calls.materials+1 end}
 function ErrorNoHalt() logCount=logCount+1 end
 function include(path) return dofile(base.."/"..path) end
 function CreateClientConVar(name,default)
@@ -82,7 +92,7 @@ end
 function GetConVar(name) return convars[name] end
 function RunConsoleCommand(name,value) convars[name].value=tonumber(value) end
 function math.Clamp(value,low,high) return math.max(low,math.min(high,value)) end
-function SysTime() return clock end
+function SysTime() return arg[3]=="renderperf" and wallclock() or clock end
 function LocalPlayer() return {valid=true,GetEyeTrace=function()return {HitPos=Vector()}end} end
 local function makeapi()
     local n={bodies={},next=0,imports=0,clears=0,models=0,props=0}
@@ -185,7 +195,7 @@ end
 local function settle()
     for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
     for _,e in ipairs(entities)do e.physics.asleep=true end
-    tick(.01);tick(.11);tick(.11)
+    tick(.01);tick(.21);for _=1,4 do tick() end
 end
 if arg[3]=="perf" then
     local D=setup("jolt");set("budget",4000);set("lifetime",0)
@@ -203,12 +213,42 @@ if arg[3]=="perf" then
         D.Count(),spawned,active,settled,s.merged,s.batches))
     D.Shutdown();return
 end
+if arg[3]=="renderperf" then
+    -- Same manager, mock physics and camera for before/after comparisons. No engine/GPU timings.
+    local D=setup("jolt");set("budget",2000);set("lifetime",0)
+    for i=0,49 do
+        D.Spawn({origin=Vector(128+(i%10)*72,128+math.floor(i/10)*72,32),angles=Angle(),material=frame.material},fragments(40))
+    end
+    for _=1,40 do tick() end
+    local function bench(label,n)
+        collectgarbage("collect")
+        for k in pairs(calls)do calls[k]=0 end
+        local before=collectgarbage("count")
+        collectgarbage("stop")
+        local times,total,worst={},0,0
+        for i=1,n do
+            local t=wallclock();tick();draw();t=(wallclock()-t)*1000
+            times[i],total,worst=t,total+t,math.max(worst,t)
+        end
+        local kb=collectgarbage("count")-before
+        collectgarbage("restart")
+        table.sort(times)
+        local s=D.Stats()
+        print(string.format("G1-B renderperf %s frames=%d live=%d merged=%d batches=%d draws=%d mean_ms=%.4f p99_ms=%.4f max_ms=%.4f alloc_KiB=%.1f vectors=%d angles=%d matrix_writes=%d materials=%d transforms=%d",
+            label,n,D.Count(),s.merged,s.batches,draws,total/n,times[math.ceil(n*.99)],worst,kb,calls.vectors,calls.angles,calls.matrixWrites,calls.materials,calls.transforms))
+    end
+    bench("moving",240)
+    for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+    bench("settling",240)
+    bench("settled",240)
+    D.Shutdown();return
+end
 local D=setup("jolt")
 set("budget",3);D.Spawn(frame,fragments(3));check(D.Count()==3 and D.Stats().pending==3,"pending import queues bounded pieces")
 tick();tick();tick()
 check(D.Backend()=="jolt" and api.models==1 and api.props==2 and D.Stats().skipped_models==1,"unique solid prop collision and missing-model skip")
 check(draw()==3,"moving pieces use individual meshes")
-check(#meshes[1].vertices==36,"both faces and four edges of a quad")
+check(meshes[1].vertexCount==36,"both faces and four edges of a quad")
 settle();check(D.Stats().merged==3 and D.Stats().batches==1 and draw()==1,"settled area draws one merged mesh")
 local rebuilds=D.Stats().rebuilds;tick(.2);check(D.Stats().rebuilds==rebuilds,"unchanged area never rebuilt")
 D.Impulse(Vector(10,10,20),32,100);check(draw()==3,"impulse invalidates affected static chunk immediately")
@@ -263,27 +303,29 @@ check(D.Stats().pose_updates==0 and D.Stats().merged==2 and draw()==1,
 api.poisonUnchanged=false
 D.Spawn(frame,fragments(1));tick()
 for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
-tick();failMesh=true;tick(.11)
+tick();failMesh=true;tick(.21)
 check(oldBatch.valid and D.Stats().merged==2,"failed replacement retains old valid pile geometry")
 tick(1.1)
-check(not oldBatch.valid and D.Stats().merged==3,"failed replacement retries and swaps only after success")
+check(oldBatch.valid and D.Stats().merged==3 and draw()==1,"replacement swaps only after success and defers old GPU resource release")
+tick();check(not oldBatch.valid,"retired mesh is released on a later frame")
 oldBatch,revision=meshes[#meshes],D.Stats().rebuilds
 D.Spawn(frame,fragments(500))
 for _=1,10 do tick() end
 check(D.Stats().pending==0,"large arrivals are bounded and drained across frames")
 for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
-tick();tick(.11)
+tick();tick(.21)
 check(oldBatch.valid and D.Stats().rebuilds==revision,"old valid pile remains during incremental replacement")
 local frames=0
 repeat
     tick();frames=frames+1
     check(D.Stats().rebuild_vertices<=1800,"pile transformation work is capped per frame")
 until D.Stats().rebuilds>revision or frames>30
-check(frames>1 and frames<=30 and not oldBatch.valid and D.Stats().merged==503,
+check(frames>1 and frames<=30 and D.Stats().merged==503 and draw()==1,
     "large pile replaces old meshes atomically after bounded work across frames")
+tick();check(not oldBatch.valid,"publication defers mesh destruction until the next frame")
 local batchCount=D.Stats().batches
 api.bodies[1].asleep,api.bodies[1].dirty=false,true;tick()
-check(draw()<200 and draw()>batchCount,"waking one piece hides only its small chunk, never the whole pile")
+check(draw()==503 and draw()>batchCount,"a wake retires its affected consolidated chunk without stale duplicate geometry")
 api.delayStep=3;tick()
 local oldCount=D.Count()
 D.Spawn(frame,fragments(3));D.Impulse(Vector(10,10,20),32,10);set("budget",400)
@@ -294,6 +336,48 @@ for _=1,10 do tick() end
 check(D.Count()==400 and D.Stats().pending==0 and api.impulses==1,"deferred mutations drain after completion")
 events.PreCleanupMap();check(D.Count()==0,"cleanup joins in-flight work and releases all stages")
 for _,m in ipairs(meshes)do check(not m.valid,"no old or staging mesh leaks after cleanup") end
+D.Shutdown()
+
+-- Transformed positions/normals match Source's complete pitch/yaw/roll basis. Scratch survives
+-- an upload and is reused at a different pose/color, without per-vertex userdata on the next pass.
+local geometry=include("nlglass/debris_mesh.lua")
+local g=assert(geometry.Geometry({{-2,-1},{2,-1},{2,1},{-2,1}},.6,color_white))
+local p={geometry=g,position=Vector(10,-20,30),angles=Angle(13,27,39),color=color_white}
+local out,pool={},{}
+geometry.Transformed(p,out,pool)
+for i,v in ipairs(g.vertices)do
+    local expected=LocalToWorld(v.pos,angle_zero,p.position,p.angles)
+    local normal=LocalToWorld(v.normal,angle_zero,vector_origin,p.angles)
+    check((out[i].pos-expected):Length()<.00001 and (out[i].normal-normal):Length()<.00001,
+        "pooled vertex transform preserves Source winding, normals and rotation")
+end
+p.position:SetUnpacked(-30,80,4);p.color=Color(20,40,60,80)
+local vectorCount=calls.vectors
+geometry.Transformed(p,{},pool)
+check(calls.vectors==vectorCount and pool[1].color==p.color,"second settled upload reuses every vertex and honors tint/alpha")
+
+D=setup("jolt");set("budget",2000);set("lifetime",0)
+for i=0,49 do
+    D.Spawn({origin=Vector(-400+(i%10)*80,-160+math.floor(i/10)*80,i%2==0 and -.1 or .1),angles=Angle(),
+        material=frame.material,color=Color(100+i,150,200,200+i)},fragments(40))
+end
+for _=1,40 do tick() end
+for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+for _=1,140 do
+    tick();check(D.Stats().rebuild_vertices<=1800,"consolidation never transforms over 1800 vertices/frame")
+end
+local s=D.Stats()
+check(s.merged==2000 and s.batches==4 and draw()==4,"2000 differently tinted pieces around grid zero consolidate into four draws")
+check(s.rebuild_pool_vertices<=24000,"one bounded scratch pool is shared by all areas and uploads")
+revision=s.rebuilds;for _=1,120 do tick() end
+check(D.Stats().rebuilds==revision,"stable 2000-piece piles schedule no rebuilds")
+vectorCount=calls.vectors
+set("budget",1900)
+for _=1,140 do tick() end
+check(D.Stats().merged==1900 and D.Stats().batches==3 and draw()==3,"removal reconsolidates surviving pieces without stale/duplicate members")
+check(calls.vectors==vectorCount,"rebuilding a warmed pile allocates no new vertex vectors")
+D.Clear()
+for _,m in ipairs(meshes)do check(not m.valid,"Clear releases published, canceled and retired consolidated meshes") end
 D.Shutdown()
 
 if arg[2] then
