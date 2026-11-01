@@ -8,12 +8,15 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 
 | File | Purpose |
 |---|---|
+| `telemetry_integration.py` | R6 real worker in a copied synthetic host: flushed ten-second samples, default/on/off/disabled policy, old CSV archived before new sampling and `nlctl status` text/JSON ([usage](telemetry_integration.py.md)) |
 | `test_presentation.cpp` | Display GMA CRC/index/metadata checks, inert payload, package identity and source-path refusal, cache edits preserved, stock menu marker validation, private-path exclusion and generated main-menu diagnostics redirect |
 | `test_presentation_hooks.cpp` | Real filesystem fixture IAT: exact A/W read redirects and attribute sizes, unrelated/write-capable/OPEN_ALWAYS calls unchanged, edited caches refused, uninstall pass-through and cache traversal boundary |
 | `CMakeLists.txt` | C++ fixtures/tests, generated-export check, PowerShell installer CTest |
 | `test_activation.cpp` | Path/root, quoted/backslash command-line parsing and off-switch unit cases |
 | `test_backend.cpp` | Separate `nl_backend_tests` target: case/duplicate/assignment/quoted-path backend normalization, unchanged RTX-off and unrelated raw Unicode arguments, malformed operands, real W/A/PEB replacement and byte-exact nested rollback/refusal in the test process only |
 | `test_proxy.cpp` | Export/forwarding checks and temporary-host integration/rotation tests |
+| `test_runtime.cpp` | Applies the real activation code to the fake runtime: blocked/read-only low fallback and failed off-mode marker reset preserve RTX; no GPU reader required |
+| `../runtime.cpp` | Real activation implementation linked into `nl_proxy_tests` for the write-failure regressions |
 | `host.cpp` | Statically imports `timeGetTime`; writes the timestamped main marker |
 | `activation_probe.h`, `activation_probe.cpp` | M4 host probe: module/static/delay paths, environment, DLL directory, W/A/PEB command line; test-only TLS descriptor fault and hold mode |
 | `fixture_runtime.cpp`, `fixture_static.cpp`, `fixture_delay.cpp` | Packaged fake d3d9 with one static and one delay dependency; controlled DllMain failures for rollback tests |
@@ -54,3 +57,11 @@ through). Evidence under `out/m5-synthetic`. Loader 0.3.0 added module dependenc
 package: the probe loads the fake module through the fake `lua_shared.dll` in RTX sessions, in starts
 without RTX and after a failed activation (it loads, its runtime loaded first from `lua\bin`), and with
 the loader off (`ERROR_MOD_NOT_FOUND`).
+
+## R6 T1 synthetic checks
+
+`activation_probe.cpp` also captures DXVK_AFTERMATH_DUMP_PATH at host entry.
+`activation_integration.py` covers first-match loader layer order, diagnostic layer/folder/env,
+next_start once, preview/re-arm/config preservation, always/off, built-in low fallback, invalid
+tier notes, CLI equality and generated medium/low payload copies. `test_presentation.cpp` checks
+I2 in menu data and the localized row embedding. All fixtures stay below this worktree's out.

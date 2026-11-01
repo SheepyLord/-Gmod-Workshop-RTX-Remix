@@ -8,475 +8,551 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:637
+#: nativeloader/lua/autorun/nativeloader_sky.lua:660
 msgid "Clear"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:637
+#: nativeloader/lua/autorun/nativeloader_sky.lua:660
 msgid "Partly cloudy"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:637
+#: nativeloader/lua/autorun/nativeloader_sky.lua:660
 msgid "Overcast"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:661
 msgid "Hazy"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:661
 msgid "Foggy"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:661
 msgid "Drizzle"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:638
+#: nativeloader/lua/autorun/nativeloader_sky.lua:661
 msgid "Rain"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:662
 msgid "Thunderstorm"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:662
 msgid "Snow"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:639
+#: nativeloader/lua/autorun/nativeloader_sky.lua:662
 msgid "Blizzard"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:663
 msgid "Sandstorm"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:640
+#: nativeloader/lua/autorun/nativeloader_sky.lua:663
 msgid "Smog"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:642
+#: nativeloader/lua/autorun/nativeloader_sky.lua:665
 msgid "Spring"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:642
+#: nativeloader/lua/autorun/nativeloader_sky.lua:665
 msgid "Summer"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:642
+#: nativeloader/lua/autorun/nativeloader_sky.lua:665
 msgid "Autumn"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:642
+#: nativeloader/lua/autorun/nativeloader_sky.lua:665
 msgid "Winter"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:666
 msgid "New moon"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:643
+#: nativeloader/lua/autorun/nativeloader_sky.lua:666
 msgid "Waxing crescent"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:667
 msgid "First quarter"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:667
 msgid "Waxing gibbous"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:644
+#: nativeloader/lua/autorun/nativeloader_sky.lua:667
 msgid "Full moon"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:668
 msgid "Waning gibbous"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:645
+#: nativeloader/lua/autorun/nativeloader_sky.lua:668
 msgid "Last quarter"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:646
+#: nativeloader/lua/autorun/nativeloader_sky.lua:669
 msgid "Waning crescent"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:647
+#: nativeloader/lua/autorun/nativeloader_sky.lua:670
 msgid "No eclipse"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:647
+#: nativeloader/lua/autorun/nativeloader_sky.lua:670
 msgid "Lunar eclipse"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:647
+#: nativeloader/lua/autorun/nativeloader_sky.lua:670
 msgid "Solar eclipse"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Night sky image"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:648
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Simulated stars"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:650
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Sunrise"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:650
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Morning"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:650
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Noon"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Sunset"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:651
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Night"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:661
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:207
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:240
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:665
+#: nativeloader/lua/autorun/nativeloader_sky.lua:688
 #, c-format
 msgid "On this map the sky is set by %s. Changing a setting here takes it over for this session."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:667
+#: nativeloader/lua/autorun/nativeloader_sky.lua:690
 msgid "Sky"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:691
 msgid "Physical sky"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:692
 msgid "The map's skybox"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:693
 msgid "The physical sky has a sun, clouds, stars and a moon, and lights the map from them."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:671
+#: nativeloader/lua/autorun/nativeloader_sky.lua:694
 msgid "Follow the map's sun"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:672
+#: nativeloader/lua/autorun/nativeloader_sky.lua:695
 msgid "The time and direction of the map's own sun. Moving the time or the direction turns this off."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:696
 msgid "Time of day"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:677
+#: nativeloader/lua/autorun/nativeloader_sky.lua:700
 #, c-format
 msgid "Now %s"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:695
+#: nativeloader/lua/autorun/nativeloader_sky.lua:718
 msgid "Sun direction"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:696
+#: nativeloader/lua/autorun/nativeloader_sky.lua:719
 msgid "Turns the sun's path around the sky."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:697
+#: nativeloader/lua/autorun/nativeloader_sky.lua:720
 msgid "Time passes"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:698
+#: nativeloader/lua/autorun/nativeloader_sky.lua:721
 msgid "Day length (min)"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:699
+#: nativeloader/lua/autorun/nativeloader_sky.lua:722
 msgid "Real minutes for a whole day while the time passes."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:700
+#: nativeloader/lua/autorun/nativeloader_sky.lua:723
 msgid "Sky update interval (s)"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:701
+#: nativeloader/lua/autorun/nativeloader_sky.lua:724
 msgid "How often the sun, moon, stars and weather move on: 0.02 is 50 times a second, 0 every frame. Longer saves a little time but the sky moves in steps."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:702
+#: nativeloader/lua/autorun/nativeloader_sky.lua:725
 msgid "Season"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:703
+#: nativeloader/lua/autorun/nativeloader_sky.lua:726
 msgid "Moon"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:704
+#: nativeloader/lua/autorun/nativeloader_sky.lua:727
 msgid "Eclipse"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:705
+#: nativeloader/lua/autorun/nativeloader_sky.lua:728
 msgid "Eclipse progress"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:706
+#: nativeloader/lua/autorun/nativeloader_sky.lua:729
 msgid "From first contact (0) to the middle (100): a lunar eclipse is total from 70, a solar one from 90. An eclipse sets the moon's phase, and the time if the sun is on the wrong side of the horizon for it."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:707
+#: nativeloader/lua/autorun/nativeloader_sky.lua:730
 msgid "Night sky"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:708
+#: nativeloader/lua/autorun/nativeloader_sky.lua:731
 msgid "Night sky image: sharp stars, a galaxy and nebulae, turning with the time and the season."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:709
+#: nativeloader/lua/autorun/nativeloader_sky.lua:732
 msgid "Weather"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:710
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
+#: nativeloader/lua/autorun/nativeloader_sky.lua:733
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:249
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
 msgid "(leave to Remix)"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:712
+#: nativeloader/lua/autorun/nativeloader_sky.lua:735
 msgid "Clouds, haze, fog, rain and snow. The runtime's own weather presets."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:713
+#: nativeloader/lua/autorun/nativeloader_sky.lua:736
 msgid "Weather change (s)"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:714
+#: nativeloader/lua/autorun/nativeloader_sky.lua:737
 msgid "How long a change of weather takes."
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:715
+#: nativeloader/lua/autorun/nativeloader_sky.lua:738
 msgid "Reset the sky and weather"
 msgstr ""
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:721
-#: nativeloader/lua/autorun/nativeloader_sky.lua:721
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
+#: nativeloader/lua/autorun/nativeloader_sky.lua:744
+#: nativeloader/lua/autorun/nativeloader_sky.lua:744
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:59
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Sky and weather"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:211
+#: nativeloader/lua/autorun/client/nativeloader.lua:219
 #, c-format
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:10
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
 msgid "Welcome"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:12
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:35
 msgid "RTX Remix is running"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:13
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
 msgid "Garry's Mod is path traced by NVIDIA RTX Remix. The native loader (bin\\win64\\winmm.dll) put the RTX package from the Workshop in place and started Remix before the game made its renderer."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:14
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:37
 msgid "Everything RTX is in the spawn menu's RTX Remix tab: the settings of the RTX add-ons, the common Remix settings, and this guide."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:15
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:38
 msgid "Turning RTX off or on"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:16
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
 msgid "RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
 msgid "The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:19
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:42
 msgid "Remix menu"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
 msgid "Alt+X opens Remix's own menu"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
 msgid "The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:23
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
 msgid "Making changes stick"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:24
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:47
 msgid "1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:25
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
 msgid "2. Change what you want."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:26
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:49
 msgid "3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:27
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
 msgid "Do not press 'Migrate developer settings to rtx.conf'. Before saving, check 'View Changes': the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:29
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
 msgid "Settings"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:30
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
 msgid "Defaults from the original RTX install"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:31
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
 msgid "Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:32
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
 msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:283
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
 msgid "Common Remix settings"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:34
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:57
 msgid "RTX Remix tab > Remix settings changes common settings for this session. Save them in Alt+X to keep them. Reapplying this panel's choices at launch is off by default; enable it only to override Remix's saved settings. Select a numeric override before editing it."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:35
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:58
 msgid "Fog: Remix's own volumetric presets, from light mist to heavy fog, dust and smoke. A preset replaces the weather's fog until you set it back to '(leave to Remix)'."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:37
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:60
 msgid "RTX Remix tab > Sky and weather. The physical sky has a real sun, clouds, stars and a moon that light the map. By default the sun stands where the map's own sun is; move the time of day or the sun's direction to choose your own, or let the time pass."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:38
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:61
 msgid "The moon has the real Moon's face and goes through its phases, lit from the sun's side. The night sky is a detailed image of stars, a galaxy and nebulae that turns with the hour and the season; 'Night sky' switches to simulated stars."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:62
 msgid "Eclipse: a lunar eclipse turns the full moon copper red in Earth's shadow; a solar eclipse covers the sun, darkens the day and shows the corona and the stars. 'Eclipse progress' moves from first contact to the middle."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:63
 msgid "Weather: twelve kinds, from clear to thunderstorm, snow and sandstorm, changing over the time you choose. Console: nativeloader_sky_time sunset (or noon, night, 18:30 ...), nativeloader_sky_status."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:42
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:65
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Lights"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:43
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:66
 msgid "Flashlight"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:67
 msgid "The flashlight key gives a path-traced flashlight. Its brightness, cone and offsets are under RTX Remix tab > Lights > Flashlight."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:68
 msgid "Map lights"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:69
 msgid "By default the map's own lights are lit by Remix from the game's lights (the 'light updater'). 'Disable Remix API Lights' under Rendering > Base Options switches between that and converting every map light into a Remix light."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:47
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:70
 msgid "Advanced MMD Animation Player"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:71
 msgid "Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
-msgid "Troubleshooting"
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:73
+msgid "Memory and stability"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:51
-msgid "First look"
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:74
+msgid "For 8 GB GPUs and 16 GB of RAM"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
-msgid "Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:75
+msgid "Use a system-managed Windows page file on a drive with at least 30 GB free. Close browsers and stop OBS recording before playing. In Task Manager > Performance > Memory, watch Committed: the first number is in use, the second is the limit. If they are close, close other apps or use fewer heavy models."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
-msgid "Files to look at"
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:76
+msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Save' so a saved value does not return next start. Keep Garry's Mod's texture detail at its highest: lowering it changes the textures Remix hashes and can break replacement matching. Use fewer heavy characters to reduce memory pressure."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
-msgid "native-loader\\logs\\loader.log - what the loader did at this start."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
+msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
-msgid "garrysmod\\data\\native-loader\\status.json and session.json - the same as data."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
+msgid "Performance tiers"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
-msgid "rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:79
+msgid "The loader chooses high, medium or low from the NVIDIA GPU's model and VRAM; recognized laptop models step down one class tier. High keeps the classic defaults. Medium and low reduce rendering work and memory use when their tier layer is available; the package's low layer also uses smaller night-sky textures. Your saved Remix settings can override these defaults."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:57
-msgid "Common problems"
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:80
+msgid "RTX Remix tab > Start here shows the tier and GPU, or the reason a tier layer was not applied. To override it, use auto, high, medium or low for remix.performance_tier in native-loader\\config.json, then restart Garry's Mod. Loader tiers are separate from Graphics Preset in Alt+X."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:58
-msgid "The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default)."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:81
+msgid "Complete minimal config.json example for the shipped allowlist, with the low tier and GPU dumps off. If you customized the file, keep your allow entries and other settings when adding these objects. Invalid JSON turns RTX off."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:59
-msgid "An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:83
+msgid "Local memory readings"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:60
-msgid "Low frame rate: choose a lower graphics preset or DLSS quality. Frame generation is off by default for stability."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:84
+msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fixes are available. The companion records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. After three failed API calls it stops for this map; toggle nativeloader_vram_telemetry off (0) and on (1) to retry. These files stay local."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:61
-msgid "'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
+msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:62
-msgid "Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu')."
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
+msgid "After a crash"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:87
+msgid "Before restarting, copy status.json and session.json from garrysmod\\data\\native-loader\\, both vram CSV files and rtx-remix\\logs\\. The next start rewrites both JSON reports and can overwrite runtime logs; the session evidence folder does not keep these JSON reports."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
+msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
+msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
+msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:91
+msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\ and shaderDebugInfo\\*.nvdbg if no session folder kept them. For a GPU hang, include nearby Event Viewer System events from Display or nvlddmkm and any matching Windows LiveKernelReports\\WATCHDOG dump. Dumps can contain process memory; review what you share."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
+msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:94
+msgid "Troubleshooting"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:95
+msgid "First look"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:96
+msgid "Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:97
+msgid "Files to look at"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:98
+msgid "native-loader\\logs\\loader.log - what the loader did at this start."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:99
+msgid "garrysmod\\data\\native-loader\\status.json and session.json - the same as data."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:100
+msgid "rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:101
+msgid "Common problems"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:102
+msgid "The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default)."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:103
+msgid "An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:104
+msgid "Low frame rate: choose a lower graphics preset or DLSS quality. Frame generation is off by default for stability."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:105
+msgid "'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:106
+msgid "Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu')."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:136
 msgid "RTX Remix guide"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:285
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:286
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Rendering"
 msgstr ""
 
@@ -487,13 +563,13 @@ msgid "Water and glass"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:282
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:282
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
 msgid "Start here"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:283
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
 msgid "Remix settings"
 msgstr ""
 
@@ -506,14 +582,17 @@ msgid "Ultra"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
 msgid "High"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
 msgid "Medium"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
 msgid "Low"
 msgstr ""
 
@@ -566,7 +645,7 @@ msgid "Frame generation"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:222
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:255
 msgid "Off"
 msgstr ""
 
@@ -646,124 +725,158 @@ msgstr ""
 msgid "Tone map colour purity"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:190
-msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+msgid "No tier layer is available."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:191
-msgid "Open the RTX Remix guide"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:192
-msgid "Print the loader's status to the console"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:193
-msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:194
-msgid "Use the classic RTX settings"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:195
-msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:196
-msgid "RTX session guard"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:197
-msgid "Turn this off only to test an add-on that misbehaves."
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:198
-msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:199
-msgid "Language"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:200
-msgid "Same as Garry's Mod"
-msgstr ""
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:202
-msgid "Language of this tab and the guide"
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:206
+#, c-format
+msgid "Performance tier %s is not applied: %s. See the Memory and stability guide."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
-msgid "Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."
+msgid "Automatic selection"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
+msgid "Configuration override"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
-msgid "Reapply these overrides at every launch"
+msgid "Compatibility fallback"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:211
-msgid "Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
+#, c-format
+msgid "Performance tier: %s (%s; %s, %s MiB VRAM). To change it, set remix.performance_tier in native-loader\\config.json to auto, high, medium or low, then restart Garry's Mod."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:221
-msgid "On"
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
+msgid "Unknown source"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
+msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:223
+msgid "Open the RTX Remix guide"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:224
+msgid "Memory and stability guide"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:225
+msgid "Print the loader's status to the console"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:226
+msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:227
+msgid "Use the classic RTX settings"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:228
+msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:229
+msgid "RTX session guard"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:230
+msgid "Turn this off only to test an add-on that misbehaves."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:231
+msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:232
+msgid "Language"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:233
+msgid "Same as Garry's Mod"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:235
+msgid "Language of this tab and the guide"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:242
+msgid "Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:243
+msgid "Reapply these overrides at every launch"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
+msgid "Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:254
+msgid "On"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
 #, c-format
 msgid "Set %s here"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
 msgid "Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:285
 msgid "Clear this panel's overrides"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:256
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:289
 msgid "Local player shadow"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:290
 msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:291
 msgid "Body height offset (units)"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:259
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:292
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:296
 msgid "Keep toolgun text sharp"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:297
 msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:301
 msgid "Hide outline meshes"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:302
 msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
 msgid "Player models"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:285
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
 msgid "Toolgun screen"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:286
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Model outlines"
 msgstr ""
 
@@ -772,8 +885,8 @@ msgid "Motion importer"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:11
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:158
-#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:184
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:160
+#: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:196
 msgid "Import VMD files and manage your motion library and playback."
 msgstr ""
 

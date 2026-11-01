@@ -1,5 +1,21 @@
 # Components
 
+R6 T6 adds [`tools/sky/drop_top_mip.py`](../tools/sky/drop_top_mip.py.md), a standard-library DDS
+mip-removal tool, with generated-fixture coverage in
+[`tools/tests/test_drop_top_mip.py`](../tools/tests/test_drop_top_mip.py.md). The runtime packager's
+`--tier-conf TIER FILE` stores optional `rtx.*` payloads under `config/dxvk-tiers/` without listing
+them as unconditional layers; R6 T1 selects the tier. Sources and smaller skies are indexed in
+`packages/runtime/files.json` ([ADR 0064](decisions/0064-performance-tier-defaults.md)).
+[`tools/tests/test_runtime_tiers.py`](../tools/tests/test_runtime_tiers.py.md) checks every layer:
+source-pinned types/ranges/enums for tier options and unchanged hashes for classic/compiler inputs.
+
+R6 T2 adds [`nl::evidence`](../loader/core/include/nl/evidence.h),
+[`nl::memory`](../loader/core/include/nl/memory.h) and the bootstrap's
+[`telemetry.cpp`](../loader/proxy/telemetry.cpp): bounded local crash evidence, memory history and
+the latest system commit snapshot. [`read_notices.lua`](../loader/proxy/ui/read_notices.lua.md)
+supplies the main-menu panel's seven-language failure summary and once-per-start RAM warning;
+all reads and samples stay local ([ADR 0063](decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+
 `loader/guard/` prepares the verified client rendering guard's early stock-initializer read redirect;
 `loader/guard/tests/` exercises generated-file ownership, stock hashes, cache integrity and off switches.
 
@@ -251,3 +267,29 @@ protection and late-hash/proxy tracking. Native cutout traversal and acceleratio
 recorded in [ADR 0048](decisions/0048-layered-alpha-cutouts.md); outline behavior is in
 [ADR 0047](decisions/0047-ignore-incompatible-model-outlines.md). Client lifecycle coverage is
 [tools/tests/test_model_layers.py](../tools/tests/test_model_layers.py.md).
+
+## R6 T1 loader GPU policy
+
+`loader/core/include/nl/performance.h` / `src/performance.cpp` hold pure GPU tier classification
+and I2 serialization. `gpu_diagnostics.h` / `src/gpu_diagnostics.cpp` probe/prepare local GPU dump
+state and atomically consume one-start requests. `activate` composes the two layer-priority slots;
+`loader/proxy/runtime.cpp` applies them, `status` and `loader/cli/nlctl.cpp` report them, and
+`loader/proxy/diagnostics.cpp` / `ui/mainmenu.js` show a localized menu tier preview (ADR 0062).
+
+## R6 T3 companion telemetry
+
+The client sampler [`nativeloader_vram.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_vram.lua.md)
+adds bounded local VRAM CSVs when the fixes expose the statistics API. Its archived
+`nativeloader_vram_telemetry` switch defaults on. Offline coverage is in
+[`test_companion_vram.py`](../tools/tests/test_companion_vram.py.md).
+
+The same task adds an optional I2 performance-tier line and a direct **Memory and stability** guide
+link in the RTX Remix tab. The player checklist is [STABILITY.md](STABILITY.md); the localized
+menu/guide contract is covered by
+[`test_companion_stability.py`](../tools/tests/test_companion_stability.py.md). The companion gettext
+namespace has 21 new agent-written messages in six non-English catalogs, with English as source.
+
+T1 review separates `presentation::prepare_main_menu` so activation supplies its effective layer
+plan after writes, and vanilla fallback supplies an inactive plan. Core GPU diagnostics can reset
+the one-start marker on off-mode RTX starts. Proxy `test_runtime.cpp` applies the real activation
+code to fake DLLs to verify failed tier writes/reset attempts preserve RTX without a GPU reader.

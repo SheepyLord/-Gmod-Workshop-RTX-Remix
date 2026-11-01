@@ -1,5 +1,71 @@
 # On-disk layout (game side)
 
+## R6 memory diagnostics
+
+The generated main-menu view reads the current start's `status.json` and latest `memory.json`
+through a bounded, read-only Lua bridge. Status and menu data also carry the same `session_token`
+as the memory snapshot; both PID and creation time must match. Other-process/malformed records are
+ignored. Commit data older than 30 seconds (or over five seconds in the future) never warns. The
+warning appears only before the first map and is remembered for this start in menu Lua, without a
+new on-disk preference or any page-file/settings change. Failure summaries and the warning follow
+the panel's seven languages. A missing evidence folder is displayed explicitly as unavailable.
+
+| Path relative to the game root | Meaning |
+|---|---|
+| `native-loader/logs/memory.csv` | Current UTC/byte CSV history; a background worker samples immediately after evidence collection, then every ten seconds. |
+| `native-loader/logs/memory.1.csv` | Previous segment. Each segment holds at most 360 samples (one hour) and 256 KiB: about one to two hours across both files. |
+| `native-loader/logs/memory-index.json` | Schema marker `native_loader_memory: 1`, sizes and SHA-256 for `active` and `rotated` files. Hash checks protect edited/unowned CSVs. One extra flushed row or an interrupted rotation can recover after a crash. |
+| `native-loader/backup/edits/memory-<SHA-256>.csv` | Exact recovered content beyond the last receipt, preserved before adoption because a valid extra row might be a user edit. Not automatically deleted by history rotation. |
+| `garrysmod/data/native-loader/memory.json` | Latest-only system commit snapshot: schema 1, current-process `session_token` (PID plus process creation FILETIME), `time_utc`, `commit_total`, `commit_limit`, `warning`. Used by the home-menu warning; overwritten atomically. No process/GPU counters or history. |
+
+CSV columns are `time_utc`, `private_bytes`, `working_set_bytes`, `system_commit_bytes`,
+`system_commit_limit_bytes`, `available_ram_bytes`, `gpu_local_usage_bytes`, `gpu_local_budget_bytes`,
+`gpu_nonlocal_usage_bytes`, `gpu_nonlocal_budget_bytes`. Timestamps use ISO 8601 UTC with milliseconds;
+all counters are bytes. A missing/failed counter is an empty CSV field. GPU counters are this process's
+DXGI node-0 usage/budget on the largest NVIDIA adapter, or the largest available hardware adapter
+when there is no NVIDIA adapter. These are not Remix's resource-category counters (T3's `vram.csv`).
+
+Optional config: `"diagnostics": {"memory_telemetry": "off"}` disables process/GPU queries and CSV
+history writes. Default is `"on"`; another value or type uses on with an activation note, and an
+unknown diagnostics key is an error.
+The independent latest system commit observation remains available for the warning, without
+retaining history. The loader's global off switches, missing/invalid config and `enabled: false`
+start neither history nor the warning observer. No game/config/page-file changes, uploads or new DLL
+import dependencies. Existing diagnostics stay on uninstall. Locked, edited or unrecognized CSV
+history is kept. Transient sharing/access errors skip that sample and retry at the next interval;
+edited or unrecognized history stops recording for that process. The menu commit snapshot continues.
+
+## R6 local session evidence
+
+[ADR 0063](decisions/0063-local-session-evidence-and-memory-telemetry.md) adds:
+
+| Path relative to the game root | Meaning |
+|---|---|
+| `native-loader/logs/session-start.json` | Schema 1: last bootstrap start's `start_filetime` (Windows 100 ns epoch), `time_utc`, `process_id`; the next start uses it to exclude older crash files. On the first R6 start, `loader.log.1`'s `startup_filetime` is the fallback. With neither record, existing bounded evidence is kept conservatively. |
+| `native-loader/logs/sessions/<UTC>-<PID>-<reason>/` | Local copies, preserving each source's relative path; `evidence.json` lists their sizes and SHA-256. Only complete unchanged archives are retention-owned: newest five, at most 200 MiB including receipts. Edited copies, added files, links and unrecognized folders stay outside automatic cleanup. |
+| `native-loader/logs/gpu/` | T1's optional Aftermath destination; collected recursively to two directory levels. The collector never deletes the originals. |
+
+The collector reads at most 256 KiB of the old Remix log to classify it, then copies the full log
+on a worker before permitting runtime load. An oversized/unavailable log falls back to its bounded
+tail. Dump files are streamed and skipped if locked or over the remaining byte limit. At most 256
+crash sources are considered; source timestamps must fall between the previous and current starts.
+`last_gpu_crash.json` is optional, bounded to 64 KiB and subject to the same freshness rule.
+Memory CSV tails are supporting evidence, never themselves a crash indication. Source files are
+opened with read/write/delete sharing and never changed, moved, deleted or uploaded.
+
+Startup status adds `previous_session` (R6 I5):
+
+```json
+{"reason":"device_lost","time_utc":"2026-10-31T01:02:03.000Z","folder":"native-loader/logs/sessions/2026-10-31T020304.000Z-123-device_lost"}
+```
+
+`time_utc` identifies the previous start (empty if unavailable); `folder` is empty if nothing was
+saved. Reasons are `device_lost`, `cs_exception`, `allocation_failed`, `out_of_memory`, `crash`,
+`clean`, `unknown`. Specific failures override generic exceptions/exit markers. The runtime has
+no general normal-shutdown marker, so an ordinary unmarked exit stays `unknown`; only its deliberate
+`RTX: Terminating application` path is recognized as `clean`. This classification does not establish
+the cause of a GPU fault. These local logs/archives stay when packages are uninstalled.
+
 The old-install migration is the narrow exception to the untouched-depot rule: recognized legacy
 edits are archived and restored to verified stock bytes before the shipment is activated
 ([ADR 0042](decisions/0042-legacy-remix-migration.md)). Root rtx.conf/dxvk.conf from that installation
@@ -264,3 +330,79 @@ The M1 log header still proves entry timing. M4 appends `deployment.outcome`, `.
 - The two generated cfgs begin with `// Generated by the GMod native loader`; the loader replaces or
   removes only files that do. Uninstall removes them and `session.json`; it keeps a pending record.
 
+
+## R6 T1 layer order
+
+The earlier "low-to-high" description of `activation.layers.dxvk` does not apply to Remix's
+`rtx.*` options. Their first listed DXVK layer containing a key wins: loader Remix layers precede
+the package copies. DXVK's merged `dxvk.*`/`d3d9.*` config instead takes the last value. The root
+`dxvk.conf` remains last; `rtx.conf` and `user.conf` keep their stronger Remix priorities.
+
+## R6 T1 performance tiers and GPU crash diagnostics (ADR 0062)
+
+Schema 1 accepts these additional optional keys (older loaders reject them as unknown):
+
+| Key | Default | Rule |
+|---|---|---|
+| `remix.performance_tier` | `"auto"` | `"high"`, `"medium"`, `"low"` override GPU selection; an invalid value/type uses auto and adds an activation note |
+| `diagnostics.gpu_crash_dumps` | `"off"` | `"next_start"` once, `"always"` every RTX activation; invalid values/types use off with an activation note |
+| `diagnostics.memory_telemetry` | `"on"` | `"off"` stops the memory history (R6 T2, ADR 0063); invalid values/types use on with an activation note |
+
+Auto selects the NVIDIA adapter with the most DXGI DedicatedVideoMemory. The VRAM tier is low
+through 8.5 GiB, medium through 12.5 GiB, high above. Recognized consumer RTX model classes 8/9,
+7 and 5/6 limit it to high, medium and low respectively; Laptop lowers the class one step, and
+Ti/Super do not change it. Use the lighter of class and VRAM. An unmatched description uses VRAM
+alone. Known non-NVIDIA adapters keep `non-nvidia.conf` and get no tier layer. A failed/empty query
+uses no GPU layer in auto; it honors an explicit tier override and reports "GPU not read".
+
+| Path under the game root | Ownership / behavior |
+|---|---|
+| `native-loader/packages/<runtime>/<version>_<generation>/config/dxvk-tiers/{medium,low}.conf` | Ordinary runtime payload, journaled and checked before activation; no new manifest field |
+| `native-loader/remix/tier.conf` | Regenerated short copy of the selected package tier; a pre-R6 package gets the built-in low fallback, or no layer for medium/high |
+| `native-loader/remix/diagnostics.conf` | Generated only when diagnostics apply; enables Aftermath, resource tracking and startup GPU crash state |
+| `native-loader/remix/gpu-crash-dumps.used` | Loader-owned atomic one-start marker; any existing marker, including an empty one, counts as consumed; an RTX start in diagnostic off mode removes it best effort |
+| `native-loader/logs/gpu/` | Local dump destination; absolute path in this process's DXVK_AFTERMATH_DUMP_PATH, reported in activation.environment; Remix may upload Aftermath dumps through Sentry with the player's crash-reporting consent |
+
+For one capture set `"diagnostics": {"gpu_crash_dumps":"next_start"}`. After preparing the
+layer/folder, the first RTX activation attempt claims the marker before runtime initialization.
+Later startup failure/crash does not re-arm it. To ask again, close the game and remove only
+`native-loader/remix/gpu-crash-dumps.used`; keep the config at next_start. Alternatively, set the
+diagnostic mode to off, start RTX once, then set next_start again: the off-mode RTX start removes
+the marker best effort (a failure adds a note and keeps RTX). Always leaves the marker alone and
+ignores it. Config is never rewritten. Read-only `nlctl activation` and the menu preview never
+consume or reset the request; starts with RTX disabled do not either.
+A preparation failure is reported and skips diagnostics. Generated files may remain when unused;
+unused files are not listed, and no logs or dumps are deleted by this switch.
+
+The loader creates the dump folder locally. Remix hands Aftermath dumps to its Sentry crash
+reporter and uploads them when the player accepts Remix crash reporting. Enabling diagnostics
+does not grant that consent; R6 leaves the runtime's reporting behavior unchanged.
+
+The DXVK list is tier, non-NVIDIA (mutually exclusive), package short copies, diagnostics, then the
+user's nonempty list or root `dxvk.conf`. The RTX list is unchanged. Standard RtxOptions take the
+first DXVK layer holding the key; merged DXVK/D3D9 options take the last. Despite its prefix,
+`rtx.enableGpuCrashState` is a merged DXVK startup option, so it stays with Aftermath diagnostics.
+A player's root DXVK options or DXVK_ENABLE_* environment can override diagnostics. Saved Remix
+settings and `rtx.conf` retain their stronger priority over tier defaults. The built-in low layer:
+
+```
+rtx.lowMemoryGpu = True
+rtx.opacityMicromap.cache.maxBudgetSizeMB = 512
+rtx.skyProbeSide = 1024
+rtx.volumetrics.froxelGridResolutionScale = 8
+rtx.terrainBaker.cascadeMap.levelResolution = 2048
+```
+
+`activation.performance_tier` (interface I2) is
+`{"tier":"high|medium|low","source":"auto|config|fallback","reason":"one line","adapter":"description","dedicated_vram_mib":0,"layer":"listed path or empty"}`.
+Source config identifies every explicit override, including one using built-in low defaults.
+Source fallback identifies automatic low selection using the built-in layer. Without NVIDIA the
+adapter is empty and the reason explains why; known non-NVIDIA hardware still gets no tier layer.
+An unwritable package copy uses its source path as ADR 0036 already does; I2 then names that path.
+An unwritable built-in fallback is omitted from the effective list/environment, with an empty I2
+layer and a note; RTX still starts and cannot read an older fallback left at that path.
+`activation.notes` reports recoverable tier/config/diagnostic issues, also in the bootstrap log.
+The menu shows the effective tier and source only with a listed tier layer and an adapter name;
+high, pre-R6 medium, failed tier writes and vanilla fallback show no tier row. Read-only preview
+also applies the ADR 0056 recipe refusal. Its seven-language translations are
+agent-written and await review. No license/trust/path/off-switch or loader version change.

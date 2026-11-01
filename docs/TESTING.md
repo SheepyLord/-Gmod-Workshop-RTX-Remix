@@ -1,5 +1,189 @@
 # Testing
 
+## R6 unattended harness failures
+
+[`poc_session.py`](../tools/poc_session.py.md) now declines crash prompts on a background watchdog
+throughout a run, preserves live crash dumps before answering, and aborts in-game work on a new Remix
+device-loss marker or a window continuously hung for 120 s. Short load stalls may recover; captures
+have a 5 s timeout. After failure Remix gets 60 s to exit before only this run's game/helpers are
+stopped. Evidence records `failed`, `device_lost`/`hung_seconds`, numeric/hex/named exits and any forced
+termination; release QA prints those causes and retains them in `qa-summary.json`. Focused tests are
+`cd tools; python -m unittest tests.test_poc_session tests.test_release_qa -v`: fake processes/windows
+and log files cover the watchdog, stale-log exclusion, hang recovery, capture races, bounded exit
+and `0x60D0DEAD` / `0xCFFFFFFF` names. No game launch is needed.
+
+Validation on `r6-harness`: all 54 focused tests pass. `tools\test.ps1 -Config Release` exits 0:
+repository conventions, 24/24 CTests and 375 Python tests (322 tools, 28 gmapack and 25 steam;
+two expected skips). No render-guard path workaround was needed. Receipts are this worktree's
+`out/r6-harness/focused-tests.log` and `release-tests.log`. No game was launched, and neither game
+install was modified; live device-loss acceptance remains with the project manager.
+
+## R6 companion VRAM sampler
+
+[`test_companion_vram.py`](../tools/tests/test_companion_vram.py.md) exercises the actual companion
+sampler under LuaJIT, with no game or GPU. Twenty scenarios check all 14 fields and byte/count
+units, 30-second timing, the default-on client switch, missing/late APIs, invalid values and errors,
+hourly rotation over five sampled hours, the 240-row bound and continuity across module reloads.
+Changed headers, truncated/NUL tails, CRLF, malformed/excess rows and oversized files must be
+preserved byte-for-byte as `vram.previous.csv` while sampling resumes. An oversized segment may
+not be read into memory. Rename failures keep the source and retry. Three consecutive nil/error
+calls stop sampling; valid results reset that count and off/on permits an immediate retry.
+These checks run in `tools/test.ps1`.
+
+[`test_companion_stability.py`](../tools/tests/test_companion_stability.py.md) runs 131 UI scenarios
+against the real menu, guide, i18n module and generated shipping catalogs: high/medium/low and all
+selection sources, T1's real non-NVIDIA/query-failed/no-layer data, fresh status on reopening,
+absent/malformed/unsupported reports, plus direct/default guide navigation in all seven languages.
+Older loaders must see update/manual-log-copy advice without R6 config keys or collection promises;
+R6 guide and docs examples must parse as complete JSON with the shipped allowlist intact. Six
+integration cases actually parse full schema-1 JSON documents for the menu and guide using Python
+as the native `util.JSONToTable` replacement. UI construction must write
+no configuration or Remix options. The guide controls wrap/stretch; visual font/layout acceptance
+still belongs to an authorized game session.
+
+The nested T3 worktree makes the guard test's default cache filename 262 characters long. On this
+machine its raw `std::filesystem::last_write_time` call fails despite the cache being written with
+an extended-length path. T3 uses an **ignored CMake-cache-only**
+`CMAKE_RUNTIME_OUTPUT_DIRECTORY=<absolute worktree>/out/build/win64-release/bin` override, then the
+unchanged `tools/test.ps1 -Config Release`; the guard suite passes from that shorter executable
+directory. Source, presets, test assertions and permissions remain unchanged.
+
+The fix pass also copied the default-layout guard executable to
+`out/r6-t3-fix/guard-short/nl_render_guard_tests.exe`. The **byte-identical executable** (matching
+SHA-256 recorded in `out/r6-t3-fix/guard-comparison.txt`) fails its repeated-preparation case at the
+long path and passes all **22 guard cases** at the shorter path.
+
+Full-access Release receipt (2026-10-31): `tools/test.ps1 -Config Release` exits **0**, with repo
+conventions, the build, all **23 CTests**, **288 tools Python tests**, **28 gmapack tests** and
+**25 Steam tests** passing (one existing skip in each of the latter two groups). The **37 companion
+tests**, companion/add-on i18n checks and skill validator pass separately. The earlier sandbox-only
+registry/Git errors do not recur. Logs are under `out/r6-t3-fix/` (`release-test.log`,
+`companion-tests.log`, `guard-long-path.log`, `guard-identical-short.log`). No native test assertions
+were changed, and no game was started.
+
+## R6 testers: reading memory
+
+The player checklist and crash handoff are in [STABILITY.md](STABILITY.md), also available through
+RTX Remix > Start here > Memory and stability guide. Record UTC/local time, map, models/mods,
+the action being tested and frame rate alongside each reading. Compare the same scene and camera,
+with the same settings and elapsed time after loading; change one setting per comparison.
+
+| Reading | Where / how | What to compare |
+|---|---|---|
+| Immediate Remix VRAM | Console `rtx_vram_stats` (RTX fixes module) | Driver allocation/budget, DXVK allocation/use, retained pools, replacement textures/geometry, buffers, acceleration structures, micromaps, render targets and D3D9 app resources. Run before and after an expensive action or map change. |
+| Loader memory history (R6 loader only) | `native-loader\logs\memory.csv` and rotated `memory.1.csv`, every 10 s | Process private bytes and working set, system commit/limit and available RAM, process GPU local/non-local usage and budgets. Only after `status.json` reports `activation.performance_tier`, `diagnostics.memory_telemetry` is `on` by default; `off` disables it. Older loaders reject this config key. |
+| Remix category history | `garrysmod\data\native-loader\vram.csv` and `vram.previous.csv`, every 30 s | Same API totals/categories, at most 120 samples per segment. Archived client setting `nativeloader_vram_telemetry` defaults to 1; 0 stops it. No API means no samples. Read the previous segment first, then the current one. |
+| Runtime HUD | Add `dxvk.hud = memory` to the game root's **dxvk.conf**, preserving its other lines, then restart | Watch DXVK memory during the same action. Restore the previous line after the comparison. This HUD does not account for every driver-owned allocation. |
+| Broader health snapshot | Console `rtx_agent_health`, when the bundled `rtx_agent` add-on is available | Its `health.json` includes Remix VRAM, Lua memory, model/entity counts and loaded components; correlate with the CSV times. |
+| Windows commit | Task Manager > Performance > Memory > **Committed** | Used versus limit for the whole system, not just GMod. Compare with the loader's system commit counters; inspect process private bytes separately. |
+
+CSV values are bytes unless the column says otherwise. In `vram*.csv`, **only**
+`forkTextureCacheCount` is an entry count; divide byte values by 1,048,576 for MiB. Timestamps are
+ISO 8601 UTC. A blank cell means unavailable/invalid, not zero. Each append is local; do not infer
+a crash cause from a final sample up to 10/30 seconds before the fault.
+
+`driverAllocatedBytes` includes allocations outside DXVK's allocator (for example DLSS/NGX and
+NRC CUDA); `totalAllocatedBytes` is DXVK's own allocation. Their difference is a useful overhead
+estimate, not another category to add to the totals. `totalUsedBytes` and the `used*Bytes` columns
+describe use within those allocations; do not sum totals and categories. The driver budget is
+dynamic and can be smaller than the adapter's physical VRAM. Growing non-local use can indicate
+memory pressure but does not establish why a device was lost. Working set is resident process RAM,
+private bytes is process commit, and system commit covers all processes; none is interchangeable.
+
+Telemetry is bounded by sample count; long gaps between sessions do not count as sampled time.
+Copy both segments promptly after a fault. The bootstrap session folder keeps its own memory tail;
+copy companion `vram*.csv` separately. Copy `garrysmod/data/native-loader/status.json` and
+`session.json` **before restarting**: the next start rewrites them and the evidence collector does
+not copy them. The R6 project manager must verify actual API readings, HUD
+visibility and Task Manager agreement in an authorized game session; offline harnesses test the
+sampler/UI contract without starting a game.
+
+## R6 T6 performance-tier payloads
+
+`tools\test.ps1 -Config Release` includes `tools/tests/test_package_runtime.py`: optional
+medium/low tiers are hashed, copied, archived and inventoried at fixed `config/dxvk-tiers/` paths,
+without changing the manifest schema/requirement or its unconditional layer lists. Invalid tier
+names, repeated tiers, non-rtx keys, malformed/empty/duplicate assignments, bad UTF-8 and missing or
+non-conf files are refused before output. Existing runtime packager behavior remains covered.
+
+`tools/tests/test_runtime_tiers.py` parses every `packages/runtime/layers/*.conf`. Low/medium and
+new layers must match a pinned table of real option names, C++ types and inclusive ranges/enums,
+cited to declarations in the fully patched R6 T4 runtime source. Typos, wrong types and invalid
+values fail, including numeric/enum boundary fixtures. Classic/compiler are pinned byte-identical;
+classic's 15 obsolete ignored keys are not falsely listed as real options. Refresh the table from
+the patched source when updating the runtime. No external checkout is required to run the test.
+
+`tools/tests/test_drop_top_mip.py` uses independently generated compressed DDS fixtures: legacy
+DXT1/3/5, ATI1/2, BC4U/S, BC5U/S and every accepted DX10 BC1/2/3/4/5/6H/7 variant. Each checks
+8/16-byte block sizes, original/result linear sizes and refusal of a wrong linear size. Covers
+rectangular images, minimum block sizes, exact mip 1 and lower-mip bytes, header preservation,
+single remaining mip flags, corrupt headers/lengths/shapes/formats and refused overwrites. All
+scratch stays under `out/tmp`. Run these alone from the worktree root with:
+
+```powershell
+python -c "import sys,unittest; sys.path.insert(0,'tools'); unittest.main(module=None,argv=['unittest','tests.test_package_runtime','tests.test_drop_top_mip','tests.test_runtime_tiers','-v'])"
+python tools/inputs.py verify --deep
+python tools/build_package.py --require-nlctl --keep-work
+```
+
+Real-asset verification: regenerate the three `_4096.dds` files with
+[`drop_top_mip.py`](../tools/sky/drop_top_mip.py.md), compare the output hashes to
+`packages/runtime/files.json` and verify the retained bytes against source mip 1 onward. The
+combined package's generated manifest/inventory must contain both tier payloads and all three
+smaller skies, while its default DXVK layer list still contains only classic/compiler layers.
+
+The PoC measurements (2026-10-31: both maps, each tier, unpinned and pinned cameras, 4K) and how
+they were taken are in ADR 0064. Repeat them with `poc_session.py config --performance-tier <tier>`
+and `run --fps 30 --camera <view> --width 3840 --height 2160`, checking the runtime log's
+"Effective RtxOption values". Still open: a zoomed sky, an 8 GB card, and class-limited low on a
+card above 8 GiB with `lowMemoryGpu` and an Automatic-preset flip. Run-specific evidence belongs in the
+[handover status](handover/R6-T6-performance-tiers.md#status).
+
+The review-fix validation passes 23 focused T6 tests, deep verification of all ten input parts,
+the combined package build with `--require-nlctl` and `tools\test.ps1 -Config Release`: repo
+conventions, 23/23 CTests and Python groups 28/25/291 (two expected skips). The handover status
+records the run logs.
+
+## R6 T2 local evidence and telemetry
+
+2026-10-31: `tools/test.ps1 -Config Release` passed all 24 CTests and 334 Python tests (28 gmapack,
+25 Steam, 281 tools; two expected fixture/environment skips). The final log is
+`out/r6-t2-evidence/release-tests-final-verified.log`. Nine evidence cases, eight memory cases, strict
+config tests, Node/LuaJIT notices and real-worker synthetic integration all passed. No GMod launch,
+in-game warning/soak comparison or real device-loss reproduction was performed by T2.
+
+On the long `r6-t2-evidence` worktree, the pre-existing guard idempotence check reaches a 261-character
+cache path and plain `std::filesystem::last_write_time` fails (`loader/guard/tests/test_early.cpp:198`).
+An archived rebuild of original commit `7759c43` reproduces it; that exact executable passes from a
+shorter `out` path. Local validation keeps all tests and sources intact, with an ignored CMake
+include at `out/r6-t2-evidence/short-guard-output.cmake`: deferred `set_target_properties` sets only
+`nl_render_guard_tests`'s `RUNTIME_OUTPUT_DIRECTORY` to `${CMAKE_BINARY_DIR}/g`. It is loaded through
+the local cache variable `CMAKE_PROJECT_native_loader_INCLUDE`; no tracked CMake or guard test edit,
+drive mapping or system setting change. Logs and the baseline rebuild are in `out/r6-t2-evidence`.
+
+`tools/tests/test_presentation_ui.py` runs the actual menu JavaScript in Node and the embedded local
+notice reader in LuaJIT, without a game/browser: five failure classes and RAM text in all seven
+languages, evidence-folder copy, stale/other-process snapshots including PID reuse, bounded reads/
+retries, once-per-start acknowledgement, language changes, hidden/home/map transitions and no
+automatic outbound action. The C++ presentation tests verify current-process metadata, embedding,
+ASCII output for the game's decoder and unchanged stock menu sources.
+
+`nl_tests "memory:"` checks byte/UTC CSV fields, unavailable counters, row/byte rotation,
+foreign/edited/locked history preservation, interrupted receipt/rotation recovery, actual kernel
+queries, latest-only commit snapshots and strict warning thresholds (below 32 GiB, above 70 percent,
+unknown/zero limit and overflow boundaries). The config test rejects invalid telemetry modes/types.
+`nl_telemetry_integration` uses the real DLL in generated synthetic host roots: two flushed samples
+ten seconds apart, previous history saved before new sampling, `nlctl` text/JSON, history off and
+loader disabled. `nl_proxy_kernel32_imports` checks static and delay import directories.
+
+`nl_tests "evidence:"` uses only generated game roots in the worktree's build tree. It covers every
+classification, optional/malformed structured GPU data, whole-log preservation before a simulated
+runtime truncation, ASCII/UTF-16 OOM strings crossing streaming chunks, stale/future file filtering,
+pre-R6 loader record fallback, empty/clean sessions, locked dumps, byte/file limits, five-session
+retention and preservation of edited archives. It prints mean/max collection time for 30 empty starts.
+`nlctl status <fixture> [--json]` reports previous-session data even without a journal.
+No game launch or source dump modification is involved.
+
 ## Release QA protocol (field install, R4)
 
 What review R4 used to test a release on the user's own install quickly and without guesswork. One
@@ -702,3 +886,284 @@ checks the resync rate limit and the single-shard cap; `test_player_body.py` cov
 private copy, draw-time reuse and the shared-material backoff. In game (not run in R4): after a
 late join on a map with many broken windows, every pane's debris is visible within a few seconds
 and the console shows no reliable-buffer overflow.
+
+## R6 T1 loader layers
+
+`loader/tests/test_activate.cpp` checks that the non-NVIDIA Remix layer precedes the package's
+short DXVK copies, including long payload paths and packages with no DXVK layers. The synthetic
+proxy activation integration checks the same order without starting Garry's Mod.
+
+### R6 T1 tier and diagnostic checks
+
+- `test_performance.cpp`: all 15 required GPU/no-NVIDIA examples plus class/laptop/name-boundary
+  cases, inclusive byte-exact 8.5/12.5 GiB thresholds, multi-adapter maximum, config overrides and I2.
+- `test_activate.cpp`: all high/medium/low/auto x off/next_start/always x NVIDIA/non-NVIDIA lists,
+  package tier records, old-package low fallback and medium omission, config notes and diagnostics
+  disable behavior. Default combined lists stay below the runtime's 259-character budget.
+- `test_gpu_diagnostics.cpp`: read-only probe, unchanged preparation, next_start once and explicit
+  re-arm, empty interrupted marker, concurrent claims, blocked paths and byte-identical config.
+- `test_config.cpp`, `test_status.cpp`: new config schema keys, recoverable invalid tier values,
+  strict dump modes, I2 and notes in JSON/bootstrap log.
+- Proxy presentation tests check tier data/localized-row embedding; the existing seven-language
+  catalog and Node menu checks cover label completeness and text-only rendering.
+- `nl_activation_integration`: a generated fake runtime/package checks diagnostic layer contents
+  and order, the absolute created dump folder/environment at host entry, next_start once, re-arm,
+  read-only preview, always/off, config preservation, tier fallback and generated package tiers.
+  It launches only the synthetic host under this worktree's out, never Garry's Mod.
+
+Run `tools/test.ps1 -Config Release`. On machines where PowerShell's script policy blocks direct
+invocation, a process-only `powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1
+-Config Release` runs the same suite without changing the machine's policy.
+
+Integration still needs a real session by the project manager: force low/medium, confirm the
+selected tier file precedes classic defaults in remix-dxvk.log and that its effective RtxOption
+values (lowMemoryGpu, OMM cap, skyProbeSide, froxel scale, terrain resolution) match. Compare high
+against the existing classic look. On a non-NVIDIA GPU check Auto (graphicsPreset 5). With
+next_start, check `Aftermath enabled` and the requested crash-state option in startup config;
+confirm the following start omits diagnostics. A real GPU fault/dump was not induced by T1.
+
+### R6 T1 validation result (2026-10-31)
+
+Final `tools/test.ps1 -Config Release` run: native build and all 23 CTests passed, including
+26 synthetic activation scenario groups, the tier/config/state unit cases and KERNEL32 imports.
+The Python gmapack group passed (28 tests, one skipped) and steam group passed (25 tests, one
+skipped). The tools group ran 280 tests: its only failures were the 21 existing
+`test_field_snapshot.FieldSnapshotTests` cases, all in setUp at `tools/tests/test_field_snapshot.py:136`:
+`reg add HKCU\Software\NativeLoaderTest_<random> ...` returned 1, `ERROR: Access is denied.`
+A single-case diagnostic rerun captured that exact stderr. No tests were skipped or weakened to
+hide this sandbox restriction; the project manager must run the complete gate with fixture-key
+access before integration. The two documented skips belong to the existing Python suite.
+
+Direct script invocation needed a process-only PowerShell ExecutionPolicy Bypass. Git-reading
+Python tests used GIT_CONFIG_GLOBAL pointing to this worktree's `out/r6-t1/test.gitconfig`, with
+only this worktree in safe.directory; no user/global Git file or permissions were changed.
+The shipped config remains its original minimal allowlist: the optional new values default to
+auto/off in nl_core, so existing installs need no config rewrite. No tools script changed.
+
+Evidence: `out/r6-t1/release-tests-final.log`, `registry-blocker.log`, CTest's
+`out/build/win64-release/Testing/Temporary/LastTest.log`, and `out/m4-synthetic/release-*`.
+The Node harness variant under `out/r6-t1/menu-tier-harness.js` also passed, explicitly rendering
+the low/fallback line in all seven languages with the real menu script/catalog. No real Garry's
+Mod launch, field-install write, runtime payload import, software install or public action occurred.
+
+### R6 T4: runtime memory diagnostics
+
+Patch 0015 registers `test_memory_diagnostics` in the runtime's `unit_tests` target. Use its
+dedicated `_CompUnitTest_x64` build, as described by the fork's `.agents/skills/run-unit-tests`.
+The test needs no GPU: it checks first/one-minute warning timing, independent and pending suppressed counts,
+cut/present deduplication, a five-minute deadline unaffected by cuts, all heap/category fields,
+64-bit byte precision, heap locality and device-local driver totals, nonzero free-VRAM/previous-budget/
+use/hard-limit/soft-limit warning values, identical marker/log timestamps and escaped reasons,
+per-process temporary files, replacement of an earlier crash marker, bounded sharing retries,
+temporary-file cleanup and preservation on write/replacement failure. It clears a stale
+`memory-fixture` at startup, including files left by an interrupted test.
+Patch 0015 also records the five previously omitted unit sources (GPU profile, GPU overrides,
+hot reload, dynamic options and particle schema) and the medium API app from the user's staged fork
+index. All six build without source guards; the five unit tests are registered in the 27-test suite.
+The medium API app is a separate GPU rendering executable, not a registered CPU unit test.
+
+For the runtime build, apply all fifteen patches and run
+`runtime\build_runtime.ps1 -Fork <own clone> -Worktree <verified tree>`. `-Verify` checks the tree
+and SDK/submodule identities without building. T4 uses only preinstalled SDKs; APIC downloads are
+disabled and an offline resolver validates local Packman package/link identities before every
+dependency step. Run `python tools\inputs.py verify --part runtime --deep`,
+`python tools\build_package.py --require-nlctl` and `tools\test.ps1 -Config Release` after import.
+The build wrapper rejects a missing/empty build directory (no `meson-private/coredata.dat`) and
+saved configurations with Debug build type, Debug DLL CRT or APIC downloads enabled, before any
+setup/compile/import. The review exercised all five rejection cases and verified unchanged hashes
+for `base.json`, `packages/runtime/files.json` and the packaged DLL. First-time source setup is
+configure-only through `python -m mesonbuild.mesonmain setup` after `Enter-VsDevEnv`, without the
+fork helper's separate vswhere/PATH lookup; the two shader passes run once through the common build path.
+
+The project manager's later authorized PoC acceptance (not performed by T4):
+
+1. At a map/camera cut, find one `[RTX Memory]` JSON line with `event:"camera_cut"`, the current
+   frame, every driver heap's budget/use and `device_local` flag, device-local `driver` budget/use,
+   and DXVK's device-local totals/eight categories. Cut samples describe the outgoing scene before
+   its delayed teardown. Compare
+   nearby values with `rtx_vram_stats`; they are sampled at different instants. Stay on the map for
+   five minutes after device creation and find `event:"periodic"` even if intervening cuts occurred.
+2. Under repeated OMM pressure, each warning kind logs immediately and then at most once every
+   sixty seconds, including `suppressed repeats: N`. A cut that recreates OMM must not reset its
+   limit. Counts are emitted with the next eligible occurrence, not on an idle timer. A budget-drop
+   line includes free VRAM, the previous budget, OMM use and the hard/soft free-VRAM thresholds in
+   bytes; those values are captured before free VRAM is invalidated. A loss snapshot includes pending
+   `omm_suppressed` counts.
+3. In a development build only, arm the crash hotkeys with process-local
+   `RTX_ENABLE_CRASH_HOTKEY=1` (or the Development tab), then Ctrl+Shift+Alt+G invokes the runtime's
+   GPU-crash shader. This ends the process. Check for `[RTX Memory]` with `event:"device_lost"`
+   before the GPU crash-state recorder, either Aftermath wait and Sentry handling, and a complete
+   schema-1 `last_gpu_crash.json` beside the runtime log, with identical UTC time, memory fields and
+   optional escaped queue `reason`. The bridge is notified before diagnostics; the log is attempted
+   before the marker write and its short file-replacement retries.
+   The default folder is `rtx-remix/logs`; a process-local
+   `DXVK_LOG_PATH` relocates both. Repeat with an unwritable marker path: the original exit behavior
+   must remain. No Remix `user.conf` edit is needed.
+
+These diagnostics do not determine the cause of a GPU fault. Aftermath tests and real device-loss
+handling still need a game session; the CPU test covers serialization and best-effort file writes.
+
+T4's initial dedicated unit build passed 22/22 tests; the review build passes 27/27 after restoring
+the five omitted unit tests. Its unit install helper mishandles `!` in paths;
+stage `d3d9.dll` and the two compiled USD plugins/resources into the unit test directory using
+literal-path PowerShell copies instead of the affected batch helpers. The runtime rebuild and
+`-Verify` pass, input verification reports zero problems, and the 1,008-file combined GMA passes
+the worktree's `nlctl` checks. Build identities and exact import commands are in
+[runtime/README.md](../runtime/README.md#r6-t4-rebuild-2026-10-31).
+
+Before this review fix, `tools\test.ps1 -Config Release` was run both at the unchanged `7759c43`
+checkout and after T4.
+Both runs pass repository conventions, 333 Python tests (two skips), and 22 of 23 CTests, with the
+same sole failure: `nl_render_guard_tests`, `test_early.cpp:198`, calls `last_write_time` on its
+260-character generated cache path without an extended-length path. Copying the unchanged guard
+test executable to `out/tmp/nl_render_guard_tests.exe` passes all 22 guard cases. T4 leaves
+`loader/` unchanged. Receipts: `out/tmp/release-baseline.log`, `release-final.log` and
+`guard-short-path.log`.
+
+### R6 T5 fixes memory-limit compatibility
+
+The GPL source bundle's
+[`test_memory_limits.py`](../packages/fixes/licenses/oversized-skinning/memory-limits/tests/test_memory_limits.py.md)
+compiles the actual production method and Lua wrapper bodies in a fake SDK harness. Run from a
+VS 2022 x64 developer shell, with TEMP/TMP below this worktree's `out/tmp`:
+
+```powershell
+python packages/fixes/licenses/oversized-skinning/memory-limits/tests/test_memory_limits.py --out out/tmp/memory-limits-test
+```
+
+It checks 8,000 concurrent calls, an absent runtime, the retained Lua `true` result, both invalid
+argument cases, a single explanatory log and zero configuration writes. It rejects a module-open
+call or unsupported key strings in the resource source. The native branch's existing
+`oversized_skinning_test.cpp` also passes C++17 `/W4 /WX`, with assertions enabled. Build both
+the base and changed module using the recorded projects and dependencies; compare PE architecture,
+imports/exports and unsupported-option strings, then `inputs.py verify --part fixes --deep`.
+See [source and rebuild pins](../packages/fixes/licenses/oversized-skinning/memory-limits/Source.md).
+
+Integration acceptance (not run by T5): enter maps repeatedly and confirm no
+`rtx.resourceLimits` rejection in `remix-dxvk.log`. Explicitly call
+`RemixResource.SetMemoryLimits(256, 1024)` twice: both return `true`, one compatibility notice
+appears per loaded module lifetime, and no limit-setting API writes occur. No game is launched by
+the offline checks.
+
+### R6 T5 ToPBR compression
+
+The [conversion record](../packages/fixes/licenses/topbr-bc7/conversion.json) pins the encoder,
+its arguments and every original/converted DDS hash. The offline audit checks all 83 files:
+DXGI 98 (BC7_UNORM, linear), single 2D image, unchanged name/dimensions/mip count, exact block
+payload size, and successful independent Pillow decoding of all 816 mip levels. Compare the
+decoded raw channels against the pre-conversion aggregate commit in that record; RGB errors
+are measured in 8-bit units, and alpha must match. All 113 USD references resolve to the same
+83 raw normal/roughness files. The [package notes](../packages/fixes/licenses/topbr-bc7/README.md)
+record measured errors and the before/after sizes; local evidence is in `out/topbr-bc7`.
+
+```powershell
+python tools/inputs.py verify --part fixes --deep
+tools/test.ps1 -Config Release
+python tools/build_package.py --require-nlctl
+```
+
+Integration acceptance (not run by T5): compare Construct brick/concrete/water, arms and
+weapons, and Kleiner in matched lighting and camera positions, near and distant. Their normal
+direction, seams and roughness should retain the preceding look. BC7 is lossy; matching metadata
+and low decoded-channel error do not replace this renderer check.
+
+T5's 2026-10-31 package build with `--require-nlctl --json` passes: the combined GMA is
+1,730,986,849 bytes with 1,017 payload files. A separate archive read matches all 83 texture
+hashes to the conversion record, the native DLL hash to its build pins, and `materials.usda`
+byte-for-byte to the unchanged input. Receipt and logs are under this task's `out/dist` and
+`out/tmp/t5-package-build.log`; nothing was uploaded or installed.
+
+`tools/test.ps1 -Config Release` also passes on 2026-10-31: 23 CTests and 333 Python tests
+(2 skips), plus repo conventions. The native compatibility harness and unchanged oversized-
+skinning test pass separately; `inputs.py verify --part fixes --deep` reports zero problems.
+The full Release log is `out/tmp/t5-release-tests.log` in this task's worktree.
+
+### R6 T1 review regressions (2026-10-31)
+
+The independent-review fix pass adds these checks, superseding the initial pass's strict dump-mode
+and manual-only rearm descriptions above:
+
+- `loader/proxy/tests/test_runtime.cpp` links the real activation implementation and loads the
+  existing fake runtime. A directory and a read-only stale file at tier.conf both preserve active
+  RTX, omit the tier from the effective list/environment, clear I2's layer, report the failure and
+  generate a menu with no tier. A blocked marker reset preserves RTX and the blocker with a note.
+  These tests supply no GPU reader, so unknown-GPU overrides and write failures run on every host.
+- `test_config.cpp` accepts invalid dump strings/types as off with a note. `test_activate.cpp`
+  checks empty/missing GPU readers, source config for overrides, stale-tier removal including a
+  user duplicate, malformed UTF-16 descriptions retaining vendor/VRAM, and combined package/tier/
+  diagnostic/user DXVK lists at exactly 259 and 260 characters. The new loader layers add 67.
+- `test_performance.cpp` includes RTX 5090 D, GTX 1080 Ti and RTX A2000 Laptop GPU; the professional
+  laptop case proves an unrecognized class does not get the consumer Laptop adjustment.
+- `test_gpu_diagnostics.cpp` exercises marker reset and re-consumption without config writes,
+  no writes for an absent marker, and preservation of a directory at the marker path.
+- `test_presentation.cpp` checks listed layers, empty/classic layers, inactive plans and the ADR
+  0056 recipe refusal, including the -insecure exception. The real Node menu harness checks all
+  seven languages with a tier, without its layer and without its adapter description.
+- Synthetic `nl_activation_integration` verifies off-mode rearm followed by a single new capture,
+  invalid diagnostics preserving activation, and a leftover low/medium tier.conf omitted from
+  both layers.dxvk and DXVK_CONFIG_FILE on the following high run.
+
+Fix-pass validation: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/test.ps1 -Config
+Release` exited 0, with repository conventions, 23/23 CTests and all three Python groups passing:
+gmapack 28 tests (one skip), steam 25 (one skip), tools 280 (no skips). Native cases include 223
+non-fault core cases, 34 proxy cases, 22 guard cases and 26 synthetic activation scenario groups.
+The initial pass's HKCU fixture restriction did not recur with this run's full user access.
+
+The reported long-path guard failure did not reproduce: the pre-rebuild baseline guard executable
+and the final Release CTest each passed 22/22 cases in the original build path. The identical final
+executable (SHA-256 compared) also passed 22/22 after copying it to `out/g/nl_render_guard_tests.exe`;
+its fixture root stays under this worktree's out and the executable path is 37 characters shorter.
+No guard code, fixtures or test exclusions were changed. The shorter-path check is:
+
+```powershell
+New-Item -ItemType Directory -Force out/g | Out-Null
+Copy-Item out/build/win64-release/loader/guard/tests/nl_render_guard_tests.exe out/g/
+& out/g/nl_render_guard_tests.exe
+```
+
+Evidence is `out/r6-t1-fix/release-tests.log`, `guard-baseline-long.log`, `guard-short.log` and
+`guard-paths.json`, plus CTest's `out/build/win64-release/Testing/Temporary/LastTest.log` and
+`out/m4-synthetic/release-68168-20261031T160751`. Only synthetic hosts/fake DLLs ran. Real Remix
+effective options, actual GPU fault capture/upload and in-game behavior remain for the project
+manager; this pass never launched Garry's Mod or touched the field/PoC installs, Steam files or
+any player's user.conf, and performed no push, merge, tag or publication.
+
+The review fix passes all 27 runtime unit tests and all six recovered sources compile without
+guards. Five rejected build configurations leave the runtime inputs unchanged; the verified
+Release rebuild imports only `d3d9.dll` (the two USD plugin hashes are unchanged), and the 1,008-file
+GMA passes `--require-nlctl`. The user's fork index hash and staged/working status remain unchanged.
+
+`tools\test.ps1 -Config Release` now passes repository conventions, all 23 CTests and 333 Python
+tests (two skips) using a session-local `ctest` wrapper for the known guard-path limitation. It
+copies the unchanged guard executable to `out/tmp/nl_render_guard_tests.exe`, verifies identical
+SHA-256, temporarily points that one generated CTest command at the copy, executes every registered
+test, and restores the generated command in `finally`. No loader or test source is changed. The
+plain long-path guard defect remains outside T4's allowed paths. A whole-worktree `subst` alias
+was unsuitable: `QueryFullProcessImageNameW` returns the real `H:` image path, so the deployment
+test's running-process comparison fails against an `R:` target. The alias was removed and the
+final suite ran under the real path. Receipts and the local wrapper are in `out/tmp`, prefixed
+`runtime-review-`: `release-tests.log`, `release-tests-drive-alias.log`, `test-short-guard.ps1`,
+`build-guards.log`, `unit-tests.log`, `inputs-verify.log`, `package-build.log` and `fork-unchanged.log`.
+The standalone medium API GPU app and an actual game/device-loss trigger were not launched.
+
+The second review configured `out/tmp/runtime-review2-setup` offline with the wrapper's direct
+Python/Meson setup command, without compiling runtime targets. All 95 saved build options match
+`_CompRelease_x64`; the scratch folder was then removed. The comparison receipt retains the
+Release/Ninja/optimization/CRT/Tracy/shim/APIC values and Meson's three compiler-probe objects
+(`out/tmp/runtime-review2-setup-comparison.json`). The focused diagnostics test also exercises a
+locked destination: two 10 ms replacement retries preserve the old marker, remove this process's
+temporary file and leave a foreign process's temporary file intact.
+
+The second-review rebuild uses `remix-main+024a9866` and passes all 27 runtime unit tests, including
+the stale-fixture rerun. The existing config-save test's symbolic-link subcase is skipped by Windows
+error 1314 (the process lacks that privilege); the other subcases pass. Runtime source verification,
+deep input verification (zero problems), and the 1,008-file package's `--require-nlctl` check pass.
+Only `d3d9.dll` was imported; the two USD plugin hashes and the six recorded test-source blobs are
+unchanged. Second-review receipts use the `out/tmp/runtime-review2-` prefix; `unit-summary.json`
+retains only names, results, exit codes and timings.
+
+Second-review repository validation also passes `tools\test.ps1 -Config Release`: conventions,
+all 23 CTests and 333 Python tests (two skips). It uses the same session-local CTest wrapper for
+the known guard-cache path limitation; the copy's hash matches and the generated CTest command
+is restored afterward. No loader/test source changed. `runtime-review2-release-summary.json`
+records those checks beside `runtime-review2-release-tests.log` and the local wrapper.

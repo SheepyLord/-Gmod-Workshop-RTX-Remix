@@ -88,13 +88,18 @@ def probe_lines(console: str) -> dict[str, list]:
 
 def check_record(record: dict) -> list[str]:
     """What the session record itself shows wrong (empty: nothing)."""
-    if record.get("failed"):
-        return [f"the session step failed: {record['failed']}"]
     problems = []
+    if record.get("device_lost"):
+        problems.append("GPU device lost")
+    if record.get("hung_seconds") is not None:
+        problems.append(f"game window hung for {record['hung_seconds']} s")
+    if record.get("failed"):
+        return [*problems, f"the session step failed: {record['failed']}"]
     if not record.get("map_loaded"):
         problems.append("the map did not load")
     if not record.get("normal_quit"):
-        problems.append(f"no normal quit (exit {record.get('exit')})")
+        meaning = f"; {record['exit_name']}" if record.get("exit_name") else ""
+        problems.append(f"no normal quit (exit {record.get('exit')}{meaning})")
     if record.get("lua_errors"):
         problems.append(f"{record['lua_errors']} Lua errors in console.log")
     activation = record.get("activation") or {}
@@ -246,6 +251,8 @@ def evaluate(name: str, step: str, evidence: Path, output: str = "") -> dict:
         problems.append(f"crash minidumps kept in {step}\\crash-reports: {record['crash_reports']}")
     return {"name": name, "step": step, "passed": not problems, "problems": problems,
             "seconds_to_map": record.get("seconds_to_map"), "exit": record.get("exit"),
+            "exit_hex": record.get("exit_hex"), "exit_name": record.get("exit_name"),
+            "device_lost": record.get("device_lost", False), "hung_seconds": record.get("hung_seconds"),
             "shots": [shot.get("label") for shot in record.get("lua_shots") or []],
             "menu_screenshot": record.get("menu_screenshot")}
 

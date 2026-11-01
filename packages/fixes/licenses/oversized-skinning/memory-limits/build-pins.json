@@ -1,0 +1,73 @@
+{
+  "license": "GPL-2.0",
+  "repository": "https://github.com/SheepyLord/garrys-mod-rtx-remixed.git",
+  "base_commit": "b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe",
+  "source_commit": "a2c8dbc5e00e3effe49a8de9609dd1b8af34d552",
+  "source_branch": "r6-no-memory-limits",
+  "native_changes": [
+    "source/module.cpp",
+    "source/remixapi/remixapi.cpp",
+    "source/remixapi/remixapi.h",
+    "source/remixapi/resource_lua_bindings.cpp"
+  ],
+  "dependencies": {
+    "garrysmod_common": "a854f237b79087826aa9a98a05de5e0d2b4502b6",
+    "garrysmod_common/detouring": "3e0b0388f6d886f6c44038ce537871b5397e9468",
+    "garrysmod_common/detouring/minhook": "e2a49551a5c8b372cb962720997dc5c43df6b4b9",
+    "garrysmod_common/premake/premake-export-compile-commands": "d22b7d1c86b0ca453fdde2ac731627f0b947f636",
+    "garrysmod_common/scanning": "d505081818ebd418af1966be64c09998babc6483",
+    "garrysmod_common/sourcesdk-minimal": "61bf02ea6eaedcabf66784dfb0e54c9e3feefdcc"
+  },
+  "configuration": "ReleaseWithSymbols|x64",
+  "toolchain": {
+    "msbuild": "VS 2022 Build Tools v143",
+    "msvc": "14.44.35207",
+    "windows_sdk": "10.0.26100.0"
+  },
+  "build_command": "MSBuild.exe gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:OutDir=<output>/",
+  "projects": "../build-projects (unchanged from the preceding packaged build)",
+  "binary": {
+    "size": 4847616,
+    "sha256": "cfcbdc95617f88ec3b002e47d35838376e77e5bba77023365a81927bbd04cfe0"
+  },
+  "previous_binary": {
+    "size": 4848128,
+    "sha256": "5e626e34f412cd55e93a485cd1d777794b339a0cb7a5082935454b72fbc72db7"
+  },
+  "baseline_binary": {
+    "size": 4848128,
+    "sha256": "59d1fd39081bc0fbf45c2be4e2eea12424a4a4d48a26010372c52b04b4bbc7e4"
+  },
+  "oversized_source": {
+    "source/HardwareSkinningHooks.cpp": {
+      "stored_sha256": "746617330685026ce5bf25c0ec55e0bfb36affe636b0ee4546c423707bde31d4",
+      "checkout_sha256": "746617330685026ce5bf25c0ec55e0bfb36affe636b0ee4546c423707bde31d4",
+      "equal_after_crlf_normalization": true
+    },
+    "source/oversized_skinning_policy.h": {
+      "stored_sha256": "09097e46c6c28707b3777fa7a4593b0ee886fb0acab02679eba0a2d19a4bf6c2",
+      "checkout_sha256": "cc17a3c7efa314930f3d5bf765a6916d30d3e6120662a91419ebe001f4ddcb40",
+      "equal_after_crlf_normalization": true
+    },
+    "tests/oversized_skinning_test.cpp": {
+      "stored_sha256": "f9ecc55a0731b9a6290d3b3236d28837b5a93c8c1f8f51fa0947bd1df0626b27",
+      "checkout_sha256": "f1dccf088630e4cd7e142ebd0d2828d478e1a22bfc3268c56738daa6ef5a9b56",
+      "equal_after_crlf_normalization": true
+    }
+  },
+  "checks": {
+    "imports_exports": "identical to packaged and baseline DLLs",
+    "unsupported_keys": "present in baseline, absent in new DLL",
+    "memory_limits_test": "PASS (8000 concurrent calls; disconnected API; Lua true result and invalid arguments; one log; zero config writes)",
+    "oversized_skinning_test": "PASS (MSVC C++17 /W4 /WX, assertions enabled)"
+  },
+  "files": {
+    "no-memory-limits.patch": "261a823cc2348355c09dd60f2a9be036b1ce06b879cdabfc800ea0fe1b01e609",
+    "source/module.cpp": "5b5117949f6fe550c773763ba0df33f83d50dfc3b07a1dc46b79cf45e6ece377",
+    "source/remixapi/remixapi.cpp": "f708f5972e0d7ecc9fe30b694bed4ec4dd322ea02fa59747d98772e2a60eceb5",
+    "source/remixapi/remixapi.h": "b1e4d31aba49fc2dc467386f9d6292fd6293ca1c74eaecf341bddb5fb363dfb9",
+    "source/remixapi/resource_lua_bindings.cpp": "32cca0818a7ccb771183c7087300a55c635b408571aa240e5a59093059e2f0f9",
+    "tests/test_memory_limits.py": "f4ad49478fa34f2f7acdc2717323af13fcd5ed6628651007dad7d89cc284f4f0",
+    "tests/test_memory_limits.py.md": "97a0f4d2ba97063bee5c67d35d57f1b55d44c10eaa1d85c9572e54a02b4d0533"
+  }
+}

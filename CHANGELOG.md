@@ -6,6 +6,76 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Added (R6: performance and stability; loader 0.11.0, [plan](docs/handover/R6-plan.md))
+
+- **Remix settings that fit your graphics card.** At each RTX start the loader picks a performance
+  tier for the NVIDIA card with the most video memory. `high` keeps the package's settings, tuned on
+  an RTX 5090. `medium` (10 to 12 GB, or an x70 model) and `low` (8 GB, or an x50/x60 model; a laptop
+  GPU counts one step lower) use fewer light bounces (8 instead of 12), a lighter neural
+  radiance cache and smaller memory budgets: micromaps, sky probe, volumetric fog grid and terrain
+  atlas; `low` also uses Remix's low-memory mode and 4096-pixel night-sky images. Settings saved in
+  Remix's menu still win. `"remix": { "performance_tier": ... }` in `config.json` picks a tier
+  yourself; the RTX Remix tab's Start here page shows the tier and why. Measured at 4K on an RTX
+  5090: medium and low are 5-9 percent faster than high and use 170-750 MiB less video memory
+  ([ADR 0062](docs/decisions/0062-loader-layers-performance-tiers-and-gpu-dumps.md),
+  [ADR 0064](docs/decisions/0064-performance-tier-defaults.md)).
+- **On AMD and Intel, Remix's own preset for your GPU takes effect.** The loader's Remix settings
+  now come before the package's copies, which used to override it.
+- **GPU crash dumps when asked for.** `"diagnostics": { "gpu_crash_dumps": "next_start" }` turns on
+  NVIDIA's GPU crash diagnostics for one RTX start (`always` for every start; `off` by default). The
+  dumps go to `native-loader\logs\gpu`; the config file is never edited to consume the request.
+- **What a crash leaves behind is kept.** At the next start the loader copies the previous
+  session's Remix log, the crash dumps already on disk and the memory history into
+  `native-loader\logs\sessions` (five sessions, at most 200 MiB), before the runtime overwrites its
+  log. Nothing is uploaded or deleted at its source. The home menu, `status.json` and
+  `nlctl status` say what probably went wrong and where the copies are
+  ([ADR 0063](docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)).
+- **Memory history.** The loader records process, system and GPU memory every ten seconds in
+  `native-loader\logs\memory.csv` (the last one to two hours; `"diagnostics": {
+  "memory_telemetry": "off" }` stops it). The companion records Remix's own VRAM categories every
+  30 seconds in `garrysmod\data\native-loader\vram*.csv` (`nativeloader_vram_telemetry 0` stops it).
+- **A warning before Windows runs out of memory.** Once per start, before the first map, the home
+  menu warns when the system commit charge is over 70 percent of its limit, or the limit is under
+  32 GiB, and explains page files and closing other programs.
+- **The runtime says what memory looked like when the GPU was lost.** Its log reports driver
+  budgets and use for every heap at camera cuts, every five minutes and at a device loss, and
+  `rtx-remix\logs\last_gpu_crash.json` keeps the last device loss's numbers and how it was
+  detected for the next start. Repeated micromap budget warnings appear at most once a minute,
+  with a count, and a dropped micromap budget says how much VRAM was free and what the limits
+  were ([ADR 0065](docs/decisions/0065-runtime-memory-diagnostics.md)).
+- **A Memory and stability page in the guide** (all seven languages; the new translations are
+  agent-written and marked for review) and a [player checklist](docs/STABILITY.md): settings for
+  8 GB cards and 16 GB of RAM, reading memory during a session, and what to send after a crash.
+- **No more rejected memory limits at each map load.** The RTX fixes stopped asking Remix for cache
+  and VRAM limits it does not have; `RemixResource.SetMemoryLimits` stays a no-op that returns `true`
+  and logs once ([ADR 0066](docs/decisions/0066-fixes-memory-limits-compatibility.md)).
+- **Smaller ToPBR textures.** The fixes' 83 `~gmod_topbr` normal and roughness maps are linear BC7:
+  34.07 MiB instead of 136.25 MiB on disk, with the same names, sizes and materials
+  ([measurements](packages/fixes/licenses/topbr-bc7/README.md)).
+- An older loader (0.10.1 and before) rejects the new `config.json` keys and starts without RTX;
+  the README, the guide and the checklist say to update `bin\win64\winmm.dll` first.
+
+### Changed (R6, for developers)
+
+- `poc_session.py` watches crash prompts throughout each run, detects GPU loss and persistent window
+  hangs, bounds captures and shutdown, keeps the evidence, and names known crash exits;
+  `release_qa.py` reports device loss and hangs explicitly in its output and JSON summary.
+- Activation lists the tier layer and the non-NVIDIA layer first in `DXVK_CONFIG_FILE` (the first
+  file wins for `rtx.*`) and the GPU diagnostics layer last (its `dxvk.enableAftermath*` keys: the
+  last file wins for `dxvk.*`); an older package without tier files gets a built-in `low` fallback.
+  `status.json` reports `activation.performance_tier` and `previous_session`; a wrong diagnostics
+  value costs only that diagnostic (a note), never the loader.
+- `runtime\build_runtime.ps1` refuses a missing or non-Release Meson configuration before building
+  or importing, and a fresh setup calls Python's Meson directly in the repository's MSVC
+  environment; patch 0015 records the six unit-test sources the fork snapshot had left out. The
+  crash marker is written through a per-process temporary file, with two short retries.
+- `tools\tests\test_runtime_tiers.py` checks every tier key's name, type and range against the
+  patched runtime; `tools\sky\drop_top_mip.py` removes a DDS top mip losslessly. The classic layer
+  still holds 15 keys this runtime no longer has (old exposure, local tonemap and bloom options,
+  `occluderTextures`, `finalizeWithACES`).
+- The MMD PBR skill requires a 2048-pixel variant for 8 GB players.
+- The task-by-task record of R6 is in [docs/handover/](docs/handover/README.md) (R6-T1 to R6-T6).
+
 ### Fixed (R5: the user's QoL report of 2026-10-31, [handover](docs/handover/R5-qol.md))
 
 - **No more line across the night sky on modern_house.** Modern House RTX puts its settings back 23,

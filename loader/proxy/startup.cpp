@@ -2,10 +2,12 @@
 #include "modules.h"
 #include "presentation.h"
 #include "runtime.h"
+#include "telemetry.h"
 #include "early.h"
 #include "../client/catalog.h"
 #include "nl/activate.h"
 #include "nl/fs.h"
+#include "nl/memory.h"
 #include "nl/session.h"
 #include "nl/startup.h"
 #include "nl/status.h"
@@ -14,6 +16,7 @@
 #include <cstdio>
 #include <cwchar>
 #include <filesystem>
+#include <future>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -122,16 +125,29 @@ struct StartupContext {
   std::vector<std::pair<std::filesystem::path, std::filesystem::path>> read_redirects;
   std::filesystem::path early_guard_source;
   RuntimeActivation runtime;
+  std::future<evidence::Result> evidence_worker;
+  std::future<void> evidence_log_ready;
   StartupContext() {
     report.loader_version = NL_VERSION_STRING;
     report.utc = utc_now();
     report.process_id = GetCurrentProcessId();
+    report.session_token = memory::process_token();
     report.deployment.action = "apply";
     report.deployment.outcome = "skipped";
   }
 };
 
 void finish_report(StartupContext& context) {
+  if (context.evidence_worker.valid()) {
+    auto evidence = context.evidence_worker.get();
+    context.report.previous_session = std::move(evidence.previous);
+    for (auto& note : evidence.notes) context.report.session.notes.push_back(std::move(note));
+    context.report.session.notes.push_back("previous session evidence collected in " + std::to_string(evidence.elapsed_ms) + " ms (worker)");
+  }
+  if (context.prepared.config.from_file && context.prepared.config.enabled) {
+    const auto note = telemetry::start(context.root, context.prepared.config.memory_telemetry);
+    if (!note.empty()) context.report.session.notes.emplace_back(note);
+  }
   context.report.startup_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - context.began).count();
   status::write(context.root, context.report);
   const auto text = status::log_fields(context.report);
@@ -257,10 +273,28 @@ void startup_cxx(StartupContext& context) noexcept {
     context.report.deployment_ms = context.prepared.elapsed_ms;
     if (context.prepared.journal && context.prepared.journal->current)
       context.report.deployment.generation = context.prepared.journal->current->number;
+    if (context.prepared.config.from_file && context.prepared.config.enabled) {
+      // Start outside loader lock. Full log copying overlaps planning/presentation; dump copying
+      // overlaps runtime activation. The report joins the worker before the engine entry point.
+      try {
+        auto ready = std::make_shared<std::promise<void>>();
+        auto signal = ready->get_future();
+        const auto root = context.root;
+        const auto start = evidence::now_filetime();
+        const auto process = context.report.process_id;
+        context.evidence_worker = std::async(std::launch::async, [root, start, process, ready] {
+          SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+          return evidence::collect(root, start, process, [ready] { ready->set_value(); });
+        });
+        context.evidence_log_ready = std::move(signal);
+      } catch (const std::exception& error) {
+        context.report.session.notes.push_back(std::string("previous session evidence worker unavailable: ") + error.what());
+      }
+    }
     if (context.prepared.config.from_file && context.prepared.config.enabled && context.prepared.journal &&
         context.prepared.journal->current && !context.prepared.journal->pending) {
       try {
-        auto display = presentation::prepare(context.root, *context.prepared.journal->current, true);
+        auto display = presentation::prepare(context.root, *context.prepared.journal->current);
         for (auto& redirect : display.redirects) context.read_redirects.emplace_back(std::move(redirect.source), std::move(redirect.replacement));
         for (auto& note : display.notes) context.report.session.notes.push_back(std::move(note));
       } catch (const std::exception& error) {
@@ -271,7 +305,8 @@ void startup_cxx(StartupContext& context) noexcept {
       const journal::Generation none;
       const auto& generation = context.prepared.journal && context.prepared.journal->current ? *context.prepared.journal->current : none;
       context.report.activation.plan = activate::plan(generation, context.prepared.config, activate::environment_value, GetCommandLineW(),
-                                                      activate::primary_display, activate::graphics_adapters);
+                                                      activate::primary_display, activate::graphics_adapters,
+                                                      gpu_diagnostics::probe(context.root));
       if (context.report.activation.plan.activate) {
         // The configuration ADR 0052 found crashing: vanilla with the reason instead (ADR 0056).
         if (auto refusal = client::render_recipes_refusal(context.report.activation.plan, GetCommandLineW()); !refusal.empty()) {
@@ -307,6 +342,8 @@ void startup_cxx(StartupContext& context) noexcept {
         }
         shade.reason = shade.plan.reason;
       }
+      // A runtime can truncate remix-dxvk.log from its DLL initializer, before creating a device.
+      if (context.evidence_log_ready.valid()) context.evidence_log_ready.get();
       context.runtime.apply(context.root, generation, context.report.activation, context.report.session, context.read_redirects);
       if (context.report.activation.outcome != "active" && !context.early_guard_source.empty()) {
         // Display redirects remain useful in vanilla fallback; executable guard source is RTX-only.
@@ -324,6 +361,15 @@ void startup_cxx(StartupContext& context) noexcept {
     // RTX-only add-ons out of the session (ADR 0013).
     if (context.report.activation.outcome != "active" && context.prepared.config.from_file && context.prepared.config.enabled) {
       restore_session_cvars(context);
+      // Runtime rollback removed its menu redirect. Vanilla gets a fresh view with no effective
+      // tier, including deployment/recipe refusals and failures after layer preparation.
+      if (context.prepared.journal && context.prepared.journal->current && !context.prepared.journal->pending) {
+        auto inactive = context.report.activation.plan;
+        inactive.activate = false;
+        auto menu = presentation::prepare_main_menu(context.root, *context.prepared.journal->current, &inactive);
+        for (auto& redirect : menu.redirects) context.read_redirects.emplace_back(std::move(redirect.source), std::move(redirect.replacement));
+        for (auto& note : menu.notes) context.report.session.notes.push_back(std::move(note));
+      }
       hide_rtx_addons(context);
     }
     if (context.report.deployment.outcome == "failed" && !context.report.deployment.error.empty())

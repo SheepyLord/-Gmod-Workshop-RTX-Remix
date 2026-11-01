@@ -19,6 +19,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import threading
 import time
 from ctypes import wintypes
 from pathlib import Path
@@ -40,6 +41,18 @@ WORKSHOP_REMOUNTING = re.compile(r"(?m)^Addons have changes - remounting")
 PARTIAL_MOUNT_GRACE = 20.0
 LUA_HEX_CHUNK = 200  # hex digits per console line, far below Source's 512-byte command limit
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+WATCHDOG_INTERVAL = 1.0
+# Map loads, the RTX fixes' model reloads and a cold shader cache keep the window unresponsive for
+# tens of seconds (console sends already allow 60 s); a lost GPU ends the run through its log marker
+# at once, so this grace only has to catch a real deadlock.
+HANG_GRACE = 120.0
+FAILURE_EXIT_TIMEOUT = 60.0
+SCREENSHOT_TIMEOUT = 5.0
+DEVICE_LOST = re.compile(r"VK_ERROR_DEVICE_LOST|Exiting after GPU device loss")
+EXIT_NAMES = {
+    0x60D0DEAD: "Remix GPU-crash exit",
+    0xCFFFFFFF: "Windows closed a not-responding program",
+}
 
 
 class Failure(Exception):
@@ -297,6 +310,7 @@ user32.EnumWindows.argtypes = [WNDENUMPROC, wintypes.LPARAM]
 user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
 user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
 user32.IsWindowVisible.argtypes = [wintypes.HWND]
+user32.IsHungAppWindow.argtypes = [wintypes.HWND]
 user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
 user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
 user32.GetDC.restype = wintypes.HDC
@@ -343,7 +357,15 @@ def game_window(pid: int) -> int | None:
 
 CRASH_PROMPT_TITLE = "RTX Remix Crash Report"
 WM_COMMAND, IDOK, IDNO = 0x0111, 1, 7
-user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+SMTO_ABORTIFHUNG = 0x0002
+user32.SendMessageTimeoutW.restype = ctypes.c_ssize_t
+user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, ctypes.c_void_p, wintypes.UINT,
+                                       wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
+
+
+def window_hung(hwnd: int) -> bool:
+    """A non-blocking check; a busy map load may report hung until its message loop resumes."""
+    return bool(user32.IsHungAppWindow(hwnd))
 
 
 def crash_prompts(pid: int) -> list[int]:
@@ -373,12 +395,13 @@ def decline_crash_prompts(pid: int) -> int:
     answered = 0
     for command in (IDNO, IDOK):
         for hwnd in crash_prompts(pid):
-            user32.SendMessageW(hwnd, WM_COMMAND, command, 0)
-            answered += 1
+            result = ctypes.c_size_t()
+            if user32.SendMessageTimeoutW(hwnd, WM_COMMAND, command, None, SMTO_ABORTIFHUNG, 1000, ctypes.byref(result)):
+                answered += 1
     return answered
 
 
-def keep_crash_reports(root: Path, target: Path) -> list[str]:
+def keep_crash_reports(root: Path, target: Path, errors: list[str] | None = None) -> list[str]:
     """Copies the minidumps waiting under the install's rtx-remix\\logs\\.sentry-native into `target`
     and returns their names. The next start's prompt is declined (decline_crash_prompts) and Remix then
     deletes the reports, which took the only evidence of a crash with it (R4, 2026-10-31)."""
@@ -387,12 +410,160 @@ def keep_crash_reports(root: Path, target: Path) -> list[str]:
     for dump in sorted(folder.rglob("*.dmp")) if folder.is_dir() else []:
         name = dump.name if dump.parent == folder else f"{dump.parent.name}-{dump.name}"
         target.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(dump, target / name)
-        kept.append(name)
+        temporary = target / f"{name}.{threading.get_ident()}.tmp"
+        try:
+            shutil.copy2(dump, temporary)
+            os.replace(temporary, target / name)
+            kept.append(name)
+        except OSError as error:
+            # The crash handler may still be writing a dump, or remove it as a prompt closes. Keep
+            # collecting the other evidence; the watchdog and the final collection can retry it.
+            if errors is not None:
+                errors.append(f"{name}: {error}")
+        finally:
+            temporary.unlink(missing_ok=True)
     return kept
 
 
+class CrashPromptWatchdog:
+    """Declines prompts throughout a run, including console sends, captures and the exit grace."""
+
+    def __init__(self, process, root: Path, evidence: Path):
+        self.process, self.root, self.evidence = process, root, evidence
+        self.answered = 0
+        self.reports: set[str] = set()
+        self.errors: list[str] = []
+        self.stopped = threading.Event()
+        self.thread = threading.Thread(target=self.run, name="crash-prompt-watchdog", daemon=True)
+
+    def start(self) -> None:
+        self.thread.start()
+
+    def run(self) -> None:
+        while not self.stopped.is_set() and self.process.poll() is None:
+            try:
+                # Declining a live device-loss prompt can delete this run's reports too.
+                if crash_prompts(self.process.pid):
+                    self.reports.update(keep_crash_reports(self.root, self.evidence / "crash-reports", self.errors))
+                if not self.stopped.is_set() and self.process.poll() is None:
+                    self.answered += decline_crash_prompts(self.process.pid)
+            except Exception as error:
+                self.errors.append(str(error))
+            if self.stopped.wait(WATCHDOG_INTERVAL):
+                break
+
+    def close(self) -> None:
+        self.stopped.set()
+        self.thread.join(timeout=3)
+
+
+class RunHealth:
+    """Cooperative checks between all run steps; never sends a message to test responsiveness."""
+
+    def __init__(self, process, remix_log: Path, remix_before: str, record: dict):
+        self.process, self.remix_log, self.remix_before, self.record = process, remix_log, remix_before, record
+        self.hung_since: dict[int, float] = {}
+
+    def check(self, hwnd: int | None = None) -> None:
+        try:
+            text = read_shared(self.remix_log)
+        except OSError as error:
+            self.record["remix_log_read_error"] = str(error)
+            text = self.remix_before  # retry next check; still detect a hung window below
+        # Remix normally truncates its log at start. Also support an appended log without reading
+        # an earlier run's device-loss marker as this run's failure.
+        fresh = text[len(self.remix_before):] if text.startswith(self.remix_before) else text
+        marker = DEVICE_LOST.search(fresh)
+        if marker:
+            self.record["device_lost"] = True
+            self.record["device_lost_marker"] = marker.group()
+            raise Failure(f"GPU device lost ({marker.group()} in remix-dxvk.log)")
+        if self.process.poll() is not None:
+            return
+        if hwnd is None:
+            hwnd = console_window(self.process.pid) or game_window(self.process.pid)
+        if hwnd and window_hung(hwnd):
+            since = self.hung_since.setdefault(hwnd, time.monotonic())
+            seconds = time.monotonic() - since
+            if seconds >= HANG_GRACE:
+                self.record["hung_seconds"] = round(seconds, 1)
+                raise Failure(f"game window hung for {seconds:.1f} s")
+        else:
+            self.hung_since.pop(hwnd, None)
+
+    def before_window(self, hwnd: int) -> None:
+        """Waits out a short load stall, or fails after HANG_GRACE; no sends or capture while hung."""
+        while True:
+            self.check(hwnd)
+            if self.process.poll() is not None:
+                raise Failure("game exited before the next window operation")
+            if not window_hung(hwnd):
+                return
+            time.sleep(0.5)
+
+    def sleep(self, seconds: float) -> None:
+        deadline = time.monotonic() + seconds
+        self.check()
+        while self.process.poll() is None and time.monotonic() < deadline:
+            time.sleep(min(0.5, max(0, deadline - time.monotonic())))
+            self.check()
+
+
+def wait_exit(process, seconds: float, check=None) -> bool:
+    """A bounded exit wait that lets a healthy run keep checking its log/window while quitting."""
+    deadline = time.monotonic() + seconds
+    while process.poll() is None:
+        if check:
+            check()
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        time.sleep(min(0.5, remaining))
+    if check:
+        check()  # include a device-loss marker written just before the exit
+    return True
+
+
+def describe_exit(record: dict) -> None:
+    code = record.get("exit")
+    if isinstance(code, int):
+        unsigned = code & 0xFFFFFFFF
+        record["exit_hex"] = f"0x{unsigned:08X}"
+        if unsigned in EXIT_NAMES:
+            record["exit_name"] = EXIT_NAMES[unsigned]
+            record["normal_quit"] = False
+            record.setdefault("failed", EXIT_NAMES[unsigned])
+        if unsigned == 0x60D0DEAD:
+            record["device_lost"] = True
+
+
 def screenshot(hwnd: int, destination: Path) -> dict:
+    """A hung window is refused; a freeze racing the check cannot hold the caller in PrintWindow.
+    Only the caller writes the image, so an abandoned capture never writes late evidence."""
+    if window_hung(hwnd):
+        raise Failure("cannot capture a hung game window")
+    done, result, errors = threading.Event(), [], []
+
+    def capture():
+        try:
+            result.append(capture_window(hwnd))
+        except Exception as error:
+            errors.append(error)
+        finally:
+            done.set()
+
+    threading.Thread(target=capture, name="window-capture", daemon=True).start()
+    if not done.wait(SCREENSHOT_TIMEOUT):
+        raise Failure(f"screenshot timed out after {SCREENSHOT_TIMEOUT:g} s")
+    if errors:
+        raise Failure(f"screenshot failed: {errors[0]}") from errors[0]
+    image, details = result[0]
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    image.save(destination)
+    return {"file": destination.name, **details}
+
+
+def capture_window(hwnd: int) -> tuple:
     """Captures the window's client area through DWM (PrintWindow with PW_RENDERFULLCONTENT), so the
     window need not be in front. Falls back to a screen grab of its rectangle if that comes back black."""
     from PIL import Image, ImageGrab, ImageStat  # Pillow; only needed for screenshots
@@ -423,11 +594,9 @@ def screenshot(hwnd: int, destination: Path) -> dict:
         user32.ClientToScreen(hwnd, ctypes.byref(origin))
         image = ImageGrab.grab(bbox=(origin.x, origin.y, origin.x + width, origin.y + height), all_screens=True)
         method = "screen grab"
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    image.save(destination)
     mean = ImageStat.Stat(image).mean
-    return {"file": destination.name, "width": width, "height": height, "method": method,
-            "mean_rgb": [round(value, 1) for value in mean]}
+    return image, {"width": width, "height": height, "method": method,
+                   "mean_rgb": [round(value, 1) for value in mean]}
 
 
 # ---------------------------------------------------------------- console text through WM_COPYDATA
@@ -444,8 +613,6 @@ class COPYDATASTRUCT(ctypes.Structure):
 
 
 user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
-user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, ctypes.c_void_p, wintypes.UINT,
-                                       wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
 
 
 def console_window(pid: int) -> int | None:
@@ -465,16 +632,22 @@ def console_window(pid: int) -> int | None:
     return found[0] if found else None
 
 
-def console(hwnd: int, command: str, attempts: int = 6) -> bool:
+def console(hwnd: int, command: str, attempts: int = 6, check=None) -> bool:
     payload = command.encode("utf-8") + b"\0"
     buffer = ctypes.create_string_buffer(payload, len(payload))
     data = COPYDATASTRUCT(0, len(payload), ctypes.cast(buffer, ctypes.c_void_p))
     result = ctypes.c_size_t(0)
     for attempt in range(attempts):
+        if check:
+            check(hwnd)
+        elif window_hung(hwnd):
+            return False
         # Loading a map, or the RTX fixes reloading models after it, can stall the message loop for
         # many seconds; that is not a hang, so wait for it (not SMTO_ABORTIFHUNG, which gives up at once).
         if user32.SendMessageTimeoutW(hwnd, WM_COPYDATA, 0, ctypes.byref(data), SMTO_NORMAL, 10000, ctypes.byref(result)):
             return True
+        if check:
+            check(hwnd)
         if attempt + 1 < attempts:
             time.sleep(3)
     return False
@@ -495,10 +668,10 @@ def client_lua_lines(name: str, code: str) -> list[str]:
     return lines
 
 
-def client_lua(hwnd: int, name: str, code: str) -> bool:
+def client_lua(hwnd: int, name: str, code: str, check=None) -> bool:
     """Runs `code` on the client through the console (client_lua_lines). False as soon as one line is
     not delivered; the lines after it, the one that runs the chunk included, are then not sent."""
-    return all(console(hwnd, line) for line in client_lua_lines(name, code))
+    return all(console(hwnd, line, **({"check": check} if check else {})) for line in client_lua_lines(name, code))
 
 
 def mount_lua(item: str) -> str:
@@ -571,6 +744,12 @@ def config_content(args) -> tuple[dict, bytes]:
              "remix": {"enabled": args.remix == "on"}, "patch_sets": {"require_insecure": args.require_insecure == "yes"}}
     if getattr(args, "reshade", None):
         value["remix"]["reshade"] = args.reshade  # loader 0.5.0 (ADR 0028); left out, the loader's default (auto)
+    # Loader 0.11.0 (ADR 0062, 0063), each left out unless given: an older loader rejects these keys.
+    if getattr(args, "performance_tier", None):
+        value["remix"]["performance_tier"] = args.performance_tier
+    diagnostics = {key: getattr(args, key) for key in ("gpu_crash_dumps", "memory_telemetry") if getattr(args, key, None)}
+    if diagnostics:
+        value["diagnostics"] = diagnostics
     return value, json.dumps(value, indent=2).replace("\n", os.linesep).encode("utf-8")
 
 
@@ -671,7 +850,8 @@ def step_run(args) -> dict:
     if not keep_log and console_log.exists():
         shutil.move(str(console_log), str(evidence / "console-before-run.log"))
     remix_log = root / "rtx-remix" / "logs" / "remix-dxvk.log"
-    remix_before = remix_log.stat().st_mtime if remix_log.exists() else None
+    remix_mtime_before = remix_log.stat().st_mtime_ns if remix_log.exists() else None
+    remix_before = read_shared(remix_log)
     window = [] if args.no_window else ["-windowed", "-w", str(args.width), "-h", str(args.height)]
     # -multirun: the user may be playing another install meanwhile, and Source otherwise ends a second
     # instance at once (exit -1, nothing in the log). This install's own game is still refused above.
@@ -688,6 +868,7 @@ def step_run(args) -> dict:
     arguments += args.post
     environment = dict(os.environ)
     environment.pop("NATIVE_LOADER_DISABLE", None)
+    environment.pop("RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES", None)  # would grant upload consent
     record = {"step": "run", "name": args.name, "root": str(root), "started": now(), "arguments": arguments}
     # This start declines the crash-report prompt of an earlier crash, and Remix then deletes the report:
     # keep its minidumps first.
@@ -698,19 +879,28 @@ def step_run(args) -> dict:
     def log_text() -> str:
         return read_shared(console_log, offset)
 
-    def decline_prompts() -> None:
-        declined = decline_crash_prompts(process.pid)
-        if declined:
-            record["declined_crash_prompts"] = record.get("declined_crash_prompts", 0) + declined
+    def send(hwnd: int, command: str) -> bool:
+        health.before_window(hwnd)
+        return console(hwnd, command, check=health.before_window)
+
+    def lua(hwnd: int, name: str, code: str) -> bool:
+        health.before_window(hwnd)
+        return client_lua(hwnd, name, code, check=health.before_window)
+
+    def take_screenshot(window: int, destination: Path) -> dict:
+        health.before_window(window)
+        result = screenshot(window, destination)
+        health.check(window)
+        return result
 
     def wait_for(marker: re.Pattern, count: int, deadline: float) -> bool:
         while time.monotonic() < deadline:
+            health.check()
             if process.poll() is not None:
                 return False
             if len(marker.findall(log_text())) >= count:
                 return True
-            decline_prompts()
-            time.sleep(0.5)
+            health.sleep(0.5)
         return False
 
     def wait_for_map(count: int, deadline: float) -> bool:
@@ -719,9 +909,10 @@ def step_run(args) -> dict:
     def wait_for_lua(index: int, count: int, deadline: float) -> bool:
         """Waits until the --lua file `index` has printed its first line `count` times in all."""
         while time.monotonic() < deadline and process.poll() is None:
+            health.check()
             if LUA_MARKER.findall(log_text()).count(str(index)) >= count:
                 return True
-            time.sleep(0.5)
+            health.sleep(0.5)
         return False
 
     def lua_shots(window: int | None, limit: float) -> tuple[list[dict], bool]:
@@ -729,31 +920,34 @@ def step_run(args) -> dict:
         the console command "nl_shot_taken <n>" so the Lua can go on to its next view; until it prints
         NL_SHOT_DONE, the game exits or `limit` seconds pass. Returns the shots and whether it was done."""
         shots, seen, began_shots = [], 0, time.monotonic()
+        record["lua_shots"], record["lua_shots_done"] = shots, False
         while time.monotonic() < began_shots + limit and process.poll() is None:
+            health.check()
             text = log_text()
             for label in SHOT_MARKER.findall(text)[seen:]:
                 seen += 1
                 if window:
-                    shot = screenshot(window, evidence / f"shot-{seen:02d}-{label}.png")
+                    shot = take_screenshot(window, evidence / f"shot-{seen:02d}-{label}.png")
                     shot.update(label=label, seconds=round(time.monotonic() - began_shots, 1))
                     shots.append(shot)
                 if hwnd:
-                    console(hwnd, f"nl_shot_taken {seen}")
+                    send(hwnd, f"nl_shot_taken {seen}")
             if SHOTS_DONE_MARKER.search(text):
                 return shots, True
-            time.sleep(0.25)
+            health.sleep(0.25)
         return shots, False
 
     def wait_quiet(seconds: float, limit: float) -> bool:
         """Waits until the console log has not grown for `seconds` (at most `limit` seconds)."""
         deadline, size, since = time.monotonic() + limit, -1, time.monotonic()
         while time.monotonic() < deadline and process.poll() is None:
+            health.check()
             now_size = console_log.stat().st_size if console_log.exists() else 0
             if now_size != size:
                 size, since = now_size, time.monotonic()
             elif time.monotonic() - since >= seconds:
                 return True
-            time.sleep(0.5)
+            health.sleep(0.5)
         return False
 
     def wait_workshop(deadline: float) -> dict:
@@ -778,8 +972,7 @@ def step_run(args) -> dict:
 
         rule = None
         while time.monotonic() < deadline and process.poll() is None:
-            time.sleep(0.5)
-            decline_prompts()
+            health.sleep(0.5)
             text = log_text()
             found = WORKSHOP_MOUNTED.findall(text)
             if found and first_seen is None:
@@ -804,19 +997,25 @@ def step_run(args) -> dict:
     process = subprocess.Popen([str(root / "bin" / "win64" / "gmod.exe"), *arguments], cwd=str(root), env=environment,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     record["pid"] = process.pid
+    health = RunHealth(process, remix_log, remix_before, record)
+    watchdog = CrashPromptWatchdog(process, root, evidence)
+    modules = []
+    watchdog.start()
     try:
+        health.check()
         if menu_first:
             record.update(wait_workshop(began + args.timeout))
             if args.menu_shot and record["workshop_ready"]:
                 # The main menu as the player sees it (the loader's diagnostics panel, the native add-on
                 # cards, the startup text), before the map is asked for.
                 menu_window = game_window(process.pid)
-                record["menu_screenshot"] = screenshot(menu_window, evidence / "menu.png") if menu_window else None
+                record["menu_screenshot"] = take_screenshot(menu_window, evidence / "menu.png") if menu_window else None
             hwnd = console_window(process.pid) if record["workshop_ready"] else None
-            record["map_command"] = bool(hwnd) and console(hwnd, f"map {args.map}")
+            record["map_command"] = bool(hwnd) and send(hwnd, f"map {args.map}")
         loaded = wait_for_map(1, began + args.timeout) if not menu_first or record["map_command"] else False
         record["map_loaded"] = loaded
         record["seconds_to_map"] = round(time.monotonic() - began, 1)
+        health.check()
         modules = modules_of(process.pid) if process.poll() is None else []
         record["early_exit"] = process.poll() is not None
         hwnd = console_window(process.pid) if loaded else None
@@ -830,7 +1029,7 @@ def step_run(args) -> dict:
                 mounted = []
                 for item in args.mount_workshop:
                     for _ in range(3):
-                        if client_lua(hwnd, "mount", mount_lua(item)) and \
+                        if lua(hwnd, "mount", mount_lua(item)) and \
                                 wait_for(MOUNT_MARKER, len(mounted) + 1, time.monotonic() + 60):
                             mounted.append(item)
                             break
@@ -839,10 +1038,10 @@ def step_run(args) -> dict:
             # gm_load prints nothing when it cannot find the save's map; the record says whether the
             # command went through and whether the map came up.
             if args.load_save:
-                record["save_command"] = console(hwnd, f'gm_load "{args.load_save}"')
+                record["save_command"] = send(hwnd, f'gm_load "{args.load_save}"')
                 record["save_loaded"] = record["save_command"] and wait_for_map(2, time.monotonic() + args.timeout)
             else:
-                record["map_command"] = console(hwnd, f"map {args.change_map}")
+                record["map_command"] = send(hwnd, f"map {args.change_map}")
                 record["map_changed"] = record["map_command"] and wait_for_map(2, time.monotonic() + args.timeout)
             hwnd = console_window(process.pid) or hwnd
         if args.console and hwnd:
@@ -850,7 +1049,7 @@ def step_run(args) -> dict:
             record["quiet_before_console"] = wait_quiet(5, 90)
         for command in args.console:
             if hwnd:
-                console(hwnd, command)
+                send(hwnd, command)
         if loaded and process.poll() is None:
             if (args.camera or args.hide_hud) and hwnd:
                 # Commands sent while the RTX fixes still reload models after a map change can be lost
@@ -860,15 +1059,15 @@ def step_run(args) -> dict:
                 record["camera"] = False
                 for _ in range(3):
                     printed = len(EYE_MARKER.findall(log_text()))
-                    if client_lua(hwnd, "camera", camera_lua(args.camera, args.hide_hud)) and \
+                    if lua(hwnd, "camera", camera_lua(args.camera, args.hide_hud)) and \
                             wait_for(EYE_MARKER, printed + 1, time.monotonic() + 20):
                         record["camera"] = True
                         break
                 if args.hide_hud:
                     # Add-ons may answer HUDShouldDraw first; these two are not archived (config.cfg
                     # holds neither) and are set back before quitting.
-                    console(hwnd, "cl_drawhud 0")
-                    console(hwnd, "r_drawviewmodel 0")
+                    send(hwnd, "cl_drawhud 0")
+                    send(hwnd, "r_drawviewmodel 0")
             if args.lua and hwnd:
                 # Lua sent while the RTX fixes reload models is lost as the camera's is: wait for quiet
                 # (done above with a camera), and send a file again until its first line has printed.
@@ -880,19 +1079,19 @@ def step_run(args) -> dict:
                     started = False
                     for _ in range(3):
                         printed = LUA_MARKER.findall(log_text()).count(str(index))
-                        if client_lua(hwnd, f"lua{index}", code) and \
+                        if lua(hwnd, f"lua{index}", code) and \
                                 wait_for_lua(index, printed + 1, time.monotonic() + 20):
                             started = True
                             break
                     record["lua"].append({"file": str(path), "started": started})
-            time.sleep(args.settle)
+            health.sleep(args.settle)
             if args.fps and hwnd and process.poll() is None:
                 # Timed in the game, frame by frame, before the screenshots (a capture can stall a frame).
                 # Lua lost while the game is busy is sent once more; its hook replaces the first one.
                 record["fps"] = None
                 for _ in range(2):
                     printed = len(FPS_MARKER.findall(log_text()))
-                    if client_lua(hwnd, "fps", fps_lua(args.fps)) and \
+                    if lua(hwnd, "fps", fps_lua(args.fps)) and \
                             wait_for(FPS_MARKER, printed + 1, time.monotonic() + args.fps + 30):
                         record["fps"] = json.loads(FPS_MARKER.findall(log_text())[-1])
                         break
@@ -900,48 +1099,74 @@ def step_run(args) -> dict:
             if args.lua_shots and process.poll() is None:
                 record["lua_shots"], record["lua_shots_done"] = lua_shots(window, args.lua_shots)
             shots = []
+            record["screenshots"] = shots
             for index in range(args.screenshots):
                 if window and process.poll() is None:
-                    shots.append(screenshot(window, evidence / f"screenshot-{index + 1}.png"))
-                    time.sleep(args.shot_interval)
-            record["screenshots"] = shots
+                    shots.append(take_screenshot(window, evidence / f"screenshot-{index + 1}.png"))
+                    health.sleep(args.shot_interval)
             modules = modules_of(process.pid) or modules
-        write_json(evidence / "modules.json", modules)
-        record["d3d9"] = next((m for m in modules if os.path.basename(m).lower() == "d3d9.dll"), None)
-        record["stdshader_dx6"] = next((m for m in modules if os.path.basename(m).lower() == "stdshader_dx6.dll"), None)
+        health.check()
         if process.poll() is None:
             hwnd = console_window(process.pid)
             if hwnd and args.hide_hud:
-                console(hwnd, "cl_drawhud 1")
-                console(hwnd, "r_drawviewmodel 1")
-            record["quit"] = "console" if hwnd and console(hwnd, "quit") else "console unavailable"
-            try:
-                process.wait(timeout=args.quit_timeout)
-                record["exit"] = process.returncode
-                record["normal_quit"] = record["quit"] == "console"
-            except subprocess.TimeoutExpired:
-                stop()
-                process.wait(timeout=30)
-                record["exit"] = "terminated"
+                send(hwnd, "cl_drawhud 1")
+                send(hwnd, "r_drawviewmodel 1")
+            record["quit"] = "console" if hwnd and send(hwnd, "quit") else "console unavailable"
+            if wait_exit(process, args.quit_timeout, health.check):
+                record["normal_quit"] = record["quit"] == "console" and process.returncode == 0
+            else:
+                record["terminated_processes"] = stop()
+                wait_exit(process, 5)
                 record["normal_quit"] = False
         else:
-            record["exit"] = process.returncode
             record["normal_quit"] = False
-        time.sleep(2)
-        leftovers = stop()
-        if leftovers:
-            record["terminated_helpers"] = leftovers
+    except Failure as error:
+        record["failed"], record["normal_quit"] = str(error), False
+        record["quit"] = "skipped after failure"
+        # Keep the watchdog alive while Aftermath/Sentry finish and Remix declines its own dialog.
+        # No more console text or screenshots, even if the window briefly starts answering again.
+        since = time.monotonic()
+        if not wait_exit(process, FAILURE_EXIT_TIMEOUT):
+            record["terminated_processes"] = stop()
+            wait_exit(process, 5)
+        record["failure_exit_wait_seconds"] = round(time.monotonic() - since, 1)
     finally:
-        if process.poll() is None:
-            stop()
+        try:
+            time.sleep(2)
+            leftovers = stop()
+            if leftovers:
+                record["terminated_helpers"] = leftovers
+        finally:
+            watchdog.close()
+    record["exit"] = process.poll()
+    if record["exit"] is None:
+        record["failed"], record["normal_quit"] = "game did not exit after bounded shutdown", False
+    try:
+        health.check()  # catch a marker written during the exit grace, including an early crash
+    except Failure as error:
+        record.setdefault("failed", str(error))
+        record["normal_quit"] = False
+    describe_exit(record)
+    if watchdog.answered:
+        record["declined_crash_prompts"] = watchdog.answered
+    if watchdog.errors:
+        record["crash_watchdog_errors"] = watchdog.errors
+    if watchdog.thread.is_alive():
+        record["crash_watchdog_stop_timed_out"] = True
+    write_json(evidence / "modules.json", modules)
+    record["d3d9"] = next((m for m in modules if os.path.basename(m).lower() == "d3d9.dll"), None)
+    record["stdshader_dx6"] = next((m for m in modules if os.path.basename(m).lower() == "stdshader_dx6.dll"), None)
     if not_ours:
         record["not_ours"] = sorted(not_ours)  # same-root games this run did not start: left running
     if not record.get("normal_quit"):
-        crashed = keep_crash_reports(root, evidence / "crash-reports")
+        errors = []
+        crashed = sorted(watchdog.reports | set(keep_crash_reports(root, evidence / "crash-reports", errors)))
         if crashed:
             record["crash_reports"] = crashed
+        if errors:
+            record["crash_report_errors"] = errors
     text = log_text()
-    (evidence / "console.log").write_text(text, encoding="utf-8")
+    (evidence / "console.log").write_text(text, encoding="utf-8", newline="")
     dxlevel = re.search(r'"mat_dxlevel" = "(\d+)"', text)
     record["mat_dxlevel"] = dxlevel.group(1) if dxlevel else None
     record["lua_errors"] = len(re.findall(r"(?m)^\[ERROR\]|lua_run_cl.*error", text))
@@ -961,7 +1186,7 @@ def step_run(args) -> dict:
                                     for key in ("outcome", "reason", "blocked_by", "generation", "change_count", "skipped")}
             record["session"] = status.get("session")
             record["status_errors"] = status.get("errors", [])
-    if remix_log.exists() and remix_log.stat().st_mtime != remix_before:
+    if remix_log.exists() and remix_log.stat().st_mtime_ns != remix_mtime_before:
         copy_if_present(remix_log, evidence / "remix-dxvk.log")
         record["remix_log"] = True
     record["finished"] = now()
@@ -998,6 +1223,12 @@ def main(argv=None) -> int:
         command.add_argument("--remix", choices=["on", "off"], default="on")
         command.add_argument("--reshade", choices=["auto", "on", "off"],
                              help="write remix.reshade (loader 0.5.0); left out by default")
+        command.add_argument("--performance-tier", choices=["auto", "high", "medium", "low"],
+                             help="write remix.performance_tier (loader 0.11.0); left out by default")
+        command.add_argument("--gpu-crash-dumps", choices=["off", "next_start", "always"],
+                             help="write diagnostics.gpu_crash_dumps (loader 0.11.0); left out by default")
+        command.add_argument("--memory-telemetry", choices=["on", "off"],
+                             help="write diagnostics.memory_telemetry (loader 0.11.0); left out by default")
         command.add_argument("--require-insecure", choices=["yes", "no"], default="yes")
         if name == "install":
             command.add_argument("--replace-config", action="store_true",
@@ -1058,7 +1289,7 @@ def main(argv=None) -> int:
     history = json.loads(log.read_text(encoding="utf-8")) if log.exists() else []
     try:
         record = steps[args.action](args)
-        code = 0
+        code = 1 if record.get("failed") else 0
     except Failure as error:
         record = {"step": args.action, "failed": str(error)}
         code = 1

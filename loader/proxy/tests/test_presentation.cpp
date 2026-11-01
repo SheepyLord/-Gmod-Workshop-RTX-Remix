@@ -85,6 +85,8 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   system.cpu = "CPU \"quoted\" <script>literal</script>\n";
   system.threads = 12;
   system.memory = 32ull << 30;
+  system.process_id = 123;
+  system.session_token = "123-456";
   system.graphics.push_back({"GPU", 8ull << 30});
   nl::journal::Generation generation;
   nl::journal::Package package;
@@ -97,15 +99,72 @@ TEST_CASE("main menu diagnostics contain hardware and package identity without p
   const auto parsed = nl::json::parse(data);
   CHECK(parsed.find("cpu")->as_string() == system.cpu);
   CHECK(parsed.find("threads")->as_int() == 12);
+  CHECK(parsed.find("process_id")->as_int() == 123);
+  CHECK(parsed.find("session_token")->as_string() == system.session_token);
   CHECK(parsed.find("loader")->find("sha256")->as_string() == std::string(64, 'b'));
   CHECK(data.find("private/location") == std::string::npos);
   const std::string original = "function MenuController( $scope, $rootScope ) {}\n";
   const auto decorated = p::decorate_main_menu(original, data);
   CHECK(decorated.starts_with(original));
   CHECK(decorated.find("native-loader-diagnostics") != std::string::npos);
+  CHECK(decorated.find("window.NativeLoaderReadNotices = ") != std::string::npos);
+  CHECK(decorated.find("native-loader/status.json") != std::string::npos);
+  CHECK(decorated.find("native-loader/memory.json") != std::string::npos);
   CHECK_THROWS_AS(p::decorate_main_menu("changed menu", data), std::runtime_error);
   CHECK_THROWS_AS(p::decorate_main_menu(original, "{};unexpected()"), std::runtime_error);
   CHECK_THROWS_AS(p::decorate_main_menu(original, "[]"), std::runtime_error);
+}
+
+TEST_CASE("main menu diagnostics expose the same localized performance tier data as activation") {
+  nl::proxy::diagnostics::System system;
+  system.performance_tier = nl::performance::classify({{nl::performance::kNvidia, "RTX 4060 Ti", 16ull << 30}},
+                                                     nl::config::PerformanceTier::automatic);
+  system.performance_tier->source = "fallback";
+  system.performance_tier->layer = nl::activate::kTierLayer;
+  const auto data = nl::proxy::diagnostics::serialize(system, "0.10.1", "", {});
+  const auto json = nl::json::parse(data);
+  CHECK(json.find("performance_tier")->find("tier")->as_string() == "low");
+  CHECK(json.find("performance_tier")->find("source")->as_string() == "fallback");
+  const auto script = p::decorate_main_menu("function MenuController( $scope, $rootScope ) {}\n", data);
+  CHECK(script.find("labels.performance_tier") != std::string::npos);
+  CHECK(script.find("labels['tier_' + tier.source]") != std::string::npos);
+}
+
+TEST_CASE("main menu tiers require an effective listed layer and pass the render recipe gate") {
+  nl::proxy::diagnostics::System system;
+  nl::activate::Plan plan;
+  plan.activate = true;
+  plan.performance_tier = nl::performance::classify({{nl::performance::kNvidia, "RTX 4070", 12ull << 30}},
+                                                    nl::config::PerformanceTier::automatic);
+  const auto select = [&] { nl::proxy::diagnostics::set_performance_tier(system, plan, L"gmod.exe"); };
+  select();
+  CHECK(!system.performance_tier);  // pre-R6 medium / classic settings have no tier layer
+  plan.performance_tier.layer = nl::activate::kTierLayer;
+  select();
+  CHECK(!system.performance_tier);  // metadata alone does not mean the layer is listed
+  plan.dxvk_layers.push_back(std::string(nl::activate::kTierLayer));
+  select();
+  CHECK(system.performance_tier.has_value());
+  plan.activate = false;
+  select();
+  CHECK(!system.performance_tier);  // failed/inactive activation
+  plan.activate = true;
+  plan.allow_secure_rtx_render_patches = false;
+  nl::manifest::PatchSet recipe;
+  recipe.module = "engine.dll";
+  recipe.patches = {
+    {"mod_loadlighting_hdr", "ff90????????85c0742b", 0, "b80200000090"},
+    {"mod_loadworldlights_hdr", "ff90????????85c00f84fa000000", 0, "b80200000090"}};
+  REQUIRE(nl::client::secure_render_patch_set(nl::client::kPackage, recipe));
+  plan.patch_sets.push_back({std::string(nl::client::kPackage), recipe});
+  select();
+  CHECK(!system.performance_tier);  // ADR 0056 refusal also applies to the preview
+  nl::proxy::diagnostics::set_performance_tier(system, plan, L"gmod.exe -insecure");
+  CHECK(system.performance_tier.has_value());
+  plan.allow_secure_rtx_render_patches = true;
+  nl::activate::disable_performance_tier(plan, "fallback write failed");
+  select();
+  CHECK(!system.performance_tier);
 }
 
 TEST_CASE("main menu: the generated script is ASCII, non-ASCII text written as \\u escapes") {

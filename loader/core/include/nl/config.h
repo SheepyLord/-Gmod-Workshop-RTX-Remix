@@ -24,6 +24,10 @@ inline constexpr std::string_view kConfigPath = "native-loader/config.json";
 // of their own (native-loader\reshade\ReShade.ini).
 enum class Reshade { automatic, on, off };
 
+// R6, ADR 0062: performance defaults and opt-in local GPU diagnostics.
+enum class PerformanceTier { automatic, high, medium, low };
+enum class GpuCrashDumps { off, next_start, always };
+
 struct Config {
   bool enabled = true;
   std::vector<std::string> workshop;     // Workshop item ids (decimal digits)
@@ -34,6 +38,11 @@ struct Config {
   bool subscribed_content = true;
   bool remix_enabled = true;             // false: runtime packages are planned but not activated
   Reshade reshade = Reshade::automatic;
+  PerformanceTier performance_tier = PerformanceTier::automatic;
+  GpuCrashDumps gpu_crash_dumps = GpuCrashDumps::off;
+  std::vector<std::string> notes;        // recoverable config issues, reported by activation
+
+  bool memory_telemetry = true;           // diagnostics.memory_telemetry ("on"/"off", ADR 0063)
   bool patch_sets_require_insecure = true;
   bool allow_secure_rtx_render_patches = true; // exact reviewed renderer recipes only
   bool from_file = false;                // false: defaults, because config.json does not exist

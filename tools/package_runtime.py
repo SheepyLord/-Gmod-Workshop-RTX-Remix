@@ -158,6 +158,39 @@ def layer_targets(kind, files):
     return out
 
 
+def tier_targets(entries):
+    """Optional rtx-only layers: payloads selected by the loader, never unconditional layers."""
+    out = []
+    seen = set()
+    for tier, source in entries:
+        if tier not in ('medium', 'low') or tier in seen:
+            raise PackageError('--tier-conf: expected medium or low, each at most once')
+        seen.add(tier)
+        if not source.lower().endswith('.conf') or not os.path.isfile(source):
+            raise PackageError('--tier-conf %s %s: expected an existing .conf file' % (tier, source))
+        try:
+            with open(source, encoding='utf-8') as handle:
+                lines = handle.read().splitlines()
+        except (UnicodeError, OSError) as error:
+            raise PackageError('--tier-conf %s: %s' % (tier, error)) from error
+        keys = set()
+        for number, line in enumerate(lines, 1):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            key, sep, value = line.partition('=')
+            key = key.strip()
+            if not sep or not re.fullmatch(r'rtx\.[A-Za-z0-9_.]+', key) or not value.strip():
+                raise PackageError('--tier-conf %s:%d: expected rtx.* = value' % (source, number))
+            if key in keys:
+                raise PackageError('--tier-conf %s:%d: duplicate key %s' % (source, number, key))
+            keys.add(key)
+        if not keys:
+            raise PackageError('--tier-conf %s: empty tier' % source)
+        out.append(('config/dxvk-tiers/%s.conf' % tier, source))
+    return out
+
+
 def inside(parent, child):
     parent, child = os.path.normcase(os.path.abspath(parent)), os.path.normcase(os.path.abspath(child))
     return child == parent or child.startswith(parent.rstrip('\\/') + os.sep)
@@ -269,7 +302,7 @@ def build(args):
         raise PackageError('no d3d9.dll in %s' % (args.d3d9_from or args.runtime))
     rtx_layers = layer_targets('rtx', args.rtx_conf)
     dxvk_layers = layer_targets('dxvk', args.dxvk_conf)
-    for rel, source in rtx_layers + dxvk_layers:
+    for rel, source in rtx_layers + dxvk_layers + tier_targets(args.tier_conf):
         files[rel] = source
     for rel in files:
         problem = path_problem('native/payload/' + rel)
@@ -382,6 +415,8 @@ def main(argv=None):
     ap.add_argument('--with-pdbs', action='store_true', help='include .pdb files')
     ap.add_argument('--rtx-conf', action='append', default=[], help='rtx.conf layer, lowest first (repeatable)')
     ap.add_argument('--dxvk-conf', action='append', default=[], help='dxvk.conf layer, lowest first (repeatable)')
+    ap.add_argument('--tier-conf', nargs=2, action='append', default=[], metavar=('TIER', 'FILE'),
+                    help='optional rtx-only medium/low payload; selected by the loader (repeatable)')
     ap.add_argument('--env', action='append', default=[], help='NAME=VALUE for the runtime (DXVK_*, RTX_*; repeatable)')
     ap.add_argument('--id', default=DEFAULT_ID, help='package id (default %s)' % DEFAULT_ID)
     ap.add_argument('--version', help='package version (default 0.0.0-dev.<d3d9 build time>+<d3d9 hash>)')

@@ -11,6 +11,7 @@ moon_albedo.dds, moon_normal.dds
   y north) from the elevation's slopes, BC5 with mipmaps. Simple cylindrical projection, north up.
 
 stars.dds, galaxy.dds, nebula.dds
+stars_4096.dds, galaxy_4096.dds, nebula_4096.dds
   The night sky, from Night Sky HD LE by PraedythXVI
   (https://www.nexusmods.com/skyrim/mods/107102): the star sphere ("Thorn Shaped option 3",
   textures\sky\skystars.dds) and the galaxy (textures\sky\skyrimgalaxy.dds) as they are, and the
@@ -20,3 +21,5 @@ stars.dds, galaxy.dds, nebula.dds
   provides as free, open assets; this project's maintainer has permission to use them.
   The mod's permissions allow converting it for other games and using its assets with credit to its
   creator, not in anything sold.
+  Each _4096 copy is its corresponding source with mip 0 removed by tools/sky/drop_top_mip.py,
+  without re-encoding. The source credits and licence permissions above also cover these copies.

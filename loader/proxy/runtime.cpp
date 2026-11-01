@@ -2,6 +2,7 @@
 #include "backend.h"
 #include "../client/catalog.h"
 #include "modules.h"
+#include "presentation.h"
 #include "nl/fs.h"
 #include "nl/paths.h"
 #include <algorithm>
@@ -130,6 +131,12 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   }
   report.reason = plan.reason;
   if (!plan.activate) { report.elapsed_ms = elapsed_ms(); return false; }
+  if (plan.reset_gpu_crash_dumps) {
+    try { gpu_diagnostics::reset_next_start(root); }
+    catch (const std::exception& error) {
+      session.notes.push_back(std::string("GPU diagnostics next_start was not rearmed: ") + error.what());
+    }
+  }
   const auto fail = [&](std::string reason, DWORD error = 0) {
     report.outcome = "failed";
     report.reason = std::move(reason);
@@ -205,6 +212,15 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
   }
   if (!unwritten.empty()) activate::use_sources(report.plan, unwritten);
 
+  if (plan.low_tier_fallback) {
+    try {
+      layer_folder();
+      write_if_changed(root, activate::kTierLayer, activate::low_tier_layer_text());
+    } catch (const std::exception& error) {
+      activate::disable_performance_tier(report.plan, std::string("the built-in low-tier Remix layer was not written: ") + error.what());
+    }
+  }
+
   // Without an NVIDIA GPU, the loader's own Remix layer (ADR 0030), which DXVK_CONFIG_FILE lists. A
   // layer that cannot be written costs Remix's automatic preset, not the session (Remix skips a missing file).
   if (plan.non_nvidia) {
@@ -213,6 +229,19 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
       write_if_changed(root, activate::kNonNvidiaLayer, activate::non_nvidia_layer_text());
     } catch (const std::exception& error) {
       session.notes.push_back(std::string("the non-NVIDIA Remix layer was not written: ") + error.what());
+    }
+  }
+
+  if (plan.gpu_crash_dumps) {
+    try {
+      const auto path = gpu_diagnostics::prepare(root);
+      for (auto& [name, value] : report.plan.env) if (name == gpu_diagnostics::kDumpVariable) value = path;
+      // Claim only after preparing the layer and destination, before the runtime can crash during
+      // initialization. CREATE_NEW makes simultaneous game starts share a single next_start request.
+      if (plan.gpu_crash_dumps_once && !gpu_diagnostics::consume_next_start(root))
+        activate::disable_gpu_crash_dumps(report.plan, "GPU diagnostics next_start was claimed by another start; continuing without diagnostics");
+    } catch (const std::exception& error) {
+      activate::disable_gpu_crash_dumps(report.plan, std::string("GPU diagnostics were not enabled: ") + error.what());
     }
   }
 
@@ -331,10 +360,16 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
 
   // Patch sets and module overrides (M5) for the engine DLLs that load after this point, and what
   // binary modules need loaded before them (ADR 0024).
-  if (!plan.patch_sets.empty() || !plan.module_overrides.empty() || !plan.module_dependencies.empty() || !read_redirects.empty()) {
+  auto redirects = read_redirects;
+  // Tier copies/fallbacks have now been prepared. The menu must describe this effective plan,
+  // including a failed tier write, rather than a second hardware/config preview.
+  const auto menu = presentation::prepare_main_menu(root, generation, &plan);
+  for (const auto& redirect : menu.redirects) redirects.emplace_back(redirect.source, redirect.replacement);
+  for (const auto& note : menu.notes) session.notes.push_back(note);
+  if (!plan.patch_sets.empty() || !plan.module_overrides.empty() || !plan.module_dependencies.empty() || !redirects.empty()) {
     modules::Setup setup;
     setup.root = std::filesystem::absolute(root);
-    setup.read_redirects = read_redirects;
+    setup.read_redirects = std::move(redirects);
     const bool general_patches = !plan.patch_sets_need_insecure || cmdline::has_arg(GetCommandLineW(), L"-insecure");
     std::size_t skipped_patches = 0;
     for (const auto& set : plan.patch_sets) {

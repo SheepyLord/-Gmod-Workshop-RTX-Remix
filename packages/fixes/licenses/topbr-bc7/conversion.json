@@ -1,0 +1,1802 @@
+{
+  "schema": 1,
+  "source_package_commit": "465bf1f46f779e539d30da90e7f242ce76a30455",
+  "encoder": {
+    "name": "NVIDIA Texture Tools Exporter",
+    "version": "2023.4.0 (development build)",
+    "path": "C:\\Program Files\\NVIDIA Corporation\\RTX Remix\\exts\\omni.flux.resources\\deps\\tools\\nvtt\\nvtt_export.exe",
+    "sha256": "bef9aaabf05d620de5c806d847f88c1ca86b3d0f69a6ecfe44caf35f11350fe8",
+    "arguments": [
+      "--format",
+      "bc7",
+      "--quality",
+      "highest",
+      "--no-cuda",
+      "--dx10",
+      "--export-transfer-function",
+      "linear",
+      "--no-mip-gamma-correct",
+      "--no-mip-pre-alpha"
+    ]
+  },
+  "format": "BC7_UNORM (DXGI 98), linear",
+  "materials": {
+    "file": "garrysmod/rtx-remix/mods/~gmod_topbr/materials.usda",
+    "references": 113,
+    "color_space": "raw",
+    "normal_textures": 33,
+    "roughness_textures": 50
+  },
+  "totals": {
+    "textures": 83,
+    "mip_levels": 816,
+    "before_bytes": 142869484,
+    "after_bytes": 35729420,
+    "before_xz_bytes": 16454204,
+    "after_xz_bytes": 15000576
+  },
+  "quality": {
+    "decoder": "Pillow 12.3.0",
+    "metric": "Decoded 8-bit RGBA absolute/RMS error; all mip pixels included",
+    "rgba_rmse": [
+      0.6586975821515463,
+      0.6545004835613084,
+      0.39086494296578744,
+      0.0
+    ],
+    "rgba_max_error": [
+      28.0,
+      29.0,
+      13.0,
+      0.0
+    ],
+    "worst_top_mip_channel_rmse": 0.9573102271958396,
+    "worst_mip_channel_rmse": 4.0,
+    "renderer_verified": false
+  },
+  "textures": [
+    {
+      "name": "brick_brickwall003a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "ad6999b5cdd219f5bbfc75862a7713b735fb119969f9144b6b4e592f892c001d"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "1649f5712835d71e7353708b8cd76558cdd97bb6cf132b2c4ca43169614aaef3"
+      },
+      "top_mip_rgba_rmse": [
+        0.6467233083766629,
+        0.6268283803078598,
+        0.34122720383737265,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template003a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "85935727f2d2d9dc4283a3a75e3f3ada63635359bef2a57be0cf43946fe1b405"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "19dfd50d8465d3c95549216529d6464aa75908e8bdcfdaed2a8e4888a26d33a9"
+      },
+      "top_mip_rgba_rmse": [
+        0.3913713572895194,
+        0.41175284488809244,
+        0.20138982429141003,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template006b_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "badd9cdbc1cbcedc143dc98e6ff605d39f5a1077e8b794d2dd01191fdd9229ee"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "3d5c1a83f8dd61cd316ca92465b8726c2bb16baa719254c731379613c1ed8df0"
+      },
+      "top_mip_rgba_rmse": [
+        0.27924906714957215,
+        0.27943342378834735,
+        0.27888682749249405,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007b_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "9a244524aa6baa4c4bffa7aeb5caf9580b85010bd9538b3dbf8898f3248da399"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "a169e4e60441006fd0e96cff95d7fef905cbd4ef8973801e49b5b71ccc87b170"
+      },
+      "top_mip_rgba_rmse": [
+        0.0078125,
+        0.0078125,
+        0.0078125,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007c_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "d64306027134bd5d1de60962961d2a4cedcd3421fac6a3ee4ebd1e2379247d1d"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "bf2e6f8d48acde68c57d58ce2b949ecdc6b4243002a7b00e37b2b214d78ef59f"
+      },
+      "top_mip_rgba_rmse": [
+        0.0078125,
+        0.0078125,
+        0.0078125,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007d_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "748af1dcdef5ac28e18294293c7c713da1b09e53c58217367be55eddfb07ef1a"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "b544303ea279b272efd7cff84d5f10f68695376bce55f2a322011c48c316f6a1"
+      },
+      "top_mip_rgba_rmse": [
+        0.0067658234670659265,
+        0.0067658234670659265,
+        0.0067658234670659265,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007h_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "eae09663b2665fe856a068528693c42623b66e6c611cfb1b9b63ec73bad45e78"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "4f23ba9231a4a1dd726787be805d034548518ec541f7c0f0f52b7ddade1a2be9"
+      },
+      "top_mip_rgba_rmse": [
+        0.053238332697027387,
+        0.053238332697027387,
+        0.053238332697027387,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007i_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "dc4a600c128a726196bf48f25c90eb5aa0d24ed09a72f81ed9a75b557cc19b8d"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "e88d48ad688131f4867b720c087b93081502917f81b8712d26c921e24fef3353"
+      },
+      "top_mip_rgba_rmse": [
+        0.005524271728019903,
+        0.005524271728019903,
+        0.005524271728019903,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007j_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "fe84c26f6c69189af148fa9e172829fed75cfac47bf597c8692861b2ff03c561"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "71ad7cf44ce93eb6faf4f6f415bf618db634518a9f0cc2fe42a0a3afdcaccab7"
+      },
+      "top_mip_rgba_rmse": [
+        0.04193537217496853,
+        0.04193537217496853,
+        0.04193537217496853,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template007m_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "e8a994725eedd85f5989c674905d97bc693196fb3c8b5bcbd1a14e4615f58f3f"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "e470ffd850c2243763b43ae0a3225f6e0e6ed0038481b016b60e71b86906cb50"
+      },
+      "top_mip_rgba_rmse": [
+        0.06316781886248526,
+        0.06316781886248526,
+        0.06316781886248526,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template010b_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "2af1b13ddba72bfc380a967552548b47edf08d5a9569e9f157ea90b012768fa5"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "13b55b8258e5e57aa9ab18f0bbee927def4abac4d5d64860d515cadb1ddef31f"
+      },
+      "top_mip_rgba_rmse": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template010c_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "41efd0c0e6422c654616136c8dd88704f972f309614ecc7d282600d3e333417e"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "0704ce07756abb72a90ba06b1096ce1ff669496996f11e162a12620c60395ebe"
+      },
+      "top_mip_rgba_rmse": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template010g_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "41efd0c0e6422c654616136c8dd88704f972f309614ecc7d282600d3e333417e"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "0704ce07756abb72a90ba06b1096ce1ff669496996f11e162a12620c60395ebe"
+      },
+      "top_mip_rgba_rmse": [
+        0.00390625,
+        0.00390625,
+        0.00390625,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_building_template013h_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 256,
+      "mips": 10,
+      "before": {
+        "size": 699180,
+        "sha256": "46b69b860f6ce0638b2c2380a8968c4cca0fe16670fe603ae067c6c691c6806b"
+      },
+      "after": {
+        "size": 174948,
+        "sha256": "d268025c9886596164eb8c3e605feffb5436ecc8fc783d7d5147c8d738df26a0"
+      },
+      "top_mip_rgba_rmse": [
+        0.015128841196122723,
+        0.015128841196122723,
+        0.015128841196122723,
+        0.0
+      ]
+    },
+    {
+      "name": "building_template_roof_template001a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "778c48056a62568f4f7da4a102e37da8292706a5845245b5058bc7cc61e238ce"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "cb5fab0cdadef6f74a4941c41d75eb5d09c642472f39abe3092d2e004fbf73c3"
+      },
+      "top_mip_rgba_rmse": [
+        0.23462714301681803,
+        0.21187580659875965,
+        0.1844746982830996,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor025a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "a78a432f8b7b7bedab95cc426d58be42296c839ccc6ebd8a50c8de90d135977c"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "ea3d18749d9f97a0831692418465c987d85690c39153014cd24a5de04f1bbc55"
+      },
+      "top_mip_rgba_rmse": [
+        0.5729118578159924,
+        0.35900860228366654,
+        0.18434023771870184,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor028a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "0b3fb2d16192a1f8e3542535e522be715d318171ff63ca28c1e60408a402e3ea"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "0d4a8d9ffe03c760f52c91cfe79e50d576c42e89531175e0c8ad99d30cd8a109"
+      },
+      "top_mip_rgba_rmse": [
+        0.37700372069771654,
+        0.2864642518327985,
+        0.19547844512826887,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor028a_normal_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "66225205c2388c94cd1944def02379029f5daebe615f6d9feee046353e105400"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "99a6cb1e41e4ea4ec4e898aaee6607e5a4ecbad8f98ddc3ad3364c10613cdd93"
+      },
+      "top_mip_rgba_rmse": [
+        0.9043622580304863,
+        0.9041006975382015,
+        0.9030030059257486,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor028c_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "6e40d7cd5c35e9e4c9644017241b79b72cf7a5ad1aa3319296eecfac23c9c6b2"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "698af987a0211c12b9ac9aae852f7e096bed9e6f24f00129f21ab5ace85daa5f"
+      },
+      "top_mip_rgba_rmse": [
+        0.07326171614652754,
+        0.06004072714429452,
+        0.07101429282303845,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor028c_normal_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "25acdde02d5666ac1d85a87b1431a6a728d525049fd30cfc3a45cd20b71855cf"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "c67541a4ffd8dd240438b2577a4acb01a954ab4e0960ca641a467d42202eaa06"
+      },
+      "top_mip_rgba_rmse": [
+        0.8169317425120829,
+        0.8173798956414503,
+        0.8164739991327131,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor039a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "b8035a93ef58e9c723f2924b11237ea5b7d8597c0c6d10060b00ec8eda387a3f"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "6f6cb6f31ddd33d611b41dab251adae4646e99b52d99b75cc00d08f0e2ad1552"
+      },
+      "top_mip_rgba_rmse": [
+        0.5419209201455562,
+        0.32417168333066587,
+        0.15765965680164504,
+        0.0
+      ]
+    },
+    {
+      "name": "concrete_concretefloor039a_normal_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "e8fed83c0fb4aa90d736cef012c07765677539a39f313d2604dfdb1284a90b79"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "ec4953851b7fc073764d7673a23b739224b23459e60b2936ee6f2e5b47c91c9a"
+      },
+      "top_mip_rgba_rmse": [
+        0.9562815941471882,
+        0.9573102271958396,
+        0.9553556760565342,
+        0.0
+      ]
+    },
+    {
+      "name": "gm_construct_construct_concrete_floor_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "fa054cb03f5c42c14d1c192697b026e3736f32f4ccec0168082623ba6367cdb3"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "1f13bf52aeac04251a9c9dfb5ebba4b4be2da4c482c00de1552ccb8d2a1fea55"
+      },
+      "top_mip_rgba_rmse": [
+        0.7795685029432949,
+        0.7525388343903755,
+        0.3828125,
+        0.0
+      ]
+    },
+    {
+      "name": "gm_construct_construct_concrete_ground_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "7670e6326d7b00789bc89d06b376f9dcca5e70e62054cd707d11509e40ff1473"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "ff45d5b0e57a11308d30904407c498191b4b2566b012517cd6b25d355afe2e14"
+      },
+      "top_mip_rgba_rmse": [
+        0.5895769134639249,
+        0.6775225657403614,
+        0.2415112313448852,
+        0.0
+      ]
+    },
+    {
+      "name": "gm_construct_water_13_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "d82f239dbbb5b42729d00f53abfc2a058299c00fd49f59f50eff0a94bcac51ea"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "a103f49a134bc4727b8b50bbc690bc8581ab3c7fdd9ed6cfead69598bc0d526d"
+      },
+      "top_mip_rgba_rmse": [
+        0.6134305152748047,
+        0.5599306554093886,
+        0.038273277230987154,
+        0.0
+      ]
+    },
+    {
+      "name": "maxofs2d_models_companion_doll_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "e066d0de6637ba5298b2ebe512c60076b75ee31f63b47a486e038700d73adcdc"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "9c796af478663e759023a984029b0a4654f72e35004f96042f95b60b6aa36007"
+      },
+      "top_mip_rgba_rmse": [
+        0.6519313582345992,
+        0.6124938964539641,
+        0.3561441900158295,
+        0.0
+      ]
+    },
+    {
+      "name": "maxofs2d_models_companion_doll_normal_phongmask_roughness_v2_r615.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "59ec4a50452a93885ec359ea03f81558446930473b2f0d5ce0d5f425a94c3e2d"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "79ffb0a1adcd2c29546d1ba778022f50b47372364d66ec4742eb4d83090a9a1d"
+      },
+      "top_mip_rgba_rmse": [
+        0.28641098093474,
+        0.28614447768456935,
+        0.28610448078592066,
+        0.0
+      ]
+    },
+    {
+      "name": "maxofs2d_models_gm_painting_phongmask_roughness_v2_r586.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "c530d43e5f2f44a3aac3f989e92b3a7388fc0ed008fe6eabc5cc29f8583530ca"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "05ea9b876868db2ea63bf68eaf2974c77b3c5de822c8bdf1d40f88ab1f877031"
+      },
+      "top_mip_rgba_rmse": [
+        0.5387244892497304,
+        0.5385784242384537,
+        0.5381949257250312,
+        0.0
+      ]
+    },
+    {
+      "name": "metal_metalpipe003a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "63eaa13b2489098a5eceb853a8bb0ec20603d448f30132e5f231bd4e7452b15d"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "90c70c207d67781ce5a277c393d27365483d8d7e9a0e56ea45a8cf95b6522416"
+      },
+      "top_mip_rgba_rmse": [
+        0.1411124364702222,
+        0.13510487191813486,
+        0.07047507247136217,
+        0.0
+      ]
+    },
+    {
+      "name": "models_kleiner_glassesfrontmask_walter_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 128,
+      "height": 64,
+      "mips": 8,
+      "before": {
+        "size": 43820,
+        "sha256": "96dfd814fb5700a6da8ff7d90844b720dcdfb08e6ba47d8a531dda7243b6c854"
+      },
+      "after": {
+        "size": 11108,
+        "sha256": "fe41e9d7197c2dded93d560aeb2d93f7c6c54f6aae2dbaf42db35a0367212656"
+      },
+      "top_mip_rgba_rmse": [
+        0.09631896879639025,
+        0.09631896879639025,
+        0.09631896879639025,
+        0.0
+      ]
+    },
+    {
+      "name": "models_kleiner_glassessidemask_walter_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 64,
+      "height": 32,
+      "mips": 7,
+      "before": {
+        "size": 11052,
+        "sha256": "e701edb6587e7d62cc940ab839e263d030617dffc15a207d6bbe4d36f58f0117"
+      },
+      "after": {
+        "size": 2916,
+        "sha256": "78bd8adbefc4b236a67270da93f61939d9a22131e8f9c715915fbaee63f5049b"
+      },
+      "top_mip_rgba_rmse": [
+        0.038273277230987154,
+        0.038273277230987154,
+        0.038273277230987154,
+        0.0
+      ]
+    },
+    {
+      "name": "models_kleiner_kleiner_sheet_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "956a73af79ef35c9eb7f71b89d60d3072f003278393f97f511acca2f79c9ed90"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "1a83f81ed6830fcb8cb739c787f594231969e39fcec2d983255d8671a69f015f"
+      },
+      "top_mip_rgba_rmse": [
+        0.36697836256557226,
+        0.3522115861294296,
+        0.15602706263626942,
+        0.0
+      ]
+    },
+    {
+      "name": "models_kleiner_kleiner_sheet_normal_phongmask_roughness_v2_r731.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "4c7735988a96c9bac78ecd2c2c291c30c52882faa6f0a6e083f94f51dc0f3181"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "c69ed541f6a7279c8ef6b75963d82a59509d9db5e9d48baf59d8a133f0edca26"
+      },
+      "top_mip_rgba_rmse": [
+        0.2143927261542052,
+        0.214521686871476,
+        0.2142102699075997,
+        0.0
+      ]
+    },
+    {
+      "name": "models_kleiner_walter_face_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 256,
+      "mips": 10,
+      "before": {
+        "size": 699180,
+        "sha256": "5da58a3c6ee626daee3ace5965c9b9f3367c7263b688bda64907723ea33aed3b"
+      },
+      "after": {
+        "size": 174948,
+        "sha256": "fb63a6d1f8b9a7534b2f7663e616b955fda73c4b32784d6a173ed4c961fbb7bb"
+      },
+      "top_mip_rgba_rmse": [
+        0.17408031214966557,
+        0.16584320090120142,
+        0.06207128352371369,
+        0.0
+      ]
+    },
+    {
+      "name": "models_kleiner_walter_face_phongmask_roughness_v2_r639.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 1024,
+      "height": 512,
+      "mips": 11,
+      "before": {
+        "size": 2796332,
+        "sha256": "a83320a873b5a0df4eec3d2006f00252969d0acfeaa9e3c3a83e2fb9a213d498"
+      },
+      "after": {
+        "size": 699236,
+        "sha256": "54459cab99553179cf84df79fb439a2c46b98c4325056e507fbcc8129b0f6046"
+      },
+      "top_mip_rgba_rmse": [
+        0.2887257857305148,
+        0.28889749302236833,
+        0.28874230048412924,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_buildings_buildingsheet_03a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "39e90bd3be5257ed2e10ae43e63412e69fb56ebf2720bda1c48c86e630aa6020"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "ce97f10d82e491ddcfdbe2c30ad7fafb9c50399282a8351e4363a84837371a88"
+      },
+      "top_mip_rgba_rmse": [
+        0.11139663462186875,
+        0.11214747828090306,
+        0.11122528144456131,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_buildings_long_building001a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "51b5eb3366f1709fc468668b9b52b0e659160e5fe7fdf601bef8217244372667"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "9ecb9cc4e797784f296bf320853822f553da63bc4e27231c7376a720781a413e"
+      },
+      "top_mip_rgba_rmse": [
+        0.17877229564842045,
+        0.17866557228170737,
+        0.1786121866850688,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_buildings_project_building01_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "d9f8820ecacfa19421f254b1fd17baf4a58e4d1b587e625bcd19573c231124f1"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "12a4df96c889daac27275597ec5c29efa48e6401ccc802fd27d23d31ff2cf1a7"
+      },
+      "top_mip_rgba_rmse": [
+        0.0812133706495773,
+        0.0826566561308548,
+        0.0812133706495773,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_buildings_project_building03_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "a16e0d3e4d1e3efb7bbe87b7c6747f9e94a4ef0c49cd364a69febc61e74878d5"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "c8fc2541c5b6a1cc39815913e8ab1c80c533176aebe5554c19136f0429ea24c1"
+      },
+      "top_mip_rgba_rmse": [
+        0.06026268992399028,
+        0.06010422872433249,
+        0.06010422872433249,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_buildings_short_building001a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "1344f3ce29049aa507e60b998d153cff44e7322a1ddf7615f5925b963cccda6c"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "95de3dfbe0ce0807a40e2f74f54382b2dae01320c26c4e2edc1357d7cf3304ff"
+      },
+      "top_mip_rgba_rmse": [
+        0.1628020780013649,
+        0.16293090029667293,
+        0.16262624678254775,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_c17_furniturecouch002a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "2a333edc44802f25ace7f9d21f0cf4deff3a101482a1aa9587ef86b6dadfc9f3"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "fd86a45d19a1fa8de546f2cc7a520e08b507d5fea7b5053ce20e74b715d316d5"
+      },
+      "top_mip_rgba_rmse": [
+        0.07108811576231795,
+        0.0711082359898341,
+        0.07108811576231795,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_c17_furniturecupboard001a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "e14a8adc25e72eb7903f72761670a41683e016de6d87672f8adb6e18bf7b18f3"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "eda1d87b07d15ad384ef979d7740cd1047dfff75d7b185d75443a10854d61c27"
+      },
+      "top_mip_rgba_rmse": [
+        0.115234375,
+        0.1152509257182182,
+        0.115234375,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_c17_furnituretable003a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "fe2df128e60eb1528e02d4efbba53dc57d2a4673d8262e1645dd9c46e80ed8c9"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "e77716e3ee377ee64309428e4b20f4a4083c4a9863c9fe7e36b1ec0b0b7cc1b4"
+      },
+      "top_mip_rgba_rmse": [
+        0.14656247917777038,
+        0.14632804157765908,
+        0.145988744850577,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_c17_furniturewooddrawers001a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "490f93027410de44aa9a9f8f91f8439127f543e798d4aeb5235374af4aa9cfdc"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "86b692c4ecf542839b435ab803ee584897cf3ace9193d5ed35c88f1c3258099f"
+      },
+      "top_mip_rgba_rmse": [
+        0.14932148377771406,
+        0.14971693669325625,
+        0.14902740513230694,
+        0.0
+      ]
+    },
+    {
+      "name": "models_props_interiors_sinkkitchen01a_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "9ed5686e30bcc2ce7f70e6c3a6fe18af668efa337874184191f7f62c2e5230d7"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "4d9aca6bf6ccd1d56ad09a23736889d8638e1b1ed17d706fa66ec732d25ba974"
+      },
+      "top_mip_rgba_rmse": [
+        0.28245456026285226,
+        0.28234649538648654,
+        0.28238702456137216,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_c_arms_citizen_c_arms_citizen_hands_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "f07d0048a1d314ea455ceb3699773a1e7bf03e165e494a999f42fe01e5bef9cc"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "fb61a5804dc5a481c9f2468cb623e9682b59820b5cd2bbf7c603e468dba52fd5"
+      },
+      "top_mip_rgba_rmse": [
+        0.22839247816964695,
+        0.2274594147081089,
+        0.08754816092275743,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_c_arms_citizen_c_arms_citizen_hands_normal_phongmask_roughness_v2_r669.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "before": {
+        "size": 5592532,
+        "sha256": "0e14d468ee58ac882b4df7c69a0d4b61d8ef7f22b7b240846ec0e43e0abfce56"
+      },
+      "after": {
+        "size": 1398276,
+        "sha256": "62968f264eb8fcd2082e24fa55b84ae57a68e915af4902857a7b09c4f035b9ce"
+      },
+      "top_mip_rgba_rmse": [
+        0.17255337096828777,
+        0.1724980937465438,
+        0.17245662420285662,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_c_arms_citizen_c_arms_citizen_sleeves_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 2048,
+      "height": 1024,
+      "mips": 12,
+      "before": {
+        "size": 11184940,
+        "sha256": "8bd45176b016933982f98153affbbcd596fd19519d0f0cfabc65080556cbe58c"
+      },
+      "after": {
+        "size": 2796388,
+        "sha256": "83ac4688d567906ccb250279416fa663c8ebe5e329992ec8cf9c9061943b5726"
+      },
+      "top_mip_rgba_rmse": [
+        0.4726285059328958,
+        0.5228080950891747,
+        0.1886801139343707,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_c_arms_citizen_c_arms_citizen_sleeves_normal_phongexp_roughness_v2.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 2048,
+      "height": 1024,
+      "mips": 12,
+      "before": {
+        "size": 11184940,
+        "sha256": "0fbb4e7249f0a2bfc57a16bf06905a95d75ceb806ac37356eebf9f6e7e45dd63"
+      },
+      "after": {
+        "size": 2796388,
+        "sha256": "87b44704419953b0b8435e48b74db72ee26e900abd89295298f372c6c9244c3c"
+      },
+      "top_mip_rgba_rmse": [
+        0.04495370815032775,
+        0.044943099605483795,
+        0.044943099605483795,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_357_357_sheet_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "810de9f3a6734b8d1dc573237194fa583cb33d231584be03d882c8457b829c64"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "90a417a9e1ae491610baf77c8c1fa4eaf31a4251ce4e92cf6ba9c4cce19db612"
+      },
+      "top_mip_rgba_rmse": [
+        0.4884765234531172,
+        0.4889604650948594,
+        0.4879999189533104,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_crossbow_string_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 32,
+      "height": 128,
+      "mips": 8,
+      "before": {
+        "size": 21980,
+        "sha256": "6561e778d9761ab5bbd98514655765c3f3d3f293eed49afe5cd932db114ea5b9"
+      },
+      "after": {
+        "size": 5668,
+        "sha256": "4db8acbf765fd780c5dfe4ae7565591d4f07a44e75aca88b3ed37788b0edaa91"
+      },
+      "top_mip_rgba_rmse": [
+        0.5661772166247949,
+        0.4965702681897095,
+        0.30618621784789724,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_crowbar_crowbar_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "c98eaf9cd91ade33b219402d18e2c2ccb681a0d30731ef36af73f6831f171610"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "b820a64ad4381ec99a508e28d9f29f77c733e420d2d5acffda7f5fe0606c7f67"
+      },
+      "top_mip_rgba_rmse": [
+        0.3664803696354349,
+        0.2757712905425436,
+        0.08468548198702656,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_crowbar_crowbar_normal_phongmask_roughness_v2_r586.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "6502bca95f9d69189f7cc4db4b70c22342328d7764dd53cb12618776ca683979"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "c5670ef1c64954cd3ca6ea0af0e5a1f69d74a693297ba198522b95c847e077d8"
+      },
+      "top_mip_rgba_rmse": [
+        0.05313074417474783,
+        0.05313074417474783,
+        0.05313074417474783,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_crowbar_head_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "2a162983090b71f072e09e27841e0d39d1b609013e8bce37340e15a24f71446c"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "ae7a3feaf4c06cf5f4f044bbc8e14087b6617fda2be2891694e8e741a0198001"
+      },
+      "top_mip_rgba_rmse": [
+        0.4259603980914041,
+        0.3083216759479862,
+        0.1057577060209444,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_crowbar_head_normal_phongmask_roughness_v2_r586.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "7046e17830812773b5d57c0448a05eef0759a4b313f12c56ec71ba1069988c41"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "ec4733f28e391d8c7dabea61f2c898ce7ffa34508b32c0b3c641b9f2a1b9b893"
+      },
+      "top_mip_rgba_rmse": [
+        0.13171652578193255,
+        0.13171652578193255,
+        0.13171652578193255,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_grenade_handle_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 699180,
+        "sha256": "34aa7486eecc4e5ba5d3696b7201e17fbde1ddf9479d26f589aa0250d49349d0"
+      },
+      "after": {
+        "size": 174948,
+        "sha256": "2764aff1a9f5d53df1e87e5d61e95bb79cd4f5c402a20d6055adf40a902fad50"
+      },
+      "top_mip_rgba_rmse": [
+        0.32370064024062034,
+        0.27901674106919644,
+        0.12253427454186033,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_grenade_handle_normal_phongmask_roughness_v2_r389.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 699180,
+        "sha256": "9dd74a5adaeb8216022c52aec1769b7b0d1706a7cb65ac83688838b352432aad"
+      },
+      "after": {
+        "size": 174948,
+        "sha256": "379cb968c79becdd90e79388af46a47265a0b78e3efc387feebbcd13f3396344"
+      },
+      "top_mip_rgba_rmse": [
+        0.18211254220218812,
+        0.18211254220218812,
+        0.18211254220218812,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_grenade_rim_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 64,
+      "mips": 9,
+      "before": {
+        "size": 87516,
+        "sha256": "1b3bd6ae6e4a1b092b655ac730bc0d5b4b076f362bf1a39461b1bbe694f98ffe"
+      },
+      "after": {
+        "size": 22052,
+        "sha256": "09a504410d62d109a0cb63c72c1033e87399bd1614cdaddbb21f8515f2306c9b"
+      },
+      "top_mip_rgba_rmse": [
+        0.23619088215360898,
+        0.21791133876533364,
+        0.07370297759419221,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_grenade_rim_normal_phongmask_roughness_v2_r348.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 64,
+      "mips": 9,
+      "before": {
+        "size": 87516,
+        "sha256": "de919bb63eff94cc97af6b295b241fdfce194c0e8ec94badd7e99fb6b8a0f945"
+      },
+      "after": {
+        "size": 22052,
+        "sha256": "19365052d8137f0aa65958a84b7f414bc1473ccb5d6294d86831a02cf6613404"
+      },
+      "top_mip_rgba_rmse": [
+        0.44865793798003845,
+        0.44865793798003845,
+        0.44838577663380447,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_grenade_top_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "68eec67f3fdc5b43be18374bf4bce37d114b0ae662d453e15ae7d97f5df696c4"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "aa092d83121fe0346f71d3d34bcb5d17305fee909281c6c31e9b5f17d61896c8"
+      },
+      "top_mip_rgba_rmse": [
+        0.5184434099648075,
+        0.49535501099117035,
+        0.2768481487403113,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_grenade_top_normal_phongmask_roughness_v2_r457.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "c4966ca59ee5e2a60491f0dc5dfa8488930d1e1fb76c6de8955a8f6ed4e76453"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "28ace1010832b4830d819d74e2acc0ced5cf428a56b244bbcd19f5f02302a5c9"
+      },
+      "top_mip_rgba_rmse": [
+        0.10312795923784442,
+        0.10290578025249603,
+        0.10290578025249603,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_irifle_v_irifle_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "bb950bcd756a168d7ccf38cc1714356605161c627baf59e0e810584d43fbbe80"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "914fdd3fd9eaf91b1368328486f4eb66ff512baf0326d23b248c3bcc30062e8c"
+      },
+      "top_mip_rgba_rmse": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_irifle_v_irifle_normal_phongmask_roughness_v2_r496.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "c3b7b54a3f395d7cb16599a63d0d0961383bb300add6bb3ad15607c3f6e8ba54"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "4cce76cf0da9fe0446c7e7b40c349b5f4874a8dc2fd84b62b79e0d4938e32783"
+      },
+      "top_mip_rgba_rmse": [
+        0.30755362686601095,
+        0.30869262656453667,
+        0.307330285355796,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_physcannon_v_physcannon_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "b4b5ff46f43caba9be0aa7c4c47cb1bfbc3af6f39aec324c53e5c897d2249021"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "c29b7b42deb7ede19ef83628dbcbc59f4339bcd3dbbc7c576904d524077e2f9e"
+      },
+      "top_mip_rgba_rmse": [
+        0.3365331293039968,
+        0.3212222693679419,
+        0.1678551578114484,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_physcannon_v_physcannon_normal_phongmask_roughness_v2_r492.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "f3686793be3df38b1c2ae434c855e4fa918463d9fcbbf6b9a21f5ad9a30950b6"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "0f97b79cd7e6c6df547f73a39e3a0378f3e541a6067a636352a8f1c7a8e869d0"
+      },
+      "top_mip_rgba_rmse": [
+        0.24419530637637163,
+        0.2449128412408943,
+        0.2441874955008638,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_physcannon_v_superphyscannon_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "e7c4151173fb128b7dafdf3679a79375ca857d3854d5a4f7e70c7ac8f033d9b0"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "8d18d628969d58c33ccc495c4b6fe7c7ba2147c61c3aea5c2333bb0e286e61be"
+      },
+      "top_mip_rgba_rmse": [
+        0.5565926514414935,
+        0.5292536306135066,
+        0.2758957579200544,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_physcannon_v_superphyscannon_normal_phongmask_roughness_v2_r707.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "25274f6932532989489e0b9a86945d6b99f801ab0e2b3a8dba71a568e7b60884"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "227f0e7dbafab8762d42e08c28a11fe0e50235095c4a7ea1ae2c84584d649413"
+      },
+      "top_mip_rgba_rmse": [
+        0.2285656996417756,
+        0.2292156745064637,
+        0.22839874147512695,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_pistol_v_pistol_sheet_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "540f963eb61abea86c0f84e8b8af5053b1f9a1b669d17efd19205e79cc305681"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "e7d2fb8714530ea16267188ad9a110a22d3f828b7a9218a16f18574c8e79336d"
+      },
+      "top_mip_rgba_rmse": [
+        0.41242397648167006,
+        0.39879636871613044,
+        0.19202308134578835,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_pistol_v_pistol_sheet_normal_phongmask_roughness_v2_r586.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "bc3bf2911c14dfb54afcfce218989151b708bb8b88589e8d451798bd5bf5ff21"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "f9ea9d1f8ad72d5824a9923bef86e96bfca25fe22ef6ad660fcf1069ee5fe004"
+      },
+      "top_mip_rgba_rmse": [
+        0.09530369452153009,
+        0.095703125,
+        0.09502309418101673,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_rocket_launcher_flat_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "a31cb5515a3fb67ecb1db47cdcbb04e4ee50d112cbd4035d41fe1ccfc1507b31"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "78de17c7fe8560d45aa8de2110d3316f00bedf164185a361b5ee8442b6b0a70c"
+      },
+      "top_mip_rgba_rmse": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_rocket_launcher_flat_normal_phongmask_roughness_v2_r522.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "6bf59f3ec776936a36599d99af44a257ee2ee70db352e13bdf1495dc0252b766"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "0f1fe48beddd85e60bf3ab915bd28dd8ed4f17ff832b9bae1c8d21661bafe9c7"
+      },
+      "top_mip_rgba_rmse": [
+        0.09596186325420505,
+        0.09578281121280648,
+        0.09578281121280648,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_shotgun_vshotgun_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "076506d9cfea380864315a29ee045d711232587164648b91fb1ea41981800dd5"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "33b2ca4911d3c3f88f0029087ffba87149b1f907318f94722117de62f3e6007e"
+      },
+      "top_mip_rgba_rmse": [
+        0.2767172170517957,
+        0.2670786853530657,
+        0.15710216837648597,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_shotgun_vshotgun_normal_phongmask_roughness_v2_r639.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "2e2869a6b56e564dc9f7a2e41fd41e91444ffebc16051b335ac4171fdea1f63e"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "4f25b9ea425cac4efe026bdd6f928cbb875e20397b0278b7f89a0f4af23e4ccd"
+      },
+      "top_mip_rgba_rmse": [
+        0.1612836651812479,
+        0.16153182131355728,
+        0.16126001134740636,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_smg1_smg1_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "d460ded26be2cc8021162ba3aeebf4955e366ed239f045e4613e5e1da7e8ab74"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "e44b517844e53d61275258a6b714b63ade72df3830bd3567b0c735924f591d90"
+      },
+      "top_mip_rgba_rmse": [
+        0.30040053015203716,
+        0.296148113000884,
+        0.15198023537078556,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_smg1_smg1_normal_phongmask_roughness_v2_r454.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "1bf8e30949cb8ac5fb5c9f2fdab4f523c6f20f23d23b24f1d9fe8660b0b0c84f"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "079cb65197f160b4c3915609e7b24ae3bac0b232b7fc14ba4e1cc409d5f90a43"
+      },
+      "top_mip_rgba_rmse": [
+        0.10425004800845718,
+        0.10428663339228511,
+        0.10425004800845718,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_toolgun_toolgun3_exp_phongexp_roughness_v2.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "15886a027a4be77a3e352882e9095da1a606afd2e5bc7bfc3cb318070d8792e0"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "e87b62d00187ff6f1036c729e11228db7afc3dd2df8b4866142ca754b68c91fd"
+      },
+      "top_mip_rgba_rmse": [
+        0.14935979917425907,
+        0.14935979917425907,
+        0.14935979917425907,
+        0.0
+      ]
+    },
+    {
+      "name": "models_weapons_v_toolgun_toolgun_exp_phongexp_roughness_v2.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 256,
+      "height": 256,
+      "mips": 9,
+      "before": {
+        "size": 349652,
+        "sha256": "d1f9e9d46b6f2e2289471f0596d732b3a31a598e91ce4ef855f729cb1c32f6ad"
+      },
+      "after": {
+        "size": 87556,
+        "sha256": "446042db331c0d45c5c8ef57936aef62e7edb81bc24493650d9c91d8b9b46724"
+      },
+      "top_mip_rgba_rmse": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "null-bumpmap_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 16,
+      "height": 16,
+      "mips": 5,
+      "before": {
+        "size": 1492,
+        "sha256": "1ec6c65ec1b909edd616e3cf8d4f0753cf167799427430275837a5d71bc23717"
+      },
+      "after": {
+        "size": 516,
+        "sha256": "90b45bec244e74c4290966cd5e64e841442b2ebfa9ca579ca8eaecc6797ca8cd"
+      },
+      "top_mip_rgba_rmse": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "plaster_plasterceiling005a_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "3ee474035db0a280f81bf9f50a4b1c786aa589a95e63628c7b7dbc502d6ff93c"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "87553b97ab2fd5f6026eeba9a4093421eceac53c127629f7527c05ccc83419c7"
+      },
+      "top_mip_rgba_rmse": [
+        0.2172363226374606,
+        0.24806225346028943,
+        0.169393485211301,
+        0.0
+      ]
+    },
+    {
+      "name": "plaster_plasterwall017c_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "c7a7478327208b5f48ecbaa7d49e01e2b2c5d205c043c0b16474864b380051f1"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "21a13b244ab7d38b9a6dd4f2c13828296b3c21204a4f7ef9de1f817a0bba9ad8"
+      },
+      "top_mip_rgba_rmse": [
+        0.2550081259236838,
+        0.16621082274526003,
+        0.10982746812116835,
+        0.0
+      ]
+    },
+    {
+      "name": "plaster_plasterwall017c_normal_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "03cadcd430d4c7c8eed72f0b48ebc455d8705e1634c42be71d3ab2a5baeeabe5"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "fa30f4157144dcb324c234e065447f1d295b06f5e64c1f02669ec51653b24656"
+      },
+      "top_mip_rgba_rmse": [
+        0.48039728889303823,
+        0.4833658843205631,
+        0.47971787744815114,
+        0.0
+      ]
+    },
+    {
+      "name": "plaster_plasterwall022c_normal_normal.dds",
+      "usage": "normalmap_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "c7a7478327208b5f48ecbaa7d49e01e2b2c5d205c043c0b16474864b380051f1"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "21a13b244ab7d38b9a6dd4f2c13828296b3c21204a4f7ef9de1f817a0bba9ad8"
+      },
+      "top_mip_rgba_rmse": [
+        0.2550081259236838,
+        0.16621082274526003,
+        0.10982746812116835,
+        0.0
+      ]
+    },
+    {
+      "name": "plaster_plasterwall022c_normal_roughness.dds",
+      "usage": "reflectionroughness_texture",
+      "width": 512,
+      "height": 512,
+      "mips": 10,
+      "before": {
+        "size": 1398228,
+        "sha256": "03cadcd430d4c7c8eed72f0b48ebc455d8705e1634c42be71d3ab2a5baeeabe5"
+      },
+      "after": {
+        "size": 349700,
+        "sha256": "fa30f4157144dcb324c234e065447f1d295b06f5e64c1f02669ec51653b24656"
+      },
+      "top_mip_rgba_rmse": [
+        0.48039728889303823,
+        0.4833658843205631,
+        0.47971787744815114,
+        0.0
+      ]
+    }
+  ]
+}

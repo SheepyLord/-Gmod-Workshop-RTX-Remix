@@ -186,9 +186,42 @@ hook.Add("AddToolMenuCategories", "nativeloader_menu", function()
     end
 end)
 
+-- I2 is optional: older loaders report no performance tier. Read the local report when the panel
+-- opens, and describe the loader's choice without writing any Remix options or configuration.
+local function performance_tier_line()
+    local ok, status = pcall(function()
+        local body = file.Read("native-loader/status.json", "DATA")
+        return body and util.JSONToTable(body)
+    end)
+    if not ok or type(status) ~= "table" or status.schema ~= 1 then return end
+    local activation = status.activation
+    local tier = type(activation) == "table" and activation.performance_tier
+    if type(tier) ~= "table" then return end
+    if activation.non_nvidia or type(tier.adapter) ~= "string" or tier.adapter == "" then return end
+    local levels = { high = N("High"), medium = N("Medium"), low = N("Low") }
+    if not levels[tier.tier] then return end
+    if tier.tier ~= "high" and (type(tier.layer) ~= "string" or tier.layer == "") then
+        local reason = type(tier.reason) == "string" and tier.reason ~= "" and tier.reason or
+            L("No tier layer is available.")
+        return string.format(L("Performance tier %s is not applied: %s. See the Memory and stability guide."),
+            L(levels[tier.tier]), reason)
+    end
+    local sources = { auto = N("Automatic selection"), config = N("Configuration override"),
+        fallback = N("Compatibility fallback") }
+    local adapter = tier.adapter
+    local memory = tier.dedicated_vram_mib
+    memory = type(memory) == "number" and memory >= 0 and memory < math.huge and
+        string.format("%.0f", memory) or "?"
+    return string.format(L("Performance tier: %s (%s; %s, %s MiB VRAM). To change it, set remix.performance_tier in native-loader\\config.json to auto, high, medium or low, then restart Garry's Mod."),
+        L(levels[tier.tier]), L(sources[tier.source] or N("Unknown source")), adapter, memory)
+end
+
 local function start_here(panel)
     panel:Help(L("RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."))
+    local tier = performance_tier_line()
+    if tier then panel:Help(tier) end
     panel:Button(L("Open the RTX Remix guide"), "nativeloader_guide")
+    panel:Button(L("Memory and stability guide"), "nativeloader_stability_guide")
     panel:Button(L("Print the loader's status to the console"), "nativeloader_status")
     panel:Help(L("Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."))
     panel:Button(L("Use the classic RTX settings"), "nativeloader_rtx_defaults")

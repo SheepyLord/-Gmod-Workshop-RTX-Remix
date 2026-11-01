@@ -6,6 +6,29 @@ local SHOWN = "nativeloader_companion/guide_shown.txt"
 local i18n = include("nativeloader/i18n.lua")
 local L, N = i18n.L, i18n.N
 
+-- Workshop updates can reach an older winmm.dll. Its config parser rejects unknown R6 keys.
+local function r6_loader()
+    local ok, status = pcall(function()
+        local body = file.Read("native-loader/status.json", "DATA")
+        return body and util.JSONToTable(body)
+    end)
+    return ok and type(status) == "table" and status.schema == 1 and
+        type(status.activation) == "table" and type(status.activation.performance_tier) == "table"
+end
+
+local R6_CONFIG = [[{
+  "schema": 1,
+  "allow": {
+    "workshop": ["3829070317"]
+  },
+  "remix": {
+    "performance_tier": "low"
+  },
+  "diagnostics": {
+    "gpu_crash_dumps": "off"
+  }
+}]]
+
 local PAGES = {
     { N("Welcome"), "icon16/star.png", {
         { "image", "nativeloader/guide/rtx_on.jpg" },
@@ -47,6 +70,27 @@ local PAGES = {
         { "h", N("Advanced MMD Animation Player") },
         { "p", N("Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start.") },
     } },
+    { N("Memory and stability"), "icon16/chart_bar.png", {
+        { "h", N("For 8 GB GPUs and 16 GB of RAM") },
+        { "p", N("Use a system-managed Windows page file on a drive with at least 30 GB free. Close browsers and stop OBS recording before playing. In Task Manager > Performance > Memory, watch Committed: the first number is in use, the second is the limit. If they are close, close other apps or use fewer heavy models.") },
+        { "p", N("Turn frame generation off in Alt+X and use 'User Settings (user.conf): Save' so a saved value does not return next start. Keep Garry's Mod's texture detail at its highest: lowering it changes the textures Remix hashes and can break replacement matching. Use fewer heavy characters to reduce memory pressure.") },
+        { "p", N("Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."), "legacy" },
+        { "h", N("Performance tiers"), "r6" },
+        { "p", N("The loader chooses high, medium or low from the NVIDIA GPU's model and VRAM; recognized laptop models step down one class tier. High keeps the classic defaults. Medium and low reduce rendering work and memory use when their tier layer is available; the package's low layer also uses smaller night-sky textures. Your saved Remix settings can override these defaults."), "r6" },
+        { "p", N("RTX Remix tab > Start here shows the tier and GPU, or the reason a tier layer was not applied. To override it, use auto, high, medium or low for remix.performance_tier in native-loader\\config.json, then restart Garry's Mod. Loader tiers are separate from Graphics Preset in Alt+X."), "r6" },
+        { "p", N("Complete minimal config.json example for the shipped allowlist, with the low tier and GPU dumps off. If you customized the file, keep your allow entries and other settings when adding these objects. Invalid JSON turns RTX off."), "r6" },
+        { "code", R6_CONFIG, "r6" },
+        { "h", N("Local memory readings") },
+        { "p", N("Console: rtx_vram_stats prints VRAM totals and categories when the RTX fixes are available. The companion records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. After three failed API calls it stops for this map; toggle nativeloader_vram_telemetry off (0) and on (1) to retry. These files stay local.") },
+        { "p", N("This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."), "r6" },
+        { "h", N("After a crash") },
+        { "p", N("Before restarting, copy status.json and session.json from garrysmod\\data\\native-loader\\, both vram CSV files and rtx-remix\\logs\\. The next start rewrites both JSON reports and can overwrite runtime logs; the session evidence folder does not keep these JSON reports.") },
+        { "p", N("At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."), "r6" },
+        { "p", N("This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."), "legacy" },
+        { "p", N("Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading.") },
+        { "p", N("Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\ and shaderDebugInfo\\*.nvdbg if no session folder kept them. For a GPU hang, include nearby Event Viewer System events from Display or nvlddmkm and any matching Windows LiveKernelReports\\WATCHDOG dump. Dumps can contain process memory; review what you share.") },
+        { "p", N("For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."), "r6" },
+    } },
     { N("Troubleshooting"), "icon16/wrench.png", {
         { "h", N("First look") },
         { "p", N("Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready.") },
@@ -86,7 +130,8 @@ local function add_image(parent, path)
     image:SetTall(300)
 end
 
-local function open_guide()
+local function open_guide(selected)
+    local r6 = r6_loader()
     local frame = vgui.Create("DFrame")
     frame:SetTitle(L("RTX Remix guide"))
     frame:SetSize(math.min(960, ScrW() - 40), math.min(720, ScrH() - 40))
@@ -97,15 +142,21 @@ local function open_guide()
     for _, page in ipairs(PAGES) do
         local scroll = vgui.Create("DScrollPanel", sheet)
         for _, item in ipairs(page[3]) do
-            if item[1] == "image" then add_image(scroll, item[2])
-            elseif item[1] == "h" then add_text(scroll, L(item[2]), "DermaLarge", Color(118, 185, 0))
-            else add_text(scroll, L(item[2]), "DermaDefault") end
+            if not item[3] or (item[3] == "r6" and r6) or (item[3] == "legacy" and not r6) then
+                if item[1] == "image" then add_image(scroll, item[2])
+                elseif item[1] == "h" then add_text(scroll, L(item[2]), "DermaLarge", Color(118, 185, 0))
+                elseif item[1] == "code" then add_text(scroll, item[2], "DermaDefault")
+                else add_text(scroll, L(item[2]), "DermaDefault") end
+            end
         end
-        sheet:AddSheet(L(page[1]), scroll, page[2])
+        local added = sheet:AddSheet(L(page[1]), scroll, page[2])
+        if page[1] == selected then sheet:SetActiveTab(added.Tab) end
     end
 end
 
-concommand.Add("nativeloader_guide", open_guide, nil, "Opens the RTX Remix guide")
+concommand.Add("nativeloader_guide", function() open_guide() end, nil, "Opens the RTX Remix guide")
+concommand.Add("nativeloader_stability_guide", function() open_guide("Memory and stability") end, nil,
+    "Opens the RTX Remix guide's memory and stability page")
 
 -- Once, on the first RTX session: open the guide a moment after the player has spawned.
 hook.Add("InitPostEntity", "nativeloader_guide", function()

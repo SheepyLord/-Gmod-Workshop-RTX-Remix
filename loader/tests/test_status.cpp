@@ -79,3 +79,28 @@ TEST_CASE("status: atomic replacement and uninstall remove only generated data")
   CHECK(!std::filesystem::exists(folder));
   std::filesystem::remove_all(root);
 }
+
+TEST_CASE("status: performance tier I2 and recoverable config notes reach status and log") {
+  nl::status::Report report;
+  auto& selected = report.activation.plan.performance_tier;
+  selected.tier = nl::performance::Tier::low;
+  selected.source = "fallback";
+  selected.adapter = "RTX 4060 Ti";
+  selected.dedicated_vram_mib = 16384;
+  selected.reason = "old package; built-in low defaults";
+  selected.layer = nl::activate::kTierLayer;
+  report.activation.plan.notes = {"remix.performance_tier is invalid; using auto"};
+  const auto parsed = nl::json::parse(nl::status::serialize(report));
+  const auto* activation = parsed.find("activation");
+  const auto* tier = activation->find("performance_tier");
+  REQUIRE(tier);
+  CHECK(tier->as_object().size() == 6);
+  CHECK(tier->find("tier")->as_string() == "low");
+  CHECK(tier->find("source")->as_string() == "fallback");
+  CHECK(tier->find("dedicated_vram_mib")->as_int() == 16384);
+  CHECK(tier->find("layer")->as_string() == selected.layer);
+  CHECK(!activation->find("notes")->as_array().empty());
+  const auto log = nl::status::log_fields(report);
+  CHECK(log.find("activation.performance_tier=" + nl::performance::serialize(selected)) != std::string::npos);
+  CHECK(log.find("activation.note=") != std::string::npos);
+}

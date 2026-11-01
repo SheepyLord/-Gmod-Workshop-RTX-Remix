@@ -4,7 +4,8 @@ target_link_libraries(nl_backend_tests PRIVATE nl_proxy_logic nl_core nl_build_o
 add_test(NAME nl_backend_tests COMMAND nl_backend_tests)
 
 add_executable(nl_proxy_tests
-  ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp test_presentation.cpp test_presentation_hooks.cpp ../modules.cpp)
+  ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp test_presentation.cpp test_presentation_hooks.cpp
+  test_runtime.cpp ../runtime.cpp ../modules.cpp)
 target_include_directories(nl_proxy_tests PRIVATE ../../tests)
 target_link_libraries(nl_proxy_tests PRIVATE nl_proxy_logic nl_proxy_presentation nl_build_options)
 target_compile_definitions(nl_proxy_tests PRIVATE
@@ -27,6 +28,11 @@ add_test(NAME nl_proxy_installer
 set_tests_properties(nl_proxy_installer PROPERTIES TIMEOUT 60)
 add_test(NAME nl_proxy_kernel32_imports
   COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/check_imports.py" "$<TARGET_FILE:nl_winmm>")
+add_test(NAME nl_telemetry_integration
+  COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/telemetry_integration.py"
+    --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>" --nlctl "$<TARGET_FILE:nlctl>"
+    --scratch "${PROJECT_SOURCE_DIR}/out/tmp/telemetry-$<CONFIG>")
+set_tests_properties(nl_telemetry_integration PROPERTIES TIMEOUT 90)
 
 add_library(nl_m4_static SHARED fixture_static.cpp)
 add_library(nl_m4_delay SHARED fixture_delay.cpp)
@@ -38,6 +44,8 @@ endforeach()
 set_target_properties(nl_m4_runtime PROPERTIES OUTPUT_NAME d3d9)
 target_link_libraries(nl_m4_runtime PRIVATE nl_m4_static nl_m4_delay delayimp)
 target_link_options(nl_m4_runtime PRIVATE "/DELAYLOAD:nl_m4_delay.dll")
+target_compile_definitions(nl_proxy_tests PRIVATE NL_RUNTIME_FIXTURE_DIR="$<TARGET_FILE_DIR:nl_m4_runtime>")
+add_dependencies(nl_proxy_tests nl_m4_runtime)
 add_test(NAME nl_activation_integration
   COMMAND "${Python3_EXECUTABLE}" -I -B "${CMAKE_CURRENT_SOURCE_DIR}/activation_integration.py"
     --repo "${PROJECT_SOURCE_DIR}" --host "$<TARGET_FILE:nl_proxy_host>" --proxy "$<TARGET_FILE:nl_winmm>"

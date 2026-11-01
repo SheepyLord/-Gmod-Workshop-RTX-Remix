@@ -1,5 +1,43 @@
 # Roadmap
 
+R6 harness failure handling is **done with offline validation** on `r6-harness` (2026-10-31): whole-run crash-prompt
+watchdog, device-loss/continuous-hang detection, bounded capture and exit, retained evidence and
+explicit release-QA reasons. Validation uses fake games/windows only; game acceptance stays with
+the project manager ([testing note](TESTING.md#r6-unattended-harness-failures)).
+
+R6 T3 implementation (companion telemetry, tier display, translated stability guide and 2048 px
+publishing guidance) was committed as `a28d6b6` on `r6-t3-companion`; see
+[the task brief](handover/R6-T3-companion-docs.md). Its independent-review fix pass covers older-loader
+guidance, missing tier layers/hardware, recoverable CSV segments, API back-off and documentation.
+The fix pass is complete on that branch: all 37 companion tests, both i18n checks,
+skill validation and the full Release gate pass with the user's access (288 tools Python tests,
+23 CTests; the unchanged guard passes from a shorter executable path). Integration, human
+translation review and game acceptance remain with the project manager; this task started no game.
+
+R6 T6 is **done** (2026-10-31, branch `r6-t6-tiers`, measured in the R6 integration): optional
+medium/low runtime payloads, lossless mip removal and 4096-wide sky inputs are implemented.
+Tier options have source-pinned validation and the DDS fixtures cover every accepted format.
+On the PoC at 4K on an RTX 5090, medium and low run 5-9 % faster than high and use 170-750 MiB
+less VRAM; low takes medium's 8 bounces, since 4 measured no faster. An 8 GB card, a zoomed sky
+and the class-limited low-memory trade-off remain unmeasured;
+[ADR 0064](decisions/0064-performance-tier-defaults.md) records the source-verified consequences
+and why medium retains the original skies.
+
+R6 T5 is **implemented and passes offline acceptance** on `r6-t5-fixes`: the fixes DLL drops
+unsupported memory-limit writes while keeping its Lua compatibility API
+([ADR 0066](decisions/0066-fixes-memory-limits-compatibility.md)); all 83 ToPBR textures use
+linear BC7, reducing DDS size from 136.25 to 34.07 MiB. Controlled rebuild/source checks,
+compatibility and oversized-skinning regressions, deep input verification, the full Release
+suite (23 CTests, 333 Python tests with 2 skips), and the nlctl-validated combined package pass.
+Game acceptance belongs to R6 integration: no resource-limit rejections at map load and
+unchanged ToPBR appearance. See [T5 validation](TESTING.md#r6-t5-topbr-compression).
+
+R6 T2 implementation and automated validation are **done** on `r6-t2-evidence`: bounded previous-session
+evidence, startup/CLI reporting, bootstrap memory history, and seven-language failure/RAM notices.
+Release passes 24 CTests and 334 Python tests (two expected skips), with the pre-existing long-worktree
+guard-test path workaround documented in [TESTING](TESTING.md#r6-t2-local-evidence-and-telemetry).
+No game was launched; integration and game QA remain with Claude ([T2 brief](handover/R6-T2-evidence-telemetry.md)).
+
 C13 graphics-add-on/map-load hardening is **done and published** in loader 0.10.0.
 The verified early guard, scoped later multiplayer installation, D3D9 backend normalization and
 required-protection vanilla fallback pass Release, actual-package and secure dedicated tests.
@@ -78,7 +116,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | QoL | **in progress** (from 2026-10-29: Codex Astra; [brief](handover/QoL-handover.md)) | Translation batch **done** (2026-10-30; [report](handover/QoL-report.md)): audit and localization of every bundled add-on interface ([ADR 0038](decisions/0038-complete-bundled-interface-translations.md)); quality-of-life changes the user asks for, on the state the brief describes (loader 0.6.0, the RTX package `+8beef27e`) | Each change tested (`tools\test.ps1`, the PoC for in-game behaviour), documented, merged and pushed; a report in `docs/handover/QoL-report.md` |
 | R4 | **done** (2026-10-31, Claude; loader 0.10.1, [review](handover/R4-review.md), field release run there) | Review of Codex Astra's QoL batch (loader 0.6.0 to 0.10.0, runtime patches 0005-0013, the GPL native changes, the companion and add-on Lua, tools and CI), fixes with tests, a field QA run on the user's install, the agent skills in [skills/](../skills/README.md), a GitHub release | Every finding triaged with a reason, accepted ones fixed and tested; the field install runs the release; `main`, the Workshop item and the release agree |
 | R5 | **done** (2026-10-31, Claude, `r5-qol` with `r5-glass` and `r5-stability`, merged into `main` as `cff3c67`; [handover](handover/R5-qol.md), [stability proposal](handover/R5-stability-proposal.md); field QA passed on the published package) | The user's QoL report: the night sky line on modern_house, broken glass that is inert, never breaks again and never goes, Workshop model packs that must always provide their models, the RTX normals checkbox, the content pack skill's checks, and a proposal (not implemented) for stability on machines with little memory | Each item fixed and tested, checked in the game; the stability proposal handed to the user |
-| R6 | **in progress** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md)) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
+| R6 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md), [report](handover/R6-report.md); loader 0.11.0; PoC release QA and tier measurements passed) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
 ## Risks being watched
@@ -133,3 +171,52 @@ Prevent unset Common Remix sliders from becoming startup zeros, make GMod startu
 and preserve native settings on failed Save or Reload ([ADR 0044](decisions/0044-remix-settings-persistence.md)).
 The panel's six translations include the ownership and save guidance. Validation and delivery are
 recorded in the [QoL report](handover/QoL-report.md#remix-settings-persistence-2026-10-30).
+
+## R6 T1: loader layers and GPU policy (2026-10-31)
+
+In progress on `r6-t1-layers`: fix loader Remix layer precedence, select performance tiers from
+the GPU, and add the opt-in GPU crash-dump switch ([brief](handover/R6-T1-loader-layers.md)).
+
+Implementation finished in this worktree: all R6 T1 tier/layer/diagnostic code and documentation
+are ready for review, uncommitted at the project manager's instruction. Release native CTests
+pass (23/23); the full Release gate is blocked only by 21 existing field-snapshot tests whose
+throwaway HKCU fixture creation is denied by this sandbox. Integration and real-runtime QA remain
+with the project manager; see the R6 T1 validation record in TESTING.md.
+
+## R6 T4: runtime memory diagnostics (2026-10-31)
+
+Proposal 8 is implemented on `r6-t4-runtime` as runtime patch 0015: shared VRAM collection, snapshots
+at cuts/five-minute intervals/device loss, a local schema-1 crash marker before Sentry and
+device-lifetime OMM warning limits ([ADR 0065](decisions/0065-runtime-memory-diagnostics.md)).
+Build/import and offline validation are recorded with the runtime in [runtime/README.md](../runtime/README.md).
+Camera-cut/driver sampling and induced device loss remain for the project manager's game QA;
+T4 does not launch Garry's Mod or modify an install.
+
+The runtime rebuild/import, all 22 runtime unit tests, deep input verification and the combined
+package check are done. Repository Release checks pass 333 Python tests (two skips) and 22/23
+CTests; the remaining guard-cache long-path failure reproduces on unchanged `7759c43`, while all
+22 guard cases pass from a shorter executable path ([TESTING.md](TESTING.md#r6-t4-runtime-memory-diagnostics)).
+
+T1 independent-review fix pass (2026-10-31): all seven findings addressed on `r6-t1-layers`, with
+regressions for fallback write failures, forgiving diagnostic config, off-mode rearm, unknown-GPU
+overrides, effective menu tiers, malformed adapter descriptions and the combined user-list budget.
+The earlier sandbox/HKCU validation limitation above belongs to the initial pass; the fix-pass
+validation record below in TESTING.md records the current full-access run. Integration, actual
+runtime option checks and GPU fault capture remain with the project manager.
+
+T4's independent-review fix pass is complete on its branch: missing or unsafe runtime build
+configurations stop before import; patch 0015 records all six omitted staged test sources, adds
+heap locality/driver totals/pending OMM counts and flushes an early crash marker under the existing
+single-handler gate. The Release rebuild imports only the changed `d3d9.dll`; all 27 runtime unit
+tests and the 1,008-file package check pass. Repository Release checks pass all 23 CTests and 333
+Python tests (two skips) with the unchanged guard executable relocated under `out/tmp` for its
+known long-path limitation. No game session was run; runtime GPU acceptance remains with Claude.
+
+T4's second-review fix pass is complete: budget-drop logs retain free VRAM, the previous budget,
+use and thresholds; crash markers/logs preserve the escaped queue reason, use PID-specific
+temporaries and two short replacement retries, and bound heap snapshots. Fresh setup invokes
+Python/Meson after the repository's MSVC environment; a configure-only scratch build matches all
+95 Release options and was removed. The single Release rebuild imports only `d3d9.dll`.
+All 27 runtime unit tests, deep input verification, the 1,008-file package check and repository
+Release checks pass (23 CTests, 333 Python tests, two skips; the same short guard-test path).
+T2's integration reader ignores the additional I7 fields; loader code remains unchanged.

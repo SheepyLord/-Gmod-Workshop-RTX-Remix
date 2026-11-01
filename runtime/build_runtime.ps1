@@ -83,6 +83,7 @@ function Get-WorkingTree([string] $Where) {
 }
 
 Invoke-Git $Fork cat-file -e "$($base.commit)^{commit}" | Out-Null
+$needsSetup = $false
 if (-not (Test-Path $Worktree)) {
     if ($Verify) { throw "$Worktree does not exist" }
     Invoke-Git $Fork worktree add --detach $Worktree $base.commit | Out-Null
@@ -98,9 +99,7 @@ if (-not (Test-Path $Worktree)) {
         Invoke-Git $Worktree clone --quiet $clones[$path].url $at | Out-Null
         Invoke-Git $at checkout --quiet --detach $clones[$path].commit | Out-Null
     }
-    Push-Location $Worktree
-    try { & .\build_dxvk.ps1 -BuildFlavour $base.flavour -BuildSubDir $base.build_dir -Backend ninja -EnableTracy false }
-    finally { Pop-Location }
+    $needsSetup = $true
 }
 
 # What is checked out must be exactly what base.json and the patches describe (R3-014): the commit's
@@ -160,8 +159,35 @@ if ($Verify) {
 
 # Shaders rebuild only while their stamp is missing, and the C++ that embeds them notices the new
 # headers only on the next run: delete the stamp, build twice (RESEARCH.md section 29).
+if (-not $needsSetup -and -not (Test-Path -LiteralPath (Join-Path $build 'meson-private\coredata.dat') -PathType Leaf)) {
+    throw "$build is not configured (meson-private\coredata.dat is missing). Configure the Release build explicitly; refusing Meson's defaults."
+}
 Import-Module (Join-Path $repo 'tools\lib\VsDevEnv.psm1')
 Enter-VsDevEnv | Out-Null
+if ($needsSetup) {
+    python -m mesonbuild.mesonmain setup --buildtype release --backend ninja `
+        -Denable_tracy=false -Dremix_with_shim=false -Ddownload_apics=false $build $Worktree
+    if ($LASTEXITCODE) { throw "runtime setup failed: $LASTEXITCODE" }
+}
+# Never import a Debug CRT build, or allow a reconfigure to enable APIC downloads implicitly.
+$buildOptionsJson = @(python -m mesonbuild.mesonmain introspect --buildoptions $build)
+if ($LASTEXITCODE) { throw "meson build-option check failed: $LASTEXITCODE" }
+$buildOptions = @{}
+foreach ($option in (($buildOptionsJson -join "`n").TrimStart([char]0xfeff) | ConvertFrom-Json)) {
+    $buildOptions[$option.name] = $option.value
+}
+if ($base.flavour -ne 'release' -or $buildOptions.buildtype -ne 'release' -or
+    $buildOptions.backend -ne 'ninja' -or $buildOptions.optimization -ne '3' -or
+    $buildOptions.b_vscrt -notin @('from_buildtype', 'md') -or
+    $buildOptions.enable_tracy -ne $false -or $buildOptions.remix_with_shim -ne $false -or
+    $buildOptions.download_apics -ne $false) {
+    throw 'Expected a Release/Ninja build with optimization=3, the release DLL CRT, Tracy/shim off and download_apics=false. Configure those options explicitly before rebuilding.'
+}
+# The fork computes its version at configure time, so an existing build must notice the new commit.
+if (-not $needsSetup) {
+    python -m mesonbuild.mesonmain setup --reconfigure $build $Worktree
+    if ($LASTEXITCODE) { throw "meson reconfigure failed: $LASTEXITCODE" }
+}
 Remove-Item -LiteralPath (Join-Path $build 'src\dxvk\_built_shaders.txt') -ErrorAction SilentlyContinue
 foreach ($pass in 1, 2) {
     python -m mesonbuild.mesonmain compile -C $build

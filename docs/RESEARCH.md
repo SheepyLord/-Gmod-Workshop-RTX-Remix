@@ -1,5 +1,166 @@
 # Research notes
 
+## R6 T3: independent-review fixes (2026-10-31)
+
+- At base `7759c43`, `loader/core/src/config.cpp:52,78` permits neither a top-level `diagnostics`
+  nor `remix.performance_tier`; `loader/core/src/startup.cpp:132-135` turns configuration errors
+  into `may_activate = false`. Workshop companion updates therefore gate new instructions on
+  the additive I2 capability, not their own version. `dist/native-loader/config.json:1-6` has only
+  schema and allow, so fragment-only examples neither describe the shipped file nor preserve trust.
+- The fixes' `source/remixapi/remixapi.cpp:1311-1325` warns on every unavailable/failed VRAM API
+  request; `resource_lua_bindings.cpp:38-71` returns nil for it. Three consecutive failures now
+  stop automatic calls until an off/on retry or a map/start; late API availability stays supported.
+- `skills/mmd-remix-pbr/tool/rpai/cli.py:391-418` replaces the model layer and prunes its unused
+  DDS files under the chosen mod. `--mod` at `cli.py:621` supplies that folder name. A 2048 px
+  publish must use a separate mod to preserve a larger variant's published textures.
+- Full-access re-check reproduced the guard fixture's 262-character path failure in unchanged
+  `test_early.cpp:198`; its shorter-output executable passes all 22 guard cases. The sandbox-only
+  observations in the original T3 notes below are historical, not current access restrictions.
+- The byte-identical default-layout guard executable (SHA-256 `698ce23a0abff6c8f90334f01f6864a2697c783e940bbc5ec9c4bfbb0cc928aa`)
+  passes all 22 cases from `out/r6-t3-fix/guard-short`; full-access `tools/test.ps1 -Config Release`
+  passes all 23 CTests and 288/28/25 tools/gmapack/Steam Python tests. The old registry/Git errors
+  did not recur. Receipts are in `out/r6-t3-fix/`; no native source was changed.
+
+## R6 T3: companion VRAM binding (2026-10-31)
+
+- Read-only inspection of `garrys-mod-rtx-remixed/source/remixapi/resource_lua_bindings.cpp:38-71`
+  confirms `RemixResource.GetVramStats()` returns a flat table with 14 numeric fields, or nil on
+  failure. It exposes the driver budget/allocation, DXVK totals, retained pools, six RTX categories,
+  the texture-cache count and D3D9 texture/buffer bytes.
+- `dxvk-remix-gmod/public/include/remix/remix_c.h:1025-1053` defines the same fields. The driver
+  allocation includes non-DXVK overhead such as DLSS/NGX and NRC CUDA; `forkTextureCacheCount` is a
+  count, every other field bytes. The companion preserves those names and units in CSV and leaves
+  missing fields blank for older modules.
+- The PBR tool's `skills/mmd-remix-pbr/tool/rpai/cli.py:384-410` publishes the PNG maps already named
+  in `generated.json`; it does not resize them. The `run` dispatch at `cli.py:654-659` generates
+  before publishing. `config.py:80-96` applies per-texture size overrides after the global cap,
+  including `"source"`, so an 8 GB variant needs generation at 2048 and a check of those overrides.
+- Derived texture cost, excluding DDS headers: a full mip chain at 4096 square has about four
+  times the bytes of one at 2048 square. BC7/BC5 cost about 21.3/5.3 MiB respectively; BC4 costs
+  about 10.7/2.7 MiB. These are format arithmetic, not measured residency or savings on an 8 GB GPU.
+- In this nested worktree the guard fixture's cache path is 262 characters long. Its idempotence
+  case uses raw `std::filesystem::last_write_time` (`loader/guard/tests/test_early.cpp:198-200`) and
+  fails with path-not-found in the default Release layout; other guard file operations already use
+  extended-length paths. The unchanged guard suite passes with executables under the shorter
+  `out/build/win64-release/bin`, configured only in the ignored CMake cache.
+- Sandbox-only Release blockers: `tools/tests/test_field_snapshot.py:136` cannot create its
+  throwaway `HKCU/Software/NativeLoaderTest_*` key (21 failures). A non-mutating `winreg.OpenKey`
+  request for `KEY_CREATE_SUB_KEY` on HKCU Software also returns WinError 5, access denied. Six
+  publisher tests fail at Git reads with "dubious ownership" because the checkout belongs to
+  `matt-peng` and the test process runs as `CodexSandboxOnline`. No ACL, registry permission or
+  global Git configuration was changed.
+
+## R6 T6: tier inputs and DDS measurements (2026-10-31)
+
+- Source files in `out/inputs/runtime/files/atmosphere/`, from the runtime input index: stars DXT5
+  8192 × 8192 (89,478,640 bytes), galaxy DXT5 8192 × 4096 (44,739,408), nebula DX10 BC7 UNORM
+  8192 × 8192 (89,478,660), all 14 mips. After dropping only mip 0 they have 13 mips and occupy
+  22,369,776 / 11,184,976 / 22,369,796 bytes respectively. The original lower mips, including
+  minimum 4 × 4 blocks, compare byte for byte (`tools/sky/drop_top_mip.py`). Derived texel storage
+  falls from 213.33 to 53.33 MiB, exactly 160 MiB saved, excluding driver alignment/overhead.
+- The three imported xz inputs add 14,811,108 bytes (14.13 MiB) to Git LFS, rather than the
+  proposal's estimated 12 MB. The files and their uncompressed/stored hashes are indexed in
+  `packages/runtime/files.json`; the original DDS inputs and runtime DLLs remain unchanged.
+- At runtime commit `6f2dbd79`, `rtx_atmosphere.cpp`'s `resolveSkyTexturePath` joins a relative
+  option to `runtimeFolder()`; `loadSkyTexture:731–813` allocates all declared mip levels and uploads
+  each. The low-tier paths therefore need no loader substitution and do not depend on the game's
+  working directory.
+- At that same commit, `rtx_neural_radiance_cache.cpp:379–422` derives training settings when the
+  NRC preset changes: Ultra 4 iterations/9 bounces/1 cm cache detail; High 3/7/4 cm; Medium 2/6/6 cm.
+  The callback selects the Derived edit target, routed to User under Custom, so duplicating those
+  training values in a lower tier layer cannot override it. The tier selects only the NRC preset.
+- Source recheck: patched R6 T4 snapshot `29546f3566a676a1318b799fb8ddd01b2a110058`, C++ paths
+  below relative to `src/dxvk/rtx_render/`. OMM's free-memory growth calculation includes the
+  default 384 MiB buffer (`rtx_opacity_micromap_manager.h:58-64`, `.cpp:175-182`): medium/low
+  leave 1408 MiB when calculating new growth budget, not 1024 MiB. Existing budget is retained
+  between soft/hard limits; it is recalculated below 1024 MiB. `lowMemoryGpu` also halves the OMM
+  VRAM percentage (`.cpp:162-173`), skips the top streamed replacement-texture mip
+  (`rtx_texture_manager.cpp:1623`), and sets the low-memory AS build flag
+  (`rtx_accel_manager.cpp:292-293`).
+- A bounce-cap stop is not an NRC query:
+  `src/dxvk/shaders/rtx/algorithm/integrator_indirect.slangh:860-885` resolves NRC termination first,
+  then stops at the query path's bounce cap without
+  querying the cache there. `rtx_neural_radiance_cache.cpp:697` sets NRC `maxPathVertices` from
+  `trainingMaxPathBounces`. Mirror/transmission paths can lose light beyond the tier cap.
+- **Changing `lowMemoryGpu` does not issue an incompatible AS UPDATE.** Automatic graphics
+  selection writes it (`rtx_options.cpp:419-461`); the ordinary-GPU decision defaults false
+  (`rtx_gpu_profile.h:55`) and sets true for at most 8 GiB (`:61`, `.cpp:212-220`). Both BLAS
+  UPDATE sites guard with `validateUpdateMode` (`rtx_accel_manager.cpp:892-895,1258-1262`), whose
+  flag comparison rejects the change (`:2011-2016`). The affected BLAS builds on next use instead;
+  TLAS always uses BUILD (`:1946-1951`), as does the one-time intersection BLAS (`:296-312`).
+  Expect rebuild/allocation work per affected BLAS, not an invalid UPDATE. Timing remains unmeasured.
+  PoC tuning question: class-limited low on an RTX 3060 12 GB or 4060 Ti 16 GB still gets the top-mip
+  drop despite its larger memory. On modern_house the switch saved about 226 MiB of replacement
+  textures (ADR 0064); it stays, and following the VRAM tier instead needs a loader change.
+- **The sky LOD argument is conditional.**
+  `src/dxvk/shaders/rtx/pass/atmosphere/atmosphere_sky.slangh:408-439` uses real texture width/height.
+  Halving them subtracts one from
+  unclamped LOD, preserving samples only when original LOD >= 1. With native 3840 × 2160,
+  90-degree horizontal FOV and zero mip bias, `pixel = 2/3840`: stars' minimum radial stretch
+  from `:365-366,404-409` gives LOD >= 2.21; galaxy `:427-429` gives 1.03; nebula `:435-439`
+  gives **0.44**, blending the missing original mip 0. The pixel angle includes FOV, traced height
+  and mip bias (`rtx_atmosphere.cpp:2914-2916,2934-2941`; `rtx_scene_manager.cpp:320-346`).
+  Narrow FOV/negative bias can expose mip 0 too. Medium therefore retains all original sky images
+  pending PoC comparison; switching all three would save 160 MiB of texels but is not guaranteed
+  visually identical even at a normal FOV in 4K.
+- `tools/tests/test_runtime_tiers.py` pins the tier option types/ranges/enums to those patched
+  declarations and their UI limits (including the six sky-probe extents in
+  `src/dxvk/imgui/dxvk_imgui.cpp:3390-3399`). Every layer is parsed; classic/compiler bytes are pinned
+  separately because classic contains 15 obsolete options with no matching current declaration
+  (old exposure/localtonemap/bloom keys, `rtx.occluderTextures`, `rtx.tonemap.finalizeWithACES`).
+  The source's `RtxOptions.md` SHA-256 is
+  `4a457a8d1e3bb6dbf00efe05720fd9c8c4ea8621509fa72c6621313eb685cc57`. This avoids inventing
+  runtime support for old high-tier keys while rejecting any new or misspelt tier key.
+- PoC measurements of the tiers (2026-10-31, 4K, RTX 5090): medium and low 5-9 % faster than high,
+  170-750 MiB less VRAM, identical pinned runs within 4.5 %; low now uses 8 bounces. Numbers and
+  method in ADR 0064.
+  [ADR 0064](decisions/0064-performance-tier-defaults.md) records the tuning and acceptance checks;
+  run-specific history is in the [handover status](handover/R6-T6-performance-tiers.md#status).
+
+## R6 T2 evidence boundaries (2026-10-31)
+
+- The stock menu's [`lua/menu/mainmenu.lua`](https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/menu/mainmenu.lua#L23-L32)
+  quotes string arguments to `lua.Run` and exposes `pnlMainMenu:Call` through `QueueJavascript`
+  (lines 156-159, read 2026-10-31). R6 uses that bridge for bounded DATA reads and JSON-encodes parsed
+  results again; it never concatenates raw file text into executable JavaScript.
+- `loader/proxy/ui/mainmenu.js:30-63` validates creation-time tokens and a 30-second snapshot age,
+  consumes a RAM warning only while visible before the first map, and acknowledges it in the menu
+  Lua realm. `loader/core/src/memory.cpp:72-74` uses strict, overflow-safe 32-GiB/70-percent thresholds.
+
+- `loader/core/src/memory.cpp` dynamically resolves `K32GetProcessMemoryInfo` and
+  `K32GetPerformanceInfo` from KERNEL32 and converts performance-info page counts to bytes. DXGI
+  is loaded from System32 and queried through `IDXGIAdapter3::QueryVideoMemoryInfo`; no PSAPI/DXGI
+  import library is linked. Release's `check_imports.py` still reports only `KERNEL32.dll`.
+- CSV rows use optional counters so an unavailable GPU query stays blank rather than appearing as
+  zero usage. Two 360-row/256-KiB segments bound default history to about one to two hours. The
+  latest system commit snapshot is independent of CSV history, so the RAM warning can work with
+  `diagnostics.memory_telemetry: "off"` without recording process/GPU data.
+
+- Release fixture measurement (30 consecutive empty collections on this machine): mean 0.556 ms,
+  maximum 0.883 ms (a previous run averaged 1.419 ms, maximum 8.056 ms during concurrent work).
+  Session-start metadata uses an atomic rename without the deployment journal's
+  write-through flushes; its loss after a power failure falls back to the older loader record.
+  Empty/clean starts do not re-hash old archives; retention runs only when a new archive is saved.
+  A later measurement during concurrent Release checks averaged 1.145 ms, maximum 1.658 ms.
+
+- The long T2 worktree makes the unchanged early-guard idempotence test's cache path 261 characters.
+  `test_early.cpp:198` uses plain `std::filesystem::last_write_time` and fails there, despite the file
+  existing and system `LongPathsEnabled=1`. An archived, rebuilt original commit `7759c43` fails at
+  the same line; its identical executable passes when copied to the shorter worktree `out` path.
+  T2's Release check uses a local CMake output-directory override only for that test executable;
+  test sources and coverage are unchanged. No system setting or other worktree was changed.
+
+- Runtime fork `src/util/log/log.cpp:75-94` opens `remix-dxvk.log` with a plain `std::ofstream`:
+  starting the runtime truncates it. R6's worker signals readiness only after the log copy/fallback
+  is secure, and bootstrap waits before runtime activation (`loader/proxy/startup.cpp`).
+- The fork has no general clean-exit log marker. `src/dxvk/rtx_render/rtx_context.cpp:945-953`
+  logs `RTX: Terminating application` only for its deliberate delayed termination after captures/
+  exports finish. FSR `onDestroy`/context-destroyed lines are resource lifecycle messages and do
+  not establish a clean process exit. Unmarked sessions remain `unknown`.
+- Engine OOM text can be ASCII or UTF-16 LE inside a dump. R6 scans bounded, copied game-root
+  dumps in 64 KiB chunks with a 64-byte overlap; it does not load the dump into memory or execute it
+  (`loader/core/src/evidence.cpp`, `loader/tests/test_evidence.cpp`).
+
 ## R4 start-up, guard and bootstrap review (loader 0.10.1)
 
 Facts behind [ADR 0056](decisions/0056-guard-and-startup-fallbacks.md), read from the PoC's stock
@@ -2479,8 +2640,10 @@ header, the time stamp's three copies in the debug directory, and one byte of th
   Chinese to Simplified Chinese; both gaps are corrected.
 - Runtime setup under this repository exposed delayed expansion consuming `!` in `update-deps.cmd`.
   Quoted paths and disabled delayed expansion fix it. Windows PowerShell 5.1 and Python 3.12 were used
-  for the verified runtime rebuild. The fresh runtime tree also needed seven ignored unit/app test
-  sources from the existing verified tree to finish Meson setup; these do not enter the runtime DLL.
+  for the verified runtime rebuild. The fresh runtime tree also needed seven unit/app test sources
+  omitted by the snapshot's ignore rules, read from the existing verified tree to finish Meson
+  setup; these do not enter the runtime DLL. R6's review below distinguishes staged additions from
+  untracked local copies.
 
 Evidence is under `out/translation-audit`; final commands and PoC results are in the
 [QoL report](handover/QoL-report.md).
@@ -2839,3 +3002,180 @@ and variants (evidence in `out\qa-field\r5-sky\01`-`10`):
   `d3d9.dll` compiling pipelines, about 4 s after the device was created, with the same stack both
   times (`out\qa-field\r5-sky\08-night-sky-debug-views` on the package before R5,
   `out\qa-field\r5-release\03-map-glass` on R5's; both reruns clean). Recorded for the stability work.
+
+## R6 T1: verified layer consumers (2026-10-31)
+
+At runtime commit `6f2dbd79`, `src/dxvk/dxvk_options.cpp:36-39` reads Aftermath and
+`rtx.enableGpuCrashState` from the same merged `Config`; a search finds no RtxOption declaration
+for that crash-state key. It belongs with the diagnostics layer after package copies despite
+its `rtx.` prefix. `src/dxvk/dxvk_instance.cpp:353-359` reads `DXVK_AFTERMATH_DUMP_PATH`
+and inserts a slash when needed before naming the dump. Remix layer precedence remains as
+recorded in R5 proposal 1: `rtx_option_layer.cpp:51-61,671-706` and `rtx_option.cpp:1156-1186`.
+
+R6 T1 implementation follows byte comparisons rather than rounded GiB: 8.5 GiB = 8704 MiB,
+12.5 GiB = 12800 MiB. `loader/core/src/performance.cpp` classifies names without consulting the
+runtime preset or adapter ordering. `loader/core/src/activate.cpp` chooses I1 tier files only from
+records owned by the selected runtime; the existing proxy validation checks every payload record's
+size/time before copying. A missing record uses the approved old-package fallback; an advertised
+but missing/changed payload is an activation integrity failure, not an excuse to trust a loose file.
+
+Measured in the synthetic Release host on 2026-10-31: DXGI selected NVIDIA GeForce RTX 5090,
+32187 MiB dedicated VRAM. Auto was high; explicit low used the pre-R6 fallback and copied the
+packaged fixture tier when supplied. `loader/core/src/performance.cpp:46,60` implement selection
+and exact thresholds; `loader/core/src/activate.cpp:265,320` select the journal-owned tier and
+late diagnostics slot. Two package DXVK copies plus tier, diagnostics and root default total
+140 characters (259-character budget). The one-start CREATE_NEW claim is at
+`loader/core/src/gpu_diagnostics.cpp:58,63`. The real runtime's effective options and GPU dumps
+remain unmeasured by this task; the fixture exercises loader behavior only.
+
+## R6 T4: runtime memory snapshots (2026-10-31)
+
+Source references below are to patch 0015 on the recorded fourteen-patch tree. The review fixes
+supersede the initial runtime commit `86ac49e9`; the final identity is in
+[runtime/README.md](../runtime/README.md#r6-t4-rebuild-2026-10-31). The user's fork checkout was not changed.
+
+- `DxvkSubmissionQueue::handleDeviceLost` (`src/dxvk/dxvk_queue.cpp:407`) is shared by the submit
+  and fence-finish loss paths (`:307`, `:357`).
+  It retains the single-handler gate and calls `onGpuCrash(reason)` inside it. The first diagnostic
+  work in `onGpuCrash` (`:148`) logs/writes the memory snapshot with the supplied queue reason before
+  the crash-state recorder and either Aftermath wait. The bridge notification precedes it and
+  returns immediately on the inactive GMod x64 bridge. Another loss thread cannot reach
+  Sentry/termination while the first is recording crash state.
+  No GPU synchronization is added by diagnostics.
+- The VRAM API's collection previously lived in `rtx_fork_api_entry.cpp:864-893`. It now calls
+  `RtxMemoryDiagnostics::capture` at line 864. `rtx_memory_stats.cpp` collects all driver heaps,
+  bounds the heap loop by the snapshot array's size, labels each with `device_local` (`:43`), and
+  sums driver budget/use, DXVK allocations/use and eight categories only across device-local heaps.
+  The serialized `driver` totals are the API's
+  `driverBudgetBytes`/`driverAllocatedBytes`. It does not
+  read the render-owned texture table; the API still adds its cache count separately.
+- `DxvkAdapter::getMemoryHeapInfo` (`dxvk_adapter.cpp:79-108`) queries physical-device memory
+  properties, rather than waiting for GPU work. With `VK_EXT_memory_budget`, budget/use are driver
+  values; without it, budget is heap size and usage is DXVK's tracked heap allocation counter.
+  Snapshots preserve those semantics and are approximate cross-thread observations.
+- `RtxContext::onPresent` (`rtx_context.cpp:919`) polls a device-owned steady-clock schedule, giving
+  one sample per cut frame and every five minutes while frames are presented. Camera cuts do not
+  reset the periodic deadline (`rtx_memory_stats_data.h`). The first deadline is five minutes
+  after device creation. Cut samples show the outgoing scene before the delayed cut-driven clear
+  (`rtx_scene_manager.cpp`, `m_enqueueDelayedClear`). A stopped render loop cannot log a periodic sample.
+- OMM is recreated at cuts (`rtx_scene_manager.cpp:3134-3152`), so its two one-minute warning limits
+  belong to the device (`rtx_memory_stats.h`). The next eligible occurrence reports the suppressed
+  count; no background thread flushes idle warnings (`rtx_memory_stats.cpp`). Device-loss snapshots
+  also include both pending counts in `omm_suppressed`, read atomically across threads. The
+  budget-dropped branch runs only after its budget is zero, so `getAvailable()` and the new budget
+  carry no information there. It now passes `m_vidmemFreeSize`, `m_prevBudget`, `m_used` and the
+  hard/soft free-VRAM limits to `logOmmBudgetDropped`, before invalidating the free-VRAM sample
+  (`rtx_opacity_micromap_manager.cpp:175-195`). The warning names all five values and their byte units.
+- The crash marker uses the same `RtxFileSys::Logs` directory as `remix-dxvk.log`, including
+  `DXVK_LOG_PATH` (`src/util/util_filesys.h:65`). `rtx_memory_stats_data.cpp` checks `WriteFile`,
+  `FlushFileBuffers` and `CloseHandle` on `last_gpu_crash.<pid>.tmp` before `MoveFileExW` replacement.
+  Sharing violations/access denial receive at most three replacement attempts and two 10 ms sleeps;
+  write/replacement failure deletes that process's temporary file. A different process's temporary
+  file is left alone. `onDeviceLoss` logs first and still attempts the marker if logging throws.
+  A failed write keeps the old marker; timestamps must be checked by the next-start reader.
+  The timestamp belongs to the captured snapshot, so the marker and log line match even if the
+  write crosses a second boundary. The optional `reason` appears identically in the log and marker,
+  with quotes, backslashes and control bytes JSON-escaped. Logging and file failures cannot unwind
+  through `onDeviceLoss`.
+- Patch 0001's snapshot omitted five unit-test sources that its Meson file names:
+  `test_particle_system_schema.cpp`, `test_hot_reload.cpp`, `test_rtx_option_dynamic.cpp`,
+  `test_gpu_profile.cpp`, `test_gpu_overrides.cpp`; and `apps/RemixAPI/remixapi_medium_test.cpp`.
+  All six are tracked, staged additions in the user's mid-merge fork index, not ignored local
+  copies. The `.gitignore:63` wildcard hid them from the snapshot operation. Patch 0015 now records
+  their staged bytes read with `git show :<path>` and removes the six silent source guards.
+  The five unit sources total 3,008 lines; the medium API app is another 377 lines. It is a
+  standalone GPU/rendering app, not one of Meson's registered CPU unit tests.
+- The development-only GPU crash trigger is real GPU work:
+  `rtx_context.cpp:498-503` dispatches `metaGpuCrash()` after Ctrl+Shift+Alt+G when armed by
+  `RTX_ENABLE_CRASH_HOTKEY=1` (`rtx_options.h:1092-1105`). It is compiled out without
+  `REMIX_DEVELOPMENT` and was not exercised by T4.
+- The fork's `scripts-common/install_file_in_dir.bat:2-12` enables delayed expansion before
+  assigning its arguments; `install_usd_plugins.bat` also enables it around paths. A source path
+  containing `!` is stripped during unit dependency staging. T4 used literal-path PowerShell
+  copies into its own unit build after that helper failed. The initial 22-test suite passed; the
+  review build passes 27/27 with the five restored unit sources.
+
+## R6 T5 fixes memory-limit compatibility
+
+- `packages/fixes/files.json` initially attributed the native DLL to an aggregate staging path
+  (`out/oversized-native-build`) at aggregate commit `04592ae8`; the actual native source is
+  pinned in `packages/fixes/licenses/oversized-skinning/build-pins.json`:
+  `b23c58fa72e8ac2d9a7dfb0bcad8b03fe247edbe`. Using the fork checkout's `fc478c06` instead would
+  lose the later oversized-skinning fixes. The new import stages the DLL inside its native
+  worktree, so its origin records native commit `a2c8dbc5e00e3effe49a8de9609dd1b8af34d552`.
+- The source delta from that base is four native files: removal of the module-open call
+  (`source/module.cpp`, formerly line 431), a no-op implementation
+  (`source/remixapi/remixapi.cpp:1329`), its declaration comment (`remixapi.h:298`) and the Lua
+  binding comment (`resource_lua_bindings.cpp:75`). The Lua number checks and `true` result remain.
+  The README and a standalone regression are the only other changed files. Full snapshots and
+  the commit patch are in [the corresponding source bundle](../packages/fixes/licenses/oversized-skinning/memory-limits/Source.md).
+- Baseline and changed builds use the same generated projects, dependency revisions,
+  `ReleaseWithSymbols|x64`, MSVC 14.44.35207 and Windows SDK 10.0.26100.0. The 4,848,128-byte old
+  DLL becomes 4,847,616 bytes. PE x64 imports/exports match; both rejected-key strings occur in
+  the original and rebuilt baseline and are absent from the new DLL. HardwareSkinningHooks.cpp
+  matches the preceding source hash exactly; the policy header/test match after CRLF normalization.
+- The earlier restricted attempt could not write the original fork's `.git`. Its shared bare clone
+  under the task's `out/fixes-origin.git` hosts `r6-no-memory-limits`, with its clean worktree at
+  `out/fixes-source`; the resumed run preserves that already-committed source and rebuilt DLL.
+  Recursive dependencies were archived from locally available git objects at their pinned
+  revisions, without fetching or modifying the original checkout. The new commit is unpushed.
+  The PM later fetched it into the fixes checkout as `codex/r6-no-memory-limits`; the PDB matching
+  the shipped DLL is kept in the main checkout's `out/fixes-memory-limits-build`.
+
+## R6 T5 ToPBR texture compression
+
+- The fixes' `garrysmod/rtx-remix/mods/~gmod_topbr/materials.usda:18-20` marks the flat normal
+  texture as `raw`; the roughness reference at `:56-58` does too. A complete reference census
+  finds 113 raw references covering exactly 83 files: 33 normal maps and 50 roughness maps,
+  no colour maps. `encoding = 0` and all USD files remain unchanged. All source DDS headers
+  describe uncompressed BGRA8; retaining RGBA in BC7 avoids dropping any encoded normal channel.
+- NVIDIA Texture Tools Exporter 2023.4.0 is already installed with RTX Remix at
+  `C:/Program Files/NVIDIA Corporation/RTX Remix/exts/omni.flux.resources/deps/tools/nvtt/nvtt_export.exe`.
+  CPU-only, highest-quality BC7 with a linear DXGI tag and gamma/premultiplied mip processing
+  disabled produces DXGI 98 for every file. Names, dimensions and the full 816 mip levels match
+  the originals. See [conversion arguments and hashes](../packages/fixes/licenses/topbr-bc7/conversion.json).
+- DDS bytes fall from 142,869,484 (136.25 MiB) to 35,729,420 (34.07 MiB): 107,140,064 fewer
+  bytes, 74.9916%. xz inputs fall from 16,454,204 to 15,000,576 bytes. These are disk sizes;
+  resident VRAM and renderer output are unmeasured because T5 may not launch the game.
+- Independent Pillow 12.3.0 decoding of all 816 mip levels gives pixel-weighted 8-bit R/G/B RMSE
+  0.659/0.655/0.391 and identical alpha. Worst top-mip channel RMSE is 0.957, worst individual
+  mip channel RMSE 4.0, maximum single-pixel R/G/B errors 28/29/13. Six offline normal/roughness
+  pairs show the same patterns. Evidence is under this task's `out/topbr-bc7` (`manifest.json`,
+  `quality.json`, `comparison.png`); [package notes](../packages/fixes/licenses/topbr-bc7/README.md)
+  preserve the measurements and integration acceptance cases.
+
+### R6 T1 independent-review corrections (2026-10-31)
+
+The local runtime fork at `6f2dbd79` routes Aftermath files into its existing Sentry GPU report:
+`src/dxvk/dxvk_instance.cpp:392` calls `queueGpuCrashReport`; `src/util/util_sentry.cpp:447-496`
+attaches the dump to the event and captures/flushes it, and `:858-863` applies the runtime's
+consent flow. Dumps written under the loader's local folder may therefore be uploaded when the
+player accepts Remix crash reporting. R6 does not alter that reporting policy.
+
+The two new DXVK paths and their commas add exactly 67 characters: tier.conf plus diagnostics.conf.
+Regression tests combine them with package copies and a user-supplied DXVK list at 259 (accepted)
+and 260 (warning that Remix ignores the list) characters. RTX 5090 D uses the consumer class rule;
+GTX 1080 Ti and RTX A2000 Laptop GPU use VRAM alone. The Laptop adjustment runs only after a
+consumer RTX class is recognized. Invalid UTF-16 descriptions can throw from filesystem UTF-8
+conversion; the startup adapter reader now keeps vendor/VRAM with an empty name instead.
+- The second review's offline scratch setup uses the same direct Python/Meson command as
+  `runtime/build_runtime.ps1` after `Enter-VsDevEnv`. All 95 recorded build options match the real
+  `_CompRelease_x64`, including optimization 3 and the release DLL CRT. Only Meson's compiler
+  probes ran; no runtime targets compiled. The scratch folder was deleted after comparison
+  (`out/tmp/runtime-review2-setup-comparison.json`).
+- T2's reader on integration commit `1dc93125` (`loader/core/src/evidence.cpp:188-202`) parses the
+  marker and reads only a string `event`; its JSON parser stores arbitrary object members without
+  a field allowlist. Unknown `device_local`, `driver`, `omm_suppressed` and `reason` fields are
+  ignored. Its existing `loader/tests/test_evidence.cpp:36-52` checks a minimal device-loss marker,
+  optional/unrelated fields and malformed JSON. No loader code or tests changed in this T4 pass.
+
+### R6 harness device-loss freeze (2026-10-31)
+
+Read-only PM evidence in the main checkout's `out/qa-poc/r6/tiers-pinned/session.json`, record
+`04-house-auto-pin`, starts at `2026-11-01T00:52:47Z` and finishes at `02:48:47Z`: 6,960 seconds
+(1 h 56 min), with `map_loaded: true`, `seconds_to_map: 7.5`, failed mount/map/camera/FPS steps and
+exit 3489660927 (`0xCFFFFFFF`). That step's `remix-dxvk.log:990` records
+`DxvkSubmissionQueue: Command submission failed: VK_ERROR_DEVICE_LOST`. The old harness only declined
+prompts inside startup/map waits and called `PrintWindow` synchronously; a GPU-crash dialog could
+therefore outlive those waits and block evidence capture. The R6 harness change checks the current
+run's log, watches prompts through exit and bounds capture/shutdown; regression tests use fakes.

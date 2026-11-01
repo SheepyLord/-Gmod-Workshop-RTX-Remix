@@ -1,0 +1,4338 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Codex <noreply@openai.com>
+Date: Sat, 31 Oct 2026 15:37:54 -0700
+Subject: [PATCH] Record GPU memory snapshots and rate-limit micromap budget
+ logs
+
+Share the VRAM collector with device-local driver totals and heap locality.
+Log the snapshot before writing the flushed marker, before the recorder,
+Aftermath and Sentry, under the existing single-handler gate. Preserve the
+queue reason with JSON escaping and use process-specific marker temporaries,
+two short replacement retries and failure cleanup.
+
+Report free VRAM, the previous OMM budget, use and both thresholds when the
+budget drops to zero. Bound the heap collector by its snapshot array.
+Record the six test sources omitted from the snapshot using the user fork's
+staged index, read only. Build them without silent guards. Cover warning
+counts and values, scheduling, reason escaping and stale/failed markers.
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ src/dxvk/dxvk_device.cpp                      |    3 +
+ src/dxvk/dxvk_objects.h                       |   13 +
+ src/dxvk/dxvk_queue.cpp                       |   11 +-
+ src/dxvk/dxvk_queue.h                         |    2 +-
+ src/dxvk/meson.build                          |    4 +
+ src/dxvk/rtx_render/rtx_context.cpp           |    1 +
+ src/dxvk/rtx_render/rtx_fork_api_entry.cpp    |   38 +-
+ src/dxvk/rtx_render/rtx_memory_stats.cpp      |  103 ++
+ src/dxvk/rtx_render/rtx_memory_stats.h        |   45 +
+ src/dxvk/rtx_render/rtx_memory_stats_data.cpp |  175 +++
+ src/dxvk/rtx_render/rtx_memory_stats_data.h   |  119 ++
+ .../rtx_opacity_micromap_manager.cpp          |    5 +-
+ .../apps/RemixAPI/remixapi_medium_test.cpp    |  377 +++++
+ tests/rtx/unit/meson.build                    |    5 +
+ tests/rtx/unit/test_gpu_overrides.cpp         |  393 +++++
+ tests/rtx/unit/test_gpu_profile.cpp           |  296 ++++
+ tests/rtx/unit/test_hot_reload.cpp            | 1265 +++++++++++++++++
+ tests/rtx/unit/test_memory_diagnostics.cpp    |  159 +++
+ .../rtx/unit/test_particle_system_schema.cpp  |  143 ++
+ tests/rtx/unit/test_rtx_option_dynamic.cpp    |  911 ++++++++++++
+ 20 files changed, 4035 insertions(+), 33 deletions(-)
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats.cpp
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats.h
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats_data.cpp
+ create mode 100644 src/dxvk/rtx_render/rtx_memory_stats_data.h
+ create mode 100644 tests/rtx/apps/RemixAPI/remixapi_medium_test.cpp
+ create mode 100644 tests/rtx/unit/test_gpu_overrides.cpp
+ create mode 100644 tests/rtx/unit/test_gpu_profile.cpp
+ create mode 100644 tests/rtx/unit/test_hot_reload.cpp
+ create mode 100644 tests/rtx/unit/test_memory_diagnostics.cpp
+ create mode 100644 tests/rtx/unit/test_particle_system_schema.cpp
+ create mode 100644 tests/rtx/unit/test_rtx_option_dynamic.cpp
+
+diff --git a/src/dxvk/dxvk_device.cpp b/src/dxvk/dxvk_device.cpp
+index 3cb6fe57..830c83a0 100644
+--- a/src/dxvk/dxvk_device.cpp
++++ b/src/dxvk/dxvk_device.cpp
+@@ -536,6 +536,9 @@ namespace dxvk {
+   DxvkObjects::DxvkObjects(DxvkDevice* device)
+     : m_device(device),
+     m_memoryManager(device),
++    // NV-DXVK start: Local memory diagnostics
++    m_memoryDiagnostics(device),
++    // NV-DXVK end
+     m_renderPassPool(device),
+     m_pipelineManager(device, &m_renderPassPool),
+     m_eventPool(device),
+diff --git a/src/dxvk/dxvk_objects.h b/src/dxvk/dxvk_objects.h
+index f37f2949..1167d3a4 100644
+--- a/src/dxvk/dxvk_objects.h
++++ b/src/dxvk/dxvk_objects.h
+@@ -37,6 +37,9 @@
+ #include "rtx_render/rtx_atmosphere.h"
+ #include "rtx_render/rtx_precipitation.h"
+ // NV-DXVK end
++// NV-DXVK start: Local memory diagnostics
++#include "rtx_render/rtx_memory_stats.h"
++// NV-DXVK end
+ #include "rtx_render/rtx_global_volumetrics.h"
+ #include "rtx_render/rtx_pathtracer_gbuffer.h"
+ #include "rtx_render/rtx_pathtracer_integrate_direct.h"
+@@ -107,6 +110,12 @@ namespace dxvk {
+       return m_memoryManager;
+     }
+ 
++    // NV-DXVK start: Local memory diagnostics
++    RtxMemoryDiagnostics& metaMemoryDiagnostics() {
++      return m_memoryDiagnostics.get();
++    }
++    // NV-DXVK end
++
+     DxvkRenderPassPool& renderPassPool() {
+       return m_renderPassPool;
+     }
+@@ -377,6 +386,10 @@ namespace dxvk {
+     DxvkDevice*                       m_device;
+ 
+     DxvkMemoryAllocator               m_memoryManager;
++
++    // NV-DXVK start: Local memory diagnostics
++    Active<RtxMemoryDiagnostics>       m_memoryDiagnostics;
++    // NV-DXVK end
+     DxvkRenderPassPool                m_renderPassPool;
+     DxvkPipelineManager               m_pipelineManager;
+ 
+diff --git a/src/dxvk/dxvk_queue.cpp b/src/dxvk/dxvk_queue.cpp
+index 4618915d..d71bf8e3 100644
+--- a/src/dxvk/dxvk_queue.cpp
++++ b/src/dxvk/dxvk_queue.cpp
+@@ -145,6 +145,8 @@ namespace dxvk {
+       return;
+     }
+ 
++    m_device->getCommon()->metaMemoryDiagnostics().onDeviceLoss(reason);
++
+     // The submission queue is destroyed and its threads are joined before the
+     // device's common objects, so the scene manager and recorder are alive here.
+     m_device->getCommon()->getSceneManager().getAccelManager().dumpCrashState(reason);
+@@ -302,8 +304,7 @@ namespace dxvk {
+         // Aftermath only produces a GPU crash dump for device loss. Other
+         // submission failures retain their existing handling without a stall.
+         if (status == VK_ERROR_DEVICE_LOST) {
+-          onGpuCrash("queue submission");
+-          handleDeviceLost();
++          handleDeviceLost("queue submission");
+         } else {
+           waitForAftermathDump();
+           m_device->waitForIdle();
+@@ -353,8 +354,7 @@ namespace dxvk {
+ 
+         // NV-DXVK start: GPU crash diagnostics and handling on device loss
+         if (status == VK_ERROR_DEVICE_LOST) {
+-          onGpuCrash("fence synchronization");
+-          handleDeviceLost();
++          handleDeviceLost("fence synchronization");
+         } else {
+           m_device->waitForIdle();
+         }
+@@ -404,7 +404,7 @@ namespace dxvk {
+     }
+   }
+ 
+-  void DxvkSubmissionQueue::handleDeviceLost() {
++  void DxvkSubmissionQueue::handleDeviceLost(const char* reason) {
+     // Both the submit and finish threads can observe device loss; ensure only the first one performs
+     // crash handling. Any other thread blocks here until the process is terminated below.
+     static std::atomic<bool> s_handlingDeviceLoss(false);
+@@ -418,6 +418,7 @@ namespace dxvk {
+     // prepare the crash dialog window before the slow Sentry capture/upload below.
+     BridgeMessageChannel::get().send(kGpuCrashNotifyMsgName, 0, 0);
+ 
++    onGpuCrash(reason);
+     waitForAftermathDump();
+     // Capture/upload the GPU crash (no-op if Sentry is inactive) before tearing down.
+     sentry::processPendingGpuCrashReports();
+diff --git a/src/dxvk/dxvk_queue.h b/src/dxvk/dxvk_queue.h
+index bdb5fb6b..48c93c6d 100644
+--- a/src/dxvk/dxvk_queue.h
++++ b/src/dxvk/dxvk_queue.h
+@@ -293,7 +293,7 @@ namespace dxvk {
+ 
+     // Report the GPU crash and terminate the process. Only the first thread to observe device loss
+     // performs the handling; any other thread blocks here until the process is killed.
+-    void handleDeviceLost();
++    void handleDeviceLost(const char* reason);
+     // NV-DXVK end
+     
+     // NV-DXVK start: DLFG integration
+diff --git a/src/dxvk/meson.build b/src/dxvk/meson.build
+index 25c2a4cd..696d9094 100644
+--- a/src/dxvk/meson.build
++++ b/src/dxvk/meson.build
+@@ -303,6 +303,10 @@ dxvk_src = files([
+   'rtx_render/rtx_mod_usd.h',
+   'rtx_render/rtx_nee_cache.cpp',
+   'rtx_render/rtx_nee_cache.h',
++  'rtx_render/rtx_memory_stats.cpp',
++  'rtx_render/rtx_memory_stats.h',
++  'rtx_render/rtx_memory_stats_data.cpp',
++  'rtx_render/rtx_memory_stats_data.h',
+   'rtx_render/rtx_neural_radiance_cache.cpp',
+   'rtx_render/rtx_neural_radiance_cache.h',
+   'rtx_render/rtx_ngx_wrapper.cpp',
+diff --git a/src/dxvk/rtx_render/rtx_context.cpp b/src/dxvk/rtx_render/rtx_context.cpp
+index ecba91f4..e876731a 100644
+--- a/src/dxvk/rtx_render/rtx_context.cpp
++++ b/src/dxvk/rtx_render/rtx_context.cpp
+@@ -916,6 +916,7 @@ namespace dxvk {
+ 
+   // Called right before D3D9 present
+   void RtxContext::onPresent(Rc<DxvkImage> targetImage) {
++    m_common->metaMemoryDiagnostics().onFrame(getSceneManager().getCameraManager().isCameraCutThisFrame());
+     {
+       static bool s_firstFrameDone = false;
+       if (!s_firstFrameDone) {
+diff --git a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+index d0ba3d4c..b69853a5 100644
+--- a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+@@ -861,36 +861,24 @@ namespace fork_hooks {
+     *out_stats = {};
+ 
+     auto device = remixDevice->GetDXVKDevice();
+-    const VkPhysicalDeviceMemoryProperties memProps = device->adapter()->memoryProperties();
+-    for (uint32_t i = 0; i < memProps.memoryHeapCount; i++) {
+-      const bool isDeviceLocal = (memProps.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
+-      if (!isDeviceLocal) {
+-        continue;
+-      }
+-      const DxvkMemoryStats stats = device->getMemoryStats(i);
+-      out_stats->totalAllocatedBytes               += stats.totalAllocated();
+-      out_stats->totalUsedBytes                    += stats.totalUsed();
+-      out_stats->usedReplacementGeometryBytes      += stats.usedByCategory(DxvkMemoryStats::Category::RTXReplacementGeometry);
+-      out_stats->usedBufferBytes                   += stats.usedByCategory(DxvkMemoryStats::Category::RTXBuffer);
+-      out_stats->usedAccelerationStructureBytes    += stats.usedByCategory(DxvkMemoryStats::Category::RTXAccelerationStructure);
+-      out_stats->usedOpacityMicromapBytes          += stats.usedByCategory(DxvkMemoryStats::Category::RTXOpacityMicromap);
+-      out_stats->usedMaterialTextureBytes          += stats.usedByCategory(DxvkMemoryStats::Category::RTXMaterialTexture);
+-      out_stats->usedRenderTargetBytes             += stats.usedByCategory(DxvkMemoryStats::Category::RTXRenderTarget);
+-      out_stats->usedAppTextureBytes               += stats.usedByCategory(DxvkMemoryStats::Category::AppTexture);
+-      out_stats->usedAppBufferBytes                += stats.usedByCategory(DxvkMemoryStats::Category::AppBuffer);
+-    }
++    const auto stats = device->getCommon()->metaMemoryDiagnostics().capture();
++    out_stats->totalAllocatedBytes               = stats.allocated;
++    out_stats->totalUsedBytes                    = stats.used;
++    out_stats->usedReplacementGeometryBytes      = stats.categories[MemorySnapshot::ReplacementGeometry];
++    out_stats->usedBufferBytes                   = stats.categories[MemorySnapshot::Buffer];
++    out_stats->usedAccelerationStructureBytes    = stats.categories[MemorySnapshot::AccelerationStructure];
++    out_stats->usedOpacityMicromapBytes          = stats.categories[MemorySnapshot::OpacityMicromap];
++    out_stats->usedMaterialTextureBytes          = stats.categories[MemorySnapshot::MaterialTexture];
++    out_stats->usedRenderTargetBytes             = stats.categories[MemorySnapshot::RenderTarget];
++    out_stats->usedAppTextureBytes               = stats.categories[MemorySnapshot::AppTexture];
++    out_stats->usedAppBufferBytes                = stats.categories[MemorySnapshot::AppBuffer];
+     out_stats->poolRetainedBytes =
+       (out_stats->totalAllocatedBytes > out_stats->totalUsedBytes)
+         ? (out_stats->totalAllocatedBytes - out_stats->totalUsedBytes)
+         : 0;
+ 
+-    const DxvkAdapterMemoryInfo memHeapInfo = device->adapter()->getMemoryHeapInfo();
+-    for (uint32_t i = 0; i < memHeapInfo.heapCount; i++) {
+-      if (memHeapInfo.heaps[i].heapFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+-        out_stats->driverAllocatedBytes += memHeapInfo.heaps[i].memoryAllocated;
+-        out_stats->driverBudgetBytes    += memHeapInfo.heaps[i].memoryBudget;
+-      }
+-    }
++    out_stats->driverAllocatedBytes = stats.driverUsage;
++    out_stats->driverBudgetBytes = stats.driverBudget;
+ 
+     out_stats->forkTextureCacheCount =
+       static_cast<uint32_t>(device->getCommon()->getTextureManager().getTextureTable().size());
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats.cpp b/src/dxvk/rtx_render/rtx_memory_stats.cpp
+new file mode 100644
+index 00000000..d00affc1
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats.cpp
+@@ -0,0 +1,103 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "rtx_memory_stats.h"
++
++#include "../dxvk_device.h"
++#include "../../util/util_filesys.h"
++
++namespace dxvk {
++
++  MemorySnapshot RtxMemoryDiagnostics::capture() const {
++    MemorySnapshot snapshot;
++    snapshot.frame = m_device->getCurrentFrameId();
++    const auto heaps = m_device->adapter()->getMemoryHeapInfo();
++    snapshot.heapCount = heaps.heapCount;
++    static_assert(VK_MAX_MEMORY_HEAPS == 16);
++    constexpr std::array<DxvkMemoryStats::Category, MemorySnapshot::CategoryCount> kCategories = {
++      DxvkMemoryStats::AppBuffer, DxvkMemoryStats::AppTexture,
++      DxvkMemoryStats::RTXReplacementGeometry, DxvkMemoryStats::RTXBuffer,
++      DxvkMemoryStats::RTXAccelerationStructure, DxvkMemoryStats::RTXOpacityMicromap,
++      DxvkMemoryStats::RTXMaterialTexture, DxvkMemoryStats::RTXRenderTarget
++    };
++    for (uint32_t i = 0; i < heaps.heapCount && i < snapshot.heaps.size(); ++i) {
++      const auto& heap = heaps.heaps[i];
++      const bool deviceLocal = (heap.heapFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
++      snapshot.heaps[i] = {heap.memoryBudget, heap.memoryAllocated, deviceLocal};
++      if (!deviceLocal) {
++        continue;
++      }
++      snapshot.driverBudget += heap.memoryBudget;
++      snapshot.driverUsage += heap.memoryAllocated;
++      const auto stats = m_device->getMemoryStats(i);
++      snapshot.allocated += stats.totalAllocated();
++      snapshot.used += stats.totalUsed();
++      for (uint32_t category = 0; category < kCategories.size(); ++category) {
++        snapshot.categories[category] += stats.usedByCategory(kCategories[category]);
++      }
++    }
++    snapshot.ommBudgetDroppedSuppressed = m_ommWarnings[0].suppressed();
++    snapshot.ommAllocationDeniedSuppressed = m_ommWarnings[1].suppressed();
++    return snapshot;
++  }
++
++  void RtxMemoryDiagnostics::onFrame(bool cameraCut) noexcept {
++    try {
++      if (m_schedule.update(m_device->getCurrentFrameId(), cameraCut, MemoryLogSchedule::Clock::now())) {
++        Logger::info(str::format("[RTX Memory] ", capture().toJson(cameraCut ? "camera_cut" : "periodic")));
++      }
++    } catch (...) {
++      // Diagnostics must not turn an allocation failure into a rendering failure.
++    }
++  }
++
++  void RtxMemoryDiagnostics::onDeviceLoss(const char* reason) const noexcept {
++    try {
++      const auto snapshot = capture();
++      try {
++        Logger::err(str::format("[RTX Memory] ", snapshot.toJson("device_lost", reason)));
++      } catch (...) {
++        // A failed log must not prevent the best-effort marker write.
++      }
++      const bool written = snapshot.writeCrashReport(util::RtxFileSys::path(util::RtxFileSys::Logs), reason);
++      if (!written) {
++        Logger::err("[RTX Memory] Could not write last_gpu_crash.json");
++      }
++    } catch (...) {
++      // Device-loss termination must run even if diagnostics run out of memory or disk.
++    }
++  }
++
++  void RtxMemoryDiagnostics::logOmmBudgetDropped(const OmmBudgetDrop& budget) {
++    if (const auto suppressed = m_ommWarnings[0].record(MemoryLogThrottle::Clock::now())) {
++      Logger::info(budget.toLog(*suppressed));
++    }
++  }
++
++  void RtxMemoryDiagnostics::logOmmAllocationDenied(uint64_t requested, uint64_t available, uint64_t budget) {
++    if (const auto suppressed = m_ommWarnings[1].record(MemoryLogThrottle::Clock::now())) {
++      Logger::info(str::format("[RTX Opacity Micromap] Out of memory budget. Requested: ", requested,
++                              " bytes. Free: ", available, " bytes, Budget: ", budget,
++                              " bytes (suppressed repeats: ", *suppressed, ")"));
++    }
++  }
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats.h b/src/dxvk/rtx_render/rtx_memory_stats.h
+new file mode 100644
+index 00000000..e04dddc0
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats.h
+@@ -0,0 +1,45 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#pragma once
++
++#include "rtx_common_object.h"
++#include "rtx_memory_stats_data.h"
++
++namespace dxvk {
++
++  class RtxMemoryDiagnostics : public CommonDeviceObject {
++  public:
++    explicit RtxMemoryDiagnostics(DxvkDevice* device) : CommonDeviceObject(device) { }
++
++    MemorySnapshot capture() const;
++    void onFrame(bool cameraCut) noexcept;
++    void onDeviceLoss(const char* reason = nullptr) const noexcept;
++    void logOmmBudgetDropped(const OmmBudgetDrop& budget);
++    void logOmmAllocationDenied(uint64_t requested, uint64_t available, uint64_t budget);
++
++  private:
++    MemoryLogSchedule m_schedule;
++    // The OMM manager is recreated on camera cuts; the device owns its warning limits.
++    std::array<MemoryLogThrottle, 2> m_ommWarnings;
++  };
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats_data.cpp b/src/dxvk/rtx_render/rtx_memory_stats_data.cpp
+new file mode 100644
+index 00000000..b3b45d28
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats_data.cpp
+@@ -0,0 +1,175 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "rtx_memory_stats_data.h"
++
++#include <ctime>
++#include <fstream>
++#include <iomanip>
++#include <locale>
++#include <sstream>
++
++#ifdef _WIN32
++#include <windows.h>
++#else
++#include <unistd.h>
++#endif
++
++namespace dxvk {
++
++  namespace {
++    void writeJsonString(std::ostream& stream, const char* text) {
++      constexpr char kHex[] = "0123456789abcdef";
++      stream << '"';
++      for (; *text; ++text) {
++        const auto c = static_cast<unsigned char>(*text);
++        if (c == '"' || c == '\\') {
++          stream << '\\' << static_cast<char>(c);
++        } else if (c < 0x20) {
++          stream << "\\u00" << kHex[c >> 4] << kHex[c & 0xf];
++        } else {
++          stream << static_cast<char>(c);
++        }
++      }
++      stream << '"';
++    }
++  }
++
++  std::string OmmBudgetDrop::toLog(uint64_t suppressed) const {
++    std::ostringstream stream;
++    stream.imbue(std::locale::classic());
++    stream << "[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."
++           << " Free VRAM: " << freeVram << " bytes, Previous budget: " << previousBudget
++           << " bytes, Used: " << used << " bytes, Hard free-VRAM limit: " << hardFreeVramLimit
++           << " bytes, Soft free-VRAM limit: " << softFreeVramLimit
++           << " bytes (suppressed repeats: " << suppressed << ')';
++    return stream.str();
++  }
++
++  std::string MemorySnapshot::toJson(const char* event, const char* reason) const {
++    const std::time_t timestamp = std::chrono::system_clock::to_time_t(time);
++    std::tm utc {};
++#ifdef _WIN32
++    gmtime_s(&utc, &timestamp);
++#else
++    gmtime_r(&timestamp, &utc);
++#endif
++    std::ostringstream stream;
++    stream.imbue(std::locale::classic());
++    stream << "{\"schema\":1,\"time_utc\":\"" << std::put_time(&utc, "%Y-%m-%dT%H:%M:%SZ")
++           << "\",\"event\":\"" << event << "\",\"frame\":" << frame << ",\"heaps\":[";
++    for (uint32_t i = 0; i < heapCount && i < heaps.size(); ++i) {
++      if (i) {
++        stream << ',';
++      }
++      stream << "{\"index\":" << i << ",\"budget\":" << heaps[i].budget << ",\"usage\":" << heaps[i].usage
++             << ",\"device_local\":" << (heaps[i].deviceLocal ? "true" : "false") << '}';
++    }
++    stream << "],\"driver\":{\"budget\":" << driverBudget << ",\"usage\":" << driverUsage
++           << "},\"dxvk\":{\"allocated\":" << allocated << ",\"used\":" << used << "},\"categories\":{";
++    constexpr std::array<const char*, CategoryCount> kCategoryNames = {
++      "app_buffer", "app_texture", "replacement_geometry", "buffer",
++      "acceleration_structure", "opacity_micromap", "material_texture", "render_target"
++    };
++    for (uint32_t i = 0; i < categories.size(); ++i) {
++      if (i) {
++        stream << ',';
++      }
++      stream << '"' << kCategoryNames[i] << "\":" << categories[i];
++    }
++    stream << "},\"omm_suppressed\":{\"budget_dropped\":" << ommBudgetDroppedSuppressed
++           << ",\"allocation_denied\":" << ommAllocationDeniedSuppressed << '}';
++    if (reason) {
++      stream << ",\"reason\":";
++      writeJsonString(stream, reason);
++    }
++    stream << '}';
++    return stream.str();
++  }
++
++  bool MemorySnapshot::writeCrashReport(const std::filesystem::path& directory, const char* reason) const noexcept {
++    try {
++#ifdef _WIN32
++      const auto processId = GetCurrentProcessId();
++#else
++      const auto processId = getpid();
++#endif
++      const auto temporary = directory / ("last_gpu_crash." + std::to_string(processId) + ".tmp");
++      const auto destination = directory / "last_gpu_crash.json";
++      const auto json = toJson("device_lost", reason) + '\n';
++#ifdef _WIN32
++      if (json.size() > MAXDWORD) {
++        return false;
++      }
++      const HANDLE file = CreateFileW(temporary.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
++      if (file == INVALID_HANDLE_VALUE) {
++        return false;
++      }
++      DWORD written = 0;
++      const bool complete = WriteFile(file, json.data(), static_cast<DWORD>(json.size()), &written, nullptr)
++                         && written == json.size() && FlushFileBuffers(file);
++      const bool closed = CloseHandle(file) != 0;
++      if (complete && closed) {
++        // A scanner may briefly hold the old marker; limit added sleeps to 20 ms.
++        constexpr uint32_t kAttempts = 3;
++        for (uint32_t attempt = 0; attempt < kAttempts; ++attempt) {
++          if (MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++            return true;
++          }
++          const DWORD error = GetLastError();
++          if (attempt + 1 == kAttempts || (error != ERROR_SHARING_VIOLATION && error != ERROR_ACCESS_DENIED)) {
++            break;
++          }
++          Sleep(10);
++        }
++      }
++      DeleteFileW(temporary.c_str());
++      return false;
++#else
++      std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
++      stream << json;
++      stream.flush();
++      if (!stream) {
++        stream.close();
++        std::error_code error;
++        std::filesystem::remove(temporary, error);
++        return false;
++      }
++      stream.close();
++      if (!stream) {
++        std::error_code error;
++        std::filesystem::remove(temporary, error);
++        return false;
++      }
++      std::error_code error;
++      std::filesystem::rename(temporary, destination, error);
++      if (!error) {
++        return true;
++      }
++      std::filesystem::remove(temporary, error);
++      return false;
++#endif
++    } catch (...) {
++      return false;
++    }
++  }
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats_data.h b/src/dxvk/rtx_render/rtx_memory_stats_data.h
+new file mode 100644
+index 00000000..d8238c1c
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_memory_stats_data.h
+@@ -0,0 +1,119 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#pragma once
++
++#include <array>
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <filesystem>
++#include <optional>
++#include <string>
++
++namespace dxvk {
++
++  class MemoryLogThrottle {
++  public:
++    using Clock = std::chrono::steady_clock;
++
++    std::optional<uint64_t> record(Clock::time_point now) {
++      if (m_nextLog && now < *m_nextLog) {
++        m_suppressed.fetch_add(1, std::memory_order_relaxed);
++        return std::nullopt;
++      }
++      const uint64_t suppressed = m_suppressed.exchange(0, std::memory_order_relaxed);
++      m_nextLog = now + std::chrono::minutes(1);
++      return suppressed;
++    }
++
++    uint64_t suppressed() const {
++      return m_suppressed.load(std::memory_order_relaxed);
++    }
++
++  private:
++    std::optional<Clock::time_point> m_nextLog;
++    std::atomic<uint64_t> m_suppressed { 0 };
++  };
++
++  class MemoryLogSchedule {
++  public:
++    using Clock = std::chrono::steady_clock;
++
++    explicit MemoryLogSchedule(Clock::time_point now = Clock::now())
++      : m_nextPeriodic(now + std::chrono::minutes(5)) { }
++
++    bool update(uint32_t frame, bool cameraCut, Clock::time_point now) {
++      if (m_lastFrame && *m_lastFrame == frame) {
++        return false;
++      }
++      m_lastFrame = frame;
++      const bool periodic = now >= m_nextPeriodic;
++      if (periodic) {
++        m_nextPeriodic = now + std::chrono::minutes(5);
++      }
++      return cameraCut || periodic;
++    }
++
++  private:
++    Clock::time_point m_nextPeriodic;
++    std::optional<uint32_t> m_lastFrame;
++  };
++
++  struct OmmBudgetDrop {
++    uint64_t freeVram;
++    uint64_t previousBudget;
++    uint64_t used;
++    uint64_t hardFreeVramLimit;
++    uint64_t softFreeVramLimit;
++
++    std::string toLog(uint64_t suppressed) const;
++  };
++
++  struct MemorySnapshot {
++    struct Heap {
++      uint64_t budget = 0;
++      uint64_t usage = 0;
++      bool deviceLocal = false;
++    };
++
++    enum Category : uint32_t {
++      AppBuffer, AppTexture, ReplacementGeometry, Buffer,
++      AccelerationStructure, OpacityMicromap, MaterialTexture, RenderTarget, CategoryCount
++    };
++
++    std::chrono::system_clock::time_point time = std::chrono::system_clock::now();
++    uint32_t frame = 0;
++    uint32_t heapCount = 0;
++    std::array<Heap, 16> heaps {};
++    uint64_t allocated = 0;
++    uint64_t used = 0;
++    uint64_t driverBudget = 0;
++    uint64_t driverUsage = 0;
++    uint64_t ommBudgetDroppedSuppressed = 0;
++    uint64_t ommAllocationDeniedSuppressed = 0;
++    std::array<uint64_t, CategoryCount> categories {};
++
++    std::string toJson(const char* event, const char* reason = nullptr) const;
++    bool writeCrashReport(const std::filesystem::path& directory, const char* reason = nullptr) const noexcept;
++  };
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
+index 9d49c51a..17375bab 100644
+--- a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
+@@ -187,7 +187,8 @@ namespace dxvk {
+     }
+   
+     if (m_budget != m_prevBudget && m_budget == 0) {
+-      ONCE(Logger::info("[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."));
++      m_device->getCommon()->metaMemoryDiagnostics().logOmmBudgetDropped(
++        {m_vidmemFreeSize, m_prevBudget, m_used, hardMinFreeVidmemToNotAllocate, softMinFreeVidmemToNotAllocate});
+     }
+ 
+     // Invalidate m_vidmemFreeSize to make sure we use it only when it was set at the end of the frame again
+@@ -196,7 +197,7 @@ namespace dxvk {
+ 
+   bool OpacityMicromapMemoryManager::allocate(VkDeviceSize size) {
+     if (size > getAvailable()) {
+-      ONCE(Logger::info(str::format("[RTX Opacity Micromap] Out of memory budget. Requested: ", size, " bytes. Free: ", getAvailable(), " bytes, Budget: ", getBudget(), " bytes")));
++      m_device->getCommon()->metaMemoryDiagnostics().logOmmAllocationDenied(size, getAvailable(), getBudget());
+       return false;
+     }
+ 
+diff --git a/tests/rtx/apps/RemixAPI/remixapi_medium_test.cpp b/tests/rtx/apps/RemixAPI/remixapi_medium_test.cpp
+new file mode 100644
+index 00000000..a8fbbd9d
+--- /dev/null
++++ b/tests/rtx/apps/RemixAPI/remixapi_medium_test.cpp
+@@ -0,0 +1,377 @@
++#include <remix/remix.h>
++
++#include <algorithm>
++#include <array>
++#include <cmath>
++#include <cstdio>
++#include <cstdlib>
++#include <memory>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++namespace {
++
++  struct Vec3 {
++    float x;
++    float y;
++    float z;
++  };
++
++  Vec3 operator+(const Vec3& a, const Vec3& b) {
++    return { a.x + b.x, a.y + b.y, a.z + b.z };
++  }
++
++  Vec3 operator-(const Vec3& a, const Vec3& b) {
++    return { a.x - b.x, a.y - b.y, a.z - b.z };
++  }
++
++  Vec3 cross(const Vec3& a, const Vec3& b) {
++    return {
++      a.y * b.z - a.z * b.y,
++      a.z * b.x - a.x * b.z,
++      a.x * b.y - a.y * b.x,
++    };
++  }
++
++  Vec3 normalize(const Vec3& value) {
++    const float length = std::sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
++    return { value.x / length, value.y / length, value.z / length };
++  }
++
++  std::unique_ptr<remix::Interface> g_remix;
++  remixapi_MaterialHandle g_cameraMediumMaterial = nullptr;
++  std::vector<remixapi_MaterialHandle> g_materials;
++  std::vector<remixapi_MeshHandle> g_meshes;
++
++  remixapi_HardcodedVertex makeVertex(const Vec3& position, const Vec3& normal, float u, float v) {
++    return {
++      .position = { position.x, position.y, position.z },
++      .normal = { normal.x, normal.y, normal.z },
++      .texcoord = { u, v },
++      .color = 0xFFFFFFFF,
++    };
++  }
++
++  remixapi_MaterialHandle createOpaqueMaterial(
++      uint64_t hash,
++      remixapi_Float3D albedo,
++      float roughness,
++      float metallic,
++      remixapi_Float3D emissiveColor = { 0.0f, 0.0f, 0.0f },
++      float emissiveIntensity = 0.0f) {
++    remix::MaterialInfoOpaqueEXT opaque;
++    opaque.albedoConstant = albedo;
++    opaque.opacityConstant = 1.0f;
++    opaque.roughnessConstant = roughness;
++    opaque.metallicConstant = metallic;
++
++    remix::MaterialInfo info;
++    info.hash = hash;
++    info.pNext = &opaque;
++    info.emissiveColorConstant = emissiveColor;
++    info.emissiveIntensity = emissiveIntensity;
++
++    auto result = g_remix->CreateMaterial(info);
++    if (!result) {
++      throw std::runtime_error("CreateMaterial(opaque) failed " + std::to_string(result.status()));
++    }
++
++    g_materials.push_back(result.value());
++    return result.value();
++  }
++
++  remixapi_MaterialHandle createTranslucentMaterial(
++      uint64_t hash,
++      float refractiveIndex,
++      remixapi_Float3D transmittanceColor,
++      float measurementDistance) {
++    remix::MaterialInfoTranslucentEXT translucent;
++    translucent.refractiveIndex = refractiveIndex;
++    translucent.transmittanceColor = transmittanceColor;
++    translucent.transmittanceMeasurementDistance = measurementDistance;
++    translucent.useDiffuseLayer = false;
++    translucent.set_thinWallThickness(std::nullopt);
++
++    remix::MaterialInfo info;
++    info.hash = hash;
++    info.pNext = &translucent;
++
++    auto result = g_remix->CreateMaterial(info);
++    if (!result) {
++      throw std::runtime_error("CreateMaterial(translucent) failed " + std::to_string(result.status()));
++    }
++
++    g_materials.push_back(result.value());
++    return result.value();
++  }
++
++  remixapi_MeshHandle createQuad(
++      uint64_t hash,
++      const Vec3& center,
++      const Vec3& horizontal,
++      const Vec3& vertical,
++      remixapi_MaterialHandle material) {
++    const Vec3 normal = normalize(cross(horizontal, vertical));
++    const std::array<remixapi_HardcodedVertex, 4> vertices = {
++      makeVertex(center - horizontal - vertical, normal, 0.0f, 1.0f),
++      makeVertex(center + horizontal - vertical, normal, 1.0f, 1.0f),
++      makeVertex(center + horizontal + vertical, normal, 1.0f, 0.0f),
++      makeVertex(center - horizontal + vertical, normal, 0.0f, 0.0f),
++    };
++    constexpr std::array<uint32_t, 6> indices = { 0, 1, 2, 0, 2, 3 };
++
++    const remixapi_MeshInfoSurfaceTriangles surface = {
++      .vertices_values = vertices.data(),
++      .vertices_count = vertices.size(),
++      .indices_values = indices.data(),
++      .indices_count = indices.size(),
++      .skinning_hasvalue = false,
++      .skinning_value = {},
++      .material = material,
++    };
++    const remixapi_MeshInfo info = {
++      .sType = REMIXAPI_STRUCT_TYPE_MESH_INFO,
++      .pNext = nullptr,
++      .hash = hash,
++      .surfaces_values = &surface,
++      .surfaces_count = 1,
++    };
++
++    auto result = g_remix->CreateMesh(info);
++    if (!result) {
++      throw std::runtime_error("CreateMesh() failed " + std::to_string(result.status()));
++    }
++
++    g_meshes.push_back(result.value());
++    return result.value();
++  }
++
++  void createScene() {
++    g_cameraMediumMaterial = createTranslucentMaterial(
++      0x1000, 1.33f, { 0.08f, 0.45f, 0.95f }, 14.0f);
++    const remixapi_MaterialHandle amberMediumMaterial = createTranslucentMaterial(
++      0x1001, 1.50f, { 0.94f, 0.52f, 0.18f }, 2.0f);
++    const remixapi_MaterialHandle mirrorMaterial = createOpaqueMaterial(
++      0x1002, { 0.98f, 0.98f, 0.98f }, 0.0f, 1.0f);
++    const remixapi_MaterialHandle whiteEmissiveMaterial = createOpaqueMaterial(
++      0x1003, { 1.0f, 1.0f, 1.0f }, 1.0f, 0.0f, { 1.0f, 1.0f, 1.0f }, 20.0f);
++    const remixapi_MaterialHandle redEmissiveMaterial = createOpaqueMaterial(
++      0x1004, { 1.0f, 0.05f, 0.03f }, 1.0f, 0.0f, { 1.0f, 0.05f, 0.03f }, 20.0f);
++    const remixapi_MaterialHandle reflectionTargetMaterial = createOpaqueMaterial(
++      0x1005, { 1.0f, 1.0f, 1.0f }, 1.0f, 0.0f, { 1.0f, 1.0f, 1.0f }, 0.1f);
++
++    // Direct targets at different depths expose starting-medium attenuation.
++    createQuad(0x2000, { -3.3f, 1.5f, 6.0f }, { 1.15f, 0.0f, 0.0f }, { 0.0f, 1.15f, 0.0f }, whiteEmissiveMaterial);
++    createQuad(0x2001, { -7.0f, -2.0f, 13.0f }, { 2.35f, 0.0f, 0.0f }, { 0.0f, 2.35f, 0.0f }, whiteEmissiveMaterial);
++
++    // The short camera-to-mirror path reflects along a much longer path through the camera medium.
++    constexpr float kSqrtHalf = 0.70710678f;
++    createQuad(
++      0x2002,
++      { 0.0f, 0.0f, 1.0f },
++      { 0.25f, 0.0f, 0.0f },
++      { 0.0f, -0.23f * kSqrtHalf, -0.23f * kSqrtHalf },
++      mirrorMaterial);
++
++    // This is the quad that will be reflected by the mirror. It is white, but if the reflection ray medium was set properly it should be tinted by the camera medium
++    createQuad(
++      0x2003,
++      { 0.0f, 20.0f, 1.0f },
++      { 8.0f, 0.0f, 0.0f },
++      { 0.0f, 0.0f, -8.0f },
++      reflectionTargetMaterial);
++
++    // The right lane exits the camera medium, crosses an amber slab, then resolves a striped target.
++    createQuad(0x2004, { 2.7f, 0.0f, 4.0f }, { 1.6f, 0.0f, 0.0f }, { 0.0f, 2.8f, 0.0f }, g_cameraMediumMaterial);
++    createQuad(0x2005, { 4.2f, 0.0f, 7.0f }, { 2.4f, 0.0f, 0.0f }, { 0.0f, -3.1f, 0.0f }, amberMediumMaterial);
++    createQuad(0x2006, { 5.4f, 0.0f, 9.0f }, { 2.9f, 0.0f, 0.0f }, { 0.0f, 3.4f, 0.0f }, amberMediumMaterial);
++
++    constexpr std::array<float, 5> stripeCenters = { 4.0f, 5.5f, 7.0f, 8.5f, 10.0f };
++    for (size_t i = 0; i < stripeCenters.size(); i++) {
++      const remixapi_MaterialHandle material = i % 2 == 0 ? redEmissiveMaterial : whiteEmissiveMaterial;
++      createQuad(
++        0x2100 + i,
++        { stripeCenters[i], 0.0f, 14.0f },
++        { 0.7f, 0.0f, 0.0f },
++        { 0.0f, 3.7f, 0.0f },
++        material);
++    }
++  }
++
++  void initialize(HWND hwnd) {
++    const wchar_t* path = L"d3d9.dll";
++    if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) {
++      path = L"bin\\d3d9.dll";
++    }
++
++    auto interfaceResult = remix::lib::loadRemixDllAndInitialize(path);
++    if (!interfaceResult) {
++      throw std::runtime_error("loadRemixDllAndInitialize() failed " + std::to_string(interfaceResult.status()));
++    }
++    g_remix = std::make_unique<remix::Interface>(*interfaceResult);
++
++    const remixapi_StartupInfo startupInfo = {
++      .sType = REMIXAPI_STRUCT_TYPE_STARTUP_INFO,
++      .pNext = nullptr,
++      .hwnd = hwnd,
++      .disableSrgbConversionForOutput = false,
++      .forceNoVkSwapchain = false,
++    };
++    auto startupResult = g_remix->Startup(startupInfo);
++    if (!startupResult) {
++      throw std::runtime_error("Startup() failed " + std::to_string(startupResult.status()));
++    }
++
++    createScene();
++  }
++
++  void drawMesh(remixapi_MeshHandle mesh) {
++    const remixapi_InstanceInfo info = {
++      .sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO,
++      .pNext = nullptr,
++      .categoryFlags = 0,
++      .mesh = mesh,
++      .transform = { {
++        { 1.0f, 0.0f, 0.0f, 0.0f },
++        { 0.0f, 1.0f, 0.0f, 0.0f },
++        { 0.0f, 0.0f, 1.0f, 0.0f },
++      } },
++      .doubleSided = true,
++    };
++    auto result = g_remix->DrawInstance(info);
++    if (!result) {
++      throw std::runtime_error("DrawInstance() failed " + std::to_string(result.status()));
++    }
++  }
++
++  void render(uint32_t width, uint32_t height, bool useCameraMedium) {
++    remixapi_CameraInfoParameterizedEXT parameters = {
++      .sType = REMIXAPI_STRUCT_TYPE_CAMERA_INFO_PARAMETERIZED_EXT,
++      .pNext = nullptr,
++      .position = { 0.0f, 0.0f, 0.0f },
++      .forward = { 0.0f, 0.0f, 1.0f },
++      .up = { 0.0f, 1.0f, 0.0f },
++      .right = { 1.0f, 0.0f, 0.0f },
++      .fovYInDegrees = 62.0f,
++      .aspect = static_cast<float>(width) / static_cast<float>(height),
++      .nearPlane = 0.1f,
++      .farPlane = 100.0f,
++    };
++    const remixapi_CameraInfo cameraInfo = {
++      .sType = REMIXAPI_STRUCT_TYPE_CAMERA_INFO,
++      .pNext = &parameters,
++    };
++
++    auto cameraResult = g_remix->SetupCamera(cameraInfo);
++    if (!cameraResult) {
++      throw std::runtime_error("SetupCamera() failed " + std::to_string(cameraResult.status()));
++    }
++    auto mediumResult = g_remix->SetCameraMediumMaterial(useCameraMedium ? g_cameraMediumMaterial : nullptr);
++    if (!mediumResult) {
++      throw std::runtime_error("SetCameraMediumMaterial() failed " + std::to_string(mediumResult.status()));
++    }
++
++    for (const remixapi_MeshHandle mesh : g_meshes) {
++      drawMesh(mesh);
++    }
++
++    auto presentResult = g_remix->Present();
++    if (!presentResult) {
++      throw std::runtime_error("Present() failed " + std::to_string(presentResult.status()));
++    }
++  }
++
++  LRESULT WINAPI windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
++    if (message == WM_DESTROY) {
++      PostQuitMessage(0);
++      return 0;
++    }
++    return DefWindowProc(hwnd, message, wParam, lParam);
++  }
++
++}
++
++int main(int argc, char* argv[]) {
++  // Zero or negative runs until closed; the test runner passes -1 for --doNotAutoTerminate.
++  const int captureFrames = argc >= 2 ? std::atoi(argv[1]) : 0;
++  const bool runUntilClosed = captureFrames <= 0;
++  constexpr int kDrainFrames = 8;
++  const int numFrames = runUntilClosed ? 0 : captureFrames + kDrainFrames;
++  const WNDCLASSEX windowClass = {
++    .cbSize = sizeof(WNDCLASSEX),
++    .style = CS_CLASSDC,
++    .lpfnWndProc = windowProc,
++    .cbClsExtra = 0L,
++    .cbWndExtra = 0L,
++    .hInstance = GetModuleHandle(nullptr),
++    .hIcon = nullptr,
++    .hCursor = nullptr,
++    .hbrBackground = nullptr,
++    .lpszMenuName = nullptr,
++    .lpszClassName = "Remix API Medium Test",
++    .hIconSm = nullptr,
++  };
++  RegisterClassEx(&windowClass);
++
++  constexpr DWORD kWindowStyle = WS_OVERLAPPEDWINDOW;
++  RECT clientRect = { 0, 0, 900, 600 };
++  AdjustWindowRect(&clientRect, kWindowStyle, false);
++  HWND hwnd = CreateWindow(
++    windowClass.lpszClassName,
++    "Remix API Medium Test",
++    kWindowStyle,
++    CW_USEDEFAULT,
++    CW_USEDEFAULT,
++    clientRect.right - clientRect.left,
++    clientRect.bottom - clientRect.top,
++    GetDesktopWindow(),
++    nullptr,
++    windowClass.hInstance,
++    nullptr);
++
++  if (hwnd == nullptr) {
++    UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
++    return EXIT_FAILURE;
++  }
++
++  int exitCode = EXIT_SUCCESS;
++  try {
++    initialize(hwnd);
++    ShowWindow(hwnd, SW_SHOWDEFAULT);
++    UpdateWindow(hwnd);
++
++    MSG message = {};
++    int frameIndex = 0;
++    while (message.message != WM_QUIT && (numFrames == 0 || frameIndex < numFrames)) {
++      if (PeekMessage(&message, nullptr, 0U, 0U, PM_REMOVE)) {
++        TranslateMessage(&message);
++        DispatchMessage(&message);
++      } else {
++        RECT rect = {};
++        GetClientRect(hwnd, &rect);
++        const uint32_t width = static_cast<uint32_t>(std::max(0L, rect.right - rect.left));
++        const uint32_t height = static_cast<uint32_t>(std::max(0L, rect.bottom - rect.top));
++        render(width, height, runUntilClosed || frameIndex < captureFrames);
++        frameIndex++;
++      }
++    }
++  } catch (const std::exception& error) {
++    std::printf("FAILED: %s\n", error.what());
++    exitCode = EXIT_FAILURE;
++  }
++
++  if (g_remix) {
++    const auto shutdownResult = remix::lib::shutdownAndUnloadRemixDll(*g_remix);
++    if (!shutdownResult) {
++      std::printf("FAILED: shutdownAndUnloadRemixDll() failed %d\n",
++      static_cast<int>(shutdownResult.status()));
++      exitCode = EXIT_FAILURE;
++    }
++    g_remix.reset();
++  }
++
++  UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
++
++  return exitCode;
++}
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index 07f7d215..317a2fb3 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -156,4 +156,9 @@ exe = executable('test_splash_message', files('test_splash_message.cpp'),
+ test('test_splash_message', exe, env: test_env, args: [meson.current_build_dir() / 'splash-fixture'])
+ tests += exe
+ 
++exe = executable('test_memory_diagnostics', files('test_memory_diagnostics.cpp', '../../../src/dxvk/rtx_render/rtx_memory_stats_data.cpp'),
++  win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_memory_diagnostics', exe, args: [meson.current_build_dir() / 'memory-fixture'])
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_gpu_overrides.cpp b/tests/rtx/unit/test_gpu_overrides.cpp
+new file mode 100644
+index 00000000..ca78bf25
+--- /dev/null
++++ b/tests/rtx/unit/test_gpu_overrides.cpp
+@@ -0,0 +1,393 @@
++/*
++* Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include <filesystem>
++#include <fstream>
++#include <iostream>
++#include <optional>
++#include <sstream>
++#include <string>
++
++#include "../../../src/dxvk/rtx_render/rtx_gpu_overrides.h"
++#include "../../../src/dxvk/rtx_render/rtx_option.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_layer.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_manager.h"
++#include "../../../src/util/config/config.h"
++
++#include "../../test_utils.h"
++
++namespace dxvk {
++  // Logger needed by some shared code used in this Unit Test.
++  Logger Logger::s_instance("test_gpu_overrides.log");
++
++namespace gpu_overrides_test {
++
++  #define TEST_ASSERT(condition, message) \
++    do { \
++      if (!(condition)) { \
++        std::ostringstream oss; \
++        oss << "FAILED: " << __FUNCTION__ << " line " << __LINE__ << ": " << message; \
++        throw DxvkError(oss.str()); \
++      } \
++    } while(0)
++
++  const std::string kPreset = GpuOverrides::kGraphicsPresetPrefix;
++  const std::string kDlss = GpuOverrides::kDlssModePrefix;
++  const std::string kRayReconstruction = GpuOverrides::kRayReconstructionPrefix;
++
++  RtxOptionLayer* acquireConfigLayer(const Config& config, uint32_t priority, const char* name, float blendStrength = 1.0f) {
++    return RtxOptionManager::acquireLayer("", RtxOptionLayerKey { priority, name }, blendStrength, 0.1f, false, &config);
++  }
++
++  void resolve() {
++    RtxOptionManager::applyPendingValues(nullptr, false);
++  }
++
++  namespace fs = std::filesystem;
++
++  fs::path confPath(const char* name) {
++    return fs::temp_directory_path() / (std::string("gpu_overrides_") + name + ".conf");
++  }
++
++  void writeFile(const fs::path& path, const std::string& text) {
++    std::ofstream file(path, std::ios::trunc);
++    file << text;
++  }
++
++  // Returns the value text for key in a saved config file, or "<missing>".
++  std::string savedValue(const fs::path& path, const std::string& key) {
++    std::ifstream file(path);
++    std::string line;
++    const std::string linePrefix = key + " = ";
++    while (std::getline(file, line)) {
++      if (line.compare(0, linePrefix.size(), linePrefix) == 0) {
++        return line.substr(linePrefix.size());
++      }
++    }
++    return "<missing>";
++  }
++
++  // rtx_options.h is not included: its option statics pull in device code this test does not link.
++  RtxOption<bool>& rayReconstructionOption() {
++    RtxOptionImpl* option = RtxOptionImpl::getOptionByFullName("rtx.enableRayReconstruction");
++    TEST_ASSERT(option != nullptr && option->getType() == OptionType::Bool, "rtx.enableRayReconstruction registered");
++    return *static_cast<RtxOption<bool>*>(option);
++  }
++
++  std::string presetName(const std::optional<GraphicsPreset>& preset) {
++    return preset ? GpuOverrides::graphicsPresetName(*preset) : "<none>";
++  }
++
++  std::string dlssName(const std::optional<DLSSProfile>& profile) {
++    return profile ? GpuOverrides::dlssModeName(*profile) : "<none>";
++  }
++
++  void test_gpuIdFormat() {
++    TEST_ASSERT(GpuOverrides::formatGpuId(0x10DE, 0x2684) == "10DE_2684", "NVIDIA ID");
++    TEST_ASSERT(GpuOverrides::formatGpuId(0x8086, 0x56A0) == "8086_56A0", "Intel ID");
++    TEST_ASSERT(GpuOverrides::formatGpuId(0x10005, 0x1) == "10005_0001", "five-digit vendor ID");
++
++    TEST_ASSERT(GpuOverrides::isCanonicalGpuId("10DE_2684"), "canonical");
++    TEST_ASSERT(GpuOverrides::isCanonicalGpuId("10005_0001"), "canonical five-digit vendor");
++    for (const char* id : { "10de_2684", "10DE_684", "10DE2684", "_2684", "10DE_", "10DE_2684_1", "10DE_XYZ1" }) {
++      TEST_ASSERT(!GpuOverrides::isCanonicalGpuId(id), "non-canonical " << id);
++    }
++  }
++
++  void test_valueNames() {
++    TEST_ASSERT(presetName(GpuOverrides::parseGraphicsPreset("ultra")) == "Ultra", "lowercase preset");
++    TEST_ASSERT(presetName(GpuOverrides::parseGraphicsPreset("HIGH")) == "High", "uppercase preset");
++    TEST_ASSERT(presetName(GpuOverrides::parseGraphicsPreset("medium")) == "Medium", "medium preset");
++    TEST_ASSERT(presetName(GpuOverrides::parseGraphicsPreset("Low")) == "Low", "low preset");
++    for (const char* name : { "Auto", "Custom", "", "Hihg" }) {
++      TEST_ASSERT(!GpuOverrides::parseGraphicsPreset(name), "rejected preset " << name);
++    }
++
++    for (const char* name : { "UltraPerformance", "Performance", "Balanced", "Quality", "FullResolution" }) {
++      TEST_ASSERT(dlssName(GpuOverrides::parseDlssMode(name)) == name, "DLSS mode " << name);
++    }
++    TEST_ASSERT(dlssName(GpuOverrides::parseDlssMode("quality")) == "Quality", "lowercase DLSS mode");
++    for (const char* name : { "Auto", "Ultra Performance", "", "Invalid" }) {
++      TEST_ASSERT(!GpuOverrides::parseDlssMode(name), "rejected DLSS mode " << name);
++    }
++
++  }
++
++  void test_lookups() {
++    Config weak;
++    weak.setOption(kPreset + "10DE_2684", std::string("high"));
++    weak.setOption(kDlss + "10DE_2684", std::string("Balanced"));
++    weak.setOption(kRayReconstruction + "10DE_2684", std::string("False"));
++    weak.setOption(kPreset + "1002_744C", std::string("Hihg"));
++    weak.setOption(kPreset + "10de_1111", std::string("Ultra"));
++    RtxOptionLayer* weakLayer = acquireConfigLayer(weak, 1000, "GpuOverridesWeak");
++    resolve();
++
++    TEST_ASSERT(presetName(GpuOverrides::findGraphicsPreset("10DE_2684")) == "High", "preset lookup");
++    TEST_ASSERT(dlssName(GpuOverrides::findDlssMode("10DE_2684")) == "Balanced", "DLSS lookup");
++    TEST_ASSERT(GpuOverrides::findRayReconstruction("10DE_2684") == false, "RR lookup");
++    TEST_ASSERT(!GpuOverrides::findGraphicsPreset("1002_744C"), "unrecognized value ignored");
++    TEST_ASSERT(!GpuOverrides::findGraphicsPreset("10DE_1111"), "non-canonical key does not match");
++    TEST_ASSERT(!GpuOverrides::findDlssMode("1002_744C"), "missing DLSS override");
++    TEST_ASSERT(!GpuOverrides::findRayReconstruction("1002_744C"), "missing RR override");
++    TEST_ASSERT(!GpuOverrides::findGraphicsPreset(""), "empty GPU ID");
++    GpuOverrides::logInvalidEntries();
++
++    Config strong;
++    strong.setOption(kPreset + "10DE_2684", std::string("Low"));
++    RtxOptionLayer* strongLayer = acquireConfigLayer(strong, 2000, "GpuOverridesStrong");
++    resolve();
++    TEST_ASSERT(presetName(GpuOverrides::findGraphicsPreset("10DE_2684")) == "Low", "stronger layer wins");
++
++    RtxOptionManager::releaseLayer(strongLayer);
++    RtxOptionManager::releaseLayer(weakLayer);
++    resolve();
++    TEST_ASSERT(!GpuOverrides::findGraphicsPreset("10DE_2684"), "no override once layers are released");
++    TEST_ASSERT(!GpuOverrides::findRayReconstruction("10DE_2684"), "RR default is not an override");
++  }
++
++  void test_rayReconstructionDefault() {
++    RtxOption<bool>& option = rayReconstructionOption();
++    const RtxOptionLayer* derivedLayer = RtxOptionLayer::getDerivedLayer();
++    GpuOverrides::setCurrentGpu(0x10DE, 0x2684);
++    TEST_ASSERT(GpuOverrides::getCurrentGpuId() == "10DE_2684", "current GPU");
++    TEST_ASSERT(option(), "RR enabled by default");
++
++    Config config;
++    config.setOption(kRayReconstruction + "10DE_2684", std::string("False"));
++    RtxOptionLayer* layer = acquireConfigLayer(config, 1000, "GpuOverridesRayReconstruction");
++    resolve();
++
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(!option(), "override applied immediately");
++    TEST_ASSERT(option.hasValueInLayer(derivedLayer), "override written to the derived layer");
++
++    option.setImmediately(true, RtxOptionLayer::getUserLayer());
++    TEST_ASSERT(option(), "user layer beats the override");
++    option.clearImmediately(RtxOptionLayer::getUserLayer());
++    TEST_ASSERT(!option(), "override returns when the user value is cleared");
++
++    option.setImmediately(true, RtxOptionLayer::getEnvironmentLayer());
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(!option.hasValueInLayer(derivedLayer), "environment value suppresses the override");
++    TEST_ASSERT(option(), "environment value wins");
++    option.clearImmediately(RtxOptionLayer::getEnvironmentLayer());
++
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(!option(), "override reapplied");
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(!option.hasValueInLayer(derivedLayer), "removed override is withdrawn");
++    TEST_ASSERT(option(), "default restored after withdrawal");
++  }
++
++  void test_dlssModeCache() {
++    GpuOverrides::setCurrentGpu(0x10DE, 0x2684);
++    GpuOverrides::updateDlssMode();
++    TEST_ASSERT(!GpuOverrides::getDlssMode(), "no DLSS override without a key");
++
++    Config config;
++    config.setOption(kDlss + "10DE_2684", std::string("Performance"));
++    RtxOptionLayer* layer = acquireConfigLayer(config, 1000, "GpuOverridesDlssMode");
++    resolve();
++    TEST_ASSERT(!GpuOverrides::getDlssMode(), "cached value holds until the next update");
++    GpuOverrides::updateDlssMode();
++    TEST_ASSERT(dlssName(GpuOverrides::getDlssMode()) == "Performance", "update picks up the override");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    TEST_ASSERT(dlssName(GpuOverrides::getDlssMode()) == "Performance", "removal waits for the next update");
++    GpuOverrides::updateDlssMode();
++    TEST_ASSERT(!GpuOverrides::getDlssMode(), "update clears a removed override");
++  }
++
++  void test_inactiveOverrides() {
++    RtxOption<bool>& option = rayReconstructionOption();
++    const RtxOptionLayer* derivedLayer = RtxOptionLayer::getDerivedLayer();
++    GpuOverrides::setCurrentGpu(0x10DE, 0x2684);
++    const std::string rrKey = kRayReconstruction + "10DE_2684";
++
++    // The Remix Config (rtx.conf) layer sits below the Derived layer that holds the override.
++    const RtxOptionLayer* rtxConfLayer = RtxOptionLayer::getRtxConfLayer();
++    option.setImmediately(false, rtxConfLayer);
++    TEST_ASSERT(!option(), "underlying RR off");
++
++    // Below its blend threshold (0.1) the layer contributes nothing, so nothing counts as an override.
++    Config overrides;
++    overrides.setOption(rrKey, std::string("False"));
++    overrides.setOption(kPreset + "10DE_2684", std::string("High"));
++    overrides.setOption(kDlss + "10DE_2684", std::string("Balanced"));
++    RtxOptionLayer* layer = acquireConfigLayer(overrides, 1000, "GpuOverridesInactive", 0.0f);
++    resolve();
++    TEST_ASSERT(!GpuOverrides::findActiveValue(rrKey), "inactive RR entry");
++    TEST_ASSERT(!GpuOverrides::findRayReconstruction("10DE_2684"), "no RR override");
++    TEST_ASSERT(!GpuOverrides::findGraphicsPreset("10DE_2684"), "no preset override");
++    GpuOverrides::apply();
++    TEST_ASSERT(!option.hasValueInLayer(derivedLayer), "inactive RR entry not applied");
++    TEST_ASSERT(!option(), "underlying RR preserved");
++    TEST_ASSERT(!GpuOverrides::getDlssMode(), "inactive DLSS entry not cached");
++
++    layer->requestBlendStrength(0.1f);
++    resolve();
++    TEST_ASSERT(GpuOverrides::findRayReconstruction("10DE_2684") == false, "entry at threshold is active");
++    TEST_ASSERT(presetName(GpuOverrides::findGraphicsPreset("10DE_2684")) == "High", "preset at threshold");
++    GpuOverrides::apply();
++    TEST_ASSERT(option.hasValueInLayer(derivedLayer), "active RR entry applied");
++    TEST_ASSERT(dlssName(GpuOverrides::getDlssMode()) == "Balanced", "apply refreshes the DLSS cache");
++
++    layer->requestBlendStrength(0.05f);
++    resolve();
++    GpuOverrides::apply();
++    TEST_ASSERT(!option.hasValueInLayer(derivedLayer), "faded RR entry withdrawn");
++    TEST_ASSERT(!GpuOverrides::getDlssMode(), "faded DLSS entry cleared");
++
++    // A weaker active layer is used when the stronger one is inactive.
++    Config weak;
++    weak.setOption(rrKey, std::string("True"));
++    RtxOptionLayer* weakLayer = acquireConfigLayer(weak, 950, "GpuOverridesWeakRayReconstruction");
++    resolve();
++    TEST_ASSERT(GpuOverrides::findRayReconstruction("10DE_2684") == true, "weaker active layer used");
++    GpuOverrides::apply();
++    TEST_ASSERT(option(), "weaker override applied");
++
++    RtxOptionManager::releaseLayer(weakLayer);
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    GpuOverrides::apply();
++    TEST_ASSERT(!option.hasValueInLayer(derivedLayer), "no override after release");
++    TEST_ASSERT(!option(), "underlying RR restored");
++    option.clearImmediately(rtxConfLayer);
++  }
++
++  void test_redundancyCleanupKeepsRayReconstructionOverride() {
++    RtxOption<bool>& option = rayReconstructionOption();
++    GpuOverrides::setCurrentGpu(0x10DE, 0x2684);
++    const std::string rrKey = kRayReconstruction + "10DE_2684";
++    // rtx.conf sits below the Derived layer that holds the override.
++    const RtxOptionLayer* rtxConfLayer = RtxOptionLayer::getRtxConfLayer();
++    option.setImmediately(false, rtxConfLayer);
++    const fs::path path = confPath("rr_cleanup");
++    // The override matches the namespace default, so only its presence distinguishes it.
++    writeFile(path, rrKey + " = True\n");
++    RtxOptionLayer* layer = RtxOptionManager::acquireLayer(path.string(), RtxOptionLayerKey { 1100, "GpuOverridesCleanup" }, 1.0f, 0.1f, false, nullptr);
++    resolve();
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(option(), "override enables RR over the underlying False");
++
++    RtxOptionManager::removeRedundantLayerValues(layer);
++    TEST_ASSERT(layer->save(), "save");
++    TEST_ASSERT(savedValue(path, rrKey) == "True", "cleanup keeps the override");
++    layer->reload();
++    resolve();
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(GpuOverrides::findRayReconstruction("10DE_2684") == true, "override found after reload");
++    TEST_ASSERT(option(), "RR still enabled after cleanup, save and reload");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    GpuOverrides::applyRayReconstructionDefault();
++    TEST_ASSERT(!option(), "underlying False returns without the override");
++    option.clearImmediately(rtxConfLayer);
++    fs::remove(path);
++  }
++
++  void test_rejectedEntries() {
++    GpuOverrides::setCurrentGpu(0x10DE, 0x2684);
++    const std::string otherKey = kRayReconstruction + "1002_744C";
++    const fs::path path = confPath("rejected");
++    writeFile(path, otherKey + " = Flase\n");
++    Config weak;
++    weak.setOption(otherKey, std::string("True"));
++    RtxOptionLayer* weakLayer = acquireConfigLayer(weak, 1150, "GpuOverridesRejectedWeak");
++    RtxOptionLayer* layer = RtxOptionManager::acquireLayer(path.string(), RtxOptionLayerKey { 1200, "GpuOverridesRejected" }, 1.0f, 0.1f, false, nullptr);
++    resolve();
++
++    // The editor lists rejected entries for any GPU next to the effective value from other layers.
++    auto entries = layer->getRejectedEntries(kRayReconstruction);
++    TEST_ASSERT(entries.size() == 1 && entries[0].first == otherKey && entries[0].second == "Flase", "rejected entry with its text");
++    TEST_ASSERT(GpuOverrides::findActiveValue(otherKey) == std::optional<std::string>("True"), "weaker valid value in effect");
++    RtxOptionManager::releaseLayer(weakLayer);
++    resolve();
++    TEST_ASSERT(!GpuOverrides::findActiveValue(otherKey), "rejected entry alone has no value");
++    TEST_ASSERT(layer->getRejectedEntries(kRayReconstruction).size() == 1, "rejected-only entry still listed");
++
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(otherKey, "False", layer) == DynamicOptionResult::Success, "replace");
++    resolve();
++    TEST_ASSERT(layer->getRejectedEntries(kRayReconstruction).empty(), "replacement clears the rejection");
++    TEST_ASSERT(GpuOverrides::findActiveValue(otherKey) == std::optional<std::string>("False"), "replacement value");
++    TEST_ASSERT(layer->save(), "save replacement");
++    TEST_ASSERT(savedValue(path, otherKey) == "False", "replacement saved");
++
++    writeFile(path, otherKey + " = Flase\n");
++    layer->reload();
++    resolve();
++    TEST_ASSERT(layer->getRejectedEntries(kRayReconstruction).size() == 1, "rejected again after reload");
++    TEST_ASSERT(RtxOptionManager::clearDynamicValue(otherKey, layer) == DynamicOptionResult::Success, "remove");
++    resolve();
++    TEST_ASSERT(layer->getRejectedEntries(kRayReconstruction).empty(), "removal clears the rejection");
++    TEST_ASSERT(layer->save(), "save removal");
++    TEST_ASSERT(savedValue(path, otherKey) == "<missing>", "removed entry not saved");
++    layer->reload();
++    resolve();
++    TEST_ASSERT(layer->getRejectedEntries(kRayReconstruction).empty() && !GpuOverrides::findActiveValue(otherKey), "removal survives reload");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++  }
++
++  void runAllTests() {
++    std::cout << "Running GPU override tests" << std::endl;
++
++    GpuOverrides::registerNamespaces();
++    RtxOptionLayer::initializeSystemLayers();
++    RtxOptionImpl::setInitialized(true);
++    RtxOptionManager::markOptionsWithCallbacksDirty();
++    RtxOptionManager::applyPendingValues(nullptr, true);
++
++    test_gpuIdFormat();
++    test_valueNames();
++    test_lookups();
++    test_rayReconstructionDefault();
++    test_dlssModeCache();
++    test_inactiveOverrides();
++    test_redundancyCleanupKeepsRayReconstructionOverride();
++    test_rejectedEntries();
++
++    std::cout << "All GPU override tests PASSED" << std::endl;
++  }
++
++}  // namespace gpu_overrides_test
++}  // namespace dxvk
++
++int main() {
++  try {
++    dxvk::gpu_overrides_test::runAllTests();
++  } catch (const dxvk::DxvkError& error) {
++    std::cerr << "TEST FAILED: " << error.message() << std::endl;
++    return -1;
++  } catch (const std::exception& e) {
++    std::cerr << "TEST FAILED with exception: " << e.what() << std::endl;
++    return -1;
++  }
++  return 0;
++}
+diff --git a/tests/rtx/unit/test_gpu_profile.cpp b/tests/rtx/unit/test_gpu_profile.cpp
+new file mode 100644
+index 00000000..d41698f5
+--- /dev/null
++++ b/tests/rtx/unit/test_gpu_profile.cpp
+@@ -0,0 +1,296 @@
++/*
++* Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include <iostream>
++#include <optional>
++#include <sstream>
++#include <string>
++
++#include <nvapi.h>
++
++#include "../../../src/dxvk/rtx_render/rtx_gpu_overrides.h"
++#include "../../../src/dxvk/rtx_render/rtx_gpu_profile.h"
++
++#include "../../test_utils.h"
++
++namespace dxvk {
++  // Logger needed by some shared code used in this Unit Test.
++  Logger Logger::s_instance("test_gpu_profile.log");
++
++namespace gpu_profile_test {
++
++  #define TEST_ASSERT(condition, message) \
++    do { \
++      if (!(condition)) { \
++        std::ostringstream oss; \
++        oss << "FAILED: " << __FUNCTION__ << " line " << __LINE__ << ": " << message; \
++        throw DxvkError(oss.str()); \
++      } \
++    } while(0)
++
++  constexpr uint32_t kNvidia = 0x10DE;
++  constexpr uint32_t kAmd = 0x1002;
++  constexpr uint64_t kGiB = 1024ull * 1024 * 1024;
++
++  GpuHardwareInfo discreteNvidia(uint64_t vram) {
++    GpuHardwareInfo info;
++    info.vendorId = kNvidia;
++    info.exactDeviceLocalTypeHeapSize = vram;
++    info.deviceLocalHeapTotal = vram;
++    return info;
++  }
++
++  GpuHardwareInfo spark(uint64_t deviceLocal) {
++    GpuHardwareInfo info;
++    info.vendorId = kNvidia;
++    info.isIntegrated = true;
++    info.nvapiIntegrated = true;
++    info.nvapiArchitecture = NV_GPU_ARCHITECTURE_GB200;
++    info.nvapiCoreCount = 5120;
++    info.deviceLocalHeapTotal = deviceLocal;
++    return info;
++  }
++
++  bool logContains(const AutoPresetDecision& decision, const std::string& text) {
++    for (const std::string& line : decision.log) {
++      if (line.find(text) != std::string::npos) {
++        return true;
++      }
++    }
++    return false;
++  }
++
++  void test_sparkDetection() {
++    TEST_ASSERT(isRtxSpark(spark(128 * kGiB)), "Spark");
++    TEST_ASSERT(describeRtxSparkMismatch(spark(128 * kGiB)) == nullptr, "Spark has no mismatch");
++    TEST_ASSERT(!isRtxSpark(discreteNvidia(16 * kGiB)), "discrete GPU");
++
++    // Core count differs per SKU and is not part of detection.
++    GpuHardwareInfo info = spark(128 * kGiB);
++    info.nvapiCoreCount = 6144;
++    TEST_ASSERT(isRtxSpark(info), "6144 cores");
++    info.nvapiCoreCount.reset();
++    TEST_ASSERT(isRtxSpark(info), "core count query failed");
++
++    info = spark(128 * kGiB);
++    info.nvapiIntegrated = false;
++    info.nvapiArchitecture.reset();
++    info.nvapiCoreCount.reset();
++    TEST_ASSERT(!isRtxSpark(info), "NVAPI unavailable or no LUID match");
++    TEST_ASSERT(std::string(describeRtxSparkMismatch(info)) == "NVAPI did not confirm an integrated GPU", "NVAPI unavailable reason");
++
++    // Vulkan reports integrated but NVAPI reports a discrete GPU.
++    info = spark(128 * kGiB);
++    info.nvapiIntegrated = false;
++    TEST_ASSERT(!isRtxSpark(info), "NVAPI reports a discrete GPU");
++
++    info = spark(128 * kGiB);
++    info.nvapiArchitecture.reset();
++    TEST_ASSERT(!isRtxSpark(info), "architecture query failed");
++    TEST_ASSERT(std::string(describeRtxSparkMismatch(info)) == "NVAPI architecture unknown", "unknown architecture reason");
++
++    const uint32_t otherArchitectures[] = { NV_GPU_ARCHITECTURE_AD100, NV_GPU_ARCHITECTURE_GB200 + 0x10u, static_cast<uint32_t>(NV_GPU_ARCHITECTURE_T4X) };
++    for (uint32_t architecture : otherArchitectures) {
++      info = spark(128 * kGiB);
++      info.nvapiArchitecture = architecture;
++      TEST_ASSERT(!isRtxSpark(info), "architecture 0x" << std::hex << architecture);
++      TEST_ASSERT(std::string(describeRtxSparkMismatch(info)) == "not a Blackwell GPU", "architecture reason");
++    }
++
++    // NVIDIA laptop GPUs, including Blackwell ones, are discrete.
++    info = spark(16 * kGiB);
++    info.isIntegrated = false;
++    TEST_ASSERT(!isRtxSpark(info), "Vulkan reports a discrete GPU");
++
++    info = spark(128 * kGiB);
++    info.vendorId = kAmd;
++    TEST_ASSERT(!isRtxSpark(info), "non-NVIDIA integrated GPU");
++
++    // A carve-out layout (one device-local heap plus a host heap) is still RTX Spark.
++    info = spark(8 * kGiB);
++    info.exactDeviceLocalTypeHeapSize = 8 * kGiB;
++    TEST_ASSERT(isRtxSpark(info), "carve-out layout");
++  }
++
++  // This is the memory layout from the first RTX Spark log.
++  // Heap 0 is 49140 MiB device-local and heap 1 is 7543 MiB host memory.
++  void test_sparkObservedLayout() {
++    GpuHardwareInfo info = spark(49140ull * 1024 * 1024);
++    info.exactDeviceLocalTypeHeapSize = 49140ull * 1024 * 1024;
++    TEST_ASSERT(isRtxSpark(info), "observed Spark");
++    const AutoPresetDecision decision = selectAutoPreset(info, std::nullopt, NV_GPU_ARCHITECTURE_GB200);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Medium && !decision.lowMemoryGpu, "observed Spark defaults");
++    TEST_ASSERT(!logContains(decision, "Blackwell architecture detected"), "discrete ladder skipped");
++  }
++
++  void test_discretePresets() {
++    struct Case { uint32_t arch; GraphicsPreset preset; const char* log; };
++    const Case cases[] = {
++      { NV_GPU_ARCHITECTURE_TU100 - 1, GraphicsPreset::Low, "without HW RTX support" },
++      { NV_GPU_ARCHITECTURE_TU100, GraphicsPreset::Low, "Turing" },
++      { NV_GPU_ARCHITECTURE_GA100 - 1, GraphicsPreset::Low, "Turing" },
++      { NV_GPU_ARCHITECTURE_GA100, GraphicsPreset::Medium, "Ampere" },
++      { NV_GPU_ARCHITECTURE_AD100, GraphicsPreset::High, "Ada" },
++      { NV_GPU_ARCHITECTURE_GB200, GraphicsPreset::Ultra, "Blackwell" },
++    };
++    for (const Case& c : cases) {
++      const AutoPresetDecision decision = selectAutoPreset(discreteNvidia(16 * kGiB), std::nullopt, c.arch);
++      TEST_ASSERT(decision.preset == c.preset, "arch 0x" << std::hex << c.arch);
++      TEST_ASSERT(logContains(decision, c.log), "log for arch 0x" << std::hex << c.arch);
++      TEST_ASSERT(!decision.lowMemoryGpu && !decision.applyNonNvidiaDefaults, "large discrete GPU flags");
++    }
++
++    // The architecture query falls back to Turing when NVAPI fails.
++    TEST_ASSERT(selectAutoPreset(discreteNvidia(16 * kGiB), std::nullopt, NV_GPU_ARCHITECTURE_TU100).preset == GraphicsPreset::Low, "Turing fallback");
++
++    // 8 GiB threshold is inclusive and demotes by one step, never below Low and never above Medium.
++    AutoPresetDecision decision = selectAutoPreset(discreteNvidia(kLowMemoryGpuThreshold), std::nullopt, NV_GPU_ARCHITECTURE_GB200);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Medium && decision.lowMemoryGpu, "Ultra at 8 GiB demotes to Medium");
++    TEST_ASSERT(logContains(decision, "lowering quality setting"), "demotion log");
++    decision = selectAutoPreset(discreteNvidia(kLowMemoryGpuThreshold + 1), std::nullopt, NV_GPU_ARCHITECTURE_GB200);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Ultra && !decision.lowMemoryGpu, "one byte over 8 GiB");
++    decision = selectAutoPreset(discreteNvidia(8 * kGiB), std::nullopt, NV_GPU_ARCHITECTURE_AD100);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Medium, "Ada at 8 GiB demotes to Medium");
++    decision = selectAutoPreset(discreteNvidia(8 * kGiB), std::nullopt, NV_GPU_ARCHITECTURE_TU100);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Low, "Turing at 8 GiB stays Low");
++
++    // No memory type is exactly DEVICE_LOCAL, as in ReBAR-only layouts.
++    // The legacy rule then sees 0 bytes.
++    GpuHardwareInfo info = discreteNvidia(0);
++    info.deviceLocalHeapTotal = 16 * kGiB;
++    decision = selectAutoPreset(info, std::nullopt, NV_GPU_ARCHITECTURE_GB200);
++    TEST_ASSERT(decision.lowMemoryGpu && decision.preset == GraphicsPreset::Medium, "no exact device-local type");
++  }
++
++  void test_overridesAndOtherVendors() {
++    AutoPresetDecision decision = selectAutoPreset(discreteNvidia(4 * kGiB), GraphicsPreset::Ultra, 0);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Ultra, "override prevents demotion");
++    TEST_ASSERT(decision.lowMemoryGpu, "override keeps memory-based low memory mode");
++    TEST_ASSERT(logContains(decision, "keeping the matched graphics preset override"), "override log");
++
++    GpuHardwareInfo amd = discreteNvidia(16 * kGiB);
++    amd.vendorId = kAmd;
++    decision = selectAutoPreset(amd, std::nullopt, 0);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Low && decision.applyNonNvidiaDefaults, "non-NVIDIA default");
++    TEST_ASSERT(logContains(decision, "Non-NVIDIA architecture detected"), "non-NVIDIA log");
++    decision = selectAutoPreset(amd, GraphicsPreset::High, 0);
++    TEST_ASSERT(decision.preset == GraphicsPreset::High && decision.applyNonNvidiaDefaults, "non-NVIDIA with override keeps side effects");
++  }
++
++  void test_sparkPresets() {
++    AutoPresetDecision decision = selectAutoPreset(spark(128 * kGiB), std::nullopt, 0);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Medium && !decision.lowMemoryGpu, "Spark default");
++    TEST_ASSERT(logContains(decision, "RTX Spark detected"), "Spark log");
++
++    decision = selectAutoPreset(spark(128 * kGiB), GraphicsPreset::High, 0);
++    TEST_ASSERT(decision.preset == GraphicsPreset::High, "per-GPU override wins on Spark");
++
++    decision = selectAutoPreset(spark(8 * kGiB), std::nullopt, 0);
++    TEST_ASSERT(decision.preset == GraphicsPreset::Medium && decision.lowMemoryGpu, "8 GiB carve-out enables low memory mode");
++    decision = selectAutoPreset(spark(8 * kGiB - 64 * 1024 * 1024), std::nullopt, 0);
++    TEST_ASSERT(decision.lowMemoryGpu, "slightly under 8 GiB");
++    decision = selectAutoPreset(spark(8 * kGiB + 1), std::nullopt, 0);
++    TEST_ASSERT(!decision.lowMemoryGpu, "one byte over 8 GiB");
++  }
++
++  void test_dlssMode() {
++    const std::optional<DLSSProfile> quality = GpuOverrides::parseDlssMode("Quality");
++    TEST_ASSERT(!selectAutoDlssMode(std::nullopt, false), "no default off Spark");
++    TEST_ASSERT(std::string(GpuOverrides::dlssModeName(*selectAutoDlssMode(std::nullopt, true))) == "Performance", "Spark default");
++    TEST_ASSERT(selectAutoDlssMode(quality, true) == quality, "per-GPU override wins on Spark");
++    TEST_ASSERT(selectAutoDlssMode(quality, false) == quality, "per-GPU override elsewhere");
++  }
++
++  void test_hardwareCollectionWithoutLuid() {
++    const uint32_t vendors[] = { kNvidia, kAmd };
++    const bool exactTypeCases[] = { true, false };
++
++    for (uint32_t vendorId : vendors) {
++      for (bool hasExactType : exactTypeCases) {
++        DxvkDeviceInfo deviceInfo = { };
++        deviceInfo.core.properties.vendorID = vendorId;
++        deviceInfo.core.properties.deviceType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
++        deviceInfo.coreDeviceId.deviceLUIDValid = vendorId == kNvidia ? VK_FALSE : VK_TRUE;
++
++        VkPhysicalDeviceMemoryProperties memoryProperties = { };
++        memoryProperties.memoryHeapCount = 3;
++        memoryProperties.memoryHeaps[0] = { 4 * kGiB, VK_MEMORY_HEAP_DEVICE_LOCAL_BIT };
++        memoryProperties.memoryHeaps[1] = { 64 * kGiB, 0 };
++        memoryProperties.memoryHeaps[2] = { 8 * kGiB, VK_MEMORY_HEAP_DEVICE_LOCAL_BIT };
++
++        memoryProperties.memoryTypeCount = 4;
++        memoryProperties.memoryTypes[0] = { VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0 };
++        if (!hasExactType) {
++          memoryProperties.memoryTypes[0].propertyFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
++        }
++        memoryProperties.memoryTypes[1] = { VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 0 };
++        memoryProperties.memoryTypes[2] = { VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 1 };
++        memoryProperties.memoryTypes[3] = { VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 2 };
++
++        DxvkAdapterMemoryInfo memoryInfo = { };
++        memoryInfo.heapCount = 3;
++        memoryInfo.heaps[0].memoryBudget = kGiB;
++        memoryInfo.heaps[2].memoryBudget = kGiB;
++
++        GpuProfile::detect(deviceInfo, memoryProperties, memoryInfo);
++        const GpuHardwareInfo& info = GpuProfile::getHardwareInfo();
++
++        TEST_ASSERT(info.vendorId == vendorId && info.isIntegrated, "Vulkan facts collected");
++        TEST_ASSERT(info.exactDeviceLocalTypeHeapSize == (hasExactType ? 4 * kGiB : 0), "first exact device-local type or zero");
++        TEST_ASSERT(info.deviceLocalHeapTotal == 12 * kGiB, "local heaps counted once, without host heaps or budgets");
++        TEST_ASSERT(!info.nvapiIntegrated && !info.nvapiArchitecture.has_value() && !info.nvapiCoreCount.has_value(), "NVAPI facts remain empty");
++        TEST_ASSERT(!GpuProfile::isRtxSpark() && !isRtxSpark(info), "unconfirmed hardware is not Spark");
++
++        if (vendorId == kNvidia) {
++          const char* pMismatch = describeRtxSparkMismatch(info);
++          TEST_ASSERT(pMismatch != nullptr && std::string(pMismatch) == "NVAPI did not confirm an integrated GPU", "invalid LUID mismatch reason");
++        }
++      }
++    }
++  }
++
++  void runAllTests() {
++    std::cout << "Running GPU profile tests" << std::endl;
++    test_sparkDetection();
++    test_sparkObservedLayout();
++    test_discretePresets();
++    test_overridesAndOtherVendors();
++    test_sparkPresets();
++    test_dlssMode();
++    test_hardwareCollectionWithoutLuid();
++    std::cout << "All GPU profile tests PASSED" << std::endl;
++  }
++
++}  // namespace gpu_profile_test
++}  // namespace dxvk
++
++int main() {
++  try {
++    dxvk::gpu_profile_test::runAllTests();
++  } catch (const dxvk::DxvkError& error) {
++    std::cerr << "TEST FAILED: " << error.message() << std::endl;
++    return -1;
++  } catch (const std::exception& e) {
++    std::cerr << "TEST FAILED with exception: " << e.what() << std::endl;
++    return -1;
++  }
++  return 0;
++}
+diff --git a/tests/rtx/unit/test_hot_reload.cpp b/tests/rtx/unit/test_hot_reload.cpp
+new file mode 100644
+index 00000000..fded82f8
+--- /dev/null
++++ b/tests/rtx/unit/test_hot_reload.cpp
+@@ -0,0 +1,1265 @@
++/*
++* Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++
++#include <algorithm>
++#include <chrono>
++#include <filesystem>
++#include <fstream>
++#include <memory>
++#include <string>
++#include <unordered_set>
++
++#include "../../test_utils.h"
++#include "rtx_render/rtx_asset_replacer.h"
++#include "rtx_render/rtx_mod_usd.h"
++#include "rtx_render/graph/rtx_graph_types.h"
++
++#include "../../../src/lssusd/usd_include_begin.h"
++#include <pxr/usd/usd/stage.h>
++#include <pxr/usd/usd/notice.h>
++#include <pxr/usd/usd/attribute.h>
++#include <pxr/usd/sdf/path.h>
++#include <pxr/usd/sdf/types.h>
++#include <pxr/base/tf/weakBase.h>
++#include <pxr/base/tf/notice.h>
++#include "../../../src/lssusd/usd_include_end.h"
++
++// Both defined in rtx_mod_usd.cpp (part of dxvk_lib).
++namespace dxvk {
++void classifyChangedPath(const pxr::SdfPath& path, bool isResync, const pxr::UsdStageWeakPtr& stage,
++                         AssetReplacements& replacements,
++                         std::unordered_set<XXH64_hash_t>& dirtyMeshHashes,
++                         std::unordered_set<XXH64_hash_t>& dirtyMatHashes,
++                         std::unordered_set<XXH64_hash_t>& dirtyLightHashes,
++                         bool& rebuildAllMeshes, bool& rebuildAllMats, bool& rebuildAllLights);
++bool usdShouldTriggerReload(const std::filesystem::path& changedPath,
++                             const std::wstring& normalizedRootModPathKey,
++                             bool watchDependencies,
++                             const std::unordered_set<std::wstring>* usedLayerPaths = nullptr);
++std::wstring normalizedPathKey(const std::filesystem::path& rawPath);
++} // namespace dxvk
++
++namespace dxvk {
++
++Logger Logger::s_instance("test_hot_reload.log");
++
++// ─── USD change listener ──────────────────────────────────────────────────────
++// Thin wrapper that forwards UsdObjectsChanged notifications into classifyPath.
++struct ChangeCapture : pxr::TfWeakBase {
++  // Material-path index classifyChangedPath consults; tests populate it via registerMaterialPath.
++  AssetReplacements replacements;
++  std::unordered_set<XXH64_hash_t> dirtyMeshHashes;
++  std::unordered_set<XXH64_hash_t> dirtyMatHashes;
++  std::unordered_set<XXH64_hash_t> dirtyLightHashes;
++  bool rebuildAllMeshes = false;
++  bool rebuildAllMats   = false;
++  bool rebuildAllLights = false;
++
++  void reset() {
++    dirtyMeshHashes.clear();
++    dirtyMatHashes.clear();
++    dirtyLightHashes.clear();
++    rebuildAllMeshes = rebuildAllMats = rebuildAllLights = false;
++  }
++
++  void OnObjectsChanged(const pxr::UsdNotice::ObjectsChanged& notice,
++                        const pxr::UsdStageWeakPtr& sender) {
++    for (const auto& p : notice.GetResyncedPaths()) {
++      classifyChangedPath(p, /*isResync=*/true, sender, replacements,
++                          dirtyMeshHashes, dirtyMatHashes, dirtyLightHashes,
++                          rebuildAllMeshes, rebuildAllMats, rebuildAllLights);
++    }
++    for (const auto& p : notice.GetChangedInfoOnlyPaths()) {
++      classifyChangedPath(p, /*isResync=*/false, sender, replacements,
++                          dirtyMeshHashes, dirtyMatHashes, dirtyLightHashes,
++                          rebuildAllMeshes, rebuildAllMats, rebuildAllLights);
++    }
++  }
++};
++
++// ─── Helpers ──────────────────────────────────────────────────────────────────
++// Returns the 64-bit hash encoded in a mesh_/mat_/light_ prim name.
++static XXH64_hash_t hashFromHexName(const char* prefix, const char* primName) {
++  const size_t prefixLen = strlen(prefix);
++  return std::strtoull(primName + prefixLen, nullptr, 16);
++}
++
++// Write a minimal mod.usda to disk and return the path.
++static std::string writeTempUsd(const std::string& content) {
++  namespace fs = std::filesystem;
++  const auto path = (fs::temp_directory_path() / "test_hot_reload.usda").string();
++  std::ofstream f(path);
++  f << content;
++  return path;
++}
++
++// UsdStage::Reload() skips a layer whose on-disk mtime hasn't visibly changed; two writes
++// issued back-to-back in a test can land within the filesystem's mtime granularity.
++static void bumpMtimeForward(const std::string& path) {
++  namespace fs = std::filesystem;
++  fs::last_write_time(path, fs::file_time_type::clock::now() + std::chrono::seconds(2));
++}
++
++// ─── mergeFrom helpers ───────────────────────────────────────────────────
++static void setMeshBucket(AssetReplacements& table, XXH64_hash_t hash) {
++  table.set<AssetReplacement::eMesh>(hash, { AssetReplacement("test") });
++}
++static bool hasMeshBucket(AssetReplacements& table, XXH64_hash_t hash) {
++  return table.get<AssetReplacement::eMesh>(hash) != nullptr;
++}
++
++// ─── Material cache tests (mergeFrom) ────────────────────────────────────
++// These cover the bug where sweepOrphans(m_materials) evicted standalone
++// material replacements (sky, surface overrides via getReplacementMaterial)
++// because they always have use_count==1 — only the cache holds them.
++
++// Standalone materials survive a hot-reload that processes other things.
++static void testStandaloneMatSurvivesHotReload() {
++  AssetReplacements live, scratch;
++
++  constexpr XXH64_hash_t kSkyMat  = 0x5AFEDEAD;
++  constexpr XXH64_hash_t kMeshKey = 0x1111;
++
++  live.storeMaterial(kSkyMat, MaterialData{});  // standalone — use_count==1 always
++  setMeshBucket(live, kMeshKey);
++
++  // A mesh changed; the standalone material was NOT in the dirty set.
++  setMeshBucket(scratch, kMeshKey);
++
++  AssetChanges info;
++  info.dirtyMeshHashes = { kMeshKey };
++  live.mergeFrom(std::move(scratch), info);
++
++  std::shared_ptr<MaterialData> out;
++  if (!live.getMaterial(kSkyMat, out)) {
++    throw DxvkError("standalone material must survive a mesh-only reload");
++  }
++  if (!hasMeshBucket(live, kMeshKey)) {
++    throw DxvkError("updated mesh must be present");
++  }
++
++  Logger::info("testStandaloneMatSurvivesHotReload passed");
++}
++
++// A deleted material prim (dirty but absent from scratch) is erased.
++static void testDeletedMatErasedFromCache() {
++  AssetReplacements live, scratch;
++
++  constexpr XXH64_hash_t kDeletedMat   = 0xDEAD1234;
++  constexpr XXH64_hash_t kSurvivingMat = 0xBEEF5678;
++
++  live.storeMaterial(kDeletedMat,   MaterialData{});
++  live.storeMaterial(kSurvivingMat, MaterialData{});
++
++  // kDeletedMat removed from stage: dirty but absent from scratch.
++  // kSurvivingMat untouched: NOT dirty, must be left alone.
++  AssetChanges info;
++  info.dirtyMatHashes = { kDeletedMat };
++  live.mergeFrom(std::move(scratch), info);
++
++  std::shared_ptr<MaterialData> out;
++  if (live.getMaterial(kDeletedMat, out)) {
++    throw DxvkError("deleted material prim must be erased");
++  }
++  if (!live.getMaterial(kSurvivingMat, out)) {
++    throw DxvkError("untouched material must survive");
++  }
++
++  Logger::info("testDeletedMatErasedFromCache passed");
++}
++
++// A pure-deletion reload (dirty mesh hash present, scratch empty - nothing reprocessed)
++// must still sweep now-orphaned geometry/graph-topology cache entries.
++static void testOrphanSweepOnPureDeletionReload() {
++  AssetReplacements live, scratch;
++
++  constexpr XXH64_hash_t kDeletedMesh = 0xDEAD0001;
++  constexpr XXH64_hash_t kGeomHash    = 0xBEEF0001;
++
++  setMeshBucket(live, kDeletedMesh);
++  live.storeGeometry(kGeomHash, MeshReplacement{});  // only the cache holds it: use_count==1
++
++  AssetChanges info;
++  info.dirtyMeshHashes = { kDeletedMesh };
++  live.mergeFrom(std::move(scratch), info);
++
++  if (hasMeshBucket(live, kDeletedMesh)) {
++    throw DxvkError("deleted mesh must be erased");
++  }
++  std::shared_ptr<MeshReplacement> out;
++  if (live.getGeometry(kGeomHash, out)) {
++    throw DxvkError("orphaned geometry must be swept on a pure-deletion reload");
++  }
++
++  Logger::info("testOrphanSweepOnPureDeletionReload passed");
++}
++
++// Simulates modify+undo: two hot-reloads where a standalone material was never
++// dirty — it must survive both.
++static void testModifyUndoCyclePreservesStandaloneMat() {
++  AssetReplacements live, scratch1, scratch2;
++
++  constexpr XXH64_hash_t kSkyMat  = 0x5CAFEBABE;
++  constexpr XXH64_hash_t kRemovedMat = 0xDEAD;
++  constexpr XXH64_hash_t kMesh    = 0x1111;
++
++  live.storeMaterial(kSkyMat,     MaterialData{});
++  live.storeMaterial(kRemovedMat, MaterialData{});
++  setMeshBucket(live, kMesh);
++
++  // Reload 1: kRemovedMat deleted, kSkyMat untouched.
++  setMeshBucket(scratch1, kMesh);
++  {
++    AssetChanges info1;
++    info1.dirtyMeshHashes = { kMesh };
++    info1.dirtyMatHashes  = { kRemovedMat };
++    live.mergeFrom(std::move(scratch1), info1);
++  }
++
++  std::shared_ptr<MaterialData> out;
++  if (live.getMaterial(kRemovedMat, out)) {
++    throw DxvkError("deleted mat must be gone after reload 1");
++  }
++  if (!live.getMaterial(kSkyMat, out)) {
++    throw DxvkError("standalone mat must survive reload 1");
++  }
++
++  // Reload 2: kRemovedMat restored. kSkyMat still untouched.
++  setMeshBucket(scratch2, kMesh);
++  scratch2.storeMaterial(kRemovedMat, MaterialData{});
++  {
++    AssetChanges info2;
++    info2.dirtyMeshHashes = { kMesh };
++    info2.dirtyMatHashes  = { kRemovedMat };
++    live.mergeFrom(std::move(scratch2), info2);
++  }
++
++  if (!live.getMaterial(kRemovedMat, out)) {
++    throw DxvkError("restored mat must be back after reload 2");
++  }
++  if (!live.getMaterial(kSkyMat, out)) {
++    throw DxvkError("standalone mat must survive reload 2");
++  }
++
++  Logger::info("testModifyUndoCyclePreservesStandaloneMat passed");
++}
++
++// ─── Test: seedMaterialsFrom reuses an unchanged material's exact object ──────
++static void testSeedMaterialsFromReusesUnchangedMaterial() {
++  AssetReplacements live, scratch;
++
++  constexpr XXH64_hash_t kMat = 0xAAAA1111;
++  auto original = live.storeMaterial(kMat, MaterialData{});
++
++  std::unordered_set<XXH64_hash_t> dirtyMatHashes;  // kMat is unchanged.
++  scratch.seedMaterialsFrom(live, dirtyMatHashes);
++
++  std::shared_ptr<MaterialData> seeded;
++  if (!scratch.getMaterial(kMat, seeded)) {
++    throw DxvkError("seedMaterialsFrom should seed the unchanged material");
++  }
++  if (seeded != original) {
++    throw DxvkError("seedMaterialsFrom must reuse the exact live object, not a duplicate");
++  }
++
++  Logger::info("testSeedMaterialsFromReusesUnchangedMaterial passed");
++}
++
++// ─── Test: seedMaterialsFrom skips dirty hashes, including deletions ──────────
++static void testSeedMaterialsFromExcludesDirtyHashes() {
++  AssetReplacements live, scratch;
++
++  constexpr XXH64_hash_t kDeletedMat = 0xBBBB2222;
++  live.storeMaterial(kDeletedMat, MaterialData{});
++
++  // Simulates kDeletedMat's prim being classified dirty by deletion.
++  std::unordered_set<XXH64_hash_t> dirtyMatHashes = { kDeletedMat };
++  scratch.seedMaterialsFrom(live, dirtyMatHashes);
++
++  std::shared_ptr<MaterialData> out;
++  if (scratch.getMaterial(kDeletedMat, out)) {
++    throw DxvkError("seedMaterialsFrom must not seed a hash in the dirty set");
++  }
++
++  AssetChanges changes;
++  changes.dirtyMatHashes = dirtyMatHashes;
++  live.mergeFrom(std::move(scratch), changes);
++
++  if (live.getMaterial(kDeletedMat, out)) {
++    throw DxvkError("a dirty material absent from scratch (deleted) must be erased after merge");
++  }
++
++  Logger::info("testSeedMaterialsFromExcludesDirtyHashes passed");
++}
++
++// ─── Test: collectMeshesUsingMaterials finds meshes by material identity hash ──
++static void testCollectMeshesUsingMaterials() {
++  AssetReplacements table;
++
++  constexpr XXH64_hash_t kDirtyMat = 0xAAAA;
++  constexpr XXH64_hash_t kCleanMat = 0xBBBB;
++  constexpr XXH64_hash_t kMeshUsingDirty = 0x1111;
++  constexpr XXH64_hash_t kMeshUsingClean = 0x2222;
++  constexpr XXH64_hash_t kMeshUsingNone  = 0x3333;
++
++  auto dirtyMat = table.storeMaterial(kDirtyMat, MaterialData{});
++  auto cleanMat = table.storeMaterial(kCleanMat, MaterialData{});
++
++  AssetReplacement usingDirty("meshUsingDirty");
++  usingDirty.type = AssetReplacement::eMesh;
++  usingDirty.materialData = dirtyMat;
++  usingDirty.materialPathHash = kDirtyMat;
++  table.set<AssetReplacement::eMesh>(kMeshUsingDirty, { usingDirty });
++
++  AssetReplacement usingClean("meshUsingClean");
++  usingClean.type = AssetReplacement::eMesh;
++  usingClean.materialData = cleanMat;
++  usingClean.materialPathHash = kCleanMat;
++  table.set<AssetReplacement::eMesh>(kMeshUsingClean, { usingClean });
++
++  AssetReplacement usingNone("meshUsingNone");
++  usingNone.type = AssetReplacement::eMesh;
++  table.set<AssetReplacement::eMesh>(kMeshUsingNone, { usingNone });
++
++  std::unordered_set<XXH64_hash_t> dirtyMatHashes = { kDirtyMat };
++  std::unordered_set<XXH64_hash_t> outMeshHashes;
++  table.collectMeshesUsingMaterials(dirtyMatHashes, outMeshHashes);
++
++  if (!outMeshHashes.count(kMeshUsingDirty)) {
++    throw DxvkError("mesh referencing the dirty material must be found");
++  }
++  if (outMeshHashes.count(kMeshUsingClean)) {
++    throw DxvkError("mesh referencing an unrelated material must not be found");
++  }
++  if (outMeshHashes.count(kMeshUsingNone)) {
++    throw DxvkError("mesh with no material must not be found");
++  }
++
++  Logger::info("testCollectMeshesUsingMaterials passed");
++}
++
++// ─── Test: every original path bound to a shared material is tracked independently ──
++// processMaterial registers on every call, including cache hits, so multiple stage paths
++// resolving to the same material (e.g. USD instance proxies) each get their own entry.
++static void testMultiplePathsForSameMaterialAreAllTracked() {
++  AssetReplacements table;
++  constexpr XXH64_hash_t kMatHash = 0xABCDEF;
++
++  table.registerMaterialPath("/Instance1/mat", kMatHash);
++  table.registerMaterialPath("/Instance2/mat", kMatHash);
++
++  std::unordered_set<XXH64_hash_t> outHashes;
++  table.collectMaterialHashesUnderPath("/Instance1/mat", outHashes);
++  if (!outHashes.count(kMatHash)) {
++    throw DxvkError("deleting one registered path for a shared material must find its hash");
++  }
++
++  outHashes.clear();
++  table.collectMaterialHashesUnderPath("/Instance2/mat", outHashes);
++  if (!outHashes.count(kMatHash)) {
++    throw DxvkError("deleting the other registered path for the same shared material must also find its hash");
++  }
++
++  Logger::info("testMultiplePathsForSameMaterialAreAllTracked passed");
++}
++
++// ─── Test: collectMaterialHashesUnderPath rejects the root and empty path ─────
++// Every registered material path starts with '/', so a naive prefix match against "/" or
++// "" matches everything - regression for a bug where a stage-level info-only notice
++// (path.GetPrimPath() reaching here as the pseudo-root) dirtied every material in the mod.
++static void testCollectMaterialHashesUnderPathRejectsRootAndEmpty() {
++  AssetReplacements table;
++  for (int i = 0; i < 50; i++) {
++    table.registerMaterialPath("/Materials/mat" + std::to_string(i), 0x1000 + i);
++  }
++
++  std::unordered_set<XXH64_hash_t> outHashes;
++  table.collectMaterialHashesUnderPath("/", outHashes);
++  if (!outHashes.empty()) {
++    throw DxvkError("collectMaterialHashesUnderPath(\"/\") must not match every registered material");
++  }
++
++  table.collectMaterialHashesUnderPath("", outHashes);
++  if (!outHashes.empty()) {
++    throw DxvkError("collectMaterialHashesUnderPath(\"\") must not match every registered material");
++  }
++
++  Logger::info("testCollectMaterialHashesUnderPathRejectsRootAndEmpty passed");
++}
++
++// ─── Test: an info-only pseudo-root notice must not dirty every material ──────
++static void testRootInfoOnlyNoticeDoesNotDirtyAllMaterials() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  for (int i = 0; i < 50; i++) {
++    cap.replacements.registerMaterialPath("/Materials/mat" + std::to_string(i), 0x1000 + i);
++  }
++
++  classifyChangedPath(pxr::SdfPath::AbsoluteRootPath(), /*isResync=*/false, stage, cap.replacements,
++                      cap.dirtyMeshHashes, cap.dirtyMatHashes, cap.dirtyLightHashes,
++                      cap.rebuildAllMeshes, cap.rebuildAllMats, cap.rebuildAllLights);
++
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("an info-only notice for the pseudo-root must not dirty every registered material");
++  }
++
++  Logger::info("testRootInfoOnlyNoticeDoesNotDirtyAllMaterials passed");
++}
++
++// ─── Test: collectMeshesUsingMaterials matches by hash, not materialData pointer identity ──
++// A partial reload can give one mesh a fresh MaterialData object while a sibling mesh
++// keeps an older, content-identical one; both must still be found by hash.
++static void testCollectMeshesUsingMaterialsAcrossDivergedMaterialPointers() {
++  AssetReplacements table;
++
++  constexpr XXH64_hash_t kMat   = 0xC0FFEE;
++  constexpr XXH64_hash_t kMeshA = 0x1111;
++  constexpr XXH64_hash_t kMeshB = 0x2222;
++
++  // Same identity hash, different pointers - simulating a diverged MaterialData object.
++  auto matPointerA = std::make_shared<MaterialData>();
++  auto matPointerB = std::make_shared<MaterialData>();
++
++  AssetReplacement usingA("meshA");
++  usingA.type = AssetReplacement::eMesh;
++  usingA.materialData = matPointerA;
++  usingA.materialPathHash = kMat;
++  table.set<AssetReplacement::eMesh>(kMeshA, { usingA });
++
++  AssetReplacement usingB("meshB");
++  usingB.type = AssetReplacement::eMesh;
++  usingB.materialData = matPointerB;
++  usingB.materialPathHash = kMat;
++  table.set<AssetReplacement::eMesh>(kMeshB, { usingB });
++
++  std::unordered_set<XXH64_hash_t> dirtyMatHashes = { kMat };
++  std::unordered_set<XXH64_hash_t> outMeshHashes;
++  table.collectMeshesUsingMaterials(dirtyMatHashes, outMeshHashes);
++
++  if (!outMeshHashes.count(kMeshA)) {
++    throw DxvkError("mesh referencing the dirty material via its own materialData object must be found");
++  }
++  if (!outMeshHashes.count(kMeshB)) {
++    throw DxvkError("mesh referencing the same material via a diverged materialData pointer must still be found");
++  }
++
++  Logger::info("testCollectMeshesUsingMaterialsAcrossDivergedMaterialPointers passed");
++}
++
++// ─── Test: adding a new mesh prim dirties exactly that mesh hash ──────────────
++static void testAddMeshPrim() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode"));
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++
++  // Author a new mesh prim — this fires UsdObjectsChanged synchronously.
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567"));
++
++  const XXH64_hash_t expected = hashFromHexName("mesh_", "mesh_DEADBEEF01234567");
++  if (!cap.dirtyMeshHashes.count(expected)) {
++    throw DxvkError("new mesh prim should dirty its hash");
++  }
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("no material should be dirtied");
++  }
++  if (!cap.dirtyLightHashes.empty()) {
++    throw DxvkError("no light should be dirtied");
++  }
++  if (cap.rebuildAllMeshes) {
++    throw DxvkError("targeted change should not force full rebuild");
++  }
++
++  Logger::info("testAddMeshPrim passed");
++}
++
++// ─── Test: editing a Shader input on a material dirties that material ─────────
++// UsdObjectsChanged fires an info-only notice on the Shader prim, not on mat_.
++// classifyPath must walk up to mat_ and dirty its hash rather than ignoring
++// the deep path.
++static void testEditShaderInputDirtiesMat() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/Looks/mat_AABBCCDDEEFF0011/Shader"));
++  // Create the attribute before subscribing so the subscription-time resync
++  // doesn't dirty the hash (we want to test the info-only path below).
++  auto attr = stage->GetPrimAtPath(pxr::SdfPath("/RootNode/Looks/mat_AABBCCDDEEFF0011/Shader"))
++                   .CreateAttribute(pxr::TfToken("inputs:diffuse_texture"),
++                                    pxr::SdfValueTypeNames->Asset);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();  // ignore anything from stage setup
++
++  // Editing an attribute on Shader fires an info-only notice for that prim.
++  attr.Set(pxr::SdfAssetPath("new_texture.dds"));
++
++  const XXH64_hash_t expected = hashFromHexName("mat_", "mat_AABBCCDDEEFF0011");
++  if (!cap.dirtyMatHashes.count(expected)) {
++    throw DxvkError("shader input edit should dirty the mat_ ancestor");
++  }
++  if (!cap.dirtyMeshHashes.empty()) {
++    throw DxvkError("no mesh should be dirtied");
++  }
++  if (cap.rebuildAllMats) {
++    throw DxvkError("targeted change should not force section rebuild");
++  }
++
++  Logger::info("testEditShaderInputDirtiesMat passed");
++}
++
++// ─── Test: a Material prim living outside /RootNode is still classified ───────
++static void testExternalMaterialIsClassified() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/Materials/woodMat"), pxr::TfToken("Material"));
++  auto attr = stage->DefinePrim(pxr::SdfPath("/Materials/woodMat/Shader"))
++                   .CreateAttribute(pxr::TfToken("inputs:diffuse_texture"),
++                                    pxr::SdfValueTypeNames->Asset);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  attr.Set(pxr::SdfAssetPath("new_texture.dds"));
++
++  if (cap.dirtyMatHashes.size() != 1) {
++    throw DxvkError("external material edit should dirty exactly one hash");
++  }
++  if (!cap.dirtyMeshHashes.empty()) {
++    throw DxvkError("no mesh should be dirtied directly");
++  }
++  if (cap.rebuildAllMats) {
++    throw DxvkError("a targeted external material change should not force a full rebuild");
++  }
++
++  // The hash must be stable across edits.
++  const XXH64_hash_t firstHash = *cap.dirtyMatHashes.begin();
++  cap.reset();
++  attr.Set(pxr::SdfAssetPath("another_texture.dds"));
++  if (!cap.dirtyMatHashes.count(firstHash)) {
++    throw DxvkError("the same external material must hash consistently across edits");
++  }
++
++  Logger::info("testExternalMaterialIsClassified passed");
++}
++
++// ─── Test: a material nested inside a mesh's own subtree is still classified ──
++static void testMaterialNestedUnderMeshIsClassified() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567/localMat"),
++                     pxr::TfToken("Material"));
++  auto attr = stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567/localMat/Shader"))
++                   .CreateAttribute(pxr::TfToken("inputs:diffuse_texture"),
++                                    pxr::SdfValueTypeNames->Asset);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  attr.Set(pxr::SdfAssetPath("new_texture.dds"));
++
++  const XXH64_hash_t expectedMesh = hashFromHexName("mesh_", "mesh_DEADBEEF01234567");
++  if (!cap.dirtyMeshHashes.count(expectedMesh)) {
++    throw DxvkError("owning mesh should still be dirtied as usual");
++  }
++  if (cap.dirtyMatHashes.size() != 1) {
++    throw DxvkError("material nested under a mesh's own subtree should also be classified");
++  }
++
++  Logger::info("testMaterialNestedUnderMeshIsClassified passed");
++}
++
++// ─── Test: a deleted external material is still classified via the material path index ──
++// GetPrimAtPath returns invalid for a deleted prim, so classification falls back to the
++// path index (simulated here via registerMaterialPath, since there's no full USD walk).
++static void testDeletedExternalMaterialIsClassified() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/Materials/woodMat"), pxr::TfToken("Material"));
++  stage->DefinePrim(pxr::SdfPath("/Materials/woodMat/Shader"))
++       .CreateAttribute(pxr::TfToken("inputs:diffuse_texture"), pxr::SdfValueTypeNames->Asset);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  constexpr XXH64_hash_t kMatHash = 0xC0FFEE;
++  cap.replacements.registerMaterialPath("/Materials/woodMat", kMatHash);
++
++  stage->RemovePrim(pxr::SdfPath("/Materials/woodMat"));
++
++  if (!cap.dirtyMatHashes.count(kMatHash)) {
++    throw DxvkError("deleting a registered external material should dirty its previously-known hash");
++  }
++
++  Logger::info("testDeletedExternalMaterialIsClassified passed");
++}
++
++// ─── Test: deleting an ancestor of a registered material also classifies it ──────
++// A subtree deletion resyncs the ancestor's path, not the nested material's own path, so
++// the path-index fallback must match by prefix, not just exact path.
++static void testDeletedMaterialAncestorIsClassified() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/Materials/group/woodMat"), pxr::TfToken("Material"));
++  stage->DefinePrim(pxr::SdfPath("/Materials/group/woodMat/Shader"))
++       .CreateAttribute(pxr::TfToken("inputs:diffuse_texture"), pxr::SdfValueTypeNames->Asset);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  constexpr XXH64_hash_t kMatHash = 0xBEEF00;
++  cap.replacements.registerMaterialPath("/Materials/group/woodMat", kMatHash);
++
++  stage->RemovePrim(pxr::SdfPath("/Materials/group"));
++
++  if (!cap.dirtyMatHashes.count(kMatHash)) {
++    throw DxvkError("deleting an ancestor of a registered material should still dirty its hash");
++  }
++
++  Logger::info("testDeletedMaterialAncestorIsClassified passed");
++}
++
++// ─── Test: when /RootNode/Looks is newly created, rebuildAllMats is set ───────
++// USD reports the section folder itself rather than individual children when
++// the section didn't exist before.
++static void testNewLooksSectionTriggersRebuildAll() {
++  // Start with a stage that has no /RootNode/Looks.
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  // Creating /RootNode/Looks for the first time — USD reports /RootNode/Looks
++  // as the resync root, not any individual mat_ child.
++  stage->DefinePrim(pxr::SdfPath("/RootNode/Looks"));
++  stage->DefinePrim(pxr::SdfPath("/RootNode/Looks/mat_1234567890ABCDEF"));
++
++  if (!cap.rebuildAllMats) {
++    throw DxvkError("creating the Looks section should trigger full mat rebuild");
++  }
++  if (cap.rebuildAllMeshes) {
++    throw DxvkError("mesh section should be unaffected");
++  }
++
++  Logger::info("testNewLooksSectionTriggersRebuildAll passed");
++}
++
++// ─── Test: info-only change on the section prim itself does not rebuild ───────
++// An attribute edit directly on /RootNode/Looks (unusual but possible) must not
++// trigger a full material rebuild — only structural changes (isResync) should.
++static void testAttributeOnSectionPrimIsIgnored() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  auto looksAttr = stage->DefinePrim(pxr::SdfPath("/RootNode/Looks"))
++                        .CreateAttribute(pxr::TfToken("customData"),
++                                         pxr::SdfValueTypeNames->String);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  // Editing an attribute directly on /RootNode/Looks.
++  looksAttr.Set(std::string("some_value"));
++
++  if (cap.rebuildAllMats) {
++    throw DxvkError("attribute on section prim must not trigger full rebuild");
++  }
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("no mat_ hashes should be dirtied");
++  }
++
++  Logger::info("testAttributeOnSectionPrimIsIgnored passed");
++}
++
++// ─── Test: deleting a mesh prim dirties exactly that mesh hash ───────────────
++static void testDeleteMeshPrimDirtiesHash() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  stage->RemovePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567"));
++
++  const XXH64_hash_t expected = hashFromHexName("mesh_", "mesh_DEADBEEF01234567");
++  if (!cap.dirtyMeshHashes.count(expected)) {
++    throw DxvkError("deleted mesh prim should dirty its hash");
++  }
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("no material should be dirtied");
++  }
++
++  Logger::info("testDeleteMeshPrimDirtiesHash passed");
++}
++
++// ─── Test: adding a light prim dirties its light hash ────────────────────────
++static void testAddLightPrimDirtiesHash() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/lights"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++
++  stage->DefinePrim(pxr::SdfPath("/RootNode/lights/light_AABB1122CCDD3344"));
++
++  const XXH64_hash_t expected = hashFromHexName("light_", "light_AABB1122CCDD3344");
++  if (!cap.dirtyLightHashes.count(expected)) {
++    throw DxvkError("new light prim should dirty its hash");
++  }
++  if (!cap.dirtyMeshHashes.empty()) {
++    throw DxvkError("no mesh should be dirtied");
++  }
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("no material should be dirtied");
++  }
++
++  Logger::info("testAddLightPrimDirtiesHash passed");
++}
++
++// ─── Test: legacy sphereLight_ naming is recognised ──────────────────────────
++static void testLegacySphereLightNaming() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/lights"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++
++  stage->DefinePrim(pxr::SdfPath("/RootNode/lights/sphereLight_AABB1122CCDD3344"));
++
++  const XXH64_hash_t expected = hashFromHexName("sphereLight_", "sphereLight_AABB1122CCDD3344");
++  if (!cap.dirtyLightHashes.count(expected)) {
++    throw DxvkError("legacy sphereLight_ name should dirty its hash");
++  }
++
++  Logger::info("testLegacySphereLightNaming passed");
++}
++
++// ─── Test: editing a GeomSubset sub-prim dirties the parent mesh ──────────────
++// Verifies the walk-up in classifyPath reaches the mesh_ ancestor from a deep path.
++static void testEditGeomSubsetDirtiesMesh() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567/SubMesh"));
++  auto attr = stage->GetPrimAtPath(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567/SubMesh"))
++                   .CreateAttribute(pxr::TfToken("materialBinding"),
++                                    pxr::SdfValueTypeNames->String);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  attr.Set(std::string("mat_ABC"));
++
++  const XXH64_hash_t expected = hashFromHexName("mesh_", "mesh_DEADBEEF01234567");
++  if (!cap.dirtyMeshHashes.count(expected)) {
++    throw DxvkError("GeomSubset attribute edit should dirty parent mesh");
++  }
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("no material should be dirtied");
++  }
++
++  Logger::info("testEditGeomSubsetDirtiesMesh passed");
++}
++
++// ─── Test: simultaneous mesh and material edits dirty both independently ──────
++static void testMultipleChangesInOneNotice() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  auto meshAttr = stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_1111111111111111"))
++                       .CreateAttribute(pxr::TfToken("prop"), pxr::SdfValueTypeNames->Int);
++  auto matAttr  = stage->DefinePrim(pxr::SdfPath("/RootNode/Looks/mat_2222222222222222"))
++                       .CreateAttribute(pxr::TfToken("prop"), pxr::SdfValueTypeNames->Int);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  // Author both changes; USD coalesces them into one notice delivery.
++  {
++    pxr::SdfChangeBlock block;
++    meshAttr.Set(1);
++    matAttr.Set(2);
++  }
++
++  const XXH64_hash_t meshHash = hashFromHexName("mesh_", "mesh_1111111111111111");
++  const XXH64_hash_t matHash  = hashFromHexName("mat_",  "mat_2222222222222222");
++  if (!cap.dirtyMeshHashes.count(meshHash)) {
++    throw DxvkError("mesh change should be captured");
++  }
++  if (!cap.dirtyMatHashes.count(matHash)) {
++    throw DxvkError("material change should be captured");
++  }
++
++  Logger::info("testMultipleChangesInOneNotice passed");
++}
++
++// ─── Test: /RootNode resync triggers full rebuild of all sections ─────────────
++static void testRootNodeResyncTriggersFullRebuild() {
++  // Stage starts completely empty — no /RootNode yet.
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++
++  // Adding /RootNode from scratch — USD reports /RootNode as the resync root.
++  stage->DefinePrim(pxr::SdfPath("/RootNode"));
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567"));
++  stage->DefinePrim(pxr::SdfPath("/RootNode/Looks/mat_AABBCCDDEEFF0011"));
++
++  // /RootNode itself or its direct section children should trigger full rebuild.
++  const bool fullRebuild = cap.rebuildAllMeshes || cap.rebuildAllMats || cap.rebuildAllLights;
++  if (!fullRebuild) {
++    throw DxvkError("/RootNode resync should trigger at least one full section rebuild");
++  }
++
++  Logger::info("testRootNodeResyncTriggersFullRebuild passed");
++}
++
++// ─── Test: deleting a mat_-named material still dirties its hash ──────────────
++// tryClassifyExternalMaterial needs a live prim to check its type, so it can't identify
++// a deleted material by path alone - only the name-based /RootNode/Looks fast path can.
++static void testDeleteMatPrimDirtiesHash() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/Looks/mat_1122334455667788"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  stage->RemovePrim(pxr::SdfPath("/RootNode/Looks/mat_1122334455667788"));
++
++  const XXH64_hash_t expected = hashFromHexName("mat_", "mat_1122334455667788");
++  if (!cap.dirtyMatHashes.count(expected)) {
++    throw DxvkError("deleting a mat_-named material should still dirty its hash");
++  }
++
++  Logger::info("testDeleteMatPrimDirtiesHash passed");
++}
++
++// ─── Test: bare /RootNode resync (no section children yet) forces a full rebuild ──
++static void testBareRootNodeResyncTriggersFullRebuild() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++
++  stage->DefinePrim(pxr::SdfPath("/RootNode"));
++
++  if (!(cap.rebuildAllMeshes && cap.rebuildAllMats && cap.rebuildAllLights)) {
++    throw DxvkError("/RootNode resync with no children yet should force a full rebuild of all sections");
++  }
++
++  Logger::info("testBareRootNodeResyncTriggersFullRebuild passed");
++}
++
++// ─── Test: a resync entirely outside /RootNode is ignored, not a full rebuild ─
++static void testUnrelatedResyncOutsideRootNodeIsIgnored() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/mesh_DEADBEEF01234567"));
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  // A resync of a prim with no relation to /RootNode - e.g. an editor camera.
++  stage->DefinePrim(pxr::SdfPath("/camera1"));
++
++  if (!(cap.dirtyMeshHashes.empty() && cap.dirtyMatHashes.empty() && cap.dirtyLightHashes.empty())) {
++    throw DxvkError("unrelated prim outside /RootNode must not dirty anything");
++  }
++  if (cap.rebuildAllMeshes || cap.rebuildAllMats || cap.rebuildAllLights) {
++    throw DxvkError("unrelated resync outside /RootNode must not force a full rebuild");
++  }
++
++  Logger::info("testUnrelatedResyncOutsideRootNodeIsIgnored passed");
++}
++
++// ─── Test: paths outside known sections are silently ignored ─────────────────
++static void testPathOutsideKnownSectionsIsIgnored() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  auto attr = stage->DefinePrim(pxr::SdfPath("/RootNode/SomeOtherSection/prim_ABCD"))
++                   .CreateAttribute(pxr::TfToken("prop"), pxr::SdfValueTypeNames->Int);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  attr.Set(42);
++
++  if (!cap.dirtyMeshHashes.empty()) {
++    throw DxvkError("unknown section should not dirty any mesh");
++  }
++  if (!cap.dirtyMatHashes.empty()) {
++    throw DxvkError("unknown section should not dirty any material");
++  }
++  if (!cap.dirtyLightHashes.empty()) {
++    throw DxvkError("unknown section should not dirty any light");
++  }
++  if (cap.rebuildAllMeshes || cap.rebuildAllMats || cap.rebuildAllLights) {
++    throw DxvkError("unknown section should not trigger any full rebuild");
++  }
++
++  Logger::info("testPathOutsideKnownSectionsIsIgnored passed");
++}
++
++// ─── Test: a mesh_-section prim with an unrecognized name is safely ignored ───
++// A prim under /RootNode/meshes that doesn't match mesh_<HEX> naming and isn't a
++// Material must not dirty anything (only log a warning).
++static void testUnrecognizedPrimNameIsIgnored() {
++  auto stage = pxr::UsdStage::CreateInMemory("test.usda");
++  auto attr = stage->DefinePrim(pxr::SdfPath("/RootNode/meshes/notAMesh"))
++                   .CreateAttribute(pxr::TfToken("prop"), pxr::SdfValueTypeNames->Int);
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  attr.Set(42);
++
++  if (!cap.dirtyMeshHashes.empty() || cap.rebuildAllMeshes) {
++    throw DxvkError("unrecognized prim name under meshes must not dirty anything");
++  }
++
++  Logger::info("testUnrecognizedPrimNameIsIgnored passed");
++}
++
++// ─── Test: changing a prim in a sublayer dirties the correct hash ─────────────
++// Sublayers are common in RTX Remix mods (e.g. a shared materials.usda).
++// USD fires UsdObjectsChanged with stage-level prim paths regardless of which
++// layer the opinion lives in, so classifyChangedPath should handle this
++// transparently.
++static void testSublayerChangeDirtiesCorrectHash() {
++  namespace fs = std::filesystem;
++  const auto tempDir      = fs::temp_directory_path();
++  const std::string rootPath = (tempDir / "test_hot_reload_root.usda").string();
++  const std::string subPath  = (tempDir / "test_hot_reload_sub.usda").string();
++
++  // Root file references the sublayer by relative name (both in the same dir).
++  {
++    std::ofstream f(rootPath);
++    f << "#usda 1.0\n(\n    subLayers = [\n        @test_hot_reload_sub.usda@\n    ]\n)\n";
++  }
++  // Initial sublayer: one existing material.
++  {
++    std::ofstream f(subPath);
++    f << R"(#usda 1.0
++def "RootNode" {
++    def "Looks" {
++        def Material "mat_AABBCCDDEEFF0011" {
++        }
++    }
++}
++)";
++  }
++
++  auto stage = pxr::UsdStage::Open(rootPath, pxr::UsdStage::LoadAll);
++  if (!stage) {
++    throw DxvkError("stage should open with sublayer");
++  }
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  // Updated sublayer: edit the existing material and add a new one.
++  {
++    std::ofstream f(subPath);
++    f << R"(#usda 1.0
++def "RootNode" {
++    def "Looks" {
++        def Material "mat_AABBCCDDEEFF0011" {
++            string diffuse = "new_texture.dds"
++        }
++        def Material "mat_1122334455667788" {
++        }
++    }
++}
++)";
++  }
++  bumpMtimeForward(subPath);
++  stage->Reload();
++
++  const XXH64_hash_t existing = hashFromHexName("mat_", "mat_AABBCCDDEEFF0011");
++  const XXH64_hash_t added    = hashFromHexName("mat_", "mat_1122334455667788");
++
++  // /RootNode/Looks already existed before the reload, so both changes must classify to
++  // their specific hashes rather than degrading to a full-section rebuild.
++  if (!cap.dirtyMatHashes.count(existing)) {
++    throw DxvkError("modified material in sublayer should be dirtied");
++  }
++  if (!cap.dirtyMatHashes.count(added)) {
++    throw DxvkError("new material in sublayer should be dirtied");
++  }
++  if (cap.rebuildAllMats) {
++    throw DxvkError("sublayer change with an already-existing Looks section must not force a full rebuild");
++  }
++  if (!cap.dirtyMeshHashes.empty() || cap.rebuildAllMeshes) {
++    throw DxvkError("mesh section should be unaffected by material-only sublayer change");
++  }
++
++  fs::remove(rootPath);
++  fs::remove(subPath);
++  Logger::info("testSublayerChangeDirtiesCorrectHash passed");
++}
++
++// ─── Test: watchDependencies=false only triggers on the root mod file ─────────
++// When watchDependencies is off, sublayer .usda files and non-USD files in the
++// same watched directory must not trigger a reload.
++static void testWatchDependenciesOff() {
++  namespace fs = std::filesystem;
++  const fs::path root    = fs::temp_directory_path() / "mod.usda";
++  const fs::path sublayer = fs::temp_directory_path() / "materials.usda";
++  const fs::path texture  = fs::temp_directory_path() / "diffuse.png";
++  const std::wstring rootKey = normalizedPathKey(root);
++
++  if (!usdShouldTriggerReload(root, rootKey, /*watchDeps=*/false)) {
++    throw DxvkError("root must trigger");
++  }
++  if (usdShouldTriggerReload(sublayer, rootKey, /*watchDeps=*/false)) {
++    throw DxvkError("sublayer must NOT trigger");
++  }
++  if (usdShouldTriggerReload(texture, rootKey, /*watchDeps=*/false)) {
++    throw DxvkError("non-USD must NOT trigger");
++  }
++
++  // Must still match with differing case or path separators (e.g. an env var vs.
++  // FileWatch's canonicalized report).
++  std::wstring upperStr = root.wstring();
++  std::transform(upperStr.begin(), upperStr.end(), upperStr.begin(), ::towupper);
++  const fs::path differentCase(upperStr);
++  if (differentCase.native() == root.native()) {
++    throw DxvkError("test setup: case must actually differ");
++  }
++  if (!usdShouldTriggerReload(differentCase, rootKey, /*watchDeps=*/false)) {
++    throw DxvkError("differing case must still match the mod's own root file");
++  }
++
++  std::wstring slashStr = root.wstring();
++  std::replace(slashStr.begin(), slashStr.end(), L'\\', L'/');
++  const fs::path differentSeparators(slashStr);
++  if (!usdShouldTriggerReload(root, normalizedPathKey(differentSeparators), /*watchDeps=*/false)) {
++    throw DxvkError("differing path separators must still match the mod's own root file");
++  }
++
++  Logger::info("testWatchDependenciesOff passed");
++}
++
++// ─── Test: watchDependencies=true triggers on root and sublayer USD files ─────
++// With watchDependencies on, any .usda/.usdc/.usd change in a watched directory
++// (not just the root file) should trigger a reload. Non-USD files are still ignored.
++static void testWatchDependenciesOn() {
++  namespace fs = std::filesystem;
++  const fs::path root     = fs::temp_directory_path() / "mod.usda";
++  const fs::path sublayer = fs::temp_directory_path() / "materials.usda";
++  const fs::path other    = fs::temp_directory_path() / "unrelated.usdc";
++  const fs::path texture  = fs::temp_directory_path() / "diffuse.png";
++  const std::wstring rootKey = normalizedPathKey(root);
++
++  if (!usdShouldTriggerReload(root, rootKey, /*watchDeps=*/true)) {
++    throw DxvkError("root must trigger");
++  }
++  if (!usdShouldTriggerReload(sublayer, rootKey, /*watchDeps=*/true)) {
++    throw DxvkError("sublayer must trigger");
++  }
++  if (!usdShouldTriggerReload(other, rootKey, /*watchDeps=*/true)) {
++    throw DxvkError("other .usdc must trigger");
++  }
++  if (usdShouldTriggerReload(texture, rootKey, /*watchDeps=*/true)) {
++    throw DxvkError("non-USD must NOT trigger");
++  }
++
++  Logger::info("testWatchDependenciesOn passed");
++}
++
++// ─── Test: watchDependencies scopes reloads to this mod's actual dependencies ─
++// A change to a file that isn't in the mod's usedLayerPaths set (e.g. another
++// mod's sublayer, sharing the same watched directory) must not trigger a reload
++// once dependency data is available. Before any dependency data exists (nullptr),
++// behavior falls back to the old blanket trigger rather than missing a real one.
++static void testWatchDependenciesScopedToUsedLayers() {
++  namespace fs = std::filesystem;
++  const fs::path root         = fs::temp_directory_path() / "mod_scoped.usda";
++  const fs::path ownDep       = fs::temp_directory_path() / "own_sublayer.usda";
++  const fs::path otherModDep  = fs::temp_directory_path() / "other_mod_sublayer.usda";
++
++  // normalizedPathKey() canonicalizes, which requires the file to exist.
++  for (const auto& p : { root, ownDep, otherModDep }) {
++    std::ofstream(p) << "#usda 1.0\n";
++  }
++
++  const std::unordered_set<std::wstring> usedLayers = {
++    normalizedPathKey(root), normalizedPathKey(ownDep)
++  };
++  const std::wstring rootKey = normalizedPathKey(root);
++
++  if (!usdShouldTriggerReload(root, rootKey, /*watchDeps=*/true, &usedLayers)) {
++    throw DxvkError("mod's own root file always triggers");
++  }
++  if (!usdShouldTriggerReload(ownDep, rootKey, /*watchDeps=*/true, &usedLayers)) {
++    throw DxvkError("this mod's own dependency must trigger");
++  }
++  if (usdShouldTriggerReload(otherModDep, rootKey, /*watchDeps=*/true, &usedLayers)) {
++    throw DxvkError("another mod's sublayer must NOT trigger once scoped");
++  }
++  if (!usdShouldTriggerReload(otherModDep, rootKey, /*watchDeps=*/true, nullptr)) {
++    throw DxvkError("no dependency data yet must fall back to the broad trigger");
++  }
++
++  fs::remove(root);
++  fs::remove(ownDep);
++  fs::remove(otherModDep);
++  Logger::info("testWatchDependenciesScopedToUsedLayers passed");
++}
++
++// ─── Test: file-based reload with real file change ───────────────────────────
++// Writes a USD file, opens a stage, modifies the file, calls Reload(),
++// and verifies that the updated mat_ hash is dirtied.
++static void testFileReloadDirtiesChangedPrims() {
++  const std::string primName = "mat_CAFEBABE12345678";
++  const std::string initialContent = R"(#usda 1.0
++def "RootNode" {
++    def "Looks" {
++    }
++}
++)";
++  const std::string updatedContent = R"(#usda 1.0
++def "RootNode" {
++    def "Looks" {
++        def Material ")" + primName + R"(" {
++        }
++    }
++}
++)";
++
++  const std::string filePath = writeTempUsd(initialContent);
++
++  auto stage = pxr::UsdStage::Open(filePath, pxr::UsdStage::LoadAll);
++  if (!stage) {
++    throw DxvkError("stage should open cleanly");
++  }
++
++  ChangeCapture cap;
++  pxr::TfNotice::Register(pxr::TfWeakPtr<ChangeCapture>(&cap),
++                           &ChangeCapture::OnObjectsChanged, stage);
++  cap.reset();
++
++  // Modify the file on disk and reload.
++  writeTempUsd(updatedContent);  // overwrites the temp file
++  bumpMtimeForward(filePath);
++  stage->Reload();               // UsdObjectsChanged fires synchronously
++
++  // /RootNode/Looks already existed (empty) before the reload, so the new material must
++  // classify to its specific hash rather than degrading to a full-section rebuild.
++  const XXH64_hash_t expected = hashFromHexName("mat_", primName.c_str());
++  if (!cap.dirtyMatHashes.count(expected)) {
++    throw DxvkError("new material on disk should be dirtied");
++  }
++  if (cap.rebuildAllMats) {
++    throw DxvkError("reload with an already-existing Looks section must not force a full rebuild");
++  }
++
++  std::filesystem::remove(filePath);
++  Logger::info("testFileReloadDirtiesChangedPrims passed");
++}
++
++} // namespace dxvk
++
++int main() {
++  try {
++    dxvk::UsdMod::loadUsdPlugins();
++
++    dxvk::testStandaloneMatSurvivesHotReload();
++    dxvk::testDeletedMatErasedFromCache();
++    dxvk::testOrphanSweepOnPureDeletionReload();
++    dxvk::testModifyUndoCyclePreservesStandaloneMat();
++    dxvk::testSeedMaterialsFromReusesUnchangedMaterial();
++    dxvk::testSeedMaterialsFromExcludesDirtyHashes();
++    dxvk::testCollectMeshesUsingMaterials();
++    dxvk::testMultiplePathsForSameMaterialAreAllTracked();
++    dxvk::testCollectMaterialHashesUnderPathRejectsRootAndEmpty();
++    dxvk::testRootInfoOnlyNoticeDoesNotDirtyAllMaterials();
++    dxvk::testCollectMeshesUsingMaterialsAcrossDivergedMaterialPointers();
++    dxvk::testAddMeshPrim();
++    dxvk::testDeleteMeshPrimDirtiesHash();
++    dxvk::testEditShaderInputDirtiesMat();
++    dxvk::testExternalMaterialIsClassified();
++    dxvk::testMaterialNestedUnderMeshIsClassified();
++    dxvk::testDeletedExternalMaterialIsClassified();
++    dxvk::testDeletedMaterialAncestorIsClassified();
++    dxvk::testAddLightPrimDirtiesHash();
++    dxvk::testLegacySphereLightNaming();
++    dxvk::testEditGeomSubsetDirtiesMesh();
++    dxvk::testMultipleChangesInOneNotice();
++    dxvk::testNewLooksSectionTriggersRebuildAll();
++    dxvk::testAttributeOnSectionPrimIsIgnored();
++    dxvk::testRootNodeResyncTriggersFullRebuild();
++    dxvk::testDeleteMatPrimDirtiesHash();
++    dxvk::testBareRootNodeResyncTriggersFullRebuild();
++    dxvk::testUnrelatedResyncOutsideRootNodeIsIgnored();
++    dxvk::testPathOutsideKnownSectionsIsIgnored();
++    dxvk::testUnrecognizedPrimNameIsIgnored();
++    dxvk::testSublayerChangeDirtiesCorrectHash();
++    dxvk::testWatchDependenciesOff();
++    dxvk::testWatchDependenciesOn();
++    dxvk::testWatchDependenciesScopedToUsedLayers();
++    dxvk::testFileReloadDirtiesChangedPrims();
++
++    dxvk::Logger::info("All hot-reload tests passed.");
++    return 0;
++  } catch (const dxvk::DxvkError& e) {
++    dxvk::Logger::err(dxvk::str::format("Test failed: ", e.message()));
++    return 1;
++  } catch (const std::exception& e) {
++    dxvk::Logger::err(dxvk::str::format("Test failed: ", e.what()));
++    return 1;
++  } catch (...) {
++    dxvk::Logger::err("Test failed with unknown exception");
++    return 1;
++  }
++}
+diff --git a/tests/rtx/unit/test_memory_diagnostics.cpp b/tests/rtx/unit/test_memory_diagnostics.cpp
+new file mode 100644
+index 00000000..44c765cb
+--- /dev/null
++++ b/tests/rtx/unit/test_memory_diagnostics.cpp
+@@ -0,0 +1,159 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "../../../src/dxvk/rtx_render/rtx_memory_stats_data.h"
++
++#include <cstdlib>
++#include <fstream>
++#include <iostream>
++#include <iterator>
++#include <limits>
++
++#ifdef _WIN32
++#include <windows.h>
++#else
++#include <unistd.h>
++#endif
++
++int main(int argc, char** argv) {
++  using namespace dxvk;
++  using namespace std::chrono;
++  const auto check = [](bool passed, const char* message) {
++    if (!passed) {
++      std::cerr << message << '\n';
++      std::exit(1);
++    }
++  };
++  check(argc == 2, "A fixture directory is required");
++  const std::filesystem::path directory(argv[1]);
++  check(directory.filename() == "memory-fixture", "Only the dedicated fixture may be removed");
++  std::filesystem::remove_all(directory);
++  std::filesystem::create_directory(directory);
++  const MemoryLogThrottle::Clock::time_point start {};
++  MemoryLogThrottle warning;
++  MemoryLogThrottle otherWarning;
++  check(warning.record(start) == 0, "The first warning must log");
++  check(!warning.record(start + seconds(1)), "A repeated warning must be suppressed");
++  check(!warning.record(start + seconds(59)), "The limit lasts a full minute");
++  check(warning.suppressed() == 2, "A crash must retain pending suppressed repeats");
++  check(otherWarning.record(start + seconds(59)) == 0, "Warning kinds have independent limits");
++  check(warning.record(start + minutes(1)) == 2, "The next warning reports the suppressed count");
++  check(warning.suppressed() == 0, "An emitted count must no longer be pending");
++  check(warning.record(start + minutes(3)) == 0, "An idle interval must not invent repeats");
++
++  const OmmBudgetDrop budgetDrop {111, 222, 333, 444, 555};
++  check(budgetDrop.toLog(7) ==
++        "[RTX Opacity Micromap] Free Vidmem dropped below a limit. Setting budget to 0."
++        " Free VRAM: 111 bytes, Previous budget: 222 bytes, Used: 333 bytes, Hard free-VRAM limit: 444 bytes,"
++        " Soft free-VRAM limit: 555 bytes (suppressed repeats: 7)",
++        "A dropped budget must log free VRAM, the previous budget, use and both thresholds instead of zeros");
++
++  MemoryLogSchedule schedule(start);
++  check(!schedule.update(0, false, start), "Do not sample every frame");
++  check(schedule.update(1, true, start + minutes(1)), "Camera cuts must sample");
++  check(!schedule.update(1, true, start + minutes(1)), "A repeated present must not log the cut twice");
++  check(schedule.update(2, true, start + minutes(4)), "Every camera cut must sample");
++  check(schedule.update(3, false, start + minutes(5)), "Camera cuts must not postpone periodic samples");
++  check(!schedule.update(4, false, start + minutes(6)), "Periodic samples must not flood the log");
++  check(schedule.update(5, true, start + minutes(10)), "A periodic sample and cut share one sample");
++  check(!schedule.update(6, false, start + minutes(10)), "The coincident periodic sample must advance its timer");
++
++  MemorySnapshot snapshot;
++  snapshot.frame = 42;
++  snapshot.heapCount = 2;
++  snapshot.time = system_clock::from_time_t(1793491200);
++  snapshot.heaps[0] = {8589934592ULL, 9007199254740993ULL, true};
++  snapshot.heaps[1] = {17179869184ULL, 64};
++  snapshot.allocated = 4294967296ULL;
++  snapshot.used = 123;
++  snapshot.driverBudget = snapshot.heaps[0].budget;
++  snapshot.driverUsage = snapshot.heaps[0].usage;
++  snapshot.ommBudgetDroppedSuppressed = 2;
++  snapshot.ommAllocationDeniedSuppressed = 7;
++  snapshot.categories[MemorySnapshot::OpacityMicromap] = std::numeric_limits<uint64_t>::max();
++  const std::string json = snapshot.toJson("device_lost");
++  check(json.find("\"schema\":1,\"time_utc\":\"") != std::string::npos, "The schema and UTC timestamp must be present");
++  check(json.find("Z\",\"event\":\"device_lost\",\"frame\":42") != std::string::npos, "The event, UTC suffix and frame must be present");
++  check(json.find("{\"index\":1,\"budget\":17179869184,\"usage\":64,\"device_local\":false}") != std::string::npos, "Non-local heaps must be identified and retained");
++  check(json.find("\"device_local\":true}") != std::string::npos, "Local heaps must be identified");
++  check(json.find("\"driver\":{\"budget\":8589934592,\"usage\":9007199254740993}") != std::string::npos, "Device-local driver totals must match the VRAM API");
++  check(json.find("\"omm_suppressed\":{\"budget_dropped\":2,\"allocation_denied\":7}") != std::string::npos, "A crash snapshot must retain both pending warning counts");
++  check(json.find("9007199254740993") != std::string::npos, "Heap bytes must not round through a floating point number");
++  check(json.find("\"opacity_micromap\":18446744073709551615") != std::string::npos, "Category bytes must retain all 64 bits");
++  check(json.find("\"app_texture\":0") != std::string::npos, "Zero categories must be present");
++  check(json.find("\"reason\"") == std::string::npos, "The loss reason is optional");
++  const char* reason = "queue \"submit\"\\lost\n\r\t\b\f\x01";
++  const auto reasonJson = snapshot.toJson("device_lost", reason);
++  check(reasonJson.find("\"reason\":\"queue \\\"submit\\\"\\\\lost\\u000a\\u000d\\u0009\\u0008\\u000c\\u0001\"") != std::string::npos,
++        "A supplied loss reason must escape quotes, backslashes and every control byte");
++
++  const auto report = directory / "last_gpu_crash.json";
++#ifdef _WIN32
++  const auto processId = GetCurrentProcessId();
++#else
++  const auto processId = getpid();
++#endif
++  const auto temporary = directory / ("last_gpu_crash." + std::to_string(processId) + ".tmp");
++  const auto otherTemporary = directory / ("last_gpu_crash." + std::to_string(processId) + "9.tmp");
++  {
++    std::ofstream other(otherTemporary);
++    other << "another process's pending marker";
++  }
++  const auto read = [&] {
++    std::ifstream stream(report, std::ios::binary);
++    return std::string(std::istreambuf_iterator<char>(stream), {});
++  };
++  check(snapshot.writeCrashReport(directory, reason), "Write the first crash marker");
++  check(read() == reasonJson + '\n', "The log and marker must share their timestamp, memory fields and escaped reason");
++  check(read().find("\"frame\":42") != std::string::npos, "The marker must contain the snapshot");
++  snapshot.frame = 43;
++  check(snapshot.writeCrashReport(directory), "Replace the previous marker atomically");
++  const auto previous = read();
++  check(previous.find("\"frame\":43") != std::string::npos, "A second crash replaces the first marker");
++  check(!std::filesystem::exists(temporary), "A successful write must leave no temporary file");
++  std::filesystem::create_directory(temporary);
++  check(!snapshot.writeCrashReport(directory), "A blocked temporary file must fail without throwing");
++  check(read() == previous, "A failed write must preserve the previous marker");
++  check(!snapshot.writeCrashReport(directory / "missing"), "An unavailable log directory must fail without throwing");
++  std::filesystem::remove(temporary);
++#ifdef _WIN32
++  const HANDLE held = CreateFileW(report.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++  check(held != INVALID_HANDLE_VALUE, "Hold the previous marker open without delete sharing");
++  snapshot.frame = 44;
++  const auto beforeRetries = steady_clock::now();
++  check(!snapshot.writeCrashReport(directory, reason), "An exhausted sharing-violation retry must fail without throwing");
++  check(steady_clock::now() - beforeRetries >= milliseconds(20), "A held marker must receive two brief replacement retries");
++  check(read() == previous, "Exhausted replacement retries must preserve the previous marker");
++  check(!std::filesystem::exists(temporary), "A failed replacement must delete this process's temporary file");
++  check(CloseHandle(held) != 0, "Release the held marker");
++  check(snapshot.writeCrashReport(directory, reason), "A released marker must be replaceable");
++#endif
++  {
++    std::ifstream other(otherTemporary);
++    const std::string contents(std::istreambuf_iterator<char>(other), {});
++    check(contents == "another process's pending marker", "A write must not truncate or remove another process's temporary file");
++  }
++  std::filesystem::remove(otherTemporary);
++  std::filesystem::remove(report);
++  std::filesystem::remove(directory);
++  std::cout << "Memory diagnostics tests passed\n";
++  return 0;
++}
+diff --git a/tests/rtx/unit/test_particle_system_schema.cpp b/tests/rtx/unit/test_particle_system_schema.cpp
+new file mode 100644
+index 00000000..a2c1121a
+--- /dev/null
++++ b/tests/rtx/unit/test_particle_system_schema.cpp
+@@ -0,0 +1,143 @@
++/*
++* Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++
++#include <filesystem>
++#include <iostream>
++#include <set>
++#include <string>
++
++#include "../../../src/lssusd/usd_include_begin.h"
++#include <pxr/base/plug/registry.h>
++#include <pxr/usd/usd/primDefinition.h>
++#include <pxr/usd/usd/schemaRegistry.h>
++#include "../../../src/lssusd/usd_include_end.h"
++
++
++namespace {
++  std::set<std::string> getExpectedProperties() {
++    std::set<std::string> properties = {
++      "primvars:particle:minSpawnColor",
++      "primvars:particle:maxSpawnColor",
++      "primvars:particle:minTargetColor",
++      "primvars:particle:maxTargetColor",
++      "primvars:particle:minSpawnSize",
++      "primvars:particle:maxSpawnSize",
++      "primvars:particle:minTargetSize",
++      "primvars:particle:maxTargetSize",
++      "primvars:particle:minSpawnRotationSpeed",
++      "primvars:particle:maxSpawnRotationSpeed",
++      "primvars:particle:minTargetRotationSpeed",
++      "primvars:particle:maxTargetRotationSpeed",
++      "primvars:particle:attractorPosition",
++      "primvars:particle:attractorForce",
++      "primvars:particle:minTimeToLive",
++      "primvars:particle:maxTimeToLive",
++      "primvars:particle:initialVelocityFromNormal",
++      "primvars:particle:initialVelocityConeAngleDegrees",
++      "primvars:particle:turbulenceFrequency",
++      "primvars:particle:turbulenceForce",
++      "primvars:particle:motionTrailMultiplier",
++      "primvars:particle:spawnRatePerSecond",
++      "primvars:particle:collisionThickness",
++      "primvars:particle:collisionRestitution",
++      "primvars:particle:initialRotationDeviationDegrees",
++      "primvars:particle:spawnBurstDuration",
++      "primvars:particle:dragCoefficient",
++      "primvars:particle:attractorRadius",
++      "primvars:particle:gravityForce",
++      "primvars:particle:initialVelocityFromMotion",
++      "primvars:particle:maxNumParticles",
++      "primvars:particle:billboardType",
++      "primvars:particle:spriteSheetMode",
++      "primvars:particle:collisionMode",
++      "primvars:particle:randomFlipAxis",
++      "primvars:particle:hideEmitter",
++      "primvars:particle:enableMotionTrail",
++      "primvars:particle:useTurbulence",
++      "primvars:particle:alignParticlesToVelocity",
++      "primvars:particle:useSpawnTexcoords",
++      "primvars:particle:enableCollisionDetection",
++      "primvars:particle:restrictVelocityX",
++      "primvars:particle:restrictVelocityY",
++      "primvars:particle:restrictVelocityZ",
++    };
++
++    for (const char* channel : { "minColor", "maxColor" }) {
++      for (const char* suffix : { "times", "values" }) {
++        properties.emplace(std::string("primvars:particle:") + channel + ":" + suffix);
++      }
++    }
++
++    for (const char* channel : {
++      "minSize:x", "minSize:y", "maxSize:x", "maxSize:y",
++      "minRotationSpeed", "maxRotationSpeed",
++      "maxVelocity:x", "maxVelocity:y", "maxVelocity:z" }) {
++      for (const char* suffix : {
++        "times", "values", "inTangentTypes", "outTangentTypes",
++        "inTangentValues", "outTangentValues", "inTangentTimes",
++        "outTangentTimes", "tangentBrokens" }) {
++        properties.emplace(std::string("primvars:particle:") + channel + ":" + suffix);
++      }
++    }
++
++    return properties;
++  }
++}
++
++int main(int argc, char* argv[]) {
++  if (argc != 2) {
++    std::cerr << "Expected the RemixParticleSystem plugin DLL path.\n";
++    return -1;
++  }
++
++  const std::filesystem::path pluginDir = std::filesystem::path(argv[1]).parent_path() / "resources";
++  pxr::PlugRegistry::GetInstance().RegisterPlugins(pluginDir.string());
++
++  const pxr::UsdPrimDefinition* primDef = pxr::UsdSchemaRegistry::GetInstance()
++    .FindAppliedAPIPrimDefinition(pxr::TfToken("ParticleSystemAPI"));
++  if (primDef == nullptr) {
++    std::cerr << "ParticleSystemAPI prim definition was not registered from " << pluginDir << ".\n";
++    return -1;
++  }
++
++  const std::set<std::string> expected = getExpectedProperties();
++  std::set<std::string> actual;
++  for (const pxr::TfToken& property : primDef->GetPropertyNames()) {
++    actual.emplace(property.GetString());
++  }
++
++  if (actual != expected) {
++    for (const std::string& property : expected) {
++      if (actual.find(property) == actual.end()) {
++        std::cerr << "Missing schema property: " << property << "\n";
++      }
++    }
++    for (const std::string& property : actual) {
++      if (expected.find(property) == expected.end()) {
++        std::cerr << "Unexpected schema property: " << property << "\n";
++      }
++    }
++    return -1;
++  }
++
++  return 0;
++}
+diff --git a/tests/rtx/unit/test_rtx_option_dynamic.cpp b/tests/rtx/unit/test_rtx_option_dynamic.cpp
+new file mode 100644
+index 00000000..9cbf0296
+--- /dev/null
++++ b/tests/rtx/unit/test_rtx_option_dynamic.cpp
+@@ -0,0 +1,911 @@
++/*
++* Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "../../../src/dxvk/rtx_render/rtx_option.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_dynamic.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_layer.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_manager.h"
++#include "../../../src/util/config/config.h"
++
++#include "../../test_utils.h"
++
++#include <filesystem>
++#include <iterator>
++#include <fstream>
++#include <iostream>
++#include <sstream>
++#include <string>
++#include <atomic>
++#include <thread>
++
++namespace dxvk {
++  // Logger needed by some shared code used in this Unit Test.
++  Logger Logger::s_instance("test_rtx_option_dynamic.log");
++
++namespace rtx_option_dynamic_test {
++
++  #define TEST_ASSERT(condition, message) \
++    do { \
++      if (!(condition)) { \
++        std::ostringstream oss; \
++        oss << "FAILED: " << __FUNCTION__ << " line " << __LINE__ << ": " << message; \
++        throw DxvkError(oss.str()); \
++      } \
++    } while(0)
++
++  namespace fs = std::filesystem;
++
++  // The option registry cannot be reset, so every test uses its own namespace prefix.
++  DynamicOptionNamespace makeNamespace(const std::string& prefix, OptionType type, const std::string& defaultValue, uint32_t flags = 0) {
++    DynamicOptionNamespace ns;
++    ns.prefix = prefix;
++    ns.type = type;
++    ns.defaultValue = defaultValue;
++    ns.flags = flags;
++    ns.description = "Test namespace";
++    return ns;
++  }
++
++  fs::path confPath(const char* name) {
++    return fs::temp_directory_path() / (std::string("rtx_option_dynamic_") + name + ".conf");
++  }
++
++  void writeFile(const fs::path& path, const std::string& text) {
++    std::ofstream file(path, std::ios::trunc);
++    file << text;
++  }
++
++  std::string readFile(const fs::path& path) {
++    std::ifstream file(path);
++    std::stringstream ss;
++    ss << file.rdbuf();
++    return ss.str();
++  }
++
++  // Returns the value text for key in a saved config file, or "<missing>".
++  std::string savedValue(const fs::path& path, const std::string& key) {
++    std::istringstream lines(readFile(path));
++    std::string line;
++    const std::string linePrefix = key + " = ";
++    while (std::getline(lines, line)) {
++      if (line.compare(0, linePrefix.size(), linePrefix) == 0) {
++        return line.substr(linePrefix.size());
++      }
++    }
++    return "<missing>";
++  }
++
++  RtxOptionLayer* acquireFileLayer(const fs::path& path, uint32_t priority, const char* name) {
++    return RtxOptionManager::acquireLayer(path.string(), RtxOptionLayerKey { priority, name }, 1.0f, 0.1f, false, nullptr);
++  }
++
++  RtxOptionLayer* acquireConfigLayer(const Config& config, uint32_t priority, const char* name, float blendStrength = 1.0f) {
++    return RtxOptionManager::acquireLayer("", RtxOptionLayerKey { priority, name }, blendStrength, 0.1f, false, &config);
++  }
++
++  void resolve() {
++    RtxOptionManager::applyPendingValues(nullptr, false);
++  }
++
++  bool exists(const std::string& key) {
++    return RtxOptionManager::getDynamicValue(key).has_value();
++  }
++
++  template<typename T>
++  T getValue(const std::string& key) {
++    const std::optional<DynamicOptionValue> value = RtxOptionManager::getDynamicValue(key);
++    TEST_ASSERT(value.has_value(), "missing dynamic option " << key);
++    TEST_ASSERT(std::holds_alternative<T>(*value), "unexpected type for " << key);
++    return std::get<T>(*value);
++  }
++
++  void expectQueue(const std::string& key, const std::string& value, DynamicOptionResult expected) {
++    const DynamicOptionResult result = RtxOptionManager::queueDynamicValue(key, value);
++    TEST_ASSERT(result == expected, "queueDynamicValue(" << key << ", '" << value << "') returned " << static_cast<int>(result));
++  }
++
++  // ============================================================================
++
++  void registerBeforeInitialization() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.early.", OptionType::Float, "1")), "early registration");
++    expectQueue("rtx.dyntest.early.value", "2.5", DynamicOptionResult::Success);
++  }
++
++  void test_valuesQueuedBeforeInitialization() {
++    TEST_ASSERT(getValue<float>("rtx.dyntest.early.value") == 2.5f, "queued value applied at first drain");
++  }
++
++  void test_registrationValidation() {
++    const auto ns = makeNamespace("rtx.dyntest.reg.", OptionType::Int, "3");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(ns), "valid namespace");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(ns), "identical registration is idempotent");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.reg.", OptionType::Int, "4")), "conflicting definition");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.reg.sub.", OptionType::Int, "0")), "nested prefix overlaps");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.", OptionType::Int, "0")), "parent prefix overlaps");
++
++    for (const char* prefix : { "rtx.dyntest.noDot", "foo.dyntest.", "rtx..dyntest.", "rtx.dyn-test.", "rtx.", "rtx.dyntest..x." }) {
++      TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace(prefix, OptionType::Int, "0")), "malformed prefix " << prefix);
++    }
++
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.baddef1.", OptionType::Int, "abc")), "invalid int default");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.baddef2.", OptionType::Float, "nan")), "invalid float default");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.baddef3.", OptionType::Bool, "yes")), "invalid bool default");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.emptystr.", OptionType::String, "")), "empty string default");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.hashset.", OptionType::HashSet, "")), "unsupported type");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.noreset.", OptionType::Int, "0", RtxOptionFlags::NoReset)), "NoReset rejected");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.invalidates.", OptionType::Int, "0", RtxOptionFlags::InvalidatesDrawcallTranslation)), "InvalidatesDrawcallTranslation rejected");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.flags.", OptionType::Int, "0", RtxOptionFlags::UserSetting | RtxOptionFlags::NoSave)), "allowed flags");
++
++    // A namespace may not cover a compile-time option.
++    std::string staticPrefix;
++    const auto options = RtxOptionImpl::getGlobalOptionMap();
++    for (const auto& [hash, option] : *options) {
++      const std::string fullName = option->getFullName();
++      const size_t lastDot = fullName.rfind('.');
++      if (!option->isDynamic() && fullName.compare(0, 4, "rtx.") == 0 && lastDot > 4) {
++        staticPrefix = fullName.substr(0, lastDot + 1);
++        break;
++      }
++    }
++    TEST_ASSERT(!staticPrefix.empty(), "found a static option category");
++    TEST_ASSERT(!RtxOptionManager::registerDynamicNamespace(makeNamespace(staticPrefix, OptionType::Int, "0")), "prefix covering static option " << staticPrefix);
++  }
++
++  void test_grammar() {
++    const std::string p = "rtx.dyntest.gram.";
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(p + "f.", OptionType::Float, "0")), "float ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(p + "i.", OptionType::Int, "0")), "int ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(p + "b.", OptionType::Bool, "false")), "bool ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(p + "s.", OptionType::String, "")), "string ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(p + "v3.", OptionType::Vector3, "0, 0, 0")), "vector3 ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(p + "v2i.", OptionType::Vector2i, "0, 0")), "vector2i ns");
++
++    const auto ok = DynamicOptionResult::Success;
++    const auto bad = DynamicOptionResult::InvalidArgument;
++    for (const char* v : { "1.5", " 2.5 ", "+3", "1e3", "-0.25" }) { expectQueue(p + "f.x", v, ok); }
++    for (const char* v : { "1.5abc", "nan", "inf", "1e39", "", "0x10", "1..2" }) { expectQueue(p + "f.x", v, bad); }
++    for (const char* v : { "42", "-7", "+8" }) { expectQueue(p + "i.x", v, ok); }
++    for (const char* v : { "12abc", "1.5", "4294967296", "" }) { expectQueue(p + "i.x", v, bad); }
++    for (const char* v : { "True", "false", "1", "0" }) { expectQueue(p + "b.x", v, ok); }
++    for (const char* v : { "yes", "" }) { expectQueue(p + "b.x", v, bad); }
++    for (const char* v : { "hello", "with inner space", " lead", "trail ", "path/to.file" }) { expectQueue(p + "s.x", v, ok); }
++    for (const char* v : { "", "   ", "a\"b", "a\nb", "tab\tinside" }) { expectQueue(p + "s.x", v, bad); }
++    expectQueue(p + "s.padded", " \tpadded value  ", ok);
++    for (const char* v : { "1, 2, 3", "1,2,3" }) { expectQueue(p + "v3.x", v, ok); }
++    for (const char* v : { "1,2", "1,2,3,4", "5", "1,2,", "1,,3" }) { expectQueue(p + "v3.x", v, bad); }
++    expectQueue(p + "v2i.x", "3, -4", ok);
++    expectQueue(p + "v2i.x", "3.5, 4", bad);
++
++    expectQueue(p + "f.a.b", "1", ok);
++    for (const char* key : { "f.bad-key", "f..x", "f.x.", "f.sp ace", "f." }) { expectQueue(p + key, "1", bad); }
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(p + "f.", "1") == bad, "set on namespace prefix rejected");
++    TEST_ASSERT(RtxOptionManager::clearDynamicValue(p + "f.") == bad, "clear on namespace prefix rejected");
++    expectQueue("rtx.dyntest.nope.x", "1", DynamicOptionResult::NotOwned);
++    expectQueue("rtx.dyntest.GRAM.f.x", "1", DynamicOptionResult::NotOwned);
++
++    // Values apply in submission order.
++    expectQueue(p + "i.order", "1", ok);
++    expectQueue(p + "i.order", "2", ok);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(p + "i.order") == 2, "last queued value wins");
++    TEST_ASSERT(getValue<float>(p + "f.x") == -0.25f, "float value");
++    TEST_ASSERT(getValue<int32_t>(p + "i.x") == 8, "int value with plus sign");
++    TEST_ASSERT(getValue<bool>(p + "b.x") == false, "bool value");
++    TEST_ASSERT(getValue<std::string>(p + "s.x") == "path/to.file", "string value");
++    TEST_ASSERT(getValue<std::string>(p + "s.padded") == "padded value", "string value is trimmed");
++    TEST_ASSERT(getValue<Vector3>(p + "v3.x") == Vector3(1.0f, 2.0f, 3.0f), "vector3 value");
++    TEST_ASSERT(getValue<Vector2i>(p + "v2i.x") == Vector2i(3, -4), "vector2i value");
++    TEST_ASSERT(!exists(p + "f.bad-key"), "invalid key not created");
++  }
++
++  void test_roundTrip() {
++    struct Case { OptionType type; const char* name; const char* defaultValue; const char* value; };
++    const Case cases[] = {
++      { OptionType::Bool, "b", "false", "True" },
++      { OptionType::Int, "i", "0", "-12" },
++      { OptionType::Float, "f", "0", "0.1" },
++      { OptionType::String, "s", "", "hello_world.v1" },
++      { OptionType::Vector2, "v2", "0, 0", "1.5, -2" },
++      { OptionType::Vector3, "v3", "0, 0, 0", "1, 2.25, -3" },
++      { OptionType::Vector4, "v4", "0, 0, 0, 0", "0.5, 0.25, 0.125, 1" },
++      { OptionType::Vector2i, "v2i", "0, 0", "3, -4" },
++    };
++    const fs::path path = confPath("roundtrip");
++    std::string text;
++    for (const Case& c : cases) {
++      const std::string prefix = std::string("rtx.dyntest.rt.") + c.name + ".";
++      TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(prefix, c.type, c.defaultValue)), "round trip ns " << prefix);
++      text += prefix + "key = " + c.value + "\n";
++    }
++    writeFile(path, text);
++
++    RtxOptionLayer* layer = acquireFileLayer(path, 1100, "RoundTripLayer");
++    resolve();
++    TEST_ASSERT(getValue<bool>("rtx.dyntest.rt.b.key") == true, "bool loaded");
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.rt.i.key") == -12, "int loaded");
++    TEST_ASSERT(getValue<float>("rtx.dyntest.rt.f.key") == 0.1f, "float loaded");
++    TEST_ASSERT(getValue<std::string>("rtx.dyntest.rt.s.key") == "hello_world.v1", "string loaded");
++    TEST_ASSERT(getValue<Vector2>("rtx.dyntest.rt.v2.key") == Vector2(1.5f, -2.0f), "vector2 loaded");
++    TEST_ASSERT(getValue<Vector3>("rtx.dyntest.rt.v3.key") == Vector3(1.0f, 2.25f, -3.0f), "vector3 loaded");
++    TEST_ASSERT(getValue<Vector4>("rtx.dyntest.rt.v4.key") == Vector4(0.5f, 0.25f, 0.125f, 1.0f), "vector4 loaded");
++    TEST_ASSERT(getValue<Vector2i>("rtx.dyntest.rt.v2i.key") == Vector2i(3, -4), "vector2i loaded");
++
++    TEST_ASSERT(layer->save(), "first save");
++    std::vector<std::string> firstSave;
++    for (const Case& c : cases) {
++      firstSave.push_back(savedValue(path, std::string("rtx.dyntest.rt.") + c.name + ".key"));
++    }
++    TEST_ASSERT(layer->reload(), "reload");
++    resolve();
++    TEST_ASSERT(getValue<float>("rtx.dyntest.rt.f.key") == 0.1f, "float after reload");
++    TEST_ASSERT(getValue<Vector4>("rtx.dyntest.rt.v4.key") == Vector4(0.5f, 0.25f, 0.125f, 1.0f), "vector4 after reload");
++    TEST_ASSERT(layer->save(), "second save");
++    for (size_t i = 0; i < std::size(cases); ++i) {
++      const std::string key = std::string("rtx.dyntest.rt.") + cases[i].name + ".key";
++      TEST_ASSERT(firstSave[i] != "<missing>", "saved " << key);
++      TEST_ASSERT(savedValue(path, key) == firstSave[i], "stable text for " << key << ": " << firstSave[i]);
++    }
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.rt.i.key") == 0, "default after release");
++    fs::remove(path);
++  }
++
++  void test_layerPrecedence() {
++    const std::string key = "rtx.dyntest.prec.k";
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.prec.", OptionType::Float, "0")), "prec ns");
++    const fs::path weakPath = confPath("prec_weak");
++    const fs::path strongPath = confPath("prec_strong");
++    writeFile(weakPath, key + " = 1.0\n");
++    writeFile(strongPath, key + " = abc\n");
++
++    RtxOptionLayer* weak = acquireFileLayer(weakPath, 1200, "PrecWeak");
++    RtxOptionLayer* strong = acquireFileLayer(strongPath, 1300, "PrecStrong");
++    resolve();
++    TEST_ASSERT(getValue<float>(key) == 1.0f, "invalid strong value does not mask weak value");
++
++    writeFile(strongPath, key + " = 3.0\n");
++    strong->reload();
++    resolve();
++    TEST_ASSERT(getValue<float>(key) == 3.0f, "valid strong value wins");
++
++    writeFile(strongPath, key + " = bad\n");
++    strong->reload();
++    resolve();
++    TEST_ASSERT(getValue<float>(key) == 1.0f, "stale strong value withdrawn after invalid edit");
++
++    writeFile(strongPath, key + " = 3.0\n");
++    strong->reload();
++    resolve();
++    RtxOptionManager::releaseLayer(strong);
++    resolve();
++    TEST_ASSERT(getValue<float>(key) == 1.0f, "removing strong layer reveals weak value");
++    RtxOptionManager::releaseLayer(weak);
++    resolve();
++    TEST_ASSERT(getValue<float>(key) == 0.0f, "default after all layers removed");
++
++    // A zero-blend layer is still an opinion.
++    Config zeroBlend;
++    zeroBlend.setOption("rtx.dyntest.prec.z", std::string("5"));
++    RtxOptionLayer* zeroLayer = acquireConfigLayer(zeroBlend, 1250, "PrecZeroBlend", 0.0f);
++    resolve();
++    const auto withOpinions = RtxOptionManager::enumerateDynamicOptions("rtx.dyntest.prec.", true);
++    TEST_ASSERT(withOpinions.size() == 1 && withOpinions[0].suffix == "z", "zero-blend opinion counts");
++    TEST_ASSERT(getValue<float>("rtx.dyntest.prec.z") == 0.0f, "zero-blend layer does not contribute");
++    RtxOptionManager::releaseLayer(zeroLayer);
++    resolve();
++
++    fs::remove(weakPath);
++    fs::remove(strongPath);
++  }
++
++  void test_lateRegistration() {
++    const fs::path path = confPath("late");
++    writeFile(path, "rtx.dyntest.late.a = 4\nrtx.dyntest.late.b = oops\n");
++    RtxOptionLayer* layer = acquireFileLayer(path, 1400, "LateLayer");
++    resolve();
++    TEST_ASSERT(!exists("rtx.dyntest.late.a"), "no option before registration");
++
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.late.", OptionType::Int, "0")), "late ns");
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.late.a") == 4, "resolved synchronously on registration");
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.late.b") == 0, "rejected value falls back to default");
++    TEST_ASSERT(layer->isKeyRejected("rtx.dyntest.late.b"), "rejected key recorded");
++    TEST_ASSERT(!layer->hasUnsavedChanges(), "no false unsaved changes after replay");
++
++    // Disabled layers are not replayed; their keys appear once the layer is enabled.
++    const fs::path disabledPath = confPath("late_disabled");
++    writeFile(disabledPath, "rtx.dyntest.late2.c = 7\n");
++    RtxOptionLayer* disabled = acquireFileLayer(disabledPath, 1450, "LateDisabled");
++    disabled->requestEnabled(false);
++    resolve();
++    TEST_ASSERT(!disabled->isEnabled(), "layer disabled");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.late2.", OptionType::Int, "0")), "late2 ns");
++    TEST_ASSERT(!exists("rtx.dyntest.late2.c"), "disabled layer not replayed");
++    disabled->requestEnabled(true);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.late2.c") == 7, "value appears when layer is enabled");
++
++    RtxOptionManager::releaseLayer(disabled);
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++    fs::remove(disabledPath);
++  }
++
++  void test_discovery() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.disc.", OptionType::Int, "0")), "disc ns");
++    const fs::path path = confPath("discovery");
++    writeFile(path, "rtx.dyntest.disc.a = 1\n");
++    RtxOptionLayer* layer = acquireFileLayer(path, 1500, "DiscoveryLayer");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.disc.a") == 1, "discovered on acquire");
++    TEST_ASSERT(!exists("rtx.dyntest.disc.b"), "b not yet present");
++
++    writeFile(path, "rtx.dyntest.disc.a = 1\nrtx.dyntest.disc.b = 2\n");
++    layer->reload();
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.disc.b") == 2, "discovered on reload");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++  }
++
++  void test_preservation() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.pres.", OptionType::Int, "0")), "pres ns");
++    const fs::path path = confPath("preservation");
++    writeFile(path, "rtx.dyntest.unregistered.x = 1\nrtx.dyntest.pres.bad = notanumber\nrtx.dyntest.pres.good = 3\n");
++    RtxOptionLayer* layer = acquireFileLayer(path, 1600, "PreservationLayer");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.pres.good") == 3, "valid value loaded");
++    layer->onLayerValueChanged();
++    TEST_ASSERT(!layer->hasUnsavedChanges(), "unmanaged and rejected keys are not pending removals");
++
++    TEST_ASSERT(layer->save(), "save");
++    TEST_ASSERT(savedValue(path, "rtx.dyntest.unregistered.x") == "1", "unmanaged key preserved");
++    TEST_ASSERT(savedValue(path, "rtx.dyntest.pres.bad") == "notanumber", "rejected value preserved");
++    TEST_ASSERT(savedValue(path, "rtx.dyntest.pres.good") == "3", "managed value saved");
++
++    RtxOptionImpl* good = RtxOptionImpl::getOptionByFullName("rtx.dyntest.pres.good");
++    TEST_ASSERT(good != nullptr, "good option exists");
++    good->disableLayerValue(layer);
++    layer->onLayerValueChanged();
++    TEST_ASSERT(layer->hasUnsavedChanges(), "intentional removal is pending");
++    TEST_ASSERT(layer->save(), "save after removal");
++    TEST_ASSERT(savedValue(path, "rtx.dyntest.pres.good") == "<missing>", "intentional removal stays removed");
++    TEST_ASSERT(savedValue(path, "rtx.dyntest.pres.bad") == "notanumber", "rejected value still preserved");
++
++    writeFile(path, "rtx.dyntest.unregistered.x = 1\nrtx.dyntest.pres.bad = 5\n");
++    layer->reload();
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.pres.bad") == 5, "replacement value loaded");
++    TEST_ASSERT(!layer->isKeyRejected("rtx.dyntest.pres.bad"), "replacement clears rejection");
++    TEST_ASSERT(layer->save(), "save after replacement");
++    TEST_ASSERT(savedValue(path, "rtx.dyntest.pres.bad") == "5", "replacement saved");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++  }
++
++  void test_enumeration() {
++    const std::string prefix = "rtx.dyntest.enum.";
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(prefix, OptionType::String, "")), "enum ns");
++    Config config;
++    config.setOption(prefix + "b", std::string("two"));
++    config.setOption(prefix + "a", std::string("one"));
++    config.setOption(prefix + "c.d", std::string("three"));
++    config.setOption(prefix + "e", std::string("bad\"quote"));
++    RtxOptionLayer* layer = acquireConfigLayer(config, 1700, "EnumerationLayer");
++    resolve();
++
++    const auto all = RtxOptionManager::enumerateDynamicOptions(prefix, false);
++    TEST_ASSERT(all.size() == 4, "all options: " << all.size());
++    TEST_ASSERT(all[0].suffix == "a" && all[1].suffix == "b" && all[2].suffix == "c.d" && all[3].suffix == "e", "sorted by full name");
++    TEST_ASSERT(std::get<std::string>(all[0].value) == "one", "value copied");
++
++    const auto withOpinions = RtxOptionManager::enumerateDynamicOptions(prefix, true);
++    TEST_ASSERT(withOpinions.size() == 3, "rejected value is not an opinion: " << withOpinions.size());
++
++    auto copy = RtxOptionManager::enumerateDynamicOptions(prefix, false);
++    std::get<std::string>(copy[0].value) = "changed";
++    TEST_ASSERT(getValue<std::string>(prefix + "a") == "one", "enumeration returns copies");
++
++    for (const DynamicOptionEntry& entry : RtxOptionManager::enumerateDynamicOptions("rtx.", false)) {
++      const RtxOptionImpl* option = RtxOptionImpl::getOptionByFullName("rtx." + entry.suffix);
++      TEST_ASSERT(option != nullptr && option->isDynamic(), "only dynamic options enumerated: " << entry.suffix);
++    }
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++  }
++
++  void test_concurrentRegistration() {
++    Config config;
++    config.setOption("rtx.dyntest.conc.k", std::string("9"));
++    RtxOptionLayer* layer = acquireConfigLayer(config, 1800, "ConcurrencyLayer");
++    resolve();
++
++    const RtxOptionImpl::RtxOptionMapSnapshot held = RtxOptionImpl::getGlobalOptionMap();
++    const size_t heldSize = held->size();
++    std::thread worker([] {
++      RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.conc.", OptionType::Int, "0"));
++      RtxOptionManager::queueDynamicValue("rtx.dyntest.conc.q", "1");
++      RtxOptionManager::queueDynamicValue("rtx.dyntest.conc.q", "5");
++    });
++    // Iterating the held snapshot while the worker publishes must stay valid.
++    size_t iterated = 0;
++    for (const auto& entry : *held) {
++      iterated += entry.second != nullptr ? 1 : 0;
++    }
++    worker.join();
++
++    TEST_ASSERT(iterated == heldSize && held->size() == heldSize, "held snapshot is immutable");
++    const XXH64_hash_t hash = StringToXXH64(std::string("rtx.dyntest.conc.k"), 0);
++    TEST_ASSERT(held->find(hash) == held->end(), "held snapshot does not see new option");
++    TEST_ASSERT(RtxOptionImpl::getGlobalOptionMap()->count(hash) == 1, "new snapshot contains new option");
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.conc.k") == 9, "registration from another thread resolved");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.conc.q") == 5, "queued values applied in order");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++  }
++
++  void test_exactPrefixKey() {
++    const std::string prefix = "rtx.dyntest.exact.";
++    Config before;
++    before.setOption(prefix, std::string("1"));
++    before.setOption(prefix + "ok", std::string("2"));
++    RtxOptionLayer* beforeLayer = acquireConfigLayer(before, 2050, "ExactPrefixBefore");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace(prefix, OptionType::Int, "0")), "exact ns");
++    TEST_ASSERT(getValue<int32_t>(prefix + "ok") == 2, "valid key replayed");
++    TEST_ASSERT(RtxOptionImpl::getOptionByFullName(prefix) == nullptr, "prefix key not created on late registration");
++
++    Config after;
++    after.setOption(prefix, std::string("3"));
++    RtxOptionLayer* afterLayer = acquireConfigLayer(after, 2060, "ExactPrefixAfter");
++    resolve();
++    TEST_ASSERT(RtxOptionImpl::getOptionByFullName(prefix) == nullptr, "prefix key not created on discovery");
++
++    RtxOptionManager::releaseLayer(afterLayer);
++    RtxOptionManager::releaseLayer(beforeLayer);
++    resolve();
++  }
++
++  void test_registrationDuringResolve() {
++    static constexpr int kNamespaces = 16;
++    Config config;
++    for (int i = 0; i < kNamespaces; ++i) {
++      config.setOption("rtx.dyntest.overlap" + std::to_string(i) + ".k", std::to_string(i));
++    }
++    RtxOptionLayer* layer = acquireConfigLayer(config, 1850, "OverlapLayer");
++    resolve();
++
++    // Exercises registration replay (which marks options dirty) overlapping applyPendingValues; it cannot prove race freedom.
++    std::atomic<bool> done { false };
++    std::thread worker([&done] {
++      for (int i = 0; i < kNamespaces; ++i) {
++        RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.overlap" + std::to_string(i) + ".", OptionType::Int, "0"));
++      }
++      done = true;
++    });
++    while (!done) {
++      resolve();
++    }
++    worker.join();
++    resolve();
++
++    for (int i = 0; i < kNamespaces; ++i) {
++      TEST_ASSERT(getValue<int32_t>("rtx.dyntest.overlap" + std::to_string(i) + ".k") == i, "overlapping registration " << i);
++    }
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++  }
++
++  void test_disabledLayerEdits() {
++    const std::string key = "rtx.dyntest.disabled.k";
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.disabled.", OptionType::Int, "0")), "disabled ns");
++    Config config;
++    config.setOption(key, std::string("3"));
++    RtxOptionLayer* layer = acquireConfigLayer(config, 2100, "DisabledEditsLayer");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "layer value");
++
++    layer->requestEnabled(false);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 0, "disabled layer removed");
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(key, "5", layer) == DynamicOptionResult::NoTargetLayer, "set on disabled layer rejected");
++    TEST_ASSERT(RtxOptionManager::clearDynamicValue(key, layer) == DynamicOptionResult::NoTargetLayer, "clear on disabled layer rejected");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 0, "rejected edits do not apply");
++
++    layer->requestEnabled(true);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "re-enabled layer keeps its values");
++
++    // A queued edit is dropped if its layer is disabled before the drain.
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(key, "7", layer) == DynamicOptionResult::Success, "set on enabled layer");
++    layer->requestEnabled(false);
++    resolve();
++    layer->requestEnabled(true);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "edit queued before disabling is dropped");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++  }
++
++  void test_setAndClear() {
++    const std::string key = "rtx.dyntest.edit.k";
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.edit.", OptionType::Int, "0")), "edit ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.edituser.", OptionType::Int, "0", RtxOptionFlags::UserSetting)), "edituser ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.editnosave.", OptionType::Int, "0", RtxOptionFlags::NoSave)), "editnosave ns");
++
++    // Routing follows the namespace flags and the edit target, like RtxOption setters.
++    {
++      RtxOptionLayerTarget target(RtxOptionEditTarget::User);
++      TEST_ASSERT(RtxOptionManager::setDynamicValue(key, "5") == DynamicOptionResult::Success, "set flagless");
++      TEST_ASSERT(RtxOptionManager::setDynamicValue("rtx.dyntest.edituser.k", "6") == DynamicOptionResult::Success, "set UserSetting");
++      TEST_ASSERT(RtxOptionManager::setDynamicValue("rtx.dyntest.editnosave.k", "7") == DynamicOptionResult::Success, "set NoSave");
++    }
++    {
++      RtxOptionLayerTarget target(RtxOptionEditTarget::Derived);
++      TEST_ASSERT(RtxOptionManager::setDynamicValue("rtx.dyntest.edituser.derived", "8") == DynamicOptionResult::Success, "set derived UserSetting");
++    }
++    TEST_ASSERT(!exists(key), "set is deferred until applyPendingValues");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 5, "flagless value");
++    TEST_ASSERT(RtxOptionImpl::getOptionByFullName(key)->hasValueInLayer(RtxOptionLayer::getRtxConfLayer()), "flagless user edit goes to rtx.conf layer");
++    TEST_ASSERT(RtxOptionImpl::getOptionByFullName("rtx.dyntest.edituser.k")->hasValueInLayer(RtxOptionLayer::getUserLayer()), "UserSetting user edit goes to user layer");
++    TEST_ASSERT(RtxOptionImpl::getOptionByFullName("rtx.dyntest.editnosave.k")->hasValueInLayer(RtxOptionLayer::getDerivedLayer()), "NoSave goes to derived layer");
++    TEST_ASSERT(RtxOptionImpl::getOptionByFullName("rtx.dyntest.edituser.derived")->hasValueInLayer(RtxOptionLayer::getQualityLayer()), "UserSetting code edit goes to quality layer");
++
++    // Clear reveals the next layer down; requests apply in submission order.
++    Config weakConfig;
++    weakConfig.setOption(key, std::string("1"));
++    RtxOptionLayer* weak = acquireConfigLayer(weakConfig, 1900, "EditWeak");
++    RtxOptionLayer* strong = acquireConfigLayer(Config(), 1950, "EditStrong");
++    RtxOptionManager::clearDynamicValue(key, RtxOptionLayer::getRtxConfLayer());
++    RtxOptionManager::setDynamicValue(key, "7", strong);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 7, "strong value");
++    RtxOptionManager::setDynamicValue(key, "2", strong);
++    RtxOptionManager::clearDynamicValue(key, strong);
++    RtxOptionManager::setDynamicValue(key, "3", strong);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "set, clear, set applies in order");
++    RtxOptionManager::setDynamicValue(key, "4", strong);
++    RtxOptionManager::clearDynamicValue(key, strong);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 1, "clear reveals weaker layer");
++
++    // A clear queued after a set that creates the option in the same drain removes the value.
++    RtxOptionManager::setDynamicValue("rtx.dyntest.edit.fresh", "6", strong);
++    RtxOptionManager::clearDynamicValue("rtx.dyntest.edit.fresh", strong);
++    resolve();
++    TEST_ASSERT(!RtxOptionManager::getDynamicValue("rtx.dyntest.edit.fresh", true).has_value(), "clear of a new option in the same drain");
++
++    // API writes share the queue.
++    expectQueue(key, "9", DynamicOptionResult::Success);
++    RtxOptionManager::clearDynamicValue(key, RtxOptionLayer::getUserLayer());
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 1, "clear after SetConfigVariable applies in order");
++
++    // A request for a layer released before the drain is dropped safely.
++    RtxOptionLayer* temporary = acquireConfigLayer(Config(), 1990, "EditTemporary");
++    RtxOptionManager::setDynamicValue(key, "11", temporary);
++    RtxOptionManager::releaseLayer(temporary);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 1, "request for released layer dropped");
++
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(key, "abc") == DynamicOptionResult::InvalidArgument, "invalid value rejected");
++    TEST_ASSERT(RtxOptionManager::clearDynamicValue("rtx.dyntest.edit.bad-key") == DynamicOptionResult::InvalidArgument, "invalid key rejected");
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(key, "1", RtxOptionLayer::getDefaultLayer()) == DynamicOptionResult::NoTargetLayer, "default layer not editable");
++
++    RtxOptionManager::releaseLayer(strong);
++    RtxOptionManager::releaseLayer(weak);
++    resolve();
++  }
++
++  void test_clearRejectedValue() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.clearbad.", OptionType::Int, "0")), "clearbad ns");
++    const std::string key = "rtx.dyntest.clearbad.k";
++    const fs::path path = confPath("clear_rejected");
++    writeFile(path, key + " = notanumber\n");
++    RtxOptionLayer* layer = acquireFileLayer(path, 2000, "ClearRejectedLayer");
++    resolve();
++    TEST_ASSERT(layer->isKeyRejected(key), "value rejected");
++    TEST_ASSERT(getValue<int32_t>(key) == 0, "default value returned");
++    TEST_ASSERT(!RtxOptionManager::getDynamicValue(key, true).has_value(), "no opinion for rejected value");
++
++    RtxOptionManager::clearDynamicValue(key, layer);
++    resolve();
++    TEST_ASSERT(!layer->isKeyRejected(key), "clear discards rejection");
++    TEST_ASSERT(layer->hasUnsavedChanges(), "cleared line is a pending removal");
++    TEST_ASSERT(layer->save(), "save");
++    TEST_ASSERT(savedValue(path, key) == "<missing>", "cleared rejected line removed on save");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++  }
++
++  void test_stringTrimFromFile() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.strtrim.", OptionType::String, "")), "strtrim ns");
++    const std::string key = "rtx.dyntest.strtrim.k";
++    const fs::path path = confPath("string_trim");
++    // The config parser keeps trailing whitespace.
++    writeFile(path, key + " = Ultra  \n");
++    RtxOptionLayer* layer = acquireFileLayer(path, 2150, "StringTrimLayer");
++    resolve();
++    TEST_ASSERT(!layer->isKeyRejected(key), "trailing whitespace accepted");
++    TEST_ASSERT(getValue<std::string>(key) == "Ultra", "value trimmed");
++    TEST_ASSERT(layer->save(), "save");
++    TEST_ASSERT(savedValue(path, key) == "Ultra", "trimmed value saved");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++  }
++
++  void test_queuedEditsFollowLayerGeneration() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.gen.", OptionType::Int, "0")), "gen ns");
++    const std::string key = "rtx.dyntest.gen.k";
++    const fs::path path = confPath("generation");
++    writeFile(path, key + " = 3\n");
++    RtxOptionLayer* layer = acquireFileLayer(path, 2200, "GenerationLayer");
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "disk value");
++
++    // Reload discards edits queued before it.
++    TEST_ASSERT(RtxOptionManager::setDynamicValue(key, "7", layer) == DynamicOptionResult::Success, "queue set");
++    layer->reload();
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "set queued before reload dropped");
++    layer->onLayerValueChanged();
++    TEST_ASSERT(!layer->hasUnsavedChanges(), "layer not dirty after reload");
++
++    TEST_ASSERT(RtxOptionManager::clearDynamicValue(key, layer) == DynamicOptionResult::Success, "queue clear");
++    layer->reload();
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 3, "clear queued before reload dropped");
++
++    // Requests from before and after a reload in one drain: only the newer one applies.
++    RtxOptionManager::setDynamicValue(key, "8", layer);
++    layer->reload();
++    RtxOptionManager::setDynamicValue(key, "9", layer);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 9, "edit queued after reload applies");
++
++    // Clearing the layer also discards queued edits.
++    RtxOptionManager::setDynamicValue(key, "5", layer);
++    layer->removeFromAllOptions();
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(key) == 0, "set queued before clear dropped");
++    layer->reload();
++    resolve();
++
++    // Edits never reach a replacement layer with the same key.
++    const RtxOptionLayerKey replaceKey { 2250, "GenerationReplace" };
++    Config original;
++    original.setOption("rtx.dyntest.gen.r", std::string("1"));
++    Config replacementConfig;
++    replacementConfig.setOption("rtx.dyntest.gen.r", std::string("2"));
++    RtxOptionLayer* first = RtxOptionManager::acquireLayer("", replaceKey, 1.0f, 0.1f, false, &original);
++    resolve();
++    RtxOptionManager::setDynamicValue("rtx.dyntest.gen.r", "7", first);
++    RtxOptionManager::releaseLayer(first);
++    RtxOptionLayer* replacement = RtxOptionManager::acquireLayer("", replaceKey, 1.0f, 0.1f, false, &replacementConfig);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.gen.r") == 2, "set for released layer does not reach replacement");
++    RtxOptionManager::clearDynamicValue("rtx.dyntest.gen.r", replacement);
++    RtxOptionManager::releaseLayer(replacement);
++    replacement = RtxOptionManager::acquireLayer("", replaceKey, 1.0f, 0.1f, false, &replacementConfig);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>("rtx.dyntest.gen.r") == 2, "clear for released layer does not reach replacement");
++    RtxOptionManager::releaseLayer(replacement);
++
++    // SetConfigVariable edits are bound to the user layer's generation.
++    const std::string userKey = "rtx.dyntest.gen.user";
++    expectQueue(userKey, "4", DynamicOptionResult::Success);
++    RtxOptionLayer::getUserLayer()->removeFromAllOptions();
++    resolve();
++    TEST_ASSERT(!RtxOptionManager::getDynamicValue(userKey, true).has_value(), "API edit queued before user layer reset dropped");
++    expectQueue(userKey, "5", DynamicOptionResult::Success);
++    resolve();
++    TEST_ASSERT(getValue<int32_t>(userKey) == 5, "API edit after reset applies");
++
++    RtxOptionManager::releaseLayer(layer);
++    resolve();
++    fs::remove(path);
++  }
++
++  void test_migrationClearsRejection() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.migrate.", OptionType::Int, "0")), "migrate ns");
++    const std::string key = "rtx.dyntest.migrate.k";
++    const fs::path path = confPath("migration");
++    writeFile(path, key + " = notanumber\n");
++    RtxOptionLayer* dest = acquireFileLayer(path, 2300, "MigrationDest");
++    Config sourceConfig;
++    sourceConfig.setOption(key, std::string("5"));
++    RtxOptionLayer* source = acquireConfigLayer(sourceConfig, 2350, "MigrationSource");
++    resolve();
++    TEST_ASSERT(dest->isKeyRejected(key), "destination value rejected");
++
++    RtxOptionImpl* option = RtxOptionImpl::getOptionByFullName(key);
++    option->moveLayerValue(source, dest);
++    resolve();
++    TEST_ASSERT(!dest->isKeyRejected(key), "migrated value clears rejection");
++    TEST_ASSERT(getValue<int32_t>(key) == 5, "migrated value");
++    TEST_ASSERT(dest->save(), "save");
++    TEST_ASSERT(savedValue(path, key) == "5", "migrated value saved over rejected line");
++
++    option->disableLayerValue(dest);
++    dest->onLayerValueChanged();
++    TEST_ASSERT(dest->hasUnsavedChanges(), "removal is pending");
++    TEST_ASSERT(dest->save(), "save after removal");
++    TEST_ASSERT(savedValue(path, key) == "<missing>", "removed value not saved");
++    dest->reload();
++    resolve();
++    TEST_ASSERT(!RtxOptionManager::getDynamicValue(key, true).has_value(), "reload does not restore the rejected line");
++
++    // migrateValuesTo clears the rejection only when its transform installs a value.
++    const std::string fromKey = "rtx.dyntest.migrate.from";
++    const std::string toKey = "rtx.dyntest.migrate.to";
++    writeFile(path, fromKey + " = 4\n" + toKey + " = bad\n");
++    dest->reload();
++    resolve();
++    RtxOptionImpl* from = RtxOptionImpl::getOptionByFullName(fromKey);
++    RtxOptionImpl* to = RtxOptionImpl::getOptionByFullName(toKey);
++    TEST_ASSERT(from != nullptr && to != nullptr && dest->isKeyRejected(toKey), "migration options");
++    from->migrateValuesTo(to, [](const GenericValue&, GenericValue&, bool) { return false; });
++    TEST_ASSERT(dest->isKeyRejected(toKey), "failed transform keeps rejection");
++    from->migrateValuesTo(to, [](const GenericValue& src, GenericValue& dst, bool) { dst.i = src.i; return true; });
++    resolve();
++    TEST_ASSERT(!dest->isKeyRejected(toKey), "successful transform clears rejection");
++    TEST_ASSERT(getValue<int32_t>(toKey) == 4, "transformed value");
++
++    RtxOptionManager::releaseLayer(source);
++    RtxOptionManager::releaseLayer(dest);
++    resolve();
++    fs::remove(path);
++  }
++
++  void test_redundantDynamicValues() {
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.dupe.", OptionType::Bool, "true")), "dupe ns");
++    TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(makeNamespace("rtx.dyntest.dupef.", OptionType::Float, "1")), "dupef ns");
++    const std::string p = "rtx.dyntest.dupe.";
++    Config strongConfig;
++    for (const char* name : { "onlyDefault", "inactiveBelow", "activeEqual", "activeDifferent" }) {
++      strongConfig.setOption(p + name, std::string("True"));
++    }
++    strongConfig.setOption("rtx.dyntest.dupef.onlyDefault", std::string("1"));
++    Config inactiveConfig;
++    inactiveConfig.setOption(p + "inactiveBelow", std::string("True"));
++    Config activeConfig;
++    activeConfig.setOption(p + "activeEqual", std::string("True"));
++    activeConfig.setOption(p + "activeDifferent", std::string("False"));
++    RtxOptionLayer* inactive = acquireConfigLayer(inactiveConfig, 2400, "DupeInactive", 0.05f);
++    RtxOptionLayer* active = acquireConfigLayer(activeConfig, 2410, "DupeActive");
++    RtxOptionLayer* strong = acquireConfigLayer(strongConfig, 2420, "DupeStrong");
++    resolve();
++
++    Config changed;
++    RtxOptionManager::writeOptions(changed, strong, true);
++    TEST_ASSERT(changed.findOption((p + "onlyDefault").c_str()), "value equal to the default is a change");
++    TEST_ASSERT(!changed.findOption((p + "activeEqual").c_str()), "value equal to an active weaker value is not a change");
++
++    RtxOptionManager::removeRedundantLayerValues(strong);
++    auto inStrong = [strong](const std::string& key) {
++      return RtxOptionImpl::getOptionByFullName(key)->hasValueInLayer(strong);
++    };
++    TEST_ASSERT(inStrong(p + "onlyDefault"), "value equal to the default kept");
++    TEST_ASSERT(inStrong(p + "inactiveBelow"), "value equal to an inactive weaker value kept");
++    TEST_ASSERT(!inStrong(p + "activeEqual"), "value equal to an active weaker value removed");
++    TEST_ASSERT(inStrong(p + "activeDifferent"), "value different from an active weaker value kept");
++    TEST_ASSERT(inStrong("rtx.dyntest.dupef.onlyDefault"), "float value equal to the default kept");
++
++    RtxOptionManager::releaseLayer(strong);
++    RtxOptionManager::releaseLayer(active);
++    RtxOptionManager::releaseLayer(inactive);
++    resolve();
++  }
++
++  void test_metadataLifetime() {
++    {
++      std::string prefix = std::string("rtx.dyntest.") + "life.";
++      DynamicOptionNamespace ns = makeNamespace(prefix, OptionType::String, "");
++      ns.description = std::string("Lifetime ") + "description";
++      TEST_ASSERT(RtxOptionManager::registerDynamicNamespace(ns), "life ns");
++      std::string key = prefix + "name";
++      std::string value = "value";
++      expectQueue(key, value, DynamicOptionResult::Success);
++    }
++    resolve();
++    const RtxOptionImpl* option = RtxOptionImpl::getOptionByFullName("rtx.dyntest.life.name");
++    TEST_ASSERT(option != nullptr, "option exists");
++    TEST_ASSERT(std::string(option->getName()) == "name", "owned name");
++    TEST_ASSERT(std::string(option->getDescription()) == "Lifetime description", "owned description");
++    TEST_ASSERT(option->getFullName() == "rtx.dyntest.life.name", "owned category");
++    TEST_ASSERT(getValue<std::string>("rtx.dyntest.life.name") == "value", "owned value");
++  }
++
++  void test_documentationExcludesDynamicOptions() {
++    const fs::path path = fs::temp_directory_path() / "rtx_option_dynamic_RtxOptions.md";
++    TEST_ASSERT(RtxOptionManager::writeMarkdownDocumentation(path.string().c_str()), "documentation written");
++    const std::string text = readFile(path);
++    TEST_ASSERT(text.find("rtx.dyntest") == std::string::npos, "dynamic options excluded from RtxOptions.md");
++    TEST_ASSERT(text.find("| RTX Option |") != std::string::npos, "documentation has option tables");
++    fs::remove(path);
++  }
++
++  void runAllTests() {
++    std::cout << "Running dynamic RtxOption tests" << std::endl;
++
++    registerBeforeInitialization();
++
++    RtxOptionLayer::initializeSystemLayers();
++    RtxOptionImpl::setInitialized(true);
++    RtxOptionManager::markOptionsWithCallbacksDirty();
++    RtxOptionManager::applyPendingValues(nullptr, true);
++
++    test_valuesQueuedBeforeInitialization();
++    test_registrationValidation();
++    test_grammar();
++    test_roundTrip();
++    test_layerPrecedence();
++    test_lateRegistration();
++    test_discovery();
++    test_preservation();
++    test_enumeration();
++    test_concurrentRegistration();
++    test_exactPrefixKey();
++    test_registrationDuringResolve();
++    test_disabledLayerEdits();
++    test_setAndClear();
++    test_clearRejectedValue();
++    test_stringTrimFromFile();
++    test_queuedEditsFollowLayerGeneration();
++    test_migrationClearsRejection();
++    test_redundantDynamicValues();
++    test_metadataLifetime();
++    test_documentationExcludesDynamicOptions();
++
++    std::cout << "All dynamic RtxOption tests PASSED" << std::endl;
++  }
++
++}  // namespace rtx_option_dynamic_test
++}  // namespace dxvk
++
++int main() {
++  try {
++    dxvk::rtx_option_dynamic_test::runAllTests();
++  } catch (const dxvk::DxvkError& error) {
++    std::cerr << "TEST FAILED: " << error.message() << std::endl;
++    return -1;
++  } catch (const std::exception& e) {
++    std::cerr << "TEST FAILED with exception: " << e.what() << std::endl;
++    return -1;
++  }
++  return 0;
++}

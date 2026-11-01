@@ -134,7 +134,7 @@ TEST_CASE("activate: both user config lists remain last and ordinary empty value
 TEST_CASE("activate: the package's layers are listed as short copies, whatever its payload folder (R3-017, ADR 0036)") {
   auto remix = base_remix();
   remix.dxvk_conf_layers = {"config/dxvk/01_classic_remix_defaults.conf", "config/dxvk/02_compiler_threads.conf"};
-  const auto amd = [] { return std::vector<unsigned>{0x1002}; };
+  const auto amd = [] { return std::vector<performance::Adapter>{{0x1002, "AMD", 16ull << 30}}; };
   // The published package's folder (the list was 275 characters there without an NVIDIA GPU), and a far
   // longer one: the list is the same.
   for (const std::string& payload : {std::string("native-loader/packages/gmod-rtx-remix/0.0.0-dev.20261030022927+8beef27e_21"),
@@ -142,7 +142,7 @@ TEST_CASE("activate: the package's layers are listed as short copies, whatever i
     const auto p = activate::plan(with_runtime(payload, remix), config::Config{}, none(), L"gmod.exe", uhd, amd);
     REQUIRE(env_value(p, "DXVK_CONFIG_FILE") != nullptr);
     CHECK(*env_value(p, "DXVK_CONFIG_FILE") ==
-          "native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,native-loader/remix/non-nvidia.conf,dxvk.conf");
+          "native-loader/remix/non-nvidia.conf,native-loader/remix/dxvk-1.conf,native-loader/remix/dxvk-2.conf,dxvk.conf");
     CHECK(p.notes.empty());
     REQUIRE(p.layer_copies.size() == 2);
     CHECK(p.layer_copies[1].source == payload + "/config/dxvk/02_compiler_threads.conf");
@@ -264,15 +264,19 @@ TEST_CASE("activate: without an NVIDIA GPU Remix chooses its own preset, from a 
   auto remix = base_remix();
   remix.dxvk_conf_layers = {"config/dxvk/01_classic_remix_defaults.conf"};
   const auto gen = with_runtime("p", remix);
-  const auto gpus = [](std::vector<unsigned> vendors) { return [vendors] { return vendors; }; };
+  const auto gpus = [](std::vector<unsigned> vendors) { return [vendors] {
+    std::vector<performance::Adapter> adapters;
+    for (unsigned vendor : vendors) adapters.push_back({vendor, "RTX 5090", 32ull << 30});
+    return adapters;
+  }; };
   const std::string classic = "native-loader/remix/dxvk-1.conf";  // the copy of the package's classic layer
 
   // An AMD (or Intel) GPU alone: the loader's layer goes above the package's, below the user's dxvk.conf.
   auto p = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd, gpus({0x1002}));
   CHECK(p.non_nvidia);
   REQUIRE(env_value(p, "DXVK_CONFIG_FILE") != nullptr);
-  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == classic + ",native-loader/remix/non-nvidia.conf,dxvk.conf");
-  CHECK((p.dxvk_layers == std::vector<std::string>{classic, "native-loader/remix/non-nvidia.conf", "dxvk.conf"}));
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "native-loader/remix/non-nvidia.conf," + classic + ",dxvk.conf");
+  CHECK((p.dxvk_layers == std::vector<std::string>{"native-loader/remix/non-nvidia.conf", classic, "dxvk.conf"}));
   CHECK(env_value(p, "DXVK_RTX_CONFIG_FILE") == nullptr);  // the rtx.conf chain is not touched
 
   // An NVIDIA GPU anywhere, no adapter read, or no reader: nothing changes.
@@ -295,7 +299,7 @@ TEST_CASE("activate: without an NVIDIA GPU Remix chooses its own preset, from a 
   config::Config off;
   off.remix_enabled = false;
   bool asked = false;
-  activate::plan(gen, off, none(), L"gmod.exe", uhd, [&asked] { asked = true; return std::vector<unsigned>{}; });
+  activate::plan(gen, off, none(), L"gmod.exe", uhd, [&asked] { asked = true; return std::vector<performance::Adapter>{}; });
   CHECK(!asked);
 }
 
@@ -327,4 +331,210 @@ TEST_CASE("activate: the runtime's late bare-name DLLs load with it (ADR 0030)")
   config::Config off;
   off.remix_enabled = false;
   CHECK(activate::plan(gen, off, none(), L"gmod.exe", uhd).preload.empty());
+}
+
+TEST_CASE("activate: tier and diagnostic layer order for all policy combinations") {
+  const auto nvidia = [] { return std::vector<performance::Adapter>{{activate::kNvidia, "RTX 5090", 32ull << 30}}; };
+  const auto amd = [] { return std::vector<performance::Adapter>{{0x1002, "AMD", 8ull << 30}}; };
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/dxvk/classic.conf", "config/dxvk/compiler.conf"};
+  auto generation = with_runtime("payload", remix);
+  for (const char* tier : {"medium", "low"}) {
+    journal::File file;
+    file.package = "rtx-remix-runtime";
+    file.path = "payload/config/dxvk-tiers/" + std::string(tier) + ".conf";
+    generation.files.push_back(file);
+  }
+  for (const auto tier : {config::PerformanceTier::automatic, config::PerformanceTier::high,
+                          config::PerformanceTier::medium, config::PerformanceTier::low}) {
+    for (const auto mode : {config::GpuCrashDumps::off, config::GpuCrashDumps::next_start, config::GpuCrashDumps::always}) {
+      for (bool is_nvidia : {false, true}) {
+        config::Config config;
+        config.performance_tier = tier;
+        config.gpu_crash_dumps = mode;
+        const auto p = activate::plan(generation, config, none(), L"gmod.exe", uhd,
+                                       is_nvidia ? activate::GpuGet(nvidia) : activate::GpuGet(amd), {false, "C:/game/native-loader/logs/gpu/", {}});
+        std::vector<std::string> expected;
+        const bool tier_layer = is_nvidia && (tier == config::PerformanceTier::medium || tier == config::PerformanceTier::low);
+        if (tier_layer) expected.emplace_back(activate::kTierLayer);
+        if (!is_nvidia) expected.emplace_back(activate::kNonNvidiaLayer);
+        expected.insert(expected.end(), {"native-loader/remix/dxvk-1.conf", "native-loader/remix/dxvk-2.conf"});
+        if (mode != config::GpuCrashDumps::off) expected.emplace_back(gpu_diagnostics::kLayer);
+        expected.emplace_back("dxvk.conf");
+        CHECK(p.dxvk_layers == expected);
+        REQUIRE(env_value(p, "DXVK_CONFIG_FILE"));
+        CHECK(env_value(p, "DXVK_CONFIG_FILE")->size() < 260);
+        CHECK(p.performance_tier.layer == (tier_layer ? std::string(activate::kTierLayer) : ""));
+        CHECK(p.low_tier_fallback == false);
+        CHECK(p.layer_copies.size() == (tier_layer ? 3u : 2u));
+        if (tier_layer) CHECK(p.layer_copies.back().source == "payload/config/dxvk-tiers/" + std::string(performance::name(p.performance_tier.tier)) + ".conf");
+        if (tier_layer) {
+          auto missing = p;
+          const auto source = missing.layer_copies.back().source;
+          activate::use_sources(missing, {std::string(activate::kTierLayer)});
+          CHECK(missing.performance_tier.layer == source);
+          CHECK(missing.dxvk_layers.front() == source);
+        }
+        CHECK((env_value(p, std::string(gpu_diagnostics::kDumpVariable)) != nullptr) == p.gpu_crash_dumps);
+      }
+    }
+  }
+}
+
+TEST_CASE("activate: old packages use the low fallback and no medium tier layer") {
+  const auto nvidia = [] { return std::vector<performance::Adapter>{{activate::kNvidia, "RTX 4060 Ti", 16ull << 30}}; };
+  const auto gen = with_runtime("payload", base_remix());
+  auto config = config::Config{};
+  auto p = activate::plan(gen, config, none(), L"gmod.exe", uhd, nvidia);
+  CHECK(p.low_tier_fallback);
+  CHECK(p.performance_tier.source == "fallback");
+  CHECK(p.performance_tier.layer == activate::kTierLayer);
+  CHECK(p.layer_copies.empty());
+  CHECK((p.dxvk_layers == std::vector<std::string>{std::string(activate::kTierLayer), "dxvk.conf"}));
+  const auto fallback = activate::low_tier_layer_text();
+  for (const char* line : {"rtx.lowMemoryGpu = True", "rtx.opacityMicromap.cache.maxBudgetSizeMB = 512", "rtx.skyProbeSide = 1024",
+                          "rtx.volumetrics.froxelGridResolutionScale = 8", "rtx.terrainBaker.cascadeMap.levelResolution = 2048"})
+    CHECK(fallback.find(line) != std::string::npos);
+  CHECK(fallback.find("dxvk.") == std::string::npos);
+  config.performance_tier = config::PerformanceTier::medium;
+  p = activate::plan(gen, config, none(), L"gmod.exe", uhd, nvidia);
+  CHECK(!p.low_tier_fallback && p.performance_tier.layer.empty());
+  CHECK(env_value(p, "DXVK_CONFIG_FILE") == nullptr);
+  CHECK(p.performance_tier.reason.find("no medium tier file") != std::string::npos);
+
+  // A different package's record cannot supply the runtime's tier file.
+  auto foreign = gen;
+  journal::File file;
+  file.package = "other";
+  file.path = "payload/config/dxvk-tiers/low.conf";
+  foreign.files.push_back(file);
+  config.performance_tier = config::PerformanceTier::low;
+  CHECK(activate::plan(foreign, config, none(), L"gmod.exe", uhd, nvidia).low_tier_fallback);
+}
+
+TEST_CASE("activate: GPU query failure honors config tiers and keeps config as the source") {
+  const auto gen = with_runtime("payload", base_remix());
+  config::Config config;
+  config.performance_tier = config::PerformanceTier::low;
+  for (const auto& gpus : {activate::GpuGet{}, activate::GpuGet([] { return std::vector<performance::Adapter>{}; })}) {
+    const auto p = activate::plan(gen, config, none(), L"gmod.exe", uhd, gpus);
+    CHECK(p.activate && p.low_tier_fallback && !p.non_nvidia);
+    CHECK(p.performance_tier.tier == performance::Tier::low);
+    CHECK(p.performance_tier.source == "config");
+    CHECK(p.performance_tier.layer == activate::kTierLayer);
+    CHECK(p.performance_tier.reason.find("GPU not read") != std::string::npos);
+  }
+  const auto nvidia = [] { return std::vector<performance::Adapter>{{activate::kNvidia, "RTX 5090", 32ull << 30}}; };
+  CHECK(activate::plan(gen, config, none(), L"gmod.exe", uhd, nvidia).performance_tier.source == "config");
+  const auto amd = [] { return std::vector<performance::Adapter>{{0x1002, "AMD", 8ull << 30}}; };
+  const auto non_nvidia = activate::plan(gen, config, none(), L"gmod.exe", uhd, amd);
+  CHECK(non_nvidia.non_nvidia && non_nvidia.performance_tier.layer.empty());
+  CHECK(non_nvidia.performance_tier.source == "config");
+  config.performance_tier = config::PerformanceTier::medium;
+  auto packaged = gen;
+  journal::File file;
+  file.package = "rtx-remix-runtime";
+  file.path = "payload/config/dxvk-tiers/medium.conf";
+  packaged.files.push_back(file);
+  CHECK(activate::plan(packaged, config, none(), L"gmod.exe", uhd).performance_tier.layer == activate::kTierLayer);
+}
+
+TEST_CASE("activate: a failed low fallback drops every stale tier entry and retains diagnostics and user layers") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/base.conf"};
+  config::Config config;
+  config.performance_tier = config::PerformanceTier::low;
+  config.gpu_crash_dumps = config::GpuCrashDumps::always;
+  const auto user = values({{"DXVK_CONFIG_FILE", std::string(activate::kTierLayer) + ",mine.conf,last.conf"}});
+  auto p = activate::plan(with_runtime("payload", remix), config, user, L"gmod.exe", uhd);
+  CHECK(p.low_tier_fallback);
+  activate::disable_performance_tier(p, "fallback write failed");
+  CHECK(p.activate && !p.low_tier_fallback && p.performance_tier.layer.empty());
+  CHECK((p.dxvk_layers == std::vector<std::string>{"native-loader/remix/dxvk-1.conf", std::string(gpu_diagnostics::kLayer), "mine.conf", "last.conf"}));
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "native-loader/remix/dxvk-1.conf,native-loader/remix/diagnostics.conf,mine.conf,last.conf");
+  CHECK(p.notes.back() == "fallback write failed");
+}
+
+TEST_CASE("activate: tier and diagnostic layers add 67 characters to the user's DXVK list budget") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/base.conf"};
+  config::Config config;
+  config.performance_tier = config::PerformanceTier::low;
+  config.gpu_crash_dumps = config::GpuCrashDumps::always;
+  const std::string base_prefix = "native-loader/remix/dxvk-1.conf,";
+  const std::string prefix = std::string(activate::kTierLayer) + ',' + base_prefix + std::string(gpu_diagnostics::kLayer) + ',';
+  CHECK(prefix.size() == base_prefix.size() + 67);
+  for (const std::size_t length : {259u, 260u}) {
+    const std::string user = "mine.conf," + std::string(length - prefix.size() - 10, 'x');
+    const auto p = activate::plan(with_runtime("payload", remix), config, values({{"DXVK_CONFIG_FILE", user}}), L"gmod.exe", uhd);
+    REQUIRE(env_value(p, "DXVK_CONFIG_FILE"));
+    CHECK(*env_value(p, "DXVK_CONFIG_FILE") == prefix + user);
+    CHECK(env_value(p, "DXVK_CONFIG_FILE")->size() == length);
+    CHECK(std::any_of(p.notes.begin(), p.notes.end(), [](const auto& note) { return note.find("DXVK_CONFIG_FILE is 260 characters") != std::string::npos; }) == (length == 260));
+  }
+}
+
+TEST_CASE("activate: malformed adapter names lose only the description") {
+  CHECK(activate::adapter_description(L"NVIDIA RTX 5090") == "NVIDIA RTX 5090");
+  CHECK(activate::adapter_description(L"GPU \u00e9") == "GPU \xc3\xa9");
+  const wchar_t invalid[] = {0xd800, 0};
+  const auto name = activate::adapter_description(invalid);
+  CHECK(name.empty());
+  const auto p = activate::plan(with_runtime("payload", base_remix()), {}, none(), L"gmod.exe", uhd,
+                               [&] { return std::vector<performance::Adapter>{{activate::kNvidia, name, 8ull << 30}}; });
+  CHECK(p.activate && p.low_tier_fallback && !p.non_nvidia);
+  CHECK(p.performance_tier.dedicated_vram_mib == 8192);
+}
+
+TEST_CASE("activate: next_start once and diagnostics failures keep package and user lists") {
+  auto config = config::Config{};
+  config.gpu_crash_dumps = config::GpuCrashDumps::next_start;
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/base.conf"};
+  const auto gen = with_runtime("payload", remix);
+  const auto env = values({{"DXVK_CONFIG_FILE", "mine.conf,last.conf"}});
+  const auto p = activate::plan(gen, config, env, L"gmod.exe", uhd, {}, {false, "C:/game/native-loader/logs/gpu/", {}});
+  CHECK(p.gpu_crash_dumps && p.gpu_crash_dumps_once);
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") == "native-loader/remix/dxvk-1.conf,native-loader/remix/diagnostics.conf,mine.conf,last.conf");
+  CHECK(*env_value(p, std::string(gpu_diagnostics::kDumpVariable)) == "C:/game/native-loader/logs/gpu/");
+  const auto used = activate::plan(gen, config, env, L"gmod.exe", uhd, {}, {true, {}, {}});
+  CHECK(!used.gpu_crash_dumps);
+  CHECK(*env_value(used, "DXVK_CONFIG_FILE") == "native-loader/remix/dxvk-1.conf,mine.conf,last.conf");
+  CHECK(!used.notes.empty());
+  auto failed = p;
+  activate::disable_gpu_crash_dumps(failed, "fixture failure");
+  CHECK(!failed.gpu_crash_dumps);
+  CHECK(failed.env == used.env);
+  CHECK(failed.notes.back() == "fixture failure");
+  config.gpu_crash_dumps = config::GpuCrashDumps::always;
+  CHECK(activate::plan(gen, config, env, L"gmod.exe", uhd, {}, {true, {}, {}}).gpu_crash_dumps);
+  config.remix_enabled = false;
+  CHECK(!activate::plan(gen, config, env, L"gmod.exe", uhd).gpu_crash_dumps);
+}
+
+TEST_CASE("activate: invalid tier notes survive planning even without a runtime") {
+  const auto config = config::parse(R"({"schema":1,"remix":{"performance_tier":"fast"}})");
+  CHECK(!activate::plan({}, config, none(), L"gmod.exe", uhd).notes.empty());
+}
+
+TEST_CASE("activate: disabling diagnostics alone restores config discovery and package environment") {
+  auto config = config::Config{};
+  config.gpu_crash_dumps = config::GpuCrashDumps::always;
+  auto bare = activate::plan(with_runtime("payload", base_remix()), config, none(), L"gmod.exe", uhd);
+  activate::disable_gpu_crash_dumps(bare, "fixture failure");
+  CHECK(env_value(bare, "DXVK_CONFIG_FILE") == nullptr);
+  CHECK(env_value(bare, std::string(gpu_diagnostics::kDumpVariable)) == nullptr);
+
+  auto remix = base_remix();
+  remix.env = {{std::string(gpu_diagnostics::kDumpVariable), "package-dump-folder"}};
+  auto package = activate::plan(with_runtime("payload", remix), config, none(), L"gmod.exe", uhd);
+  activate::disable_gpu_crash_dumps(package, "fixture failure");
+  REQUIRE(env_value(package, std::string(gpu_diagnostics::kDumpVariable)));
+  CHECK(*env_value(package, std::string(gpu_diagnostics::kDumpVariable)) == "package-dump-folder");
+
+  const auto own = values({{"DXVK_CONFIG_FILE", std::string(gpu_diagnostics::kLayer) + ",mine.conf"}});
+  auto duplicate = activate::plan(with_runtime("payload", base_remix()), config, own, L"gmod.exe", uhd);
+  activate::disable_gpu_crash_dumps(duplicate, "fixture failure");
+  CHECK(env_value(duplicate, "DXVK_CONFIG_FILE") == nullptr);  // the user's explicit duplicate stays in their environment
+  CHECK((duplicate.dxvk_layers == std::vector<std::string>{std::string(gpu_diagnostics::kLayer), "mine.conf"}));
 }

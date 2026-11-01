@@ -2,18 +2,23 @@
 #include "../client/catalog.h"
 #include "nl/fs.h"
 #include "nl/json.h"
+#include "nl/memory.h"
 #include "nl/sha256.h"
 #include "nl/version.h"
+#include "nl/activate.h"
 
 #include <windows.h>
 #include <dxgi1_2.h>
 #include <intrin.h>
 #include <array>
+#include <algorithm>
 #include <cstring>
 
 namespace nl::proxy::diagnostics {
 System query_system() {
   System result;
+  result.process_id = GetCurrentProcessId();
+  result.session_token = memory::process_token();
   result.os = "Windows x64";
   using GetVersion = LONG(WINAPI*)(OSVERSIONINFOW*);
   const auto get_version = reinterpret_cast<GetVersion>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
@@ -53,7 +58,8 @@ System query_system() {
         if (factory->EnumAdapters1(index, &adapter) != S_OK) break;
         DXGI_ADAPTER_DESC1 description{};
         if (SUCCEEDED(adapter->GetDesc1(&description)) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
-          result.graphics.push_back({fs::utf8(std::filesystem::path(description.Description)), description.DedicatedVideoMemory});
+          result.graphics.push_back({activate::adapter_description(description.Description), description.DedicatedVideoMemory,
+                                     description.VendorId});
         }
         adapter->Release();
       }
@@ -79,13 +85,38 @@ std::string serialize(const System& system, std::string_view version, std::strin
     out += "{\"id\":" + json::quote(package.id) + ",\"version\":" + json::quote(package.version) +
            ",\"sha256\":" + json::quote(package.manifest_sha256) + '}';
   }
-  return out + "],\"client_bootstrap\":" + (client::native_bootstrap_present(generation) ? "true" : "false") + '}';
+  out += "],\"performance_tier\":" + (system.performance_tier ? performance::serialize(*system.performance_tier) : "null");
+  out += ",\"client_bootstrap\":" + std::string(client::native_bootstrap_present(generation) ? "true" : "false");
+  out += ",\"process_id\":" + std::to_string(system.process_id) + ",\"session_token\":" + json::quote(system.session_token);
+  return out + '}';
 }
 
-std::string collect(const std::filesystem::path& root, const journal::Generation& generation) {
+void set_performance_tier(System& system, const activate::Plan& plan, std::wstring_view command_line) {
+  system.performance_tier.reset();
+  const auto& tier = plan.performance_tier;
+  if (plan.activate && !tier.layer.empty() &&
+      std::find(plan.dxvk_layers.begin(), plan.dxvk_layers.end(), tier.layer) != plan.dxvk_layers.end() &&
+      client::render_recipes_refusal(plan, command_line).empty())
+    system.performance_tier = tier;
+}
+
+std::string collect(const std::filesystem::path& root, const journal::Generation& generation,
+                    const activate::Plan* effective) {
   System system;
   std::string hash;
   try { system = query_system(); } catch (...) { }
+  try {
+    if (effective) set_performance_tier(system, *effective, GetCommandLineW());
+    else {
+      // Read-only preview for callers without an applied session; never consume next_start or
+      // read a stale previous status.json. The render-recipe gate matches activation (ADR 0056).
+      std::vector<performance::Adapter> adapters;
+      for (const auto& gpu : system.graphics) adapters.push_back({gpu.vendor, gpu.name, gpu.memory});
+      const auto preview = activate::plan(generation, config::load(root), activate::environment_value, GetCommandLineW(),
+                                          [] { return activate::Display{}; }, [&] { return adapters; });
+      set_performance_tier(system, preview, GetCommandLineW());
+    }
+  } catch (...) { }
   try {
     constexpr std::string_view binary = "bin/win64/winmm.dll";
     fs::refuse_links(root, binary);

@@ -36,6 +36,35 @@ TEST_CASE("config: only the schema is required; defaults allow nothing") {
   CHECK(defaults.workshop.empty());
 }
 
+TEST_CASE("config: local memory history is on by default and accepts only on or off") {
+  CHECK(nl::config::Config{}.memory_telemetry);
+  CHECK(nl::config::parse(R"({"schema":1,"diagnostics":{}})").memory_telemetry);
+  CHECK(nl::config::parse(R"({"schema":1,"diagnostics":{"memory_telemetry":"on"}})").memory_telemetry);
+  const auto off = nl::config::parse(R"({"schema":1,"diagnostics":{"memory_telemetry":"off"}})");
+  CHECK(!off.memory_telemetry);
+  CHECK(off.enabled && off.remix_enabled && off.workshop.empty());
+  for (const char* invalid : {"true", "\"auto\"", "null", "\"OFF\"", "[]"}) {
+    const auto config = nl::config::parse(std::string(R"({"schema":1,"diagnostics":{"memory_telemetry":)") + invalid + "}}");
+    CHECK(config.memory_telemetry);
+    REQUIRE(config.notes.size() == 1);
+    CHECK(config.notes.front().find("diagnostics.memory_telemetry") != std::string::npos);
+    CHECK(config.notes.front().find("using on") != std::string::npos);
+  }
+  for (const char* text : {
+    R"({"schema":1,"diagnostics":{"memory": "off"}})",
+    R"({"schema":1,"diagnostics":false})"
+  }) CHECK_THROWS_AS(nl::config::parse(text), Error);
+}
+
+TEST_CASE("config: both diagnostics settings are accepted together") {
+  using nl::config::GpuCrashDumps;
+  const auto both = nl::config::parse(
+      R"({"schema":1,"diagnostics":{"gpu_crash_dumps":"next_start","memory_telemetry":"off"}})");
+  CHECK(both.gpu_crash_dumps == GpuCrashDumps::next_start);
+  CHECK(!both.memory_telemetry);
+  CHECK(both.notes.empty());
+}
+
 TEST_CASE("config: allow.subscribed_content switches content packages from subscriptions off") {
   CHECK(!nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": false}})").subscribed_content);
   CHECK(nl::config::parse(R"({"schema": 1, "allow": {"subscribed_content": true, "workshop": ["1"]}})").subscribed_content);
@@ -114,4 +143,39 @@ TEST_CASE("config: load reads native-loader/config.json or falls back to default
   std::ofstream(root / "native-loader" / "config.json") << "{broken";
   CHECK_THROWS_AS(nl::config::load(root), Error);
   std::filesystem::remove_all(root);
+}
+
+TEST_CASE("config: performance tier defaults and overrides, invalid values recover with a note") {
+  using nl::config::PerformanceTier;
+  CHECK(nl::config::parse(R"({"schema":1})").performance_tier == PerformanceTier::automatic);
+  for (const auto& [name, tier] : std::vector<std::pair<std::string, PerformanceTier>>{
+         {"auto", PerformanceTier::automatic}, {"high", PerformanceTier::high},
+         {"medium", PerformanceTier::medium}, {"low", PerformanceTier::low}}) {
+    const auto config = nl::config::parse("{\"schema\":1,\"remix\":{\"performance_tier\":\"" + name + "\"}}");
+    CHECK(config.performance_tier == tier);
+    CHECK(config.notes.empty());
+  }
+  for (const char* invalid : {"\"LOW\"", "\"fast\"", "\"\"", "true", "null", "8", "[]", "{}"}) {
+    const auto config = nl::config::parse(std::string("{\"schema\":1,\"remix\":{\"performance_tier\":") + invalid + "}}");
+    CHECK(config.performance_tier == PerformanceTier::automatic);
+    REQUIRE(config.notes.size() == 1);
+    CHECK(config.notes.front().find("using auto") != std::string::npos);
+  }
+}
+
+TEST_CASE("config: GPU crash dumps are opt-in and invalid values recover with off and a note") {
+  using nl::config::GpuCrashDumps;
+  CHECK(nl::config::parse(R"({"schema":1})").gpu_crash_dumps == GpuCrashDumps::off);
+  for (const auto& [name, mode] : std::vector<std::pair<std::string, GpuCrashDumps>>{
+         {"off", GpuCrashDumps::off}, {"next_start", GpuCrashDumps::next_start}, {"always", GpuCrashDumps::always}}) {
+    CHECK(nl::config::parse("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":\"" + name + "\"}}").gpu_crash_dumps == mode);
+  }
+  for (const char* invalid : {"\"on\"", "\"NEXT_START\"", "\"\"", "true", "null", "1", "[]", "{}"}) {
+    const auto config = nl::config::parse(std::string("{\"schema\":1,\"diagnostics\":{\"gpu_crash_dumps\":") + invalid + "}}");
+    CHECK(config.gpu_crash_dumps == GpuCrashDumps::off);
+    REQUIRE(config.notes.size() == 1);
+    CHECK(config.notes.front().find("diagnostics.gpu_crash_dumps") != std::string::npos);
+    CHECK(config.notes.front().find("using off") != std::string::npos);
+  }
+  CHECK_THROWS_AS(nl::config::parse(R"({"schema":1,"diagnostics":{"gpu_dump":"always"}})"), Error);
 }

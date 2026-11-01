@@ -67,6 +67,11 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0059](0059-outline-shell-rule-opt-in.md) | The front-cull outline shell rule is an opt-in (`nativeloader_ignore_outline_shells`, default 0); `nativeloader_ignore_outlines` keeps only the name rule, for materials of loaded models; amends 0047 | Accepted (R4) |
 | [0060](0060-motion-tab-hosts-the-importer.md) | The Motion importer tab is the importer: the add-on's importer and Motion Manager built into the tab by its own builders (its windows use them too), in External Models' look | Accepted (R4) |
 | [0061](0061-loose-glass-breaks-again-and-expires.md) | Broken glass (map debris and the add-on's fragments) is loose physics that players pass through, breaks again until it is dust, shares one 256-piece budget and fades out after `rtx_glass_debris_lifetime` (default 120 s); supersedes part of 0040 | Accepted 2026-10-31 (R5, the user's report) |
+| [0062](0062-loader-layers-performance-tiers-and-gpu-dumps.md) | Loader Remix layers first, GPU performance tiers and opt-in one-start GPU dumps; amends 0030's layer placement | Accepted 2026-10-31 (R6) |
+| [0063](0063-local-session-evidence-and-memory-telemetry.md) | Bounded local previous-session evidence, bootstrap memory telemetry and a once-per-start system-commit warning | Accepted 2026-10-31 (R6 T2, approved proposals 3, 5 and 11) |
+| [0064](0064-performance-tier-defaults.md) | Conditional performance-tier payloads and night skies without mip 0; classic high unchanged; candidate tuning awaits PoC measurements | R6 interface accepted 2026-10-31; tuning provisional |
+| [0065](0065-runtime-memory-diagnostics.md) | Shared runtime VRAM snapshots at cuts, five-minute intervals and device loss; atomic local crash marker and device-lifetime OMM warning limits | Accepted 2026-10-31 (R6 T4) |
+| [0066](0066-fixes-memory-limits-compatibility.md) | Remove the fixes' startup memory-limit call; preserve the Lua API as a documented no-op with one notice and no configuration writes | Accepted 2026-10-31 (R6 T5) |
 
 ## Template
 

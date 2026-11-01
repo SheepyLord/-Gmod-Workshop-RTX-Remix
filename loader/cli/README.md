@@ -3,6 +3,10 @@
 The loader core on the command line, so packages and installs can be examined and deployed without
 starting Garry's Mod. It links `nl_core`, the same library the bootstrap uses.
 
+R6: `status` also prints the bootstrap report's `previous_session` (reason, UTC time and relative
+evidence folder), including when there is no deployment journal. `--json` adds that object or `null`
+when the report is missing/invalid. This is a read-only view; it never collects or uploads evidence.
+
 | File | Purpose |
 |---|---|
 | `CMakeLists.txt` | Builds `nlctl`; registers the `nlctl_crosscheck_gmapack`, `nlctl_e2e_plan`, `nlctl_e2e_deploy` and `nlctl_uninstall_loader` CTests |
@@ -106,3 +110,11 @@ Exit codes: `0` ok, `1` a check found problems (bad CRC, trailing data, failed a
 
 Output is UTF-8. JSON strings come from `nl::json::quote`: invalid UTF-8 bytes in archive paths are
 shown as U+FFFD, never passed through raw.
+
+## R6 performance and GPU diagnostics preview
+
+`activation` reports interface I2 (`performance_tier`) and recoverable config/activation `notes`,
+in text and JSON. It reads the same DXGI adapter details and one-start marker as the bootstrap,
+including the absolute dump destination, but never writes a layer/folder or consumes next_start.
+The new optional config keys are validated by the shared schema-1 parser; an invalid performance
+value uses auto with a note, while an invalid diagnostics mode remains a config error.

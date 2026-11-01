@@ -49,7 +49,7 @@ Config parse(std::string_view json_text) {
   }
   try {
     if (!root.is_object()) fail("the document must be a JSON object");
-    only_keys(root, "the config", {"schema", "enabled", "allow", "remix", "patch_sets"});
+    only_keys(root, "the config", {"schema", "enabled", "allow", "remix", "patch_sets", "diagnostics"});
     const Value* schema = root.find("schema");
     if (!schema) fail("missing \"schema\"");
     if (schema->as_int("schema") != kSchema) fail("schema " + std::to_string(schema->as_int()) + " is not supported (expected 1)");
@@ -75,14 +75,40 @@ Config parse(std::string_view json_text) {
       if (const Value* dev = allow->find("dev_folders")) c.dev_folders = unique_strings(*dev, "allow.dev_folders");
     }
     if (const Value* remix = root.find("remix")) {
-      only_keys(*remix, "remix", {"enabled", "reshade"});
+      only_keys(*remix, "remix", {"enabled", "reshade", "performance_tier"});
       if (const Value* enabled = remix->find("enabled")) c.remix_enabled = enabled->as_bool("remix.enabled");
+      if (const Value* tier = remix->find("performance_tier")) {
+        const std::string mode = tier->is_string() ? tier->as_string() : std::string{};
+        if (mode == "auto") c.performance_tier = PerformanceTier::automatic;
+        else if (mode == "high") c.performance_tier = PerformanceTier::high;
+        else if (mode == "medium") c.performance_tier = PerformanceTier::medium;
+        else if (mode == "low") c.performance_tier = PerformanceTier::low;
+        else c.notes.push_back("remix.performance_tier must be auto, high, medium or low; using auto");
+      }
       if (const Value* reshade = remix->find("reshade")) {
         const std::string& mode = reshade->as_string("remix.reshade");
         if (mode == "auto") c.reshade = Reshade::automatic;
         else if (mode == "on") c.reshade = Reshade::on;
         else if (mode == "off") c.reshade = Reshade::off;
         else fail("remix.reshade must be \"auto\", \"on\" or \"off\"");
+      }
+    }
+    // A wrong diagnostics value only costs that diagnostic (a note, then its default); it never
+    // switches the loader off. An unknown key still fails like everywhere else.
+    if (const Value* diagnostics = root.find("diagnostics")) {
+      only_keys(*diagnostics, "diagnostics", {"gpu_crash_dumps", "memory_telemetry"});
+      if (const Value* dumps = diagnostics->find("gpu_crash_dumps")) {
+        const std::string mode = dumps->is_string() ? dumps->as_string() : std::string{};
+        if (mode == "off") c.gpu_crash_dumps = GpuCrashDumps::off;
+        else if (mode == "next_start") c.gpu_crash_dumps = GpuCrashDumps::next_start;
+        else if (mode == "always") c.gpu_crash_dumps = GpuCrashDumps::always;
+        else c.notes.push_back("diagnostics.gpu_crash_dumps must be off, next_start or always; using off");
+      }
+      if (const Value* telemetry = diagnostics->find("memory_telemetry")) {
+        const std::string mode = telemetry->is_string() ? telemetry->as_string() : std::string{};
+        if (mode == "on") c.memory_telemetry = true;
+        else if (mode == "off") c.memory_telemetry = false;
+        else c.notes.push_back("diagnostics.memory_telemetry must be on or off; using on");
       }
     }
     if (const Value* patches = root.find("patch_sets")) {

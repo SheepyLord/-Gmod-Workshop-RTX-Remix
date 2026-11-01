@@ -23,14 +23,14 @@
    "imported": "2026-10-30T00:42:29+00:00"
   },
   "files/d3d9.dll": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\runtime-translations\\_CompRelease_x64\\src\\d3d9\\d3d9.dll",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t4-runtime\\out\\runtime-src\\_CompRelease_x64\\src\\d3d9\\d3d9.dll",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/runtime-translations",
-    "remote": "https://github.com/sambow23/dxvk-remix-gmod.git",
-    "commit": "6f2dbd79cfd907a29995435b6414896c6c2e4cf5",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t4-runtime/out/runtime-src",
+    "remote": "H:\\BACKUP_20260815\\Modding\\dxvk-remix-gmod",
+    "commit": "024a98665149e628db827cd0f9ce142828c14701",
     "dirty": false
    },
-   "imported": "2026-10-31T12:16:07+00:00"
+   "imported": "2026-11-01T00:03:26+00:00"
   },
   "layers/classic_remix_defaults.conf": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\startup-bounce-defaults.conf",
@@ -41,6 +41,76 @@
     "dirty": false
    },
    "imported": "2026-10-31T06:02:06+00:00"
+  },
+  "files/usd/plugins/RemixCategories/RemixCategories.dll": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t4-runtime\\out\\runtime-src\\_CompRelease_x64\\src\\usd-plugins\\RemixCategories\\RemixCategories.dll",
+   "git": null,
+   "imported": "2026-10-31T22:48:47+00:00"
+  },
+  "files/usd/plugins/RemixParticleSystem/RemixParticleSystem.dll": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t4-runtime\\out\\runtime-src\\_CompRelease_x64\\src\\usd-plugins\\RemixParticleSystem\\RemixParticleSystem.dll",
+   "git": null,
+   "imported": "2026-10-31T22:48:47+00:00"
+  },
+  "layers/medium.conf": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-fix-stage\\layers\\medium.conf",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "84e0f1a809454d30b436baf47727c6353ba306f8",
+    "dirty": false
+   },
+   "imported": "2026-10-31T23:44:37+00:00"
+  },
+  "layers/low.conf": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6\\out\\r6-tune\\layers\\low.conf",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "8436180b5f92c58617637356bc9749161501c879",
+    "dirty": false
+   },
+   "imported": "2026-11-01T03:05:18+00:00"
+  },
+  "files/atmosphere/stars_4096.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\stars_4096.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/galaxy_4096.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\galaxy_4096.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/nebula_4096.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-stage\\atmosphere\\nebula_4096.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "7759c433e4c96d5a284d2fcc7c9d55755d2b2a65",
+    "dirty": false
+   },
+   "imported": "2026-10-31T22:25:32+00:00"
+  },
+  "files/atmosphere/CREDITS.txt": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r6-t6-tiers\\out\\t6-fix-stage\\atmosphere\\CREDITS.txt",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r6-t6-tiers",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "84e0f1a809454d30b436baf47727c6353ba306f8",
+    "dirty": false
+   },
+   "imported": "2026-10-31T23:44:37+00:00"
   }
  },
  "files": {
@@ -53,9 +123,9 @@
    "stored_sha256": "e31fcab4f48296f2c5290bf422224a822d4fa259fea84372286ce02b957e7147"
   },
   "files/atmosphere/CREDITS.txt": {
-   "size": 1569,
-   "sha256": "16f3384d2d7ded1b7ae8d325bce54201608f10f1eb671d967c178c0e24911e12",
-   "mtime_ns": 1793314519515967700,
+   "size": 1810,
+   "sha256": "b0833600962f381b2d4a7c7da1add7fad932eac1f794f2952b5b3f5106e51b4a",
+   "mtime_ns": 1793490196604674700,
    "stored": "plain"
   },
   "files/atmosphere/galaxy.dds": {
@@ -65,6 +135,14 @@
    "stored": "xz",
    "stored_size": 7430664,
    "stored_sha256": "ef3f2173ac3b7a06724c4c0ca83402b5cae148cceb84b012fa07d60264804952"
+  },
+  "files/atmosphere/galaxy_4096.dds": {
+   "size": 11184976,
+   "sha256": "d27c8afd7fb849ce1143fada7df12b2a87595492497895974b01b1f5290c1482",
+   "mtime_ns": 1793485460720740000,
+   "stored": "xz",
+   "stored_size": 2046012,
+   "stored_sha256": "1e6478769547187f03a0e9db40bf20d4f6c1792d101ba4fe5cf2c32ff3febe50"
   },
   "files/atmosphere/moon_albedo.dds": {
    "size": 2796388,
@@ -90,6 +168,14 @@
    "stored_size": 36617144,
    "stored_sha256": "a187706e6aa5d6ec08bbdb5a1a3c3244311c98b476ed4b93ba5a51ed3d97601d"
   },
+  "files/atmosphere/nebula_4096.dds": {
+   "size": 22369796,
+   "sha256": "08c763d0032408455f68602643082c20e64e8dbe7e1aebe6477bd26b99dd9222",
+   "mtime_ns": 1793485460997232200,
+   "stored": "xz",
+   "stored_size": 10673456,
+   "stored_sha256": "69361337508fd111c8514eb6e2e53f774d001a2734e57502c3113d1aa4536591"
+  },
   "files/atmosphere/stars.dds": {
    "size": 89478640,
    "sha256": "158ea3c9842a839b52a6930400b496617a61556f2cf2ceb9cb9504be9be0486c",
@@ -97,6 +183,14 @@
    "stored": "xz",
    "stored_size": 5399612,
    "stored_sha256": "cceb00c9d9d8d31576d9b7afb4e0908fbb5b499b1f6637c339de9d2f2270080a"
+  },
+  "files/atmosphere/stars_4096.dds": {
+   "size": 22369776,
+   "sha256": "189004af92e3c244d1ce1414fad09164102a862ac6080a41e835a513fc8850f8",
+   "mtime_ns": 1793485460504905500,
+   "stored": "xz",
+   "stored_size": 2091640,
+   "stored_sha256": "398f768605be09923350f82750026c52a83d011aaee2c7e1d3ff723c6c683ab4"
   },
   "files/crashpad_handler.exe": {
    "size": 1094144,
@@ -123,12 +217,12 @@
    "stored_sha256": "9abbc646f44e7dd8345bb6d33949bd7f8ecbb97b96de9b0e50d785e1b31b6837"
   },
   "files/d3d9.dll": {
-   "size": 395531776,
-   "sha256": "40a50fd55e9a76943fb80861d6e6a0d2690f39e02a52515716f63cae80638f83",
-   "mtime_ns": 1793448791546228700,
+   "size": 395540480,
+   "sha256": "c40f28e4371f7525dce01afad7316ae3efeabb2099c7ec19fe1df5dc3706ac19",
+   "mtime_ns": 1793491279567023900,
    "stored": "xz",
-   "stored_size": 58330696,
-   "stored_sha256": "5506a4b6fce64cd88fd2462c383322c076b8f73770fbc8030d0439af3850e12c"
+   "stored_size": 58336968,
+   "stored_sha256": "41b7bd472041b94fa58642ff34d561aa82aafb4be0901703b982ae00322d4b39"
   },
   "files/GFSDK_Aftermath_Lib.x64.dll": {
    "size": 9240728,
@@ -670,11 +764,11 @@
   },
   "files/usd/plugins/RemixCategories/RemixCategories.dll": {
    "size": 12800,
-   "sha256": "3278b47615b69cdbd0b07f215d50f0a73bf749980a769edda083c9fc6fe079a4",
-   "mtime_ns": 1793266354965055100,
+   "sha256": "f6974a716688746e3b09a5628380d246406b13fb6935420317bc0dc127ab8068",
+   "mtime_ns": 1793486444602308200,
    "stored": "xz",
-   "stored_size": 4988,
-   "stored_sha256": "4b38d53badc788960c1a270b5cbb791186d3d28ecbcafe42f8839d347a8001d2"
+   "stored_size": 5024,
+   "stored_sha256": "aa20329e0064fd558a5fb557fe22d09f40da9d02329a68046180d315265031b0"
   },
   "files/usd/plugins/RemixCategories/resources/plugInfo.json": {
    "size": 635,
@@ -690,11 +784,11 @@
   },
   "files/usd/plugins/RemixParticleSystem/RemixParticleSystem.dll": {
    "size": 12800,
-   "sha256": "9b2f55a2ef1770c4ee98f28fa8a1c42dee13a3328dc6f26a05c9dd7677810b76",
-   "mtime_ns": 1793266354967054700,
+   "sha256": "e0315c6a8c48344c31513fb44f08465487d7dbdf275e184f13cda3a2eaa1bb62",
+   "mtime_ns": 1793486443730262500,
    "stored": "xz",
-   "stored_size": 4980,
-   "stored_sha256": "e90783a164742ea6227c7662d5178a0bcf5c49b8a47733796bf235a21916b9e4"
+   "stored_size": 5016,
+   "stored_sha256": "f137f856420e7a636f06ae170acb5a1c6b917dcd649a010aef754fd6bc79f110"
   },
   "files/usd/plugins/RemixParticleSystem/resources/plugInfo.json": {
    "size": 501,
@@ -1322,6 +1416,18 @@
    "size": 319,
    "sha256": "fdb168ee65505699c13d8f8396825dc22e38666cf9f2864c5026677ce9f1ebb0",
    "mtime_ns": 1793310301440089100,
+   "stored": "plain"
+  },
+  "layers/low.conf": {
+   "size": 1619,
+   "sha256": "329ac9263f4610d80544b208f631147b30c99070814a330e4e5a07cf53db6146",
+   "mtime_ns": 1793502318429456700,
+   "stored": "plain"
+  },
+  "layers/medium.conf": {
+   "size": 1167,
+   "sha256": "3c9fb6adfaf4e2d50a7457310759c98c1aed080d80d14899d9c9822bdd5103dd",
+   "mtime_ns": 1793490196603169100,
    "stored": "plain"
   }
  }

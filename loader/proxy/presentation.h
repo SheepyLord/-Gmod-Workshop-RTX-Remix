@@ -4,6 +4,7 @@
 
 #include "nl/gma.h"
 #include "nl/journal.h"
+#include "nl/activate.h"
 
 #include <filesystem>
 #include <string>
@@ -36,5 +37,10 @@ std::string add_client_bootstrap(std::string_view original);
 // files below native-loader/presentation, and returns exact read redirects. Missing/changed sources,
 // links, and modified cache files are left alone and reported. Never changes a Steam/depot file.
 Prepared prepare(const std::filesystem::path& root, const journal::Generation& generation, bool include_diagnostics = false);
+
+// Prepare only the main menu, using the effective session plan after tier writes (or an inactive
+// plan for vanilla fallback). With no plan, diagnostics makes its read-only preview.
+Prepared prepare_main_menu(const std::filesystem::path& root, const journal::Generation& generation,
+                           const activate::Plan* effective = nullptr);
 
 }  // namespace nl::proxy::presentation

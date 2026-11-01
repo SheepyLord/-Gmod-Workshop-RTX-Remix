@@ -2,7 +2,8 @@
 
 Unit tests for [`poc_session.py`](../poc_session.py.md), without a game. `subprocess.Popen`,
 `console()`, the window and module lookups and the clock are mocked, so no game is ever started and
-no test waits. Scratch goes in a temporary folder under `out\tmp`.
+the session clock is simulated. Watchdog/capture tests use short real thread waits with bounded
+event synchronization. Scratch goes in a temporary folder under `out\tmp`.
 
 ```powershell
 cd tools; python -m unittest tests.test_poc_session -v    # or tools\test.ps1
@@ -59,3 +60,19 @@ Exit code: unittest's (0 when all pass).
   `crash-reports\`, both named in the record.
 - `test_the_menu_shot_is_taken_at_the_menu_before_the_map` (R4): `--menu-shot` captures `menu.png` once
   the Workshop is mounted and before `map` is sent.
+- **R6 unattended failure handling.** Fake process/windows/logs exercise both device-loss markers,
+  an old log (unchanged, appended and rewritten), a persistent hung window, the 20 s continuous-hang
+  grace and recovery during a normal 12 s load stall. Console retries check health after a 10 s
+  send; known hung windows receive neither console text nor capture calls. A frozen capture worker
+  times out and cannot save a late image; capture success and errors are checked too.
+- **Watchdog lifetime and evidence.** A real background thread polls fake prompts, survives a
+  temporary lookup error, counts successful No/OK answers only and stops on process exit or explicit
+  close. Prompt sends have a bounded timeout. A crash after map startup shows its prompt during the
+  exit grace: the watchdog copies its dump before the fake runtime deletes it, declines the prompt
+  and allows the Remix GPU-crash exit without a kill. The consent-granting environment flag is removed.
+  Device loss or a persistent hang skips subsequent operations, bounds the exit wait at 60 s and
+  keeps console/Remix logs, modules and dumps. Known exit codes (signed and unsigned) get names and
+  hex values without losing the numeric exit; the CLI persists failed records and returns 1.
+- A temporarily locked Remix log still allows hang detection. A failed dump-copy retry preserves
+  the previous complete evidence file. A capture timeout follows bounded session cleanup and still
+  collects the logs.
