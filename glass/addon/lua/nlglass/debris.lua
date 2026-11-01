@@ -448,7 +448,10 @@ local function nativeTick()
             if r[4] >= CurTime() then
                 if r[5] > 0 and world.api.Melee then
                     ok, reason = world.api.Melee(r[1], r[2], math.min(1e9, r[3] * 16000), clamp(r[3] * 20, 80, 1200), r[5])
-                else ok, reason = world.api.Ray(r[1], r[2], math.min(1e9, r[3] * 12000), clamp(r[3] * 20, 80, 1200)) end
+                -- A bullet concentrates its energy: 60000 per damage point lets a pistol round (8) split
+                -- a whole fallen slab (about 350000 needed) and an SMG round (4-5) all but the largest.
+                -- At 12000 per point only small pieces split (PoC R8 21-glass-r8).
+                else ok, reason = world.api.Ray(r[1], r[2], math.min(1e9, r[3] * 60000), clamp(r[3] * 20, 80, 1200)) end
                 if ok == nil then failed(reason);return end
             end
         end

@@ -8,6 +8,9 @@ Client module included by G1-A's client initializer. Defines `NLGlassDebris` wit
   preparation or a worker step stay drawn at their last known pose, bounded by the player budget.
 - `Impulse(origin, radius, speed)`: radial velocity kick; wakes and unbatches affected pieces.
 - `Ray(from, to, damage)`: validated server pellet trace; queues at most 32 for 0.5 s and applies
+  A bullet reaching a broken piece carries 60,000 energy per damage point (melee 16,000): a pistol
+  round splits a whole fallen slab and an SMG round all but the largest pieces (R8; at 12,000 only
+  small pieces split). Intact panes keep `damage.lua`'s energies.
   at most eight/frame, only with native interaction available and the local setting enabled.
 - `Clear`, `Count`, `Backend` (`jolt`, `vphysics`, `none`); cleanup keeps the imported map.
 - `Stats`: reused QA counts and native statistics. Adds `worker_busy`, `pose_updates` and
