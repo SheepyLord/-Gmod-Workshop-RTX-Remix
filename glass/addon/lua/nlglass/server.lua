@@ -102,7 +102,7 @@ function S.Impact(r,impact,forceAll)
     S.Refresh(r)
     r.lastImpact=impact -- native engine health may break on a hit too weak to show cracks
     local old={id=r.id,entityIndex=r.entityIndex,native=r.native,frame=r.frame,localOrigin=r.localOrigin,localAngles=r.localAngles,
-        state={def=r.state.def,impacts=r.state.impacts,damage=r.state.damage,revision=r.state.revision,all=r.state.all}}
+        state=F.Snapshot(r.state)}
     local pieces,accepted,broke=F.Apply(r.state,impact,forceAll,r.native)
     if not accepted then return false end
     net.Start("nlglass_hit") net.WriteUInt(r.id,32) net.WriteUInt(old.state.revision,32)

@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A fracture now refines locally and coarsens complete distant groups under its 512-cell cap,
+  preserving hit locations and existing holes. Weak hits accumulate under a capped crack floor;
+  tempered glass shows local spiderwebs before full shatter. Cached topology/snapshots remove full
+  history replay; clipped vertices merge below 1/256 and cracks omit the window perimeter.
+
 - G1-A fix pass: require actual approaching body contact; use incoming player movement to catch
   a stopped-by-collision runner; create replicated settings in both realms; dispatch captured map
   OnBreak outputs without engine shatter; record weak native hits, push blasts after their new

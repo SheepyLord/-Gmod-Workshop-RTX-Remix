@@ -506,7 +506,8 @@ elseif scenario=="player_move" then
     local mv={GetOrigin=function() return ply.pos end,GetVelocity=function() return Vector(-500,0,0) end}
     sv.traceResult={Hit=true,Entity=ent,Fraction=0.6,HitPos=Vector(16.5,0,0)}
     sv.run("SetupMove",ply,mv) sv.flush()
-    check(r.state.revision==1 and #F.Remaining(r.state)<#r.state.cells,"pre-movement 500 units/s contact breaks upright pane despite stopped body velocity")
+    local area=0 for _,poly in ipairs(F.Remaining(r.state)) do area=area+F.Area(poly) end
+    check(r.state.revision==1 and area<6144,"pre-movement 500 units/s contact breaks upright pane despite stopped body velocity")
     check(sv.lastTrace.filter==ply and sv.lastTrace.mask==sv.MASK_PLAYERSOLID,"player sweep respects intervening solids")
 elseif scenario=="client_settings" then
     local remote=realm(false) remote.include("autorun/nlglass.lua")
@@ -544,6 +545,23 @@ elseif scenario=="blast_order" then
 elseif scenario=="budget" then
     local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[10].hi==8192,"budget slider respects the debris convar's 8192 cap")
+elseif scenario=="topology" then
+    local ent,r=pane()
+    r.state=F.New(S.Definition({{-128,-64},{128,-64},{128,64},{-128,64}},1,"annealed",1))
+    for i=1,100 do F.Apply(r.state,{x=(i*37)%240-120,y=(i*19)%112-56,energy=80000,seed=900+i,kind="sharp",dx=0,dy=0,dz=1},false,true) end
+    local start=#sv.out+1 S.Snapshot(r) network(cl,start)
+    local cr=cl.NLGlass.Client.records[r.id]
+    check(#cr.state.cells==#r.state.cells and #cr.state.groups==#r.state.groups,"bounded coarsening tree survives the actual wire")
+    check(sv.out[#sv.out].bits<65533*8,"near-cap snapshot fits one GMod message")
+    print(string.format("snapshot_cells=%d groups=%d bytes=%.0f",#r.state.cells,#r.state.groups,math.ceil(sv.out[#sv.out].bits/8)))
+    start=#sv.out+1
+    local _,pieces=S.Impact(r,{x=0,y=0,energy=600000,seed=712,kind="sharp",dx=0,dy=0,dz=1})
+    network(cl,start)
+    check(#pieces==#cl.debris[1].pieces,"snapshot's next break releases the same pieces")
+    for i,p in ipairs(pieces) do
+        near(p.poly[1][1],cl.debris[1].pieces[i].poly[1][1],"snapshot piece x")
+        near(p.poly[1][2],cl.debris[1].pieces[i].poly[1][2],"snapshot piece y")
+    end
 else error("unknown scenario "..tostring(scenario)) end
 check(not sv.hooks.Think and not sv.hooks.Tick,"no server per-tick pane polling")
 print("engine "..scenario.." OK")

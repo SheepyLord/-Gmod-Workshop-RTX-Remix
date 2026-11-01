@@ -38,33 +38,36 @@ Contacts are event-driven and
 deferred out of physics callbacks; there is no server Think/Tick scan of idle panes.
 
 A 96×64, thickness-1 annealed pane at strength 1 has a 450,000 breaking threshold and a 36,000
-crack threshold. Threshold scales with thickness squared, strength, square root of area (reference
+crack threshold. All positive weak energy accumulates; there is no visible crack until it reaches
+`min(8% of threshold, 36,000)`. The breaking threshold scales with thickness squared, strength, square root of area (reference
 6144 units², minimum scale 0.35), and 3.5 for tempered. DamageInfo energy is damage × 12,000 for
 bullets/buckshot/crush, × 16,000 for other blunt damage, × 20,000 for blast. Thus a 15-damage pistol
 hit cracks, three such hits break a region, and an 85 kg body at 200 units/s supplies 1,700,000.
 These are tunable game defaults, not engineering strength predictions. Thickness is in Source units.
 Native windows keep engine health: our accumulated damage controls their visual cracks only.
 
-The first accepted hit establishes 8–16 seeded rays, more for higher initial energy, and homothetic
-polygonal rings whose spacing grows outward. Convex clipping gives small cells near the hit and
-larger cells far away. Subsequent spatially separate hits subdivide the existing cuts; repeated
-nearby hits grow their crack extent without moving the original cuts. Annealed breakout removes
-whole inner rings and any cells no longer connected along an edge to the frame. Later breaks grow
-holes; an impact in retained glass can establish another centre. Tempered uses a nearly uniform
-grid and releases the whole pane at its higher threshold.
+Each cracking hit establishes 8?16 seeded rays and polygonal rings with spacing that grows
+outward. Only cells in its contact neighbourhood subdivide; repeated hits reuse those cuts.
+Live cells and their complete subdivision groups are retained. Above the 512-cell limit, complete
+old groups far from the new hit return to their exact convex parent. Groups containing a released
+cell cannot coarsen, so holes never refill. Eight active centres describe crack growth; a new distant
+hit reclaims a distant slot while keeping its actual location. Old distant cracks may simplify.
+A pathological perforated pane with no room to refine/coarsen releases its remaining glass at the
+current hit. A 100-impact generated probe reaches the cap without that fallback.
 
-All fracture coordinates use a 1/1024-unit grid, an integer Park–Miller generator, an integer circle
-table and integer square roots. No global random generator, trigonometry or libm square roots affect
-the cells. Impact history is bounded at eight slots, merging into the nearest when full; a ninth cut
-or a cut that would exceed 512 cells also merges. Merging retains the old cut's location/seed, a
-deliberate limit on very heavily damaged panes. Tempered adapts its minimum piece size to keep a
-large pane below the cell bound. Strength/settings are quantized before networking.
+All coordinates use a 1/1024 wire grid, an integer Park?Miller generator, an integer circle table
+and integer square roots. Hull/Clip merge vertices closer than 1/256 before sending any piece to
+G1-B's mesh builder. No global random generator, trigonometry or libm roots affect the cells.
+Tempered glass starts as one intact convex, shows a small spiderweb near impacts and generates a
+bounded uniform grid only when the whole pane shatters. Its grid is never rendered as cracks.
 
-Cracks use the same cell edges as the eventual pieces. Their visible extent grows with accumulated
-energy; sharp hits thicken the fine central/radial geometry into a hole mark. Thin frosted strips sit
-on both pane faces. Meshes rebuild only when state changes. The server rebuilds VPhysics only when
-glass breaks out; clients mirror remaining convexes for prediction, including late entity creation.
-No convex covers an opening. A physics-build failure falls back to a full cosmetic break.
+Cracks use cell edges, excluding the pane's original border. Their visible extent grows with
+energy; thin frosted strips sit on both faces. Remaining polygons and cracks are cached. Support
+connectivity uses shared edges and runs once per breakout, never on an ordinary cracking hit.
+Complete groups and immutable cell arrays let snapshots retain pre-break state without recomputing
+history. Server collision rebuilds only at breakout; clients mirror remaining convexes for prediction.
+No convex covers a hole. A physics-build failure releases the remaining glass with pieces.
+See [ADR 0075](../docs/decisions/0075-incremental-glass-topology.md).
 
 Near pieces receive the impact direction with squared distance falloff and seeded spin. Far pieces
 have little or no initial velocity and fall in G1-B's gravity. A scripted break releases the whole
@@ -73,13 +76,12 @@ otherwise the pane centre with nominal energy. Cleanup suppresses pending native
 
 ## State and map logic
 
-The server sends a pane definition/frame once, then 19-byte impact payloads (27 bytes including pane
-ID, revision and flags). A breaking event additionally contains the preceding bounded state, so a removed/not-yet
-transmitted entity cannot swallow its pieces. There is no mesh or per-piece networking. A joining
-player gets the current bounded impacts, holes, seed, energy and revision; restoring them creates
-cracks/collision, with no historical debris replay. A client requests resynchronization on a missing
-revision. The only client-to-server routes are a rate-limited read-only sync and validated admin
-setting changes. Other add-ons' native damage hooks are not suppressed.
+The server sends a pane definition/frame once, then compact impact events (27 bytes including
+ID/revision/flags). Breaks also carry their pre-state so a missing or already removed entity cannot
+swallow pieces. Snapshots include bounded live pane topology and complete subdivision groups,
+sharing vertex coordinates; a 501-cell probe uses 16,721 bytes. Restore resumes that topology
+without history replay or historical debris. This is pane state only: no moving piece/pose stream
+or per-piece server entities. Settings remain validated server/admin changes.
 
 Map startup, newly created map brushes, cleanup and save restore are covered. Surface geometry uses
 the largest valid brush face, its convex outline and original material metadata; rendering uses the

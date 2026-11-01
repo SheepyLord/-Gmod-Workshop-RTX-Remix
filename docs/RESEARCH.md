@@ -1,5 +1,21 @@
 # Research notes
 
+## G1-A incremental fracture probes (2026-11-01)
+
+- `tools/tests/nlglass_fracture_harness.lua` now reproduces lost hit location at the fourth
+  separated impact against 3096b2e, sub-floor energy loss, full tempered grid cracks, a 1/1024
+  clipped edge and border cracks. All fail before the fix and pass after it. The 180-seed edge
+  probe checks 36,015 generated edges at or above 1/256. The 100-hit coarsening probe peaks at
+  512 cells with area error 0.01414 on a 32,768-unit² pane; another preserves an existing hole.
+- The same 80-sample high-resolution near-cap workload (100 preparation hits outside timing)
+  measured before/after mean new-hit 12.5675/1.1596 ms, repeat 13.6601/0.1359 ms and break
+  14.5538/0.8603 ms. Before/after p99: hit 20.8927/2.7537, repeat 23.7746/1.4296, break
+  23.1292/3.1285 ms. Prepared cell counts: 493/502. These are LuaJIT fracture CPU times;
+  no GMod, native debris, physics initialization, rendering or network transport is measured.
+- `tools/tests/nlglass_engine_harness.lua topology` round-trips 501 live cells and 47 complete
+  subdivision groups in 16,721 bytes, then compares the next break's polygons. Remaining/crack
+  caches avoid repeated support passes; only a breakout needs adjacency/support traversal.
+
 ## G1-A contact and hidden-surface output investigation (2026-11-01)
 
 - In the read-only `out/qa-poc/g1/02-qa/console.log`, the 40-pane falling scene reports mean

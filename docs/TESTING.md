@@ -1,5 +1,18 @@
 # Testing
 
+## G1-A fix pass: incremental fracture
+
+The plain LuaJIT harness runs cap-location, weak-energy/floor, local tempered spiderweb, perimeter,
+tiny-edge, revision-cache and coarsening regressions without a game. One hundred separated impacts
+reach 512 cells (area error 0.01414/32,768 units²); a perforated-pane probe checks old holes stay
+empty. A 180-seed probe checks 36,015 edges. The typed engine harness restores a 16,721-byte pane
+snapshot (501 cells/47 groups) and checks its following break against the server.
+
+`luajit tools/tests/nlglass_fracture_harness.lua glass/addon/lua timings` prepares 100 impacts,
+then times 80 new hits, repeats and breaks with QueryPerformanceCounter. Before/after mean times
+on this machine: 12.5675/1.1596, 13.6601/0.1359 and 14.5538/0.8603 ms (493/502 prepared cells).
+This measures fracture CPU only; actual game frame-time acceptance remains with Claude.
+
 ## G1-A glass (offline)
 
 Validation on `g1-lua` (2026-11-01): `tools\test.ps1 -Config Release` exits 0, conventions pass,

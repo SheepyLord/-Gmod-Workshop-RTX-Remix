@@ -47,6 +47,35 @@ class FractureTests(unittest.TestCase):
     def test_scripted_nominal_break_always_has_pieces(self):
         self.run_case('forced')
 
+    def test_hits_beyond_cell_and_history_caps_keep_their_location(self):
+        self.run_case('cap_local')
+
+    def test_weak_energy_accumulates_and_pistol_crack_floor_is_capped(self):
+        self.run_case('weak')
+
+    def test_incremental_cells_and_revision_caches(self):
+        self.run_case('incremental')
+
+    def test_tempered_cracks_are_local_spiderwebs(self):
+        self.run_case('tempered_spider')
+
+    def test_clipping_merges_tiny_edges(self):
+        self.run_case('tiny_edges')
+
+    def test_cracks_exclude_the_pane_perimeter(self):
+        self.run_case('border')
+
+    def test_one_hundred_hits_coarsen_old_rings_and_preserve_area(self):
+        self.run_case('coarsen')
+
+    def test_coarsening_cannot_fill_old_holes(self):
+        self.run_case('hole_coarsen')
+
+    def test_record_hit_and_break_timings(self):
+        output = self.run_case('timings')
+        self.assertIn('hit n=80 mean_ms=', output)
+        self.assertIn('break n=80 mean_ms=', output)
+
 
 class GlassCatalogTests(unittest.TestCase):
     def test_complete_mit_catalogs_and_exact_generated_shipping_data(self):
@@ -137,3 +166,6 @@ class EngineTests(unittest.TestCase):
 
     def test_budget_slider_matches_convar_bound(self):
         self.run_case('budget')
+
+    def test_near_cap_topology_snapshot_and_following_break(self):
+        self.run_case('topology')

@@ -4,6 +4,10 @@ Includes G1-A fix-pass regressions for oriented body contact, pre-movement playe
 independent client convars, engine-effect-free map output routing, weak native last impacts,
 blast ordering and the matching debris-budget bound.
 
+Fracture regressions cover local hits beyond the old cap, weak energy/floor, revision caches,
+tempered spiderwebs, 1/256 edge merging, perimeter omission, complete-group coarsening with holes,
+bounded topology snapshots and repeatable near-cap timing output.
+
 G1-A unit/integration acceptance under LuaJIT, invoked by `tools/test.ps1`:
 
 ```powershell

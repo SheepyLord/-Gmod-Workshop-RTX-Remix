@@ -1,5 +1,5 @@
 -- MIT. Pure Lua 5.1: no engine globals, random(), trigonometry or platform-dependent hash order.
-local F = {MAX_IMPACTS = 8, MAX_CELLS = 512, GRID = 1024}
+local F = {MAX_IMPACTS = 8, MAX_CELLS = 512, GRID = 1024, MIN_EDGE = 1/256}
 local abs, floor, min, max = math.abs, math.floor, math.min, math.max
 local function clamp(x, a, b) return max(a, min(b, x)) end
 local function snap(x) return floor(x * F.GRID + 0.5) / F.GRID end
@@ -50,6 +50,18 @@ function F.Hull(points)
         hull[#hull + 1] = p[i]
     end
     table.remove(hull)
+    -- Clipping can produce distinct snapped points a single wire step apart. The debris mesh
+    -- rejects such edges; collapse them here, identically in collision, drawing and snapshots.
+    local changed=true
+    while changed and #hull>=3 do
+        changed=false
+        for i,a in ipairs(hull) do
+            local j=i%#hull+1 local b=hull[j]
+            if (a[1]-b[1])^2+(a[2]-b[2])^2<F.MIN_EDGE^2 then
+                table.remove(hull,j) changed=true break
+            end
+        end
+    end
     return hull
 end
 
@@ -89,6 +101,7 @@ function F.Threshold(def)
     local kindScale = def.kind == "tempered" and 3.5 or 1
     return clamp(floor(450000 * areaScale * def.thickness * def.thickness * def.strength * kindScale + 0.5),1,2000000000)
 end
+function F.CrackFloor(def) return min(36000,max(1,floor(F.Threshold(def)*0.08))) end
 
 -- Integer circle, linearly interpolated. Rays jitter in angle, but their ordering cannot cross.
 local circle = {{1024,0},{946,392},{724,724},{392,946},{0,1024},{-392,946},{-724,724},{-946,392},
@@ -135,44 +148,6 @@ local function bounds(poly)
 end
 local function overlap(a,b) return a[1]<=b[3]+0.01 and b[1]<=a[3]+0.01 and a[2]<=b[4]+0.01 and b[2]<=a[4]+0.01 end
 
-local function partition(def, impacts)
-    local cells = {{poly=def.outline, tags={}}}
-    if def.kind == "tempered" then
-        local box = bounds(def.outline)
-        -- At most ~400 tiles even for a very large brush. Piece size remains a lower bound.
-        local size = max(def.piece_size, F.Root((box[3]-box[1])*(box[4]-box[2])/360)+1)
-        cells = {}
-        for x=box[1],box[3]-0.001,size do for y=box[2],box[4]-0.001,size do
-            local poly=F.Clip(def.outline,{{x,y},{x+size,y},{x+size,y+size},{x,y+size}})
-            if poly then cells[#cells+1]={poly=poly,tags={}} end
-        end end
-    else
-        for slot, hit in ipairs(impacts) do
-            local nextCells = {}
-            local cuts = tiles(def,hit)
-            for _, tile in ipairs(cuts) do tile.bounds=bounds(tile.poly) end
-            for _, cell in ipairs(cells) do
-                local box=bounds(cell.poly)
-                for _, tile in ipairs(cuts) do
-                    if overlap(box,tile.bounds) then
-                        local poly=F.Clip(cell.poly,tile.poly)
-                        if poly then
-                            local tags={}
-                            for k,v in ipairs(cell.tags) do tags[k]=v end
-                            tags[slot]=tile.ring
-                            nextCells[#nextCells+1]={poly=poly,tags=tags}
-                            if #nextCells>F.MAX_CELLS then return nil end
-                        end
-                    end
-                end
-            end
-            cells=nextCells
-        end
-    end
-    for _, c in ipairs(cells) do c.center, c.bounds = F.Center(c.poly), bounds(c.poly) end
-    return cells
-end
-
 -- A shared edge may be subdivided by another cut; endpoint equality alone loses islands.
 local function sharedEdge(a,b,c,d)
     local dx,dy=b[1]-a[1],b[2]-a[2]
@@ -190,82 +165,233 @@ local function touches(first,second)
     return false
 end
 
-local function remaining(def, impacts, cells, all)
-    local keep, queue = {}, {}
-    for i,c in ipairs(cells) do
-        local removed=all
-        for slot,h in ipairs(impacts) do if (c.tags[slot] or math.huge)<=h.hole then removed=true end end
-        if not removed then
-            keep[i]=false
-            if touches(c.poly,def.outline) then keep[i]=true queue[#queue+1]=i end
-        end
-    end
-    local cursor=1
-    while queue[cursor] do
-        local c=cells[queue[cursor]]
-        for j,d in ipairs(cells) do
-            if keep[j]==false and overlap(c.bounds,d.bounds) and touches(c.poly,d.poly) then
-                keep[j]=true queue[#queue+1]=j
+local function adjacency(cells)
+    -- Sweep bounds once to build adjacency. The previous flood repeatedly compared every pair,
+    -- including distant cells, on every Remaining() call.
+    local order,adj={},{}
+    for i=1,#cells do order[i]=i adj[i]={} end
+    table.sort(order,function(a,b) return cells[a].bounds[1]<cells[b].bounds[1] or
+        (cells[a].bounds[1]==cells[b].bounds[1] and a<b) end)
+    for a=1,#order do
+        local i=order[a] local c=cells[i]
+        for b=a+1,#order do
+            local j=order[b] local d=cells[j]
+            if d.bounds[1]>c.bounds[3]+0.01 then break end
+            if overlap(c.bounds,d.bounds) and touches(c.poly,d.poly) then
+                adj[i][#adj[i]+1]=j adj[j][#adj[j]+1]=i
             end
         end
+    end
+    return adj
+end
+local function supported(def,cells)
+    local keep,queue={},{}
+    for i,c in ipairs(cells) do
+        keep[i]=false
+        if touches(c.poly,def.outline) then keep[i]=true queue[#queue+1]=i end
+    end
+    local adj=adjacency(cells)
+    local cursor=1
+    while queue[cursor] do
+        for _,j in ipairs(adj[queue[cursor]]) do if not keep[j] then keep[j]=true queue[#queue+1]=j end end
         cursor=cursor+1
     end
     return keep
 end
 
-function F.New(def)
-    return {def=def, impacts={}, damage=0, revision=0, all=false, cells=partition(def,{})}
+local function cell(poly,tags,id) return {poly=poly,tags=tags or {},id=id,center=F.Center(poly),bounds=bounds(poly)} end
+local function copyTags(tags)
+    local out={} for i=1,F.MAX_IMPACTS do out[i]=tags[i] end return out
+end
+local function cache(state)
+    state.polys={} for _,c in ipairs(state.cells) do state.polys[#state.polys+1]=c.poly end
+    state.cracks=nil state.visualRevision=state.revision
+end
+local function uniform(def)
+    local box,cells=bounds(def.outline),{}
+    local size=max(def.piece_size,F.Root((box[3]-box[1])*(box[4]-box[2])/360)+1)
+    for x=box[1],box[3]-0.001,size do for y=box[2],box[4]-0.001,size do
+        local poly=F.Clip(def.outline,{{x,y},{x+size,y},{x+size,y+size},{x,y+size}})
+        if poly then cells[#cells+1]=cell(poly) end
+    end end
+    return cells
 end
 
-function F.Restore(def, impacts, damage, revision, all)
-    local state=F.New(def)
-    state.impacts,state.damage,state.revision,state.all=impacts,damage,revision,all
-    state.cells=assert(partition(def,impacts),"glass snapshot exceeds cell bound")
-    return state
+-- Retain the subdivision tree. A complete old subtree can return to its exact convex parent,
+-- even when no pair of its clipped children has a convex union. An incomplete subtree (a hole)
+-- can never coarsen. Only live nodes/complete groups survive, so the tree is bounded by 2*cells-1.
+local function descendants(cells,groups)
+    local nodes,memo={},{}
+    for _,c in ipairs(cells) do memo[c.id]={c.id} end
+    for _,g in ipairs(groups) do nodes[g.id]=g end
+    local function visit(id)
+        if memo[id]~=nil then return memo[id] end
+        local g=nodes[id] if not g then memo[id]=false return false end
+        local out,complete={},true
+        for _,child in ipairs(g.children) do
+            local leaves=visit(child)
+            if not leaves then complete=false else for _,leaf in ipairs(leaves) do out[#out+1]=leaf end end
+        end
+        memo[id]=complete and out or false return memo[id]
+    end
+    for _,g in ipairs(groups) do visit(g.id) end
+    return memo
+end
+local function prune(cells,groups)
+    local leaves=descendants(cells,groups) local live,out={},{}
+    for _,c in ipairs(cells) do live[c.id]=true end
+    for _,g in ipairs(groups) do if not live[g.id] and leaves[g.id] then out[#out+1]=g end end
+    return out
+end
+local function distanceSquared(poly,hit)
+    local inside,closest=true,math.huge
+    for i,a in ipairs(poly) do
+        local b=poly[i%#poly+1] local dx,dy=b[1]-a[1],b[2]-a[2]
+        if dx*(hit.y-a[2])-dy*(hit.x-a[1])<0 then inside=false end
+        local t=clamp(((hit.x-a[1])*dx+(hit.y-a[2])*dy)/max(0.000001,dx*dx+dy*dy),0,1)
+        closest=min(closest,(hit.x-a[1]-t*dx)^2+(hit.y-a[2]-t*dy)^2)
+    end
+    return inside and 0 or closest
+end
+local function coarsen(cells,groups,hit,target,protect)
+    local leaves=descendants(cells,groups)
+    local order={}
+    for _,g in ipairs(groups) do
+        local distance=distanceSquared(g.poly,hit)
+        if leaves[g.id] and distance>protect*protect then order[#order+1]={group=g,distance=distance} end
+    end
+    table.sort(order,function(a,b) return a.distance>b.distance or (a.distance==b.distance and a.group.id<b.group.id) end)
+    local replacement,chosen,count={},{},#cells
+    for _,entry in ipairs(order) do
+        if count<=target then break end
+        local g=entry.group local list=leaves[g.id] local available=true
+        for _,id in ipairs(list) do if replacement[id] then available=false break end end
+        if available then
+            for _,id in ipairs(list) do replacement[id]=g end
+            chosen[g.id]=true count=count-#list+1
+        end
+    end
+    local out,emitted={},{}
+    for _,c in ipairs(cells) do
+        local g=replacement[c.id]
+        if not g then out[#out+1]=c elseif not emitted[g.id] then
+            emitted[g.id]=true out[#out+1]=cell(g.poly,g.tags,g.id)
+        end
+    end
+    return out,prune(out,groups)
+end
+
+local function refine(def,cells,groups,nextID,hit,slot,radius)
+    local cuts=tiles(def,hit)
+    for _,tile in ipairs(cuts) do tile.bounds=bounds(tile.poly) end
+    local near={hit.x-radius,hit.y-radius,hit.x+radius,hit.y+radius}
+    local out,newGroups={},{}
+    for _,g in ipairs(groups) do newGroups[#newGroups+1]=g end
+    for _,c in ipairs(cells) do
+        if c.tags[slot] or not overlap(c.bounds,near) then out[#out+1]=c else
+            local children={}
+            for _,tile in ipairs(cuts) do if overlap(c.bounds,tile.bounds) then
+                local poly=F.Clip(c.poly,tile.poly)
+                if poly then
+                    local tags=copyTags(c.tags) tags[slot]=tile.ring
+                    nextID=nextID+1 children[#children+1]=cell(poly,tags,nextID)
+                end
+            end end
+            if #children==1 then children[1].id=c.id end
+            if #children==0 then out[#out+1]=c end
+            if #children>1 then
+                local ids={} for _,child in ipairs(children) do ids[#ids+1]=child.id end
+                newGroups[#newGroups+1]={id=c.id,poly=c.poly,tags=c.tags,children=ids}
+            end
+            for _,child in ipairs(children) do out[#out+1]=child end
+        end
+    end
+    return out,newGroups,nextID
+end
+
+function F.New(def)
+    local s={def=def,impacts={},damage=0,pending=0,retiredEnergy=0,revision=0,all=false,cells={cell(def.outline,{},1)},groups={},nextCellID=1}
+    cache(s) return s
+end
+
+function F.Restore(def,impacts,damage,revision,all,cells,pending,retiredEnergy,groups,nextCellID)
+    local s={def=def,impacts=impacts,damage=damage,revision=revision,all=all,
+        pending=pending or 0,retiredEnergy=retiredEnergy or 0,cells={},groups=groups or {},nextCellID=nextCellID or 1}
+    for _,c in ipairs(cells or {}) do s.cells[#s.cells+1]=cell(c.poly,c.tags,c.id) end
+    assert(#s.cells<=F.MAX_CELLS,"glass snapshot exceeds cell bound")
+    cache(s) return s
+end
+function F.Snapshot(s)
+    -- Cells/impacts are immutable across Apply. A pre-break snapshot needs no fracture rebuild.
+    return {def=s.def,impacts=s.impacts,damage=s.damage,revision=s.revision,all=s.all,cells=s.cells,
+        pending=s.pending,retiredEnergy=s.retiredEnergy,visualRevision=s.visualRevision,groups=s.groups,nextCellID=s.nextCellID}
 end
 
 function F.Remaining(state)
-    local out,keep={},remaining(state.def,state.impacts,state.cells,state.all)
-    for i,c in ipairs(state.cells) do if keep[i] then out[#out+1]=c.poly end end
-    return out
+    if not state.polys then -- also supports hand-constructed diagnostic fixtures
+        local keep=supported(state.def,state.cells)
+        state.polys={}
+        for i,c in ipairs(state.cells) do if keep[i] and not state.all then state.polys[#state.polys+1]=c.poly end end
+    end
+    return state.polys
 end
 
 function F.Apply(state, impact, forceAll, watchOnly)
     local threshold=F.Threshold(state.def)
     local energy=clamp(floor(impact.energy+0.5),0,2147483647)
-    if not forceAll and energy<max(1,floor(threshold*0.08)) then return {},false end
+    if state.all or (not forceAll and energy==0) then return {},false end
+    state.damage=min(2147483647,state.damage+energy)
+    state.pending=min(2147483647,state.pending+energy)
+    state.revision=state.revision+1
+    if not forceAll and state.pending<F.CrackFloor(state.def) then return {},true,false end
+    local accumulated=state.pending state.pending=0
     local hits={}
     for i,h in ipairs(state.impacts) do local copy={} for k,v in pairs(h) do copy[k]=v end hits[i]=copy end
-    local nearest,dist=1,math.huge
+    local nearest,dist,furthest,far=1,math.huge,1,-1
     for i,h in ipairs(hits) do
         local dx,dy=h.x-impact.x,h.y-impact.y
         local d=dx*dx+dy*dy
         if d<dist then nearest,dist=i,d end
+        if d>far then furthest,far=i,d end
     end
-    local append=#hits<F.MAX_IMPACTS and dist>state.def.piece_size*state.def.piece_size
-    if #hits==0 or append then
-        hits[#hits+1]={x=snap(impact.x),y=snap(impact.y),energy=0,seed=impact.seed,
-            rays=clamp(8+floor(energy/120000)*2,8,16),kind=impact.kind,hole=0,dx=impact.dx,dy=impact.dy,dz=impact.dz}
-        nearest=#hits
-    end
-    local cells=partition(state.def,hits)
-    if not cells then
-        table.remove(hits)
-        nearest,dist=1,math.huge
-        for i,h in ipairs(hits) do
-            local dx,dy=h.x-impact.x,h.y-impact.y
-            local d=dx*dx+dy*dy
-            if d<dist then nearest,dist=i,d end
+    local cells,groups,nextID=state.cells,state.groups,state.nextCellID
+    if #hits==0 or dist>1 then
+        nearest=#hits<F.MAX_IMPACTS and #hits+1 or furthest
+        if hits[nearest] then state.retiredEnergy=min(2147483647,state.retiredEnergy+hits[nearest].energy) end
+        hits[nearest]={x=snap(impact.x),y=snap(impact.y),energy=0,seed=impact.seed,
+            rays=clamp(8+floor(accumulated/120000)*2,8,16),kind=impact.kind,hole=0,dx=impact.dx,dy=impact.dy,dz=impact.dz}
+        local cleared={}
+        for _,c in ipairs(cells) do
+            if c.tags[nearest] then local tags=copyTags(c.tags) tags[nearest]=nil cleared[#cleared+1]=cell(c.poly,tags,c.id)
+            else cleared[#cleared+1]=c end
         end
-        cells=state.cells
+        cells=cleared
+        local clearedGroups={}
+        for _,g in ipairs(groups) do
+            if g.tags[nearest] then local tags=copyTags(g.tags) tags[nearest]=nil
+                clearedGroups[#clearedGroups+1]={id=g.id,poly=g.poly,tags=tags,children=g.children}
+            else clearedGroups[#clearedGroups+1]=g end
+        end
+        groups=clearedGroups
     end
-    local before=remaining(state.def,hits,cells,state.all)
     local hit=hits[nearest]
-    hit.energy=min(2147483647,hit.energy+energy)
-    state.damage=min(2147483647,state.damage+energy)
+    hit.energy=min(2147483647,hit.energy+accumulated)
     local broke=forceAll or (not watchOnly and state.damage>=threshold)
+    local whole=forceAll or (broke and state.def.kind=="tempered")
+    if state.def.kind=="annealed" then
+        -- Refine just the contact neighbourhood. Extending every new ray through all old rings
+        -- recreates the quadratic cross-cut explosion this bound is meant to avoid.
+        local refined,newGroups,newID=refine(state.def,cells,groups,nextID,hit,nearest,state.def.piece_size)
+        if #refined>F.MAX_CELLS then refined,newGroups=coarsen(refined,newGroups,hit,F.MAX_CELLS-64,state.def.piece_size*3) end
+        if #refined>F.MAX_CELLS then refined,newGroups=coarsen(refined,newGroups,hit,F.MAX_CELLS,state.def.piece_size) end
+        if #refined>F.MAX_CELLS then
+            -- A pane with too many non-convex hole boundaries cannot be coarsened exactly. Release
+            -- the remaining bounded topology rather than moving a hit or creating invisible glass.
+            whole,broke=true,true
+        else cells,groups,nextID=refined,newGroups,newID end
+    elseif whole then cells=uniform(state.def) end
     if broke then
-        if forceAll or state.def.kind=="tempered" then state.all=true else
+        if not whole then
             local _,radii=tiles(state.def,hit)
             local radius=state.def.piece_size*(2+F.Root(state.damage*100/ max(1,threshold))/4)
             local oldHole=hit.hole
@@ -274,10 +400,24 @@ function F.Apply(state, impact, forceAll, watchOnly)
         end
         state.damage=0
     end
-    local after=remaining(state.def,hits,cells,state.all)
-    local pieces={}
+    local candidates,removed={},{}
+    local holeRadius=0
+    if broke and not whole then local _,radii=tiles(state.def,hit) holeRadius=radii[hit.hole+1] or 0 end
     for i,c in ipairs(cells) do
-        if before[i] and not after[i] then
+        local near=(c.center[1]-impact.x)^2+(c.center[2]-impact.y)^2<=holeRadius*holeRadius
+        if whole or (broke and ((c.tags[nearest] or math.huge)<=hit.hole or (not c.tags[nearest] and near))) then removed[#removed+1]=c
+        else candidates[#candidates+1]=c end
+    end
+    if broke and not whole then
+        local keep=supported(state.def,candidates)
+        local supportedCells={}
+        for i,c in ipairs(candidates) do
+            if keep[i] then supportedCells[#supportedCells+1]=c else removed[#removed+1]=c end
+        end
+        candidates=supportedCells
+    end
+    local pieces={}
+    for i,c in ipairs(removed) do
             local dx,dy=c.center[1]-impact.x,c.center[2]-impact.y
             local distance=F.Root(dx*dx+dy*dy)
             local reach=state.def.piece_size*10
@@ -287,19 +427,35 @@ function F.Apply(state, impact, forceAll, watchOnly)
             pieces[#pieces+1]={poly=c.poly,thickness=state.def.thickness,
                 velocity={impact.dx*speed,impact.dy*speed,impact.dz*speed},
                 spin={(rng(361)-180)*falloff,(rng(361)-180)*falloff,rng(241)-120},seed=impact.seed+i}
-        end
     end
-    state.impacts,state.cells,state.revision=hits,cells,state.revision+1
+    state.impacts,state.cells,state.all=hits,candidates,whole or #candidates==0
+    state.groups=whole and {} or (broke and prune(candidates,groups) or groups)
+    state.nextCellID=nextID
+    cache(state)
     return pieces,true,broke
 end
 
 function F.Cracks(state)
+    if state.cracks then return state.cracks end
     local lines,seen={},{}
-    for _,poly in ipairs(F.Remaining(state)) do for i,a in ipairs(poly) do
+    local polys=F.Remaining(state)
+    if state.def.kind=="tempered" and not state.all then
+        -- The uniform pieces exist only at shatter time. Before that, a small impact spiderweb.
+        polys={}
+        for _,h in ipairs(state.impacts) do
+            for _,tile in ipairs(tiles(state.def,h)) do if tile.ring<=3 then
+                local poly=F.Clip(state.def.outline,tile.poly) if poly then polys[#polys+1]=poly end
+            end end
+        end
+    end
+    for _,poly in ipairs(polys) do for i,a in ipairs(poly) do
         local b=poly[i%#poly+1]
         local mid={(a[1]+b[1])/2,(a[2]+b[2])/2}
-        for _,h in ipairs(state.impacts) do
+        local border=false
+        for j,c in ipairs(state.def.outline) do if sharedEdge(a,b,c,state.def.outline[j%#state.def.outline+1]) then border=true break end end
+        for _,h in ipairs(state.impacts) do if not border then
             local extent=state.def.piece_size*(1+F.Root(h.energy/1500)/3)
+            if state.def.kind=="tempered" then extent=min(extent,state.def.piece_size*2.5) end
             local dx,dy=mid[1]-h.x,mid[2]-h.y
             if dx*dx+dy*dy<=extent*extent then
                 local first,second=a,b
@@ -307,8 +463,9 @@ function F.Cracks(state)
                 local key=table.concat({first[1],first[2],second[1],second[2]},":")
                 if not seen[key] then lines[#lines+1]={a,b,sharp=h.kind=="sharp"} seen[key]=true end
             end
-        end
+        end end
     end end
+    state.cracks=lines
     return lines
 end
 

@@ -22,6 +22,9 @@ hole exclusion, forced breaks without an initial snapshot, native health ownersh
 breaker / nominal fallback, once-only surface output bridging, remaining frozen convexes, actual
 typed packets with float32 fields, two-client replay, late join, cached mesh drawing, deduplicated
 explosion impulses, cleanup epochs, property-only restore/dupe, tool CPPI/limits, translations,
+
+`topology` additionally round-trips a near-cap pane's live cells/coarsening groups through the typed
+wire mock, checks the message-size bound and compares the next break's polygons on server/client.
 admin authorization, injection refusal and reset (including queued edits), rotated triangular brush
 frames/material objects, surviving cleanup panes, delayed client entities, reused index safety and
 collision-build failure. Engine callback order and object liveness can be
