@@ -8,9 +8,12 @@ Claude still combines G1-B's fixes and checks player contact, map outputs/effect
 tempered visuals, two clients/prediction and the 40/50-pane scene in game. No game was launched,
 no install changed, no G1-B file edited and no package, upload, push, merge or tag was made.
 
-G1-A's post-integration fix pass is **in progress** on `g1-lua-fix` (2026-11-01). Contact,
-replicated settings, quiet map output routing and small server/menu fixes pass offline regressions;
-incremental bounded fracture, client cost/culling and targeted synchronization are next.
+G1-B fix-pass implementation and offline checks are **done** on `g1-native-fix` (2026-11-01):
+gm_construct imports despite isolated bad hulls, terrain indexing/tags are corrected, preparation
+and stepping run on polled workers, active/changed pose queues and staged pile chunks reduce client
+work, and cache saturation stays nonfatal. Release passes 25 CTests and 426 Python tests with the
+documented local guard-output path workaround. Real map/prop contacts, responsive first breaks and
+Remix frame-time acceptance stay with Claude; see [the fix report](handover/G1-B-fix-report.md).
 
 G1-A is **implemented and passes offline acceptance** on `g1-lua` (2026-11-01): original MIT panes,
 unified impacts/strength, bounded deterministic annealed/tempered fracture, synchronized growing

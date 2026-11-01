@@ -1401,3 +1401,49 @@ Evidence: `out/qa-poc/c16/` (each run's shots, `console.log` and `remix-dxvk.log
 
 Receipts: `out/tmp/c16-verify-final.log`, `c16-inputs-verify.log`, `c16-package-build.log`,
 `c16-release-tests-plain.log` and `c16-validation-summary.json`.
+
+## G1-B fix pass: offline map probe
+
+`out/build/win64-release/glass/native/nl_glass_import_probe.exe <map.bsp>` opens only the named
+file for reading, validates the same 256 MiB bound, and prints considered/clipped/skipped/refused
+brushes, displacement triangles, prop metadata, static bodies and parse/build timings. It does not
+extract client model collision, write fixtures or start a game. Exit 0 means a usable finished world;
+1 means refusal/read failure; 2 means missing argument. CTest never reads an installed map.
+Generated regressions cover 62-sided clipping, Jolt-refused brush/prop convexes, ordinary triangle
+tags without SURFACE, explicit REMOVE holes and asymmetric displacement indexing.
+
+### G1-B fix-pass checks
+
+Generated native cases now also cover asymmetric displacements with ordinary tags 0/2/6,
+Jolt-refused brush and prop convexes, active-only pose queues, safe contact saturation, background
+import/finish/step polling and joining at teardown. A separate 4,000-body async probe prints dispatch,
+poll and worker timings and measured catch-up limiting. The import probe also prints asynchronous
+copy/enqueue, poll and total cooking time without extracting client model collision.
+
+The Lua harness checks changed-ID consumption (including poisoned unused rows), zero worker
+requests for an unchanged sleeping world, refused model isolation, bounded queued spawning and
+safe deferred removal/impulse, retained old pile chunks through multi-frame rebuilds, failed mesh
+build retention/retry, per-frame work limits, affected-chunk wakes and in-flight cleanup. Its optional
+`skip perf` arguments run the original/corrected manager against identical mocked physics.
+Claude still owns real-map terrain/prop contacts, late-frame behavior during import, pile wake /
+expiry / cleanup visibility, and empty/falling/settled Remix frame-time acceptance with thousands
+of pieces. No game is started by any of these tests.
+
+### G1-B final import receipt and local gate environment
+
+After moving the owned BSP buffer's release onto the import worker, the final read-only probe
+reports the same geometry counts, standalone parse 14.50 ms, Init 1.13 ms, parse/cook/finish
+46.60 ms. Async enqueue/copy is 3.79 ms, maximum poll .0069 ms, total preparation 76.12 ms;
+Init scratch remains zero. Evidence: `out/g1-native-fix/import-delivery.log`. These timings exclude
+Lua's engine VFS read and client prop collision extraction.
+
+The full Release gate's sole initial failure was the existing guard fixture's MAX_PATH limit:
+`loader/guard/tests/test_early.cpp:198` uses `std::filesystem::last_write_time` on a long generated
+cache path. This worktree uses the already documented local-only CMake output relocation:
+`out/g1-native-fix/short-guard-output.cmake`, loaded by the ignored build cache's
+`CMAKE_PROJECT_native_loader_INCLUDE`, defers only the guard test output to `${CMAKE_BINARY_DIR}/g`.
+No loader/guard source, assertion, registered test, tracked build setting, drive mapping or system
+setting changed. With that local setup, `tools/test.ps1 -Config Release` passes 25 CTests and 426
+Python tests (373 tools, 28 gmapack, 25 steam; two expected skips). The glass native target has 19
+cases and the actual Lua manager/probe harness passes 3,264 assertions. Receipt:
+`out/g1-native-fix/test-release-final.log`.

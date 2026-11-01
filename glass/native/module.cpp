@@ -44,11 +44,11 @@ V3 vector(ILuaBase* l,int index,float bound,bool angle=false) {
   }
   need(v.valid(bound),"nonfinite/out-of-range vector");return v;
 }
-Hull hull(ILuaBase* l,int index) {
+Hull hull(ILuaBase* l,int index,bool require_volume=true) {
   need(l->IsType(index,Type::Table),"expected hull point array");index=absolute(l,index);
   const int count=l->ObjLen(index);need(count>=4 && count<=static_cast<int>(kMaxHullPoints),"hull requires 4-256 points");
   Hull h;h.reserve(count);for(int i=1;i<=count;++i) { get(l,index,i);h.push_back(vector(l,-1,kCoordinateLimit));l->Pop(); }
-  need(valid_hull(h),"flat/invalid hull");return h;
+  need(!require_volume || valid_hull(h),"flat/invalid hull");return h;
 }
 std::uint32_t id(ILuaBase* l) { return integer(l,1,1,std::numeric_limits<std::uint32_t>::max()); }
 World& active(ILuaBase* l) { need(l==owner && world!=nullptr,"nlglass is not initialized in this client realm");return *world; }
@@ -62,15 +62,8 @@ template<class F> int guarded(ILuaBase* l,F&& f) noexcept {
   }
 }
 int success(ILuaBase* l) { l->PushBool(true);return 1; }
-LUA_FUNCTION_STATIC(Init) { return guarded(LUA,[&] {
-  const auto budget=integer(LUA,1,1,kMaxBudget);const auto gravity=static_cast<float>(number(LUA,2,0,10000));
-  world.reset();world=std::make_unique<World>(budget,gravity);return success(LUA);
-}); }
-LUA_FUNCTION_STATIC(LoadMap) { return guarded(LUA,[&] {
-  auto& w=active(LUA);need(LUA->IsType(1,Type::String),"expected BSP byte string");unsigned len=0;
-  const auto* data=LUA->GetString(1,&len);need(data && len<=kMaxMapBytes,"BSP input size limit");
-  const auto props=w.load_map({reinterpret_cast<const std::uint8_t*>(data),len});
-  LUA->CreateTable();unsigned index=0;
+int prop_table(ILuaBase* l,const std::vector<StaticProp>& props) {
+  auto* LUA=l;LUA->CreateTable();unsigned index=0;
   for(const auto& p:props) {
     LUA->CreateTable();LUA->PushString(p.model.c_str());set(LUA,-2,"model");
     auto addvec=[&](V3 v,const char* field) {
@@ -80,19 +73,41 @@ LUA_FUNCTION_STATIC(LoadMap) { return guarded(LUA,[&] {
     LUA->PushNumber(p.scale);set(LUA,-2,"scale");set(LUA,-2,++index);
   }
   return 1;
+}
+std::span<const std::uint8_t> map_bytes(ILuaBase* l) {
+  need(l->IsType(1,Type::String),"expected BSP byte string");unsigned len=0;
+  const auto* data=l->GetString(1,&len);need(data && len<=kMaxMapBytes,"BSP input size limit");
+  return {reinterpret_cast<const std::uint8_t*>(data),len};
+}
+LUA_FUNCTION_STATIC(Init) { return guarded(LUA,[&] {
+  const auto budget=integer(LUA,1,1,kMaxBudget);const auto gravity=static_cast<float>(number(LUA,2,0,10000));
+  world.reset();world=std::make_unique<World>(budget,gravity);return success(LUA);
+}); }
+LUA_FUNCTION_STATIC(LoadMap) { return guarded(LUA,[&] {
+  auto& w=active(LUA);return prop_table(LUA,w.load_map(map_bytes(LUA)));
+}); }
+LUA_FUNCTION_STATIC(BeginLoadMap) { return guarded(LUA,[&] {
+  auto& w=active(LUA);const auto bytes=map_bytes(LUA);w.begin_load({bytes.begin(),bytes.end()});return success(LUA);
+}); }
+LUA_FUNCTION_STATIC(PollLoadMap) { return guarded(LUA,[&] {
+  std::vector<StaticProp> props;
+  if(!active(LUA).poll_load(props)) { LUA->PushBool(false);return 1; }
+  return prop_table(LUA,props);
 }); }
 LUA_FUNCTION_STATIC(AddModel) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto model=string(LUA,1,128);need(LUA->IsType(2,Type::Table),"expected convex array");
   const int count=LUA->ObjLen(2);need(count>0 && count<=128,"prop model requires 1-128 convexes");
   std::vector<Hull> convexes;convexes.reserve(count);
-  for(int i=1;i<=count;++i) { get(LUA,2,i);convexes.push_back(hull(LUA,-1));LUA->Pop(); }
-  w.add_model(model,convexes);return success(LUA);
+  for(int i=1;i<=count;++i) { get(LUA,2,i);convexes.push_back(hull(LUA,-1,false));LUA->Pop(); }
+  LUA->PushBool(w.add_model(model,convexes));return 1;
 }); }
 LUA_FUNCTION_STATIC(AddProp) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto model=string(LUA,1,128);const auto p=vector(LUA,2,kCoordinateLimit),a=vector(LUA,3,36000,true);
-  w.add_prop(model,p,a,static_cast<float>(number(LUA,4,.001,16)));return success(LUA);
+  LUA->PushBool(w.add_prop(model,p,a,static_cast<float>(number(LUA,4,.001,16))));return 1;
 }); }
 LUA_FUNCTION_STATIC(FinishWorld) { return guarded(LUA,[&] { active(LUA).finish();return success(LUA); }); }
+LUA_FUNCTION_STATIC(BeginFinishWorld) { return guarded(LUA,[&] { active(LUA).begin_finish();return success(LUA); }); }
+LUA_FUNCTION_STATIC(PollFinishWorld) { return guarded(LUA,[&] { LUA->PushBool(active(LUA).poll_finish());return 1; }); }
 LUA_FUNCTION_STATIC(Spawn) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto points=hull(LUA,1);const auto p=vector(LUA,2,kCoordinateLimit),a=vector(LUA,3,36000,true);
   const auto v=vector(LUA,4,100000),spin=vector(LUA,5,36000);
@@ -111,6 +126,8 @@ LUA_FUNCTION_STATIC(SetGravity) { return guarded(LUA,[&] {
   active(LUA).set_gravity(static_cast<float>(number(LUA,1,0,10000)));return success(LUA);
 }); }
 LUA_FUNCTION_STATIC(Step) { return guarded(LUA,[&] { active(LUA).step(number(LUA,1,0,10));return success(LUA); }); }
+LUA_FUNCTION_STATIC(BeginStep) { return guarded(LUA,[&] { active(LUA).begin_step(number(LUA,1,0,10));return success(LUA); }); }
+LUA_FUNCTION_STATIC(PollStep) { return guarded(LUA,[&] { LUA->PushBool(active(LUA).poll_step());return 1; }); }
 LUA_FUNCTION_STATIC(ReadPoses) { return guarded(LUA,[&] {
   auto& w=active(LUA);need(LUA->IsType(1,Type::Table) && LUA->IsType(2,Type::Table),"expected reusable poses and changed-id tables");
   const auto poses=w.poses();
@@ -133,7 +150,13 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("live",s.live);add("awake",s.awake);add("statics",s.statics);add("models",s.models);add("workers",s.workers);
   add("substeps",s.substeps);add("step_ms",s.step_ms);add("dropped_seconds",s.dropped_seconds);
   add("brushes",s.brushes);add("skipped_brushes",s.skipped_brushes);
-  LUA->PushBool(s.ready);set(LUA,1,"ready");return success(LUA);
+  add("refused_brushes",s.refused_brushes);add("refused_convexes",s.refused_convexes);
+  add("refused_meshes",s.refused_meshes);add("skipped_props",s.skipped_props);
+  add("contact_overflows",s.contact_overflows);add("manifold_overflows",s.manifold_overflows);
+  add("pair_overflows",s.pair_overflows);add("constraint_overflows",s.constraint_overflows);
+  add("temp_reserved_bytes",static_cast<double>(s.temp_reserved_bytes));add("temp_peak_bytes",static_cast<double>(s.temp_peak_bytes));
+  add("pose_visits",s.pose_visits);
+  LUA->PushBool(s.ready);set(LUA,1,"ready");LUA->PushBool(s.busy);set(LUA,1,"busy");return success(LUA);
 }); }
 LUA_FUNCTION_STATIC(Clear) { return guarded(LUA,[&] { active(LUA).clear();return success(LUA); }); }
 LUA_FUNCTION_STATIC(Shutdown) { return guarded(LUA,[&] { world.reset();return success(LUA); }); }
@@ -148,6 +171,8 @@ GMOD_MODULE_OPEN() {
     LUA->CreateTable();
     const std::pair<const char*,GarrysMod::Lua::CFunc> functions[]{
       {"Init",Init},{"LoadMap",LoadMap},{"AddModel",AddModel},{"AddProp",AddProp},{"FinishWorld",FinishWorld},
+      {"BeginLoadMap",BeginLoadMap},{"PollLoadMap",PollLoadMap},{"BeginFinishWorld",BeginFinishWorld},{"PollFinishWorld",PollFinishWorld},
+      {"BeginStep",BeginStep},{"PollStep",PollStep},
       {"Spawn",Spawn},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
       {"Step",Step},{"ReadPoses",ReadPoses},{"IsSleeping",IsSleeping},{"Stats",ReadStats},{"Clear",Clear},{"Shutdown",Shutdown}};
     for(const auto& [name,fn]:functions) { LUA->PushCFunction(fn);set(LUA,-2,name); }

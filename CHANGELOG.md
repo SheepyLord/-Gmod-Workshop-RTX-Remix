@@ -23,6 +23,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
   OnBreak outputs without engine shatter; record weak native hits, push blasts after their new
   debris and match the settings budget slider to 8,192. Offline regressions cover each path.
 
+- G1-B performance fix pass: prepare maps and step Jolt on a polled worker; consume changed poses,
+  avoid full settled-piece scans, retain old pile chunks through staged rebuilds, allocate scratch
+  from demand and continue safely when Jolt's contact tables fill ([ADR 0075](docs/decisions/0075-glass-background-work-and-staged-piles.md)).
+
+- G1-B fix pass: skip/count refused brush and prop convexes without losing Jolt for the whole map;
+  clip brush hulls in double precision, correct displacement indexing and retain ordinary terrain
+  triangles whose SURFACE bit is absent.
+
 - The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
   references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
   the new MIT glass part is assembled separately by G1 integration.

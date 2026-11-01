@@ -39,10 +39,14 @@ local function report()
     local sum = 0
     for _, value in ipairs(samples) do sum = sum + value end
     local s = D.Stats()
-    print(string.format("NL_GLASS_PROBE phase=%s samples=%d mean_ms=%.3f p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f max_ms=%.3f backend=%s live=%d moving=%d sleeping=%d merged=%d batches=%d rebuilds=%d native_step_ms=%.3f",
+    print(string.format("NL_GLASS_PROBE phase=%s samples=%d mean_ms=%.3f p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f max_ms=%.3f backend=%s live=%d moving=%d sleeping=%d merged=%d batches=%d rebuilds=%d native_step_ms=%.3f pending=%d worker_busy=%s pose_updates=%d rebuild_vertices=%d brushes=%d skipped=%d refused=%d refused_convexes=%d contact_overflows=%d scratch_MiB=%.2f scratch_peak_MiB=%.2f dropped_s=%.3f",
         phase, #samples, sum / math.max(1, #samples), percentile(samples, .5), percentile(samples, .95),
         percentile(samples, .99), samples[#samples] or 0, D.Backend(), s.live, s.moving, s.sleeping, s.merged,
-        s.batches, s.rebuilds, s.native.step_ms or 0))
+        s.batches, s.rebuilds, s.native.step_ms or 0, s.pending, tostring(s.worker_busy), s.pose_updates or 0,
+        s.rebuild_vertices or 0, s.native.brushes or 0, s.native.skipped_brushes or 0,
+        s.native.refused_brushes or 0, s.native.refused_convexes or 0, s.native.contact_overflows or 0,
+        (s.native.temp_reserved_bytes or 0) / 1048576, (s.native.temp_peak_bytes or 0) / 1048576,
+        s.native.dropped_seconds or 0))
 end
 local function begin(name)
     phase, since, samples = name, RealTime(), {}

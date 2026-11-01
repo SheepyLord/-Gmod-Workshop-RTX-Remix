@@ -149,16 +149,17 @@ void read_displacements(Reader& r,Map& out) {
     std::vector<V3> grid(size);
     for(unsigned y=0;y<side;++y)for(unsigned x=0;x<side;++x) {
       const float u=float(x)/float(side-1),v=float(y)/float(side-1);
-      const auto base=quad[nearest]*((1-u)*(1-v))+quad[(nearest+1)%4]*(u*(1-v))+
-        quad[(nearest+2)%4]*(u*v)+quad[(nearest+3)%4]*((1-u)*v);
+      // Source's fast (column) index walks 0 -> 3; rows walk 0 -> 1.
+      const auto base=quad[nearest]*((1-u)*(1-v))+quad[(nearest+3)%4]*(u*(1-v))+
+        quad[(nearest+2)%4]*(u*v)+quad[(nearest+1)%4]*((1-u)*v);
       const auto atv=(start+y*side+x)*20;
       grid[y*side+x]=base+vec(dv,atv)*f32(dv,atv+12);
       need(grid[y*side+x].valid(),"displacement position out of bounds");
     }
     unsigned tri=0;
     auto add=[&](unsigned a,unsigned b,unsigned c) {
-      // DISPTRI_TAG_SURFACE (bit 0): omit authored holes. With no tag lump all triangles collide.
-      if(!nt || (u16(tags,(tstart+tri)*2)&1)) {
+      // SURFACE is not set by all compilers (gm_construct has none). REMOVE is the hole flag.
+      if(!nt || !(u16(tags,(tstart+tri)*2)&(1u<<5))) {
         if((grid[b]-grid[a]).cross(grid[c]-grid[a]).length()>1e-5f)out.triangles.push_back({grid[a],grid[b],grid[c]});
       }
       ++tri;
@@ -229,36 +230,50 @@ bool valid_hull(const Hull& p) {
 }
 Hull brush_hull(const std::vector<Plane>& planes) {
   if(planes.size()<4 || planes.size()>64)return {};
-  Hull vertices;
+  // Keep clipping and deduplication in double precision, including the very large seed faces.
+  // Floats here amplify cancellation into extra near-vertices on bevelled/high-sided brushes.
+  struct D3 {
+    double x,y,z;
+    D3 operator+(D3 b) const { return {x+b.x,y+b.y,z+b.z}; }
+    D3 operator-(D3 b) const { return {x-b.x,y-b.y,z-b.z}; }
+    D3 operator*(double s) const { return {x*s,y*s,z*s}; }
+    double dot(D3 b) const { return x*b.x+y*b.y+z*b.z; }
+    D3 cross(D3 b) const { return {y*b.z-z*b.y,z*b.x-x*b.z,x*b.y-y*b.x}; }
+  };
+  auto normal=[](const Plane& p) { return D3{p.normal.x,p.normal.y,p.normal.z}; };
+  std::vector<D3> vertices;
   for(const auto& face:planes) {
     if(!face.normal.valid(1.01f) || !std::isfinite(face.distance) || std::abs(face.distance)>kCoordinateLimit ||
        face.normal.length()<.99f || face.normal.length()>1.01f)return {};
-    V3 axis=std::abs(face.normal.z)<.8f?V3{0,0,1}:V3{0,1,0};
-    auto u=axis.cross(face.normal);u=u*(1/u.length());const auto v=face.normal.cross(u);
-    const auto center=face.normal*face.distance;const float extent=kCoordinateLimit*4;
-    Hull poly{center+u*extent+v*extent,center-u*extent+v*extent,center-u*extent-v*extent,center+u*extent-v*extent};
+    const auto n=normal(face);const D3 axis=std::abs(n.z)<.8?D3{0,0,1}:D3{0,1,0};
+    auto u=axis.cross(n);u=u*(1/std::sqrt(u.dot(u)));const auto v=n.cross(u);
+    const auto center=n*(face.distance/n.dot(n));const double extent=kCoordinateLimit*4;
+    std::vector<D3> poly{center+u*extent+v*extent,center-u*extent+v*extent,center-u*extent-v*extent,center+u*extent-v*extent};
     for(const auto& clip:planes) {
-      Hull next;
+      std::vector<D3> next;
       for(std::size_t i=0;i<poly.size();++i) {
-        const auto a=poly[i],b=poly[(i+1)%poly.size()];const float da=clip.normal.dot(a)-clip.distance,db=clip.normal.dot(b)-clip.distance;
-        if(da<=.005f)next.push_back(a);
-        if((da<0 && db>0)||(da>0 && db<0))next.push_back(a+(b-a)*(da/(da-db)));
+        const auto a=poly[i],b=poly[(i+1)%poly.size()];
+        const double da=normal(clip).dot(a)-clip.distance,db=normal(clip).dot(b)-clip.distance;
+        const bool ina=da<=1e-7,inb=db<=1e-7;
+        if(ina)next.push_back(a);
+        if(ina!=inb)next.push_back(a+(b-a)*std::clamp(da/(da-db),0.0,1.0));
       }
       poly=std::move(next);if(poly.empty())break;
     }
     for(auto p:poly) {
-      if(!p.valid())return {}; // An unbounded brush reaches the initial huge polygon.
-      bool duplicate=false;for(auto q:vertices)if((p-q).length()<.02f) { duplicate=true;break; }
+      if(std::abs(p.x)>kCoordinateLimit || std::abs(p.y)>kCoordinateLimit || std::abs(p.z)>kCoordinateLimit)return {};
+      bool duplicate=false;for(auto q:vertices)if((p-q).dot(p-q)<1e-6) { duplicate=true;break; }
       if(!duplicate) { vertices.push_back(p);if(vertices.size()>kMaxHullPoints)return {}; }
     }
   }
-  return valid_hull(vertices)?vertices:Hull{};
+  Hull hull;hull.reserve(vertices.size());
+  for(auto p:vertices)hull.push_back({static_cast<float>(p.x),static_cast<float>(p.y),static_cast<float>(p.z)});
+  return valid_hull(hull)?hull:Hull{};
 }
 Map read_bsp(std::span<const std::uint8_t> bytes) {
   Reader reader(bytes);Map map;
   read_brushes(reader,map);read_displacements(reader,map);read_props(reader,map);
-  // Skipped brushes are tolerated; a map whose brushes mostly fail is probably misread, so it is refused.
-  need(!map.brushes.empty() && map.skipped_brushes*2<=map.considered_brushes,"BSP solid brushes mostly unusable");
+  // Structural errors still refuse the map; individual shapes do not. Props may supply collision later.
   return map;
 }
 }

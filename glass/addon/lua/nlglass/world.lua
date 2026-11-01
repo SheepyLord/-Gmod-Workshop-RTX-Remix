@@ -61,27 +61,38 @@ function W.Begin(budget, gravity)
         if not size or size < 1036 or size > 256 * 1024 * 1024 then error("map missing or larger than 256 MiB", 0) end
         local bytes = file.Read(path, "GAME")
         if type(bytes) ~= "string" or #bytes ~= size then error("cannot read map from GAME", 0) end
-        local props = must(W.api.LoadMap(bytes))
+        must(W.api.BeginLoadMap(bytes))
         W.task = coroutine.create(function()
+            local props, err
+            repeat
+                props, err = W.api.PollLoadMap()
+                if props == nil then error(err or "map import failed", 0) end
+                if props == false then coroutine.yield() end
+            until props ~= false
             local models = {}
             for _, prop in ipairs(props) do models[prop.model] = false end
             local n = 0
             for model in pairs(models) do
                 local convexes = collision(model)
                 if convexes then
-                    local added, err = W.api.AddModel(model, convexes)
-                    -- A supplied but rejected hull indicates incomplete import: use fallback.
-                    must(added, err)
-                    models[model] = true
+                    local added = W.api.AddModel(model, convexes)
+                    models[model] = added == true
+                    if not added then W.skipped = W.skipped + 1 end
                 else W.skipped = W.skipped + 1 end
                 n = n + 1
                 if n % 2 == 0 then coroutine.yield() end
             end
             for i, prop in ipairs(props) do
-                if models[prop.model] then must(W.api.AddProp(prop.model, prop.position, prop.angles, prop.scale)) end
+                if models[prop.model] then W.api.AddProp(prop.model, prop.position, prop.angles, prop.scale) end
                 if i % 64 == 0 then coroutine.yield() end
             end
-            must(W.api.FinishWorld())
+            must(W.api.BeginFinishWorld())
+            local done, reason
+            repeat
+                done, reason = W.api.PollFinishWorld()
+                if done == nil then error(reason or "world finish failed", 0) end
+                if not done then coroutine.yield() end
+            until done
             W.state = "ready"
         end)
     end)
