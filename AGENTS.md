@@ -34,6 +34,7 @@ patched copy of GMod managed by RTXLauncher.
 | `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder); `reshade/` holds only ReShade's licence, for the unchanged ReShade binary the RTX package carries |
 | `skills/` | Agent skills, each a `SKILL.md` with references and scripts: AI PBR materials for MMD characters (`mmd-remix-pbr`, with the `rpai` tool) and for maps (`remix-map-pbr`), and Workshop content packs with their dependencies (`workshop-content-pack`) ([skills/README.md](skills/README.md)) |
 | `dist/` | What the end-user bundle ships besides `winmm.dll`: the default `native-loader/config.json` and the player README ([ADR 0017](docs/decisions/0017-release-bundle-and-ci.md)) |
+| `glass/` | The glass system (G1, [ADR 0070](docs/decisions/0070-glass-overhaul.md)): `addon/` (the Lua add-on: panes, damage, cracks, fracture, broken-glass manager), `native/` (the Jolt client module for broken glass) |
 | `.github/workflows/` | CI: `build.yml` runs `tools\test.ps1 -Config Release` on every push and pull request and keeps the bundle as an artifact; a `v*` tag releases it. `package.yml` builds the RTX package from `packages/` (Git LFS, cached) |
 | `docs/` | Architecture, package format, on-disk layout, testing, roadmap, research, decisions |
 | `CHANGELOG.md` | Notable changes, newest first |
