@@ -122,6 +122,7 @@ function B.Forward(entity, from, to, damage, radius, attacker)
 end
 hook.Add("PostEntityFireBullets", "NLGlass.DebrisBullets", function(entity, data)
     if not IsValid(entity) or type(data) ~= "table" or type(data.Trace) ~= "table" then return end
+    if data.Trace.StartSolid or data.Trace.AllSolid then return end
     local attacker = IsValid(data.Attacker) and data.Attacker or entity
     local damage = tonumber(data.Damage) or 0
     if damage <= 0 and game.GetAmmoID and game.GetAmmoPlayerDamage then

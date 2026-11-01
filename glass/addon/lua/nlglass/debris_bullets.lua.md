@@ -22,3 +22,5 @@ resets leases, recent breaks, buckets and counters on map cleanup. `sent`/`limit
 Never modifies bullets, callbacks or other hooks' return values. No Source force/damage or file access.
 Lost/late leases, >32 separated regions or saturated buckets may miss cosmetic hits. Runtime module:
 no exit code; errors appear in the console.
+
+StartSolid/AllSolid pellet traces are ignored; no endpoint behind a solid start becomes a glass hit.

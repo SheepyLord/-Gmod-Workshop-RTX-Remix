@@ -31,3 +31,6 @@ The replay emits only text to stdout and takes no installed assets.
 R8-G scene_flags checks all 16 masks, default living exclusion, live/dead classification, NextBots and client ragdolls; capture rows carry their native category.
 
 R8-G adds long-lived per-client interest/lease validation, actual client refresh/empty-update cadence, stock swing cooldown/animation coalescing, and read-only Source-clipped SWEP trace regressions. Existing bullet tests use the new bounded payload and verify numeric region tests.
+
+The SWEP scenario also exercises stock fists' delayed line-then-hull pattern: one message keeps
+the larger hull and the mean of the configured HitDamage range. Trace results remain unchanged.

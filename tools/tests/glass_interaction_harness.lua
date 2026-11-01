@@ -301,6 +301,8 @@ else
         check(B.clients[a]==saved,"rapid interest updates cannot replace an accepted lease")
         now=142;interest(a,Vector(),0);check(#B.clients[a].regions==0,"explicit empty interest clears local demand")
     elseif scenario:match("^melee_") then
+        local timers={};timer={Simple=function(_,fn)timers[#timers+1]=fn end}
+        local function flush() local list=timers;timers={};for _,fn in ipairs(list)do fn()end end
         local w={valid=true,Primary={Damage=31},nextFire=0,class="weapon_crowbar",GetClass=function(self)return self.class end,
             GetHoldType=function()return "melee2"end,GetNextPrimaryFire=function(self)return self.nextFire end}
         shooter.GetActiveWeapon=function()return w end;shooter.GetShootPos=function()return Vector()end
@@ -328,12 +330,17 @@ else
             w.class="weapon_trace_melee";hooks.StartCommand(shooter,command)
             local input={start=Vector(),endpos=Vector(90,0,0),filter=shooter,mins=Vector(-8,-8,-8),maxs=Vector(8,8,8)}
             local result=util.TraceHull(input)
+            flush()
             check(result==lastResult and lastData==input and result.HitPos.x==30,"SWEP receives the same real trace object and input")
             check(#sends==1 and sends[1].fields[2].x==30 and sends[1].fields[4]==8,"actual SWEP hull trace is clipped by Source, including misses through glass")
-            util.TraceLine(input);check(#sends==1,"duplicate melee traces in the same swing are coalesced")
-            now=.8;util.TraceLine(input);check(#sends==1,"traces outside an attack window do not become melee")
+            util.TraceLine(input);flush();check(#sends==1,"duplicate melee traces in the same swing are coalesced")
+            now=.8;util.TraceLine(input);flush();check(#sends==1,"traces outside an attack window do not become melee")
             now=.9;hooks.StartCommand(shooter,command);input.endpos=Vector(10000,0,0);util.TraceLine(input)
             check(#sends==1,"unrelated long traces are ignored")
+            now=1.1;w.class="weapon_fists";w.Primary={};w.HitDamage={8,12};hooks.StartCommand(shooter,command)
+            input.endpos=Vector(48,0,0);input.mins,input.maxs=nil,nil;util.TraceLine(input)
+            input.mins,input.maxs=Vector(-10,-10,-8),Vector(10,10,8);util.TraceHull(input);flush()
+            check(#sends==2 and sends[2].fields[4]==10 and sends[2].fields[3]==10,"fists' line-then-hull pattern keeps the final wider trace and configured damage")
         end
         M.Stop();local observed=M.observed
         util.TraceLine({start=Vector(),endpos=Vector(50,0,0),filter=shooter})

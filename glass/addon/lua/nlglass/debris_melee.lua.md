@@ -18,3 +18,9 @@ restores them only if still owned; reload does not stack active observers. Clean
 No files, client hit claims or networked shards. Client-only weapons, functional filters and unusual
 weapons without a recognizable melee type need an adapter; saturated cosmetic events can be dropped.
 No exit code; errors propagate to the Lua console.
+
+R8-G follow-up: defer SWEP observations to a zero-delay timer and retain the widest actual trace
+from the call. Stock fists use a line followed by a hull, so the first observation must not consume
+the swing before the hull is available. Read HitDamage as a mean when Primary.Damage is absent.
+Stock cooldown detection also accepts the player's processed attack button, independent of other
+StartCommand hook ordering. StartSolid/AllSolid observations are ignored.
