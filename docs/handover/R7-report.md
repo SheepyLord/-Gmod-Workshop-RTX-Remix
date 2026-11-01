@@ -128,7 +128,28 @@ checks passed".
 
 ## Field install
 
-FIELD
+Merged into `main` as `74536d3`, pushed, and published as `0.0.0-dev.20261101124815+39da503d`
+(result "uploaded"; the push's own run found the inputs unchanged). Then the user's `GarrysMod`:
+
+- **Before.** `verify_install.py` found all 2,877 depot files intact (only the user's own
+  `autoexec.cfg` differs) and `gmod.exe` stock. The loader files are backed up in
+  `out/field-backup/2026-11-01-r7`: `winmm.dll` `b4103bbf...`, its PDB, the receipt and `config.json`.
+- **Install.** `tools\workflow.ps1 -SkipTests -Install ... -AllowSteamManaged` installed loader
+  `0.12.0+74536d3c`; the user's `config.json` was kept.
+- **Two starts.** Steam fetches the item's new version only while GMod runs ("Fetching
+  Subscriptions", after the loader has deployed), so the check took two starts (`out/qa-field/r7`).
+  - `01-menu` deployed G1's package. The home menu's diagnostics show loader 0.12.0, `gmod-rtx-remix`
+    with its version and hash, "Content add-ons: 4 enabled" and no memory warning (61.6 GiB of RAM).
+    Steam downloaded the new version during that session.
+  - `02-columbina` deployed `0.0.0-dev.20261101124815+39da503d` and reported "exit observer ready".
+    The companion registered 47 materials, the mask's `0x4f9dc84370047174` among them. Columbina's
+    mask renders as a white lattice with the eyes visible through its holes, with no shadow band.
+    The loader recorded the previous session as a clean end.
+- **Both sessions** quit normally and left no observer process behind.
+
+Earlier in the round, at 11:00 UTC, the user's running field game was closed under the user's
+standing permission. It was PID 48296, started at 10:30 UTC. It ignored `WM_CLOSE` for 45 s and was
+ended.
 
 ## Open issues
 
