@@ -78,6 +78,7 @@ FAKE = {
     'garrysmod/bin/win64/stdshader_dx6_readme.txt': b'readme',
     'garrysmod/garrysmod/addons/remixbinary/lua/autorun/client/cl_rtx.lua': b'require("RTXFixesBinary")\n',
     'garrysmod/garrysmod/addons/remixbinary/materials/rtx/ignore.vtf': b'VTF',
+    'garrysmod/garrysmod/addons/remixbinary/materials/rtx/replace_me/glassmat.vmt': b'"UnlitGeneric" {}\n',
     'garrysmod/garrysmod/addons/remixbinary/lua/old.lua.bak': b'old',
     'garrysmod/garrysmod/addons/Glass-Rewrite-Remix/.git': b'gitdir: ../../.git/modules/glass\n',
     'garrysmod/garrysmod/addons/Glass-Rewrite-Remix/.gitattributes': b'* text=auto\n',
@@ -97,6 +98,7 @@ FAKE = {
     'garrysmod/garrysmod/data/remix_map_configs/default.txt': b'map config',
     'garrysmod/rtx-remix/mods/base_mod/mod.usda': b'#usda 1.0\n',
     'garrysmod/rtx-remix/mods/base_mod/textures/a.dds': b'DDS a',
+    'garrysmod/rtx-remix/mods/base_mod/breakable_glass/glass.usda': b'#usda 1.0\n',
     'garrysmod/rtx-remix/mods/~gmod_topbr/textures/b.dds': b'DDS b',
     'x86_64/Release/gmcl_RTXFixesBinary_win64.dll': b'MZ fixes',
     'x86_64/Release/gmcl_RTXFixesBinary_win64.lib': b'lib',
@@ -107,7 +109,7 @@ FAKE = {
 DEBUG_ADDON_FILE = 'source/debug/addon/lua/autorun/client/rtx_debug.lua'
 FAKE_MOD = 'garrysmod/rtx-remix/mods/base_mod/textures/a.dds'
 EXPECTED_ROOTS = [
-    'garrysmod/addons/Glass-Rewrite-Remix', 'garrysmod/addons/nativeloader', 'garrysmod/addons/niknaks',
+    'garrysmod/addons/nativeloader', 'garrysmod/addons/niknaks',
     'garrysmod/addons/remixbinary', 'garrysmod/addons/rtx_agent', 'garrysmod/data/nativeloader_ui', 'garrysmod/data/remix_map_configs',
     'garrysmod/lua/bin/gmcl_RTXFixesBinary_win64.dll',
     'garrysmod/lua/bin/gmcl_rtxwater_win64.dll', 'rtx-remix/mods/base_mod', 'rtx-remix/mods/~gmod_topbr',
@@ -119,8 +121,7 @@ EXPECTED_LEFT_OUT = [
     'garrysmod/lua/menu/problems/problems.lua', 'rtx.conf',
 ]
 EXPECTED_JUNK = [
-    'garrysmod/addons/Glass-Rewrite-Remix/.git', 'garrysmod/addons/Glass-Rewrite-Remix/.gitattributes',
-    'garrysmod/addons/Glass-Rewrite-Remix/lua/Thumbs.db', 'garrysmod/addons/niknaks/.git',
+    'garrysmod/addons/niknaks/.git',
     'garrysmod/addons/niknaks/desktop.ini', 'garrysmod/addons/remixbinary/lua/old.lua.bak',
 ]
 
@@ -197,13 +198,13 @@ class PackageFixesTests(unittest.TestCase):
                                  ('garrysmod/garrysmod/data/', 'native/root/garrysmod/data/'),
                                  ('garrysmod/rtx-remix/mods/', 'native/root/rtx-remix/mods/')):
                 if rel.startswith(area) and rel.count('/') > area.count('/') and not any(
-                        j in rel for j in ('.git', 'Thumbs.db', 'desktop.ini', '.bak')):
+                        j in rel for j in ('.git', 'Thumbs.db', 'desktop.ini', '.bak', '/Glass-Rewrite-Remix/')):
                     files[target + rel[len(area):]] = rel
         out = {key: self.repo / rel for key, rel in files.items()}
         out.update(companion_files())
         # The companion's translations, built from companion/i18n/*.po (companion_i18n.py).
         built = self.root / 'expected-i18n_data.lua'
-        package_fixes.companion_i18n.build(str(built))
+        built.write_text(package_fixes.fixes_translation_text(), encoding='utf-8', newline='\n')
         out[package_fixes.COMPANION_I18N] = built
         return out
 
@@ -229,11 +230,39 @@ class PackageFixesTests(unittest.TestCase):
         self.assertEqual((summary['files'], summary['id'], summary['version']), (len(expected), 'rtx-fixes', m['version']))
         self.assertEqual(summary['mods'], ['base_mod', '~gmod_topbr'])
         self.assertEqual(summary['empty_mods'], ['empty_mod'])
-        self.assertEqual(summary['addons'], ['Glass-Rewrite-Remix', 'niknaks', 'remixbinary', 'rtx_agent', 'nativeloader'])
+        self.assertEqual(summary['addons'], ['niknaks', 'remixbinary', 'rtx_agent', 'nativeloader'])
+        self.assertEqual(summary['excluded_addons'], ['Glass-Rewrite-Remix'])
         self.assertEqual(summary['left_out'], EXPECTED_LEFT_OUT)
         self.assertEqual(summary['junk'], EXPECTED_JUNK)
         self.assertEqual(summary['patches'], 7)
         self.assertEqual(self.leftovers(), [])
+
+    def test_g1_retires_only_old_glass_and_its_exclusive_translations(self):
+        folder = self.root / 'pkg'
+        self.build('--out', folder)
+        files = self.manifest(folder)['files']
+        self.assertFalse([p for p in files if '/glass-rewrite-remix/' in p.lower()])
+        for path in ('garrysmod/addons/remixbinary/materials/rtx/replace_me/glassmat.vmt',
+                     'rtx-remix/mods/base_mod/breakable_glass/glass.usda'):
+            self.assertIn('native/root/' + path, files)
+        i18n = package_fixes.companion_i18n
+        removed = package_fixes.retired_glass_phrases()
+        self.assertIn('Turns props into glass upon left click', removed)
+        built = (folder / package_fixes.COMPANION_I18N).read_text(encoding='utf-8')
+        bundled = built.split('["addons"] = ', 1)[1]
+        catalogs = folder / 'native/root/garrysmod/addons/nativeloader/resource/bundled-translations'
+        for language in i18n.LANGUAGES:
+            original = {e['msgid']: e['msgstr'] for e in i18n.read_po(str(Path(i18n.ADDON_I18N) / (language + '.po'))) if e['msgid']}
+            expected = {s: t for s, t in original.items() if s not in removed}
+            packaged = catalogs / (language + '.po')
+            actual = {e['msgid']: e['msgstr'] for e in i18n.read_po(str(packaged)) if e['msgid']}
+            self.assertEqual(actual, expected)
+            self.assertNotIn('/Glass-Rewrite-Remix/', packaged.read_text(encoding='utf-8'))
+            for text, translated in expected.items():
+                self.assertIn('[%s] = %s,' % (i18n.lua_quote(text), i18n.lua_quote(translated)), bundled)
+        for text in removed:
+            self.assertNotIn('[%s] = ' % i18n.lua_quote(text), bundled)
+        self.assertEqual((catalogs / 'COPYING').read_bytes(), (Path(i18n.ADDON_I18N) / 'COPYING').read_bytes())
 
     def test_every_listed_file_matches_its_hash_and_nothing_is_unlisted(self):
         out = self.root / 'pkg'
@@ -288,7 +317,7 @@ class PackageFixesTests(unittest.TestCase):
             self.assertFalse([p for p in paths if banned in p], banned)
         self.assertIn('native/root/garrysmod/addons/nativeloader/lua/autorun/client/nativeloader.lua', paths)
         self.assertIn('native/root/garrysmod/data/remix_map_configs/default.txt', paths)  # seed data, create-only
-        self.assertIn('native/root/garrysmod/addons/glass-rewrite-remix/readme.md', paths)  # the add-ons' own docs stay
+        self.assertFalse([p for p in paths if '/glass-rewrite-remix/' in p])
 
     def test_session_cvars_from_the_rtx_section(self):
         summary = self.build('--out', self.root / 'pkg')
@@ -351,7 +380,7 @@ class PackageFixesTests(unittest.TestCase):
         self.assertNotIn('garrysmod/addons/rtx_agent', roots)
         self.assertNotIn('garrysmod/addons/nativeloader', roots)
         self.assertFalse([f for f in m['files'] if '/rtx_agent/' in f or '/nativeloader/' in f])
-        self.assertEqual(summary['excluded_addons'], ['nativeloader', 'rtx_agent'])
+        self.assertEqual(summary['excluded_addons'], ['Glass-Rewrite-Remix', 'nativeloader', 'rtx_agent'])
         self.assertIsNone(summary['session_cvars'])
         self.assertEqual(summary['patches'], 0)
         self.assertEqual(summary['left_out'], EXPECTED_LEFT_OUT)  # an excluded add-on is reported by name only
@@ -391,7 +420,8 @@ class PackageFixesTests(unittest.TestCase):
             names = sorted(e['name'] for e in g.files)
         folder = sorted(p.relative_to(out).as_posix() for p in out.rglob('*') if p.is_file())
         self.assertEqual(names, folder)
-        self.assertIn('native/root/garrysmod/addons/Glass-Rewrite-Remix/lua/autorun/glass.lua', names)
+        self.assertIn('native/root/garrysmod/addons/remixbinary/lua/autorun/client/cl_rtx.lua', names)
+        self.assertFalse([n for n in names if '/Glass-Rewrite-Remix/' in n])
         first = gma.read_bytes()
         code, _, _ = self.run_tool('--gma', gma)
         self.assertEqual(code, 1)  # exists, no --force
@@ -474,19 +504,19 @@ class PackageFixesTests(unittest.TestCase):
             self.assertTrue(notes[rel].startswith('allowed with --allow-private: '), rel)
 
     def test_lua_sidecar_docs_stay_in_source_and_out_of_deployed_scripts(self):
-        source = self.repo / 'garrysmod/garrysmod/addons/Glass-Rewrite-Remix'
+        source = self.repo / 'garrysmod/garrysmod/addons/niknaks'
         lua = self.write(source / 'lua/entities/fixture.lua', b'ENT.Type="anim"')
         doc = self.write(source / 'lua/entities/fixture.lua.md', b'# Source documentation')
         readme = self.write(source / 'README.md', b'# Addon license and documentation')
         folder = self.root / 'pkg'
         summary = self.build('--out', folder)
         files = self.manifest(folder)['files']
-        prefix = 'native/root/garrysmod/addons/Glass-Rewrite-Remix/'
+        prefix = 'native/root/garrysmod/addons/niknaks/'
         self.assertIn(prefix + 'lua/entities/fixture.lua', files)
         self.assertIn(prefix + 'README.md', files)
         self.assertNotIn(prefix + 'lua/entities/fixture.lua.md', files)
         self.assertEqual(doc.read_bytes(), b'# Source documentation')
-        self.assertIn('garrysmod/addons/Glass-Rewrite-Remix/lua/entities/fixture.lua.md', summary['junk'])
+        self.assertIn('garrysmod/addons/niknaks/lua/entities/fixture.lua.md', summary['junk'])
         self.assertTrue(lua.is_file() and readme.is_file())
 
     def test_map_compile_logs_stay_out_as_junk(self):

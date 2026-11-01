@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
+  references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
+  the new MIT glass part is assembled separately by G1 integration.
+
 - A new MIT glass add-on implements server-owned convex panes, one damage pipeline for bullets,
   melee, blasts, props/ragdolls and bodies, synchronized growing cracks, deterministic radial/ring
   annealed holes and full tempered shatter. Remaining cells supply frozen server/client collision;
