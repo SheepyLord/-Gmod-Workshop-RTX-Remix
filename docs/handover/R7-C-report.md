@@ -171,3 +171,130 @@ server break interest can miss cosmetic interactions. Weapons that bypass FireBu
 own adapter. Follow-up pieces intentionally differ between clients; pane state stays authoritative.
 Saturation drops cosmetic work. No pickup, reverse Source force, glass-inflicted gameplay damage,
 piece-piece fracture cascade, package import or falling-renderer performance work was added.
+
+## R7-C fast-body fix pass (`r7-glass-fix`)
+
+Based on `7b49de9` on `r7-glass-fix`, for Claude's review and PoC recheck. The read-only run 11
+evidence (`out/qa-poc/r7/11-interact/console.log:656–662` in the main checkout) records nine sleeping
+pieces before and after the 30 kg, 650-unit/s drum, with zero mirrors/body splits at the after shot.
+No game was launched, install/Steam/Remix file changed, package imported, download performed,
+Workshop item updated, or branch pushed/merged/tagged. All generated evidence stays in this
+worktree's `out/r7-glass-fix/`. The ground-level drum throw line is unchanged.
+
+### Changes and bounds
+
+- Discovery remains 10 Hz over at most 32 native interest regions. Spatial queries gain a 192-unit
+  margin; retention tests current bounds plus velocity times 0.25 s, clamped to 192 units. Inspect
+  at most 512 entries total, including duplicate query results and the player prefix. Rank incoming
+  bodies (at least 160 units/s) before players and other candidates, then retain at most 128.
+  The existing 96 mirrors, 24 bones/entity and two convex extractions/snapshot remain capped.
+- Cold fast physics bodies get boxes immediately, without calling engine mesh extraction while
+  fast. They can upgrade on slowing under the existing eight-convex/512-point/two-shape limits.
+  Snapshot poses remain actual Source poses; discovery does not predict an early impact.
+- Earlier capture alone still failed the thin-floor-box replay. Jolt explicitly excludes kinematics
+  from CCD (`third_party/jolt/Jolt/Physics/PhysicsSystem.cpp:1564`). Fast actual mirror translations
+  now shape-cast against glass before worker dispatch, transferring closing normal velocity only to
+  pieces. They queue the existing body damage energy and preserve the Source-driven mirror target.
+  No mirror/map response or Source write is introduced. No falling solver/render/batching change.
+- Native snapshot caps: 16 casts, eight unique hits/cast, 64 body visits and 64 hit callbacks/cast,
+  64 distinct velocity transfers total. Collector/budget buffers are fixed on the stack. Closing
+  speed must reach 160 units/s; added speed caps at 2000. The existing 128-unit teleport correction
+  bypasses sweeps. Minimum-size pieces only move, and interaction off does no sweep.
+- QA prints peak mirrors/cold fast boxes, retained fast candidates/inspected entries, and cumulative
+  native sweeps/hits/limited counters. A prop can leave before its screenshot, so current mirrors
+  alone are insufficient. Native totals must be compared before/after each fixture.
+
+### Regression and validation
+
+The new end-to-end regression feeds the real `debris_scene.lua` snapshots into the offline native
+`nl_glass_scene_replay` executable. It settles the same nine 32x32x0.5 pieces on a generated floor,
+then replays a 3600-unit/s box and a 650-unit/s box behind 120 slow candidates. Their 108-unit
+contact spans last about 0.03/0.17 s: within one/two discovery periods. Both 60 and 30 Hz snapshots
+are tested, preserving the prescribed kinematic trajectory, with enabled and disabled controls.
+The starting implementation fails both cases: zero pieces moved, zero body hits. Earlier discovery
+with the starting native executable also fails. With both fixes, the four enabled replays move
+3–5 pieces and register 5–6 body-damage events; every disabled replay moves/hits zero.
+
+Two native cases independently cover both box speeds/cadences and both piece collision layers,
+plus cast/transfer caps, minimum-size movement, teleport bypass and disabling. Lua checks also
+cover moving-away/distant rejection, displacement caps, deferred convex upgrades and counter reset.
+All 31 native glass cases and all 70 glass Python cases pass on the final code. The broader Release
+run passes 26/26 CTests and 470 Python tests (417 tools, 28 gmapack, 25 steam; two existing skips).
+Its only failure is conventions: three pre-existing links in `R7-plan.md` and the handover index
+target the absent `R7-A-mmd-alpha.md`. A four-line redirect to Claude's existing investigation is
+prepared under `out/r7-glass-fix/R7-A-mmd-alpha.redirect.md`; adding that separate handover document
+requires scope clarification. It has not been written into `docs/`. No test is skipped or relaxed
+to hide the failure. Receipts: `out/r7-glass-fix/test-release.log`, `test-release-final.log`; targeted receipts:
+`glass-final.log` and `native-final.log`. No guard-path workaround was needed in this shorter worktree.
+
+### Offline costs
+
+Three interleaved before/after comparisons use preserved starting helpers/executable. Values below
+are medians of run means; engine doubles and generated Jolt rooms, **not game or RTX frame times**.
+
+| Controlled workload | Before | Fix |
+|---|---:|---:|
+| Empty capture, 1200 samples/run | 0.00027 ms | 0.00037 ms |
+| Lua capture, 96 warm bodies, 1200 samples/run | 0.1428 ms | 0.1447 ms |
+| Lua capture, 512-entry crowded prefix, 1200 samples/run | 0.1563 ms | 0.1959 ms |
+| Native 96 warm mirrors + 2000-piece regions, 120 samples/run | 0.06035 ms | 0.05966 ms |
+| Lua Think + draw, 2000 moving pieces, 240 frames/run | 0.1568 ms | 0.1691 ms |
+| Same, settled in four batches | 0.0130 ms | 0.0129 ms |
+| Native unchanged 4000-piece step benchmark | 3.5990 ms | 3.6797 ms |
+| Native 2000 minimum-size steps, interaction on | 0.2564 ms | 0.2409 ms |
+
+The crowded Lua prefix adds about **0.040 ms mean**; its p99 is 0.7772 ms versus 0.4917 before,
+including 10 Hz discovery bursts. One moving box/native sync averages 0.0011–0.0033 ms across
+the native speed/cadence/layer cases (largest sampled sync 0.0139 ms). The 96-mirror/128-leaf stress
+snapshot reaches the 64-transfer cap in 0.0693 ms median (three samples, 0.0664/0.0799/0.0693 ms).
+
+The moving Lua p99 is 0.2567 -> 0.2559 ms; draw counts and warm Vector/Angle allocations are
+unchanged (2000 moving draws, four settled batches, 500 visible culled draws). The 4000-piece
+benchmark still settles in exactly 11.0167 simulated seconds, with identical scratch use and zero
+contact overflows. The renderer and fixed-step loop are unchanged; these noisy offline numbers
+include a 0.0123 ms increase in mocked moving-frame mean and cannot establish game frame parity.
+Real engine spatial-query/result construction and extraction
+remain unmeasured and indivisible; bounded counts are not a wall-clock guarantee.
+
+Evidence: `out/r7-glass-fix/regression-before.log`, `regression-after.log`, `measured-results.txt`,
+`costs-{raw,summary}.json`, `capture-{before,after}-[1–3].log`, `render-{before,after}-[1–3].log`,
+`native-{before,after}-[1–3].log`, `fast-box-[1–3].log`, and `sweep-cap-[1–3].log`. The native replay
+is a test executable; only the rebuilt client module and matching Lua are candidates for import.
+
+### Limits and Claude's QA
+
+Repeat `nlglass_qa interact` with the matching Lua/module. The unchanged drum must move/split the
+pile (`body > 0`), with nonzero fast-box/peak-mirror counters and new sweep hits. Repeat off: no
+new mirror/body/sweep activity. Keep Source speed, health and trajectory unchanged. Recheck the
+unchanged `field` on/off falling/settled frame-time acceptance from G1 run 10; no repeatable slowdown
+is acceptable. The QA sidecar describes counter deltas and saturation evidence.
+
+Finite discovery/lookahead, missing client entities/velocities, dense query prefixes, 32-region/
+96-body limits and the native cast/transfer caps can still miss cosmetic contacts. More than 128
+units between samples is treated as a teleport. Rotation-only motion is not swept; fast cold boxes
+approximate convexes until slowing. Saturation reports skipped/truncated sweeps rather than delaying
+Source. Actual drum contact tuning and RTX frame parity remain Claude's PoC acceptance work.
+
+Implementation commit: `b9ff677` (fix, regression, caps, sidecars and QA counters). Rebuilt module:
+`out/build/win64-release/glass/native/gmcl_nlglass_win64.dll`, 1,496,064 bytes, SHA-256
+`4d40352c4d55424f14ce12d557ba087800306b42ceb7566f3f0ba2154939a014`.
+
+### Delivery report
+
+Implemented on `r7-glass-fix` in `b9ff677`, with report/shared evidence in a separate documentation
+commit. Fast bodies use bounded swept discovery, priority and immediate boxes; capped native sweeps
+transfer velocity/damage only to glass. No Source response or falling solver/render change.
+
+The real Lua-to-Jolt regression fails before and now moves/damages a settled nine-piece pile at
+650/3600 units/s and 60/30 Hz; disabled controls stay inert. All 31 native glass cases, 70 glass
+Python cases, 26 CTests and 470 Python tests pass.
+
+Offline cost: crowded capture adds about 0.040 ms mean; the capped 64-transfer native stress
+snapshot costs 0.069 ms median. Mocked moving Think/draw measured 0.157 -> 0.169 ms; real drum
+acceptance and falling-frame parity remain Claude's PoC checks. Saturated caps, finite lookahead,
+missing client state, >128-unit corrections and rotation-only motion can still miss contacts.
+
+The full Release gate is not green: three pre-existing links target the missing R7-A brief.
+Your scope restriction requires clarification before adding that separate handover document;
+the proposed four-line redirect is prepared under `out`. No game/install/package/Workshop/remote
+action was taken. The unchanged ground-level drum throw is preserved.

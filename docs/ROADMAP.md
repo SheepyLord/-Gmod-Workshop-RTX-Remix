@@ -1,5 +1,13 @@
 # Roadmap
 
+R7-C's fast-body fix is implemented on `r7-glass-fix` from `7b49de9` (2026-11-01): bounded swept
+discovery, immediate/prioritized fast boxes, and capped one-way mirror sweeps. The real Lua-to-Jolt
+sleeping-pile regression fails before and passes after at 650/3600 units/s and 60/30 Hz. All 31
+native glass and 70 glass Python cases pass. The broader run passes 26 CTests/470 Python tests,
+but the top-level gate still flags three pre-existing links to the missing R7-A brief; scope
+clarification is pending for a minimal redirect. Claude retains PoC drum/frame-parity acceptance.
+See [the fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
+
 R7-B implementation and offline acceptance are **complete** on `r7-crash-diag` (2026-11-01):
 the embedded external exit observer, seven-language reports/previews, revised commit warning
 and content add-on count. Release passes 26 CTests and 455 Python tests (two expected skips);
