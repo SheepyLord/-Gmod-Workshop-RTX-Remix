@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Sun, 1 Nov 2026 13:22:35 -0700
+Subject: [PATCH] Keep denoiser history for Model Hotloader draws under MMD
+ alpha
+
+Patch 0017 marked an instance's material as changed whenever its MMD alpha
+state differed from the instance's stored alpha state. That state is also
+written by mergeInstanceHeuristics for a later draw of the same frame, and a
+new instance starts untagged, so tagged characters were marked changed every
+frame: the denoisers and DLSS Ray Reconstruction discarded their history and
+the characters showed frame-to-frame path-tracing noise.
+
+Compare the first draws of consecutive frames instead, through a per-instance
+key, and never for an instance seen for the first time.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/dxvk/rtx_render/rtx_instance_manager.cpp | 11 +++++++----
+ src/dxvk/rtx_render/rtx_instance_manager.h   |  1 +
+ src/dxvk/rtx_render/rtx_mmd_alpha.h          | 14 ++++++++++++++
+ tests/rtx/unit/test_mmd_alpha.cpp            | 14 +++++++++++++-
+ 4 files changed, 35 insertions(+), 5 deletions(-)
+
+diff --git a/src/dxvk/rtx_render/rtx_instance_manager.cpp b/src/dxvk/rtx_render/rtx_instance_manager.cpp
+index 59b6300a..987f89e3 100644
+--- a/src/dxvk/rtx_render/rtx_instance_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_instance_manager.cpp
+@@ -193,7 +193,7 @@ namespace dxvk {
+   namespace {
+     template<int RtInstanceSize> struct CheckRtInstanceSize {
+       // The second line of the build error should contain the new size of RtInstance in the template argument, i.e. `dxvk::CheckRtInstanceSize<newSize>`
+-      static_assert(RtInstanceSize == 776, "RtInstance size has changed.  Fix the copy constructor above this message, then update the expected size.");
++      static_assert(RtInstanceSize == 784, "RtInstance size has changed.  Fix the copy constructor above this message, then update the expected size.");
+     };
+     CheckRtInstanceSize<sizeof(RtInstance)> _rtInstanceSizeTest;
+   }
+@@ -251,6 +251,7 @@ namespace dxvk {
+     m_linkedBlas = src.m_linkedBlas;
+     m_materialHash = src.m_materialHash;
+     m_materialDataHash = src.m_materialDataHash;
++    m_mmdAlphaKey = src.m_mmdAlphaKey;
+     m_texcoordHash = src.m_texcoordHash;
+     m_indexHash = src.m_indexHash;
+     m_vkInstance = src.m_vkInstance;
+@@ -1122,11 +1123,13 @@ namespace dxvk {
+ 
+         const XXH64_hash_t materialInstanceHash = materialData->getHash();
+         currentInstance.m_materialDataHash = drawCall.getMaterialData().getHash();
++        const bool seenBefore = currentInstance.m_materialHash != kEmptyHash;
++        const uint32_t mmdKey = mmdAlphaKey(alphaState);
+         currentInstance.surface.hasMaterialChanged =
+-          (currentInstance.m_materialHash != kEmptyHash && currentInstance.m_materialHash != materialInstanceHash) ||
+-          currentInstance.surface.alphaState.isMmdAlpha != alphaState.isMmdAlpha ||
+-          currentInstance.surface.alphaState.mmdAlphaCutoff != alphaState.mmdAlphaCutoff;
++          (seenBefore && currentInstance.m_materialHash != materialInstanceHash) ||
++          mmdAlphaChanged(seenBefore, currentInstance.m_mmdAlphaKey, mmdKey);
+         currentInstance.m_materialHash = materialInstanceHash;
++        currentInstance.m_mmdAlphaKey = mmdKey;
+ 
+         if (currentInstance.surface.hasMaterialChanged) {
+           notifySceneChanged();
+diff --git a/src/dxvk/rtx_render/rtx_instance_manager.h b/src/dxvk/rtx_render/rtx_instance_manager.h
+index a69050dc..c45b8d42 100644
+--- a/src/dxvk/rtx_render/rtx_instance_manager.h
++++ b/src/dxvk/rtx_render/rtx_instance_manager.h
+@@ -267,6 +267,7 @@ private:
+   BlasEntry* m_linkedBlas = nullptr;
+   XXH64_hash_t m_materialHash = kEmptyHash;
+   XXH64_hash_t m_materialDataHash = kEmptyHash;
++  uint32_t m_mmdAlphaKey = 0;  // mmdAlphaKey() of the first draw of the last updated frame
+   XXH64_hash_t m_texcoordHash = kEmptyHash;
+   XXH64_hash_t m_indexHash = kEmptyHash;
+   VkAccelerationStructureInstanceKHR m_vkInstance;
+diff --git a/src/dxvk/rtx_render/rtx_mmd_alpha.h b/src/dxvk/rtx_render/rtx_mmd_alpha.h
+index 0a2487b9..019a4ad8 100644
+--- a/src/dxvk/rtx_render/rtx_mmd_alpha.h
++++ b/src/dxvk/rtx_render/rtx_mmd_alpha.h
+@@ -28,4 +28,18 @@ namespace dxvk {
+       state.alphaTestReferenceValue = uint8_t(cutoff * 255.f);
+     }
+   }
++
++  // The MMD alpha rule a draw used: 0 for none, else a flag bit and the fixed-point cutoff.
++  inline uint32_t mmdAlphaKey(const RtSurface::AlphaState& state) {
++    return state.isMmdAlpha ? (1u << 16) | state.mmdAlphaCutoff : 0u;
++  }
++
++  // A changed rule is a changed material for the denoisers (which then discard the pixels' history).
++  // Compare only the first draw of consecutive frames of an instance that existed before: a new
++  // instance, or a later draw merged into this frame's alpha state, changed nothing. Comparing the
++  // merged state flagged Model Hotloader characters every frame (R8, 2026-11-01): full-character
++  // noise that DLSS Ray Reconstruction showed most.
++  inline bool mmdAlphaChanged(bool seenBefore, uint32_t previousKey, uint32_t key) {
++    return seenBefore && previousKey != key;
++  }
+ }
+diff --git a/tests/rtx/unit/test_mmd_alpha.cpp b/tests/rtx/unit/test_mmd_alpha.cpp
+index c8954020..5aa23449 100644
+--- a/tests/rtx/unit/test_mmd_alpha.cpp
++++ b/tests/rtx/unit/test_mmd_alpha.cpp
+@@ -104,5 +104,17 @@ int main() {
+   a = b;
+   ++b.alphaState.mmdAlphaCutoff;
+   require(ommHash(a) != ommHash(b), "OMM cache identity omitted cutoff changes");
+-  std::cout << "MMD alpha: option lifetime, categories, precedence, boundaries, packing and OMM identity passed\n";
++
++  // History: only a real change of the rule between two frames' first draws discards denoiser history.
++  const uint32_t taggedKey = mmdAlphaKey(tested), plainKey = mmdAlphaKey(original);
++  require(taggedKey != 0 && plainKey == 0 && mmdAlphaKey(opaque) == 0, "MMD key must tell tagged draws apart");
++  require(!mmdAlphaChanged(false, 0, taggedKey),
++    "A new instance's first tagged draw must not discard history (every frame for re-created instances)");
++  require(!mmdAlphaChanged(true, taggedKey, taggedKey), "An unchanged rule must keep history");
++  require(mmdAlphaChanged(true, plainKey, taggedKey) && mmdAlphaChanged(true, taggedKey, plainKey),
++    "Tagging or untagging an existing instance is a material change");
++  auto otherCutoff = original;
++  applyMmdAlphaState(otherCutoff, true, true, false, 0.25f);
++  require(mmdAlphaChanged(true, taggedKey, mmdAlphaKey(otherCutoff)), "A cutoff change is a material change");
++  std::cout << "MMD alpha: option lifetime, categories, precedence, boundaries, packing, OMM identity and history passed\n";
+ }
