@@ -1,13 +1,15 @@
 -- MIT. Cached pane/crack geometry and deterministic replay; debris uses only G1-B's public API.
 local previous=NLGlass.Client
 if previous and previous.Clear then previous.Clear() end
-local V={records={},byIndex={},syncTimes={},DRAW_DISTANCE=8192}
+local V={records={},byIndex={},syncTimes={},DRAW_DISTANCE=8192,
+    pending={},pendingFirst=1,pendingLast=0,BUILDS_PER_FRAME=2,BUILD_SECONDS=0.001}
 NLGlass.Client=V
 local F,G,P=NLGlass.Fracture,NLGlass.Geometry,NLGlass.Protocol
 local frost=CreateMaterial("nlglass_frost_lit","VertexLitGeneric",{["$basetexture"]="models/debug/debugwhite",
     ["$translucent"]="1",["$alpha"]="0.65",["$color"]="[0.65 0.72 0.76]",["$nocull"]="1"})
 local showCracks=GetConVar("rtx_glass_show_cracks")
 local function destroy(r)
+    r.buildQueued=nil r.collisionPending=nil
     if r.mesh then r.mesh:Destroy() r.mesh=nil end
     if r.cracks then r.cracks:Destroy() r.cracks=nil end
 end
@@ -29,7 +31,7 @@ function V.Pose(r)
         r.matrix:SetTranslation(r.frame.origin) r.matrix:SetAngles(r.frame.angles)
     end
 end
-function V.Attach(r,rebuild,candidate)
+function V.Attach(r,rebuild,candidate,deferCollision)
     local ent=candidate and V.Entity(r,candidate) or r.entity
     if not IsValid(ent) then ent=V.Entity(r) end
     local changed=ent~=r.entity
@@ -37,12 +39,16 @@ function V.Attach(r,rebuild,candidate)
     if not IsValid(ent) then return end
     if changed then r.posePosition=nil end
     if r.native then return end
+    if deferCollision then r.collisionPending=r.collisionPending or changed return end
     if not changed and not rebuild then return end
     -- The server remains authoritative. An identical frozen client copy lets prediction/traces
     -- meet the remaining cells instead of the placeholder model's box or a vanished whole pane.
     local polys=F.Remaining(r.state)
     if #polys==0 then ent:PhysicsDestroy() ent:SetNotSolid(true) return end
-    ent:PhysicsInitMultiConvex(G.Convexes(polys,r.state.def.thickness))
+    if r.convexPolys~=polys then
+        r.convexes=G.Convexes(polys,r.state.def.thickness) r.convexPolys=polys
+    end
+    ent:PhysicsInitMultiConvex(r.convexes)
     ent:EnableCustomCollisions(true) ent:SetSolid(SOLID_VPHYSICS)
     local phys=ent:GetPhysicsObject()
     if IsValid(phys) then phys:EnableMotion(false) ent:SetNotSolid(false) else ent:SetNotSolid(true) end
@@ -53,14 +59,29 @@ function V.Build(r,collisionChanged)
     if r.meshCells~=r.state.cells then
         if r.mesh then r.mesh:Destroy() r.mesh=nil end
         if #polys>0 and not r.native then
-            r.mesh=Mesh() r.mesh:BuildFromTriangles(G.Triangles(polys,r.state.def.thickness))
+            local triangles
+            if collisionChanged then
+                triangles,r.convexes=G.PaneGeometry(polys,r.state.def.thickness) r.convexPolys=polys
+            else triangles=G.Triangles(polys,r.state.def.thickness) end
+            r.mesh=Mesh() r.mesh:BuildFromTriangles(triangles)
         end
         r.meshCells=r.state.cells
     end
     if r.cracks then r.cracks:Destroy() r.cracks=nil end
     local triangles={}
-    local function tri(a,b,c,normal)
-        for _,v in ipairs({a,b,c}) do triangles[#triangles+1]={pos=v,normal=normal,u=v.x/64,v=v.y/64} end
+    local front,back=Vector(0,0,1),Vector(0,0,-1)
+    local function strip(a,b,nx,ny,z,normal)
+        local function vertex(x,y) return {pos=Vector(x,y,z),normal=normal,u=x/64,v=y/64} end
+        local p,q,s,t=vertex(a[1]+nx,a[2]+ny),vertex(b[1]+nx,b[2]+ny),
+            vertex(b[1]-nx,b[2]-ny),vertex(a[1]-nx,a[2]-ny)
+        local i=#triangles
+        if normal.z>0 then
+            triangles[i+1],triangles[i+2],triangles[i+3]=p,s,q
+            triangles[i+4],triangles[i+5],triangles[i+6]=p,t,s
+        else
+            triangles[i+1],triangles[i+2],triangles[i+3]=p,q,s
+            triangles[i+4],triangles[i+5],triangles[i+6]=p,s,t
+        end
     end
     for _,line in ipairs(F.Cracks(r.state)) do
         local a,b=line[1],line[2]
@@ -69,12 +90,8 @@ function V.Build(r,collisionChanged)
         if length>0.001 then
             local width=line.sharp and 0.10 or 0.065
             local nx,ny=-dy/length*width,dx/length*width
-            for _,side in ipairs({-1,1}) do
-                local z=side*(r.state.def.thickness/2+0.015)
-                local p,q,s,t=Vector(a[1]+nx,a[2]+ny,z),Vector(b[1]+nx,b[2]+ny,z),
-                    Vector(b[1]-nx,b[2]-ny,z),Vector(a[1]-nx,a[2]-ny,z)
-                tri(p,q,s,Vector(0,0,side)) tri(p,s,t,Vector(0,0,side))
-            end
+            local z=r.state.def.thickness/2+0.015
+            strip(a,b,nx,ny,-z,back) strip(a,b,nx,ny,z,front)
         end
     end
     if #triangles>0 then r.cracks=Mesh() r.cracks:BuildFromTriangles(triangles) end
@@ -82,6 +99,36 @@ function V.Build(r,collisionChanged)
     V.Attach(r,collisionChanged)
     V.Pose(r)
 end
+function V.QueueBuild(r,collisionChanged)
+    if r.state.all then
+        -- A whole break has nothing left to build. Drop stale drawing/collision immediately.
+        destroy(r) r.builtRevision=r.state.visualRevision r.meshCells=r.state.cells
+        V.Attach(r,true) return
+    end
+    if r.builtRevision==r.state.visualRevision and not collisionChanged then return end
+    r.collisionPending=r.collisionPending or collisionChanged
+    if r.buildQueued then return end
+    r.buildQueued=true r.buildFrame=FrameNumber()
+    V.pendingLast=V.pendingLast+1 V.pending[V.pendingLast]=r
+end
+hook.Add("Think","NLGlass.Build",function()
+    local frame=FrameNumber()
+    if V.lastBuildFrame==frame or V.pendingFirst>V.pendingLast then return end
+    V.lastBuildFrame=frame
+    local start,built=SysTime(),0
+    while V.pendingFirst<=V.pendingLast do
+        local r=V.pending[V.pendingFirst]
+        if r.buildQueued and V.records[r.id]==r then
+            if r.buildFrame>=frame then break end -- never build in the receiving frame
+            r.buildQueued=nil
+            local collision=r.collisionPending r.collisionPending=nil
+            V.Build(r,collision) built=built+1
+        end
+        V.pending[V.pendingFirst]=nil V.pendingFirst=V.pendingFirst+1
+        if built>=V.BUILDS_PER_FRAME or SysTime()-start>=V.BUILD_SECONDS then break end
+    end
+    if V.pendingFirst>V.pendingLast then V.pending={} V.pendingFirst=1 V.pendingLast=0 end
+end)
 function V.Store(r,deferBuild)
     local old=V.records[r.id]
     if old then destroy(old) V.byIndex[old.entityIndex]=nil end
@@ -93,7 +140,7 @@ function V.Store(r,deferBuild)
     r.radius=math.sqrt(radius+(r.state.def.thickness/2)^2)
     local color=r.frame.color or color_white
     r.red,r.green,r.blue,r.alpha=color.r/255,color.g/255,color.b/255,color.a/255
-    if not deferBuild then V.Build(r,true) end
+    if not deferBuild then V.Build(r,true) else V.Attach(r,false,nil,true) V.Pose(r) end
     -- A map or session with glass: have the broken-glass world ready before the first break.
     if NLGlassDebris and NLGlassDebris.Prepare then NLGlassDebris.Prepare() end
     return r
@@ -120,7 +167,7 @@ net.Receive("nlglass_hit",function()
     if before and (not r or r.state.revision~=revision) then r=V.Store(before,true) end
     if not r or r.state.revision~=revision then sync(id) return end
     local pieces,_,broke=F.Apply(r.state,impact,forceAll,native)
-    V.Build(r,broke)
+    V.QueueBuild(r,broke)
     V.Pose(r)
     if #pieces>0 then
         for _,piece in ipairs(pieces) do piece.velocity=G.WorldVector(r.frame,piece.velocity) piece.spin=G.WorldVector(r.frame,piece.spin) end
@@ -142,6 +189,7 @@ end)
 function V.Clear()
     for _,r in pairs(V.records) do destroy(r) end
     V.records={} V.byIndex={} V.syncTimes={}
+    V.pending={} V.pendingFirst=1 V.pendingLast=0 V.lastBuildFrame=nil
     if NLGlassDebris then NLGlassDebris.Clear() end
 end
 net.Receive("nlglass_clear",V.Clear)
@@ -152,7 +200,7 @@ if previous then timer.Simple(0,initialSync) end -- refresh only; join uses its 
 hook.Add("NetworkEntityCreated","NLGlass.Attach",function(ent)
     local r=V.byIndex[ent:EntIndex()]
     if r then
-        r.entity=nil V.Attach(r,true,ent) V.Pose(r)
+        r.entity=nil V.Attach(r,true,ent,r.buildQueued) V.Pose(r)
     end
 end)
 hook.Add("EntityRemoved","NLGlass.Detach",function(ent)

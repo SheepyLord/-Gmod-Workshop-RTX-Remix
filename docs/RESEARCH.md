@@ -1,5 +1,34 @@
 # Research notes
 
+## G1-A second pass: client build cost (2026-11-01)
+
+- Full Release gate exits 0: repo conventions, 25/25 CTests (48.67 s), and 453 Python tests
+  (28 gmapack, 25 steam, 400 tools, two existing skips). All 50 G1-A glass tests execute.
+  The tools tests take 79.927 s. Evidence: `out/g1-lua-fix2/release.log`. No G1-B/native/Jolt,
+  QA, package or Workshop configuration paths were edited in this branch.
+
+- `glass/addon/lua/nlglass/client.lua:102` queues a dirty pane once; `:114` drains it after the
+  receiving FrameNumber with a two-pane cap and a soft 1 ms elapsed-time stop. A whole break
+  clears stale meshes/collision immediately. Removal/snapshot replacement/cleanup invalidate
+  pending entries. `Attach` preserves collision dirtiness for an entity arriving while queued.
+  Current contact-default anchors are `config.lua:7`, `damage.lua:71` and `server.lua:154`
+  in the same directory (the earlier contact note's fallback line numbers were one line late).
+- `glass/addon/lua/nlglass/geometry.lua:74` supplies mesh and convex positions from one extrusion;
+  face fans and crack strips share read-only vertex records. The crack strip builder at
+  `client.lua:73` also makes winding agree with outward normals on both faces. The engine
+  harness checks position identity, triangle counts, winding, queue bounds/coalescing and
+  cancellation including late entities and a whole break overtaking partial work.
+- Updated 40-sample benchmark on the same 100-hit preparation: ad3ed46 has 502 cells, this pass
+  164. Client break handler mean/p99 13.5920/20.7774 -> 1.8676/2.6174 ms; deferred build after
+  1.0124/2.1511 ms; per-sample combined cost 13.5931/20.7784 -> 2.8800/4.5732 ms. Hit combined
+  cost 13.3168/21.9155 -> 3.2667/5.6801 ms. The queue does not hide deferred work in these sums.
+  Initial snapshot/attach is outside timing; engine/physics/transport/debris are mocked.
+  This is CPU evidence only, not GMod or Remix frame-time acceptance.
+- The stronger active-cap coarsening probe peaks at 199 cells with 0.048986 units² area error;
+  36,015 generated edges remain at least 1/256 long. The typed snapshot is 5,723 bytes for
+  176 live cells/7 groups. New density/lit/default/defer regressions fail on ad3ed46; all
+  50 glass cases pass now. Logs remain under this worktree's `out/g1-lua-fix2/`.
+
 ## G1-A second pass: lit cracks and walking (2026-11-01)
 
 - `glass/addon/lua/nlglass/client.lua:7` creates `nlglass_frost_lit` with VertexLitGeneric and

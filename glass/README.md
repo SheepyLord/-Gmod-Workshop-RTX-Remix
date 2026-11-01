@@ -1,7 +1,7 @@
 # Native loader glass (G1)
 
 An original MIT add-on replaces Glass-Rewrite-Remix. One frozen server entity represents each
-convex pane; broken pieces exist only in G1-B's client debris world. This is G1-A's integration fix pass.
+convex pane; broken pieces exist only in G1-B's client debris world. This is G1-A's second integration fix pass.
 Combine it with G1-B's fix pass before packaging/game acceptance. No GPL code or material files were copied.
 The add-on draws glass with `models/props_combine/health_charger_glass`, the material the old add-on used, which the fixes part's Remix mod `base_mod/breakable_glass` replaces with translucent PBR glass (texture hash `C0C4BC4C02DBDF70`).
 
@@ -115,9 +115,20 @@ Initial state uses one client-readiness request from `InitPostEntity`, with a ze
 only for Lua refresh. A missing revision requests just that pane ID; the server replies with its
 snapshot or removal, deduplicating IDs and allowing 16 requests per two-second window. There is
 no second PlayerInitialSpawn push. A matching client state applies a break directly; a recovery
-snapshot is stored without a build, then its final state builds once. Weak pending hits keep
+snapshot is stored without a build, then its final state queues one build. Weak pending hits keep
 geometry and collision; unchanged cells retain the pane mesh. Cached meshes/cracks update by
 revision and prediction physics rebuilds only on initial attachment or breakout.
+
+Hit handling spawns pieces/sound/effects immediately. Remaining pane/crack meshes and prediction
+collision build from the latest revision no earlier than the next client frame. A coalescing
+queue builds at most two panes/frame and stops after a pane when 1 ms has elapsed; a single
+mesh/physics API call is not preemptible. Bursts may wait further frames. Snapshots attach
+immediately; whole breaks discard old geometry/collision immediately. Removal, replacement,
+cleanup and Lua refresh cancel stale queued work; late entities retain pending collision.
+
+One extrusion now supplies render positions and remaining-glass convexes. Face fans and crack
+strips reuse read-only vertex records instead of allocating each triangle's positions again.
+See [ADR 0077](../docs/decisions/0077-glass-client-build-queue.md) for the scheduling tradeoff.
 
 Each pane caches its validated entity, Matrix, material, tint and bounds. Only a pose change calls
 LocalToWorld and updates that Matrix; a stationary draw has no new Matrix/transform/class lookup.
@@ -219,3 +230,15 @@ probes reach 512 cells across 100 separated impacts, preserve an old hole, check
 across 180 seeds and exercise 200 dense visual-only native hits. See [testing](../docs/TESTING.md)
 for before/after pure-fracture and mocked server/client timings. Real game contact timing,
 Hammer output semantics, two clients and Remix performance are still acceptance checks.
+
+The second pass runs 50 glass tests, with before-failing density/lit/default/defer probes against
+ad3ed46. On the same 100-hit preparation, lower topology density plus shared geometry and queued
+builds reduce the mocked client break from 13.59 ms mean / 20.78 ms p99 to 1.87 / 2.62 ms in the
+handler, plus 1.01 ms mean deferred work: **2.88 / 4.57 ms combined**. Prepared cells fall from
+502 to 164; initial attachment is outside timing. See [testing](../docs/TESTING.md) for the full
+table and limits. This is not a live game benchmark. Dark/night crack shading, real walking and
+running, partial-hole prediction during deferral and integrated 50-pane performance remain for
+Claude's game checks. All game evidence was read only; only this worktree and its out were written.
+
+The second-pass full Release gate passes 25 CTests and 453 Python tests (two existing skips),
+including all 50 glass cases. Evidence is in `out/g1-lua-fix2/release.log` in this worktree.

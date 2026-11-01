@@ -193,3 +193,9 @@ class EngineTests(unittest.TestCase):
 
     def test_default_and_reset_allow_walking_but_break_for_running(self):
         self.run_case('walk_run')
+
+    def test_client_queue_coalesces_limits_and_cancels_builds(self):
+        self.run_case('build_queue')
+
+    def test_mesh_and_collision_share_one_extrusion(self):
+        self.run_case('shared_geometry')

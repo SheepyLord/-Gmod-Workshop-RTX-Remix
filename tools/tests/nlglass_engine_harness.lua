@@ -47,6 +47,8 @@ local function realm(server)
     e.TOP,e.FILL=1,5
     e.tick,e.time=100,10 e.queue={} e.out={} e.receivers={} e.cvars={}
     function e.CurTime() return e.time end
+    e.SysTime=now e.frames=0
+    function e.FrameNumber() return e.frames end
     e.engine={TickCount=function() return e.tick end,TickInterval=function() return 1/66 end}
     e.MASK_PLAYERSOLID=123
     e.file={Exists=function(path) local f=io.open(root.."/"..path,"r") if f then f:close() return true end return false end}
@@ -95,6 +97,7 @@ local function realm(server)
     function e.run(name,...)
         for _,f in pairs(e.hooks[name] or {}) do local r=f(...) if r~=nil then return r end end
     end
+    function e.frame() e.frames=e.frames+1 e.run("Think") end
     e.util={AddNetworkString=function() end,Effect=function() e.effects=(e.effects or 0)+1 end,
         TraceHull=function(t) e.lastTrace=t return e.traceResult or {Hit=false} end}
     e.gameevent={Listen=function(name) check(name=="break_breakable","engine break event subscribed") end}
@@ -255,6 +258,7 @@ local cl=realm(false) cl.cvars=sv.cvars cl.ents=sv.ents
 cl.include("autorun/nlglass.lua")
 local function network(client,start)
     for i=start or 1,#sv.out do local packet=sv.out[i] if not packet.target or packet.target==client.player then client.deliver(packet) end end
+    client.frame()
 end
 local function pane(kind,pos)
     local ent=newEntity("nlglass_pane",{pos=pos})
@@ -590,7 +594,10 @@ elseif scenario=="client_build" then
     for i=1,2 do local start=#sv.out+1 ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) network(cl,start) end
     local start=#sv.out+1 ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
     local physicsBuilds,meshBuilds=ent.physicsBuilds,cl.meshBuilds
-    network(cl,start)
+    for i=start,#sv.out do cl.deliver(sv.out[i]) end
+    check(ent.physicsBuilds==physicsBuilds and cl.meshBuilds==meshBuilds,"break handler defers remaining mesh and collision builds")
+    cl.run("Think") check(cl.meshBuilds==meshBuilds,"receiving frame never drains the build queue")
+    cl.frame()
     check(ent.physicsBuilds==physicsBuilds+1,"one prediction-physics build per break message")
     check(cl.meshBuilds-meshBuilds<=2,"one pane/crack mesh build per break message, no pre-state build")
     local spawned=#cl.debris cl.deliver(sv.out[start])
@@ -647,8 +654,13 @@ elseif scenario=="lit_cracks" then
     end
     check(front>0 and front==back,"cracks remain on both faces")
     for i=1,#cr.cracks.triangles,6 do
-        local a,b=cr.cracks.triangles[i].pos,cr.cracks.triangles[i+5].pos
-        check((a-b):LengthSqr()<=0.201^2,"crack strips stay thin")
+        local first=cr.cracks.triangles[i]
+        local last=cr.cracks.triangles[i+(first.normal.z>0 and 4 or 5)]
+        check((first.pos-last.pos):LengthSqr()<=0.201^2,"crack strips stay thin")
+    end
+    for i=1,#cr.cracks.triangles,3 do
+        local a,b,c=cr.cracks.triangles[i],cr.cracks.triangles[i+1],cr.cracks.triangles[i+2]
+        check((b.pos-a.pos):Cross(c.pos-a.pos):Dot(a.normal)>0,"lit crack winding agrees with the outward face normal")
     end
 elseif scenario=="walk_run" then
     check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250,"default contact threshold separates walking and running")
@@ -667,13 +679,92 @@ elseif scenario=="walk_run" then
     sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[12].DoClick()
     sv.deliver(cl.out[#cl.out],ply)
     check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250 and panel.controls[7].value==250,"Reset to Defaults restores 250 in server and menu")
+elseif scenario=="build_queue" then
+    local V=cl.NLGlass.Client
+    local ent,r=pane() network(cl,1)
+    local start=#sv.out+1
+    ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
+    local meshes,physicsBuilds=cl.meshBuilds,ent.physicsBuilds
+    for i=start,#sv.out do cl.deliver(sv.out[i]) end
+    check(cl.meshBuilds==meshes and ent.physicsBuilds==physicsBuilds and #cl.debris==1,"burst spawns debris immediately without building remaining glass")
+    check(V.pendingLast-V.pendingFirst+1==1,"same-pane burst coalesces into one queued build")
+    local cr=V.records[r.id] local cells=cr.state.cells
+    cl.frame()
+    check(cl.meshBuilds-meshes==2 and ent.physicsBuilds==physicsBuilds+1,"one final mesh pair and collision build for the whole burst")
+    check(cr.meshCells==cells and cr.builtRevision==cr.state.visualRevision,"queue builds only the latest revision")
+    -- Geometry and collision share exactly the same extruded positions.
+    local positions={}
+    for _,vertex in ipairs(cr.mesh.triangles) do positions[vertex.pos]=true end
+    for _,convex in ipairs(ent.convexes) do for _,p in ipairs(convex) do check(positions[p],"collision reuses render extrusion positions") end end
+    -- Count and time budgets are independent; control time for deterministic assertions.
+    V.BUILD_SECONDS=math.huge
+    local records={}
+    for i=1,5 do
+        local e,rec=pane() S.Snapshot(rec) cl.deliver(sv.out[#sv.out])
+        local at=#sv.out+1 e:OnTakeDamage(damage(sv.DMG_BULLET,15))
+        for j=at,#sv.out do cl.deliver(sv.out[j]) end
+        records[#records+1]=V.records[rec.id]
+    end
+    cl.frame()
+    local built=0 for _,rec in ipairs(records) do if not rec.buildQueued then built=built+1 end end
+    check(built==2,"at most two panes build in one frame")
+    cl.run("Think")
+    local twice=0 for _,rec in ipairs(records) do if not rec.buildQueued then twice=twice+1 end end
+    check(twice==2,"repeated Think in one frame cannot bypass the bound")
+    local clock=0 cl.SysTime=function() clock=clock+0.002 return clock end V.BUILD_SECONDS=0.001
+    cl.frame()
+    built=0 for _,rec in ipairs(records) do if not rec.buildQueued then built=built+1 end end
+    check(built==3,"time budget stops after one expensive pane")
+    cl.SysTime=now V.BUILD_SECONDS=math.huge cl.frame()
+    for _,rec in ipairs(records) do check(not rec.buildQueued,"queue eventually drains without starving a pane") end
+    -- New snapshots/removals/cleanup invalidate old work.
+    local a,ra=pane() S.Snapshot(ra) cl.deliver(sv.out[#sv.out])
+    local at=#sv.out+1 a:OnTakeDamage(damage(sv.DMG_BULLET,15)) cl.deliver(sv.out[at])
+    local stale=V.records[ra.id] S.Snapshot(ra) cl.deliver(sv.out[#sv.out])
+    meshes=cl.meshBuilds cl.frame() check(cl.meshBuilds==meshes and not stale.buildQueued,"snapshot replacement cancels obsolete queued work")
+    at=#sv.out+1 a:OnTakeDamage(damage(sv.DMG_BULLET,15)) cl.deliver(sv.out[at])
+    S.Forget(ra) cl.deliver(sv.out[#sv.out]) meshes=cl.meshBuilds cl.frame()
+    check(cl.meshBuilds==meshes and not V.records[ra.id],"removal cancels queued work")
+    at=#sv.out+1 ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
+    for i=at,#sv.out do cl.deliver(sv.out[i]) end
+    V.Clear() meshes=cl.meshBuilds cl.frame()
+    check(cl.meshBuilds==meshes and V.pendingLast==0,"cleanup cancels the queue")
+    -- A late network entity attaches once; its collision must still wait for the queued build.
+    local b,rb=pane() entities[b.id]=nil S.Snapshot(rb) cl.deliver(sv.out[#sv.out])
+    at=#sv.out+1 b:OnTakeDamage(damage(sv.DMG_BULLET,15)) cl.deliver(sv.out[at])
+    entities[b.id]=b physicsBuilds=b.physicsBuilds
+    cl.run("NetworkEntityCreated",b)
+    check(b.physicsBuilds==physicsBuilds,"late attachment cannot bypass deferred collision")
+    cl.frame() check(b.physicsBuilds==physicsBuilds+1,"late entity gets one final prediction collision")
+    at=#sv.out+1 b:OnTakeDamage(damage(sv.DMG_BULLET,15)) cl.deliver(sv.out[at])
+    check(V.records[rb.id].buildQueued,"probe has pending partial work")
+    at=#sv.out+1 sv.run("AcceptInput",b,"Break")
+    cl.deliver(sv.out[at])
+    local empty=V.records[rb.id]
+    check(empty.state.all and not empty.mesh and not empty.cracks and not empty.buildQueued,"whole break removes stale visuals and cancels partial work immediately")
+    for i=at+1,#sv.out do cl.deliver(sv.out[i]) end
+    meshes=cl.meshBuilds cl.frame() check(cl.meshBuilds==meshes,"whole break cannot rebuild obsolete remaining glass")
+elseif scenario=="shared_geometry" then
+    local G=cl.NLGlass.Geometry
+    for _,poly in ipairs({{{-48,-32},{48,-32},{48,32},{-48,32}},{{0,0},{80,0},{10,50}}}) do
+        local triangles,convexes=G.PaneGeometry({poly},1)
+        check(#convexes==1 and #convexes[1]==#poly*2,"one convex with two positions per vertex")
+        check(#triangles==(#poly-2)*6+#poly*6,"extrusion keeps all face/edge triangles")
+        local positions={}
+        for _,vertex in ipairs(triangles) do positions[vertex.pos]=true end
+        for _,p in ipairs(convexes[1]) do check(positions[p],"mesh and convex positions share one extrusion") end
+        for i=1,#triangles,3 do
+            local a,b,c=triangles[i],triangles[i+1],triangles[i+2]
+            check((b.pos-a.pos):Cross(c.pos-a.pos):Dot(a.normal)>0,"triangle winding matches outward normal")
+        end
+    end
 elseif scenario=="client_timings" then
     local ent,r=pane()
     r.state=F.New(S.Definition({{-128,-64},{128,-64},{128,64},{-128,64}},1,"annealed",1))
     for i=1,100 do F.Apply(r.state,{x=(i*37)%240-120,y=(i*19)%112-56,energy=180000,seed=900+i,kind="sharp",dx=0,dy=0,dz=1},false,true) end
     local base=r.state base.damage=0
     print("prepared_cells="..#base.cells)
-    local times={server_hit={},server_break={},client_hit={},client_break={}}
+    local times={server_hit={},server_break={},client_hit={},client_break={},deferred_hit={},deferred_break={},total_hit={},total_break={}}
     local function clientPackets(start)
         for i=start,#sv.out do cl.deliver(sv.out[i]) end
     end
@@ -686,10 +777,15 @@ elseif scenario=="client_timings" then
             S.Impact(r,{x=0,y=0,energy=which=="hit" and 180000 or 1200000,seed=81,kind="sharp",dx=0,dy=0,dz=1})
             local values=times["server_"..which] values[#values+1]=(now()-t)*1000
             t=now() clientPackets(start)
-            values=times["client_"..which] values[#values+1]=(now()-t)*1000
+            local handler=(now()-t)*1000
+            values=times["client_"..which] values[#values+1]=handler
+            t=now() cl.frame()
+            local deferred=(now()-t)*1000
+            values=times["deferred_"..which] values[#values+1]=deferred
+            values=times["total_"..which] values[#values+1]=handler+deferred
         end
     end
-    for _,name in ipairs({"server_hit","server_break","client_hit","client_break"}) do
+    for _,name in ipairs({"server_hit","server_break","client_hit","client_break","deferred_hit","deferred_break","total_hit","total_break"}) do
         local values=times[name] table.sort(values) local sum=0 for _,v in ipairs(values) do sum=sum+v end
         print(string.format("%s n=%d mean_ms=%.4f p99_ms=%.4f",name,#values,sum/#values,values[math.ceil(#values*.99)]))
     end

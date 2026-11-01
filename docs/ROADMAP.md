@@ -4,6 +4,13 @@ G1-A second fix pass (2026-11-01, `g1-lua-fix2`) is in progress: bounded break d
 implemented and offline tested; lit cracks, the 250-unit/s contact default and lower client
 break cost follow. Integration, packaging and game acceptance remain with Claude.
 
+G1-A second-pass implementation and offline validation are complete on `g1-lua-fix2`: all four
+items are implemented, with 200/300-piece bounds, lit cracks, walking below the 250-unit/s default
+and deferred/coalesced client builds. Release passes 25 CTests and 453 Python tests (two existing
+skips), including 50 glass cases. Mocked total client break CPU drops from 13.59 to 2.88 ms mean;
+the density change lowers prepared topology from 502 to 164 cells. Real crack lighting, body
+contact, prediction and the 50-pane comparison with G1-B remain Claude's game acceptance work.
+
 G1-A's integration fix pass is **complete offline** on `g1-lua-fix` (2026-11-01): all eleven
 items in [the brief](handover/G1-fix-pass.md) are implemented, with 45 glass tests and before-failing
 regressions. Release passes 25 CTests and 448 Python tests (two existing skips). Near-cap fracture

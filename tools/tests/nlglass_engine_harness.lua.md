@@ -39,11 +39,21 @@ pose update. `initial_sync`/`target_sync` check one readiness push and independe
 The contact probe includes the QA SetVelocity base impulse and player yaw; blast ordering also
 covers an engine-native removal deferred after damage.
 
+Second-pass `client_build` asserts no meshes/collision build in the receiving frame and one
+build on the next. `build_queue` checks same-pane burst coalescing, two-pane and soft elapsed-time
+limits, repeated Think calls, latest revision, shared render/collision positions, cancellation
+by snapshots/removal/whole-break/cleanup, and collision attachment for a late entity. `shared_geometry`
+checks triangle counts, position sharing, thickness and outward winding on a rectangle and triangle.
+Lit cracks also check triangle winding after the shared strip builder changed.
+
 `client_timings` prepares 100 hits, restores a fresh near-cap server/client state before each of
 40 samples, and measures actual server/client hit/break handlers with QueryPerformanceCounter.
 Client reset and initial snapshot/build are outside timing. The Lua mesh/convex work is real;
 engine APIs, transport, debris simulation and renderer submission are mocks. It reports mean/p99
-milliseconds; these numbers do not predict GMod/Remix frame times.
+milliseconds; these numbers do not predict GMod/Remix frame times. Second-pass output separates
+the receiving handler from the next frame's queued build and reports their per-sample sum, so
+deferring work cannot hide it. The same workload prepares 502 cells before and 164 after the
+new density cap. A mock frame advance drains work between the hit and break measurements.
 
 Output: assertion diagnostics and `engine <scenario> OK`. Side effects exist only in mocked tables
 (network outboxes, collision meshes, sounds, UI controls, debris calls). No filesystem writes,

@@ -181,7 +181,7 @@ elseif mode=="coarsen" then
     for i=1,100 do
         F.Apply(s,hit((i*37)%240-120,(i*19)%112-56,80000,900+i),false,true)
         check(not s.all,"bounded unbroken history coarsens instead of losing the pane")
-        check(#s.cells<=512,"coarsened cell budget") peak=math.max(peak,#s.cells)
+        check(#s.cells<=F.CellLimit(d),"coarsened cell budget") peak=math.max(peak,#s.cells)
         check(#s.groups<#s.cells,"subdivision history is bounded by live cells")
     end
     local area=0 for _,poly in ipairs(F.Remaining(s)) do area=area+F.Area(poly) end
@@ -192,14 +192,14 @@ elseif mode=="coarsen" then
     local dense=F.New(d)
     for i=1,200 do
         local pieces=F.Apply(dense,hit((i*37)%31-15,(i*19)%31-15,180000,1700+i),false,true)
-        check(not dense.all and #pieces==0 and #dense.cells<=512,"dense visual cuts never shatter engine-owned glass")
+        check(not dense.all and #pieces==0 and #dense.cells<=F.CellLimit(d),"dense visual cuts never shatter engine-owned glass")
     end
 elseif mode=="hole_coarsen" then
     local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
     local s=F.New(d) local pieces=F.Apply(s,hit(0,0,1200000,88))
     check(#pieces>0,"probe starts with a real hole")
     for i=1,100 do F.Apply(s,hit((i*37)%240-120,(i*19)%112-56,80000,900+i),false,true) end
-    check(not s.all and #s.cells<=512,"perforated pane remains bounded")
+    check(not s.all and #s.cells<=F.CellLimit(d),"perforated pane remains bounded")
     for _,piece in ipairs(pieces) do
         local p=F.Center(piece.poly)
         for _,poly in ipairs(F.Remaining(s)) do

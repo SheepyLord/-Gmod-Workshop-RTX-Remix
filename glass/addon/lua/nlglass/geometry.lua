@@ -42,26 +42,40 @@ function G.Convexes(polys,thickness)
     return out
 end
 
-function G.Triangles(polys,thickness)
+function G.Triangles(polys,thickness,convexes)
     local out={}
-    local function tri(a,b,c,n)
-        for _,p in ipairs({a,b,c}) do out[#out+1]={pos=p,normal=n,u=p.x/64,v=p.y/64} end
+    local front,back=Vector(0,0,1),Vector(0,0,-1)
+    local function vertex(p,n) return {pos=p,normal=n,u=p.x/64,v=p.y/64} end
+    local function tri(a,b,c)
+        out[#out+1],out[#out+2],out[#out+3]=a,b,c
     end
     for _,poly in ipairs(polys) do
+        local upper,lower={},{}
+        local points=convexes and {}
+        for i,p in ipairs(poly) do
+            local lo,hi=Vector(p[1],p[2],-thickness/2),Vector(p[1],p[2],thickness/2)
+            lower[i],upper[i]=vertex(lo,back),vertex(hi,front)
+            if points then points[#points+1],points[#points+2]=lo,hi end
+        end
+        if points then convexes[#convexes+1]=points end
         for i=2,#poly-1 do
-            local a,b,c=poly[1],poly[i],poly[i+1]
-            tri(Vector(a[1],a[2],thickness/2),Vector(b[1],b[2],thickness/2),Vector(c[1],c[2],thickness/2),Vector(0,0,1))
-            tri(Vector(a[1],a[2],-thickness/2),Vector(c[1],c[2],-thickness/2),Vector(b[1],b[2],-thickness/2),Vector(0,0,-1))
+            tri(upper[1],upper[i],upper[i+1])
+            tri(lower[1],lower[i+1],lower[i])
         end
         for i,a in ipairs(poly) do
-            local b=poly[i%#poly+1]
+            local j=i%#poly+1 local b=poly[j]
             local n=Vector(b[2]-a[2],a[1]-b[1],0):GetNormalized()
-            local p,q,r,s=Vector(a[1],a[2],-thickness/2),Vector(b[1],b[2],-thickness/2),
-                Vector(b[1],b[2],thickness/2),Vector(a[1],a[2],thickness/2)
-            tri(p,q,r,n) tri(p,r,s,n)
+            local p,q,r,s=vertex(lower[i].pos,n),vertex(lower[j].pos,n),vertex(upper[j].pos,n),vertex(upper[i].pos,n)
+            tri(p,q,r) tri(p,r,s)
         end
     end
     return out
+end
+function G.PaneGeometry(polys,thickness)
+    -- One extrusion supplies render positions and collision hulls. Never rebuild a polygon
+    -- for each consumer; shared positions/triangle entries are read-only after construction.
+    local convexes={}
+    return G.Triangles(polys,thickness,convexes),convexes
 end
 
 -- Surface vertices are brush-model local, including world-positioned (origin zero) map brushes.
