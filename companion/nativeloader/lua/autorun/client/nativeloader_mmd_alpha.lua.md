@@ -6,12 +6,13 @@ provides the public `mmd/<16 hex digits>/<part>` material names. Soft copies, de
 public parts share the same textures, so they inherit the category without editing any material.
 
 A part whose every texel is partly transparent (Columbina's lattice mask) is drawn only through the
-hotloader's soft copy, so its public material is never bound and the runtime reports no hash for it
-(PoC run `14-mask-diag`, 2026-11-01: empty for the public and the soft material). When a part's material
-gives no hash, its base texture gets a wrapper (`nativeloader_mmd_alpha_<texture>`, `UnlitGeneric`),
-tracked and drawn once as a 1x1 quad into the screen-effect render target in `PostRender` (at most four
-per frame), the way the category manager finds chrome hashes; the wrapper's hash is the texture's.
-Wrapper lookups count against the same 16-lookup frame budget.
+hotloader's soft copy, never through its public material, so the runtime reports no hash for the
+public name (PoC runs `14-mask-diag` and `16-mask-diag2`, 2026-11-01). The soft copy, tracked by its
+plain name (`mmdhl_soft_v1_<asset>_<part>`, without the `!`), reports the texture's live hash
+(`0x4F9DC84370047174` for the mask). Each sweep therefore also reads the soft-copy names the hotloader
+keeps in `mmdhl.softMaterials[<asset>].soft` (created on a part's first draw), finds them as `!` materials
+(no VMT on disk) and tracks and looks them up like the public parts, within the same budgets. A
+tracked off-screen wrapper of the texture was tried first and never reported a hash in game.
 
 Runs automatically on client `Think`. `nativeloader_mmd_alpha_status` prints its material count and
 last accepted list. There is no new setting: this is the scoped correction to Model Hotloader

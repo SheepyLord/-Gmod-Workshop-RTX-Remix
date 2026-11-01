@@ -24,29 +24,11 @@ function Material(path)
         end
     }
 end
-local hooks = {}
-hook = {Add = function(event, _, fn) hooks[event] = fn if event == "Think" then think = fn end end}
+hook = {Add = function(_, _, fn) think = fn end}
 concommand = {Add = function() end}
--- Off-screen wrapper binds (soft-only parts): the draw makes the runtime record the wrapper's hash.
-local created, drawn, current = {}, {}, nil
-if scenario == "soft_only" or scenario == "soft_only_budget" then
-    function CreateMaterial(wrapper, shader, params)
-        assert(shader == "UnlitGeneric" and params["$basetexture"], "wrapper binds the part's base texture")
-        created[wrapper] = params["$basetexture"]
-        return {name = wrapper}
-    end
-    render = {PushRenderTarget = function() end, PopRenderTarget = function() end, GetScreenEffectTexture = function() return {} end}
-    cam = {Start2D = function() end, End2D = function() end}
-    surface = {SetDrawColor = function() end, SetMaterial = function(m) current = m end,
-        DrawTexturedRect = function() if current then drawn[current.name] = true end end}
-end
 RemixMaterial = {
     TrackMaterial = function(path) tracks[path] = (tracks[path] or 0) + 1 end,
-    GetAllTextureHashes = function(path)
-        lookups = lookups + 1
-        if created[path] then return drawn[path] and tracks[path] and {hash} or nil end
-        return hashes[path]
-    end,
+    GetAllTextureHashes = function(path) lookups = lookups + 1 return hashes[path] end,
     GetMaterialHashRevision = function() return revision end
 }
 local refuse = false
@@ -65,12 +47,9 @@ RemixConfig = {SetConfigVariable = function(key, value)
     calls[#calls + 1] = value
     return true
 end}
-mmdhl = {assets = {asset = {materials = {{path = name}}}}}
+mmdhl = {assets = {asset = {materials = {{path = name}}}}, softMaterials = {}}
 local function frames(count, step)
-    for _ = 1, count do
-        now = now + (step or 1/60) think()
-        if hooks.PostRender then hooks.PostRender() end
-    end
+    for _ = 1, count do now = now + (step or 1/60) think() end
 end
 local function value() return calls[#calls] end
 local function contains(needle) return value() and value():find(needle:lower(), 1, true) end
@@ -85,8 +64,15 @@ if scenario == "nil_revision" then RemixMaterial.GetMaterialHashRevision = nil e
 if scenario == "no_tracking" then RemixMaterial.TrackMaterial = nil end
 if scenario == "retry" then refuse = true end
 if scenario == "track_retry" then refuseTrack = true hashes[name] = nil end
--- Every texel partly transparent: the hotloader draws only the soft copy, never the public material.
-if scenario == "soft_only" or scenario == "soft_only_budget" then hashes[name] = nil end
+-- Every texel partly transparent: the hotloader draws only the soft copy, so only its name has a hash.
+local softName = "mmdhl_soft_v1_" .. string.rep("ab", 32) .. "_16"
+local softHash = "0x4F9DC84370047174"
+if scenario:match("^soft") then
+    hashes[name] = nil
+    bindings["!" .. softName], hashes[softName] = "mmd/t/2c7b2c8505cc6a6e", {softHash}
+    mmdhl_soft = {asset = {soft = {"", "!" .. softName}}}
+end
+if mmdhl_soft and scenario ~= "soft_late" then mmdhl.softMaterials = mmdhl_soft end
 assert(loadfile(source))()
 frames(120)
 if scenario == "no_api" then
@@ -153,22 +139,31 @@ elseif scenario == "bounded" then
     end
     assert(contains(hash))
 elseif scenario == "soft_only" then
-    local wrapper = next(created)
-    assert(wrapper and created[wrapper] == name and drawn[wrapper] and tracks[wrapper], "a soft-only part's texture is bound once off-screen")
-    assert(contains(hash), "a part drawn only through its soft copy must still be tagged")
-elseif scenario == "soft_only_budget" then
-    local parts = {}
-    for i = 1, 512 do
-        local path = "mmd/0123456789abcdef/soft" .. i
-        parts[i], bindings[path] = {path = path}, path
+    assert(contains(softHash) and tracks[softName] == 1, "a part drawn only through its soft copy must be tagged by the copy's name")
+    assert(not contains(hash), "the public material had no hash")
+elseif scenario == "soft_late" then
+    assert(value() == "", "nothing to tag before the soft copy exists")
+    mmdhl.softMaterials = mmdhl_soft
+    frames(180)
+    assert(contains(softHash), "a soft copy created on first draw must join at the next sweep")
+elseif scenario == "soft_budget" then
+    local copies = {}
+    for i = 1, 1024 do
+        local copy = "mmdhl_soft_v1_" .. string.rep("cd", 32) .. "_" .. i
+        copies[i], bindings["!" .. copy], hashes[copy] = "!" .. copy, "mmd/t/" .. i, {softHash}
     end
-    mmdhl.assets.asset.materials = parts
+    mmdhl.softMaterials.asset.soft = copies
     for _ = 1, 300 do
         local before = lookups
         frames(1)
-        assert(lookups - before <= 16, "wrapper lookups count against the per-frame budget")
+        assert(lookups - before <= 16, "soft copies share the lookup budget")
     end
-    assert(contains(hash))
+    assert(contains(softHash))
+elseif scenario == "soft_namespace" then
+    mmdhl.softMaterials.asset.soft = {"!other_material", "!mmdhl_soft_v1_zz_1", "mmd/0123456789abcdef/mask", 42}
+    hashes["other_material"], hashes["mmdhl_soft_v1_zz_1"] = {"0x1111"}, {"0x2222"}
+    frames(180)
+    assert(not contains("0x1111") and not contains("0x2222") and not tracks["other_material"], "only hotloader soft-copy names are tracked")
 elseif scenario == "namespace" then
     mmdhl.assets.asset.materials = {{path = "models/props/glass"}, {path = "mmd/short/wrong"},
         {path = "mmd/0123456789abcdef/../../wrong"}, {path = "!MMD/0123456789ABCDEF/MASK.VMT"}}
