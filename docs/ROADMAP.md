@@ -1,5 +1,13 @@
 # Roadmap
 
+G1-B's second fix pass is **complete offline** on `g1-native-fix2` (2026-11-01): consolidated
+settled material areas, pooled/timed rebuilds and staged resource retirement, grouped/cached
+individual drawing, current-view/distance/subpixel culling, and per-frame manager timings/calls.
+Release passes 25 CTests/448 Python tests (two existing skips), with the documented local guard
+output-path workaround; the final Lua harness passes 14,576 assertions. Mocked 2,000-piece piles
+draw in four batches, and mixed-visibility individual draws fall from 2,000 to 500. Claude retains
+all real-game frame targets and integrated visual acceptance; see [the second-pass report](handover/G1-B-fix2-report.md).
+
 G1-B's second fix pass is **in progress** on `g1-native-fix2` (2026-11-01). The supplied game
 evidence leaves settled draw count, moving-piece Lua work and manager instrumentation open.
 Consolidated areas/shared vertex scratch and offline regression measurements are implemented;
