@@ -34,6 +34,11 @@ licence); `NLGlassDebris.Prepare()` so the map is imported before the first brea
 [`tools/qa/nlglass_qa`](../../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md) (modes `field`, `map`,
 `contact`, `old`); and the fixes below.
 
+Merged into `main` as `ad007e4` and pushed (2026-11-01); the merge's hook published item 3829070317 as
+`0.0.0-dev.20261101101553+d9e04e20` (fingerprint `d9e04e20`, the inputs QA ran on). An install that
+ran the old glass, such as the field install, gets the one-time settings reset on its first start
+with this package.
+
 ## What the game found, and the fixes
 
 Runs are under the main checkout's `out/qa-poc/g1/` (PoC, 1920x1080 windowed, RTX on).
