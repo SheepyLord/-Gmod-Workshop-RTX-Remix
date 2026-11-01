@@ -6,6 +6,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R8-G boundary fixes: recook retained Source shapes after changing collision categories, and initialize melee state when an animation arrives before the first command; discard deferred work across cleanup.
+
 - R8-G falling load: spread mesh/body creation across frames and group crowded, distant fragments into exact compound bodies/combined meshes. Keep nearby detail and every retained original polygon; charge original fragments to the budget, inherit expiry and preserve queued blast pushes. No forced sleeps or solver changes.
 
 - R8-G melee coalescing retains the final wider SWEP trace (including fists), instead of letting its preceding line consume the swing; solid-start traces are rejected.

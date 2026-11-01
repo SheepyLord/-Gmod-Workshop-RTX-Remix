@@ -46,3 +46,5 @@ Finite lookahead, missing client entities/velocities, saturated prefixes and >12
 corrections can still miss cosmetic interactions. See the R7-C report and native sweep limits.
 
 R8-G Capture(api, dt, flags) defaults to mask 3: objects=1, ragdolls=2, living players=4, living NPCs/NextBots=8. It filters before bounds/shape extraction and on every snapshot, includes kind in row 8, and refreshes discovery immediately when the mask changes. Zero removes mirrors without querying regions. Client ragdolls are classified separately from living actors.
+
+Flag changes also invalidate the Lua shape cache: the native side removes mirrors, so retained categories must resend cold shapes under the existing two-shape limit instead of falsely assuming a convex still exists.

@@ -34,3 +34,5 @@ R8-G adds long-lived per-client interest/lease validation, actual client refresh
 
 The SWEP scenario also exercises stock fists' delayed line-then-hull pattern: one message keeps
 the larger hull and the mean of the configured HitDamage range. Trace results remain unchanged.
+
+Additional boundary regressions cover animation-before-command initialization and resending cooked shapes after a collision-mask change.

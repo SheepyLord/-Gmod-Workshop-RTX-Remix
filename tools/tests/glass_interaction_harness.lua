@@ -150,6 +150,8 @@ elseif scenario:match("^scene") then
         end
         S.Reset();local rows=capture(S,n,.016,3)
         check(#rows==3,"default excludes all living hulls and shadow physics")
+        rows=capture(S,n,.016,7)
+        for _,row in ipairs(rows)do if row[8]==1 then check(row[6]~=nil,"flag changes resend cold native shapes rather than retaining stale custom-shape cache")end end
         actor.alive=false;npc.alive=false;bot.alive=false
         now=now+.11;rows=capture(S,n,.016,15)
         for _,row in ipairs(rows)do check(row[8]~=4 and row[8]~=8,"dead actors cannot keep living mirrors")end
@@ -326,6 +328,10 @@ else
             now=.6;w.class="weapon_stunstick";w.nextFire=0;hooks.StartCommand(shooter,command)
             now=.62;w.nextFire=1;hooks.StartCommand(shooter,command)
             check(#sends==2 and sends[2].fields[3]==40,"stunstick uses its own melee damage")
+            local other=entity("player");other.GetActiveWeapon=shooter.GetActiveWeapon
+            other.GetShootPos,other.GetAimVector=shooter.GetShootPos,shooter.GetAimVector
+            now=.8;hooks.DoAnimationEvent(other,PLAYERANIMEVENT_ATTACK_PRIMARY);hooks.StartCommand(other,command)
+            check(#sends==3,"an animation before the first command initializes a complete stock swing state")
         else
             w.class="weapon_trace_melee";hooks.StartCommand(shooter,command)
             local input={start=Vector(),endpos=Vector(90,0,0),filter=shooter,mins=Vector(-8,-8,-8),maxs=Vector(8,8,8)}

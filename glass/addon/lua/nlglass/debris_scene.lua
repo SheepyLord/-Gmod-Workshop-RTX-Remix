@@ -128,7 +128,7 @@ end
 function S.Capture(api, dt, flags)
     local start, now = SysTime(), CurTime()
     flags = flags or 3
-    if flags ~= currentFlags then currentFlags, nextDiscovery = flags, 0 end
+    if flags ~= currentFlags then currentFlags, nextDiscovery, states = flags, 0, {} end
     if flags == 0 then
         if S.bodies > 0 then api.SyncBodies({}, .016) end
         S.Reset();return 0

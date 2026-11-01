@@ -24,3 +24,5 @@ from the call. Stock fists use a line followed by a hull, so the first observati
 the swing before the hull is available. Read HitDamage as a mean when Primary.Damage is absent.
 Stock cooldown detection also accepts the player's processed attack button, independent of other
 StartCommand hook ordering. StartSolid/AllSolid observations are ignored.
+
+An animation arriving before the first command initializes the weapon cooldown field too. Deferred SWEP work also checks state identity, so cleanup cannot forward an old timer through a fresh actor state.

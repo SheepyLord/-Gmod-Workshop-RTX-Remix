@@ -51,7 +51,7 @@ hook.Add("DoAnimationEvent", "NLGlass.DebrisMelee", function(ply,event)
     if not M.active or not B.HasInterest() or (event ~= PLAYERANIMEVENT_ATTACK_PRIMARY and event ~= PLAYERANIMEVENT_ATTACK_SECONDARY) then return end
     local w = weapon(ply);if not w then return end
     local s=states[ply]
-    if not s or s.weapon~=w then s={weapon=w,sentUntil=0};states[ply]=s end
+    if not s or s.weapon~=w then s={weapon=w,sentUntil=0,nextFire=w:GetNextPrimaryFire()};states[ply]=s end
     s.untilTime,s.seen=CurTime()+.6,CurTime()
     if stock[w:GetClass()] then stockSwing(ply,w) end
     -- Never return an animation override.
@@ -80,7 +80,7 @@ local function observe(data,result)
     if not pending or radius>=pending[5] then state.pending={ply,w,data.start,result.HitPos,radius} end
     if not pending then timer.Simple(0,function()
         local p=state.pending;state.pending=nil
-        if M.active and p then send(unpack(p)) end
+        if M.active and p and states[ply]==state then send(unpack(p)) end
     end) end
 end
 local wrappedLine,wrappedHull
