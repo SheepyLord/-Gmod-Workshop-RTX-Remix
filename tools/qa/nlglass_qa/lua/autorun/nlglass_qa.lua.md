@@ -49,6 +49,64 @@ skipped refused statics models` from `NLGlassDebris.Stats()`, then `NL_SHOT <lab
 Side effects: the session's player position, entities it spawns and removes, and the glass broken.
 Exit codes: none (game Lua).
 
+## R8-G acceptance (Claude; matching R8-G Lua and module required)
+
+Run `nlglass_qa r8` on gm_construct, or use [nlglass_r8_start.lua](../../../nlglass_r8_start.lua.md)
+with the established `poc_session.py --lua-shots 240` workflow. Allow at least 240 seconds for the
+whole capture: the first screenshot waits **61 seconds**. Jolt must be ready, piece size 8, budget
+2000. This sequence saves and prints the client's collision/master/lifetime values, temporarily
+uses interaction 1 and lifetime 180, then restores them at completion. On interruption restore the
+three printed values manually; the QA also changes host position, gives weapons/ammo and simulates
+attack commands. Run only in the dedicated test session. This branch itself never installs/runs it.
+
+| Labels / action | Must show |
+|---|---|
+| `r8_old_pile_before` | The public Spawn/Clear fixture has slept for 61 s. Jolt is ready, `flags 3`, interaction on, no creation pending. Interest continues even without a recent pane break or moving bodies. |
+| `r8_pistol_60s` | Real `weapon_pistol` input, rather than a synthetic injected native ray. Server forwarded-hit delta and native `ray_hits` increase. The old slab moves and/or `bullet` splits increase. |
+| `r8_smg_60s` | Real `weapon_smg1` input reaches the same older pile; more ray hits and visible movement/fracture. No Lua/weapon errors or damage callback changes. |
+| `r8_crowbar_before`, `r8_crowbar` | A fresh settled slab, then real crowbar input. Server melee delta and native `melee_hits` increase; large fine pieces can add `melee_splits`, minimum pieces must move. Shooting the empty air above a pile is not a valid contact. |
+| `r8_default_walk_before`, `r8_default_walk` | Mask 3 (objects/ragdolls only), a settled nine-piece pile, then a 200-unit/s walk. No player mirror/contact or glass movement caused by the walker; Source health/speed/end position stay normal. Compare native/body counters as deltas since native counters can be cumulative. |
+| `r8_players_walk_before`, `r8_players_walk` | Mask 7 adds living players. The same traversal now moves pieces and can split large ones; mirrors become nonzero. Source crosses at full speed with unchanged health and no reverse force. |
+| `r8_cleanup` | Saved client settings restored; no live fragments, queued construction, mirrors or pending damage/rays. Native hit totals may remain cumulative. |
+
+`NL_QA r8` lines add the mask, original fragment count, queued bodies/fragments, creations in the last
+frame, creation CPU/peak, cumulative grouped fragments, native melee hits/limits and melee splits.
+`live`/`moving` count rigid bodies; `fragments` charges all original polygons inside groups. The
+budget still limits those original fragments, including queued work. A whole-group eviction can
+underfill by at most seven. Creation must stay at most 12 bodies/meshes per frame; 0.75 ms is a
+yielding allowance, **not** a hard upper bound on an individual geometry/upload/cook.
+
+Run unchanged `nlglass_qa field` in fresh matching sessions, interaction off and on, with the same
+camera, resolution and Remix settings as R7 runs 27/28. Keep piece size 8, budget 2000, lifetime 120;
+defaults use mask 3. Also run mask 15 once for comparison with R7's all-target contact configuration.
+Do not compare a background window, mismatched package/module or another active game.
+
+| Capture | R7 mean / p99 | R8 acceptance |
+|---|---|---|
+| Falling, interaction off | 26.28 / 134.30 ms | Falling minus its settled mean ≤8.5 ms; p99 ≤67 ms. With a 9.17 ms settled mean, about ≤17.67 ms falling. |
+| Falling, interaction on | 28.60 / 134.33 ms | Same ≤8.5 ms excess / ≤67 ms p99 target. |
+| Settled, off/on | 9.17 / 9.32 ms mean | No repeatable regression. Queue drained, sleeping glass remains batched. |
+
+Repeat the whole matching comparison at least three times: a 140–150-frame falling p99 is sensitive
+to a single frame. Expect hundreds of rigid draws under distant burst load, original fragments
+≤2000 including pending work, smaller creation bursts, identical pane holes/remaining collision and
+full nearby detail. Groups intentionally move rigidly instead of splitting further; their original
+triangles and exact collision sub-hulls remain. Fine pieces still split. Recheck `nlglass_qa map`
+on modern_house, blasts during construction, cleanup mid-burst and missing/older-module fallback.
+
+Manual coverage: toggle each target independently, including a living NPC/NextBot and a client
+ragdoll; Reset works for a non-admin and console changes update checkboxes in all seven languages.
+Use stunstick, crouched fists (their reach is short), and one trace-based melee SWEP. Test a piece
+behind a Source wall (no hit) and two clients: masks 3/7 produce different cosmetic contacts while
+pane holes agree. With the shooter at budget 0, another client still receives shots near its own
+pieces. At lifetime 0, shoot again after 130 s, then stop/clear interest and confirm delivery ceases.
+Saturated queues/leases, unavailable remote shapes, >32 separated regions and unsupported melee
+filters/hold types remain bounded cosmetic limitations; watch the dropped/limited counters.
+
+The older `interact` sequence below tests the all-target R7 behaviour: set
+`rtx_glass_debris_collide_with 15` before running it. The R8 default intentionally leaves its
+walking/running contacts disabled; use `r8` for the new defaults.
+
 ## R7-C interaction acceptance (Claude)
 
 Run on the PoC only after review/import of the rebuilt module and the matching `glass/addon` Lua;
@@ -117,3 +175,8 @@ intentional saturation and must be retained alongside the frame samples.
 
 Keep the unchanged `field` on/off frame-time check above. No game was run during the fix; offline
 capture/native/falling checks and remaining limits are recorded in the R7-C report.
+
+R8-G also reports `retired`/`released` individual meshes. Burst eviction must not synchronously
+release a whole old pile; at most 16 individual GPU objects retire per frame. This exceeds the
+12 initial plus two split-child allocations, keeping sustained replacement bounded. Cleanup must
+leave no retired meshes. The separate settled-batch queue keeps its existing two releases/frame.

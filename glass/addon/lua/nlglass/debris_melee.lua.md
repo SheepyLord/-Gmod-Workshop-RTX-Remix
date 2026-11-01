@@ -26,3 +26,7 @@ Stock cooldown detection also accepts the player's processed attack button, inde
 StartCommand hook ordering. StartSolid/AllSolid observations are ignored.
 
 An animation arriving before the first command initializes the weapon cooldown field too. Deferred SWEP work also checks state identity, so cleanup cannot forward an old timer through a fresh actor state.
+
+Forwarded volumes are re-clipped with a containing Source TraceHull box, independently of the weapon's untouched actual trace. This also protects line-only SWEPs from pushing pieces behind an endpoint wall. These extra queries have a 64/s global token bucket, burst 32; limited counts rejected queries. Native sphere casts fit within the clipping box. Cleanup resets this bucket.
+
+Deferred observations copy both endpoints, so a SWEP can reuse/mutate its input/output vectors after returning without changing the queued cosmetic hit.

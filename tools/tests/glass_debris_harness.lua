@@ -60,7 +60,7 @@ end
 function IsValid(v) return type(v)=="table" and v.valid==true end
 local function entity(model,temporary)
     local e={valid=true,model=model,temporary=temporary,position=Vector(),angles=Angle(),physics=phys(),
-        SetNoDraw=function() end,PhysicsInit=function() end,PhysicsInitConvex=function() end,PhysicsInitMultiConvex=function()end,SetMoveType=function() end,SetSolid=function() end,
+        SetNoDraw=function() end,PhysicsInit=function() end,PhysicsInitConvex=function() end,PhysicsInitMultiConvex=function(self,hulls)self.compound=hulls end,SetMoveType=function() end,SetSolid=function() end,
         SetCollisionGroup=function(self,v) self.group=v end,SetPos=function(self,v) self.position=v end,SetAngles=function(self,v) self.angles=v end,
         GetPos=function(self) return self.position end,GetAngles=function(self) return self.angles end,
         GetPhysicsObject=function(self) return self.physics end,Remove=function(self) self.valid=false end}
@@ -77,7 +77,7 @@ function Mesh(material)
         if failMesh then failMesh=false;error("injected GPU build refusal") end
         workClock=workClock+costs.upload
         check(#v%3==0 and #v<=60000,"bounded triangle mesh");self.vertexCount=#v
-    end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false end,
+    end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false;workClock=workClock+(costs.destroy or 0)end,
     Draw=function(self)check(self.valid,"never draw destroyed mesh");draws=draws+1;workClock=workClock+costs.draw end}
     meshes[#meshes+1]=m;return m
 end
@@ -331,6 +331,12 @@ if arg[3]=="load_queue" then
     check(D.Stats().fragments==10 and D.Stats().creation_pending==0,"queued fragments participate in oldest-first budget reduction")
     D.Clear();D.Spawn(frame,fragments(40));D.Clear()
     check(D.Count()==0 and D.Stats().creation_pending==0,"cleanup cancels all deferred creation")
+    api.delayStep=0;set("budget",64);D.Spawn(frame,fragments(64));for _=1,6 do tick()end
+    costs.destroy=.001;local before=workClock;D.Spawn(frame,fragments(64))
+    check(workClock==before and D.Stats().retired_individual==64,"budget receipt retires old meshes without synchronous GPU release")
+    tick();check(D.Stats().released_individual<=16 and D.Stats().retired_individual>=48,"individual GPU releases are count bounded per frame")
+    D.Clear();check(D.Stats().retired_individual==0,"cleanup releases the deferred GPU resources too")
+    costs.destroy=0
     D.Shutdown();print("interaction manager load_queue OK");return
 end
 if arg[3]=="load_manager" or arg[3]=="loadperf" then
@@ -374,6 +380,15 @@ if arg[3]=="load_manager" or arg[3]=="loadperf" then
     print(string.format("R8-G loadperf receipts=%d receipt_mean_ms=%.4f receipt_max_ms=%.4f frame_mean_ms=%.4f frame_p99_ms=%.4f frame_max_ms=%.4f live=%d fragments=%d moving_draws=%d created_max=%d creation_peak_ms=%.4f pending_peak=%d settled_mean_ms=%.4f settled_draws=%d",
         #receipts,totalReceipt/#receipts,maxReceipt,total/240,times[math.ceil(#times*.99)],worst,falling.live,falling.fragments or falling.live,
         movingDraws,maxCreated,creationPeak,peakPending,settledMean,draw()))
+    if arg[3]=="load_manager" then
+        D.Impulse(Vector(),131072,100);api.failStep=true;tick();tick()
+        local compounds=0;for _,e in ipairs(entities)do if e.valid and e.compound then compounds=compounds+1 end end
+        check(D.Backend()=="vphysics" and D.Stats().fragments<=64 and compounds>0,"a failed native step migrates exact groups within the conservative fallback budget")
+        D=setup("jolt");set("budget",2000);set("lifetime",0);D.Prepare();tick();tick();tick()
+        camera={origin=Vector(400,0,64),angles=Angle(),fov=90,aspect=16/9};draw()
+        D.Spawn({origin=Vector(400,0,64),angles=Angle(),material=frame.material},fragments(256))
+        check(D.Stats().creation_pending==256,"adaptive near-detail protection uses the actual render camera, not a distant player eye")
+    end
     D.Shutdown();EyePos=nil
     if arg[3]=="load_manager" then print("interaction manager load_manager OK")end
     return
@@ -494,6 +509,15 @@ if arg[3] and arg[3]:match("^interaction_") then
         timer={Simple=function(_,fn)timers[#timers+1]=fn end}
         concommand={Add=function(name,fn)commands[name]=fn end}
         dofile("tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua")
+        set("collide_with",10);set("interact",0);set("lifetime",12)
+        text="r8_defaults";receivers.nlglass_qa_fixture()
+        check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==3 and GetConVar("rtx_glass_debris_interact"):GetInt()==1,"R8 QA stages the default collision mask")
+        text="r8_players";receivers.nlglass_qa_fixture()
+        check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==7,"R8 QA enables only players in addition to the defaults")
+        text="r8_restore";receivers.nlglass_qa_fixture()
+        check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==10 and GetConVar("rtx_glass_debris_interact"):GetInt()==0 and
+            GetConVar("rtx_glass_debris_lifetime"):GetInt()==12,"R8 QA restores all original client values")
+        set("interact",1);text="slab"
         receivers.nlglass_qa_fixture();check(D.Count()==1,"QA fixture goes through the real public Spawn/Clear path")
         for _=1,3 do tick()end
         text="qa_probe";receivers.nlglass_qa_view()

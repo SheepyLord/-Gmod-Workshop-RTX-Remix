@@ -5,10 +5,21 @@ local candidates, regions, states, serial, nextDiscovery = {}, {}, {}, 0, 0
 local MAX_BODIES, MAX_ENTITIES, MAX_BONES, MAX_EXAMINED = 96, 128, 24, 512
 local LOOKAHEAD, MAX_SWEEP, FAST_SPEED = .25, 192, 160
 local currentFlags = 3
+local function living(e)
+    return IsValid(e) and ((e:IsPlayer() and e:Alive()) or
+        ((e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health()>0))
+end
 local function kind(e)
     if e:IsPlayer() then return e:Alive() and 4 or 0 end
     if (e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health() > 0 then return 8 end
     local class = e:GetClass()
+    -- Equipped weapons/followers are not independent Source objects. The owner's hull supplies
+    -- living contact when selected; otherwise an attachment must not bypass the living-off mask.
+    if (e.IsWeapon and e:IsWeapon()) or class=="phys_bone_follower" then
+        local owner=e.GetOwner and e:GetOwner()
+        local parent=e.GetParent and e:GetParent()
+        if living(owner) or living(parent) then return 0 end
+    end
     return ((e.IsRagdoll and e:IsRagdoll()) or class == "prop_ragdoll" or class == "class C_ClientRagdoll" or
         class == "class C_HL2MPRagdoll" or class == "client_ragdoll") and 2 or 1
 end

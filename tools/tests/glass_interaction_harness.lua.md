@@ -36,3 +36,9 @@ The SWEP scenario also exercises stock fists' delayed line-then-hull pattern: on
 the larger hull and the mean of the configured HitDamage range. Trace results remain unchanged.
 
 Additional boundary regressions cover animation-before-command initialization and resending cooked shapes after a collision-mask change.
+
+The all-mask regression also includes an equipped weapon, a dropped pickup and a living actor's bone follower: equipment/shadow contacts cannot bypass living-off flags.
+
+The melee scenario additionally proves that conservative Source re-clipping shortens the forwarded endpoint while preserving the SWEP result, rejects solid starts, and bounds extra clipping queries even when no recipient region overlaps.
+
+The SWEP regression mutates the returned vectors before the deferred send and verifies that the owned observation and the weapon's mutated result remain independent.

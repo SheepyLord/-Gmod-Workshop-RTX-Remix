@@ -3859,3 +3859,21 @@ PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r
 
   G1 run 10, the old baseline: 25.31 / 113.22 ms falling and 9.74 / 16.39 ms settled. The falling
   p99 is the second-worst of about 150 frames: 113, 134 and 142 ms across runs 10, 27 and 21.
+
+R8-G evidence (2026-11-01): R7 read-only `27-field-off/console.log` and `28-field-on/console.log`
+under the main checkout's `out/qa-poc/r7/` record 26.28/134.30 and 28.60/134.33 ms falling
+mean/p99, settled 9.17/9.32 ms. Lua draw costs about 6.9 ms at roughly 1330 moving draws; the
+remaining engine/Remix ingestion/instance-update costs are not separated by those counters.
+The preserved before/after replay now retains 2000/1998 original fragments in 2000/348 rigid
+draws (four settled batches on both sides). Exact compound creation is in
+`glass/native/world.cpp:409`; split paths reject groups before convex-only access.
+`glass/addon/lua/nlglass/debris_detail.lua:20` plans groups without changing polygons;
+`debris_mesh.lua:53` recentres the same triangles/sub-hulls. Native body origin includes the
+shape COM offset (`third_party/jolt/Jolt/Physics/Body/Body.h:268`), matching the render frame.
+Source collision flags are enforced at `glass/native/world.cpp:474`; changing them invalidates
+Lua shape cache too. The old server router used 32 fixed recent-break spheres/120 seconds;
+`debris_bullets.lua` now takes renewable per-client regions. `debris_melee.lua` observes actual
+SWEP traces/stock swings, keeps the wider line/hull result (stock fists use that pattern), then
+re-clips a containing Source box before the native sphere cast. Numeric region loops remain.
+Primary three-run offline costs and all limits are in [the R8-G report](handover/R8-G-report.md);
+raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claimed from doubles.

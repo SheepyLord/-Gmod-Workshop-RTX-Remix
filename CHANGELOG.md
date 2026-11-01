@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R8-G also spreads budget eviction's GPU resource release: retired individual meshes disappear immediately and are destroyed at most 16 per frame, with full cleanup at lifecycle boundaries.
+
+- R8-G adds delayed real-weapon/collision QA and reproducible offline measurements. Equipped weapons and bone followers cannot bypass living-off contact settings; nearby detail follows the actual render camera.
+
 - R8-G boundary fixes: recook retained Source shapes after changing collision categories, and initialize melee state when an animation arrives before the first command; discard deferred work across cleanup.
 
 - R8-G falling load: spread mesh/body creation across frames and group crowded, distant fragments into exact compound bodies/combined meshes. Keep nearby detail and every retained original polygon; charge original fragments to the budget, inherit expiry and preserve queued blast pushes. No forced sleeps or solver changes.

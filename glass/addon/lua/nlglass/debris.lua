@@ -69,7 +69,7 @@ local function erase(piece)
         else world.api.Remove(piece.native);poses[piece.native] = nil end
     end
     fallback.Remove(piece)
-    if piece.mesh then piece.mesh:Destroy() end
+    if piece.mesh then individual.Retire(piece.mesh) end
     individual.Remove(piece)
     pieces[piece.id], pending[piece.id], shrinking[piece.id] = nil, nil, nil
     count = count - 1
@@ -168,8 +168,8 @@ function D.Spawn(frame, fragments)
     end
     local now=CurTime();demand=math.max(0,demand-math.max(0,now-demandStamp)*256)+#valid;demandStamp=now
     local eye
-    if EyePos then
-        local focus=EyePos()
+    if view.ready or EyePos then
+        local focus=view.ready and Vector(view.x,view.y,view.z) or EyePos()
         if validVector(focus,131072) then
             local p=WorldToLocal(focus,angle_zero,frame.origin,frame.angles);eye={p.x,p.y,p.z}
         end
@@ -288,6 +288,7 @@ function D.Clear()
     if world.state == "ready" then world.api.Clear();stepBusy = false end
     for _, piece in pairs(pieces) do piece.native = nil;erase(piece) end
     batches.Clear()
+    individual.ClearRetired()
     expiry.Clear();scene.Reset()
     pieces, order, poses, changed = {}, {}, {}, {}
     natives, pending, shrinking, removals, impulses = {}, {}, {}, {}, {}
@@ -314,6 +315,7 @@ function D.Stats()
     end
     metrics.batches, metrics.merged = batches.Count()
     metrics.fragments,metrics.creation_pending,metrics.creation_fragments=represented,queuedCount,queuedWeight
+    metrics.retired_individual,metrics.released_individual=individual.retireLast-individual.retireFirst+1,individual.released
     metrics.pending=metrics.pending+queuedCount
     metrics.rebuilds, metrics.rebuild_vertices = batches.rebuilds, batches.vertices
     metrics.rebuild_ms, metrics.upload_ms = batches.tick_ms or 0, batches.upload_ms or 0
@@ -550,6 +552,7 @@ local function think()
     end
     age()
     batches.Tick(individual)
+    individual.Tick()
     if first > 8192 or last > 32768 then
         local compact = {}
         for i = first, last do if pieces[order[i]] then compact[#compact + 1] = order[i] end end

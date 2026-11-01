@@ -137,5 +137,6 @@ TEST_CASE("glass binding validates scene ray damage and split APIs with balanced
   CHECK(parts.table->at("n1").table->at("spoly").type==Type::Table);
   CHECK(!m.call("CanSplit",{id,num(4)})[0].b);CHECK(!m.call("Remove",{id})[0].b);
   m.call("BeginStep",{num(.016)});CHECK(failure(m.call("SyncBodies",{Value::object(),num(.016)})));
+  CHECK(failure(m.call("SpawnGroup",{Value::array({hull(),hull()}),vector(100,0,32),vector(),vector(),vector()})));
   CHECK(failure(m.call("ReadDamage")));CHECK(failure(m.call("ReadRegions")));m.call("Clear");
 }

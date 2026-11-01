@@ -1679,3 +1679,13 @@ scope clarification; no checks or tracked build settings were relaxed. No guard-
 is needed here. Receipts: `out/r7-glass-fix/test-release.log`, `glass-final.log`, `native-final.log`.
 Measured costs, evidence, bounds and Claude's unchanged field/drum QA are in the
 [fix report](handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
+
+R8-G (2026-11-01) adds native collision-mask/group/melee boundaries and LuaJIT construction/GPU
+retirement, exact area/near-camera, 50-pane replay, 60/130-second interest, stock/fist/SWEP and
+QA-setting restoration coverage. Release passes 26 CTests (35 native glass cases) and 479 Python
+tests, including 79 glass cases; two existing skips remain. Final receipt is
+`out/r8-g/test-release-frozen.log`. The repeatable offline command is documented in
+[measure_nlglass.py](../tools/qa/measure_nlglass.py.md); real-weapon, default/player-enabled walk and
+unchanged field/map acceptance are in [the QA sidecar](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md).
+The game targets remain unverified on this branch: falling excess ?8.5 ms, p99 ?67 ms, settled
+unchanged. See [the report](handover/R8-G-report.md) for measurements and limitations.

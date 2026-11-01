@@ -90,6 +90,12 @@ TEST_CASE("glass adaptive rigid groups keep exact sub hull gaps and only cosmeti
   CHECK_THROWS_AS(w.spawn_group(std::vector<Hull>(9,left),{},{},{},{}),Error);
   auto bad=left;bad[0].x=std::numeric_limits<float>::quiet_NaN();
   CHECK_THROWS_AS(w.spawn_group({bad,right},{},{},{},{}),Error);CHECK(w.stats().live==1);
+  Hull dense;
+  for(unsigned i=0;i<64;++i) {
+    const auto a=float(i)*6.283185307f/64;
+    dense.push_back({4*std::cos(a),4*std::sin(a),-.5f});dense.push_back({4*std::cos(a),4*std::sin(a),.5f});
+  }
+  CHECK_THROWS_AS(w.spawn_group(std::vector<Hull>(8,dense),{},{},{},{}),Error);CHECK(w.stats().live==1);
   w.clear();CHECK(w.stats().live==0);
 }
 TEST_CASE("glass adaptive load benchmark compares 2000 exact quads as bodies or eight hull groups") {

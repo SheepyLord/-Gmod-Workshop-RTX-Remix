@@ -140,18 +140,21 @@ elseif scenario:match("^scene") then
         local actor, npc, bot = entity("player"), entity("npc_citizen"), entity("nextbot")
         local rag, prop = entity("prop_ragdoll",nil,{phys()}), entity("prop_physics",nil,{phys()})
         local clientRag = entity("class C_ClientRagdoll",nil,{phys()})
-        nearby={actor,npc,bot,rag,prop,clientRag};player={GetAll=function()return {actor}end}
+        local held,pickup,follower=entity("weapon_crowbar",nil,{phys()}),entity("weapon_crowbar",nil,{phys()}),entity("phys_bone_follower",nil,{phys()})
+        held.IsWeapon=function()return true end;pickup.IsWeapon=held.IsWeapon;held.GetOwner=function()return actor end
+        follower.GetOwner=function()return npc end
+        nearby={actor,npc,bot,rag,prop,clientRag,held,pickup,follower};player={GetAll=function()return {actor}end}
         for flags=0,15 do
             local rows=capture(S,n,.016,flags) or {}
             local expected=0
-            for _, k in ipairs({4,8,8,2,1,2}) do if math.floor(flags/k)%2==1 then expected=expected+1 end end
+            for _, k in ipairs({4,8,8,2,1,2,1}) do if math.floor(flags/k)%2==1 then expected=expected+1 end end
             check(#rows==expected,"independent collision category filtering mask "..flags)
             for _,row in ipairs(rows)do check(math.floor(flags/row[8])%2==1,"snapshot tags match the filter")end
         end
         S.Reset();local rows=capture(S,n,.016,3)
-        check(#rows==3,"default excludes all living hulls and shadow physics")
+        check(#rows==4,"default excludes living hulls, their equipped weapons and bone followers, but keeps pickups")
         rows=capture(S,n,.016,7)
-        for _,row in ipairs(rows)do if row[8]==1 then check(row[6]~=nil,"flag changes resend cold native shapes rather than retaining stale custom-shape cache")end end
+        check(rows[3][8]==1 and rows[3][6]~=nil,"flag changes resend cold native shapes rather than retaining stale custom-shape cache")
         actor.alive=false;npc.alive=false;bot.alive=false
         now=now+.11;rows=capture(S,n,.016,15)
         for _,row in ipairs(rows)do check(row[8]~=4 and row[8]~=8,"dead actors cannot keep living mirrors")end
@@ -311,10 +314,13 @@ else
         shooter.GetAimVector=function()return Vector(1,0,0)end
         IN_ATTACK,IN_ATTACK2,PLAYERANIMEVENT_ATTACK_PRIMARY,PLAYERANIMEVENT_ATTACK_SECONDARY=1,2,0,1
         local command={KeyDown=function(_,key)return key==IN_ATTACK end}
-        local lastData,lastResult
+        local lastData,lastResult,clipBlocked,clipQueries
+        clipQueries=0
         util.TraceLine=function(data)
+            clipQueries=clipQueries+1
             lastData=data;lastResult={HitPos=data.endpos,StartPos=data.start,Hit=false}
-            if scenario=="melee_swep" then lastResult.HitPos=Vector(30,0,0);lastResult.Hit=true end
+            if clipBlocked then lastResult.StartSolid=true end
+            if scenario=="melee_swep" then lastResult.HitPos=Vector(data.endpos.x==30 and 22 or 30,0,0);lastResult.Hit=true end
             return lastResult
         end
         util.TraceHull=util.TraceLine
@@ -332,13 +338,24 @@ else
             other.GetShootPos,other.GetAimVector=shooter.GetShootPos,shooter.GetAimVector
             now=.8;hooks.DoAnimationEvent(other,PLAYERANIMEVENT_ATTACK_PRIMARY);hooks.StartCommand(other,command)
             check(#sends==3,"an animation before the first command initializes a complete stock swing state")
+            now=1.1;clipBlocked=true;hooks.DoAnimationEvent(other,PLAYERANIMEVENT_ATTACK_PRIMARY)
+            check(#sends==3,"stock melee cannot cross a solid start in the Source clipping volume")
+            clipBlocked=false;B.Clear();B.Mark(Vector(5000,0,0));local before=clipQueries
+            for _=1,100 do
+                local p=entity("player");p.GetActiveWeapon=shooter.GetActiveWeapon;p.GetShootPos=shooter.GetShootPos;p.GetAimVector=shooter.GetAimVector
+                hooks.DoAnimationEvent(p,PLAYERANIMEVENT_ATTACK_PRIMARY)
+            end
+            check(clipQueries-before<=32 and M.limited>0,"Source melee clipping queries obey their own global burst cap even outside recipient regions")
         else
             w.class="weapon_trace_melee";hooks.StartCommand(shooter,command)
             local input={start=Vector(),endpos=Vector(90,0,0),filter=shooter,mins=Vector(-8,-8,-8),maxs=Vector(8,8,8)}
             local result=util.TraceHull(input)
-            flush()
             check(result==lastResult and lastData==input and result.HitPos.x==30,"SWEP receives the same real trace object and input")
-            check(#sends==1 and sends[1].fields[2].x==30 and sends[1].fields[4]==8,"actual SWEP hull trace is clipped by Source, including misses through glass")
+            input.start.x,result.HitPos.x=900,1000
+            flush()
+            check(#sends==1 and sends[1].fields[2].x==22 and sends[1].fields[4]==8,"the native volume is conservatively re-clipped by Source while the SWEP's own hit stays unchanged")
+            check(result.HitPos.x==1000,"deferred observation owns copies and never overwrites a weapon's reused vectors")
+            input.start.x=0
             util.TraceLine(input);flush();check(#sends==1,"duplicate melee traces in the same swing are coalesced")
             now=.8;util.TraceLine(input);flush();check(#sends==1,"traces outside an attack window do not become melee")
             now=.9;hooks.StartCommand(shooter,command);input.endpos=Vector(10000,0,0);util.TraceLine(input)

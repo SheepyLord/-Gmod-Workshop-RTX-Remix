@@ -332,3 +332,8 @@ joined with the saved MMD-alpha category by runtime patch 0017. Its LuaJIT lifec
 live in [`companion/tests`](../companion/tests/test_mmd_alpha.py.md). The existing
 [`tools/qa/alpha_probe.lua`](../tools/qa/alpha_probe.lua.md) can temporarily tag its own ramp/plate
 textures for Claude's game comparison, restoring the previous transient list afterwards.
+
+R8-G glass support: `debris_detail.lua` plans exact small rigid groups; `debris_settings.lua` migrates
+client collision flags; `debris_melee.lua` observes server swings/traces. `tools/qa/measure_nlglass.py`
+compares saved/current offline workloads, while `nlglass_qa r8` covers delayed real weapons and
+collision defaults. See [the QA sidecar](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md).

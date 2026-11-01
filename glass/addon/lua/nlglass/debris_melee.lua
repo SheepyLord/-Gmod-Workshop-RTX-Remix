@@ -2,11 +2,12 @@
 if CLIENT then return end
 local previous = NLGlass.Melee
 if previous and previous.Stop then previous.Stop() end
-local M = { sent = 0, observed = 0, active = true }
+local M = { sent = 0, observed = 0, limited = 0, active = true }
 NLGlass.Melee = M
 local B = NLGlass.Bullets
 local states = setmetatable({}, {__mode = "k"})
 local traceLine, traceHull = util.TraceLine, util.TraceHull
+local clipTokens,clipStamp=32,CurTime()
 local stock = {weapon_crowbar = 25, weapon_stunstick = 40}
 local holds = {melee = true, melee2 = true, knife = true, fist = true}
 local function weapon(ply)
@@ -19,18 +20,25 @@ end
 local function send(ply,w,from,to,radius)
     local state = states[ply]
     if not state or state.weapon ~= w or state.sentUntil > CurTime() then return end
+    -- A swept volume extends beyond a line endpoint. Reclip a containing Source box so even
+    -- a line-only SWEP cannot push local glass just behind a wall. Never change its real trace.
+    local now=CurTime();clipTokens=math.min(32,clipTokens+math.max(0,now-clipStamp)*64);clipStamp=now
+    if clipTokens<1 or not traceHull then M.limited=M.limited+1;return end
+    clipTokens=clipTokens-1;radius=math.max(1,math.min(16,math.ceil(radius or 6)))
+    local ok,clipped=pcall(traceHull,{start=from,endpos=to,filter=ply,mask=MASK_SHOT_HULL,
+        mins=Vector(-radius,-radius,-radius),maxs=Vector(radius,radius,radius)})
+    if not ok or type(clipped)~="table" or not isvector(clipped.HitPos) or clipped.StartSolid or clipped.AllSolid then return end
+    to=clipped.HitPos
     local primary = type(w.Primary) == "table" and w.Primary or {}
     local hitDamage = type(w.HitDamage)=="table" and ((tonumber(w.HitDamage[1]) or 0)+(tonumber(w.HitDamage[2]) or 0))*.5 or tonumber(w.HitDamage)
     local damage = stock[w:GetClass()] or tonumber(primary.Damage) or hitDamage or 25
-    if B.Forward(ply,from,to,damage,math.max(1,math.min(16,math.ceil(radius or 6))),ply) then
+    if B.Forward(ply,from,to,damage,radius,ply) then
         state.sentUntil = CurTime()+.1;M.sent=M.sent+1
     end
 end
 local function stockSwing(ply,w)
-    if not traceLine then return end
     local from = ply:GetShootPos()
-    local trace = traceLine({start=from,endpos=from+ply:GetAimVector()*75,filter=ply,mask=MASK_SHOT_HULL})
-    if type(trace) == "table" and isvector(trace.HitPos) and not trace.StartSolid and not trace.AllSolid then send(ply,w,from,trace.HitPos,6) end
+    send(ply,w,from,from+ply:GetAimVector()*75,6)
 end
 -- Stock C++ melee does not call Lua's util.Trace*. A successful cooldown advance after a ready
 -- attack command is the server-side observation; animation supplies an earlier observation too.
@@ -77,7 +85,10 @@ local function observe(data,result)
     end
     M.observed=M.observed+1
     local pending=state.pending
-    if not pending or radius>=pending[5] then state.pending={ply,w,data.start,result.HitPos,radius} end
+    if not pending or radius>=pending[5] then
+        local a,b=data.start,result.HitPos
+        state.pending={ply,w,Vector(a.x,a.y,a.z),Vector(b.x,b.y,b.z),radius}
+    end
     if not pending then timer.Simple(0,function()
         local p=state.pending;state.pending=nil
         if M.active and p and states[ply]==state then send(unpack(p)) end
@@ -98,5 +109,7 @@ function M.Stop()
     if util.TraceHull==wrappedHull then util.TraceHull=traceHull end
     states=setmetatable({}, {__mode="k"})
 end
-hook.Add("PreCleanupMap", "NLGlass.DebrisMelee", function() states=setmetatable({}, {__mode="k"});M.sent,M.observed=0,0 end)
+hook.Add("PreCleanupMap", "NLGlass.DebrisMelee", function()
+    states=setmetatable({}, {__mode="k"});M.sent,M.observed,M.limited=0,0,0;clipTokens,clipStamp=32,CurTime()
+end)
 return M

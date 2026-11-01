@@ -50,3 +50,12 @@ R8-G collision_settings checks the archived one-time migration, explicit mask/ma
 R8-G interaction_rays also checks native melee dispatch and malformed radius/range rejection in the shared expiring queue.
 
 R8-G load_queue checks receipt without mesh/body allocation, the 12-item/time allowance, worker exclusion, original expiry, queued blast inheritance, budget changes and cleanup. load_area checks 160 real annealed/tempered full/partial breaks for exact polygon/front-triangle area, no missing/duplicate input, geometry bounds and preserved nearby detail. load_manager replays 50 real fractures over 1.5 seconds, keeping the original 2000-fragment budget with fewer than 600 rigid instances. loadperf measures the same path against preserved starting helpers. Warm renderperf/off/on modes remain comparable; preparation now drains before timing. All are engine/physics doubles, never game timings.
+
+R8 QA regression also checks temporary masks 3/7 and restoration of the original mask, master and
+lifetime through the actual client fixture receiver. No game or install is used.
+
+load_manager additionally verifies near-detail protection from the actual scripted render camera when the physical player eye is distant.
+
+load_queue injects a slow mesh Destroy to prove that budget receipt performs no synchronous GPU release, drains at most 16/frame, and frees the retirement queue at cleanup.
+
+The real-fracture load scenario also forces a native failure and verifies exact compound fallback within the 64-original-fragment cap.
