@@ -1,5 +1,10 @@
 # test_nlglass.py
 
+Second-pass density regression checks live topology and break-piece bounds, full area, large
+and thin panes and all three tested piece sizes. Lit crack strips and walking/running/default
+reset cases are covered in the engine harness. Deferred/coalesced client builds, cancellation,
+late attachment and shared render/collision extrusion are covered. The module now runs 50 tests.
+
 Includes G1-A fix-pass regressions for oriented body contact, pre-movement player collision,
 independent client convars, engine-effect-free map output routing, weak native last impacts,
 blast ordering and the matching debris-budget bound.

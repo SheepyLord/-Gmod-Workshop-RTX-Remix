@@ -1,5 +1,66 @@
 # Research notes
 
+## G1-A second pass: client build cost (2026-11-01)
+
+- Full Release gate exits 0: repo conventions, 25/25 CTests (48.67 s), and 453 Python tests
+  (28 gmapack, 25 steam, 400 tools, two existing skips). All 50 G1-A glass tests execute.
+  The tools tests take 79.927 s. Evidence: `out/g1-lua-fix2/release.log`. No G1-B/native/Jolt,
+  QA, package or Workshop configuration paths were edited in this branch.
+
+- `glass/addon/lua/nlglass/client.lua:102` queues a dirty pane once; `:114` drains it after the
+  receiving FrameNumber with a two-pane cap and a soft 1 ms elapsed-time stop. A whole break
+  clears stale meshes/collision immediately. Removal/snapshot replacement/cleanup invalidate
+  pending entries. `Attach` preserves collision dirtiness for an entity arriving while queued.
+  Current contact-default anchors are `config.lua:7`, `damage.lua:71` and `server.lua:154`
+  in the same directory (the earlier contact note's fallback line numbers were one line late).
+- `glass/addon/lua/nlglass/geometry.lua:74` supplies mesh and convex positions from one extrusion;
+  face fans and crack strips share read-only vertex records. The crack strip builder at
+  `client.lua:73` also makes winding agree with outward normals on both faces. The engine
+  harness checks position identity, triangle counts, winding, queue bounds/coalescing and
+  cancellation including late entities and a whole break overtaking partial work.
+- Updated 40-sample benchmark on the same 100-hit preparation: ad3ed46 has 502 cells, this pass
+  164. Client break handler mean/p99 13.5920/20.7774 -> 1.8676/2.6174 ms; deferred build after
+  1.0124/2.1511 ms; per-sample combined cost 13.5931/20.7784 -> 2.8800/4.5732 ms. Hit combined
+  cost 13.3168/21.9155 -> 3.2667/5.6801 ms. The queue does not hide deferred work in these sums.
+  Initial snapshot/attach is outside timing; engine/physics/transport/debris are mocked.
+  This is CPU evidence only, not GMod or Remix frame-time acceptance.
+- The stronger active-cap coarsening probe peaks at 199 cells with 0.048986 units² area error;
+  36,015 generated edges remain at least 1/256 long. The typed snapshot is 5,723 bytes for
+  176 live cells/7 groups. New density/lit/default/defer regressions fail on ad3ed46; all
+  50 glass cases pass now. Logs remain under this worktree's `out/g1-lua-fix2/`.
+
+## G1-A second pass: lit cracks and walking (2026-11-01)
+
+- `glass/addon/lua/nlglass/client.lua:7` creates `nlglass_frost_lit` with VertexLitGeneric and
+  `models/debug/debugwhite`, no selfillum. A new name avoids the existing material cache after
+  Lua refresh. The `lit_cracks` mock checks the shader and strips at z=±0.515 for thickness 1,
+  outward normals, equal front/back vertices and full width at most 0.20 units. Whether Remix
+  shades those strips correctly at night/in a dark room remains a real renderer check.
+- `config.lua:7` now defaults the replicated contact speed to 250; `damage.lua:72` and
+  `server.lua:155` use the same fallback. The `walk_run` harness checks contacts/sweeps at
+  200/249 (no damage) and 250/400 (damage), menu value and admin reset to 250. Existing archived
+  values remain user choices. The menu help and six MIT catalogs include the default guidance.
+
+## G1-A second pass: break density (2026-11-01)
+
+- `glass/addon/lua/nlglass/fracture.lua:7` defines kind-specific active caps (200 annealed,
+  300 tempered) within MAX_CELLS=512. `rings` stretches only the final outer ring when its
+  ray/ring product exhausts the budget; `uniform` bounds its row/column product explicitly.
+  `Apply` coarsens before assigning refined cells, so every release is bounded without losing
+  area. Repeated radius queries no longer build unused tile polygons.
+- `tools/tests/nlglass_fracture_harness.lua density` fails on ad3ed46 and passes after the fix.
+  At spacing 8, seed 171 and a 2-unit corner inset, annealed fresh/damaged whole-break counts
+  are 89/160 centre and 52/197 corner (96x64), 116/170 and 63/184 (256x128), 116/151 and
+  65/182 (128x256). Damaged means 24 prior 180,000-energy spatial visual-only native hits.
+  Tempered counts are 96, 300 and 300 at either location, fresh or damaged. The harness also
+  checks 8192x1, 1x8192, 8192x8192, spacings 4/8/64 and conserved total area.
+- Local pre-change handler baseline: 502 prepared cells, 40 samples, client break mean/p99
+  14.5843/23.7406 ms. This differs from the first-pass handover's earlier machine/load sample;
+  both measure mocked engine calls, not live frame time. Lower-cap pure-fracture means over
+  80 samples (164 cells): hit 0.4183, repeat 0.0652, break 0.1389 ms versus local baseline
+  0.6187/0.0805/0.5113 ms at 502 cells. Evidence stays in this worktree's ignored
+  `out/g1-lua-fix2/`. No game or install was changed.
+
 ## G1-A client/update fix pass: final offline evidence (2026-11-01)
 
 - Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),

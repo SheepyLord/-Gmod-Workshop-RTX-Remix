@@ -8,6 +8,19 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-A break handlers defer/coalesce remaining-pane meshes and prediction collision to later
+  client frames, bounded to two builds/frame with a soft 1 ms budget. Shared extrusion/vertices
+  cut duplicate geometry work. Whole breaks and cleanup cancel stale work; pieces still spawn
+  immediately. The mocked client's total break CPU mean drops from 13.59 to 2.88 ms locally.
+
+- G1-A crack strips use a lit shader and white texture so Remix can shade them in dark scenes.
+  Body contact defaults to 250 units/s, above walking and below running; menu guidance is
+  translated and Reset to Defaults restores the new threshold. Archived choices remain intact.
+
+- G1-A second pass bounds breaks at 200 annealed / 300 tempered pieces, including large and
+  repeatedly hit map windows. Small impact rings and large far pieces remain; tempered grids
+  evenly cover the pane without exceeding their budget or dropping glass area.
+
 - G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
   cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
   state. Player sweeps include scripted base velocity, and blast impulses follow deferred native

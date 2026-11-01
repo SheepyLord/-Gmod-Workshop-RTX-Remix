@@ -6,6 +6,8 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 | # | Decision | Status |
 |---|---|---|
+| [0077](0077-glass-client-build-queue.md) | Coalesce remaining-pane client builds across bounded later frames and share extrusion positions | Accepted 2026-11-01 |
+| [0076](0076-glass-bounded-break-density.md) | Bound live annealed topology to 200 and tempered shatter to 300 before releasing pieces | Accepted 2026-11-01 |
 | [0001](0001-bootstrap-winmm-proxy.md) | The bootstrap is a `winmm.dll` proxy that works at the EXE entry point | Accepted 2026-10-27 |
 | [0002](0002-source-agnostic-payloads.md) | Payloads are source-agnostic; Workshop route decided after a private upload test | Accepted 2026-10-27 |
 | [0003](0003-native-trust-allowlist.md) | Only allowlisted packages may deploy native code until signatures exist | Accepted 2026-10-27 |

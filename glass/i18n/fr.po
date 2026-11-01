@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:81
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "Verre recuit"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:81
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "Verre trempé"
@@ -59,36 +59,40 @@ msgid "Player break speed"
 msgstr "Vitesse de bris par contact"
 
 #: addon/lua/nlglass/menu.lua:56
+msgid "Default: 250 units/s; walking stays below this threshold."
+msgstr "Par défaut : 250 unités/s ; la marche reste sous ce seuil."
+
+#: addon/lua/nlglass/menu.lua:57
 msgid "Player / NPC mass (kg)"
 msgstr "Masse joueur / PNJ (kg)"
 
-#: addon/lua/nlglass/menu.lua:57
+#: addon/lua/nlglass/menu.lua:58
 msgid "Broken pieces are local to you and collide with the map and other pieces."
 msgstr "Les éclats sont simulés sur votre client et heurtent la carte et les autres éclats."
 
-#: addon/lua/nlglass/menu.lua:58
+#: addon/lua/nlglass/menu.lua:59
 msgid "Debris lifetime (s; 0 = until cleanup)"
 msgstr "Durée des éclats (s ; 0 = nettoyage)"
 
-#: addon/lua/nlglass/menu.lua:59
+#: addon/lua/nlglass/menu.lua:60
 msgid "Debris budget"
 msgstr "Nombre maximal d’éclats"
 
-#: addon/lua/nlglass/menu.lua:60
+#: addon/lua/nlglass/menu.lua:61
 msgid "Pieces collide with each other"
 msgstr "Collision entre éclats"
 
-#: addon/lua/nlglass/menu.lua:61
+#: addon/lua/nlglass/menu.lua:62
 msgid "Reset to Defaults"
 msgstr "Rétablir les valeurs par défaut"
 
-#: addon/lua/nlglass/menu.lua:72
-#: addon/lua/nlglass/menu.lua:75
-#: addon/lua/nlglass/menu.lua:77
+#: addon/lua/nlglass/menu.lua:73
+#: addon/lua/nlglass/menu.lua:76
+#: addon/lua/nlglass/menu.lua:78
 msgid "Glass settings"
 msgstr "Réglages du verre"
 
-#: addon/lua/nlglass/menu.lua:79
+#: addon/lua/nlglass/menu.lua:80
 msgid "Glass pane"
 msgstr "Vitre"
 

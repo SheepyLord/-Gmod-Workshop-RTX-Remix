@@ -1,9 +1,12 @@
 -- MIT. Pure Lua 5.1: no engine globals, random(), trigonometry or platform-dependent hash order.
-local F = {MAX_IMPACTS = 8, MAX_CELLS = 512, GRID = 1024, MIN_EDGE = 1/256}
+local F = {MAX_IMPACTS = 8, MAX_CELLS = 512, ANNEALED_CELLS = 200, TEMPERED_CELLS = 300, GRID = 1024, MIN_EDGE = 1/256}
 local abs, floor, min, max = math.abs, math.floor, math.min, math.max
 local function clamp(x, a, b) return max(a, min(b, x)) end
 local function snap(x) return floor(x * F.GRID + 0.5) / F.GRID end
 F.Snap = snap
+function F.CellLimit(def)
+    return min(F.MAX_CELLS,def.kind=="tempered" and F.TEMPERED_CELLS or F.ANNEALED_CELLS)
+end
 
 -- All products are exact integers below 2^53, including in a LuaJIT without the bit library.
 function F.Generator(seed)
@@ -117,7 +120,12 @@ local function rings(def, hit)
     local r, limit = {0}, 1
     for _, p in ipairs(def.outline) do limit = max(limit, abs(p[1]-hit.x)+abs(p[2]-hit.y)) end
     local radius = def.piece_size * 0.55
-    while r[#r] < limit * 2 + def.piece_size do
+    local reach=limit*2+def.piece_size
+    local budget=max(1,floor(F.CellLimit(def)/hit.rays))
+    while r[#r] < reach do
+        -- Keep the small impact rings. On an enormous pane the final ring stretches to the
+        -- frame instead of adding more far-away pieces; one fresh cut always fits the budget.
+        if #r>=budget then radius=reach end
         r[#r+1] = snap(radius)
         radius = radius * 1.55 + def.piece_size * 0.3
     end
@@ -211,9 +219,19 @@ local function cache(state,topologyChanged)
 end
 local function uniform(def)
     local box,cells=bounds(def.outline),{}
-    local size=max(def.piece_size,F.Root((box[3]-box[1])*(box[4]-box[2])/360)+1)
-    for x=box[1],box[3]-0.001,size do for y=box[2],box[4]-0.001,size do
-        local poly=F.Clip(def.outline,{{x,y},{x+size,y},{x+size,y+size},{x,y+size}})
+    local width,height=box[3]-box[1],box[4]-box[2]
+    local limit=F.CellLimit(def)
+    local size=max(def.piece_size,F.Root(width*height/limit),width/limit,height/limit)
+    local nx,ny=max(1,math.ceil(width/size)),max(1,math.ceil(height/size))
+    while nx*ny>limit do
+        if nx>1 and (ny==1 or width/nx<height/ny) then nx=nx-1 else ny=ny-1 end
+    end
+    -- Divide the full bounds evenly: no tiny partial row along the far edge and no overflow
+    -- from rounding the square-root estimate on long, thin windows.
+    for i=0,nx-1 do for j=0,ny-1 do
+        local x,y=snap(box[1]+width*i/nx),snap(box[2]+height*j/ny)
+        local xx,yy=snap(box[1]+width*(i+1)/nx),snap(box[2]+height*(j+1)/ny)
+        local poly=F.Clip(def.outline,{{x,y},{xx,y},{xx,yy},{x,yy}})
         if poly then cells[#cells+1]=cell(poly) end
     end end
     return cells
@@ -386,9 +404,10 @@ function F.Apply(state, impact, forceAll, watchOnly)
         -- Refine just the contact neighbourhood. Extending every new ray through all old rings
         -- recreates the quadratic cross-cut explosion this bound is meant to avoid.
         local refined,newGroups,newID=refine(state.def,cells,groups,nextID,hit,nearest,state.def.piece_size)
-        if #refined>F.MAX_CELLS then refined,newGroups=coarsen(refined,newGroups,hit,F.MAX_CELLS-64,state.def.piece_size*3) end
-        if #refined>F.MAX_CELLS then refined,newGroups=coarsen(refined,newGroups,hit,F.MAX_CELLS,state.def.piece_size) end
-        if #refined>F.MAX_CELLS then
+        local limit=F.CellLimit(state.def)
+        if #refined>limit then refined,newGroups=coarsen(refined,newGroups,hit,max(1,limit-32),state.def.piece_size*3) end
+        if #refined>limit then refined,newGroups=coarsen(refined,newGroups,hit,limit,state.def.piece_size) end
+        if #refined>limit then
             -- A pane with too many non-convex hole boundaries cannot be coarsened exactly. Release
             -- the remaining bounded topology rather than moving a hit or creating invisible glass.
             if watchOnly then
@@ -403,7 +422,7 @@ function F.Apply(state, impact, forceAll, watchOnly)
     elseif whole then cells=uniform(state.def) end
     if broke then
         if not whole then
-            local _,radii=tiles(state.def,hit)
+            local radii=rings(state.def,hit)
             local radius=state.def.piece_size*(2+F.Root(state.damage*100/ max(1,threshold))/4)
             local oldHole=hit.hole
             for i=2,#radii do if radii[i]<=radius then hit.hole=max(hit.hole,i-1) end end
@@ -413,7 +432,7 @@ function F.Apply(state, impact, forceAll, watchOnly)
     end
     local candidates,removed={},{}
     local holeRadius=0
-    if broke and not whole then local _,radii=tiles(state.def,hit) holeRadius=radii[hit.hole+1] or 0 end
+    if broke and not whole then local radii=rings(state.def,hit) holeRadius=radii[hit.hole+1] or 0 end
     for i,c in ipairs(cells) do
         local near=(c.center[1]-impact.x)^2+(c.center[2]-impact.y)^2<=holeRadius*holeRadius
         if whole or (broke and ((c.tags[nearest] or math.huge)<=hit.hole or (not c.tags[nearest] and near))) then removed[#removed+1]=c

@@ -181,25 +181,25 @@ elseif mode=="coarsen" then
     for i=1,100 do
         F.Apply(s,hit((i*37)%240-120,(i*19)%112-56,80000,900+i),false,true)
         check(not s.all,"bounded unbroken history coarsens instead of losing the pane")
-        check(#s.cells<=512,"coarsened cell budget") peak=math.max(peak,#s.cells)
+        check(#s.cells<=F.CellLimit(d),"coarsened cell budget") peak=math.max(peak,#s.cells)
         check(#s.groups<#s.cells,"subdivision history is bounded by live cells")
     end
     local area=0 for _,poly in ipairs(F.Remaining(s)) do area=area+F.Area(poly) end
     near(area,32768,4,"coarsening conserves unbroken area within clipping grid tolerance")
-    check(peak>450,"probe actually reaches the cell cap")
+    check(peak>F.CellLimit(d)*0.9,"probe actually reaches the cell cap")
     check(encode(F.Remaining(s))==encode(F.Remaining(copy(s))),"near-cap coarsening snapshot")
     print("peak_cells="..peak.." area_error="..math.abs(area-32768))
     local dense=F.New(d)
     for i=1,200 do
         local pieces=F.Apply(dense,hit((i*37)%31-15,(i*19)%31-15,180000,1700+i),false,true)
-        check(not dense.all and #pieces==0 and #dense.cells<=512,"dense visual cuts never shatter engine-owned glass")
+        check(not dense.all and #pieces==0 and #dense.cells<=F.CellLimit(d),"dense visual cuts never shatter engine-owned glass")
     end
 elseif mode=="hole_coarsen" then
     local d=definition() d.outline={{-128,-64},{128,-64},{128,64},{-128,64}}
     local s=F.New(d) local pieces=F.Apply(s,hit(0,0,1200000,88))
     check(#pieces>0,"probe starts with a real hole")
     for i=1,100 do F.Apply(s,hit((i*37)%240-120,(i*19)%112-56,80000,900+i),false,true) end
-    check(not s.all and #s.cells<=512,"perforated pane remains bounded")
+    check(not s.all and #s.cells<=F.CellLimit(d),"perforated pane remains bounded")
     for _,piece in ipairs(pieces) do
         local p=F.Center(piece.poly)
         for _,poly in ipairs(F.Remaining(s)) do
@@ -229,7 +229,7 @@ elseif mode=="timings" then
     local base=F.New(d)
     for i=1,100 do F.Apply(base,hit((i*37)%240-120,(i*19)%112-56,180000,900+i),false,true) end
     print("prepared_cells="..#base.cells)
-    check(#base.cells>=450,"timing probe actually measures near the cap")
+    check(#base.cells>=F.CellLimit(d)*0.8,"timing probe actually measures near the cap")
     local hits,repeats,breaks={},{},{}
     for run=1,80 do
         local s=copy(base)
@@ -242,5 +242,34 @@ elseif mode=="timings" then
         print(string.format("%s n=%d mean_ms=%.4f p99_ms=%.4f",name,#values,sum/#values,values[math.ceil(#values*.99)]))
     end
     report("hit",hits) report("repeat",repeats) report("break",breaks)
+elseif mode=="density" then
+    for _,kind in ipairs({"annealed","tempered"}) do
+        local limit=kind=="tempered" and 300 or 200
+        for _,size in ipairs({{96,64},{256,128},{128,256},{8192,1},{1,8192},{8192,8192}}) do
+            local d=definition(kind)
+            d.outline={{0,0},{size[1],0},{size[1],size[2]},{0,size[2]}}
+            for _,corner in ipairs({false,true}) do
+                local x=corner and math.min(2,size[1]/4) or size[1]/2
+                local y=corner and math.min(2,size[2]/4) or size[2]/2
+                for _,spacing in ipairs({4,8,64}) do
+                    d.piece_size=spacing
+                    local s=F.New(d)
+                    -- Native windows may collect many hits before the engine breaks them.
+                    for i=1,24 do
+                        F.Apply(s,hit(size[1]*((i*37)%97)/100,size[2]*((i*19)%97)/100,180000,900+i),false,true)
+                        check(#s.cells<=limit,"live fracture stays inside its kind's piece budget")
+                    end
+                    local pieces=F.Apply(s,hit(x,y,2000000,171),true)
+                    check(#pieces>0 and #pieces<=limit and #pieces<=F.MAX_CELLS,"break density bound for any pane aspect/hit/spacing")
+                    local area=0 for _,p in ipairs(pieces) do area=area+F.Area(p.poly) end
+                    near(area,size[1]*size[2],math.max(2,size[1]*size[2]*0.00002),"bounded pieces conserve pane area")
+                    if spacing==8 and size[1]<=256 and size[2]<=256 then
+                        local fresh=F.New(d) local first=F.Apply(fresh,hit(x,y,2000000,171),true)
+                        print(string.format("%s %dx%d %s first=%d after_24=%d cap=%d",kind,size[1],size[2],corner and "corner" or "centre",#first,#pieces,limit))
+                    end
+                end
+            end
+        end
+    end
 else error("unknown fracture scenario "..tostring(mode)) end
 print("fracture "..mode.." OK")

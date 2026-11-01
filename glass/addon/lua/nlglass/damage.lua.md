@@ -1,5 +1,8 @@
 # damage.lua
 
+Body contact uses a 250-unit/s normal-speed default/fallback, so default walking at 200 does
+not damage a pane while running at 400 passes the gate. Energy/approach/proximity still apply.
+
 Body contacts require inward normal velocity, a projected centre in remaining glass and plane
 distance within half thickness plus the body's oriented half width (1/32-unit contact tolerance).
 The player mover can supply its incoming velocity and swept contact centre before collision stops it.

@@ -38,6 +38,9 @@ class FractureTests(unittest.TestCase):
     def test_tempered_full_uniform_shatter(self):
         self.run_case('tempered')
 
+    def test_break_density_bounds_for_large_panes_and_accumulated_hits(self):
+        self.run_case('density')
+
     def test_bounded_merged_impacts_and_late_join_replay(self):
         self.run_case('bounded')
 
@@ -184,3 +187,15 @@ class EngineTests(unittest.TestCase):
 
     def test_record_server_and_client_hit_and_break_timings(self):
         self.run_case('client_timings')
+
+    def test_cracks_use_lit_material_and_thin_both_face_geometry(self):
+        self.run_case('lit_cracks')
+
+    def test_default_and_reset_allow_walking_but_break_for_running(self):
+        self.run_case('walk_run')
+
+    def test_client_queue_coalesces_limits_and_cancels_builds(self):
+        self.run_case('build_queue')
+
+    def test_mesh_and_collision_share_one_extrusion(self):
+        self.run_case('shared_geometry')

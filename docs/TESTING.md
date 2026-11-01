@@ -1,5 +1,55 @@
 # Testing
 
+## G1-A second fix pass: density, lit cracks, walking and client cost
+
+`tools\test.ps1 -Config Release` exits 0: conventions pass, **25/25 CTests** pass (48.67 s),
+and **453 Python tests** run (28 gmapack, 25 steam, 400 tools; two existing skips). All 50 glass
+cases execute. The tools group takes 79.927 s. The full output is `out/g1-lua-fix2/release.log`.
+
+All **50 glass tests** pass under the existing LuaJIT installation. New density, shader, speed
+and deferred-build regressions fail against ad3ed46. The original `03-qa`/`04-map` console and
+screenshots were inspected read only; no game was launched and no install/package was changed.
+
+`nlglass_fracture_harness.lua density` checks 200 annealed / 300 tempered active-cell limits,
+full-break counts and conserved area for 96x64, 256x128, 128x256, 8192x1, 1x8192 and 8192x8192,
+both hit locations and piece sizes 4/8/64, including 24 prior spatial hits. The requested count
+table is in [glass](../glass/README.md). The 100-hit coarsening probe peaks at 199 cells with
+0.048986 units² area error on 32,768 units². The edge probe checks 36,015 edges over 180 seeds.
+The typed topology snapshot probe uses 176 cells/7 groups in 5,723 bytes and matches the next break.
+
+The same 100-hit preparation and 40 fresh-state samples measured before/after CPU times below.
+Before is ad3ed46 (502 prepared cells); after includes the lower density cap (164 cells), shared
+extrusion/vertices and the queue. Initial snapshot/attachment is outside timing. The updated
+harness reports queued work separately and sums handler plus deferred cost for each sample.
+
+| Mocked client work | Before mean / p99 ms | After mean / p99 ms |
+|---|---:|---:|
+| Hit handler | 13.3155 / 21.9141 | 1.1774 / 3.4443 |
+| Hit deferred build | 0.0013 / 0.0022 | 2.0893 / 4.2278 |
+| Hit combined | 13.3168 / 21.9155 | 3.2667 / 5.6801 |
+| Break handler | 13.5920 / 20.7774 | 1.8676 / 2.6174 |
+| Break deferred build | 0.0011 / 0.0014 | 1.0124 / 2.1511 |
+| Break combined | 13.5931 / 20.7784 | 2.8800 / 4.5732 |
+
+Server hit mean/p99 changes from 3.1823/8.9127 to 1.0998/2.8644 ms; server break from
+4.9517/11.5744 to 2.8235/7.0681 ms. These use real Lua fracture/geometry but mocked engine,
+transport, physics and debris; they do not establish GMod/Remix frame-time acceptance. The
+earlier handover's 23.74 ms mean and this run's 13.59 ms baseline reflect different load/samples.
+Evidence is under this worktree's ignored `out/g1-lua-fix2/`.
+
+Queue tests assert no receiving-frame build, one coalesced latest revision, at most two panes
+per frame, a soft elapsed-time stop, cancellation and late collision attachment. Shared geometry
+tests check complete faces, winding and shared collision/render positions. Crack tests check the
+lit non-emissive material, both outward faces, z=±0.515 and width ≤0.20. Body tests cover 200/249
+(no contact damage), 250/400 (contact damage), movement sweeps and menu/admin reset to 250.
+
+Claude's game checks: lit crack brightness in a dark room/night and on both faces; ordinary
+walking/running plus the scripted upright contact; requested map-window piece density/appearance;
+late join/two clients and partial-hole prediction while a build waits; the 50-pane falling and
+settled frame times with G1-B. The 1 ms queue budget is soft because a mesh/physics API call
+cannot be preempted, and a burst may delay remaining-pane collision beyond one frame. Existing
+archived contact-speed choices remain; Reset to Defaults supplies 250 for the default QA case.
+
 ## G1-A fix pass: final client and Release checks
 
 Release passes **25 CTests and 448 Python tests** (two existing skips), including 45 glass tests.

@@ -1,5 +1,12 @@
 # fracture.lua
 
+Second pass: CellLimit caps live annealed topology at 200 and tempered shatter at 300 (also
+bounded by the 512-cell wire ceiling). Complete distant groups coarsen before refinement can
+exceed the kind's cap. Radial cuts retain their small inner rings and stretch the final far ring
+when necessary to fit the budget. Tempered uses an evenly divided grid with a bounded integer
+row/column product, including thin/huge outlines. Break radius queries generate radii only,
+without allocating unused tile polygons. See ADR 0076 and the README's measured counts.
+
 G1-A fix pass: Apply accumulates positive weak hits in `pending`/damage; the crack floor is capped
 at 36,000. Cells are immutable live convexes with stable IDs, plus a bounded subdivision tree.
 Only the contact neighbourhood is refined. Complete distant subtrees can coarsen to their exact

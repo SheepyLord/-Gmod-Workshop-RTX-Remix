@@ -68,7 +68,7 @@ function D.FromBody(r,body,velocity,point)
     if velocity:LengthSqr()<1 then return end
     local normal=G.WorldVector(r.frame,{0,0,1})
     local speed=velocity:Dot(normal)
-    if math.abs(speed)<C.Number("rtx_glass_player_break_speed",180) then return end
+    if math.abs(speed)<C.Number("rtx_glass_player_break_speed",250) then return end
     point=point or body:WorldSpaceCenter()
     local p=G.LocalPoint(r.frame,point)
     if p.z*speed>0 then return end -- departing from the body's side of the pane

@@ -1,5 +1,8 @@
 # menu.lua
 
+Player break speed reads/resets to the shared 250-unit/s default. A translated help line explains
+that walking stays below that default threshold; its six catalogs and generated Lua are updated.
+
 The debris budget slider caps at 8,192, matching the debris manager's convar/native limit.
 
 Translated glass settings page and glass_open_panel command.

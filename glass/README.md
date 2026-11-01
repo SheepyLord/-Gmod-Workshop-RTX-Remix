@@ -1,7 +1,7 @@
 # Native loader glass (G1)
 
 An original MIT add-on replaces Glass-Rewrite-Remix. One frozen server entity represents each
-convex pane; broken pieces exist only in G1-B's client debris world. This is G1-A's integration fix pass.
+convex pane; broken pieces exist only in G1-B's client debris world. This is G1-A's second integration fix pass.
 Combine it with G1-B's fix pass before packaging/game acceptance. No GPL code or material files were copied.
 The add-on draws glass with `models/props_combine/health_charger_glass`, the material the old add-on used, which the fixes part's Remix mod `base_mod/breakable_glass` replaces with translucent PBR glass (texture hash `C0C4BC4C02DBDF70`).
 
@@ -31,7 +31,7 @@ Every script has a sidecar describing inputs, outputs and effects. `addon/LICENS
 See [ADR 0071](../docs/decisions/0071-glass-impact-model.md). Energies are gameplay units:
 `0.5 * mass_kg * relative_speed_units_per_second²` for physics, players, NPCs and vehicles.
 `CollisionData.HitObject` supplies the real PhysObj mass. Player/NPC fallback mass is 85 kg;
-body contacts require at least 180 units/s toward the plane from the body's side, a centre within
+body contacts require at least 250 units/s toward the plane from the body's side, a centre within
 remaining glass and actual plane proximity (half thickness plus oriented body half width).
 Players also use a pre-movement hull sweep, retaining incoming movement plus base velocity
 (including the QA `SetVelocity` push) before collision stops it. Player/NPC hulls stay axis aligned;
@@ -44,18 +44,39 @@ crack threshold. All positive weak energy accumulates; there is no visible crack
 `min(8% of threshold, 36,000)`. The breaking threshold scales with thickness squared, strength, square root of area (reference
 6144 units², minimum scale 0.35), and 3.5 for tempered. DamageInfo energy is damage × 12,000 for
 bullets/buckshot/crush, × 16,000 for other blunt damage, × 20,000 for blast. Thus a 15-damage pistol
-hit cracks, three such hits break a region, and an 85 kg body at 200 units/s supplies 1,700,000.
+hit cracks, three such hits break a region, and an 85 kg running body at 400 units/s supplies 6,800,000.
+Walking at 200 units/s stays below the default contact-speed gate.
 These are tunable game defaults, not engineering strength predictions. Thickness is in Source units.
 Native windows keep engine health: our accumulated damage controls their visual cracks only.
 
 Each cracking hit establishes 8–16 seeded rays and polygonal rings with spacing that grows
 outward. Only cells in its contact neighbourhood subdivide; repeated hits reuse those cuts.
-Live cells and their complete subdivision groups are retained. Above the 512-cell limit, complete
+Live cells and their complete subdivision groups are retained. Above the 200-cell annealed limit, complete
 old groups far from the new hit return to their exact convex parent. Groups containing a released
 cell cannot coarsen, so holes never refill. Eight active centres describe crack growth; a new distant
 hit reclaims a distant slot while keeping its actual location. Old distant cracks may simplify.
 A pathological perforated pane with no room to refine/coarsen releases its remaining glass at the
 current hit. A 100-impact generated probe reaches the cap without that fallback.
+
+The second pass lowers the active topology budget to **200 annealed / 300 tempered** cells,
+within the unchanged 512-cell snapshot ceiling ([ADR 0076](../docs/decisions/0076-glass-bounded-break-density.md)).
+Annealed cuts keep small inner rings and use fewer large far cells when the outer ring budget
+is exhausted; complete distant groups coarsen before new cuts exceed 200. Tempered divides the
+full pane bounds into near-square tiles with at most 300 rows times columns, including narrow
+panes. No pieces are discarded and their total area is preserved.
+
+Whole-break counts below use piece size 8, seed 171, thickness/strength 1, a centre or a corner
+2 units inside each edge. `Fresh / damaged` means an untouched pane versus 24 prior spatial
+visual-only hits, as an engine-owned window can receive before its native break:
+
+| Pane | Annealed centre | Annealed corner | Tempered centre / corner |
+|---|---:|---:|---:|
+| 96x64 | 89 / 160 | 52 / 197 | 96 / 96 |
+| 256x128 | 116 / 170 | 63 / 184 | 300 / 300 |
+| 128x256 | 116 / 151 | 65 / 182 | 300 / 300 |
+
+The cap also applies to partial breakouts and repeated hits, rather than trimming the debris
+list after fracture. The density harness checks piece sizes 4/8/64 and extreme aspect ratios.
 
 All coordinates use a 1/1024 wire grid, an integer Park–Miller generator, an integer circle table
 and integer square roots. Hull/Clip merge vertices closer than 1/256 before sending any piece to
@@ -70,6 +91,11 @@ Complete groups and immutable cell arrays let snapshots retain pre-break state w
 history. Server collision rebuilds only at breakout; clients mirror remaining convexes for prediction.
 No convex covers a hole. A physics-build failure releases the remaining glass with pieces.
 See [ADR 0075](../docs/decisions/0075-incremental-glass-topology.md).
+
+Cracks use `VertexLitGeneric` and the white `models/debug/debugwhite` base texture, with no
+self-illumination. They keep the 0.10/0.065-unit half widths and outward normals on both faces.
+The material name `nlglass_frost_lit` also avoids reusing an old unlit material after Lua refresh.
+Remix should shade the strips with the scene; a dark room/night check remains part of game QA.
 
 Near pieces receive the impact direction with squared distance falloff and seeded spin. Far pieces
 have little or no initial velocity and fall in G1-B's gravity. A scripted break releases the whole
@@ -89,9 +115,20 @@ Initial state uses one client-readiness request from `InitPostEntity`, with a ze
 only for Lua refresh. A missing revision requests just that pane ID; the server replies with its
 snapshot or removal, deduplicating IDs and allowing 16 requests per two-second window. There is
 no second PlayerInitialSpawn push. A matching client state applies a break directly; a recovery
-snapshot is stored without a build, then its final state builds once. Weak pending hits keep
+snapshot is stored without a build, then its final state queues one build. Weak pending hits keep
 geometry and collision; unchanged cells retain the pane mesh. Cached meshes/cracks update by
 revision and prediction physics rebuilds only on initial attachment or breakout.
+
+Hit handling spawns pieces/sound/effects immediately. Remaining pane/crack meshes and prediction
+collision build from the latest revision no earlier than the next client frame. A coalescing
+queue builds at most two panes/frame and stops after a pane when 1 ms has elapsed; a single
+mesh/physics API call is not preemptible. Bursts may wait further frames. Snapshots attach
+immediately; whole breaks discard old geometry/collision immediately. Removal, replacement,
+cleanup and Lua refresh cancel stale queued work; late entities retain pending collision.
+
+One extrusion now supplies render positions and remaining-glass convexes. Face fans and crack
+strips reuse read-only vertex records instead of allocating each triangle's positions again.
+See [ADR 0077](../docs/decisions/0077-glass-client-build-queue.md) for the scheduling tradeoff.
 
 Each pane caches its validated entity, Matrix, material, tint and bounds. Only a pose change calls
 LocalToWorld and updates that Matrix; a stationary draw has no new Matrix/transform/class lookup.
@@ -139,7 +176,7 @@ agent-written and await human review. Long slider/combo labels use full-width he
 | `rtx_glass_show_cracks` | `1` | Draw cracks; gameplay damage still accumulates when off |
 | `rtx_glass_piece_size` | `8` | 4–64 units; minimum tile/ring spacing for new panes |
 | `rtx_glass_velocity_transfer` | `1` | 0–3 impact velocity multiplier for new panes |
-| `rtx_glass_player_break_speed` | `180` | Minimum normal contact speed, 0–1000 |
+| `rtx_glass_player_break_speed` | `250` | Minimum normal contact speed, 0–1000; walking 200 stays below it, running 400 exceeds it |
 | `rtx_glass_player_mass` | `85` | 1–500 kg fallback where no valid physics mass exists |
 | `rtx_glass_debris_lifetime` | `120` | G1-B: seconds, 0 until cleanup |
 | `rtx_glass_debris_budget` | `2000` | G1-B: live pieces per player |
@@ -147,6 +184,7 @@ agent-written and await human review. Long slider/combo labels use full-width he
 
 Reset to Defaults resets client debris settings and, for an admin, server settings. Existing panes
 retain their material properties; map cleanup applies new kind/strength/size settings to map windows.
+Previously archived speed choices are retained; Reset to Defaults restores the new 250-unit/s gate.
 Spawn presets are 48×48, 96×64 and 128×128, each annealed or tempered. The existing glass tool name
 is retained: left-click converts a prop into a flat convex envelope or resets an existing pane's kind
 and strength; right-click makes a pane at a surface. Complex volumetric props are simplified, rather
@@ -192,3 +230,15 @@ probes reach 512 cells across 100 separated impacts, preserve an old hole, check
 across 180 seeds and exercise 200 dense visual-only native hits. See [testing](../docs/TESTING.md)
 for before/after pure-fracture and mocked server/client timings. Real game contact timing,
 Hammer output semantics, two clients and Remix performance are still acceptance checks.
+
+The second pass runs 50 glass tests, with before-failing density/lit/default/defer probes against
+ad3ed46. On the same 100-hit preparation, lower topology density plus shared geometry and queued
+builds reduce the mocked client break from 13.59 ms mean / 20.78 ms p99 to 1.87 / 2.62 ms in the
+handler, plus 1.01 ms mean deferred work: **2.88 / 4.57 ms combined**. Prepared cells fall from
+502 to 164; initial attachment is outside timing. See [testing](../docs/TESTING.md) for the full
+table and limits. This is not a live game benchmark. Dark/night crack shading, real walking and
+running, partial-hole prediction during deferral and integrated 50-pane performance remain for
+Claude's game checks. All game evidence was read only; only this worktree and its out were written.
+
+The second-pass full Release gate passes 25 CTests and 453 Python tests (two existing skips),
+including all 50 glass cases. Evidence is in `out/g1-lua-fix2/release.log` in this worktree.
