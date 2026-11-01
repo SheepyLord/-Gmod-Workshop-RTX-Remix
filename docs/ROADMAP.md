@@ -1,5 +1,24 @@
 # Roadmap
 
+R8-C's pre-QA review corrections are **complete offline** (2026-11-01):
+native material loads/readers, exact bundled-caller exemptions and binding-only shader checks replace
+the earlier material preflight. The 1,200-path harness proves zero added VMT reads, including icons
+and repeated misses. The [updated report](handover/R8-C-report.md) records modeled costs and source
+collision limits. Release passes 26 CTests and 495 Python tests (two existing skips), including
+47 guard test methods/49 LuaJIT invocations and a static inventory check. Claude retains game QA;
+no game or install is touched here.
+
+R8-C implementation and offline acceptance are **complete** on `r8-compat` (2026-11-01):
+non-throwing guard fallbacks, inert screen-space shaders, eight exact archive source inventories,
+ADR 0086 and eighteen add-on replay cases. Release passes 26 CTests and 488 Python tests (two
+existing symlink skips); the guard has 40 methods/43 LuaJIT scenario invocations. Claude retains
+PoC/two-client/tester-machine acceptance; see [the report](handover/R8-C-report.md).
+
+R8-C is **in progress** on `r8-compat` (2026-11-01): reinvestigate GShader and the named graphics
+add-ons, replace guard-created errors with safe fallbacks, and document inert effects under RTX.
+Eight exact source archives are indexed in [the second audit](audits/R8-C-addon-compat.md); Claude
+retains GPU and two-client acceptance. No game or install is changed by this task.
+
 R7 (the user's report of 2026-11-01) is **done** (2026-11-01, loader 0.12.0):
 
 - **Mask.** Columbina's mask renders as in MMD under RTX: runtime patch 0017 adds a texture category

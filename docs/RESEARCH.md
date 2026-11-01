@@ -1,5 +1,62 @@
 # Research notes
 
+## R8-C material review: loading, provenance and cost (2026-11-01)
+
+The fixes' `remixlua/cl/cl_fix_pbr_materials.lua:50-72,88` inspects native ExoPBR shader/texture
+fields after Material; inert objects lose those inputs. The hotloader's `mmdhl/client.lua:68-84`
+creates screenspace_general with mmdhl_vs20/mmdhl_ps20b and then sets its textures; blanket creation
+suppression breaks its immediate path. `loader/client/bootstrap.lua:169` compiles owned files with
+@lua/<path> labels, omitting add-on identity. The reviewed guard uses an exact 344-path snapshot
+checked against indexed package hashes plus companion/glass sources (no internal collisions after
+retired glass is excluded). Other mounted add-ons or forged labels can collide and bypass the
+material compatibility exemption; this does not authenticate Lua or grant native execution.
+
+There is no evidence establishing that merely loading/reading these materials caused the tester's
+crash. The known PoC loaded/exited normally; some shader warnings precede Lua. Native loading is
+therefore retained. The review removes all material VMT preflight; only status/session startup
+reads remain. Untrusted bindings inspect cached native shader/program fields. Entity bindings
+resolve once through native Material per live cached path; trusted bindings add no such resolution.
+
+In `out/r8-compat/material-cost.json`, three-run medians with a modeled 761-mount, 1 ms failed
+lookup show the prior guard taking 1,205.573 ms/1,200 mixed paths, 1,204.843 ms/repeated paths and
+1,214.444 ms/PNG+JPG icons: each batch makes 1,200 reads/913,200 modeled mount probes. The reviewed
+guard makes zero material-preflight reads/probes and takes 0.299, 0.247 and 0.909 ms respectively.
+Trusted new reads take 0.959 ms; first/repeat entity bindings 2.167/1.284 ms; fresh/repeat render
+bindings 2.700/2.213 ms. Plain loads make zero metadata queries; entity repeats add zero native
+resolutions or metadata queries. Windows QPC measures batch elapsed time with fake native objects;
+mount probes and 1 ms are explicit assumptions, not field measurements. Native cold I/O and GPU
+behavior remain unmeasured. Expected added guard VMT I/O is zero regardless of 761 mounts. See
+[the reproducible harness](../tools/tests/bench_render_guard.py.md) and
+[updated handover](handover/R8-C-report.md); the older preflight claims below describe the earlier implementation.
+
+## R8-C: graphics add-ons, exact sources (2026-11-01)
+
+[The second audit](audits/R8-C-addon-compat.md) and [hash ledger](audits/R8-C-addon-compat.json)
+index 86 Lua/VMT files and 856 candidate API lines across eight exact installed Workshop archives.
+Every indexed file matches its archive-entry CRC and SHA-256; source bodies remain in ignored
+`out/r8-compat/src`. This is a static inventory, not an execution count. Quick Bloom is now exact: its
+only client autorun writes two bloom cvars in Initialize. Life Mod legacy decoding is bounded and
+its declared-length GMA passes all 98 entry CRCs and aggregate CRC 374141b9.
+
+Claude's existing r8/07-gshader console contains 26 failed-shader lines, an intentional guard error
+at bumps_building.lua:35 and one at worldpos.lua:27 through !!shaderlib.lua:800. The map loads/exits
+normally there; the tester's crash is not reproduced. Raw RGBA32323232F29 is a documented Source
+format, but the guard's old enum snapshot predates GShader exporting it. That false diagnostic is
+separate from backend support: D3D9Ex dependencies, reserved target replacement, MRT/depth copies,
+world-mesh reconstruction and shared light-metatable edits remain concrete capability risks.
+[ADR 0086](decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md) makes the incompatible
+work inert with real engine-backed fallbacks; it does not claim native/GPU fault recovery.
+
+R8-C final offline checks pass 26 CTests and 488 Python tests (two existing symlink skips), with
+40 guard methods/43 LuaJIT invocations including 18 new replay cases. Repeated GShader light
+acquisition needs readback of its private metatable edits; returning a fresh native-table clone
+on every call would reset the wrong __index table. The harness checks that readback and simulates
+GLua ITexture type labels. Isolating GShader's native Remove override also requires retiring its exported projector-cache entries
+and rebuilding their indices; the replay removes several lamps in sequence and requires an empty
+cache afterward. No actual game, GPU or third-party Lua was executed. The new policy's
+[harness and QA receipt](handover/R8-C-report.md) explicitly separates these results from the
+original tester crash and foreign-initializer startup gap.
+
 ## R7-B: external exit diagnostics (2026-11-01)
 
 The final text review caught lossy catalog generation through Windows PowerShell 5.1's

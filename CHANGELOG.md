@@ -14,6 +14,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
   denoisers and DLSS Ray Reconstruction discarded its history on every pixel. Patch 0018 compares the
   first draws of consecutive frames only. Remix's disocclusion debug view showed the whole character
   white before and none after.
+- **R8-C graphics compatibility:** adopt non-throwing render-guard fallbacks and keep GShader-style
+  screen effects inert under RTX; preserve ordinary rendering and fresh RTX-off sessions
+  ([ADR 0086](docs/decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md)).
+- **R8-C material review:** keep native material loading, PBR inspection and the package's own
+  shader rendering; filter unsafe untrusted bindings instead. Exact bundled Lua paths exempt
+  material operations, with namespace-collision limits documented. Remove VMT preflight disk
+  reads entirely; add 1,200-path/image/repeat lookup regressions and an offline cost comparison.
+- **R8-C projector cleanup:** retire removed lights from GShader's exported caches and rebuild
+  their indices while isolating its native metatable overrides; repeated CSM controller changes
+  must not retain every removed projector.
 
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 

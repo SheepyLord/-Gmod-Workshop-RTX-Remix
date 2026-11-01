@@ -30,7 +30,7 @@ local enabled = CreateClientConVar("nativeloader_guard", "1", true, false,
 local playerMeta, convarMeta = FindMetaTable("Player"), FindMetaTable("ConVar")
 -- The native getter: the motion-blur read compatibility below wraps ConVar:GetBool.
 local getBool = convarMeta and convarMeta.GetBool
-local state = {version = 2, installation = installation,
+local state = {version = 2, installation = installation, policy = "inert screen-space shaders under RTX",
     blocked = {}, errors = {}, cleanup_errors = {}, limitations = {
     "Lua errors only: native faults, GPU failures and infinite loops are not caught",
     "Unknown native state and partially built meshes cannot be universally restored",
@@ -58,7 +58,10 @@ local function virtual(s)
     if s:sub(1, 1) == "[" or s:sub(1, 1) == "=" then return "<dynamic Lua>" end
     return s:sub(1, 180)
 end
-local function caller() local info = getinfo(3, "S") return virtual(info and info.source) end
+local function location(info)
+    return virtual(info and info.source) .. ":" .. tostring(info and info.currentline or 0)
+end
+local function caller() return location(getinfo(3, "Sl")) end
 local function functionSource(fn)
     local info = type(fn) == "function" and getinfo(fn, "S")
     return virtual(info and info.source)
@@ -67,16 +70,16 @@ local guardSource = getinfo(1, "S").source
 -- The first caller outside this guard and native frames, resolved only when a call is refused.
 local function externalCaller()
     for level = 3, 32 do
-        local info = getinfo(level, "S")
+        local info = getinfo(level, "Sl")
         if not info then break end
-        if info.what ~= "C" and info.source ~= guardSource then return virtual(info.source) end
+        if info.what ~= "C" and info.source ~= guardSource then return location(info) end
     end
     return "<unknown>"
 end
 local told, reportCounts = {}, {}
 local function report(kind, api, reason, source)
     source = virtual(source)
-    local key = kind .. "|" .. api .. "|" .. source .. "|" .. reason
+    local key = kind .. "|" .. api .. "|" .. source .. (kind == "blocked" and "" or "|" .. reason)
     local count = reportCounts[kind] or 0
     -- Each category has its own cap, so a flood of refusals cannot hide later error records.
     if told[key] or count >= 128 then return end
@@ -87,11 +90,12 @@ local function report(kind, api, reason, source)
 end
 local function reject(api, reason, source)
     report("blocked", api, reason, source or externalCaller())
-    error("[nativeloader RTX guard] " .. api .. ": " .. reason, 3)
+    return false
 end
 local function rejectNul(api, value, source)
     if type(value) == "string" and value:find("%z") then
         reject(api, "embedded NUL in native string", source)
+        return true
     end
 end
 
@@ -108,13 +112,29 @@ for _, name in ipairs({"mat_dxlevel", "mat_hdr_level"}) do
     local value = GetConVar(name)
     if value then pinned[name] = pinned[name] or value:GetString() end
 end
+-- Video/depth allocations cannot be changed safely during this D3D9 session.
+for _, name in ipairs({"r_flashlightdepthres", "mat_antialias", "mat_aaquality", "mat_disable_d3d9ex"}) do
+    local value = GetConVar(name)
+    if value then pinned[name] = pinned[name] or value:GetString() end
+end
 local function exempt(s)
     return s:find("remixbinary", 1, true) or s:find("remixlua", 1, true) or s:find("nativeloader", 1, true)
 end
-local criticalPins = {mat_dxlevel = true, mat_hdr_level = true}
+local criticalPins = {mat_dxlevel = true, mat_hdr_level = true, r_flashlightdepthres = true,
+    mat_antialias = true, mat_aaquality = true, mat_disable_d3d9ex = true}
 local function allowPin(name, value, source, query)
     if not active() then return true end
     local key = tostring(name or ""):lower()
+    local csm = source:find("lua/realcsm/", 1, true) == 1 or source:find("lua/entities/edit_csm/", 1, true) == 1
+        or source:find("lua/autorun/realcsm_client.lua", 1, true) == 1
+    if csm and value ~= nil and (key == "r_ambientlightingonly" or key == "r_lightstyle" or key == "r_radiosity"
+        or key == "r_shadows_gamecontrol" or key == "r_shadowrendertotexture" or key == "r_shadowdist" or key == "r_farz") then
+        report("blocked", key, "Real CSM raster world-lighting settings are inert under RTX", source) return false
+    end
+    if source:find("lua/autorun/client/cl_bloom_config.lua", 1, true)
+        and (key == "mat_bloomscale" or key == "mat_bloom_scalefactor_scalar") then
+        report("blocked", key, "Quick Bloom raster bloom settings are inert under RTX", source) return false
+    end
     local want = pinned[key]
     if want == nil or (exempt(source) and not criticalPins[key]) or (query and value == nil) then return true end
     if type(value) == "boolean" then value = value and "1" or "0" end
@@ -178,8 +198,8 @@ if RunConsoleCommand then
     RunConsoleCommand = function(name, ...)
         if not active() then return original(name, ...) end
         local source = caller()
-        rejectNul("RunConsoleCommand", name, source)
-        for i = 1, select("#", ...) do rejectNul("RunConsoleCommand", select(i, ...), source) end
+        if rejectNul("RunConsoleCommand", name, source) then return end
+        for i = 1, select("#", ...) do if rejectNul("RunConsoleCommand", select(i, ...), source) then return end end
         if checkTokens({name, ...}, source, 0) then return original(name, ...) end
     end
 end
@@ -188,7 +208,7 @@ if playerMeta and playerMeta.ConCommand then
     playerMeta.ConCommand = function(self, command, ...)
         if not active() then return original(self, command, ...) end
         local source = caller()
-        rejectNul("Player.ConCommand", command, source)
+        if rejectNul("Player.ConCommand", command, source) then return end
         if type(command) ~= "string" or checkCommands(command, source, 0) then return original(self, command, ...) end
     end
 end
@@ -197,7 +217,7 @@ if game and game.ConsoleCommand then
     game.ConsoleCommand = function(command, ...)
         if not active() then return original(command, ...) end
         local source = caller()
-        rejectNul("game.ConsoleCommand", command, source)
+        if rejectNul("game.ConsoleCommand", command, source) then return end
         if type(command) ~= "string" or checkCommands(command, source, 0) then return original(command, ...) end
     end
 end
@@ -225,81 +245,595 @@ if convarMeta then
     end
 end
 
--- Early installation captures enums before add-ons can rewrite them. The verified
--- multiplayer bootstrap can run later, so its current globals are not guaranteed pristine.
--- R32F (27) is used by the shipped MMDHL shadow target and verified on this backend,
--- but is not exported as IMAGE_FORMAT_R32F by every supported GMod build.
-local formats, sizes, depthModes, fullFrame = {[-1] = true, [27] = true}, {}, {}, {}
-for name, value in pairs(_G) do
-    if type(name) == "string" and integer(value) then
-        if name:match("^IMAGE_FORMAT_") and not name:find("COUNT", 1, true)
-            and not name:find("NUM_FORMATS", 1, true) then formats[value] = true end
-        if name:match("^RT_SIZE_") then sizes[value] = true end
-        if name:match("^MATERIAL_RT_DEPTH_") then depthModes[value] = true end
+-- The policy is self-contained because the verified early initializer embeds this file alone.
+local policy = {inertTextures = setmetatable({}, {__mode = "k"}), inertMaterials = setmetatable({}, {__mode = "k"})}
+do
+    local sources = {
+        ["lua/autorun/!!shaderlib.lua"] = true,
+        ["lua/autorun/client/worldpos.lua"] = true,
+        ["lua/autorun/client/depthbuffer.lua"] = true,
+        ["lua/autorun/client/bumps_building.lua"] = true,
+        ["lua/autorun/client/lightmaps_building.lua"] = true,
+        ["lua/autorun/client/lut_writing.lua"] = true,
+        ["lua/autorun/client/stencil_masks.lua"] = true,
+        ["lua/autorun/client/translucent_crutch.lua"] = true,
+        ["lua/autorun/client/fixes_for_workshop_addons.lua"] = true,
+        ["lua/postprocess/shader_lib.lua"] = true,
+        ["lua/postprocess/fxaa.lua"] = true,
+        ["lua/postprocess/ssdo.lua"] = true,
+        ["lua/postprocess/pp_ssr.lua"] = true,
+    }
+    function policy.effect(source)
+        source = source:lower():gsub(":%d+$", "")
+        return sources[source] or source:find("lua/lifemod/render/modules/", 1, true) == 1
+    end
+    function policy.csm(source)
+        source = source:lower()
+        return source:find("lua/realcsm/", 1, true) == 1 or source:find("lua/entities/edit_csm/", 1, true) == 1
+    end
+    -- Initialization still defines the add-ons' API and receives real engine-backed fallbacks.
+    -- Rendering/reconstruction/world-mesh callbacks are inert even through cached hook.Call.
+    function policy.skipCallback(fn, event)
+        if event == "Initialize" or event == "InitReconstruction" or event == "InitPostReconstruction"
+            or event == "OnScreenSizeChanged" or event == "OnReloaded" or event == "ShutDown" then return false end
+        if not policy.effect(functionSource(fn)) then return false end
+        reject("hook." .. tostring(event), "screen-space shader effect is inert under RTX", functionSource(fn))
+        return true
+    end
+    local wrapperPaths = { ["lua/autorun/!!projected_texture_wrapper.lua"] = true,
+        ["lua/autorun/!!dynamic_light_wrapper.lua"] = true }
+    local function wrapper(source) return wrapperPaths[source:gsub(":%d+$", "")] end
+    local function copy(tbl) local out = {} for k, v in pairs(tbl) do out[k] = v end return out end
+    -- GShader repeatedly edits the shared native PT __index, nesting it once per created lamp.
+    -- Its dlight wrapper also replaces native userdata metatables. Keep those edits in Lua copies.
+    local findMeta = FindMetaTable
+    FindMetaTable = function(name, ...)
+        local result = findMeta(name, ...)
+        if active() and wrapper(caller()) and type(result) == "table" then
+            reject("FindMetaTable", "native light metatable edits isolated", caller())
+            return copy(result)
+        end
+        return result
+    end
+    local getMeta, setMeta = debug.getmetatable, debug.setmetatable
+    local privateMetas = setmetatable({}, {__mode = "k"})
+    debug.getmetatable = function(obj)
+        local result = getMeta(obj)
+        if active() and wrapper(caller()) and type(result) == "table" then return privateMetas[obj] or copy(result) end
+        return result
+    end
+    debug.setmetatable = function(obj, meta)
+        if active() and wrapper(caller()) then
+            reject("debug.setmetatable", "native light metatable replacement ignored", caller())
+            privateMetas[obj] = meta
+            return obj
+        end
+        return setMeta(obj, meta)
     end
 end
-for _, name in ipairs({"RT_SIZE_FULL_FRAME_BUFFER", "RT_SIZE_FULL_FRAME_BUFFER_ROUNDED_UP", "RT_SIZE_HDR"}) do
-    if _G[name] ~= nil then fullFrame[_G[name]] = true end
+-- Exact bundled virtual paths, checked against the indexed package inputs/companion by tests.
+-- Source labels omit the add-on directory. This is a compatibility exemption, not authentication:
+-- a colliding file or forged chunk label can bypass these material filters (ADR 0086).
+do
+    local bundled = {}
+    for path in ([[
+lua/advanced_bodygroup_tool/cl_i18n.lua
+lua/advanced_bodygroup_tool/cl_uv_hide.lua
+lua/advanced_bodygroup_tool/cl_vertex_keep_editor.lua
+lua/advmat/cl_05_i18n.lua
+lua/advmat/cl_19_help_i18n.lua
+lua/advmat/cl_20_help.lua
+lua/advmat/cl_23_backend.lua
+lua/advmat/cl_27_rtx_bridge.lua
+lua/advmat/cl_28_rtx_enhance.lua
+lua/advmat/cl_29_rtx_normals.lua
+lua/advmat/cl_30_theme.lua
+lua/advmat/cl_31_windowux.lua
+lua/advmat/cl_40_store.lua
+lua/advmat/cl_41_rtx_store.lua
+lua/advmat/cl_50_apply.lua
+lua/advmat/cl_55_normalgen.lua
+lua/advmat/cl_56_texops.lua
+lua/advmat/cl_57_surfacegen.lua
+lua/advmat/cl_58_meshuv.lua
+lua/advmat/cl_59_assets.lua
+lua/advmat/cl_60_texpicker.lua
+lua/advmat/cl_61_import.lua
+lua/advmat/cl_65_rows.lua
+lua/advmat/cl_67_gendialog.lua
+lua/advmat/cl_68_surfacedialog.lua
+lua/advmat/cl_70_ui.lua
+lua/advmat/cl_71_rtx_source.lua
+lua/advmat/cl_72_canvas.lua
+lua/advmat/cl_73_modelview.lua
+lua/advmat/cl_74_texeditor.lua
+lua/advmat/cl_75_rtx_nodes.lua
+lua/advmat/cl_76_rtx_editor.lua
+lua/advmat/cl_78_vmtexport.lua
+lua/advmat/cl_80_browser.lua
+lua/advmat/cl_88_dispatch.lua
+lua/advmat/cl_90_probe.lua
+lua/advmat/sh_00_config.lua
+lua/advmat/sh_10_util.lua
+lua/advmat/sh_15_mmd.lua
+lua/advmat/sh_20_net.lua
+lua/advmat/sh_25_vmt.lua
+lua/advmat/sh_30_shaderdb.lua
+lua/advmat/sh_31_shaderdb_ext.lua
+lua/advmat/sh_35_matname.lua
+lua/advmat/sh_36_rtx_schema.lua
+lua/advmat/sh_40_gen.lua
+lua/advmat/sh_41_sel.lua
+lua/advmat/sh_42_gen_normal.lua
+lua/advmat/sh_43_texedit.lua
+lua/advmat/sh_44_gen_surface.lua
+lua/advmat/sh_45_assets.lua
+lua/advmat/sh_50_finalise.lua
+lua/advmat/sv_29_assets.lua
+lua/advmat/sv_30_store.lua
+lua/advmat/sv_31_rtx_store.lua
+lua/advmat/sv_32_rtx_tool.lua
+lua/advmat/sv_40_apply.lua
+lua/autorun/_nativeloader_guard.lua
+lua/autorun/advanced_bodygroup_tool.lua
+lua/autorun/advmat_loader.lua
+lua/autorun/bullet_break_simulator_loader.lua
+lua/autorun/cl_rtx.lua
+lua/autorun/client/cl_remix_portals.lua
+lua/autorun/client/cl_render_core.lua
+lua/autorun/client/hl2rtx_model_compat_viewmodels.lua
+lua/autorun/client/nativeloader.lua
+lua/autorun/client/nativeloader_guide.lua
+lua/autorun/client/nativeloader_imported_normals.lua
+lua/autorun/client/nativeloader_menu.lua
+lua/autorun/client/nativeloader_mmd_alpha.lua
+lua/autorun/client/nativeloader_model_layers.lua
+lua/autorun/client/nativeloader_motion_tab.lua
+lua/autorun/client/nativeloader_toolgun.lua
+lua/autorun/client/nativeloader_vram.lua
+lua/autorun/client/removehalo.lua
+lua/autorun/client/rtx_agent.lua
+lua/autorun/client/rtx_debug.lua
+lua/autorun/matdebug.lua
+lua/autorun/mmd_vmd_npc.lua
+lua/autorun/mmdhl.lua
+lua/autorun/nativeloader_defaults.lua
+lua/autorun/nativeloader_i18n.lua
+lua/autorun/nativeloader_sky.lua
+lua/autorun/nlglass.lua
+lua/autorun/poolrooms_rtx.lua
+lua/autorun/rtx_water.lua
+lua/autorun/server/hl2rtx_model_compat.lua
+lua/autorun/server/sv_portals_pvs.lua
+lua/autorun/server/sv_prop_teleport.lua
+lua/autorun/sh_detours.lua
+lua/autorun/sh_player_teleport.lua
+lua/autorun/sh_rtx.lua
+lua/autorun/sv_rtx.lua
+lua/autorun/tmc.lua
+lua/bullet_break_simulator/cl_10_i18n.lua
+lua/bullet_break_simulator/cl_20_filters.lua
+lua/bullet_break_simulator/cl_21_mdl_bodyparts.lua
+lua/bullet_break_simulator/cl_22_shape.lua
+lua/bullet_break_simulator/cl_25_profiler.lua
+lua/bullet_break_simulator/cl_29_mesh_preparation.lua
+lua/bullet_break_simulator/cl_30_overlay.lua
+lua/bullet_break_simulator/cl_32_mesh_persistence.lua
+lua/bullet_break_simulator/cl_39_material_safety.lua
+lua/bullet_break_simulator/cl_40_damage.lua
+lua/bullet_break_simulator/cl_90_settings.lua
+lua/bullet_break_simulator/sh_00_config.lua
+lua/bullet_break_simulator/sh_10_network.lua
+lua/bullet_break_simulator/sv_20_hits.lua
+lua/entities/gmod_lamp.lua
+lua/entities/gmod_light.lua
+lua/entities/mmdhl_attach_link.lua
+lua/entities/mmdhl_prop/cl_init.lua
+lua/entities/mmdhl_prop/init.lua
+lua/entities/mmdhl_prop/shared.lua
+lua/entities/mmdhl_ragdoll/cl_init.lua
+lua/entities/mmdhl_ragdoll/init.lua
+lua/entities/mmdhl_ragdoll/shared.lua
+lua/entities/mmdhl_ragdoll/tool_api.lua
+lua/entities/nlglass_pane/cl_init.lua
+lua/entities/nlglass_pane/init.lua
+lua/entities/nlglass_pane/shared.lua
+lua/entities/remix_rt_light/cl_init.lua
+lua/entities/remix_rt_light/init.lua
+lua/entities/remix_rt_light/shared.lua
+lua/entities/remix_sky_editor/cl_init.lua
+lua/entities/remix_sky_editor/init.lua
+lua/entities/remix_sky_editor/shared.lua
+lua/entities/rtx_pseudoplayer.lua
+lua/entities/rtx_pseudoweapon.lua
+lua/entities/seamless_portal/cl_init.lua
+lua/entities/seamless_portal/init.lua
+lua/entities/seamless_portal/sh_init.lua
+lua/includes/modules/niknaks.lua
+lua/mmd_vmd_npc/cl_camera.lua
+lua/mmd_vmd_npc/cl_flashlight.lua
+lua/mmd_vmd_npc/cl_import_bake.lua
+lua/mmd_vmd_npc/cl_import_data.lua
+lua/mmd_vmd_npc/cl_importer.lua
+lua/mmd_vmd_npc/cl_menu.lua
+lua/mmd_vmd_npc/cl_radial.lua
+lua/mmd_vmd_npc/sh_core.lua
+lua/mmd_vmd_npc/sv_cache.lua
+lua/mmd_vmd_npc/sv_commands.lua
+lua/mmdhl/actors.lua
+lua/mmdhl/bodygroups.lua
+lua/mmdhl/bone_mapper.lua
+lua/mmdhl/bone_mapper_rules.lua
+lua/mmdhl/bone_mapper_ui.lua
+lua/mmdhl/carrier.lua
+lua/mmdhl/client.lua
+lua/mmdhl/client_ragdolls.lua
+lua/mmdhl/collision_editor.lua
+lua/mmdhl/compat.lua
+lua/mmdhl/compatibility_policy.lua
+lua/mmdhl/debug.lua
+lua/mmdhl/entity_editor.lua
+lua/mmdhl/faceposer.lua
+lua/mmdhl/file_access.lua
+lua/mmdhl/first_person.lua
+lua/mmdhl/i18n.lua
+lua/mmdhl/installation.lua
+lua/mmdhl/installation_ui.lua
+lua/mmdhl/instances.lua
+lua/mmdhl/library.lua
+lua/mmdhl/materials.lua
+lua/mmdhl/menu.lua
+lua/mmdhl/names.lua
+lua/mmdhl/native_policy.lua
+lua/mmdhl/native_render.lua
+lua/mmdhl/native_tools.lua
+lua/mmdhl/performance.lua
+lua/mmdhl/persistence.lua
+lua/mmdhl/physics_editor.lua
+lua/mmdhl/physics_editor_ui.lua
+lua/mmdhl/physics_lod.lua
+lua/mmdhl/physics_profile.lua
+lua/mmdhl/physics_reset.lua
+lua/mmdhl/physics_settings.lua
+lua/mmdhl/player_copies.lua
+lua/mmdhl/props/collision.lua
+lua/mmdhl/props/editor.lua
+lua/mmdhl/props/library.lua
+lua/mmdhl/props/render.lua
+lua/mmdhl/props/server.lua
+lua/mmdhl/props/shared.lua
+lua/mmdhl/props/tool.lua
+lua/mmdhl/scene_sharing.lua
+lua/mmdhl/secondary_backend.lua
+lua/mmdhl/secondary_collision.lua
+lua/mmdhl/secondary_water.lua
+lua/mmdhl/server.lua
+lua/mmdhl/server_settings.lua
+lua/mmdhl/settings.lua
+lua/mmdhl/sharing.lua
+lua/mmdhl/terms.lua
+lua/mmdhl/ui.lua
+lua/mmdhl/workshop.lua
+lua/mmdhl/workshop_export.lua
+lua/nativeloader/classic_defaults.lua
+lua/nativeloader/i18n.lua
+lua/nativeloader/sky_model.lua
+lua/nativeloader/weather_presets.lua
+lua/niknaks/framework/sh_localbsp.lua
+lua/niknaks/modules/sh_bignumber.lua
+lua/niknaks/modules/sh_bitbuffer.lua
+lua/niknaks/modules/sh_bsp_brushes.lua
+lua/niknaks/modules/sh_bsp_entities.lua
+lua/niknaks/modules/sh_bsp_faces.lua
+lua/niknaks/modules/sh_bsp_leafs.lua
+lua/niknaks/modules/sh_bsp_module.lua
+lua/niknaks/modules/sh_bsp_pvspas.lua
+lua/niknaks/modules/sh_bsp_staticprops.lua
+lua/niknaks/modules/sh_bsp_trace.lua
+lua/niknaks/modules/sh_bsp_worldlights.lua
+lua/niknaks/modules/sh_color_extended.lua
+lua/niknaks/modules/sh_datapackage.lua
+lua/niknaks/modules/sh_datetime.lua
+lua/niknaks/modules/sh_enums.lua
+lua/niknaks/modules/sh_file_extended.lua
+lua/niknaks/modules/sh_hooks.lua
+lua/niknaks/modules/sh_linq_module.lua
+lua/niknaks/modules/sh_model_extended.lua
+lua/niknaks/modules/sh_randomizer.lua
+lua/niknaks/modules/sh_sound_module.lua
+lua/niknaks/modules/sh_timedelta.lua
+lua/niknaks/modules/sh_util_extended.lua
+lua/niknaks/submodules/ai/sh_file.lua
+lua/niknaks/submodules/ai/sh_map.lua
+lua/niknaks/submodules/ai/sh_node.lua
+lua/niknaks/submodules/ai/sh_pathfinder.lua
+lua/niknaks/submodules/sh_submodules.lua
+lua/nlglass/client.lua
+lua/nlglass/config.lua
+lua/nlglass/damage.lua
+lua/nlglass/debris.lua
+lua/nlglass/debris_batches.lua
+lua/nlglass/debris_bullets.lua
+lua/nlglass/debris_draw.lua
+lua/nlglass/debris_expiry.lua
+lua/nlglass/debris_fallback.lua
+lua/nlglass/debris_mesh.lua
+lua/nlglass/debris_scene.lua
+lua/nlglass/debris_view.lua
+lua/nlglass/fracture.lua
+lua/nlglass/geometry.lua
+lua/nlglass/i18n.lua
+lua/nlglass/i18n_data.lua
+lua/nlglass/menu.lua
+lua/nlglass/protocol.lua
+lua/nlglass/server.lua
+lua/nlglass/world.lua
+lua/patcher/addons/cl_mwbase.lua
+lua/patcher/cl_init.lua
+lua/patcher/cl_intercepts.lua
+lua/patcher/sh_core.lua
+lua/patcher/tests/cl_mwbase_dependency_tests.lua
+lua/patcher/tests/cl_patcher_core_tests.lua
+lua/patcher/tests/cl_patcher_intercepts_tests.lua
+lua/patcher/tests/cl_patcher_loader_tests.lua
+lua/poolrooms_rtx/cl_lights_data.lua
+lua/poolrooms_rtx/cl_main.lua
+lua/poolrooms_rtx/sh_config.lua
+lua/remixlua/cl/cl_fix_bft_materials.lua
+lua/remixlua/cl/cl_fix_pbr_materials.lua
+lua/remixlua/cl/cl_fix_refract_materials.lua
+lua/remixlua/cl/cl_fix_solid_color_materials.lua
+lua/remixlua/cl/cl_map_fixes.lua
+lua/remixlua/cl/cl_map_markers.lua
+lua/remixlua/cl/cl_material_inspector.lua
+lua/remixlua/cl/cl_material_pipeline.lua
+lua/remixlua/cl/cl_nonapi_flashlight.lua
+lua/remixlua/cl/cl_remove_detail_textures.lua
+lua/remixlua/cl/cl_rtx_light_updater.lua
+lua/remixlua/cl/cl_rtx_material_fixer.lua
+lua/remixlua/cl/cl_rtx_misc.lua
+lua/remixlua/cl/cl_rtx_settings.lua
+lua/remixlua/cl/cl_rtx_topbr_conversion.lua
+lua/remixlua/cl/customrender/cl_2d_skybox_renderer.lua
+lua/remixlua/cl/customrender/cl_build_progress.lua
+lua/remixlua/cl/customrender/cl_displacement_renderer.lua
+lua/remixlua/cl/customrender/cl_rtx_meshed_world_renderer.lua
+lua/remixlua/cl/customrender/cl_rtx_skybox_boundary_renderer.lua
+lua/remixlua/cl/customrender/cl_static_prop_renderer.lua
+lua/remixlua/cl/customrender/render_core.lua
+lua/remixlua/cl/remixapi/cl_physgun_color_sync.lua
+lua/remixlua/cl/remixapi/cl_remix_category_0_manager.lua
+lua/remixlua/cl/remixapi/cl_remix_category_1_pseudoplayer.lua
+lua/remixlua/cl/remixapi/cl_remix_category_debug.lua
+lua/remixlua/cl/remixapi/cl_remix_flashlight.lua
+lua/remixlua/cl/remixapi/cl_remix_light_cmd.lua
+lua/remixlua/cl/remixapi/cl_remix_map_configs.lua
+lua/remixlua/cl/remixapi/debug_hash_hud.lua
+lua/remixlua/cl/remixapi/rtx_hash_lookup.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_dynamiclight_wrapper_menu.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_light_wrapper_menu.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_maplight_animator.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper.lua
+lua/remixlua/cl/remixapi/wrappers/cl_remix_projectedtexture_wrapper_menu.lua
+lua/remixlua/sh/sh_flashlight_override.lua
+lua/remixlua/sv/sv_nonapi_flashlight.lua
+lua/remixlua/sv/sv_remix_flashlight.lua
+lua/remixlua/sv/sv_remix_maplight_bridge.lua
+lua/remixlua/sv/sv_remove_entities.lua
+lua/remixlua/sv/sv_skybox_fix.lua
+lua/rtx_water/cl_bodies.lua
+lua/rtx_water/cl_core.lua
+lua/rtx_water/cl_data.lua
+lua/rtx_water/cl_menu.lua
+lua/rtx_water/cl_native.lua
+lua/rtx_water/cl_ripples.lua
+lua/rtx_water/cl_splash.lua
+lua/rtx_water/cl_surface.lua
+lua/rtx_water/sv_bullets.lua
+lua/tmc/init.lua
+lua/tmc/types.lua
+lua/unittest/niknaks/bignumber.lua
+lua/unittest/niknaks/bitbuffer.lua
+lua/unittest/niknaks/bsp.lua
+lua/unittest/niknaks/color.lua
+lua/unittest/niknaks/datetime.lua
+lua/unittest/niknaks/gunit_emmy.lua
+lua/unittest/niknaks/linq.lua
+lua/unittest/niknaks/main.lua
+lua/unittest/niknaks/timedelta.lua
+lua/weapons/gmod_tool/stools/advanced_bodygroup.lua
+lua/weapons/gmod_tool/stools/advmateditor.lua
+lua/weapons/gmod_tool/stools/mmd_vmd_npc.lua
+lua/weapons/gmod_tool/stools/mmdhl_prop.lua
+lua/weapons/gmod_tool/stools/portal_creator_tool.lua
+lua/weapons/gmod_tool/stools/portal_fitter_tool.lua
+lua/weapons/gmod_tool/stools/portal_resizer_tool.lua
+lua/weapons/gmod_tool/stools/procedural_glass_tool.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_distant.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_rect.lua
+lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua
+lua/weapons/portal_gun.lua
+lua/weapons/weapon_mmdhl.lua
+    ]]):gmatch("%S+") do bundled[path] = true end
+    function policy.bundled(source) return bundled[source:lower():gsub(":%d+$", "")] == true end
 end
-local allocations, allocationCounts = {}, {}
-state.allocations_by_source = allocationCounts
+local nativeRender = {}
+for name, value in pairs(render or {}) do nativeRender[name] = value end
+local nativeRT, nativeRTEx, nativeMaterial, nativeCreate = GetRenderTarget, GetRenderTargetEx, Material, CreateMaterial
 local function canonical(name) return name:gsub("\\", "/"):lower():gsub("%.[^./]*$", "") end
-local function checkTarget(api, name, w, h, sizeMode, format, source)
-    if type(name) ~= "string" or #name == 0 or #name > 256 or name:find("%z") then reject(api, "invalid target name", source) end
+function policy.reserved(name)
+    -- GLua's type() can report "ITexture", rather than LuaJIT's ordinary "userdata".
+    if name ~= nil and type(name) ~= "string" then
+        local ok, value = pcall(function() return name:GetName() end)
+        if not ok then return false end
+        name = value
+    end
+    if type(name) ~= "string" then return false end
     local base = canonical(name):match("([^/]+)$") or ""
-    if base:match("^_rt_shadowdepthtexture_") or base:match("^_rt_resolvedfullframedepth") then
-        reject(api, "engine-owned shadow/depth target cannot be recreated by Lua in RTX", source)
+    return base:match("^_rt_shadowdepthtexture") or base:match("^_rt_resolvedfullframedepth")
+        or base:match("^_nativeloader_inert_rt")
+end
+do
+    local meta = FindMetaTable("ProjectedTexture")
+    local remove = meta and meta.Remove
+    if remove then
+        meta.Remove = function(self, ...)
+            local result = pack(remove(self, ...))
+            if active() then
+                -- GShader's Remove replacement lives in its private copy. Retire its public
+                -- caches here instead, otherwise that list retains every removed native lamp.
+                local lights, indices, cache = rawget(_G, "ENV_PROJTEXS"), rawget(_G, "ENV_PROJTEXS_I"), rawget(_G, "ptCache")
+                if type(lights) == "table" and type(indices) == "table" and type(cache) == "table" then
+                    rawset(cache, self, nil)
+                    local count, kept = #lights, 0
+                    for i = 1, count do
+                        local light = rawget(lights, i)
+                        local ok, valid = pcall(IsValid, light)
+                        if light ~= self and ok and valid then kept = kept + 1 rawset(lights, kept, light) end
+                    end
+                    for i = kept + 1, count do rawset(lights, i, nil) end
+                    for id in pairs(indices) do rawset(indices, id, nil) end
+                    for i = 1, kept do
+                        local id = rawget(cache, rawget(lights, i))
+                        if id ~= nil then rawset(indices, id, i) end
+                    end
+                end
+            end
+            return unpack(result, 1, result.n)
+        end
     end
-    w, h = whole(w), whole(h)
-    if not w or not h then reject(api, "target dimensions must be finite numbers", source) end
-    if sizeMode ~= nil and not sizes[sizeMode] then reject(api, "unknown render-target size mode", source) end
-    local fw, fh = w, h
-    if fullFrame[sizeMode] then
-        if w < -1 or h < -1 or w == 0 or h == 0 then reject(api, "invalid full-frame dimensions", source) end
-        fw, fh = ScrW(), ScrH()
-    elseif w <= 0 or h <= 0 then reject(api, "target dimensions must be positive", source) end
-    if not finite(fw) or not finite(fh) or fw > 16384 or fh > 16384 or fw * fh > 67108864 then
-        reject(api, "render-target allocation exceeds the guard limit", source)
-    end
-    if format ~= nil and (not integer(format) or not formats[format]) then reject(api, "unknown image format", source) end
-    local key = canonical(name)
-    if not allocations[key] then
-        if (allocationCounts[source] or 0) >= 128 then reject(api, "caller render-target name limit", source) end
-        return key, source
+    for _, method in ipairs({"Update", "SetEnableShadows", "SetFOV", "SetHorizontalFOV", "SetVerticalFOV",
+        "SetNearZ", "SetFarZ", "SetShadowDepthBias", "SetShadowSlopeScaleDepthBias", "SetBrightness"}) do
+        local original = meta and meta[method]
+        if original then
+            meta[method] = function(self, ...)
+                if active() then
+                    local source, value = caller(), ...
+                    if policy.csm(source) and (method == "Update" or method == "SetEnableShadows") then
+                        reject("ProjectedTexture." .. method, "Real CSM raster shadow pass is inert under RTX", source) return
+                    end
+                    if method ~= "Update" and method ~= "SetEnableShadows" and (not finite(value)
+                        or (method:find("FOV", 1, true) and (value <= 0 or value >= 180))) then
+                        reject("ProjectedTexture." .. method, "invalid projection parameter ignored", source) return
+                    end
+                end
+                return original(self, ...)
+            end
+        end
     end
 end
-local function allocated(key, source)
-    if key then allocations[key] = true allocationCounts[source] = (allocationCounts[source] or 0) + 1 end
+function policy.inertTarget()
+    if policy.target then return policy.target end
+    local ok, target
+    if nativeRTEx then
+        ok, target = pcall(nativeRTEx, "_nativeloader_inert_rt_v1", 1, 1, 8, 2, 0, 0, 0)
+    elseif nativeRT then ok, target = pcall(nativeRT, "_nativeloader_inert_rt_v1", 1, 1) end
+    -- An allocator can itself fail (Lua error, not native/GPU recovery). Reuse an engine texture.
+    if (not ok or not target) and nativeRender.GetScreenEffectTexture then
+        ok, target = pcall(nativeRender.GetScreenEffectTexture)
+    end
+    if ok and target then policy.target = target policy.inertTextures[target] = true end
+    return policy.target
 end
-if GetRenderTarget then
-    local original = GetRenderTarget
-    GetRenderTarget = function(name, w, h, ...)
-        if not active() then return original(name, w, h, ...) end
-        local key, bytes = checkTarget("GetRenderTarget", name, w, h, nil, nil, caller())
-        local result = pack(original(name, w, h, ...))
-        if result[1] then allocated(key, bytes) end
-        return unpack(result, 1, result.n)
+function policy.inertMaterial()
+    if not policy.material then
+        policy.material = nativeCreate("_nativeloader_inert_material_v1", "UnlitGeneric", {
+            ["$basetexture"] = "vgui/white", ["$translucent"] = "1", ["$alpha"] = "0", ["$ignorez"] = "1"})
+        policy.inertMaterials[policy.material] = true
+    end
+    return policy.material
+end
+-- A reviewed color subset, not every IMAGE_FORMAT enum exported by this engine or by an add-on.
+-- Raw R32F27 remains supported for MMDHL. Depth/INTZ/NULL/compressed/RGB32F/R16F and unreviewed
+-- formats become the single shared RGBA8 target, even when an add-on exports their enum names.
+do
+    local formats = {[-1] = 4, [0] = 4, [1] = 4, [2] = 4, [3] = 4, [4] = 2,
+        [11] = 4, [12] = 4, [16] = 4, [24] = 8, [25] = 8, [27] = 4}
+    -- Stock D3D9 enum values: late multiplayer globals may already have been replaced.
+    local fullFrame = {[3] = true, [4] = true, [6] = true}
+    local allocations, counts, bytes, total = {}, {}, {}, 0
+    state.allocations_by_source, state.allocation_bytes_by_source = counts, bytes
+    local function check(name, w, h, sizeMode, format, source)
+        if type(name) ~= "string" or #name == 0 or #name > 256 or name:find("%z") then return "invalid target name" end
+        if policy.reserved(name) then return "engine-owned shadow/depth target kept unchanged" end
+        if policy.effect(source) then return "screen-space shader target is inert under RTX" end
+        w, h = whole(w), whole(h)
+        if not w or not h then return "target dimensions must be finite numbers" end
+        local fw, fh = w, h
+        if fullFrame[sizeMode] then
+            if w < -1 or h < -1 or w == 0 or h == 0 then return "invalid full-frame dimensions" end
+            fw, fh = ScrW(), ScrH()
+            if sizeMode == 6 and finite(fw) and finite(fh) and fw > 0 and fh > 0 then
+                fw, fh = 2 ^ math.ceil(math.log(fw) / math.log(2)), 2 ^ math.ceil(math.log(fh) / math.log(2))
+            end
+        elseif w <= 0 or h <= 0 then return "target dimensions must be positive" end
+        if not finite(fw) or not finite(fh) or fw <= 0 or fh <= 0 or fw > 16384 or fh > 16384
+            or fw * fh > 67108864 then return "render-target allocation exceeds the guard limit" end
+        if not formats[format] then return "unreviewed RTX color format; using inert RGBA8 target" end
+        local key, owner = canonical(name), source:gsub(":%d+$", "")
+        local cost = fw * fh * formats[format]
+        if not allocations[key] then
+            if (counts[owner] or 0) >= 128 then return "caller render-target name limit" end
+            if cost > 134217728 or (bytes[owner] or 0) + cost > 536870912 or total + cost > 1073741824 then
+                return "render-target byte budget exceeded"
+            end
+            return nil, key, owner, cost
+        end
+    end
+    local function allocated(target, key, owner, cost)
+        if not target or not key then return end
+        allocations[key], counts[owner] = true, (counts[owner] or 0) + 1
+        bytes[owner], total = (bytes[owner] or 0) + cost, total + cost
+        state.allocation_bytes = total
+    end
+    local function fallback(api, reason, source, name)
+        reject(api, reason, source)
+        -- The getter only fetches Source's texture; NeedsDepthPass is suppressed below. Never
+        -- call GetRenderTarget[Ex] with the reserved name (that may reconfigure a live resource).
+        if type(name) == "string" and canonical(name) == "_rt_resolvedfullframedepth"
+            and nativeRender.GetResolvedFullFrameDepth then return nativeRender.GetResolvedFullFrameDepth() end
+        return policy.inertTarget()
+    end
+    if nativeRT then
+        GetRenderTarget = function(name, w, h, ...)
+            if not active() then return nativeRT(name, w, h, ...) end
+            local source = caller()
+            local reason, key, owner, cost = check(name, w, h, nil, -1, source)
+            if reason then return fallback("GetRenderTarget", reason, source, name) end
+            local result = pack(nativeRT(name, w, h, ...))
+            allocated(result[1], key, owner, cost)
+            return unpack(result, 1, result.n)
+        end
+    end
+    if nativeRTEx then
+        GetRenderTargetEx = function(name, w, h, size, depth, flags, rtFlags, format, ...)
+            if not active() then return nativeRTEx(name, w, h, size, depth, flags, rtFlags, format, ...) end
+            local source, reason = caller()
+            if not integer(size) or size < 0 or size > 9 then reason = "unknown size mode"
+            elseif not integer(depth) or depth < 0 or depth > 3 then reason = "unknown depth mode"
+            elseif depth == 3 then reason = "depth-only targets are unsupported under RTX"
+            elseif not integer(flags) or not integer(rtFlags) or flags < 0 or flags > 4294967295
+                or rtFlags < 0 or rtFlags > 4294967295 then reason = "flags must be finite unsigned integers"
+            elseif math.floor(flags / 16384) % 2 == 1 then reason = "cubemap render targets are unsafe" end
+            if reason then return fallback("GetRenderTargetEx", reason, source, name) end
+            local key, owner, cost
+            reason, key, owner, cost = check(name, w, h, size, format, source)
+            if reason then return fallback("GetRenderTargetEx", reason, source, name) end
+            local result = pack(nativeRTEx(name, w, h, size, depth, flags, rtFlags, format, ...))
+            allocated(result[1], key, owner, cost)
+            return unpack(result, 1, result.n)
+        end
     end
 end
-if GetRenderTargetEx then
-    local original = GetRenderTargetEx
-    GetRenderTargetEx = function(name, w, h, size, depth, flags, rtFlags, format, ...)
-        if not active() then return original(name, w, h, size, depth, flags, rtFlags, format, ...) end
-        local source = caller()
-        if not integer(size) or not sizes[size] then reject("GetRenderTargetEx", "unknown size mode", source) end
-        if not integer(depth) or not depthModes[depth] then reject("GetRenderTargetEx", "unknown depth mode", source) end
-        if not integer(format) or not formats[format] then reject("GetRenderTargetEx", "unknown image format", source) end
-        if not integer(flags) or not integer(rtFlags) or flags < 0 or flags > 4294967295
-            or rtFlags < 0 or rtFlags > 4294967295 then reject("GetRenderTargetEx", "flags must be finite unsigned integers", source) end
-        local key, bytes = checkTarget("GetRenderTargetEx", name, w, h, size, format, source)
-        local result = pack(original(name, w, h, size, depth, flags, rtFlags, format, ...))
-        if result[1] then allocated(key, bytes) end
-        return unpack(result, 1, result.n)
-    end
-end
-
-local unsupported = {depthwrite = true, screenspace_general = true, screenspace_general_dx9 = true}
--- Shader names per material object: render.SetMaterial runs many times every frame.
+local unsupported = {depthwrite = true, screenspace_general = true, screenspace_general_dx9 = true,
+    lux_custom = true, lux_screenspace_general = true}
 local shaderNames = setmetatable({}, {__mode = "k"})
 local function shaderMethod(mat) return mat.GetShader end
 local function shaderName(mat)
@@ -313,48 +847,177 @@ local function shaderName(mat)
         if success and type(value) == "string" then name = value:lower() end
     end
     local kind = type(mat)
-    if kind == "userdata" or kind == "table" then shaderNames[mat] = name end
+    if kind == "userdata" or kind == "table" or kind == "IMaterial" then shaderNames[mat] = name end
     return name or nil
 end
-if CreateMaterial then
-    local original = CreateMaterial
-    CreateMaterial = function(name, shader, ...)
-        if active() then
-            local source = caller()
-            rejectNul("CreateMaterial", name, source)
-            rejectNul("CreateMaterial", shader, source)
-            if type(shader) == "string" and unsupported[shader:lower()] then reject("CreateMaterial", "unsupported RTX shader", source) end
+function policy.shader(shader, data)
+    if type(shader) == "string" and (unsupported[shader:lower()] or shader:lower():match("^lux_")
+        or shader:lower():match("^screenspace_general") or shader:find("%z")) then return true end
+    if type(data) == "table" then
+        for key, value in pairs(data) do
+            if type(key) == "string" and (key:lower() == "$pixshader" or key:lower() == "$vertexshader") then return true end
+            if policy.reserved(value) then return true end
         end
-        return original(name, shader, ...)
+    end
+    return false
+end
+do
+    local checks, creationHints = setmetatable({}, {__mode = "k"}), setmetatable({}, {__mode = "k"})
+    -- Inspect only at an untrusted binding. Loading/reading a material is native, including
+    -- ExoPBR/GPBR conversion and MMDHL's immediate shaders. No guard VMT/FS lookup is needed.
+    function policy.incompatibleMaterial(mat)
+        if mat == nil then return false end
+        if policy.inertMaterials[mat] or creationHints[mat] then return true end
+        if checks[mat] ~= nil then return checks[mat] end
+        local denied = policy.shader(shaderName(mat))
+        if not denied then
+            local ok, method = pcall(function() return mat.GetString end)
+            if ok and type(method) == "function" then
+                for _, key in ipairs({"$pixshader", "$vertexshader", "$basetexture"}) do
+                    local success, value = pcall(method, mat, key)
+                    if success and type(value) == "string" and value ~= "" then
+                        if key ~= "$basetexture" or policy.reserved(value) then denied = true break end
+                    end
+                end
+            end
+        end
+        checks[mat] = denied
+        return denied
+    end
+    if nativeCreate then
+        CreateMaterial = function(name, shader, data, ...)
+            local on = active()
+            if on and (rejectNul("CreateMaterial", name) or rejectNul("CreateMaterial", shader)) then
+                return policy.inertMaterial()
+            end
+            local result = pack(nativeCreate(name, shader, data, ...))
+            -- CreateMaterial caches by name: safe parameters on a later call cannot clear a hint.
+            if on and result[1] and policy.shader(shader, data) then creationHints[result[1]] = true end
+            return unpack(result, 1, result.n)
+        end
+    end
+    if nativeMaterial then
+        Material = function(path, ...)
+            if active() and rejectNul("Material", path) then return policy.inertMaterial() end
+            return nativeMaterial(path, ...)
+        end
+    end
+    local meta = FindMetaTable("IMaterial")
+    for _, method in ipairs({"SetShader", "SetShaderAndParams", "SetTexture", "SetString", "SetInt", "SetFloat",
+        "SetVector", "SetVector4D", "SetMatrix", "SetUndefined", "SetDynamicImage", "Recompute"}) do
+        local original = meta and meta[method]
+        if original then
+            meta[method] = function(self, ...)
+                local key, value = ...
+                if active() then
+                    local source = caller()
+                    local denied = policy.inertMaterials[self]
+                    if not policy.bundled(source) then
+                        denied = denied or policy.effect(source)
+                        if method == "SetShader" or method == "SetShaderAndParams" then
+                            denied = denied or policy.shader(key, value)
+                        elseif method == "SetTexture" or method == "SetString" then
+                            denied = denied or policy.inertTextures[value] or policy.reserved(value)
+                        end
+                    end
+                    if denied then reject("IMaterial." .. method, "incompatible material mutation ignored", source) return end
+                end
+                shaderNames[self], checks[self] = nil, nil
+                if method == "SetShader" or method == "SetShaderAndParams" then creationHints[self] = nil end
+                return original(self, ...)
+            end
+        end
     end
 end
-if Material then
-    local original = Material
-    Material = function(path, ...)
-        if active() then rejectNul("Material", path, caller()) end
-        local result = pack(original(path, ...))
-        if unsupported[shaderName(result[1])] and active() then reject("Material", "material requires an unsupported RTX shader", caller()) end
-        return unpack(result, 1, result.n)
+do
+    local meta = FindMetaTable("Entity")
+    -- Resolve named bindings through the native material cache, including !CreateMaterial names.
+    -- Weak values and per-material decisions avoid extra lookups while the object is live.
+    local boundPaths = setmetatable({}, {__mode = "v"})
+    local function materialPath(path)
+        if type(path) ~= "string" or path == "" or not nativeMaterial then return false end
+        local mat = boundPaths[path]
+        if not mat then
+            mat = nativeMaterial(path:sub(1, 1) == "!" and path:sub(2) or path)
+            boundPaths[path] = mat
+        end
+        return policy.incompatibleMaterial(mat)
+    end
+    for _, method in ipairs({"SetMaterial", "SetSubMaterial"}) do
+        local original = meta and meta[method]
+        if original then
+            meta[method] = function(self, ...)
+                local path = method == "SetMaterial" and select(1, ...) or select(2, ...)
+                if active() then
+                    local source = caller()
+                    if rejectNul("Entity." .. method, path, source) then return end
+                    if not policy.bundled(source) and (policy.effect(source) or materialPath(path)) then
+                        reject("Entity." .. method, "unsupported world/entity material replacement ignored", source) return
+                    end
+                end
+                return original(self, ...)
+            end
+        end
+    end
+    local setMaterial = surface and surface.SetMaterial
+    if setMaterial then
+        surface.SetMaterial = function(mat, ...)
+            local on, source = active()
+            if on then source = caller() end
+            policy.surfaceInert = on and (policy.inertMaterials[mat] or
+                (not policy.bundled(source) and (policy.effect(source) or policy.incompatibleMaterial(mat))))
+            if policy.surfaceInert then
+                reject("surface.SetMaterial", "unsupported RTX surface material", source)
+                return setMaterial(policy.inertMaterial(), ...)
+            end
+            return setMaterial(mat, ...)
+        end
+    end
+    for _, method in ipairs({"DrawTexturedRect", "DrawTexturedRectUV", "DrawTexturedRectRotated", "DrawPoly"}) do
+        local original = surface and surface[method]
+        if original then
+            surface[method] = function(...)
+                if active() and (policy.surfaceInert or policy.effect(caller()) or (policy.suppressed and policy.suppressed())) then
+                    reject("surface." .. method, "screen-space effect surface draw is inert", caller()) return
+                end
+                return original(...)
+            end
+        end
     end
 end
-local nativeRender = {}
-for name, value in pairs(render or {}) do nativeRender[name] = value end
 for _, name in ipairs({"SetMaterial", "MaterialOverride", "BrushMaterialOverride", "WorldMaterialOverride"}) do
     local original = nativeRender[name]
     if original then
         render[name] = function(mat, ...)
-            if unsupported[shaderName(mat)] and active() then reject("render." .. name, "unsupported RTX shader draw", caller()) end
+            local on, source = active()
+            if on then source = caller() end
+            local denied = on and (policy.inertMaterials[mat] or
+                (not policy.bundled(source) and (policy.effect(source) or policy.incompatibleMaterial(mat))))
+            if name == "SetMaterial" then policy.boundInert = denied end
+            if denied then
+                reject("render." .. name, "unsupported RTX shader draw", source)
+                if name == "SetMaterial" then return original(policy.inertMaterial(), ...) end
+                return
+            end
             return original(mat, ...)
         end
     end
 end
-for _, name in ipairs({"GetResolvedFullFrameDepth", "RedownloadAllLightmaps"}) do
+for _, name in ipairs({"DrawScreenQuad", "DrawScreenQuadEx", "DrawQuad", "DrawQuadEasy", "DrawSprite"}) do
     local original = nativeRender[name]
     if original then
         render[name] = function(...)
-            if active() then reject("render." .. name, "unsupported RTX depth/lightmap rebuild", caller()) end
+            if active() and (policy.boundInert or (policy.suppressed and policy.suppressed()) or policy.effect(caller())) then
+                reject("render." .. name, "screen-space shader draw is inert under RTX", caller()) return
+            end
             return original(...)
         end
+    end
+end
+if nativeRender.RedownloadAllLightmaps then
+    render.RedownloadAllLightmaps = function(...)
+        if active() then reject("render.RedownloadAllLightmaps", "RTX lightmap rebuild ignored", caller()) return end
+        return nativeRender.RedownloadAllLightmaps(...)
     end
 end
 
@@ -431,6 +1094,7 @@ local function popped(kind)
     local action = table.remove(stacks[kind])
     if not action then return end
     action.active = false
+    if action.skipped then return end -- no native state to replay after a virtual pop
     -- A completed Pre hook may deliberately leave a scope for its Post hook.
     -- If that later callback fails, retain the exact known RT push for replay.
     -- A descendant's scope was created after our entry and is already gone.
@@ -446,6 +1110,15 @@ local function invokeBusy(fn, ...)
     if not result[1] then error(result[2], 0) end
     return unpack(result, 2, result.n)
 end
+-- Failed pushes get a virtual scope. Its matching pop must not consume the caller's real
+-- native scope. Repeated suppressed pushes share a counter, keeping runaway loops bounded.
+function policy.suppressed()
+    for _, stack in pairs(stacks) do
+        local top = stack[#stack]
+        if top and top.skipped then return true end
+    end
+    return false
+end
 local function pair(tbl, push, pop, kind, validate)
     local first, last = tbl and tbl[push], tbl and tbl[pop]
     if not first or not last then return end
@@ -453,15 +1126,26 @@ local function pair(tbl, push, pop, kind, validate)
         if busy > 0 then return first(...) end
         sync()
         if active() then
-            if chainDepth(stacks[kind]) >= 32 then reject(push, "tracked stack limit") end
-            if validate then validate(nil, ...) end
+            local top = stacks[kind][#stacks[kind]]
+            local skip = top and top.skipped
+            if chainDepth(stacks[kind]) >= 32 then reject(push, "tracked stack limit") skip = true end
+            if validate and validate(nil, ...) == false then skip = true end
+            if skip then
+                if top and top.skipped and top.owner == frame then top.count = top.count + 1
+                else
+                    pushed(kind, function() end, function() end)
+                    top = stacks[kind][#stacks[kind]]
+                    top.skipped, top.count = true, 1
+                end
+                return
+            end
         end
         if kind == "rt" and frame then noteTarget() end
         local replay
         if kind == "rt" then
             local args = pack(...)
             replay = function()
-                if validate then validate("<tracked render-target push>", unpack(args, 1, args.n)) end
+                if validate and validate("<tracked render-target push>", unpack(args, 1, args.n)) == false then return end
                 return first(unpack(args, 1, args.n))
             end
         end
@@ -472,12 +1156,17 @@ local function pair(tbl, push, pop, kind, validate)
     tbl[pop] = function(...)
         if busy > 0 then return last(...) end
         sync()
+        local top = stacks[kind][#stacks[kind]]
         if active() then
-            local top = stacks[kind][#stacks[kind]]
-            if not top then reject(pop, "no tracked Lua push to pop") end
+            if not top then reject(pop, "no tracked Lua push to pop") return end
             if frame and top.owner ~= frame and (not top.owner or not top.owner.completed) then
-                reject(pop, "protected callback cannot consume caller-owned state")
+                reject(pop, "protected callback cannot consume caller-owned state") return
             end
+        end
+        if top and top.skipped then
+            top.count = top.count - 1
+            if top.count == 0 then popped(kind) end
+            return
         end
         if kind == "rt" and frame then noteTarget() end
         local result = pack(invokeBusy(last, ...))
@@ -486,50 +1175,61 @@ local function pair(tbl, push, pop, kind, validate)
     end
 end
 local function viewValues(api, source, view)
-    if view == nil then return end
-    if type(view) ~= "table" then reject(api, "view must be a table", source) end
+    if view == nil then return true end
+    if type(view) ~= "table" then return reject(api, "view must be a table", source) end
     for _, key in ipairs({"x", "y", "w", "h", "fov", "znear", "zfar", "zNear", "zFar", "aspect"}) do
-        if view[key] ~= nil and not finite(view[key]) then reject(api, "non-finite view parameter " .. key, source) end
+        if view[key] ~= nil and not finite(view[key]) then return reject(api, "non-finite view parameter " .. key, source) end
     end
     for _, key in ipairs({"w", "h"}) do
-        if view[key] ~= nil and (view[key] <= 0 or view[key] > 16384) then reject(api, "invalid explicit viewport", source) end
+        if view[key] ~= nil and (view[key] < 1 or view[key] > 16384) then return reject(api, "invalid explicit viewport", source) end
     end
+    if view.fov ~= nil and (view.fov <= 0 or view.fov >= 180) then return reject(api, "invalid field of view", source) end
     for _, key in ipairs({"origin", "angles"}) do
         if view[key] ~= nil then
             local ok, a, b, c = pcall(function()
                 if key == "origin" then return view[key].x, view[key].y, view[key].z end
                 return view[key].p, view[key].y, view[key].r
             end)
-            if not ok or not finite(a) or not finite(b) or not finite(c) then reject(api, "invalid " .. key, source) end
+            if not ok or not finite(a) or not finite(b) or not finite(c) then return reject(api, "invalid " .. key, source) end
         end
     end
+    return true
 end
 local function dimensions(texture) return texture:Width(), texture:Height() end
 local validTextures = setmetatable({}, {__mode = "k"})
 local function targetValues(source, texture, x, y, w, h)
-    if texture ~= nil and not validTextures[texture] then
-        local ok, width, height = pcall(dimensions, texture)
-        if not ok or not finite(width) or not finite(height) or width <= 0 or height <= 0 then reject("PushRenderTarget", "invalid texture", source) end
-        local kind = type(texture)
-        if kind == "userdata" or kind == "table" then validTextures[texture] = true end
+    if texture ~= nil then
+        if policy.inertTextures[texture] then return reject("render target", "inert target cannot be bound or copied", source) end
+        if not validTextures[texture] then
+            local ok, width, height = pcall(dimensions, texture)
+            if not ok or not finite(width) or not finite(height) or width <= 0 or height <= 0
+                or width > 16384 or height > 16384 then return reject("render target", "invalid texture", source) end
+            local named, name = pcall(function() return texture:GetName() end)
+            if named and policy.reserved(name) then return reject("render target", "engine-owned depth target cannot be bound or copied", source) end
+            local kind = type(texture)
+            if kind == "userdata" or kind == "table" or kind == "ITexture" then validTextures[texture] = true end
+        end
     end
     if (x ~= nil and not finite(x)) or (y ~= nil and not finite(y)) or (w ~= nil and not finite(w)) or (h ~= nil and not finite(h)) then
-        reject("PushRenderTarget", "non-finite viewport", source)
+        return reject("PushRenderTarget", "non-finite viewport", source)
     end
-    if (w and w <= 0) or (h and h <= 0) then reject("PushRenderTarget", "invalid explicit viewport", source) end
+    if (w and (w < 1 or w > 16384)) or (h and (h < 1 or h > 16384)) then
+        return reject("PushRenderTarget", "invalid explicit viewport", source)
+    end
+    return true
 end
 pair(render, "PushRenderTarget", "PopRenderTarget", "rt", targetValues)
 pair(render, "PushCustomClipPlane", "PopCustomClipPlane", "clip")
 pair(cam, "PushModelMatrix", "PopModelMatrix", "model")
-pair(cam, "Start", "End3D", "camera", function(s, view) viewValues("cam.Start", s, view) end)
+pair(cam, "Start", "End3D", "camera", function(s, view) return viewValues("cam.Start", s, view) end)
 pair(cam, "Start2D", "End2D", "camera")
 pair(cam, "Start3D", "End3D", "camera", function(s, pos, angle, fov, x, y, w, h, near, far)
-    viewValues("cam.Start3D", s, {origin = pos, angles = angle, fov = fov, x = x, y = y, w = w, h = h, znear = near, zfar = far})
+    return viewValues("cam.Start3D", s, {origin = pos, angles = angle, fov = fov, x = x, y = y, w = w, h = h, znear = near, zfar = far})
 end)
 pair(cam, "Start3D2D", "End3D2D", "camera")
 if nativeRender.SetRenderTarget then
     render.SetRenderTarget = function(texture, ...)
-        if active() then targetValues(nil, texture) end
+        if active() and (policy.suppressed() or not targetValues(nil, texture)) then return end
         if frame and busy == 0 then noteTarget() end
         local result = pack(nativeRender.SetRenderTarget(texture, ...))
         if frame and busy == 0 then frame.targetChanged = true end
@@ -539,10 +1239,10 @@ end
 if nativeRender.SetRenderTargetEx then
     render.SetRenderTargetEx = function(index, texture, ...)
         if active() then
-            if not integer(index) or index < 0 or index > 3 then reject("render.SetRenderTargetEx", "unknown render-target slot")
-            -- Clearing slots 1-3 with nil is how stock code ends MRT work; only binding them is refused.
-            elseif index ~= 0 and texture ~= nil then reject("render.SetRenderTargetEx", "MRT is unsupported by the RTX path")
-            else targetValues(nil, texture) end
+            if index == 0 and policy.suppressed() then return end
+            if not integer(index) or index < 0 or index > 3 then reject("render.SetRenderTargetEx", "unknown render-target slot") return
+            elseif index ~= 0 and texture ~= nil then reject("render.SetRenderTargetEx", "MRT is unsupported by the RTX path") return
+            elseif not targetValues(nil, texture) then return end
         end
         local primary = index == 0 and frame ~= nil and busy == 0
         if primary then noteTarget() end
@@ -551,12 +1251,48 @@ if nativeRender.SetRenderTargetEx then
         return unpack(result, 1, result.n)
     end
 end
+for _, name in ipairs({"Clear", "ClearDepth", "ClearStencil", "DepthRange", "OverrideDepthEnable",
+    "OverrideColorWriteEnable", "OverrideAlphaWriteEnable", "OverrideBlend", "SetBlend", "SetLightingMode",
+    "FogMode", "FogColor", "FogStart", "FogEnd", "FogMaxDensity", "UpdateScreenEffectTexture", "UpdateRefractTexture"}) do
+    local original = nativeRender[name]
+    if original then
+        render[name] = function(...)
+            if active() and (policy.suppressed() or policy.effect(caller())) then
+                reject("render." .. name, "inert effect state change ignored", caller()) return
+            end
+            return original(...)
+        end
+    end
+end
+for _, name in ipairs({"CopyRenderTargetToTexture", "CopyTexture"}) do
+    local original = nativeRender[name]
+    if original then
+        render[name] = function(...)
+            local target, other = ...
+            if active() then
+                local source = caller()
+                if policy.effect(source) or target == nil or (name == "CopyTexture" and other == nil)
+                    or not targetValues(source, target) or (other ~= nil and not targetValues(source, other)) then
+                    reject("render." .. name, "incompatible color/depth copy ignored", source) return
+                end
+                if policy.suppressed() then return end
+                if name == "CopyRenderTargetToTexture" and nativeRender.GetRenderTarget then
+                    local current = nativeRender.GetRenderTarget()
+                    if current and not targetValues(source, current) then return end
+                end
+            end
+            return original(...)
+        end
+    end
+end
 local viewDepth = 0
 if nativeRender.RenderView then
     render.RenderView = function(view, ...)
         if not active() then return nativeRender.RenderView(view, ...) end
-        viewValues("render.RenderView", caller(), view)
-        if viewDepth >= 4 then reject("render.RenderView", "nested view limit", caller()) end
+        if policy.suppressed() then reject("render.RenderView", "ignored render scope has no secondary view", caller()) return end
+        if not viewValues("render.RenderView", caller(), view) then return end
+        if policy.effect(caller()) then reject("render.RenderView", "screen-space secondary view is inert", caller()) return end
+        if viewDepth >= 4 then reject("render.RenderView", "nested view limit", caller()) return end
         viewDepth = viewDepth + 1
         local result = pack(pcall(nativeRender.RenderView, view, ...))
         viewDepth = viewDepth - 1
@@ -664,6 +1400,7 @@ local function settle(f, ok, ...)
     return true, ...
 end
 local function protectedCall(fn, event, ...)
+    if policy.skipCallback(fn, event) then return true end
     local f = {event = event, fn = fn, parent = frame}
     frame = f
     return settle(f, xpcall(fn, handler, ...))
@@ -682,6 +1419,7 @@ if not late then
     local originalCall = hook.Call
     hook.Call = function(name, gm, ...)
         if not events[name] or not active() then return originalCall(name, gm, ...) end
+        if name == "NeedsDepthPass" then return false end
         if name == "PreRender" and not frameNumber and frame == nil and busy == 0 then resync() end
         local entries = getHooks()[name]
         local stopped = quarantine[name]
@@ -703,6 +1441,35 @@ if not late then
         if fn then return gamemodeResult(protectedCall(fn, name, gm, ...)) end
     end
 end
+-- Capability policy applies to remote callbacks too, without catching their unrelated errors.
+-- Wrapping these entries also covers an engine/add-on that cached the original hook.Call.
+do
+    local allowed = {Initialize = true, InitReconstruction = true, InitPostReconstruction = true,
+        OnScreenSizeChanged = true, OnReloaded = true, ShutDown = true}
+    local filtered = setmetatable({}, {__mode = "k"})
+    local function filter(event, fn)
+        if type(fn) ~= "function" or (event ~= "NeedsDepthPass"
+            and (allowed[event] or not policy.effect(functionSource(fn)))) then return fn end
+        local entries = filtered[fn]
+        if not entries then entries = {} filtered[fn] = entries end
+        if not entries[event] then
+            entries[event] = function(...)
+                if active() then
+                    if event == "NeedsDepthPass" then return false end
+                    if policy.skipCallback(fn, event) then return end
+                end
+                return fn(...)
+            end
+        end
+        return entries[event]
+    end
+    policy.filter = filter
+    for event, entries in pairs(getHooks()) do
+        for id, fn in pairs(entries) do entries[id] = filter(event, fn) end
+    end
+    local originalAdd = hook.Add
+    hook.Add = function(event, id, fn, ...) return originalAdd(event, id, filter(event, fn), ...) end
+end
 local function callback(fn, event)
     local stopped = false
     local function finish(ok, ...)
@@ -711,6 +1478,7 @@ local function callback(fn, event)
     end
     return function(...)
         if not active() then return fn(...) end
+        if policy.skipCallback(fn, event) then return end
         if stopped then return end
         return finish(protectedCall(fn, event, ...))
     end
@@ -763,6 +1531,7 @@ if timer and timer.Create then
     local original = timer.Create
     timer.Create = function(id, delay, count, fn, ...)
         if protects(fn) then fn = callback(fn, "timer.Create") end
+        fn = policy.filter("timer.Create", fn)
         return original(id, delay, count, fn, ...)
     end
 end
@@ -770,6 +1539,7 @@ if timer and timer.Simple then
     local original = timer.Simple
     timer.Simple = function(delay, fn, ...)
         if protects(fn) then fn = callback(fn, "timer.Simple") end
+        fn = policy.filter("timer.Simple", fn)
         return original(delay, fn, ...)
     end
 end
@@ -777,6 +1547,7 @@ if cvars and cvars.AddChangeCallback then
     local original = cvars.AddChangeCallback
     cvars.AddChangeCallback = function(name, fn, id, ...)
         if protects(fn) then fn = callback(fn, "cvars.AddChangeCallback") end
+        fn = policy.filter("cvars.AddChangeCallback", fn)
         return original(name, fn, id, ...)
     end
 end

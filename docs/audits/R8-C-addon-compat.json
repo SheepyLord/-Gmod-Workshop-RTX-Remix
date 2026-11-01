@@ -1,0 +1,5815 @@
+{
+  "schema": 1,
+  "date": "2026-11-01",
+  "phase": "static source inspection and authored API replays; no game or third-party Lua execution",
+  "source_bodies_included": false,
+  "items": [
+    {
+      "workshop_id": "1837527967",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/autorun/client/lifehud.lua",
+          "sha256": "57582eee9618ab0e98860215a9bfdaff1b8f31cb3fe7bc84fd04e17dabb95df0",
+          "bytes": 75567,
+          "calls": [
+            {
+              "line": 221,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 222,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 229,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 230,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 231,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 240,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 241,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 242,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 245,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 246,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 247,
+              "apis": [
+                "surface.DrawTexturedRectUV"
+              ]
+            },
+            {
+              "line": 250,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 251,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 252,
+              "apis": [
+                "surface.DrawTexturedRectUV"
+              ]
+            },
+            {
+              "line": 260,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 261,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 262,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 263,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 269,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 273,
+              "apis": [
+                "surface.DrawTexturedRectUV"
+              ]
+            },
+            {
+              "line": 334,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 413,
+              "apis": [
+                "surface.DrawPoly"
+              ]
+            },
+            {
+              "line": 487,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 488,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 490,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 491,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 505,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 513,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 514,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 515,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 516,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 527,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 528,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 529,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 545,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 548,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 549,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 550,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 551,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 554,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 555,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 556,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 557,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 560,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 561,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 562,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 563,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 594,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 596,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 598,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 602,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 604,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 607,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 610,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 639,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 647,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 648,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 651,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 652,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 780,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 781,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 782,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 785,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 786,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 898,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 971,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 972,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 1004,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1007,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1014,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1017,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 1018,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1019,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1020,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1021,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1031,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1032,
+              "apis": [
+                "surface.DrawPoly"
+              ]
+            },
+            {
+              "line": 1044,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 1048,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1050,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1052,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1056,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1058,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1061,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1065,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 1069,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1074,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 1097,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1098,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1099,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1100,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1127,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1134,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 1156,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1157,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1161,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 1162,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 1164,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1953,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 1988,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 2008,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 2030,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 2071,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 2080,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 2089,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 2098,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 2107,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/blink.lua",
+          "sha256": "bac1e1b1bb19421a4c069da6e25143379009c16c73b664f664cd2f85ae7984ac",
+          "bytes": 794,
+          "calls": [
+            {
+              "line": 36,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 37,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/cinematicoverlay.lua",
+          "sha256": "0477fced6a60aa8ba4257a6ac9d2d77963bb60d2a8a5adae8b147ced6aa7ae15",
+          "bytes": 1236,
+          "calls": [
+            {
+              "line": 41,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 42,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/dof.lua",
+          "sha256": "69008f845f1f2e0ad9051581c5d50eeda475b8127d748bbb0828fc1cf5da094e",
+          "bytes": 1549,
+          "calls": [
+            {
+              "line": 41,
+              "apis": [
+                "render.DepthRange"
+              ]
+            },
+            {
+              "line": 43,
+              "apis": [
+                "render.UpdateRefractTexture"
+              ]
+            },
+            {
+              "line": 44,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 45,
+              "apis": [
+                "render.DrawSprite"
+              ]
+            },
+            {
+              "line": 47,
+              "apis": [
+                "render.DepthRange"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/fog.lua",
+          "sha256": "292bd8ab77c47dca5b7580e44d8a7cee85da598e8ced8147b92e48504df990c9",
+          "bytes": 1106,
+          "calls": [
+            {
+              "line": 31,
+              "apis": [
+                "render.FogMode"
+              ]
+            },
+            {
+              "line": 32,
+              "apis": [
+                "render.FogStart"
+              ]
+            },
+            {
+              "line": 33,
+              "apis": [
+                "render.FogEnd"
+              ]
+            },
+            {
+              "line": 34,
+              "apis": [
+                "render.FogMaxDensity"
+              ]
+            },
+            {
+              "line": 35,
+              "apis": [
+                "render.FogColor"
+              ]
+            },
+            {
+              "line": 40,
+              "apis": [
+                "render.FogMode"
+              ]
+            },
+            {
+              "line": 41,
+              "apis": [
+                "render.FogStart"
+              ]
+            },
+            {
+              "line": 42,
+              "apis": [
+                "render.FogEnd"
+              ]
+            },
+            {
+              "line": 43,
+              "apis": [
+                "render.FogMaxDensity"
+              ]
+            },
+            {
+              "line": 44,
+              "apis": [
+                "render.FogColor"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/masks.lua",
+          "sha256": "9e8a8388f5fe85f94c2afd4ab92575768d7acf98dad71e7806bea916a822d0e4",
+          "bytes": 2286,
+          "calls": [
+            {
+              "line": 48,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 49,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/sunbeams.lua",
+          "sha256": "74f80748de0957874a6db3d04cbe6b0396c25c428a3fe21173e85d919005ebb2",
+          "bytes": 800,
+          "calls": [
+            {
+              "line": 17,
+              "apis": [
+                "render.SupportsPixelShaders_"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/toytown.lua",
+          "sha256": "48b3c3d8fea63a917e47ba6e518095997e2f02ca431cd76ae56de66d5a9c6b44",
+          "bytes": 375,
+          "calls": [
+            {
+              "line": 16,
+              "apis": [
+                "render.SupportsPixelShaders_"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/videodistortion.lua",
+          "sha256": "a4024e2530c7b96a68bf6eb48f14c3f2a69b6d15607e682597527f2162a34c51",
+          "bytes": 7550,
+          "calls": [
+            {
+              "line": 58,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 71,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 79,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 87,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 152,
+              "apis": [
+                "render.GetScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 197,
+              "apis": [
+                "render.CopyRenderTargetToTexture"
+              ]
+            },
+            {
+              "line": 199,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 201,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 202,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 212,
+              "apis": [
+                "surface.DrawTexturedRectUV"
+              ]
+            },
+            {
+              "line": 223,
+              "apis": [
+                "surface.DrawTexturedRectUV"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/modules/vignette.lua",
+          "sha256": "508c45c10d21ee7ba52f1474f447fd253a103c1b895d18f4666253f769f5ea96",
+          "bytes": 2593,
+          "calls": [
+            {
+              "line": 78,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 79,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 83,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/render/rendercore.lua",
+          "sha256": "8926d3fb377da38d808476c4d1676cd8dafa3eac84a6c1ef3e1af3a6a93d6a8b",
+          "bytes": 11717,
+          "calls": [
+            {
+              "line": 143,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 145,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/ui/cvarsavingmodule.lua",
+          "sha256": "64c42bdd493ceee464c407deec12953470b9943934a1b2c844209a2ba8fcbefa",
+          "bytes": 1200,
+          "calls": [
+            {
+              "line": 18,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/ui/lifemod_ui.lua",
+          "sha256": "1942f1d2da92bbb457b6085d848ee4f0fb112c4adb156bfb4d6aad76143d7453",
+          "bytes": 47446,
+          "calls": [
+            {
+              "line": 106,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 300,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 369,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 370,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 371,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 372,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 373,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 374,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 450,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 451,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 464,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 525,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 526,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 527,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 528,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 529,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 531,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 532,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 533,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 534,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 537,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 538,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 539,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 610,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 633,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 634,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 635,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 636,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 637,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 638,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 648,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 650,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 670,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 671,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 677,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 679,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 699,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 700,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 706,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 708,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 749,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 750,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 751,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 773,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 774,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 775,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 776,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 790,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 791,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 804,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 836,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 837,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 838,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 865,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 891,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 892,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 893,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 894,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 901,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 902,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 910,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 911,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1056,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1057,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1066,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1067,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1075,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1076,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1214,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1215,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1315,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1316,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1317,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 1319,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1320,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1322,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1338,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1339,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1341,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1342,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1343,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1346,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1347,
+              "apis": [
+                "surface.DrawText"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/lifemod/ui/wheatley_gui.lua",
+          "sha256": "6d0ef4980151ff216c7fb2c6bce1f78ae29b9fc12d61461c4e0fa1eb5c85da85",
+          "bytes": 61148,
+          "calls": [
+            {
+              "line": 183,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 191,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 197,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 223,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 257,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 258,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 275,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 295,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 296,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 303,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 304,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 357,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 358,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 364,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 366,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 496,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 543,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 544,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 546,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 547,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 613,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 614,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 659,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 660,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 661,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 663,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 664,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 666,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 668,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 669,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 681,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 682,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 683,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 684,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 745,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 746,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 748,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 749,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 751,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 752,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 753,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 754,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 755,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 830,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 833,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 834,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 843,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 844,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 863,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 865,
+              "apis": [
+                "surface.DrawPoly"
+              ]
+            },
+            {
+              "line": 866,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 868,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 869,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 870,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 886,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 887,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 891,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 892,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 896,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 897,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1010,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1011,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1049,
+              "apis": [
+                "surface.SetAlphaMultiplier"
+              ]
+            },
+            {
+              "line": 1073,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1075,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1076,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1081,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1083,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1112,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1113,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1114,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1115,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1117,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1118,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 1126,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1127,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1129,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1130,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 1131,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 1134,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1135,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1136,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1140,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1141,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1142,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1143,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1157,
+              "apis": [
+                "surface.PlaySound"
+              ]
+            },
+            {
+              "line": 1215,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1216,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1218,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1219,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 1224,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1225,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1228,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1229,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1230,
+              "apis": [
+                "surface.GetTextSize"
+              ]
+            },
+            {
+              "line": 1250,
+              "apis": [
+                "render.PushFilterMag"
+              ]
+            },
+            {
+              "line": 1251,
+              "apis": [
+                "render.PushFilterMin"
+              ]
+            },
+            {
+              "line": 1253,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1254,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 1255,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 1257,
+              "apis": [
+                "render.PopFilterMag"
+              ]
+            },
+            {
+              "line": 1258,
+              "apis": [
+                "render.PopFilterMin"
+              ]
+            },
+            {
+              "line": 1352,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1355,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1356,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1357,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1358,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1359,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1362,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1381,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1382,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 1383,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 1439,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1442,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1443,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1444,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1445,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1446,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1449,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1467,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1468,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 1469,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 1522,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1525,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 1526,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1527,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1528,
+              "apis": [
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1529,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1532,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1534,
+              "apis": [
+                "surface.DrawPoly"
+              ]
+            },
+            {
+              "line": 1627,
+              "apis": [
+                "surface.SetTextColor"
+              ]
+            },
+            {
+              "line": 1628,
+              "apis": [
+                "surface.SetFont"
+              ]
+            },
+            {
+              "line": 1629,
+              "apis": [
+                "surface.GetTextSize",
+                "surface.SetTextPos"
+              ]
+            },
+            {
+              "line": 1630,
+              "apis": [
+                "surface.DrawText"
+              ]
+            },
+            {
+              "line": 1712,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1713,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 1714,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 1761,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1762,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1794,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1795,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 1811,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 1812,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 1813,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 1830,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1838,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1848,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1856,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1865,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1873,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1881,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1890,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1898,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1906,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1913,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1921,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1929,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1937,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1946,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            },
+            {
+              "line": 1953,
+              "apis": [
+                "surface.CreateFont"
+              ]
+            }
+          ]
+        }
+      ],
+      "archive": {
+        "file": "789740278447554389_legacy.bin",
+        "sha256": "0190afa325fbcb1d7532225afcd3240d48bd25592b7e349ef1a4a9a988dbe861",
+        "indexed_files_matched": 14
+      }
+    },
+    {
+      "workshop_id": "2811767286",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/autorun/client/cl_bloom_config.lua",
+          "sha256": "41cbb420e18157a167415031e46b00682f5d0b3cd5055b555a39a46c2dd3a879",
+          "bytes": 225,
+          "calls": [
+            {
+              "line": 2,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 3,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        }
+      ],
+      "archive": {
+        "file": "quickbloomfix.gma",
+        "sha256": "8933e85f6193ed071483e41036c5cd6fd5ebf652192f24f3740d6eac01d8bbda",
+        "indexed_files_matched": 1
+      }
+    },
+    {
+      "workshop_id": "2817072898",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/autorun/realcsm_client.lua",
+          "sha256": "fdadfdaf80edd045e008330e602aaec50f2b80c31c19ba756f478221caff53ba",
+          "bytes": 31732,
+          "calls": [
+            {
+              "line": 23,
+              "apis": [
+                "RunConsoleCommand",
+                "render.GetHDREnabled"
+              ]
+            },
+            {
+              "line": 30,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 50,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 55,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 118,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 286,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 288,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 296,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 366,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 404,
+              "apis": [
+                "FindMetaTable"
+              ]
+            },
+            {
+              "line": 442,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 443,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 444,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 445,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 465,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 519,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 551,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/realcsm_server.lua",
+          "sha256": "4ca4a8bfa46eb00c588be35f0f7271582a1fbba6e53eef7deb536afc3d17cd72",
+          "bytes": 4289,
+          "calls": [
+            {
+              "line": 44,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 95,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/entities/csm_pseudoplayer.lua",
+          "sha256": "7a5813ba13c81f549664414629d0b09c7f898ec27add15e3fa16c9c55a20e771",
+          "bytes": 3068,
+          "calls": [
+            {
+              "line": 21,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 92,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/entities/csm_pseudoplayer_old.lua",
+          "sha256": "fc442e72c996fc1dd78ea9eddb5b671440afa391672443dba3749587af68214a",
+          "bytes": 8350,
+          "calls": [
+            {
+              "line": 23,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 165,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/entities/edit_csm/cl_init.lua",
+          "sha256": "476682befa30d2c7493a01fed54785a44c17cc79db830baa87402be5f2b06222",
+          "bytes": 51934,
+          "calls": [
+            {
+              "line": 59,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 67,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 77,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 79,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 86,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 88,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 98,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 132,
+              "apis": [
+                "render.GetHDREnabled"
+              ]
+            },
+            {
+              "line": 136,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 182,
+              "apis": [
+                ":SetMaterial"
+              ]
+            },
+            {
+              "line": 186,
+              "apis": [
+                "RunConsoleCommand",
+                "render.GetHDREnabled"
+              ]
+            },
+            {
+              "line": 207,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 225,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 231,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 232,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 234,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 266,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 303,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 318,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 389,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 409,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 410,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 414,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 420,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 421,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 423,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 454,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 455,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 457,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 466,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 478,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 479,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 490,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 491,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 493,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 505,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 510,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 511,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 516,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 534,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 567,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 582,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 583,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 585,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 586,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 593,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 641,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 646,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 699,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 705,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 706,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 708,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 713,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 719,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 720,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 722,
+              "apis": [
+                "render.RedownloadAllLightmaps"
+              ]
+            },
+            {
+              "line": 743,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 744,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 747,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 748,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 1065,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1067,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1069,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1072,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1075,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1078,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1081,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1084,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 1227,
+              "apis": [
+                ":Update"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/entities/edit_csm/init.lua",
+          "sha256": "e4cf163ecde5917bdd6f5c0540ab8c1adf1e02912bac362f7c6f6ae639e89cfa",
+          "bytes": 8233,
+          "calls": [
+            {
+              "line": 47,
+              "apis": [
+                ":SetMaterial"
+              ]
+            },
+            {
+              "line": 87,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 119,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 120,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 126,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 141,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 143,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 144,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/cascademasks.lua",
+          "sha256": "c03d27773116fcef35a70098eca464d045f7e0b86f78d0ff52ee4ddfcb0051e5",
+          "bytes": 10919,
+          "calls": [
+            {
+              "line": 45,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 65,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 86,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 98,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 99,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 118,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 119,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 120,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 121,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 122,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 130,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 131,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 134,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 142,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 143,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 144,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 174,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 175,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 181,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 182,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 193,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 194,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 195,
+              "apis": [
+                "surface.DrawTexturedRect"
+              ]
+            },
+            {
+              "line": 198,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 219,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 265,
+              "apis": [
+                ":SetTexture"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/frustumplacement.lua",
+          "sha256": "49c270bff1357b8e7fedf433cc5cb0fcf069dc88af0c08bd21e7cf50df523f94",
+          "bytes": 14854,
+          "calls": [
+            {
+              "line": 97,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 98,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 99,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 100,
+              "apis": [
+                "surface.DrawOutlinedRect"
+              ]
+            },
+            {
+              "line": 184,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 185,
+              "apis": [
+                "surface.DrawPoly"
+              ]
+            },
+            {
+              "line": 186,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 190,
+              "apis": [
+                "surface.DrawLine"
+              ]
+            },
+            {
+              "line": 194,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 195,
+              "apis": [
+                "surface.DrawPoly"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/niknaks_suninfo.lua",
+          "sha256": "0c39890d5269a9f8f226bf838858a814e19cec233ae2150dc7f5238e88971407",
+          "bytes": 5905,
+          "calls": [
+            {
+              "line": 94,
+              "apis": [
+                "render.GetHDREnabled"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/rtt.lua",
+          "sha256": "2100c06857aa195a1a878a577d5b79289a45c305d888ebb361b73e43dc7cf448",
+          "bytes": 1820,
+          "calls": [
+            {
+              "line": 12,
+              "apis": [
+                "FindMetaTable"
+              ]
+            },
+            {
+              "line": 43,
+              "apis": [
+                ":DrawModel"
+              ]
+            },
+            {
+              "line": 44,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 53,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 62,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/skyboxfix.lua",
+          "sha256": "9f8b04f49a250b693fce7b929eca421c4f09bf374c973e60f855807eeccb7038",
+          "bytes": 535,
+          "calls": [
+            {
+              "line": 12,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 18,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/skyboxlamp.lua",
+          "sha256": "610e1da215211465254ed6d3ba43622f8ef6584655be4fdf08ea3aef371756c5",
+          "bytes": 9029,
+          "calls": [
+            {
+              "line": 73,
+              "apis": [
+                "FindMetaTable"
+              ]
+            },
+            {
+              "line": 117,
+              "apis": [
+                ":Update"
+              ]
+            },
+            {
+              "line": 151,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 153,
+              "apis": [
+                ":Update"
+              ]
+            },
+            {
+              "line": 167,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 170,
+              "apis": [
+                ":Update"
+              ]
+            },
+            {
+              "line": 181,
+              "apis": [
+                ":Update"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/realcsm/sunocclude.lua",
+          "sha256": "cb49f6be466f4752335cd4c594e66761e5d6499661fd578b4127137823214099",
+          "bytes": 17908,
+          "calls": [
+            {
+              "line": 335,
+              "apis": [
+                ":Update"
+              ]
+            },
+            {
+              "line": 370,
+              "apis": [
+                ":Update"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/tests/csgotest.lua",
+          "sha256": "0dfad6c37bd191f7646714e2e9767c478fdc43eda0189f196f95212554da628e",
+          "bytes": 1310,
+          "calls": [
+            {
+              "line": 2,
+              "apis": [
+                "render.GetLightmapTexture"
+              ]
+            },
+            {
+              "line": 6,
+              "apis": [
+                "GetRenderTarget"
+              ]
+            },
+            {
+              "line": 7,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 8,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 11,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 12,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 15,
+              "apis": [
+                "render.CapturePixels"
+              ]
+            },
+            {
+              "line": 16,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 22,
+              "apis": [
+                "render.ReadPixel"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "materials/csm/edit_csm.vmt",
+          "sha256": "003cea5bfef99459dca3de5991604e0dd633a611b3fd1e887c3c7df135eac5ee",
+          "bytes": 263,
+          "calls": []
+        },
+        {
+          "path": "materials/csm/mask_soft.vmt",
+          "sha256": "9182178d799f3424f5a46d6826e39b162b40287551310a45f66103fb76fc9921",
+          "bytes": 115,
+          "calls": []
+        }
+      ],
+      "archive": {
+        "file": "gmpublisher.gma",
+        "sha256": "a25cb24899829610099b34785a76c4566bbf2c579c458fb06786d275f76958e7",
+        "indexed_files_matched": 16
+      }
+    },
+    {
+      "workshop_id": "2861839844",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/niknaks/modules/cl_lightmap_atlas.lua",
+          "sha256": "39dd403cefc416eff759eb43d3c38ca57ed0b284859ce9e94b735cae5a1ad732",
+          "bytes": 33899,
+          "calls": [
+            {
+              "line": 10,
+              "apis": [
+                "GetRenderTarget"
+              ]
+            },
+            {
+              "line": 26,
+              "apis": [
+                ":Update"
+              ]
+            },
+            {
+              "line": 538,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 539,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 548,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 551,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 554,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 555,
+              "apis": [
+                "surface.DrawRect"
+              ]
+            },
+            {
+              "line": 559,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 568,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 579,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 616,
+              "apis": [
+                "surface.DrawTexturedRectUV"
+              ]
+            },
+            {
+              "line": 624,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 625,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 628,
+              "apis": [
+                "surface.SetMaterial"
+              ]
+            },
+            {
+              "line": 636,
+              "apis": [
+                "surface.SetDrawColor"
+              ]
+            },
+            {
+              "line": 802,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 885,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 898,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 908,
+              "apis": [
+                ":Update"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/niknaks/modules/cl_mesh_builder.lua",
+          "sha256": "d2706120116960ef06136a7473393e61ca59ec9609f712e6a2e5133860dbdb69",
+          "bytes": 16578,
+          "calls": [
+            {
+              "line": 245,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 253,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 256,
+              "apis": [
+                "render.SetColorMaterial"
+              ]
+            },
+            {
+              "line": 263,
+              "apis": [
+                "render.SetLightmapTexture"
+              ]
+            },
+            {
+              "line": 267,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 274,
+              "apis": [
+                "render.SetLightingMode"
+              ]
+            },
+            {
+              "line": 278,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 282,
+              "apis": [
+                "render.SetLightingMode"
+              ]
+            },
+            {
+              "line": 287,
+              "apis": [
+                "render.SetColorMaterial"
+              ]
+            },
+            {
+              "line": 288,
+              "apis": [
+                "render.OverrideBlend"
+              ]
+            },
+            {
+              "line": 289,
+              "apis": [
+                "render.DepthRange"
+              ]
+            },
+            {
+              "line": 294,
+              "apis": [
+                "render.DepthRange"
+              ]
+            },
+            {
+              "line": 295,
+              "apis": [
+                "render.OverrideBlend"
+              ]
+            },
+            {
+              "line": 299,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 307,
+              "apis": [
+                "render.ClearDepth"
+              ]
+            },
+            {
+              "line": 344,
+              "apis": [
+                "render.SetColorMaterial"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/niknaks/modules/sh_bsp_faces.lua",
+          "sha256": "78c674306d8fd8b7848444ff25e93ec48d9f13c474d7dfccd2f09e1496ee537b",
+          "bytes": 40395,
+          "calls": [
+            {
+              "line": 8,
+              "apis": [
+                "FindMetaTable"
+              ]
+            },
+            {
+              "line": 1114,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/niknaks/modules/sh_bsp_leafs.lua",
+          "sha256": "983526fb3a5e12b5a49445d701e872e70472241853609b49548aea6537842787",
+          "bytes": 31938,
+          "calls": [
+            {
+              "line": 232,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 233,
+              "apis": [
+                "render.SetBlend"
+              ]
+            },
+            {
+              "line": 234,
+              "apis": [
+                "render.DrawBox"
+              ]
+            },
+            {
+              "line": 235,
+              "apis": [
+                "render.SetBlend"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/niknaks/modules/sh_bsp_staticprops.lua",
+          "sha256": "ef3760895e701d9296b4d42e090ff8caf7149cda3abc18372b91404fdd1d46da",
+          "bytes": 14881,
+          "calls": [
+            {
+              "line": 444,
+              "apis": [
+                "render.GetDXLevel"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/niknaks/modules/sh_color_extended.lua",
+          "sha256": "614d9a8e7417de4cae74ce548b190491452f5993451bbbbc39e23a56c11b17d8",
+          "bytes": 5212,
+          "calls": [
+            {
+              "line": 5,
+              "apis": [
+                "FindMetaTable"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/niknaks/modules/sh_file_extended.lua",
+          "sha256": "2d107cfe8f362f3bd38e4645631e9ddb1befe4b7187b2d157fbd2643b4923680",
+          "bytes": 1296,
+          "calls": [
+            {
+              "line": 5,
+              "apis": [
+                "FindMetaTable"
+              ]
+            }
+          ]
+        }
+      ],
+      "archive": {
+        "file": "niknaks.gma",
+        "sha256": "959d34dc21a26b24cbf420dba845c9e959fd5e9fd4e4314cb08312e461cef85a",
+        "indexed_files_matched": 7
+      }
+    },
+    {
+      "workshop_id": "3542644649",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/autorun/!!dynamic_light_wrapper.lua",
+          "sha256": "4f79793065a96d7f8840fa345b3a26d9c34124c9bd40bae02dca0f905cf82036",
+          "bytes": 6244,
+          "calls": [
+            {
+              "line": 8,
+              "apis": [
+                "FindMetaTable"
+              ]
+            },
+            {
+              "line": 15,
+              "apis": [
+                "debug.setmetatable"
+              ]
+            },
+            {
+              "line": 16,
+              "apis": [
+                "debug.getmetatable"
+              ]
+            },
+            {
+              "line": 228,
+              "apis": [
+                "render.GetDynamicLights"
+              ]
+            },
+            {
+              "line": 246,
+              "apis": [
+                "render.GetDynamicLight"
+              ]
+            },
+            {
+              "line": 250,
+              "apis": [
+                "render.DynamicLightPairs"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/!!projected_texture_wrapper.lua",
+          "sha256": "2f871544d1a7e9505aca68621a1377e902d243fb6c0ff8708a6ad9ae701c9b46",
+          "bytes": 2134,
+          "calls": [
+            {
+              "line": 38,
+              "apis": [
+                "debug.getmetatable"
+              ]
+            },
+            {
+              "line": 55,
+              "apis": [
+                "debug.setmetatable"
+              ]
+            },
+            {
+              "line": 60,
+              "apis": [
+                "FindMetaTable"
+              ]
+            },
+            {
+              "line": 79,
+              "apis": [
+                "render.GetProjectedTextures"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/!!shaderlib.lua",
+          "sha256": "021294bba48ede739d6d653d9b4f0fcc255bdb287993e798aa7ea0b4bdc604bf",
+          "bytes": 24217,
+          "calls": [
+            {
+              "line": 3,
+              "apis": [
+                "render.GetDXLevel"
+              ]
+            },
+            {
+              "line": 145,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 154,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 213,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 307,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 309,
+              "apis": [
+                "render.DrawQuad"
+              ]
+            },
+            {
+              "line": 316,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 322,
+              "apis": [
+                "render.DrawQuad"
+              ]
+            },
+            {
+              "line": 330,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 334,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 348,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 375,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 377,
+              "apis": [
+                "render.DrawQuad"
+              ]
+            },
+            {
+              "line": 384,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 390,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 391,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 426,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 427,
+              "apis": [
+                "render.SetWriteDepthToDestAlpha"
+              ]
+            },
+            {
+              "line": 612,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 720,
+              "apis": [
+                "render.SetColorMaterial"
+              ]
+            },
+            {
+              "line": 722,
+              "apis": [
+                "render.DrawWireframeBox"
+              ]
+            },
+            {
+              "line": 723,
+              "apis": [
+                "render.DrawLine"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/client/bumps_building.lua",
+          "sha256": "e1dea0616500044d8896cf241353cb229463d224cf2a2bf760e6623d88d109f6",
+          "bytes": 13361,
+          "calls": [
+            {
+              "line": 317,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 320,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 325,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 328,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 333,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 335,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 465,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 473,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 474,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 475,
+              "apis": [
+                "render.SetColorMaterial"
+              ]
+            },
+            {
+              "line": 476,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 478,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 484,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 488,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 489,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/client/depthbuffer.lua",
+          "sha256": "0048adb2d1671655375980f115d99c65acb2c6c9f75f5026675f68e02d692ab1",
+          "bytes": 22337,
+          "calls": [
+            {
+              "line": 8,
+              "apis": [
+                "GetRenderTargetEx",
+                "render.GetResolvedFullFrameDepth"
+              ]
+            },
+            {
+              "line": 34,
+              "apis": [
+                "render.GetResolvedFullFrameDepth"
+              ]
+            },
+            {
+              "line": 56,
+              "apis": [
+                "render.RenderView"
+              ]
+            },
+            {
+              "line": 70,
+              "apis": [
+                "render.GetDXLevel"
+              ]
+            },
+            {
+              "line": 72,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 81,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 82,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 83,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 94,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 95,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 96,
+              "apis": [
+                "render.ClearDepth"
+              ]
+            },
+            {
+              "line": 99,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 101,
+              "apis": [
+                "render.DrawBox"
+              ]
+            },
+            {
+              "line": 104,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 395,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 451,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 467,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 468,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 473,
+              "apis": [
+                "render.ClearDepth"
+              ]
+            },
+            {
+              "line": 474,
+              "apis": [
+                "render.CullMode"
+              ]
+            },
+            {
+              "line": 481,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 483,
+              "apis": [
+                "render.DrawBox"
+              ]
+            },
+            {
+              "line": 489,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 495,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 501,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 507,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 512,
+              "apis": [
+                "render.CullMode"
+              ]
+            },
+            {
+              "line": 514,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 523,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 524,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 525,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/client/lightmaps_building.lua",
+          "sha256": "b3fcac42677b3a918800b8e685403d77d461eda6c64ac3a8496e9d8b06c35799",
+          "bytes": 20974,
+          "calls": [
+            {
+              "line": 3,
+              "apis": [
+                "render.GetDXLevel"
+              ]
+            },
+            {
+              "line": 6,
+              "apis": [
+                "render.GetHDREnabled"
+              ]
+            },
+            {
+              "line": 21,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 255,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 540,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 554,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 558,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 562,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 568,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 569,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 570,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 573,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 577,
+              "apis": [
+                "render.OverrideDepthEnable"
+              ]
+            },
+            {
+              "line": 578,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/client/lut_writing.lua",
+          "sha256": "067bfe843b1f181c4bd0de1967efc79c6cf34e91832bddbb4e480b018f19b9fc",
+          "bytes": 1593,
+          "calls": [
+            {
+              "line": 17,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 18,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 20,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 28,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 38,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 39,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 40,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/client/stencil_masks.lua",
+          "sha256": "6833c7e3c75c4306b1c636513783f1edacb26ddd11a9629eca62ce571b921493",
+          "bytes": 1163,
+          "calls": [
+            {
+              "line": 12,
+              "apis": [
+                "render.SetStencilEnable"
+              ]
+            },
+            {
+              "line": 14,
+              "apis": [
+                "render.SetStencilWriteMask"
+              ]
+            },
+            {
+              "line": 15,
+              "apis": [
+                "render.SetStencilTestMask"
+              ]
+            },
+            {
+              "line": 16,
+              "apis": [
+                "render.SetStencilReferenceValue"
+              ]
+            },
+            {
+              "line": 18,
+              "apis": [
+                "render.SetStencilCompareFunction"
+              ]
+            },
+            {
+              "line": 20,
+              "apis": [
+                "render.SetStencilPassOperation"
+              ]
+            },
+            {
+              "line": 21,
+              "apis": [
+                "render.SetStencilFailOperation"
+              ]
+            },
+            {
+              "line": 22,
+              "apis": [
+                "render.SetStencilZFailOperation"
+              ]
+            },
+            {
+              "line": 29,
+              "apis": [
+                "render.SetStencilEnable"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/client/worldpos.lua",
+          "sha256": "f6fa3f798f4f2b3141e6d447148df0074fea8ff88d3f000ace6f87f1eb49c92b",
+          "bytes": 9362,
+          "calls": [
+            {
+              "line": 27,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 35,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 43,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 51,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 109,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 110,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 111,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 112,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 113,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 114,
+              "apis": [
+                "GetRenderTarget",
+                "render.GetRenderTarget"
+              ]
+            },
+            {
+              "line": 115,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 117,
+              "apis": [
+                "render.GetScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 172,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 174,
+              "apis": [
+                "GetRenderTarget"
+              ]
+            },
+            {
+              "line": 222,
+              "apis": [
+                "render.UpdateScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 223,
+              "apis": [
+                "render.CopyRenderTargetToTexture"
+              ]
+            },
+            {
+              "line": 226,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 227,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 228,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 229,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 230,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 234,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 235,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 236,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 237,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 242,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 243,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 244,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 245,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 248,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 249,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 251,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 254,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 255,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 257,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/autorun/server/projected_shared.lua",
+          "sha256": "6c0bd7b7de268d0ba99d91aeb3f013046ec435130e3e43ead49c33ba34661a6a",
+          "bytes": 2817,
+          "calls": [
+            {
+              "line": 18,
+              "apis": [
+                "FindMetaTable"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "lua/postprocess/shader_lib.lua",
+          "sha256": "2153f17eddec061ba74cfe08ab512250294f4c0611e9d4a5ed20d161da71706e",
+          "bytes": 21514,
+          "calls": [
+            {
+              "line": 1,
+              "apis": [
+                "render.GetDXLevel"
+              ]
+            },
+            {
+              "line": 176,
+              "apis": [
+                "render.GetDXLevel"
+              ]
+            },
+            {
+              "line": 249,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 258,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 267,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 302,
+              "apis": [
+                "render.GetFogMode"
+              ]
+            },
+            {
+              "line": 374,
+              "apis": [
+                "render.GetResolvedFullFrameDepth"
+              ]
+            },
+            {
+              "line": 380,
+              "apis": [
+                "render.GetHDREnabled"
+              ]
+            },
+            {
+              "line": 390,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 394,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 400,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 401,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 402,
+              "apis": [
+                "render.DrawScreenQuadEx"
+              ]
+            },
+            {
+              "line": 407,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 414,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 419,
+              "apis": [
+                "render.Clear",
+                "render.PopRenderTarget",
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 420,
+              "apis": [
+                "render.Clear",
+                "render.PopRenderTarget",
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 422,
+              "apis": [
+                "render.Clear",
+                "render.PopRenderTarget",
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 424,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 425,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 427,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 430,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 431,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 433,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 436,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 466,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 467,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 468,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "materials/bumps/bump.vmt",
+          "sha256": "e5ca3548bc711477083f23e3880b48b9f8defac7f15f502a8c53713332e19de9",
+          "bytes": 406,
+          "calls": []
+        },
+        {
+          "path": "materials/bumps/bump_alphatest.vmt",
+          "sha256": "0e92537e9499bd30144872e22963ff93247c937b2a529cf205a937d4ff2e91d1",
+          "bytes": 412,
+          "calls": []
+        },
+        {
+          "path": "materials/bumps/bump_ssbump.vmt",
+          "sha256": "3c8954f5eadc9f335956a82bbd4861ce58bdd08c02414c895b85d14e7d47a64e",
+          "bytes": 508,
+          "calls": []
+        },
+        {
+          "path": "materials/bumps/bump_worldvertextransition.vmt",
+          "sha256": "69d4aad7464070f6237bb6252e4de8fb562d2f59d3e02888b9bf1217d0242507",
+          "bytes": 364,
+          "calls": []
+        },
+        {
+          "path": "materials/bumps/bump_worldvertextransition_modulate.vmt",
+          "sha256": "a28496465436fa935ecb1b472eb655af7e996e253acd888d0972cac373e1634b",
+          "bytes": 373,
+          "calls": []
+        },
+        {
+          "path": "materials/bumps/bump_worldvertextransition_modulate_ssbump.vmt",
+          "sha256": "ad5aeadeb4e7f082a096f0c895e8844844fcbcacc083d14ccc1ff99653a7a1e2",
+          "bytes": 380,
+          "calls": []
+        },
+        {
+          "path": "materials/bumps/bump_worldvertextransition_ssbump.vmt",
+          "sha256": "a01fb2c6376e2d7289f99ad6a53b18d4fcead0b7ef5d8880192beb31d9ba28c6",
+          "bytes": 371,
+          "calls": []
+        },
+        {
+          "path": "materials/debug/decode_normals_tangents.vmt",
+          "sha256": "49ac27fab773a51fc59d34b3af0edd06c8f8d4b0866f393b61d1a48212628c9d",
+          "bytes": 362,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/copy_depth.vmt",
+          "sha256": "7a012d5bc41c9090b80cb09320ae3ecc25c60b126b231935c77e8a35fc83f705",
+          "bytes": 157,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/depth_combine.vmt",
+          "sha256": "391c76cab8091a5638f3fd1ca1774feb35dada90466233b1b2cd24f029df79bf",
+          "bytes": 218,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/lut_writting.vmt",
+          "sha256": "0755fc1c457ca240cbd981fb089469740a2e3d6d73292ebb83d02db186a87d81",
+          "bytes": 182,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/normal_smooth.vmt",
+          "sha256": "fae226a74472aff5495144fafaf5df948573c79e3688d309cc4af5781a2ba565",
+          "bytes": 459,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/wp_reconstruction.vmt",
+          "sha256": "68e68a5591e74cc92a14df4e0454123eae0aef58ad855891a72924160583a026",
+          "bytes": 426,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/wpn_reconstruction_3tap.vmt",
+          "sha256": "9ebcd392fd91fc2b60fca262c692c45ced78a9eed99d0827409328751626efa7",
+          "bytes": 500,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/wpn_reconstruction_4tap.vmt",
+          "sha256": "cb945ba0c95572c67ae44e2ebb5857991f0e4212d36ffa7423357102e9f77c6c",
+          "bytes": 458,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/wpn_reconstruction_accurate.vmt",
+          "sha256": "028104178ccff38c8ca7ee5ca0b8008a932c7a782e29ec3a44e5137b250cf1d4",
+          "bytes": 486,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/wpn_reconstruction_improved.vmt",
+          "sha256": "ad32c84de0abc598c6faad288fc21e472cbe4cae639bfa5db6c59fe67a1bc432",
+          "bytes": 511,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/wpn_reconstruction_simple.vmt",
+          "sha256": "8f27a8ba47a7b036daf5057a8b3275b2a3af3ce7b59b69692b4e9ab15b18c56c",
+          "bytes": 495,
+          "calls": []
+        }
+      ],
+      "archive": {
+        "file": "gmpublisher.gma",
+        "sha256": "b412876133517221f347fad2a1b83afb681bb97c78459543caf6c4e09e79c6f8",
+        "indexed_files_matched": 29
+      }
+    },
+    {
+      "workshop_id": "3555378834",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/postprocess/fxaa.lua",
+          "sha256": "eafc3a4e3223398fbd2d2b04ca2473ee82b2d48ee3dec46334ed2f41d3d575e4",
+          "bytes": 6119,
+          "calls": [
+            {
+              "line": 85,
+              "apis": [
+                "render.GetScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 105,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 107,
+              "apis": [
+                "render.GetRenderTarget"
+              ]
+            },
+            {
+              "line": 112,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 115,
+              "apis": [
+                "render.UpdateScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 116,
+              "apis": [
+                "render.CopyRenderTargetToTexture"
+              ]
+            },
+            {
+              "line": 118,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 119,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "materials/pp/pp_fxaa_high.vmt",
+          "sha256": "0223a72ccb9b3e4a84b8c67ebbfd953781f81b31d11694e26283be6efb239cc7",
+          "bytes": 270,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_fxaa_low.vmt",
+          "sha256": "6702d9964bd750947965a0994565aa24b729b4a518828bf4b7bf54d55b556a05",
+          "bytes": 269,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_fxaa_medium.vmt",
+          "sha256": "dd330cfaec82a34c6003227932686ca06cfa883299ab7e5968b663eac787fe90",
+          "bytes": 272,
+          "calls": []
+        }
+      ],
+      "archive": {
+        "file": "gmpublisher.gma",
+        "sha256": "6c7f9f4b8b96b432fe45be006bc3c08aad19586d59972610ee2572252f12372d",
+        "indexed_files_matched": 4
+      }
+    },
+    {
+      "workshop_id": "3586554495",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/postprocess/pp_ssr.lua",
+          "sha256": "3831e32668acb20d46819c89b2e2ab68ec195a491d894cca9fccfda8dc6fa5cf",
+          "bytes": 21252,
+          "calls": [
+            {
+              "line": 239,
+              "apis": [
+                "render.GetPowerOfTwoTexture"
+              ]
+            },
+            {
+              "line": 240,
+              "apis": [
+                "render.GetScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 243,
+              "apis": [
+                "render.GetScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 319,
+              "apis": [
+                ":DrawModel"
+              ]
+            },
+            {
+              "line": 321,
+              "apis": [
+                "render.GetRenderTarget"
+              ]
+            },
+            {
+              "line": 322,
+              "apis": [
+                ":DrawModel"
+              ]
+            },
+            {
+              "line": 324,
+              "apis": [
+                "render.SetStencilEnable"
+              ]
+            },
+            {
+              "line": 326,
+              "apis": [
+                "render.SetStencilWriteMask"
+              ]
+            },
+            {
+              "line": 327,
+              "apis": [
+                "render.SetStencilTestMask"
+              ]
+            },
+            {
+              "line": 328,
+              "apis": [
+                "render.SetStencilReferenceValue"
+              ]
+            },
+            {
+              "line": 330,
+              "apis": [
+                "render.SetStencilCompareFunction"
+              ]
+            },
+            {
+              "line": 331,
+              "apis": [
+                "render.SetStencilPassOperation"
+              ]
+            },
+            {
+              "line": 332,
+              "apis": [
+                "render.SetStencilFailOperation"
+              ]
+            },
+            {
+              "line": 333,
+              "apis": [
+                "render.SetStencilZFailOperation"
+              ]
+            },
+            {
+              "line": 335,
+              "apis": [
+                ":DrawModel"
+              ]
+            },
+            {
+              "line": 337,
+              "apis": [
+                "render.SetStencilEnable"
+              ]
+            },
+            {
+              "line": 358,
+              "apis": [
+                "render.SetStencilEnable"
+              ]
+            },
+            {
+              "line": 360,
+              "apis": [
+                "render.SetStencilPassOperation"
+              ]
+            },
+            {
+              "line": 361,
+              "apis": [
+                "render.SetStencilFailOperation"
+              ]
+            },
+            {
+              "line": 362,
+              "apis": [
+                "render.SetStencilZFailOperation"
+              ]
+            },
+            {
+              "line": 363,
+              "apis": [
+                "render.SetStencilCompareFunction"
+              ]
+            },
+            {
+              "line": 365,
+              "apis": [
+                "render.SetStencilReferenceValue"
+              ]
+            },
+            {
+              "line": 367,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 368,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 370,
+              "apis": [
+                "render.SetStencilEnable"
+              ]
+            },
+            {
+              "line": 376,
+              "apis": [
+                "render.DrawTextureToScreenRect"
+              ]
+            },
+            {
+              "line": 391,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 392,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 393,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 399,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 415,
+              "apis": [
+                "render.UpdateScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 416,
+              "apis": [
+                "render.CopyRenderTargetToTexture"
+              ]
+            },
+            {
+              "line": 419,
+              "apis": [
+                "render.OverrideBlend"
+              ]
+            },
+            {
+              "line": 423,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 424,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 430,
+              "apis": [
+                "render.OverrideBlend"
+              ]
+            },
+            {
+              "line": 560,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 561,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 575,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "materials/pp/pp_ssr_high.vmt",
+          "sha256": "094c06cc0b603638e327036bdac60cacd81d6a47b5d37af5e3a70adf2badf4f0",
+          "bytes": 549,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_ssr_low.vmt",
+          "sha256": "41eab59c8abeec9d3739a2ecd2fa653c1d56497acf161f99f8507b1a60dba2d7",
+          "bytes": 582,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_ssr_medium.vmt",
+          "sha256": "d9b987b16cecdb2e1897c648f4f017c8d37b47d992f001784762a8663ee3a01d",
+          "bytes": 585,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_ssr_stencil_high.vmt",
+          "sha256": "4a4f10433267985ac8511e7b7491299690216ba8e0b15a426d597f510fd358d5",
+          "bytes": 556,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_ssr_stencil_low.vmt",
+          "sha256": "ffeda596e23a26c504ea9cb0f4eb5824caae4a1dcf09ef7fb5c615be2fdc5556",
+          "bytes": 589,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/pp_ssr_stencil_medium.vmt",
+          "sha256": "fe6cb678dcb3b3d896c8db6f37b701ef26c48ea4b9ca286e567a30ced64acb3a",
+          "bytes": 592,
+          "calls": []
+        }
+      ],
+      "archive": {
+        "file": "gmpublisher.gma",
+        "sha256": "88ccb74ff79ea9628bcb8ad1f2a72a812b9d78c790b2dc6f2a33a2cc982ec01a",
+        "indexed_files_matched": 7
+      }
+    },
+    {
+      "workshop_id": "3707449642",
+      "source": "exact installed Workshop archive; indexed Lua/VMT SHA-256 and entry CRC matched to the inspected snapshot",
+      "files": [
+        {
+          "path": "lua/postprocess/ssdo.lua",
+          "sha256": "84ed2b8f61026993eab897ca03bd0e7c4e31d14c983f5261489af64182a03f9f",
+          "bytes": 14100,
+          "calls": [
+            {
+              "line": 149,
+              "apis": [
+                "render.GetScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 162,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 170,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 178,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 194,
+              "apis": [
+                "GetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 227,
+              "apis": [
+                "render.GetViewSetup"
+              ]
+            },
+            {
+              "line": 266,
+              "apis": [
+                "render.UpdateScreenEffectTexture"
+              ]
+            },
+            {
+              "line": 267,
+              "apis": [
+                "render.CopyRenderTargetToTexture"
+              ]
+            },
+            {
+              "line": 269,
+              "apis": [
+                "render.CopyTexture"
+              ]
+            },
+            {
+              "line": 271,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 272,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 273,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 275,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 276,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 277,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 279,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 280,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 281,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 283,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 284,
+              "apis": [
+                "render.SetRenderTargetEx"
+              ]
+            },
+            {
+              "line": 286,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 287,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 288,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 289,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 290,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 292,
+              "apis": [
+                "render.PushRenderTarget"
+              ]
+            },
+            {
+              "line": 293,
+              "apis": [
+                "render.Clear"
+              ]
+            },
+            {
+              "line": 294,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 295,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 296,
+              "apis": [
+                "render.PopRenderTarget"
+              ]
+            },
+            {
+              "line": 298,
+              "apis": [
+                "render.SetMaterial"
+              ]
+            },
+            {
+              "line": 299,
+              "apis": [
+                "render.DrawScreenQuad"
+              ]
+            },
+            {
+              "line": 336,
+              "apis": [
+                ":SetTexture"
+              ]
+            },
+            {
+              "line": 350,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 351,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 352,
+              "apis": [
+                "RunConsoleCommand"
+              ]
+            },
+            {
+              "line": 411,
+              "apis": [
+                ":SetTexture"
+              ]
+            }
+          ]
+        },
+        {
+          "path": "materials/pp/ssdo_blur_h.vmt",
+          "sha256": "e3c95f8f5320ab1ffb4214e1f0025bc32c96529ba7bfe6ac023f8c8aefa75ef3",
+          "bytes": 271,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/ssdo_blur_v.vmt",
+          "sha256": "1f60f57ef15d6424ea5b0b25d6059bc4317a0c34cc0afb650436c831e90b754e",
+          "bytes": 278,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/ssdo_hight.vmt",
+          "sha256": "f63dc115419e24ab491937c264d3ea5919b938d4acce72424eb257fc03118adc",
+          "bytes": 301,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/ssdo_low.vmt",
+          "sha256": "44c9f78138043fafcd33c0ca57bc0c79f2380a8b714c1e5070104e31ae1b3b6e",
+          "bytes": 327,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/ssdo_medium.vmt",
+          "sha256": "76cfea366002d5a53b1f2d17b97ed63f595b1090b2ecb78a3d37dbe593a3a531",
+          "bytes": 328,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/ssdo_upsample.vmt",
+          "sha256": "df66fdc46f2b8fd2a5463531c782f17daf48a380cc5c1248d968a04299c21cac",
+          "bytes": 500,
+          "calls": []
+        },
+        {
+          "path": "materials/pp/ssdo_very_low.vmt",
+          "sha256": "61a4f061939a142da6a5503e56eb200af0214643392b4f06a58535a01dcb99be",
+          "bytes": 360,
+          "calls": []
+        }
+      ],
+      "archive": {
+        "file": "gmpublisher.gma",
+        "sha256": "b626d5cccfb2d37945c791cf6bb1521e9b1e633cc901a299dc38c3a63d6b2ec1",
+        "indexed_files_matched": 8
+      }
+    }
+  ],
+  "limits": [
+    "Only these eight sources were inspected; collection 3728139288 has 22 members",
+    "The user crash is not reproduced; hardware-fault paths are risks, not established causes",
+    "CPU policy tests do not establish GPU or multiplayer timing acceptance"
+  ],
+  "legacy_lifemod_note": "Legacy raw-LZMA decoder ran with a 128 MiB output bound; exactly the header-declared 8262218 bytes form a GMA with matching aggregate CRC 374141b9 and all 98 entry CRCs. Seven non-archive decoded bytes were excluded only in the ignored analysis copy. Installed legacy.bin was not changed."
+}

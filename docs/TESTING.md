@@ -1,5 +1,44 @@
 # Testing
 
+## R8-C material review corrections (offline, 2026-11-01)
+
+`tools/test.ps1 -Config Release` passes 26 CTests and 495 Python tests (two existing skips);
+receipt: `out/r8-compat/review-release.log`.
+
+The reviewed guard suite passes 47 unittest methods: 49 LuaJIT invocations plus the exact bundled
+path/index/SHA-256 check. This supersedes the earlier no-load-before-preflight assertion below.
+Material/CreateMaterial must return real objects to all readers, including both fixes PBR-reader
+paths and hotloader custom shaders. All 344 bundled paths keep native material bindings/mutations;
+untrusted draws and reuse remain filtered. Lookalike paths fail the exemption; identical virtual
+path collisions are explicitly demonstrated as a compatibility-policy limit.
+
+The cost regression asserts no file.Read for 1,200 mixed paths, 1,200 PNG/JPG icons, trusted calls,
+repeated misses or bindings. Repeated entity paths add no native Material lookup or shader/string
+queries while objects remain live. Trusted entity callers add no resolution. Weak per-material
+decisions are invalidated by mutations. A separate [benchmark](../tools/tests/bench_render_guard.py.md)
+compares this guard with 60c2be5, three fresh-process runs per version, a native material-cache
+double and a 761-mount/1 ms failed-lookup double. It records medians and exact counters, with no
+flaky timing assertions. The receipt is `out/r8-compat/material-cost.json`; detailed results and
+required PBR/hotloader/browser game controls are in [the report](handover/R8-C-report.md).
+
+## R8-C: non-throwing graphics compatibility (offline, 2026-11-01)
+
+`tools/test.ps1 -Config Release` passes 26 CTests and 488 Python tests (two existing symlink-related
+skips). The combined `test_render_guard*.py` suites have 40 methods/43 LuaJIT invocations, including
+18 new authored API replays for the eight exact Workshop sources. They execute the real guard,
+never third-party add-on Lua or the game. Native-call counters check safe fallbacks, no shader
+load before preflight, no incompatible MRT/depth copies/draws, continued setup, preserved world/
+caller state, private light-metatable readback and repeated projector-cache retirement, normal
+NikNaks/R32F controls, memory quotas,
+GLua ITexture labels, cached remote dispatch, unrelated server errors and guard-off delegation.
+The existing proof, return/identity, cleanup, actual-error quarantine and off tests remain.
+
+Local receipts are `out/r8-compat/release-test.log` and `out/r8-compat/release-final.log`. These are
+CPU contracts, not GPU or native-crash reproduction. Claude's required six-map-load SP add-on
+matrix, two-map listen-server/second-client matrix, transitions, early/late/vanilla-client route
+checks and RTX-off controls are specified with expected outcomes in
+[the report](handover/R8-C-report.md#qa-for-claude-what-each-check-must-show).
+
 ## R7-B: exit observer and read-only previews
 
 Offline acceptance passed: 26 CTests and 455 Python tests (two expected skips), recorded in
