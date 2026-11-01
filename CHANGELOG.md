@@ -9,6 +9,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 ### G1 (unreleased)
 
 - Vendor Jolt Physics 5.3.0 (MIT) for the dedicated client-side broken-glass world (G1-B).
+- Add `gmcl_nlglass_win64.dll`: bounded BSP brush/displacement/static-prop collision import,
+  worker-thread glass physics, fixed stepping, sleeping and reusable Lua pose output. Bad maps or
+  missing modules select a capped client physics fallback ([ADR 0072](docs/decisions/0072-glass-debris-world-and-batching.md)).
+- Add the client debris manager: per-player budget/lifetime/collision settings, oldest-first
+  eviction, last-second shrink, explosion impulses and settled area mesh batching. A client QA
+  [probe](tools/qa/glass_debris_jolt_probe.lua.md) compares empty/falling/settled frame times.
 
 ### C-16 (unreleased)
 

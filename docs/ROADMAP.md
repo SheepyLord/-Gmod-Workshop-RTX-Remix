@@ -1,5 +1,13 @@
 # Roadmap
 
+G1-B implementation and offline acceptance are **done** on `g1-native` (2026-10-31): Jolt 5.3.0,
+the native glass world/module, bounded BSP import, debris rendering/batching and Source fallback,
+with generated-fixture native tests and a LuaJIT manager/probe harness. Release passes 25 CTests
+and 402 Python tests (two expected fixture skips). Four thousand colliding shards sleep in 11.02
+simulated seconds; settled core step/pose cost is 0.091 ms on this machine. Packaging, real-map
+collision/material checks and Remix frame-time acceptance remain with Claude; see
+[the module README](../glass/native/README.md) and [testing](TESTING.md).
+
 G1-B is **in progress** on `g1-native`: a dedicated Jolt broken-glass client module, map import,
 debris manager and offline tests, per [the brief](handover/G1-B-native.md). Packaging and game
 acceptance belong to Claude; this task uses only its worktree and starts no game.

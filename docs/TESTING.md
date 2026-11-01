@@ -1,5 +1,17 @@
 # Testing
 
+G1-B offline validation (2026-10-31, `g1-native`): `tools/test.ps1 -Config Release` includes
+`nl_glass_tests` (11 cases in one CTest target) and `tools/tests/test_glass_debris.py` (the real
+Lua manager, map-import glue and new QA probe under LuaJIT engine doubles). The native fixtures
+generate a room, displacement, LZMA leaf, scaled solid prop and non-solid prop; malformed input,
+degenerate hulls, bounds, actual binding calls, interpolation, sleep/wake and contact overflow are
+covered. The 4,000-piece collision/settling test enforces 15 simulated seconds, 30 wall seconds and
+120 process CPU seconds; measured values are in [RESEARCH](RESEARCH.md#g1-b-dedicated-glass-world-and-offline-measurements-2026-10-31).
+The gate passes 25 CTests and 402 Python tests (two expected fixture skips). No game was started.
+Claude's acceptance uses [the Jolt probe](../tools/qa/glass_debris_jolt_probe.lua.md); the older
+`glass_debris_probe.lua` remains unchanged for the legacy loose-glass baseline. Actual Workshop
+BSP/model coverage, glass materials under Remix and frame-time parity need that game acceptance.
+
 ## C16-B adaptive eye emission (offline, 2026-10-31)
 
 `tools/tests/test_adaptive_emission.py` adds 17 standard-library tests for the USD writer,

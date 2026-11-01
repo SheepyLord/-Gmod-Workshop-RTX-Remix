@@ -35,5 +35,6 @@ target_link_options(nl_build_options INTERFACE
 enable_testing()
 add_subdirectory(third_party/lzma)
 add_subdirectory(loader)
+add_subdirectory(glass/native)
 # Standalone GPL package-policy tests: no GPL object is linked into the MIT loader.
 add_subdirectory(packages/fixes/licenses/oversized-skinning/tests)
