@@ -19,7 +19,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
   `r_forcehwlight 1` on its maps, R3-016's cause: GPU-skinned meshes reach Remix without bones. The add-on
   no longer sets it (fixes clone, branch `claude/rtx-remix-map-enhancement-bda9ac`, `98d7682`; the field
   copy updated, the old one backed up), and the RTX guard pins `r_forcehwlight` at 0 against every Lua
-  caller.
+  caller. RTX map remasters may still scope `r_novis 0` to their maps (the Backrooms remaster ran at
+  9 FPS with the session's `r_novis 1` in the field).
 - **Graphics add-ons under RTX without guard-made Lua errors** (the user: GShader Library still crashes or
   errors on a tester's machine). Blocked calls get safe fallbacks; GShader-style screen-space effects stay
   inert under RTX and keep working with RTX off; material loads stay native and the package's own Lua is

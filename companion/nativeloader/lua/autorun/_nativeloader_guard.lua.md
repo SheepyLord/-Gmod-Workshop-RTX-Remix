@@ -97,7 +97,11 @@ session value or captured native value. The critical pins have no source-name ex
 `r_forcehwlight` is a critical pin at 0: set to 1, it sends every model Source skins on the GPU
 through fixed-function hardware skinning, which gives Remix no bones, so player models and other
 vanilla characters draw in bind pose around the pelvis (R3-016: Modern House RTX; R8: the
-Backrooms map add-on). A player can still type it into the console.
+Backrooms map add-on). A player can still type it into the console. RTX map remasters
+(`lua/autorun/<name>_rtx.lua`, `lua/<name>_rtx/`) may set the session's `r_novis` pin only: the Backrooms
+remaster scopes `r_novis 0` and the fixes' PAS patch to its maps (about 13 ms a frame; 9 FPS with the
+session's `r_novis 1` in the R8 field check). A setter called through `pcall` is attributed to the first
+Lua caller, not to the native frame.
 Quick Bloom's two raster bloom writes and Real CSM's competing raster-world lighting writes are
 ignored. Existing noncritical source exemptions and motion-blur read compatibility remain.
 
