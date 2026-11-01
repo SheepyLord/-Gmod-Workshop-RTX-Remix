@@ -101,7 +101,8 @@ callbacks; success resets the streak. Gamemode methods never quarantine. Re-regi
 function recovers the callback. Per-category records cap at 128; refusal flooding cannot hide errors.
 
 Only observed Lua RT/camera/clip/model pushes are tracked. Ignored pushes create virtual scopes;
-their matching pops do not consume caller-owned native scopes. Repeated virtual pushes share a
+their matching pops do not consume caller-owned native scopes. While such a scope is ignored,
+primary-target resets and secondary views are ignored too, preserving the caller's target. Repeated virtual pushes share a
 counter. A callback cannot pop an active ancestor's/unowned caller's state. Completed Pre/Post
 balancing remains legal. Real-error cleanup unwinds only extra known owned scopes and restores
 known direct target changes; successful children contribute their chronological actions. Never call

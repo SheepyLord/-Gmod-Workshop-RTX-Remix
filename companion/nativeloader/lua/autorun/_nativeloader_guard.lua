@@ -864,7 +864,7 @@ end)
 pair(cam, "Start3D2D", "End3D2D", "camera")
 if nativeRender.SetRenderTarget then
     render.SetRenderTarget = function(texture, ...)
-        if active() and not targetValues(nil, texture) then return end
+        if active() and (policy.suppressed() or not targetValues(nil, texture)) then return end
         if frame and busy == 0 then noteTarget() end
         local result = pack(nativeRender.SetRenderTarget(texture, ...))
         if frame and busy == 0 then frame.targetChanged = true end
@@ -874,6 +874,7 @@ end
 if nativeRender.SetRenderTargetEx then
     render.SetRenderTargetEx = function(index, texture, ...)
         if active() then
+            if index == 0 and policy.suppressed() then return end
             if not integer(index) or index < 0 or index > 3 then reject("render.SetRenderTargetEx", "unknown render-target slot") return
             elseif index ~= 0 and texture ~= nil then reject("render.SetRenderTargetEx", "MRT is unsupported by the RTX path") return
             elseif not targetValues(nil, texture) then return end
@@ -923,6 +924,7 @@ local viewDepth = 0
 if nativeRender.RenderView then
     render.RenderView = function(view, ...)
         if not active() then return nativeRender.RenderView(view, ...) end
+        if policy.suppressed() then reject("render.RenderView", "ignored render scope has no secondary view", caller()) return end
         if not viewValues("render.RenderView", caller(), view) then return end
         if policy.effect(caller()) then reject("render.RenderView", "screen-space secondary view is inert", caller()) return end
         if viewDepth >= 4 then reject("render.RenderView", "nested view limit", caller()) return end
