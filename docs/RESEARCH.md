@@ -3663,3 +3663,27 @@ PoC, 1920x1080 windowed, RTX on; runs under the main checkout's `out/qa-poc/g1/`
   in new geometry.
 - modern_house (run 11): the map alone runs at about 19 ms per frame here; 44 native glass panes; a
   window broken by rounds gives 203 pieces; a ragdoll burst 391 live, 25.83 / 161.8 ms while falling.
+
+## R7: alpha in GMod RTX (2026-11-01, Claude)
+
+PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r7/`.
+
+- **GMod RTX draws models with Source's fixed-function shaders**: `Material(...):GetShader()` returns
+  `VertexLitGeneric_DX7` and `UnlitGeneric_DX6` although `mat_dxlevel` is 90.
+- **Alpha-tested lit materials cut at about 0.7.** Plates with a 16-band alpha ramp (`04-ramp`): every
+  `VertexLitGeneric` alpha-test variant (`$alphatestreference .5`, `.2`, with or without
+  `$allowalphatocoverage` or `$vertexcolor`) shows only the top bands; `UnlitGeneric` near 0.5. The runtime
+  takes the draw's `D3DRS_ALPHAREF` (`src/d3d9/d3d9_rtx_utils.cpp` `setLegacyMaterialState`), so Source's
+  DX7 path sends a fixed reference, not `$alphatestreference`.
+- **Blended draws are opaque only above `rtx.stochasticAlphaBlendOpacityThreshold`** (0.79 in
+  `packages/runtime/layers/classic_remix_defaults.conf`, 0.95 the runtime default) and a stochastic dither
+  below. A blended opacity in (`resolveTransparencyThreshold`, that threshold] is skipped by primary rays
+  (`shaders/rtx/algorithm/resolve.slangh`, the stochastic early out), while visibility rays attenuate by
+  `1 - opacity` (`shaders/rtx/algorithm/visibility.slangh`).
+- **Model Hotloader's soft alpha** (`mmdhl_soft_alpha`, default on) draws triangles with partly transparent
+  texels blended in the opaque pass under Remix (`native_render.lua`). Columbina's mask (bars 0.65, panes
+  0.26) therefore vanished and shadowed her face (`03-columbina`); a root `rtx.conf` threshold of 0.5 drew it
+  as in MMD (`05-columbina-thr05`).
+- `SetMaterial` on a client-side model did not change what drew in this setup (`01-plates`); a
+  `RenderOverride` with `render.MaterialOverride` did (`02-plates`).
+- A field game started without `-console` ignored `WM_CLOSE` on its `Valve001` window for 45 s.

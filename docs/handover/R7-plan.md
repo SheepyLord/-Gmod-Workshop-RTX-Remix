@@ -34,21 +34,35 @@ What the field session's data shows (read only; `garrysmod/data/mmd_hotloader` o
 - So with an alpha test at 0.5 the bars (0.65) should draw and the panes (0.26) be cut. Under RTX the mask
   does not show and the face is darkened where it is: its shadow without the surface.
 
-Next: reproduce on the PoC with the same VTF on a plain prop, varying one material state at a time
-(`$allowalphatocoverage`, `$alphatest` reference, `$vertexcolor`, `$nocull`, `$translucent`), and with the
-model itself; find where primary and shadow visibility disagree (runtime alpha test, vertex colour alpha,
-alpha to coverage, opacity micromaps); fix it where the cause is (runtime patch, hotloader material
-generation, or configuration), then a brief for Codex if the fix is large.
+What the PoC showed (`out/qa-poc/r7/` in the main checkout; the user then added: "it is not sure whether
+alphatest is required if we are in Remix; could we use translucent or a better Remix-managed alpha, since
+everything in this project runs in Remix; find the best way to implement alpha"):
+
+- GMod RTX draws models with Source's fixed-function shaders (`VertexLitGeneric_DX7`, `UnlitGeneric_DX6`).
+  Plates with a 16-band alpha ramp (`04-ramp`, `alpha_probe.lua`): lit alpha-tested materials cut at about
+  0.7 whatever `$alphatestreference` says (Source's DX7 path sends a fixed `D3DRS_ALPHAREF`); unlit ones near
+  0.5; blended materials are opaque only above `rtx.stochasticAlphaBlendOpacityThreshold` (0.79 in the
+  package's classic defaults) and a stochastic dither below it.
+- Under Remix the hotloader draws Columbina's mask blended (its soft-alpha path). The runtime skips a blended
+  opacity between its transparency threshold and the stochastic threshold in primary rays (left to the
+  stochastic composite) while visibility rays still attenuate by `1 - opacity`: no mask, a lattice shadow
+  (`03-columbina`). With a temporary root `rtx.conf` threshold of 0.5 the mask renders as white bars with
+  see-through holes (`05-columbina-thr05`).
+- Lowering the threshold for everything would also make other blended surfaces between 0.5 and 0.79 opaque
+  (map glass, props) and depart from the classic settings. The best fix gives Model Hotloader materials MMD's
+  own rule in Remix: a runtime texture category whose alpha test cuts at 0.5 and whose blended opacity at or
+  above 0.5 is solid in every ray type, filled by the companion with the hotloader's texture hashes at
+  runtime. Task R7-A ([brief](R7-A-mmd-alpha.md)).
 
 ## Tasks
 
 | Task | Brief | Scope | Branch |
 |---|---|---|---|
-| R7-A | this file | Transparent materials: investigation and fix | Claude, `r7-int` |
+| R7-A | [R7-A-mmd-alpha.md](R7-A-mmd-alpha.md) (investigation above, by Claude) | Point 1: MMD alpha under Remix, a runtime texture category and the companion filling it | Codex, `r7-alpha` |
 | R7-B | [R7-B-crash-diagnostics.md](R7-B-crash-diagnostics.md) | Points 2 and 4: an exit report after a crash, the memory warning rule, the add-on list | Codex, `r7-crash-diag` |
 | R7-C | [R7-C-glass-interaction.md](R7-C-glass-interaction.md) | Point 3: broken glass pushed and broken by players, NPCs, props, ragdolls, bullets, blasts and falls; one way | Codex, `r7-glass-interact` |
 
-R7-B and R7-C touch disjoint paths. Shared documents (CHANGELOG, ROADMAP, RESEARCH, TESTING,
+R7-A, R7-B and R7-C touch disjoint paths. Shared documents (CHANGELOG, ROADMAP, RESEARCH, TESTING,
 COMPONENTS) get additive edits only. Claude reviews, integrates on `r7-int`, runs the game QA on the PoC
 and publishes.
 
