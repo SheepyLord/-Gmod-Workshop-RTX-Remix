@@ -17,6 +17,7 @@ NLGlass.Config=include("nlglass/config.lua")
 NLGlass.Geometry=include("nlglass/geometry.lua")
 NLGlass.Protocol=include("nlglass/protocol.lua")
 include("nlglass/debris_bullets.lua")
+include("nlglass/debris_melee.lua")
 if SERVER then
     NLGlass.Damage=include("nlglass/damage.lua")
     include("nlglass/server.lua")

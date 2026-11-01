@@ -1,5 +1,16 @@
 # Components
 
+R8-C review adds [an offline material-cost comparison](../tools/tests/bench_render_guard.py.md)
+under `tools/tests`. The self-contained companion guard now carries exact bundled virtual paths,
+checked against package indexes and companion/glass sources, and applies custom-shader policy at
+untrusted material bindings. Native loads add no guard VMT reads; no new runtime module is needed.
+
+R8-C keeps the verified guard in the existing companion autorun and early loader embedding path.
+It adds [eighteen authored call replays](../tools/tests/render_guard_addon_replays.lua.md) and
+[their Python driver](../tools/tests/test_render_guard_addons.py.md) under `tools/tests`, with no new
+runtime module or native trust surface. Policy and scope are in
+[ADR 0086](decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md).
+
 R7-C's fast-body fix adds [`glass/native/tests/scene_replay.cpp`](../glass/native/tests/scene_replay.cpp):
 an offline generated-pile executable fed by the real Lua capture harness in `tools/tests`. Scene
 capture prioritizes approaching bodies and native snapshot sync adds bounded one-way shape sweeps.
@@ -332,3 +343,8 @@ joined with the saved MMD-alpha category by runtime patch 0017. Its LuaJIT lifec
 live in [`companion/tests`](../companion/tests/test_mmd_alpha.py.md). The existing
 [`tools/qa/alpha_probe.lua`](../tools/qa/alpha_probe.lua.md) can temporarily tag its own ramp/plate
 textures for Claude's game comparison, restoring the previous transient list afterwards.
+
+R8-G glass support: `debris_detail.lua` plans exact small rigid groups; `debris_settings.lua` migrates
+client collision flags; `debris_melee.lua` observes server swings/traces. `tools/qa/measure_nlglass.py`
+compares saved/current offline workloads, while `nlglass_qa r8` covers delayed real weapons and
+collision defaults. See [the QA sidecar](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md).

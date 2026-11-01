@@ -1,6 +1,27 @@
 -- MIT. Only individual pieces enter these material groups; stable merged piles are never scanned.
 local geometry = include("nlglass/debris_mesh.lua")
-local R = { groups = {} }
+local R = { groups = {}, retired = {}, retireFirst = 1, retireLast = 0, released = 0 }
+function R.Retire(mesh)
+    R.retireLast=R.retireLast+1;R.retired[R.retireLast]=mesh
+end
+function R.Tick()
+    R.released=0
+    -- Creation is capped at twelve initial meshes plus two split children per frame. Releasing
+    -- sixteen drains a burst without allowing a sustained stream to grow this queue forever.
+    for _=1,16 do
+        local mesh=R.retired[R.retireFirst];if not mesh then break end
+        mesh:Destroy();R.retired[R.retireFirst]=nil;R.retireFirst=R.retireFirst+1;R.released=R.released+1
+    end
+    if R.retireFirst>R.retireLast then R.retireFirst,R.retireLast=1,0
+    elseif R.retireFirst>8192 then
+        local compact={};for i=R.retireFirst,R.retireLast do compact[#compact+1]=R.retired[i]end
+        R.retired,R.retireFirst,R.retireLast=compact,1,#compact
+    end
+end
+function R.ClearRetired()
+    for i=R.retireFirst,R.retireLast do R.retired[i]:Destroy() end
+    R.retired,R.retireFirst,R.retireLast,R.released={},1,0,0
+end
 function R.Add(p)
     if p.drawGroup then return end
     local group = R.groups[p.materialName]

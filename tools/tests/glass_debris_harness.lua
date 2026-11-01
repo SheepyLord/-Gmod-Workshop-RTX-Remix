@@ -60,7 +60,7 @@ end
 function IsValid(v) return type(v)=="table" and v.valid==true end
 local function entity(model,temporary)
     local e={valid=true,model=model,temporary=temporary,position=Vector(),angles=Angle(),physics=phys(),
-        SetNoDraw=function() end,PhysicsInit=function() end,PhysicsInitConvex=function() end,SetMoveType=function() end,SetSolid=function() end,
+        SetNoDraw=function() end,PhysicsInit=function() end,PhysicsInitConvex=function() end,PhysicsInitMultiConvex=function(self,hulls)self.compound=hulls end,SetMoveType=function() end,SetSolid=function() end,
         SetCollisionGroup=function(self,v) self.group=v end,SetPos=function(self,v) self.position=v end,SetAngles=function(self,v) self.angles=v end,
         GetPos=function(self) return self.position end,GetAngles=function(self) return self.angles end,
         GetPhysicsObject=function(self) return self.physics end,Remove=function(self) self.valid=false end}
@@ -77,7 +77,7 @@ function Mesh(material)
         if failMesh then failMesh=false;error("injected GPU build refusal") end
         workClock=workClock+costs.upload
         check(#v%3==0 and #v<=60000,"bounded triangle mesh");self.vertexCount=#v
-    end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false end,
+    end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false;workClock=workClock+(costs.destroy or 0)end,
     Draw=function(self)check(self.valid,"never draw destroyed mesh");draws=draws+1;workClock=workClock+costs.draw end}
     meshes[#meshes+1]=m;return m
 end
@@ -102,7 +102,7 @@ end
 function GetConVar(name) return convars[name] end
 function RunConsoleCommand(name,value) convars[name].value=tonumber(value) end
 function math.Clamp(value,low,high) return math.max(low,math.min(high,value)) end
-function SysTime() return (arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffperf") and wallclock() or clock+workClock end
+function SysTime() return (arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffperf" or arg[3]=="loadperf") and wallclock() or clock+workClock end
 function LocalPlayer() return {valid=true,GetEyeTrace=function()return {HitPos=Vector()}end} end
 local function makeapi()
     local n={bodies={},next=0,imports=0,clears=0,models=0,props=0}
@@ -135,9 +135,15 @@ local function makeapi()
     function n.FinishWorld() return true end
     function n.Spawn(_,pos,angles,velocity,spin,minimum)
         check(not n.running,"spawn never touches in-flight world")
-        n.next=n.next+1;n.bodies[n.next]={position=pos,angles=angles,asleep=false,dirty=true,minimum=minimum};return n.next
+        n.next=n.next+1;n.bodies[n.next]={position=pos,angles=angles,asleep=false,dirty=true,minimum=minimum,velocity=velocity};return n.next
     end
     function n.Remove(id) check(not n.running,"remove never touches in-flight world");n.bodies[id]=nil;return true end
+    function n.SpawnGroup(hulls,pos,angles,velocity,spin)
+        check(#hulls>=2 and #hulls<=8,"adaptive groups have two to eight exact hulls")
+        local id=n.Spawn(hulls[1],pos,angles,velocity,spin,8)
+        n.bodies[id].groupCount,n.bodies[id].leaf=#hulls,true
+        n.groups=(n.groups or 0)+1;return id
+    end
     function n.Clear() n.running=false;n.bodies={};n.clears=n.clears+1;return true end
     function n.Shutdown() n.running=false;n.bodies={};return true end
     function n.SetGravity() check(not n.running,"gravity only between steps");return true end
@@ -193,6 +199,9 @@ local function makeapi()
             if id then n.bodies[id].asleep,n.bodies[id].dirty=false,true end
             return id or 0
         end
+        function n.Melee(...)
+            n.melees=(n.melees or 0)+1;return n.Ray(...)
+        end
         function n.CanSplit(id) return not n.refuseSplit and n.bodies[id] and not n.bodies[id].leaf end
         function n.Split(id,minimum)
             check(not n.running and minimum>=4,"split only between steps with a minimum-size floor")
@@ -240,6 +249,7 @@ local function fragments(n)
     local t={};for i=1,n do t[i]={poly={{-1,-1},{1,-1},{1,1},{-1,1}},thickness=.3,velocity=Vector(),spin=Vector(),seed=i}end;return t
 end
 local function settle()
+    for _=1,700 do if NLGlassDebris.Stats().pending==0 then break end;tick() end
     for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
     for _,e in ipairs(entities)do e.physics.asleep=true end
     tick(.01);tick(.21);for _=1,4 do tick() end
@@ -267,7 +277,7 @@ if arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffp
     for i=0,49 do
         D.Spawn({origin=Vector(128+(i%10)*72,128+math.floor(i/10)*72,32),angles=Angle(),material=frame.material},fragments(40))
     end
-    for _=1,40 do tick() end
+    for _=1,700 do tick();if D.Stats().pending==0 then break end end
     camera={origin=Vector(-500,300,32),angles=Angle(),fov=90,aspect=16/9}
     local function bench(label,n)
         collectgarbage("collect")
@@ -298,6 +308,134 @@ if arg[3]=="renderperf" or arg[3]=="interactionperf" or arg[3]=="interactionoffp
     end
     bench("moving_culled",240)
     D.Shutdown();return
+end
+if arg[3]=="load_queue" then
+    local D=setup("jolt");set("budget",64);set("lifetime",0);D.Prepare();tick();tick();tick()
+    local before=#meshes
+    D.Spawn(frame,fragments(40))
+    check(#meshes==before and not next(api.bodies) and D.Stats().creation_pending==40,"break receipt creates neither meshes nor bodies")
+    for _=1,4 do tick();check(D.Stats().created_last<=12,"burst construction caps meshes and bodies per frame")end
+    check(D.Stats().creation_pending==0 and D.Stats().fragments==40,"bounded construction eventually retains every fragment")
+    api.delayStep=2;tick();before=#meshes;D.Spawn(frame,fragments(8));tick()
+    check(#meshes==before and D.Stats().creation_pending==8,"queued creation never enters a busy worker")
+    for _=1,8 do tick()end
+    D.Clear();costs.upload=.001
+    D.Spawn(frame,fragments(5));tick()
+    check(D.Stats().created_last==1 and D.Stats().creation_pending==4,"measured creation allowance yields after an indivisible slow upload")
+    costs.upload=0;D.Clear();set("lifetime",1);D.Spawn(frame,fragments(20));tick(2);tick()
+    check(D.Count()==0 and not next(api.bodies),"expired queue entries allocate no bodies or meshes")
+    set("lifetime",0);D.Spawn(frame,fragments(2));D.Impulse(frame.origin-Vector(10,0,0),100,100);tick()
+    for _,b in pairs(api.bodies)do check(b.velocity.x>80,"queued debris inherits a blast exactly once on creation")end
+    D.Clear()
+    set("lifetime",0);D.Spawn(frame,fragments(100));set("budget",10);for _=1,8 do tick()end
+    check(D.Stats().fragments==10 and D.Stats().creation_pending==0,"queued fragments participate in oldest-first budget reduction")
+    D.Clear();D.Spawn(frame,fragments(40));D.Clear()
+    check(D.Count()==0 and D.Stats().creation_pending==0,"cleanup cancels all deferred creation")
+    api.delayStep=0;set("budget",64);D.Spawn(frame,fragments(64));for _=1,6 do tick()end
+    costs.destroy=.001;local before=workClock;D.Spawn(frame,fragments(64))
+    check(workClock==before and D.Stats().retired_individual==64,"budget receipt retires old meshes without synchronous GPU release")
+    tick();check(D.Stats().released_individual<=16 and D.Stats().retired_individual>=48,"individual GPU releases are count bounded per frame")
+    D.Clear();check(D.Stats().retired_individual==0,"cleanup releases the deferred GPU resources too")
+    costs.destroy=0
+    D.Shutdown();print("interaction manager load_queue OK");return
+end
+if arg[3]=="load_manager" or arg[3]=="loadperf" then
+    local D=setup("jolt");set("budget",2000);set("lifetime",0)
+    EyePos=function()return Vector(0,0,64)end
+    local F=include("nlglass/fracture.lua")
+    local function pane(i)
+        local state=F.New{outline={{-48,-32},{48,-32},{48,32},{-48,32}},thickness=1,strength=1,kind="annealed",piece_size=8,velocity_transfer=1}
+        local list=F.Apply(state,{x=0,y=0,energy=4000000,seed=i+171,kind="blast",dx=1,dy=0,dz=0},true)
+        for _,f in ipairs(list)do f.velocity=Vector(unpack(f.velocity));f.spin=Vector(unpack(f.spin))end
+        return {origin=Vector(400+(i%5)*70,-360+math.floor(i/5)*80,64),angles=Angle(),material=frame.material},list
+    end
+    D.Prepare();tick();tick();tick()
+    local receipts,totalReceipt,maxReceipt,creationPeak,maxCreated,peakPending={},0,0,0,0,0
+    local function submit(i)
+        local f,list=pane(i);local start=wallclock();D.Spawn(f,list);local elapsed=(wallclock()-start)*1000
+        receipts[#receipts+1]=elapsed;totalReceipt=totalReceipt+elapsed;maxReceipt=math.max(maxReceipt,elapsed)
+    end
+    -- The same 50 real fractures arrive over 1.5 simulated seconds, never into the engine.
+    local times,total,worst={},0,0
+    for frameIndex=1,240 do
+        local start=wallclock()
+        if frameIndex<=90 and frameIndex%9<5 then submit(math.floor(frameIndex/9)*5+frameIndex%9)end
+        tick(1/60);draw()
+        local elapsed=(wallclock()-start)*1000;times[#times+1]=elapsed;total=total+elapsed;worst=math.max(worst,elapsed)
+        local s=D.Stats();maxCreated=math.max(maxCreated,s.created_last or 0)
+        creationPeak=math.max(creationPeak,s.creation_ms or 0);peakPending=math.max(peakPending,s.creation_pending or 0)
+    end
+    table.sort(times);local falling=D.Stats();local movingDraws=draw()
+    check(falling.pending==0 and (falling.fragments or falling.live)<=2000,"real-fracture load drains within fragment budget")
+    if arg[3]=="load_manager" then
+        check(falling.fragments>1800 and falling.live<600 and api.groups>0,"adaptive groups reduce instances while retaining the original fragment budget")
+        check(maxCreated<=12,"real multi-pane burst obeys the construction cap")
+        D.Impulse(Vector(),131072,100);tick()
+        check(D.Count()==falling.live,"blast wakes adaptive groups without replacing or duplicating polygons")
+    end
+    for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+    for _=1,240 do tick()end
+    local settledStart=wallclock();for _=1,240 do tick();draw()end
+    local settledMean=(wallclock()-settledStart)*1000/240;local settled=D.Stats()
+    print(string.format("R8-G loadperf receipts=%d receipt_mean_ms=%.4f receipt_max_ms=%.4f frame_mean_ms=%.4f frame_p99_ms=%.4f frame_max_ms=%.4f live=%d fragments=%d moving_draws=%d created_max=%d creation_peak_ms=%.4f pending_peak=%d settled_mean_ms=%.4f settled_draws=%d",
+        #receipts,totalReceipt/#receipts,maxReceipt,total/240,times[math.ceil(#times*.99)],worst,falling.live,falling.fragments or falling.live,
+        movingDraws,maxCreated,creationPeak,peakPending,settledMean,draw()))
+    if arg[3]=="load_manager" then
+        D.Impulse(Vector(),131072,100);api.failStep=true;tick();tick()
+        local compounds=0;for _,e in ipairs(entities)do if e.valid and e.compound then compounds=compounds+1 end end
+        check(D.Backend()=="vphysics" and D.Stats().fragments<=64 and compounds>0,"a failed native step migrates exact groups within the conservative fallback budget")
+        D=setup("jolt");set("budget",2000);set("lifetime",0);D.Prepare();tick();tick();tick()
+        camera={origin=Vector(400,0,64),angles=Angle(),fov=90,aspect=16/9};draw()
+        D.Spawn({origin=Vector(400,0,64),angles=Angle(),material=frame.material},fragments(256))
+        check(D.Stats().creation_pending==256,"adaptive near-detail protection uses the actual render camera, not a distant player eye")
+    end
+    D.Shutdown();EyePos=nil
+    if arg[3]=="load_manager" then print("interaction manager load_manager OK")end
+    return
+end
+if arg[3]=="load_area" then
+    setup("jolt")
+    local F=include("nlglass/fracture.lua")
+    local plan=include("nlglass/debris_detail.lua");local geo=include("nlglass/debris_mesh.lua")
+    for _,kind in ipairs({"annealed","tempered"})do for seed=1,80 do
+        local state=F.New{outline={{-48,-32},{48,-32},{48,32},{-48,32}},thickness=1,strength=1,kind=kind,piece_size=8,velocity_transfer=1}
+        local fragments=F.Apply(state,{x=seed%40-20,y=seed%28-14,energy=4000000,seed=seed,kind="blast",dx=1,dy=0,dz=0},seed%2==0)
+        local packed=plan.Pack(fragments,1,#fragments,true,{1000,0,0})
+        local beforeArea,afterArea,seen=0,0,{}
+        for _,f in ipairs(fragments)do beforeArea=beforeArea+F.Area(f.poly)end
+        for _,group in ipairs(packed)do
+            check(#group.parts<=8 and group.points<=512,"adaptive group geometry bounds")
+            local g= #group.parts>1 and geo.Group(group.parts,color_white) or geo.Geometry(group.parts[1].poly,1,color_white)
+            check(g~=nil,"all planned geometry is valid")
+            local drawn=0
+            for i=1,#g.vertices,3 do
+                local a,b,c=g.vertices[i],g.vertices[i+1],g.vertices[i+2]
+                if a.normal.z>.5 then drawn=drawn+((b.pos.x-a.pos.x)*(c.pos.y-a.pos.y)-(b.pos.y-a.pos.y)*(c.pos.x-a.pos.x))*.5 end
+            end
+            check(math.abs(drawn-g.area)<.000001,"uploaded front triangles preserve exact polygon area")
+            afterArea=afterArea+g.area
+            for _,f in ipairs(group.parts)do check(not seen[f],"no fragment duplicated");seen[f]=true end
+        end
+        check(math.abs(afterArea-beforeArea)<.000001,"adaptive detail preserves exact released area")
+        for _,f in ipairs(fragments)do check(seen[f],"no fragment dropped")end
+        check(#packed<#fragments*.55,"crowded distant breaks cut rigid instances at least 45 percent")
+        local near=plan.Pack(fragments,1,#fragments,true,{0,0,0})
+        check(#near==#fragments,"nearby glass retains full detail")
+    end end
+    NLGlassDebris.Shutdown();print("interaction manager load_area OK");return
+end
+if arg[3]=="collision_settings" then
+    local D=setup("interaction")
+    check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==3,"objects and ragdolls default on; living off")
+    set("interact",0);set("collide",0);set("collide_with",9);set("collision_version",0)
+    include("nlglass/debris_settings.lua")
+    check(GetConVar("rtx_glass_debris_collide"):GetInt()==1 and GetConVar("rtx_glass_debris_collision_version"):GetInt()==1,"old piece switch retires once")
+    check(GetConVar("rtx_glass_debris_interact"):GetInt()==0 and GetConVar("rtx_glass_debris_collide_with"):GetInt()==9,"migration preserves explicit new mask and master off")
+    set("collide_with",12);include("nlglass/debris_settings.lua")
+    check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==12,"reload preserves later choices")
+    D.Spawn(frame,fragments(1));for _=1,5 do tick()end
+    check(api.collide==true,"map and piece collisions always enabled")
+    D.Shutdown();print("interaction manager collision_settings OK");return
 end
 if arg[3] and arg[3]:match("^interaction_") then
     local function big(n)
@@ -357,6 +495,12 @@ if arg[3] and arg[3]:match("^interaction_") then
         tick(1);check(api.rays==8,"expired cosmetic rays are discarded")
         D.Ray(Vector(0/0,0,0),Vector(),15);D.Ray(Vector(),Vector(),-1)
         check(D.Stats().ray_pending<=16,"malformed input never grows the ray queue")
+        for _=1,4 do tick()end
+        D.Ray(Vector(-10,0,20),Vector(100,0,20),25,6);tick()
+        check(api.melees==1,"server melee volume uses the native bounded cast")
+        local before=D.Stats().ray_pending
+        D.Ray(Vector(),Vector(300,0,0),25,6);D.Ray(Vector(),Vector(50,0,0),25,17)
+        check(D.Stats().ray_pending==before,"malformed melee distance/radius refused before queuing")
     elseif arg[3]=="interaction_qa" then
         local receivers, commands, timers = {}, {}, {}
         local text, at = "slab", Vector(50,50,10)
@@ -365,13 +509,22 @@ if arg[3] and arg[3]:match("^interaction_") then
         timer={Simple=function(_,fn)timers[#timers+1]=fn end}
         concommand={Add=function(name,fn)commands[name]=fn end}
         dofile("tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua")
+        set("collide_with",10);set("interact",0);set("lifetime",12)
+        text="r8_defaults";receivers.nlglass_qa_fixture()
+        check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==3 and GetConVar("rtx_glass_debris_interact"):GetInt()==1,"R8 QA stages the default collision mask")
+        text="r8_players";receivers.nlglass_qa_fixture()
+        check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==7,"R8 QA enables only players in addition to the defaults")
+        text="r8_restore";receivers.nlglass_qa_fixture()
+        check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==10 and GetConVar("rtx_glass_debris_interact"):GetInt()==0 and
+            GetConVar("rtx_glass_debris_lifetime"):GetInt()==12,"R8 QA restores all original client values")
+        set("interact",1);text="slab"
         receivers.nlglass_qa_fixture();check(D.Count()==1,"QA fixture goes through the real public Spawn/Clear path")
         for _=1,3 do tick()end
         text="qa_probe";receivers.nlglass_qa_view()
         for _,fn in ipairs(timers)do fn()end
         check(commands.nl_shot_taken~=nil,"QA screenshot reply remains registered")
         D.Clear();local f=big(1);f[1].minimum_size=16;D.Spawn(frame,f)
-        check(api.bodies[api.next].minimum==16,"API minimum-size metadata reaches the native Spawn boundary")
+        tick();check(api.bodies[api.next].minimum==16,"API minimum-size metadata reaches the native Spawn boundary")
     else error("unknown manager interaction case") end
     D.Shutdown();print("interaction manager "..arg[3].." OK ("..checks.." assertions)");return
 end
@@ -442,7 +595,7 @@ check(oldBatch.valid and D.Stats().merged==3 and draw()==1,"replacement swaps on
 tick();check(not oldBatch.valid,"retired mesh is released on a later frame")
 oldBatch,revision=meshes[#meshes],D.Stats().rebuilds
 D.Spawn(frame,fragments(500))
-for _=1,10 do tick() end
+for _=1,60 do tick();if D.Stats().pending==0 then break end end
 check(D.Stats().pending==0,"large arrivals are bounded and drained across frames")
 for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
 tick();tick(.21)
@@ -499,7 +652,7 @@ for i=0,49 do
     D.Spawn({origin=Vector(-400+(i%10)*80,-160+math.floor(i/10)*80,i%2==0 and -.1 or .1),angles=Angle(),
         material=frame.material,color=Color(100+i,150,200,200+i)},fragments(40))
 end
-for _=1,40 do tick() end
+for _=1,700 do tick();if D.Stats().pending==0 then break end end
 for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
 for _=1,140 do
     tick();check(D.Stats().rebuild_vertices<=1800,"consolidation never transforms over 1800 vertices/frame")
@@ -535,7 +688,7 @@ D=setup("jolt");set("budget",100);set("lifetime",0);D.Prepare();tick();tick();ti
 camera={origin=Vector(),angles=Angle(),fov=90,aspect=16/9}
 D.Spawn({origin=Vector(100,0,0),angles=Angle(),material=frame.material},fragments(10))
 D.Spawn({origin=Vector(-100,0,0),angles=Angle(),material=frame.material},fragments(10))
-tick()
+tick();tick()
 local writes=calls.matrixWrites
 local vectors,angles,matrixCount=calls.vectors,calls.angles,calls.matrices
 calls.materials=0
@@ -573,7 +726,7 @@ D.Shutdown()
 
 -- A slow client must obey the measured preparation allowance too, rather than only its vertex cap.
 D=setup("jolt");set("budget",100);set("lifetime",0)
-D.Spawn(frame,fragments(100));tick();tick();tick()
+D.Spawn(frame,fragments(100));for _=1,14 do tick() end
 for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
 tick()
 _G.glassVertexCost=function()workClock=workClock+.000001 end

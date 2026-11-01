@@ -11,3 +11,5 @@ scale only when the shrink factor changes. Culled pieces defer updates until vis
 Meshes are destroyed by their owning manager or on failed construction.
 No files, networking, entities, timers or hooks; invalid geometry returns nil, mesh failures throw
 to the manager's protected construction call. No process exit code.
+
+R8-G Geometry also returns exact area. Group(fragments,color) builds the same original triangles and sub-hulls, recentered around their combined mass centroid; returns vertices/hulls/center/radius/mass/area for one rigid group. Does not fill gaps or change source polygons. Each original colour/UV/thickness/normal is retained. The manager averages the group's initial velocities/spins; later motion shares a transform.

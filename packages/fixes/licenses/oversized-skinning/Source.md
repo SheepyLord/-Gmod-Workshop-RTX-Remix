@@ -1,5 +1,9 @@
 # Oversized mesh hardware-skinning source
 
+The [R8-B Backrooms native candidate](backrooms/Source.md) layers its reviewed model-loading,
+lazy-transform and optional PAS changes on the R6 build below. That local DLL awaits Claude's
+import; its full source, patch, tests and hashes are included under this existing bundled tree.
+
 The R6 DLL rebuild adds the [memory-limit compatibility change](memory-limits/Source.md) on top
 of this recorded source commit, with the same dependencies and generated projects. That folder
 holds the current DLL's source commit, hash and complete patch; the record below describes the

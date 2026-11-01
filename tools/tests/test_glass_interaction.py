@@ -17,6 +17,9 @@ class GlassInteractionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('interaction ' + case + ' OK', result.stdout)
 
+    def test_collision_flags_default_living_exclusion_and_independent_categories(self):
+        self.run_case('scene_flags')
+
     def test_living_hulls_ragdoll_bones_prop_shapes_and_physics_replacement(self):
         self.run_case('scene_kinds')
 
@@ -58,6 +61,18 @@ class GlassInteractionTests(unittest.TestCase):
     def test_clients_receive_only_server_traces_and_send_no_requests(self):
         self.run_case('bullets_client')
 
+    def test_client_owned_interest_refreshes_after_60_seconds_and_expires(self):
+        self.run_case('bullets_interest')
+
+    def test_real_client_interest_cadence_cleanup_and_empty_fast_path(self):
+        self.run_case('bullets_client_interest')
+
+    def test_stock_crowbar_and_stunstick_observe_real_swing_and_coalesce(self):
+        self.run_case('melee_stock')
+
+    def test_trace_swep_observer_preserves_source_clip_trace_and_returns(self):
+        self.run_case('melee_swep')
+
     def run_manager(self, case):
         result = subprocess.run([luajit(), str(REPO / 'tools/tests/glass_debris_harness.lua'), str(LUA),
                                  str(REPO / 'tools/qa/glass_debris_jolt_probe.lua'), case],
@@ -67,6 +82,18 @@ class GlassInteractionTests(unittest.TestCase):
 
     def test_damage_bursts_adopt_children_at_one_replacement_per_frame(self):
         self.run_manager('interaction_manager')
+
+    def test_archived_collision_migration_preserves_mask_and_master_once(self):
+        self.run_manager('collision_settings')
+
+    def test_break_bursts_spread_creation_without_busy_access_or_expiry_extension(self):
+        self.run_manager('load_queue')
+
+    def test_adaptive_detail_keeps_exact_area_all_parts_and_nearby_detail(self):
+        self.run_manager('load_area')
+
+    def test_real_50_pane_fractures_keep_budget_while_cutting_rigid_instances(self):
+        self.run_manager('load_manager')
 
     def test_oldest_first_budget_minimum_size_refusal_and_one_piece_budget(self):
         self.run_manager('interaction_budget')

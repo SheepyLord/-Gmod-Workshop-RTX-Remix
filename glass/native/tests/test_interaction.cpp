@@ -39,6 +39,89 @@ TEST_CASE("glass convex bisection preserves area thickness and minimum size over
   CHECK(split_polygon(outline_xy(fixture::box(4,4)),8)[0].empty());
   CHECK(split_polygon(outline_xy(fixture::box(32,1)),4)[0].empty());
 }
+TEST_CASE("glass collision flags default to objects and ragdolls and filter each target independently") {
+  World w(8,0);ready(w);w.set_interaction(true);
+  CHECK(w.stats().collision_flags==(Objects|Ragdolls));
+  std::vector<SceneBody> rows;
+  for(unsigned i=0;i<4;++i) { auto b=mirror(i+1,{float(i)*50,0,32});b.kind=1u<<i;rows.push_back(b); }
+  w.sync_bodies(rows,1.0/60);CHECK(w.stats().scene_bodies==2);
+  for(unsigned flags=0;flags<16;++flags) {
+    w.set_collision_flags(flags);CHECK(w.stats().scene_bodies==0);
+    w.sync_bodies(rows,1.0/60);
+    unsigned expected=0;
+    for(unsigned i=0;i<4;++i)if(flags&(1u<<i)) { ++expected;CHECK((w.scene_pose(i+1).position-rows[i].position).length()<.001f); }
+    CHECK(w.stats().scene_bodies==expected);
+  }
+  CHECK_THROWS_AS(w.set_collision_flags(16),Error);
+  rows[0].kind=3;CHECK_THROWS_AS(w.sync_bodies(rows,1.0/60),Error);
+  w.set_interaction(false);CHECK(w.stats().scene_bodies==0);
+}
+TEST_CASE("glass melee wakes old piles fractures large pieces and bounds a crowded sweep") {
+  World w(64,0);ready(w);w.set_interaction(true);
+  const auto large=w.spawn(fixture::box(16,16,.5f),{0,0,32},{},{},{},8);
+  const auto leaf=w.spawn(fixture::box(2,2,.5f),{0,28,32},{},{},{},8);
+  for(unsigned i=0;i<7800;++i)w.step(1.0/60); // >120 seconds; age never disables a local hit.
+  REQUIRE(w.sleeping(large));REQUIRE(w.sleeping(leaf));
+  CHECK(w.melee({-50,0,32},{50,0,32},400000,500,6)==1);
+  auto events=w.take_damage();REQUIRE(events.size()==1);CHECK(events[0].id==large && events[0].kinds==Melee);
+  CHECK(w.split(large,8).size()==2);
+  CHECK(w.melee({-50,28,32},{50,28,32},400000,500,6)==1);
+  CHECK(w.take_damage().empty());CHECK(!w.sleeping(leaf)); // minimum size still moves.
+  w.clear();
+  for(unsigned i=0;i<32;++i)w.spawn(fixture::box(1,1,.5f),{float(i)*3,0,32},{},{},{},8);
+  CHECK(w.melee({-20,0,32},{120,0,32},400000,500,8)<=8);
+  CHECK(w.stats().melee_limited>0);
+  const auto hits=w.stats().melee_hits;w.set_interaction(false);
+  CHECK(w.melee({-20,0,32},{120,0,32},400000,500,8)==0);CHECK(w.stats().melee_hits==hits);
+  CHECK_THROWS_AS(w.melee({},{300,0,0},1000,100,8),Error);
+  CHECK_THROWS_AS(w.melee({},{100,0,0},1000,100,17),Error);
+}
+TEST_CASE("glass adaptive rigid groups keep exact sub hull gaps and only cosmetic motion") {
+  World w(4,0);ready(w);w.set_interaction(true);
+  auto left=fixture::box(2,4,.5f),right=left;
+  for(auto& p:left)p.x-=8;for(auto& p:right)p.x+=8;
+  const auto id=w.spawn_group({left,right},{0,0,32},{},{},{});
+  CHECK(w.stats().live==1);CHECK(w.ray({0,0,50},{0,0,10},200000,400)==0); // never fill the gap.
+  CHECK(w.ray({-8,0,50},{-8,0,10},200000,400)==id);
+  CHECK(!w.can_split(id,4));CHECK(w.split(id,4).empty());CHECK(w.take_damage().empty());
+  CHECK(w.melee({8,-20,32},{8,20,32},400000,400,6)==1);
+  w.step(1.0/60);const auto poses=w.poses();REQUIRE(poses.size()==1);CHECK(!poses[0].sleeping);
+  CHECK_THROWS_AS(w.spawn_group({left},{},{},{},{}),Error);
+  CHECK_THROWS_AS(w.spawn_group(std::vector<Hull>(9,left),{},{},{},{}),Error);
+  auto bad=left;bad[0].x=std::numeric_limits<float>::quiet_NaN();
+  CHECK_THROWS_AS(w.spawn_group({bad,right},{},{},{},{}),Error);CHECK(w.stats().live==1);
+  Hull dense;
+  for(unsigned i=0;i<64;++i) {
+    const auto a=float(i)*6.283185307f/64;
+    dense.push_back({4*std::cos(a),4*std::sin(a),-.5f});dense.push_back({4*std::cos(a),4*std::sin(a),.5f});
+  }
+  CHECK_THROWS_AS(w.spawn_group(std::vector<Hull>(8,dense),{},{},{},{}),Error);CHECK(w.stats().live==1);
+  w.clear();CHECK(w.stats().live==0);
+}
+TEST_CASE("glass adaptive load benchmark compares 2000 exact quads as bodies or eight hull groups") {
+  for(bool grouped:{false,true}) {
+    World w(2000);ready(w);const auto start=std::chrono::steady_clock::now();
+    if(grouped) {
+      std::vector<Hull> hulls;
+      for(int y=0;y<2;++y)for(int x=0;x<4;++x) {
+        auto hull=fixture::box(2,2,.3f);
+        for(auto& p:hull) { p.x+=float(x)*5;p.y+=float(y)*5; }hulls.push_back(std::move(hull));
+      }
+      for(unsigned y=0;y<25;++y)for(unsigned x=0;x<10;++x)
+        w.spawn_group(hulls,{float(x)*20-100,float(y)*10-125,64},{},{},{});
+    } else for(unsigned y=0;y<50;++y)for(unsigned x=0;x<40;++x)
+      w.spawn(fixture::box(2,2,.3f),{float(x)*5-100,float(y)*5-125,64},{},{},{},8);
+    const auto spawn_ms=ms(start);double falling=0,max_step=0;unsigned frames=0;
+    for(unsigned i=0;i<900;++i) {
+      w.step(1.0/60);const auto s=w.stats();
+      if(i<120) { falling+=s.step_ms;max_step=std::max(max_step,s.step_ms);++frames; }
+      if(i>=120 && s.awake==0)break;
+    }
+    CHECK(w.stats().awake==0);CHECK(w.stats().live==(grouped?250u:2000u));
+    std::cout<<"R8-G load grouped="<<grouped<<" fragments=2000 bodies="<<w.stats().live<<" spawn_ms="<<spawn_ms
+      <<" falling_step_mean_ms="<<falling/frames<<" falling_step_max_ms="<<max_step<<'\n';
+  }
+}
 TEST_CASE("glass Source mirrors push sleeping pieces but never yield to them") {
   World w(8,0);ready(w);w.set_interaction(true);w.set_collide(false);
   const auto id=w.spawn(fixture::box(8,8,1),{0,0,32},{},{},{});

@@ -1,157 +1,155 @@
 # _nativeloader_guard.lua
 
-Self-contained RTX-session renderer guard. Loader startup can append the verified source after
-stock includes/init.lua, before community autoruns capture native APIs. The literal
-NATIVELOADER_RENDER_GUARD_V2 marker identifies this entry. No include or require is needed.
-The normal autorun is idempotent through NativeLoaderRenderGuard.version.
+Self-contained client RTX guard, identified by NATIVELOADER_RENDER_GUARD_V2. The loader embeds
+this exact catalog-SHA-verified file after the supported stock initializer, before autoruns.
+No include/require or additional runtime module is needed. The new content hash selects a new
+generated cache automatically. NativeLoaderRenderGuard.version=2 makes installation idempotent.
+R8 policy: [ADR 0086](../../../../docs/decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md);
+[source audit](../../../../docs/audits/R8-C-addon-compat.md).
 
-## Installation routes
+## Inputs and installation
 
-`NativeLoaderRenderGuard.installation` names the route that installed it:
+- The generated initializer's __NATIVELOADER_RTX_GUARD_EARLY flag and local cache existence proof
+  give installation="early". The local loader's DATA native-loader/status.json must report active
+  RTX, preventing a listen host's served initializer/autorun from enabling the guard on vanilla clients.
+- An active local start without the early view installs at ordinary autorun, installation="autorun".
+- The verified native multiplayer bootstrap's raw marker in a private environment gives
+  installation="verified multiplayer bootstrap". It can run after remote server autoruns. Global
+  or inherited markers do not authorize installation. This route uses the real _G hook table.
+- SERVER/MENU_DLL and RTX-off starts return without mutation or AddCSLuaFile. No native catalog API
+  is exposed/consulted by this file. Status-file proof is an accident check, not a security boundary.
 
-- **"early"**: the loader's generated initializer view sets __NATIVELOADER_RTX_GUARD_EARLY after
-  the pinned stock initializer, and only when its own cache file exists on this machine
-  (`file.Exists(..., "BASE_PATH")`).
-- **"autorun"**: a local RTX start whose early view was not prepared or not installed (a GMod
-  update changed the stock initializer, the catalog could not be verified, ...) installs from this
-  ordinary autorun, late like ADR 0022's guard. The loader's status notes say why the early view
-  was unavailable. The dispatcher replacement and API wrappers are those of the early route;
-  aliases cached by add-ons that loaded before it are a stated limit.
-- **"verified multiplayer bootstrap"**: the existing NATIVELOADER_VERIFIED_MULTIPLAYER marker
-  raw-set only in the native bootstrap's private hash-verified chunk environment; an inherited
-  marker or one set in the global environment is not accepted. It runs after the menu
-  poll/bootstrap readiness checks (GAMEMODE and a valid local player), after the remote server's
-  autoruns: it cannot protect first-load operations that happened before it, earlier native aliases
-  may be cached and the late enum snapshot is not guaranteed pristine.
+Read cfg/nativeloader_session.cfg for declared session pins. The saved nativeloader_guard convar
+(default 1) delegates future calls/callbacks to originals at zero. A fresh RTX-off session restores
+normal add-on setup; toggling the guard cannot recreate resources skipped earlier in that Lua state.
 
-A listen host serves both this file (autorun files are sent to clients automatically) and its
-generated initializer to remote clients. The early and autorun routes therefore also require
-this machine's own loader to have reported an active RTX start: `native-loader/status.json` (DATA),
-which the loader rewrites at every start before Lua runs, must hold the active activation outcome.
-A remote vanilla client, or a loader user whose own start is RTX-off, installs nothing. Lua on a
-server can write DATA files, so this is a local-session check against accidents, not a security
-boundary; the guard has no native capability to grant. Without a route the client returns before
-creating convars or replacing APIs, including in vanilla fallback. The SERVER realm returns
-without `AddCSLuaFile`; the menu realm returns. The guard does not consult or expose the temporary
-native catalog API. See [ADR 0056](../../../../docs/decisions/0056-guard-and-startup-fallbacks.md).
+## Non-throwing capability policy
 
-The saved nativeloader_guard 0 setting immediately delegates to original behavior, including
-quarantined callbacks. Native allowlists, sv_allowcslua, user.conf and installed Steam files are
-unchanged. There are no file writes or network operations. The only file reads are the loader's
-session cfg and status.json.
+A deliberate refusal reports one bounded console note and returns safely. It never calls error,
+ErrorNoHaltWithStack or callback quarantine. Actual add-on/native API Lua errors are separate.
 
-## Session settings and existing behavior
+| Request | Fallback under RTX |
+|---|---|
+| Invalid, oversized, unreviewed-format, cubemap, effect-owned or reserved shadow RT creation | Shared lazily created 1x1 RGBA8, depth-none engine ITexture; callers can use Width/Height/GetName normally |
+| Exact reserved _rt_resolvedfullframedepth name (case/extension normalized) | Source's own getter texture; no recreation/reconfiguration |
+| Allocator Lua error while creating the inert target | Reuse an engine screen-effect texture if available; not recovery from OOM/native/GPU failure |
+| Loading/creating/reading any material, including DepthWrite, screenspace_general, LUX and custom programs | Original native material, arguments and returns; embedded NUL still receives the safe fallback |
+| Untrusted render/surface binding of those shader families/programs | Shared transparent UnlitGeneric engine IMaterial; its mutators are ignored and associated draws stay inert |
+| Unsupported copy, MRT bind, material mutation, renderer reload, recursive/invalid view | No values, no native dispatch |
+| Audited rendering/reconstruction/world-building callbacks | Inert; Initialize and API-definition hooks can finish |
+| NeedsDepthPass | False, including filtered registrations reached by cached dispatchers |
 
-Read pins from cfg/nativeloader_session.cfg, retain engine motion blur at zero while its Lua
-getters report one, and retain the existing stock PostFX/halo suppression. Normal fresh RT
-drawing and DrawScreenQuad are not globally disabled. The Initialize hook also catches PostFX
-functions defined after the early install.
+Supported color IDs are -1,0,1,2,3,4,11,12,16,24,25,27; raw R32F27 is an explicit MMDHL control.
+The stock size modes 0-9 and depth modes 0-3 are numeric policy constants, independent of later
+add-on enum exports. Depth-only mode 3 is refused. Fractional dimensions follow native truncation;
+full-frame/HDR modes preserve -1/-1. Rounded-up frame buffers are budgeted at rounded-up dimensions.
+Bounds: 16,384 per axis, 64 Mi pixels, estimated 128 MiB color bytes per new target, 128 names and
+512 MiB per virtual source file, 1 GiB total tracked Lua allocations. Canonical cache-name reuse
+counts once. These estimates omit depth buffers/driver overhead/native allocations; they are not
+measured VRAM availability. Exhaustion gets the same shared fallback, never another named target.
 
-RunConsoleCommand, Player:ConCommand, game.ConsoleCommand and ConVar SetInt/SetFloat/SetString/
-SetBool enforce pins. Command parsing handles quoted semicolons, command chains, newlines,
-indirect toggle/incrementvar/multvar/cycle and nested alias/bind payloads (four levels).
-mat_dxlevel and mat_hdr_level are pinned to the declared session value or their early native
-value, without the old source-name exemption. Other pins retain the earlier remixbinary,
-remixlua and nativeloader exemption; these strings are not a security boundary.
-Lua mat_reload*, mat_setvideomode, mat_restart and vid_restart commands are refused.
-Console names/arguments and command strings reject embedded NUL before native dispatch, including
-alias/bind payloads. Material paths and CreateMaterial names/shaders reject NUL before native
-loading/creation, so Lua lookup cannot disagree with a truncated native C-string name.
-Interactive native console commands and unseen preexisting aliases/exec-file bodies are outside
-this Lua interception contract.
+Material and CreateMaterial remain native for all callers, including known effect sources. There
+is no evidence that loading/reading alone caused the tester's crash. PBR conversion needs the real
+ExoPBR/GPBR shader and texture parameters; MMDHL's immediate path creates its own custom programs.
+The guard never reads VMT text: plain/trusted/image/repeat loads add zero file.Read calls, and do
+not inspect shader metadata or caller paths. Only the existing status/session startup reads remain.
 
-## Native call preconditions
+Untrusted render/surface bindings inspect native GetShader and, if necessary, GetString for custom
+pixel/vertex programs or reserved base textures. Decisions and creation hints use weak material
+keys; material mutations invalidate cached decisions even while the switch is off. Custom creation
+hints survive native fallback shaders and later cached-name reuse with different parameters.
+Entity setters resolve their material path through native Material, including !CreateMaterial
+references, at the binding boundary. Weak-valued path entries avoid repeat native resolutions
+while the material is live. Normal native cold loading, missing-material errors and VMT/Patch
+parsing remain the engine's responsibility; Lua does not claim native load-time fault prevention.
 
-Early installation captures image-format, RT-size and RT-depth enums before add-ons can rewrite
-globals; the verified multiplayer route captures the values present at its later installation.
-COUNT/NUM_FORMATS sentinels are excluded. Enums are not exhaustive: also permit backend-verified
-R32F raw format 27, used by the shipped MMDHL 1024x1024 shadow target even on builds without the
-IMAGE_FORMAT_R32F Lua constant. This is a format allowance, not an add-on prefix exemption.
-Preserve IMAGE_FORMAT_DEFAULT and full-frame -1/-1
-dimensions. GetRenderTargetEx requires known captured modes/formats and finite unsigned flags.
-Literal/non-PO2 modes and ordinary fresh targets remain usable. Fractional dimensions are checked
-as the native API uses them, truncated toward zero (ScrW() / 3 is valid; 0.5 is not), and the
-original arguments are forwarded. Limits are 16,384 per axis, 64 million pixels per target and
-128 newly named targets per virtual caller. The name quota is not a measured VRAM budget;
-repeated use of a cached name does not consume it again.
+The guard embeds 344 exact package Lua virtual paths. A test verifies the table against indexed
+package paths/SHA-256 values plus companion/glass Lua, excludes the retired glass add-on and checks
+internal collisions. Bindings and material mutations from these paths bypass the new material
+policy; target/cvar/scope protections remain. Tests replay every path, including both fixes PBR
+readers, the hotloader, companion, nlglass, advanced material editor, bodygroup tools and motion
+importer. Untrusted reuse of a material made by one of these callers still encounters the filter.
+There are no prefix/wildcard exemptions. Source labels omit the add-on directory, so a different
+add-on at an identical virtual path, or code forging that chunk label, can bypass material filters.
+Catalog hashes verify shipped bytes, not the runtime source label. This is a compatibility rule,
+not authentication or a native permission; details and collision consequences are in ADR 0086.
 
-Lua recreation of engine-owned shadowdepthtexture and resolvedfullframedepth targets is refused,
-including case/extension aliases. DepthWrite/screenspace_general creation, known unsupported
-material draws, resolved-depth generation, lightmap rebuilding and binding a texture to MRT slots
-1-3 are refused with a Lua error. Slot zero, nil restoration of slot zero and clearing slots 1-3
-with nil remain valid; slots outside 0-3 are refused. Material-from-disk shaders can only be
-checked after the native Material load; this remains an explicit native-load gap. Shader names
-are cached per material object and texture validity per texture object (weak tables).
+Depth/inert textures cannot be bound or copied. Non-nil MRT slots 1-3 are refused, so mismatched MRT
+attachments never reach native. Valid slot zero, nil MRT clears, normal color copies and fresh
+color targets pass. Suppress incompatible render/surface draws rather than drawing a black overlay
+or accidentally drawing with the previously bound material. Unsupported world/brush/entity
+material overrides/mutations are ignored; normal material setters and UI drawing remain usable.
 
-RenderView keeps ordinary sequential calls, optional/current-view fields and native returns.
-It rejects non-finite supplied view data and limits nested views to four. This is not a claim
-to catch native recursion faults or infinite Lua loops.
+The audited GShader, FXAA, SSDO and SSR virtual source paths identify effect callbacks. Life Mod
+module-origin APIs are also filtered because its own dispatcher invokes methods directly. GShader's
+world/mesh builds and Real CSM's raster shadow Update/enable work are inert. Normal NikNaks color
+atlases and ordinary projected lights pass. The two GShader lighting wrappers receive private
+FindMetaTable/debug metatable copies with per-object readback, preventing shared native __index
+nesting and cached-light resets from editing native tables. Native Remove retires the public
+GShader projector-cache entries and rebuilds their indices, avoiding retained removed lamps. Source labels are compatibility policy,
+not trusted identity; renamed code needs fresh evidence.
 
-## Callback containment and state
+## Session pins and stock helpers
 
-The early and autorun routes contain loading/render/UI events through hook.Call while preserving
-registry callback identity; hook.Call reads the switch only for these events. The verified
-multiplayer route leaves the remote server's own Lua as it is (ADR 0052): it does not replace
-hook.Call, and wraps only callbacks whose function environment is one of the owned private
-environments (existing render entries, future hook.Add registrations, timer.Create, timer.Simple
-and cvars.AddChangeCallback). Server-delivered callbacks keep their identity and their vanilla
-error behaviour. Late owned render entries deliberately have wrapper identities, so a
-pre-installation cached hook.Call still invokes the error boundary. Initialize, InitPostEntity
-and OnReloaded entries are excluded from this late wrapping; the native bootstrap's equality check
-and owned initialization replay remain valid. NativeLoaderRenderGuard.late_render_wrappers reports
-that route. Registrations through an old cached hook.Add alias or direct registry writes after
-installation can bypass it, as can gamemode or entity methods invoked outside these entries.
+RunConsoleCommand, Player:ConCommand, game.ConsoleCommand and typed ConVar setters enforce pins.
+DX/HDR, r_flashlightdepthres, mat_antialias, mat_aaquality and mat_disable_d3d9ex keep the declared
+session value or captured native value. The critical pins have no source-name exemption.
+`r_forcehwlight` is a critical pin at 0: set to 1, it sends every model Source skins on the GPU
+through fixed-function hardware skinning, which gives Remix no bones, so player models and other
+vanilla characters draw in bind pose around the pelvis (R3-016: Modern House RTX; R8: the
+Backrooms map add-on). A player can still type it into the console.
+Quick Bloom's two raster bloom writes and Real CSM's competing raster-world lighting writes are
+ignored. Existing noncritical source exemptions and motion-blur read compatibility remain.
 
-String IDs, object self, invalid-object removal, first non-nil override and six hook return values
-are preserved. A failing callback is contained: its cleanup runs and its original error and stack
-go to the engine's own error output (ErrorNoHaltWithStack), at most once per callback every ten
-seconds, with a count of the errors suppressed meanwhile. Three consecutive failures within ten
-seconds quarantine a hook ID/function, timer or cvar callback; a success resets the count. A
-gamemode method is never quarantined (base GM:PostDrawViewModel draws the hands for every weapon):
-each failure is contained and reported. Re-registering the same function keeps its late wrapper
-and quarantine; a replacement function runs normally; guard zero delegates to the original
-callback, including quarantined functions. Timer and cvar callbacks keep their original
-arguments/IDs.
+Quoted command chains, newlines, toggle/incrementvar/multvar/cycle, alias/bind payloads (four levels)
+and embedded NUL are checked before native dispatch. Renderer/video reloads require a fresh RTX
+session. Interactive native console writes, existing native aliases and exec-file bodies are outside
+this interception. Existing stock DrawBloom/ColorModify/Sharpen/MotionBlur/ToyTown/MaterialOverlay/
+Sobel/Sunbeams/Texturize/BokehDOF and halo.Render remain suppressed; Initialize catches late definitions.
+Ordinary drawing is not globally disabled.
 
-Protected callbacks cannot pop a tracked scope owned by an active ancestor or an unowned caller.
-A successful completed Pre callback can deliberately leave a scope for a later Post callback;
-that balance remains valid. On caught Lua errors, cleanup unwinds only extra tracked Lua
-RT/camera/clip/model-matrix pushes owned by that callback, plus its known direct RT change.
-Successful nested callbacks contribute their actions to the active parent's chronological undo
-log, so an ancestor failure can unwind known nested pushes. Failed children clean up locally;
-their restoration markers are not propagated or replayed a second time.
-Nested successful direct RT changes also mark the parent for restoration to its recorded entry RT.
-The entry render target is recorded when a callback first touches render targets, not on every
-call. If the failed callback consumed a completed render-target scope, its recorded push arguments
-are replayed only when the expected tracked stack still matches and the texture/viewport remain
-valid. Completed camera/clip/matrix pops cannot be reconstructed reliably from implicit defaults or
-mutable arguments; a subsequent Lua error records that cleanup limitation instead of inventing
-native state. It never guesses native stack depths,
-resets DepthRange to 0..1, or calls mesh.End as an abort. Unknown non-stack state, half-built
-meshes and APIs overwritten later remain limitations. No arbitrary native SEH continuation,
-GPU recovery or universal rendering-add-on compatibility is promised.
+## Callback and scope behavior
 
-Code that fails outside a protected callback can leave a tracked push open (the stock toolgun
-screen around a tool's DrawToolScreen, an ENT:Draw error between cam.Start3D2D and End3D2D). At
-each frame boundary, a new FrameNumber or a top-level PreRender where FrameNumber is unavailable,
-the guard forgets tracked entries no running callback owns; a later pop cannot consume them. Only
-the running callback chain's own scopes count toward the 32-entry limit, so such leftovers never
-make later pushes fail. Native state is not popped on anyone's behalf.
+Early/autorun routes contain selected loading/render/UI callbacks through hook.Call. Unrelated hooks
+keep registry identity, object self, arguments and first non-nil/six hook returns. The late multiplayer
+route contains only callbacks from owned private environments; unrelated server callbacks retain
+identity and vanilla errors. The separate capability filter wraps only known effects and depth
+registrations, including existing entries/new hook.Add, timers and cvar callbacks. Thus a cached
+original hook.Call still invokes those policy refusals. This is the narrow ADR 0086 exception to
+ADR 0056's server-callback identity rule; it adds no general server-error containment.
 
-NativeLoaderRenderGuard exposes bounded local blocked/error/cleanup records and allocation
-counts using virtual Lua source labels. Its records and MsgN lines omit raw exception text and
-private paths; the original error text reaches only the engine's error output, as it would
-without the guard. Messages are emitted once per category/API/source/reason, capped at 128
-records per category.
+Actual failures print original errors/stacks at most once per callback every ten seconds with a
+suppressed count. Three consecutive failures within ten seconds quarantine hooks/timers/cvar
+callbacks; success resets the streak. Gamemode methods never quarantine. Re-registering a different
+function recovers the callback. Per-category records cap at 128; refusal flooding cannot hide errors.
 
-## Verification
+Only observed Lua RT/camera/clip/model pushes are tracked. Ignored pushes create virtual scopes;
+their matching pops do not consume caller-owned native scopes. While such a scope is ignored,
+primary-target resets and secondary views are ignored too, preserving the caller's target. Repeated virtual pushes share a
+counter. A callback cannot pop an active ancestor's/unowned caller's state. Completed Pre/Post
+balancing remains legal. Real-error cleanup unwinds only extra known owned scopes and restores
+known direct target changes; successful children contribute their chronological actions. Never call
+mesh.End as an abort, guess depth zero, or restore arbitrary camera/clip/matrix state. FrameNumber
+(or top-level PreRender) forgets stale unowned bookkeeping without native pops. Only live callback
+chains count toward the 32-native-scope limit. Sequential stereo RenderView calls pass; nested views
+stop at four, and effect-origin views are inert.
 
-The actual-source LuaJIT harness is tools/tests/render_guard_harness.lua, invoked by
-tools/tests/test_render_guard.py. It checks malformed native-call rejection and stock controls,
-not recovery from real native faults. Primary contracts include
-[RT creation](https://wiki.facepunch.com/gmod/Global.GetRenderTargetEx),
-[MRT](https://wiki.facepunch.com/gmod/render.SetRenderTargetEx),
-[depth](https://wiki.facepunch.com/gmod/render.GetResolvedFullFrameDepth),
-[hook returns](https://wiki.facepunch.com/gmod/hook.Call) and
-[pcall limitations](https://wiki.facepunch.com/gmod/Global.pcall).
-The broader read-only audit is under out/c13-evidence/wiki-api-audit.md.
+## Outputs, side effects and verification
+
+NativeLoaderRenderGuard reports policy, installation, enabled state, blocked/errors/cleanup_errors,
+allocations_by_source, allocation_bytes_by_source and allocation_bytes. Notes contain virtual source
+locations, one per API/call site, capped at 128 per category; no private paths or exception bodies
+enter guard records. Real exception text goes only to the engine error output. APIs/convars/hooks
+change in this Lua state. There are no file/config writes, network operations or Steam changes.
+This autorun has no process exit code.
+
+[The LuaJIT harness](../../../../tools/tests/render_guard_harness.lua.md) executes this complete
+production file with fake engine functions. [R8 call replays](../../../../tools/tests/render_guard_addon_replays.lua.md)
+use original minimal snippets reproducing eight add-ons' calls, never third-party add-on code.
+Forty-seven unittest methods cover 49 LuaJIT scenario invocations and the static path-inventory
+check (24 replay scenarios for R8). The [offline cost harness](../../../../tools/tests/bench_render_guard.py.md)
+measures 1,200 distinct and repeated paths against a modeled slow 761-mount lookup.
+These checks prove CPU policy/contract behavior,
+not a GPU/native-fault fix. Foreign remote initializers, earlier native aliases, later API overrides,
+direct registry mutations, unknown shaders, native modules, infinite loops and driver failures
+remain explicit limits. See Claude's QA procedure in the R8-C report after integration.

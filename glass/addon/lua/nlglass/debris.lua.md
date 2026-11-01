@@ -8,6 +8,9 @@ Client module included by G1-A's client initializer. Defines `NLGlassDebris` wit
   preparation or a worker step stay drawn at their last known pose, bounded by the player budget.
 - `Impulse(origin, radius, speed)`: radial velocity kick; wakes and unbatches affected pieces.
 - `Ray(from, to, damage)`: validated server pellet trace; queues at most 32 for 0.5 s and applies
+  A bullet reaching a broken piece carries 60,000 energy per damage point (melee 16,000): a pistol
+  round splits a whole fallen slab and an SMG round all but the largest pieces (R8; at 12,000 only
+  small pieces split). Intact panes keep `damage.lua`'s energies.
   at most eight/frame, only with native interaction available and the local setting enabled.
 - `Clear`, `Count`, `Backend` (`jolt`, `vphysics`, `none`); cleanup keeps the imported map.
 - `Stats`: reused QA counts and native statistics. Adds `worker_busy`, `pose_updates` and
@@ -69,3 +72,17 @@ The fast-body fix adds `scene_examined`, `scene_fast_candidates`, `scene_fast_bo
 prop leaves the pile; current `scene_bodies` can already be zero at the screenshot. Native
 `scene_sweeps`, `scene_sweep_hits` and `scene_sweep_limited` are cumulative for the world and must
 be compared before/after. Think/step dispatch, falling-piece draws and batching are unchanged.
+
+R8-G always enables map/piece collision and reads the archived Source collision mask from debris_settings.lua. At idle worker boundaries it updates optional SetCollisionFlags and passes the mask to scene capture. Stats adds collision_flags. The interaction master stays independent.
+
+R8-G Ray(from,to,damage,radius=0) shares the 32-entry/0.5-second/eight-casts-per-frame queue for bullets and melee. Radius 1-16 uses optional native Melee, with a 256-unit range cap; old modules fall back to a line kick. Idle boundaries renew actual local interest, including fully sleeping scenes. Splits add cause bit 16 (melee).
+
+R8-G replaces synchronous receipt with a FIFO construction queue. Receipt plans numeric descriptors only; Think creates at most 12 meshes/bodies and 8192 vertices per frame, yielding after 0.75 ms (a single geometry/upload/cook cannot be preempted). Never enters an in-flight world. Pending descriptors share the configured fragment budget with live glass; oldest-first eviction counts every original fragment inside a rigid group, so grouping cannot multiply the geometry budget. Group eviction may underfill by at most seven fragments. Count includes planned bodies; Stats.live counts built bodies, fragments counts their retained original fragments, creation_pending/creation_fragments describe the queue. created_last/creation_ms/creation_peak_ms/creation_peak_pending and grouped_fragments expose work and pressure.
+
+A decaying demand counter (256 fragments/s, threshold 192) or >256 moving bodies permits distant detail grouping when SpawnGroup is available. debris_detail.lua keeps every original polygon/hull and protects bounds within 256 units of the eye. Groups share one mesh/rigid transform, at most eight fragments/512 hull points in a 32-unit cell; large fragments remain separate. Groups move on further hits instead of splitting. Fine pieces retain R7 fracture. No authoritative pane density/outline/hole changes, and no forced sleeps or solver changes.
+
+Constructed pieces retain receipt time via inherited expiry; expired queued work creates nothing. A 64-event numeric blast history applies at most eight relevant later kicks at construction, without per-queued-fragment work in the blast callback. Cleanup cancels descriptors/history and frees built meshes. Missing modules keep the conservative 64-fragment fallback and disable new grouping. Settled meshes still use the existing batching path.
+
+Near-detail protection uses the last actual render-camera snapshot, falling back to EyePos before one is available. A third-person/scripted camera near glass therefore retains individual pieces even when the player eye is farther away.
+
+Budget receipt also retires erased individual meshes instead of synchronously releasing hundreds of GPU objects. Think drains at most 16/frame through debris_draw.lua; Stats adds retired_individual/released_individual. Cleanup joins/frees everything as before. Native removals remain immediate/at the worker boundary so invisible old collision bodies cannot intercept later hits.

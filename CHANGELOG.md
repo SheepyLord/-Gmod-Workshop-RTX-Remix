@@ -6,14 +6,37 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
-### R8 (unreleased; [plan](docs/handover/R8-plan.md))
+### R8 (unreleased; [plan](docs/handover/R8-plan.md), [report](docs/handover/R8-report.md))
 
 - **No more noise on Model Hotloader characters** (the user: frame-to-frame noise since the alpha fix,
   worst with DLSS). R7's runtime patch marked a tagged character's material as changed every frame (it
   compared a state that a later draw of the same frame, or a new instance, had replaced), so the
   denoisers and DLSS Ray Reconstruction discarded its history on every pixel. Patch 0018 compares the
-  first draws of consecutive frames only. Remix's disocclusion debug view showed the whole character
-  white before and none after.
+  first draws of consecutive frames only. Remix's disocclusion debug view: 37 % of the frame before, 0 %
+  after.
+- **Vanilla characters in bind pose again** (the user: broken bones and meshes on non-Model-Hotloader
+  characters). The Backrooms map add-on (`gm_br_rtx`, installed in the field the same day) forced
+  `r_forcehwlight 1` on its maps, R3-016's cause: GPU-skinned meshes reach Remix without bones. The add-on
+  no longer sets it (fixes clone, branch `claude/rtx-remix-map-enhancement-bda9ac`, `98d7682`; the field
+  copy updated, the old one backed up), and the RTX guard pins `r_forcehwlight` at 0 against every Lua
+  caller.
+- **Graphics add-ons under RTX without guard-made Lua errors** (the user: GShader Library still crashes or
+  errors on a tester's machine). Blocked calls get safe fallbacks; GShader-style screen-space effects stay
+  inert under RTX and keep working with RTX off; material loads stay native and the package's own Lua is
+  exempt by exact paths; GShader's light-metatable edits stay private; Real CSM's and Quick Bloom's raster
+  settings are pinned ([ADR 0086](docs/decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md)).
+- **Falling glass costs far less.** Piece creation is spread over frames and crowded distant fragments fall
+  as grouped bodies: the 50-pane scene falls at 10.9-11.9 ms instead of 26.3-28.6 ms (p99 35-36 instead of
+  134 ms), settled unchanged ([ADR 0085](docs/decisions/0085-glass-load-collision-and-hits.md)).
+- **Glass collision levels**, like the MMD physics: objects, ragdolls, players and NPCs each have a checkbox;
+  living entities are off by default (one-time migration of archived settings, seven languages).
+- **Bullets and melee break fractured glass at any time.** Clients' interest updates were always refused
+  (the server required 128 bits per region; `net.WriteVector` sends 3-66), so bullets reached pieces only
+  for 2 s after a break; a bullet now carries 60,000 energy per damage point (pistol rounds split whole
+  slabs); crowbar, stunstick, fists and trace-based melee SWEPs are forwarded.
+- **The Backrooms work's native fixes in the RTX fixes DLL**: a cache of models without a SW VTX, lazy model
+  transforms and default-off PAS visibility for the room next door, ported onto the packaged fixes source
+  (corresponding source in `packages/fixes/licenses/oversized-skinning/backrooms/`).
 
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 

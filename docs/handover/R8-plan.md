@@ -51,6 +51,14 @@ shader". The tester's crash is not reproduced here. Brief: [R8-C-addon-compat.md
 
 Brief: [R8-G-glass.md](R8-G-glass.md).
 
+## 6. The Backrooms work's native fixes (R8-B, Codex)
+
+The user, later the same day: "Refer to RTX-Remix modern_house enhancement session, it mentions Backrooms
+addon needs gmRTX's Lua lighting API to create its lights, please also inspect its work and deploy the fixes
+when possible." That session installed the `gm_br_rtx` add-on and its texture mod into the field install and
+left the fixes DLL alone; its three RTXFixesBinary changes reach players only through this package. Brief:
+[R8-B-backrooms-fixes.md](R8-B-backrooms-fixes.md).
+
 ## Integration
 
 On `r8-int`: the runtime import (patch 0018), both Codex branches, PoC QA (the noise probe with and

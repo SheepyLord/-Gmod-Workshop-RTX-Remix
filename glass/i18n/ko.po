@@ -1,4 +1,4 @@
-# MIT; translations written for G1.
+# MIT; translations written for G1 and R8.
 # Translations of the GMod native loader glass (the RTX Remix tab, the guide).
 # Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
 msgid ""
@@ -10,97 +10,117 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "일반 유리"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "강화 유리"
 
-#: addon/lua/nlglass/menu.lua:43
+#: addon/lua/nlglass/menu.lua:58
 msgid "Server settings require an administrator."
 msgstr "서버 설정을 바꾸려면 관리자 권한이 필요합니다."
 
-#: addon/lua/nlglass/menu.lua:44
+#: addon/lua/nlglass/menu.lua:59
 msgid "Map windows"
 msgstr "맵 창문"
 
-#: addon/lua/nlglass/menu.lua:45
+#: addon/lua/nlglass/menu.lua:60
 msgid "Spawned glass"
 msgstr "생성할 유리"
 
-#: addon/lua/nlglass/menu.lua:46
+#: addon/lua/nlglass/menu.lua:61
 msgid "Kind, strength and piece size apply to new panes; clean up the map to replace its windows."
 msgstr "종류, 강도, 파편 크기는 새 유리에 적용됩니다. 맵을 정리하면 창문에도 적용됩니다."
 
-#: addon/lua/nlglass/menu.lua:47
+#: addon/lua/nlglass/menu.lua:62
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
 msgid "Glass strength"
 msgstr "유리 강도"
 
-#: addon/lua/nlglass/menu.lua:48
+#: addon/lua/nlglass/menu.lua:63
 msgid "Show cracks"
 msgstr "균열 표시"
 
-#: addon/lua/nlglass/menu.lua:53
+#: addon/lua/nlglass/menu.lua:68
 msgid "Piece size"
 msgstr "파편 크기"
 
-#: addon/lua/nlglass/menu.lua:54
+#: addon/lua/nlglass/menu.lua:69
 msgid "Velocity transfer"
 msgstr "속도 전달 배율"
 
-#: addon/lua/nlglass/menu.lua:55
+#: addon/lua/nlglass/menu.lua:70
 msgid "Player break speed"
 msgstr "플레이어 충돌 파괴 속도"
 
-#: addon/lua/nlglass/menu.lua:56
+#: addon/lua/nlglass/menu.lua:71
 msgid "Default: 250 units/s; walking stays below this threshold."
 msgstr "기본값: 초당 250 유닛. 걷기 속도는 이 기준보다 낮습니다."
 
-#: addon/lua/nlglass/menu.lua:57
+#: addon/lua/nlglass/menu.lua:72
 msgid "Player / NPC mass (kg)"
 msgstr "플레이어 / NPC 질량 (kg)"
 
-#: addon/lua/nlglass/menu.lua:58
+#: addon/lua/nlglass/menu.lua:73
 msgid "Broken pieces are local to you and collide with the map and other pieces."
 msgstr "파편은 각 클라이언트에서 시뮬레이션되며 맵과 다른 파편에 충돌합니다."
 
-#: addon/lua/nlglass/menu.lua:59
+#: addon/lua/nlglass/menu.lua:74
 msgid "Debris lifetime (s; 0 = until cleanup)"
 msgstr "파편 수명 (초, 0 = 정리할 때까지)"
 
-#: addon/lua/nlglass/menu.lua:60
+#: addon/lua/nlglass/menu.lua:75
 msgid "Debris budget"
 msgstr "파편 수 제한"
 
-#: addon/lua/nlglass/menu.lua:61
-msgid "Pieces collide with each other"
-msgstr "파편끼리 충돌"
-
-#: addon/lua/nlglass/menu.lua:62
+#: addon/lua/nlglass/menu.lua:76
 msgid "Bodies and damage affect broken pieces"
 msgstr "물체와 피해가 유리 파편에 영향"
 
-#: addon/lua/nlglass/menu.lua:63
-msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
-msgstr "플레이어, 소품, 총알, 폭발 및 낙하로 유리 파편이 움직이거나 부서집니다. 유리 파편은 물체를 밀어내지 않습니다."
+#: addon/lua/nlglass/menu.lua:77
+msgid "Bullets, melee, blasts and falls move or break your pieces. Glass never pushes back."
+msgstr "총알, 근접 공격, 폭발, 낙하로 파편이 움직이거나 깨집니다. 유리는 상대를 밀지 않습니다."
 
-#: addon/lua/nlglass/menu.lua:64
+#: addon/lua/nlglass/menu.lua:78
+msgid "Collide with (map and other pieces always enabled)"
+msgstr "충돌 대상 (맵 및 다른 파편과의 충돌은 항상 켜짐)"
+
+#: addon/lua/nlglass/menu.lua:79
+msgid "Objects (props and physics objects)"
+msgstr "물체 (소품 및 물리 오브젝트)"
+
+#: addon/lua/nlglass/menu.lua:80
+msgid "Ragdolls"
+msgstr "래그돌"
+
+#: addon/lua/nlglass/menu.lua:81
+msgid "Living players"
+msgstr "살아 있는 플레이어"
+
+#: addon/lua/nlglass/menu.lua:82
+msgid "Living NPCs and NextBots"
+msgstr "살아 있는 NPC 및 NextBot"
+
+#: addon/lua/nlglass/menu.lua:83
+msgid "Default: objects and ragdolls; living entities pass through your pieces."
+msgstr "기본값: 물체와 래그돌. 살아 있는 개체는 파편을 통과합니다."
+
+#: addon/lua/nlglass/menu.lua:84
 msgid "Reset to Defaults"
 msgstr "기본값으로 초기화"
 
-#: addon/lua/nlglass/menu.lua:75
-#: addon/lua/nlglass/menu.lua:78
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:95
+#: addon/lua/nlglass/menu.lua:98
+#: addon/lua/nlglass/menu.lua:100
 msgid "Glass settings"
 msgstr "유리 설정"
 
-#: addon/lua/nlglass/menu.lua:82
+#: addon/lua/nlglass/menu.lua:102
 msgid "Glass pane"
 msgstr "유리판"
 

@@ -3,7 +3,7 @@
 Runs the actual self-contained early guard with mocked native interfaces. Arguments are guard
 source and scenario; test_render_guard.py invokes it through LuaJIT. Checks no mutation without
 verified early/native-client RTX proof, idempotence, immediate
-off switch, legacy PostFX/motion-blur behavior, typed/multi-command pins, early enum snapshots,
+off switch, legacy PostFX/motion-blur behavior, typed/multi-command pins, reviewed numeric enums,
 reserved/invalid allocations, normal texture UI and importer copies, unsupported shaders/depth/MRT,
 sequential and nested views, hook registry/function identity, object self and return values,
 quarantine, timer/cvar callback arguments and private diagnostics. Embedded-NUL console names,
@@ -17,7 +17,7 @@ deterministic.
 
 The multiplayer fixture executes the actual source in a non-global environment with the native
 bootstrap's raw verified marker and a scoped hook proxy with its own Add forwarding function.
-It requires the real global dispatcher to stay unchanged, protects only functions whose
+It requires the real global dispatcher to stay unchanged in the late route, protects only functions whose
 environment is that private one (server callbacks, timers and their errors keep vanilla
 behaviour), retains loading-hook identity, does not consult the temporary catalog API or
 status.json, and reports its later installation provenance. Early-mode registry identity stays
@@ -50,3 +50,24 @@ DrawToolScreen) over forty frames and forty failing ENT:Draw scopes in one frame
 never refused, scopes from earlier frames cannot satisfy a later pop, and a protected callback's
 own 33rd scope is still refused and unwound. The hooks case keeps the original error message out
 of the guard's records and MsgN lines while the mocked engine error output receives it.
+
+R8 scenarios prefixed r8_ dispatch to [render_guard_addon_replays.lua](render_guard_addon_replays.lua.md)
+with shared fake-engine state and counters. Fixtures include VMT text, cached native materials,
+material/entity/projector metatables (including native projector removal), render/surface draws,
+copies and a failing native allocator. Native bind doubles require material objects, so an invalid
+fallback cannot pass silently. One r8_mp_ scenario runs
+through the private late installation while invoking the pre-installation dispatcher. The harness
+never loads third-party Lua or starts a game. Current combined count: 47 methods, including one
+static inventory/hash check, and 49 LuaJIT invocations (24 R8 replay scenarios).
+The MATERIAL_RT_DEPTH fixture uses the official shared=0, separate=1, none=2, only=3 constants.
+
+Material review scenarios check real ExoPBR/GPBR reading, hotloader custom-program creation/draws,
+all 344 exact bundled virtual paths, untrusted reuse, lookalike labels and the documented identical
+source-label collision. Native shader/program metadata is cached and invalidated on mutation.
+The r8_material_cost scenario asserts zero added file.Read calls across mixed paths, PNG/JPG,
+trusted calls, repeated misses and bindings. Entity repeats add no native resolution or metadata
+queries while objects remain live; trusted entity bindings add no resolution. An optional third
+argument models minimum milliseconds per failed VMT lookup across 761 mounts. The nonasserting
+r8_material_bench scenario permits comparison with an older guard; it emits BENCH JSON rows and
+uses QueryPerformanceCounter through LuaJIT FFI on Windows (os.clock elsewhere). See
+[bench_render_guard.py](bench_render_guard.py.md) for measurement scope and output.

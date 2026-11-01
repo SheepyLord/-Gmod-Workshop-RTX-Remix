@@ -5,6 +5,10 @@ local NET_VIEW, NET_NEXT, NET_FIXTURE = "nlglass_qa_view", "nlglass_qa_next", "n
 -- The walk and run steps hold the player's own keys: forward (and sprint), facing west. Both realms run it,
 -- so prediction agrees; GMod picks the run speed from the user command's buttons, not from the move data.
 hook.Add("StartCommand", "nlglass_qa_walk", function(ply, cmd)
+    if CurTime() < ply:GetNW2Float("nlglass_qa_attack_until", 0) then
+        cmd:ClearMovement();cmd:SetViewAngles(ply:GetNW2Angle("nlglass_qa_attack_angle",angle_zero))
+        cmd:SetButtons(IN_ATTACK);return
+    end
     if CurTime() > ply:GetNW2Float("nlglass_qa_move_until", 0) then return end
     local sprint = ply:GetNW2Bool("nlglass_qa_sprint", false)
     cmd:ClearMovement() cmd:SetViewAngles(Angle(0, 180, 0)) cmd:SetForwardMove(10000)
@@ -212,6 +216,52 @@ if SERVER then
             view("interact_cleanup", A, .2)
         end)
     end
+    local function r8()
+        local A=ORIGIN+Vector(-220,0,2)
+        local savedWeapon=IsValid(owner:GetActiveWeapon()) and owner:GetActiveWeapon():GetClass()
+        local function option(kind)
+            net.Start(NET_FIXTURE);net.WriteString(kind);net.WriteVector(A);net.Send(owner)
+        end
+        local function fixture(kind) clear();option(kind);owner:SetPos(ORIGIN) end
+        local function attack(class,label)
+            owner:Give(class);owner:SelectWeapon(class)
+            if class=="weapon_pistol" then owner:GiveAmmo(60,"Pistol",true)
+            elseif class=="weapon_smg1" then owner:GiveAmmo(120,"SMG1",true) end
+            owner:SetPos(Vector(A.x+8,A.y,ORIGIN.z));owner:SetVelocity(-owner:GetVelocity())
+            local angle=(A+Vector(10,10,0)-owner:GetShootPos()):Angle()
+            owner:SetEyeAngles(angle)
+            -- After the weapon's deploy animation (a pistol cannot fire for about a second after SelectWeapon).
+            timer.Simple(1.5,function()
+                local beforeHits,beforeMelee=NLGlass.Bullets.sent,NLGlass.Melee.sent
+                owner:SetNW2Angle("nlglass_qa_attack_angle",angle)
+                owner:SetNW2Float("nlglass_qa_attack_until",CurTime()+.4)
+                say("%s: real %s input",label,class)
+                timer.Simple(.6,function() say("%s: forwarded hit delta %d, melee delta %d",label,
+                    NLGlass.Bullets.sent-beforeHits,NLGlass.Melee.sent-beforeMelee)end)
+                view(label,A,1.5)
+            end)
+        end
+        add(function() option("r8_defaults");fixture("slab");view("r8_old_pile_before",A,61) end)
+        add(function() attack("weapon_pistol","r8_pistol_60s") end)
+        add(function() attack("weapon_smg1","r8_smg_60s") end)
+        add(function() fixture("slab");view("r8_crowbar_before",A,3) end)
+        add(function() attack("weapon_crowbar","r8_crowbar") end)
+        local function walk(label,players)
+            add(function() option(players and "r8_players" or "r8_defaults");fixture("pile");view(label.."_before",A,3) end)
+            add(function()
+                owner:SetPos(Vector(A.x+110,A.y,ORIGIN.z));owner:SetVelocity(-owner:GetVelocity());owner:SetEyeAngles(Angle(0,180,0))
+                local health=owner:Health();owner:SetNW2Bool("nlglass_qa_sprint",false)
+                owner:SetNW2Float("nlglass_qa_move_until",CurTime()+1.3)
+                timer.Simple(1.4,function()
+                    say("%s: Source x %.2f health %d -> %d, players %s",label,owner:GetPos().x,health,owner:Health(),tostring(players))
+                    view(label,A,.2)
+                end)
+            end)
+        end
+        walk("r8_default_walk",false);walk("r8_players_walk",true)
+        add(function() option("r8_restore");fixture("empty");if savedWeapon then owner:SelectWeapon(savedWeapon) end
+            view("r8_cleanup",A,.3) end)
+    end
     local function map()
         local panes = {}
         for _, e in ipairs(ents.FindByClass("func_breakable")) do
@@ -256,7 +306,7 @@ if SERVER then
         if not IsValid(owner) then return end
         steps, tags, index = {}, {}, 0
         watch()
-        if args[1] == "map" then map() elseif args[1] == "old" then old() elseif args[1] == "interact" then interact()
+        if args[1] == "map" then map() elseif args[1] == "old" then old() elseif args[1] == "interact" then interact() elseif args[1]=="r8" then r8()
         else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
         if args[1] == "contact" then -- only the walk and run steps
             local only = {} for i, fn in ipairs(steps) do if tags[i] == "contact" then only[#only + 1] = fn end end steps = only
@@ -266,11 +316,27 @@ if SERVER then
     return
 end
 -- client: frame the step, report the broken-glass manager, measure frame times, print NL_SHOT
-local camera, frames
+local camera, frames, savedR8
 net.Receive(NET_FIXTURE, function()
     local kind, at = net.ReadString(), net.ReadVector()
     local d = NLGlassDebris
     if not d then print("NL_QA interaction fixture FAILED: missing manager");return end
+    if kind:match("^r8_") then
+        if kind=="r8_restore" then
+            if savedR8 then for name,value in pairs(savedR8)do RunConsoleCommand(name,tostring(value))end;savedR8=nil end
+        else
+            if not savedR8 then
+                savedR8={};for _,name in ipairs({"rtx_glass_debris_collide_with","rtx_glass_debris_interact","rtx_glass_debris_lifetime"})do
+                    local cv=GetConVar(name);savedR8[name]=cv and cv:GetFloat() or 0
+                end
+                print(string.format("NL_QA r8 saved flags %s interact %s lifetime %s",tostring(savedR8.rtx_glass_debris_collide_with),
+                    tostring(savedR8.rtx_glass_debris_interact),tostring(savedR8.rtx_glass_debris_lifetime)))
+            end
+            RunConsoleCommand("rtx_glass_debris_collide_with",kind=="r8_players" and "7" or "3")
+            RunConsoleCommand("rtx_glass_debris_interact","1");RunConsoleCommand("rtx_glass_debris_lifetime","180")
+        end
+        return
+    end
     d.Clear()
     local list = {}
     local function piece(x, y, width, height)
@@ -317,6 +383,10 @@ local function stats(label)
         tostring(s.scene_fast_bodies), tostring(s.scene_peak_bodies), tostring(s.scene_fast_boxes),
         tostring(s.scene_fast_candidates), tostring(s.scene_examined), tostring(n.scene_sweeps),
         tostring(n.scene_sweep_hits), tostring(n.scene_sweep_limited)))
+    print(string.format("NL_QA r8 %s flags %s fragments %s queued %s queued_fragments %s created %s creation_ms %s creation_peak %s grouped %s melee_hits %s melee_splits %s melee_limited %s retired %s released %s",
+        label,tostring(s.collision_flags),tostring(s.fragments),tostring(s.creation_pending),tostring(s.creation_fragments),
+        tostring(s.created_last),f(s.creation_ms),f(s.creation_peak_ms),tostring(s.grouped_fragments),tostring(n.melee_hits),
+        tostring(s.splits_melee),tostring(n.melee_limited),tostring(s.retired_individual),tostring(s.released_individual)))
 end
 local pending
 net.Receive(NET_VIEW, function()

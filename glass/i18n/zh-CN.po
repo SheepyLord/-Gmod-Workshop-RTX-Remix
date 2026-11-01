@@ -1,4 +1,4 @@
-# MIT; translations written for G1.
+# MIT; translations written for G1 and R8.
 # Translations of the GMod native loader glass (the RTX Remix tab, the guide).
 # Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
 msgid ""
@@ -10,97 +10,117 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "退火玻璃"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:83
+#: addon/lua/nlglass/menu.lua:103
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "钢化玻璃"
 
-#: addon/lua/nlglass/menu.lua:43
+#: addon/lua/nlglass/menu.lua:58
 msgid "Server settings require an administrator."
 msgstr "服务器设置需要管理员权限。"
 
-#: addon/lua/nlglass/menu.lua:44
+#: addon/lua/nlglass/menu.lua:59
 msgid "Map windows"
 msgstr "地图窗户"
 
-#: addon/lua/nlglass/menu.lua:45
+#: addon/lua/nlglass/menu.lua:60
 msgid "Spawned glass"
 msgstr "生成的玻璃"
 
-#: addon/lua/nlglass/menu.lua:46
+#: addon/lua/nlglass/menu.lua:61
 msgid "Kind, strength and piece size apply to new panes; clean up the map to replace its windows."
 msgstr "类型、强度和碎片大小仅应用于新玻璃；清理地图即可重建窗户。"
 
-#: addon/lua/nlglass/menu.lua:47
+#: addon/lua/nlglass/menu.lua:62
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:82
 msgid "Glass strength"
 msgstr "玻璃强度"
 
-#: addon/lua/nlglass/menu.lua:48
+#: addon/lua/nlglass/menu.lua:63
 msgid "Show cracks"
 msgstr "显示裂纹"
 
-#: addon/lua/nlglass/menu.lua:53
+#: addon/lua/nlglass/menu.lua:68
 msgid "Piece size"
 msgstr "碎片大小"
 
-#: addon/lua/nlglass/menu.lua:54
+#: addon/lua/nlglass/menu.lua:69
 msgid "Velocity transfer"
 msgstr "速度传递"
 
-#: addon/lua/nlglass/menu.lua:55
+#: addon/lua/nlglass/menu.lua:70
 msgid "Player break speed"
 msgstr "玩家撞碎速度"
 
-#: addon/lua/nlglass/menu.lua:56
+#: addon/lua/nlglass/menu.lua:71
 msgid "Default: 250 units/s; walking stays below this threshold."
 msgstr "默认值：250 单位/秒；步行速度低于此阈值。"
 
-#: addon/lua/nlglass/menu.lua:57
+#: addon/lua/nlglass/menu.lua:72
 msgid "Player / NPC mass (kg)"
 msgstr "玩家／NPC 质量（kg）"
 
-#: addon/lua/nlglass/menu.lua:58
+#: addon/lua/nlglass/menu.lua:73
 msgid "Broken pieces are local to you and collide with the map and other pieces."
 msgstr "碎片仅在你的客户端模拟，与地图和其他碎片碰撞。"
 
-#: addon/lua/nlglass/menu.lua:59
+#: addon/lua/nlglass/menu.lua:74
 msgid "Debris lifetime (s; 0 = until cleanup)"
 msgstr "碎片寿命（秒；0 = 保留到清理）"
 
-#: addon/lua/nlglass/menu.lua:60
+#: addon/lua/nlglass/menu.lua:75
 msgid "Debris budget"
 msgstr "碎片数量上限"
 
-#: addon/lua/nlglass/menu.lua:61
-msgid "Pieces collide with each other"
-msgstr "碎片互相碰撞"
-
-#: addon/lua/nlglass/menu.lua:62
+#: addon/lua/nlglass/menu.lua:76
 msgid "Bodies and damage affect broken pieces"
 msgstr "物体和伤害影响碎玻璃"
 
-#: addon/lua/nlglass/menu.lua:63
-msgid "Players, props, bullets, blasts and falls move or break your pieces. Glass never pushes back."
-msgstr "玩家、道具、子弹、爆炸和坠落会推动或击碎你看到的碎片。玻璃不会反向推挤物体。"
+#: addon/lua/nlglass/menu.lua:77
+msgid "Bullets, melee, blasts and falls move or break your pieces. Glass never pushes back."
+msgstr "子弹、近战、爆炸和坠落会推动或击碎碎片。玻璃不会反向施力。"
 
-#: addon/lua/nlglass/menu.lua:64
+#: addon/lua/nlglass/menu.lua:78
+msgid "Collide with (map and other pieces always enabled)"
+msgstr "碰撞对象（始终与地图和其他碎片碰撞）"
+
+#: addon/lua/nlglass/menu.lua:79
+msgid "Objects (props and physics objects)"
+msgstr "物体（道具和物理对象）"
+
+#: addon/lua/nlglass/menu.lua:80
+msgid "Ragdolls"
+msgstr "布娃娃"
+
+#: addon/lua/nlglass/menu.lua:81
+msgid "Living players"
+msgstr "活着的玩家"
+
+#: addon/lua/nlglass/menu.lua:82
+msgid "Living NPCs and NextBots"
+msgstr "活着的 NPC 和 NextBot"
+
+#: addon/lua/nlglass/menu.lua:83
+msgid "Default: objects and ragdolls; living entities pass through your pieces."
+msgstr "默认：物体和布娃娃；活着的实体会穿过你的碎片。"
+
+#: addon/lua/nlglass/menu.lua:84
 msgid "Reset to Defaults"
 msgstr "恢复默认设置"
 
-#: addon/lua/nlglass/menu.lua:75
-#: addon/lua/nlglass/menu.lua:78
-#: addon/lua/nlglass/menu.lua:80
+#: addon/lua/nlglass/menu.lua:95
+#: addon/lua/nlglass/menu.lua:98
+#: addon/lua/nlglass/menu.lua:100
 msgid "Glass settings"
 msgstr "玻璃设置"
 
-#: addon/lua/nlglass/menu.lua:82
+#: addon/lua/nlglass/menu.lua:102
 msgid "Glass pane"
 msgstr "玻璃板"
 

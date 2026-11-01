@@ -1,5 +1,90 @@
 # Research notes
 
+## R8-C material review: loading, provenance and cost (2026-11-01)
+
+The fixes' `remixlua/cl/cl_fix_pbr_materials.lua:50-72,88` inspects native ExoPBR shader/texture
+fields after Material; inert objects lose those inputs. The hotloader's `mmdhl/client.lua:68-84`
+creates screenspace_general with mmdhl_vs20/mmdhl_ps20b and then sets its textures; blanket creation
+suppression breaks its immediate path. `loader/client/bootstrap.lua:169` compiles owned files with
+@lua/<path> labels, omitting add-on identity. The reviewed guard uses an exact 344-path snapshot
+checked against indexed package hashes plus companion/glass sources (no internal collisions after
+retired glass is excluded). Other mounted add-ons or forged labels can collide and bypass the
+material compatibility exemption; this does not authenticate Lua or grant native execution.
+
+There is no evidence establishing that merely loading/reading these materials caused the tester's
+crash. The known PoC loaded/exited normally; some shader warnings precede Lua. Native loading is
+therefore retained. The review removes all material VMT preflight; only status/session startup
+reads remain. Untrusted bindings inspect cached native shader/program fields. Entity bindings
+resolve once through native Material per live cached path; trusted bindings add no such resolution.
+
+In `out/r8-compat/material-cost.json`, three-run medians with a modeled 761-mount, 1 ms failed
+lookup show the prior guard taking 1,205.573 ms/1,200 mixed paths, 1,204.843 ms/repeated paths and
+1,214.444 ms/PNG+JPG icons: each batch makes 1,200 reads/913,200 modeled mount probes. The reviewed
+guard makes zero material-preflight reads/probes and takes 0.299, 0.247 and 0.909 ms respectively.
+Trusted new reads take 0.959 ms; first/repeat entity bindings 2.167/1.284 ms; fresh/repeat render
+bindings 2.700/2.213 ms. Plain loads make zero metadata queries; entity repeats add zero native
+resolutions or metadata queries. Windows QPC measures batch elapsed time with fake native objects;
+mount probes and 1 ms are explicit assumptions, not field measurements. Native cold I/O and GPU
+behavior remain unmeasured. Expected added guard VMT I/O is zero regardless of 761 mounts. See
+[the reproducible harness](../tools/tests/bench_render_guard.py.md) and
+[updated handover](handover/R8-C-report.md); the older preflight claims below describe the earlier implementation.
+
+## R8-C: graphics add-ons, exact sources (2026-11-01)
+
+[The second audit](audits/R8-C-addon-compat.md) and [hash ledger](audits/R8-C-addon-compat.json)
+index 86 Lua/VMT files and 856 candidate API lines across eight exact installed Workshop archives.
+Every indexed file matches its archive-entry CRC and SHA-256; source bodies remain in ignored
+`out/r8-compat/src`. This is a static inventory, not an execution count. Quick Bloom is now exact: its
+only client autorun writes two bloom cvars in Initialize. Life Mod legacy decoding is bounded and
+its declared-length GMA passes all 98 entry CRCs and aggregate CRC 374141b9.
+
+Claude's existing r8/07-gshader console contains 26 failed-shader lines, an intentional guard error
+at bumps_building.lua:35 and one at worldpos.lua:27 through !!shaderlib.lua:800. The map loads/exits
+normally there; the tester's crash is not reproduced. Raw RGBA32323232F29 is a documented Source
+format, but the guard's old enum snapshot predates GShader exporting it. That false diagnostic is
+separate from backend support: D3D9Ex dependencies, reserved target replacement, MRT/depth copies,
+world-mesh reconstruction and shared light-metatable edits remain concrete capability risks.
+[ADR 0086](decisions/0086-inert-shader-effects-and-safe-guard-fallbacks.md) makes the incompatible
+work inert with real engine-backed fallbacks; it does not claim native/GPU fault recovery.
+
+R8-C final offline checks pass 26 CTests and 488 Python tests (two existing symlink skips), with
+40 guard methods/43 LuaJIT invocations including 18 new replay cases. Repeated GShader light
+acquisition needs readback of its private metatable edits; returning a fresh native-table clone
+on every call would reset the wrong __index table. The harness checks that readback and simulates
+GLua ITexture type labels. Isolating GShader's native Remove override also requires retiring its exported projector-cache entries
+and rebuilding their indices; the replay removes several lamps in sequence and requires an empty
+cache afterward. No actual game, GPU or third-party Lua was executed. The new policy's
+[harness and QA receipt](handover/R8-C-report.md) explicitly separates these results from the
+original tester crash and foreign-initializer startup gap.
+
+## R8-B: Backrooms native port (2026-11-01)
+
+Fixes source `7094baf6edf6797fd5c3f0b58ca668f9307b4906` is based on packaged `a2c8dbc5`.
+The Backrooms branch ends at `e4d548d`; 6b4794f's model-miss cache also needs the model-loader
+hunk from `672ada9`. Its original `GetVtxFileChecksum` returns zero for missing, truncated and
+zero-checksum files: treating all three as absence suppresses a valid lower mount. The port
+reports genuine open failure separately (`source/modelload_fixes.cpp:418`, `:503`, `:519`),
+keeps malformed-file fallback and caps the mutex-protected cache at 65,536 paths. Shutdown
+clears it at `:1499`; hardware-cache flushes keep it. SDK `filesystem.h:515` specifies that a null
+path ID searches all paths; null/all-path misses and GAME misses therefore have separate keys.
+
+The lazy transform is consumed by bone upload at `source/HardwareSkinningHooks.cpp:3179`
+and `:3525`, including the protected automatic oversized path with force-hardware off; per-strip
+state resolves at `:3618`. Nested studio draws preserve pending/cached state at `:3751`.
+`source/culling_patches.cpp:408` validates the unique executable CM_Vis locator and engine-relative
+globals; `:446` validates the vis lump and offset table. SDK `bspfile.h:85` and `:91` define
+65,536 clusters and 16 MiB of visibility. `:475` restores still-owned PVS offsets at module close;
+default-off synchronization does not read the vis table. PAS uses existing engine vis streams,
+not a new BSP decoder. It cannot change a separate multiplayer server's visibility decisions.
+
+Offline checks passed: three production-code harnesses, existing oversized-skinning and
+memory-limit tests, unchanged PE imports/exports, 2,334 pinned dependency files and a clean
+patch reconstruction. DLL size is 4,864,512 bytes (16,896 above the packaged R6 DLL).
+Static add-on/API review found 1,682 lights in gm_br_complex and 2,687 in gm_br_pitfalls;
+package Lua already provides the native lighting globals, Light2RTX clearing and updater hooks,
+and packaged NikNaks has PASForOrigin. No game/frame-time measurement was made in R8-B.
+Details and exact hashes: [corresponding source](../packages/fixes/licenses/oversized-skinning/backrooms/Source.md).
+
 ## R7-B: external exit diagnostics (2026-11-01)
 
 The final text review caught lossy catalog generation through Windows PowerShell 5.1's
@@ -3859,3 +3944,63 @@ PoC, gm_construct, noon, 1920x1080; runs under the main checkout's `out/qa-poc/r
 
   G1 run 10, the old baseline: 25.31 / 113.22 ms falling and 9.74 / 16.39 ms settled. The falling
   p99 is the second-worst of about 150 frames: 113, 134 and 142 ms across runs 10, 27 and 21.
+
+R8-G evidence (2026-11-01): R7 read-only `27-field-off/console.log` and `28-field-on/console.log`
+under the main checkout's `out/qa-poc/r7/` record 26.28/134.30 and 28.60/134.33 ms falling
+mean/p99, settled 9.17/9.32 ms. Lua draw costs about 6.9 ms at roughly 1330 moving draws; the
+remaining engine/Remix ingestion/instance-update costs are not separated by those counters.
+The preserved before/after replay now retains 2000/1998 original fragments in 2000/348 rigid
+draws (four settled batches on both sides). Exact compound creation is in
+`glass/native/world.cpp:409`; split paths reject groups before convex-only access.
+`glass/addon/lua/nlglass/debris_detail.lua:20` plans groups without changing polygons;
+`debris_mesh.lua:53` recentres the same triangles/sub-hulls. Native body origin includes the
+shape COM offset (`third_party/jolt/Jolt/Physics/Body/Body.h:268`), matching the render frame.
+Source collision flags are enforced at `glass/native/world.cpp:474`; changing them invalidates
+Lua shape cache too. The old server router used 32 fixed recent-break spheres/120 seconds;
+`debris_bullets.lua` now takes renewable per-client regions. `debris_melee.lua` observes actual
+SWEP traces/stock swings, keeps the wider line/hull result (stock fists use that pattern), then
+re-clips a containing Source box before the native sphere cast. Numeric region loops remain.
+Primary three-run offline costs and all limits are in [the R8-G report](handover/R8-G-report.md);
+raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claimed from doubles.
+
+## R8: noise on Model Hotloader characters after R7 (2026-11-01, Claude)
+
+- **What discards history.** `geometry_resolver.slangh` (fork, `e9460a14`) sets
+  `discardRRHistory = surface.hasMaterialChanged || (animated water and the option)`; the pixel then
+  writes the DLSS-RR disocclusion value `log(10000)` (RR) or uses the alternate disocclusion threshold
+  (NRD) into `PrimaryDisocclusionThresholdMix`. Remix's debug view 128, "Primary Alternate Disocclusion
+  Threshold", shows that buffer: white where history is thrown away. `DXVK_RTX_DEBUG_VIEW_INDEX=128` in
+  the game's environment turns it on for a whole session; `poc_session.py` passes its environment on.
+- **Patch 0017's comparison.** `InstanceManager::updateInstance` set `hasMaterialChanged` also when the
+  instance's stored `surface.alphaState` differed from the new draw's in `isMmdAlpha` or the cutoff.
+  That stored state is written by `mergeInstanceHeuristics` for a later draw of the same frame (the
+  "opaqueness takes priority" merge), and a new instance starts with a default (untagged) state; only
+  these two writes exist (`rtx_instance_manager.cpp:954`, `:1149`). The material-hash comparison next to
+  it was guarded by `m_materialHash != kEmptyHash`; the alpha comparison was not.
+- **Measured on the PoC** (Robin face up on gm_construct, pinned camera, share of the frame centre
+  that discards history): G1 runtime 0.0 %; R7 runtime with the companion 37.1 %; R7 with the companion
+  stopped before the spawn 0.0 %; R7 with Robin's 166 materials tracked but nothing tagged 0.0 %; R7 with
+  Robin's 15 texture hashes tagged by hand 31.4 %; patch 0018 0.0 %. Frame-to-frame difference inside the
+  character's surfaces (two consecutive shots, DLSS on): R7 shows a grain over dress, arms and hands
+  that G1 and patch 0018 do not (`out/qa-poc/r8/noise-compare.png`).
+- **API notes.** `RemixConfig.GetConfigVariable` returns an empty string for the hash-set option
+  `rtx.gmod.mmdAlphaTexturesForSession`. Setting it to `""` or to a single dummy hash at runtime did not
+  remove tags already applied in these runs (the character stayed white), while adding hashes took effect
+  within seconds; treat runtime removal from that set as unreliable.
+- **Unit tests.** The fork's Release build includes `tests/rtx/unit`; run them with
+  `python -m mesonbuild.mesonmain test -C _CompRelease_x64 --no-rebuild` inside `Enter-VsDevEnv`. Tests
+  that load `d3d9.dll` (`test_remix_categories`) need the runtime's NVIDIA/USD DLLs next to
+  `_CompRelease_x64\src\d3d9\d3d9.dll`; staged from a deployed runtime folder, all 29 pass.
+
+## R8 integration: two facts from the game (2026-11-01, Claude)
+
+- **`net.WriteVector` is compressed.** Each vector takes 3-66 bits (per component a presence bit, then
+  integer and fractional coordinate bits), so a region of a vector and a 32-bit float takes 35-98 bits. A
+  receiver that requires 128 bits per region refuses every real message; glass interest did until R8
+  (PoC `21-glass-r8`: forwarded hits 0 → 1/6 after the fix).
+- **Session cheat variables in the field.** `r_forcehwlight` (created by `gmcl_RTXFixesBinary`, flags 0,
+  default 0) breaks GPU-skinned characters only together with `mat_softwareskin 0`: on the PoC, with
+  `sv_cheats 1` and `mat_softwareskin 1`, a Lua `r_forcehwlight 1` left Kleiner, Alyx and a citizen right
+  (`18-vanilla-control`); R3-016 saw the break once `sv_cheats` had gone 1 → 0 and reset the cheat
+  variable. The field's own `autoexec.cfg` line `r_forcehwlight 1` never applies (the variable does not
+  exist yet when it runs).
