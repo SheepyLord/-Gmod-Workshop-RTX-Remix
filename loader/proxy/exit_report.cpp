@@ -66,7 +66,7 @@ std::string message(const evidence::PreviousSession& previous, std::uint32_t cod
   if (!exception.empty()) text += " (" + label(labels, exception) + ')';
   text += "\n\n" + label(labels, "exit_evidence") + ": ";
   if (previous.folder.empty()) text += label(labels, "evidence_unavailable");
-  else text += fs::utf8(fs::join(root, previous.folder));
+  else text += fs::utf8(fs::join(root, previous.folder).make_preferred());  // one separator style for the user
   return text;
 }
 }  // namespace nl::proxy::exit_report

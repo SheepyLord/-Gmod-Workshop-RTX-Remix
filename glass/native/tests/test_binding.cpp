@@ -100,3 +100,30 @@ TEST_CASE("glass binding background operations return pending results and propag
   CHECK(m.call("BeginLoadMap",{Value::text("bad map")})[0].b);CHECK(failure(poll("PollLoadMap")));
   CHECK(m.call("BeginLoadMap",{bytes})[0].b);CHECK(m.call("Shutdown")[0].b); // joins safely
 }
+TEST_CASE("glass binding validates scene ray damage and split APIs with balanced raw tables") {
+  Module m;m.call("Init",{num(4),num(0)});
+  const auto bsp=nl::glass::fixture::room();m.call("LoadMap",{Value::text(std::string(bsp.begin(),bsp.end()))});m.call("FinishWorld");
+  CHECK(failure(m.call("SetInteraction",{num(1)})));CHECK(m.call("SetInteraction",{Value::boolean(true)})[0].b);
+  CHECK(failure(m.call("SyncBodies",{num(1),num(.016)})));
+  auto row=Value::array({num(1),vector(40,0,32),vector(),vector(4,4,8),num(85),Value{},vector()});
+  auto rows=Value::array({row});CHECK(m.call("SyncBodies",{rows,num(.016)})[0].n==1);
+  CHECK(failure(m.call("SyncBodies",{Value::array({row,row}),num(.016)})));
+  (*row.table)["n6"]=Value::array({hull()});CHECK(m.call("SyncBodies",{rows,num(.016)})[0].type==Type::Number);
+  (*row.table)["n7"]=num(0);CHECK(failure(m.call("SyncBodies",{rows,num(.016)})));
+  CHECK(m.call("ReadRegions")[0].type==Type::Table);CHECK(m.call("ReadDamage")[0].type==Type::Bool);
+  const auto large=Value::object();unsigned n=0;
+  for(auto p:nl::glass::fixture::box(16,12,.5f))(*large.table)["n"+std::to_string(++n)]=vector(p.x,p.y,p.z);
+  CHECK(failure(m.call("Spawn",{large,vector(0,0,32),vector(),vector(),vector(),num(0)})));
+  const auto id=m.call("Spawn",{large,vector(0,0,32),vector(),vector(),vector(),num(4)})[0];
+  CHECK(failure(m.call("Ray",{vector(),vector(),num(-1),num(10)})));
+  CHECK(m.call("Ray",{vector(-100,0,32),vector(100,0,32),num(180000),num(600)})[0].n==id.n);
+  CHECK(m.call("ReadDamage")[0].type==Type::Table);CHECK(m.call("ReadDamage")[0].type==Type::Bool);
+  CHECK(m.call("CanSplit",{id,num(4)})[0].b);
+  CHECK(failure(m.call("Split",{id,num(3)})));
+  const auto parts=m.call("Split",{id,num(4)})[0];CHECK(parts.type==Type::Table);
+  CHECK(parts.table->at("n1").table->at("sid").n!=id.n);
+  CHECK(parts.table->at("n1").table->at("spoly").type==Type::Table);
+  CHECK(!m.call("CanSplit",{id,num(4)})[0].b);CHECK(!m.call("Remove",{id})[0].b);
+  m.call("BeginStep",{num(.016)});CHECK(failure(m.call("SyncBodies",{Value::object(),num(.016)})));
+  CHECK(failure(m.call("ReadDamage")));CHECK(failure(m.call("ReadRegions")));m.call("Clear");
+}

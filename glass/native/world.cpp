@@ -10,6 +10,13 @@
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/ContactListener.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <atomic>
+#include <array>
+#include <limits>
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>
@@ -60,12 +67,15 @@ public:
 };
 class ObjectBroadFilter final:public JPH::ObjectVsBroadPhaseLayerFilter {
 public:
-  bool ShouldCollide(JPH::ObjectLayer a,JPH::BroadPhaseLayer b) const override { return a!=0 || b.GetValue()!=0; }
+  bool ShouldCollide(JPH::ObjectLayer a,JPH::BroadPhaseLayer b) const override {
+    return (a==1 || a==2) || b.GetValue()!=0;
+  }
 };
 class PairFilter final:public JPH::ObjectLayerPairFilter {
 public:
   bool ShouldCollide(JPH::ObjectLayer a,JPH::ObjectLayer b) const override {
-    return (a==0 && b!=0)||(b==0 && a!=0)||(a==1 && b==1);
+    const bool glass_a=a==1 || a==2,glass_b=b==1 || b==2;
+    return (glass_a && (b==0 || b==3))||(glass_b && (a==0 || a==3))||(a==1 && b==1);
   }
 };
 JPH::RefConst<JPH::Shape> hull_shape(const Hull& hull,bool glass) {
@@ -87,21 +97,62 @@ public:
 };
 }
 struct World::Impl {
+  static constexpr unsigned no_queue=std::numeric_limits<unsigned>::max();
   struct Piece {
     std::uint32_t id=0;
     JPH::BodyID body;
     JPH::RVec3 previous=JPH::RVec3::sZero(),current=JPH::RVec3::sZero();
     JPH::Quat before=JPH::Quat::sIdentity(),after=JPH::Quat::sIdentity();
     bool asleep=false,dirty=true;
-    unsigned queued=kMaxBudget;
+    unsigned queued=no_queue;
     std::uint64_t seen=0;
+    float mass=0,thickness=1,threshold=0;
+    bool splittable=false;
+    std::atomic<float> damage{0};
+    std::atomic<unsigned> kinds{0};
+    std::atomic<bool> damage_queued{false};
   };
+  struct Mirror {
+    std::uint32_t key=0;JPH::BodyID body;
+    V3 half;float mass=85,remaining=0;
+    JPH::RVec3 target=JPH::RVec3::sZero();JPH::Quat rotation=JPH::Quat::sIdentity();
+    bool custom=false,seen=false;
+  };
+  struct Contacts final:JPH::ContactListener {
+    Impl& world;
+    explicit Contacts(Impl& w):world(w) {}
+    void contact(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m) {
+      const auto la=a.GetObjectLayer(),lb=b.GetObjectLayer();
+      // No piece-piece damage cascade or work proportional to a resting pile's manifolds.
+      if((la!=0 && la!=3) && (lb!=0 && lb!=3))return;
+      const bool first=la==1 || la==2;
+      const auto& piece=first?a:b;const auto& obstacle=first?b:a;
+      const auto slot=static_cast<unsigned>(piece.GetUserData()-1);
+      if(slot>=world.pieces.size())return;
+      if(!world.pieces[slot].splittable)return;
+      const auto point=m.GetWorldSpaceContactPointOn1(0);
+      const float speed=std::max(0.0f,(a.GetPointVelocity(point)-b.GetPointVelocity(point)).Dot(m.mWorldSpaceNormal))/kMetres;
+      const bool source=obstacle.GetObjectLayer()==3;
+      if(speed<(source?160.0f:220.0f))return;
+      const auto& p=world.pieces[slot];
+      const float mass=source?std::min(world.mirrors[obstacle.GetUserData()-1].mass,p.mass*8):p.mass;
+      world.damage(slot,.5f*mass*speed*speed,source?SourceBody:Fall);
+    }
+    void OnContactAdded(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings&) override { contact(a,b,m); }
+    void OnContactPersisted(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings&) override { contact(a,b,m); }
+  } contacts{*this};
   std::shared_ptr<Runtime> registry;
   BroadLayers broad;ObjectBroadFilter object_filter;PairFilter pair_filter;
   std::unique_ptr<JPH::PhysicsSystem> physics;
   std::unique_ptr<JPH::JobSystemThreadPool> jobs;
   std::unique_ptr<Scratch> temp;
   std::vector<Piece> pieces;
+  unsigned capacity;
+  std::array<Mirror,kMaxSceneBodies> mirrors;
+  std::array<std::pair<unsigned,std::uint32_t>,kMaxDamageEvents> damage_slots{};
+  std::atomic<unsigned> damage_count{0},damage_dropped{0};
+  unsigned scene_moves=0,scene_cooks=0,ray_hits=0,splits=0;
+  bool interaction=false;
   std::vector<unsigned> free;
   std::unordered_map<std::uint32_t,unsigned> ids;
   std::vector<JPH::BodyID> statics;
@@ -119,41 +170,43 @@ struct World::Impl {
   float gravity=600;
   double accumulator=0,step_ms=0,dropped=0,last_fixed_ms=0;
 
-  Impl(unsigned budget,float g):registry(runtime()),pieces(budget),gravity(g) {
+  Impl(unsigned budget,float g):registry(runtime()),pieces(budget+2),capacity(budget),gravity(g) {
     const unsigned hw=std::thread::hardware_concurrency();
     workers=std::clamp(hw>2?hw-2:1u,1u,8u);
     jobs=std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs,JPH::cMaxPhysicsBarriers,static_cast<int>(workers));
     // Scratch is allocated lazily from live demand, not the maximum menu budget.
     physics=std::make_unique<JPH::PhysicsSystem>();
-    physics->Init(static_cast<JPH::uint>(budget+kMaxStaticBodies),0,std::max(1024u,budget*8),std::max(1024u,budget*4),broad,object_filter,pair_filter);
+    physics->Init(static_cast<JPH::uint>(budget+2+kMaxStaticBodies+kMaxSceneBodies),0,std::max(1024u,budget*8),std::max(1024u,budget*4),broad,object_filter,pair_filter);
     JPH::PhysicsSettings settings;
     settings.mTimeBeforeSleep=.35f;settings.mPointVelocitySleepThreshold=.06f;
     settings.mPenetrationSlop=.001f;settings.mSpeculativeContactDistance=.003f;
     settings.mMaxPenetrationDistance=.03f;settings.mNumVelocitySteps=6;settings.mNumPositionSteps=2;
     settings.mMaxInFlightBodyPairs=static_cast<int>(std::max(1024u,budget*16));
     physics->SetPhysicsSettings(settings);physics->SetGravity({0,0,-g*kMetres});
-    ids.reserve(budget);output.reserve(budget);free.reserve(budget);statics.reserve(kMaxStaticBodies);
-    pose_slots.reserve(budget);active_before.reserve(budget);
-    for(unsigned i=budget;i>0;--i)free.push_back(i-1);
+    ids.reserve(budget+2);output.reserve(budget);free.reserve(budget+2);statics.reserve(kMaxStaticBodies);
+    pose_slots.reserve(budget+2);active_before.reserve(budget+kMaxSceneBodies);
+    for(unsigned i=budget+2;i>0;--i)free.push_back(i-1);
   }
   ~Impl() { clear_all(); }
   void destroy(JPH::BodyID body) {
     auto& bi=physics->GetBodyInterfaceNoLock();bi.RemoveBody(body);bi.DestroyBody(body);
   }
   void queue(unsigned slot) {
-    auto& p=pieces[slot];if(p.queued!=kMaxBudget)return;
+    auto& p=pieces[slot];if(p.queued!=no_queue)return;
     p.queued=static_cast<unsigned>(pose_slots.size());pose_slots.push_back(slot);
   }
   void unqueue(unsigned slot) {
-    auto& p=pieces[slot];if(p.queued==kMaxBudget)return;
+    auto& p=pieces[slot];if(p.queued==no_queue)return;
     const auto tail=pose_slots.back();pose_slots[p.queued]=tail;pieces[tail].queued=p.queued;
-    pose_slots.pop_back();p.queued=kMaxBudget;
+    pose_slots.pop_back();p.queued=no_queue;
   }
   void clear_pieces() {
-    for(auto& p:pieces)if(p.id) { destroy(p.body);p.id=0;p.queued=kMaxBudget; }
+    for(auto& p:pieces)if(p.id) { destroy(p.body);p.id=0;p.queued=no_queue;p.damage_queued=false;p.damage=0;p.kinds=0; }
     ids.clear();free.clear();for(unsigned i=static_cast<unsigned>(pieces.size());i>0;--i)free.push_back(i-1);
-    accumulator=0;output.clear();pose_slots.clear();
+    accumulator=0;output.clear();pose_slots.clear();damage_count=0;
+    clear_scene();
   }
+  void clear_scene() { for(auto& m:mirrors)if(m.key) { destroy(m.body);m=Mirror{}; } }
   void clear_all() {
     clear_pieces();for(auto id:statics)destroy(id);statics.clear();models.clear();model_points=0;loaded=ready=false;
   }
@@ -166,6 +219,37 @@ struct World::Impl {
   }
   Piece* find(std::uint32_t id) {
     const auto it=ids.find(id);return it==ids.end()?nullptr:&pieces[it->second];
+  }
+  void damage(unsigned slot,float energy,unsigned kind) {
+    auto& p=pieces[slot];if(!interaction || !p.splittable || energy<p.threshold)return;
+    auto previous=p.damage.load(std::memory_order_relaxed);
+    while(previous<energy && !p.damage.compare_exchange_weak(previous,energy,std::memory_order_relaxed)) {}
+    p.kinds.fetch_or(kind,std::memory_order_relaxed);
+    if(p.damage_queued.exchange(true,std::memory_order_relaxed))return;
+    const auto index=damage_count.fetch_add(1,std::memory_order_relaxed);
+    if(index<kMaxDamageEvents)damage_slots[index]={slot,p.id};
+    else { p.damage_queued=false;++damage_dropped; }
+  }
+  std::uint32_t create(JPH::RefConst<JPH::Shape> shape,V3 position,V3 a,V3 velocity,V3 spin,float minimum_size=4) {
+    need(!free.empty() && next_id!=0,"piece budget/identifier exhausted");
+    JPH::BodyCreationSettings settings(shape,jvec(position),rotation(a),JPH::EMotionType::Dynamic,collide?1:2);
+    settings.mFriction=.65f;settings.mRestitution=.025f;settings.mLinearDamping=.15f;settings.mAngularDamping=.35f;
+    settings.mMaxLinearVelocity=200;settings.mMaxAngularVelocity=100;
+    settings.mMotionQuality=JPH::EMotionQuality::LinearCast;
+    settings.mLinearVelocity=jvec(velocity);settings.mAngularVelocity=jvec(spin,kRadians);
+    settings.mUserData=free.back()+1;
+    const auto id=physics->GetBodyInterfaceNoLock().CreateAndAddBody(settings,JPH::EActivation::Activate);
+    need(!id.IsInvalid(),"piece allocation failed");const auto index=free.back();const auto token=next_id++;
+    try { ids.emplace(token,index); }catch(...) { destroy(id);throw; }
+    free.pop_back();auto& p=pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);
+    p.before=p.after=rotation(a);p.asleep=false;p.dirty=true;p.damage=0;p.kinds=0;p.damage_queued=false;
+    const auto size=shape->GetLocalBounds().GetSize()/kMetres;
+    p.thickness=size.GetZ();p.mass=shape->GetMassProperties().mMass;
+    const float area=shape->GetVolume()/(kMetres*kMetres*kMetres*p.thickness);
+    p.threshold=std::max(12000.0f,36000*std::sqrt(area/64)*p.thickness*p.thickness);
+    p.splittable=area>=2*minimum_size*minimum_size && std::max(size.GetX(),size.GetY())>=2*minimum_size &&
+      std::min(size.GetX(),size.GetY())>=minimum_size;
+    queue(index);return token;
   }
 };
 World::World(unsigned budget,float gravity) {
@@ -259,32 +343,20 @@ bool World::poll_finish() {
 void World::finish_impl() {
   auto& w=*impl_;need(w.loaded && !w.statics.empty(),"BSP has no usable world collision");w.physics->OptimizeBroadPhase();w.ready=true;
 }
-std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin) {
+std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin,float minimum_size) {
   auto& w=idle();need(w.ready,"world is not ready");
   need(position.valid() && a.valid(36000) && velocity.valid(100000) && spin.valid(36000),"invalid piece transform/velocity");
-  need(!w.free.empty() && w.next_id!=0,"piece budget/identifier exhausted");
+  need(std::isfinite(minimum_size) && minimum_size>=4 && minimum_size<=64,"invalid minimum piece size");
+  need(w.ids.size()<w.capacity && w.next_id!=0,"piece budget/identifier exhausted");
   // A hull must remain close to its local origin; huge off-centre inputs are not debris.
   for(auto p:hull)need(p.valid(1024),"piece hull exceeds 1024 local units");
   const auto shape=hull_shape(hull,true);
   need(shape!=nullptr,"Jolt refused piece hull");
-  JPH::BodyCreationSettings settings(shape,jvec(position),rotation(a),JPH::EMotionType::Dynamic,w.collide?1:2);
-  settings.mFriction=.65f;settings.mRestitution=.025f;settings.mLinearDamping=.15f;settings.mAngularDamping=.35f;
-  settings.mMaxLinearVelocity=200;settings.mMaxAngularVelocity=100;
-  settings.mMotionQuality=JPH::EMotionQuality::LinearCast;
-  settings.mLinearVelocity=jvec(velocity);settings.mAngularVelocity=jvec(spin,kRadians);
-  settings.mUserData=w.free.back()+1;
-  const auto id=w.physics->GetBodyInterfaceNoLock().CreateAndAddBody(settings,JPH::EActivation::Activate);
-  need(!id.IsInvalid(),"piece allocation failed");
-  const auto index=w.free.back();
-  // Map insertion can allocate; roll back the Jolt body if the host allocator refuses it.
-  const auto token=w.next_id++;
-  try { w.ids.emplace(token,index); }catch(...) { w.destroy(id);throw; }
-  w.free.pop_back();auto& p=w.pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);
-  p.before=p.after=rotation(a);p.asleep=false;p.dirty=true;w.queue(index);return token;
+  return w.create(shape,position,a,velocity,spin,minimum_size);
 }
 bool World::remove(std::uint32_t id) {
   auto& w=idle();auto* p=w.find(id);if(!p)return false;
-  const auto index=w.ids.at(id);w.unqueue(index);w.destroy(p->body);p->id=0;
+  const auto index=w.ids.at(id);w.unqueue(index);w.destroy(p->body);p->id=0;p->damage_queued=false;p->damage=0;p->kinds=0;
   w.ids.erase(id);w.free.push_back(index);return true;
 }
 void World::clear() {
@@ -302,6 +374,7 @@ void World::impulse(V3 origin,float radius,float speed) {
     // A bounded radial velocity kick: independent of each shard's mass.
     const auto kick=jvec(direction*(speed*(1-distance/radius)));
     bi.ActivateBody(p.body);bi.SetLinearVelocity(p.body,bi.GetLinearVelocity(p.body)+kick);p.asleep=false;p.dirty=true;
+    if(w.interaction) { const float v=speed*(1-distance/radius);if(v>=220)w.damage(static_cast<unsigned>(&p-w.pieces.data()),.5f*p.mass*v*v,Blast); }
     w.queue(static_cast<unsigned>(&p-w.pieces.data()));
   }
 }
@@ -319,6 +392,161 @@ void World::set_gravity(float gravity) {
     w.physics->GetBodyInterfaceNoLock().ActivateBody(p.body);p.asleep=false;p.dirty=true;
     w.queue(static_cast<unsigned>(&p-w.pieces.data()));
   }
+}
+void World::set_interaction(bool enabled) {
+  auto& w=idle();if(w.interaction==enabled)return;w.interaction=enabled;
+  w.physics->SetContactListener(enabled?&w.contacts:nullptr);
+  if(!enabled) { w.clear_scene();(void)take_damage(); }
+}
+unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_dt) {
+  auto& w=idle();need(w.ready,"world is not ready");
+  need(bodies.size()<=kMaxSceneBodies && std::isfinite(sample_dt) && sample_dt>=.001 && sample_dt<=.25,"invalid scene count/timestep");
+  unsigned cooks=0;
+  for(std::size_t i=0;i<bodies.size();++i) {
+    const auto& s=bodies[i];
+    need(s.key && s.position.valid() && s.angles.valid(36000) && s.velocity.valid(100000) && s.half.valid(1024) &&
+      s.half.x>=.05f && s.half.y>=.05f && s.half.z>=.05f && std::isfinite(s.mass) && s.mass>=.01f && s.mass<=50000,"invalid scene body");
+    for(std::size_t j=0;j<i;++j)need(bodies[j].key!=s.key,"duplicate scene key");
+    if(!s.convexes.empty()) {
+      need(++cooks<=2 && s.convexes.size()<=8,"scene cooking budget exceeded");
+      std::size_t points=0;for(const auto& h:s.convexes) {
+        need(valid_hull(h),"invalid scene convex");points+=h.size();
+        for(auto p:h)need(p.valid(1024),"scene hull exceeds local bounds");
+      }
+      need(points<=512,"scene shape point budget exceeded");
+    }
+  }
+  if(!w.interaction) { w.clear_scene();return 0; }
+  auto& bi=w.physics->GetBodyInterfaceNoLock();w.scene_moves=0;
+  for(auto& m:w.mirrors)if(m.key) {
+    m.seen=false;
+    if(std::none_of(bodies.begin(),bodies.end(),[&](const SceneBody& s) { return s.key==m.key; })) { w.destroy(m.body);m=Impl::Mirror{}; }
+  }
+  for(const auto& s:bodies) {
+    auto it=std::find_if(w.mirrors.begin(),w.mirrors.end(),[&](const auto& m) { return m.key==s.key; });
+    const bool fresh=it==w.mirrors.end();
+    if(fresh)it=std::find_if(w.mirrors.begin(),w.mirrors.end(),[](const auto& m) { return !m.key; });
+    need(it!=w.mirrors.end(),"scene body allocation limit");auto& m=*it;
+    JPH::RefConst<JPH::Shape> shape;
+    const bool box_changed=!m.custom && (s.half-m.half).length()>.01f;
+    if(!s.convexes.empty()) {
+      JPH::StaticCompoundShapeSettings settings;
+      for(const auto& h:s.convexes) { const auto sub=hull_shape(h,false);if(sub)settings.AddShape(JPH::Vec3::sZero(),JPH::Quat::sIdentity(),sub); }
+      if(!settings.mSubShapes.empty()) { const auto result=settings.Create();if(!result.HasError())shape=result.Get(); }
+      if(shape) { m.custom=true;++w.scene_cooks; }
+    }
+    if(!shape && (fresh || box_changed))shape=new JPH::BoxShape(jvec(s.half),.0005f);
+    const auto target=jvec(s.position);const auto q=rotation(s.angles);
+    if(fresh) {
+      // One sample of incoming motion lets a newly discovered fast body actually sweep into glass.
+      auto history=jvec(s.velocity)*(1.0f/60);if(history.Length()>128*kMetres)history=JPH::Vec3::sZero();
+      JPH::BodyCreationSettings settings(shape,target-history,q,JPH::EMotionType::Kinematic,3);
+      settings.mUserData=static_cast<JPH::uint64>(it-w.mirrors.begin()+1);
+      settings.mFriction=.65f;settings.mRestitution=.025f;
+      m.body=bi.CreateAndAddBody(settings,JPH::EActivation::Activate);need(!m.body.IsInvalid(),"scene body allocation failed");m.key=s.key;
+    } else if(shape)bi.SetShape(m.body,shape,false,JPH::EActivation::Activate);
+    m.half=s.half;m.mass=s.mass;m.target=target;m.rotation=q;m.seen=true;
+    const auto delta=target-bi.GetPosition(m.body);
+    if(delta.Length()>128*kMetres) { // Teleports are pose corrections, never a giant impact.
+      bi.SetPositionAndRotation(m.body,target,q,JPH::EActivation::DontActivate);
+      bi.SetLinearAndAngularVelocity(m.body,JPH::Vec3::sZero(),JPH::Vec3::sZero());m.remaining=0;
+    } else if(fresh || delta.LengthSq()>1e-10f || std::abs(bi.GetRotation(m.body).Dot(q))<.999999f) {
+      m.remaining=static_cast<float>(std::clamp(sample_dt,1.0/60,4.0/60));++w.scene_moves;
+    }
+  }
+  return w.scene_moves;
+}
+Pose World::scene_pose(std::uint32_t key) const {
+  const auto& w=idle();for(const auto& m:w.mirrors)if(m.key==key) {
+    const auto& bi=w.physics->GetBodyInterfaceNoLock();return {key,vec(bi.GetPosition(m.body)),angles(bi.GetRotation(m.body)),!bi.IsActive(m.body)};
+  }
+  throw Error("unknown scene key");
+}
+std::vector<Region> World::regions(V3 focus) const {
+  need(focus.valid(),"invalid scene focus");
+  const auto& w=idle();std::vector<Region> out;out.reserve(kMaxRegions);
+  std::array<std::array<int,3>,kMaxRegions> cells{};
+  std::array<float,kMaxRegions> scores{};
+  for(const auto& p:w.pieces)if(p.id) {
+    const auto* b=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p.body);
+    const auto c=vec(b->GetPosition());const std::array<int,3> key{int(std::floor(c.x/512)),int(std::floor(c.y/512)),int(std::floor(c.z/512))};
+    std::size_t index=0;while(index<out.size() && cells[index]!=key)++index;
+    const V3 delta{(key[0]+.5f)*512-focus.x,(key[1]+.5f)*512-focus.y,(key[2]+.5f)*512-focus.z};
+    const auto score=delta.dot(delta);bool replace=false;
+    if(index==kMaxRegions) {
+      const auto furthest=std::max_element(scores.begin(),scores.end());
+      if(score>=*furthest)continue;
+      index=static_cast<std::size_t>(furthest-scores.begin());replace=true;
+    }
+    const auto bounds=b->GetWorldSpaceBounds();const auto lo=vec(bounds.mMin)-V3{96,96,96},hi=vec(bounds.mMax)+V3{96,96,96};
+    if(replace) { cells[index]=key;scores[index]=score;out[index]={lo,hi}; }
+    else if(index==out.size()) { cells[index]=key;scores[index]=score;out.push_back({lo,hi}); }
+    else {
+      auto& r=out[index];r.minimum={std::min(r.minimum.x,lo.x),std::min(r.minimum.y,lo.y),std::min(r.minimum.z,lo.z)};
+      r.maximum={std::max(r.maximum.x,hi.x),std::max(r.maximum.y,hi.y),std::max(r.maximum.z,hi.z)};
+    }
+  }
+  std::sort(out.begin(),out.end(),[focus](const Region& a,const Region& b) {
+    const auto da=(a.minimum+a.maximum)*.5f-focus,db=(b.minimum+b.maximum)*.5f-focus;
+    return da.dot(da)<db.dot(db);
+  });
+  return out;
+}
+std::vector<DamageEvent> World::take_damage() {
+  auto& w=idle();const auto n=std::min(w.damage_count.exchange(0),kMaxDamageEvents);
+  std::vector<DamageEvent> out;out.reserve(n);
+  for(unsigned i=0;i<n;++i) {
+    const auto [slot,id]=w.damage_slots[i];auto& p=w.pieces[slot];if(p.id!=id)continue;
+    const auto energy=p.damage.exchange(0);const auto kinds=p.kinds.exchange(0);p.damage_queued=false;
+    if(energy>0)out.push_back({id,energy,kinds});
+  }
+  return out;
+}
+std::uint32_t World::ray(V3 from,V3 to,float energy,float speed) {
+  need(from.valid() && to.valid() && (to-from).length()<=131072 && std::isfinite(energy) && energy>=0 && energy<=1e9 &&
+    std::isfinite(speed) && speed>=0 && speed<=2000,"invalid debris ray");
+  auto& w=idle();if(!w.interaction || (to-from).length()<.001f)return 0;
+  class Pieces final:public JPH::ObjectLayerFilter { bool ShouldCollide(JPH::ObjectLayer l) const override { return l==1 || l==2; } } filter;
+  JPH::RayCastResult hit;
+  if(!w.physics->GetNarrowPhaseQueryNoLock().CastRay(JPH::RRayCast(jvec(from),jvec(to-from)),hit,{},filter))return 0;
+  const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(hit.mBodyID);
+  const auto slot=static_cast<unsigned>(body->GetUserData()-1);auto& p=w.pieces[slot];
+  auto& bi=w.physics->GetBodyInterfaceNoLock();const auto kick=jvec((to-from)*(speed/(to-from).length()));
+  bi.ActivateBody(p.body);bi.SetLinearVelocity(p.body,bi.GetLinearVelocity(p.body)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
+  w.damage(slot,energy,Bullet);++w.ray_hits;return p.id;
+}
+bool World::can_split(std::uint32_t id,float minimum_size) const {
+  auto& w=idle();auto* p=w.find(id);if(!p)return false;
+  const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
+  const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
+  Hull points;points.reserve(shape->GetNumPoints());
+  for(unsigned i=0;i<shape->GetNumPoints();++i)points.push_back(vec(shape->GetPoint(i)+shape->GetCenterOfMass()));
+  return !split_polygon(outline_xy(points),minimum_size)[0].empty();
+}
+std::vector<Fragment> World::split(std::uint32_t id,float minimum_size) {
+  auto& w=idle();need(std::isfinite(minimum_size) && minimum_size>=4 && minimum_size<=64,"invalid minimum piece size");
+  auto* p=w.find(id);if(!p || w.ids.size()>=w.capacity)return {};
+  auto& bi=w.physics->GetBodyInterfaceNoLock();const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
+  const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
+  Hull points;points.reserve(shape->GetNumPoints());
+  for(unsigned i=0;i<shape->GetNumPoints();++i)points.push_back(vec(shape->GetPoint(i)+shape->GetCenterOfMass()));
+  const auto polygons=split_polygon(outline_xy(points),minimum_size);if(polygons[0].empty())return {};
+  const auto position=bi.GetPosition(p->body);const auto q=bi.GetRotation(p->body);
+  const auto velocity=bi.GetLinearVelocity(p->body),spin=bi.GetAngularVelocity(p->body);
+  const auto thick=p->thickness;
+  std::vector<Fragment> out;out.reserve(2);std::array<JPH::RefConst<JPH::Shape>,2> shapes;
+  for(unsigned i=0;i<2;++i) {
+    auto poly=polygons[i];const auto center=polygon_center(poly);for(auto& v:poly)v=v-center;
+    shapes[i]=hull_shape(extrude(poly,thick),true);if(!shapes[i])return {};
+    const auto delta=q*jvec(center);
+    out.push_back({0,std::move(poly),thick,vec(position+delta),angles(q),vec(velocity+spin.Cross(delta)),vec(spin,1/kRadians)});
+  }
+  // Two reserved internal slots permit a transactional replacement even at budget-1 live bodies.
+  // Public Spawn and completed Split never exceed the configured capacity.
+  try {
+    for(unsigned i=0;i<2;++i)out[i].id=w.create(shapes[i],out[i].position,out[i].angles,out[i].velocity,out[i].spin,minimum_size);
+  } catch(...) { for(const auto& f:out)if(f.id)remove(f.id);throw; }
+  remove(id);++w.splits;return out;
 }
 void World::step(double dt) {
   (void)idle();step_impl(dt);
@@ -343,6 +571,19 @@ void World::step_impl(double dt) {
     const double elapsed=std::chrono::duration<double,std::milli>(tick-start).count();
     // Always permit one fixed update; additional catch-up steps must fit a measured 4 ms budget.
     if(w.substeps && elapsed+w.last_fixed_ms>4)break;
+    if(w.interaction) {
+      auto& bi=w.physics->GetBodyInterfaceNoLock();
+      for(auto& m:w.mirrors)if(m.key) {
+        if(m.remaining>0) {
+          const auto p=bi.GetPosition(m.body);const auto q=bi.GetRotation(m.body);
+          const float t=std::min(1.0f,static_cast<float>(fixed)/m.remaining);
+          bi.MoveKinematic(m.body,p+(m.target-p)*t,q.SLERP(m.rotation,t),static_cast<float>(fixed));
+          m.remaining=std::max(0.0f,m.remaining-static_cast<float>(fixed));
+        } else if(bi.IsActive(m.body)) {
+          bi.SetLinearAndAngularVelocity(m.body,JPH::Vec3::sZero(),JPH::Vec3::sZero());bi.DeactivateBody(m.body);
+        }
+      }
+    }
     const auto n=w.physics->GetNumActiveBodies(JPH::EBodyType::RigidBody);
     if(n) {
       const unsigned scratch=2*1024*1024+((static_cast<unsigned>(w.ids.size())+255)/256)*256*8192;
@@ -351,7 +592,8 @@ void World::step_impl(double dt) {
       w.active_before.assign(active,active+n);
       auto body=[&](JPH::BodyID id) { return w.physics->GetBodyLockInterfaceNoLock().TryGetBody(id); };
       for(auto id:w.active_before) {
-        auto& p=w.pieces[body(id)->GetUserData()-1];p.previous=p.current;p.before=p.after;
+        const auto* b=body(id);if(b->GetObjectLayer()==3)continue;
+        auto& p=w.pieces[b->GetUserData()-1];p.previous=p.current;p.before=p.after;
       }
       const auto error=w.physics->Update(static_cast<float>(fixed),1,w.temp.get(),w.jobs.get());
       // A small first population can still need capacity-sized solver scratch. Learn that demand
@@ -366,7 +608,8 @@ void World::step_impl(double dt) {
       if((error&JPH::EPhysicsUpdateError::ContactConstraintsFull)!=JPH::EPhysicsUpdateError::None)++w.constraint_overflows;
       ++w.epoch;
       auto capture=[&](JPH::BodyID id) {
-        const auto* b=body(id);const auto slot=static_cast<unsigned>(b->GetUserData()-1);auto& p=w.pieces[slot];
+        const auto* b=body(id);if(b->GetObjectLayer()==3)return;
+        const auto slot=static_cast<unsigned>(b->GetUserData()-1);auto& p=w.pieces[slot];
         if(p.seen==w.epoch)return;
         p.seen=w.epoch;p.current=b->GetPosition();p.after=b->GetRotation();p.asleep=!b->IsActive();p.dirty=true;w.queue(slot);
       };
@@ -401,6 +644,9 @@ Stats World::stats() const {
   if(busy()) { auto s=snapshot_;s.busy=true;return s; }
   const auto& w=*impl_;Stats s;
   s.live=static_cast<unsigned>(w.ids.size());s.awake=w.physics->GetNumActiveBodies(JPH::EBodyType::RigidBody);
+  for(const auto& m:w.mirrors)if(m.key) { ++s.scene_bodies;if(w.physics->GetBodyInterfaceNoLock().IsActive(m.body))--s.awake; }
+  s.scene_moves=w.scene_moves;s.scene_cooks=w.scene_cooks;s.damage_dropped=w.damage_dropped.load();
+  s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
   s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;

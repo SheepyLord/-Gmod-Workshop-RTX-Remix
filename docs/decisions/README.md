@@ -91,6 +91,9 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 - [0082: Map commit headroom and a compact content summary](0082-map-commit-headroom-and-addon-summary.md)
 
+- [0084: One-way broken-glass interaction](0084-glass-one-way-interaction.md) — accepted R7-C;
+  supersedes 0070's map/piece-only contact rule, retaining authoritative pane fracture.
+
 - [0074: Incoming body contact and quiet map outputs](0074-glass-contact-and-quiet-map-outputs.md)
 - [0075: Incremental glass topology](0075-incremental-glass-topology.md)
 

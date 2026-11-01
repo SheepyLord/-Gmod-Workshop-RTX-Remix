@@ -1,5 +1,8 @@
 # client.lua
 
+R7-C passes each pane's original `piece_size` as optional debris `minimum_size` metadata. Changing
+the global setting after a pane was made does not change that pane's follow-up fracture floor.
+
 Crack strips use the lit VertexLitGeneric shader and a white base texture, without selfillum.
 The distinct nlglass_frost_lit name prevents Lua refresh from reusing the former unlit shader.
 Geometry remains thin and has outward normals on both pane faces; dark/night Remix QA remains.

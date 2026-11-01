@@ -312,3 +312,11 @@ T1 review separates `presentation::prepare_main_menu` so activation supplies its
 plan after writes, and vanilla fallback supplies an inactive plan. Core GPU diagnostics can reset
 the one-start marker on off-mode RTX starts. Proxy `test_runtime.cpp` applies the real activation
 code to fake DLLs to verify failed tier writes/reset attempts preserve RTX without a GPU reader.
+
+R7-C extends `glass/native/` with `fracture.h/.cpp` (convex bisection) and
+`tests/test_interaction.cpp`, and `glass/addon/lua/nlglass/` with `debris_scene.lua` (read-only bounded
+Source snapshots), `debris_bullets.lua` (bounded final server pellet traces) and `debris_expiry.lua`
+(descendant lifetime). The existing manager stages render replacement and exposes the per-player
+switch. `tools/tests/glass_interaction_harness.lua` / `test_glass_interaction.py` cover the integration;
+`tools/qa/nlglass_qa` adds the `interact` sequence and `tools/qa/nlglass_interaction_start.lua` starts it.
+See [the report](handover/R7-C-report.md) and [native API](../glass/native/README.md).

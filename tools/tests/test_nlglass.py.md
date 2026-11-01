@@ -1,5 +1,9 @@
 # test_nlglass.py
 
+R7-C also verifies authoritative pane break registration for bounded debris bullet forwarding;
+weak/cracking impacts must register no region. The menu regression covers the local interaction
+checkbox, all translations and restoring its default.
+
 Second-pass density regression checks live topology and break-piece bounds, full area, large
 and thin panes and all three tested piece sizes. Lit crack strips and walking/running/default
 reset cases are covered in the engine harness. Deferred/coalesced client builds, cancellation,

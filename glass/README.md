@@ -19,6 +19,7 @@ The add-on draws glass with `models/props_combine/health_charger_glass`, the mat
 | `nlglass/server.lua` | Authoritative registry, remaining-cell collision, map adapters, break/late-join/blast events, admin settings |
 | `nlglass/client.lua` | Network replay, cached pane/frosted crack meshes, matching frozen prediction collision, debris API calls |
 | `nlglass/menu.lua` | Spawn-menu settings and `glass_open_panel` compatibility command |
+| `nlglass/debris_scene.lua`, `debris_bullets.lua`, `debris_expiry.lua` | R7-C bounded one-way Source snapshots, final server pellet forwarding and inherited descendant expiry |
 | `nlglass/i18n.lua`, `i18n_data.lua` | Language selector and generated MIT translations |
 | `weapons/gmod_tool/stools/procedural_glass_tool.lua` | Existing tool name, prop conversion, new panes, per-pane kind/strength |
 
@@ -186,6 +187,7 @@ agent-written and await human review. Long slider/combo labels use full-width he
 | `rtx_glass_debris_lifetime` | `120` | G1-B: seconds, 0 until cleanup |
 | `rtx_glass_debris_budget` | `2000` | G1-B: live pieces per player |
 | `rtx_glass_debris_collide` | `1` | G1-B: pieces collide with each other |
+| `rtx_glass_debris_interact` | `1` | R7-C: Source bodies and subsequent bullets/blasts/falls push or break your pieces, with no response in Source |
 
 Reset to Defaults resets client debris settings and, for an admin, server settings. Existing panes
 retain their material properties; map cleanup applies new kind/strength/size settings to map windows.
@@ -225,6 +227,23 @@ call `Impulse` after synchronous and one-turn deferred breaks, so the blast also
 own new pieces. No private debris/world API, native API or server broken-glass entity is used.
 
 ## Validation
+
+R7-C extends only cosmetic debris interactions, under [ADR 0084](../docs/decisions/0084-glass-one-way-interaction.md).
+Living actors use collision hulls; ragdolls use physics bones or remote bone hitboxes; physics
+objects use available convexes or boxes. Up to 96 nearby kinematic mirrors follow Source each
+step, with region discovery at 10 Hz and at most two new shape extractions per snapshot. Nothing
+writes back to Source. Living mirrors extend eight units below the feet so the fixed Source floor
+height does not pin thin pieces in place; their Source hull is untouched. Native contact events,
+blasts and Source-clipped final pellet rays can
+bisect sufficiently large convex pieces; one binary replacement per client frame bounds new mesh
+work. Minimum size, oldest-first budgets and original expiration still apply. Small pieces move.
+Off/older-module fallback retains G1 behaviour. Seven-language labels and Reset to Defaults include
+the new per-player setting. See the [QA steps](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md)
+for `nlglass_qa interact`, on/off/two-client checks and unchanged field/map performance scenes.
+
+No falling-piece rendering, batching or solver tuning is part of R7-C. The baseline remains G1
+field run 10 (25.31 / 113.22 ms falling mean/p99, 9.74 / 16.39 ms settled). Offline generated-room
+and engine-double measurements cannot certify parity in RTX; Claude owns that game acceptance.
 
 Run `python -m unittest tests.test_nlglass -v` from `tools/`, then `tools\test.ps1 -Config Release`.
 [The fracture harness](../tools/tests/nlglass_fracture_harness.lua.md) runs without GMod globals;

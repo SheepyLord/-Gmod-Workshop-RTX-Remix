@@ -1,5 +1,8 @@
 # config.lua
 
+R7-C adds per-player `rtx_glass_debris_interact=1` to the debris reset list; its convar is created
+only by the client manager and never enters the server/admin settings message.
+
 The player/body contact-speed default is 250 units/s, between default walking (200) and running
 (400). Existing archived values are respected, except the two that Glass-Rewrite-Remix archived
 under the same names with other meanings (contact speed, velocity transfer): `server.lua` resets

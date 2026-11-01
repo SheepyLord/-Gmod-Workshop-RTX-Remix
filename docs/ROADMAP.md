@@ -10,6 +10,17 @@ R7-B is **in progress** on `r7-crash-diag` (2026-11-01): a post-exit crash repor
 external observer, a map-headroom memory warning and a compact content add-on count. This task
 does offline checks only; Claude retains PoC acceptance ([brief](handover/R7-B-crash-diagnostics.md)).
 
+R7-C implementation and offline acceptance are **complete** on `r7-glass-interact` (2026-11-01):
+bounded one-way Source mirrors, follow-up damage/fracture, Source-clipped pellet rays, original
+descendant expiry, a seven-language per-player switch and the 19-step interaction QA sequence.
+Release passes 25 CTests (29 native glass cases) and 468 Python tests (two existing skips), with
+68 glass Python cases. Claude retains module import and real contact/two-client/RTX frame-parity
+acceptance; no game or install was touched. See [the report](handover/R7-C-report.md).
+
+R7-C is **in progress** on `r7-glass-interact` (2026-11-01): one-way Source mirrors, bounded local
+follow-up damage/fracture and bullet rays, a per-player setting and offline tests. Claude owns
+package import, integration and PoC contact/performance acceptance; no game is run by this task.
+
 G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
 Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
 (whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed

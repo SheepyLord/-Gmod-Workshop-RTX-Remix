@@ -1,5 +1,13 @@
 # glass_debris_harness.lua
 
+R7-C adds `interaction_manager`, `interaction_budget`, `interaction_lifetime`, `interaction_off`
+and `interaction_rays` as the third argument (after the existing probe path). `interaction_qa` runs
+the QA add-on's actual client fixtures and statistics output. These enable strict
+new native-API doubles and execute the actual manager, including render adoption and expiry.
+`interactionperf` runs the same 2,000-piece QPC render comparison with native interaction available
+and on, empty Source interest and no damage. Existing `renderperf` keeps older-module compatibility.
+`interactionoffperf` supplies the new native API with the local setting off for a matched comparison.
+
 Runs the actual G1-B `debris*.lua` and `world.lua` through mocked engine APIs. Called by
 `test_glass_debris.py`, or `luajit tools/tests/glass_debris_harness.lua glass/addon/lua`.
 

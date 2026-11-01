@@ -1,5 +1,8 @@
 # menu.lua
 
+R7-C adds a local interaction checkbox and explanatory help in all seven languages. Reset to
+Defaults restores `rtx_glass_debris_interact=1`, independently of administrator permissions.
+
 Player break speed reads/resets to the shared 250-unit/s default. A translated help line explains
 that walking stays below that default threshold; its six catalogs and generated Lua are updated.
 

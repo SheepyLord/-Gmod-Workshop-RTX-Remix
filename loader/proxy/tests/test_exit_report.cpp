@@ -32,6 +32,7 @@ TEST_CASE("exit report: every reason has localized advice, evidence and exceptio
       CHECK(text.size() > 100); CHECK(text.find("0xC0000005") != text.npos);
       CHECK(text.find('?') == text.npos);
       CHECK(text.find("sessions") != text.npos); CHECK(text.find("{count}") == text.npos);
+      CHECK(text.find("native-loader\\logs\\sessions\\test") != text.npos);  // one separator style
       for (const auto code : {0xC0000409u, 0xC00000FDu, 0xE06D7363u})
         CHECK(!r::message(previous, code, root, language).empty());
     }

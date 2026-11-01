@@ -7,11 +7,17 @@ local world = include("nlglass/world.lua")
 local batches = include("nlglass/debris_batches.lua")
 local individual = include("nlglass/debris_draw.lua")
 local view = include("nlglass/debris_view.lua")
+local scene = include("nlglass/debris_scene.lua")
+local expiry = include("nlglass/debris_expiry.lua")
 local D = {}
 NLGlassDebris = D
 local lifetime = CreateClientConVar("rtx_glass_debris_lifetime", "120", true, false, "Broken glass lifetime; 0 keeps it until cleanup", 0, 86400)
 local budget = CreateClientConVar("rtx_glass_debris_budget", "2000", true, false, "Maximum broken glass pieces", 0, 8192)
 local collide = CreateClientConVar("rtx_glass_debris_collide", "1", true, false, "Broken glass pieces collide with each other", 0, 1)
+local interact = CreateClientConVar("rtx_glass_debris_interact", "1", true, false, "Source bodies and follow-up damage affect your broken glass", 0, 1)
+local interactionAvailable, knownInteraction = false, false
+local rays, damageQueue, damageByID = {}, {}, {}
+local damageFirst, damageLast = 1, 0
 local pieces, order, poses, changed = {}, {}, {}, {}
 local natives, pending, shrinking, removals, impulses = {}, {}, {}, {}, {}
 local stepBusy, stepElapsed, expiryCursor, knownLife = false, 0, 1, -1
@@ -49,6 +55,7 @@ local function unmerge(piece)
     individual.Add(piece)
 end
 local function erase(piece)
+    expiry.Remove(piece)
     unmerge(piece)
     if piece.native then
         if not piece.nativeSleeping then nativeMoving = nativeMoving - 1 end
@@ -76,7 +83,7 @@ local function merge(piece)
 end
 local function physics(piece)
     if backend == "jolt" then
-        local id = world.api.Spawn(piece.geometry.hull, piece.position, piece.angles, piece.velocity, piece.spin)
+        local id = world.api.Spawn(piece.geometry.hull, piece.position, piece.angles, piece.velocity, piece.spin, piece.minimumSize or 8)
         if not id then return false end
         piece.native, natives[id] = id, piece
         piece.nativeSleeping, nativeMoving = false, nativeMoving + 1
@@ -97,6 +104,7 @@ local function failed(reason)
         if not fallback.Spawn(p) then erase(p) end
     end
     nativeMoving = 0
+    interactionAvailable, knownInteraction = false, false;scene.Reset()
 end
 local function ensure()
     if world.state == "new" then
@@ -126,6 +134,8 @@ function D.Spawn(frame, fragments)
     local color = Color(clamp(c.r, 0, 255), clamp(c.g, 0, 255), clamp(c.b, 0, 255), clamp(c.a, 0, 255))
     local materialName = type(frame.material) == "string" and #frame.material <= 256 and frame.material or "models/props_c17/fisheyelens"
     local material = Material(materialName)
+    local size = GetConVar("rtx_glass_piece_size")
+    local minimumSize = clamp(size and size:GetFloat() or 8, 4, 64)
     -- Ignore excess input before constructing meshes. The retained fragments are the newest ones.
     for i = math.max(1, #fragments - max + 1), #fragments do
         local f = fragments[i]
@@ -139,6 +149,7 @@ function D.Spawn(frame, fragments)
                 local piece = {id = serial, geometry = g, position = position, angles = a, velocity = f.velocity or vector_origin,
                     spin = f.spin or vector_origin, born = CurTime(), color = color, material = material, materialName = materialName,
                     matrix = Matrix(), scale = Vector(1, 1, 1), poseDirty = true, sleeping = false, mass = g.mass}
+                piece.minimumSize = finite(f.minimum_size, 64) and f.minimum_size >= 4 and f.minimum_size or minimumSize
                 local ok, mesh = pcall(geometry.Build, g.vertices, material)
                 if ok then
                     piece.mesh = mesh
@@ -150,6 +161,14 @@ function D.Spawn(frame, fragments)
             end
         end
     end
+end
+-- Server-supplied, Source-clipped pellet traces. Queue at most 32 and apply at most eight per frame.
+function D.Ray(from, to, damage)
+    if stopped or not interact:GetBool() or count == 0 or backend ~= "jolt" or not interactionAvailable or
+        not validVector(from, 131072) or not validVector(to, 131072) or not finite(damage, 10000) or damage <= 0 or
+        (to - from):LengthSqr() > 131072 ^ 2 then return end
+    if #rays == 32 then table.remove(rays, 1);metrics.rays_dropped = (metrics.rays_dropped or 0) + 1 end
+    rays[#rays + 1] = {from, to, damage, CurTime() + .5}
 end
 -- Start the map import ahead of the first break (a map with glass, a spawned pane), so the first
 -- pieces do not wait for the world while the player looks at them.
@@ -184,8 +203,11 @@ function D.Clear()
     if world.state == "ready" then world.api.Clear();stepBusy = false end
     for _, piece in pairs(pieces) do piece.native = nil;erase(piece) end
     batches.Clear()
+    expiry.Clear();scene.Reset()
     pieces, order, poses, changed = {}, {}, {}, {}
     natives, pending, shrinking, removals, impulses = {}, {}, {}, {}, {}
+    rays, damageQueue, damageByID, damageFirst, damageLast = {}, {}, {}, 1, 0
+    for _, key in ipairs({"splits", "splits_bullet", "splits_blast", "splits_body", "splits_fall", "split_ms", "split_peak_ms", "damage_dropped", "rays_dropped"}) do metrics[key] = 0 end
     thinkTime, drawTime, drawCalls = window(), window(), window()
     currentFrame, currentDrawTime, currentDrawCalls = nil, 0, 0
     metrics.culled_pieces, metrics.draw_calls_current = 0, 0
@@ -212,11 +234,88 @@ function D.Stats()
     metrics.draw_calls, metrics.draw_calls_avg = drawCalls.last, drawCalls.sum / math.max(1, drawCalls.count)
     metrics.think_samples, metrics.draw_samples = thinkTime.count, drawTime.count
     metrics.worker_busy = stepBusy
+    metrics.interaction, metrics.interaction_available = knownInteraction, interactionAvailable
+    metrics.scene_bodies, metrics.scene_candidates, metrics.scene_queries = scene.bodies, scene.candidates, scene.queries
+    metrics.capture_ms, metrics.scene_cooks = scene.capture_ms, scene.cooks
+    metrics.capture_peak_ms = scene.capture_peak_ms
+    metrics.damage_pending, metrics.ray_pending = math.max(0, damageLast - damageFirst + 1), #rays
     if backend == "jolt" then world.api.Stats(nativeStats) end
     metrics.backend, metrics.native, metrics.skipped_models = backend, nativeStats, world.skipped
     return metrics
 end
 function D.Shutdown() D.Clear();batches.pool = {};world.Shutdown();stopped, backend = true, "none" end
+local function fractures()
+    local events, reason = world.api.ReadDamage()
+    if events == nil then failed(reason);return end
+    for _, event in ipairs(events or {}) do
+        if not damageByID[event[1]] then
+            if damageLast - damageFirst + 1 >= 64 then
+                local old = damageQueue[damageFirst];damageByID[old[1]] = nil
+                damageQueue[damageFirst], damageFirst = nil, damageFirst + 1
+                metrics.damage_dropped = (metrics.damage_dropped or 0) + 1
+            end
+            damageLast = damageLast + 1;damageQueue[damageLast] = event;damageByID[event[1]] = true
+        end
+    end
+    local start, processed = SysTime(), 0
+    metrics.split_ms = 0
+    -- One binary replacement per frame; no secondary burst grows with the size of a falling pile.
+    while damageFirst <= damageLast and processed < 1 do
+        local event = damageQueue[damageFirst];damageQueue[damageFirst], damageFirst = nil, damageFirst + 1
+        damageByID[event[1]] = nil
+        local parent = natives[event[1]]
+        if parent and limit() >= 2 and world.api.CanSplit(parent.native, parent.minimumSize) then
+            -- The parent is being replaced. Evict the oldest *remaining* piece for the extra child.
+            -- Temporarily skip a parent at the head, so a hit cannot simply erase it at budget.
+            if count >= limit() then
+                local victim = oldest()
+                if victim == parent then
+                    victim = oldest();first = first - 1;order[first] = parent.id
+                end
+                if victim then erase(victim) end
+            end
+            if pieces[parent.id] then
+                local children, err = world.api.Split(parent.native, parent.minimumSize)
+                if children == nil then failed(err);return end
+                if children then
+                    erase(parent)
+                    for _, f in ipairs(children) do
+                        local g = geometry.Geometry(f.poly, f.thickness, parent.color)
+                        local ok, mesh = false, nil
+                        if g then ok, mesh = pcall(geometry.Build, g.vertices, parent.material) end
+                        if ok then
+                            serial = serial + 1
+                            local p = {id = serial, native = f.id, nativeSleeping = false, geometry = g, mesh = mesh,
+                                position = Vector(unpack(f.position)), angles = Angle(unpack(f.angles)),
+                                velocity = Vector(unpack(f.velocity)), spin = Vector(unpack(f.spin)),
+                                material = parent.material, materialName = parent.materialName, color = parent.color,
+                                matrix = Matrix(), scale = Vector(1, 1, 1), poseDirty = true, sleeping = false,
+                                born = CurTime(), ageBorn = parent.ageBorn or parent.born, minimumSize = parent.minimumSize, mass = g.mass}
+                            pieces[p.id], natives[p.native], count, nativeMoving = p, p, count + 1, nativeMoving + 1
+                            poses[p.native] = {p.position.x, p.position.y, p.position.z, p.angles.p, p.angles.y, p.angles.r, false}
+                            last = last + 1;order[last] = p.id;individual.Add(p);expiry.Add(p)
+                        else world.api.Remove(f.id) end
+                    end
+                    metrics.splits = (metrics.splits or 0) + 1
+                    for i, kind in ipairs({"bullet", "blast", "body", "fall"}) do
+                        if math.floor(event[3] / 2 ^ (i - 1)) % 2 == 1 then
+                            metrics["splits_" .. kind] = (metrics["splits_" .. kind] or 0) + 1
+                        end
+                    end
+                end
+                processed = processed + 1
+            end
+        end
+        if SysTime() - start >= .00075 then break end
+    end
+    metrics.split_ms = (SysTime() - start) * 1000
+    metrics.split_peak_ms = math.max(metrics.split_peak_ms or 0, metrics.split_ms)
+    if damageFirst > damageLast then damageQueue, damageByID, damageFirst, damageLast = {}, {}, 1, 0 end
+    if damageFirst > 128 then
+        local compact = {};for i = damageFirst, damageLast do compact[#compact + 1] = damageQueue[i] end
+        damageQueue, damageFirst, damageLast = compact, 1, #compact
+    end
+end
 local function nativeTick()
     stepElapsed = math.min(.25, stepElapsed + math.min(FrameTime(), .25))
     if stepBusy then
@@ -232,11 +331,25 @@ local function nativeTick()
         knownCollide = collide:GetBool();ok, reason = world.api.SetCollide(knownCollide)
     end
     if not ok then failed(reason);return end
+    if interactionAvailable and knownInteraction ~= interact:GetBool() then
+        knownInteraction = interact:GetBool();ok, reason = world.api.SetInteraction(knownInteraction)
+        rays, damageQueue, damageByID, damageFirst, damageLast = {}, {}, {}, 1, 0;scene.Reset()
+        if not ok then failed(reason);return end
+    end
     for i = 1, #impulses do
         local event = impulses[i]
         ok, reason = world.api.Impulse(event[1], event[2], event[3])
         if not ok then failed(reason);return end
         impulses[i] = nil
+    end
+    if knownInteraction then
+        for _ = 1, math.min(8, #rays) do
+            local r = table.remove(rays, 1)
+            if r[4] >= CurTime() then
+                ok, reason = world.api.Ray(r[1], r[2], math.min(1e9, r[3] * 12000), clamp(r[3] * 20, 80, 1200))
+                if ok == nil then failed(reason);return end
+            end
+        end
     end
     local spawned = 0
     for id, p in pairs(pending) do
@@ -263,7 +376,16 @@ local function nativeTick()
             if p.sleeping then merge(p) end
         end
     end
-    if nativeMoving == 0 then stepElapsed = 0;return end -- a fully settled world needs no worker dispatch
+    local sceneMoved = 0
+    if knownInteraction then
+        fractures()
+        if backend ~= "jolt" then return end
+        if count > 0 then
+            sceneMoved, reason = scene.Capture(world.api, stepElapsed)
+            if sceneMoved == nil then failed(reason);return end
+        elseif scene.bodies > 0 then world.api.SyncBodies({}, .016);scene.Reset() end
+    end
+    if nativeMoving == 0 and sceneMoved == 0 then stepElapsed = 0;return end -- settled scenes keep their fast path
     ok, reason = world.api.BeginStep(stepElapsed)
     stepElapsed = 0
     if not ok then failed(reason);return end
@@ -274,8 +396,15 @@ local function age()
     if life ~= knownLife then
         for _, p in pairs(shrinking) do p.shrink = nil;if p.sleeping then merge(p) end end
         shrinking, expiryCursor, knownLife = {}, first, life
+        expiry.Clear()
+        for _, p in pairs(pieces) do if p.ageBorn then expiry.Add(p) end end
     end
     if life > 0 then
+        while true do
+            local p = expiry.PopBefore(now - life + 1)
+            if not p then break end
+            unmerge(p);shrinking[p.id] = p
+        end
         -- Birth order is monotonic. Only the final-second cohort needs per-frame lifetime work.
         expiryCursor = math.max(expiryCursor, first)
         while expiryCursor <= last do
@@ -285,7 +414,7 @@ local function age()
             expiryCursor = expiryCursor + 1
         end
         for _, p in pairs(shrinking) do
-            local remaining = p.born + life - now
+            local remaining = (p.ageBorn or p.born) + life - now
             if remaining <= 0 then erase(p) else p.shrink = remaining end
         end
     end
@@ -298,6 +427,9 @@ local function think()
     if world.state == "ready" and backend ~= "jolt" then
         backend = "jolt"
         world.api.SetCollide(collide:GetBool())
+        interactionAvailable = type(world.api.SetInteraction) == "function" and type(world.api.SyncBodies) == "function" and
+            type(world.api.ReadRegions) == "function" and type(world.api.ReadDamage) == "function" and
+            type(world.api.Ray) == "function" and type(world.api.Split) == "function" and type(world.api.CanSplit) == "function"
     elseif world.state == "failed" and backend ~= "vphysics" and not fallbackUnavailable then failed(world.reason) end
     trim(limit())
     if backend == "jolt" then nativeTick()

@@ -16,6 +16,7 @@ NLGlass.Fracture=include("nlglass/fracture.lua")
 NLGlass.Config=include("nlglass/config.lua")
 NLGlass.Geometry=include("nlglass/geometry.lua")
 NLGlass.Protocol=include("nlglass/protocol.lua")
+include("nlglass/debris_bullets.lua")
 if SERVER then
     NLGlass.Damage=include("nlglass/damage.lua")
     include("nlglass/server.lua")

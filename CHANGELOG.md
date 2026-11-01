@@ -16,6 +16,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   percentage warning that incorrectly flagged 64.0 / 90.6 GiB. The RTX package keeps its
   version/hash row; other enabled content packages become one count in the panel and copied text.
 
+- R7-C: local broken glass gains one-way Source body contacts and bounded follow-up fracture from
+  bullets, blasts, heavy/fast bodies and falls, with a per-player interaction switch
+  ([ADR 0084](docs/decisions/0084-glass-one-way-interaction.md)). Game acceptance remains with Claude.
+
 ### G1 (unreleased)
 
 - Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes

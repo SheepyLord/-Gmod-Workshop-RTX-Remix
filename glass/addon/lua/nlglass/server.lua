@@ -117,6 +117,11 @@ function S.Impact(r,impact,forceAll)
         state=F.Snapshot(r.state)}
     local pieces,accepted,broke=F.Apply(r.state,impact,forceAll,r.native)
     if not accepted then return false end
+    if #pieces>0 and NLGlass.Bullets then
+        local radius=768
+        for _,v in ipairs(r.state.def.outline) do radius=math.max(radius,768+math.sqrt(v[1]*v[1]+v[2]*v[2])) end
+        NLGlass.Bullets.Mark(r.frame.origin,radius)
+    end
     net.Start("nlglass_hit") net.WriteUInt(r.id,32) net.WriteUInt(old.state.revision,32)
     net.WriteBool(broke) if broke then P.WriteRecord(old) end
     P.WriteImpact(impact) net.WriteBool(forceAll or false) net.WriteBool(r.native) net.Broadcast()
