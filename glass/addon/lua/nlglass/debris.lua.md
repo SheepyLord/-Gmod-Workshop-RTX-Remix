@@ -63,3 +63,9 @@ Statistics add `interaction`, `interaction_available`, `scene_bodies`, `scene_ca
 `splits_body`, `splits_fall`, `damage_pending`, `ray_pending`, `damage_dropped`, `rays_dropped`.
 Capture includes native snapshot/cooking time; split includes bounded mesh builds. Native stats
 provide cumulative ray hits, splits and dropped contact events. Clear resets manager counters.
+
+The fast-body fix adds `scene_examined`, `scene_fast_candidates`, `scene_fast_bodies`,
+`scene_fast_boxes` and `scene_peak_bodies` from `debris_scene`. They preserve evidence after a fast
+prop leaves the pile; current `scene_bodies` can already be zero at the screenshot. Native
+`scene_sweeps`, `scene_sweep_hits` and `scene_sweep_limited` are cumulative for the world and must
+be compared before/after. Think/step dispatch, falling-piece draws and batching are unchanged.

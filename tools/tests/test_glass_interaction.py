@@ -26,6 +26,29 @@ class GlassInteractionTests(unittest.TestCase):
     def test_remote_ragdoll_hitboxes_oriented_boxes_and_bad_convex_fallback(self):
         self.run_case('scene_fallback')
 
+    def test_sweep_lookahead_direction_distance_box_upgrade_and_counter_bounds(self):
+        self.run_case('scene_sweep_bounds')
+
+    def test_fast_capture_rows_push_a_real_sleeping_jolt_pile_one_way(self):
+        replay = REPO / 'out/build/win64-release/glass/native/nl_glass_scene_replay.exe'
+        if not replay.is_file():
+            replay = REPO / 'out/build/win64-debug/glass/native/nl_glass_scene_replay.exe'
+        if not replay.is_file():
+            self.skipTest('build the native scene replay with tools/build.ps1 first')
+        for case in ('scene_fast_replay', 'scene_fast_crowded_replay'):
+            for dt in (1 / 60, 1 / 30):
+                with self.subTest(case=case, dt=dt):
+                    capture = subprocess.run([luajit(), str(REPO / 'tools/tests/glass_interaction_harness.lua'),
+                                              str(LUA), case, str(dt)], cwd=REPO,
+                                             capture_output=True, encoding='utf-8', timeout=30)
+                    self.assertEqual(capture.returncode, 0, capture.stdout + capture.stderr)
+                    snapshots = capture.stdout.split('REPLAY_BEGIN\n', 1)[1].split('REPLAY_END', 1)[0]
+                    for setting in ([], ['--off']):
+                        result = subprocess.run([str(replay), *setting], input=snapshots, cwd=REPO,
+                                                capture_output=True, encoding='utf-8', timeout=30)
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        self.assertIn('frames=36', result.stdout)
+
     def test_recent_glass_pvs_source_endpoint_and_unchanged_weapon_callback(self):
         self.run_case('bullets_filter')
 

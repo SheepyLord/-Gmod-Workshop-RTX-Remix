@@ -1,5 +1,12 @@
 # Native loader glass (G1)
 
+R7-C fast-body follow-up: discovery now uses a 0.25-second velocity sweep capped at 192 units,
+with a wider bounded query, incoming-body priority and immediate boxes for uncooked fast physics
+objects. Actual mirror translations also sweep local glass, with 16 casts/64 transfers per snapshot;
+Source receives nothing. Discovery remains 10 Hz, mirrors remain capped at 96, and falling-piece
+stepping/drawing/batching are unchanged. See [the native bounds](native/README.md) and
+[the fix report](../docs/handover/R7-C-report.md#r7-c-fast-body-fix-pass-r7-glass-fix).
+
 An original MIT add-on replaces Glass-Rewrite-Remix. One frozen server entity represents each
 convex pane; broken pieces exist only in G1-B's client debris world. This is G1-A's second integration fix pass.
 Combine it with G1-B's fix pass before packaging/game acceptance. No GPL code or material files were copied.

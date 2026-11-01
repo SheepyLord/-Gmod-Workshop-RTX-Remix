@@ -4,8 +4,21 @@ MIT LuaJIT harness for the actual `debris_scene.lua` and `debris_bullets.lua`. R
 `test_glass_interaction.py`, or `luajit tools/tests/glass_interaction_harness.lua glass/addon/lua CASE`.
 Cases: `scene_kinds`, `scene_caps`, `scene_fallback`, `bullets_filter`, `bullets_rate`, `bullets_client`.
 
+`scene_sweep_bounds` verifies approaching/away/distant bodies, the 192-unit lookahead cap,
+immediate fast boxes, later convex upgrade, stable identities and resettable fast counters.
+`scene_fast_replay` (3600 units/s) and `scene_fast_crowded_replay` (650 units/s behind 120 slow
+candidates) implement spatial box queries and emit the actual captured rows between
+`REPLAY_BEGIN`/`REPLAY_END` for the native replay regression. An optional third argument sets
+the snapshot interval (1/60 or 1/30 seconds). Fast physics mesh extraction must not be called.
+The Python test passes those rows to Jolt; this Lua harness does not pretend to simulate contacts.
+
+`sceneperf` prints 1200-sample QueryPerformanceCounter timings after 80 warm frames: empty,
+96 warm bodies and a 512-entry priority prefix. Timings include real capture code with engine
+doubles and a native-sync double; no real engine query, native sync, Remix or GPU costs.
+
 Source doubles forbid all position, velocity, force and damage writes and whole-map scans. Checks
 living/shadow classification, per-bone ragdolls, stale physics identity, fallback shapes, spatial/body/
 shape caps, removals, final trace/PVS forwarding, unchanged weapon callbacks, ammo metadata, token
 buckets, expired/cleaned interest and receive-only clients. No game, native module, installed assets,
 network or files are changed. Exit 0 prints an assertion count; assertion/Lua errors exit nonzero.
+The replay emits only text to stdout and takes no installed assets.

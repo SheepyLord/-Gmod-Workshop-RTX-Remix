@@ -6,6 +6,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+- R7-C fix: fast Source props are discovered by bounded swept bounds and prioritized for immediate
+  box mirrors; capped native sweeps push thin settled glass between samples, one way. The regression
+  replays real Lua snapshots into Jolt; QA counters retain brief passes after a prop leaves the pile.
+
 ### R7-B diagnostics
 
 - An external observer from the same `winmm.dll` reports abnormal exits after the game closes,

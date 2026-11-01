@@ -238,6 +238,8 @@ function D.Stats()
     metrics.scene_bodies, metrics.scene_candidates, metrics.scene_queries = scene.bodies, scene.candidates, scene.queries
     metrics.capture_ms, metrics.scene_cooks = scene.capture_ms, scene.cooks
     metrics.capture_peak_ms = scene.capture_peak_ms
+    metrics.scene_examined, metrics.scene_fast_candidates, metrics.scene_fast_bodies = scene.examined, scene.fast_candidates, scene.fast_bodies
+    metrics.scene_fast_boxes, metrics.scene_peak_bodies = scene.fast_boxes, scene.peak_bodies
     metrics.damage_pending, metrics.ray_pending = math.max(0, damageLast - damageFirst + 1), #rays
     if backend == "jolt" then world.api.Stats(nativeStats) end
     metrics.backend, metrics.native, metrics.skipped_models = backend, nativeStats, world.skipped

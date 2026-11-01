@@ -313,6 +313,10 @@ local function stats(label)
         tostring(s.scene_queries), f(s.capture_ms), f(s.capture_peak_ms), f(s.split_ms), f(s.split_peak_ms), tostring(s.splits), tostring(s.splits_bullet),
         tostring(s.splits_blast), tostring(s.splits_body), tostring(s.splits_fall), tostring(s.damage_pending),
         tostring(s.ray_pending), tostring(n.ray_hits), tostring(s.damage_dropped), tostring(s.rays_dropped), tostring(n.damage_dropped)))
+    print(string.format("NL_QA fast bodies %s peak %s boxes %s candidates %s examined %s sweeps %s hits %s limited %s",
+        tostring(s.scene_fast_bodies), tostring(s.scene_peak_bodies), tostring(s.scene_fast_boxes),
+        tostring(s.scene_fast_candidates), tostring(s.scene_examined), tostring(n.scene_sweeps),
+        tostring(n.scene_sweep_hits), tostring(n.scene_sweep_limited)))
 end
 local pending
 net.Receive(NET_VIEW, function()

@@ -14,6 +14,7 @@
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
 #include <atomic>
 #include <array>
 #include <limits>
@@ -118,6 +119,7 @@ struct World::Impl {
     JPH::RVec3 target=JPH::RVec3::sZero();JPH::Quat rotation=JPH::Quat::sIdentity();
     bool custom=false,seen=false;
   };
+  struct SweepBudget { unsigned casts=0,count=0;std::array<JPH::uint32,64> kicked; };
   struct Contacts final:JPH::ContactListener {
     Impl& world;
     explicit Contacts(Impl& w):world(w) {}
@@ -152,6 +154,7 @@ struct World::Impl {
   std::array<std::pair<unsigned,std::uint32_t>,kMaxDamageEvents> damage_slots{};
   std::atomic<unsigned> damage_count{0},damage_dropped{0};
   unsigned scene_moves=0,scene_cooks=0,ray_hits=0,splits=0;
+  unsigned scene_sweeps=0,scene_sweep_hits=0,scene_sweep_limited=0;
   bool interaction=false;
   std::vector<unsigned> free;
   std::unordered_map<std::uint32_t,unsigned> ids;
@@ -229,6 +232,52 @@ struct World::Impl {
     const auto index=damage_count.fetch_add(1,std::memory_order_relaxed);
     if(index<kMaxDamageEvents)damage_slots[index]={slot,p.id};
     else { p.damage_queued=false;++damage_dropped; }
+  }
+  // Jolt CCD deliberately excludes kinematics. Sampled poses alone can tunnel through sleeping
+  // thin glass or pin it against the floor. Sweep only actual fast mirror translations, between
+  // worker steps; transfer closing normal velocity to glass, never change the mirror trajectory.
+  void sweep_mirror(const Mirror& m,JPH::Vec3Arg delta,float dt,SweepBudget& budget) {
+    const auto velocity=delta/dt;
+    if(velocity.LengthSq()<JPH::Square(160*kMetres))return;
+    if(budget.casts==16 || budget.count==64) { ++scene_sweep_limited;return; }
+    ++budget.casts;++scene_sweeps;
+    struct Hit { JPH::BodyID body;JPH::Vec3 normal; };
+    struct Collector final:JPH::CastShapeCollector {
+      std::array<Hit,8> hits;unsigned count=0,visits=0,bodies=0;
+      void OnBody(const JPH::Body&) override { if(++bodies==64)ForceEarlyOut(); }
+      void AddHit(const JPH::ShapeCastResult& hit) override {
+        if(count==hits.size() || visits==64)return;
+        if(++visits==64)ForceEarlyOut();
+        for(unsigned i=0;i<count;++i)if(hits[i].body==hit.mBodyID2)return;
+        hits[count++]={hit.mBodyID2,hit.mPenetrationAxis};
+        if(count==hits.size())ForceEarlyOut();
+      }
+    } collector;
+    class Pieces final:public JPH::ObjectLayerFilter {
+      bool ShouldCollide(JPH::ObjectLayer layer) const override { return layer==1 || layer==2; }
+    } filter;
+    const auto* body=physics->GetBodyLockInterfaceNoLock().TryGetBody(m.body);
+    const JPH::RShapeCast cast(body->GetShape(),JPH::Vec3::sReplicate(1),body->GetCenterOfMassTransform(),delta);
+    JPH::ShapeCastSettings settings;settings.mUseShrunkenShapeAndConvexRadius=true;
+    const JPH::SpecifiedBroadPhaseLayerFilter moving_layer(JPH::BroadPhaseLayer(1));
+    physics->GetNarrowPhaseQueryNoLock().CastShape(cast,settings,JPH::RVec3::sZero(),collector,moving_layer,filter);
+    if(collector.ShouldEarlyOut())++scene_sweep_limited;
+    auto& bi=physics->GetBodyInterfaceNoLock();
+    for(unsigned i=0;i<collector.count && budget.count<64;++i) {
+      const auto& hit=collector.hits[i];
+      const auto id=hit.body.GetIndexAndSequenceNumber();
+      if(std::find(budget.kicked.begin(),budget.kicked.begin()+budget.count,id)!=budget.kicked.begin()+budget.count)continue;
+      const auto normal=hit.normal.NormalizedOr(JPH::Vec3::sZero());
+      const auto before=bi.GetLinearVelocity(hit.body);
+      const float closing=(velocity-before).Dot(normal);
+      if(closing<160*kMetres)continue;
+      const auto* piece=physics->GetBodyLockInterfaceNoLock().TryGetBody(hit.body);
+      const auto slot=static_cast<unsigned>(piece->GetUserData()-1);auto& p=pieces[slot];
+      bi.ActivateBody(hit.body);bi.SetLinearVelocity(hit.body,before+normal*std::min(closing,2000*kMetres));
+      p.asleep=false;p.dirty=true;queue(slot);budget.kicked[budget.count++]=id;++scene_sweep_hits;
+      const float speed=closing/kMetres,mass=std::min(m.mass,p.mass*8);
+      damage(slot,.5f*mass*speed*speed,SourceBody);
+    }
   }
   std::uint32_t create(JPH::RefConst<JPH::Shape> shape,V3 position,V3 a,V3 velocity,V3 spin,float minimum_size=4) {
     need(!free.empty() && next_id!=0,"piece budget/identifier exhausted");
@@ -418,6 +467,7 @@ unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_d
   }
   if(!w.interaction) { w.clear_scene();return 0; }
   auto& bi=w.physics->GetBodyInterfaceNoLock();w.scene_moves=0;
+  Impl::SweepBudget sweep_budget;
   for(auto& m:w.mirrors)if(m.key) {
     m.seen=false;
     if(std::none_of(bodies.begin(),bodies.end(),[&](const SceneBody& s) { return s.key==m.key; })) { w.destroy(m.body);m=Impl::Mirror{}; }
@@ -452,6 +502,7 @@ unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_d
       bi.SetLinearAndAngularVelocity(m.body,JPH::Vec3::sZero(),JPH::Vec3::sZero());m.remaining=0;
     } else if(fresh || delta.LengthSq()>1e-10f || std::abs(bi.GetRotation(m.body).Dot(q))<.999999f) {
       m.remaining=static_cast<float>(std::clamp(sample_dt,1.0/60,4.0/60));++w.scene_moves;
+      w.sweep_mirror(m,delta,m.remaining,sweep_budget);
     }
   }
   return w.scene_moves;
@@ -646,6 +697,7 @@ Stats World::stats() const {
   s.live=static_cast<unsigned>(w.ids.size());s.awake=w.physics->GetNumActiveBodies(JPH::EBodyType::RigidBody);
   for(const auto& m:w.mirrors)if(m.key) { ++s.scene_bodies;if(w.physics->GetBodyInterfaceNoLock().IsActive(m.body))--s.awake; }
   s.scene_moves=w.scene_moves;s.scene_cooks=w.scene_cooks;s.damage_dropped=w.damage_dropped.load();
+  s.scene_sweeps=w.scene_sweeps;s.scene_sweep_hits=w.scene_sweep_hits;s.scene_sweep_limited=w.scene_sweep_limited;
   s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;

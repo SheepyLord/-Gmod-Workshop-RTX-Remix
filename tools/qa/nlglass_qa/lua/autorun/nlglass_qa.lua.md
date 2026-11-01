@@ -99,3 +99,21 @@ independent cosmetic debris; an NPC walks through a pile; client/remote ragdoll 
 landing on displacement/props; budget 1/2000/8192 and oldest-first eviction; minimum-size pieces only
 move; lifetime changes and a split just before expiration; map cleanup/reload and missing/older-module
 fallback. No pickup, server piece entities, reverse Source forces or glass-inflicted damage should exist.
+
+## R7-C fast-body fix recheck
+
+Run 11's ground-level drum crosses the settled pile without a piece moving (`console.log:656–662`
+in the read-only `out/qa-poc/r7/11-interact` evidence). Its throw position/velocity is unchanged by
+this fix. After importing the matching Lua/module, repeat `interact_prop_before`/`interact_prop`
+through `nlglass_qa interact`: the 30 kg drum at 650 units/s must move/split pieces (`body > 0`),
+with no glass-caused change to Source. Repeat off: no body contacts, mirrors or new sweep hits.
+
+`NL_QA fast` now prints current fast bodies, peak mirror count and cumulative cold fast boxes since
+the fixture reset, latest fast candidates/examined entries, and native sweeps/hits/limited totals.
+The peak/box counters preserve a brief pass even if current mirrors are zero at the after shot.
+Native counters are cumulative for the map: compare deltas. With on, fast boxes/peak must become
+nonzero and sweep hits should increase; with off, none increases. A nonzero limited delta marks
+intentional saturation and must be retained alongside the frame samples.
+
+Keep the unchanged `field` on/off frame-time check above. No game was run during the fix; offline
+capture/native/falling checks and remaining limits are recorded in the R7-C report.

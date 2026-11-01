@@ -232,6 +232,7 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("temp_reserved_bytes",static_cast<double>(s.temp_reserved_bytes));add("temp_peak_bytes",static_cast<double>(s.temp_peak_bytes));
   add("pose_visits",s.pose_visits);
   add("scene_bodies",s.scene_bodies);add("scene_moves",s.scene_moves);add("scene_cooks",s.scene_cooks);
+  add("scene_sweeps",s.scene_sweeps);add("scene_sweep_hits",s.scene_sweep_hits);add("scene_sweep_limited",s.scene_sweep_limited);
   add("damage_dropped",s.damage_dropped);add("ray_hits",s.ray_hits);add("splits",s.splits);
   LUA->PushBool(s.interaction);set(LUA,1,"interaction");
   LUA->PushBool(s.ready);set(LUA,1,"ready");LUA->PushBool(s.busy);set(LUA,1,"busy");return success(LUA);

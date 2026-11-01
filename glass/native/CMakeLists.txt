@@ -35,3 +35,7 @@ set_tests_properties(nl_glass_tests PROPERTIES TIMEOUT 180)
 # Deliberate read-only probe; never runs against an installed map as part of CTest.
 add_executable(nl_glass_import_probe tests/import_probe.cpp)
 target_link_libraries(nl_glass_import_probe PRIVATE nl_glass nl_build_options)
+
+# Python feeds real Lua snapshots into this offline generated-pile regression.
+add_executable(nl_glass_scene_replay tests/scene_replay.cpp)
+target_link_libraries(nl_glass_scene_replay PRIVATE nl_glass nl_build_options)
