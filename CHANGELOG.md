@@ -6,6 +6,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### Fixed (after R6)
+
+- The git hooks' background Workshop publish no longer opens a window for every step it runs; with
+  Windows Terminal as the default terminal each step had left a finished tab open (about 60 per push).
+
 ### Added (R6: performance and stability; loader 0.11.0, [plan](docs/handover/R6-plan.md))
 
 - **Remix settings that fit your graphics card.** At each RTX start the loader picks a performance

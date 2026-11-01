@@ -49,6 +49,7 @@ def shared_state() -> Path:
 
 STATE = shared_state()
 HOOK_MARKER = '# nl-workshop-hook'
+BACKGROUND_FLAGS = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP
 # What goes into the item from this repository: a change here can change the package. packages/ holds
 # every part's inputs (its LFS files are pointers in git, so the tree hash covers their content).
 # companion_i18n.py builds the shipped i18n_data.lua (package_fixes.py imports it); package_fixes.py
@@ -519,9 +520,11 @@ def main(argv=None) -> int:
             log_path = logs / f'publish-{stamp()}-{os.getpid()}.log'
             forward = [a for a in (argv if argv is not None else sys.argv[1:]) if a != '--background']
             with open(log_path, 'ab') as handle:
+                # One hidden console that the run's children share. Without a console (DETACHED_PROCESS)
+                # each console child opened its own window, a Windows Terminal tab that stayed (2026-10-31).
                 subprocess.Popen([sys.executable, str(Path(__file__).resolve()), *forward], cwd=REPO, stdout=handle,
                                  stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                 creationflags=0x00000008 | 0x00000200)  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+                                 creationflags=BACKGROUND_FLAGS)
             print(f'publish_workshop: running in the background; log {log_path}')
             return 0
         def log(text: str) -> None:

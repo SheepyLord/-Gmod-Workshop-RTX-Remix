@@ -15,6 +15,7 @@ cd tools; python -m unittest tests.test_publish_workshop
 
 | Test | Checks |
 |---|---|
+| the background run shares one hidden console | `--background` relaunches without that flag, with `CREATE_NO_WINDOW` and never `DETACHED_PROCESS` |
 | first run uploads, then unchanged inputs stop early | one upload; `published.json`; the change notes name the version; the second run uploads nothing |
 | changed content uploads again | a changed file in a part uploads a new version |
 | same content with new input times uploads nothing | a rebuild with the same digest is `unchanged-content` and keeps the new fingerprint |

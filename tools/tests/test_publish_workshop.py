@@ -181,6 +181,26 @@ class PublisherPreflightTests(unittest.TestCase):
                 self.assertFalse(pub.steam_api_ready(self.api, self.game))
 
 
+class BackgroundLaunchTests(unittest.TestCase):
+    def test_the_background_run_shares_one_hidden_console(self):
+        """Children of a console-less run each opened a window (a Windows Terminal tab that stayed)."""
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        state = Path(tempfile.mkdtemp(prefix='test-publish-background-', dir=SCRATCH))
+        saved = pub.STATE
+        pub.STATE = state
+        try:
+            with mock.patch.object(pub.subprocess, 'Popen') as popen, \
+                    mock.patch('sys.stdout', new_callable=lambda: open(os.devnull, 'w')):
+                self.assertEqual(pub.main(['--background', '--reason', 'test']), 0)
+        finally:
+            pub.STATE = saved
+            shutil.rmtree(state, ignore_errors=True)
+        flags = popen.call_args.kwargs['creationflags']
+        self.assertTrue(flags & 0x08000000)       # CREATE_NO_WINDOW
+        self.assertFalse(flags & 0x00000008)      # never DETACHED_PROCESS
+        self.assertNotIn('--background', popen.call_args.args[0])
+
+
 class PublishTests(unittest.TestCase):
     def setUp(self):
         SCRATCH.mkdir(parents=True, exist_ok=True)

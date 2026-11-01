@@ -163,7 +163,9 @@ Without git-lfs the other hooks skip its step and go on. A push that deletes `ma
 
 Each hook runs `publish_workshop.py --background --commit <commit> --reason "<what> <commit>"`: for
 `pre-push` the commit sent to `main`, which step 0 builds in the checkout that has it checked out.
-- The background run is detached, so the commit, merge or push returns at once.
+- The background run is detached, so the commit, merge or push returns at once. It gets one hidden
+  console (`CREATE_NO_WINDOW`) that every step it runs shares: started without a console, each step
+  opened a window of its own, and Windows Terminal kept dozens of finished tabs (2026-10-31).
 - Its output goes to `out\workshop\logs\publish-<time>-<pid>.log`.
 - A run that fails, for example because Steam is not running, changes nothing. The next commit,
   merge or push of `main` tries again.
