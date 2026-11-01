@@ -18,11 +18,19 @@ python tools\package_fixes.py --modules-from <build folder> --exclude-addon rtx_
 
 ## What goes in
 
+G1 always excludes `Glass-Rewrite-Remix`, including its own source docs and Lua. The new MIT glass
+part replaces it. The fixes' `remixbinary` glass material and `base_mod/breakable_glass` Remix
+replacement stay. Bundled catalog build/source copies omit phrases exclusive to that retired
+add-on and its source references; shared phrases, every other translation and the GPL license stay.
+Source catalogs are read-only. Filtered editable copies are generated under `out/tmp/fixes-catalogs-<pid>`
+with source timestamps, and the generated companion Lua uses the same filter. Full source catalog
+validation still runs before packaging. This does not add or change any other exclusion.
+
 Sources are relative to the fixes repo's `garrysmod\` folder (its distributable tree) unless stated.
 
 | Package path | From | Manifest |
 |---|---|---|
-| `native/root/garrysmod/addons/<name>/**` | every folder in `garrysmod\addons\` except `--exclude-addon` ones | one `root_files` entry `garrysmod/addons/<name>` per add-on, kind `lua-addon`, `replace-owned` |
+| `native/root/garrysmod/addons/<name>/**` | every folder in `garrysmod\addons\` except `Glass-Rewrite-Remix` and `--exclude-addon` ones | one `root_files` entry `garrysmod/addons/<name>` per add-on, kind `lua-addon`, `replace-owned` |
 | `native/root/garrysmod/addons/nativeloader/**` | this repo's [Lua companion](../companion/README.md) `companion\nativeloader\`, its `.md` files left out | the same, `garrysmod/addons/nativeloader` |
 | `native/root/garrysmod/addons/nativeloader/lua/nativeloader/i18n_data.lua` | built from [`companion\i18n\*.po`](../companion/i18n/README.md) by [`companion_i18n.py`](companion_i18n.py.md) `build` into a scratch file under `out\tmp` (removed afterwards), with the newest `.po` file's time; the inventory names `companion\i18n` as its source. A `.po` that does not check stops the build | the same |
 | `native/root/rtx-remix/mods/<mod>/**` | every folder in `rtx-remix\mods\` that holds files | one entry `rtx-remix/mods/<mod>` per mod, kind `root-files`, `replace-owned`; `~gmod_topbr` `create-only`, because the fixes' ToPBR converter rewrites it at run time (a reinstall would otherwise find its files "not placed by the loader" and refuse the package) |

@@ -17,6 +17,8 @@ on:
       - 'companion/**'
       - 'third_party/reshade/**'
       - 'third_party/gmod/LICENSE'
+      - 'third_party/jolt/LICENSE'
+      - 'glass/addon/**'
       - 'LICENSE'
       - '.gitattributes'
       - 'tools/inputs.py'

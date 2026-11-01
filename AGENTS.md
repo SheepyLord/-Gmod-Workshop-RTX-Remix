@@ -14,8 +14,8 @@ patched copy of GMod managed by RTXLauncher.
 
 - How it works: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - What each component does: [docs/COMPONENTS.md](docs/COMPONENTS.md)
-- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0-M7, R1, R3, R4 (reviews, fixes, the QoL round's review and field QA; loader 0.10.1), R5 (the user's QoL report), R6 (performance tiers and stability evidence; loader 0.11.0) and C-16 (steady anime eye whites) done; R2 (field parity with the classic install) in progress**)
-- Picking up a milestone from another agent: [docs/handover/](docs/handover/README.md) (your brief is there; the latest round is [C16-report.md](docs/handover/C16-report.md), after [R6-report.md](docs/handover/R6-report.md) and [R5-qol.md](docs/handover/R5-qol.md))
+- Where we are and what is next: [docs/ROADMAP.md](docs/ROADMAP.md) (current: **M0-M7, R1, R3, R4 (reviews, fixes, the QoL round's review and field QA; loader 0.10.1), R5 (the user's QoL report), R6 (performance tiers and stability evidence; loader 0.11.0), C-16 (steady anime eye whites) and G1 (a glass overhaul) done; R2 (field parity with the classic install) in progress**)
+- Picking up a milestone from another agent: [docs/handover/](docs/handover/README.md) (your brief is there; the latest round is [G1-report.md](docs/handover/G1-report.md), after [C16-report.md](docs/handover/C16-report.md) and [R6-report.md](docs/handover/R6-report.md))
 - Why it is built this way: [docs/decisions/](docs/decisions/README.md)
 - Facts gathered about GMod, Remix and the existing RTX tooling: [docs/RESEARCH.md](docs/RESEARCH.md)
 - This machine (installs, toolchain): [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)
@@ -29,9 +29,9 @@ patched copy of GMod managed by RTXLauncher.
 | `tools/steam/` | Steam depot manifest tools: verify an install, build the vanilla PoC copy |
 | `tools/gmapack/` | Vendored `.gma` reader and writer (Python) |
 | `tools/sky/` | Tools that make the runtime's sky textures (the Moon, the night sky image) |
-| `packages/` | Every input of the RTX package's ten parts, so this repo alone builds it: text as it is, binaries xz-compressed in Git LFS, each part indexed in `files.json` ([packages/README.md](packages/README.md), [ADR 0033](docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)) |
+| `packages/` | Every input of the RTX package's eleven parts, so this repo alone builds it: text as it is, binaries xz-compressed in Git LFS, each part indexed in `files.json` ([packages/README.md](packages/README.md), [ADR 0033](docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)) |
 | `runtime/` | This project's changes to the Remix runtime fork, as patches against the fork commit in `base.json`, with what else the build has (submodule settings, clones; [ADR 0034](docs/decisions/0034-the-runtimes-build-inputs-recorded.md)), and the script that rebuilds `d3d9.dll` from them ([runtime/README.md](runtime/README.md)) |
-| `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder); `reshade/` holds only ReShade's licence, for the unchanged ReShade binary the RTX package carries |
+| `third_party/` | Vendored third-party code, byte-identical to upstream, each with its licence: `lzma/` (LZMA SDK decoder); `jolt/` (Jolt Physics 5.3.0, linked into the glass module); `reshade/` holds only ReShade's licence, for the unchanged ReShade binary the RTX package carries |
 | `skills/` | Agent skills, each a `SKILL.md` with references and scripts: AI PBR materials for MMD characters (`mmd-remix-pbr`, with the `rpai` tool) and for maps (`remix-map-pbr`), and Workshop content packs with their dependencies (`workshop-content-pack`) ([skills/README.md](skills/README.md)) |
 | `dist/` | What the end-user bundle ships besides `winmm.dll`: the default `native-loader/config.json` and the player README ([ADR 0017](docs/decisions/0017-release-bundle-and-ci.md)) |
 | `glass/` | The glass system (G1, [ADR 0070](docs/decisions/0070-glass-overhaul.md)): `addon/` (the Lua add-on: panes, damage, cracks, fracture, broken-glass manager), `native/` (the Jolt client module for broken glass) |

@@ -1,5 +1,281 @@
 # Research notes
 
+## G1-A second pass: client build cost (2026-11-01)
+
+- Full Release gate exits 0: repo conventions, 25/25 CTests (48.67 s), and 453 Python tests
+  (28 gmapack, 25 steam, 400 tools, two existing skips). All 50 G1-A glass tests execute.
+  The tools tests take 79.927 s. Evidence: `out/g1-lua-fix2/release.log`. No G1-B/native/Jolt,
+  QA, package or Workshop configuration paths were edited in this branch.
+
+- `glass/addon/lua/nlglass/client.lua:102` queues a dirty pane once; `:114` drains it after the
+  receiving FrameNumber with a two-pane cap and a soft 1 ms elapsed-time stop. A whole break
+  clears stale meshes/collision immediately. Removal/snapshot replacement/cleanup invalidate
+  pending entries. `Attach` preserves collision dirtiness for an entity arriving while queued.
+  Current contact-default anchors are `config.lua:7`, `damage.lua:71` and `server.lua:154`
+  in the same directory (the earlier contact note's fallback line numbers were one line late).
+- `glass/addon/lua/nlglass/geometry.lua:74` supplies mesh and convex positions from one extrusion;
+  face fans and crack strips share read-only vertex records. The crack strip builder at
+  `client.lua:73` also makes winding agree with outward normals on both faces. The engine
+  harness checks position identity, triangle counts, winding, queue bounds/coalescing and
+  cancellation including late entities and a whole break overtaking partial work.
+- Updated 40-sample benchmark on the same 100-hit preparation: ad3ed46 has 502 cells, this pass
+  164. Client break handler mean/p99 13.5920/20.7774 -> 1.8676/2.6174 ms; deferred build after
+  1.0124/2.1511 ms; per-sample combined cost 13.5931/20.7784 -> 2.8800/4.5732 ms. Hit combined
+  cost 13.3168/21.9155 -> 3.2667/5.6801 ms. The queue does not hide deferred work in these sums.
+  Initial snapshot/attach is outside timing; engine/physics/transport/debris are mocked.
+  This is CPU evidence only, not GMod or Remix frame-time acceptance.
+- The stronger active-cap coarsening probe peaks at 199 cells with 0.048986 units² area error;
+  36,015 generated edges remain at least 1/256 long. The typed snapshot is 5,723 bytes for
+  176 live cells/7 groups. New density/lit/default/defer regressions fail on ad3ed46; all
+  50 glass cases pass now. Logs remain under this worktree's `out/g1-lua-fix2/`.
+
+## G1-A second pass: lit cracks and walking (2026-11-01)
+
+- `glass/addon/lua/nlglass/client.lua:7` creates `nlglass_frost_lit` with VertexLitGeneric and
+  `models/debug/debugwhite`, no selfillum. A new name avoids the existing material cache after
+  Lua refresh. The `lit_cracks` mock checks the shader and strips at z=±0.515 for thickness 1,
+  outward normals, equal front/back vertices and full width at most 0.20 units. Whether Remix
+  shades those strips correctly at night/in a dark room remains a real renderer check.
+- `config.lua:7` now defaults the replicated contact speed to 250; `damage.lua:72` and
+  `server.lua:155` use the same fallback. The `walk_run` harness checks contacts/sweeps at
+  200/249 (no damage) and 250/400 (damage), menu value and admin reset to 250. Existing archived
+  values remain user choices. The menu help and six MIT catalogs include the default guidance.
+
+## G1-A second pass: break density (2026-11-01)
+
+- `glass/addon/lua/nlglass/fracture.lua:7` defines kind-specific active caps (200 annealed,
+  300 tempered) within MAX_CELLS=512. `rings` stretches only the final outer ring when its
+  ray/ring product exhausts the budget; `uniform` bounds its row/column product explicitly.
+  `Apply` coarsens before assigning refined cells, so every release is bounded without losing
+  area. Repeated radius queries no longer build unused tile polygons.
+- `tools/tests/nlglass_fracture_harness.lua density` fails on ad3ed46 and passes after the fix.
+  At spacing 8, seed 171 and a 2-unit corner inset, annealed fresh/damaged whole-break counts
+  are 89/160 centre and 52/197 corner (96x64), 116/170 and 63/184 (256x128), 116/151 and
+  65/182 (128x256). Damaged means 24 prior 180,000-energy spatial visual-only native hits.
+  Tempered counts are 96, 300 and 300 at either location, fresh or damaged. The harness also
+  checks 8192x1, 1x8192, 8192x8192, spacings 4/8/64 and conserved total area.
+- Local pre-change handler baseline: 502 prepared cells, 40 samples, client break mean/p99
+  14.5843/23.7406 ms. This differs from the first-pass handover's earlier machine/load sample;
+  both measure mocked engine calls, not live frame time. Lower-cap pure-fracture means over
+  80 samples (164 cells): hit 0.4183, repeat 0.0652, break 0.1389 ms versus local baseline
+  0.6187/0.0805/0.5113 ms at 502 cells. Evidence stays in this worktree's ignored
+  `out/g1-lua-fix2/`. No game or install was changed.
+
+## G1-B second pass: final offline receipt (2026-11-01)
+
+- Final matched QPC samples (`out/g1-native-fix2/render-before-final.log` / `render-after-final.log`):
+  moving Think+draw means 0.1623 -> 0.1650 ms with all 2,000 pieces visible; mixed visibility
+  0.1349 -> 0.1144 ms (2,000 -> 500 draws); settled 0.0155 -> 0.0119 ms (15 -> four draws).
+  Settling allocates 41,795 -> 14,220 KiB with GC stopped, including 288,000 -> 47,952 Vector
+  and 144,000 -> zero Angle constructions. The mocks omit real engine-call and GPU cost.
+- Source anchors: `debris_mesh.lua:59` mutates shared transformed vertices; `debris_batches.lua:5`
+  bounds upload/preparation work, `:102` stages rebuild/retirement and `:133` culls settled areas;
+  `debris_draw.lua:19` groups individual draws; `debris_view.lua:25` tests spheres and projected
+  size using camera depth; `debris.lua:196` publishes the manager's rolling metrics. All are
+  under `glass/addon/lua/nlglass`. A slow-vector double yields before the count cap, and a 2.5 ms
+  upload injection remains in the peak statistic after quiet frames.
+- Release passes 25 CTests/448 Python tests (two existing skips) after the already documented
+  local guard-output shortening; 19 native glass cases pass. The unchanged native test drops
+  4,000 colliding pieces to sleep in 11.0167 simulated seconds with zero contact overflows;
+  settled core step+poses averages 0.00165 ms. It runs alongside the full test suite, not a game.
+  Separate final Lua manager/probe checks pass 14,576 assertions. No game frame target is claimed.
+
+## G1-B second pass: moving draw work and attribution (2026-11-01)
+
+- `debris_draw.lua` maintains individual material groups; a fully visible 2,000-piece mock frame
+  binds once instead of 2,000 times. Across 240 frames, setters fall from 1,440,000 to 962,000
+  (two pose setters per piece/update plus one initial scale setter). Repeated draw passes with
+  unchanged poses perform no matrix writes. No per-piece Vector/Angle/Matrix is constructed by
+  either warmed draw path; the change avoids engine calls and culls work rather than claiming
+  the original draw path allocated those userdata every frame.
+- `debris_view.lua` uses the render view, numeric Source basis and conservative sphere bounds;
+  the controlled mixed scene retains 500 of 2,000 pieces, rejecting rear, beyond-8192-unit and
+  distant subpixel pieces. It submits 500 rather than 2,000 draws. Engine doubles make material
+  and matrix calls effectively free: fully-visible Think+draw **increases** from 0.132 to 0.164 ms
+  with culling/instrumentation, while mixed visibility falls from 0.129 to 0.115 ms. This does not
+  measure the reduced real-engine binding/GPU cost and does not prove the <20 ms game target.
+- `debris.lua` records 120-frame Think/draw means, last and peak samples; draw passes sharing
+  FrameNumber accumulate before publication. Injecting 1.25 ms Think work and 0.4 ms/mesh for two
+  two-mesh passes produces exactly 1.25 ms Think, 1.6 ms draw and four calls/frame. Rebuild and
+  upload peaks survive quiet frames. These fields separate hook work from asynchronous Jolt;
+  Spawn/fracture outside Think and GPU time are explicitly excluded.
+
+## G1-B second pass: pile allocation and draw findings (2026-11-01)
+
+- Read-only game receipts: `out/qa-poc/g1/03-qa/console.log:657,660,662` in the main checkout
+  report 678 sleeping pieces/40 batches at 8.71 ms mean, 2,000 live/1,453 moving at 33.83 ms
+  (Jolt 1.5816 ms), then 2,000 sleeping/388 batches at 11.91 ms mean, p99 28.95 ms. These
+  frame spikes cannot be attributed precisely from those aggregate logs alone.
+- Before the second pass, `debris_batches.lua` grouped 256-unit XYZ cells by material **and
+  color**, uploaded at most 6,000 vertices, and `debris_mesh.lua:57` called `LocalToWorld`
+  twice per transformed vertex. A controlled 2,000-quad/50-location LuaJIT sample allocates
+  41,624 KiB while settling, including 288,000 Vector and 144,000 Angle constructions.
+  This is a concrete source of later GC pressure; engine/Remix spikes still need game attribution.
+- Consolidating into offset 1024-unit cells by material, with vertex colors preserved and one
+  shared 24,000-record upload pool, reduces the same sample from 15 to four settled draws and
+  to 14,209 KiB allocated, 47,952 Vector constructions and **zero** Angle constructions while
+  settling. A warmed rebuild allocates no vertex vectors. The color/grid-zero regression puts
+  all 2,000 pieces into four draws in one area. Source-basis position/normal comparisons pass.
+  GPU releases now spread across frames; transforms have count and measured time caps. These
+  measurements use engine/physics doubles, QPC and stopped GC; actual uploads/GPU costs are absent.
+
+## G1-A client/update fix pass: final offline evidence (2026-11-01)
+
+- Implementation anchors: `damage.lua:65` (side/proximity contact), `server.lua:86` (quiet outputs),
+  `server.lua:151` (incoming/base-velocity sweep), `server.lua:286` (targeted sync), all under
+  `glass/addon/lua/nlglass/`. Fracture anchors there: `fracture.lua:104` (capped crack floor),
+  `:258`/`:286` (complete-group coarsening/local refinement), `:343`/`:451` (apply/crack caches).
+  Client anchors: `client.lua:22`/`:50`/`:162` (pose cache/build/draw), `protocol.lua:13` (snapshot).
+
+- `glass/addon/lua/nlglass/client.lua` retains matrices/entity validation and refreshes transforms
+  only after a pose change. The draw harness checks 20 frames with zero new Matrix, LocalToWorld
+  or class calls; far/rear panes are skipped. A break builds prediction physics once and at most
+  one pane/crack mesh pair. Pending weak energy builds neither. Initial sync is client-ready only;
+  a mismatch requests one pane and two different panes can repair in the same frame.
+- The corrected 40-sample handler benchmark restores fresh server/client records before each
+  sample (so stale revisions cannot short-circuit later samples). Same 100 preparation hits,
+  493/502 cells before/after. Mean ms before/after: server hit 14.2875/5.3019; server break
+  18.9326/10.3577; client hit 45.3190/27.7840; client break 84.1545/23.7365. p99 ms:
+  39.5452/16.4711; 37.8406/25.0744; 73.6096/52.1866; 118.3529/46.5227 respectively.
+  These include Lua mesh/convex construction and mock overhead/GC, not actual engine/GPU physics,
+  transport, debris/Jolt or Remix. They do not establish game frame-rate acceptance.
+- Final pure-fracture 80-sample means: new hit 0.8426 ms, repeat 0.0961 ms, break 0.6749 ms;
+  p99 2.6709/0.6155/1.9264 ms. Existing before means were 12.5675/13.6601/14.5538 ms.
+- [Entity:SetVelocity](https://wiki.facepunch.com/gmod/Entity:SetVelocity) sets base velocity,
+  added to player movement; [GetBaseVelocity](https://wiki.facepunch.com/gmod/Entity:GetBaseVelocity)
+  exposes it. The QA runner's scripted push needs this in addition to CMoveData velocity. Tests
+  cover ordinary incoming motion with stopped entity velocity and zero movement velocity with a
+  500-unit/s base impulse. The old logs have no Touch/velocity trace, so exact engine callback
+  timing is still a game check. Native-removal blast order is separately tested with deferred breaks.
+- Full `tools/test.ps1 -Config Release`: 25 CTests, 448 Python tests (28 gmapack, 25 steam,
+  395 tools; two existing skips), including 45 G1-A glass cases. Output and before-failure/timing
+  evidence are under this worktree's ignored `out/g1a/`; original QA evidence was read only.
+
+## G1-A incremental fracture probes (2026-11-01)
+
+- `tools/tests/nlglass_fracture_harness.lua` now reproduces lost hit location at the fourth
+  separated impact against 3096b2e, sub-floor energy loss, full tempered grid cracks, a 1/1024
+  clipped edge and border cracks. All fail before the fix and pass after it. The 180-seed edge
+  probe checks 36,015 generated edges at or above 1/256. The 100-hit coarsening probe peaks at
+  512 cells with area error 0.01414 on a 32,768-unit² pane; another preserves an existing hole.
+- The same 80-sample high-resolution near-cap workload (100 preparation hits outside timing)
+  measured before/after mean new-hit 12.5675/1.1596 ms, repeat 13.6601/0.1359 ms and break
+  14.5538/0.8603 ms. Before/after p99: hit 20.8927/2.7537, repeat 23.7746/1.4296, break
+  23.1292/3.1285 ms. Prepared cell counts: 493/502. These are LuaJIT fracture CPU times;
+  no GMod, native debris, physics initialization, rendering or network transport is measured.
+- `tools/tests/nlglass_engine_harness.lua topology` round-trips 501 live cells and 47 complete
+  subdivision groups in 16,721 bytes, then compares the next break's polygons. Remaining/crack
+  caches avoid repeated support passes; only a breakout needs adjacency/support traversal.
+
+## G1-A contact and hidden-surface output investigation (2026-11-01)
+
+- In the read-only `out/qa-poc/g1/02-qa/console.log`, the 40-pane falling scene reports mean
+  17.66 ms, p99 292.93 ms; empty 8.33 ms, settled 8.88 ms, all on the 64-piece VPhysics fallback.
+  The QA player step supplies 500 units/s toward an upright 64×96 pane but leaves it intact.
+  `tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua` sets that velocity before the mover stops it;
+  `glass/addon/lua/entities/nlglass_pane/init.lua` previously relied only on Touch/GetVelocity.
+  This explains a missed incoming velocity path; actual callback timing still requires game QA.
+- [Facepunch SetupMove](https://wiki.facepunch.com/gmod/GM:SetupMove) runs before engine movement.
+  [EntityKeyValue](https://wiki.facepunch.com/gmod/GM:EntityKeyValue) captures repeated output keys;
+  [GetKeyValues](https://wiki.facepunch.com/gmod/Entity:GetKeyValues) does not expose all keys;
+  [TriggerOutput](https://wiki.facepunch.com/gmod/ENTITY:TriggerOutput) is a scripted-base helper,
+  not direct access to the native brush's output objects.
+- [Valve func_breakablesurf.cpp](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/server/func_breakablesurf.cpp)
+  lines 562–579 play PhysBreakSound and fire inherited OnBreak. InputShatter (668–715) calls
+  Die and ShatterPane. NoDraw cannot suppress these events. The surface datadesc (143–172) adds
+  no OnShatter output. The replacement now mirrors captured OnBreak keys to an unused native user
+  channel, preserving raw parameter/delay/count strings instead of requesting engine fracture.
+
+## G1-A glass: offline executable evidence (2026-10-31)
+
+- `glass/addon/lua/nlglass/damage.lua:58` reads `CollisionData.HitObject` as the PhysObj itself,
+  including `GetMass`; relative velocity uses `TheirOldVelocity - OurOldVelocity`. The mocked
+  PhysObj deliberately has no `GetPhysicsObject`. A 120 kg hitter at relative 180 units/s produces
+  1,944,000 game energy, identically for a prop and ragdoll. `:65` admits moving players, NPCs and
+  vehicles, excludes slow/tangential contacts and tests the remaining polygons to avoid ghost hits
+  in holes. The server defers physics reconstruction outside PhysicsCollide callbacks.
+- `glass/addon/lua/nlglass/fracture.lua:87` supplies the tunable 450,000 reference breaking threshold
+  (96×64, thickness 1, annealed, strength 1), 8% crack threshold and 3.5× tempered threshold. The
+  pure LuaJIT probe `out/g1-a/fracture-smoke.lua`, seed 100, returns 58 cells after a 180,000-energy
+  centre hit, 86 visible crack segments then 109 after the second hit; the third releases 40 cells
+  and leaves 18 in the frame. Their full area sums to 6144. These are synthetic energy/geometry
+  measurements, not observed damage from the game's pistol.
+- `fracture.lua:2`, `:233` cap impacts at eight and cells at 512; nearest-centre merging preserves
+  energy and the seed/cuts. Snapshot replay and fresh-process outputs match. The pure harness
+  disables global random, sin/cos and sqrt; no libm call controls tessellation. Crack edges from
+  the first hit occur in the final cells. Shared-edge connectivity releases unsupported islands
+  and keeps support across an edge subdivided by another cut.
+- `glass/addon/lua/nlglass/protocol.lua:3` encodes an impact in 148 bits (19 rounded-up bytes):
+  24-bit x/y at 1/1024 units, 31-bit energy/seed, two-bit kind, three signed 12-bit directions.
+  With pane ID, revision and three flags, the ordinary event is 215 bits (27 bytes). Breaks carry
+  the prior bounded state; a test deliberately misses the create packet and removes the entity
+  before client replay, yet all pieces reach the debris stub. Late join creates no old debris.
+- `glass/addon/lua/nlglass/client.lua:17` mirrors remaining frozen convexes for prediction, attaches
+  after late entity networking and rejects an index reused by an unrelated class. The wire carries
+  entity-local frame offsets, so delayed client poses do not introduce a permanent geometry offset.
+- `glass/addon/lua/nlglass/server.lua:76` retains the original hidden/non-solid surface brush and
+  fires one covering Shatter input on first breakout; the harness proves bypass/routing and that
+  a partial pane remains. It does **not** prove Source's Hammer output semantics for a hidden brush.
+  Native `func_breakable` retains engine health/collision; `:152` sends pieces once across break
+  events/removal, using last damage, breaker pose/velocity or a nominal centre impact. `:241`
+  invalidates pending native removals during cleanup. Restored panes keep their output bridge;
+  duplicates do not take it from the original.
+- The companion relocates category `Glass Rewrite Remixed` to Water and glass
+  (`companion/nativeloader/lua/autorun/client/nativeloader_menu.lua:20`). G1 retains that category
+  and `GlassSettings` (`glass/addon/lua/nlglass/menu.lua:72`) plus `glass_open_panel` and
+  `rtx_glass_player_break_speed`, avoiding an orphaned settings page. Non-English MIT catalogs are
+  newly agent-written and await human review. Actual weapon tuning, engine outputs, prediction,
+  Remix frosting and the 50-window performance baseline remain game acceptance.
+
+## G1-B: dedicated glass world and offline measurements (2026-10-31)
+
+- Final QA refinement (2026-11-01): the 4,000-piece benchmark now reserves **8192** bodies, exactly
+  as the manager does, rather than reserving only 4000. With that reserve it still slept in
+  **11.0167 simulated seconds**: spawn **42.35 ms**, simulation **6.384 s wall / 31.281 s process
+  CPU**, fixed-step **9.657 ms mean / 17.063 ms maximum**, settled step+poses **0.1225 ms**.
+  The fixture uses axis-aligned rectangular shards and zero initial spin/velocity. These are
+  core-test figures, not game/rendering figures; evidence is `out/native-tests-qa.log`. Compressed
+  `sprp` tests now exercise both directory-length conventions, and the displacement fixture also
+  verifies omission of an authored hole. The earlier 4000-reserve measurements below are retained.
+
+- Pinned Jolt `v5.3.0`: the only downloaded archive was
+  `https://codeload.github.com/jrouwe/JoltPhysics/zip/refs/tags/v5.3.0`, SHA-256
+  `ee47dbd3de026829bc9734eeed960118c3d0a1a61b16e172009731a407d1466a`. All 444 vendored
+  upstream files were compared directly against the archive and matched; our README is separate.
+- Source's collision-lump LZMA wrapper is treated as 17 bytes: `LZMA`, original size, packed size,
+  five decoder properties; it is not the loader's 13-byte standalone LZMA header. The reader limits
+  expanded sizes and dictionary before calling the existing SDK decoder
+  (`glass/native/bsp.cpp:36`). Generated compressed-leaf and damaged-input tests cover this path.
+- The importer traverses model 0's world tree, rather than importing the brush lump wholesale:
+  nodes are 32 bytes, leaves v0/v1 are 56/32 bytes, models 48 bytes, brushes 12 bytes and sides
+  8 bytes. `0x400b` selects solid/window/grate/moveable contents; playerclip/water/entity-only
+  brushes are excluded (`glass/native/bsp.cpp:78`). Displacement records are 176 bytes, vertices
+  20 bytes, faces 56 bytes; surface-tagged triangles from powers 2-4 collide on both sides
+  (`glass/native/bsp.cpp:121`, `glass/native/world.cpp`). These are offline-supported layouts;
+  real mounted-map compatibility remains game QA, not a claim that every Source derivative works.
+- `sprp` origin/angles/model/solidity use byte offsets 0/12/24/30; supported records have strides
+  56-80 bytes (v4-11), with v11 uniform scale at 76. Compressed child lumps can advertise packed
+  or original directory length (`glass/native/bsp.cpp:169`). The generated fixture includes a
+  scaled solid prop and a non-solid decoration; native tests also drop bodies onto that prop and
+  onto the generated displacement, proving collision rather than just parser counts.
+- Jolt's fixed-only `TempAllocatorImpl` explicitly calls `std::abort()` on exhaustion
+  (`third_party/jolt/Jolt/Core/TempAllocator.h`); this module uses
+  `TempAllocatorImplWithMallocFallback` instead. Main physics/contact capacities remain bounded
+  and contact overflow is a controlled error; a 128-body overlapping fixture tests both overflow
+  and the piece-collision-off filter (`glass/native/tests/test_glass.cpp`).
+- Release, Ryzen 9 9950X3D (16 cores/32 hardware threads), eight Jolt workers: 4,000 4x4x0.6-unit
+  shards in four layers, against each other and the generated room, all slept after **11.0167 s
+  simulated**. Isolated final implementation run: **42.67 ms spawn**, **5.531 s simulation wall**,
+  **28.766 s process CPU** (`GetProcessTimes`, sum over all threads), **8.367 ms mean / 13.596 ms
+  maximum fixed step**. Once asleep, 120 calls to step plus pose output averaged **0.0908 ms**.
+  Test bounds are 15 simulated seconds, 30 wall seconds and 120 process CPU seconds. This is a
+  physics/core measurement, with no game or Remix draw cost (`glass/native/tests/test_glass.cpp`,
+  evidence `out/native-tests-impl.log`).
+- The `ILuaBase` double executes the actual callbacks and refuses metamethod/engine-call paths;
+  `ReadPoses` creates no Lua tables or Vector/Angle userdata. The real Lua manager/probe execute
+  under LuaJIT with mocks, including cleanup, batch invalidation and preserving edits made during
+  a probe's temporary convar override (`tools/tests/glass_debris_harness.lua`).
+
 ## C-16: in-game tuning of the eye whites (2026-10-31)
 
 - Client Lua may not run `lua_run`: `RunConsoleCommand("lua_run", ...)` prints
@@ -3295,3 +3571,95 @@ Runtime paths below refer to the isolated source built from `runtime/base.json` 
   5,888-byte auto-exposure SPIR-V and 74,616-byte opaque G-buffer SPIR-V occur byte-for-byte inside
   the final DLL (offsets 380,900,976 and 12,898,160 respectively). No source or build output in the
   R6 tree or the user's fork was changed.
+
+## G1-B fix pass: real-map collision findings (2026-11-01)
+
+- Read-only gm_construct probe (36,735,656 bytes): baseline considered 2,095 brushes, clipped
+  2,092, skipped 3; Jolt refused one hull and aborted the entire world in 55.38 ms. Double clipping
+  reduces the maximum hull from 46 to 24 vertices; cooking skips/counts the one remaining refusal.
+  The corrected world has 2,094 static bodies (2,091 brush bodies + three terrain mesh batches),
+  20,992 displacement triangles, four prop metadata entries (not cooked by the offline probe).
+  Initial corrected parse/build: 46.98 ms, standalone parse 14.25 ms. Evidence stays under this
+  worktree's ignored `out/g1-native-fix/`; QA logs 01-qa and 02-qa were read only.
+- The installed map's displacement tags are 6 (20,801), 2 (122), 0 (69): **zero** SURFACE bits.
+  Requiring bit 0 silently discarded all terrain. The local Source SDK reference's
+  `public/bspfile.h:624-629` names SURFACE/WALKABLE/BUILDABLE/REMOVE (bits 0/1/2/5).
+  Import now omits only REMOVE-tagged triangles; generated tests cover tags 0, 2, 6 and holes.
+- The same local reference's `public/builddisp.cpp:1918-1994` interpolates rows along 0->1 and
+  columns along 0->3 (`ndx = i * postSpacing + j`); our parser had those swapped. The uneven
+  generated fixture now asserts a raised vertex at (200,210,1.25), never its transposed position.
+  This was read for format facts only; no GPL implementation was copied.
+
+## G1-B fix pass: background work and pile cost (2026-11-01)
+
+- `glass/native/world.cpp` now snapshots Jolt's old/new active IDs across an update, uses exclusive
+  NoLock body access and a dense pose queue, and counts contact/manifold/pair/constraint saturation
+  instead of throwing. A generated 128-body overlap saturates the cache and remains ready; the
+  ordinary 4,000-body benchmark reports zero overflows. A measured 4 ms catch-up budget permits at
+  least one step and at most four, discarding whole excess steps. At 4,000 bodies a .25-second
+  dispatch ran one substep and counted .233333 dropped seconds.
+- Same-machine pre-fix core baseline: 4,000 live / 8,192 slots, eight workers, 11.0167 simulated
+  seconds to sleep, 2.706 s wall / 18.797 s process CPU, 4.094 ms mean / 7.380 ms max active step,
+  .0640 ms settled step+poses. Corrected synchronous diagnostic: 11.0167 seconds to sleep,
+  3.295 s wall / 22.703 s CPU, 4.983 ms mean / 7.874 ms max, .00162 ms settled. Active worker
+  throughput did **not** improve in that comparison; moving it off the client thread is the material
+  change. Async dispatch averaged .0134 ms (max .0605); polls averaged .00296 ms (max .0203), while
+  the worker averaged 5.434 ms/update. These are native-only measurements, not game frame times.
+- `Init(8192)`/map cooking now reserve **zero simulation scratch**, rather than 144 MiB. The first
+  active step sizes scratch to live demand and observed peak with a non-aborting fallback. Pair /
+  contact capacities are max(1024,budget*8) / max(1024,budget*4). The 4,000-body test held 34 MiB
+  scratch and peaked at 30,234,553 requested bytes (28.83 MiB). Doubling contact capacity used
+  56 MiB with no useful throughput gain, so the smaller bounded table is retained.
+- `module.cpp` Begin/Poll entry points copy BSP bytes before a worker parses/cooks them, and
+  asynchronously optimize the final broadphase and step physics. Busy access refuses immediately;
+  Stats returns a pre-dispatch snapshot. Cleanup/shutdown joins before freeing the world. Generated
+  core and actual binding callbacks cover pending polls, no concurrent mutation, worker exceptions,
+  teardown while importing/stepping and foreign realms.
+- Read-only gm_construct final probe: 2,095 considered / 2,092 clipped brushes, 3 clipping skips,
+  1 Jolt refusal, 20,992 triangles, zero refused mesh batches, four prop records, 2,094 static bodies.
+  Standalone parse 15.98 ms, Init .91 ms, parse+cook+finish 53.62 ms. Async enqueue including the
+  36,735,656-byte copy took 4.80 ms; maximum poll 1.41 ms; total 78.11 ms. The VFS read still runs
+  on the engine thread; this offline probe excludes it and excludes engine prop model extraction.
+- LuaJIT mocked-physics comparison of the original 3096b2e helpers against corrected helpers:
+  4,000 active manager Think calls .165 -> .135 ms mean; settled .130 -> .026 ms. These include
+  the same mock pose filling but exclude real physics, engine mesh uploads and rendering. Spawn
+  still constructed all 4,000 meshes in 108 -> 111 ms CPU in this synthetic burst; initial mesh
+  creation is not claimed to be cheap. Settled chunk count grows from 3 to 25 in this deliberately
+  single-area pile, bounding replacement/wake work. Ordinary game piles span multiple areas.
+- `debris_batches.lua` transforms up to 1,800 vertices/frame, accumulating at most 6,000 per mesh
+  and uploading one mesh/frame. Valid old chunks remain until the complete replacement exists;
+  wake/removal hides only its affected chunk. New arrivals request a later snapshot; removals cancel
+  stale staging; failed GPU builds retain old geometry. The Lua harness covers stale unchanged pose
+  rows, staged replacements, upload failure/retry, busy-world queues and complete mesh cleanup.
+
+- Final import polling additionally releases its large owned BSP buffer on the worker before
+  publishing completion (`World::begin_load`), avoiding a client-side deallocation stall. Final
+  gm_construct receipt: synchronous parse/cook/finish 46.60 ms; async owned-copy enqueue 3.79 ms,
+  max poll .0069 ms, total 76.12 ms. Geometry counts are unchanged. An unchanged pile area now
+  leaves the rebuild work set entirely; only dirty/staged areas enter Think.
+
+## G1 integration: glass in the game (2026-11-01, Claude)
+
+PoC, 1920x1080 windowed, RTX on; runs under the main checkout's `out/qa-poc/g1/`.
+
+- **GMod takes the run speed from the user command's buttons.** A server `SetupMove` hook that adds
+  `IN_FORWARD | IN_SPEED` to the move data and sets `SetMaxClientSpeed`/`SetMaxSpeed` to the run speed
+  still tops out at the walk speed, 200 units/s (run 06). A `StartCommand` hook in both realms that
+  sets the command's buttons and forward move reaches 400 (run 07).
+- **Archived Lua convars outlive their add-on.** GMod keeps them in `garrysmod/cfg/server.vdf` (server
+  realm) and `client.vdf` (client realm) and restores a value when a later add-on creates a convar of
+  the same name, over that add-on's default. The PoC still had Glass-Rewrite-Remix's
+  `rtx_glass_player_break_speed "80"`, `rtx_glass_velocity_transfer "2.000000"`, `rtx_glass_rigidity`,
+  `rtx_glass_shard_count` and others; with the new system the 80 let a 200-unit/s walk break glass
+  (run 08: one impact, 14 % of the pane left). After the one-time reset (run 10) the file holds 250,
+  1 and `rtx_glass_settings_version "1"`, and the walk leaves the pane whole.
+- **50 panes broken by blasts, same view** (frame mean / p99): old system (run 12, published package
+  `0.0.0-dev.20261101052452+2768a059`) empty 8.87 / 10.20 ms, falling 18.18 / 109.13 ms with 361 shard
+  entities, settled 10.89 / 14.49 ms with 302; new system (run 10) before 8.75 / 11.77 ms (787 settled
+  pieces present), falling 25.31 / 113.22 ms (2,000 live, 1,236 moving; manager 1.69 ms think, 6.99 ms
+  draw; Jolt step 1.50 ms), settled 9.74 / 16.39 ms (62 batches; manager 0.16 ms).
+- One annealed 96x64 pane breaking into 161 pieces gives a 62 ms frame (run 10 `bullet_break` p99),
+  while its fracture costs about 0.7 ms offline: most of the spike is piece creation or Remix taking
+  in new geometry.
+- modern_house (run 11): the map alone runs at about 19 ms per frame here; 44 native glass panes; a
+  window broken by rounds gives 203 pieces; a ragdoll burst 391 live, 25.83 / 161.8 ms while falling.

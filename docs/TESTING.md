@@ -1,5 +1,206 @@
 # Testing
 
+## G1 integration: game QA on the PoC (Claude, 2026-11-01)
+
+The QA add-on [`tools/qa/nlglass_qa`](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md) is copied
+into the PoC's `garrysmod/addons` for the session and removed afterwards; the PoC's
+`native-loader/config.json` allows the package under test as a local `.gma`. From the main checkout:
+
+```powershell
+python tools\poc_session.py --evidence out\qa-poc\g1 run --name 10-field --addons --map gm_construct --width 1920 --height 1080 --lua out\worktrees\g1-int\tools\qa\nlglass_qa_start.lua --lua-shots 900 --extra=-insecure
+python tools\poc_session.py --evidence out\qa-poc\g1 run --name 11-map --addons --map gm_construct --mount-workshop 3495468649 --change-map modern_house --width 1920 --height 1080 --lua out\worktrees\g1-int\tools\qa\nlglass_qa_start.lua --lua-shots 600 --extra=-insecure
+```
+
+`nlglass_qa contact` runs only the walk and run steps; `nlglass_qa old` runs the 50-pane scene with
+Glass-Rewrite-Remix (the package before G1, `local: []`), for the before/after frame times. Each step
+prints `NL_QA` lines (server verdicts; client frame times, the manager's per-frame costs and Jolt's
+counters) and one screenshot. Read the verdicts, not only the entity: the walk/run verdict counts the
+impacts the glass server accepted and the share of glass left, because annealed glass keeps its frame
+after a breakout. Results and the history of runs 01-12: [G1 report](handover/G1-report.md).
+
+Check an install's `garrysmod/cfg/server.vdf` before reading contact results: values archived by
+an earlier add-on under the same convar name override new defaults (the PoC had
+`rtx_glass_player_break_speed` 80 from Glass-Rewrite-Remix); the glass system now resets its two
+affected settings once.
+
+## G1-A second fix pass: density, lit cracks, walking and client cost
+
+`tools\test.ps1 -Config Release` exits 0: conventions pass, **25/25 CTests** pass (48.67 s),
+and **453 Python tests** run (28 gmapack, 25 steam, 400 tools; two existing skips). All 50 glass
+cases execute. The tools group takes 79.927 s. The full output is `out/g1-lua-fix2/release.log`.
+
+All **50 glass tests** pass under the existing LuaJIT installation. New density, shader, speed
+and deferred-build regressions fail against ad3ed46. The original `03-qa`/`04-map` console and
+screenshots were inspected read only; no game was launched and no install/package was changed.
+
+`nlglass_fracture_harness.lua density` checks 200 annealed / 300 tempered active-cell limits,
+full-break counts and conserved area for 96x64, 256x128, 128x256, 8192x1, 1x8192 and 8192x8192,
+both hit locations and piece sizes 4/8/64, including 24 prior spatial hits. The requested count
+table is in [glass](../glass/README.md). The 100-hit coarsening probe peaks at 199 cells with
+0.048986 units² area error on 32,768 units². The edge probe checks 36,015 edges over 180 seeds.
+The typed topology snapshot probe uses 176 cells/7 groups in 5,723 bytes and matches the next break.
+
+The same 100-hit preparation and 40 fresh-state samples measured before/after CPU times below.
+Before is ad3ed46 (502 prepared cells); after includes the lower density cap (164 cells), shared
+extrusion/vertices and the queue. Initial snapshot/attachment is outside timing. The updated
+harness reports queued work separately and sums handler plus deferred cost for each sample.
+
+| Mocked client work | Before mean / p99 ms | After mean / p99 ms |
+|---|---:|---:|
+| Hit handler | 13.3155 / 21.9141 | 1.1774 / 3.4443 |
+| Hit deferred build | 0.0013 / 0.0022 | 2.0893 / 4.2278 |
+| Hit combined | 13.3168 / 21.9155 | 3.2667 / 5.6801 |
+| Break handler | 13.5920 / 20.7774 | 1.8676 / 2.6174 |
+| Break deferred build | 0.0011 / 0.0014 | 1.0124 / 2.1511 |
+| Break combined | 13.5931 / 20.7784 | 2.8800 / 4.5732 |
+
+Server hit mean/p99 changes from 3.1823/8.9127 to 1.0998/2.8644 ms; server break from
+4.9517/11.5744 to 2.8235/7.0681 ms. These use real Lua fracture/geometry but mocked engine,
+transport, physics and debris; they do not establish GMod/Remix frame-time acceptance. The
+earlier handover's 23.74 ms mean and this run's 13.59 ms baseline reflect different load/samples.
+Evidence is under this worktree's ignored `out/g1-lua-fix2/`.
+
+Queue tests assert no receiving-frame build, one coalesced latest revision, at most two panes
+per frame, a soft elapsed-time stop, cancellation and late collision attachment. Shared geometry
+tests check complete faces, winding and shared collision/render positions. Crack tests check the
+lit non-emissive material, both outward faces, z=±0.515 and width ≤0.20. Body tests cover 200/249
+(no contact damage), 250/400 (contact damage), movement sweeps and menu/admin reset to 250.
+
+Claude's game checks: lit crack brightness in a dark room/night and on both faces; ordinary
+walking/running plus the scripted upright contact; requested map-window piece density/appearance;
+late join/two clients and partial-hole prediction while a build waits; the 50-pane falling and
+settled frame times with G1-B. The 1 ms queue budget is soft because a mesh/physics API call
+cannot be preempted, and a burst may delay remaining-pane collision beyond one frame. Existing
+archived contact-speed choices remain; Reset to Defaults supplies 250 for the default QA case.
+
+## G1-B second pass: rendering and manager instrumentation
+
+`python -m unittest discover -s tools/tests -p test_glass_debris.py -q` executes the actual owned
+manager/helpers under LuaJIT. Second-pass regressions cover 2,000 tinted pieces in four settled
+draws, shared scratch and allocation-free warmed vertex reuse, Source rotation/normal correctness,
+retained replacements/deferred retirement, material grouping and cached transforms, current-camera
+frustum/distance/subpixel rejection, visibility restoration without rebuilding, shrink after a new
+rotation, repeated render passes, exact injected frame costs/calls, 120-frame means and Clear reset.
+
+`luajit tools/tests/glass_debris_harness.lua glass/addon/lua skip renderperf` compares moving,
+settling, settled and mixed-visibility manager Think+draw CPU using QPC. GC is stopped for each
+240-frame sample to count allocations, then restarted. It prints draw/material/matrix/userdata
+counts and CPU mean/p99/max. Copies of the starting helpers under this worktree's
+`out/g1-native-fix2/before` allow the identical harness to measure both versions. These mocks
+exclude native physics, engine upload and GPU costs; game frame targets remain unverified.
+
+Claude should sample `NLGlassDebris.Stats()`'s `think_ms`, `draw_ms`, `draw_calls`, peaks,
+`rebuild_peak_ms`/`upload_peak_ms` and `culled_pieces` alongside total frame time in the fifty-pane
+case. Check the settled delta <=1 ms, no settled >16 ms spikes, falling mean <20 ms, few draws per
+area, cleanup/expiry/explosion replacement visibility, and no edge-of-view popping with wide or
+third-person cameras. Package the two new `debris_*.lua` helpers with the existing ones; the owned
+autorun's glob already serves them, so G1-A needs no change. Jolt/native ABI and files stay unchanged.
+
+Final second-pass Release receipt (2026-11-01): **25 CTests and 448 Python tests** (395 tools,
+28 gmapack, 25 steam; two existing skips) pass. The native glass target contains 19 cases;
+the final direct LuaJIT manager/probe run passes 14,576 assertions. Evidence is in this worktree's
+`out/g1-native-fix2/test-release-final.log` and `lua-final.log`. The first full run reproduced only
+the previously documented guard MAX_PATH failure at `test_early.cpp:198`. The successful gate
+uses the same ignored CMake output relocation to `${CMAKE_BINARY_DIR}/g`, through
+`out/g1-native-fix2/short-guard-output.cmake` and `CMAKE_PROJECT_native_loader_INCLUDE`; guard/loader
+source and registered tests are unchanged. All 22 guard cases run. New slow-client regressions
+also verify the measured preparation limit and retention of an injected 2.5 ms upload peak.
+
+## G1-A fix pass: final client and Release checks
+
+Release passes **25 CTests and 448 Python tests** (two existing skips), including 45 glass tests.
+The eleven fix items have before-failing probes against 3096b2e; outputs are in this worktree's
+`out/g1a/`. The original main-checkout `out/qa-poc/g1/` evidence was inspected without edits.
+
+`nlglass_engine_harness.lua ... client_timings` prepares the same 100 impacts, then restores a fresh
+server/client state for each of 40 samples (493/502 cells before/after). Initial snapshot/build
+is outside timing. Actual Lua mesh/convex generation runs; engine APIs/transport/debris are mocked.
+
+| Handler | Before mean/p99 ms | After mean/p99 ms |
+|---|---:|---:|
+| Server hit | 14.29 / 39.55 | 5.30 / 16.47 |
+| Server break | 18.93 / 37.84 | 10.36 / 25.07 |
+| Client hit | 45.32 / 73.61 | 27.78 / 52.19 |
+| Client break | 84.15 / 118.35 | 23.74 / 46.52 |
+
+Final pure-fracture means (80 samples): 0.8426 ms new hit, 0.0961 ms repeat, 0.6749 ms break;
+p99 2.6709/0.6155/1.9264 ms. These CPU probes do not predict live game frame times. Client
+regressions also count one physics build and at most one pane/crack pair per break, no weak-hit
+build, zero stationary draw allocations/transforms/class queries, distance/eye-plane culling,
+one readiness push and per-pane repair. Player contact includes the QA base-velocity impulse;
+blast ordering includes deferred native removals.
+
+Claude's remaining game checks: ordinary running and the scripted 500-unit/s upright contact;
+departing horizontal/distant rotated bodies; many later hits at the cell cap; pistol rounds on
+large/thick panes and cumulative weak damage; small tempered spiderweb then full shatter; no border
+cracks; real Hammer OnBreak targets/activator/caller/delay/count with no duplicate engine effects;
+late join/two-client cracks and holes, collision prediction, moving panes and conservative culling;
+Jolt after G1-B's fixes and the 40/50-pane falling/settled scene against empty/classic baselines.
+Check all-four-OnUser and missing-key/hot-refresh bridge limitations documented in ADR 0074.
+
+## G1-A fix pass: incremental fracture
+
+The plain LuaJIT harness runs cap-location, weak-energy/floor, local tempered spiderweb, perimeter,
+tiny-edge, revision-cache and coarsening regressions without a game. One hundred separated impacts
+reach 512 cells (area error 0.01414/32,768 units²); a perforated-pane probe checks old holes stay
+empty. A 180-seed probe checks 36,015 edges. The typed engine harness restores a 16,721-byte pane
+snapshot (501 cells/47 groups) and checks its following break against the server.
+
+`luajit tools/tests/nlglass_fracture_harness.lua glass/addon/lua timings` prepares 100 impacts,
+then times 80 new hits, repeats and breaks with QueryPerformanceCounter. Before/after mean times
+on this machine: 12.5675/1.1596, 13.6601/0.1359 and 14.5538/0.8603 ms (493/502 prepared cells).
+This measures fracture CPU only; actual game frame-time acceptance remains with Claude.
+
+## G1-A glass (offline)
+
+Validation on `g1-lua` (2026-11-01): `tools\test.ps1 -Config Release` exits 0, conventions pass,
+24/24 CTests pass and 425 Python tests pass with two pre-existing skips (372 tools, 28 gmapack,
+25 Steam). All 23 new G1 tests execute under the existing LuaJIT installation. Both full runs pass;
+the final receipt is `out/g1-a/release-final.log`. The latest focused suite also passes after the
+join-hook/resynchronization assertions. Only this worktree and its `out/` were written.
+
+[`test_nlglass.py`](../tools/tests/test_nlglass.py.md) adds 23 cases: a pure LuaJIT fracture harness
+and actual server/client add-on modules under mocked GMod APIs, with only NLGlassDebris stubbed.
+It covers bullets/buckshot/melee/crush, blast dedup and impulses, real prop/ragdoll PhysObj mass and
+relative velocity, moving players/NPCs/vehicles, scripted break, native recorded/breaker/nominal
+fallbacks, duplicate event/removal suppression and cleanup epochs. State tests check typed wire
+fields (including real float32 conversion), two-client replay, late join before and after breakout,
+a break with no create packet, delayed entity networking and unrelated entity-index reuse.
+
+Fracture cases compare identical states and fresh processes with global RNG/trigonometry/sqrt
+disabled, corner/centre location, near/far cell area and velocity, accumulated crack growth and
+old cracks becoming final cell edges, uniform tempered shatter, bounded/merged impacts, area
+conservation, supported frame cells and falling islands. Integration checks remaining server/client
+collision, collision failure becoming a full break, rotated triangular brush geometry/material,
+surface input bridging, property-only save/dupe and output ownership, tool limits/CPPI, companion
+settings relocation, admin setting authorization/injection refusal/reset, every Lua file compiling
+without GLua conversion and all six non-English MIT catalogs matching generated data.
+
+The fixes packager adds a separate fixture-backed exclusion test: only the retired glass add-on and
+its exclusive catalog phrases/references disappear; other translations and the glass VMT/Remix
+replacement stay. Full original catalog validation remains enabled. No test launches Garry's Mod,
+loads the native debris module or writes either game install. Claude owns package/native integration,
+real map outputs, two-client visual/prediction acceptance, actual weapon/body tuning, materials under
+Remix and the original/new 50-window/pile performance measurements.
+
+G1-B final fixture refinement (2026-11-01): the benchmark uses the manager's 8192-body reserve
+while dropping 4000 shards; the same 11 native cases additionally verify compressed `sprp` with
+both packed/original directory lengths and displacement holes. The LuaJIT manager/probe harness
+passes 523 assertions. Latest reserve-matched measurements and retained earlier figures are in
+the G1-B RESEARCH entry below; none establishes game frame-time acceptance.
+
+G1-B offline validation (2026-10-31, `g1-native`): `tools/test.ps1 -Config Release` includes
+`nl_glass_tests` (11 cases in one CTest target) and `tools/tests/test_glass_debris.py` (the real
+Lua manager, map-import glue and new QA probe under LuaJIT engine doubles). The native fixtures
+generate a room, displacement, LZMA leaf, scaled solid prop and non-solid prop; malformed input,
+degenerate hulls, bounds, actual binding calls, interpolation, sleep/wake and contact overflow are
+covered. The 4,000-piece collision/settling test enforces 15 simulated seconds, 30 wall seconds and
+120 process CPU seconds; measured values are in [RESEARCH](RESEARCH.md#g1-b-dedicated-glass-world-and-offline-measurements-2026-10-31).
+The gate passes 25 CTests and 402 Python tests (two expected fixture skips). No game was started.
+Claude's acceptance uses [the Jolt probe](../tools/qa/glass_debris_jolt_probe.lua.md); the older
+`glass_debris_probe.lua` remains unchanged for the legacy loose-glass baseline. Actual Workshop
+BSP/model coverage, glass materials under Remix and frame-time parity need that game acceptance.
+
 ## C16-B adaptive eye emission (offline, 2026-10-31)
 
 `tools/tests/test_adaptive_emission.py` adds 17 standard-library tests for the USD writer,
@@ -1306,3 +1507,49 @@ Evidence: `out/qa-poc/c16/` (each run's shots, `console.log` and `remix-dxvk.log
 
 Receipts: `out/tmp/c16-verify-final.log`, `c16-inputs-verify.log`, `c16-package-build.log`,
 `c16-release-tests-plain.log` and `c16-validation-summary.json`.
+
+## G1-B fix pass: offline map probe
+
+`out/build/win64-release/glass/native/nl_glass_import_probe.exe <map.bsp>` opens only the named
+file for reading, validates the same 256 MiB bound, and prints considered/clipped/skipped/refused
+brushes, displacement triangles, prop metadata, static bodies and parse/build timings. It does not
+extract client model collision, write fixtures or start a game. Exit 0 means a usable finished world;
+1 means refusal/read failure; 2 means missing argument. CTest never reads an installed map.
+Generated regressions cover 62-sided clipping, Jolt-refused brush/prop convexes, ordinary triangle
+tags without SURFACE, explicit REMOVE holes and asymmetric displacement indexing.
+
+### G1-B fix-pass checks
+
+Generated native cases now also cover asymmetric displacements with ordinary tags 0/2/6,
+Jolt-refused brush and prop convexes, active-only pose queues, safe contact saturation, background
+import/finish/step polling and joining at teardown. A separate 4,000-body async probe prints dispatch,
+poll and worker timings and measured catch-up limiting. The import probe also prints asynchronous
+copy/enqueue, poll and total cooking time without extracting client model collision.
+
+The Lua harness checks changed-ID consumption (including poisoned unused rows), zero worker
+requests for an unchanged sleeping world, refused model isolation, bounded queued spawning and
+safe deferred removal/impulse, retained old pile chunks through multi-frame rebuilds, failed mesh
+build retention/retry, per-frame work limits, affected-chunk wakes and in-flight cleanup. Its optional
+`skip perf` arguments run the original/corrected manager against identical mocked physics.
+Claude still owns real-map terrain/prop contacts, late-frame behavior during import, pile wake /
+expiry / cleanup visibility, and empty/falling/settled Remix frame-time acceptance with thousands
+of pieces. No game is started by any of these tests.
+
+### G1-B final import receipt and local gate environment
+
+After moving the owned BSP buffer's release onto the import worker, the final read-only probe
+reports the same geometry counts, standalone parse 14.50 ms, Init 1.13 ms, parse/cook/finish
+46.60 ms. Async enqueue/copy is 3.79 ms, maximum poll .0069 ms, total preparation 76.12 ms;
+Init scratch remains zero. Evidence: `out/g1-native-fix/import-delivery.log`. These timings exclude
+Lua's engine VFS read and client prop collision extraction.
+
+The full Release gate's sole initial failure was the existing guard fixture's MAX_PATH limit:
+`loader/guard/tests/test_early.cpp:198` uses `std::filesystem::last_write_time` on a long generated
+cache path. This worktree uses the already documented local-only CMake output relocation:
+`out/g1-native-fix/short-guard-output.cmake`, loaded by the ignored build cache's
+`CMAKE_PROJECT_native_loader_INCLUDE`, defers only the guard test output to `${CMAKE_BINARY_DIR}/g`.
+No loader/guard source, assertion, registered test, tracked build setting, drive mapping or system
+setting changed. With that local setup, `tools/test.ps1 -Config Release` passes 25 CTests and 426
+Python tests (373 tools, 28 gmapack, 25 steam; two expected skips). The glass native target has 19
+cases and the actual Lua manager/probe harness passes 3,264 assertions. Receipt:
+`out/g1-native-fix/test-release-final.log`.

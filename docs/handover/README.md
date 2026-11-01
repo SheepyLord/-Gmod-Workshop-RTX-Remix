@@ -22,8 +22,15 @@ so the next agent has the full story without the chat transcripts.
 | R5 QoL round | (the user's report, 2026-10-31) | | [R5-qol.md](R5-qol.md): the night sky line, loose broken glass, Workshop packs over own imports, the RTX normals checkbox, the content pack checks, the stability proposal | Claude (lead), a glass agent and stability researchers | `r5-qol` in `out\worktrees\r5`, with `r5-glass` merged |
 | R6 performance and stability | [R6-plan.md](R6-plan.md) | six briefs: [T1](R6-T1-loader-layers.md), [T2](R6-T2-evidence-telemetry.md), [T3](R6-T3-companion-docs.md), [T4](R6-T4-runtime-logs.md), [T5](R6-T5-fixes-memlimits.md), [T6](R6-T6-performance-tiers.md) | [R6-report.md](R6-report.md): what was built, the reviews, PoC QA and tier measurements, open issues | Codex (gpt-6.1-sol) through the Claude Code plugin; Claude as project manager | `r6-t1-layers` ... `r6-t6-tiers` in `out/worktrees/` |
 | C-16 steady eye-white brightness | [C16-plan.md](C16-plan.md) | two briefs: [C16-A runtime](C16-A-runtime.md), [C16-B content](C16-B-content.md) | [C16-report.md](C16-report.md): what was built, the review, the PoC measurements and tuning, the packs, open issues | Codex (gpt-6.1-sol); Claude as project manager | `c16-runtime`, `c16-content` in `out/worktrees`, integrated on `c16-int` |
-| G1 glass overhaul | [G1-plan.md](G1-plan.md) | two briefs: [G1-A Lua](G1-A-lua.md), [G1-B native](G1-B-native.md) | (to come) | Codex (gpt-6.1-sol); Claude as project manager | `g1-lua`, `g1-native` in `out/worktrees` |
+| G1 glass overhaul | [G1-plan.md](G1-plan.md) | two briefs: [G1-A Lua](G1-A-lua.md), [G1-B native](G1-B-native.md); fix passes [1](G1-fix-pass.md), [2](G1-fix-pass-2.md) | [G1-report.md](G1-report.md): what was built, the integration findings and fixes, the PoC measurements (old and new system), open issues | Codex (gpt-6.1-sol); Claude as project manager | `g1-lua`, `g1-native` and their fix branches in `out/worktrees`, integrated on `g1-int` |
 | R1 whole-repo review | [R1-handover.md](R1-handover.md) | [R1-codex-prompt.md](R1-codex-prompt.md) | [R1-report.md](R1-report.md) (Codex), [triage](R1-triage.md) (Claude) | Codex; triage and fixes by Claude | report on `r1-review`; fixes on `r1-fixes`, both in `H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\r1-review`, from `main` after `8f8a540`; merged into `main` 2026-10-28 |
+
+G1-B implementation/offline validation is complete: [G1-B report](G1-B-report.md). G1-A and Claude's
+integration/game acceptance remain separate from that native/debris report.
+
+G1-B's post-game fix pass is complete for implementation/offline checks:
+[G1-B fix report](G1-B-fix-report.md), branch `g1-native-fix`. Integration/game acceptance remains
+with Claude; the report includes real-map import counts and before/after timing limits.
 
 ## Rules for briefs
 

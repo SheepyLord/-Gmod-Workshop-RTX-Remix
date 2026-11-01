@@ -6,6 +6,88 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### G1 (unreleased)
+
+- Glass breaks are no longer always the same shape (the user: "always an octagon"): each hit takes
+  6–16 rays at uneven seeded angles, every ray has its own ring radii, and a break also drops a few
+  small cells at the hole's edge. Still seeded, so every player sees the same pieces.
+- Walking into glass no longer breaks it, for two reasons found in game. The player's physics
+  shadow reported a collision that took the prop energy rule (85 kg at 200 units/s is far above
+  the breaking energy); bodies now always use the 250-unit/s contact speed. And Glass-Rewrite-Remix
+  archived `rtx_glass_player_break_speed` (default 100) and `rtx_glass_velocity_transfer` (2) under
+  the names this system reuses; the first start resets those two once and keeps later choices.
+- The RTX package gains its eleventh part, `glass`: the MIT add-on (`nlglass`) with the Jolt
+  licence and the `gmcl_nlglass_win64.dll` module, replacing Glass-Rewrite-Remix
+  ([report](docs/handover/G1-report.md)).
+- G1-B's decision records 0074–0077 are now 0073 and 0078–0080: the parallel tasks had used the
+  same numbers.
+
+- G1-A break handlers defer/coalesce remaining-pane meshes and prediction collision to later
+  client frames, bounded to two builds/frame with a soft 1 ms budget. Shared extrusion/vertices
+  cut duplicate geometry work. Whole breaks and cleanup cancel stale work; pieces still spawn
+  immediately. The mocked client's total break CPU mean drops from 13.59 to 2.88 ms locally.
+
+- G1-A crack strips use a lit shader and white texture so Remix can shade them in dark scenes.
+  Body contact defaults to 250 units/s, above walking and below running; menu guidance is
+  translated and Reset to Defaults restores the new threshold. Archived choices remain intact.
+
+- G1-A second pass bounds breaks at 200 annealed / 300 tempered pieces, including large and
+  repeatedly hit map windows. Small impact rings and large far pieces remain; tempered grids
+  evenly cover the pane without exceeding their budget or dropping glass area.
+
+- G1-B debris draws bind material once per group, reuse matrices after pose/scale changes, and
+  cull outside the current view, beyond 8192 units or below a distant subpixel threshold.
+  `NLGlassDebris.Stats()` reports averaged Think/draw milliseconds, peaks, draw calls per frame,
+  culled pieces and pile upload timings for game QA.
+
+- G1-B second pass consolidates settled glass into larger material-based areas and 24,000-vertex
+  meshes. Bounded reusable upload scratch replaces temporary transformed vertices; timed rebuilds
+  and staged GPU-resource retirement reduce allocation/rebuild bursts
+  ([ADR 0079](docs/decisions/0079-glass-pile-consolidation.md)).
+
+- G1-A clients build a break once, reuse unchanged pane meshes, cache stationary transforms and
+  cull distant/rear panes. Revision repair targets one pane; joining clients request one initial
+  state. Player sweeps include scripted base velocity, and blast impulses follow deferred native
+  breaks. All fix-pass items have before-failing regressions; the full Release gate passes.
+
+- G1-A fracture now refines locally and coarsens complete distant groups under its 512-cell cap,
+  preserving hit locations and existing holes. Weak hits accumulate under a capped crack floor;
+  tempered glass shows local spiderwebs before full shatter. Cached topology/snapshots remove full
+  history replay; clipped vertices merge below 1/256 and cracks omit the window perimeter.
+
+- G1-A fix pass: require actual approaching body contact; use incoming player movement to catch
+  a stopped-by-collision runner; create replicated settings in both realms; dispatch captured map
+  OnBreak outputs without engine shatter; record weak native hits, push blasts after their new
+  debris and match the settings budget slider to 8,192. Offline regressions cover each path.
+
+- G1-B performance fix pass: prepare maps and step Jolt on a polled worker; consume changed poses,
+  avoid full settled-piece scans, retain old pile chunks through staged rebuilds, allocate scratch
+  from demand and continue safely when Jolt's contact tables fill ([ADR 0078](docs/decisions/0078-glass-background-work-and-staged-piles.md)).
+
+- G1-B fix pass: skip/count refused brush and prop convexes without losing Jolt for the whole map;
+  clip brush hulls in double precision, correct displacement indexing and retain ordinary terrain
+  triangles whose SURFACE bit is absent.
+
+- The fixes packager omits Glass-Rewrite-Remix and its exclusive interface catalog entries/source
+  references. Other add-ons/translations and the existing glass VMT/Remix replacement remain;
+  the new MIT glass part is assembled separately by G1 integration.
+
+- A new MIT glass add-on implements server-owned convex panes, one damage pipeline for bullets,
+  melee, blasts, props/ragdolls and bodies, synchronized growing cracks, deterministic radial/ring
+  annealed holes and full tempered shatter. Remaining cells supply frozen server/client collision;
+  debris uses G1-B's client API. Map glass, late join, cleanup, property-only saves/duplicates, the
+  glass tool, spawn presets and seven-language settings are covered by offline LuaJIT tests.
+  Actual game/material/output and performance acceptance remains with G1 integration
+  ([implementation and defaults](glass/README.md), [damage decision](docs/decisions/0071-glass-impact-model.md)).
+
+- Vendor Jolt Physics 5.3.0 (MIT) for the dedicated client-side broken-glass world (G1-B).
+- Add `gmcl_nlglass_win64.dll`: bounded BSP brush/displacement/static-prop collision import,
+  worker-thread glass physics, fixed stepping, sleeping and reusable Lua pose output. Bad maps or
+  missing modules select a capped client physics fallback ([ADR 0072](docs/decisions/0072-glass-debris-world-and-batching.md)).
+- Add the client debris manager: per-player budget/lifetime/collision settings, oldest-first
+  eviction, last-second shrink, explosion impulses and settled area mesh batching. A client QA
+  [probe](tools/qa/glass_debris_jolt_probe.lua.md) compares empty/falling/settled frame times.
+
 ### C-16 (unreleased)
 
 - Anime characters' eye whites no longer glow at night or turn grey by day: with Robin's pack, the eye

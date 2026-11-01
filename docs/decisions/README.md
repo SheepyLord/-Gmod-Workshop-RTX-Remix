@@ -6,6 +6,8 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 | # | Decision | Status |
 |---|---|---|
+| [0077](0077-glass-client-build-queue.md) | Coalesce remaining-pane client builds across bounded later frames and share extrusion positions | Accepted 2026-11-01 |
+| [0076](0076-glass-bounded-break-density.md) | Bound live annealed topology to 200 and tempered shatter to 300 before releasing pieces | Accepted 2026-11-01 |
 | [0001](0001-bootstrap-winmm-proxy.md) | The bootstrap is a `winmm.dll` proxy that works at the EXE entry point | Accepted 2026-10-27 |
 | [0002](0002-source-agnostic-payloads.md) | Payloads are source-agnostic; Workshop route decided after a private upload test | Accepted 2026-10-27 |
 | [0003](0003-native-trust-allowlist.md) | Only allowlisted packages may deploy native code until signatures exist | Accepted 2026-10-27 |
@@ -76,8 +78,17 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0068](0068-adaptive-eye-emission-publishing.md) | Publish-time eye adaptive/fallback ratio; byte-preserving staged-pack updates and package verification | Accepted 2026-10-31 (C16-B); default superseded by 0069 |
 | [0069](0069-tuned-adaptive-eye-emission.md) | The adaptive eye emission ratio tuned in game: 25 (4.5x the old level at exposure 1); one ratio for every condition | Accepted 2026-10-31 (C-16, Claude, for the user's eye-white request) |
 | [0070](0070-glass-overhaul.md) | A glass system of our own (MIT) replacing Glass-Rewrite-Remix; server-authoritative panes with cracks and impact-following fracture; broken glass cosmetic, in a dedicated Jolt world on each client; annealed and tempered glass | Accepted 2026-10-31 (G1, the user) |
+| [0071](0071-glass-impact-model.md) | G1-A game-energy defaults, bounded deterministic impacts/cuts, remaining-cell collision and map-output input bridge | Accepted 2026-10-31 as implementation defaults under 0070; numerical tuning and engine output acceptance pending |
+| [0072](0072-glass-debris-world-and-batching.md) | Bounded glass world import, reusable poses and area batching; module limits and conservative Source fallback | Accepted 2026-10-31 (G1-B implementation) |
+| [0073](0073-glass-native-fix-pass.md) | Isolate refused glass collision shapes; correct displacement indexing and tags; bound client preparation | Accepted 2026-11-01 (G1-B fix pass) |
+| [0078](0078-glass-background-work-and-staged-piles.md) | Background map preparation and stepping; active pose queues, nonfatal contact saturation, lazy scratch and incremental pile replacement | Accepted 2026-11-01 (G1-B fix pass) |
+| [0079](0079-glass-pile-consolidation.md) | Larger material-based settled areas, shared vertex scratch, timed rebuilding and deferred GPU resource retirement | Accepted 2026-11-01 (G1-B second pass) |
+| [0080](0080-glass-visibility-and-frame-costs.md) | Material-group individual rendering, cached matrices, current-view/distance/subpixel culling and measured per-frame manager costs | Accepted 2026-11-01 (G1-B second pass) |
 
 ## Template
+
+- [0074: Incoming body contact and quiet map outputs](0074-glass-contact-and-quiet-map-outputs.md)
+- [0075: Incremental glass topology](0075-incremental-glass-topology.md)
 
 ```markdown
 # NNNN: Title

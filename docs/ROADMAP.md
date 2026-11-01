@@ -1,5 +1,59 @@
 # Roadmap
 
+G1 (a glass overhaul) is **done** (2026-11-01): the MIT glass system and the Jolt module replace
+Glass-Rewrite-Remix as the package's eleventh part. Game QA on the PoC passed every cause, walking
+(whole) and running (broken), map glass on modern_house and the 50-pane scene; integration fixed
+walking breaking glass (archived settings of the old add-on, reset once; shadow contact) and made
+breaks irregular at the user's request. See [the report](handover/G1-report.md).
+
+G1-A second-pass implementation and offline validation are complete on `g1-lua-fix2`: all four
+items are implemented, with 200/300-piece bounds, lit cracks, walking below the 250-unit/s default
+and deferred/coalesced client builds. Release passes 25 CTests and 453 Python tests (two existing
+skips), including 50 glass cases. Mocked total client break CPU drops from 13.59 to 2.88 ms mean;
+the density change lowers prepared topology from 502 to 164 cells. Real crack lighting, body
+contact, prediction and the 50-pane comparison with G1-B remain Claude's game acceptance work.
+
+G1-B's second fix pass is **complete offline** on `g1-native-fix2` (2026-11-01): consolidated
+settled material areas, pooled/timed rebuilds and staged resource retirement, grouped/cached
+individual drawing, current-view/distance/subpixel culling, and per-frame manager timings/calls.
+Release passes 25 CTests/448 Python tests (two existing skips), with the documented local guard
+output-path workaround; the final Lua harness passes 14,576 assertions. Mocked 2,000-piece piles
+draw in four batches, and mixed-visibility individual draws fall from 2,000 to 500. Claude retains
+all real-game frame targets and integrated visual acceptance; see [the second-pass report](handover/G1-B-fix2-report.md).
+
+G1-A's integration fix pass is **complete offline** on `g1-lua-fix` (2026-11-01): all eleven
+items in [the brief](handover/G1-fix-pass.md) are implemented, with 45 glass tests and before-failing
+regressions. Release passes 25 CTests and 448 Python tests (two existing skips). Near-cap fracture
+means are 0.84 ms new hit, 0.10 ms repeat, 0.67 ms break; real frame-time acceptance remains open.
+Claude still combines G1-B's fixes and checks player contact, map outputs/effects, weak-hit and
+tempered visuals, two clients/prediction and the 40/50-pane scene in game. No game was launched,
+no install changed, no G1-B file edited and no package, upload, push, merge or tag was made.
+
+G1-B fix-pass implementation and offline checks are **done** on `g1-native-fix` (2026-11-01):
+gm_construct imports despite isolated bad hulls, terrain indexing/tags are corrected, preparation
+and stepping run on polled workers, active/changed pose queues and staged pile chunks reduce client
+work, and cache saturation stays nonfatal. Release passes 25 CTests and 426 Python tests with the
+documented local guard-output path workaround. Real map/prop contacts, responsive first breaks and
+Remix frame-time acceptance stay with Claude; see [the fix report](handover/G1-B-fix-report.md).
+
+G1-A is **implemented and passes offline acceptance** on `g1-lua` (2026-11-01): original MIT panes,
+unified impacts/strength, bounded deterministic annealed/tempered fracture, synchronized growing
+cracks, remaining frozen collision/prediction, map input bridging, late join, cleanup, property-only
+save/dupe, tool/presets and seven-language settings. The existing companion settings destination is
+retained. All 23 new G1 cases pass; Release passes 24 CTests and 425 Python tests (two existing skips).
+G1-B integration, package assembly, real engine outputs/weapon tuning/material/prediction checks and
+the old/new 50-window/pile performance measurements remain with Claude. No game was launched and no
+game install, Steam settings, user.conf or Workshop item was changed. See [implementation](../glass/README.md)
+and [the G1 brief](handover/G1-A-lua.md).
+
+G1-B implementation and offline acceptance are **done** on `g1-native` (2026-10-31): Jolt 5.3.0,
+the native glass world/module, bounded BSP import, debris rendering/batching and Source fallback,
+with generated-fixture native tests and a LuaJIT manager/probe harness. Release passes 25 CTests
+and 402 Python tests (two expected fixture skips). Four thousand colliding shards sleep in 11.02
+simulated seconds; settled core step/pose cost is 0.091 ms on this machine. Packaging, real-map
+collision/material checks and Remix frame-time acceptance remain with Claude; see
+[the module README](../glass/native/README.md) and [testing](TESTING.md).
+
 R6 harness failure handling is **done with offline validation** on `r6-harness` (2026-10-31): whole-run crash-prompt
 watchdog, device-loss/continuous-hang detection, bounded capture and exit, retained evidence and
 explicit release-QA reasons. Validation uses fake games/windows only; game acceptance stays with
@@ -118,7 +172,7 @@ change in [CHANGELOG.md](../CHANGELOG.md).
 | R5 | **done** (2026-10-31, Claude, `r5-qol` with `r5-glass` and `r5-stability`, merged into `main` as `cff3c67`; [handover](handover/R5-qol.md), [stability proposal](handover/R5-stability-proposal.md); field QA passed on the published package) | The user's QoL report: the night sky line on modern_house, broken glass that is inert, never breaks again and never goes, Workshop model packs that must always provide their models, the RTX normals checkbox, the content pack skill's checks, and a proposal (not implemented) for stability on machines with little memory | Each item fixed and tested, checked in the game; the stability proposal handed to the user |
 | R6 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/R6-plan.md), [report](handover/R6-report.md); loader 0.11.0; PoC release QA, tier measurements and the field map-load check passed) | The stability proposal's 1-6, 8, 9 and 11, and performance tiers for the Remix defaults (the user's request: defaults for performance and stability, not the best consumer GPU) | Each task merged with tests; checked in the game; published |
 | C-16 | **done** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/C16-plan.md), [report](handover/C16-report.md); measured and tuned on the PoC, [ADR 0069](decisions/0069-tuned-adaptive-eye-emission.md)) | Anime characters' eye whites keep a steady brightness when the light changes: scene-adaptive emission in the runtime, written by the PBR tool | Measured on the PoC across bright, dim and dark scenes; packs updated; published |
-| G1 | **in progress** (2026-10-31, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [ADR 0070](decisions/0070-glass-overhaul.md)) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
+| G1 | **done** (2026-11-01, Codex through the Claude Code plugin, Claude as project manager; [plan](handover/G1-plan.md), [report](handover/G1-report.md), [ADR 0070](decisions/0070-glass-overhaul.md); every cause, walking and running, map glass and the 50-pane scene checked on the PoC, the old system measured as the baseline; irregular breaks at the user's request) | A glass overhaul: every cause of a break scatters glass, breaks follow the impact, damage shows cracks, many broken panes and piles cost nothing visible (a dedicated Jolt world for broken glass) | Each case checked on the PoC against the old system; published |
 | Later | — | Signed manifests (authenticity), bootstrap self-update, URL + SHA-256 sources, more package kinds | — |
 
 C-16 (2026-10-31): the runtime's scene-adaptive emission (C16-A) and the PBR writer, staged-pack
