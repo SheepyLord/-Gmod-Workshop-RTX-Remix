@@ -17,6 +17,16 @@ Part of the `mmd-remix-pbr` skill ([SKILL.md](../../SKILL.md)); the full method 
 
 Run with the rpai venv's Python (`%USERPROFILE%\.rpai\venv\Scripts\python.exe`).
 
+`material_block(..., emissive_adaptive_intensity=A)` accepts an optional literal adaptive intensity.
+For an emissive map it writes `float inputs:emissive_adaptive_intensity` beside the unchanged fixed
+`emissive_intensity`; with no emissive map neither emission input is written. `None` omits the new
+input, and `0` writes an explicit opt-out. `check_adaptive_intensity` rejects values outside the
+runtime's finite 0..65504 range. Adaptive values use nine significant digits.
+
+`write_model_layer` accepts `(hash, maps, fallback[, subsurface[, adaptive]])` tuples; the old
+three/four-field tuples still work. The publisher decides which maps carry eye classes and
+calculates the final adaptive value; this writer does not infer classes from texture filenames.
+
 ## Side effects
 
 Writes the Remix mod under `rtx-remix\mods\<mod>`: `models\<model>.usda`, content-named DDS (never overwritten in place) and an atomically rewritten `mod.usda`, which makes the runtime reload.

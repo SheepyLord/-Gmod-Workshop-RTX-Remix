@@ -84,6 +84,19 @@ upstream 68ee7965, between remix-1.5.2 and 1.6.0, and is about 200 commits behin
     `colorTemperature`. The Advanced Material Editor's colour constants are affected too.
 - **Emission:** `emissive_mask_texture` (an sRGB colour, used as-is) times `emissive_intensity` (MDL
   default 40), gated by `enable_emission`. With a texture, `emissive_color_constant` is ignored.
+- **C-16 optional eye emission (2026-10-31; runtime integration and in-game tuning pending):**
+  `float inputs:emissive_adaptive_intensity` (0..65504; 0 off). A supporting runtime with
+  `rtx.adaptiveEmission.enable` uses `emissiveColor * adaptiveIntensity * scale * clamp(L_adapt,
+  minLuminance, maxLuminance)`, preserving the emissive blend influence. `L_adapt` is the adapted
+  scene luminance behind auto exposure; disabled auto exposure uses the runtime's
+  `rtx.adaptiveEmission.fallbackLuminance`. Older runtimes ignore the input and keep
+  `emissive_intensity`; input 0 or feature off also keeps that fixed fallback.
+  rpai writes it for maps carrying eye classes, alongside the unchanged fallback. The publish
+  option is a ratio to that fallback per scene luminance: default `1/0.18` preserves its level at
+  exposure 1, using the package's `targetAdaptedYf = 0.18`. This default is mathematical, not an
+  in-game measurement; scale/clamps and exposure caps affect the result. See
+  [standards](standards.md#scene-adaptive-eye-emission-c-16-provisional-2026-10-31) for the derivation
+  and [`C16-plan.md`](../../../docs/handover/C16-plan.md) for the acceptance test.
 - **Subsurface scattering works only under two conditions.** Measured on Guinevere's forearm:
   - diffusion profile on → the diffuse is replaced by a scattering term from one probe ray per pixel;
   - **the material must be forced opaque** (`bool inputs:use_legacy_alpha_state = 0`,

@@ -1,5 +1,35 @@
 # Research notes
 
+## C16-B: publishing scene-adaptive eye emission (2026-10-31)
+
+- `skills/mmd-remix-pbr/tool/rpai/compose.py:618-630` normalises the emissive map by its largest
+  class weight `S`; `cli.py:411-420` restores `S * I` at publish and now writes adaptive intensity
+  `(S * I) * R` for cached maps whose coverage includes `sclera`, `eye` or `highlight`. No maps
+  or class weights need regeneration. `config.py:59` sets provisional `R = 1 / 0.18`.
+  Class coverage at `cli.py:324` is rounded to four decimals, but its keys include every present
+  class, so publish tests key presence even when a tiny eye region's coverage rounded to zero.
+- `packages/runtime/layers/classic_remix_defaults.conf:59` sets `targetAdaptedYf = 0.18`
+  (`maxExposure = 16` at line 146). Using the C16 plan's exposure equation, mid exposure 1 gives
+  `L_mid = 0.18`, ignoring noise. Thus `M * (F / 0.18) * L_mid = M * F`: the old eye-white
+  `C * 0.025 * I` at that reference. This is a derivation, not an in-game brightness measurement.
+- Read-only PoC pack inventory: `pbr_robin/models/robin_r18_f9c3e4b4.usda:136-191` has three
+  emissive overrides (`203355325A5208A0`, `70EC49FA6891154F`, `06DDF9D48A2DC2B1`), all fallback
+  0.6. Evernight's `models/evernight_cf3eec2f.usda:64-69` has `596BBF16AC554B2E` at 0.6;
+  March 7th's `models/model_e2c25f9e.usda:50-55` has `175BEFCBA6AE4083` at 0.04. Guinaifen's
+  `models/new_mmd_model_1c2ed2fc.usda:93-123` has `4D84DF2D4E18DDE1` and `C8A78C7CF9EE33F2`
+  at 0.6. The different normalisations require a per-fallback ratio when migrating together.
+- Demonstrated `set_adaptive_emission.py --multiplier 5.555555555555555` on copies under
+  `out/c16-b/packs/`: seven inputs added across four model layers, values 3.33333333 (fallback
+  0.6) and 0.222222222 (fallback 0.04). All 157 original files (32/79/46 by pack) were hashed
+  before copying and after the demonstration; their hashes and modification times match.
+  Dry runs and repeat runs preserve every copied byte/timestamp; only the seven inserted lines
+  change layer bytes, with `mod.usda` touched for reload. Evidence: `out/c16-b/demonstration.json`
+  and per-pack command logs. No game was launched or install written.
+- `scripts/package_characters.py:74-78` within the skill copies and checks USD layers byte for
+  byte, retaining adaptive and fixed inputs. `scripts/set_adaptive_emission.py:44-118` masks
+  literals/comments and edits byte ranges; `:138-174` preflights every layer before writes,
+  reports changed material names and touches the existing root only after an actual edit.
+
 ## R6 T3: independent-review fixes (2026-10-31)
 
 - At base `7759c43`, `loader/core/src/config.cpp:52,78` permits neither a top-level `diagnostics`

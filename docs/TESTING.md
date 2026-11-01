@@ -1,5 +1,24 @@
 # Testing
 
+## C16-B adaptive eye emission (offline, 2026-10-31)
+
+`tools/tests/test_adaptive_emission.py` adds 17 standard-library tests for the USD writer,
+publish-time eye-class selection (including tiny regions rounded to zero coverage), settings and
+CLI validation, exposure-1 normalisation, explicit opt-out, legacy tuple compatibility, staged
+layer edits and package preservation. Edits cover insertion once, numeric updates, unchanged
+non-emissive shaders, BOM/CRLF/comments, dry-run byte/timestamp equality, idempotence, malformed
+layer preflight and range errors. Synthetic DDS encoding is mocked; scratch stays in `out/tmp`.
+
+`tools\test.ps1 -Config Release` passes: conventions, 24/24 CTests and 393 Python tests
+(340 tools, 28 gmapack, 25 Steam; two existing skips). No path workaround was needed. The focused
+17-test suite also passes after the rounded-coverage review fix. Log: `out/c16-b/release-tests.log`.
+The local pack demonstration in `out/c16-b/demonstration.json` records seven inserted inputs
+across four layers in copies of Robin, Evernight/March 7th and Guinaifen, verifies all 157 source
+files unchanged, and checks dry runs, repeat runs and preservation of every other copied byte.
+The copied packs and per-pack command logs are under `out/c16-b/` in this worktree. No game was
+launched, installed config edited or pack published. In-game brightness acceptance remains with
+Claude; the [default](decisions/0068-adaptive-eye-emission-publishing.md) is provisional.
+
 ## R6 unattended harness failures
 
 [`poc_session.py`](../tools/poc_session.py.md) now declines crash prompts on a background watchdog
