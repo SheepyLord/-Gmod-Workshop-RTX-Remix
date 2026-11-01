@@ -1,5 +1,38 @@
 # Testing
 
+## G1-B second pass: rendering and manager instrumentation
+
+`python -m unittest discover -s tools/tests -p test_glass_debris.py -q` executes the actual owned
+manager/helpers under LuaJIT. Second-pass regressions cover 2,000 tinted pieces in four settled
+draws, shared scratch and allocation-free warmed vertex reuse, Source rotation/normal correctness,
+retained replacements/deferred retirement, material grouping and cached transforms, current-camera
+frustum/distance/subpixel rejection, visibility restoration without rebuilding, shrink after a new
+rotation, repeated render passes, exact injected frame costs/calls, 120-frame means and Clear reset.
+
+`luajit tools/tests/glass_debris_harness.lua glass/addon/lua skip renderperf` compares moving,
+settling, settled and mixed-visibility manager Think+draw CPU using QPC. GC is stopped for each
+240-frame sample to count allocations, then restarted. It prints draw/material/matrix/userdata
+counts and CPU mean/p99/max. Copies of the starting helpers under this worktree's
+`out/g1-native-fix2/before` allow the identical harness to measure both versions. These mocks
+exclude native physics, engine upload and GPU costs; game frame targets remain unverified.
+
+Claude should sample `NLGlassDebris.Stats()`'s `think_ms`, `draw_ms`, `draw_calls`, peaks,
+`rebuild_peak_ms`/`upload_peak_ms` and `culled_pieces` alongside total frame time in the fifty-pane
+case. Check the settled delta <=1 ms, no settled >16 ms spikes, falling mean <20 ms, few draws per
+area, cleanup/expiry/explosion replacement visibility, and no edge-of-view popping with wide or
+third-person cameras. Package the two new `debris_*.lua` helpers with the existing ones; the owned
+autorun's glob already serves them, so G1-A needs no change. Jolt/native ABI and files stay unchanged.
+
+Final second-pass Release receipt (2026-11-01): **25 CTests and 448 Python tests** (395 tools,
+28 gmapack, 25 steam; two existing skips) pass. The native glass target contains 19 cases;
+the final direct LuaJIT manager/probe run passes 14,576 assertions. Evidence is in this worktree's
+`out/g1-native-fix2/test-release-final.log` and `lua-final.log`. The first full run reproduced only
+the previously documented guard MAX_PATH failure at `test_early.cpp:198`. The successful gate
+uses the same ignored CMake output relocation to `${CMAKE_BINARY_DIR}/g`, through
+`out/g1-native-fix2/short-guard-output.cmake` and `CMAKE_PROJECT_native_loader_INCLUDE`; guard/loader
+source and registered tests are unchanged. All 22 guard cases run. New slow-client regressions
+also verify the measured preparation limit and retention of an injected 2.5 ms upload peak.
+
 ## G1-A fix pass: final client and Release checks
 
 Release passes **25 CTests and 448 Python tests** (two existing skips), including 45 glass tests.

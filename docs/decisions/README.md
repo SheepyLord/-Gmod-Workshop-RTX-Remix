@@ -81,6 +81,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 | [0074](0074-glass-native-fix-pass.md) | Isolate refused glass collision shapes; correct displacement indexing and tags; bound client preparation | Accepted 2026-11-01 (G1-B fix pass) |
 | [0075](0075-glass-background-work-and-staged-piles.md) | Background map preparation and stepping; active pose queues, nonfatal contact saturation, lazy scratch and incremental pile replacement | Accepted 2026-11-01 (G1-B fix pass) |
 | [0076](0076-glass-pile-consolidation.md) | Larger material-based settled areas, shared vertex scratch, timed rebuilding and deferred GPU resource retirement | Accepted 2026-11-01 (G1-B second pass) |
+| [0077](0077-glass-visibility-and-frame-costs.md) | Material-group individual rendering, cached matrices, current-view/distance/subpixel culling and measured per-frame manager costs | Accepted 2026-11-01 (G1-B second pass) |
 
 ## Template
 

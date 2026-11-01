@@ -22,7 +22,10 @@ function V:Length() return math.sqrt(self:LengthSqr()) end
 function V:Cross(b) return Vector(self.y*b.z-self.z*b.y,self.z*b.x-self.x*b.z,self.x*b.y-self.y*b.x) end
 function V:GetNormalized() local n=self:Length();return n>0 and self/n or Vector() end
 function V:Set(v) self.x,self.y,self.z=v.x,v.y,v.z end
-function V:SetUnpacked(x,y,z) self.x,self.y,self.z=x,y,z end
+function V:SetUnpacked(x,y,z)
+    self.x,self.y,self.z=x,y,z
+    if _G.glassVertexCost then _G.glassVertexCost() end
+end
 function A:Set(a) self.p,self.y,self.r=a.p,a.y,a.r end
 function A:SetUnpacked(p,y,r) self.p,self.y,self.r=p,y,r end
 function isnumber(v) return type(v)=="number" end
@@ -41,6 +44,8 @@ function WorldToLocal(p,a,o,b) return p-o,Angle(a.p-b.p,a.y-b.y,a.r-b.r) end
 SERVER,CLIENT=false,true
 SOLID_VPHYSICS,MOVETYPE_VPHYSICS,COLLISION_GROUP_WORLD,RENDERGROUP_OTHER=6,6,20,10
 local clock,dt,convars,events,meshes,entities,draws,logCount,reads,api,mode
+local camera,workClock,costs=nil,0,{think=0,draw=0,upload=0}
+local mockFrame=0
 local failMesh = false
 local function phys()
     return {valid=true,asleep=false,impulses=0,SetMaterial=function() end,SetMass=function() end,
@@ -65,23 +70,28 @@ end
 function CurTime() return clock end
 function RealTime() return clock end
 function FrameTime() return dt end
+function FrameNumber()return mockFrame end
 function Material(name) return {name=name} end
 function Mesh(material)
     local m={material=material,valid=true,BuildFromTriangles=function(self,v)
         if failMesh then failMesh=false;error("injected GPU build refusal") end
+        workClock=workClock+costs.upload
         check(#v%3==0 and #v<=60000,"bounded triangle mesh");self.vertexCount=#v
     end,Destroy=function(self)check(self.valid,"no double mesh destruction");self.valid=false end,
-    Draw=function(self)check(self.valid,"never draw destroyed mesh");draws=draws+1 end}
+    Draw=function(self)check(self.valid,"never draw destroyed mesh");draws=draws+1;workClock=workClock+costs.draw end}
     meshes[#meshes+1]=m;return m
 end
 function Matrix()
     calls.matrices=calls.matrices+1
     return {SetTranslation=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.position=v end,
-        SetAngles=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.angles=v end,
+        SetAngles=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.angles=v;self.scale=1 end,
         SetScale=function(self,v)calls.matrixWrites=calls.matrixWrites+1;self.scale=v.x end}
 end
 cam={PushModelMatrix=function(matrix) _G.lastScale=matrix.scale end,PopModelMatrix=function()end}
 render={SetMaterial=function()calls.materials=calls.materials+1 end}
+render.GetViewSetup=function()return camera end
+function ScrW()return 1920 end
+function ScrH()return 1080 end
 function ErrorNoHalt() logCount=logCount+1 end
 function include(path) return dofile(base.."/"..path) end
 function CreateClientConVar(name,default)
@@ -92,7 +102,7 @@ end
 function GetConVar(name) return convars[name] end
 function RunConsoleCommand(name,value) convars[name].value=tonumber(value) end
 function math.Clamp(value,low,high) return math.max(low,math.min(high,value)) end
-function SysTime() return arg[3]=="renderperf" and wallclock() or clock end
+function SysTime() return arg[3]=="renderperf" and wallclock() or clock+workClock end
 function LocalPlayer() return {valid=true,GetEyeTrace=function()return {HitPos=Vector()}end} end
 local function makeapi()
     local n={bodies={},next=0,imports=0,clears=0,models=0,props=0}
@@ -145,6 +155,7 @@ local function makeapi()
     function n.Step() return true end
     function n.ReadPoses(rows,changed)
         check(not n.running,"poses only after worker completes")
+        workClock=workClock+costs.think
         local count=0
         for id,b in pairs(n.bodies)do
             if not b.asleep or b.dirty then
@@ -168,6 +179,8 @@ end
 local function setup(which)
     if NLGlassDebris then NLGlassDebris.Shutdown() end
     clock,dt,convars,events,meshes,entities,draws,logCount,reads,mode=0,.01,{}, {}, {}, {},0,0,0,which
+    camera,workClock,costs=nil,0,{think=0,draw=0,upload=0}
+    mockFrame=0
     local callbacks={}
     hook={Add=function(event,id,fn)
         callbacks[event]=callbacks[event] or {};callbacks[event][id]=fn
@@ -185,7 +198,7 @@ local function setup(which)
     NLGlassDebris=nil
     return dofile(base.."/nlglass/debris.lua")
 end
-local function tick(amount) dt=amount or .01;clock=clock+dt;events.Think() end
+local function tick(amount) dt=amount or .01;clock=clock+dt;mockFrame=mockFrame+1;events.Think() end
 local function draw() draws=0;events.PostDrawTranslucentRenderables(false,false);return draws end
 local function set(name,value)convars["rtx_glass_debris_"..name].value=value end
 local frame={origin=Vector(10,10,20),angles=Angle(),material="glass/fixture"}
@@ -220,6 +233,7 @@ if arg[3]=="renderperf" then
         D.Spawn({origin=Vector(128+(i%10)*72,128+math.floor(i/10)*72,32),angles=Angle(),material=frame.material},fragments(40))
     end
     for _=1,40 do tick() end
+    camera={origin=Vector(-500,300,32),angles=Angle(),fov=90,aspect=16/9}
     local function bench(label,n)
         collectgarbage("collect")
         for k in pairs(calls)do calls[k]=0 end
@@ -241,6 +255,13 @@ if arg[3]=="renderperf" then
     for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
     bench("settling",240)
     bench("settled",240)
+    D.Impulse(Vector(),131072,0);tick()
+    camera.origin:SetUnpacked(0,0,0)
+    for id,b in pairs(api.bodies)do
+        local kind=id%4
+        b.position:SetUnpacked(kind==0 and 100 or kind==1 and -1000 or kind==2 and 10000 or 6000,0,0)
+    end
+    bench("moving_culled",240)
     D.Shutdown();return
 end
 local D=setup("jolt")
@@ -355,6 +376,12 @@ p.position:SetUnpacked(-30,80,4);p.color=Color(20,40,60,80)
 local vectorCount=calls.vectors
 geometry.Transformed(p,{},pool)
 check(calls.vectors==vectorCount and pool[1].color==p.color,"second settled upload reuses every vertex and honors tint/alpha")
+p.matrix,p.scale,p.poseDirty=Matrix(),Vector(1,1,1),true
+-- Use an owned live mesh for this direct draw check; the previous manager has shut down.
+p.mesh=geometry.Build(g.vertices,Material(frame.material))
+geometry.Draw(p,.5);p.poseDirty=true;geometry.Draw(p,.5)
+check(lastScale==.5,"a moving piece keeps its shrink factor when the next rotation replaces the matrix basis")
+p.mesh:Destroy()
 
 D=setup("jolt");set("budget",2000);set("lifetime",0)
 for i=0,49 do
@@ -378,6 +405,77 @@ check(D.Stats().merged==1900 and D.Stats().batches==3 and draw()==3,"removal rec
 check(calls.vectors==vectorCount,"rebuilding a warmed pile allocates no new vertex vectors")
 D.Clear()
 for _,m in ipairs(meshes)do check(not m.valid,"Clear releases published, canceled and retired consolidated meshes") end
+D.Shutdown()
+
+-- The actual current render camera supplies the frustum (including scripted/third-person views).
+local view=include("nlglass/debris_view.lua")
+camera={origin=Vector(),angles=Angle(),fov=90,aspect=16/9};view.Capture()
+check(view.Visible(Vector(100,0,0),2,true),"visible near glass is retained")
+check(not view.Visible(Vector(-100,0,0),2,true),"behind-camera piece is culled")
+check(not view.Visible(Vector(100,400,0),2,true) and not view.Visible(Vector(100,0,200),2,true),"side and vertical frustum planes cull pieces")
+check(view.Visible(Vector(100,135,0),2,true),"sphere crossing the view edge is retained conservatively")
+check(view.Visible(Vector(1000,1300,0),1.2,true),"pixel size uses camera depth so a visible shard near the view edge is retained")
+check(not view.Visible(Vector(10000,0,0),20,false),"beyond-distance pieces/areas are culled")
+check(not view.Visible(Vector(1024,0,0),.1,true) and view.Visible(Vector(64,0,0),.1,true),"subpixel pieces skip only beyond the near zone")
+camera.angles=Angle(20,70,45);camera.fov=150;view.Capture()
+check(view.Visible(LocalToWorld(Vector(100,0,0),angle_zero,camera.origin,camera.angles),2,true),"rotated, rolled and wide-FOV camera keeps forward glass")
+
+D=setup("jolt");set("budget",100);set("lifetime",0);D.Prepare();tick();tick();tick();D.Clear()
+camera={origin=Vector(),angles=Angle(),fov=90,aspect=16/9}
+D.Spawn({origin=Vector(100,0,0),angles=Angle(),material=frame.material},fragments(10))
+D.Spawn({origin=Vector(-100,0,0),angles=Angle(),material=frame.material},fragments(10))
+tick()
+local writes=calls.matrixWrites
+local vectors,angles,matrixCount=calls.vectors,calls.angles,calls.matrices
+calls.materials=0
+check(draw()==10 and calls.materials==1 and D.Stats().culled_pieces==10,"only visible pieces draw with one material bind per group")
+check(calls.matrixWrites-writes==30,"culled pieces never update their drawing matrices")
+writes=calls.matrixWrites;calls.materials=0
+check(draw()==10 and calls.matrixWrites==writes,"repeat draw of the same pose/scale reuses every cached matrix")
+check(calls.vectors==vectors and calls.angles==angles and calls.matrices==matrixCount,"individual drawing allocates no per-piece Vector, Angle or Matrix")
+camera.angles:SetUnpacked(0,180,0)
+check(draw()==10 and calls.matrixWrites-writes==30,"camera change shows formerly hidden pieces at their cached latest pose")
+events.PostDrawTranslucentRenderables(true,false);events.PostDrawTranslucentRenderables(false,true)
+check(D.Stats().draw_calls_current==30,"depth/sky callbacks do not draw or count pieces")
+camera.angles:SetUnpacked(0,0,0)
+D.Spawn({origin=Vector(100,0,0),angles=Angle(),material="glass/second"},fragments(3));tick();calls.materials=0
+check(draw()==13 and calls.materials==2,"different visible materials bind once each without mixing groups")
+D.Clear()
+camera.angles:SetUnpacked(0,0,0)
+D.Spawn({origin=Vector(100,0,0),angles=Angle(),material=frame.material},fragments(2))
+costs.think,costs.draw=.00125,.0004
+tick();check(draw()==2,"timed first pass");check(draw()==2,"timed second pass");tick()
+s=D.Stats()
+check(math.abs(s.think_ms-1.25)<.00001 and math.abs(s.think_last_ms-1.25)<.00001,"Think instrumentation reports rolling mean and last cost in milliseconds")
+check(math.abs(s.draw_ms-1.6)<.00001 and s.draw_calls==4 and s.draw_calls_avg==4,"draw instrumentation sums repeated passes within one frame")
+check(s.draw_samples==1 and s.think_samples==2 and math.abs(s.draw_peak_ms-1.6)<.00001,"timing counters expose sample counts and peak frame costs")
+costs.think,costs.draw=0,0
+for _=1,130 do tick();draw() end
+check(D.Stats().draw_samples==120 and D.Stats().think_samples==120 and D.Stats().draw_ms<.00001,"timing average uses a bounded 120-frame rolling window")
+D.Clear();s=D.Stats()
+check(s.think_ms==0 and s.draw_ms==0 and s.draw_calls==0 and s.draw_calls_current==0,"Clear resets timing and draw counters")
+D.Spawn({origin=Vector(-2048,0,0),angles=Angle(),material=frame.material},fragments(10));settle()
+check(D.Stats().merged==10 and draw()==0 and D.Stats().culled_pieces==10,"settled areas are culled against the same camera")
+camera.origin:SetUnpacked(-3000,0,0)
+check(draw()==1,"a camera move redraws a visible settled pile without rebuilding")
+D.Shutdown()
+
+-- A slow client must obey the measured preparation allowance too, rather than only its vertex cap.
+D=setup("jolt");set("budget",100);set("lifetime",0)
+D.Spawn(frame,fragments(100));tick();tick();tick()
+for _,b in pairs(api.bodies)do b.asleep,b.dirty=true,true end
+tick()
+_G.glassVertexCost=function()workClock=workClock+.000001 end
+costs.upload=.0025
+tick(.21)
+check(D.Stats().rebuild_vertices>0 and D.Stats().rebuild_vertices<=360,
+    "slow vertex preparation yields by measured time before reaching the hard vertex cap")
+for _=1,20 do tick() end
+check(D.Stats().merged==100 and math.abs(D.Stats().upload_peak_ms-2.5)<.00001,
+    "timed preparation still completes and retains the actual upload peak")
+_G.glassVertexCost=nil;costs.upload=0;tick()
+check(D.Stats().upload_ms==0 and math.abs(D.Stats().upload_peak_ms-2.5)<.00001,
+    "upload peaks remain attributable after the pile is quiet")
 D.Shutdown()
 
 if arg[2] then

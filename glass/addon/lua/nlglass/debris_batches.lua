@@ -33,7 +33,7 @@ function B.Add(p)
     local area = B.areas[key]
     if not area then
         area = { members = {}, included = {}, batches = {}, material = p.material, key = key,
-            x = x * 1024, y = y * 1024, z = z * 1024, radius = 887 }
+            x = x * 1024, y = y * 1024, z = z * 1024, radius = 887, materialName = p.materialName }
         B.areas[key] = area
     end
     area.radius = math.max(area.radius, 887 + p.geometry.radius)
@@ -49,7 +49,7 @@ function B.Remove(p, individual)
         for id in pairs(batch.members) do
             area.included[id] = nil
             local member = area.members[id]
-            if member then individual[id] = member end
+            if member then individual.Add(member) end
         end
     end
     area.members[p.id], area.included[p.id], p.area = nil, nil, nil
@@ -79,6 +79,7 @@ local function build(job, individual, deadline)
         local before = SysTime()
         local mesh = geometry.Build(B.upload, area.material)
         B.upload_ms = (SysTime() - before) * 1000
+        B.upload_peak_ms = math.max(B.upload_peak_ms or 0, B.upload_ms)
         job.batches[#job.batches + 1] = { mesh = mesh, members = job.members, count = job.count, valid = true }
         job.members, job.count = {}, 0
         resetUpload()
@@ -90,7 +91,7 @@ local function build(job, individual, deadline)
         end
         for _, b in ipairs(job.batches) do
             B.batch_count, B.merged = B.batch_count + 1, B.merged + b.count
-            for id in pairs(b.members) do included[id] = b;individual[id] = nil end
+            for id in pairs(b.members) do included[id] = b;individual.Remove(area.members[id]) end
         end
         retireBatches(area.batches)
         area.batches, area.included, B.job = job.batches, included, nil
@@ -110,11 +111,13 @@ function B.Tick(individual)
     end
     if B.retireFirst > B.retireLast then B.retireFirst, B.retireLast = 1, 0 end
     if not B.job then
+        local candidate
         for key, area in pairs(B.work) do
             if not next(area.members) then
                 retireBatches(area.batches);B.areas[key], B.work[key] = nil, nil
-            elseif RealTime() >= area.due then start(area);break end
+            elseif RealTime() >= area.due and (not candidate or area.due < candidate.due) then candidate = area end
         end
+        if candidate then start(candidate) end
     end
     local job = B.job
     if job then
@@ -125,12 +128,22 @@ function B.Tick(individual)
         end
     end
     B.tick_ms = (SysTime() - before) * 1000
+    B.tick_peak_ms = math.max(B.tick_peak_ms or 0, B.tick_ms)
 end
-function B.Draw()
+function B.Draw(view)
+    local calls, culled, materialName = 0, 0, nil
     for _, area in pairs(B.areas) do
-        render.SetMaterial(area.material)
-        for _, b in ipairs(area.batches) do if b.valid then b.mesh:Draw() end end
+        local visible = view.Visible(area, area.radius, false)
+        for _, b in ipairs(area.batches) do
+            if b.valid then
+                if visible then
+                    if materialName ~= area.materialName then render.SetMaterial(area.material);materialName = area.materialName end
+                    b.mesh:Draw();calls = calls + 1
+                else culled = culled + b.count end
+            end
+        end
     end
+    return calls, culled
 end
 function B.Count() return B.batch_count, B.merged end
 function B.Clear()
@@ -141,6 +154,7 @@ function B.Clear()
     for i = B.retireFirst, B.retireLast do B.retired[i]:Destroy() end
     B.areas, B.work, B.job, B.retired = {}, {}, nil, {}
     B.retireFirst, B.retireLast, B.batch_count, B.merged = 1, 0, 0, 0
+    B.vertices, B.tick_ms, B.tick_peak_ms, B.upload_ms, B.upload_peak_ms = 0, 0, 0, 0, 0
     resetUpload() -- retain the bounded pool so the next break does not recreate every vertex
 end
 return B

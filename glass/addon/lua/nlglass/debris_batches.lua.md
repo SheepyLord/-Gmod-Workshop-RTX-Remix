@@ -16,7 +16,10 @@ retain old valid geometry and retry after one second. Superseded/canceled GPU me
 most two/frame instead of all at publication; cleanup frees all outstanding meshes immediately.
 The vertex pool survives `Clear` for reuse and is released with the helper on shutdown/reload.
 `Count` uses maintained counters. `tick_ms`, `upload_ms`, `pool`, and the retirement queue feed
-manager QA metrics. No file, server or network operations; exceptions are caught, no exit code.
+manager QA metrics. Ready areas schedule oldest-due first to prevent continuing arrivals from
+starving other piles. `Draw(view)` conservatively culls area spheres and returns draw/culled
+piece counts. Tick/upload peaks are retained until `Clear`. No file, server or network operations;
+exceptions are caught, no exit code.
 
 Only dirty/in-progress areas enter the rebuild work set. An unchanged settled area is never
 visited by Think; drawing still visits its visible batches.

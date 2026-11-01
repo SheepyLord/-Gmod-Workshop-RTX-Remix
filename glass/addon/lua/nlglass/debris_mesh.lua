@@ -79,10 +79,17 @@ function M.Transformed(piece, out, pool)
     end
 end
 function M.Draw(piece, scale)
-    piece.matrix:SetTranslation(piece.position)
-    piece.matrix:SetAngles(piece.angles)
-    piece.scale:SetUnpacked(scale, scale, scale)
-    piece.matrix:SetScale(piece.scale)
+    local poseChanged = piece.poseDirty
+    if piece.poseDirty then
+        piece.matrix:SetTranslation(piece.position)
+        piece.matrix:SetAngles(piece.angles)
+        piece.poseDirty = false
+    end
+    -- SetAngles may replace the rotation block, so reapply non-unit shrink after a new pose.
+    if piece.drawScale ~= scale or (poseChanged and scale ~= 1) then
+        piece.scale:SetUnpacked(scale, scale, scale)
+        piece.matrix:SetScale(piece.scale);piece.drawScale = scale
+    end
     cam.PushModelMatrix(piece.matrix)
     piece.mesh:Draw()
     cam.PopModelMatrix()

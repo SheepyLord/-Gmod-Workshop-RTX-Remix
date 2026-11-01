@@ -89,3 +89,13 @@ world access. A dense pose queue visits active/changed bodies instead of all 819
 The read-only import probe prints synchronous counts/times and asynchronous enqueue (including
 byte copy), poll and total preparation times. It omits static-prop model collision (requires client
 engine extraction); no installed assets are included in tests or written by the probe.
+
+G1-B second-pass rendering stays in the owned `debris*.lua` helpers; the native ABI/Jolt settings
+are unchanged. The manager groups individual material binds, caches matrices, culls current-view
+spheres and consolidates settled material areas with bounded pooled uploads. `NLGlassDebris.Stats()`
+adds `think_ms`/`draw_ms` (120-frame means), last/peak hook times, completed/current/average draw
+calls, culled pieces and rebuild/upload timings/peaks. Draw timing sums passes per engine frame.
+These are client CPU hook costs; `Spawn`/fracture outside Think and GPU time are excluded. See
+[the manager fields](../addon/lua/nlglass/debris.lua.md) for sampling/reset details. Existing
+sleep tuning remains 0.35 s with a 0.06 m/s point-velocity threshold; rendering optimization does
+not force bodies asleep in flight. Game targets remain with Claude.

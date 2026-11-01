@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### G1 (unreleased)
 
+- G1-B debris draws bind material once per group, reuse matrices after pose/scale changes, and
+  cull outside the current view, beyond 8192 units or below a distant subpixel threshold.
+  `NLGlassDebris.Stats()` reports averaged Think/draw milliseconds, peaks, draw calls per frame,
+  culled pieces and pile upload timings for game QA.
+
 - G1-B second pass consolidates settled glass into larger material-based areas and 24,000-vertex
   meshes. Bounded reusable upload scratch replaces temporary transformed vertices; timed rebuilds
   and staged GPU-resource retirement reduce allocation/rebuild bursts
