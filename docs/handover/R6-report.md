@@ -80,11 +80,31 @@ Integration (`r6-int` in `out\worktrees\r6`):
   so players see no false alarm. A clean-exit marker (the companion's `ShutDown` hook, or the
   bootstrap's process detach) would let the collector skip normal sessions.
 
+## Field QA (2026-10-31)
+
+The user installed the CI bundle of `main` `9b1d28a` (loader 0.11.0, `winmm.dll` `49F7E478...`) by hand
+at 20:31 and asked only for a map-load check. With the published package
+`0.0.0-dev.20261101032111+a1592c11`, deployed as generation 35, the field install loads gm_construct
+with RTX active, auto picks `high` on the RTX 5090, and release QA's session check passes (guard and
+toolgun, normal quit, no Lua error). The bootstrap receipt still records 0.10.1, so a later
+`install-loader.ps1` refuses that DLL until the receipt is moved aside and `-ReplaceUntracked` used.
+
+**Incident: a test host replaced the field's `gmod.exe`.** At 20:03:53, during the `r6-harness`
+worktree's `tools\test.ps1` run (its CTest stage ran 20:03-20:04), `bin\win64\gmod.exe` of the field
+install was overwritten with that build's `nl_proxy_host.exe` (289,280 bytes, byte-identical; NTFS
+change time 20:03:53). Every start then ran the loader in the test host, which exits at once and
+writes a marker file named after its first argument (`-steam`, `-game` in the game root): the user's
+four starts at 20:25 and 20:32 and the first check failed this way. Claude archived the host and the
+marker files in the main checkout's `out\qa-field\r6\damage`, restored the stock `gmod.exe` from the
+PoC copy (matching the depot manifest), and `verify_install.py` then passed all 2,877 depot files. The
+writer is not identified: every test checked writes only to its own scratch folder, and later full
+runs of the same suite on `r6-int` did not touch the field. Until it is found, check the field's
+`gmod.exe` (size 1,042,256, version "Garry's Mod") before field QA.
+
 ## Questions for the user
 
-- Field QA needs loader 0.11.0 in the field install (`bin\win64\winmm.dll`, backed up first): may
-  Claude replace it? The published package works with the installed 0.10.1 too, at the classic
-  settings and without the R6 evidence.
+- Should the field `gmod.exe` incident get a task of its own (find the writer, make the suite unable to
+  write into a real install)?
 - Should the recurring `nvlddmkm` 153 device loss get a task of its own (Aftermath dumps through
   `diagnostics.gpu_crash_dumps`, then the dump read with NVIDIA's tools)?
 - Should R2 map the classic layer's 15 obsolete options to their current names?
