@@ -19,8 +19,17 @@
   merged; the cloud session's `claude/sweet-cori-iqcvoh` was superseded by `a0573f8`. All 68 branch
   tips are recorded in `out/branch-backup/2026-11-02/branches.txt`. The two unmerged ones are in
   `unmerged.bundle`: `r4-companion` (one R4 harness commit) and `sweet-cori-iqcvoh`. The 63 worktrees
-  under `out/worktrees` and `.claude/worktrees` are detached with their files kept (283.5 GB);
-  `r7-alpha` holds the runtime source with patch 0018.
+  under `out/worktrees` and `.claude/worktrees` were first detached with their files kept.
+- **`out/worktrees` deleted** at the user's request, about 283 GB. Before deleting, the following were
+  saved in `out/branch-backup/2026-11-02/worktree-backup`:
+  - every uncommitted diff (`g2-falling`, `runtime-translations` and both runtime source trees);
+  - bundles of every commit no ref contains, among them the runtime source's detached patch-0018
+    commit and the `c16-runtime` clone's branch.
+  The 125 junctions into `H:\packman-repo` were removed as links first; the cache keeps all 9,345 files.
+  The worktree records in this repository, `dxvk-remix-gmod`, `garrys-mod-rtx-remixed` (and its debug
+  module) and `Gmod-Mmd-Motion-Importer` are pruned. Five R6 folders keep 196 KB of test scratch: a
+  Codex sandbox created it with permissions that lock out the user's account, and only an elevated
+  shell can remove it. The next runtime build starts from a fresh `build_runtime.ps1` worktree.
 - **Field.** Loader `0.12.1+2b543006` (the release's loader code) is installed, the 0.12.1 build it
   replaced is in `out/field-backup/2026-11-02-r9-observer`. Two starts: `exit observer ready`,
   `window ghosting off`, normal quits, and package `0.0.0-dev.20261102001953+4ce30d5a` (the melee fix).
