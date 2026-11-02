@@ -24,3 +24,46 @@ and [0090](../decisions/0090-ready-carriers-before-actor-publication.md).
   meanings only for names the model lacks, with sides measured on the model. NPC entries are published
   only once the carrier is mounted and the current map has precached the model; a mount from an earlier
   map is checked, not trusted. Codex could not reproduce the user's exact "model not found" on the PoC.
+- **Tests on `r10-int`.** `tools\test.ps1 -Config Release`: 26 of 26 CTests, the Python suites (498, 28
+  and 25 tests, one skip each in the two small ones), "All checks passed".
+
+## PoC check of the merged package (Claude)
+
+The combined package from `r10-int`, `0.0.0-dev.20261102121250+988a3f12` (1,064 files, digest
+`425e24de...`), deployed as a local package with RTX on (`out/r10-qa` in the `r10-int` worktree). A first
+run deployed nothing: the package path was given relative, and the loader resolved it against the game
+folder ("file not found"); an absolute path fixed it.
+
+**Eye whites** (Linlong, no pack; R10-E's front camera, boxes and placement; noon and night):
+
+| | off | 100 % | 200 % |
+|---|---:|---:|---:|
+| Eye white over cheek, noon | 0.17 | 0.75 | 1.21 |
+| Eye white over cheek, night | 0.31 | 1.05 | 1.74 |
+| A face patch outside the eyes over cheek, noon / night | 0.98 / 0.92 | 0.98 / 0.92 | 0.96 / 0.91 |
+
+The same as R10-E's numbers with its own DLL (0.18/0.74/1.21 at noon, 0.26/1.02/1.69 at night). The
+status line shows the imported runtime accepting the option (`supported=true`), only `eye_white_4`
+bound to the copy (`0x72639b32...` aliasing the atlas `0xbd866dd5...`), the original atlas back when the
+checkbox is off, 117 ms to prepare the copy once and the same frame time in every variant (9.3 ms
+median). At 100 % Linlong's eye whites look light beige: her painted eye white is cream (sRGB 249, 237,
+221 in `face.png`, linear 0.95, 0.85, 0.72), and the emission has the albedo's colour, as the packs' does;
+lit only by the bluish sky it looked grey. Evidence: `linlong-eyes-sheet.png`, `linlong-eye-zoom.png`.
+
+**Expressions** (R10-H's driver, Guinaifen and Robin): each motion holds its own PMX morph at 1 and the
+others at 0 (smile: `笑い`, wink: `ウィンク`, blink: `まばたき`). The screenshots show both eyes closed in a
+smile for `笑い`, both closed for `まばたき`, and the character's left eye closed for `ウィンク`. The mapping
+window, the one the user's screenshot showed, now reads `笑い` -> `笑い [eyes_blink_smile] #16` ("Drives:
+笑い [eyes_blink_smile] #16"). Evidence: `expressions-sheet.png`, `mapping-guinaifen-full.png`,
+`expressions/`.
+
+**NPCs after a map change** (R10-H's driver, `--cold-first`, Linlong, a character Codex's runs did not
+use), in the user's order: Linlong spawned as a ragdoll on gm_construct; after `map gm_flatgrass` her
+first NPC came from the library (a new citizen carrier), then from the stock NPC menu, then the library
+again; after `map gm_construct` the menu NPC and a library NPC again. Every spawn was attached with a
+valid model. Evidence: `npc-linlong/`, `driver-npc.log`.
+
+All three sessions quit normally with no Lua error. The only recurring console line,
+`TrackMaterial: Material 'mmdhl_soft_v1_...' not found`, comes from the hotloader's soft copies and is
+in R10-H's Workshop-baseline run too, so it predates R10. The PoC is back on its Workshop-only config
+(the original's SHA-256, `bb27c0d8...`) and the lock is released.
