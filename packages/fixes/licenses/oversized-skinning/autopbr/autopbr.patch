@@ -1,9 +1,9 @@
 diff --git a/docs/TOPBR_R11.md b/docs/TOPBR_R11.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..960bd638e78fc49a67259737fd20dab7b1449423
+index 0000000000000000000000000000000000000000..b8e3133b4b400c06e3f03a78a70f2569a4fec2d4
 --- /dev/null
 +++ b/docs/TOPBR_R11.md
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,92 @@
 +# R11 ToPBR
 +
 +GPL-2.0. Phase 1 snapshots one live IMaterial per client frame and hands value-only jobs to the
@@ -76,9 +76,13 @@ index 0000000000000000000000000000000000000000..960bd638e78fc49a67259737fd20dab7
 +only for records with a known correctness defect. Limits: 4096 records, 64 hashes per record, 8 MiB
 +registry input, 4096 bytes per row, existing DDS dimension bounds. All file references are plain DDS
 +filenames under the known textures directory; reparse-point textures/directories are rejected.
-+Missing/truncated records are pruned on load; digest failures prune on restoration. Unknown schemas
-+and unreadable registries remain intact. Atomic replacement preserves pre-existing or later edited
-+registry bytes in content-named `.before-r11b-<digest>.bak` files before writing.
++Missing/truncated records are pruned on load; digest failures prune on restoration. Only another
++well-formed decimal schema version or a file over 8 MiB stays read-only and intact. Other unreadable
++files (including empty/torn headers, duplicate identities and excess rows) start empty and writable,
++with one damage log line. The next save preserves the damaged bytes in the same content-named
++`.before-r11b-<digest>.bak` path used for pre-existing or later edited registries. Staging uses
++CreateFileW/WriteFile, FlushFileBuffers, CloseHandle, then write-through MoveFileExW; failures remove
++the staging file. An unsavable registry warns once per module session, across worker restarts/jobs.
 +
 +`rtx_topbr_clear` drops/requeues live registrations but retains the registry and DDS, including over
 +map changes and worker cancellation. A prior successful conversion with R11-B is required: cached
@@ -87,7 +91,8 @@ index 0000000000000000000000000000000000000000..960bd638e78fc49a67259737fd20dab7
 +
 +Compile `tests/game_registry_test.cpp` with MSVC C++17 `/EHsc /UNDEBUG /W4 /WX /DNOMINMAX` and pass
 +a fresh scratch directory under `out`. It exercises atomic read/write and failed replacement,
-+preserved user edits, current identity/hash checks, missing/invalid/edited DDS, bounded malformed input,
++preserved user edits, damaged-file recovery/backups, unchanged read-only versions/oversized input,
++replacement failure/staging cleanup, current identity/hash checks, missing/invalid/edited DDS, bounded malformed input,
 +record/generator versions, source refresh/rejection, switch-off and authored-hash exclusion. No SDK,
 +game, network or user character is needed. The native loader repository's Release suite builds and
 +runs this test from its GPL corresponding-source copy, as well as the Lua source-less queue harness.
@@ -1413,10 +1418,10 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +}}}
 diff --git a/source/material_pipeline/to_pbr/game_registry.h b/source/material_pipeline/to_pbr/game_registry.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510dab16b79c8
+index 0000000000000000000000000000000000000000..b61ff883e5a428e022785aaa36cfaac058d6db5c
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_registry.h
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,244 @@
 +// GPL-2.0. Worker-owned records for imported textures whose local source is unavailable.
 +#pragma once
 +#include "pbr_policy.h"
@@ -1501,6 +1506,7 @@ index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510da
 +    explicit Registry(fs::path output) : output_(std::move(output)), path_(output_.parent_path() / "game_materials.registry") {}
 +    const fs::path& Path() const { return path_; }
 +    size_t Size() const { return records_.size(); }
++    bool WasDamaged() const { return damaged_; }
 +    bool Capture(Record& record, const std::array<std::string, 4>& paths) const {
 +        for (size_t i = 0; i < paths.size(); ++i) {
 +            if (paths[i].empty()) continue;
@@ -1513,20 +1519,35 @@ index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510da
 +        return ValidRecord(record);
 +    }
 +    bool Load() {
-+        records_.clear(); writable_ = true;
++        records_.clear(); writable_ = true; damaged_ = false; lastPublished_.reset();
 +        std::error_code ec;
-+        if (!fs::exists(path_, ec)) return !ec;
++        if (!fs::exists(path_, ec)) return ec ? DiscardDamaged() : true;
 +        const auto bytes = fs::file_size(path_, ec);
-+        if (ec || bytes > MaxBytes) { writable_ = false; return false; }
++        if (ec) return DiscardDamaged();
++        if (bytes > MaxBytes) { writable_ = false; return false; }
 +        std::ifstream file(path_, std::ios::binary);
 +        std::string text(size_t(bytes), '\0');
-+        if (!file.read(text.data(), std::streamsize(text.size()))) { writable_ = false; return false; }
++        if (!file.read(text.data(), std::streamsize(text.size()))) return DiscardDamaged();
 +        std::istringstream lines(text); lines.imbue(std::locale::classic());
 +        std::string line;
-+        if (!std::getline(lines, line) || line != "TOPBR_GAME_REGISTRY 1") { writable_ = false; return false; }
++        if (!std::getline(lines, line)) return DiscardDamaged();
++        if (line != "TOPBR_GAME_REGISTRY 1") {
++            const std::string prefix = "TOPBR_GAME_REGISTRY ";
++            if (line.compare(0, prefix.size(), prefix) == 0) {
++                const auto version = line.substr(prefix.size());
++                // Compare arbitrary-length decimal versions without overflow. Leading
++                // zeroes do not turn this version's damaged header into another version.
++                const auto significant = version.find_first_not_of('0');
++                if (!version.empty() && version.find_first_not_of("0123456789") == std::string::npos &&
++                    (significant == std::string::npos || version.substr(significant) != "1")) {
++                    writable_ = false; return false;
++                }
++            }
++            return DiscardDamaged();
++        }
 +        size_t count = 0;
 +        while (std::getline(lines, line)) {
-+            if (++count > MaxRecords) { records_.clear(); writable_ = false; return false; }
++            if (++count > MaxRecords) return DiscardDamaged();
 +            if (line.size() > 4096) continue;
 +            Record record; size_t hashes = 0;
 +            std::istringstream row(line); row.imbue(std::locale::classic());
@@ -1541,12 +1562,12 @@ index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510da
 +            row >> std::ws;
 +            if (!row.eof() || !ValidRecord(record) || !Validate(record, false)) continue;
 +            // Duplicate identities are ambiguous; reject the whole file rather than select one.
-+            if (!records_.emplace(record.identity, record).second) { records_.clear(); writable_ = false; return false; }
++            if (!records_.emplace(record.identity, record).second) return DiscardDamaged();
 +        }
 +        return true;
 +    }
 +    bool Save() const {
-+        if (!writable_) return false; // Keep an unknown/unreadable registry intact.
++        if (!writable_) return false; // Keep another schema version or an oversized file intact.
 +        std::ostringstream text; text.imbue(std::locale::classic());
 +        text << "TOPBR_GAME_REGISTRY 1\n" << std::setprecision(std::numeric_limits<float>::max_digits10);
 +        for (const auto& pair : records_) {
@@ -1581,12 +1602,21 @@ index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510da
 +            }
 +        }
 +        const fs::path staged(path_.wstring() + L".tmp");
-+        { std::ofstream file(staged, std::ios::binary | std::ios::trunc);
-+          file.write(bytes.data(), std::streamsize(bytes.size())); file.close(); if (!file) return false; }
++        HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
++        bool written = file != INVALID_HANDLE_VALUE;
++        size_t offset = 0;
++        while (written && offset < bytes.size()) {
++            DWORD count = 0;
++            written = WriteFile(file, bytes.data() + offset, DWORD(bytes.size() - offset), &count, nullptr) != 0 && count != 0;
++            offset += count;
++        }
++        if (written) written = FlushFileBuffers(file) != 0;
++        if (file != INVALID_HANDLE_VALUE && !CloseHandle(file)) written = false;
++        if (!written) { DeleteFileW(staged.c_str()); return false; }
 +        if (MoveFileExW(staged.c_str(), path_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
 +            lastPublished_ = bytes; return true;
 +        }
-+        std::error_code ec; fs::remove(staged, ec); return false;
++        DeleteFileW(staged.c_str()); return false;
 +    }
 +    // A readable source always calls today's converter; failed/empty conversion cannot revive old maps.
 +    // The generator number is provenance, not an expiry check for source-less records.
@@ -1616,6 +1646,10 @@ index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510da
 +        return texture.file.empty() ? std::string{} : (output_ / fs::u8path(texture.file)).u8string();
 +    }
 +private:
++    bool DiscardDamaged() {
++        // Save preserves the damaged bytes before replacing them with a fresh registry.
++        records_.clear(); damaged_ = true; return true;
++    }
 +    bool Validate(const Record& record, bool digest) const {
 +        const DWORD attrs = GetFileAttributesW(output_.c_str());
 +        if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_REPARSE_POINT)) return false;
@@ -1628,6 +1662,7 @@ index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510da
 +    fs::path output_, path_;
 +    std::map<std::string, Record> records_;
 +    bool writable_ = true;
++    bool damaged_ = false;
 +    mutable std::optional<std::string> lastPublished_;
 +};
 +}}}
@@ -1694,7 +1729,7 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71e5b4f7ab 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bfa095f5e1 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
 @@ -4,6 +4,12 @@
@@ -2835,6 +2870,11 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
 -    std::string stagingPath = modDir + "/materials.usda.tmp";
 -    if (!USDA::WriteMaterialsUSDAFile(modDir, m_outputDirectory, m_processedMaterialInfo, m_debugOutput, stagingPath)) {
 -        return false;
+-    }
+-    
+-    // Atomic replace: staging -> final
+-    if (!USDA::PublishStagedFile(stagingPath, materialsUsdaPath)) {
+-        return false;
 +    if (!USDA::PublishStagedFile(staging, target)) return false;
 +    // Remix watches the root layer's time, not only its sublayer's.
 +    HANDLE file = CreateFileW(std::filesystem::u8path(modDir + "/mod.usda").c_str(), FILE_WRITE_ATTRIBUTES,
@@ -2842,11 +2882,6 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
 +    if (file != INVALID_HANDLE_VALUE) {
 +        FILETIME now; GetSystemTimeAsFileTime(&now); SetFileTime(file, nullptr, nullptr, &now); CloseHandle(file);
      }
--    
--    // Atomic replace: staging -> final
--    if (!USDA::PublishStagedFile(stagingPath, materialsUsdaPath)) {
--        return false;
--    }
 -    
 -    m_lastUSDAWriteTime = std::chrono::steady_clock::now();
 -    
@@ -2897,7 +2932,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
      if (!m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Not running
      }
-@@ -4833,183 +4703,135 @@ void TextureProcessor::StopWorkerThread() {
+@@ -4833,183 +4703,143 @@ void TextureProcessor::StopWorkerThread() {
  }
  
  void TextureProcessor::WorkerThreadFunc() {
@@ -2916,10 +2951,18 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
 -        // Get next material from queue, with a timeout so we can
 -        // flush USDA after a quiet period even if no new work arrives
 +    const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++    const auto saveRegistry = [this]() {
++        if (!m_gameRegistry->Save() && !m_gameRegistrySaveWarned) {
++            m_gameRegistrySaveWarned = true;
++            Warning("[MaterialPipeline::ToPBR] Game registry could not be saved (read-only or I/O failure); further save warnings suppressed this session\n");
++        }
++    };
 +    if (!m_gameRegistry) {
 +        m_gameRegistry = std::make_unique<GameRegistry::Registry>(std::filesystem::u8path(m_outputDirectory));
-+        if (!m_gameRegistry->Load()) Warning("[MaterialPipeline::ToPBR] Game registry unreadable; retained without reuse\n");
-+        else if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry prune could not be saved\n");
++        m_gameRegistry->Load();
++        if (m_gameRegistry->WasDamaged())
++            Warning("[MaterialPipeline::ToPBR] Damaged game registry; starting empty and preserving old bytes on save\n");
++        saveRegistry();
 +    }
 +    while (!m_shutdownRequested.load()) {
 +        WorkItem job;
@@ -3026,7 +3069,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
 +                        gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
 +                    return result;
 +                });
-+                if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry update could not be saved\n");
++                saveRegistry();
 +                if (record) {
 +                    ProcessedMaterialInfo info{};
 +                    info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);
@@ -3193,7 +3236,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
  int TextureProcessor::QueueMaterialsForProcessing() {
      if (!m_enabled.load(std::memory_order_relaxed)) {
          return 0;
-@@ -5049,6 +4871,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5049,6 +4879,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
          std::lock_guard<std::recursive_mutex> lock(m_mutex);
          for (size_t i = 0; i < cachedMaterials.size(); i++) {
              const std::string& matName = cachedMaterials[i];
@@ -3201,7 +3244,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
              if (MaterialFilter::IsNonSceneMaterialName(matName)) {
                  m_processedMaterials.insert(matName);
                  continue;
-@@ -5082,6 +4905,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5082,6 +4913,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
                  continue;
              }
              
@@ -3209,7 +3252,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
              m_materialQueue.push(matName);
              m_queuedMaterials.insert(matName);
              queuedCount++;
-@@ -5102,87 +4926,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5102,87 +4934,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
  
  size_t TextureProcessor::GetQueuedMaterialCount() const {
      std::lock_guard<std::mutex> lock(m_queueMutex);
@@ -3303,7 +3346,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
  } // namespace ToPBR
  } // namespace MaterialPipeline
  
-@@ -5190,6 +4947,23 @@ void TextureProcessor::AppendToUSDAAsync() {
+@@ -5190,6 +4955,23 @@ void TextureProcessor::AppendToUSDAAsync() {
  // Lua Bindings - Must be at global scope
  //=============================================================================
  
@@ -3327,7 +3370,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
  LUA_FUNCTION(ToPBR_Initialize) {
      // If already initialized (by C++ during RemixAPI init), return success
      if (MaterialPipeline::ToPBR::TextureProcessor::Instance().IsInitialized()) {
-@@ -5297,14 +5071,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
+@@ -5297,14 +5079,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
      bool enabled = LUA->GetBool(1);
      MaterialPipeline::ToPBR::TextureProcessor::Instance().SetMetallicGeneration(enabled);
      
@@ -3343,7 +3386,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
      return 0;
  }
  
-@@ -5382,6 +5149,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
+@@ -5382,6 +5157,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
      LUA->PushNumber(stats.failedConversions);
      LUA->SetField(-2, "failedConversions");
      
@@ -3352,7 +3395,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
      return 1;
  }
  
-@@ -5789,6 +5558,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
+@@ -5789,6 +5566,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
      LUA->PushCFunction(ToPBR_Initialize);
      LUA->SetField(-2, "Initialize");
      
@@ -3367,7 +3410,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71
      LUA->SetField(-2, "IsInitialized");
      
 diff --git a/source/material_pipeline/to_pbr/to_pbr.h b/source/material_pipeline/to_pbr/to_pbr.h
-index 895cc47f2dd5352c0563c7dc37bc565cb961c492..361de6e5cdbe21451268ad71b6e0756058576243 100644
+index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e20504b10 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.h
 +++ b/source/material_pipeline/to_pbr/to_pbr.h
 @@ -14,6 +14,7 @@
@@ -3473,7 +3516,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..361de6e5cdbe21451268ad71b6e07560
      
      // Debounce timer for USDA writes - prevents Remix from constantly reloading
      // the mod layer while materials are still being processed
-@@ -616,10 +625,28 @@ private:
+@@ -616,10 +625,29 @@ private:
      // =========================================================================
      
      // Background worker thread
@@ -3490,6 +3533,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..361de6e5cdbe21451268ad71b6e07560
 +    std::queue<GameJob> m_gameQueue;
 +    std::unordered_set<std::string> m_gameSubmitted;
 +    std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
++    bool m_gameRegistrySaveWarned = false; // Worker-only, once per module session across worker restarts.
 +    std::atomic<bool> m_gameEnabled{false};
 +    std::queue<std::shared_ptr<PreparedSnapshot>> m_metadataReady;
 +    std::queue<WorkItem> m_readyQueue;
@@ -3502,7 +3546,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..361de6e5cdbe21451268ad71b6e07560
      // Work queue for materials to process
      std::queue<std::string> m_materialQueue;
      std::unordered_set<std::string> m_queuedMaterials;  // Fast lookup to avoid duplicates
-@@ -638,7 +665,7 @@ private:
+@@ -638,7 +666,7 @@ private:
      void WorkerThreadFunc();
      
      // Process a single material on the worker thread (no main thread locks)
@@ -3946,10 +3990,10 @@ index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc634666817
 +}
 diff --git a/tests/game_registry_test.cpp b/tests/game_registry_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..33fe9eca84201395c151ffc1ece14886ab084aa0
+index 0000000000000000000000000000000000000000..2aed106c4ba827457a71eaf115c9519bd66a7f89
 --- /dev/null
 +++ b/tests/game_registry_test.cpp
-@@ -0,0 +1,143 @@
+@@ -0,0 +1,187 @@
 +// GPL-2.0. Production persistent game-map registry and publication-selection regressions.
 +#include <cassert>
 +#include <iostream>
@@ -4028,6 +4072,12 @@ index 0000000000000000000000000000000000000000..33fe9eca84201395c151ffc1ece14886
 +    assert(second.Resolve(identity, {0x999}, true, true, [&]() { auto r = made; r->generator = 6; return r; }));
 +    assert(!second.Save() && Bytes(second.Path()) == original);
 +    fs::remove(staged);
++    // A sharing violation at replacement removes the fully written staging file.
++    HANDLE locked = CreateFileW(second.Path().c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
++                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++    assert(locked != INVALID_HANDLE_VALUE);
++    assert(!second.Save() && !fs::exists(staged) && Bytes(second.Path()) == original);
++    assert(CloseHandle(locked));
 +    auto update = [&]() {
 +        auto record = convert(); record->generator = 999; record->roughness = .25f; return record;
 +    };
@@ -4075,11 +4125,49 @@ index 0000000000000000000000000000000000000000..33fe9eca84201395c151ffc1ece14886
 +    assert(invalid.Load() && invalid.Size() == 0);
 +    { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY 1\nmmd/t/0123456789abcdef 1 5 1000000000\n"; }
 +    assert(invalid.Load() && invalid.Size() == 0);
-+    { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY 99\nfuture data\n"; }
-+    const auto future = Bytes(registry.Path());
-+    assert(!invalid.Load() && !invalid.Save() && Bytes(registry.Path()) == future);
++    // Damage must not disable future recording/restoration. Each first save backs
++    // up the exact damaged bytes, including a crash's empty or torn header.
++    const std::array<std::pair<std::string, std::string>, 7> damagedFiles{{
++        {"empty", ""}, {"garbage", "torn header\n"},
++        {"duplicate", original + original.substr(original.find('\n') + 1)},
++        {"too-many-rows", original + std::string(GameRegistry::MaxRecords, '\n')},
++        {"bad-version", "TOPBR_GAME_REGISTRY 99oops\n"},
++        {"signed-version", "TOPBR_GAME_REGISTRY +99\n"},
++        {"same-version-zeroes", "TOPBR_GAME_REGISTRY 0001\n"}
++    }};
++    for (const auto& fixture : damagedFiles) {
++        const auto textures = output.parent_path() / fixture.first / "textures";
++        fs::create_directories(textures);
++        for (const auto& path : paths) fs::copy_file(fs::u8path(path), textures / fs::u8path(path).filename());
++        GameRegistry::Registry damaged(textures);
++        { std::ofstream file(damaged.Path(), std::ios::binary); file << fixture.second; }
++        assert(damaged.Load() && damaged.WasDamaged() && damaged.Size() == 0);
++        assert(Bytes(damaged.Path()) == fixture.second);
++        assert(!damaged.Resolve(identity, {0x999}, true, false, absent));
++        assert(damaged.Save() && Bytes(damaged.Path()) == "TOPBR_GAME_REGISTRY 1\n");
++        bool backedUp = false;
++        for (const auto& file : fs::directory_iterator(textures.parent_path()))
++            if (file.path().filename().u8string().find("game_materials.registry.before-r11b-") == 0 &&
++                file.path().extension() == ".bak" && Bytes(file.path()) == fixture.second) backedUp = true;
++        assert(backedUp);
++        GameRegistry::Registry recovered(textures);
++        assert(recovered.Load() && !recovered.WasDamaged() && recovered.Size() == 0);
++        assert(recovered.Resolve(identity, {0x777}, true, true, [&]() { return made; }) && recovered.Save());
++        GameRegistry::Registry restarted(textures);
++        assert(restarted.Load() && restarted.Size() == 1 && !restarted.WasDamaged());
++        assert(restarted.Resolve(identity, {0x888}, true, false, absent));
++    }
++    // Only another well-formed decimal schema version or oversized files stay read-only.
++    for (const auto& version : {"99", "00099", "0", "999999999999999999999999999999"}) {
++        { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY " << version << "\nfuture data\n"; }
++        const auto future = Bytes(registry.Path());
++        assert(!invalid.Load() && !invalid.WasDamaged() && invalid.Size() == 0);
++        assert(!invalid.Save() && Bytes(registry.Path()) == future);
++    }
 +    { std::ofstream file(registry.Path(), std::ios::binary); file.seekp(GameRegistry::MaxBytes); file.put('x'); }
-+    assert(!invalid.Load() && invalid.Size() == 0 && !invalid.Save());
++    const auto oversized = Bytes(registry.Path());
++    assert(!invalid.Load() && !invalid.WasDamaged() && invalid.Size() == 0 && !invalid.Save());
++    assert(Bytes(registry.Path()) == oversized);
 +    // Use exactly the production publication selector for off/authored/incomplete cases.
 +    struct Material { bool importedGame; };
 +    std::unordered_map<uint64_t, Material> materials{{0x123, {true}}, {0x456, {false}}};
@@ -4091,7 +4179,7 @@ index 0000000000000000000000000000000000000000..33fe9eca84201395c151ffc1ece14886
 +    assert(FallbackGuard::Select(materials, true, false, guard).count(0x456) == 1);
 +    guard.complete = false;
 +    assert(FallbackGuard::Select(materials, true, true, guard).empty());
-+    std::cout << "PASS game registry: atomic roundtrip, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
++    std::cout << "PASS game registry: durable atomic roundtrip/failure, damaged-file backup/recovery, read-only versions/size, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
 +}
 diff --git a/tests/make_game_pbr_fixtures.py b/tests/make_game_pbr_fixtures.py
 new file mode 100644

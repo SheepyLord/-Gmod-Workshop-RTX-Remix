@@ -3,9 +3,10 @@
 The fixes [LICENSE](../../../LICENSE) applies. This layer builds on the shipped R8 native source
 `7094baf6edf6797fd5c3f0b58ca668f9307b4906`, reconstructed through the
 [preceding source record](../backrooms/Source.md). The local fixes branch `codex/r11-autopbr` ends at
-`6e33b90fd705e4f5185b78e3f80a74232ff0f503`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`;
+`cc77daa7a0c4c0d4196637165b0a6662bad145b6`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`;
 `1679a99` moves VMT I/O off frame after profiling, and `6e33b90` adds R11-B's source-less game-map
-registry. Nothing was pushed.
+registry. `cc77daa` fixes damaged-registry recovery, durable saves and session-scoped save warnings.
+Nothing was pushed.
 
 [autopbr.patch](autopbr.patch) is the complete change from that base. Complete changed files are
 also included at their native-repository paths; [source-files.json](source-files.json) records their
@@ -34,7 +35,11 @@ R11-B records each successful game material in an atomic, bounded `game_material
 the output textures. A current live `mmd/t/<16 hex>` identity can restore the material without its
 source only if every published DDS passes full header/mip-size, byte-count and content-digest checks.
 Old hashes never register themselves. Readable sources use the current converter; missing/invalid
-records are pruned, unknown schemas remain intact, and registry edits are preserved before replacement.
+records are pruned, other well-formed schema versions/oversized files remain read-only and intact,
+and registry edits are preserved before replacement. Damaged files start empty and writable, log once,
+and are backed up before a fresh registry is written. Staging uses CreateFileW/WriteFile,
+FlushFileBuffers and CloseHandle before write-through MoveFileExW; failures remove staging files.
+An unsavable registry warns once per module session, including across worker restarts.
 Record compatibility is independent of generator version. Cache clearing retains the registry/DDS
 and requeues live materials. See [ADR 0093](../../../../../docs/decisions/0093-cached-imported-game-materials.md).
 
@@ -64,8 +69,8 @@ From an x64 VS shell in the R11-B loader worktree:
 MSBuild.exe out/r11-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0
 ```
 
-The DLL is **5,139,456 bytes**, SHA-256
-`f1cf17478cb46f08a38ca997104a7ddd50d3463e026243ce8183e301d2c6fa43`.
+The DLL is **5,147,136 bytes**, SHA-256
+`c5ae890e0daf93adf2bec6b8d8e88980510d110bce056ccd874c35947586b2d1`.
 The matching PDB remains beside it under the loader worktree's `out/r11-b/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
@@ -78,6 +83,8 @@ PMX, rooted/traversal paths, duplicate companions and image sanity. Commands are
 R11-B's standalone production registry/selector test is also built by the aggregate Release gate:
 atomic persistence/failure, edit preservation, identity/current hashes, source refresh, record/generator
 versions, missing/truncated/edited DDS, bounded malformed input, settings and authored exclusion.
+Review cases verify damaged-file backup/recovery and fresh reload/record/restore, preserved decimal
+other-version/oversized bytes, and staging cleanup after a Windows sharing violation at replacement.
 The Lua harness also tests absent source/base metadata and clear/requeue. The existing production
 Source/VTF/USD and game-channel harnesses pass on the rebuilt source.
 

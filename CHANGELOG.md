@@ -8,6 +8,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R11
 
+- **Damaged imported-game PBR registries recover automatically.** Empty/torn files, duplicate
+  identities and excess rows are backed up before rebuilding; newer-version and oversized files
+  remain intact. Saves flush staging bytes before replacement, and save failures warn once per session.
 - **Imported game PBR survives a missing source folder after one successful conversion.** ToPBR
   records the live hotloader texture and material, then restores it only while every cached map
   validates. The setting still retracts it, authored replacements still win, and clearing ToPBR's

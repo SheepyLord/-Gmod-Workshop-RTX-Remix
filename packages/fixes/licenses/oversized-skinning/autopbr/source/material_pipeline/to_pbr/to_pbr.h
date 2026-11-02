@@ -638,6 +638,7 @@ private:
     std::queue<GameJob> m_gameQueue;
     std::unordered_set<std::string> m_gameSubmitted;
     std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
+    bool m_gameRegistrySaveWarned = false; // Worker-only, once per module session across worker restarts.
     std::atomic<bool> m_gameEnabled{false};
     std::queue<std::shared_ptr<PreparedSnapshot>> m_metadataReady;
     std::queue<WorkItem> m_readyQueue;

@@ -114,3 +114,47 @@ cannot recover a character whose source is already gone; restoring its source on
 association. No game assets are committed. No branch was pushed, merged, tagged or published.
 The two retained device-loss runs remain a parallel-session stability limitation; R11-B changes no
 runtime memory management and claims acceptance for the completed low-profile pair.
+
+## Review fixes
+
+Claude's review fixes are in fixes commit `cc77daa7a0c4c0d4196637165b0a6662bad145b6`.
+Empty/garbage headers, duplicate identities, excess rows and other read failures start empty and
+writable, log one damage line, and preserve the exact old bytes through `.before-r11b-<hash>.bak`
+on the next save. Only well-formed decimal headers for another version and files over 8 MiB remain
+read-only and byte-identical. Staging uses CreateFileW/WriteFile, FlushFileBuffers and CloseHandle
+before write-through MoveFileExW; failures remove staging files. Save warnings are session-scoped
+across game jobs and worker restarts. ADR 0093's unreadable-file sentence is corrected in place.
+
+Rebuilt ReleaseWithSymbols x64 under `out/r11-b` with the same pinned toolchain/dependencies. New
+DLL: **5,147,136 bytes**, SHA-256
+`c5ae890e0daf93adf2bec6b8d8e88980510d110bce056ccd874c35947586b2d1`.
+The GPL files, cumulative patch and source/build pins reconstruct all 22 changed files from `7094baf`.
+Imported this DLL exactly once for the review pass (the authorized second R11-B import); no other
+indexed input changed or was removed. Deep input verification: **11 parts, 0 problems**.
+
+The standalone production regression passes with assertions and `/W4 /WX`, including all four
+requested damaged fixtures, exact backup bytes, new reload/record/restore, other-version/oversized
+preservation and staging cleanup after a real Windows sharing violation. `tools/test.ps1 -Config
+Release` passes again: **26 CTests + 554 Python tests**, with the same two existing skips. The
+reviewed indexed package validates with `nlctl` (1,090 files; digest `e65390ac0b5ab3b6...`); its
+DLL xz is 1,006,816 bytes. Evidence is under `out/r11-b/review`.
+
+The field activity gate cleared at **22:49:33 UTC**: no field `gmod.exe` remained. Fresh preflight
+checks before setup and launch also found none, so no waiting interval was necessary. Acquired the
+exclusive PoC lock and saved 189 files, including the prior metadata, settings and generated USD/registry.
+`08-review-missing` uses the indexed shipped DLL, the still-hidden Alf copy, low profile, 30 fps and
+the same fixed camera. It exits **0 normally, zero Lua errors/device loss**, with **seven cached
+restorations, zero fresh conversions, 7/0/7 on/off/restored and zero after final cleanup**. Five
+screenshots are retained. Actor/camera bounds, hashes, on-state USD and registry match `05-low-missing`
+exactly (USD `97a0f545...`, registry `615a9d85...`). Damaged-file recovery was checked in the native
+regression; this game run retained the valid registry needed for the source-less restoration proof.
+
+Restored all **189** snapshot files byte-for-byte, archiving six changed files first. The Workshop-only
+config remains `bb27c0d8...`. Redeployed the original Workshop package offline with `nlctl apply`
+(generation 143; fixes DLL `c4833fc1...`), avoiding an extra game launch. Payload verification reports
+only the expected generated `materials.usda` drift; that empty-registration file matches its original
+snapshot exactly. Registry/DDS remain retained with **zero active registrations**. Depot verification:
+**2,877 files / 7,279,873,012 bytes OK**, zero mismatches and the same one permitted `autoexec.cfg`
+user-config difference. No PoC process remains; the lock was released. No Remix `user.conf`, original
+character folder or field-install file was written, and no field process was focused, sent input or
+ended. Neither branch was pushed, merged or published.

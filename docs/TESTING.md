@@ -1893,3 +1893,22 @@ cache restores. Earlier high/medium device-loss runs remain diagnostic evidence.
 package and restored-Workshop smoke sessions also quit normally; 185 original snapshot files match,
 no generated materials remain active, and depot verification reports 2,877 OK files and zero depot
 mismatches (one permitted user-config difference).
+
+R11-B review regressions additionally load empty files, garbage headers, duplicate identities and
+excess rows as empty/writable, save exact damaged bytes to `.before-r11b-<hash>.bak`, then reload a
+valid registry and verify new recording/restoration. Malformed/signed/same-version padded headers
+recover too; other decimal versions (including huge values) and oversized input stay byte-identical
+and read-only. A real Windows sharing violation checks failed replacement and staging cleanup.
+Before review PoC runs, check field `gmod.exe` ownership of the foreground and `GetLastInputInfo`:
+while a field process exists and either owns the foreground or input is newer than 10 minutes, wait
+and recheck every five minutes, for at most three hours. Skip rendered QA if still busy; never focus,
+send input to, or end the field game. Reuse the low profile, hidden Alf copy and fixed camera only
+after the gate clears. Evidence is under `out/r11-b/review` and in the report's review section.
+
+Review evidence: the Release gate again passes 26 CTests + 554 Python tests (two existing skips).
+The activity gate and immediate preflight find no field game. Shipped-DLL `08-review-missing` passes
+with seven cached restores, zero conversions, 7/0/7 on/off/restored and zero after cleanup; normal exit
+0, no Lua errors/device loss, matching prior camera bounds/USD/registry. All 189 snapshot files are
+restored, and offline `nlctl apply` restores the original Workshop deployment without another game
+launch. The only payload-verifier drift is the generated USD, matching its original snapshot with
+zero registrations. Depot verification passes 2,877 files; the lock is released.

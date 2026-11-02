@@ -4704,10 +4704,18 @@ void TextureProcessor::StopWorkerThread() {
 
 void TextureProcessor::WorkerThreadFunc() {
     const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    const auto saveRegistry = [this]() {
+        if (!m_gameRegistry->Save() && !m_gameRegistrySaveWarned) {
+            m_gameRegistrySaveWarned = true;
+            Warning("[MaterialPipeline::ToPBR] Game registry could not be saved (read-only or I/O failure); further save warnings suppressed this session\n");
+        }
+    };
     if (!m_gameRegistry) {
         m_gameRegistry = std::make_unique<GameRegistry::Registry>(std::filesystem::u8path(m_outputDirectory));
-        if (!m_gameRegistry->Load()) Warning("[MaterialPipeline::ToPBR] Game registry unreadable; retained without reuse\n");
-        else if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry prune could not be saved\n");
+        m_gameRegistry->Load();
+        if (m_gameRegistry->WasDamaged())
+            Warning("[MaterialPipeline::ToPBR] Damaged game registry; starting empty and preserving old bytes on save\n");
+        saveRegistry();
     }
     while (!m_shutdownRequested.load()) {
         WorkItem job;
@@ -4761,7 +4769,7 @@ void TextureProcessor::WorkerThreadFunc() {
                         gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
                     return result;
                 });
-                if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry update could not be saved\n");
+                saveRegistry();
                 if (record) {
                     ProcessedMaterialInfo info{};
                     info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);

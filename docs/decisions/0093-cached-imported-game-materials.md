@@ -18,7 +18,11 @@ game conversion records the live hotloader base-texture identity (`mmd/t/<16 hex
 Remix hashes, the four published DDS channels (normal, roughness, metallic, emission), DDS byte
 counts/content digests, material constants, record version and generator version. Paths are safe
 filenames relative to that texture directory. The registry uses a bounded text format and an atomic
-staging-file replacement; unknown schemas and unreadable registries remain intact without reuse.
+staging-file replacement. Only a well-formed header for another decimal schema version or a file
+over 8 MiB stays read-only and intact without reuse. Other unreadable/damaged registries start empty
+and writable, logging once; the next save preserves their bytes in the existing content-named backup
+before rebuilding. Staging writes are flushed to disk and closed before write-through replacement;
+save failures warn once per module session.
 
 Lua submits loaded hotloader materials even when their library source/base metadata is absent.
 The client captures the actual base-texture identity and current hashes; all disk work stays on the

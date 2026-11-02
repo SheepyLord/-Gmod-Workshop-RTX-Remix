@@ -70,9 +70,13 @@ must not expire source-less materials that cannot be regenerated. Raise the mini
 only for records with a known correctness defect. Limits: 4096 records, 64 hashes per record, 8 MiB
 registry input, 4096 bytes per row, existing DDS dimension bounds. All file references are plain DDS
 filenames under the known textures directory; reparse-point textures/directories are rejected.
-Missing/truncated records are pruned on load; digest failures prune on restoration. Unknown schemas
-and unreadable registries remain intact. Atomic replacement preserves pre-existing or later edited
-registry bytes in content-named `.before-r11b-<digest>.bak` files before writing.
+Missing/truncated records are pruned on load; digest failures prune on restoration. Only another
+well-formed decimal schema version or a file over 8 MiB stays read-only and intact. Other unreadable
+files (including empty/torn headers, duplicate identities and excess rows) start empty and writable,
+with one damage log line. The next save preserves the damaged bytes in the same content-named
+`.before-r11b-<digest>.bak` path used for pre-existing or later edited registries. Staging uses
+CreateFileW/WriteFile, FlushFileBuffers, CloseHandle, then write-through MoveFileExW; failures remove
+the staging file. An unsavable registry warns once per module session, across worker restarts/jobs.
 
 `rtx_topbr_clear` drops/requeues live registrations but retains the registry and DDS, including over
 map changes and worker cancellation. A prior successful conversion with R11-B is required: cached
@@ -81,7 +85,8 @@ as ordinary unused cache data, not a published material dependency.
 
 Compile `tests/game_registry_test.cpp` with MSVC C++17 `/EHsc /UNDEBUG /W4 /WX /DNOMINMAX` and pass
 a fresh scratch directory under `out`. It exercises atomic read/write and failed replacement,
-preserved user edits, current identity/hash checks, missing/invalid/edited DDS, bounded malformed input,
+preserved user edits, damaged-file recovery/backups, unchanged read-only versions/oversized input,
+replacement failure/staging cleanup, current identity/hash checks, missing/invalid/edited DDS, bounded malformed input,
 record/generator versions, source refresh/rejection, switch-off and authored-hash exclusion. No SDK,
 game, network or user character is needed. The native loader repository's Release suite builds and
 runs this test from its GPL corresponding-source copy, as well as the Lua source-less queue harness.

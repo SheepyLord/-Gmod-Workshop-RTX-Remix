@@ -82,6 +82,7 @@ public:
     explicit Registry(fs::path output) : output_(std::move(output)), path_(output_.parent_path() / "game_materials.registry") {}
     const fs::path& Path() const { return path_; }
     size_t Size() const { return records_.size(); }
+    bool WasDamaged() const { return damaged_; }
     bool Capture(Record& record, const std::array<std::string, 4>& paths) const {
         for (size_t i = 0; i < paths.size(); ++i) {
             if (paths[i].empty()) continue;
@@ -94,20 +95,35 @@ public:
         return ValidRecord(record);
     }
     bool Load() {
-        records_.clear(); writable_ = true;
+        records_.clear(); writable_ = true; damaged_ = false; lastPublished_.reset();
         std::error_code ec;
-        if (!fs::exists(path_, ec)) return !ec;
+        if (!fs::exists(path_, ec)) return ec ? DiscardDamaged() : true;
         const auto bytes = fs::file_size(path_, ec);
-        if (ec || bytes > MaxBytes) { writable_ = false; return false; }
+        if (ec) return DiscardDamaged();
+        if (bytes > MaxBytes) { writable_ = false; return false; }
         std::ifstream file(path_, std::ios::binary);
         std::string text(size_t(bytes), '\0');
-        if (!file.read(text.data(), std::streamsize(text.size()))) { writable_ = false; return false; }
+        if (!file.read(text.data(), std::streamsize(text.size()))) return DiscardDamaged();
         std::istringstream lines(text); lines.imbue(std::locale::classic());
         std::string line;
-        if (!std::getline(lines, line) || line != "TOPBR_GAME_REGISTRY 1") { writable_ = false; return false; }
+        if (!std::getline(lines, line)) return DiscardDamaged();
+        if (line != "TOPBR_GAME_REGISTRY 1") {
+            const std::string prefix = "TOPBR_GAME_REGISTRY ";
+            if (line.compare(0, prefix.size(), prefix) == 0) {
+                const auto version = line.substr(prefix.size());
+                // Compare arbitrary-length decimal versions without overflow. Leading
+                // zeroes do not turn this version's damaged header into another version.
+                const auto significant = version.find_first_not_of('0');
+                if (!version.empty() && version.find_first_not_of("0123456789") == std::string::npos &&
+                    (significant == std::string::npos || version.substr(significant) != "1")) {
+                    writable_ = false; return false;
+                }
+            }
+            return DiscardDamaged();
+        }
         size_t count = 0;
         while (std::getline(lines, line)) {
-            if (++count > MaxRecords) { records_.clear(); writable_ = false; return false; }
+            if (++count > MaxRecords) return DiscardDamaged();
             if (line.size() > 4096) continue;
             Record record; size_t hashes = 0;
             std::istringstream row(line); row.imbue(std::locale::classic());
@@ -122,12 +138,12 @@ public:
             row >> std::ws;
             if (!row.eof() || !ValidRecord(record) || !Validate(record, false)) continue;
             // Duplicate identities are ambiguous; reject the whole file rather than select one.
-            if (!records_.emplace(record.identity, record).second) { records_.clear(); writable_ = false; return false; }
+            if (!records_.emplace(record.identity, record).second) return DiscardDamaged();
         }
         return true;
     }
     bool Save() const {
-        if (!writable_) return false; // Keep an unknown/unreadable registry intact.
+        if (!writable_) return false; // Keep another schema version or an oversized file intact.
         std::ostringstream text; text.imbue(std::locale::classic());
         text << "TOPBR_GAME_REGISTRY 1\n" << std::setprecision(std::numeric_limits<float>::max_digits10);
         for (const auto& pair : records_) {
@@ -162,12 +178,21 @@ public:
             }
         }
         const fs::path staged(path_.wstring() + L".tmp");
-        { std::ofstream file(staged, std::ios::binary | std::ios::trunc);
-          file.write(bytes.data(), std::streamsize(bytes.size())); file.close(); if (!file) return false; }
+        HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        bool written = file != INVALID_HANDLE_VALUE;
+        size_t offset = 0;
+        while (written && offset < bytes.size()) {
+            DWORD count = 0;
+            written = WriteFile(file, bytes.data() + offset, DWORD(bytes.size() - offset), &count, nullptr) != 0 && count != 0;
+            offset += count;
+        }
+        if (written) written = FlushFileBuffers(file) != 0;
+        if (file != INVALID_HANDLE_VALUE && !CloseHandle(file)) written = false;
+        if (!written) { DeleteFileW(staged.c_str()); return false; }
         if (MoveFileExW(staged.c_str(), path_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
             lastPublished_ = bytes; return true;
         }
-        std::error_code ec; fs::remove(staged, ec); return false;
+        DeleteFileW(staged.c_str()); return false;
     }
     // A readable source always calls today's converter; failed/empty conversion cannot revive old maps.
     // The generator number is provenance, not an expiry check for source-less records.
@@ -197,6 +222,10 @@ public:
         return texture.file.empty() ? std::string{} : (output_ / fs::u8path(texture.file)).u8string();
     }
 private:
+    bool DiscardDamaged() {
+        // Save preserves the damaged bytes before replacing them with a fresh registry.
+        records_.clear(); damaged_ = true; return true;
+    }
     bool Validate(const Record& record, bool digest) const {
         const DWORD attrs = GetFileAttributesW(output_.c_str());
         if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_REPARSE_POINT)) return false;
@@ -209,6 +238,7 @@ private:
     fs::path output_, path_;
     std::map<std::string, Record> records_;
     bool writable_ = true;
+    bool damaged_ = false;
     mutable std::optional<std::string> lastPublished_;
 };
 }}}

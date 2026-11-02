@@ -76,6 +76,12 @@ int main(int argc, char** argv) {
     assert(second.Resolve(identity, {0x999}, true, true, [&]() { auto r = made; r->generator = 6; return r; }));
     assert(!second.Save() && Bytes(second.Path()) == original);
     fs::remove(staged);
+    // A sharing violation at replacement removes the fully written staging file.
+    HANDLE locked = CreateFileW(second.Path().c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
+                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    assert(locked != INVALID_HANDLE_VALUE);
+    assert(!second.Save() && !fs::exists(staged) && Bytes(second.Path()) == original);
+    assert(CloseHandle(locked));
     auto update = [&]() {
         auto record = convert(); record->generator = 999; record->roughness = .25f; return record;
     };
@@ -123,11 +129,49 @@ int main(int argc, char** argv) {
     assert(invalid.Load() && invalid.Size() == 0);
     { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY 1\nmmd/t/0123456789abcdef 1 5 1000000000\n"; }
     assert(invalid.Load() && invalid.Size() == 0);
-    { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY 99\nfuture data\n"; }
-    const auto future = Bytes(registry.Path());
-    assert(!invalid.Load() && !invalid.Save() && Bytes(registry.Path()) == future);
+    // Damage must not disable future recording/restoration. Each first save backs
+    // up the exact damaged bytes, including a crash's empty or torn header.
+    const std::array<std::pair<std::string, std::string>, 7> damagedFiles{{
+        {"empty", ""}, {"garbage", "torn header\n"},
+        {"duplicate", original + original.substr(original.find('\n') + 1)},
+        {"too-many-rows", original + std::string(GameRegistry::MaxRecords, '\n')},
+        {"bad-version", "TOPBR_GAME_REGISTRY 99oops\n"},
+        {"signed-version", "TOPBR_GAME_REGISTRY +99\n"},
+        {"same-version-zeroes", "TOPBR_GAME_REGISTRY 0001\n"}
+    }};
+    for (const auto& fixture : damagedFiles) {
+        const auto textures = output.parent_path() / fixture.first / "textures";
+        fs::create_directories(textures);
+        for (const auto& path : paths) fs::copy_file(fs::u8path(path), textures / fs::u8path(path).filename());
+        GameRegistry::Registry damaged(textures);
+        { std::ofstream file(damaged.Path(), std::ios::binary); file << fixture.second; }
+        assert(damaged.Load() && damaged.WasDamaged() && damaged.Size() == 0);
+        assert(Bytes(damaged.Path()) == fixture.second);
+        assert(!damaged.Resolve(identity, {0x999}, true, false, absent));
+        assert(damaged.Save() && Bytes(damaged.Path()) == "TOPBR_GAME_REGISTRY 1\n");
+        bool backedUp = false;
+        for (const auto& file : fs::directory_iterator(textures.parent_path()))
+            if (file.path().filename().u8string().find("game_materials.registry.before-r11b-") == 0 &&
+                file.path().extension() == ".bak" && Bytes(file.path()) == fixture.second) backedUp = true;
+        assert(backedUp);
+        GameRegistry::Registry recovered(textures);
+        assert(recovered.Load() && !recovered.WasDamaged() && recovered.Size() == 0);
+        assert(recovered.Resolve(identity, {0x777}, true, true, [&]() { return made; }) && recovered.Save());
+        GameRegistry::Registry restarted(textures);
+        assert(restarted.Load() && restarted.Size() == 1 && !restarted.WasDamaged());
+        assert(restarted.Resolve(identity, {0x888}, true, false, absent));
+    }
+    // Only another well-formed decimal schema version or oversized files stay read-only.
+    for (const auto& version : {"99", "00099", "0", "999999999999999999999999999999"}) {
+        { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY " << version << "\nfuture data\n"; }
+        const auto future = Bytes(registry.Path());
+        assert(!invalid.Load() && !invalid.WasDamaged() && invalid.Size() == 0);
+        assert(!invalid.Save() && Bytes(registry.Path()) == future);
+    }
     { std::ofstream file(registry.Path(), std::ios::binary); file.seekp(GameRegistry::MaxBytes); file.put('x'); }
-    assert(!invalid.Load() && invalid.Size() == 0 && !invalid.Save());
+    const auto oversized = Bytes(registry.Path());
+    assert(!invalid.Load() && !invalid.WasDamaged() && invalid.Size() == 0 && !invalid.Save());
+    assert(Bytes(registry.Path()) == oversized);
     // Use exactly the production publication selector for off/authored/incomplete cases.
     struct Material { bool importedGame; };
     std::unordered_map<uint64_t, Material> materials{{0x123, {true}}, {0x456, {false}}};
@@ -139,5 +183,5 @@ int main(int argc, char** argv) {
     assert(FallbackGuard::Select(materials, true, false, guard).count(0x456) == 1);
     guard.complete = false;
     assert(FallbackGuard::Select(materials, true, true, guard).empty());
-    std::cout << "PASS game registry: atomic roundtrip, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
+    std::cout << "PASS game registry: durable atomic roundtrip/failure, damaged-file backup/recovery, read-only versions/size, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
 }

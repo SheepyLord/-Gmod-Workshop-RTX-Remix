@@ -1,5 +1,27 @@
 # Research notes
 
+## R11-B review: damaged registries and durable saves (2026-11-02)
+
+- In the GPL source, `game_registry.h:98` resets load state; only a file over `MaxBytes` or an exact
+  `TOPBR_GAME_REGISTRY <digits>` header whose numeric version differs from 1 disables writes. Decimal
+  classification handles arbitrarily long versions without overflow. Empty/garbage headers, duplicate
+  identities and excess rows discard all records, preserving writability and the original bytes until
+  the next backed-up save. Invalid individual records still prune as before.
+- `game_registry.h:181` writes staging bytes with `CreateFileW`/`WriteFile`, calls `FlushFileBuffers`,
+  closes the handle and uses the existing write-through `MoveFileExW`. A sharing-violation regression
+  confirms the old registry survives and the staging file is removed. `to_pbr.cpp:4708` centralizes
+  save warnings behind a session member that survives worker restarts; damaged-load logging is separate.
+- The production regression verifies seven damaged-header/duplicate/row-bound fixtures, exact `.bak`
+  bytes, fresh reload/record/restore, four other-version decimal forms and byte-identical oversized
+  input. Review build/test/render evidence remains under `out/r11-b/review`.
+- The gate at 22:49:33 UTC found no remaining field process, as did setup/launch checks. The reviewed
+  shipped DLL (5,147,136 bytes, `c5ae890e...`) restores the seven Alf records with zero conversions in
+  `08-review-missing`; 7/0/7 on/off/restored, zero after cleanup, normal exit 0 and no Lua errors/device
+  loss. Exact camera/actor bounds, hashes, USD and registry match the prior low-profile run. All 189
+  snapshots and the original Workshop package are restored offline; the verifier's only drift is the
+  generated `materials.usda`, matching the original empty-registration snapshot. Depot check: 2,877
+  OK files, zero mismatches. The PoC lock is released; no field process or source folder was changed.
+
 ## R11-B: persistent imported game maps (2026-11-02)
 
 - A hotloader material name identifies a model/slot; its actual base texture has the separate
