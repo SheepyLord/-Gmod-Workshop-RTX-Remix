@@ -59,3 +59,15 @@ Notes:
 - Session 02 crashed at engine start-up (`0xC0000005`), before any Lua or glass code ran. This is the
   intermittent Remix start-up crash from R8 that the user deferred. The rerun (07) passed.
 - Not run: two clients, map windows on other maps.
+
+## Merge, publish and field
+
+- `ceb0d5f` merges `r9-glass` after the full Release suite passed on it (26 of 26 CTests, 515 Python
+  tests with two existing skips, "All checks passed"). The merge published Workshop item 3829070317 as
+  `0.0.0-dev.20261102021900+cef426ad`. The branch is deleted; only `main` remains. The test packages
+  (about 19 GB) were removed from the worktree; the QA evidence stays in `out/worktrees/r9-glass/out/qa-r9`.
+- The PoC is back on the Workshop-only config, and the QA add-on is removed.
+- Field, gm_construct with the user's add-ons (`out/qa-field/r9`): start 03 downloaded the package and
+  start 04 deployed it. Run 05 spawned and broke one tempered pane through the host's console. GMod
+  blocks `RunConsoleCommand("lua_run")` from client Lua, so run 04's own probe could not spawn one. The
+  result: Jolt backend, 391 pieces (81 split on landing), 69 glass sounds, a normal quit.
