@@ -19,9 +19,68 @@ static std::string Bytes(const fs::path& path) {
     std::ifstream file(path, std::ios::binary);
     return std::string(std::istreambuf_iterator<char>(file), {});
 }
+static void SessionCases(const fs::path& output) {
+    fs::create_directories(output);
+    const auto texture = output / "session.dds";
+    DDS(texture);
+    GameRegistry::Registry registry(output);
+    assert(registry.Load());
+    GameRegistry::Session session;
+    const std::string identity = "mmd/t/0123456789abcdef", other = "mmd/t/1123456789abcdef";
+    int resolutions = 0, conversions = 0, saves = 0;
+    auto resolve = [&](const std::string& key, bool maps) {
+        ++resolutions;
+        auto result = registry.Resolve(key, {0x123}, true, true, [&]() -> std::optional<GameRegistry::Record> {
+            ++conversions;
+            if (!maps) return {};
+            GameRegistry::Record record;
+            record.identity = key; record.hashes = {0x123}; record.generator = 5;
+            assert(registry.Capture(record, {texture.u8string(), {}, {}, {}}));
+            return record;
+        });
+        ++saves; assert(registry.Save());
+        return result;
+    };
+    auto unexpected = []() -> std::optional<GameRegistry::Record> { assert(false); return {}; };
+    assert(!session.ResolveOnce(identity, {0x123}, false, unexpected));
+    assert(!session.ResolveOnce(identity, {}, true, unexpected));
+    assert(!session.ResolveOnce(identity, {0}, true, unexpected));
+    assert(!session.ResolveOnce("not an identity", {0x123}, true, unexpected));
+    auto first = session.ResolveOnce(identity, {0x123}, true, [&]() { return resolve(identity, true); });
+    assert(first && resolutions == 1 && conversions == 1 && saves == 1);
+    // Material/source aliases use the same live identity. Remove both disk inputs:
+    // a hit still succeeds without converting, inspecting/hashing DDS or registry I/O.
+    fs::rename(texture, output / "hidden.dds");
+    fs::rename(registry.Path(), registry.Path().wstring() + L".hidden");
+    auto shared = session.ResolveOnce(identity, {0x456, 0x789}, true, unexpected);
+    assert(shared && shared->hashes == (std::vector<uint64_t>{0x456, 0x789}));
+    assert(shared->textures[0].digest == first->textures[0].digest);
+    assert(resolutions == 1 && conversions == 1 && saves == 1);
+    fs::rename(output / "hidden.dds", texture);
+    fs::rename(registry.Path().wstring() + L".hidden", registry.Path());
+    assert(session.ResolveOnce(other, {0x999}, true, [&]() { return resolve(other, true); }));
+    assert(resolutions == 2 && conversions == 2 && saves == 2);
+    const std::string noMaps = "mmd/t/2123456789abcdef";
+    assert(!session.ResolveOnce(noMaps, {0x123}, true, [&]() { return resolve(noMaps, false); }));
+    assert(!session.ResolveOnce(noMaps, {0x456}, true, unexpected));
+    assert(resolutions == 3 && conversions == 3 && saves == 3);
+    // Source rejection also remains no-maps after an exception.
+    const std::string rejected = "mmd/t/3123456789abcdef";
+    bool threw = false;
+    try { session.ResolveOnce(rejected, {0x123}, true, []() -> std::optional<GameRegistry::Record> { throw std::runtime_error("rejected"); }); }
+    catch (const std::runtime_error&) { threw = true; }
+    assert(threw && !session.ResolveOnce(rejected, {0x456}, true, unexpected));
+    // ClearCache stops the production worker. A new worker-local Session resolves
+    // both a previously successful identity and a no-maps identity afresh.
+    GameRegistry::Session restarted;
+    assert(restarted.ResolveOnce(identity, {0xaaa}, true, [&]() { return resolve(identity, true); }));
+    assert(!restarted.ResolveOnce(noMaps, {0xbbb}, true, [&]() { return resolve(noMaps, false); }));
+    assert(resolutions == 5 && conversions == 5 && saves == 5);
+}
 int main(int argc, char** argv) {
     assert(argc == 2);
     const fs::path output = fs::u8path(argv[1]) / "textures";
+    SessionCases(output.parent_path() / "session" / "textures");
     fs::create_directories(output);
     const std::string identity = "mmd/t/0123456789abcdef";
     assert(GameRegistry::Identity("MMD\\T\\0123456789ABCDEF") == identity);
@@ -183,5 +242,5 @@ int main(int argc, char** argv) {
     assert(FallbackGuard::Select(materials, true, false, guard).count(0x456) == 1);
     guard.complete = false;
     assert(FallbackGuard::Select(materials, true, true, guard).empty());
-    std::cout << "PASS game registry: durable atomic roundtrip/failure, damaged-file backup/recovery, read-only versions/size, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
+    std::cout << "PASS game registry: once-per-worker identity resolution (including no-maps/restart), durable atomic roundtrip/failure, damaged-file backup/recovery, read-only versions/size, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
 }

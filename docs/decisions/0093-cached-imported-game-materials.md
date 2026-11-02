@@ -50,3 +50,12 @@ moved or removed. The registry cannot recover characters whose only successful c
 this record: they need their source once to establish the association. No filenames, old generated USD
 or model names are guessed. Unpublished AO data remains in the ordinary DDS cache and is not needed
 to restore the material. No source model/texture is included in the distributed package.
+
+## Second review clarification (2026-11-02)
+
+The readable-source rule above applies to the first resolution of each live texture identity per
+worker invocation. Later jobs reuse its successful or no-maps result with their own live hashes,
+without source/converter/DDS/registry work; cache clear or worker restart starts a new session.
+USD publication atomically records the last published size/digest beside the target, after the USD
+replacement. Matching output needs no backup across sessions; edited/foreign bytes and missing,
+damaged or stale records still require preservation. Existing backups are never deleted.

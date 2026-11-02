@@ -77,6 +77,32 @@ inline std::optional<Texture> Inspect(const fs::path& path, bool digest) {
     }
     return texture;
 }
+// One instance per worker invocation. Cache successes and no-maps results by the
+// actual live texture identity, regardless of material/source metadata aliases.
+// All registry/converter I/O belongs inside resolve, so a hit does no disk work.
+class Session {
+public:
+    template<class Resolve>
+    std::optional<Record> ResolveOnce(const std::string& identity, const std::vector<uint64_t>& liveHashes,
+                                      bool enabled, Resolve resolve) {
+        if (!enabled || identity.empty() || Identity(identity) != identity ||
+            liveHashes.empty() || liveHashes.size() > MaxHashes) return {};
+        for (auto hash : liveHashes) if (!hash) return {};
+        auto found = resolved_.find(identity);
+        if (found == resolved_.end()) {
+            if (resolved_.size() >= MaxRecords) return {};
+            // Reserve no-maps before resolving: a rejected/throwing converter is
+            // also attempted at most once until clear/restart creates a new Session.
+            found = resolved_.emplace(identity, std::nullopt).first;
+            found->second = resolve();
+        }
+        auto result = found->second;
+        if (result) result->hashes = liveHashes; // Each material registers its own current hashes.
+        return result;
+    }
+private:
+    std::map<std::string, std::optional<Record>> resolved_;
+};
 class Registry {
 public:
     explicit Registry(fs::path output) : output_(std::move(output)), path_(output_.parent_path() / "game_materials.registry") {}

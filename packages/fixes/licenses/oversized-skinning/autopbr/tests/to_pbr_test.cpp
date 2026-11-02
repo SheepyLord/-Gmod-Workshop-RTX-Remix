@@ -9,7 +9,22 @@
 #include "../source/material_pipeline/to_pbr/pbr_policy.h"
 #include "../source/material_pipeline/to_pbr/fallback_guard.h"
 using namespace MaterialPipeline::ToPBR;
+static void PublishAfterRestart(const std::filesystem::path& staged, const std::filesystem::path& target) {
+    wchar_t executable[32768];
+    const DWORD count = GetModuleFileNameW(nullptr, executable, DWORD(std::size(executable)));
+    assert(count && count < std::size(executable));
+    std::wstring command = L"\"" + std::wstring(executable) + L"\" --publish \"" + staged.wstring() + L"\" \"" + target.wstring() + L"\"";
+    STARTUPINFOW startup{}; startup.cb = sizeof(startup);
+    PROCESS_INFORMATION process{};
+    assert(CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process));
+    assert(WaitForSingleObject(process.hProcess, 10000) == WAIT_OBJECT_0);
+    DWORD exit = 1;
+    assert(GetExitCodeProcess(process.hProcess, &exit) && exit == 0);
+    assert(CloseHandle(process.hThread) && CloseHandle(process.hProcess));
+}
 int main(int argc, char** argv) {
+    if (argc == 4 && std::string(argv[1]) == "--publish")
+        return USDA::PublishStagedFile(argv[2], argv[3]) ? 0 : 1;
     assert(argc == 2);
     assert(Policy::IsImportedMaterialName("mmd/0123456789abcdef/part"));
     assert(Policy::IsImportedMaterialName("!mmdhl_soft_v1_abcdef_2"));
@@ -88,17 +103,58 @@ int main(int argc, char** argv) {
     {std::ofstream f(staging);f<<"generated 1";}
     assert(USDA::PublishStagedFile(staging.u8string(),target.u8string()));
     {std::ofstream f(staging);f<<"generated 2";}
-    assert(USDA::PublishStagedFile(staging.u8string(),target.u8string()));
-    {std::ofstream f(target);f<<"user later edit";}
+    PublishAfterRestart(staging, target); // Separate process has no ownership memory.
+    const auto backupCount = [&]() {
+        size_t count = 0;
+        for (const auto& entry : std::filesystem::directory_iterator(target.parent_path()))
+            if (entry.path().extension() == ".bak") ++count;
+        return count;
+    };
+    assert(backupCount() == 1); // Only the foreign original, never our prior session's output.
+    {std::ofstream f(target);f<<"edited same";} // Same byte count as "generated 2"; the digest must differ.
     {std::ofstream f(staging);f<<"generated 3";}
     assert(USDA::PublishStagedFile(staging.u8string(),target.u8string()));
     size_t originals=0,edits=0;
     for(const auto& entry:std::filesystem::directory_iterator(root/"~gmod_topbr")) {
         if(entry.path().extension()!=".bak")continue;
         std::ifstream f(entry.path());std::string text((std::istreambuf_iterator<char>(f)),{});
-        originals+=text=="user original";edits+=text=="user later edit";
+        originals+=text=="user original";edits+=text=="edited same";
     }
     assert(originals==1 && edits==1);
+    const std::filesystem::path stamp(target.wstring() + L".last-published");
+    // Missing, truncated/garbage and stale records all fail closed, even when the
+    // current process has already published this target. Existing backups remain.
+    for (int damage = 0; damage < 3; ++damage) {
+        if (damage == 0) std::filesystem::remove(stamp);
+        else { std::ofstream f(stamp); f << (damage == 1 ? "TOPBR_USD_PUBLICATION 1" : "TOPBR_USD_PUBLICATION 1 11 0000000000000000\n"); }
+        const auto before = backupCount();
+        { std::ofstream f(staging); f << "after damaged record " << damage; }
+        PublishAfterRestart(staging, target);
+        assert(backupCount() == before + 1);
+        assert(std::filesystem::exists(stamp) && !std::filesystem::exists(stamp.wstring() + L".tmp"));
+    }
+    // Failed USD replacement cannot advance ownership. A failed sidecar replacement
+    // cannot claim the newly published bytes; the next publication preserves them.
+    const auto read = [](const std::filesystem::path& path) {
+        std::ifstream f(path, std::ios::binary); return std::string(std::istreambuf_iterator<char>(f), {});
+    };
+    const auto ownedStamp = read(stamp), ownedBytes = read(target);
+    HANDLE locked = CreateFileW(target.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    assert(locked != INVALID_HANDLE_VALUE);
+    { std::ofstream f(staging); f << "blocked USD"; }
+    assert(!USDA::PublishStagedFile(staging.u8string(), target.u8string()));
+    assert(read(stamp) == ownedStamp && read(target) == ownedBytes && !std::filesystem::exists(staging));
+    assert(CloseHandle(locked));
+    locked = CreateFileW(stamp.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    assert(locked != INVALID_HANDLE_VALUE);
+    { std::ofstream f(staging); f << "published with blocked sidecar"; }
+    assert(USDA::PublishStagedFile(staging.u8string(), target.u8string()));
+    assert(read(stamp) == ownedStamp && !std::filesystem::exists(stamp.wstring() + L".tmp"));
+    assert(CloseHandle(locked));
+    const auto before = backupCount();
+    { std::ofstream f(staging); f << "sidecar recovered"; }
+    PublishAfterRestart(staging, target);
+    assert(backupCount() == before + 1);
     TextureProcessor::ProcessedMaterialInfo darkEmission{};darkEmission.emissivePath="C:/fixture/textures/glow.dds";darkEmission.emissionIntensity=0;
     std::ostringstream shaderText;USDA::WriteOpaqueMaterial(shaderText,1,darkEmission,"C:/fixture/textures");
     assert(shaderText.str().find("inputs:emissive_intensity = 0")!=std::string::npos);

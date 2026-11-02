@@ -136,49 +136,78 @@ bool LoadExistingHashes(const std::string& materialsUsdaPath,
     return true;
 }
 
+namespace {
+bool ReadPublicationBytes(const std::filesystem::path& path, std::string& result, size_t limit) {
+    const DWORD attrs = GetFileAttributesW(path.c_str());
+    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) return false;
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    const auto size = file.tellg();
+    if (!file || size < 0 || uint64_t(size) > limit) return false;
+    result.resize(size_t(size)); file.seekg(0);
+    return bool(file.read(result.data(), std::streamsize(result.size())));
+}
+uint64_t PublicationDigest(const std::string& bytes) {
+    uint64_t hash = 14695981039346656037ull;
+    for (unsigned char c : bytes) { hash ^= c; hash *= 1099511628211ull; }
+    return hash;
+}
+std::string PublicationStamp(const std::string& bytes) {
+    char stamp[96];
+    snprintf(stamp, sizeof(stamp), "TOPBR_USD_PUBLICATION 1 %llu %016llX\n",
+        (unsigned long long)bytes.size(), (unsigned long long)PublicationDigest(bytes));
+    return stamp;
+}
+bool WritePublicationStamp(const std::filesystem::path& path, const std::string& bytes) {
+    const std::filesystem::path staged(path.wstring() + L".tmp");
+    for (const auto& candidate : {path, staged}) {
+        const DWORD attrs = GetFileAttributesW(candidate.c_str());
+        if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) return false;
+    }
+    HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return false;
+    DWORD count = 0;
+    bool written = WriteFile(file, bytes.data(), DWORD(bytes.size()), &count, nullptr) != 0 && count == bytes.size();
+    if (written) written = FlushFileBuffers(file) != 0;
+    if (!CloseHandle(file)) written = false;
+    if (written && MoveFileExW(staged.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) return true;
+    DeleteFileW(staged.c_str());
+    return false;
+}
+}
+
 bool PublishStagedFile(const std::string& stagingPath, const std::string& finalPath) {
-    // Only generated USD snapshots are mutable. Preserve pre-existing or subsequently
-    // edited text before replacing it; byte comparison distinguishes our own last write.
+    // Ownership is read from disk on every publication, including the first after a
+    // process restart. Missing/damaged/stale records never suppress preservation.
     static std::mutex ownershipMutex;
-    static std::unordered_map<std::string, std::string> lastPublished;
     std::lock_guard<std::mutex> lock(ownershipMutex);
+    const auto staging = std::filesystem::u8path(stagingPath), target = std::filesystem::u8path(finalPath);
+    const std::filesystem::path stampPath(target.wstring() + L".last-published");
+    const auto fail = [&]() { DeleteFileW(staging.c_str()); return false; };
     const bool usd = finalPath.size() >= 5 && finalPath.substr(finalPath.size()-5) == ".usda";
     std::string next;
     if (usd) {
-        auto read = [](const std::string& path, std::string& result) {
-            std::ifstream f(std::filesystem::u8path(path), std::ios::binary | std::ios::ate);
-            if (!f) return false;
-            const auto n=f.tellg();
-            if (n < 0 || n > 16*1024*1024) return false;
-            result.resize(size_t(n)); f.seekg(0);
-            return bool(f.read(result.data(), std::streamsize(result.size())));
-        };
-        if (!read(stagingPath, next)) return false;
-        if (GetFileAttributesW(std::filesystem::u8path(finalPath).c_str()) != INVALID_FILE_ATTRIBUTES) {
-            std::string previous;
-            if (!read(finalPath, previous)) return false;
-            const auto owned=lastPublished.find(finalPath);
-            if (previous != next && (owned == lastPublished.end() || previous != owned->second)) {
-                uint64_t hash=14695981039346656037ull;
-                for (unsigned char c:previous) { hash^=c; hash*=1099511628211ull; }
-                char suffix[64]; snprintf(suffix,sizeof(suffix),".before-r11-%016llX.bak",(unsigned long long)hash);
-                const auto backup=std::filesystem::u8path(finalPath+suffix);
-                const auto original=std::filesystem::u8path(finalPath);
-                if (!CopyFileW(original.c_str(),backup.c_str(),TRUE) &&
-                    !Policy::SameFile(original,backup)) return false;
+        if (!ReadPublicationBytes(staging, next, 16*1024*1024)) return fail();
+        if (GetFileAttributesW(target.c_str()) != INVALID_FILE_ATTRIBUTES) {
+            std::string previous, stamp;
+            if (!ReadPublicationBytes(target, previous, 16*1024*1024)) return fail();
+            if (!ReadPublicationBytes(stampPath, stamp, 128) || stamp != PublicationStamp(previous)) {
+                char suffix[64]; snprintf(suffix, sizeof(suffix), ".before-r11-%016llX.bak", (unsigned long long)PublicationDigest(previous));
+                const std::filesystem::path backup(target.wstring() + std::filesystem::u8path(suffix).wstring());
+                if (!CopyFileW(target.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(target, backup)) return fail();
                 // A concurrent edit must also be preserved before publication.
-                if (!Policy::SameFile(original,backup)) return false;
+                if (!Policy::SameFile(target, backup)) return fail();
             }
         }
     }
-    if (MoveFileExW(std::filesystem::u8path(stagingPath).c_str(), std::filesystem::u8path(finalPath).c_str(),
-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-        if (usd) lastPublished[finalPath]=std::move(next);
+    if (MoveFileExW(staging.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+        // Never claim bytes until their complete snapshot has been published. A failed
+        // stamp write leaves a stale/missing record, so the next call backs up safely.
+        if (usd && !WritePublicationStamp(stampPath, PublicationStamp(next)))
+            Warning("[USDA] Could not save publication record for %s; next publication may need a backup\n", finalPath.c_str());
         return true;
     }
     Warning("[USDA] Failed to publish %s (error %lu)\n", finalPath.c_str(), GetLastError());
-    std::remove(stagingPath.c_str());
-    return false;
+    return fail();
 }
 
 bool WriteModUSDAFile(const std::string& modDir) {

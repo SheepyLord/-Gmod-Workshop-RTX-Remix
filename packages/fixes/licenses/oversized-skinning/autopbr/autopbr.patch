@@ -1,9 +1,9 @@
 diff --git a/docs/TOPBR_R11.md b/docs/TOPBR_R11.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..b8e3133b4b400c06e3f03a78a70f2569a4fec2d4
+index 0000000000000000000000000000000000000000..b09827077036cb393793ac35102e5dd8bfd9d59d
 --- /dev/null
 +++ b/docs/TOPBR_R11.md
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,113 @@
 +# R11 ToPBR
 +
 +GPL-2.0. Phase 1 snapshots one live IMaterial per client frame and hands value-only jobs to the
@@ -96,6 +96,27 @@ index 0000000000000000000000000000000000000000..b8e3133b4b400c06e3f03a78a70f2569
 +record/generator versions, source refresh/rejection, switch-off and authored-hash exclusion. No SDK,
 +game, network or user character is needed. The native loader repository's Release suite builds and
 +runs this test from its GPL corresponding-source copy, as well as the Lua source-less queue harness.
++
++## R11-B second review
++
++Each worker invocation owns a bounded `GameRegistry::Session`. The first enabled job for a live
++texture identity resolves its present source or persistent record and saves the registry. Later
++materials with that identity reuse the result with their own live hashes, without source probing,
++conversion, DDS hashing or registry access. No-maps/rejected results also stay resolved. Clearing
++ToPBR stops the worker, so clear/restart starts a new session; persistent records/DDS remain.
++
++USD publication records the successfully published byte count and streaming FNV-1a digest in
++`<target>.last-published`, using a flushed/closed staging file and write-through atomic replacement
++after the USD replacement. Every publication reads that record afresh: an exact match needs no
++backup across process restarts. Missing, damaged or stale records and edited/foreign USD require
++the existing content-named backup first. No existing backup is removed. A failed USD publication
++cannot advance the record; a failed record write falls back to preservation on the next publication.
++These digests detect accidental changes, not adversarial modification.
++
++`game_registry_test.cpp` covers repeated identities with new live hashes and unavailable disk
++inputs, distinct identities, no-maps/rejection, disabled/invalid jobs and a new worker session.
++`to_pbr_test.cpp` republishes in separate child processes to verify restart ownership, same-size
++USD edits, missing/damaged/stale records and failed USD/sidecar replacement with staging cleanup.
 diff --git a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
 index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..a6b9d9b0e284f5822b2e5705c2098bce2971bdc5 100644
 --- a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
@@ -1418,10 +1439,10 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +}}}
 diff --git a/source/material_pipeline/to_pbr/game_registry.h b/source/material_pipeline/to_pbr/game_registry.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..b61ff883e5a428e022785aaa36cfaac058d6db5c
+index 0000000000000000000000000000000000000000..53e905deb1e9342ac5c987af26ddc0adeaa19e38
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_registry.h
-@@ -0,0 +1,244 @@
+@@ -0,0 +1,270 @@
 +// GPL-2.0. Worker-owned records for imported textures whose local source is unavailable.
 +#pragma once
 +#include "pbr_policy.h"
@@ -1501,6 +1522,32 @@ index 0000000000000000000000000000000000000000..b61ff883e5a428e022785aaa36cfaac0
 +    }
 +    return texture;
 +}
++// One instance per worker invocation. Cache successes and no-maps results by the
++// actual live texture identity, regardless of material/source metadata aliases.
++// All registry/converter I/O belongs inside resolve, so a hit does no disk work.
++class Session {
++public:
++    template<class Resolve>
++    std::optional<Record> ResolveOnce(const std::string& identity, const std::vector<uint64_t>& liveHashes,
++                                      bool enabled, Resolve resolve) {
++        if (!enabled || identity.empty() || Identity(identity) != identity ||
++            liveHashes.empty() || liveHashes.size() > MaxHashes) return {};
++        for (auto hash : liveHashes) if (!hash) return {};
++        auto found = resolved_.find(identity);
++        if (found == resolved_.end()) {
++            if (resolved_.size() >= MaxRecords) return {};
++            // Reserve no-maps before resolving: a rejected/throwing converter is
++            // also attempted at most once until clear/restart creates a new Session.
++            found = resolved_.emplace(identity, std::nullopt).first;
++            found->second = resolve();
++        }
++        auto result = found->second;
++        if (result) result->hashes = liveHashes; // Each material registers its own current hashes.
++        return result;
++    }
++private:
++    std::map<std::string, std::optional<Record>> resolved_;
++};
 +class Registry {
 +public:
 +    explicit Registry(fs::path output) : output_(std::move(output)), path_(output_.parent_path() / "game_materials.registry") {}
@@ -1729,7 +1776,7 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bfa095f5e1 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9fa5968a35 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
 @@ -4,6 +4,12 @@
@@ -2932,7 +2979,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
      if (!m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Not running
      }
-@@ -4833,183 +4703,143 @@ void TextureProcessor::StopWorkerThread() {
+@@ -4833,183 +4703,150 @@ void TextureProcessor::StopWorkerThread() {
  }
  
  void TextureProcessor::WorkerThreadFunc() {
@@ -2951,6 +2998,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
 -        // Get next material from queue, with a timeout so we can
 -        // flush USDA after a quiet period even if no new work arrives
 +    const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++    GameRegistry::Session gameSession; // ClearCache stops this worker; every restart starts fresh.
 +    const auto saveRegistry = [this]() {
 +        if (!m_gameRegistry->Save() && !m_gameRegistrySaveWarned) {
 +            m_gameRegistrySaveWarned = true;
@@ -3001,18 +3049,6 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
 -                    // No pending USDA data - block indefinitely until work arrives
 -                    m_queueCondition.wait(lock, [this] {
 -                        return !m_materialQueue.empty() || m_shutdownRequested.load(std::memory_order_relaxed);
--                    });
--                    
--                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
--                        break;
--                    }
--                }
--            }
--            
--            if (!m_materialQueue.empty()) {
--                materialName = m_materialQueue.front();
--                m_materialQueue.pop();
--                gotWork = true;
 +            m_queueCondition.wait_for(lock, std::chrono::milliseconds(500), [this] {
 +                return m_shutdownRequested.load() || !m_readyQueue.empty() || !m_gameQueue.empty() ||
 +                    (IsEnabled() && !m_materialQueue.empty() && m_metadataReady.size() < 2);
@@ -3036,6 +3072,59 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
 +                try { prepared->valid=ParseVMTFile(m_fileSystem,metadataName,prepared->vmt,m_debugOutput); }
 +                catch (const std::exception& e) { Warning("[MaterialPipeline::ToPBR] VMT rejected: %s (%s)\n",metadataName.c_str(),e.what()); }
 +                std::lock_guard<std::mutex> lock(m_queueMutex); m_metadataReady.push(std::move(prepared));
++            }
++        }
++        if (gotGame) {
++            m_backgroundProcessing.store(true);
++            try {
++                bool restored = false;
++                const auto record = gameSession.ResolveOnce(gameJob.identity, gameJob.hashes,
++                    m_gameEnabled.load(), [&]() {
++                    // Resolve each identity once per worker, including source probing,
++                    // DDS validation and registry saves. Later jobs only register live hashes.
++                    std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
++                    const bool sourceReadable = !gameJob.base.empty() && source.good();
++                    auto resolved = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
++                        true, sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
++                        auto output = GamePBR::Convert(gameJob.source, gameJob.base, m_outputDirectory,
++                            [this](const ConvertedTexture& t, const std::string& path) { return WriteTextureToDDS(t,path); },
++                            [this](ConvertedTexture& t) { ConvertNormalMapToOctahedral(t); });
++                        if (output.normal.empty() && output.roughness.empty()) return {};
++                        GameRegistry::Record result;
++                        result.identity = gameJob.identity; result.hashes = gameJob.hashes; result.generator = GamePBR::GeneratorVersion;
++                        if (!m_gameRegistry->Capture(result, {output.normal, output.roughness, output.metallic, output.emission})) return {};
++                        Msg("[MaterialPipeline::ToPBR] Imported game maps: %s normal=%d packed=%d emission=%d protected_pixels=%zu\n",
++                            gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
++                        return result;
+                     });
+-                    
+-                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
+-                        break;
+-                    }
++                    saveRegistry();
++                    restored = !sourceReadable;
++                    return resolved;
++                });
++                if (record) {
++                    ProcessedMaterialInfo info{};
++                    info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);
++                    info.roughnessPath = m_gameRegistry->TexturePath(record->textures[1]);
++                    info.metallicPath = m_gameRegistry->TexturePath(record->textures[2]);
++                    info.emissivePath = m_gameRegistry->TexturePath(record->textures[3]);
++                    info.roughnessConstant = record->roughness; info.metallicConstant = record->metallic; info.emissionIntensity = record->emission;
++                    RegisterProcessedMaterial(record->hashes, info);
++                    if (restored) Msg("[MaterialPipeline::ToPBR] Restored cached game maps: %s (%zu live hashes, generator=%u)\n",
++                        record->identity.c_str(), record->hashes.size(), record->generator);
+                 }
+-            }
+-            
+-            if (!m_materialQueue.empty()) {
+-                materialName = m_materialQueue.front();
+-                m_materialQueue.pop();
+-                gotWork = true;
++            } catch (const std::exception& e) {
++                Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
++                std::lock_guard<std::recursive_mutex> lock(m_mutex); ++m_stats.failedConversions;
              }
          }
 -        
@@ -3049,43 +3138,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
 -            std::lock_guard<std::mutex> lock(m_queueMutex);
 -            m_queuedMaterials.erase(materialName);
 -            continue;
-+        if (gotGame) {
-+            m_backgroundProcessing.store(true);
-+            try {
-+                // A present source always runs the current converter, whose keys
-+                // include input bytes and recipe. Only absent/unreadable PMX uses a record.
-+                std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
-+                const bool sourceReadable = !gameJob.base.empty() && source.good();
-+                const auto record = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
-+                    m_gameEnabled.load(), sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
-+                    auto output = GamePBR::Convert(gameJob.source, gameJob.base, m_outputDirectory,
-+                        [this](const ConvertedTexture& t, const std::string& path) { return WriteTextureToDDS(t,path); },
-+                        [this](ConvertedTexture& t) { ConvertNormalMapToOctahedral(t); });
-+                    if (output.normal.empty() && output.roughness.empty()) return {};
-+                    GameRegistry::Record result;
-+                    result.identity = gameJob.identity; result.hashes = gameJob.hashes; result.generator = GamePBR::GeneratorVersion;
-+                    if (!m_gameRegistry->Capture(result, {output.normal, output.roughness, output.metallic, output.emission})) return {};
-+                    Msg("[MaterialPipeline::ToPBR] Imported game maps: %s normal=%d packed=%d emission=%d protected_pixels=%zu\n",
-+                        gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
-+                    return result;
-+                });
-+                saveRegistry();
-+                if (record) {
-+                    ProcessedMaterialInfo info{};
-+                    info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);
-+                    info.roughnessPath = m_gameRegistry->TexturePath(record->textures[1]);
-+                    info.metallicPath = m_gameRegistry->TexturePath(record->textures[2]);
-+                    info.emissivePath = m_gameRegistry->TexturePath(record->textures[3]);
-+                    info.roughnessConstant = record->roughness; info.metallicConstant = record->metallic; info.emissionIntensity = record->emission;
-+                    RegisterProcessedMaterial(record->hashes, info);
-+                    if (!sourceReadable) Msg("[MaterialPipeline::ToPBR] Restored cached game maps: %s (%zu live hashes, generator=%u)\n",
-+                        record->identity.c_str(), record->hashes.size(), record->generator);
-+                }
-+            } catch (const std::exception& e) {
-+                Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
-+                std::lock_guard<std::recursive_mutex> lock(m_mutex); ++m_stats.failedConversions;
-+            }
-         }
+-        }
 -        
 -        // Process the material (outside of queue lock)
 -        m_backgroundProcessing.store(true, std::memory_order_relaxed);
@@ -3236,7 +3289,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
  int TextureProcessor::QueueMaterialsForProcessing() {
      if (!m_enabled.load(std::memory_order_relaxed)) {
          return 0;
-@@ -5049,6 +4879,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5049,6 +4886,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
          std::lock_guard<std::recursive_mutex> lock(m_mutex);
          for (size_t i = 0; i < cachedMaterials.size(); i++) {
              const std::string& matName = cachedMaterials[i];
@@ -3244,7 +3297,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
              if (MaterialFilter::IsNonSceneMaterialName(matName)) {
                  m_processedMaterials.insert(matName);
                  continue;
-@@ -5082,6 +4913,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5082,6 +4920,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
                  continue;
              }
              
@@ -3252,7 +3305,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
              m_materialQueue.push(matName);
              m_queuedMaterials.insert(matName);
              queuedCount++;
-@@ -5102,87 +4934,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5102,87 +4941,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
  
  size_t TextureProcessor::GetQueuedMaterialCount() const {
      std::lock_guard<std::mutex> lock(m_queueMutex);
@@ -3346,7 +3399,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
  } // namespace ToPBR
  } // namespace MaterialPipeline
  
-@@ -5190,6 +4955,23 @@ void TextureProcessor::AppendToUSDAAsync() {
+@@ -5190,6 +4962,23 @@ void TextureProcessor::AppendToUSDAAsync() {
  // Lua Bindings - Must be at global scope
  //=============================================================================
  
@@ -3370,7 +3423,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
  LUA_FUNCTION(ToPBR_Initialize) {
      // If already initialized (by C++ during RemixAPI init), return success
      if (MaterialPipeline::ToPBR::TextureProcessor::Instance().IsInitialized()) {
-@@ -5297,14 +5079,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
+@@ -5297,14 +5086,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
      bool enabled = LUA->GetBool(1);
      MaterialPipeline::ToPBR::TextureProcessor::Instance().SetMetallicGeneration(enabled);
      
@@ -3386,7 +3439,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
      return 0;
  }
  
-@@ -5382,6 +5157,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
+@@ -5382,6 +5164,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
      LUA->PushNumber(stats.failedConversions);
      LUA->SetField(-2, "failedConversions");
      
@@ -3395,7 +3448,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..4c6d219665219f34ea9e07a123d9a3bf
      return 1;
  }
  
-@@ -5789,6 +5566,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
+@@ -5789,6 +5573,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
      LUA->PushCFunction(ToPBR_Initialize);
      LUA->SetField(-2, "Initialize");
      
@@ -3556,7 +3609,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
      // Append materials to USDA file (called from worker thread)
      bool AppendMaterialsToUSDA();
 diff --git a/source/material_pipeline/to_pbr/usda.cpp b/source/material_pipeline/to_pbr/usda.cpp
-index ef9065617d76e2dc867310956ef65796b250c7a6..931e6759fa3d44175d71dcfae796fd8750291643 100644
+index ef9065617d76e2dc867310956ef65796b250c7a6..bc1ebacf2cef91696df2bb6b4cb256eeecbadadd 100644
 --- a/source/material_pipeline/to_pbr/usda.cpp
 +++ b/source/material_pipeline/to_pbr/usda.cpp
 @@ -13,6 +13,12 @@
@@ -3609,52 +3662,90 @@ index ef9065617d76e2dc867310956ef65796b250c7a6..931e6759fa3d44175d71dcfae796fd87
  }
  
  // =========================================================================
-@@ -146,8 +137,43 @@ bool LoadExistingHashes(const std::string& materialsUsdaPath,
+@@ -145,14 +136,78 @@ bool LoadExistingHashes(const std::string& materialsUsdaPath,
+     return true;
  }
  
++namespace {
++bool ReadPublicationBytes(const std::filesystem::path& path, std::string& result, size_t limit) {
++    const DWORD attrs = GetFileAttributesW(path.c_str());
++    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) return false;
++    std::ifstream file(path, std::ios::binary | std::ios::ate);
++    const auto size = file.tellg();
++    if (!file || size < 0 || uint64_t(size) > limit) return false;
++    result.resize(size_t(size)); file.seekg(0);
++    return bool(file.read(result.data(), std::streamsize(result.size())));
++}
++uint64_t PublicationDigest(const std::string& bytes) {
++    uint64_t hash = 14695981039346656037ull;
++    for (unsigned char c : bytes) { hash ^= c; hash *= 1099511628211ull; }
++    return hash;
++}
++std::string PublicationStamp(const std::string& bytes) {
++    char stamp[96];
++    snprintf(stamp, sizeof(stamp), "TOPBR_USD_PUBLICATION 1 %llu %016llX\n",
++        (unsigned long long)bytes.size(), (unsigned long long)PublicationDigest(bytes));
++    return stamp;
++}
++bool WritePublicationStamp(const std::filesystem::path& path, const std::string& bytes) {
++    const std::filesystem::path staged(path.wstring() + L".tmp");
++    for (const auto& candidate : {path, staged}) {
++        const DWORD attrs = GetFileAttributesW(candidate.c_str());
++        if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))) return false;
++    }
++    HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
++    if (file == INVALID_HANDLE_VALUE) return false;
++    DWORD count = 0;
++    bool written = WriteFile(file, bytes.data(), DWORD(bytes.size()), &count, nullptr) != 0 && count == bytes.size();
++    if (written) written = FlushFileBuffers(file) != 0;
++    if (!CloseHandle(file)) written = false;
++    if (written && MoveFileExW(staged.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) return true;
++    DeleteFileW(staged.c_str());
++    return false;
++}
++}
++
  bool PublishStagedFile(const std::string& stagingPath, const std::string& finalPath) {
 -    if (MoveFileExA(stagingPath.c_str(), finalPath.c_str(),
-+    // Only generated USD snapshots are mutable. Preserve pre-existing or subsequently
-+    // edited text before replacing it; byte comparison distinguishes our own last write.
+-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++    // Ownership is read from disk on every publication, including the first after a
++    // process restart. Missing/damaged/stale records never suppress preservation.
 +    static std::mutex ownershipMutex;
-+    static std::unordered_map<std::string, std::string> lastPublished;
 +    std::lock_guard<std::mutex> lock(ownershipMutex);
++    const auto staging = std::filesystem::u8path(stagingPath), target = std::filesystem::u8path(finalPath);
++    const std::filesystem::path stampPath(target.wstring() + L".last-published");
++    const auto fail = [&]() { DeleteFileW(staging.c_str()); return false; };
 +    const bool usd = finalPath.size() >= 5 && finalPath.substr(finalPath.size()-5) == ".usda";
 +    std::string next;
 +    if (usd) {
-+        auto read = [](const std::string& path, std::string& result) {
-+            std::ifstream f(std::filesystem::u8path(path), std::ios::binary | std::ios::ate);
-+            if (!f) return false;
-+            const auto n=f.tellg();
-+            if (n < 0 || n > 16*1024*1024) return false;
-+            result.resize(size_t(n)); f.seekg(0);
-+            return bool(f.read(result.data(), std::streamsize(result.size())));
-+        };
-+        if (!read(stagingPath, next)) return false;
-+        if (GetFileAttributesW(std::filesystem::u8path(finalPath).c_str()) != INVALID_FILE_ATTRIBUTES) {
-+            std::string previous;
-+            if (!read(finalPath, previous)) return false;
-+            const auto owned=lastPublished.find(finalPath);
-+            if (previous != next && (owned == lastPublished.end() || previous != owned->second)) {
-+                uint64_t hash=14695981039346656037ull;
-+                for (unsigned char c:previous) { hash^=c; hash*=1099511628211ull; }
-+                char suffix[64]; snprintf(suffix,sizeof(suffix),".before-r11-%016llX.bak",(unsigned long long)hash);
-+                const auto backup=std::filesystem::u8path(finalPath+suffix);
-+                const auto original=std::filesystem::u8path(finalPath);
-+                if (!CopyFileW(original.c_str(),backup.c_str(),TRUE) &&
-+                    !Policy::SameFile(original,backup)) return false;
++        if (!ReadPublicationBytes(staging, next, 16*1024*1024)) return fail();
++        if (GetFileAttributesW(target.c_str()) != INVALID_FILE_ATTRIBUTES) {
++            std::string previous, stamp;
++            if (!ReadPublicationBytes(target, previous, 16*1024*1024)) return fail();
++            if (!ReadPublicationBytes(stampPath, stamp, 128) || stamp != PublicationStamp(previous)) {
++                char suffix[64]; snprintf(suffix, sizeof(suffix), ".before-r11-%016llX.bak", (unsigned long long)PublicationDigest(previous));
++                const std::filesystem::path backup(target.wstring() + std::filesystem::u8path(suffix).wstring());
++                if (!CopyFileW(target.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(target, backup)) return fail();
 +                // A concurrent edit must also be preserved before publication.
-+                if (!Policy::SameFile(original,backup)) return false;
++                if (!Policy::SameFile(target, backup)) return fail();
 +            }
 +        }
 +    }
-+    if (MoveFileExW(std::filesystem::u8path(stagingPath).c_str(), std::filesystem::u8path(finalPath).c_str(),
-                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-+        if (usd) lastPublished[finalPath]=std::move(next);
++    if (MoveFileExW(staging.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++        // Never claim bytes until their complete snapshot has been published. A failed
++        // stamp write leaves a stale/missing record, so the next call backs up safely.
++        if (usd && !WritePublicationStamp(stampPath, PublicationStamp(next)))
++            Warning("[USDA] Could not save publication record for %s; next publication may need a backup\n", finalPath.c_str());
          return true;
      }
      Warning("[USDA] Failed to publish %s (error %lu)\n", finalPath.c_str(), GetLastError());
-@@ -354,7 +380,7 @@ void WriteOpaqueMaterial(std::ostream& stream,
+-    std::remove(stagingPath.c_str());
+-    return false;
++    return fail();
+ }
+ 
+ bool WriteModUSDAFile(const std::string& modDir) {
+@@ -354,7 +409,7 @@ void WriteOpaqueMaterial(std::ostream& stream,
          stream << "                asset inputs:emissive_mask_texture = @" << relPath << "@ (\n";
          stream << "                    colorSpace = \"srgb\"\n";
          stream << "                )\n";
@@ -3663,7 +3754,7 @@ index ef9065617d76e2dc867310956ef65796b250c7a6..931e6759fa3d44175d71dcfae796fd87
          stream << "                float inputs:emissive_intensity = " << emitIntensity << "\n";
      }
      
-@@ -376,10 +402,12 @@ static void WriteFreshUSDAContent(std::ostream& stream,
+@@ -376,10 +431,12 @@ static void WriteFreshUSDAContent(std::ostream& stream,
      stream << "    over \"Looks\"\n";
      stream << "    {\n";
      
@@ -3680,7 +3771,7 @@ index ef9065617d76e2dc867310956ef65796b250c7a6..931e6759fa3d44175d71dcfae796fd87
          if (info.isGlass) {
              WriteGlassMaterial(stream, hash, info, outputDirectory);
          } else {
-@@ -396,157 +424,12 @@ bool WriteMaterialsUSDAFile(const std::string& modDir,
+@@ -396,157 +453,12 @@ bool WriteMaterialsUSDAFile(const std::string& modDir,
                              const std::unordered_map<uint64_t, TextureProcessor::ProcessedMaterialInfo>& materialInfo,
                              bool debugOutput,
                              const std::string& overridePath) {
@@ -3844,6 +3935,19 @@ index ef9065617d76e2dc867310956ef65796b250c7a6..931e6759fa3d44175d71dcfae796fd87
  }
  
  } // namespace USDA
+diff --git a/source/material_pipeline/to_pbr/usda.h b/source/material_pipeline/to_pbr/usda.h
+index ecc69e9d49e7c3ed1ba9fe54d2989b4f12bb997f..f4f4c57f8121b59d5f9bee0a0c86fdcce5e07375 100644
+--- a/source/material_pipeline/to_pbr/usda.h
++++ b/source/material_pipeline/to_pbr/usda.h
+@@ -45,6 +45,8 @@ bool WriteModUSDAFile(const std::string& modDir);
+ 
+ // Atomically replace finalPath with the finished stagingPath, so Remix's file watcher
+ // never sees a missing or partial layer. The staging file is removed on failure.
++// A durable .last-published size/digest sidecar recognizes our output after restart;
++// foreign/edited bytes or missing/damaged records require a preserved backup first.
+ // @return true on success
+ bool PublishStagedFile(const std::string& stagingPath, const std::string& finalPath);
+ 
 diff --git a/source/material_pipeline/to_pbr/vtf.cpp b/source/material_pipeline/to_pbr/vtf.cpp
 index ac2e3e036c763d40d87cd5cb07375604fa04d7a7..2bf94f3584e2b6e92080b5d1255aba38af679b89 100644
 --- a/source/material_pipeline/to_pbr/vtf.cpp
@@ -3990,10 +4094,10 @@ index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc634666817
 +}
 diff --git a/tests/game_registry_test.cpp b/tests/game_registry_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..2aed106c4ba827457a71eaf115c9519bd66a7f89
+index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e58a00f5a
 --- /dev/null
 +++ b/tests/game_registry_test.cpp
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,246 @@
 +// GPL-2.0. Production persistent game-map registry and publication-selection regressions.
 +#include <cassert>
 +#include <iostream>
@@ -4015,9 +4119,68 @@ index 0000000000000000000000000000000000000000..2aed106c4ba827457a71eaf115c9519b
 +    std::ifstream file(path, std::ios::binary);
 +    return std::string(std::istreambuf_iterator<char>(file), {});
 +}
++static void SessionCases(const fs::path& output) {
++    fs::create_directories(output);
++    const auto texture = output / "session.dds";
++    DDS(texture);
++    GameRegistry::Registry registry(output);
++    assert(registry.Load());
++    GameRegistry::Session session;
++    const std::string identity = "mmd/t/0123456789abcdef", other = "mmd/t/1123456789abcdef";
++    int resolutions = 0, conversions = 0, saves = 0;
++    auto resolve = [&](const std::string& key, bool maps) {
++        ++resolutions;
++        auto result = registry.Resolve(key, {0x123}, true, true, [&]() -> std::optional<GameRegistry::Record> {
++            ++conversions;
++            if (!maps) return {};
++            GameRegistry::Record record;
++            record.identity = key; record.hashes = {0x123}; record.generator = 5;
++            assert(registry.Capture(record, {texture.u8string(), {}, {}, {}}));
++            return record;
++        });
++        ++saves; assert(registry.Save());
++        return result;
++    };
++    auto unexpected = []() -> std::optional<GameRegistry::Record> { assert(false); return {}; };
++    assert(!session.ResolveOnce(identity, {0x123}, false, unexpected));
++    assert(!session.ResolveOnce(identity, {}, true, unexpected));
++    assert(!session.ResolveOnce(identity, {0}, true, unexpected));
++    assert(!session.ResolveOnce("not an identity", {0x123}, true, unexpected));
++    auto first = session.ResolveOnce(identity, {0x123}, true, [&]() { return resolve(identity, true); });
++    assert(first && resolutions == 1 && conversions == 1 && saves == 1);
++    // Material/source aliases use the same live identity. Remove both disk inputs:
++    // a hit still succeeds without converting, inspecting/hashing DDS or registry I/O.
++    fs::rename(texture, output / "hidden.dds");
++    fs::rename(registry.Path(), registry.Path().wstring() + L".hidden");
++    auto shared = session.ResolveOnce(identity, {0x456, 0x789}, true, unexpected);
++    assert(shared && shared->hashes == (std::vector<uint64_t>{0x456, 0x789}));
++    assert(shared->textures[0].digest == first->textures[0].digest);
++    assert(resolutions == 1 && conversions == 1 && saves == 1);
++    fs::rename(output / "hidden.dds", texture);
++    fs::rename(registry.Path().wstring() + L".hidden", registry.Path());
++    assert(session.ResolveOnce(other, {0x999}, true, [&]() { return resolve(other, true); }));
++    assert(resolutions == 2 && conversions == 2 && saves == 2);
++    const std::string noMaps = "mmd/t/2123456789abcdef";
++    assert(!session.ResolveOnce(noMaps, {0x123}, true, [&]() { return resolve(noMaps, false); }));
++    assert(!session.ResolveOnce(noMaps, {0x456}, true, unexpected));
++    assert(resolutions == 3 && conversions == 3 && saves == 3);
++    // Source rejection also remains no-maps after an exception.
++    const std::string rejected = "mmd/t/3123456789abcdef";
++    bool threw = false;
++    try { session.ResolveOnce(rejected, {0x123}, true, []() -> std::optional<GameRegistry::Record> { throw std::runtime_error("rejected"); }); }
++    catch (const std::runtime_error&) { threw = true; }
++    assert(threw && !session.ResolveOnce(rejected, {0x456}, true, unexpected));
++    // ClearCache stops the production worker. A new worker-local Session resolves
++    // both a previously successful identity and a no-maps identity afresh.
++    GameRegistry::Session restarted;
++    assert(restarted.ResolveOnce(identity, {0xaaa}, true, [&]() { return resolve(identity, true); }));
++    assert(!restarted.ResolveOnce(noMaps, {0xbbb}, true, [&]() { return resolve(noMaps, false); }));
++    assert(resolutions == 5 && conversions == 5 && saves == 5);
++}
 +int main(int argc, char** argv) {
 +    assert(argc == 2);
 +    const fs::path output = fs::u8path(argv[1]) / "textures";
++    SessionCases(output.parent_path() / "session" / "textures");
 +    fs::create_directories(output);
 +    const std::string identity = "mmd/t/0123456789abcdef";
 +    assert(GameRegistry::Identity("MMD\\T\\0123456789ABCDEF") == identity);
@@ -4179,7 +4342,7 @@ index 0000000000000000000000000000000000000000..2aed106c4ba827457a71eaf115c9519b
 +    assert(FallbackGuard::Select(materials, true, false, guard).count(0x456) == 1);
 +    guard.complete = false;
 +    assert(FallbackGuard::Select(materials, true, true, guard).empty());
-+    std::cout << "PASS game registry: durable atomic roundtrip/failure, damaged-file backup/recovery, read-only versions/size, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
++    std::cout << "PASS game registry: once-per-worker identity resolution (including no-maps/restart), durable atomic roundtrip/failure, damaged-file backup/recovery, read-only versions/size, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
 +}
 diff --git a/tests/make_game_pbr_fixtures.py b/tests/make_game_pbr_fixtures.py
 new file mode 100644
@@ -4222,10 +4385,10 @@ index 0000000000000000000000000000000000000000..4fc2637a53d0912e2c9834191e264ebc
 +Exit 0 on success, nonzero on filesystem/encoding failure. No game or network access.
 diff --git a/tests/to_pbr_test.cpp b/tests/to_pbr_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..264247a5ef46bdb573ba382576fa83b65c24c71e
+index 0000000000000000000000000000000000000000..499fce52cdc4a5e35a1a108c0245296fd35a1621
 --- /dev/null
 +++ b/tests/to_pbr_test.cpp
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,183 @@
 +﻿// GPL-2.0. Production helper regression.
 +#include <cassert>
 +#include <cstring>
@@ -4237,7 +4400,22 @@ index 0000000000000000000000000000000000000000..264247a5ef46bdb573ba382576fa83b6
 +#include "../source/material_pipeline/to_pbr/pbr_policy.h"
 +#include "../source/material_pipeline/to_pbr/fallback_guard.h"
 +using namespace MaterialPipeline::ToPBR;
++static void PublishAfterRestart(const std::filesystem::path& staged, const std::filesystem::path& target) {
++    wchar_t executable[32768];
++    const DWORD count = GetModuleFileNameW(nullptr, executable, DWORD(std::size(executable)));
++    assert(count && count < std::size(executable));
++    std::wstring command = L"\"" + std::wstring(executable) + L"\" --publish \"" + staged.wstring() + L"\" \"" + target.wstring() + L"\"";
++    STARTUPINFOW startup{}; startup.cb = sizeof(startup);
++    PROCESS_INFORMATION process{};
++    assert(CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process));
++    assert(WaitForSingleObject(process.hProcess, 10000) == WAIT_OBJECT_0);
++    DWORD exit = 1;
++    assert(GetExitCodeProcess(process.hProcess, &exit) && exit == 0);
++    assert(CloseHandle(process.hThread) && CloseHandle(process.hProcess));
++}
 +int main(int argc, char** argv) {
++    if (argc == 4 && std::string(argv[1]) == "--publish")
++        return USDA::PublishStagedFile(argv[2], argv[3]) ? 0 : 1;
 +    assert(argc == 2);
 +    assert(Policy::IsImportedMaterialName("mmd/0123456789abcdef/part"));
 +    assert(Policy::IsImportedMaterialName("!mmdhl_soft_v1_abcdef_2"));
@@ -4316,17 +4494,58 @@ index 0000000000000000000000000000000000000000..264247a5ef46bdb573ba382576fa83b6
 +    {std::ofstream f(staging);f<<"generated 1";}
 +    assert(USDA::PublishStagedFile(staging.u8string(),target.u8string()));
 +    {std::ofstream f(staging);f<<"generated 2";}
-+    assert(USDA::PublishStagedFile(staging.u8string(),target.u8string()));
-+    {std::ofstream f(target);f<<"user later edit";}
++    PublishAfterRestart(staging, target); // Separate process has no ownership memory.
++    const auto backupCount = [&]() {
++        size_t count = 0;
++        for (const auto& entry : std::filesystem::directory_iterator(target.parent_path()))
++            if (entry.path().extension() == ".bak") ++count;
++        return count;
++    };
++    assert(backupCount() == 1); // Only the foreign original, never our prior session's output.
++    {std::ofstream f(target);f<<"edited same";} // Same byte count as "generated 2"; the digest must differ.
 +    {std::ofstream f(staging);f<<"generated 3";}
 +    assert(USDA::PublishStagedFile(staging.u8string(),target.u8string()));
 +    size_t originals=0,edits=0;
 +    for(const auto& entry:std::filesystem::directory_iterator(root/"~gmod_topbr")) {
 +        if(entry.path().extension()!=".bak")continue;
 +        std::ifstream f(entry.path());std::string text((std::istreambuf_iterator<char>(f)),{});
-+        originals+=text=="user original";edits+=text=="user later edit";
++        originals+=text=="user original";edits+=text=="edited same";
 +    }
 +    assert(originals==1 && edits==1);
++    const std::filesystem::path stamp(target.wstring() + L".last-published");
++    // Missing, truncated/garbage and stale records all fail closed, even when the
++    // current process has already published this target. Existing backups remain.
++    for (int damage = 0; damage < 3; ++damage) {
++        if (damage == 0) std::filesystem::remove(stamp);
++        else { std::ofstream f(stamp); f << (damage == 1 ? "TOPBR_USD_PUBLICATION 1" : "TOPBR_USD_PUBLICATION 1 11 0000000000000000\n"); }
++        const auto before = backupCount();
++        { std::ofstream f(staging); f << "after damaged record " << damage; }
++        PublishAfterRestart(staging, target);
++        assert(backupCount() == before + 1);
++        assert(std::filesystem::exists(stamp) && !std::filesystem::exists(stamp.wstring() + L".tmp"));
++    }
++    // Failed USD replacement cannot advance ownership. A failed sidecar replacement
++    // cannot claim the newly published bytes; the next publication preserves them.
++    const auto read = [](const std::filesystem::path& path) {
++        std::ifstream f(path, std::ios::binary); return std::string(std::istreambuf_iterator<char>(f), {});
++    };
++    const auto ownedStamp = read(stamp), ownedBytes = read(target);
++    HANDLE locked = CreateFileW(target.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++    assert(locked != INVALID_HANDLE_VALUE);
++    { std::ofstream f(staging); f << "blocked USD"; }
++    assert(!USDA::PublishStagedFile(staging.u8string(), target.u8string()));
++    assert(read(stamp) == ownedStamp && read(target) == ownedBytes && !std::filesystem::exists(staging));
++    assert(CloseHandle(locked));
++    locked = CreateFileW(stamp.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++    assert(locked != INVALID_HANDLE_VALUE);
++    { std::ofstream f(staging); f << "published with blocked sidecar"; }
++    assert(USDA::PublishStagedFile(staging.u8string(), target.u8string()));
++    assert(read(stamp) == ownedStamp && !std::filesystem::exists(stamp.wstring() + L".tmp"));
++    assert(CloseHandle(locked));
++    const auto before = backupCount();
++    { std::ofstream f(staging); f << "sidecar recovered"; }
++    PublishAfterRestart(staging, target);
++    assert(backupCount() == before + 1);
 +    TextureProcessor::ProcessedMaterialInfo darkEmission{};darkEmission.emissivePath="C:/fixture/textures/glow.dds";darkEmission.emissionIntensity=0;
 +    std::ostringstream shaderText;USDA::WriteOpaqueMaterial(shaderText,1,darkEmission,"C:/fixture/textures");
 +    assert(shaderText.str().find("inputs:emissive_intensity = 0")!=std::string::npos);

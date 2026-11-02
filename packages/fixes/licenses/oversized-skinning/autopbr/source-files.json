@@ -1,8 +1,8 @@
 {
   "base": "7094baf6edf6797fd5c3f0b58ca668f9307b4906",
-  "commit": "cc77daa7a0c4c0d4196637165b0a6662bad145b6",
+  "commit": "633fd5e000aca862a8ae58b5c722d678ac4fa053",
   "files": {
-    "docs/TOPBR_R11.md": "b3e64d3b50559442d43da55a0497bdc0600365ef4be06fb08035d8fbe6093feb",
+    "docs/TOPBR_R11.md": "67ffc195687e508bfc9bfe7c8e3f8509b41454b3d9200af74b28c39005ff452e",
     "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua": "d8080dcf1d0788a9270c13e345c3f060a7314588b33b6990b20f316acc2c9f21",
     "source/material_pipeline/to_pbr/fallback_guard.h": "e0f000b3f6059edf126a39189ab5d37fb3f11a12951b7e85b6d01a66f8b5676b",
     "source/material_pipeline/to_pbr/format_bftpseudopbr.cpp": "b9b4e7984b5a22fec12ce3a51c9747cb28307e909806a7c62d6c31586ab1c60e",
@@ -13,17 +13,18 @@
     "source/material_pipeline/to_pbr/formats.cpp": "9da72bb5cb39ba6eac0f1ac3b2d7a2b38436566498ca2712a5d67abcffedb29e",
     "source/material_pipeline/to_pbr/formats.h": "7c6c8e159c511df8d61a9514b93610fd12e515bd87e4c088c1891e9818bf6568",
     "source/material_pipeline/to_pbr/game_pbr.h": "efaa674f652732c4b30efcec8785ca8d0cf58d58fa6c9042e5e591a1bc479475",
-    "source/material_pipeline/to_pbr/game_registry.h": "82d8ee1ed27ea9770a772d30f77bde3acf883367510ad8185f66a17ac0f5cafe",
+    "source/material_pipeline/to_pbr/game_registry.h": "f3236e5f8a00afa0121d558e20d98e25ce951dc04715fc9599913a9949b69dd8",
     "source/material_pipeline/to_pbr/pbr_policy.h": "fe5d65abc7ffbcf13fd25a7af1a22db8dcecc7578388186f9da260a001fe924b",
-    "source/material_pipeline/to_pbr/to_pbr.cpp": "597f9df64a75c92172dd16492039b175cd2f5bf51e4b5e2bca2433ddd5cdbf0a",
+    "source/material_pipeline/to_pbr/to_pbr.cpp": "0daf95010f5a83b585229a50f5f2891d7032efaee23e42c3667d6aab365d2f23",
     "source/material_pipeline/to_pbr/to_pbr.h": "2534334a455c801b59acfae000d3291f73102503396853834e569435f9cf0c5f",
-    "source/material_pipeline/to_pbr/usda.cpp": "2fe697afac17169b9eebb21ff2b6725057febcc14ee0145635a4b0fc197b0ded",
+    "source/material_pipeline/to_pbr/usda.cpp": "ffa619634e638b29ad897531f2c62c17aaffd4c660c24ae99c8350906dbf3983",
+    "source/material_pipeline/to_pbr/usda.h": "4c08600fbb66ae641b4afc102b98a13b133c229688943bd7e48c02303b11b1cf",
     "source/material_pipeline/to_pbr/vtf.cpp": "33c46b449b3b27a4ed4649b380ac165a86d995b7d757f1dd94c132d312e6eb48",
     "tests/game_pbr_test.cpp": "a85572804fb573c09b968e7f2818026c7d98a54bccf784f8033ced0873541944",
-    "tests/game_registry_test.cpp": "1290de68fe20f43ed55b0bce3cfe0b01e5c48f65a41d13e168ec2be81d62a900",
+    "tests/game_registry_test.cpp": "3dc60c6d57a290b4fcdbed570ee95c66b27b71946081a305eb313051fc0116e2",
     "tests/make_game_pbr_fixtures.py": "ec2033f458e8f5be539127425ed99c7afcd33c7d050b74cf6abfaceacb55ff2c",
     "tests/make_game_pbr_fixtures.py.md": "559b5e78f7c1dfb7996c33de1d00d1238406a2a597a068be1aaecf009a53ed37",
-    "tests/to_pbr_test.cpp": "82ff159fe8f1fced55902b2580f165e027f1ab736185774c85577802e5a02b3e"
+    "tests/to_pbr_test.cpp": "5c4763df3e06705ba6f57f48591271e5f17992b6cf95d6f61b9f2c4d62f2b4a0"
   },
   "build": {
     "source\\material_pipeline\\to_pbr\\fallback_guard.h": "e0f000b3f6059edf126a39189ab5d37fb3f11a12951b7e85b6d01a66f8b5676b",
@@ -35,17 +36,17 @@
     "source\\material_pipeline\\to_pbr\\formats.cpp": "9da72bb5cb39ba6eac0f1ac3b2d7a2b38436566498ca2712a5d67abcffedb29e",
     "source\\material_pipeline\\to_pbr\\formats.h": "7c6c8e159c511df8d61a9514b93610fd12e515bd87e4c088c1891e9818bf6568",
     "source\\material_pipeline\\to_pbr\\game_pbr.h": "efaa674f652732c4b30efcec8785ca8d0cf58d58fa6c9042e5e591a1bc479475",
-    "source\\material_pipeline\\to_pbr\\game_registry.h": "82d8ee1ed27ea9770a772d30f77bde3acf883367510ad8185f66a17ac0f5cafe",
+    "source\\material_pipeline\\to_pbr\\game_registry.h": "f3236e5f8a00afa0121d558e20d98e25ce951dc04715fc9599913a9949b69dd8",
     "source\\material_pipeline\\to_pbr\\pbr_policy.h": "fe5d65abc7ffbcf13fd25a7af1a22db8dcecc7578388186f9da260a001fe924b",
-    "source\\material_pipeline\\to_pbr\\to_pbr.cpp": "597f9df64a75c92172dd16492039b175cd2f5bf51e4b5e2bca2433ddd5cdbf0a",
+    "source\\material_pipeline\\to_pbr\\to_pbr.cpp": "0daf95010f5a83b585229a50f5f2891d7032efaee23e42c3667d6aab365d2f23",
     "source\\material_pipeline\\to_pbr\\to_pbr.h": "2534334a455c801b59acfae000d3291f73102503396853834e569435f9cf0c5f",
-    "source\\material_pipeline\\to_pbr\\usda.cpp": "2fe697afac17169b9eebb21ff2b6725057febcc14ee0145635a4b0fc197b0ded",
-    "source\\material_pipeline\\to_pbr\\usda.h": "5437ddbcb8a078bca9a035e0c20feaa70504f6076afe582656c7e2f9ea9986cf",
+    "source\\material_pipeline\\to_pbr\\usda.cpp": "ffa619634e638b29ad897531f2c62c17aaffd4c660c24ae99c8350906dbf3983",
+    "source\\material_pipeline\\to_pbr\\usda.h": "4c08600fbb66ae641b4afc102b98a13b133c229688943bd7e48c02303b11b1cf",
     "source\\material_pipeline\\to_pbr\\vtf.cpp": "33c46b449b3b27a4ed4649b380ac165a86d995b7d757f1dd94c132d312e6eb48",
     "source\\material_pipeline\\to_pbr\\vtf.h": "47eaef14c15747d25fefafc3aa21468f2fb63be628fa6c1c65d73d629d014827",
     "dll": {
-      "bytes": 5147136,
-      "sha256": "c5ae890e0daf93adf2bec6b8d8e88980510d110bce056ccd874c35947586b2d1"
+      "bytes": 5167104,
+      "sha256": "526a6584d4ab68e657b7f1cead25db88beb6cbfa568ad31f92028ddc3345f792"
     }
   },
   "source_copy_line_endings": "working-tree bytes; reconstruction compares after CRLF normalization"

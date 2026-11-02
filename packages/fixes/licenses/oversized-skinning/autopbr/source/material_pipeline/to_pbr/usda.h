@@ -1,0 +1,115 @@
+// =========================================================================
+// usda.h - USD/USDA file generation
+// =========================================================================
+// Functions for generating RTX Remix mod.usda and materials.usda files
+// =========================================================================
+
+#pragma once
+
+#ifdef _WIN64
+
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <cstdint>
+#include <ostream>
+
+// Include full header for TextureProcessor::ProcessedMaterialInfo type
+#include "to_pbr.h"
+
+namespace MaterialPipeline {
+namespace ToPBR {
+namespace USDA {
+
+// =========================================================================
+// USDA Generation
+// =========================================================================
+
+// Check if there are new materials to write to the USDA file
+// @param materialsUsdaPath - Path to materials.usda
+// @param materialInfo - Map of processed materials
+// @param existingHashes - Output: set of hashes already in the file
+// @param newMaterialCount - Output: count of new materials to add
+// @param debugOutput - Whether to output debug messages
+// @return true if file was read successfully (or didn't exist)
+bool CheckExistingMaterials(const std::string& materialsUsdaPath,
+                            const std::unordered_map<uint64_t, TextureProcessor::ProcessedMaterialInfo>& materialInfo,
+                            std::unordered_set<uint64_t>& existingHashes,
+                            int& newMaterialCount,
+                            bool debugOutput = false);
+
+// Write the main mod.usda file (references materials.usda)
+// @param modDir - Directory to write to
+// @return true on success
+bool WriteModUSDAFile(const std::string& modDir);
+
+// Atomically replace finalPath with the finished stagingPath, so Remix's file watcher
+// never sees a missing or partial layer. The staging file is removed on failure.
+// A durable .last-published size/digest sidecar recognizes our output after restart;
+// foreign/edited bytes or missing/damaged records require a preserved backup first.
+// @return true on success
+bool PublishStagedFile(const std::string& stagingPath, const std::string& finalPath);
+
+// Write material definitions to materials.usda
+// @param modDir - Directory to write to
+// @param outputDirectory - Base output directory for relative path calculation
+// @param materialInfo - Map of processed materials
+// @param debugOutput - Whether to output debug messages
+// @param overridePath - If non-empty, write to this path instead of modDir/materials.usda
+//                       (used for staging file writes to avoid triggering Remix reloads)
+// @return true on success
+bool WriteMaterialsUSDAFile(const std::string& modDir,
+                            const std::string& outputDirectory,
+                            const std::unordered_map<uint64_t, TextureProcessor::ProcessedMaterialInfo>& materialInfo,
+                            bool debugOutput = false,
+                            const std::string& overridePath = "");
+
+// Write a single glass material entry to the stream
+// @param stream - Output stream
+// @param hash - Material hash
+// @param info - Material info
+// @param outputDirectory - For relative path calculation
+void WriteGlassMaterial(std::ostream& stream,
+                        uint64_t hash,
+                        const TextureProcessor::ProcessedMaterialInfo& info,
+                        const std::string& outputDirectory);
+
+// Write a single opaque material entry to the stream
+// @param stream - Output stream  
+// @param hash - Material hash
+// @param info - Material info
+// @param outputDirectory - For relative path calculation
+void WriteOpaqueMaterial(std::ostream& stream,
+                         uint64_t hash,
+                         const TextureProcessor::ProcessedMaterialInfo& info,
+                         const std::string& outputDirectory);
+
+// =========================================================================
+// Utility Functions
+// =========================================================================
+
+// Load existing material hashes from a materials.usda file
+// @param materialsUsdaPath - Path to materials.usda
+// @param existingHashes - Output: set of hashes found in the file
+// @param debugOutput - Whether to output debug messages
+// @return true if file was read successfully (false if file doesn't exist is OK)
+bool LoadExistingHashes(const std::string& materialsUsdaPath,
+                        std::unordered_set<uint64_t>& existingHashes,
+                        bool debugOutput = false);
+
+// Convert absolute path to relative path from mod directory
+// @param absolutePath - Full path to texture file
+// @param outputDir - Output directory for context
+// @return Relative path like "./textures/models_props_foo_type.dds"
+std::string GetRelativeTexturePath(const std::string& absolutePath, const std::string& outputDir);
+
+// Get mod directory from output directory (parent of textures folder)
+// @param outputDirectory - Output directory containing textures subfolder
+// @return Mod directory path
+std::string GetModDirectory(const std::string& outputDirectory);
+
+} // namespace USDA
+} // namespace ToPBR
+} // namespace MaterialPipeline
+
+#endif // _WIN64

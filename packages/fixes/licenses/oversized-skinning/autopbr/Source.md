@@ -3,9 +3,10 @@
 The fixes [LICENSE](../../../LICENSE) applies. This layer builds on the shipped R8 native source
 `7094baf6edf6797fd5c3f0b58ca668f9307b4906`, reconstructed through the
 [preceding source record](../backrooms/Source.md). The local fixes branch `codex/r11-autopbr` ends at
-`cc77daa7a0c4c0d4196637165b0a6662bad145b6`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`;
+`633fd5e000aca862a8ae58b5c722d678ac4fa053`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`;
 `1679a99` moves VMT I/O off frame after profiling, and `6e33b90` adds R11-B's source-less game-map
 registry. `cc77daa` fixes damaged-registry recovery, durable saves and session-scoped save warnings.
+`633fd5e` resolves each live texture identity once per worker and persists USD publication ownership.
 Nothing was pushed.
 
 [autopbr.patch](autopbr.patch) is the complete change from that base. Complete changed files are
@@ -13,7 +14,7 @@ also included at their native-repository paths; [source-files.json](source-files
 SHA-256 values and the built source/DLL identity. Overlay them onto the exact base, or apply the patch.
 The tests generate synthetic fixtures; no user model or texture is distributed here.
 Copies retain the native working-tree bytes/line endings. Applying the canonical Git patch to the
-base reproduces all 22 changed files after CRLF normalization; build hashes record the raw source bytes.
+base reproduces all 23 changed files after CRLF normalization; build hashes record the raw source bytes.
 
 ## Behavior
 
@@ -43,6 +44,13 @@ An unsavable registry warns once per module session, including across worker res
 Record compatibility is independent of generator version. Cache clearing retains the registry/DDS
 and requeues live materials. See [ADR 0093](../../../../../docs/decisions/0093-cached-imported-game-materials.md).
 
+Each worker invocation now caches successful and no-maps resolutions by live texture identity.
+Later jobs register that result with their own current hashes without source probing, conversion,
+DDS hashing or registry access. A cache clear or worker restart starts a fresh session.
+USD publication keeps a flushed, atomically replaced `<target>.last-published` size/digest sidecar.
+An exact match recognizes our output across process restarts. Edited/foreign USD and damaged,
+missing or stale records still require the existing backup; no existing backup is deleted.
+
 **Runtime patch 0020 now supplies absolute precedence** ([ADR 0092](../../../../../docs/decisions/0092-generated-fallback-mods-rank-last.md)). The fixes also exclude every authored
 hash they can conservatively inspect and remove late conflicts, including Unicode-later mod names.
 Folder scanning alone cannot synchronize runtime swaps. See
@@ -69,8 +77,8 @@ From an x64 VS shell in the R11-B loader worktree:
 MSBuild.exe out/r11-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0
 ```
 
-The DLL is **5,147,136 bytes**, SHA-256
-`c5ae890e0daf93adf2bec6b8d8e88980510d110bce056ccd874c35947586b2d1`.
+The DLL is **5,167,104 bytes**, SHA-256
+`526a6584d4ab68e657b7f1cead25db88beb6cbfa568ad31f92028ddc3345f792`.
 The matching PDB remains beside it under the loader worktree's `out/r11-b/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
@@ -85,6 +93,10 @@ atomic persistence/failure, edit preservation, identity/current hashes, source r
 versions, missing/truncated/edited DDS, bounded malformed input, settings and authored exclusion.
 Review cases verify damaged-file backup/recovery and fresh reload/record/restore, preserved decimal
 other-version/oversized bytes, and staging cleanup after a Windows sharing violation at replacement.
+Second-review cases cover once-per-worker identity resolution, new live hashes, no-maps/rejection,
+distinct identities and new worker sessions. The USD regression republishes in separate processes,
+verifies same-size edited/foreign bytes and missing/damaged/stale sidecar fallback, and checks failed
+USD/sidecar writes and staging cleanup.
 The Lua harness also tests absent source/base metadata and clear/requeue. The existing production
 Source/VTF/USD and game-channel harnesses pass on the rebuilt source.
 

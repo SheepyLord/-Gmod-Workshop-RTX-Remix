@@ -90,3 +90,24 @@ replacement failure/staging cleanup, current identity/hash checks, missing/inval
 record/generator versions, source refresh/rejection, switch-off and authored-hash exclusion. No SDK,
 game, network or user character is needed. The native loader repository's Release suite builds and
 runs this test from its GPL corresponding-source copy, as well as the Lua source-less queue harness.
+
+## R11-B second review
+
+Each worker invocation owns a bounded `GameRegistry::Session`. The first enabled job for a live
+texture identity resolves its present source or persistent record and saves the registry. Later
+materials with that identity reuse the result with their own live hashes, without source probing,
+conversion, DDS hashing or registry access. No-maps/rejected results also stay resolved. Clearing
+ToPBR stops the worker, so clear/restart starts a new session; persistent records/DDS remain.
+
+USD publication records the successfully published byte count and streaming FNV-1a digest in
+`<target>.last-published`, using a flushed/closed staging file and write-through atomic replacement
+after the USD replacement. Every publication reads that record afresh: an exact match needs no
+backup across process restarts. Missing, damaged or stale records and edited/foreign USD require
+the existing content-named backup first. No existing backup is removed. A failed USD publication
+cannot advance the record; a failed record write falls back to preservation on the next publication.
+These digests detect accidental changes, not adversarial modification.
+
+`game_registry_test.cpp` covers repeated identities with new live hashes and unavailable disk
+inputs, distinct identities, no-maps/rejection, disabled/invalid jobs and a new worker session.
+`to_pbr_test.cpp` republishes in separate child processes to verify restart ownership, same-size
+USD edits, missing/damaged/stale records and failed USD/sidecar replacement with staging cleanup.
