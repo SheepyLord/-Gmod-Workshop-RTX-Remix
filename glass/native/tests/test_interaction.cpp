@@ -25,7 +25,7 @@ TEST_CASE("glass convex bisection preserves area thickness and minimum size over
       std::vector<Hull> next;
       for(const auto& p:leaves) {
         auto parts=split_polygon(p,4);
-        if(parts[0].empty())next.push_back(p);else for(auto& child:parts)next.push_back(std::move(child));
+        if(parts.empty())next.push_back(p);else for(auto& child:parts)next.push_back(std::move(child));
       }
       leaves=std::move(next);
     }
@@ -36,8 +36,8 @@ TEST_CASE("glass convex bisection preserves area thickness and minimum size over
     }
     CHECK(std::abs(area-expected)<expected*.00001);
   }
-  CHECK(split_polygon(outline_xy(fixture::box(4,4)),8)[0].empty());
-  CHECK(split_polygon(outline_xy(fixture::box(32,1)),4)[0].empty());
+  CHECK(split_polygon(outline_xy(fixture::box(4,4)),8).empty());
+  CHECK(split_polygon(outline_xy(fixture::box(32,1)),4).empty());
 }
 TEST_CASE("glass collision flags default to objects and ragdolls and filter each target independently") {
   World w(8,0);ready(w);w.set_interaction(true);
@@ -64,7 +64,7 @@ TEST_CASE("glass melee wakes old piles fractures large pieces and bounds a crowd
   REQUIRE(w.sleeping(large));REQUIRE(w.sleeping(leaf));
   CHECK(w.melee({-50,0,32},{50,0,32},400000,500,6)==1);
   auto events=w.take_damage();REQUIRE(events.size()==1);CHECK(events[0].id==large && events[0].kinds==Melee);
-  CHECK(w.split(large,8).size()==2);
+  CHECK(w.split(large,8,2).size()==2);
   CHECK(w.melee({-50,28,32},{50,28,32},400000,500,6)==1);
   CHECK(w.take_damage().empty());CHECK(!w.sleeping(leaf)); // minimum size still moves.
   w.clear();
@@ -253,13 +253,13 @@ TEST_CASE("glass falls blasts and bullets deliver bounded deduplicated damage ev
 TEST_CASE("glass split replaces exactly one body preserves area and motion and respects capacity") {
   World w(3,0);ready(w);w.set_interaction(true);
   const auto id=w.spawn(fixture::box(16,12,.5f),{0,0,32},{13,27,39},{300,0,0},{0,0,180});
-  const auto children=w.split(id,4);REQUIRE(children.size()==2);CHECK(w.stats().live==2);CHECK(!w.remove(id));
+  const auto children=w.split(id,4,2);REQUIRE(children.size()==2);CHECK(w.stats().live==2);CHECK(!w.remove(id));
   double area=0;for(const auto& c:children) {
     CHECK(c.id!=id);CHECK(c.thickness>.999f && c.thickness<1.001f);CHECK(c.velocity.length()>200);
     CHECK(std::abs(c.spin.z-180)<.001f);area+=polygon_area(c.polygon);
   }
   CHECK(std::abs(area-32*24)<.05);
-  const auto second=w.split(children[0].id,4);CHECK(second.size()==2);CHECK(w.stats().live==3);
+  const auto second=w.split(children[0].id,4,2);CHECK(second.size()==2);CHECK(w.stats().live==3);
   CHECK(w.split(children[1].id,4).empty());CHECK(w.stats().live==3);
   w.remove(children[1].id);const auto leaf=w.spawn(fixture::box(4,4,.5f),{0,0,40},{},{},{});
   CHECK(w.split(leaf,8).empty());CHECK(w.stats().live==3);
@@ -320,7 +320,7 @@ TEST_CASE("glass interaction benchmark bounds scene capture raycasts and dormant
   World w(8,0);ready(w);std::vector<double> times;double total=0;
   for(unsigned i=0;i<120;++i) {
     const auto id=w.spawn(fixture::box(16,12,.5f),{0,0,32},{},{400,0,0},{0,0,180},8);
-    const auto begin=std::chrono::steady_clock::now();CHECK(w.can_split(id,8));const auto parts=w.split(id,8);
+    const auto begin=std::chrono::steady_clock::now();CHECK(w.can_split(id,8));const auto parts=w.split(id,8,2);
     const auto elapsed=ms(begin);total+=elapsed;times.push_back(elapsed);
     REQUIRE(parts.size()==2);for(const auto& child:parts)w.remove(child.id);
   }

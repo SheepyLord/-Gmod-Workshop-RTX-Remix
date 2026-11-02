@@ -131,7 +131,7 @@ TEST_CASE("glass binding validates scene ray damage and split APIs with balanced
   CHECK(m.call("Ray",{vector(-100,0,32),vector(100,0,32),num(180000),num(600)})[0].n==id.n);
   CHECK(m.call("ReadDamage")[0].type==Type::Table);CHECK(m.call("ReadDamage")[0].type==Type::Bool);
   CHECK(m.call("CanSplit",{id,num(4)})[0].b);
-  CHECK(failure(m.call("Split",{id,num(3)})));
+  CHECK(failure(m.call("Split",{id,num(.5)})));
   const auto parts=m.call("Split",{id,num(4)})[0];CHECK(parts.type==Type::Table);
   CHECK(parts.table->at("n1").table->at("sid").n!=id.n);
   CHECK(parts.table->at("n1").table->at("spoly").type==Type::Table);
@@ -139,4 +139,22 @@ TEST_CASE("glass binding validates scene ray damage and split APIs with balanced
   m.call("BeginStep",{num(.016)});CHECK(failure(m.call("SyncBodies",{Value::object(),num(.016)})));
   CHECK(failure(m.call("SpawnGroup",{Value::array({hull(),hull()}),vector(100,0,32),vector(),vector(),vector()})));
   CHECK(failure(m.call("ReadDamage")));CHECK(failure(m.call("ReadRegions")));m.call("Clear");
+}
+TEST_CASE("glass R9 binding bounds sound motion tiny pieces and busy readers") {
+  Module m;m.call("Init",{num(8),num(0)});
+  const auto bsp=nl::glass::fixture::room(20,false,true);
+  m.call("LoadMap",{Value::text(std::string(bsp.begin(),bsp.end()))});m.call("FinishWorld");
+  CHECK(failure(m.call("SetSounds",{num(1)})));CHECK(m.call("SetSounds",{Value::boolean(true)})[0].b);
+  CHECK(m.call("ReadSounds")[0].type==Type::Table);
+  const auto token=m.call("Spawn",{hull(),vector(0,0,32),vector(),vector(250,0,0),vector(),num(1)})[0];
+  const auto motions=m.call("ReadMotion",{Value::array({token})})[0];
+  CHECK(motions.table->at("n1").table->at("n1").n==token.n);
+  CHECK(motions.table->at("n1").table->at("n3").table->at("n1").n>249.9);
+  CHECK(failure(m.call("ReadMotion",{Value::array({num(0)})})));
+  auto many=Value::object();for(unsigned i=1;i<=257;++i)(*many.table)["n"+std::to_string(i)]=token;
+  CHECK(failure(m.call("ReadMotion",{many})));
+  CHECK(failure(m.call("Split",{token,num(1),num(7)})));
+  m.call("BeginStep",{num(.016)});CHECK(failure(m.call("ReadSounds")));
+  CHECK(failure(m.call("ReadMotion",{Value::array({token})})));m.call("Clear");
+  CHECK(m.call("ReadSounds")[0].table->empty());
 }

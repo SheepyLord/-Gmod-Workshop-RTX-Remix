@@ -8,11 +8,12 @@ Jolt 5.3.0 is statically linked from [the pinned source](../../third_party/jolt/
 | `geometry.h` | Source-unit geometry, input limits and hull validation |
 | `bsp.h`, `bsp.cpp` | Bounded little-endian VBSP reader, LZMA collision lumps, world brushes, displacement triangles and static-prop metadata |
 | `world.h`, `world.cpp` | Separate Jolt world, worker pool, pieces, fixed stepping, interpolated poses, sleep/wake and budgets |
-| `fracture.h`, `fracture.cpp` | Convex XY outlines, equal-area binary clipping, centroids and extrusion for follow-up splits |
+| `fracture.h`, `fracture.cpp` | Convex XY outlines, seeded hit-centred convex clipping, centroids and extrusion for follow-up splits |
 | `module.cpp` | Client-only `ILuaBase` binding, raw table access, numeric/type validation and exception-to-result boundary |
 | `tests/fixture.h` | Generated synthetic room, displacement and static-prop BSP; no game files |
 | `tests/test_glass.cpp` | Parser, hull, boundary, lifecycle, interpolation and 4,000-piece benchmark tests |
 | `tests/test_interaction.cpp` | One-way kinematics, contact/bullet/blast/fall damage, convex area/minimum-size/capacity tests and bounded-cost benchmarks |
+| `tests/test_r9.cpp` | Irregular one-unit fracture, multi-child budgets, bounded sounds, BSP buoyancy, reverse-velocity reproductions and environment CPU costs |
 | `tests/import_probe.cpp` | Read-only offline map counts/timings; run `nl_glass_import_probe <map.bsp>` explicitly, never via CTest |
 | `tests/scene_replay.cpp` | Replays actual Lua capture rows from stdin into a generated sleeping nine-piece pile; checks movement/damage, prescribed mirror trajectories and the disabled control |
 | `tests/fake_lua.h`, `tests/test_binding.cpp` | Strict stack-based `ILuaBase` double executing the actual exported callbacks, including realm refusal and reused pose tables |
@@ -82,7 +83,7 @@ ignores piece-piece damage, rejects minimum-size pieces early and records only h
 | `ReadRegions` | `(optionalFocus)` -> at most 32 `{minimum, maximum}` arrays around live glass, prioritizing cells closest to the viewer; no regions when empty |
 | `Ray` | `(from, to, energy, kickSpeed)` -> nearest piece id or 0; endpoints must already be Source-clipped |
 | `ReadDamage` | `()` -> false when empty, else up to 64 `{pieceId, energy, causeBits}`; drains safely between steps |
-| `CanSplit`, `Split` | `(pieceId, minimumSize)` -> boolean / false or two `{id, poly, thickness, position, angles, velocity, spin}` fragments replacing the parent |
+| `CanSplit`, `Split` | `(pieceId, minimumSize)` -> boolean / false or 2-6 `{id, poly, thickness, position, angles, velocity, spin}` fragments replacing the parent |
 | `Step` | `(dtSeconds)` -> true; synchronous core/test compatibility; invalid inputs return nil/reason |
 | `BeginStep`, `PollStep` | `(dtSeconds)` -> true / `()` -> false while pending, then true; manager uses these to keep physics off the client thread |
 | `ReadPoses` | `(posesById, changedIds)` -> count; writes existing rows `{x,y,z,pitch,yaw,roll,sleeping}` and changed ids `[1..count]` |
@@ -164,3 +165,27 @@ R8-G Melee(from,to,energy,kickSpeed,radius) casts a 1-16-unit sphere over at mos
 R8-G SpawnGroup(hulls,position,angles,velocity,spin) creates one dynamic rigid body from 2-8 exact original sub-hulls (512 points total, existing per-hull/local bounds). It never fills a geometric gap; the renderer combines the same original triangles. Groups count as one native body but Lua charges their original fragment count to the user's budget. They respond by moving; CanSplit returns false and Split refuses compound shapes before the convex-only path. Fine pieces retain their existing binary fracture. No Jolt sleep/solver/CCD setting changed. Tests cover gap rays, movement, safe split refusal, malformed/budget boundaries and a paired 2000-quad/250-group benchmark.
 
 Final boundary coverage also checks the group total-point limit and SpawnGroup refusal while a worker owns the world.
+
+
+R9-G ([ADR 0087](../../docs/decisions/0087-glass-shards-and-environment.md)) supersedes the older
+four-unit floor/binary-split paragraphs above. Spawn/CanSplit/Split accept minimum size 1-64;
+Split optionally accepts a third maximum-child argument (2-6, default 6). The manager uses one
+unit regardless of initial pane spacing, six staging slots, inherited expiry and oldest-first
+fragment budgets. Actual local contact/ray hit points drive seeded oblique cuts. Tiny fragments
+under four square units retain map/mirror contacts but omit mutual glass constraints.
+
+`SetSounds(bool)` controls native event production independently of SetInteraction. `ReadSounds()`
+drains at most 128 rows `{id, {x,y,z}, speed, mass, kind}` (impact=1, split=2, water=3) between workers.
+Callbacks use fixed storage and atomic per-piece cooldowns. The listener stays installed when
+interaction is off for local contact audio. `ReadMotion(ids)` is an explicit read-only QA query,
+at most 256 ids, returning `{id, position, velocity, spin}` rows; ordinary rendering never uses it.
+All new functions refuse while busy, and cleanup discards pending sound events.
+
+Water/slime world brushes are imported separately as convex halfspaces (4096 volumes maximum),
+indexed by a bounded BVH and excluded from solid collision. Active bodies use Jolt buoyancy at
+0.4 density ratio, linear drag 1.4 and angular drag 0.08, including compounds. Sleeping bottom piles
+stay asleep. New stats: sound_events/sound_dropped, water_volumes/water_tests/water_applied/
+water_entries/water_ms and overlap_suppressed. Mirror spawn/pose-correction overlaps are suppressed
+until separation; corrections also test next-step swept piece bounds. Swept overlap transfer uses
+the sampled travel direction and avoids a second opposite penetration solve. There is no Source
+response or global velocity clamp. `tests/test_r9.cpp` exercises these paths with generated fixtures.

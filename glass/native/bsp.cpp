@@ -100,11 +100,12 @@ void read_brushes(Reader& r, Map& out) {
   }
   std::size_t total=0, work=0;
   for(std::size_t b=0;b<nb;++b) {
-    // MASK_SOLID_BRUSHONLY: solid, window, grate, moveable; not player/monster clip or water.
-    if(!used[b] || !(u32(brushes,b*12+8)&0x400b))continue;
+    const auto contents=u32(brushes,b*12+8);
+    const bool water=(contents&0x30)!=0 && !(contents&0x400b);
+    if(!used[b] || (!(contents&0x400b) && !water))continue;
     const auto first=u32(brushes,b*12), number=u32(brushes,b*12+4);
     need(first<=ns && number<=ns-first,"BSP brush side range");
-    ++out.considered_brushes;
+    if(!water)++out.considered_brushes;
     // A brush that cannot become a hull (too few or many sides, a bad plane, a sliver) is skipped:
     // real maps carry a few (gm_construct does), and one lost brush costs less than the whole world.
     if(number<4 || number>64) { ++out.skipped_brushes;continue; }
@@ -119,6 +120,15 @@ void read_brushes(Reader& r, Map& out) {
     auto hull=usable?brush_hull(p):Hull{};
     if(hull.empty()) { ++out.skipped_brushes;continue; }
     total+=hull.size();need(total<=kMaxMapPoints && out.brushes.size()<kMaxStaticBodies,"BSP brush geometry limit");
+    if(water) {
+      need(out.water.size()<4096,"BSP water volume limit");
+      auto top=std::max_element(p.begin(),p.end(),[](const Plane& a,const Plane& b) { return a.normal.z<b.normal.z; });
+      if(top==p.end() || top->normal.z<.7f)continue;
+      V3 lo=hull.front(),hi=lo;
+      for(auto v:hull) { lo={std::min(lo.x,v.x),std::min(lo.y,v.y),std::min(lo.z,v.z)};hi={std::max(hi.x,v.x),std::max(hi.y,v.y),std::max(hi.z,v.z)}; }
+      out.water.push_back({std::move(p),lo,hi,*top});
+      continue;
+    }
     out.brushes.push_back(std::move(hull));
   }
 }
