@@ -737,11 +737,20 @@ def config_path(root: Path) -> Path:
     return root / "native-loader" / "config.json"
 
 
+def from_here(path: str) -> str:
+    """A relative path that exists from the current folder, made absolute. The loader reads a relative
+    entry against the game root, so `--allow-local out\\pkg.gma` from the repository deployed nothing
+    ("file not found", R10). Other entries pass as given (relative to the game root)."""
+    candidate = Path(path)
+    return str(candidate.resolve()) if not candidate.is_absolute() and candidate.exists() else path
+
+
 def config_content(args) -> tuple[dict, bytes]:
     """The config.json that the install and config steps write, as a value and as the exact bytes
     on disk (line breaks as the text-mode write has always made them)."""
     value = {"schema": 1, "enabled": True,
-             "allow": {"workshop": args.allow_workshop, "local": args.allow_local, "dev_folders": args.allow_dev},
+             "allow": {"workshop": args.allow_workshop, "local": [from_here(p) for p in args.allow_local],
+                       "dev_folders": [from_here(p) for p in args.allow_dev]},
              "remix": {"enabled": args.remix == "on"}, "patch_sets": {"require_insecure": args.require_insecure == "yes"}}
     if getattr(args, "reshade", None):
         value["remix"]["reshade"] = args.reshade  # loader 0.5.0 (ADR 0028); left out, the loader's default (auto)

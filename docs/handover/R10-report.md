@@ -67,3 +67,51 @@ All three sessions quit normally with no Lua error. The only recurring console l
 `TrackMaterial: Material 'mmdhl_soft_v1_...' not found`, comes from the hotloader's soft copies and is
 in R10-H's Workshop-baseline run too, so it predates R10. The PoC is back on its Workshop-only config
 (the original's SHA-256, `bb27c0d8...`) and the lock is released.
+
+## Merge, publish and CI
+
+- `main` fast-forwarded to `r10-int` (`0429e9d`). The merge published Workshop item 3829070317 as
+  `0.0.0-dev.20261102122205+988a3f12`, content digest `425e24de...`, the package checked on the PoC
+  (Steam sent 32.2 MB of changed content). Pushed `96cfa4e..0429e9d` with the new runtime's Git LFS object
+  (59 MB); the push's publish found unchanged inputs.
+- CI on `0429e9d`: "Build winmm.dll" (run 41444241642) and "Build the RTX package" (run 41444241571)
+  passed.
+
+## Field (the user's install and add-ons)
+
+The user's game was idle (over an hour without input); every session used `poc_session.py --root
+<field> --allow-steam-managed` with the Workshop and the user's add-ons, single player, and quit
+normally. Only each session's own part of `console.log` was read (from its start offset).
+
+| Start | Package | What happened |
+|---|---|---|
+| 01 | `20261102021900+cef426ad` (R9; Steam fetched the new one during this start) | Guinaifen, the user's example character: ragdoll, library NPC, spawn-menu NPC and library NPC on gm_construct; after `map gm_flatgrass` the spawn-menu NPC came first, as the user does it, and spawned attached with a valid model. **The user's "model not found" did not reproduce on the old package either.** |
+| 02, 03 | `20261102122205+988a3f12` (deployed and active) | gm_construct as in 01, with Linlong; the second map was not reached: the test driver lost the console after the map change (below) |
+| 04 | the same | Linlong: ragdoll, library NPC, menu NPC, library NPC on gm_construct; after `map gm_flatgrass` the spawn-menu NPC first, then the library; after `map gm_construct` again both. Every spawn attached with a valid model |
+| 05 | the same | R10-E's eye-white probe, Linlong at noon (the PoC's placement, camera and boxes): eye white over cheek 0.19 off, 0.78 with the feature on (PoC 0.17 / 0.75); a face patch outside the eyes 1.06 both times; status `supported=true`, `applied=1`, the alias `0x72639b32...=0xbd866dd5...`, the copy prepared once in 118 ms; frame time 10.5 / 10.4 ms median. Only the eye whites changed on screen (`field-eyes-sheet.png`) |
+
+The driver (R10-H's, wrapped by `out/r10/field/field_npc_session.py`) failed after field map changes at
+first: right after a field map load the game window briefly fails `poc_session.game_window`'s test and
+flips between hung and responsive for a while, and `poc_session.console` gives up while it is hung. The
+wrapper reuses the session's window handle and waits until the window has answered for five seconds;
+start 04 passed with it.
+
+## Branches, worktrees and evidence
+
+- Only `main` remains, locally and on GitHub: `r10-eyes`, `r10-hotloader` and `r10-int` are merged and
+  deleted. The `r10-hotloader` and `r10-int` worktrees are removed (an empty `out/worktrees/r10-int`
+  folder was still held open by a process at the time).
+- `out/worktrees/r10-eyes` stays as a detached worktree for its runtime build tree,
+  `out/runtime-src` inside it: a standalone clone of the fork at HEAD `381271b1` (the base and patches
+  0001-0019) with a configured, built `_CompRelease_x64`. The next runtime patch builds incrementally:
+  `runtime\build_runtime.ps1 -Fork <that folder> -Worktree <that folder>` after `git am` of the new patch.
+- Evidence, without the test packages (`.gma`), is in `out/r10/evidence`: `r10-e` (Codex's catalogue,
+  measurements and PoC runs, 326 MiB), `r10-h` (corpus analysis, mappings and PoC runs, 59 MiB), each with
+  Codex's prompt, final message and log, and `r10-int-qa` (Claude's PoC and field sessions, 37 MiB).
+
+**Item 33 in short:** neither the PoC (Codex's runs and Claude's, across `map` changes, fresh starts and a
+listen server) nor the field, on the old package or the new one, showed the user's error. R10-H's change
+(ADR 0090) removes the conditions that could produce it: an NPC entry is offered only once the carrier is
+mounted and the current map has precached its model, a mount from an earlier map is checked rather than
+trusted, and the hotloader's own spawn checks the same; a spawn that still cannot be made ready now stops
+with the hotloader's mount error instead of using a model the map does not have.

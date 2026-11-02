@@ -29,6 +29,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   menu offers an imported NPC or player model only once its files are mounted and the new map has
   loaded the model, and the hotloader's own NPC spawn checks the same; a mount from the previous map
   is no longer taken on trust ([ADR 0090](docs/decisions/0090-ready-carriers-before-actor-publication.md)).
+- `tools/poc_session.py` writes a relative `--allow-local` or `--allow-dev` path that exists from the
+  current folder as an absolute path: the loader reads relative entries against the game root, so a
+  package given as `out\...` deployed nothing ("file not found").
 
 ### R9 (the user's glass report of 2026-11-02)
 

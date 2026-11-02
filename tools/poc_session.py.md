@@ -57,7 +57,9 @@ dropped, so before a save or the camera the script waits until `console.log` has
 
 - `install`: runs [`install-loader.ps1`](install-loader.ps1.md) for `--config` (Release by default)
   and writes `native-loader\config.json` from `--allow-local`, `--allow-dev`, `--allow-workshop`
-  (each repeatable), `--remix on|off`, `--reshade auto|on|off` (`remix.reshade`, loader 0.5.0; left out
+  (each repeatable; a relative `--allow-local` or `--allow-dev` path that exists from the current
+  folder is written as an absolute path, because the loader reads relative entries against the game
+  root: R10's `out\...` package deployed nothing, "file not found"; other entries are written as given), `--remix on|off`, `--reshade auto|on|off` (`remix.reshade`, loader 0.5.0; left out
   unless given), `--performance-tier auto|high|medium|low`, `--gpu-crash-dumps off|next_start|always`
   and `--memory-telemetry on|off` (`remix.performance_tier` and the `diagnostics` keys, loader 0.11.0;
   each left out unless given, since an older loader rejects them) and `--require-insecure yes|no`. An

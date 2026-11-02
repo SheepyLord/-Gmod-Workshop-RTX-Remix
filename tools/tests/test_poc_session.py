@@ -1147,6 +1147,22 @@ class PowerShellTests(unittest.TestCase):
             self.assertEqual([name for name in kwargs['env'] if name.upper() == 'PSMODULEPATH'], [])
             self.assertEqual(kwargs['env'].get('PATH'), os.environ.get('PATH'))
 
+    def test_relative_local_packages_that_exist_here_become_absolute(self):
+        """R10: the loader reads a relative entry against the game root, so out\\pkg.gma deployed nothing."""
+        folder = scratch(self, 'poc-session-local-')
+        (folder / 'pkg.gma').write_bytes(b'GMAD')
+        (folder / 'dev').mkdir()
+        args = SimpleNamespace(allow_local=['pkg.gma', 'garrysmod/addons/x.gma'], allow_dev=['dev'], allow_workshop=[],
+                               remix='on', require_insecure='yes')
+        here = os.getcwd()
+        os.chdir(folder)
+        try:
+            value, _ = ps.config_content(args)
+        finally:
+            os.chdir(here)
+        self.assertEqual(value['allow']['local'], [str((folder / 'pkg.gma').resolve()), 'garrysmod/addons/x.gma'])
+        self.assertEqual(value['allow']['dev_folders'], [str((folder / 'dev').resolve())])
+
     @unittest.skipUnless(shutil.which('powershell'), 'Windows PowerShell is not installed')
     def test_windows_powershell_finds_get_filehash_under_a_powershell_7_module_path(self):
         folder = scratch(self, 'poc-session-pwsh-')
