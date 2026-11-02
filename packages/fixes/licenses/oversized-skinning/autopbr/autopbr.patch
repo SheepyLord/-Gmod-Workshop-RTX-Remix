@@ -1,9 +1,9 @@
 diff --git a/docs/TOPBR_R11.md b/docs/TOPBR_R11.md
 new file mode 100644
-index 0000000..6fc2cf0
+index 0000000000000000000000000000000000000000..960bd638e78fc49a67259737fd20dab7b1449423
 --- /dev/null
 +++ b/docs/TOPBR_R11.md
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,87 @@
 +# R11 ToPBR
 +
 +GPL-2.0. Phase 1 snapshots one live IMaterial per client frame and hands value-only jobs to the
@@ -53,8 +53,46 @@ index 0000000..6fc2cf0
 +VMT values without file access. Explicit inspection retains its diagnostic read path. Construct
 +retest: maximum snapshot 0.830 ms, conversion p99 9.133 ms versus 23.472 ms before this split.
 +Unconditional authored-mod priority still needs the runtime change described above.
++
++## R11-B: source-less game-map records
++
++Runtime patch 0020 now supplies authored-first fallback ranking outside this repository. R11-B keeps
++using the fixes' conservative hash guard as well. The shared `FallbackGuard::Select` drives publication
++for both freshly converted and restored game materials, including switch-off and uncertain scans.
++
++`source/material_pipeline/to_pbr/game_registry.h` is a worker-only persistent table, written as
++`game_materials.registry` beside the output texture directory. The client captures the actual
++`$basetexture` name, requiring a content identity `mmd/t/<16 hex>` and current live Remix hashes.
++Lua queues hotloader materials even without source/base metadata. A readable source with metadata
++always runs today's content/recipe-keyed converter. An absent/unreadable source can only restore
++a known identity whose four published DDS channels still have valid headers/full mip payload sizes,
++the recorded byte counts and streaming FNV-1a content digests. These digests detect accidental edits;
++they are not a cryptographic trust mechanism. Original albedo/alpha and protected texels remain untouched.
++Saved hashes are diagnostic provenance, never a source of live registrations. Source rejection or an
++empty safe conversion does not revive the previous output.
++
++The record format/version (1, minimum 1) is independent of the generator (5): generator updates
++must not expire source-less materials that cannot be regenerated. Raise the minimum record version
++only for records with a known correctness defect. Limits: 4096 records, 64 hashes per record, 8 MiB
++registry input, 4096 bytes per row, existing DDS dimension bounds. All file references are plain DDS
++filenames under the known textures directory; reparse-point textures/directories are rejected.
++Missing/truncated records are pruned on load; digest failures prune on restoration. Unknown schemas
++and unreadable registries remain intact. Atomic replacement preserves pre-existing or later edited
++registry bytes in content-named `.before-r11b-<digest>.bak` files before writing.
++
++`rtx_topbr_clear` drops/requeues live registrations but retains the registry and DDS, including over
++map changes and worker cancellation. A prior successful conversion with R11-B is required: cached
++textures written before the registry existed are not guessed back into materials. AO is retained
++as ordinary unused cache data, not a published material dependency.
++
++Compile `tests/game_registry_test.cpp` with MSVC C++17 `/EHsc /UNDEBUG /W4 /WX /DNOMINMAX` and pass
++a fresh scratch directory under `out`. It exercises atomic read/write and failed replacement,
++preserved user edits, current identity/hash checks, missing/invalid/edited DDS, bounded malformed input,
++record/generator versions, source refresh/rejection, switch-off and authored-hash exclusion. No SDK,
++game, network or user character is needed. The native loader repository's Release suite builds and
++runs this test from its GPL corresponding-source copy, as well as the Lua source-less queue harness.
 diff --git a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
-index 911eca8..193a171 100644
+index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..a6b9d9b0e284f5822b2e5705c2098bce2971bdc5 100644
 --- a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
 +++ b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
 @@ -15,15 +15,17 @@
@@ -95,7 +133,21 @@ index 911eca8..193a171 100644
          end
      end
      
-@@ -515,10 +517,13 @@ concommand.Add("rtx_topbr_stats", function()
+@@ -446,11 +448,13 @@ end
+ --[[
+     Clear conversion cache
+ ]]--
++local gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
+ function RTXToPBR.ClearCache()
+     local processor = GetProcessor()
+     if processor then
+         processor.ClearCache()
+     end
++    gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
+     MsgC(Color(100, 255, 100), "[RTX ToPBR] Cache cleared\n")
+ end
+ 
+@@ -515,10 +519,13 @@ concommand.Add("rtx_topbr_stats", function()
      MsgC(Color(200, 200, 200), string.format("  Materials with roughness: %d\n", stats.materialsWithRoughness or 0))
      MsgC(Color(200, 200, 200), string.format("  Failed conversions: %d\n", stats.failedConversions or 0))
      
@@ -112,7 +164,7 @@ index 911eca8..193a171 100644
      
      MsgC(Color(100, 200, 255), "\n  Background Processing:\n")
      if isProcessing then
-@@ -527,62 +532,33 @@ concommand.Add("rtx_topbr_stats", function()
+@@ -527,62 +534,33 @@ concommand.Add("rtx_topbr_stats", function()
          MsgC(Color(200, 200, 200), string.format("  Idle - %d processed in last run\n", lastProcessed))
      end
      
@@ -134,6 +186,17 @@ index 911eca8..193a171 100644
 -    RunConsoleCommand("rtx_topbr_debug", enabled and "1" or "0")
 -    MsgC(Color(100, 255, 100), string.format("[RTX ToPBR] Debug output %s\n", enabled and "enabled" or "disabled"))
 -end, nil, "Enable/disable debug output")
+-
+-concommand.Add("rtx_topbr_metallic", function(ply, cmd, args)
+-    local enabled = args[1] == "1" or args[1] == "true"
+-    local processor = GetProcessor()
+-    if processor and processor.SetMetallicGeneration then
+-        processor.SetMetallicGeneration(enabled)
+-        RunConsoleCommand("rtx_topbr_metallic", enabled and "1" or "0")
+-    else
+-        MsgC(Color(255, 100, 100), "[RTX ToPBR] Metallic generation not available (module not loaded)\n")
+-    end
+-end, nil, "Enable/disable experimental metallic generation (WARNING: may cause dark materials to appear black)")
 +-- These are convars, not commands with the same name (Source refuses duplicates).
 +for _, pair in ipairs({{"rtx_topbr_debug", "SetDebugOutput"},
 +    {"rtx_topbr_metallic", "SetMetallicGeneration"},
@@ -145,21 +208,6 @@ index 911eca8..193a171 100644
 +    end, "RTXToPBR_" .. pair[1])
 +end
  
--concommand.Add("rtx_topbr_metallic", function(ply, cmd, args)
--    local enabled = args[1] == "1" or args[1] == "true"
--    local processor = GetProcessor()
--    if processor and processor.SetMetallicGeneration then
--        processor.SetMetallicGeneration(enabled)
--        RunConsoleCommand("rtx_topbr_metallic", enabled and "1" or "0")
--    else
--        MsgC(Color(255, 100, 100), "[RTX ToPBR] Metallic generation not available (module not loaded)\n")
--    end
--end, nil, "Enable/disable experimental metallic generation (WARNING: may cause dark materials to appear black)")
-+hook.Add("Think", "RTXToPBR_Snapshots", function()
-+    local p = GetProcessor()
-+    if p and p.PumpSnapshots then p.PumpSnapshots() end
-+end)
- 
 -concommand.Add("rtx_topbr_autodiscover", function(ply, cmd, args)
 -    local enabled = args[1] == "1" or args[1] == "true"
 -    local processor = GetProcessor()
@@ -170,7 +218,11 @@ index 911eca8..193a171 100644
 -        MsgC(Color(255, 100, 100), "[RTX ToPBR] Auto-discover not available (module not loaded)\n")
 -    end
 -end, nil, "Enable/disable auto-discovery of companion textures (_normal, _mask, _spec)")
--
++hook.Add("Think", "RTXToPBR_Snapshots", function()
++    local p = GetProcessor()
++    if p and p.PumpSnapshots then p.PumpSnapshots() end
++end)
+ 
 -concommand.Add("rtx_topbr_parse_commented_properties", function(ply, cmd, args)
 -    local enabled = args[1] == "1" or args[1] == "true"
 -    local processor = GetProcessor()
@@ -194,7 +246,7 @@ index 911eca8..193a171 100644
  
  concommand.Add("rtx_topbr_help", function()
      MsgC(Color(100, 200, 255), "\n[RTX ToPBR] Runtime PBR Material Converter\n")
-@@ -604,8 +580,7 @@ ToPBR Configuration Commands:
+@@ -604,8 +582,7 @@ ToPBR Configuration Commands:
    rtx_topbr_stats             - Show conversion statistics
    rtx_topbr_clear             - Clear conversion cache
    rtx_topbr_debug 1/0         - Enable/disable debug output
@@ -204,7 +256,7 @@ index 911eca8..193a171 100644
    rtx_topbr_autodiscover 1/0  - Enable/disable auto-discovery of 
                                  companion textures (_normal, _mask, _spec)
    rtx_topbr_parse_commented_properties 1/0
-@@ -627,9 +602,8 @@ Roughness Priority (phong materials are handled first):
+@@ -627,9 +604,8 @@ Roughness Priority (phong materials are handled first):
  5. Base texture alpha with envmap
  
  Note: Dark envmap materials (chrome balls, etc.) use low roughness
@@ -216,7 +268,7 @@ index 911eca8..193a171 100644
  
  ]])
      MsgC(Color(100, 200, 255), string.rep("=", 60) .. "\n\n")
-@@ -655,11 +629,56 @@ if MaterialPipeline and MaterialPipeline.ToPBR then
+@@ -655,11 +631,58 @@ if MaterialPipeline and MaterialPipeline.ToPBR then
      -- Sync enabled state immediately at load time so a saved rtx_topbr_enabled=0
      -- takes effect before the C++ worker thread processes any queued materials
      if MaterialPipeline.ToPBR.SetEnabled then
@@ -231,7 +283,6 @@ index 911eca8..193a171 100644
 +
 +-- The source path is local-only hotloader data; no network or importer hook is needed.
 +CreateClientConVar("rtx_topbr_game_maps", "1", true, false, "Use shipped packed game PBR maps on imported characters")
-+local gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
 +local function syncGameMaps()
 +    local p = GetProcessor()
 +    if p and p.SetGameEnabled then p.SetGameEnabled(GetConVarBoolSafe("rtx_topbr_game_maps", true)) end
@@ -257,8 +308,11 @@ index 911eca8..193a171 100644
 +            local name = istable(part) and part.path
 +            local source = entry and entry.source
 +            local base = original and original.base
-+            if isstring(name) and not gameSubmitted[name] and isstring(source) and source ~= "" and isstring(base) and base ~= "" then
-+                if p.QueueGameMaterial(name, source, base) then gameSubmitted[name] = true end
++            if isstring(name) and not gameSubmitted[name] then
++                -- Native restores only recorded, validated maps for the live texture identity.
++                if p.QueueGameMaterial(name, isstring(source) and source or "", isstring(base) and base or "") then
++                    gameSubmitted[name] = true
++                end
 +            end
 +        else
 +            if gameKey and gameAssets[gameKey] == nil then gameKey = nil end
@@ -276,10 +330,10 @@ index 911eca8..193a171 100644
  return RTXToPBR
 diff --git a/source/material_pipeline/to_pbr/fallback_guard.h b/source/material_pipeline/to_pbr/fallback_guard.h
 new file mode 100644
-index 0000000..d6fbe8b
+index 0000000000000000000000000000000000000000..70a6f2465e6c351e241afb13e0c7065f39b70251
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/fallback_guard.h
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,71 @@
 +// GPL-2.0. Conservative filesystem exclusion; runtime lookup remains authoritative.
 +#pragma once
 +#include <cstdint>
@@ -291,6 +345,13 @@ index 0000000..d6fbe8b
 +
 +namespace MaterialPipeline { namespace ToPBR { namespace FallbackGuard {
 +struct Result { bool complete = true; std::unordered_set<uint64_t> hashes; };
++template<class Materials>
++Materials Select(const Materials& materials, bool worldEnabled, bool gameEnabled, const Result& guard) {
++    Materials visible;
++    if (guard.complete) for (const auto& pair : materials)
++        if ((pair.second.importedGame ? gameEnabled : worldEnabled) && !guard.hashes.count(pair.first)) visible.insert(pair);
++    return visible;
++}
 +inline void ExtractHashes(const std::string& text, Result& result) {
 +    size_t at = 0;
 +    while ((at = text.find("mat_", at)) != std::string::npos) {
@@ -345,7 +406,7 @@ index 0000000..d6fbe8b
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/format_bftpseudopbr.cpp b/source/material_pipeline/to_pbr/format_bftpseudopbr.cpp
-index d09a06a..5272e27 100644
+index d09a06a30c8c2affd2b3a55a6d975f99b90cc62d..5272e27e1b97fa2b0a3dc35cfd0bdb12f6d20b91 100644
 --- a/source/material_pipeline/to_pbr/format_bftpseudopbr.cpp
 +++ b/source/material_pipeline/to_pbr/format_bftpseudopbr.cpp
 @@ -34,6 +34,7 @@
@@ -384,7 +445,7 @@ index d09a06a..5272e27 100644
          hasMarker = true;
      }
 diff --git a/source/material_pipeline/to_pbr/format_exopbr.cpp b/source/material_pipeline/to_pbr/format_exopbr.cpp
-index 5729a2b..9b3ebd6 100644
+index 5729a2b95c6dba34d687b91d7598737207b22d8a..9b3ebd6b10dd6e22c56d038d8022e88574455c98 100644
 --- a/source/material_pipeline/to_pbr/format_exopbr.cpp
 +++ b/source/material_pipeline/to_pbr/format_exopbr.cpp
 @@ -16,6 +16,7 @@
@@ -405,7 +466,7 @@ index 5729a2b..9b3ebd6 100644
      if (shaderLower != "screenspace_general_8tex") {
          return false;
 diff --git a/source/material_pipeline/to_pbr/format_gpbr.cpp b/source/material_pipeline/to_pbr/format_gpbr.cpp
-index b86715f..595dd5a 100644
+index b86715f066b7610a108211c60ddde9b2f9cbe15a..595dd5ab9763bbb205f2d9b0fb49eededf7869a9 100644
 --- a/source/material_pipeline/to_pbr/format_gpbr.cpp
 +++ b/source/material_pipeline/to_pbr/format_gpbr.cpp
 @@ -18,6 +18,7 @@
@@ -426,7 +487,7 @@ index b86715f..595dd5a 100644
  }
  
 diff --git a/source/material_pipeline/to_pbr/format_mwbpbr.cpp b/source/material_pipeline/to_pbr/format_mwbpbr.cpp
-index ed4cf2f..662b732 100644
+index ed4cf2f5510be109831b1800b3d1bae454506d5f..662b732f48647ca095995edff49d27f2177a6482 100644
 --- a/source/material_pipeline/to_pbr/format_mwbpbr.cpp
 +++ b/source/material_pipeline/to_pbr/format_mwbpbr.cpp
 @@ -38,6 +38,7 @@
@@ -456,7 +517,7 @@ index ed4cf2f..662b732 100644
          // _rgb suffix is MWB's naming convention
          if (baseTexLower.length() >= 4 && baseTexLower.substr(baseTexLower.length() - 4) == "_rgb") {
 diff --git a/source/material_pipeline/to_pbr/format_source.cpp b/source/material_pipeline/to_pbr/format_source.cpp
-index 58eae48..42cbec8 100644
+index 58eae48a734f0b801ca7306849db0c853c007fea..42cbec86851eb6ee211d19c0e84b9c8e9a0c8ba7 100644
 --- a/source/material_pipeline/to_pbr/format_source.cpp
 +++ b/source/material_pipeline/to_pbr/format_source.cpp
 @@ -39,6 +39,7 @@
@@ -1013,7 +1074,7 @@ index 58eae48..42cbec8 100644
      // Height map processing
      // =========================================================================
 diff --git a/source/material_pipeline/to_pbr/formats.cpp b/source/material_pipeline/to_pbr/formats.cpp
-index 28212cf..de092f9 100644
+index 28212cfd91b454d4ee0b00e181844eabef6885b1..de092f95c509f779fd26daf03bb0dfac67f4c219 100644
 --- a/source/material_pipeline/to_pbr/formats.cpp
 +++ b/source/material_pipeline/to_pbr/formats.cpp
 @@ -18,7 +18,7 @@ namespace ToPBR {
@@ -1026,7 +1087,7 @@ index 28212cf..de092f9 100644
      size_t pos = contentLower.find(keyLower);
      if (pos == std::string::npos) return "";
 diff --git a/source/material_pipeline/to_pbr/formats.h b/source/material_pipeline/to_pbr/formats.h
-index acfea74..5ac1e6d 100644
+index acfea746c19f77b5960f17337e93b94450a93e2a..5ac1e6d1963e42cb3c4961fa7281967fb960df2d 100644
 --- a/source/material_pipeline/to_pbr/formats.h
 +++ b/source/material_pipeline/to_pbr/formats.h
 @@ -196,6 +196,7 @@ namespace BFTPseudoPBR {
@@ -1039,10 +1100,10 @@ index acfea74..5ac1e6d 100644
      ProcessedMaterial ProcessTextures(const MaterialPBRProperties& props,
 diff --git a/source/material_pipeline/to_pbr/game_pbr.h b/source/material_pipeline/to_pbr/game_pbr.h
 new file mode 100644
-index 0000000..4dd46a6
+index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1bec8bc08f2
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_pbr.h
-@@ -0,0 +1,306 @@
+@@ -0,0 +1,307 @@
 +// GPL-2.0. Local authored game-map conversion, independent of Source material objects.
 +#pragma once
 +#include "to_pbr.h"
@@ -1063,6 +1124,7 @@ index 0000000..4dd46a6
 +
 +namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 +namespace fs = std::filesystem;
++constexpr unsigned GeneratorVersion = 5; // Registry provenance; content-key/marker version below.
 +using Microsoft::WRL::ComPtr;
 +inline std::string Lower(std::string s) {
 +    for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -1349,9 +1411,229 @@ index 0000000..4dd46a6
 +    return result;
 +}
 +}}}
+diff --git a/source/material_pipeline/to_pbr/game_registry.h b/source/material_pipeline/to_pbr/game_registry.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..feeb36cad22f1c72f5465852cd8510dab16b79c8
+--- /dev/null
++++ b/source/material_pipeline/to_pbr/game_registry.h
+@@ -0,0 +1,214 @@
++// GPL-2.0. Worker-owned records for imported textures whose local source is unavailable.
++#pragma once
++#include "pbr_policy.h"
++#include <Windows.h>
++#include <array>
++#include <iomanip>
++#include <limits>
++#include <locale>
++#include <map>
++#include <optional>
++#include <sstream>
++
++namespace MaterialPipeline { namespace ToPBR { namespace GameRegistry {
++namespace fs = std::filesystem;
++constexpr unsigned RecordVersion = 1;
++// Independent of the generator: raise only to retire records with a known correctness bug.
++constexpr unsigned MinimumRecordVersion = 1;
++constexpr size_t MaxRecords = 4096, MaxHashes = 64, MaxBytes = 8 * 1024 * 1024;
++struct Texture { std::string file; uint64_t bytes = 0, digest = 0; };
++struct Record {
++    unsigned version = RecordVersion, generator = 0;
++    std::string identity;
++    std::vector<uint64_t> hashes; // Provenance only; never a source of live registrations.
++    std::array<Texture, 4> textures; // normal, roughness, metallic, emission
++    float roughness = .7f, metallic = 0, emission = 1;
++};
++inline std::string Identity(std::string name) {
++    for (auto& c : name) {
++        if (c == '\\') c = '/';
++        else if (uint8_t(c) < 128) c = char(std::tolower(uint8_t(c)));
++    }
++    if (name.size() != 22 || name.compare(0, 6, "mmd/t/") != 0) return {};
++    for (size_t i = 6; i < name.size(); ++i)
++        if (!((name[i] >= '0' && name[i] <= '9') || (name[i] >= 'a' && name[i] <= 'f'))) return {};
++    return name;
++}
++inline bool SafeFile(const std::string& file) {
++    if (file.size() < 5 || file.size() > 128 || file.substr(file.size() - 4) != ".dds") return false;
++    for (unsigned char c : file)
++        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
++              (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '.')) return false;
++    return file.find("..") == std::string::npos;
++}
++inline bool ValidRecord(const Record& record) {
++    if (record.version < MinimumRecordVersion || record.version > RecordVersion || !record.generator ||
++        Identity(record.identity) != record.identity || record.identity.empty() || record.hashes.empty() ||
++        record.hashes.size() > MaxHashes || (record.textures[0].file.empty() && record.textures[1].file.empty()) ||
++        !std::isfinite(record.roughness) || record.roughness < 0 || record.roughness > 1 ||
++        !std::isfinite(record.metallic) || record.metallic < 0 || record.metallic > 1 ||
++        !std::isfinite(record.emission) || record.emission < 0 || record.emission > 10000) return false;
++    for (auto hash : record.hashes) if (!hash) return false;
++    for (const auto& texture : record.textures) {
++        if (texture.file.empty()) { if (texture.bytes || texture.digest) return false; }
++        else if (!SafeFile(texture.file) || texture.bytes < 132 || texture.bytes > 90 * 1024 * 1024) return false;
++    }
++    return true;
++}
++inline std::optional<Texture> Inspect(const fs::path& path, bool digest) {
++    // No links/junctions, traversal or alternate data streams in recorded paths.
++    const DWORD attrs = GetFileAttributesW(path.c_str());
++    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) ||
++        !Policy::ValidDDS(path)) return {};
++    std::error_code ec;
++    Texture texture{path.filename().u8string(), fs::file_size(path, ec), 0};
++    if (ec || !SafeFile(texture.file)) return {};
++    if (digest) {
++        std::ifstream file(path, std::ios::binary);
++        uint64_t read = 0, hash = 14695981039346656037ull;
++        char bytes[65536];
++        while (file.read(bytes, sizeof(bytes)) || file.gcount()) {
++            read += uint64_t(file.gcount());
++            if (read > texture.bytes) return {};
++            for (std::streamsize i = 0; i < file.gcount(); ++i) { hash ^= uint8_t(bytes[i]); hash *= 1099511628211ull; }
++        }
++        if (file.bad() || read != texture.bytes) return {};
++        texture.digest = hash;
++    }
++    return texture;
++}
++class Registry {
++public:
++    explicit Registry(fs::path output) : output_(std::move(output)), path_(output_.parent_path() / "game_materials.registry") {}
++    const fs::path& Path() const { return path_; }
++    size_t Size() const { return records_.size(); }
++    bool Capture(Record& record, const std::array<std::string, 4>& paths) const {
++        for (size_t i = 0; i < paths.size(); ++i) {
++            if (paths[i].empty()) continue;
++            const auto path = fs::u8path(paths[i]).lexically_normal();
++            if (path.parent_path() != output_.lexically_normal()) return false;
++            auto texture = Inspect(path, true);
++            if (!texture) return false;
++            record.textures[i] = *texture;
++        }
++        return ValidRecord(record);
++    }
++    bool Load() {
++        records_.clear(); writable_ = true;
++        std::error_code ec;
++        if (!fs::exists(path_, ec)) return !ec;
++        const auto bytes = fs::file_size(path_, ec);
++        if (ec || bytes > MaxBytes) { writable_ = false; return false; }
++        std::ifstream file(path_, std::ios::binary);
++        std::string text(size_t(bytes), '\0');
++        if (!file.read(text.data(), std::streamsize(text.size()))) { writable_ = false; return false; }
++        std::istringstream lines(text); lines.imbue(std::locale::classic());
++        std::string line;
++        if (!std::getline(lines, line) || line != "TOPBR_GAME_REGISTRY 1") { writable_ = false; return false; }
++        size_t count = 0;
++        while (std::getline(lines, line)) {
++            if (++count > MaxRecords) { records_.clear(); writable_ = false; return false; }
++            if (line.size() > 4096) continue;
++            Record record; size_t hashes = 0;
++            std::istringstream row(line); row.imbue(std::locale::classic());
++            if (!(row >> record.identity >> record.version >> record.generator >> hashes) || hashes > MaxHashes) continue;
++            record.hashes.resize(hashes);
++            for (auto& hash : record.hashes) row >> std::hex >> hash >> std::dec;
++            for (auto& texture : record.textures) {
++                row >> texture.file >> texture.bytes >> std::hex >> texture.digest >> std::dec;
++                if (texture.file == "-") texture.file.clear();
++            }
++            if (!(row >> record.roughness >> record.metallic >> record.emission)) continue;
++            row >> std::ws;
++            if (!row.eof() || !ValidRecord(record) || !Validate(record, false)) continue;
++            // Duplicate identities are ambiguous; reject the whole file rather than select one.
++            if (!records_.emplace(record.identity, record).second) { records_.clear(); writable_ = false; return false; }
++        }
++        return true;
++    }
++    bool Save() const {
++        if (!writable_) return false; // Keep an unknown/unreadable registry intact.
++        std::ostringstream text; text.imbue(std::locale::classic());
++        text << "TOPBR_GAME_REGISTRY 1\n" << std::setprecision(std::numeric_limits<float>::max_digits10);
++        for (const auto& pair : records_) {
++            const auto& record = pair.second;
++            text << record.identity << ' ' << record.version << ' ' << record.generator << ' ' << record.hashes.size();
++            for (auto hash : record.hashes) text << ' ' << std::hex << hash << std::dec;
++            for (const auto& texture : record.textures)
++                text << ' ' << (texture.file.empty() ? "-" : texture.file) << ' ' << texture.bytes << ' '
++                     << std::hex << texture.digest << std::dec;
++            text << ' ' << record.roughness << ' ' << record.metallic << ' ' << record.emission << '\n';
++        }
++        const std::string bytes = text.str();
++        if (bytes.size() > MaxBytes) return false;
++        // Preserve pre-existing and subsequently edited registry bytes just as USD
++        // publication does. Ordinary repeated writes in this worker need no backup.
++        const DWORD attrs = GetFileAttributesW(path_.c_str());
++        if (attrs != INVALID_FILE_ATTRIBUTES) {
++            if (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) return false;
++            std::ifstream file(path_, std::ios::binary | std::ios::ate);
++            const auto size = file.tellg();
++            if (!file || size < 0 || uint64_t(size) > MaxBytes) return false;
++            std::string previous(size_t(size), '\0'); file.seekg(0);
++            if (!file.read(previous.data(), std::streamsize(previous.size()))) return false;
++            if (previous == bytes) { lastPublished_ = bytes; return true; }
++            if (!lastPublished_ || previous != *lastPublished_) {
++                uint64_t hash = 14695981039346656037ull;
++                for (unsigned char c : previous) { hash ^= c; hash *= 1099511628211ull; }
++                std::ostringstream suffix; suffix << ".before-r11b-" << std::hex << hash << ".bak";
++                const fs::path backup(path_.wstring() + fs::u8path(suffix.str()).wstring());
++                if (!CopyFileW(path_.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(path_, backup)) return false;
++                if (!Policy::SameFile(path_, backup)) return false;
++            }
++        }
++        const fs::path staged(path_.wstring() + L".tmp");
++        { std::ofstream file(staged, std::ios::binary | std::ios::trunc);
++          file.write(bytes.data(), std::streamsize(bytes.size())); file.close(); if (!file) return false; }
++        if (MoveFileExW(staged.c_str(), path_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++            lastPublished_ = bytes; return true;
++        }
++        std::error_code ec; fs::remove(staged, ec); return false;
++    }
++    // A readable source always calls today's converter; failed/empty conversion cannot revive old maps.
++    // The generator number is provenance, not an expiry check for source-less records.
++    template<class Convert>
++    std::optional<Record> Resolve(const std::string& identity, const std::vector<uint64_t>& liveHashes,
++                                  bool enabled, bool sourceReadable, Convert convert) {
++        if (!enabled || Identity(identity) != identity || identity.empty() || liveHashes.empty() || liveHashes.size() > MaxHashes) return {};
++        for (auto hash : liveHashes) if (!hash) return {};
++        if (sourceReadable) {
++            auto record = convert();
++            if (record) {
++                record->identity = identity; record->hashes = liveHashes;
++                if (!ValidRecord(*record) || !Validate(*record, true)) record.reset();
++            }
++            if (record && (records_.count(identity) || records_.size() < MaxRecords)) records_[identity] = *record;
++            else records_.erase(identity);
++            return record;
++        }
++        auto found = records_.find(identity);
++        if (found == records_.end()) return {};
++        if (!Validate(found->second, true)) { records_.erase(found); return {}; }
++        Record record = found->second;
++        record.hashes = liveHashes; // Return only this session's hashes to the caller.
++        return record;
++    }
++    std::string TexturePath(const Texture& texture) const {
++        return texture.file.empty() ? std::string{} : (output_ / fs::u8path(texture.file)).u8string();
++    }
++private:
++    bool Validate(const Record& record, bool digest) const {
++        const DWORD attrs = GetFileAttributesW(output_.c_str());
++        if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_REPARSE_POINT)) return false;
++        for (const auto& texture : record.textures) if (!texture.file.empty()) {
++            const auto checked = Inspect(output_ / fs::u8path(texture.file), digest);
++            if (!checked || checked->bytes != texture.bytes || (digest && checked->digest != texture.digest)) return false;
++        }
++        return true;
++    }
++    fs::path output_, path_;
++    std::map<std::string, Record> records_;
++    bool writable_ = true;
++    mutable std::optional<std::string> lastPublished_;
++};
++}}}
 diff --git a/source/material_pipeline/to_pbr/pbr_policy.h b/source/material_pipeline/to_pbr/pbr_policy.h
 new file mode 100644
-index 0000000..f619b64
+index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8ddc6ed53
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/pbr_policy.h
 @@ -0,0 +1,56 @@
@@ -1412,22 +1694,23 @@ index 0000000..f619b64
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fd..b6b8188 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..4b987abd01caf9826d643f3c0e48ce71e5b4f7ab 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
-@@ -4,6 +4,11 @@
+@@ -4,6 +4,12 @@
  #include "formats.h"
  #include "vtf.h"
  #include "usda.h"
 +#include "fallback_guard.h"
 +#include "pbr_policy.h"
 +#include "game_pbr.h"
++#include "game_registry.h"
 +#include <filesystem>
 +#include <iomanip>
  #include "../material_filter.h"
  #include <tier0/dbg.h>
  #include <materialsystem/imaterialsystem.h>
-@@ -183,55 +188,12 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
+@@ -183,55 +189,12 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
          }
      }
      
@@ -1480,8 +1763,8 @@ index 2be46fd..b6b8188 100644
 -        m_processedMaterials.insert(m_ineligibleCache.begin(), m_ineligibleCache.end());
 -    }
 -    
-+    // Registrations are rebuilt from live identities each session. Only content-keyed
-+    // DDS files survive: material names and old USD hashes are not content identities.
++    // Registrations are rebuilt from live identities each session. The worker may
++    // restore validated game records only after seeing a matching hotloader texture.
 +    EnsureOutputDirectory();
 +    m_publishRequested.store(true);
 +
@@ -1489,7 +1772,7 @@ index 2be46fd..b6b8188 100644
      m_initialized = true;
      Msg("[MaterialPipeline::ToPBR] Initialized successfully\n");
      Msg("[MaterialPipeline::ToPBR] Output directory: %s\n", m_outputDirectory.c_str());
-@@ -241,8 +203,6 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
+@@ -241,8 +204,6 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
  void TextureProcessor::Shutdown() {
      if (!m_initialized) return;
      
@@ -1498,16 +1781,16 @@ index 2be46fd..b6b8188 100644
      
      // Stop background worker thread first
      StopWorkerThread();
-@@ -255,6 +215,8 @@ void TextureProcessor::Shutdown() {
+@@ -255,6 +216,8 @@ void TextureProcessor::Shutdown() {
      }
      m_textureHandles.clear();
      
-+    m_gameFiles.clear();
++    m_gameRegistry.reset();
 +    m_gameSubmitted.clear();
      m_uploadedTextures.clear();
      m_processedMaterials.clear();
      m_processedMaterialInfo.clear();
-@@ -266,6 +228,9 @@ void TextureProcessor::Shutdown() {
+@@ -266,6 +229,9 @@ void TextureProcessor::Shutdown() {
          std::lock_guard<std::mutex> lock(m_queueMutex);
          while (!m_materialQueue.empty()) m_materialQueue.pop();
          m_queuedMaterials.clear();
@@ -1517,7 +1800,7 @@ index 2be46fd..b6b8188 100644
      }
      
      // Clear pending USDA
-@@ -370,6 +335,7 @@ void TextureProcessor::SaveIneligibleCache(bool force) {
+@@ -370,6 +336,7 @@ void TextureProcessor::SaveIneligibleCache(bool force) {
  }
  
  void TextureProcessor::SetOutputDirectory(const std::string& path) {
@@ -1525,7 +1808,7 @@ index 2be46fd..b6b8188 100644
      m_outputDirectory = path;
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Output directory set to: %s\n", path.c_str());
-@@ -452,16 +418,12 @@ std::string TextureProcessor::GenerateOutputPath(const std::string& sourceName,
+@@ -452,16 +419,12 @@ std::string TextureProcessor::GenerateOutputPath(const std::string& sourceName,
      });
      if (key.compare(0, 10, "materials/") == 0) key.erase(0, 10);
      if (key.size() > 4 && key.compare(key.size() - 4, 4, ".vtf") == 0) key.resize(key.size() - 4);
@@ -1546,7 +1829,7 @@ index 2be46fd..b6b8188 100644
  
      // Keep the full path under MAX_PATH by truncating the readable part.
      constexpr size_t kMaxNameLength = 140;
-@@ -511,12 +473,27 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
+@@ -511,12 +474,27 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
  }
  
  bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
@@ -1576,7 +1859,7 @@ index 2be46fd..b6b8188 100644
      if (!file.is_open()) {
          Warning("[MaterialPipeline::ToPBR] Failed to open file for writing: %s\n", outputPath.c_str());
          return false;
-@@ -598,6 +575,8 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const
+@@ -598,6 +576,8 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const
      }
      
      file.close();
@@ -1585,7 +1868,7 @@ index 2be46fd..b6b8188 100644
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Wrote DDS file: %s (%dx%d, %d mips)\n", outputPath.c_str(), texture.width, texture.height, mipCount);
-@@ -992,6 +971,7 @@ bool TextureProcessor::ExtractVTFPixelData(const std::vector<uint8_t>& fileData,
+@@ -992,6 +972,7 @@ bool TextureProcessor::ExtractVTFPixelData(const std::vector<uint8_t>& fileData,
                                                 ConvertedTexture& outTexture, 
                                                 bool isNormalMap) {
      // Delegate to VTF module
@@ -1593,7 +1876,7 @@ index 2be46fd..b6b8188 100644
      return VTF::ExtractVTFPixelData(fileData, header, outTexture, isNormalMap, m_debugOutput);
  }
  
-@@ -1393,140 +1373,18 @@ uint64_t TextureProcessor::ConvertAndUploadTexture(const std::string& vtfPath, b
+@@ -1393,140 +1374,18 @@ uint64_t TextureProcessor::ConvertAndUploadTexture(const std::string& vtfPath, b
      return texture.hash;
  }
  
@@ -1739,7 +2022,7 @@ index 2be46fd..b6b8188 100644
  bool TextureProcessor::AnalyzeBaseTextureBrightness(const std::string& texturePath, float& outBrightness) {
      if (texturePath.empty()) {
          return false;
-@@ -1848,7 +1706,18 @@ struct VMTProperties {
+@@ -1848,7 +1707,18 @@ struct VMTProperties {
  // Parse a VMT file and extract properties that FindVar doesn't reliably expose
  // This is crucial because when running with DX6 fallback shaders, FindVar() returns
  // incorrect or missing values for many material properties
@@ -1758,7 +2041,7 @@ index 2be46fd..b6b8188 100644
      if (!fileSystem) return false;
      
      // Guard against include cycles in patch VMT chains
-@@ -2035,7 +1904,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2035,7 +1905,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
      
      // Convert to lowercase for case-insensitive matching
      std::string contentLower = content;
@@ -1767,7 +2050,7 @@ index 2be46fd..b6b8188 100644
      
      // Extract shader name (first non-whitespace word, possibly in quotes)
      // Skip any comment lines (// or /* */) at the start
-@@ -2673,7 +2542,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2673,7 +2543,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
      // ExoPBR uses screenspace_general_8tex shader with ExoPBR proxy
      // =========================================================================
      std::string shaderLower = outProps.shaderName;
@@ -1776,7 +2059,7 @@ index 2be46fd..b6b8188 100644
      
      if (shaderLower == "screenspace_general_8tex") {
          // Check for ExoPBR proxy
-@@ -2931,6 +2800,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2931,6 +2801,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
  
  bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName, 
                                                MaterialPBRProperties& outProps) {
@@ -1784,7 +2067,7 @@ index 2be46fd..b6b8188 100644
      if (!materials) {
          Warning("[MaterialPipeline::ToPBR] Material system not available\n");
          return false;
-@@ -3909,7 +3779,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3909,7 +3780,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          bool isRefractShader = false;
          if (!outProps.shaderName.empty()) {
              std::string shaderLower = outProps.shaderName;
@@ -1793,7 +2076,7 @@ index 2be46fd..b6b8188 100644
              isRefractShader = (shaderLower == "refract");
          }
          
-@@ -3917,7 +3787,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3917,7 +3788,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          bool isSurfaceGlass = false;
          if (!outProps.surfaceProp.empty()) {
              std::string surfaceLower = outProps.surfaceProp;
@@ -1802,7 +2085,7 @@ index 2be46fd..b6b8188 100644
              isSurfaceGlass = (surfaceLower == "glass" || surfaceLower.find("glass") != std::string::npos);
          }
          
-@@ -3930,7 +3800,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3930,7 +3801,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          if (hasVMTParsed) {
              if (!vmtParsed.shaderName.empty()) {
                  std::string vmtShaderLower = vmtParsed.shaderName;
@@ -1811,7 +2094,7 @@ index 2be46fd..b6b8188 100644
                  vmtIsRefract = (vmtShaderLower == "refract");
              }
              vmtHasRefractAmount = vmtParsed.hasRefractAmount;
-@@ -4001,48 +3871,8 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -4001,48 +3872,8 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          }
      }
      
@@ -1862,7 +2145,7 @@ index 2be46fd..b6b8188 100644
      // Calculate PBR values with enhanced logic
      // Skip Source Engine heuristics for direct-PBR formats (ExoPBR, GPBR) - they already
      // set their own appropriate defaults (roughness=0.5, metallic=0.0) and rely on
-@@ -4060,12 +3890,191 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -4060,12 +3891,191 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
              outProps.hasEnvMapMask, outProps.hasPhongExponentTexture, outProps.hasEnvMapTint, outProps.hasEnvMap, outProps.normalMapAlphaEnvMapMask, outProps.isGlass);
      }
      
@@ -2055,7 +2338,7 @@ index 2be46fd..b6b8188 100644
      ProcessingContext ctx;
      
      // Bind member functions to the context
-@@ -4092,13 +4101,13 @@ ProcessingContext TextureProcessor::CreateProcessingContext() {
+@@ -4092,13 +4102,13 @@ ProcessingContext TextureProcessor::CreateProcessingContext() {
          return GenerateOutputPath(sourceName, suffix);
      };
      ctx.fileExists = [this](const std::string& path) {
@@ -2072,7 +2355,7 @@ index 2be46fd..b6b8188 100644
      
      return ctx;
  }
-@@ -4235,11 +4244,17 @@ static std::vector<uint64_t> CollectMaterialFrameHashes(const std::string& mater
+@@ -4235,11 +4245,17 @@ static std::vector<uint64_t> CollectMaterialFrameHashes(const std::string& mater
  void TextureProcessor::RegisterProcessedMaterial(const std::vector<uint64_t>& hashes,
                                                   ProcessedMaterialInfo info) {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -2091,7 +2374,7 @@ index 2be46fd..b6b8188 100644
  }
  
  bool TextureProcessor::RegisterChromeMaterial(uint64_t hash) {
-@@ -4340,7 +4355,7 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4340,7 +4356,7 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      matInfo.emissionIntensity = props.hasEmissionScale ? props.emissionScale : 1.0f;
      
      // Create processing context for modular handlers
@@ -2100,7 +2383,7 @@ index 2be46fd..b6b8188 100644
      
      // =========================================================================
      // Delegate to format-specific handlers (defined in separate files)
-@@ -4350,7 +4365,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4350,7 +4366,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // ExoPBR format
      if (props.isExoPBR) {
          ProcessedMaterial result = ExoPBR::ProcessTextures(props, textureHash, ctx);
@@ -2110,7 +2393,7 @@ index 2be46fd..b6b8188 100644
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4361,7 +4377,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4361,7 +4378,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // GPBR format
      if (props.isGPBR) {
          ProcessedMaterial result = GPBR::ProcessTextures(props, textureHash, ctx);
@@ -2120,7 +2403,7 @@ index 2be46fd..b6b8188 100644
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4372,7 +4389,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4372,7 +4390,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // MWB PBR Gen format (must check before BFT - it has more specific patterns)
      if (props.isMWBPBR) {
          ProcessedMaterial result = MWBPBR::ProcessTextures(props, textureHash, ctx);
@@ -2130,7 +2413,7 @@ index 2be46fd..b6b8188 100644
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4383,7 +4401,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4383,7 +4402,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // BlueFlyTrap PseudoPBR format
      if (props.isBFTPseudoPBR) {
          ProcessedMaterial result = BFTPseudoPBR::ProcessTextures(props, textureHash, ctx);
@@ -2140,7 +2423,7 @@ index 2be46fd..b6b8188 100644
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4391,6 +4410,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4391,6 +4411,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
          }
      }
      
@@ -2149,7 +2432,7 @@ index 2be46fd..b6b8188 100644
      // =========================================================================
      // Standard Source Engine material processing (fallback)
      // For non-PBR format materials, use the SourceEngine handler
-@@ -4423,143 +4444,11 @@ int TextureProcessor::ProcessAllTrackedMaterials() {
+@@ -4423,143 +4445,11 @@ int TextureProcessor::ProcessAllTrackedMaterials() {
      return ProcessTrackedMaterialsBatch(0);
  }
  
@@ -2296,7 +2579,7 @@ index 2be46fd..b6b8188 100644
  bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) const {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
      return m_processedMaterials.find(materialName) != m_processedMaterials.end();
-@@ -4567,19 +4456,24 @@ bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) cons
+@@ -4567,19 +4457,24 @@ bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) cons
  
  TextureProcessor::Stats TextureProcessor::GetStats() const {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -2309,11 +2592,12 @@ index 2be46fd..b6b8188 100644
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
      
      // Clear all tracking data for reprocessing.
-     // Note: USDA files remain on disk and need game restart to reload.
+-    // Note: USDA files remain on disk and need game restart to reload.
++    // The next worker publication retracts the USD snapshot. Persistent game
++    // records and DDS survive: without the source they cannot be regenerated.
      m_processedMaterials.clear();
      m_processedFrameCounts.clear();
 +    m_gameSubmitted.clear();
-+    m_gameFiles.clear();
      m_uploadedTextures.clear();
      m_processedMaterialInfo.clear();
      m_needsUSDAUpdate = false;
@@ -2322,7 +2606,12 @@ index 2be46fd..b6b8188 100644
      m_stats = {};
      
      // Clear persistent ineligible cache and delete the file
-@@ -4594,68 +4488,68 @@ void TextureProcessor::ClearCache() {
+@@ -4590,72 +4485,80 @@ void TextureProcessor::ClearCache() {
+         DeleteFileA(cachePath.c_str());
+     }
+     
+-    Msg("[MaterialPipeline::ToPBR] Cache cleared (including persistent ineligible cache)\n");
++    Msg("[MaterialPipeline::ToPBR] Cache cleared (game-map records and DDS retained)\n");
  }
  
  bool TextureProcessor::ProcessSingleMaterial(const std::string& materialName) {
@@ -2393,13 +2682,21 @@ index 2be46fd..b6b8188 100644
 +        name.compare(0,4,"mmd/") != 0 || name.size() < 22 || name[20] != '/' ||
 +        source.find(char(0)) != std::string::npos || base.find(char(0)) != std::string::npos) return false;
 +    for (size_t i=4;i<20;++i) if (!std::isxdigit(uint8_t(name[i]))) return false;
++    if (!materials) return false;
++    IMaterial* material = materials->FindMaterial(name.c_str(), TEXTURE_GROUP_OTHER, false);
++    if (!material || material->IsErrorMaterial()) return false;
++    bool found = false;
++    IMaterialVar* baseVar = material->FindVar("$basetexture", &found, false);
++    ITexture* texture = found && baseVar ? baseVar->GetTextureValue() : nullptr;
++    const std::string identity = texture ? GameRegistry::Identity(texture->GetName()) : std::string{};
++    if (identity.empty()) return false; // A model/material name is not a texture identity.
 +    auto hashes = CollectMaterialFrameHashes(name);
-+    if (hashes.empty()) return false; // Lua retries after the texture was actually drawn.
++    if (hashes.empty() || hashes.size() > GameRegistry::MaxHashes) return false; // Retry after draw.
 +    std::lock_guard<std::mutex> lock(m_queueMutex);
 +    if (m_gameSubmitted.count(name)) return true;
 +    if (m_gameSubmitted.size() >= 4096 || m_gameQueue.size() >= 128) return false;
 +    m_gameSubmitted.insert(name);
-+    m_gameQueue.push({name,source,base,std::move(hashes)});
++    m_gameQueue.push({name,source,base,identity,std::move(hashes)});
 +    m_queueCondition.notify_one();
 +    return true;
 +}
@@ -2451,7 +2748,7 @@ index 2be46fd..b6b8188 100644
  }
  
  void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, uint64_t textureHash) {
-@@ -4703,91 +4597,53 @@ void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, ui
+@@ -4703,91 +4606,48 @@ void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, ui
  }
  
  void TextureProcessor::WriteUSDAIfNeeded() {
@@ -2509,6 +2806,7 @@ index 2be46fd..b6b8188 100644
 -    if (newMaterialCount == 0 && !existingHashes.empty()) {
 -        if (m_debugOutput) {
 -            Msg("[MaterialPipeline::ToPBR] No new materials to add to USDA\n");
+-        }
 +    if (m_outputDirectory.empty()) return false;
 +    const std::string modDir = USDA::GetModDirectory(m_outputDirectory);
 +    auto guard = FallbackGuard::Scan(std::filesystem::u8path(modDir).parent_path(),
@@ -2516,13 +2814,15 @@ index 2be46fd..b6b8188 100644
 +    std::unordered_map<uint64_t, ProcessedMaterialInfo> visible;
 +    {
 +        std::lock_guard<std::recursive_mutex> lock(m_mutex);
-+        if (guard.complete) {
-+            for (const auto& pair : m_processedMaterialInfo) {
-+                if ((pair.second.importedGame ? m_gameEnabled.load() : IsEnabled()) &&
-+                    !guard.hashes.count(pair.first)) visible.insert(pair);
-+            }
-         }
--        return true;
++        visible = FallbackGuard::Select(m_processedMaterialInfo, IsEnabled(), m_gameEnabled.load(), guard);
++    }
++    const std::string target = modDir + "/materials.usda";
++    const std::string staging = target + ".tmp";
++    if (!USDA::WriteModUSDAFile(modDir) ||
++        !USDA::WriteMaterialsUSDAFile(modDir, m_outputDirectory, visible, false, staging)) return false;
++    if (Policy::SameFile(std::filesystem::u8path(staging), std::filesystem::u8path(target))) {
++        std::remove(staging.c_str());
+         return true;
      }
 -    
 -    // Write mod.usda using USDA module (this file rarely changes, no staging needed)
@@ -2535,18 +2835,6 @@ index 2be46fd..b6b8188 100644
 -    std::string stagingPath = modDir + "/materials.usda.tmp";
 -    if (!USDA::WriteMaterialsUSDAFile(modDir, m_outputDirectory, m_processedMaterialInfo, m_debugOutput, stagingPath)) {
 -        return false;
-+    const std::string target = modDir + "/materials.usda";
-+    const std::string staging = target + ".tmp";
-+    if (!USDA::WriteModUSDAFile(modDir) ||
-+        !USDA::WriteMaterialsUSDAFile(modDir, m_outputDirectory, visible, false, staging)) return false;
-+    if (Policy::SameFile(std::filesystem::u8path(staging), std::filesystem::u8path(target))) {
-+        std::remove(staging.c_str());
-+        return true;
-     }
--    
--    // Atomic replace: staging -> final
--    if (!USDA::PublishStagedFile(stagingPath, materialsUsdaPath)) {
--        return false;
 +    if (!USDA::PublishStagedFile(staging, target)) return false;
 +    // Remix watches the root layer's time, not only its sublayer's.
 +    HANDLE file = CreateFileW(std::filesystem::u8path(modDir + "/mod.usda").c_str(), FILE_WRITE_ATTRIBUTES,
@@ -2554,6 +2842,11 @@ index 2be46fd..b6b8188 100644
 +    if (file != INVALID_HANDLE_VALUE) {
 +        FILETIME now; GetSystemTimeAsFileTime(&now); SetFileTime(file, nullptr, nullptr, &now); CloseHandle(file);
      }
+-    
+-    // Atomic replace: staging -> final
+-    if (!USDA::PublishStagedFile(stagingPath, materialsUsdaPath)) {
+-        return false;
+-    }
 -    
 -    m_lastUSDAWriteTime = std::chrono::steady_clock::now();
 -    
@@ -2575,7 +2868,7 @@ index 2be46fd..b6b8188 100644
      if (m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Already running
      }
-@@ -4795,7 +4651,13 @@ void TextureProcessor::StartWorkerThread() {
+@@ -4795,7 +4655,13 @@ void TextureProcessor::StartWorkerThread() {
      m_shutdownRequested.store(false, std::memory_order_relaxed);
      m_workerRunning.store(true, std::memory_order_relaxed);
      
@@ -2590,7 +2883,7 @@ index 2be46fd..b6b8188 100644
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Background worker thread started\n");
-@@ -4807,9 +4669,13 @@ void TextureProcessor::CancelPendingWork() {
+@@ -4807,9 +4673,13 @@ void TextureProcessor::CancelPendingWork() {
      std::lock_guard<std::mutex> lock(m_queueMutex);
      while (!m_materialQueue.empty()) m_materialQueue.pop();
      m_queuedMaterials.clear();
@@ -2604,7 +2897,7 @@ index 2be46fd..b6b8188 100644
      if (!m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Not running
      }
-@@ -4833,183 +4699,121 @@ void TextureProcessor::StopWorkerThread() {
+@@ -4833,183 +4703,135 @@ void TextureProcessor::StopWorkerThread() {
  }
  
  void TextureProcessor::WorkerThreadFunc() {
@@ -2623,6 +2916,11 @@ index 2be46fd..b6b8188 100644
 -        // Get next material from queue, with a timeout so we can
 -        // flush USDA after a quiet period even if no new work arrives
 +    const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++    if (!m_gameRegistry) {
++        m_gameRegistry = std::make_unique<GameRegistry::Registry>(std::filesystem::u8path(m_outputDirectory));
++        if (!m_gameRegistry->Load()) Warning("[MaterialPipeline::ToPBR] Game registry unreadable; retained without reuse\n");
++        else if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry prune could not be saved\n");
++    }
 +    while (!m_shutdownRequested.load()) {
 +        WorkItem job;
 +        GameJob gameJob;
@@ -2711,25 +3009,34 @@ index 2be46fd..b6b8188 100644
 +        if (gotGame) {
 +            m_backgroundProcessing.store(true);
 +            try {
-+                const std::string cacheKey = gameJob.name.substr(4,16) + "\n" + gameJob.source + "\n" + gameJob.base;
-+                ProcessedMaterialInfo info{};
-+                auto cached = m_gameFiles.find(cacheKey);
-+                if (cached != m_gameFiles.end()) info = cached->second;
-+                else {
++                // A present source always runs the current converter, whose keys
++                // include input bytes and recipe. Only absent/unreadable PMX uses a record.
++                std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
++                const bool sourceReadable = !gameJob.base.empty() && source.good();
++                const auto record = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
++                    m_gameEnabled.load(), sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
 +                    auto output = GamePBR::Convert(gameJob.source, gameJob.base, m_outputDirectory,
 +                        [this](const ConvertedTexture& t, const std::string& path) { return WriteTextureToDDS(t,path); },
 +                        [this](ConvertedTexture& t) { ConvertNormalMapToOctahedral(t); });
-+                    info.importedGame = true; info.normalPath = output.normal;
-+                    info.roughnessPath = output.roughness; info.metallicPath = output.metallic;
-+                    info.emissivePath = output.emission; info.roughnessConstant = .7f;
-+                    info.metallicConstant = 0; info.emissionIntensity = 1;
-+                    m_gameFiles[cacheKey] = info;
++                    if (output.normal.empty() && output.roughness.empty()) return {};
++                    GameRegistry::Record result;
++                    result.identity = gameJob.identity; result.hashes = gameJob.hashes; result.generator = GamePBR::GeneratorVersion;
++                    if (!m_gameRegistry->Capture(result, {output.normal, output.roughness, output.metallic, output.emission})) return {};
 +                    Msg("[MaterialPipeline::ToPBR] Imported game maps: %s normal=%d packed=%d emission=%d protected_pixels=%zu\n",
-+                        gameJob.base.c_str(), !info.normalPath.empty(), !info.metallicPath.empty(),
-+                        !info.emissivePath.empty(), output.protectedPixels);
-+                }
-+                if (!info.normalPath.empty() || !info.roughnessPath.empty()) {
-+                    RegisterProcessedMaterial(gameJob.hashes, info);
++                        gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
++                    return result;
++                });
++                if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry update could not be saved\n");
++                if (record) {
++                    ProcessedMaterialInfo info{};
++                    info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);
++                    info.roughnessPath = m_gameRegistry->TexturePath(record->textures[1]);
++                    info.metallicPath = m_gameRegistry->TexturePath(record->textures[2]);
++                    info.emissivePath = m_gameRegistry->TexturePath(record->textures[3]);
++                    info.roughnessConstant = record->roughness; info.metallicConstant = record->metallic; info.emissionIntensity = record->emission;
++                    RegisterProcessedMaterial(record->hashes, info);
++                    if (!sourceReadable) Msg("[MaterialPipeline::ToPBR] Restored cached game maps: %s (%zu live hashes, generator=%u)\n",
++                        record->identity.c_str(), record->hashes.size(), record->generator);
 +                }
 +            } catch (const std::exception& e) {
 +                Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
@@ -2886,7 +3193,7 @@ index 2be46fd..b6b8188 100644
  int TextureProcessor::QueueMaterialsForProcessing() {
      if (!m_enabled.load(std::memory_order_relaxed)) {
          return 0;
-@@ -5049,6 +4853,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5049,6 +4871,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
          std::lock_guard<std::recursive_mutex> lock(m_mutex);
          for (size_t i = 0; i < cachedMaterials.size(); i++) {
              const std::string& matName = cachedMaterials[i];
@@ -2894,7 +3201,7 @@ index 2be46fd..b6b8188 100644
              if (MaterialFilter::IsNonSceneMaterialName(matName)) {
                  m_processedMaterials.insert(matName);
                  continue;
-@@ -5082,6 +4887,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5082,6 +4905,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
                  continue;
              }
              
@@ -2902,7 +3209,7 @@ index 2be46fd..b6b8188 100644
              m_materialQueue.push(matName);
              m_queuedMaterials.insert(matName);
              queuedCount++;
-@@ -5102,87 +4908,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5102,87 +4926,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
  
  size_t TextureProcessor::GetQueuedMaterialCount() const {
      std::lock_guard<std::mutex> lock(m_queueMutex);
@@ -2996,7 +3303,7 @@ index 2be46fd..b6b8188 100644
  } // namespace ToPBR
  } // namespace MaterialPipeline
  
-@@ -5190,6 +4929,23 @@ void TextureProcessor::AppendToUSDAAsync() {
+@@ -5190,6 +4947,23 @@ void TextureProcessor::AppendToUSDAAsync() {
  // Lua Bindings - Must be at global scope
  //=============================================================================
  
@@ -3020,7 +3327,7 @@ index 2be46fd..b6b8188 100644
  LUA_FUNCTION(ToPBR_Initialize) {
      // If already initialized (by C++ during RemixAPI init), return success
      if (MaterialPipeline::ToPBR::TextureProcessor::Instance().IsInitialized()) {
-@@ -5297,14 +5053,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
+@@ -5297,14 +5071,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
      bool enabled = LUA->GetBool(1);
      MaterialPipeline::ToPBR::TextureProcessor::Instance().SetMetallicGeneration(enabled);
      
@@ -3036,7 +3343,7 @@ index 2be46fd..b6b8188 100644
      return 0;
  }
  
-@@ -5382,6 +5131,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
+@@ -5382,6 +5149,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
      LUA->PushNumber(stats.failedConversions);
      LUA->SetField(-2, "failedConversions");
      
@@ -3045,7 +3352,7 @@ index 2be46fd..b6b8188 100644
      return 1;
  }
  
-@@ -5789,6 +5540,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
+@@ -5789,6 +5558,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
      LUA->PushCFunction(ToPBR_Initialize);
      LUA->SetField(-2, "Initialize");
      
@@ -3060,7 +3367,7 @@ index 2be46fd..b6b8188 100644
      LUA->SetField(-2, "IsInitialized");
      
 diff --git a/source/material_pipeline/to_pbr/to_pbr.h b/source/material_pipeline/to_pbr/to_pbr.h
-index 895cc47..28dc221 100644
+index 895cc47f2dd5352c0563c7dc37bc565cb961c492..361de6e5cdbe21451268ad71b6e0756058576243 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.h
 +++ b/source/material_pipeline/to_pbr/to_pbr.h
 @@ -14,6 +14,7 @@
@@ -3071,15 +3378,16 @@ index 895cc47..28dc221 100644
  
  #include <remix/remix.h>
  #include <remix/remix_c.h>
-@@ -39,6 +40,7 @@ namespace ToPBR {
+@@ -39,6 +40,8 @@ namespace ToPBR {
  
  // Forward declaration for modular format handlers
  struct ProcessingContext;
 +struct PreparedSnapshot;
++namespace GameRegistry { class Registry; }
  
  // VTF file format structures
  #pragma pack(push, 1)
-@@ -313,12 +315,15 @@ public:
+@@ -313,12 +316,15 @@ public:
          int materialsWithNormals;
          int materialsWithRoughness;
          int failedConversions;
@@ -3095,7 +3403,7 @@ index 895cc47..28dc221 100644
          std::string normalPath;
          std::string roughnessPath;
          std::string metallicPath;
-@@ -344,13 +349,15 @@ public:
+@@ -344,13 +350,15 @@ public:
      // Clear processed materials cache (for map changes)
      void ClearCache();
  
@@ -3115,7 +3423,7 @@ index 895cc47..28dc221 100644
      bool IsEnabled() const { return m_enabled.load(std::memory_order_relaxed); }
      
      // Enable/disable auto-processing of new materials
-@@ -501,10 +508,11 @@ private:
+@@ -501,10 +509,11 @@ private:
      
      // Discover companion textures that might not be explicitly referenced in the VMT
      // E.g., if basetexture is "metal/metal001", look for "metal/metal001_normal", "_height", "_mask", "_spec"
@@ -3128,7 +3436,7 @@ index 895cc47..28dc221 100644
      
      // Get filesystem interface
      IFileSystem* GetFileSystem();
-@@ -512,12 +520,12 @@ private:
+@@ -512,12 +521,12 @@ private:
      remix::Interface* m_remixInterface;
      IFileSystem* m_fileSystem;
      bool m_initialized;
@@ -3147,7 +3455,7 @@ index 895cc47..28dc221 100644
      std::string m_outputDirectory;       // Absolute output directory for writing DDS files
      size_t m_lastKnownMaterialCount;     // Cache to avoid expensive GetCachedMaterials() calls
      std::atomic<bool> m_allMaterialsProcessed; // Lock-free flag for instant early exit
-@@ -574,7 +582,7 @@ private:
+@@ -574,7 +583,7 @@ private:
      // an implicit roughness map on non-reflective materials.
      // Version 24 prevents additive effects with a glass physics surface from
      // being emitted as refractive translucent replacements.
@@ -3156,7 +3464,7 @@ index 895cc47..28dc221 100644
      std::unordered_set<std::string> m_ineligibleCache;
      bool m_ineligibleCacheDirty = false;
      
-@@ -599,7 +607,7 @@ private:
+@@ -599,7 +608,7 @@ private:
      std::unordered_set<uint64_t> m_materialsWrittenToUSDA;
      
      // Flag to indicate USDA needs to be rewritten
@@ -3165,7 +3473,7 @@ index 895cc47..28dc221 100644
      
      // Debounce timer for USDA writes - prevents Remix from constantly reloading
      // the mod layer while materials are still being processed
-@@ -616,10 +624,28 @@ private:
+@@ -616,10 +625,28 @@ private:
      // =========================================================================
      
      // Background worker thread
@@ -3178,10 +3486,10 @@ index 895cc47..28dc221 100644
 +        MaterialPBRProperties props{};
 +        std::vector<uint64_t> hashes;
 +    };
-+    struct GameJob { std::string name, source, base; std::vector<uint64_t> hashes; };
++    struct GameJob { std::string name, source, base, identity; std::vector<uint64_t> hashes; };
 +    std::queue<GameJob> m_gameQueue;
 +    std::unordered_set<std::string> m_gameSubmitted;
-+    std::unordered_map<std::string, ProcessedMaterialInfo> m_gameFiles;
++    std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
 +    std::atomic<bool> m_gameEnabled{false};
 +    std::queue<std::shared_ptr<PreparedSnapshot>> m_metadataReady;
 +    std::queue<WorkItem> m_readyQueue;
@@ -3194,7 +3502,7 @@ index 895cc47..28dc221 100644
      // Work queue for materials to process
      std::queue<std::string> m_materialQueue;
      std::unordered_set<std::string> m_queuedMaterials;  // Fast lookup to avoid duplicates
-@@ -638,7 +664,7 @@ private:
+@@ -638,7 +665,7 @@ private:
      void WorkerThreadFunc();
      
      // Process a single material on the worker thread (no main thread locks)
@@ -3204,7 +3512,7 @@ index 895cc47..28dc221 100644
      // Append materials to USDA file (called from worker thread)
      bool AppendMaterialsToUSDA();
 diff --git a/source/material_pipeline/to_pbr/usda.cpp b/source/material_pipeline/to_pbr/usda.cpp
-index ef90656..931e675 100644
+index ef9065617d76e2dc867310956ef65796b250c7a6..931e6759fa3d44175d71dcfae796fd8750291643 100644
 --- a/source/material_pipeline/to_pbr/usda.cpp
 +++ b/source/material_pipeline/to_pbr/usda.cpp
 @@ -13,6 +13,12 @@
@@ -3493,7 +3801,7 @@ index ef90656..931e675 100644
  
  } // namespace USDA
 diff --git a/source/material_pipeline/to_pbr/vtf.cpp b/source/material_pipeline/to_pbr/vtf.cpp
-index ac2e3e0..2bf94f3 100644
+index ac2e3e036c763d40d87cd5cb07375604fa04d7a7..2bf94f3584e2b6e92080b5d1255aba38af679b89 100644
 --- a/source/material_pipeline/to_pbr/vtf.cpp
 +++ b/source/material_pipeline/to_pbr/vtf.cpp
 @@ -10,6 +10,7 @@
@@ -3557,7 +3865,7 @@ index ac2e3e0..2bf94f3 100644
      outTexture.height = parserTexture.height;
 diff --git a/tests/game_pbr_test.cpp b/tests/game_pbr_test.cpp
 new file mode 100644
-index 0000000..6724b97
+index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc6346668178a74fbf5
 --- /dev/null
 +++ b/tests/game_pbr_test.cpp
 @@ -0,0 +1,75 @@
@@ -3636,9 +3944,158 @@ index 0000000..6724b97
 +    }
 +    if(SUCCEEDED(com))CoUninitialize();
 +}
+diff --git a/tests/game_registry_test.cpp b/tests/game_registry_test.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..33fe9eca84201395c151ffc1ece14886ab084aa0
+--- /dev/null
++++ b/tests/game_registry_test.cpp
+@@ -0,0 +1,143 @@
++// GPL-2.0. Production persistent game-map registry and publication-selection regressions.
++#include <cassert>
++#include <iostream>
++#include <stdexcept>
++#include <unordered_map>
++#include "../source/material_pipeline/to_pbr/game_registry.h"
++#include "../source/material_pipeline/to_pbr/fallback_guard.h"
++using namespace MaterialPipeline::ToPBR;
++namespace fs = std::filesystem;
++static void DDS(const fs::path& path, char pixel = 17) {
++    uint32_t h[32]{};
++    h[0] = 0x20534444; h[1] = 124; h[3] = h[4] = 1; h[7] = 1;
++    h[19] = 32; h[20] = 0x41; h[22] = 32;
++    h[23] = 0x00ff0000; h[24] = 0x0000ff00; h[25] = 0xff; h[26] = 0xff000000;
++    std::ofstream file(path, std::ios::binary); file.write(reinterpret_cast<char*>(h), sizeof(h));
++    for (int i = 0; i < 4; ++i) file.put(pixel);
++}
++static std::string Bytes(const fs::path& path) {
++    std::ifstream file(path, std::ios::binary);
++    return std::string(std::istreambuf_iterator<char>(file), {});
++}
++int main(int argc, char** argv) {
++    assert(argc == 2);
++    const fs::path output = fs::u8path(argv[1]) / "textures";
++    fs::create_directories(output);
++    const std::string identity = "mmd/t/0123456789abcdef";
++    assert(GameRegistry::Identity("MMD\\T\\0123456789ABCDEF") == identity);
++    assert(GameRegistry::Identity("mmd/0123456789abcdef/material_0").empty());
++    assert(GameRegistry::Identity("mmd/t/0123456789abcdef_extra").empty());
++    assert(GameRegistry::Identity("mmd/t/0123456789abcdeg").empty());
++    assert(!GameRegistry::SafeFile("../normal.dds"));
++    assert(!GameRegistry::SafeFile("C:normal.dds"));
++    assert(!GameRegistry::SafeFile("normal.dds:stream.dds"));
++    std::array<std::string, 4> paths;
++    for (size_t i = 0; i < paths.size(); ++i) {
++        const auto path = output / ("game_test_" + std::to_string(i) + ".dds");
++        DDS(path); paths[i] = path.u8string();
++    }
++    GameRegistry::Registry registry(output);
++    assert(registry.Load() && registry.Size() == 0);
++    int conversions = 0;
++    auto convert = [&]() -> std::optional<GameRegistry::Record> {
++        ++conversions;
++        GameRegistry::Record record;
++        record.identity = identity; record.hashes = {0x123}; record.generator = 5;
++        record.roughness = .123456789f; record.metallic = .875f; record.emission = 1.5f;
++        assert(registry.Capture(record, paths));
++        return record;
++    };
++    auto absent = []() -> std::optional<GameRegistry::Record> { assert(false); return {}; };
++    // Nothing is guessed for an unknown texture, even if the old live hash happens to match.
++    assert(!registry.Resolve(identity, {0x123}, true, false, absent));
++    assert(!registry.Resolve(identity, {0x123}, false, true, convert) && conversions == 0);
++    auto made = registry.Resolve(identity, {0x123, 0x456}, true, true, convert);
++    assert(made && conversions == 1 && made->hashes.size() == 2);
++    assert(registry.Save());
++    const auto original = Bytes(registry.Path());
++    // A crash's leftover staging file is never used as the registry.
++    { std::ofstream partial(registry.Path().wstring() + L".tmp"); partial << "partial new data"; }
++    GameRegistry::Registry second(output);
++    assert(second.Load() && second.Size() == 1);
++    assert(!second.Resolve("mmd/t/1123456789abcdef", {0x123}, true, false, absent));
++    assert(!second.Resolve(identity, {0}, true, false, absent));
++    assert(!second.Resolve(identity, {}, true, false, absent));
++    assert(!second.Resolve(identity, {0x999}, false, false, absent));
++    auto restored = second.Resolve(identity, {0x999}, true, false, absent);
++    assert(restored && restored->hashes == std::vector<uint64_t>{0x999});
++    assert(restored->textures[3].file == "game_test_3.dds");
++    assert(restored->roughness == made->roughness && restored->metallic == made->metallic && restored->emission == made->emission);
++    assert(restored->generator == 5); // No comparison with today's generator/recipe version.
++    assert(second.Save() && Bytes(second.Path()) == original);
++    // A failed atomic replacement preserves the complete prior registry.
++    const fs::path staged(second.Path().wstring() + L".tmp");
++    fs::remove(staged);
++    fs::create_directory(staged);
++    assert(second.Resolve(identity, {0x999}, true, true, [&]() { auto r = made; r->generator = 6; return r; }));
++    assert(!second.Save() && Bytes(second.Path()) == original);
++    fs::remove(staged);
++    auto update = [&]() {
++        auto record = convert(); record->generator = 999; record->roughness = .25f; return record;
++    };
++    auto updated = second.Resolve(identity, {0x777}, true, true, update);
++    assert(updated && updated->generator == 999 && updated->roughness == .25f && conversions == 2);
++    const std::string edit = original + "user edited registry\n";
++    { std::ofstream file(second.Path(), std::ios::binary); file << edit; }
++    assert(second.Save());
++    bool retained = false;
++    for (const auto& file : fs::directory_iterator(output.parent_path()))
++        if (file.path().extension() == ".bak" && Bytes(file.path()) == edit) retained = true;
++    assert(retained);
++    // Present sources never fall back when today's conversion fails or yields no safe surface.
++    bool threw = false;
++    try { second.Resolve(identity, {0x777}, true, true, []() -> std::optional<GameRegistry::Record> { throw std::runtime_error("bad PMX"); }); }
++    catch (const std::runtime_error&) { threw = true; }
++    assert(threw);
++    assert(!second.Resolve(identity, {0x777}, true, true, []() -> std::optional<GameRegistry::Record> { return {}; }));
++    assert(second.Size() == 0);
++    assert(second.Resolve(identity, {0x777}, true, true, convert) && second.Save());
++    // Reopening models cache-clear/restart retention; registrations are never loaded by old hash.
++    GameRegistry::Registry cleared(output);
++    assert(cleared.Load() && cleared.Resolve(identity, {0x888}, true, false, absent));
++    // Same-length pixel corruption has a valid DDS header, but must not restore.
++    DDS(fs::u8path(paths[2]), 18);
++    assert(Policy::ValidDDS(fs::u8path(paths[2])));
++    assert(!cleared.Resolve(identity, {0x888}, true, false, absent) && cleared.Size() == 0);
++    assert(cleared.Save());
++    DDS(fs::u8path(paths[2]));
++    assert(cleared.Resolve(identity, {0x888}, true, true, convert) && cleared.Save());
++    // Missing and truncated files prune the record at load, and persist the pruning.
++    fs::remove(fs::u8path(paths[1]));
++    GameRegistry::Registry missing(output); assert(missing.Load() && missing.Size() == 0 && missing.Save());
++    DDS(fs::u8path(paths[1]));
++    assert(missing.Resolve(identity, {0x888}, true, true, convert) && missing.Save());
++    { std::ofstream bad(fs::u8path(paths[3]), std::ios::binary); bad << "DDS truncated"; }
++    GameRegistry::Registry invalid(output); assert(invalid.Load() && invalid.Size() == 0);
++    DDS(fs::u8path(paths[3]));
++    // Reject retired record versions, traversal, malformed rows, unknown schema and oversized input.
++    { auto text = original; text.replace(text.find(identity) + identity.size(), 2, " 0");
++      std::ofstream file(registry.Path(), std::ios::binary); file << text; }
++    assert(invalid.Load() && invalid.Size() == 0);
++    { auto text = original; text.replace(text.find("game_test_0.dds"), 15, "../normal.dds");
++      std::ofstream file(registry.Path(), std::ios::binary); file << text; }
++    assert(invalid.Load() && invalid.Size() == 0);
++    { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY 1\nmmd/t/0123456789abcdef 1 5 1000000000\n"; }
++    assert(invalid.Load() && invalid.Size() == 0);
++    { std::ofstream file(registry.Path(), std::ios::binary); file << "TOPBR_GAME_REGISTRY 99\nfuture data\n"; }
++    const auto future = Bytes(registry.Path());
++    assert(!invalid.Load() && !invalid.Save() && Bytes(registry.Path()) == future);
++    { std::ofstream file(registry.Path(), std::ios::binary); file.seekp(GameRegistry::MaxBytes); file.put('x'); }
++    assert(!invalid.Load() && invalid.Size() == 0 && !invalid.Save());
++    // Use exactly the production publication selector for off/authored/incomplete cases.
++    struct Material { bool importedGame; };
++    std::unordered_map<uint64_t, Material> materials{{0x123, {true}}, {0x456, {false}}};
++    FallbackGuard::Result guard;
++    assert(FallbackGuard::Select(materials, false, true, guard).size() == 1);
++    assert(FallbackGuard::Select(materials, false, false, guard).empty());
++    guard.hashes.insert(0x123);
++    assert(FallbackGuard::Select(materials, false, true, guard).empty());
++    assert(FallbackGuard::Select(materials, true, false, guard).count(0x456) == 1);
++    guard.complete = false;
++    assert(FallbackGuard::Select(materials, true, true, guard).empty());
++    std::cout << "PASS game registry: atomic roundtrip, live identity/hash, source refresh, generator retention, DDS integrity/pruning, bounds, switches and authored exclusion\n";
++}
 diff --git a/tests/make_game_pbr_fixtures.py b/tests/make_game_pbr_fixtures.py
 new file mode 100644
-index 0000000..4d721e6
+index 0000000000000000000000000000000000000000..4d721e6e2e4c7c18924d3ad05b7dfaaa31a44345
 --- /dev/null
 +++ b/tests/make_game_pbr_fixtures.py
 @@ -0,0 +1,21 @@
@@ -3665,7 +4122,7 @@ index 0000000..4d721e6
 +(root/'test.pmx').write_bytes(b)
 diff --git a/tests/make_game_pbr_fixtures.py.md b/tests/make_game_pbr_fixtures.py.md
 new file mode 100644
-index 0000000..4fc2637
+index 0000000000000000000000000000000000000000..4fc2637a53d0912e2c9834191e264ebce08c6180
 --- /dev/null
 +++ b/tests/make_game_pbr_fixtures.py.md
 @@ -0,0 +1,6 @@
@@ -3677,7 +4134,7 @@ index 0000000..4fc2637
 +Exit 0 on success, nonzero on filesystem/encoding failure. No game or network access.
 diff --git a/tests/to_pbr_test.cpp b/tests/to_pbr_test.cpp
 new file mode 100644
-index 0000000..264247a
+index 0000000000000000000000000000000000000000..264247a5ef46bdb573ba382576fa83b65c24c71e
 --- /dev/null
 +++ b/tests/to_pbr_test.cpp
 @@ -0,0 +1,127 @@

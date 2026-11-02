@@ -41,6 +41,7 @@ namespace ToPBR {
 // Forward declaration for modular format handlers
 struct ProcessingContext;
 struct PreparedSnapshot;
+namespace GameRegistry { class Registry; }
 
 // VTF file format structures
 #pragma pack(push, 1)
@@ -633,10 +634,10 @@ private:
         MaterialPBRProperties props{};
         std::vector<uint64_t> hashes;
     };
-    struct GameJob { std::string name, source, base; std::vector<uint64_t> hashes; };
+    struct GameJob { std::string name, source, base, identity; std::vector<uint64_t> hashes; };
     std::queue<GameJob> m_gameQueue;
     std::unordered_set<std::string> m_gameSubmitted;
-    std::unordered_map<std::string, ProcessedMaterialInfo> m_gameFiles;
+    std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
     std::atomic<bool> m_gameEnabled{false};
     std::queue<std::shared_ptr<PreparedSnapshot>> m_metadataReady;
     std::queue<WorkItem> m_readyQueue;

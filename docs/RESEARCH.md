@@ -1,5 +1,42 @@
 # Research notes
 
+## R11-B: persistent imported game maps (2026-11-02)
+
+- A hotloader material name identifies a model/slot; its actual base texture has the separate
+  content identity `mmd/t/<16 hex>`. The client now snapshots that live texture name and current
+  hashes (`packages/fixes/licenses/oversized-skinning/autopbr/source/material_pipeline/to_pbr/to_pbr.cpp:4507`),
+  never a stored material name or old USD hash. Alf's 17 public parts include face/eye parts and
+  debug-white parts; seven distinct supported texture identities are visible in the fixed front view.
+- `game_registry.h:96` bounds and reads the registry; `:129` preserves edited bytes and replaces it
+  atomically; `:175` resolves only known live identities. Four published channels retain their DDS
+  byte counts and streaming FNV-1a digests. A valid header alone does not detect same-size pixel edits;
+  the production regression explicitly rejects such an edited DDS. Minimum record version 1 is
+  independent of generator version 5; the test retains source-less generator provenance, replaces it
+  on successful conversion, and rejects retired record version 0. AO is not a material input and is
+  not a restoration dependency.
+- Source availability is checked on the worker (`to_pbr.cpp:4750`). A readable source with base
+  metadata calls the current converter; a missing source uses the validated record. The worker owns
+  file I/O and the registry; client work adds no filesystem probes. `rtx_topbr_clear` retains the
+  records/DDS and resets both native and Lua submission tracking. `FallbackGuard::Select`, used at
+  `to_pbr.cpp:4622`, handles settings and authored exclusion for both paths. Runtime patch 0020
+  supplies the unconditional precedence required by ADR 0092; this change leaves it intact.
+- The QA character is a read-only copy of `E:/G/Upload/Alf`: 532 files, 3,562,938,076 bytes under
+  this worktree's `out/r11-b/source/Alf`. The unindexed candidate package permits testing before
+  the one final DLL import. The first exploratory high-profile run reached all expected material
+  states, but device loss followed the final camera return (9.04 GB reported budget with another
+  field session running); it is diagnostic evidence, not successful acceptance. The cached medium
+  run later also lost the device with 8.65 GB budget / 7.86 GB usage and micromap denials. Final
+  pinned comparison uses the existing low PoC profile and a 30 fps cap. Source run `04-low-source`
+  quits normally with zero Lua errors, seven materials on/restored and zero off.
+- The final `04-low-source` / `05-low-missing` pair has identical actor/camera bounds, USD (6,574
+  bytes, SHA-256 `97a0f545...`) and registry (1,879 bytes, `615a9d85...`), and 7/0/7 on/off/restored
+  hashes in both sessions. Missing source: zero conversions, seven cached restores. Both quit normally
+  with zero Lua errors. Character ROI byte-RGB MAE: source/missing on-off 3.669/4.162, on repeats
+  1.152/1.168, cross-session on 1.799 and restored 1.332; temporal/exposure drift remains visible.
+  Only the checked copy under `out` was renamed; the user's source was never changed. Final indexed
+  package and restored-Workshop smokes pass; original config/metadata bytes match, active generated
+  materials are zero, and depot verification finds zero mismatches. See [the report](handover/R11-B-report.md).
+
 ## R10-E: imported eye-white surfaces (2026-11-02)
 
 Final GPU evidence is in the [R10-E report](handover/R10-E-report.md): the automatic 100% ratio is

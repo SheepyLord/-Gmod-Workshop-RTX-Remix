@@ -9,6 +9,13 @@
 
 namespace MaterialPipeline { namespace ToPBR { namespace FallbackGuard {
 struct Result { bool complete = true; std::unordered_set<uint64_t> hashes; };
+template<class Materials>
+Materials Select(const Materials& materials, bool worldEnabled, bool gameEnabled, const Result& guard) {
+    Materials visible;
+    if (guard.complete) for (const auto& pair : materials)
+        if ((pair.second.importedGame ? gameEnabled : worldEnabled) && !guard.hashes.count(pair.first)) visible.insert(pair);
+    return visible;
+}
 inline void ExtractHashes(const std::string& text, Result& result) {
     size_t at = 0;
     while ((at = text.find("mat_", at)) != std::string::npos) {

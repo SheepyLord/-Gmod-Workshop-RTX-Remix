@@ -40,6 +40,7 @@ p.PumpSnapshots=function() calls.pump=(calls.pump or 0)+1 end
 p.IsProcessingInBackground=function() return false end
 p.GetQueuedMaterialCount=function() return 0 end
 p.GetLastProcessedCount=function() return 0 end
+p.ClearCache=function() calls.clear=true end
 p.QueueMaterialsForProcessing=function() calls.queue=true end
 p.QueueGameMaterial=function(name,source,base)
     assert(name=="mmd/0123456789abcdef/material_0")
@@ -73,5 +74,21 @@ assert(tries==2 and accepted==1)
 function RealTime() return 112 end
 hooks.RTXToPBR_GameMaps()
 assert(tries==2 and accepted==1) -- successful requests are one-time per client session
+-- Missing source/base metadata still reaches the native texture-identity registry.
+local missingTries=0
+p.QueueGameMaterial=function(name,source,base)
+    assert(name=="mmd/0123456789abcdef/material_0")
+    assert(source=="" and base=="")
+    missingTries=missingTries+1
+    return true
+end
+mmdhl.library.entries[id]=nil
+commands.rtx_topbr_clear() assert(calls.clear)
+hooks.RTXToPBR_GameMaps() assert(missingTries==1)
+RunConsoleCommand("rtx_topbr_game_maps","0")
+commands.rtx_topbr_clear()
+hooks.RTXToPBR_GameMaps() assert(missingTries==1)
+RunConsoleCommand("rtx_topbr_game_maps","1")
+hooks.RTXToPBR_GameMaps() assert(missingTries==2)
 hooks.RTXToPBR_Snapshots() assert(calls.pump==1)
-print("PASS ToPBR driver: diagnostics, settings, bounded metadata discovery, hash retry and deduplication")
+print("PASS ToPBR driver: diagnostics, settings, bounded metadata discovery, hash retry, source-less queue and clear/requeue")

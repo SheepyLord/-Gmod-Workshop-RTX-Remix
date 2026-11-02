@@ -47,3 +47,41 @@ ready slots). A thread-local scoped value override lets the existing extractor r
 VMT values without file access. Explicit inspection retains its diagnostic read path. Construct
 retest: maximum snapshot 0.830 ms, conversion p99 9.133 ms versus 23.472 ms before this split.
 Unconditional authored-mod priority still needs the runtime change described above.
+
+## R11-B: source-less game-map records
+
+Runtime patch 0020 now supplies authored-first fallback ranking outside this repository. R11-B keeps
+using the fixes' conservative hash guard as well. The shared `FallbackGuard::Select` drives publication
+for both freshly converted and restored game materials, including switch-off and uncertain scans.
+
+`source/material_pipeline/to_pbr/game_registry.h` is a worker-only persistent table, written as
+`game_materials.registry` beside the output texture directory. The client captures the actual
+`$basetexture` name, requiring a content identity `mmd/t/<16 hex>` and current live Remix hashes.
+Lua queues hotloader materials even without source/base metadata. A readable source with metadata
+always runs today's content/recipe-keyed converter. An absent/unreadable source can only restore
+a known identity whose four published DDS channels still have valid headers/full mip payload sizes,
+the recorded byte counts and streaming FNV-1a content digests. These digests detect accidental edits;
+they are not a cryptographic trust mechanism. Original albedo/alpha and protected texels remain untouched.
+Saved hashes are diagnostic provenance, never a source of live registrations. Source rejection or an
+empty safe conversion does not revive the previous output.
+
+The record format/version (1, minimum 1) is independent of the generator (5): generator updates
+must not expire source-less materials that cannot be regenerated. Raise the minimum record version
+only for records with a known correctness defect. Limits: 4096 records, 64 hashes per record, 8 MiB
+registry input, 4096 bytes per row, existing DDS dimension bounds. All file references are plain DDS
+filenames under the known textures directory; reparse-point textures/directories are rejected.
+Missing/truncated records are pruned on load; digest failures prune on restoration. Unknown schemas
+and unreadable registries remain intact. Atomic replacement preserves pre-existing or later edited
+registry bytes in content-named `.before-r11b-<digest>.bak` files before writing.
+
+`rtx_topbr_clear` drops/requeues live registrations but retains the registry and DDS, including over
+map changes and worker cancellation. A prior successful conversion with R11-B is required: cached
+textures written before the registry existed are not guessed back into materials. AO is retained
+as ordinary unused cache data, not a published material dependency.
+
+Compile `tests/game_registry_test.cpp` with MSVC C++17 `/EHsc /UNDEBUG /W4 /WX /DNOMINMAX` and pass
+a fresh scratch directory under `out`. It exercises atomic read/write and failed replacement,
+preserved user edits, current identity/hash checks, missing/invalid/edited DDS, bounded malformed input,
+record/generator versions, source refresh/rejection, switch-off and authored-hash exclusion. No SDK,
+game, network or user character is needed. The native loader repository's Release suite builds and
+runs this test from its GPL corresponding-source copy, as well as the Lua source-less queue harness.

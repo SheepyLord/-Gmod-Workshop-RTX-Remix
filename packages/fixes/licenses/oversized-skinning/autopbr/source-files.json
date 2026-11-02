@@ -1,10 +1,10 @@
 {
   "base": "7094baf6edf6797fd5c3f0b58ca668f9307b4906",
-  "commit": "1679a99a3b54576b0b4c68f8bf86972bf3c42969",
+  "commit": "6e33b90fd705e4f5185b78e3f80a74232ff0f503",
   "files": {
-    "docs/TOPBR_R11.md": "5e03e37aea6273b0de66f291d08a65c93a3208a3418c2bf3d25758ca6886c42c",
-    "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua": "c053ee518720123c7d32278b5ca5b88fa802b14c7f44ea533303bdfbf0e6eda1",
-    "source/material_pipeline/to_pbr/fallback_guard.h": "884f5fb3e7cca934e776ed0d0146755e2ac660b07f421189da5006bc0129f73d",
+    "docs/TOPBR_R11.md": "f0016ada266d709bfde7e7d230650ad06a2487637d7aaf153964d28703b61fe3",
+    "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua": "d8080dcf1d0788a9270c13e345c3f060a7314588b33b6990b20f316acc2c9f21",
+    "source/material_pipeline/to_pbr/fallback_guard.h": "e0f000b3f6059edf126a39189ab5d37fb3f11a12951b7e85b6d01a66f8b5676b",
     "source/material_pipeline/to_pbr/format_bftpseudopbr.cpp": "b9b4e7984b5a22fec12ce3a51c9747cb28307e909806a7c62d6c31586ab1c60e",
     "source/material_pipeline/to_pbr/format_exopbr.cpp": "1150a6df6b74bf11e0264b32c44e7773a1e3aac741ba976e7a5fa3dba6d8e66c",
     "source/material_pipeline/to_pbr/format_gpbr.cpp": "5ec0c3fdd46edbfa92132b9f2d121af74a31a26f35eb1a5b35e0e67dbda85e79",
@@ -12,37 +12,41 @@
     "source/material_pipeline/to_pbr/format_source.cpp": "7263eb4314254d221825e6acbc58d23b04b26995aafd72ebb510a0554e2bdc52",
     "source/material_pipeline/to_pbr/formats.cpp": "9da72bb5cb39ba6eac0f1ac3b2d7a2b38436566498ca2712a5d67abcffedb29e",
     "source/material_pipeline/to_pbr/formats.h": "7c6c8e159c511df8d61a9514b93610fd12e515bd87e4c088c1891e9818bf6568",
-    "source/material_pipeline/to_pbr/game_pbr.h": "3176581b017ac79799a4e5154a61ee10edd4553f6bae5b2f70a579dd3692c89e",
+    "source/material_pipeline/to_pbr/game_pbr.h": "efaa674f652732c4b30efcec8785ca8d0cf58d58fa6c9042e5e591a1bc479475",
+    "source/material_pipeline/to_pbr/game_registry.h": "703565504d976673e4738d2817588d7397581d64faa90ce9c2f427a86f8c71e2",
     "source/material_pipeline/to_pbr/pbr_policy.h": "fe5d65abc7ffbcf13fd25a7af1a22db8dcecc7578388186f9da260a001fe924b",
-    "source/material_pipeline/to_pbr/to_pbr.cpp": "77c68e9c5acacbaa0c7185f93ea4fb87edbfd0adefc9631c68e4202eaca81600",
-    "source/material_pipeline/to_pbr/to_pbr.h": "0953332d839eaaea1c1b3a9b58d964e496601a1c207297e9ecda330ddfcfd02a",
+    "source/material_pipeline/to_pbr/to_pbr.cpp": "e99a5630483c88531b948b7f8c7b2af5e4b3cf0f3505429276b632941de695da",
+    "source/material_pipeline/to_pbr/to_pbr.h": "a3639bb8a1ee1baf4b7f8edbce8b60efc291547cd19277d282bf0e2d3f870bf5",
     "source/material_pipeline/to_pbr/usda.cpp": "2fe697afac17169b9eebb21ff2b6725057febcc14ee0145635a4b0fc197b0ded",
     "source/material_pipeline/to_pbr/vtf.cpp": "33c46b449b3b27a4ed4649b380ac165a86d995b7d757f1dd94c132d312e6eb48",
     "tests/game_pbr_test.cpp": "a85572804fb573c09b968e7f2818026c7d98a54bccf784f8033ced0873541944",
+    "tests/game_registry_test.cpp": "9b14690afda91ccb2ddf00def788e8502cba7c95276651b0ef55d13c681e4548",
     "tests/make_game_pbr_fixtures.py": "ec2033f458e8f5be539127425ed99c7afcd33c7d050b74cf6abfaceacb55ff2c",
     "tests/make_game_pbr_fixtures.py.md": "559b5e78f7c1dfb7996c33de1d00d1238406a2a597a068be1aaecf009a53ed37",
     "tests/to_pbr_test.cpp": "82ff159fe8f1fced55902b2580f165e027f1ab736185774c85577802e5a02b3e"
   },
   "build": {
-    "source\\material_pipeline\\to_pbr\\fallback_guard.h": "884f5fb3e7cca934e776ed0d0146755e2ac660b07f421189da5006bc0129f73d",
-    "source\\material_pipeline\\to_pbr\\formats.cpp": "9da72bb5cb39ba6eac0f1ac3b2d7a2b38436566498ca2712a5d67abcffedb29e",
-    "source\\material_pipeline\\to_pbr\\formats.h": "7c6c8e159c511df8d61a9514b93610fd12e515bd87e4c088c1891e9818bf6568",
+    "source\\material_pipeline\\to_pbr\\fallback_guard.h": "e0f000b3f6059edf126a39189ab5d37fb3f11a12951b7e85b6d01a66f8b5676b",
     "source\\material_pipeline\\to_pbr\\format_bftpseudopbr.cpp": "b9b4e7984b5a22fec12ce3a51c9747cb28307e909806a7c62d6c31586ab1c60e",
     "source\\material_pipeline\\to_pbr\\format_exopbr.cpp": "1150a6df6b74bf11e0264b32c44e7773a1e3aac741ba976e7a5fa3dba6d8e66c",
     "source\\material_pipeline\\to_pbr\\format_gpbr.cpp": "5ec0c3fdd46edbfa92132b9f2d121af74a31a26f35eb1a5b35e0e67dbda85e79",
     "source\\material_pipeline\\to_pbr\\format_mwbpbr.cpp": "a7d76974301fd9864213321bf2f4b8ded0e4fd4a16ed87e97788be3eab302bd2",
     "source\\material_pipeline\\to_pbr\\format_source.cpp": "7263eb4314254d221825e6acbc58d23b04b26995aafd72ebb510a0554e2bdc52",
-    "source\\material_pipeline\\to_pbr\\game_pbr.h": "3176581b017ac79799a4e5154a61ee10edd4553f6bae5b2f70a579dd3692c89e",
+    "source\\material_pipeline\\to_pbr\\formats.cpp": "9da72bb5cb39ba6eac0f1ac3b2d7a2b38436566498ca2712a5d67abcffedb29e",
+    "source\\material_pipeline\\to_pbr\\formats.h": "7c6c8e159c511df8d61a9514b93610fd12e515bd87e4c088c1891e9818bf6568",
+    "source\\material_pipeline\\to_pbr\\game_pbr.h": "efaa674f652732c4b30efcec8785ca8d0cf58d58fa6c9042e5e591a1bc479475",
+    "source\\material_pipeline\\to_pbr\\game_registry.h": "703565504d976673e4738d2817588d7397581d64faa90ce9c2f427a86f8c71e2",
     "source\\material_pipeline\\to_pbr\\pbr_policy.h": "fe5d65abc7ffbcf13fd25a7af1a22db8dcecc7578388186f9da260a001fe924b",
-    "source\\material_pipeline\\to_pbr\\to_pbr.cpp": "77c68e9c5acacbaa0c7185f93ea4fb87edbfd0adefc9631c68e4202eaca81600",
-    "source\\material_pipeline\\to_pbr\\to_pbr.h": "0953332d839eaaea1c1b3a9b58d964e496601a1c207297e9ecda330ddfcfd02a",
+    "source\\material_pipeline\\to_pbr\\to_pbr.cpp": "e99a5630483c88531b948b7f8c7b2af5e4b3cf0f3505429276b632941de695da",
+    "source\\material_pipeline\\to_pbr\\to_pbr.h": "a3639bb8a1ee1baf4b7f8edbce8b60efc291547cd19277d282bf0e2d3f870bf5",
     "source\\material_pipeline\\to_pbr\\usda.cpp": "2fe697afac17169b9eebb21ff2b6725057febcc14ee0145635a4b0fc197b0ded",
     "source\\material_pipeline\\to_pbr\\usda.h": "5437ddbcb8a078bca9a035e0c20feaa70504f6076afe582656c7e2f9ea9986cf",
     "source\\material_pipeline\\to_pbr\\vtf.cpp": "33c46b449b3b27a4ed4649b380ac165a86d995b7d757f1dd94c132d312e6eb48",
     "source\\material_pipeline\\to_pbr\\vtf.h": "47eaef14c15747d25fefafc3aa21468f2fb63be628fa6c1c65d73d629d014827",
     "dll": {
-      "bytes": 5060608,
-      "sha256": "c4833fc18673ab050aeac7d6c43431908cd9e4d1212dbfce0b5cd88157418a1c"
+      "bytes": 5139456,
+      "sha256": "f1cf17478cb46f08a38ca997104a7ddd50d3463e026243ce8183e301d2c6fa43"
     }
-  }
+  },
+  "source_copy_line_endings": "working-tree bytes; reconstruction compares after CRLF normalization"
 }

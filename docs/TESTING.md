@@ -1858,3 +1858,38 @@ Canals snapshot maxima are .830/.069/.644 ms. A valid Unicode-later authored lay
 UGC MWB inspection/rendering succeeds, while full Workshop startup hangs at the menu. Rollback and
 indexed-package reinstall succeed after generated writes; final depot verification has zero depot
 mismatches. See the report for discarded trials and unverified real-format coverage.
+
+
+## R11-B cached imported game maps
+
+`tools/test.ps1 -Config Release` includes the packaged GPL production registry/selector regression
+(`tools/tests/test_topbr_registry.py`, MSVC C++17 with assertions and `/W4 /WX`) and the Lua driver
+harness. Registry cases cover atomic roundtrip and failed replacement, preserved edits, actual texture
+identity/current hashes, unknown identity, missing/truncated/same-size-edited DDS, malformed/oversized
+input, retired record and retained generator provenance, source refresh/rejection, independent switches
+and authored-hash exclusion. Lua cases include absent source/base metadata, retry, deduplication and
+clear/requeue while disabled/enabled. The production Source/VTF/USD and game-channel harnesses
+also run from the recorded fixes source (commands in its GPL implementation notes).
+
+For rendered QA, exclusively create `out/r10/poc.lock` in the main checkout, preserve the PoC config
+and hotloader metadata under this worktree's `out`, and copy a game character folder there from the
+read-only user library. Build a local candidate package without importing the DLL into Git LFS yet.
+Run the PoC with `-multirun`, local package/add-ons, no Workshop mounting and a fixed frozen character
+view. Record current-run-tagged USD/registry snapshots alongside acknowledged on/off screenshots.
+Quit normally; rename only the checked copy inside `out`, leaving the hotloader source path unchanged.
+Start again: identical published hashes/material values and matching views must return without source
+reads; disable must publish zero. Also clear/requeue and remove source metadata in memory to exercise
+those paths. Never focus, send input to, or end an independently running field process.
+
+Keep failed runs and describe them separately. Restore the Workshop-only config and preserved metadata,
+run a restored smoke session and depot verification, and release the lock only after restoration.
+Registry/DDS may remain as useful generated QA cache, with no active temporary material registrations.
+Evidence and final outcomes: `out/r11-b` in `r11-cache`; [R11-B report](handover/R11-B-report.md).
+
+R11-B final evidence: Release gate passes 26 CTests + 554 Python tests (two existing skips). The
+pinned low-profile source/missing pair exits normally with zero Lua errors, byte-identical USD/registry
+and 7/0/7 materials on/off/restored in each session. Missing source logs zero conversions and seven
+cache restores. Earlier high/medium device-loss runs remain diagnostic evidence. The final indexed
+package and restored-Workshop smoke sessions also quit normally; 185 original snapshot files match,
+no generated materials remain active, and depot verification reports 2,877 OK files and zero depot
+mismatches (one permitted user-config difference).

@@ -3,12 +3,16 @@
 The fixes [LICENSE](../../../LICENSE) applies. This layer builds on the shipped R8 native source
 `7094baf6edf6797fd5c3f0b58ca668f9307b4906`, reconstructed through the
 [preceding source record](../backrooms/Source.md). The local fixes branch `codex/r11-autopbr` ends at
-`1679a99a3b54576b0b4c68f8bf86972bf3c42969`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`; the final commit moves VMT I/O off frame after profiling. Nothing was pushed.
+`6e33b90fd705e4f5185b78e3f80a74232ff0f503`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`;
+`1679a99` moves VMT I/O off frame after profiling, and `6e33b90` adds R11-B's source-less game-map
+registry. Nothing was pushed.
 
 [autopbr.patch](autopbr.patch) is the complete change from that base. Complete changed files are
 also included at their native-repository paths; [source-files.json](source-files.json) records their
 SHA-256 values and the built source/DLL identity. Overlay them onto the exact base, or apply the patch.
 The tests generate synthetic fixtures; no user model or texture is distributed here.
+Copies retain the native working-tree bytes/line endings. Applying the canonical Git patch to the
+base reproduces all 22 changed files after CRLF normalization; build hashes record the raw source bytes.
 
 ## Behavior
 
@@ -26,10 +30,17 @@ Endfield green is flipped. Named skin/face/eye regions are protected, original a
 and AO is retained as data. A completed, content-keyed cache bypasses decode/raster work on later runs.
 The default-on checkbox is translated by the MIT companion. Source conversion remains opt-in.
 
-**Runtime integration is still required for absolute precedence.** The fixes exclude every authored
+R11-B records each successful game material in an atomic, bounded `game_materials.registry` beside
+the output textures. A current live `mmd/t/<16 hex>` identity can restore the material without its
+source only if every published DDS passes full header/mip-size, byte-count and content-digest checks.
+Old hashes never register themselves. Readable sources use the current converter; missing/invalid
+records are pruned, unknown schemas remain intact, and registry edits are preserved before replacement.
+Record compatibility is independent of generator version. Cache clearing retains the registry/DDS
+and requeues live materials. See [ADR 0093](../../../../../docs/decisions/0093-cached-imported-game-materials.md).
+
+**Runtime patch 0020 now supplies absolute precedence** ([ADR 0092](../../../../../docs/decisions/0092-generated-fallback-mods-rank-last.md)). The fixes also exclude every authored
 hash they can conservatively inspect and remove late conflicts, including Unicode-later mod names.
-They cannot change the runtime's first-mod lookup or synchronize its asynchronous swaps. This is
-not a claim that folder scanning proves the user's unconditional priority requirement. See
+Folder scanning alone cannot synchronize runtime swaps. See
 [ADR 0091](../../../../../docs/decisions/0091-automatic-pbr-fallbacks.md) and the
 [R11-A report](../../../../../docs/handover/R11-A-report.md).
 
@@ -43,12 +54,19 @@ the new headers. WIC/COM system libraries were already linked by the module's te
 
 MSVC 14.44.35207, Windows SDK 10.0.26100.0, C++17. Run the R8 MSBuild command with all output,
 intermediates and TEMP/TMP under out. R11's isolated generated projects and dependency copy are in
-`out/worktrees/r11-fixes/out/build` and `out/deps`; reproducing this layout only rebases the recorded
-projects' paths, OutDir and per-project IntDir. No new source or library is downloaded.
+`out/worktrees/r11-fixes/out/build` and `out/deps`. R11-B rebases those prepared projects' build/output
+and per-project intermediate paths into `out/worktrees/r11-cache/out/r11-b/build` and `module`,
+while reading the same isolated dependencies and fixes source. No source or library is downloaded.
 
-The DLL is **5,060,608 bytes**, SHA-256
-`c4833fc18673ab050aeac7d6c43431908cd9e4d1212dbfce0b5cd88157418a1c`.
-The matching PDB remains beside it under the fixes worktree's `out/r11-module`.
+From an x64 VS shell in the R11-B loader worktree:
+
+```powershell
+MSBuild.exe out/r11-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0
+```
+
+The DLL is **5,139,456 bytes**, SHA-256
+`f1cf17478cb46f08a38ca997104a7ddd50d3463e026243ce8183e301d2c6fa43`.
+The matching PDB remains beside it under the loader worktree's `out/r11-b/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
 the existing VTF filesystem/logging stubs and assertions enabled. They cover malformed/resource VTFs,
@@ -57,6 +75,11 @@ zero emission, Source metal/roughness, Exo/GPBR channels and all four format det
 game regression covers packed channels, green convention, shared skin, Unicode PMX names, malformed
 PMX, rooted/traversal paths, duplicate companions and image sanity. Commands are in the native
 [implementation notes](docs/TOPBR_R11.md). The aggregate Lua harness covers the indexed driver.
+R11-B's standalone production registry/selector test is also built by the aggregate Release gate:
+atomic persistence/failure, edit preservation, identity/current hashes, source refresh, record/generator
+versions, missing/truncated/edited DDS, bounded malformed input, settings and authored exclusion.
+The Lua harness also tests absent source/base metadata and clear/requeue. The existing production
+Source/VTF/USD and game-channel harnesses pass on the rebuilt source.
 
 PoC profiling reduced the maximum client snapshot from 23.553 to 0.830 ms by moving VMT reads and
 companion discovery off frame. Construct conversion p99 fell from 23.472 to 9.133 ms.

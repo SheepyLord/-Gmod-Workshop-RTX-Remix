@@ -7,6 +7,7 @@
 #include "fallback_guard.h"
 #include "pbr_policy.h"
 #include "game_pbr.h"
+#include "game_registry.h"
 #include <filesystem>
 #include <iomanip>
 #include "../material_filter.h"
@@ -188,8 +189,8 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
         }
     }
     
-    // Registrations are rebuilt from live identities each session. Only content-keyed
-    // DDS files survive: material names and old USD hashes are not content identities.
+    // Registrations are rebuilt from live identities each session. The worker may
+    // restore validated game records only after seeing a matching hotloader texture.
     EnsureOutputDirectory();
     m_publishRequested.store(true);
 
@@ -215,7 +216,7 @@ void TextureProcessor::Shutdown() {
     }
     m_textureHandles.clear();
     
-    m_gameFiles.clear();
+    m_gameRegistry.reset();
     m_gameSubmitted.clear();
     m_uploadedTextures.clear();
     m_processedMaterials.clear();
@@ -4464,11 +4465,11 @@ void TextureProcessor::ClearCache() {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     
     // Clear all tracking data for reprocessing.
-    // Note: USDA files remain on disk and need game restart to reload.
+    // The next worker publication retracts the USD snapshot. Persistent game
+    // records and DDS survive: without the source they cannot be regenerated.
     m_processedMaterials.clear();
     m_processedFrameCounts.clear();
     m_gameSubmitted.clear();
-    m_gameFiles.clear();
     m_uploadedTextures.clear();
     m_processedMaterialInfo.clear();
     m_needsUSDAUpdate = false;
@@ -4484,7 +4485,7 @@ void TextureProcessor::ClearCache() {
         DeleteFileA(cachePath.c_str());
     }
     
-    Msg("[MaterialPipeline::ToPBR] Cache cleared (including persistent ineligible cache)\n");
+    Msg("[MaterialPipeline::ToPBR] Cache cleared (game-map records and DDS retained)\n");
 }
 
 bool TextureProcessor::ProcessSingleMaterial(const std::string& materialName) {
@@ -4508,13 +4509,21 @@ bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::str
         name.compare(0,4,"mmd/") != 0 || name.size() < 22 || name[20] != '/' ||
         source.find(char(0)) != std::string::npos || base.find(char(0)) != std::string::npos) return false;
     for (size_t i=4;i<20;++i) if (!std::isxdigit(uint8_t(name[i]))) return false;
+    if (!materials) return false;
+    IMaterial* material = materials->FindMaterial(name.c_str(), TEXTURE_GROUP_OTHER, false);
+    if (!material || material->IsErrorMaterial()) return false;
+    bool found = false;
+    IMaterialVar* baseVar = material->FindVar("$basetexture", &found, false);
+    ITexture* texture = found && baseVar ? baseVar->GetTextureValue() : nullptr;
+    const std::string identity = texture ? GameRegistry::Identity(texture->GetName()) : std::string{};
+    if (identity.empty()) return false; // A model/material name is not a texture identity.
     auto hashes = CollectMaterialFrameHashes(name);
-    if (hashes.empty()) return false; // Lua retries after the texture was actually drawn.
+    if (hashes.empty() || hashes.size() > GameRegistry::MaxHashes) return false; // Retry after draw.
     std::lock_guard<std::mutex> lock(m_queueMutex);
     if (m_gameSubmitted.count(name)) return true;
     if (m_gameSubmitted.size() >= 4096 || m_gameQueue.size() >= 128) return false;
     m_gameSubmitted.insert(name);
-    m_gameQueue.push({name,source,base,std::move(hashes)});
+    m_gameQueue.push({name,source,base,identity,std::move(hashes)});
     m_queueCondition.notify_one();
     return true;
 }
@@ -4610,12 +4619,7 @@ bool TextureProcessor::WriteModUSDA() {
     std::unordered_map<uint64_t, ProcessedMaterialInfo> visible;
     {
         std::lock_guard<std::recursive_mutex> lock(m_mutex);
-        if (guard.complete) {
-            for (const auto& pair : m_processedMaterialInfo) {
-                if ((pair.second.importedGame ? m_gameEnabled.load() : IsEnabled()) &&
-                    !guard.hashes.count(pair.first)) visible.insert(pair);
-            }
-        }
+        visible = FallbackGuard::Select(m_processedMaterialInfo, IsEnabled(), m_gameEnabled.load(), guard);
     }
     const std::string target = modDir + "/materials.usda";
     const std::string staging = target + ".tmp";
@@ -4700,6 +4704,11 @@ void TextureProcessor::StopWorkerThread() {
 
 void TextureProcessor::WorkerThreadFunc() {
     const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (!m_gameRegistry) {
+        m_gameRegistry = std::make_unique<GameRegistry::Registry>(std::filesystem::u8path(m_outputDirectory));
+        if (!m_gameRegistry->Load()) Warning("[MaterialPipeline::ToPBR] Game registry unreadable; retained without reuse\n");
+        else if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry prune could not be saved\n");
+    }
     while (!m_shutdownRequested.load()) {
         WorkItem job;
         GameJob gameJob;
@@ -4735,25 +4744,34 @@ void TextureProcessor::WorkerThreadFunc() {
         if (gotGame) {
             m_backgroundProcessing.store(true);
             try {
-                const std::string cacheKey = gameJob.name.substr(4,16) + "\n" + gameJob.source + "\n" + gameJob.base;
-                ProcessedMaterialInfo info{};
-                auto cached = m_gameFiles.find(cacheKey);
-                if (cached != m_gameFiles.end()) info = cached->second;
-                else {
+                // A present source always runs the current converter, whose keys
+                // include input bytes and recipe. Only absent/unreadable PMX uses a record.
+                std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
+                const bool sourceReadable = !gameJob.base.empty() && source.good();
+                const auto record = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
+                    m_gameEnabled.load(), sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
                     auto output = GamePBR::Convert(gameJob.source, gameJob.base, m_outputDirectory,
                         [this](const ConvertedTexture& t, const std::string& path) { return WriteTextureToDDS(t,path); },
                         [this](ConvertedTexture& t) { ConvertNormalMapToOctahedral(t); });
-                    info.importedGame = true; info.normalPath = output.normal;
-                    info.roughnessPath = output.roughness; info.metallicPath = output.metallic;
-                    info.emissivePath = output.emission; info.roughnessConstant = .7f;
-                    info.metallicConstant = 0; info.emissionIntensity = 1;
-                    m_gameFiles[cacheKey] = info;
+                    if (output.normal.empty() && output.roughness.empty()) return {};
+                    GameRegistry::Record result;
+                    result.identity = gameJob.identity; result.hashes = gameJob.hashes; result.generator = GamePBR::GeneratorVersion;
+                    if (!m_gameRegistry->Capture(result, {output.normal, output.roughness, output.metallic, output.emission})) return {};
                     Msg("[MaterialPipeline::ToPBR] Imported game maps: %s normal=%d packed=%d emission=%d protected_pixels=%zu\n",
-                        gameJob.base.c_str(), !info.normalPath.empty(), !info.metallicPath.empty(),
-                        !info.emissivePath.empty(), output.protectedPixels);
-                }
-                if (!info.normalPath.empty() || !info.roughnessPath.empty()) {
-                    RegisterProcessedMaterial(gameJob.hashes, info);
+                        gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
+                    return result;
+                });
+                if (!m_gameRegistry->Save()) Warning("[MaterialPipeline::ToPBR] Game registry update could not be saved\n");
+                if (record) {
+                    ProcessedMaterialInfo info{};
+                    info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);
+                    info.roughnessPath = m_gameRegistry->TexturePath(record->textures[1]);
+                    info.metallicPath = m_gameRegistry->TexturePath(record->textures[2]);
+                    info.emissivePath = m_gameRegistry->TexturePath(record->textures[3]);
+                    info.roughnessConstant = record->roughness; info.metallicConstant = record->metallic; info.emissionIntensity = record->emission;
+                    RegisterProcessedMaterial(record->hashes, info);
+                    if (!sourceReadable) Msg("[MaterialPipeline::ToPBR] Restored cached game maps: %s (%zu live hashes, generator=%u)\n",
+                        record->identity.c_str(), record->hashes.size(), record->generator);
                 }
             } catch (const std::exception& e) {
                 Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());

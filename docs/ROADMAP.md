@@ -1,5 +1,12 @@
 # Roadmap
 
+R11-B (cached imported game maps) is **complete locally** on `r11-cache` / `codex/r11-autopbr`:
+successful game materials persist by hotloader texture identity and restore validated DDS when the
+source is unavailable. Release/native/Lua checks pass; the pinned PoC source-present/missing-source
+pair publishes 7/0/7 on/off/restored in both sessions, then the PoC is restored. See the
+[brief](handover/R11-B-cached-game-maps.md), [report](handover/R11-B-report.md), and
+[ADR 0093](decisions/0093-cached-imported-game-materials.md).
+
 R11 (automatic PBR, 2026-11-02; [plan](handover/R11-plan.md)) is **done**: imported Wuthering Waves,
 Endfield and Silver Palace characters get their own shipped PBR maps automatically ("Imported game PBR",
 on by default), the fixes' ToPBR is bounded and closer to the RTX look (still opt-in for world materials),

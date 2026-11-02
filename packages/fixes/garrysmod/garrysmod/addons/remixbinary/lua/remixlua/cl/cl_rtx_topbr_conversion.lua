@@ -448,11 +448,13 @@ end
 --[[
     Clear conversion cache
 ]]--
+local gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
 function RTXToPBR.ClearCache()
     local processor = GetProcessor()
     if processor then
         processor.ClearCache()
     end
+    gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
     MsgC(Color(100, 255, 100), "[RTX ToPBR] Cache cleared\n")
 end
 
@@ -639,7 +641,6 @@ MsgC(Color(200, 200, 200), "  Use 'rtx_topbr_help' for usage information.\n")
 
 -- The source path is local-only hotloader data; no network or importer hook is needed.
 CreateClientConVar("rtx_topbr_game_maps", "1", true, false, "Use shipped packed game PBR maps on imported characters")
-local gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
 local function syncGameMaps()
     local p = GetProcessor()
     if p and p.SetGameEnabled then p.SetGameEnabled(GetConVarBoolSafe("rtx_topbr_game_maps", true)) end
@@ -665,8 +666,11 @@ hook.Add("Think", "RTXToPBR_GameMaps", function()
             local name = istable(part) and part.path
             local source = entry and entry.source
             local base = original and original.base
-            if isstring(name) and not gameSubmitted[name] and isstring(source) and source ~= "" and isstring(base) and base ~= "" then
-                if p.QueueGameMaterial(name, source, base) then gameSubmitted[name] = true end
+            if isstring(name) and not gameSubmitted[name] then
+                -- Native restores only recorded, validated maps for the live texture identity.
+                if p.QueueGameMaterial(name, isstring(source) and source or "", isstring(base) and base or "") then
+                    gameSubmitted[name] = true
+                end
             end
         else
             if gameKey and gameAssets[gameKey] == nil then gameKey = nil end

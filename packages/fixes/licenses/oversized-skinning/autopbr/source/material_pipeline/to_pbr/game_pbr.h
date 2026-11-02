@@ -18,6 +18,7 @@
 
 namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 namespace fs = std::filesystem;
+constexpr unsigned GeneratorVersion = 5; // Registry provenance; content-key/marker version below.
 using Microsoft::WRL::ComPtr;
 inline std::string Lower(std::string s) {
     for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }

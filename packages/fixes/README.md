@@ -37,11 +37,14 @@ to R6 integration; offline decoding alone does not prove the rendered look.
 
 ## R11 automatic PBR
 
-The R11 DLL is built from fixes `1679a99a3b54576b0b4c68f8bf86972bf3c42969` on the shipped
-R8 base, preserving the oversized/model/PAS and memory-limit fixes. It is 5,060,608 bytes,
-SHA-256 `c4833fc18673ab050aeac7d6c43431908cd9e4d1212dbfce0b5cd88157418a1c`.
+The R11-B DLL is built from fixes `6e33b90fd705e4f5185b78e3f80a74232ff0f503` on the shipped
+R8/R11-A base, preserving the oversized/model/PAS and memory-limit fixes. It is 5,139,456 bytes,
+SHA-256 `f1cf17478cb46f08a38ca997104a7ddd50d3463e026243ce8183e301d2c6fa43`.
 Only the rebuilt DLL and ToPBR client driver were imported, each with `inputs.py --file`; every
 other indexed fixes input is retained. [Corresponding source and rebuild tests](licenses/oversized-skinning/autopbr/Source.md)
 are nested in the existing bundled source tree. Vanilla ToPBR stays opt-in; imported game maps
-have an independent default-on setting. Absolute late-pack precedence remains a runtime
-integration requirement; see [ADR 0091](../../docs/decisions/0091-automatic-pbr-fallbacks.md).
+have an independent default-on setting. R11-B retains successful game materials by live hotloader
+texture identity when their source is unavailable, with complete DDS validation and persistent
+record-version policy ([ADR 0093](../../docs/decisions/0093-cached-imported-game-materials.md)).
+Runtime patch 0020 supplies absolute authored-pack precedence
+([ADR 0092](../../docs/decisions/0092-generated-fallback-mods-rank-last.md)).
