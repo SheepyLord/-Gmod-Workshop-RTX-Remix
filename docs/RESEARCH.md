@@ -1,5 +1,56 @@
 # Research notes
 
+## R10-E: imported eye-white surfaces (2026-11-02)
+
+Final GPU evidence is in the [R10-E report](handover/R10-E-report.md): the automatic 100% ratio is
+0.738–1.017 over six conditions, versus 0.921–1.274 for Robin in the same front-view protocol; exact
+local parity is not achieved by C-16's frame-average input. Three visible Linlongs measure median
+12.209 ms off / 12.202 ms on, with one 22,369,700-byte proxy shared by the instances. Preparation
+reached 153.208 ms. Only the selected eye part changes among Linlong's 30 and Robin's 83 public
+material bindings, including final comparisons of generated soft bindings. Native hotloader
+`module.cpp:619-627` (the local source, read only) selects separate soft names under Remix; the
+controller covers the matching asset/slot's copy. Six Lua scenarios cover that lifecycle. All named
+corpus whites have material alpha 0 or 1; five have no PMX texture path, so name hits alone do not
+prove availability of a supported owned albedo at runtime.
+
+- The production Lua matcher finds **522 surfaces in 493/1,225 PMX models** (27,096 materials) in
+  the main checkout's `out/r10/corpus.jsonl`; **470/493** share their texture with other materials.
+  PoC: **5/5** characters, five matched surfaces, all shared. Read-only field snapshot: **143 manifests,
+  6,233 materials, 121 matches in 118 models**, 109 sharing their texture; 25 lack a recognized
+  separate white. The brief's 144-library count differs from this snapshot. Reproduce with
+  [eye_white_catalogue.py](../tools/qa/eye_white_catalogue.py.md); evidence `out/r10/catalogue.json`.
+  Unnamed/combined surfaces cannot be inferred from names. Near misses are review candidates, not
+  proven false negatives.
+- PMX UV/geometry inspection confirms Ganyu's exact `eyeball` covers white eye regions (156
+  triangles, centroid RGB median 255/255/255). Four `目白底` materials sample painted lower white
+  backing. `目白框`/`目白边` sample dark rims (RGB medians 139/120/107 or 136/136/136). `eye_back`
+  samples pink backing (215/192/200); `眼角膜` covers colored iris/cornea regions. Keep those excluded.
+  Per-material bounds, UV overlays and color measurements: `out/r10/ambiguous-materials.json`,
+  `uv-*.png`; original PMX/PNG files were read only through `rpai.pmx.read_pmx`.
+- Robin's shipped PoC `pbr_robin/models/robin_r18_f9c3e4b4.usda:141-142` has fallback **0.6** and
+  adaptive input **15**. Decoding the published 4096² DDS albedo/emission maps from sRGB and measuring
+  **131,891** eroded sclera texels gives **15 × emission/albedo = 0.6276053226**, equal at p05/median/p95.
+  The nominal class formula `.025/.6*15` is **0.625** (0.417% quantization difference). Automatic
+  intensity uses 0.625 through C-16's helper, preserving source shading. Paths/results are in
+  `out/r10/robin-reference.json`.
+- The generated atlases inspected are VTF **7.2**, 80-byte header, RGBA8888 (format 0), one frame/depth,
+  no thumbnail, mip data smallest-to-largest. DXVK hashes **subresource 0 pixels**, not file metadata
+  (`d3d9_common_texture.cpp:672-684`, `d3d9_texture_hash.h:123` in the recorded fork). A header change
+  cannot isolate an eye texture identity. The validated clone toggles one top-mip RGB low bit;
+  alpha and lower mips remain byte-identical. Unsupported layouts fail closed.
+- Hotloader `native_render.lua:93-105,303-306` binds public IMaterials, allowing an eye-only base
+  texture change without a native-renderer hook. Remix tracking waits for a real draw
+  (`material_lua_bindings.cpp:515-550,644` in the fixes source, read only). The original hash comes
+  from immutable original/proxy helpers in a tiny offscreen 2D target on separate frames before world rebinding.
+  Original-hash mod lookup precedes fallback in `SceneManager::determineMaterialData` (patch 0019),
+  preserving authored pack emission. [ADR 0088](decisions/0088-imported-character-eye-whites.md)
+  records filtering, compatibility, lifecycle and memory tradeoffs.
+- PoC verification found distinct Lua `ITexture` wrappers need not compare equal: normalized texture
+  names identify owned bindings for apply/restore. Source's queued tracker reliably observes immutable
+  helpers on separate frames. The render guard needs their three exact bundled source paths; no broad
+  exemption is added. An eye proxy must also inherit the original atlas's category snapshot, because
+  the existing MMD-alpha scanner intentionally rejects a DATA texture outside `mmd/`.
+
 ## R8-C material review: loading, provenance and cost (2026-11-01)
 
 The fixes' `remixlua/cl/cl_fix_pbr_materials.lua:50-72,88` inspects native ExoPBR shader/texture

@@ -51,6 +51,28 @@ no `;` or `//` (the console would split or cut it there).
 
 ## Side effects
 
+R10: `NL_EYE_SETTINGS` optionally supplies `{label, automatic, percent}` variants per condition, for
+example `{{"off",0,100},{"zero",1,0},{"default",1,100},{"double",1,200},{"off-repeat",0,100}}`. Every
+variant keeps the same actor/pose/camera and waits for settled exposure; `NL_EYE_SETTLE` overrides
+the 10-second wait. Labels become `noon-default`, etc. Each shot logs median and p95 frame milliseconds,
+sample count and `nativeloader_eye_whites_status` (hash aliases, active materials, preparation cost).
+`NL_EYE_BINDING <label> <json>` records each public material's name/path/base-texture binding so
+on/off variants can prove that only the named eye surface was rebound, even on a shared atlas.
+One material per line avoids Source's approximately 4 KiB console-line truncation on large actors.
+`soft_path`/`soft_texture` also record an existing generated soft-triangle copy of each part.
+The feature and brightness convars are saved before the probe and restored alongside the sky.
+Use `NL_EYE_ASSET = "801f3bcf7491bc1e53a8d7d91028817d50f0cd32dd1eae00087af28a3a7c7592"` for Linlong.
+For the lamp-lit room place the player at `(1227,-1669,-144)`, angles `(50,45,0)`, through `--console`;
+use noon/night conditions and inspect the actual Linlong frame before choosing measurement boxes.
+
+`NL_EYE_FROZEN=true` requests a frozen pose. `NL_EYE_FRONT=true` frames it toward the placed player's
+horizontal position, needed for characters such as Linlong that fall face-down under the original
+C-16 protocol. A frozen ragdoll's root angles may disagree with its head, so they do not set this view.
+`NL_EYE_DISTANCE`/`NL_EYE_FOV` adjust that front view (defaults 22/38). `NL_EYE_EXTRA_COUNT=2` adds two
+copies before the first condition for a workload with a few visible characters; use a wider front
+view and a server `--console` placement hook to separate their frozen physics bodies. Copies are
+removed at cleanup. Defaults still reproduce C-16's top-down ragdoll view.
+
 The session's time of day and weather while it runs; the four sky settings are put back. The character
 it spawned is removed; the hooks it added (`CalcView`, `HUDShouldDraw`, `PreDrawViewModel`) are removed.
 It adds the console command `nl_shot_taken`. Exit codes: none (client Lua).

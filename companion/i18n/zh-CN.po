@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "「RTX Remix」选项卡 >「从这里开始」>「使用经典 RTX 设置」（控制台命令：nativeloader_rtx_defaults）会重新应用以上所有值，您改过的值也会被覆盖。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Common Remix settings"
 msgstr "常用 Remix 设置"
 
@@ -550,9 +550,9 @@ msgstr "RTX Remix 指南"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Rendering"
 msgstr "渲染"
 
@@ -563,13 +563,13 @@ msgid "Water and glass"
 msgstr "水与玻璃"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Start here"
 msgstr "从这里开始"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Remix settings"
 msgstr "Remix 设置"
 
@@ -868,15 +868,31 @@ msgstr "隐藏描边网格"
 msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
 msgstr "隐藏可能遮盖模型或使模型变黑的异常描边外壳。模型的其他材质仍会正常渲染。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:303
+msgid "Steady eye whites for imported characters"
+msgstr "导入角色的稳定眼白"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+msgid "Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."
+msgstr "识别名称明确的眼白表面。有 PBR 包的角色保留包内材质。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
+msgid "Eye-white brightness"
+msgstr "眼白亮度"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
+msgid "Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."
+msgstr "百分比：100 为调校后的默认值。实时影响自动眼白和 PBR 包中随场景调整的眼部发光。零可关闭这部分发光。"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
 msgid "Player models"
 msgstr "玩家模型"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 msgid "Toolgun screen"
 msgstr "工具枪屏幕"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Model outlines"
 msgstr "模型描边"
 

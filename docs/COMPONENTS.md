@@ -1,5 +1,15 @@
 # Components
 
+R10-E adds the companion's
+[`nativeloader_eye_whites.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_eye_whites.lua.md),
+pure [name matcher](../companion/nativeloader/lua/nativeloader/eye_white_names.lua.md) and
+[VTF identity encoder](../companion/nativeloader/lua/nativeloader/eye_white_vtf.lua.md). Model outlines
+contains its checkbox/brightness controls. Runtime patch 0019 checks original PBR replacements before
+automatic albedo emission. The [catalogue audit](../tools/qa/eye_white_catalogue.py.md), extended
+[probe](../tools/qa/eye_white_probe.lua.md) and [comparison](../tools/qa/eye_white_patches.py.md) supply
+offline/game evidence; the [Lua harness](../tools/tests/eye_whites_harness.lua.md) covers lifecycle,
+isolation and option writes.
+
 R8-C review adds [an offline material-cost comparison](../tools/tests/bench_render_guard.py.md)
 under `tools/tests`. The self-contained companion guard now carries exact bundled virtual paths,
 checked against package indexes and companion/glass sources, and applies custom-shader policy at

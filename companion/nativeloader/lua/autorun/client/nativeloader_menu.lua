@@ -300,6 +300,10 @@ end
 local function model_layers_settings(panel)
     panel:CheckBox(L("Hide outline meshes"), "nativeloader_ignore_outlines")
     panel:ControlHelp(L("Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."))
+    panel:CheckBox(L("Steady eye whites for imported characters"), "nativeloader_eye_whites")
+    panel:ControlHelp(L("Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."))
+    panel:NumSlider(L("Eye-white brightness"), "nativeloader_eye_white_brightness", 0, 200, 0)
+    panel:ControlHelp(L("Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."))
 end
 
 concommand.Add("nativeloader_remix_reset", function()

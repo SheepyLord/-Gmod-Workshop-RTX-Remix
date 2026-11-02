@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "'RTX Remix' 탭 > '시작하기' > '클래식 RTX 설정 사용'(콘솔: nativeloader_rtx_defaults)은 이 값들을 모두 다시 적용하며, 바꾼 값도 덮어씁니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Common Remix settings"
 msgstr "주요 Remix 설정"
 
@@ -550,9 +550,9 @@ msgstr "RTX Remix 가이드"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Rendering"
 msgstr "렌더링"
 
@@ -563,13 +563,13 @@ msgid "Water and glass"
 msgstr "물과 유리"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Start here"
 msgstr "시작하기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Remix settings"
 msgstr "Remix 설정"
 
@@ -868,15 +868,31 @@ msgstr "외곽선 메시 숨기기"
 msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
 msgstr "모델을 덮거나 어둡게 만드는 호환되지 않는 외곽선 셸을 숨깁니다. 다른 모델 재질은 정상적으로 렌더링됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:303
+msgid "Steady eye whites for imported characters"
+msgstr "가져온 캐릭터의 흰자 밝기 안정화"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+msgid "Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."
+msgstr "이름으로 흰자 표면을 식별합니다. PBR 팩이 있는 캐릭터는 팩의 머티리얼을 유지합니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
+msgid "Eye-white brightness"
+msgstr "흰자 밝기"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
+msgid "Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."
+msgstr "백분율: 100은 조정된 기본값입니다. 자동 흰자 보정과 PBR 팩의 장면 적응형 눈 발광에 즉시 적용됩니다. 0은 이 발광을 끕니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
 msgid "Player models"
 msgstr "플레이어 모델"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 msgid "Toolgun screen"
 msgstr "툴건 화면"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Model outlines"
 msgstr "모델 외곽선"
 

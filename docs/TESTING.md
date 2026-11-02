@@ -1,5 +1,23 @@
 # Testing
 
+## R10-E: imported eye whites
+
+The [R10-E report](handover/R10-E-report.md) records six-condition PoC measurements, material binding
+scope, 0/100/200% controls, Robin pack preservation and a three-character workload. Runtime unit suite:
+30/30. Repository Release: 26/26 CTests, 545 Python tests (two existing skips); separate companion
+suite 20/20. The full `tools/test.ps1 -Config Release` exits 1 **only** for the deliberately unimported
+runtime's provenance mismatch. The brief forbids changing `packages/runtime`/`runtime/base.json`;
+Claude's reviewed import is required for that convention to pass. It was not bypassed.
+
+The [Lua harness](../tools/tests/eye_whites_harness.lua.md) executes the real matcher, VTF encoder,
+bounded discovery, API retries, live settings, ownership/restoration and generated soft-copy lifecycle.
+The [catalogue audit](../tools/qa/eye_white_catalogue.py.md) runs that matcher on the corpus/read-only
+libraries. The [probe](../tools/qa/eye_white_probe.lua.md) retains one actor/pose across settings and
+logs public/soft bindings; [patch comparisons](../tools/qa/eye_white_patches.py.md) include off repeats
+and an outside-eye face control. Renderer tests exercise strict aliases, NoSave options, original
+category snapshots and C-16 normalization. Exact Robin/cheek brightness parity is **not accepted**:
+Linlong is 0.738–1.017 at 100% across the tested conditions, with no whole-face material rebinding.
+
 ## R8-C material review corrections (offline, 2026-11-01)
 
 `tools/test.ps1 -Config Release` passes 26 CTests and 495 Python tests (two existing skips);
