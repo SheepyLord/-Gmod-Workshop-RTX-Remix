@@ -6,6 +6,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R11
+
+- **Automatic PBR is safer to try:** bounded client inspection, background conversion, content-based
+  texture reuse, working diagnostics and an off switch that removes generated materials. Authored
+  replacements are conservatively excluded; absolute precedence during runtime hot reload still
+  needs the runtime integration described in ADR 0091. Vanilla conversion stays opt-in.
+
 ### R10
 
 - **Imported characters get steady eye whites** (the user: apply the eye-white correction to Model

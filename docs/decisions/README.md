@@ -122,3 +122,5 @@ Each with the reason it lost.
 - [0088: Isolated texture identities for imported eye-white surfaces](0088-imported-character-eye-whites.md).
 - [0089: PMX identities before expression meanings](0089-pmx-identities-and-geometry-checked-vmd-expressions.md).
 - [0090: Make carriers ready before publishing actor entries](0090-ready-carriers-before-actor-publication.md).
+
+- [0091: Bounded automatic PBR fallbacks and imported game maps](0091-automatic-pbr-fallbacks.md).

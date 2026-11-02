@@ -173,7 +173,7 @@ return {
     rtx_topbr_autodiscover = "1",
     rtx_topbr_enabled = "0",
     rtx_topbr_metallic = "0",
-    rtx_topbr_parse_commented_properties = "1",
+    rtx_topbr_parse_commented_properties = "0",
     rtx_water_bullets = "1",
     rtx_water_clarity = "150",
     rtx_water_color = "0.62 0.89 0.97",

@@ -1,5 +1,9 @@
 # Roadmap
 
+R11-A is **in progress** on `r11-autopbr` and fixes `codex/r11-autopbr`: safer vanilla ToPBR,
+then automatically unpacked character maps ([ADR 0091](decisions/0091-automatic-pbr-fallbacks.md)).
+Absolute late-pack precedence needs runtime integration outside this brief's permitted paths.
+
 R10 (the user's character report of 2026-11-02; [plan](handover/R10-plan.md)) is **done**, merged into
 `main` from `r10-int`: R10-E (steady eye whites for imported characters, a brightness slider, runtime patch 0019;
 [report](handover/R10-E-report.md), [ADR 0088](decisions/0088-imported-character-eye-whites.md)) and
