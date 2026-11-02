@@ -8,17 +8,26 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R11
 
-- **Imported game characters use their shipped PBR maps automatically:** Wuthering Waves,
-  Arknights: Endfield and Silver Palace companions are detected from known local hotloader sources,
-  with the aggressive material style and protected skin/face/eye regions on shared sheets. The
-  seven-language ?Imported game PBR? checkbox turns this fallback on or off independently of world
-  conversion. Explicit authored replacement precedence during asynchronous runtime swaps remains
-  an integration blocker recorded in ADR 0091.
-
-- **Automatic PBR is safer to try:** bounded client inspection, background conversion, content-based
-  texture reuse, working diagnostics and an off switch that removes generated materials. Authored
-  replacements are conservatively excluded; absolute precedence during runtime hot reload still
-  needs the runtime integration described in ADR 0091. Vanilla conversion stays opt-in.
+- **Imported game characters use their own PBR maps automatically** (the user: Wuthering Waves,
+  Arknights: Endfield and Silver Palace models ship packed PBR maps that should be detected and applied
+  in RTX with the aggressive look, with an on/off setting). For a character imported with the Model
+  Hotloader, the maps beside its model file are found by the games' naming (`_N`, `_MRA`, `_P`, `_E`...)
+  and unpacked into normal, roughness, metallic, AO and emission maps; what a game does not ship comes
+  from the aggressive preset. Skin, faces and eyes keep their look, and the R10 eye whites keep working.
+  It needs the folder the character was imported from to still exist. "Imported game PBR" in the RTX
+  menu's character options (on by default, all seven languages)
+  ([ADR 0091](docs/decisions/0091-automatic-pbr-fallbacks.md)).
+- **Real PBR replacements always win over automatic PBR** (the user: "actual PBR replacements, if
+  exists, should always overwrite the autoPBR result"). A character pack, a map's PBR mod or any other
+  mod with a material for a texture is what renders, whatever the mod's folder is named, also when it is
+  added or reloaded while the game runs; before, a pack whose folder name sorted after `~` (a Chinese
+  name, for example) lost to the automatic material. Runtime patch 0020
+  ([ADR 0092](docs/decisions/0092-generated-fallback-mods-rank-last.md)).
+- **The automatic PBR for map and prop materials (ToPBR) is safer and looks closer to RTX:** its work
+  moved off the frame (0.8 ms at most per frame instead of 23.5 ms on gm_construct), converted textures
+  are reused safely, turning it off removes its materials, glossiness follows the material's Phong
+  settings more naturally and dark plastic is no longer turned into metal. It stays off by default
+  ("Enable ToPBR" in the RTX settings), as the user's map and add-on content has not all been checked.
 
 ### R10
 

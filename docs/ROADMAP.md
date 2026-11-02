@@ -1,8 +1,11 @@
 # Roadmap
 
-R11-A is **in progress** on `r11-autopbr` and fixes `codex/r11-autopbr`: safer vanilla ToPBR,
-then automatically unpacked character maps ([ADR 0091](decisions/0091-automatic-pbr-fallbacks.md)).
-Absolute late-pack precedence needs runtime integration outside this brief's permitted paths.
+R11 (automatic PBR, 2026-11-02; [plan](handover/R11-plan.md)) is **done**: imported Wuthering Waves,
+Endfield and Silver Palace characters get their own shipped PBR maps automatically ("Imported game PBR",
+on by default), the fixes' ToPBR is bounded and closer to the RTX look (still opt-in for world materials),
+and real PBR replacements always win over automatic ones (runtime patch 0020). See
+[the report](handover/R11-report.md), ADRs [0091](decisions/0091-automatic-pbr-fallbacks.md) and
+[0092](decisions/0092-generated-fallback-mods-rank-last.md).
 
 R10 (the user's character report of 2026-11-02; [plan](handover/R10-plan.md)) is **done**, merged into
 `main` from `r10-int`: R10-E (steady eye whites for imported characters, a brightness slider, runtime patch 0019;
