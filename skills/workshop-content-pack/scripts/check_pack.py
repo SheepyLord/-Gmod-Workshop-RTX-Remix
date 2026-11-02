@@ -18,8 +18,12 @@ It checks, for one build folder (or the parts given one by one):
 
 Usage:
 
-    python -I check_pack.py <build folder> [--nlctl <nlctl.exe>] [--deep] [--hashes-json FILE]...
+    python -I check_pack.py <build folder> [--nlctl <nlctl.exe>] [--deep] [--hashes-json FILE]... [--keep-name ASSET]...
     python -I check_pack.py --addon DIR --mod DIR [--gma FILE] [--icon FILE] [--description FILE] [...]
+
+--keep-name names a model (its asset id's first 8 or more hex digits) whose published display name the
+user keeps: an update of an item whose name predates the ASCII-name rule (Guinaifen). Its non-ASCII or
+placeholder name is then a warning, not an error.
 
 A build folder holds one mmdhl_<n> folder, one pbr_<n> folder (a folder with mod.usda), one .gma,
 icon.jpg and description.txt, as out\\packages\\<n>\\ does. Each found part is checked; a part given
@@ -176,7 +180,7 @@ class Decoder:
         return bytes(raw)
 
 
-def check_hotloader(r: Report, addon: str, deep: bool):
+def check_hotloader(r: Report, addon: str, deep: bool, keep=()):
     metadata = os.path.join(addon, "addon.json")
     if not os.path.isfile(metadata):
         r.warn("%s has no addon.json" % addon)
@@ -266,13 +270,13 @@ def check_hotloader(r: Report, addon: str, deep: bool):
             r.ok("package %s: %d files, %.1f MB raw, every entry within the installers' limits%s"
                  % (pid, len(files), total / 1e6, ", every packet unpacked to its SHA-256" if deep else ""))
         for item in items:
-            check_item(r, item, files)
+            check_item(r, item, files, keep)
     extra = sorted(set(os.listdir(file_dir)) - listed_dats) if os.path.isdir(file_dir) else []
     if extra:
         r.warn("%d .dat files no manifest lists (left from an earlier build?)" % len(extra))
 
 
-def check_item(r: Report, item: dict, files: dict):
+def check_item(r: Report, item: dict, files: dict, keep=()):
     if not isinstance(item, dict) or item.get("kind") not in ("character", "static") or not HEX64.match(str(item.get("asset", ""))):
         r.error("invalid model entry")
         return
@@ -299,15 +303,22 @@ def check_item(r: Report, item: dict, files: dict):
         r.warn("%s: the display name carries R18" % label)
     # The pack's display name is the character's plain ASCII name (Robin), never the PMX's own:
     # the Evernight and March 7th pack shipped 長夜月 and 三月七 (the user, 2026-10-31).
+    problem = None
     if ascii_text(name) and name.strip() and not PLACEHOLDER.match(name.strip()):
         r.ok("%s: plain ASCII display name, shown as written" % label)
     elif ascii_text(name):
-        r.error("%s: a placeholder display name; give the character's plain name (Robin)" % label)
+        problem = "a placeholder display name; give the character's plain name (Robin)"
     elif english and ascii_text(english) and english != name and not (R18.search(english) or PLACEHOLDER.match(english.strip())):
-        r.error("%s: non-ASCII display name; give the character's plain ASCII name (English readers would see "
-                "the PMX English name %r, others the PMX name)" % (label, english))
+        problem = ("non-ASCII display name; give the character's plain ASCII name (English readers would see "
+                   "the PMX English name %r, others the PMX name)" % english)
     else:
-        r.error("%s: non-ASCII display name; give the character's plain ASCII name (Robin)" % label)
+        problem = "non-ASCII display name; give the character's plain ASCII name (Robin)"
+    if problem and any(asset.startswith(k) for k in keep):
+        # The user kept Guinaifen's published name (2026-11-01). Players who installed the model keep
+        # its library name anyway (writeIfMissing), so only new installs see it.
+        r.warn("%s: %s, kept as published (--keep-name)" % (label, problem.split(";")[0]))
+    elif problem:
+        r.error("%s: %s" % (label, problem))
     settings = item.get("settings") if isinstance(item.get("settings"), dict) else {}
     groups = settings.get("bodygroups")
     if item["kind"] == "character":
@@ -642,9 +653,16 @@ def main(argv=None) -> int:
                     help="rpai work\\<key>\\hashes.json of a packed model (repeatable)")
     ap.add_argument("--nlctl", help="nlctl.exe (default: found above the archive)")
     ap.add_argument("--deep", action="store_true", help="unpack every Hotloader packet and compare its SHA-256")
+    ap.add_argument("--keep-name", action="append", default=[], metavar="ASSET",
+                    help="a model (8 or more hex digits of its asset id) whose published display name the user "
+                         "keeps: its name is a warning, not an error (repeatable)")
     args = ap.parse_args(argv)
     if args.build and not os.path.isdir(args.build):
         ap.error("%s is not a folder" % args.build)
+    for asset in args.keep_name:
+        if not re.fullmatch(r"[0-9a-fA-F]{8,64}", asset):
+            ap.error("--keep-name %s: give 8 to 64 hex digits of the model's asset id" % asset)
+    keep = tuple(asset.lower() for asset in args.keep_name)
     parts = discover(args.build) if args.build else {}
     for key in ("addon", "mod", "gma", "icon", "description"):
         if getattr(args, key):
@@ -665,7 +683,7 @@ def main(argv=None) -> int:
     check_names(r, addon, mod, package_id, hotloader)
     if hotloader:
         print("== Model Hotloader package")
-        check_hotloader(r, addon, args.deep)
+        check_hotloader(r, addon, args.deep, keep)
     elif addon:
         r.info("%s has no data_static/mmdhl: checked as a plain Lua add-on (map remaster)" % addon)
     if mod:

@@ -15,7 +15,7 @@ Made this way so far (dates UTC; all hidden):
 
 | Item | Package id | What | Notes |
 |---|---|---|---|
-| 3829348717 | `guinaifen-rtx` | Guinaifen: Model Hotloader package + 18 PBR materials, 695,563,031 bytes | published by the user from the agent's build (2026-10-29), then updated by the agent |
+| 3829348717 | `guinaifen-rtx` | Guinaifen: Model Hotloader package + 18 PBR materials, 695,563,467 bytes | published by the user from the agent's build (2026-10-29), then updated by the agent (two hashes; the adaptive eye emission, 2026-11-02); display name `Guinaifen (桂乃芬)` kept by the user |
 | 3829347093 | `guinaifen-rtx` | the agent's first upload of the same pack, first build | hidden duplicate; never delete, never subscribe |
 | 3829892354 | `robin-rtx` | Robin: preset `Default`, name `Robin`, 17 materials, 452,591,324 bytes | created 2026-10-30 as `robin-r18-rtx`, updated twice; page title still the old one unless the user renamed it |
 | 3830769477 | `evernight-march7th-rtx` | Evernight and March 7th: two models, two layers, 1,222,846,295 bytes | created 2026-10-31 with `hotloader_export.py`; download read back identical |
@@ -162,7 +162,8 @@ $B     = "$repo\out\packages\<n>"                              # the build folde
    no errors; carry its warnings into the report. A non-ASCII or placeholder display name and a model
    without a terms-of-use record are errors (R5: the Evernight and March 7th pack went out with
    長夜月, 三月七 and no terms for March 7th): rename in Model Hotloader or pass `--item <id8>=<Name>`,
-   record the terms, and pack again.
+   record the terms, and pack again. An update of an item whose published name the user keeps
+   (Guinaifen) passes `--keep-name <id8>`, which reports the name as a warning.
    - **Check it in the game before the upload.** On the PoC, never the user's install:
      `python $repo\tools\poc_session.py --evidence $repo\out\packages\<n>\poc install --allow-workshop 3829070317
      --allow-local "$B\<n>-rtx.gma" --replace-config`, then `run --name 01-pack --addons --map gm_construct
@@ -231,8 +232,9 @@ and the red entry in the add-on list are expected. Private test item.
    (`out\packages\guinaifen`, `out\packages\robin`; Evernight's is in its worktree,
    `.claude\worktrees\pbr-textures-evernight-marth-8c028c\out\packages\evernight-march7th`).
 2. Rebuild what changed (steps 2-7; `mmdhl_pack.py --replace`, a fresh stage folder,
-   `package_content.py --force`), then step 8. Keep the item's package id and folder names unless
-   the user asks for new ones (Robin's rename to `robin-rtx` was the user's request).
+   `package_content.py --force`), then step 8 (Guinaifen: `--keep-name 1c2ed2fc`). Keep the item's
+   package id, folder names and display names unless the user asks for new ones (Robin's rename to
+   `robin-rtx` was the user's request; the user kept `Guinaifen (桂乃芬)`, 2026-11-01).
 3. `& "$root\bin\win64\gmpublish.exe" update -id <id> -addon "$B\<n>-rtx.gma" [-icon "$B\icon.jpg"] -changes "<version>: <what changed>" *> "$B\gmpublish-update.log"`
    from `$root` as in step 9; expect `Success!`.
 4. Tell the user: `update` does not change the title (rename it on the page), the description or the

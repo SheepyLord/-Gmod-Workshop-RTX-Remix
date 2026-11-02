@@ -105,7 +105,9 @@ marked **inferred** follow from the code but were not observed.
 The item name `Guinaifen (桂乃芬)` is non-ASCII and her PMX's English name is `New MMD Model`; the
 field install's library and terms records hold exactly those (read 2026-10-31). By `names.lua` an
 English reader sees `New MMD Model`. Not looked at in game. The cure is the one of pitfall 7: an ASCII
-name in a rebuild only reaches new installs; the existing entry needs a rename in game.
+name in a rebuild only reaches new installs; the existing entry needs a rename in game. The user kept
+the name (2026-11-01): Guinaifen's updates pass `check_pack.py --keep-name 1c2ed2fc`, which reports it
+as a warning.
 
 ### 9. The default bodygroup preset was named "1" (Robin's first build)
 

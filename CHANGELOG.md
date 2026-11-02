@@ -207,6 +207,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - Anime characters' eye whites no longer glow at night or turn grey by day: with Robin's pack, the eye
   white's luminance over the cheek's went from 0.52-0.88 by day and 46 at night to 0.77-1.38 by day,
   0.70 at night and 1.04 in a lamp-lit room ([ADR 0069](docs/decisions/0069-tuned-adaptive-eye-emission.md)).
+- Guinaifen's pack (Workshop item 3829348717) has the steady eye whites too (2026-11-02): her two face
+  materials carry the adaptive input 15 beside the fixed 0.6. Her display name `Guinaifen (桂乃芬)`
+  stays as published, as the user chose; `check_pack.py --keep-name` reports such a kept name as a
+  warning instead of refusing the update ([report](docs/handover/C16-report.md)).
 - Opaque materials can opt into scene-adaptive emission with `emissive_adaptive_intensity`: it
   follows auto exposure's scene luminance to steady eye-white brightness, with a fixed-intensity
   fallback, configurable scale/clamps and luminance/exposure logs for tuning

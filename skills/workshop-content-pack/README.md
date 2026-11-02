@@ -18,7 +18,7 @@ Copy this folder to `%USERPROFILE%\.claude\skills\workshop-content-pack\`, or ke
 
 | Item | Package | Content | History |
 |---|---|---|---|
-| [3829348717](https://steamcommunity.com/sharedfiles/filedetails/?id=3829348717) | `guinaifen-rtx` 0.0.0-dev.202610290741+bd360151 | Guinaifen (桂乃芬.pmx), 18 PBR materials, 44 DDS; 695,563,031 bytes | 2026-10-29: the user published the agent's build as this item; the agent updated it with two extra texture hashes |
+| [3829348717](https://steamcommunity.com/sharedfiles/filedetails/?id=3829348717) | `guinaifen-rtx` 0.0.0-dev.202611010517+7ccac1bb | Guinaifen (桂乃芬.pmx), 18 PBR materials, 44 DDS; 695,563,467 bytes | 2026-10-29: the user published the agent's build as this item; the agent updated it with two extra texture hashes. 2026-11-02: the C-16 adaptive eye emission on her two face materials, her display name kept (`check_pack.py --keep-name 1c2ed2fc`) |
 | [3829347093](https://steamcommunity.com/sharedfiles/filedetails/?id=3829347093) | `guinaifen-rtx` (first build) | the same pack, before the hash fix | the agent's first upload; a hidden duplicate that stays (nothing is deleted until the project is done) |
 | [3829892354](https://steamcommunity.com/sharedfiles/filedetails/?id=3829892354) | `robin-rtx` 0.0.0-dev.202610300504+6d1373ed | Robin (知更鸟.pmx), preset `Default`, 17 materials, 30 DDS; 452,591,324 bytes | 2026-10-30: created as `robin-r18-rtx`, renamed (`mmdhl_robin`, `pbr_robin`), then the display name `Robin`. The Workshop title was set at creation ("Robin R18 RTX (native loader package)") and `update` cannot change it |
 | [3830769477](https://steamcommunity.com/sharedfiles/filedetails/?id=3830769477) | `evernight-march7th-rtx` 0.0.0-dev.202610311103+e95455ed | Evernight and March 7th, two layers; 1,222,846,295 bytes | 2026-10-31: the first pack made with `hotloader_export.py` and `stage_pbr_mod.py`; downloaded copy identical to the build |
@@ -68,8 +68,8 @@ written while drafting.
   layer on the author's machine; English readers see Guinaifen as "New MMD Model" (her PMX's English
   name); Model Hotloader shows no Workshop page button for loader-deployed packages.
 - **Open decisions for the user**: whether character packs use `--requires-remix` (Guinaifen and
-  Robin did, Evernight did not); whether to rename Guinaifen to an ASCII name in a rebuild; making
-  anything public (R18 content; the models' terms, Evernight's forbids redistribution).
+  Robin did, Evernight did not); making anything public (R18 content; the models' terms, Evernight's
+  forbids redistribution). The user kept Guinaifen's non-ASCII display name (2026-11-01).
 - The agent cannot sign in to Steam's website: titles after creation, descriptions, Required items
   and visibility stay with the user.
 - Windows only for packing (`cabinet.dll`'s XPRESS Huffman codec). The offline packer does not carry
