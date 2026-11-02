@@ -8,17 +8,25 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R9 (in progress: the user's glass report of 2026-11-02)
 
-- **Glass appears immediately and reacts locally.** Deterministic branched annealed shards and
-  irregular tempered cuts replace the grid. Breaking holes and shared ballistic previews appear
-  in the receiving frame while bounded body construction continues. Stock shard sounds, BSP water
-  buoyancy, victim-independent Lua/native blast observation and seven-language local/admin clear
-  buttons complete R9-G. New helpers stay within the existing exact render-guard source inventory;
-  loader trust rules are unchanged. See [the R9-G report](docs/handover/R9-G-report.md).
-
-- **Native glass shards and environment.** Follow-up hits cut two to six irregular fragments down
-  to one square unit, retain covered area/point velocity and stage replacements transactionally.
-  A bounded contact-sound buffer and static BSP water buoyancy add local feedback; mirror spawn,
-  sweep and teleport overlap handling avoids reverse penetration kicks ([ADR 0087](docs/decisions/0087-glass-shards-and-environment.md)).
+- **Glass breaks realistically, down to tiny pieces** (the user: always square and uniform, never very
+  small). Annealed panes break into long radial shards around a crushed core at the impact. Tempered
+  panes dice into compact, irregular granules instead of a grid. A hit on a fallen piece cracks it
+  into two to six irregular fragments around the hit, down to one square unit, instead of halving it
+  ([ADR 0087](docs/decisions/0087-glass-shards-and-environment.md), [report](docs/handover/R9-G-report.md)).
+- **No visible delay between the hit and the break.** The hole and every piece appear in the frame
+  the hit arrives, nearest the impact first. Pieces whose physics bodies are still being built fly in
+  shared previews meanwhile. Holes used to appear two frames late, and pieces came 12 a frame.
+- **Glass sounds.** Pieces sound when they hit the map, props or each other, land, split and enter
+  water. They use the game's own glass sounds, positional and limited to 4 a frame and 24 a second.
+  A switch in the glass settings turns them off.
+- **Water and explosions.** Pieces sink slowly in water, with drag, using the map's water brushes and
+  Jolt's buoyancy. Every explosion near pieces pushes them, wakes sleeping ones and breaks weak ones,
+  even when it damages nothing else: `util.BlastDamage`, `env_explosion`, grenades, barrels, rockets.
+- **No more glass flying backwards.** Pieces created inside a moving player or prop, or moved into
+  one by a teleport correction, were pushed out of it backwards. Such overlaps now wait until they
+  separate, and fast pushes follow the body's actual travel.
+- **"Clear broken glass" buttons** in the glass settings. One clears your own fallen glass; an admin
+  of a single-player or listen server can also clear everyone's. All seven languages.
 
 - **Glass no longer breaks other add-ons' traces.** A bullet penetration add-on traces with a function
   as its filter, which GMod allows; the melee observer passed it to `IsValid`, which indexes its
