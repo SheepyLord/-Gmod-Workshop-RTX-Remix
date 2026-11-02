@@ -64,15 +64,19 @@ hook.Add("DoAnimationEvent", "NLGlass.DebrisMelee", function(ply,event)
     if stock[w:GetClass()] then stockSwing(ply,w) end
     -- Never return an animation override.
 end)
+-- A trace filter may be an entity, a table of entities or class names, or a function: IsValid
+-- indexes its argument, so only entities reach it.
+local function player(value)
+    if isentity(value) and IsValid(value) and value:IsPlayer() then return value end
+end
 local function observe(data,result)
-    if not M.active or not B.HasInterest() or type(data)~="table" or type(result)~="table" or result.StartSolid or result.AllSolid or
+    if type(data)~="table" or type(result)~="table" or result.StartSolid or result.AllSolid or
         not isvector(data.start) or not isvector(result.HitPos) or not isvector(data.endpos) then return end
     local delta=data.endpos-data.start
     if delta:LengthSqr()<1 or delta:LengthSqr()>160^2 then return end
-    local filter=data.filter;local ply
-    if IsValid(filter) and filter:IsPlayer() then ply=filter
-    elseif type(filter)=="table" then
-        for i=1,math.min(8,#filter)do if IsValid(filter[i]) and filter[i]:IsPlayer() then ply=filter[i];break end end
+    local filter=data.filter;local ply=player(filter)
+    if not ply and type(filter)=="table" then
+        for i=1,math.min(8,#filter)do ply=player(filter[i]);if ply then break end end
     end
     local state=ply and states[ply]
     if not state or state.untilTime < CurTime() then return end
@@ -94,13 +98,19 @@ local function observe(data,result)
         if M.active and p and states[ply]==state then send(unpack(p)) end
     end) end
 end
+-- Every add-on's traces pass through here: an observation must never fail the caller's trace.
+local function watch(data,result)
+    if not M.active or not B.HasInterest() then return end
+    local ok,problem=pcall(observe,data,result)
+    if not ok then M.errors=(M.errors or 0)+1;M.lastError=tostring(problem) end
+end
 local wrappedLine,wrappedHull
 if traceLine then
-    wrappedLine=function(data,...) local result=traceLine(data,...);observe(data,result);return result end
+    wrappedLine=function(data,...) local result=traceLine(data,...);watch(data,result);return result end
     util.TraceLine=wrappedLine
 end
 if traceHull then
-    wrappedHull=function(data,...) local result=traceHull(data,...);observe(data,result);return result end
+    wrappedHull=function(data,...) local result=traceHull(data,...);watch(data,result);return result end
     util.TraceHull=wrappedHull
 end
 function M.Stop()

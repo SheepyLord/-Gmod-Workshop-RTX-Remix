@@ -17,7 +17,13 @@ trace tables. `sent` and `observed` are diagnostic counters. `Stop()` disables o
 restores them only if still owned; reload does not stack active observers. Cleanup drops actor state.
 No files, client hit claims or networked shards. Client-only weapons, functional filters and unusual
 weapons without a recognizable melee type need an adapter; saturated cosmetic events can be dropped.
-No exit code; errors propagate to the Lua console.
+No exit code. Every add-on's traces pass through the wrappers, so an observation runs under `pcall`:
+a failure is counted (`errors`, `lastError`) and never reaches the caller, whose result is returned.
+
+R9: a trace filter may be a function, as in a bullet penetration add-on's callback, or a table holding
+class names, numbers or functions. GMod's `IsValid` indexes its argument and threw "attempt to index
+local 'object' (a function value)" through that add-on's `util.TraceLine` call. Only entities
+(`isentity`) are now checked for a player; any other filter names none.
 
 R8-G follow-up: defer SWEP observations to a zero-delay timer and retain the widest actual trace
 from the call. Stock fists use a line followed by a hull, so the first observation must not consume

@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R9 (in progress: the user's glass report of 2026-11-02)
+
+- **Glass no longer breaks other add-ons' traces.** A bullet penetration add-on traces with a function
+  as its filter, which GMod allows; the melee observer passed it to `IsValid`, which indexes its
+  argument, and the error ("attempt to index local 'object' (a function value)") surfaced through that
+  add-on's `util.TraceLine` call. Only entities are now checked for a player, and each observation runs
+  protected, so a failure is counted (`errors`, `lastError`) and the caller always gets its own result.
+  The test harness's `IsValid` now throws as GMod's does.
+
 ### R8 (unreleased; [plan](docs/handover/R8-plan.md), [report](docs/handover/R8-report.md))
 
 - **No more noise on Model Hotloader characters** (the user: frame-to-frame noise since the alpha fix,

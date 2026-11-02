@@ -15,7 +15,14 @@ function V:DistToSqr(b) return (self-b):LengthSqr() end
 function isvector(v) return getmetatable(v)==V end
 function isangle(v) return getmetatable(v)==A end
 function isnumber(v) return type(v)=="number" end
-function IsValid(v) return type(v)=="table" and v.valid==true end
+-- As lua/includes/util.lua: IsValid indexes its argument, so a function, number or true throws.
+function IsValid(v)
+    if not v then return false end
+    local t=type(v)
+    if t=="function" or t=="number" or t=="boolean" then error("attempt to index local 'object' (a "..t.." value)",2) end
+    return t=="table" and v.valid==true
+end
+function isentity(v) return type(v)=="table" and v.IsPlayer~=nil and v.GetClass~=nil end
 function CurTime() return now end
 -- Harness time is the Source clock the cases advance, never this machine's: capture budgets such as
 -- debris_scene.lua's 0.5 ms second-shape cook must not race the CPU (os.clock is wall time on
@@ -370,6 +377,18 @@ else
             input.endpos=Vector(48,0,0);input.mins,input.maxs=nil,nil;util.TraceLine(input)
             input.mins,input.maxs=Vector(-10,-10,-8),Vector(10,10,8);util.TraceHull(input);flush()
             check(#sends==2 and sends[2].fields[4]==10 and sends[2].fields[3]==10,"fists' line-then-hull pattern keeps the final wider trace and configured damage")
+            -- Another add-on's bullet callback traces with a function filter (R9: universal bullet
+            -- penetration); IsValid would index it. Filter tables may hold class names or numbers.
+            now=1.3;hooks.StartCommand(shooter,command)
+            local before=#sends
+            for _,filter in ipairs({function()return true end,{function()end,"prop_physics",7,true},7,"player"}) do
+                local data={start=Vector(),endpos=Vector(40,0,0),filter=filter}
+                local ok,traced=pcall(util.TraceLine,data)
+                check(ok and traced==lastResult,"any trace filter passes through and returns the caller's own result")
+            end
+            flush();check(#sends==before and (M.errors or 0)==0,"filters that name no player are skipped without errors")
+            input.filter={function()end,shooter};input.endpos=Vector(44,0,0);util.TraceLine(input);flush()
+            check(#sends==before+1,"a player after a function in a filter table is still found")
         end
         M.Stop();local observed=M.observed
         util.TraceLine({start=Vector(),endpos=Vector(50,0,0),filter=shooter})
