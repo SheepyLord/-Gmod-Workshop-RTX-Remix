@@ -1,9 +1,12 @@
 # Roadmap
 
-R10-E source, runtime validation and six-condition PoC measurements are complete on `r10-eyes`:
-isolated eye-white identities, PBR precedence, patch 0019 and translated live controls. Review/import
-and exact local brightness parity remain open; [the report](handover/R10-E-report.md) records the
-limits and provenance gate. [ADR 0088](decisions/0088-imported-character-eye-whites.md) records the mechanism.
+R10 (the user's character report of 2026-11-02; [plan](handover/R10-plan.md)) is integrated on
+`r10-int`: R10-E (steady eye whites for imported characters, a brightness slider, runtime patch 0019;
+[report](handover/R10-E-report.md), [ADR 0088](decisions/0088-imported-character-eye-whites.md)) and
+R10-H (VMD expressions bound to the model's own PMX morphs, NPC entries ready after a map change;
+[report](handover/R10-H-report.md), ADRs [0089](decisions/0089-pmx-identities-and-geometry-checked-vmd-expressions.md)
+and [0090](decisions/0090-ready-carriers-before-actor-publication.md)). Claude's PoC check of the merged
+package, the publish and the field check follow ([R10-report.md](handover/R10-report.md)).
 
 R9 (the user's glass report of 2026-11-02) is **done**: CI is green again (the glass mirrors' dropped steps
 and the exit observer's clock race), `v0.12.1` is released and only `main` remains. Glass breaks

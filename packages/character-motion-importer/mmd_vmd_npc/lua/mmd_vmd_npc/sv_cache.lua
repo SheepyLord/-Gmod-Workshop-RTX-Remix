@@ -119,17 +119,17 @@ local function exact_flex_on_entity(ent, flexName)
     flexName = tostring(flexName or "")
     if flexName == "" then return nil, nil end
 
-    local maxFlex = ent:GetFlexNum() or 0
-    for flexID = 0, maxFlex - 1 do
-        local current = tostring(ent:GetFlexName(flexID) or "")
+    local controllers = MMDVMDNPC.ModelFlexList(ent)
+    for _, target in ipairs(controllers) do
+        local flexID, current = target.id, target.name
         if current == flexName then
             return flexID, current
         end
     end
 
     local wantedLower = string.lower(flexName)
-    for flexID = 0, maxFlex - 1 do
-        local current = tostring(ent:GetFlexName(flexID) or "")
+    for _, target in ipairs(controllers) do
+        local flexID, current = target.id, target.name
         if string.lower(current) == wantedLower then
             return flexID, current
         end
@@ -204,10 +204,16 @@ function MMDVMDNPC.FlexOverrideTargetsForModel(modelPath, sourceName, mmdName)
         return override_flex_names(map[key])
     end
 
-    return lookup(modelOverrides.by_mmd, mmdName)
+    local saved = lookup(modelOverrides.by_mmd, mmdName)
         or lookup(modelOverrides.by_source, sourceName)
         or lookup(modelOverrides.by_mmd_norm, normalize_flex_name(mmdName))
         or lookup(modelOverrides.by_source_norm, normalize_flex_name(sourceName))
+    if saved then return saved end
+    local legacy = (MMDVMDNPC.MorphSemantics().legacy or {})[mmdName]
+    if legacy then
+        return lookup(modelOverrides.by_source, legacy)
+            or lookup(modelOverrides.by_source_norm, normalize_flex_name(legacy))
+    end
 end
 
 function MMDVMDNPC.FlexOverrideForModel(modelPath, sourceName, mmdName)
@@ -280,6 +286,11 @@ function MMDVMDNPC.ClearFlexOverrideForModel(modelPath, mmdName, sourceName)
     drop(modelOverrides.by_source, sourceName)
     drop(modelOverrides.by_mmd_norm, mmdName ~= "" and normalize_flex_name(mmdName) or "")
     drop(modelOverrides.by_source_norm, sourceName ~= "" and normalize_flex_name(sourceName) or "")
+    local legacy = (MMDVMDNPC.MorphSemantics().legacy or {})[mmdName]
+    if legacy then
+        drop(modelOverrides.by_source, legacy)
+        drop(modelOverrides.by_source_norm, normalize_flex_name(legacy))
+    end
 
     if not removedAny then return false end
     MMDVMDNPC.SaveFlexOverrides()
@@ -325,6 +336,11 @@ function MMDVMDNPC.LoadFlexAliases()
         ingest_alias_row(values)
     end
 
+    -- Existing DATA copies predate the corrected native names. Extend the
+    -- in-memory aliases from the bundled table without rewriting user files.
+    local bundled = util.JSONToTable(file.Read(FLEX_MAPPING_STATIC_PATH, "GAME") or "") or {}
+    for _, values in ipairs(bundled.aliases or {}) do ingest_alias_row(values) end
+
     MMDVMDNPC.FlexAliases = aliases
     return aliases
 end
@@ -333,11 +349,18 @@ end
 -- -> first flex id carrying it. Resolving every track of a motion against one
 -- index replaces a GetFlexName scan per candidate name per track.
 function MMDVMDNPC.BuildFlexIndex(ent)
-    local index = { exact = {}, lower = {}, normalized = {}, names = {} }
+    local index = { exact = {}, lower = {}, normalized = {}, names = {}, original = {}, controllers = {} }
     if not IsValid(ent) or not ent.GetFlexNum or not ent.GetFlexName then return index end
 
-    for flexID = 0, (ent:GetFlexNum() or 0) - 1 do
-        local name = tostring(ent:GetFlexName(flexID) or "")
+    index.controllers = MMDVMDNPC.ModelFlexList(ent)
+    index.pmx = #MMDVMDNPC.ModelMorphs(ent) > 0
+    for _, target in ipairs(index.controllers) do
+        local flexID, name = target.id, target.name
+        if target.original and target.original ~= "" then
+            local matches = index.original[target.original] or {}
+            matches[#matches + 1] = target
+            index.original[target.original] = matches
+        end
         index.names[flexID] = name
         if index.exact[name] == nil then index.exact[name] = flexID end
         local lower = string.lower(name)
@@ -360,7 +383,14 @@ local function flex_name_candidates(sourceName, mmdName)
         end
     end
 
+    -- Ordinary Source models keep the old semantic hints when an importer
+    -- canonical was corrected. Hotloader identities were handled before here.
+    local semantics = MMDVMDNPC.MorphSemantics()
+    local standard = semantics.standard[mmdName]
+    local legacy = (semantics.legacy or {})[mmdName]
+    if legacy and standard and (sourceName == standard.source or sourceName == mmdName) then add_candidate(legacy) end
     add_candidate(sourceName)
+    if standard then add_candidate(standard.source) end
     add_candidate(mmdName)
     local aliases = MMDVMDNPC.LoadFlexAliases()
     for _, alias in ipairs(aliases[sourceName] or {}) do
@@ -447,10 +477,15 @@ function MMDVMDNPC.ResolveFlexTargets(ent, sourceName, mmdName, index)
             if name == FLEX_OVERRIDE_UNASSIGNED then return {} end
         end
         for _, name in ipairs(override) do
-            add_target(resolve_flex_candidates(ent, index, { name }))
+            local id = resolve_flex_candidates(ent, index, { name })
+            if id == nil then return {}, "missing manual target" end
+            add_target(id)
         end
-        if #targets > 0 then return targets end
+        return targets, "manual"
     end
+
+    local modelTargets, reason = MMDVMDNPC.ResolveModelMorph(ent, sourceName, mmdName, index)
+    if modelTargets then return modelTargets, reason end
 
     local candidates = flex_name_candidates(sourceName, mmdName)
     local flexID = resolve_flex_candidates(ent, index, candidates)

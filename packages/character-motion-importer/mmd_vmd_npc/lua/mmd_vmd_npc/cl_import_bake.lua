@@ -1625,7 +1625,8 @@ local function flex_tracks_of(parsed, D, checkpoint)
     local entries = {}
     for _, raw in ipairs(parsed.morphOrder) do
         local mapped = D.flexMap[raw]
-        if mapped then entries[#entries + 1] = { mapped[1], mapped[2], parsed.morphs[raw] } end
+        local name = MMDVMDNPC.DecodeVMDMorphName(raw)
+        if name ~= "" then entries[#entries + 1] = { name, mapped and mapped[2] or name, parsed.morphs[raw] } end
     end
     sort(entries, function(a, b) return a[1] < b[1] end)
     local tracks = {}
@@ -1656,7 +1657,9 @@ function Bake.MergeFlexTracks(sources, emit, checkpoint)
         end
         for _, track in ipairs(tracks) do
             checkpoint()
-            local target = track.g
+            -- Distinct PMX names remain distinct even when their English aliases
+            -- coincide. Merge only the same VMD identity across input files.
+            local target = track.m
             local existing = seen[target]
             if existing then
                 local meaningful = track_is_meaningful(track.k)

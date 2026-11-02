@@ -1377,8 +1377,8 @@ end
 clear_all_flex_weights = function(ent)
     if not is_usable_npc(ent) or not ent.GetFlexNum or not ent.SetFlexWeight then return end
 
-    for flexID = 0, (ent:GetFlexNum() or 0) - 1 do
-        ent:SetFlexWeight(flexID, 0)
+    for _, target in ipairs(MMDVMDNPC.ModelFlexList(ent)) do
+        MMDVMDNPC.SetModelFlexWeight(ent, target.id, 0)
     end
 end
 
@@ -1930,13 +1930,13 @@ local function write_frame_payload(motion, motionID, activeFrame, startFrame, en
         net.WriteString(track.source or "")
         net.WriteString(row.resolvedName or "")
         net.WriteFloat(row.weight or 0)
-        net.WriteInt(row.flexID or -1, 16)
+        net.WriteInt(row.flexID or -1, 32)
         net.WriteBool(row.resolved == true)
         local targets = row.targets or {}
         local targetCount = math.min(#targets, 255)
         net.WriteUInt(targetCount, 8)
         for t = 1, targetCount do
-            net.WriteInt(targets[t].id, 16)
+            net.WriteInt(targets[t].id, 32)
             net.WriteString(targets[t].name or "")
         end
     end
@@ -2282,20 +2282,20 @@ local function send_build_plan(ply, job)
             net.WriteString(track.source or "")
             net.WriteString(MMDVMDNPC.FlexTargetsLabel(targets))
             net.WriteBool(targets[1] ~= nil)
-            net.WriteInt(targets[1] and targets[1].id or -1, 16)
+            net.WriteInt(targets[1] and targets[1].id or -1, 32)
             net.WriteBool(mode.animated)
             if not mode.animated then net.WriteFloat(mode.weight or 0) end
             net.WriteUInt(targetCount, 8)
             for t = 1, targetCount do
                 local target = targets[t]
-                net.WriteInt(target.id, 16)
+                net.WriteInt(target.id, 32)
                 net.WriteString(target.name or "")
                 if not targetSeen[target.id] then
                     targetSeen[target.id] = true
                     resolvedFlexes = resolvedFlexes + 1
                 end
                 job.flexes[target.id] = {
-                    name = job.ent.GetFlexName and (job.ent:GetFlexName(target.id) or "") or "",
+                    name = job.ent.GetFlexName and (MMDVMDNPC.GetModelFlexName(job.ent, target.id) or "") or "",
                     source = track.source or "",
                     mmd = track.mmd or "",
                     resolved = target.name or "",
@@ -3056,7 +3056,7 @@ do
                 local flexB = (frameB.flexes or {})[index] or flexA
                 local flexID = tonumber(flexA[1]) or -1
                 if flexID >= 0 then
-                    ent:SetFlexWeight(flexID, math.Clamp(lerp_value(flexA[2], flexB[2], fraction) * (blend or 1), 0, 1))
+                    MMDVMDNPC.SetModelFlexWeight(ent, flexID, math.Clamp(lerp_value(flexA[2], flexB[2], fraction) * (blend or 1), 0, 1))
                 end
             end
         end
@@ -4037,7 +4037,7 @@ hook.Add("Think", "MMDVMDNPCBuiltPlaybackThink", function()
             MMDVMDNPC.DebugFlexHolds[ent] = nil
         elseif not MMDVMDNPC.Playbacks[ent] and ent.SetFlexWeight then
             for flexID, weight in pairs(held) do
-                ent:SetFlexWeight(flexID, weight)
+                MMDVMDNPC.SetModelFlexWeight(ent, flexID, weight)
             end
         end
     end
@@ -4155,13 +4155,11 @@ net.Receive("mmdvmd_debug_apply", function(_, ply)
     end
 
     local flexCount = math.Clamp(net.ReadUInt(16), 0, 4096)
-    local maxFlexes = ent.GetFlexNum and (ent:GetFlexNum() or 0) or 0
     local held = {}
     for _ = 1, flexCount do
-        local flexID = net.ReadInt(16)
+        local flexID = net.ReadInt(32)
         local weight = math.Clamp(net.ReadFloat(), 0, 1)
-        if ent.SetFlexWeight and flexID >= 0 and flexID < maxFlexes then
-            ent:SetFlexWeight(flexID, weight)
+        if MMDVMDNPC.SetModelFlexWeight(ent, flexID, weight) then
             held[flexID] = weight
         end
     end
@@ -4769,7 +4767,7 @@ net.Receive("mmdvmd_build_frame_result", function(_, ply)
     if layoutFlexCount > maxFlexCount then return end
     local layoutFlexes = {}
     for i = 1, layoutFlexCount do
-        layoutFlexes[i] = net.ReadInt(16)
+        layoutFlexes[i] = net.ReadInt(32)
     end
 
     local frames = {}
@@ -4803,7 +4801,7 @@ net.Receive("mmdvmd_build_frame_result", function(_, ply)
             local flexCount = net.ReadUInt(16)
             if flexCount > maxFlexCount then return end
             for i = 1, flexCount do
-                local flexID = net.ReadInt(16)
+                local flexID = net.ReadInt(32)
                 flexes[i] = { flexID, math.Clamp(finite_number(net.ReadFloat()), 0, 1) }
             end
         end
@@ -4823,7 +4821,7 @@ net.Receive("mmdvmd_build_frame_result", function(_, ply)
         for _, f in ipairs(frameData.flexes) do
             local flexID = f[1]
             if flexID >= 0 and not job.flexes[flexID] then
-                job.flexes[flexID] = job.ent.GetFlexName and (job.ent:GetFlexName(flexID) or "") or ""
+                job.flexes[flexID] = job.ent.GetFlexName and (MMDVMDNPC.GetModelFlexName(job.ent, flexID) or "") or ""
             end
         end
     end

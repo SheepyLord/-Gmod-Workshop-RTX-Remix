@@ -119,6 +119,158 @@ function mmdhl.GetRig(ent)
 end
 function mmdhl.GetMetadata(ent) local info=mmdhl.assets and mmdhl.assets[mmdhl.GetAsset(ent)] if not info then info=mmdhl.Decode(native.AssetInfo(mmdhl.GetAsset(ent))) end return {asset=mmdhl.GetAsset(ent),rig=mmdhl.GetRig(ent),model=info} end
 function mmdhl.GetMorphs(ent) local rig=mmdhl.GetRig(ent) return rig and rig.morphs or {} end
+-- R10 PMX geometry helpers (kept in this trusted bundled source path).
+do
+-- Read only the geometry needed to classify a PMX expression. The immutable imported
+-- model.bin is the source of truth; controller suffixes are never a side measurement.
+local cache,order={},{}
+local function side(left)
+ if not left then return 'unknown' end
+ return left>=.8 and 'left' or left<=.2 and 'right' or 'both'
+end
+local function readGeometry(f)
+ local size=f:Size()
+ if size>256*1024*1024 then error('PMX geometry exceeds reader budget') end
+ local data=f:Read(size) if not data or #data~=size then error('truncated PMX morph geometry') end
+ local pos=1
+ local function need(n) if n<0 or n>size-pos+1 then error('truncated PMX morph geometry') end end
+ local function skip(n) need(n) pos=pos+n end
+ local function byte() need(1) local v=data:byte(pos) pos=pos+1 return v end
+ local function unsigned(n)
+  need(n) local v=0
+  for i=0,n-1 do v=v+data:byte(pos+i)*256^i end
+  pos=pos+n return v
+ end
+ local function long() local v=unsigned(4) return v>=2147483648 and v-4294967296 or v end
+ local function float()
+  need(4) local a,b,c,d=data:byte(pos,pos+3) pos=pos+4
+  local exponent=(d%128)*2+math.floor(c/128)
+  local fraction=a+b*256+(c%128)*65536
+  if exponent==255 then error('nonfinite PMX geometry') end
+  local value=exponent==0 and math.ldexp(fraction,-149) or math.ldexp(fraction+8388608,exponent-150)
+  return d>=128 and -value or value
+ end
+ local function count(limit) local n=long() if n<0 or n>limit then error('PMX geometry count exceeds limit') end return n end
+ local function text() skip(count(size)) end
+ local function index(n,unsigned)
+  need(n)
+  if n==1 then local v=byte() return not unsigned and v>=128 and v-256 or v end
+  if n==2 then local v=byte()+byte()*256 return not unsigned and v>=32768 and v-65536 or v end
+  if n==4 then local v=long() return unsigned and v<0 and v+4294967296 or v end
+  error('invalid PMX index width')
+ end
+ need(4) if data:sub(1,4)~='PMX ' then error('geometry is available for PMX only') end pos=5
+ local version=float() if version<2 or version>2.11 then error('unknown PMX version') end
+ local globals=byte() if globals<8 then error('invalid PMX header') end
+ local encoding,uv,vs,ts,ms,bs,mrs,rs=byte(),byte(),byte(),byte(),byte(),byte(),byte(),byte()
+ if encoding>1 or uv>4 then error('invalid PMX globals') end
+ for _,n in ipairs({vs,ts,ms,bs,mrs,rs}) do if n~=1 and n~=2 and n~=4 then error('invalid PMX index width') end end
+ skip(globals-8) for _=1,4 do text() end
+ local xs={}
+ local vertices=count(2000000)
+ for i=1,vertices do
+  xs[i]=float() skip(28+uv*16)
+  local deform=byte()
+  if deform==0 then skip(bs)
+  elseif deform==1 then skip(2*bs+4)
+  elseif deform==2 or deform==4 then skip(4*bs+16)
+  elseif deform==3 then skip(2*bs+40)
+  else error('unknown PMX deform') end
+  skip(4)
+ end
+ skip(count(12000000)*vs)
+ for _=1,count(100000) do text() end
+ for _=1,count(100000) do
+  text() text() skip(66+2*ts)
+  local shared=byte() if shared==0 then skip(ts) elseif shared==1 then skip(1) else error('invalid PMX toon') end
+  text() skip(4)
+ end
+ for _=1,count(100000) do
+  text() text() skip(12+bs+4) local flags=unsigned(2)
+  if bit.band(flags,1)~=0 then skip(bs) else skip(12) end
+  if bit.band(flags,0x300)~=0 then skip(bs+4) end
+  if bit.band(flags,0x400)~=0 then skip(12) end
+  if bit.band(flags,0x800)~=0 then skip(24) end
+  if bit.band(flags,0x2000)~=0 then skip(4) end
+  if bit.band(flags,0x20)~=0 then
+   skip(bs+8)
+   for _=1,count(100000) do skip(bs) if byte()~=0 then skip(24) end end
+  end
+ end
+ local morphs={}
+ for i=1,count(100000) do
+  text() text() local panel,kind=byte(),byte() local n=count(2000000)
+  local m={panel=panel,type=kind,total=0,leftWeight=0} morphs[i]=m
+  if kind==1 then
+   m.offsetStart=pos m.count=n
+   for _=1,n do
+    local v=index(vs,true)+1 local x,y,z=float(),float(),float()
+    if not xs[v] then error('invalid PMX morph vertex') end
+    local w=math.sqrt(x*x+y*y+z*z) m.total=m.total+w
+    if xs[v]>0 then m.leftWeight=m.leftWeight+w end
+   end
+  elseif kind==0 or kind==9 then
+   m.children={} for j=1,n do m.children[j]={index(mrs,false)+1,float()} end
+  elseif kind==2 then skip(n*(bs+28))
+  elseif kind>=3 and kind<=7 then skip(n*(vs+16))
+  elseif kind==8 then skip(n*(ms+113))
+  elseif kind==10 then skip(n*(rs+25))
+  else error('unknown PMX morph type') end
+ end
+ -- Combine signed displacement vectors before measuring a group. Summing
+ -- child magnitudes can call a cancelled eye "both". Re-read only referenced
+ -- vertex spans instead of retaining every model offset in Lua memory.
+ local function collect(i,scale,vertices,visiting,depth)
+  local m=morphs[i] if not m or visiting[i] or depth>64 then error('invalid PMX morph group') end
+  if scale==0 then return true end
+  if scale~=scale or math.abs(scale)==math.huge then error('nonfinite PMX group weight') end
+  visiting[i]=true local complete=true
+  if m.type==1 then
+   pos=m.offsetStart
+   for _=1,m.count do
+    local v=index(vs,true)+1 local x,y,z=float()*scale,float()*scale,float()*scale
+    local out=vertices[v]
+    if out then out[1]=out[1]+x out[2]=out[2]+y out[3]=out[3]+z else vertices[v]={x,y,z} end
+   end
+  elseif m.type==0 then
+   for _,child in ipairs(m.children) do if not collect(child[1],scale*child[2],vertices,visiting,depth+1) then complete=false end end
+  else
+   -- Bone/UV/material and stepped flip effects cannot be measured from vertex
+   -- offsets alone. Exact-name playback still drives them normally.
+   complete=false
+  end
+  visiting[i]=nil return complete
+ end
+ for i,m in ipairs(morphs) do
+  local complete=true
+  if m.type==0 then
+   local vertices={} complete=collect(i,1,vertices,{},0)
+   for v,delta in pairs(vertices) do
+    local w=math.sqrt(delta[1]^2+delta[2]^2+delta[3]^2)
+    m.total=m.total+w if xs[v]>0 then m.leftWeight=m.leftWeight+w end
+   end
+  end
+  m.left=complete and m.total>1e-12 and m.total<math.huge and m.leftWeight/m.total or nil m.side=side(m.left)
+ end
+ return morphs
+end
+mmdhl.ReadMorphGeometry=readGeometry -- also exercised against generated PMX fixtures
+function mmdhl.GetMorphGeometry(ent)
+ local rig=mmdhl.GetRig(ent) if not rig then return nil,'model metadata unavailable' end
+ local id=rig.asset if cache[id] then return cache[id] end
+ if not isstring(id) or #id~=64 or id:find('[^a-f0-9]') then return nil,'invalid model id' end
+ local f=file.Open('mmd_hotloader/assets/'..id..'/model.bin','rb','DATA')
+ if not f then return nil,'imported model geometry unavailable' end
+ local ok,result=pcall(readGeometry,f) f:Close()
+ if not ok then return nil,tostring(result) end
+ if #result~=#rig.morphs then return nil,'model geometry and rig morph counts differ' end
+ cache[id]=result order[#order+1]=id
+ if #order>16 then cache[table.remove(order,1)]=nil end
+ return result
+end
+
+end
+-- End R10 PMX geometry helpers.
 function mmdhl.GetMorphWeight(ent,index)
  local morph=mmdhl.GetMorphs(ent)[index+1] if not morph then return end
  return morph.native>=0 and ent:GetFlexWeight(morph.native) or (ent.MMDHLLocalMorphs and ent.MMDHLLocalMorphs[index+1]) or ent:GetNW2Float('MMDHLMorph'..index,0)

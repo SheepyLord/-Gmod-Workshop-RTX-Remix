@@ -1786,3 +1786,41 @@ The development nlglass_qa add-on supplies r9-latency, r9-velocity, r9-water, r9
 its sidecar describes expected counters and actual menu clicking. Keep native windows engine-owned.
 The performance gate remains falling mean <= settled+8.5 ms, p99 <=67 ms, with an actually sleeping
 settled baseline, repeated off/on and on two clients. See [the report](handover/R9-G-report.md).
+
+## R10-H: original PMX expressions and NPC map changes
+
+[The regression suite](../tools/tests/test_mmd_morphs.py.md) executes the packaged
+Lua matcher, VMD merge, PMX geometry reader and actor gate under LuaJIT. It covers
+width/case/truncation and CP932 dangling leads, duplicate original names,
+overflow IDs above 32767, preserved manual overrides, reversed suffixes, missing
+opposite eye halves, ordinary Source models, generated/malformed PMX, new cache
+keys, failed mounts and map precache resets. Only aggregate corpus statistics
+and named relations are committed; no model fixtures.
+
+Use [mmd_morph_corpus.py](../tools/mmd_morph_corpus.py.md) against the read-only
+corpus for measured standard sides, group/offset synonym evidence and coverage.
+Keep generated data under `out/` and import reviewed package inputs through
+`tools/inputs.py`. Exact name binding never uses the NFKC audit normalization.
+
+PoC acceptance uses [the session driver](../tools/qa/mmd_hotloader_session.py.md)
+and its adjacent server/client Lua probes. Acquire the main checkout's shared
+`out/r10/poc.lock` exclusively as R10-H before deploying or launching. If owned
+by R10-E, retry once per minute; only an older-than-90-minute lock with no PoC
+game can be taken over. Every session uses `-multirun` via `poc_session.py`.
+
+- On gm_construct, spawn an imported ragdoll then an NPC; use the stock NPC tab
+  entry and the hotloader factory. Switch to gm_flatgrass and back, repeating
+  both paths; repeat a fresh launch directly on gm_flatgrass and on a listen
+  server (`--players 2`). Check the spawned model, attachment, server precache
+  and exact console errors, rather than just whether a command was sent.
+- Build/play the generated 笑い, ウィンク and まばたき motions on Guinaifen and
+  Robin through the actual motion builder/sampler. The server probe records
+  every tick and pauses at frame 30; the client probe frames the face. Confirm
+  exact PMX targets/weights plus both/left/both visual closures. Capture the
+  manual mapping window too: original PMX names must identify every target.
+- Copy evidence into this worktree's `out/r10`, quit normally, restore the
+  Workshop-only loader configuration and release the lock. Leave field/Steam
+  files, user.conf and R10-E's worktree untouched. Distinguish an unreproduced
+  field symptom from a guarded readiness defect or a runtime crash.
+
+Current outcomes and evidence paths are in [R10-H-report.md](handover/R10-H-report.md).

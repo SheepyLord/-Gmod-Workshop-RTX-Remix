@@ -1,0 +1,1141 @@
+{
+  "version": 2,
+  "standard": {
+    "まばたき": {
+      "meaning": "blink",
+      "side": "both",
+      "source": "blink",
+      "eye": true,
+      "sided": true
+    },
+    "笑い": {
+      "meaning": "blink_smile",
+      "side": "both",
+      "source": "eyes_blink_smile",
+      "eye": true,
+      "sided": true
+    },
+    "ウィンク": {
+      "meaning": "blink_smile",
+      "side": "left",
+      "source": "eye_blink_happy_left",
+      "eye": true,
+      "sided": true
+    },
+    "ウインク": {
+      "meaning": "blink_smile",
+      "side": "left",
+      "source": "eye_blink_happy_left",
+      "eye": true,
+      "sided": true
+    },
+    "ウィンク右": {
+      "meaning": "blink_smile",
+      "side": "right",
+      "source": "eye_blink_happy_right",
+      "eye": true,
+      "sided": true
+    },
+    "ウインク右": {
+      "meaning": "blink_smile",
+      "side": "right",
+      "source": "eye_blink_happy_right",
+      "eye": true,
+      "sided": true
+    },
+    "ウィンク２": {
+      "meaning": "blink",
+      "side": "left",
+      "source": "eye_blink_left",
+      "eye": true,
+      "sided": true
+    },
+    "ウインク２": {
+      "meaning": "blink",
+      "side": "left",
+      "source": "eye_blink_left",
+      "eye": true,
+      "sided": true
+    },
+    "ウィンク２右": {
+      "meaning": "blink",
+      "side": "right",
+      "source": "eye_blink_right",
+      "eye": true,
+      "sided": true
+    },
+    "ウインク２右": {
+      "meaning": "blink",
+      "side": "right",
+      "source": "eye_blink_right",
+      "eye": true,
+      "sided": true
+    },
+    "ｳｨﾝｸ２右": {
+      "meaning": "blink",
+      "side": "right",
+      "source": "eye_blink_right",
+      "eye": true,
+      "sided": true
+    },
+    "はぅ": {
+      "meaning": "squeeze",
+      "side": "both",
+      "source": "eyes_sqeeze",
+      "eye": true,
+      "sided": true
+    },
+    "なごみ": {
+      "meaning": "peaceful",
+      "side": "both",
+      "source": "eyes_peaceful",
+      "eye": true,
+      "sided": true
+    },
+    "じと目": {
+      "meaning": "stare",
+      "side": "both",
+      "source": "eyes_stare",
+      "eye": true,
+      "sided": true
+    },
+    "ジト目": {
+      "meaning": "stare",
+      "side": "both",
+      "source": "eyes_stare",
+      "eye": true,
+      "sided": true
+    },
+    "びっくり": {
+      "meaning": "surprised",
+      "side": "both",
+      "source": "eyes_surprised",
+      "eye": true,
+      "sided": true
+    },
+    "キリッ": {
+      "meaning": "sharp",
+      "side": "both",
+      "source": "eyes_sharp",
+      "eye": true,
+      "sided": true
+    },
+    "ｷﾘｯ": {
+      "meaning": "sharp",
+      "side": "both",
+      "source": "eyes_sharp",
+      "eye": true,
+      "sided": true
+    },
+    "なぬ！": {
+      "meaning": "funny",
+      "side": "both",
+      "source": "eyes_lower_upper",
+      "eye": true,
+      "sided": true
+    },
+    "なぬ": {
+      "meaning": "funny",
+      "side": "both",
+      "source": "eyes_lower_upper",
+      "eye": true,
+      "sided": true
+    },
+    "瞳小": {
+      "meaning": "pupil_small",
+      "side": "both",
+      "source": "eyes_pupil_small",
+      "eye": true,
+      "sided": true
+    },
+    "瞳大": {
+      "meaning": "pupil_big",
+      "side": "both",
+      "source": "eyes_pupil_big",
+      "eye": true,
+      "sided": true
+    },
+    "見開き": {
+      "meaning": "enlarge",
+      "side": "both",
+      "source": "eyes_enlarge",
+      "eye": true,
+      "sided": true
+    },
+    "目尻上げ": {
+      "meaning": "outer_upper",
+      "side": "both",
+      "source": "eyes_outer_upper",
+      "eye": true,
+      "sided": true
+    },
+    "目尻下げ": {
+      "meaning": "outer_lower",
+      "side": "both",
+      "source": "eyes_outer_lower",
+      "eye": true,
+      "sided": true
+    },
+    "真面目": {
+      "meaning": "brow_serious",
+      "side": "both",
+      "source": "brows_serious",
+      "eye": false,
+      "sided": true
+    },
+    "困る": {
+      "meaning": "brow_worry",
+      "side": "both",
+      "source": "brows_worry",
+      "eye": false,
+      "sided": true
+    },
+    "にこり": {
+      "meaning": "brow_happy",
+      "side": "both",
+      "source": "brows_cheerful",
+      "eye": false,
+      "sided": true
+    },
+    "怒り": {
+      "meaning": "brow_angry",
+      "side": "both",
+      "source": "brows_angry",
+      "eye": false,
+      "sided": true
+    },
+    "上": {
+      "meaning": "brow_up",
+      "side": "both",
+      "source": "brows_up",
+      "eye": false,
+      "sided": true
+    },
+    "下": {
+      "meaning": "brow_down",
+      "side": "both",
+      "source": "brows_down",
+      "eye": false,
+      "sided": true
+    },
+    "平行": {
+      "meaning": "brow_flat",
+      "side": "both",
+      "source": "brows_flat",
+      "eye": false,
+      "sided": true
+    },
+    "眉寄せ": {
+      "meaning": "brow_close",
+      "side": "both",
+      "source": "brows_close",
+      "eye": false,
+      "sided": true
+    },
+    "あ": {
+      "meaning": "mouth_a",
+      "side": "both",
+      "source": "mouth_a",
+      "eye": false,
+      "sided": false
+    },
+    "い": {
+      "meaning": "mouth_i",
+      "side": "both",
+      "source": "mouth_i",
+      "eye": false,
+      "sided": false
+    },
+    "う": {
+      "meaning": "mouth_u",
+      "side": "both",
+      "source": "mouth_u",
+      "eye": false,
+      "sided": false
+    },
+    "え": {
+      "meaning": "mouth_e",
+      "side": "both",
+      "source": "mouth_e",
+      "eye": false,
+      "sided": false
+    },
+    "お": {
+      "meaning": "mouth_o",
+      "side": "both",
+      "source": "mouth_o",
+      "eye": false,
+      "sided": false
+    },
+    "ああ": {
+      "meaning": "mouth_aa",
+      "side": "both",
+      "source": "mouth_aa",
+      "eye": false,
+      "sided": false
+    },
+    "ワ": {
+      "meaning": "mouth_wa",
+      "side": "both",
+      "source": "mouth_wa",
+      "eye": false,
+      "sided": false
+    },
+    "ん": {
+      "meaning": "mouth_n",
+      "side": "both",
+      "source": "mouth_n",
+      "eye": false,
+      "sided": false
+    },
+    "にやり": {
+      "meaning": "mouth_grin",
+      "side": "both",
+      "source": "mouth_smug",
+      "eye": false,
+      "sided": false
+    },
+    "口角上げ": {
+      "meaning": "mouth_smile",
+      "side": "both",
+      "source": "mouth_up",
+      "eye": false,
+      "sided": false
+    },
+    "口角下げ": {
+      "meaning": "mouth_sad",
+      "side": "both",
+      "source": "mouth_down",
+      "eye": false,
+      "sided": false
+    },
+    "口横広げ": {
+      "meaning": "mouth_wide",
+      "side": "both",
+      "source": "mouth_widen",
+      "eye": false,
+      "sided": false
+    },
+    "口横狭め": {
+      "meaning": "mouth_narrow",
+      "side": "both",
+      "source": "mouth_narrow",
+      "eye": false,
+      "sided": false
+    },
+    "▲": {
+      "meaning": "mouth_triangle",
+      "side": "both",
+      "source": "mouth_tri",
+      "eye": false,
+      "sided": false
+    },
+    "∧": {
+      "meaning": "mouth_caret",
+      "side": "both",
+      "source": "mouth_closed_tri",
+      "eye": false,
+      "sided": false
+    },
+    "への字": {
+      "meaning": "mouth_caret",
+      "side": "both",
+      "source": "mouth_closed_tri",
+      "eye": false,
+      "sided": false
+    },
+    "ω": {
+      "meaning": "mouth_cat",
+      "side": "both",
+      "source": "mouth_cat",
+      "eye": false,
+      "sided": false
+    },
+    "ω□": {
+      "meaning": "mouth_cat_open",
+      "side": "both",
+      "source": "mouth_cat_square",
+      "eye": false,
+      "sided": false
+    },
+    "ぺろっ": {
+      "meaning": "tongue_out",
+      "side": "both",
+      "source": "mouth_tongue_out",
+      "eye": false,
+      "sided": false
+    },
+    "舌出し": {
+      "meaning": "tongue_out",
+      "side": "both",
+      "source": "mouth_tongue_out",
+      "eye": false,
+      "sided": false
+    },
+    "照れ": {
+      "meaning": "blush",
+      "side": "both",
+      "source": "misc_blush",
+      "eye": false,
+      "sided": false
+    },
+    "赤面": {
+      "meaning": "face_red",
+      "side": "both",
+      "source": "face_red",
+      "eye": false,
+      "sided": false
+    },
+    "青ざめ": {
+      "meaning": "pale",
+      "side": "both",
+      "source": "misc_unwell",
+      "eye": false,
+      "sided": false
+    },
+    "涙": {
+      "meaning": "tears",
+      "side": "both",
+      "source": "misc_tears",
+      "eye": false,
+      "sided": false
+    },
+    "星目": {
+      "meaning": "eye_stars",
+      "side": "both",
+      "source": "eyes_star_eye",
+      "eye": true,
+      "sided": true
+    },
+    "ウィンク2": {
+      "meaning": "blink",
+      "side": "left",
+      "source": "eye_blink_left",
+      "eye": true,
+      "sided": true
+    },
+    "ウィンク2右": {
+      "meaning": "blink",
+      "side": "right",
+      "source": "eye_blink_right",
+      "eye": true,
+      "sided": true
+    },
+    "ｳｨﾝｸ２": {
+      "meaning": "blink",
+      "side": "left",
+      "source": "eye_blink_left",
+      "eye": true,
+      "sided": true
+    },
+    "ｳｨﾝｸ2右": {
+      "meaning": "blink",
+      "side": "right",
+      "source": "eye_blink_right",
+      "eye": true,
+      "sided": true
+    },
+    "ｳｨﾝｸ右": {
+      "meaning": "blink_smile",
+      "side": "right",
+      "source": "eye_blink_happy_right",
+      "eye": true,
+      "sided": true
+    }
+  },
+  "canonical": {
+    "blink": {
+      "meaning": "blink",
+      "side": "both",
+      "source": "blink",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_blink_smile": {
+      "meaning": "blink_smile",
+      "side": "both",
+      "source": "eyes_blink_smile",
+      "eye": true,
+      "sided": true
+    },
+    "eye_blink_happy_left": {
+      "meaning": "blink_smile",
+      "side": "left",
+      "source": "eye_blink_happy_left",
+      "eye": true,
+      "sided": true
+    },
+    "eye_blink_happy_right": {
+      "meaning": "blink_smile",
+      "side": "right",
+      "source": "eye_blink_happy_right",
+      "eye": true,
+      "sided": true
+    },
+    "eye_blink_left": {
+      "meaning": "blink",
+      "side": "left",
+      "source": "eye_blink_left",
+      "eye": true,
+      "sided": true
+    },
+    "eye_blink_right": {
+      "meaning": "blink",
+      "side": "right",
+      "source": "eye_blink_right",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_sqeeze": {
+      "meaning": "squeeze",
+      "side": "both",
+      "source": "eyes_sqeeze",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_peaceful": {
+      "meaning": "peaceful",
+      "side": "both",
+      "source": "eyes_peaceful",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_stare": {
+      "meaning": "stare",
+      "side": "both",
+      "source": "eyes_stare",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_surprised": {
+      "meaning": "surprised",
+      "side": "both",
+      "source": "eyes_surprised",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_sharp": {
+      "meaning": "sharp",
+      "side": "both",
+      "source": "eyes_sharp",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_lower_upper": {
+      "meaning": "funny",
+      "side": "both",
+      "source": "eyes_lower_upper",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_pupil_small": {
+      "meaning": "pupil_small",
+      "side": "both",
+      "source": "eyes_pupil_small",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_pupil_big": {
+      "meaning": "pupil_big",
+      "side": "both",
+      "source": "eyes_pupil_big",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_enlarge": {
+      "meaning": "enlarge",
+      "side": "both",
+      "source": "eyes_enlarge",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_outer_upper": {
+      "meaning": "outer_upper",
+      "side": "both",
+      "source": "eyes_outer_upper",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_outer_lower": {
+      "meaning": "outer_lower",
+      "side": "both",
+      "source": "eyes_outer_lower",
+      "eye": true,
+      "sided": true
+    },
+    "brows_serious": {
+      "meaning": "brow_serious",
+      "side": "both",
+      "source": "brows_serious",
+      "eye": false,
+      "sided": true
+    },
+    "brows_worry": {
+      "meaning": "brow_worry",
+      "side": "both",
+      "source": "brows_worry",
+      "eye": false,
+      "sided": true
+    },
+    "brows_cheerful": {
+      "meaning": "brow_happy",
+      "side": "both",
+      "source": "brows_cheerful",
+      "eye": false,
+      "sided": true
+    },
+    "brows_angry": {
+      "meaning": "brow_angry",
+      "side": "both",
+      "source": "brows_angry",
+      "eye": false,
+      "sided": true
+    },
+    "brows_up": {
+      "meaning": "brow_up",
+      "side": "both",
+      "source": "brows_up",
+      "eye": false,
+      "sided": true
+    },
+    "brows_down": {
+      "meaning": "brow_down",
+      "side": "both",
+      "source": "brows_down",
+      "eye": false,
+      "sided": true
+    },
+    "brows_flat": {
+      "meaning": "brow_flat",
+      "side": "both",
+      "source": "brows_flat",
+      "eye": false,
+      "sided": true
+    },
+    "brows_close": {
+      "meaning": "brow_close",
+      "side": "both",
+      "source": "brows_close",
+      "eye": false,
+      "sided": true
+    },
+    "mouth_a": {
+      "meaning": "mouth_a",
+      "side": "both",
+      "source": "mouth_a",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_i": {
+      "meaning": "mouth_i",
+      "side": "both",
+      "source": "mouth_i",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_u": {
+      "meaning": "mouth_u",
+      "side": "both",
+      "source": "mouth_u",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_e": {
+      "meaning": "mouth_e",
+      "side": "both",
+      "source": "mouth_e",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_o": {
+      "meaning": "mouth_o",
+      "side": "both",
+      "source": "mouth_o",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_aa": {
+      "meaning": "mouth_aa",
+      "side": "both",
+      "source": "mouth_aa",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_wa": {
+      "meaning": "mouth_wa",
+      "side": "both",
+      "source": "mouth_wa",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_n": {
+      "meaning": "mouth_n",
+      "side": "both",
+      "source": "mouth_n",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_smug": {
+      "meaning": "mouth_grin",
+      "side": "both",
+      "source": "mouth_smug",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_up": {
+      "meaning": "mouth_smile",
+      "side": "both",
+      "source": "mouth_up",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_down": {
+      "meaning": "mouth_sad",
+      "side": "both",
+      "source": "mouth_down",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_widen": {
+      "meaning": "mouth_wide",
+      "side": "both",
+      "source": "mouth_widen",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_narrow": {
+      "meaning": "mouth_narrow",
+      "side": "both",
+      "source": "mouth_narrow",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_tri": {
+      "meaning": "mouth_triangle",
+      "side": "both",
+      "source": "mouth_tri",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_closed_tri": {
+      "meaning": "mouth_caret",
+      "side": "both",
+      "source": "mouth_closed_tri",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_cat": {
+      "meaning": "mouth_cat",
+      "side": "both",
+      "source": "mouth_cat",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_cat_square": {
+      "meaning": "mouth_cat_open",
+      "side": "both",
+      "source": "mouth_cat_square",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_tongue_out": {
+      "meaning": "tongue_out",
+      "side": "both",
+      "source": "mouth_tongue_out",
+      "eye": false,
+      "sided": false
+    },
+    "misc_blush": {
+      "meaning": "blush",
+      "side": "both",
+      "source": "misc_blush",
+      "eye": false,
+      "sided": false
+    },
+    "face_red": {
+      "meaning": "face_red",
+      "side": "both",
+      "source": "face_red",
+      "eye": false,
+      "sided": false
+    },
+    "misc_unwell": {
+      "meaning": "pale",
+      "side": "both",
+      "source": "misc_unwell",
+      "eye": false,
+      "sided": false
+    },
+    "misc_tears": {
+      "meaning": "tears",
+      "side": "both",
+      "source": "misc_tears",
+      "eye": false,
+      "sided": false
+    },
+    "eyes_star_eye": {
+      "meaning": "eye_stars",
+      "side": "both",
+      "source": "eyes_star_eye",
+      "eye": true,
+      "sided": true
+    },
+    "eye_blink_happy": {
+      "meaning": "blink_smile",
+      "side": "both",
+      "source": "eyes_blink_smile",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_blink_happy": {
+      "meaning": "blink_smile",
+      "side": "both",
+      "source": "eyes_blink_smile",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_calm": {
+      "meaning": "peaceful",
+      "side": "both",
+      "source": "eyes_peaceful",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_squeeze": {
+      "meaning": "squeeze",
+      "side": "both",
+      "source": "eyes_sqeeze",
+      "eye": true,
+      "sided": true
+    },
+    "eyes_slant": {
+      "meaning": "sharp",
+      "side": "both",
+      "source": "eyes_sharp",
+      "eye": true,
+      "sided": true
+    },
+    "brows_happy": {
+      "meaning": "brow_happy",
+      "side": "both",
+      "source": "brows_cheerful",
+      "eye": false,
+      "sided": true
+    },
+    "mouth_grin": {
+      "meaning": "mouth_grin",
+      "side": "both",
+      "source": "mouth_smug",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_smile": {
+      "meaning": "mouth_smile",
+      "side": "both",
+      "source": "mouth_up",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_sad": {
+      "meaning": "mouth_sad",
+      "side": "both",
+      "source": "mouth_down",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_triangle": {
+      "meaning": "mouth_triangle",
+      "side": "both",
+      "source": "mouth_tri",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_caret": {
+      "meaning": "mouth_caret",
+      "side": "both",
+      "source": "mouth_closed_tri",
+      "eye": false,
+      "sided": false
+    },
+    "mouth_cat_open": {
+      "meaning": "mouth_cat_open",
+      "side": "both",
+      "source": "mouth_cat_square",
+      "eye": false,
+      "sided": false
+    },
+    "misc_uppershy": {
+      "meaning": "blush",
+      "side": "both",
+      "source": "misc_blush",
+      "eye": false,
+      "sided": false
+    }
+  },
+  "aliases": {
+    "EL_Happy_l_CLO": {
+      "meaning": "blink_smile",
+      "observations": 673
+    },
+    "EL_Happy_r_CLO": {
+      "meaning": "blink_smile",
+      "observations": 673
+    },
+    "EL_Surprised_01": {
+      "meaning": "surprised",
+      "observations": 337
+    },
+    "EL_Tired_01_OP": {
+      "meaning": "stare",
+      "observations": 286
+    },
+    "G照れ": {
+      "meaning": "blush",
+      "observations": 21
+    },
+    "G赤面": {
+      "meaning": "face_red",
+      "observations": 21
+    },
+    "TDS_haixiu": {
+      "meaning": "blush",
+      "observations": 285
+    },
+    "TDS_liulei_03": {
+      "meaning": "tears",
+      "observations": 285
+    },
+    "biyan": {
+      "meaning": "blink",
+      "observations": 337
+    },
+    "biyan_L": {
+      "meaning": "blink",
+      "observations": 337
+    },
+    "biyan_R": {
+      "meaning": "blink",
+      "observations": 449
+    },
+    "eye_SF": {
+      "meaning": "pupil_small",
+      "observations": 337
+    },
+    "jawOpen_a": {
+      "meaning": "mouth_a",
+      "observations": 337
+    },
+    "jawOpen_ei": {
+      "meaning": "mouth_e",
+      "observations": 337
+    },
+    "jawOpen_o": {
+      "meaning": "mouth_o",
+      "observations": 337
+    },
+    "jawOpen_wu": {
+      "meaning": "mouth_u",
+      "observations": 337
+    },
+    "jawOpen_yi": {
+      "meaning": "mouth_i",
+      "observations": 337
+    },
+    "なぬ！右": {
+      "meaning": "funny",
+      "observations": 21
+    },
+    "なぬ！左": {
+      "meaning": "funny",
+      "observations": 21
+    },
+    "にこり右": {
+      "meaning": "brow_happy",
+      "observations": 28
+    },
+    "にこり左": {
+      "meaning": "brow_happy",
+      "observations": 28
+    },
+    "びっくり右": {
+      "meaning": "surprised",
+      "observations": 4
+    },
+    "びっくり左": {
+      "meaning": "surprised",
+      "observations": 4
+    },
+    "上右": {
+      "meaning": "brow_up",
+      "observations": 37
+    },
+    "上左": {
+      "meaning": "brow_up",
+      "observations": 37
+    },
+    "下右": {
+      "meaning": "brow_down",
+      "observations": 37
+    },
+    "下左": {
+      "meaning": "brow_down",
+      "observations": 37
+    },
+    "原026_EL_Seriou": {
+      "meaning": "sharp",
+      "observations": 17
+    },
+    "原065_jawOpen_H": {
+      "meaning": "mouth_wa",
+      "observations": 17
+    },
+    "原067_jawOpen_S": {
+      "meaning": "mouth_triangle",
+      "observations": 17
+    },
+    "原076_EL_Seriou": {
+      "meaning": "sharp",
+      "observations": 268
+    },
+    "原115_jawOpen_H": {
+      "meaning": "mouth_wa",
+      "observations": 268
+    },
+    "原117_jawOpen_S": {
+      "meaning": "mouth_triangle",
+      "observations": 268
+    },
+    "口横広げ右": {
+      "meaning": "mouth_wide",
+      "observations": 3
+    },
+    "口横広げ左": {
+      "meaning": "mouth_wide",
+      "observations": 3
+    },
+    "口横狭め右": {
+      "meaning": "mouth_narrow",
+      "observations": 3
+    },
+    "口横狭め左": {
+      "meaning": "mouth_narrow",
+      "observations": 3
+    },
+    "口角上げ右": {
+      "meaning": "mouth_smile",
+      "observations": 3
+    },
+    "口角上げ左": {
+      "meaning": "mouth_smile",
+      "observations": 3
+    },
+    "口角下げ右": {
+      "meaning": "mouth_sad",
+      "observations": 3
+    },
+    "口角下げ左": {
+      "meaning": "mouth_sad",
+      "observations": 3
+    },
+    "右眉上下": {
+      "meaning": "brow_up",
+      "observations": 4
+    },
+    "困る2右": {
+      "meaning": "brow_worry",
+      "observations": 6
+    },
+    "困る2左": {
+      "meaning": "brow_worry",
+      "observations": 6
+    },
+    "困る右": {
+      "meaning": "brow_worry",
+      "observations": 31
+    },
+    "困る左": {
+      "meaning": "brow_worry",
+      "observations": 31
+    },
+    "左眉上下": {
+      "meaning": "brow_up",
+      "observations": 4
+    },
+    "怒り右": {
+      "meaning": "brow_angry",
+      "observations": 37
+    },
+    "怒り左": {
+      "meaning": "brow_angry",
+      "observations": 37
+    },
+    "悲しい": {
+      "meaning": "brow_worry",
+      "observations": 3
+    },
+    "眉上右": {
+      "meaning": "brow_up",
+      "observations": 3
+    },
+    "眉上左": {
+      "meaning": "brow_up",
+      "observations": 3
+    },
+    "眉下右": {
+      "meaning": "brow_down",
+      "observations": 5
+    },
+    "眉下左": {
+      "meaning": "brow_down",
+      "observations": 5
+    },
+    "真面目右": {
+      "meaning": "brow_serious",
+      "observations": 34
+    },
+    "真面目左": {
+      "meaning": "brow_serious",
+      "observations": 34
+    },
+    "瞳大右": {
+      "meaning": "pupil_big",
+      "observations": 3
+    },
+    "瞳大左": {
+      "meaning": "pupil_big",
+      "observations": 3
+    },
+    "瞳小右": {
+      "meaning": "pupil_small",
+      "observations": 3
+    },
+    "瞳小左": {
+      "meaning": "pupil_small",
+      "observations": 3
+    },
+    "ｷﾘｯ右": {
+      "meaning": "sharp",
+      "observations": 3
+    },
+    "ｷﾘｯ左": {
+      "meaning": "sharp",
+      "observations": 3
+    }
+  },
+  "legacy": {
+    "なごみ": "eyes_calm",
+    "にこり": "brows_happy",
+    "にやり": "mouth_grin",
+    "はぅ": "eyes_peaceful",
+    "ぺろっ": "mouth_lick",
+    "ん": "mouth_neutral",
+    "ジト目": "eyes_staring",
+    "下": "brows_lower",
+    "口角上げ": "mouth_grin_2",
+    "口角下げ": "mouth_sad",
+    "照れ": "misc_uppershy",
+    "笑い": "eye_blink_happy",
+    "ｷﾘｯ": "eyes_slant",
+    "キリッ": "eyes_slant"
+  }
+}

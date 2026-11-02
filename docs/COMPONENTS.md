@@ -10,6 +10,15 @@ automatic albedo emission. The [catalogue audit](../tools/qa/eye_white_catalogue
 offline/game evidence; the [Lua harness](../tools/tests/eye_whites_harness.lua.md) covers lifecycle,
 isolation and option writes.
 
+R10-H adds [the PMX morph corpus auditor](../tools/mmd_morph_corpus.py.md), aggregate
+statistics and [Lua regression harness](../tools/tests/mmd_morph_harness.lua.md)
+under `tools/tests`, plus [NPC/expression PoC probes](../tools/qa/mmd_hotloader_session.py.md)
+under `tools/qa`. The hotloader's existing `carrier.lua` gains bounded lazy
+PMX side summaries; the importer's existing `sh_core.lua` gains the matcher and
+overflow adapter, with reviewed `morph_semantics.json` and generated `cp932.json`.
+Native modules/controller
+names are unchanged. Both parts are imported from staging through `inputs.py`.
+
 R8-C review adds [an offline material-cost comparison](../tools/tests/bench_render_guard.py.md)
 under `tools/tests`. The self-contained companion guard now carries exact bundled virtual paths,
 checked against package indexes and companion/glass sources, and applies custom-shader policy at

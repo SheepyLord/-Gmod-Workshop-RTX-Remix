@@ -16,6 +16,19 @@ Versions follow the loader's CMake project version once it ships; until then eve
   pack keep the pack's look. The RTX menu has a "Steady eye whites for imported characters" checkbox
   and an "Eye-white brightness" slider (0-200 %, for every character, packs included), in all seven
   languages. Runtime patch 0019 ([ADR 0088](docs/decisions/0088-imported-character-eye-whites.md)).
+- **VMD expressions drive the model's own morphs** (the user: 笑い drove a wink on Guinaifen, and
+  many other expressions landed on the wrong morph, Robin too). A motion's 笑い now closes both eyes
+  with the model's own 笑い, and はぅ no longer plays as なごみ: an expression the model has by name
+  always drives that morph, the way MMD and nanoem match them, including morphs beyond the hotloader's
+  first 96. Only an expression the model lacks is matched by meaning, checked against 1,225 of the
+  user's models, with each eye's side measured on the model itself (the names' left and right are
+  not reliable). A both-eyes expression never drives one eye. The mapping window shows the real
+  PMX morph names, saved manual choices stay, and animations built with the old mapping are rebuilt
+  ([ADR 0089](docs/decisions/0089-pmx-identities-and-geometry-checked-vmd-expressions.md)).
+- **Imported characters spawn as NPCs after a map change** (the user: model not found). The spawn
+  menu offers an imported NPC or player model only once its files are mounted and the new map has
+  loaded the model, and the hotloader's own NPC spawn checks the same; a mount from the previous map
+  is no longer taken on trust ([ADR 0090](docs/decisions/0090-ready-carriers-before-actor-publication.md)).
 
 ### R9 (the user's glass report of 2026-11-02)
 

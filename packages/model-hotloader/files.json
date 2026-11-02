@@ -3,9 +3,14 @@
  "part": "model-hotloader",
  "origins": {
   "mmd_hotloader": {
-   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\addons\\mmd_hotloader",
-   "git": null,
-   "imported": "2026-10-30T00:42:44+00:00"
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "dirty": false
+   },
+   "imported": "2026-11-02T10:48:38+00:00"
   },
   "overrides": {
    "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!GMHLVK\\Gmod-Model-Hotloader-with-Vulkan\\addon\\lua\\mmdhl",
@@ -156,6 +161,46 @@
     "dirty": false
    },
    "imported": "2026-10-31T20:58:06+00:00"
+  },
+  "mmd_hotloader/lua/autorun/mmdhl.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\autorun\\mmdhl.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "dirty": false
+   },
+   "imported": "2026-11-02T11:03:55+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/actors.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\actors.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "dirty": false
+   },
+   "imported": "2026-11-02T11:05:12+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/morph_geometry.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\morph_geometry.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "dirty": false
+   },
+   "imported": "2026-11-02T10:27:32+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/carrier.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\carrier.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "dirty": false
+   },
+   "imported": "2026-11-02T11:36:57+00:00"
   }
  },
  "files": {
@@ -392,9 +437,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/autorun/mmdhl.lua": {
-   "size": 6459,
-   "sha256": "eb063319da9e1a0fa21d1bacb3b561db0e589c625d525f0420ec9c411740a8ea",
-   "mtime_ns": 1793055809766785900,
+   "size": 7297,
+   "sha256": "a9773a0cd9e3c7d6400417e4e8ef58196973bb6123edfb91d718007885157e7d",
+   "mtime_ns": 1793617435016160000,
    "stored": "plain"
   },
   "mmd_hotloader/lua/entities/mmdhl_attach_link.lua": {
@@ -446,9 +491,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/actors.lua": {
-   "size": 28963,
-   "sha256": "bcd271148be8846a7203d1be3cddc17c8a77a955dfcebb8718f2275381b52dd1",
-   "mtime_ns": 1792920438684032000,
+   "size": 29943,
+   "sha256": "f4e997b32b1e7233e84c25620b3c5653cbad27645a9852be4ba6946c9f6c8bf2",
+   "mtime_ns": 1793617512009796100,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/bodygroups.lua": {
@@ -476,9 +521,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/carrier.lua": {
-   "size": 21578,
-   "sha256": "57857e75aff185962a7934ce118f671c46088749a37ce09eb2eab18e808349b3",
-   "mtime_ns": 1792920438687029400,
+   "size": 28577,
+   "sha256": "7992a4933a4aa0e5ad872f8d1e45688d36a1c95e63cfc67c52dad2972845d07e",
+   "mtime_ns": 1793619417298396000,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/client.lua": {
