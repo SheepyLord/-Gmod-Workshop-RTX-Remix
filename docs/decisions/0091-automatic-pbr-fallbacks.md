@@ -1,6 +1,6 @@
 # 0091: Bounded automatic PBR fallbacks and imported game maps
 
-- Status: Implementing on R11-A, 2026-11-02; runtime precedence prerequisite remains outside scope
+- Status: Accepted 2026-11-02 (R11); the runtime precedence it required is [ADR 0092](0092-generated-fallback-mods-rank-last.md) (runtime patch 0020)
 - Decided by: the user's R11 items 34 and 32 and explicit replacement-priority requirement
 
 ## Decision

@@ -124,3 +124,4 @@ Each with the reason it lost.
 - [0090: Make carriers ready before publishing actor entries](0090-ready-carriers-before-actor-publication.md).
 
 - [0091: Bounded automatic PBR fallbacks and imported game maps](0091-automatic-pbr-fallbacks.md).
+- [0092: Generated fallback mods rank after every authored mod](0092-generated-fallback-mods-rank-last.md).

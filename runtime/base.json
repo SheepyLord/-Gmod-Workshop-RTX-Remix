@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "c61f172586af9f7f9e8ebad74a962be65003b13fb3e96561ae3097792d7fc107",
-  "built_from": "HEAD 381271b1 (with what the rest of this record names)",
+  "d3d9.dll": "f76c316a1033f58e3fac0225780788fd6b8e0e3c6a4e64bffab77465a2cc416f",
+  "built_from": "HEAD f8b42e63 (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -73,6 +73,7 @@
    "patches/0017-Apply-scoped-MMD-alpha-consistently-to-ray-materials.patch": "e89d4ba576cfcd373bb400a317e70ba09779d7312a373a9dd2dcbec78fc1c838",
    "patches/0018-Keep-denoiser-history-for-Model-Hotloader-draws-unde.patch": "38c820d10d35fd499e4e0d13a2b3c0f29b830c17cac5dd81271df11507afe48c",
    "patches/0019-Keep-imported-eye-white-emission-on-isolated-surface.patch": "1d47f89fda7fe616d3ce6b60dd4d1e9b74a11f9239953142409df10583d4a29f",
+   "patches/0020-Rank-generated-fallback-mods-after-every-authored-mod.patch": "9c414a55c90f405df61151a1d37a73504f06f0ebf006ac592f7dd48353bbee92",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }
