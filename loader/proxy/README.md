@@ -16,6 +16,13 @@ at start-up, so long loads no longer replace the game window with a "Not Respond
 `activate.cpp`, it loads user32 at run time, so the import table stays KERNEL32-only.
 `exit_report::keep_window_ghosting()` reads the opt-out, `NATIVE_LOADER_WINDOW_GHOSTING=1`.
 
+R8 CI: the observer names each identity check it refuses. It exits with `0x4E4C0000` plus the reason
+(arguments, process id, parent process, creation time, session start before process creation,
+inherited handle, image path, ready event, exception). `observer::start()` waits on the ready event
+*or* the observer's exit, so a refusal costs no wait and the note says `exit observer refused: pid=...,
+<reason>`. `exit_report::session_after_creation()` lets the coarse session start precede the precise
+creation time by two 15.625 ms clock ticks.
+
 R7-B keeps the full `gmod-rtx-remix` identity row and counts the other deployed content packages
 in one localized line, including in copied diagnostics. The seven catalogs describe the new
 18 GiB free-commit / 24 GiB total memory thresholds.

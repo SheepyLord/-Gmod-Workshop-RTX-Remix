@@ -53,6 +53,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
   0.12.1 turns that window ghosting off for the game process (user32 loaded at run time; the bootstrap
   still imports only KERNEL32); `NATIVE_LOADER_WINDOW_GHOSTING=1` keeps it. `tools\poc_session.py` takes
   `--hang-grace <seconds>` for such loads.
+- **The exit observer no longer refuses a fast start** (the other CI failure on `main` since R7, and the
+  `v0.12.1` tag build). The observer refused a session start earlier than the game's creation time. The
+  start comes from `GetSystemTimeAsFileTime`, which moves once per clock tick (15.625 ms at Windows'
+  default, on the CI runner), while the creation time is finer. A loader that recorded its session within
+  a tick of the process starting therefore lost its crash observer, and start-up waited the full 3 s.
+  Two ticks of slack now cover that. A refusing observer exits with `0x4E4C0000` plus its reason, and
+  start-up stops waiting at once and logs it (`exit observer refused: pid=..., <reason>`).
 
 ### R7 (unreleased; loader 0.12.0, [plan](docs/handover/R7-plan.md), [report](docs/handover/R7-report.md))
 

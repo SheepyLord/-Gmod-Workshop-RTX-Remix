@@ -1,5 +1,6 @@
 #pragma once
 #include "nl/evidence.h"
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -9,6 +10,10 @@ namespace nl::proxy::exit_report {
 bool quiet(std::string_view environment) noexcept;
 // NATIVE_LOADER_WINDOW_GHOSTING=1 keeps Windows' "Not Responding" ghosting; anything else turns it off.
 bool keep_window_ghosting(std::string_view environment) noexcept;
+// The session start comes from GetSystemTimeAsFileTime, which moves once per clock tick (up to 15.625
+// ms); the process creation time is finer. A start read within a tick of creation can precede it,
+// which made the observer refuse on CI runners at the default tick. Allows two such ticks, no more.
+bool session_after_creation(std::uint64_t start, std::uint64_t created) noexcept;
 std::string command_language(std::wstring_view command);
 std::string language(std::string_view config, std::string_view override_code, std::string_view os_locale);
 std::string message(const evidence::PreviousSession& previous, std::uint32_t code,

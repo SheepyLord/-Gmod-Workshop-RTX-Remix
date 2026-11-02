@@ -21,6 +21,7 @@ kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
 kernel.WaitForSingleObject.restype = wintypes.DWORD
 kernel.CloseHandle.argtypes = [wintypes.HANDLE]
 kernel.CloseHandle.restype = wintypes.BOOL
+REFUSED = 0x4E4C0000  # loader/proxy/observer.cpp: a refusing observer exits with this plus its reason
 
 
 def wait_for(predicate, timeout=12):
@@ -82,17 +83,21 @@ def main():
         shutil.copy2(args.host, host)
         shutil.copy2(args.proxy, dll)
         write(root, 'native-loader/config.json', '{"schema":1,"diagnostics":{"memory_telemetry":"off"}}')
-        # An export invoked manually has no inherited, identity-checked game handle. DllMain's
-        # rundll32 guard must leave the root unchanged, even with loader configuration present.
-        subprocess.run([str(rundll), str(dll) + ',NativeLoaderObserve', '123', '124',
-                        str(os.getpid()), '123', '124', '-'], env=env, check=True, timeout=10)
+        # An export invoked manually has no inherited, identity-checked game handle: it is refused
+        # (exit code 0x4E4C0000 + 2, "process id"). DllMain's rundll32 guard must leave the root
+        # unchanged, even with loader configuration present.
+        manual = subprocess.run([str(rundll), str(dll) + ',NativeLoaderObserve', '123', '124',
+                                 str(os.getpid()), '123', '124', '-'], env=env, timeout=10)
+        assert manual.returncode == REFUSED + 2, hex(manual.returncode)
         assert not (root / 'native-loader/logs').exists()
         process = subprocess.Popen([str(host), '--m4-hold', str(root / 'ready')], cwd=root, env=env)
         observer = None
         try:
             wait_for(lambda: (root / 'ready').exists())
             notes = (root / 'native-loader/logs/loader.log').read_text(encoding='utf-8')
-            pid = int(re.search(r'exit observer ready: pid=(\d+)', notes).group(1))
+            started = re.search(r'exit observer ready: pid=(\d+)', notes)
+            assert started, notes  # a refused observer names its reason in this log
+            pid = int(started.group(1))
             observer = kernel.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE, pins the exact observer
             assert observer, ctypes.get_last_error()
             assert kernel.WaitForSingleObject(observer, 0) == 258  # alive while game is alive
@@ -163,7 +168,7 @@ def main():
             process.terminate()
             process.wait(timeout=10)
         notes = root / 'native-loader/logs/loader.log'
-        assert not notes.exists() or 'exit observer ready' not in notes.read_text(encoding='utf-8')
+        assert not notes.exists() or not re.search(r'exit observer (?:ready|not ready|refused)', notes.read_text(encoding='utf-8'))
         assert not list((root / 'native-loader/logs').glob('sessions/**/exit-report.json'))
         assert root.resolve().is_relative_to(scratch) and root.resolve() != scratch
         shutil.rmtree(root)

@@ -14,4 +14,6 @@ on failure the generated root. Checks waiting before exit, exact NTSTATUS/Win32 
 all log/dump/commit sources, zero-exit fatal Remix paths, clean silence, quiet JSON persistence,
 observer exit, manual-invocation refusal, all loader off switches and non-game/Chromium hosts.
 The chosen exit codes simulate failures; no actual memory exhaustion or driver reset occurs.
+The manual export call is refused for its process id (exit code `0x4E4C0000 + 2`). A case without an
+`exit observer ready` note fails, with the loader log, which names a refusal's reason.
 Exit 0 on success; nonzero on an assertion, timeout or OS error. Run via CTest normally.

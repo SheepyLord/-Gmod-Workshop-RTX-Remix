@@ -7,7 +7,9 @@
 #include "nl/session.h"
 #include <tlhelp32.h>
 #include <charconv>
+#include <cstdio>
 #include <cwchar>
+#include <iterator>
 #include <filesystem>
 #include <stdexcept>
 #include <vector>
@@ -104,35 +106,56 @@ void show(const evidence::PreviousSession& previous, DWORD code, const std::file
   if (message) message(nullptr, text.c_str(), title.c_str(), MB_OK | MB_ICONWARNING | MB_SETFOREGROUND);
   FreeLibrary(user32);
 }
-void observe(std::wstring_view command) {
-  if (!host()) return;
+// A refusal ends the rundll32 host with kRefused + its reason, so start() names it at once instead of
+// waiting out its budget (R8 CI: observers refused the clock check below and the test saw no note).
+constexpr DWORD kRefused = 0x4E4C0000;  // "NL"
+enum Refusal : DWORD {
+  kBound, kArguments, kProcessId, kParent, kCreation, kStartBeforeCreation, kInheritance, kImagePath, kReadyEvent, kException,
+};
+constexpr const char* kRefusals[] = {"bound", "arguments", "process id", "parent process", "creation time",
+    "session start before process creation", "inherited handle", "image path", "ready event", "exception"};
+std::string refusal(DWORD code) {
+  if (code > kRefused && code - kRefused < std::size(kRefusals)) return kRefusals[code - kRefused];
+  char text[32]{};
+  std::snprintf(text, sizeof(text), "exit code 0x%08lX", static_cast<unsigned long>(code));
+  return text;
+}
+Refusal observe(std::wstring_view command) {
+  if (!host()) return kBound;  // not rundll32: nothing to observe, and no exit code to set
   const auto args = cmdline::tokenize(command);
-  if (args.size() != 6) return;
-  Handle game{reinterpret_cast<HANDLE>(number(args[0]))};
-  Handle ready{reinterpret_cast<HANDLE>(number(args[1]))};
-  const auto pid = number(args[2]), created = number(args[3]), start = number(args[4]);
+  if (args.size() != 6) return kArguments;
+  std::uint64_t values[5]{};
+  try {
+    for (std::size_t index = 0; index < 5; ++index) values[index] = number(args[index]);
+  } catch (const std::exception&) { return kArguments; }
+  Handle game{reinterpret_cast<HANDLE>(values[0])};
+  Handle ready{reinterpret_cast<HANDLE>(values[1])};
+  const auto pid = values[2], created = values[3], start = values[4];
   const auto root = module_path().parent_path().parent_path().parent_path();
   DWORD flags = 0;
   wchar_t image[kPathCapacity]{}; DWORD size = kPathCapacity;
   const auto expected = (root / L"bin" / L"win64" / L"gmod.exe").wstring();
-  if (pid > MAXDWORD || GetProcessId(game.value) != pid || !parent_is(static_cast<DWORD>(pid)) ||
-      !created || start < created || creation(game.value) != created ||
-      !GetHandleInformation(game.value, &flags) || !(flags & HANDLE_FLAG_INHERIT) ||
-      !QueryFullProcessImageNameW(game.value, 0, image, &size) ||
+  if (pid > MAXDWORD || GetProcessId(game.value) != pid) return kProcessId;
+  if (!parent_is(static_cast<DWORD>(pid))) return kParent;
+  if (!created || creation(game.value) != created) return kCreation;
+  if (!exit_report::session_after_creation(start, created)) return kStartBeforeCreation;
+  if (!GetHandleInformation(game.value, &flags) || !(flags & HANDLE_FLAG_INHERIT)) return kInheritance;
+  if (!QueryFullProcessImageNameW(game.value, 0, image, &size) ||
       CompareStringOrdinal(image, static_cast<int>(size), expected.c_str(), static_cast<int>(expected.size()), TRUE) != CSTR_EQUAL)
-    return;
-  if (!SetEvent(ready.value)) return;
+    return kImagePath;
+  if (!SetEvent(ready.value)) return kReadyEvent;
   CloseHandle(ready.value); ready.value = nullptr;
   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
-  if (WaitForSingleObject(game.value, INFINITE) != WAIT_OBJECT_0) return;
+  if (WaitForSingleObject(game.value, INFINITE) != WAIT_OBJECT_0) return kBound;
   DWORD code = 0;
-  if (!GetExitCodeProcess(game.value, &code)) return;
+  if (!GetExitCodeProcess(game.value, &code)) return kBound;
   const bool quiet = exit_report::quiet(environment());
   const auto result = evidence::finish(root, start, static_cast<DWORD>(pid), code,
       std::to_string(pid) + '-' + std::to_string(created), quiet);
   CloseHandle(game.value); game.value = nullptr;
   if (!quiet && evidence::needs_report(result.previous.reason))
     show(result.previous, code, root, language(root, args[5] == L"-" ? "" : fs::utf8(std::filesystem::path(args[5]))));
+  return kBound;
 }
 }  // namespace
 bool host() noexcept {
@@ -172,8 +195,14 @@ std::string start(std::uint64_t session_start) noexcept {
                         EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW, nullptr, g_bootstrap.root, &info.StartupInfo, &process))
       return "exit observer: CreateProcess failed (" + std::to_string(GetLastError()) + ')';
     Handle child{process.hProcess}, thread{process.hThread};
-    const auto wait = WaitForSingleObject(ready.value, 3000);
-    return std::string(wait == WAIT_OBJECT_0 ? "exit observer ready: pid=" : "exit observer not ready: pid=") + std::to_string(process.dwProcessId);
+    // Ready, or the observer gone first (a refusal's exit code says why), or the 3 s budget spent.
+    HANDLE signals[] = {ready.value, child.value};
+    const auto wait = WaitForMultipleObjects(2, signals, FALSE, 3000);
+    const auto id = "pid=" + std::to_string(process.dwProcessId);
+    if (wait == WAIT_OBJECT_0) return "exit observer ready: " + id;
+    DWORD code = 0;
+    if (wait == WAIT_OBJECT_0 + 1 && GetExitCodeProcess(child.value, &code)) return "exit observer refused: " + id + ", " + refusal(code);
+    return "exit observer not ready: " + id;
   } catch (const std::exception&) { return "exit observer: initialization failed"; }
 }
 std::string disable_window_ghosting() noexcept {
@@ -194,8 +223,12 @@ std::string disable_window_ghosting() noexcept {
 }  // namespace nl::proxy::observer
 
 extern "C" __declspec(dllexport) void CALLBACK NativeLoaderObserveW(HWND, HINSTANCE, LPWSTR command, int) {
-  try { if (command) nl::proxy::observer::observe(command); }
-  catch (...) { OutputDebugStringW(L"Native Loader: exit observer could not report.\n"); }
+  using namespace nl::proxy::observer;
+  Refusal refused = kBound;
+  try { if (command) refused = observe(command); }
+  catch (...) { refused = kException; OutputDebugStringW(L"Native Loader: exit observer could not report.\n"); }
+  // The game's start-up waits on this process too: a refusal's exit code names the reason there.
+  if (refused != kBound) ExitProcess(kRefused + refused);
 }
 extern "C" __declspec(dllexport) void CALLBACK NativeLoaderExitPreviewW(HWND, HINSTANCE, LPWSTR command, int) {
   using namespace nl::proxy;

@@ -35,6 +35,10 @@ bool quiet(std::string_view environment) noexcept {
   return true;
 }
 bool keep_window_ghosting(std::string_view environment) noexcept { return environment == "1"; }
+bool session_after_creation(std::uint64_t start, std::uint64_t created) noexcept {
+  constexpr std::uint64_t kSlack = 2 * 156250;  // two 15.625 ms ticks, in FILETIME's 100 ns units
+  return created && start + kSlack >= created;
+}
 std::string command_language(std::wstring_view command) {
   const auto args = cmdline::tokenize(command);
   std::string result;

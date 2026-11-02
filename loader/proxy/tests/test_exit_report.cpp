@@ -7,6 +7,16 @@ TEST_CASE("exit report: automation quiet is explicit and does not imply consent"
   CHECK(r::quiet("quiet")); CHECK(r::quiet("QUIET"));
   CHECK(!r::quiet("")); CHECK(!r::quiet("1")); CHECK(!r::quiet("off")); CHECK(!r::quiet("quiet "));
 }
+TEST_CASE("exit observer: a session start within two clock ticks before creation is this process's") {
+  constexpr std::uint64_t created = 134380469997187261ull, tick = 156250;  // 15.625 ms in 100 ns units
+  CHECK(r::session_after_creation(created, created));
+  CHECK(r::session_after_creation(created + 10000000, created));
+  CHECK(r::session_after_creation(created - tick, created));       // a coarse clock read within a tick
+  CHECK(r::session_after_creation(created - 2 * tick, created));
+  CHECK(!r::session_after_creation(created - 2 * tick - 1, created));
+  CHECK(!r::session_after_creation(created - 10000000, created));  // a second earlier: another session
+  CHECK(!r::session_after_creation(created, 0));
+}
 TEST_CASE("window ghosting stays on only when asked") {
   CHECK(r::keep_window_ghosting("1"));
   CHECK(!r::keep_window_ghosting("")); CHECK(!r::keep_window_ghosting("0")); CHECK(!r::keep_window_ghosting("true"));

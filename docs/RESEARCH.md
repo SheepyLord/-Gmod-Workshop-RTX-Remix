@@ -4074,3 +4074,24 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
   answers `SysTime` with its Source clock, as `glass_debris_harness.lua` already did. `sceneperf` still
   measures QueryPerformanceCounter, and the game's budget is unchanged: a slow frame cooks that shape in
   the next snapshot.
+
+## R8 CI: the exit observer and the coarse clock (2026-11-02, Claude)
+
+- **Symptom.** `nl_exit_observer_integration` failed in five CI runs since R7 (41308841564,
+  41354364348, 41359603305, 41359867098 and 41362392767), each time in one case of 16 (a different one
+  in the runs read). The loader log
+  had no `exit observer ready` note, so start-up had waited out its 3 s budget. The cloud session's
+  probe (`claude/sweet-cori-iqcvoh`, run 41362889676) showed readiness is fast on the runner, even
+  beside the other CTests: 45 of 45 ready in 14-226 ms. Slowness was not the cause.
+- **Cause: two clocks.** The observer refused a session start earlier than the game's creation time
+  (`observer.cpp`, `start < created`). The loader records the start with `GetSystemTimeAsFileTime`
+  (`evidence::now_filetime`), which moves once per clock tick. `GetProcessTimes` reports a creation
+  time that is not on that tick grid. On this machine the timer runs at 1 ms (`NtQueryTimerResolution`:
+  current 10000, coarsest 156250, finest 5000, in 100 ns units), and a tiny program's coarse clock at
+  `main` led its creation time by 1.2 ms or more in 400 of 400 starts (`out/r9-ci/clock_race.c`), so
+  it never failed here. A runner at Windows' default 15.625 ms tick reads a start up to 15.6 ms behind.
+  A loader that records its session within one tick of process creation therefore lost its observer.
+- **Fix.** `exit_report::session_after_creation` allows two coarsest ticks (31.25 ms). The other
+  identity checks still pin the game: pid, exact creation time, inherited handle, parent process and
+  image path. A refusal now exits with `0x4E4C0000` plus its reason, and start-up waits on readiness
+  *or* the observer's exit.
