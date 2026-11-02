@@ -8,11 +8,11 @@ sessions publish 7/0/7 on/off/restored with zero fresh conversions, including th
 Claude's review fixes. See the [brief](handover/R11-B-cached-game-maps.md), the
 [report](handover/R11-B-report.md) and [ADR 0093](decisions/0093-cached-imported-game-materials.md).
 
-R11-B's second review fixes are **complete locally**: each live texture resolves once per worker,
-and durable USD publication ownership avoids backups of our own output across restarts. Native and
-Release regressions pass; the source-present/source-hidden PoC pair publishes the same 7/0/7 with
-seven distinct conversions / seven cached restorations and no new materials backup. The exact prior
-PoC deployment is restored and the lock released; neither branch is pushed, merged or published.
+R11-B's second review fixes (after Claude's field check of the published R11-B) are **done**: each
+live texture resolves once per worker session (Endfield's shared cloth texture had converted twice), and
+a durable record of the last published USD stops ToPBR backing up its own output at every start. Native
+and Release regressions pass; the source-present/source-hidden PoC pair publishes the same 7/0/7 with
+seven distinct conversions / seven cached restorations and no new materials backup.
 
 R11 (automatic PBR, 2026-11-02; [plan](handover/R11-plan.md)) is **done**: imported Wuthering Waves,
 Endfield and Silver Palace characters get their own shipped PBR maps automatically ("Imported game PBR",

@@ -12,8 +12,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   character's source folder is gone). After one successful conversion, ToPBR records the character's
   live texture and material; when the folder is later moved or deleted, it restores them as long as
   every cached map still validates. The setting still turns them off, real replacements still win,
-  clearing ToPBR's cache keeps the records, and a damaged record file is backed up and rebuilt;
-  shared textures resolve once per worker session and generated USD ownership survives restarts
+  clearing ToPBR's cache keeps the records, and a damaged record file is backed up and rebuilt. A
+  texture shared by several materials now converts once per session, and ToPBR no longer leaves a
+  `materials.usda.before-r11-*.bak` copy of its own output at every game start (R11 did)
   ([R11-B](docs/decisions/0093-cached-imported-game-materials.md)).
 - **Imported game characters use their own PBR maps automatically** (the user: Wuthering Waves,
   Arknights: Endfield and Silver Palace models ship packed PBR maps that should be detected and applied

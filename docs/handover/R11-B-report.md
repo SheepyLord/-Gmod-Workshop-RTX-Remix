@@ -117,6 +117,28 @@ Of the library's 20 missing sources, 7 do exist byte for byte elsewhere under `E
 renamed: Pearl, Ruan Mei, Xingyi, Zankou twice, Furina, March 7th); none of them is a game-PBR character,
 so that only matters to the hotloader's Reload.
 
+## Field check of the first publication (Claude)
+
+`main` fast-forwarded to `b2cecfe` (the Release gate passed on the branch: 26 CTests, 501/28/25 Python
+tests); the merge published item 3829070317 as `0.0.0-dev.20261102230445+8ec6486b` (digest
+`e65390ac...`, the reviewed package) and the push carried two LFS objects (2.0 MB); CI passed. The user
+had closed the field game. Evidence is in the main checkout's `out/r11b/field`.
+
+- Start 01 ran the R11 package while Steam fetched the new archive. Start 02 deployed it (generation 47,
+  runtime `0.0.0-dev.20261102230445+8ec6486b`) and created `game_materials.registry` (header only).
+- In the meantime the user had copied two Alf folders into `E:\G\Upload\Alf\1_PMX` (15:26) and pointed
+  阿芙2.0 at one. Spawned in start 02, it still got **no game maps**: that build (by 神帝宇) renamed every
+  base texture (`衣服.png`, `皮肤.png`, …) and keeps the packed maps under the game's names in `法贴\`
+  (`T_AlfDefault_Body01_B_N.png`, `_MRA`, …). R11-A's `Discover` pairs maps only through a `<stem>_D`
+  base, so none pair (13 of 13 bases renamed). The field's other game characters pair through their
+  names: four Endfield characters (4-6 bases each), 穗穗 twice (5), Alf 合体7 (8) and 初雪 (5).
+- Start 03 spawned Endfield's endminf (source present): four `Imported game maps` lines, `Published 3
+  fallback materials (1640 authored hashes, scan=complete)`, three registry records, normal quit, no
+  Lua error. Its shared `T_actor_endminf_cloth_01_D` converted **twice** (two materials): R11-B had
+  dropped R11-A's per-session cache, at up to ~0.43 s of worker time per conversion. The field's
+  `~gmod_topbr` also held four `materials.usda.before-r11-*.bak` from that day alone: R11-A's
+  publication backed up its own previous session's output at each start. Both are fixed below.
+
 ## Limits
 
 One successful conversion with this registry is necessary. Older DDS without a recorded association
