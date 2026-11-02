@@ -10,7 +10,9 @@
 
 1. Annealed cracks keep seeded radial rays and growing rings, with a small crushed core and
    alternating diagonal branches through ring cells. Tempered glass uses seeded recursive oblique
-   convex cuts, with a smaller target area by the impact. Both use the same integer Lua generator,
+   convex cuts, with a smaller target area by the impact; each cut crosses the cell's longest extent
+   of six seeded directions, so granules stay compact (Claude's review: random directions left
+   full-length slivers). Both use the same integer Lua generator,
    shared snapped intersections and stable ordering in both realms. Keep 200 annealed/300 tempered
    live cells and the 512-cell wire ceiling. Coarsening cannot reset a perforated pane to its outline.
 2. Fallen individual convexes split near the actual local hit along seeded oblique crack lines,
