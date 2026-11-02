@@ -4128,3 +4128,80 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
 Raw/paired evidence: this worktree's `out/qa-r9/trusted-feature-costs`, `trusted-load-costs`,
 `native-frozen-evidence.log`, `latency-summary.json` and owned PoC sessions. See
 [the R9-G report](handover/R9-G-report.md) for the full numbers, QA and limits.
+
+## R10-H: PMX identities, expression meanings and map readiness (2026-11-02)
+
+- In nanoem `30acffaa29f5d2eb9e997d69418f2e4b97b5894f`,
+  `nanoem/nanoem.c:5962-5980` reads a VMD morph's 15-byte field as CP932;
+  `nanoemBufferGetStringFromCp932` (`:699`) ends at NUL.
+  `emapp/src/Model.cc:3777` visits each model morph with its original Japanese
+  name, and `emapp/src/model/Morph.cc:179` finds/interpolates motion keys by that
+  exact name. Windows `nanoem/ext/mbwc.c:98,212` uses
+  `MultiByteToWideChar(932,0)` and `wcscmp`, with no NFKC/case/prefix folding.
+  Sources: [VMD parser](https://github.com/hkrn/nanoem/blob/30acffaa29f5d2eb9e997d69418f2e4b97b5894f/nanoem/nanoem.c),
+  [model synchronization](https://github.com/hkrn/nanoem/blob/30acffaa29f5d2eb9e997d69418f2e4b97b5894f/emapp/src/Model.cc),
+  [Windows strings](https://github.com/hkrn/nanoem/blob/30acffaa29f5d2eb9e997d69418f2e4b97b5894f/nanoem/ext/mbwc.c).
+  A local Windows API probe checked all 60 lead bytes × 255 non-NUL followers:
+  valid Python CP932 mappings agree; every invalid pair produces U+30FB and
+  consumes both bytes. A dangling lead at byte 15 also becomes U+30FB. This
+  matters when a long VMD name ends halfway through a Japanese character.
+- The hotloader's native `rig.cpp:405` retains `{mmd,name,original,displayName,
+  namingSource,native}`, disambiguates duplicate English names with index
+  suffixes, then assigns at most 96 native controllers. Packaged
+  `carrier.lua:GetMorphWeight/SetMorphWeight/SetMorphWeights` (baseline
+  `1c12083:126-156`) already reads/writes overflow weights via NW2 and native
+  SetMorph; the motion importer had only used Source Get/SetFlexWeight.
+- The importer had discarded custom VMD identities in
+  `cl_import_bake.lua:flex_tracks_of` and merged by English `track.g`. R10 keeps
+  every decoded identity and merges by `track.m`. The existing `sh_core.lua`
+  implements exact identity and the overflow adapter; `carrier.lua`
+  reads bounded PMX side summaries without changing native controller names.
+- Corpus statistics count each NFKC name once per model (first occurrence),
+  preserving exact names for binding. Of 1,009 models with 笑い, 999 move both
+  sides, one the left, nine have no measurable geometry. ウィンク moves left
+  in 971 models and right in 21; ウィンク右 moves right in 955 and left in 22.
+  ウィンク2 moves left in 945 and right in 34; ウィンク2右 moves right in 920
+  and left in 34. Different duplicate/whitespace policies explain small
+  differences from the brief's initial tally. All 345 `EL_Happy_l_CLO` instances
+  move character-right, and all 345 `_r_` instances move character-left.
+  The [user's reference table](https://github.com/Sinsax/mmd-facial-expression)
+  uses opposite-looking wink-side descriptions; geometry supplies our sides.
+- Unit-weight standard group recipes link 笑い to the two `EL_Happy_*_CLO`
+  halves in 336 models, まばたき to `biyan` in 336, and the vowels to
+  `jawOpen_a/yi/wu/ei/o` in 336. The 48-file offset sample corroborates several
+  of those and finds 悲しい equivalent to 困る in three models. The generated
+  table accepts 62 unambiguous aliases with >=3 observations. These are model
+  observations, not a count of independent authors. Raw evidence and rejected
+  candidates stay in `out/r10/corpus-analysis.json`; only aggregate fixtures ship.
+- Across 1,225 models × 19 unique morph labels retained in the user's Robin
+  built cache: exact 15,930/23,275 (68.443%), meaning 234 (1.005%), unresolved
+  7,111 (30.552%). A built header cannot include discarded/unresolved source
+  tracks, so this is illustrative unweighted label coverage. Both actual PoC
+  characters resolve the required expressions by original identity; the
+  baseline/after table is in [the report](handover/R10-H-report.md).
+- `actors.lua:RegisterActor` used to publish entries without checking material
+  mounts or explicitly populating the new server's modelprecache table. GMA
+  mount state and that table have different lifetimes. The new `ReadyActor`
+  gate checks mounts and server precaching before registration or factory spawn.
+  The mount memo now rechecks a visible file, and the actor requires its exact
+  carrier model. Group sides combine signed vectors before measuring, so
+  cancellation cannot make a one-eye group look bilateral. Bone/UV/material/
+  stepped flip effects remain unknown for semantic side selection.
+  [IsValidModel](https://wiki.facepunch.com/gmod/util.IsValidModel) also depends
+  on server precaching; [PrecacheModel](https://wiki.facepunch.com/gmod/util.PrecacheModel)
+  is server-only. The baseline PoC spawned successfully after map transitions;
+  a later full-map baseline session exited `0xC0000374`. Neither fact is a
+  reproduced model-not-found message. The offline regression isolates readiness
+  by resetting precache while leaving archives mounted.
+
+R10-H final PoC: `out/r10/qa-certified` records successful stock-menu and actual
+client library RequestSpawn/status spawns across construct/flatgrass/construct,
+a fresh flatgrass start and a two-slot listen server. The cold Workshop baseline
+also succeeds with March 7th's first NPC after a map change; the field error is
+still not reproduced. `out/r10/qa-expression-clean` has six real v2/_fm2 builds,
+eight screenshots and 201 server ticks each. Exactly the requested original
+morph ends at 1, other observed controls at 0; max ramp error is 4.85e-8.
+Final cold byte-snapshot geometry reads are 36.2/140.0 ms for Guinaifen/Robin,
+versus the first file-call implementation's 2395/3721 ms; cached reads are
+0.001–0.002 ms. Exact binding does not scan geometry. Final sessions exit 0,
+normally, with zero Lua errors; see [the report](handover/R10-H-report.md).

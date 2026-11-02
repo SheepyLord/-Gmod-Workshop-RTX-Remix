@@ -119,3 +119,5 @@ Each with the reason it lost.
 ```
 
 - [0087: Irregular shards, immediate break visibility and bounded local environment effects](0087-glass-shards-and-environment.md).
+- [0089: PMX identities before expression meanings](0089-pmx-identities-and-geometry-checked-vmd-expressions.md).
+- [0090: Make carriers ready before publishing actor entries](0090-ready-carriers-before-actor-publication.md).

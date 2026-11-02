@@ -1302,7 +1302,7 @@ local function send_debug_pose(ent, packed, flexPacked)
         end
         net.WriteUInt(math.min(#flexPacked, 4096), 16)
         for i = 1, math.min(#flexPacked, 4096) do
-            net.WriteInt(flexPacked[i].flexID, 16)
+            net.WriteInt(flexPacked[i].flexID, 32)
             net.WriteFloat(flexPacked[i].weight)
         end
     net.SendToServer()
@@ -3613,9 +3613,6 @@ local function debug_flex_choice_label(row, index)
     local mmd = tostring(row and row.mmd or "")
     local source = tostring(row and row.source or "")
     local label = mmd ~= "" and mmd or source
-    if mmd ~= "" and source ~= "" and mmd ~= source then
-        label = mmd .. " -> " .. source
-    end
     return string.format("%03d  %s", tonumber(index) or 0, label ~= "" and label or "?")
 end
 
@@ -3626,11 +3623,12 @@ local function selected_debug_flex_row(frame)
 end
 
 -- "name #id" for every model flex a motion flex row drives.
-local function flex_targets_text(row)
+local function flex_targets_text(row, ent)
     if not row or not row.resolved then return "" end
     local parts = {}
     for t, flexID in ipairs(flex_row_ids(row)) do
         local name = row.flexNames and row.flexNames[t] or row.resolvedName or ""
+        if IsValid(ent) then name = MMDVMDNPC.ModelFlexLabel(ent, flexID, name) end
         parts[#parts + 1] = tostring(name) .. " #" .. tostring(flexID)
     end
     return table.concat(parts, " + ")
@@ -3665,6 +3663,8 @@ local function refresh_flex_override_controls(frame, flexRows, targetEntIndex)
     frame.UnresolvedMorphCombo:Clear()
     frame.ModelFlexCombo:Clear()
 
+    local ent = targetEntIndex and targetEntIndex > 0 and Entity(targetEntIndex) or nil
+
     local firstMotionFlex
     for index, row in ipairs(flexRows or {}) do
         local label = debug_flex_choice_label(row, index)
@@ -3675,7 +3675,7 @@ local function refresh_flex_override_controls(frame, flexRows, targetEntIndex)
             resolved = row.resolved == true,
             resolvedName = tostring(row.resolvedName or ""),
             flexID = tonumber(row.flexID) or -1,
-            targetsText = flex_targets_text(row),
+            targetsText = flex_targets_text(row, ent),
         }
         firstMotionFlex = firstMotionFlex or label
     end
@@ -3689,13 +3689,12 @@ local function refresh_flex_override_controls(frame, flexRows, targetEntIndex)
         frame.UnresolvedMorphCombo:SetEnabled(false)
     end
 
-    local ent = targetEntIndex and targetEntIndex > 0 and Entity(targetEntIndex) or nil
     local firstFlex
     if IsValid(ent) and ent.GetFlexNum and ent.GetFlexName then
-        for flexID = 0, (ent:GetFlexNum() or 0) - 1 do
-            local flexName = tostring(ent:GetFlexName(flexID) or "")
+        for _, target in ipairs(MMDVMDNPC.ModelFlexList(ent)) do
+            local flexID, flexName = target.id, target.name
             if flexName ~= "" then
-                local label = string.format("%s #%d", flexName, flexID)
+                local label = string.format("%s #%d", MMDVMDNPC.ModelFlexLabel(ent, flexID, flexName), flexID)
                 frame.ModelFlexCombo:AddChoice(label)
                 frame.ModelFlexChoices[label] = flexName
                 firstFlex = firstFlex or label
@@ -4124,7 +4123,7 @@ function MMDVMDNPC.OpenDebugMenu(motionID, vmdFrame)
         frame.FlexRows.OnRowSelected = function(_, _, line)
             if not IsValid(frame.UnresolvedMorphCombo) or not line then return end
             local mmd = line:GetColumnText(1)
-            local source = line:GetColumnText(2)
+            local source = line.MMDVMDSource or line:GetColumnText(2)
             for label, row in pairs(frame.UnresolvedFlexChoices or {}) do
                 if row.mmd == mmd and row.source == source then
                     frame.UnresolvedMorphCombo:SetValue(label)
@@ -4427,12 +4426,12 @@ local function read_frame_payload()
             source = net.ReadString(),
             resolvedName = net.ReadString(),
             weight = net.ReadFloat(),
-            flexID = net.ReadInt(16),
+            flexID = net.ReadInt(32),
             resolved = net.ReadBool(),
         }
         row.flexIDs, row.flexNames = {}, {}
         for t = 1, net.ReadUInt(8) do
-            row.flexIDs[t] = net.ReadInt(16)
+            row.flexIDs[t] = net.ReadInt(32)
             row.flexNames[t] = net.ReadString()
         end
         flexRows[i] = row
@@ -4541,13 +4540,20 @@ net.Receive("mmdvmd_debug_response", function()
         local flexScroll = IsValid(flexScrollBar) and flexScrollBar:GetScroll() or 0
         frame.FlexRows:Clear()
         for _, row in ipairs(flexRows) do
-            style_debug_list_line(frame.FlexRows:AddLine(
+            local assigned = {}
+            local target = targetEntIndex and Entity(targetEntIndex)
+            for t, id in ipairs(flex_row_ids(row)) do
+                if row.resolved then assigned[#assigned + 1] = MMDVMDNPC.ModelFlexLabel(target, id, row.flexNames and row.flexNames[t] or row.resolvedName) end
+            end
+            local line = frame.FlexRows:AddLine(
                 row.mmd,
-                row.source,
+                table.concat(assigned, " + "),
                 fmt_num(row.weight),
                 fmt_num(row.scaledWeight ~= nil and row.scaledWeight or scaled_flex_weight(row)),
-                row.resolved and flex_targets_text(row) or "unresolved"
-            ))
+                row.resolved and flex_targets_text(row, targetEntIndex and Entity(targetEntIndex)) or "unresolved"
+            )
+            line.MMDVMDSource = row.source
+            style_debug_list_line(line)
         end
         if IsValid(flexScrollBar) and flexScroll > 0 then
             timer.Simple(0, function()
@@ -4632,13 +4638,13 @@ net.Receive("mmdvmd_build_plan", function()
             source = net.ReadString(),
             resolvedName = net.ReadString(),
             resolved = net.ReadBool(),
-            flexID = net.ReadInt(16),
+            flexID = net.ReadInt(32),
         }
         track.animated = net.ReadBool()
         if not track.animated then track.cw = net.ReadFloat() end
         track.flexIDs, track.flexNames = {}, {}
         for t = 1, net.ReadUInt(8) do
-            track.flexIDs[t] = net.ReadInt(16)
+            track.flexIDs[t] = net.ReadInt(32)
             track.flexNames[t] = net.ReadString()
         end
         flexTracks[i] = track
@@ -4780,7 +4786,7 @@ do
         for j = 1, boneCount do
             if hasPos[j] then posCount = posCount + 1 end
         end
-        local headerBits = 32 + 32 + 8 + 16 + boneCount * 17 + 16 + flexCount * 16
+        local headerBits = 32 + 32 + 8 + 16 + boneCount * 17 + 16 + flexCount * 32
         local layoutFrameBits = 1 + boneCount * NET_ANGLE_MAX_BITS + posCount * 96 + flexCount * 32
 
         local index = 1
@@ -4790,7 +4796,7 @@ do
             while last < count do
                 local frame = frames[last + 1]
                 local frameBits = matches[last + 1] and layoutFrameBits
-                    or (1 + 16 + #frame.bones * (16 + NET_ANGLE_MAX_BITS + 96) + 16 + #frame.flexes * 48)
+                    or (1 + 16 + #frame.bones * (16 + NET_ANGLE_MAX_BITS + 96) + 16 + #frame.flexes * 64)
                 if last >= index and bits + frameBits > BUILD_RESULT_BUDGET_BITS then break end
                 bits = bits + frameBits
                 last = last + 1
@@ -4807,7 +4813,7 @@ do
                 end
                 net.WriteUInt(flexCount, 16)
                 for j = 1, flexCount do
-                    net.WriteInt(layoutFlexes[j][1], 16)
+                    net.WriteInt(layoutFlexes[j][1], 32)
                 end
                 for i = index, last do
                     local frame = frames[i]
@@ -4840,7 +4846,7 @@ do
                         local m = math.min(#flexes, 4096)
                         net.WriteUInt(m, 16)
                         for j = 1, m do
-                            net.WriteInt(flexes[j][1], 16)
+                            net.WriteInt(flexes[j][1], 32)
                             net.WriteFloat(flexes[j][2])
                         end
                     end

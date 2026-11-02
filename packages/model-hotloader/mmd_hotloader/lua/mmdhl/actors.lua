@@ -84,10 +84,25 @@ function mmdhl.NewerActor(rig)
   if entry.rig.generator>rig.generator and sameActor(entry.rig,rig) then return entry end
  end
 end
+function mmdhl.ReadyActor(rig,arms)
+ if not mmdhl.IsLoadableRig(rig) or not rig.model then return false end
+ if arms and (not mmdhl.IsLoadableRig(arms) or not arms.model) then return false end
+ -- Archive visibility and the server's modelprecache string table have
+ -- different lifetimes. Publish menu entries only once this map can
+ -- actually spawn them, including a cached carrier after a full `map` change.
+ local function ready(r)
+  if r.materialGma and not mmdhl.MountPackage(r.materialGma) then return false end
+  if not mmdhl.MountPackage('data/mmd_hotloader/rigs/'..r.key..'/carrier.gma',r.model) then return false end
+  if SERVER then util.PrecacheModel(r.model) return util.IsValidModel(r.model) end
+  return true
+ end
+ if not ready(rig) or (arms and not ready(arms)) then return false end
+ return true
+end
 function mmdhl.RegisterActor(rig,arms)
- if not mmdhl.IsLoadableRig(rig) or not rig.model then return end
+ if not mmdhl.ReadyActor(rig,arms) then return false end
  if CLIENT then
-  if mmdhl.NewerActor(rig) then return end
+  if mmdhl.NewerActor(rig) then return true end
   for model,entry in pairs(mmdhl.actorRegistrations) do
    if entry.rig.generator<rig.generator and sameActor(entry.rig,rig) then mmdhl.UnregisterActor(model) end
   end
@@ -102,6 +117,7 @@ function mmdhl.RegisterActor(rig,arms)
  elseif role=='citizen' or role=='combine' then
   list.Set('NPC',key,{Name=mmdhl.Localize(role=='citizen' and L('actors.npc_citizen',{name=name}) or L('actors.npc_combine',{name=name})),Class=role=='citizen' and 'npc_citizen' or 'npc_combine_s',Category=mmdhl.Localize(L'common.external_models'),Model=rig.model,Weapons=role=='citizen' and {'weapon_pistol','weapon_smg1'} or {'weapon_smg1','weapon_ar2'},KeyValues=role=='citizen' and {citizentype=4} or {},MMDHLAsset=rig.asset,MMDHLRig=rig.key})
  end
+ return true
 end
 if SERVER then
  local function friendlyCitizen(ent)
@@ -303,7 +319,7 @@ if SERVER then
   net.Start('mmdhl_actor_registration') net.WriteString(rig.key) net.WriteString(arms and arms.key or '') if target then net.Send(target) else net.Broadcast() end
  end
  function mmdhl.PublishActor(rig,arms,target)
-  mmdhl.RegisterActor(rig,arms)
+  if not mmdhl.RegisterActor(rig,arms) then return false end
   if mmdhl.PublishRig then mmdhl.PublishRig(rig,arms) end
   mmdhl.SendActorRegistration(rig,arms,target)
  end
@@ -327,6 +343,7 @@ if SERVER then
    local raw,err=native.PrepareCarrier(id,util.TableToJSON(armOptions)) if not raw then if done then done(nil,err) end return end
    arms=util.JSONToTable(raw) if not mmdhl.MountPackage(arms.gma) then if done then done(nil,L'actors.error.arms_mount_failed') end return end
   end
+  if not mmdhl.ReadyActor(rig,arms) then if done then done(nil,L'carrier.error.mount_carrier') end return end
   local ent=role=='player' and p or ents.Create(role=='combine' and 'npc_combine_s' or 'npc_citizen')
   if not IsValid(ent) then if done then done(nil,L'actors.error.create_failed') end return end
   if role=='player' and hook.Run('MMDHLCanSetPlayerModel',p,id,rig)==false then if done then done(nil,L'actors.error.player_model_disallowed') end return end
@@ -444,7 +461,7 @@ else
    local arms=armsKey~='' and util.JSONToTable(file.Read('mmd_hotloader/rigs/'..armsKey..'/rig.json','DATA') or '') or nil
    if not rig or (armsKey~='' and not arms) then return false end
    mmdhl.MountPackage('data/mmd_hotloader/rigs/'..key..'/carrier.gma') if arms then mmdhl.MountPackage('data/mmd_hotloader/rigs/'..armsKey..'/carrier.gma') end
-   mmdhl.RegisterActor(rig,arms) return true
+   return mmdhl.RegisterActor(rig,arms)
   end
   if not ready() and mmdhl.RequestSharedRig then mmdhl.RequestSharedRig(key,ready) if armsKey~='' then mmdhl.RequestSharedRig(armsKey,ready) end end
  end)

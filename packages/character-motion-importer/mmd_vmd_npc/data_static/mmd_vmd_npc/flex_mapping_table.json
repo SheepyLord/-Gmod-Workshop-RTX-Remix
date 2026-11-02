@@ -1,12 +1,12 @@
 {
   "aliases": [
     ["blink", "eyes_blink", "eye down", "eyelid_down", "eye_blink"],
-    ["eye_blink_happy", "eyes_blink_happy", "eyes_wink", "eyes_happy", "eye_happy", "blink_smile", "wink_2", "wink2"],
+    ["eye_blink_happy", "eyes_blink_happy", "eyes_happy", "eye_happy", "blink_smile", "eyes_blink_smile"],
     ["eye_blink_happy_left", "left_lid_tightener", "blink_smile_l", "wink_left", "winkleft", "wink"],
     ["eye_blink_happy_right", "right_lid_tightener", "blink_smile_r", "wink_right", "winkright"],
     ["eye_blink_left", "left_lid_closer", "eyes_left", "blink_l", "eye_close_l", "blink_left", "blinkleft"],
     ["eye_blink_right", "right_lid_closer", "eyes_right", "blink_r", "eye_close_r", "blink_right", "blinkright"],
-    ["eyes_calm", "half_closed", "eye_calm"],
+    ["eyes_calm", "half_closed", "eye_calm", "eyes_peaceful"],
     ["eyes_surprised", "eyes_raise", "eye_surprised", "eye_shocked"],
     ["eyes_stare", "eye_smug", "eye_digusted"],
     ["brows_sad", "brow_sad"],
@@ -20,7 +20,7 @@
     ["mouth_u", "jaw_drop", "mouth u", "u"],
     ["mouth_e", "e", "mouth e", "smile"],
     ["mouth_o", "o", "oh", "mouth o", "kuchio"],
-    ["mouth_grin", "mouth_smirk"],
+    ["mouth_grin", "mouth_smirk", "mouth_smug"],
     ["mouth_wa", "mouth_open_wide"],
     ["mouth_neutral"],
     ["mouth_ch_1", "mouth_chi", "chi"],
@@ -31,8 +31,8 @@
     ["mouth_cat", "cat"],
     ["mouth_tehheh", "tehheh", "sidelick"],
     ["mouth_lick", "lick", "mouth_tongue_out"],
-    ["mouth_smile", "smile", "mouth_happy", "happy", "mouth_happy_open"],
-    ["mouth_sad", "bite", "sadness", "mouth_angry", "mouth_triangle", "mouth sad", "disappointed"],
+    ["mouth_smile", "smile", "mouth_happy", "happy", "mouth_happy_open", "mouth_up"],
+    ["mouth_sad", "bite", "sadness", "mouth_angry", "mouth_triangle", "mouth sad", "disappointed", "mouth_down"],
     ["mouth_widen", "jaw_clencher"],
     ["mouth_narrow", "tightener"],
     ["mouth_narrow_2"],
@@ -59,6 +59,7 @@
     ["eyes_look_down", "down", "eye_down"],
     ["eyes_look_left", "eye_left"],
     ["eyes_look_right", "eye_right"],
-    ["eyes_look_camera", "camera eyes"]
+    ["eyes_look_camera", "camera eyes"],
+    ["eyes_sqeeze", "eyes_squeeze"]
   ]
 }

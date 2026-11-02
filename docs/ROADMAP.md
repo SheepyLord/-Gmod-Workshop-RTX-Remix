@@ -1,5 +1,22 @@
 # Roadmap
 
+R10-H implementation and PoC QA are **complete** on `r10-hotloader` (2026-11-02):
+original PMX expression binding, geometry-checked meanings, overflow playback,
+truthful mapping and cache rebuilding; stale-mount/per-map NPC readiness.
+Release passes 26 CTests and 520 Python tests (two existing skips). Stock-menu
+and library requests pass both map changes, fresh flatgrass and a listen server;
+Guinaifen/Robin expression weights and screenshots pass. The exact field
+missing-model error remains unreproduced; even the Workshop-baseline cold
+ragdoll→map→first-NPC test passes. Claude retains merged integration and field
+confirmation ([report](handover/R10-H-report.md)).
+
+R10-H (items 33 and 34) is **in progress** on `r10-hotloader`: original PMX
+expression identities, geometry-checked fallback, overflow playback and truthful
+mapping/caches; ready carrier registration across maps. Offline regressions and
+the Release native build pass; PoC QA shares the R10-E lock. Decisions are
+[0089](decisions/0089-pmx-identities-and-geometry-checked-vmd-expressions.md) and
+[0090](decisions/0090-ready-carriers-before-actor-publication.md).
+
 R9 (the user's glass report of 2026-11-02) is **done**: CI is green again (the glass mirrors' dropped steps
 and the exit observer's clock race), `v0.12.1` is released and only `main` remains. Glass breaks
 realistically down to tiny pieces, without visible delay, with sounds, in water and under every kind of

@@ -6,6 +6,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R10
+
+- **Imported MMD expressions use the model's original morphs.** `笑い` drives
+  the smiling blink instead of a wink; `はぅ` and `なごみ` stay distinct. Exact
+  PMX names take priority over English translations, including overflow morphs.
+  Missing names use corpus-checked meanings and each model's measured eye sides;
+  a two-eye expression requires both sides. The mapping window names the actual
+  PMX targets, saved manual choices remain, and old animation caches rebuild
+  ([ADR 0089](docs/decisions/0089-pmx-identities-and-geometry-checked-vmd-expressions.md)).
+- **NPC entries are made ready again after changing maps.** Material/carrier
+  mounts must succeed, and the current server precaches the model before it is
+  offered as an NPC or player model. The hotloader's own NPC factory uses the
+  same check ([ADR 0090](docs/decisions/0090-ready-carriers-before-actor-publication.md)).
+
 ### R9 (in progress: the user's glass report of 2026-11-02)
 
 - **Glass breaks realistically, down to tiny pieces** (the user: always square and uniform, never very

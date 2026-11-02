@@ -12,7 +12,116 @@ MMDVMDNPC.SettingsRoot = MMDVMDNPC.DataRoot .. "/settings"
 MMDVMDNPC.AudioOffsetPath = MMDVMDNPC.SettingsRoot .. "/audio_offsets.json"
 MMDVMDNPC.FlexOverridePath = MMDVMDNPC.SettingsRoot .. "/flex_overrides.json"
 MMDVMDNPC.CacheExtension = ".json"
-MMDVMDNPC.BuiltFormat = "mmd_vmd_npc_built_v1"
+MMDVMDNPC.BuiltFormat = "mmd_vmd_npc_built_v2"
+
+-- R10 PMX binding helpers (kept in this trusted bundled source path).
+do
+-- Exact PMX identities, overflow controllers and the reviewed semantic fallback (ADR 0089).
+local M=MMDVMDNPC
+local semantics,cp932
+function M.MorphSemantics()
+ if not semantics then semantics=util.JSONToTable(file.Read('data_static/mmd_vmd_npc/morph_semantics.json','GAME') or '') or {standard={},aliases={},canonical={}} end
+ return semantics
+end
+-- VMD stores exactly 15 CP932 bytes, ending at the first NUL. Width and case are
+-- significant. Never shorten/fold a model name to turn a VMD prefix into a match.
+function M.DecodeVMDMorphName(raw)
+ if not cp932 then cp932=util.JSONToTable(file.Read('data_static/mmd_vmd_npc/cp932.json','GAME') or '') or {} end
+ local out,i={},1
+ while i<=math.min(#raw,15) do
+  local a=raw:byte(i) if a==0 then break end
+  local b=raw:byte(i+1)
+  local lead=(a>=0x81 and a<=0x9f) or (a>=0xe0 and a<=0xfc)
+  local pair=lead and i<15 and b and b~=0
+  -- nanoem's Windows factory uses MultiByteToWideChar(932,0): an invalid
+  -- pair consumes both bytes, and an incomplete lead becomes U+30FB.
+  out[#out+1]=lead and (pair and cp932[tostring(a*256+b)] or nil) or cp932[tostring(a)] or '・'
+  i=i+(pair and 2 or 1)
+ end
+ return table.concat(out)
+end
+function M.ModelMorphs(ent)
+ return mmdhl and mmdhl.IsMMD and mmdhl.IsMMD(ent) and mmdhl.GetMorphs and mmdhl.GetMorphs(ent) or {}
+end
+-- Virtual ids use signed 32-bit wire/cache slots and never collide
+-- with the model's Source controllers. Keep native names for saved overrides.
+function M.MorphControllerID(ent,morph)
+ if (morph.native or -1)>=0 then return morph.native end
+ local id=(ent:GetFlexNum() or 0)+(morph.mmd or 0)
+ return id<=2147483647 and id or nil
+end
+local function overflow(ent,id)
+ local base=ent:GetFlexNum() or 0
+ if id<base then return end
+ local morph=M.ModelMorphs(ent)[id-base+1]
+ if morph and (morph.native or -1)<0 then return morph.mmd end
+end
+function M.GetModelFlexName(ent,id)
+ local morphIndex=overflow(ent,id)
+ if morphIndex then local m=M.ModelMorphs(ent)[morphIndex+1] return m.name or m.original or '' end
+ return ent:GetFlexName(id) or ''
+end
+function M.SetModelFlexWeight(ent,id,value)
+ local morphIndex=overflow(ent,id)
+ if morphIndex then return mmdhl.SetMorphWeight(ent,morphIndex,value) end
+ if id>=0 and id<(ent:GetFlexNum() or 0) then ent:SetFlexWeight(id,value) return true end
+ return false
+end
+function M.ModelFlexList(ent)
+ local list,seen={},{}
+ for _,m in ipairs(M.ModelMorphs(ent)) do
+  local id=M.MorphControllerID(ent,m)
+  if id then
+   seen[id]=true list[#list+1]={id=id,name=m.name or '',original=m.original or '',morph=m.mmd,overflow=(m.native or -1)<0}
+  end
+ end
+ for id=0,(ent:GetFlexNum() or 0)-1 do if not seen[id] then list[#list+1]={id=id,name=ent:GetFlexName(id) or ''} end end
+ table.sort(list,function(a,b) return a.id<b.id end)
+ return list
+end
+function M.ModelFlexLabel(ent,id,name)
+ for _,m in ipairs(M.ModelMorphs(ent)) do
+  if M.MorphControllerID(ent,m)==id then
+   return (m.original or m.name or '')..' ['..(m.name or '')..']'..((m.native or -1)<0 and ' (PMX)' or '')
+  end
+ end
+ return name or M.GetModelFlexName(ent,id)
+end
+-- Returns nil for ordinary Source models (the existing alias path handles them),
+-- a list for PMX models, and the actual resolution reason for diagnostics/tests.
+function M.ResolveModelMorph(ent,sourceName,mmdName,index)
+ if not index.pmx then return nil end
+ local exact=index.original[mmdName]
+ if exact then return exact,'name' end
+ local data=M.MorphSemantics()
+ local standard=data.standard[mmdName] or data.canonical[sourceName]
+ if not standard then return {},'unknown meaning' end
+ local geometry=mmdhl.GetMorphGeometry and mmdhl.GetMorphGeometry(ent)
+ local family=standard.meaning
+ local both,left,right={},{},{}
+ for _,target in ipairs(index.controllers) do
+  local alias=data.standard[target.original] or data.aliases[target.original]
+   or data.canonical[target.original] or data.canonical[string.lower(target.original or '')]
+  -- Native names can misstate the side or meaning. Only the PMX name's
+  -- corpus-checked family is used; its side always comes from this model.
+  if alias and alias.meaning==family then
+   local shape=geometry and geometry[(target.morph or -1)+1]
+   local actual=shape and shape.side or 'unknown'
+   if not standard.eye and not standard.sided then actual='both' end
+   if actual=='both' then both[#both+1]=target
+   elseif actual=='left' then left[#left+1]=target
+   elseif actual=='right' then right[#right+1]=target end
+  end
+ end
+ if standard.side=='left' then return left[1] and {left[1]} or {},'meaning' end
+ if standard.side=='right' then return right[1] and {right[1]} or {},'meaning' end
+ if both[1] then return {both[1]},'meaning' end
+ if left[1] and right[1] then return {left[1],right[1]},'meaning pair' end
+ return {},'missing bilateral morph'
+end
+
+end
+-- End R10 PMX binding helpers.
 -- Category sentinels: never valid authored category names (authored categories
 -- come from the importer's metadata table, plain text). Localized at display
 -- time via MMDVMDNPC.CategoryDisplayName.
@@ -4976,7 +5085,7 @@ function MMDVMDNPC.BuiltPath(motionID, modelPath, options)
 
     options = options or {}
     local suffix = string.format(
-        "tw%d_ht%d_eye%d_sp%d",
+        "tw%d_ht%d_eye%d_sp%d_fm2",
         options.disableArmTwist and 1 or 0,
         options.disableHandTwist and 1 or 0,
         options.disableEyes and 1 or 0,
