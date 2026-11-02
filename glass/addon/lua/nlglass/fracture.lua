@@ -276,11 +276,21 @@ local function granular(def,hit)
         if best<=0 then break end
         local c=cells[index]
         local a,b
-        for _=1,6 do
+        -- Tempered glass dices into compact granules. Of six seeded directions, cut across the
+        -- cell's longest extent near its middle: a random direction alone often cuts along a long
+        -- side and leaves slivers. A linear scan (no sort) keeps every client's choice identical.
+        local options={}
+        for k=1,6 do
             local n=direction(random(16384))
             local lo,hi=math.huge,-math.huge
             for _,p in ipairs(c.poly) do local v=p[1]*n[1]+p[2]*n[2] lo=min(lo,v) hi=max(hi,v) end
-            a,b=cut(c.poly,n,lo+(hi-lo)*(350+random(301))/1000)
+            options[k]={n,lo,hi,(400+random(201))/1000}
+        end
+        for _=1,6 do
+            local pick,extent=1,-1
+            for k,o in ipairs(options) do if o[3]-o[2]>extent then pick,extent=k,o[3]-o[2] end end
+            local o=table.remove(options,pick)
+            a,b=cut(c.poly,o[1],o[2]+(o[3]-o[2])*o[4])
             if a then break end
         end
         if a then
