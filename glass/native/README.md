@@ -175,7 +175,7 @@ fragment budgets. Actual local contact/ray hit points drive seeded oblique cuts.
 under four square units retain map/mirror contacts but omit mutual glass constraints.
 
 `SetSounds(bool)` controls native event production independently of SetInteraction. `ReadSounds()`
-drains at most 128 rows `{id, {x,y,z}, speed, mass, kind}` (impact=1, split=2, water=3) between workers.
+returns false when empty, otherwise drains at most 128 rows `{id, {x,y,z}, speed, mass, kind}` (impact=1, split=2, water=3) between workers.
 Callbacks use fixed storage and atomic per-piece cooldowns. The listener stays installed when
 interaction is off for local contact audio. `ReadMotion(ids)` is an explicit read-only QA query,
 at most 256 ids, returning `{id, position, velocity, spin}` rows; ordinary rendering never uses it.

@@ -88,13 +88,13 @@ Near-detail protection uses the last actual render-camera snapshot, falling back
 Budget receipt also retires erased individual meshes instead of synchronously releasing hundreds of GPU objects. Think drains at most 16/frame through debris_draw.lua; Stats adds retired_individual/released_individual. Cleanup joins/frees everything as before. Native removals remain immediate/at the worker boundary so invisible old collision bodies cannot intercept later hits.
 
 
-R9-G: pending descriptors draw immediately through debris_preview.lua; physics remains capped at
+R9-G: pending descriptors draw immediately through debris_detail.lua Preview; physics remains capped at
 12 creations/8192 vertices per frame with a 0.75-ms soft allowance. Construction prioritizes impact
 then camera distance. Preview face meshes share ballistic transforms in chunks of at most 24 rows;
 bodies begin at the same pose, with age capped at 0.5 s during import. The new module's one-unit
 follow-up floor is independent of initial pane spacing. A split replaces at most six children per
 frame; older modules keep binary splitting. Count original fragments, preserve original expiry and
 evict other oldest fragments to make room. New diagnostics: preview_draws/uploads and sounds_received/
-played/culled/limited. Native sound events drain only at idle worker boundaries. Diagnostics(maximum)
+played/culled/limited. debris_draw.lua Audio events drain only at idle worker boundaries. Diagnostics(maximum)
 reads at most 256 native motion rows for QA, returning nil/reason while busy/unavailable. Cleanup
 also cancels previews and sound rate state. No gameplay state is sent back to Source.

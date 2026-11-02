@@ -18,6 +18,9 @@ R8-G replaces the obsolete piece/piece switch with four independent client Sourc
 
 
 R9-G adds the archived local sound checkbox, local Clear broken glass button and an everyone-clear
-button for a single-player/listen host admin. The server validates the everyone request and limits
+button for an admin on a single-player or listen server. The server validates the everyone request and limits
 it to once a second. Both clear paths retain pane state. All labels have seven-language catalogs.
 Non-admin Reset includes the local sound switch and never sends an admin request.
+
+The listen-server UI capability is replicated by the server, so remote admins can also use the
+everyone button. Dedicated-server clients keep local clear; server authorization is independent.

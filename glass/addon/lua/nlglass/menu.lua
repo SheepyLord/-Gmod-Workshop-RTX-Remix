@@ -84,7 +84,7 @@ function NLGlass.BuildSettings(panel)
     panel:CheckBox(L("Broken glass sounds"),"rtx_glass_debris_sounds")
     local clear=panel:Button(L("Clear broken glass"))
     clear.DoClick=function() if NLGlassDebris then NLGlassDebris.Clear() end end
-    if admin() and (game.SinglePlayer() or (LocalPlayer().IsListenServerHost and LocalPlayer():IsListenServerHost())) then
+    if admin() and (game.SinglePlayer() or (GetGlobalBool and GetGlobalBool("NLGlass.ListenServer",false))) then
         local all=panel:Button(L("Clear broken glass for everyone"))
         all.DoClick=function() net.Start("nlglass_clear_debris") net.SendToServer() end
     end

@@ -13,3 +13,9 @@ R8-G also owns a deferred individual-mesh retirement queue. Erasure removes a pi
 
 R9-G also retires transient preview meshes through this queue. Secondary construction can produce
 up to six children in a frame; previews use shared meshes. The 16-release per-frame bound remains.
+
+R9-G embeds Audio, with archived rtx_glass_debris_sounds=1. Drain(api) consumes a fixed native
+event buffer at an idle boundary; sounds are culled past 1536 units, limited to four/frame,
+24/s (burst 24), and one/0.12 s/piece. Native impact speed/mass select soft/hard stock glass
+sounds and bounded volume. Splits and water entries use small break/splash sounds. Clear resets
+counters/rate state. No files, network or Source-physics writes; old modules remain silent.
