@@ -1747,3 +1747,24 @@ tests, including 79 glass cases; two existing skips remain. Final receipt is
 unchanged field/map acceptance are in [the QA sidecar](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md).
 The game targets remain unverified on this branch: falling excess ?8.5 ms, p99 ?67 ms, settled
 unchanged. See [the report](handover/R8-G-report.md) for measurements and limitations.
+
+
+## R9-G: shards, immediate drawing and environment
+
+`tools/test.ps1 -Config Release` passes 26 CTests (43 native glass cases) and 515 Python tests
+(two existing skips), including 88 glass cases. New coverage checks deterministic seeds/area,
+non-axis cuts and one-unit descendants, six-child budgets/original expiry, bounded contacts and
+sound rate/distance/switches, water sinking/drag and compound bodies, spawn/sweep/teleport velocity,
+worker-safe moving diagnostics, empty/native blast signals, wrapper refresh and local/everyone
+clear permissions including remote listen admins. Exact bundled Lua source inventory remains.
+
+Use `tools/qa/measure_nlglass_r9.py` for paired pane/handler/split and feature-on/off environment
+costs, and `tools/qa/measure_nlglass.py` for the existing 50-break/warm-render/native guard costs.
+Saved baseline Lua/executable are required; outputs/TEMP/TMP stay in this worktree's out. The
+replay's added immediate visibility costs about 0.24 ms mean; native buoyancy on 1000 active pieces
+costs about 0.129 ms/step. CPU doubles do not prove RTX performance.
+
+The development nlglass_qa add-on supplies r9-latency, r9-velocity, r9-water, r9 and r9-perf modes;
+its sidecar describes expected counters and actual menu clicking. Keep native windows engine-owned.
+The performance gate remains falling mean <= settled+8.5 ms, p99 <=67 ms, with an actually sleeping
+settled baseline, repeated off/on and on two clients. See [the report](handover/R9-G-report.md).

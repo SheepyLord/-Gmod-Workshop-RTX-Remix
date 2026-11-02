@@ -348,3 +348,8 @@ R8-G glass support: `debris_detail.lua` plans exact small rigid groups; `debris_
 client collision flags; `debris_melee.lua` observes server swings/traces. `tools/qa/measure_nlglass.py`
 compares saved/current offline workloads, while `nlglass_qa r8` covers delayed real weapons and
 collision defaults. See [the QA sidecar](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md).
+
+R9-G embeds preview planning in glass debris_detail.lua, native sound consumption in debris_draw.lua,
+and bounded server explosion observation in server.lua, preserving the loader's exact trusted paths.
+`tools/qa/measure_nlglass_r9.py` records paired fracture/handler/split and environment CPU costs;
+`tools/qa/nlglass_qa` includes numeric R9 latency/velocity/explosion/water/sound/performance modes.

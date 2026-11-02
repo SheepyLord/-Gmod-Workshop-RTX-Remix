@@ -8,6 +8,18 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R9 (in progress: the user's glass report of 2026-11-02)
 
+- **Glass appears immediately and reacts locally.** Deterministic branched annealed shards and
+  irregular tempered cuts replace the grid. Breaking holes and shared ballistic previews appear
+  in the receiving frame while bounded body construction continues. Stock shard sounds, BSP water
+  buoyancy, victim-independent Lua/native blast observation and seven-language local/admin clear
+  buttons complete R9-G. New helpers stay within the existing exact render-guard source inventory;
+  loader trust rules are unchanged. See [the R9-G report](docs/handover/R9-G-report.md).
+
+- **Native glass shards and environment.** Follow-up hits cut two to six irregular fragments down
+  to one square unit, retain covered area/point velocity and stage replacements transactionally.
+  A bounded contact-sound buffer and static BSP water buoyancy add local feedback; mirror spawn,
+  sweep and teleport overlap handling avoids reverse penetration kicks ([ADR 0087](docs/decisions/0087-glass-shards-and-environment.md)).
+
 - **Glass no longer breaks other add-ons' traces.** A bullet penetration add-on traces with a function
   as its filter, which GMod allows; the melee observer passed it to `IsValid`, which indexes its
   argument, and the error ("attempt to index local 'object' (a function value)") surfaced through that
