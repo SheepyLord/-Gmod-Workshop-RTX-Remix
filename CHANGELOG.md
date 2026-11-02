@@ -8,13 +8,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R11
 
-- **Damaged imported-game PBR registries recover automatically.** Empty/torn files, duplicate
-  identities and excess rows are backed up before rebuilding; newer-version and oversized files
-  remain intact. Saves flush staging bytes before replacement, and save failures warn once per session.
-- **Imported game PBR survives a missing source folder after one successful conversion.** ToPBR
-  records the live hotloader texture and material, then restores it only while every cached map
-  validates. The setting still retracts it, authored replacements still win, and clearing ToPBR's
-  cache retains these records ([R11-B](docs/decisions/0093-cached-imported-game-materials.md)).
+- **Imported game PBR survives a missing source folder** (the user: keep game maps working after a
+  character's source folder is gone). After one successful conversion, ToPBR records the character's
+  live texture and material; when the folder is later moved or deleted, it restores them as long as
+  every cached map still validates. The setting still turns them off, real replacements still win,
+  clearing ToPBR's cache keeps the records, and a damaged record file is backed up and rebuilt
+  ([R11-B](docs/decisions/0093-cached-imported-game-materials.md)).
 - **Imported game characters use their own PBR maps automatically** (the user: Wuthering Waves,
   Arknights: Endfield and Silver Palace models ship packed PBR maps that should be detected and applied
   in RTX with the aggressive look, with an on/off setting). For a character imported with the Model

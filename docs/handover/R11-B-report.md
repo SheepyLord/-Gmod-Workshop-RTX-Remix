@@ -107,6 +107,16 @@ session's first capture. The final pair and all acceptance comparisons use curre
 - No PoC game remains, and the exclusive lock was released after restoration. The original user
   character folders and the field install were never written. Nothing was pushed, merged or published.
 
+## Field note (Claude)
+
+The field library's five Wuthering Waves and Silver Palace characters (心 twice, 库拉蒂—骑士, 锁暝,
+阿芙2.0) were imported from `Desktop` folders that were gone before R11 shipped, so they were never
+converted and this registry cannot help them: they need their source once. Their PMX files are not under
+`E:\G\Upload`, neither byte for byte (the manifest's `sourceHash` is the PMX's SHA-256) nor by file name.
+Of the library's 20 missing sources, 7 do exist byte for byte elsewhere under `E:\G\Upload` (moved or
+renamed: Pearl, Ruan Mei, Xingyi, Zankou twice, Furina, March 7th); none of them is a game-PBR character,
+so that only matters to the hotloader's Reload.
+
 ## Limits
 
 One successful conversion with this registry is necessary. Older DDS without a recorded association

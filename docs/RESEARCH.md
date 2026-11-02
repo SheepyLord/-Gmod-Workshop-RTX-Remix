@@ -58,6 +58,12 @@
   Only the checked copy under `out` was renamed; the user's source was never changed. Final indexed
   package and restored-Workshop smokes pass; original config/metadata bytes match, active generated
   materials are zero, and depot verification finds zero mismatches. See [the report](handover/R11-B-report.md).
+- Hotloader manifests (`data/mmd_hotloader/assets/<id>/manifest.json`, version 2): `sourceHash` is the
+  SHA-256 of the PMX bytes (checked on three field entries whose source exists), so a moved PMX can be
+  found by content; `textures[i].base` (64 hex) is **not** the SHA-256 of the image file next to the PMX
+  (checked on `tex\颜.png`), so images cannot be matched that way. In the field library (2026-11-02),
+  20 of 45 recorded sources are missing; 7 of those exist byte for byte elsewhere under `E:\G\Upload`,
+  none of them the five game-PBR characters, whose `Desktop` folders were gone before R11 shipped.
 
 ## R10-E: imported eye-white surfaces (2026-11-02)
 

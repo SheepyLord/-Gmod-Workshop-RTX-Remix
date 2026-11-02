@@ -1,17 +1,12 @@
 # Roadmap
 
-R11-B (cached imported game maps) is **complete locally** on `r11-cache` / `codex/r11-autopbr`:
-successful game materials persist by hotloader texture identity and restore validated DDS when the
-source is unavailable. Release/native/Lua checks pass; the pinned PoC source-present/missing-source
-pair publishes 7/0/7 on/off/restored in both sessions, then the PoC is restored. See the
-[brief](handover/R11-B-cached-game-maps.md), [report](handover/R11-B-report.md), and
-[ADR 0093](decisions/0093-cached-imported-game-materials.md).
-
-R11-B review fixes: damaged registries recover through preserved backups, saves flush before atomic
-replacement, and unsavable registries warn once per session. Validation and gated PoC evidence are
-recorded in the report's review section; the field activity gate applies before any new PoC launch.
-The review Release gate and shipped-DLL source-less PoC pass (7/0/7, zero fresh conversions and no
-device loss); all 189 snapshots and the original Workshop deployment are restored and the lock released.
+R11-B (cached imported game maps, 2026-11-02) is **done**: after one successful conversion, an
+imported game character keeps its maps when its source folder is moved or deleted (successful game
+materials persist by hotloader texture identity and restore only while their DDS validate; a damaged
+registry is backed up and rebuilt). Release/native/Lua checks pass; on the PoC the missing-source
+sessions publish 7/0/7 on/off/restored with zero fresh conversions, including the shipped DLL after
+Claude's review fixes. See the [brief](handover/R11-B-cached-game-maps.md), the
+[report](handover/R11-B-report.md) and [ADR 0093](decisions/0093-cached-imported-game-materials.md).
 
 R11 (automatic PBR, 2026-11-02; [plan](handover/R11-plan.md)) is **done**: imported Wuthering Waves,
 Endfield and Silver Palace characters get their own shipped PBR maps automatically ("Imported game PBR",
