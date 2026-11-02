@@ -65,3 +65,17 @@ result." Codex was restarted a few minutes in to carry the note.
   maps and add-ons were not all checked.
 - An unreadable mod (binary USD) still suppresses all generated output (a coverage limit; precedence is
   the runtime's now).
+
+## Merge, publish and field
+
+- `tools	est.ps1 -Config Release` on `r11-autopbr`: 26 of 26 CTests, the Python suites (500, 28 and 25
+  tests), "All checks passed". `main` fast-forwarded to `78d06b3`; the merge published Workshop item
+  3829070317 as `0.0.0-dev.20261102210333+f497f506`, content digest `066ea889...`, the package checked on
+  the PoC. Pushed `60ff5f6..78d06b3` with the runtime's and the fixes DLL's Git LFS objects (60 MB).
+- Field (the user idle, the user's add-ons): start 01 ran the R10 package while Steam fetched R11; start
+  02 deployed it (250 changes) and ran runtime `0.0.0-dev.20261102210333+f497f506`. ToPBR initialised and
+  published 0 automatic materials against the 1,640 authored hashes of the user's mods (world conversion
+  off, no imported game character spawned); normal quit, no Lua error.
+- The field player's archived `rtx_topbr_parse_commented_properties 1` (the old default) is kept: the new
+  default 0 reaches new players. It matters only with world ToPBR on.
+
