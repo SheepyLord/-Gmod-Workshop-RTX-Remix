@@ -424,6 +424,68 @@ if arg[3]=="load_area" then
     end end
     NLGlassDebris.Shutdown();print("interaction manager load_area OK");return
 end
+if arg[3]=="r9_multi" then
+    local D=setup("interaction");set("budget",8);set("lifetime",10)
+    api.ReadSounds=function()return {}end;api.SetSounds=function()return true end
+    api.Split=function(id,minimum,maximum)
+        check(minimum==1 and maximum==6,"new module gets one-unit floor and at most six children")
+        local parent=api.bodies[id];api.bodies[id]=nil;local out={}
+        for i=1,6 do
+            api.next=api.next+1;local pos=parent.position+Vector(i*5,0,0)
+            api.bodies[api.next]={position=pos,angles=parent.angles,asleep=false,dirty=true,leaf=true}
+            out[#out+1]={id=api.next,poly={{-2,-2},{2,-2},{2,2},{-2,2}},thickness=.3,
+                position={pos.x,pos.y,pos.z},angles={0,0,0},velocity={400,0,0},spin={0,0,30}}
+        end
+        return out
+    end
+    local list=fragments(4);for _,f in ipairs(list)do f.poly={{-16,-16},{16,-16},{16,16},{-16,16}}end
+    D.Spawn(frame,list);for _=1,6 do tick()end
+    api.ReadMotion=function(ids)check(not api.running and #ids<=256,"motion diagnostics only after a nonblocking worker poll");return ids end
+    check(#D.Diagnostics(1000)==4,"PostRender diagnostics can observe a completed moving world")
+    api.delayStep=1;tick();check(D.Diagnostics()==nil,"unfinished diagnostics never wait")
+    check(#D.Diagnostics()==4,"a later poll publishes moving diagnostics");api.delayStep=0
+    api.damage={{3,900000,1}};tick()
+    check(D.Stats().splits==1 and D.Stats().fragments==8,"six-child replacement stays within original fragment budget")
+    check(not api.bodies[1] and not api.bodies[3],"oldest other piece is evicted, struck parent is replaced")
+    tick(10.1);tick();check(D.Count()==0,"all six descendants keep the original pane deadline")
+    D.Shutdown();print("R9 multi OK");return
+end
+if arg[3]=="r9_preview" then
+    local D=setup("interaction");set("budget",2000);set("lifetime",0)
+    for _=1,5 do tick()end
+    local f=fragments(120)
+    for i,part in ipairs(f)do
+        local x=(i%20)*5;local y=math.floor(i/20)*5
+        part.poly={{x-2,y-2},{x+2,y-2},{x+2,y+2},{x-2,y+2}}
+    end
+    D.Spawn(frame,f,Vector(10,10,20),99)
+    check(D.Stats().creation_pending==120,"all fragments initially queued")
+    check(draw()>0 and D.Stats().preview_draws==5,"all pending fragments visible in the receiving frame, in five shared meshes")
+    local initial=meshes[#meshes].vertexCount
+    tick();draw()
+    check(D.Stats().created_last<=12 and D.Stats().creation_pending>0,"preview does not bypass body construction cap")
+    for _=1,40 do tick();draw()end
+    check(D.Stats().creation_pending==0 and D.Stats().preview_draws==0 and D.Stats().fragments==120,"handoff retains every original fragment")
+    D.Spawn(frame,f);draw();D.Clear();check(draw()==0 and D.Count()==0,"cleanup cancels preview, queued and built pieces together")
+    D.Shutdown();print("R9 preview OK");return
+end
+if arg[3]=="r9_sounds" then
+    setup("jolt")
+    local S=include("nlglass/debris_draw.lua").Audio
+    local emitted=0;sound={Play=function()emitted=emitted+1 end};EyePos=function()return Vector()end
+    local queue={};local mock={ReadSounds=function()local q=queue;queue={};return q end}
+    local function event(id,x)return {id,{x or 0,0,0},300,.1,1}end
+    for i=1,128 do queue[i]=event(i)end
+    S.Drain(mock);check(emitted==4 and S.limited==124,"at most four sounds in one frame")
+    for i=1,10 do mockFrame=mockFrame+1;queue={event(i+200),event(i+300),event(i+400),event(i+500)};S.Drain(mock)end
+    check(emitted==24,"at most token-bucket burst 24 without elapsed time")
+    clock=clock+1;mockFrame=mockFrame+1;queue={event(999)};S.Drain(mock)
+    mockFrame=mockFrame+1;queue={event(999)};S.Drain(mock);check(emitted==25,"one piece cannot chatter on adjacent frames")
+    queue={event(1000,2000)};S.Drain(mock);check(emitted==25 and S.culled==1,"far sounds are culled")
+    S.setting.value=0;queue={event(1001)};S.Drain(mock);check(emitted==25,"sound switch silences native events")
+    S.Clear();check(S.played==0 and next(S.last)==nil,"cleanup resets rate state and counters")
+    NLGlassDebris.Shutdown();print("R9 sounds OK");return
+end
 if arg[3]=="collision_settings" then
     local D=setup("interaction")
     check(GetConVar("rtx_glass_debris_collide_with"):GetInt()==3,"objects and ragdolls default on; living off")

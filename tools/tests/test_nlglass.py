@@ -38,7 +38,7 @@ class FractureTests(unittest.TestCase):
     def test_breaks_vary_ray_count_spacing_and_ring_radii(self):
         self.run_case('irregular')
 
-    def test_tempered_full_uniform_shatter(self):
+    def test_tempered_full_irregular_shatter(self):
         self.run_case('tempered')
 
     def test_break_density_bounds_for_large_panes_and_accumulated_hits(self):

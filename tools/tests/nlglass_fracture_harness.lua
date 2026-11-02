@@ -96,19 +96,21 @@ elseif mode=="tempered" then
     p=F.Apply(s,hit(0,0,1600000)) check(#p>=80 and #F.Remaining(s)==0,"tempered shatters completely")
     local lo,hi=math.huge,0
     for _,piece in ipairs(p) do local a=F.Area(piece.poly) lo=math.min(lo,a) hi=math.max(hi,a) end
-    check(hi/lo<1.1,"tempered cells are nearly uniform")
+    check(hi/lo>3,"tempered granules vary in area around a crushed impact region")
     local d=definition("tempered") d.outline={{-2048,-2048},{2048,-2048},{2048,2048},{-2048,2048}}
     check(#F.New(d).cells<=512,"large pane has bounded tessellation")
 elseif mode=="bounded" then
     local s=F.New(definition())
+    local acceptedEnergy=0
     for i=1,30 do
-        F.Apply(s,hit((i*37)%90-45,(i*19)%60-30,50000,900+i))
+        local _,accepted=F.Apply(s,hit((i*37)%90-45,(i*19)%60-30,50000,900+i))
+        if accepted then acceptedEnergy=acceptedEnergy+50000 end
         check(#s.impacts<=F.MAX_IMPACTS and #s.cells<=F.MAX_CELLS,"bounded impacts/cells")
         local restored=copy(s)
         check(encode(F.Remaining(s))==encode(F.Remaining(restored)),"bounded history replay")
     end
     local total=(s.retiredEnergy or 0)+(s.pending or 0) for _,h in ipairs(s.impacts) do total=total+h.energy end
-    check(total==1500000,"full impact slots merge energy instead of dropping damage")
+    check(total==acceptedEnergy,"accepted impacts retain energy; fully released panes refuse later damage")
 elseif mode=="connectivity" then
     local d=definition()
     local function cell(poly) return {poly=poly,tags={},bounds={-48,-32,48,32}} end
@@ -270,6 +272,30 @@ elseif mode=="density" then
                 end
             end
         end
+    end
+elseif mode=="r9_shards" then
+    for _,kind in ipairs({"annealed","tempered"})do
+        local smallest,triangles,diagonals=math.huge,0,0
+        for seed=1,40 do
+            local def=definition(kind)
+            local a,b=F.New(def),F.New(def)
+            local h=hit(4,-3,2000000,seed*7919)
+            local pieces=F.Apply(a,h,true);local again=F.Apply(b,h,true)
+            check(encode(pieces)==encode(again),"independent states have identical seeded fracture")
+            check(#pieces<=F.CellLimit(def),"initial piece ceiling unchanged")
+            local area=0
+            for _,p in ipairs(pieces)do
+                local ar=F.Area(p.poly);smallest=math.min(smallest,ar);area=area+ar
+                if #p.poly==3 then triangles=triangles+1 end
+                for i,v in ipairs(p.poly)do local w=p.poly[i%#p.poly+1]
+                    if math.abs(v[1]-w[1])>.01 and math.abs(v[2]-w[2])>.01 then diagonals=diagonals+1 end
+                end
+            end
+            near(area,6144,.7,"irregular pieces cover the original pane")
+        end
+        check(diagonals>100,"cuts are oblique rather than a regular grid")
+        if kind=="annealed" then check(smallest<1 and triangles>200,"small crushed core and tapered triangular shards")end
+        print(string.format("R9 %s smallest_area=%.6f triangles=%d oblique_edges=%d",kind,smallest,triangles,diagonals))
     end
 elseif mode=="irregular" then
     -- The user (2026-11-01): breaks were always an octagon. Ray count, spacing and the ring radius

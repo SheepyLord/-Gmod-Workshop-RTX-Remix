@@ -59,3 +59,12 @@ load_manager additionally verifies near-detail protection from the actual script
 load_queue injects a slow mesh Destroy to prove that budget receipt performs no synchronous GPU release, drains at most 16/frame, and frees the retirement queue at cleanup.
 
 The real-fracture load scenario also forces a native failure and verifies exact compound fallback within the 64-original-fragment cap.
+
+
+R9-G adds r9_preview (120 queued fragments visible in five shared meshes in the receipt frame,
+12-body construction cap, complete handoff and cleanup) and r9_sounds (four/frame, burst 24,
+per-piece cooldown, distance culling, switch and cleanup). Existing older-module interaction tests
+retain binary replacements, exercising the compatibility path.
+
+`r9_multi` verifies six-child adoption within the original fragment budget, inherited expiry and
+nonblocking motion diagnostics between worker steps.

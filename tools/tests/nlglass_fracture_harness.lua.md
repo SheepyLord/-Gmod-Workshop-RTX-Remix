@@ -37,3 +37,9 @@ The deterministic scenario emits a canonical state/piece serialization for fresh
 Inputs are generated in memory. Outputs are assertion diagnostics and an OK marker on stdout;
 there are no files, network calls, engine entities or native debris. Exit 0 passes; Lua assertions
 give a nonzero exit. The Python wrapper runs all scenarios and compares independent processes.
+
+
+R9-G adds r9_shards: forty seeds for both kinds, separate deterministic states, covered-area and
+unchanged count bounds, a sub-unit annealed core and oblique edge counts. Tempered granules must
+vary in area instead of meeting the superseded grid-uniformity assertion. The bounded-energy case
+counts accepted impacts only: fully released panes legitimately refuse subsequent hits.

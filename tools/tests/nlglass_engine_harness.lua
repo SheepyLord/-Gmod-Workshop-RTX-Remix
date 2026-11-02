@@ -46,6 +46,7 @@ local function realm(server)
     e.DMG_BULLET,e.DMG_BUCKSHOT,e.DMG_BLAST,e.DMG_CRUSH,e.DMG_CLUB=2,4,8,16,32
     e.TOP,e.FILL=1,5
     e.tick,e.time=100,10 e.queue={} e.out={} e.receivers={} e.cvars={}
+    e.game={SinglePlayer=function()return true end,IsDedicated=function()return false end}
     function e.CurTime() return e.time end
     e.SysTime=now e.frames=0
     function e.FrameNumber() return e.frames end
@@ -59,7 +60,7 @@ local function realm(server)
     end
     function e.include(path)
         -- G1-B's manager has its own harness (glass_debris_harness.lua); here the public-API stub stands in.
-        if path:match("^nlglass/debris") or path:match("^nlglass/world") then return nil end
+        if (path:match("^nlglass/debris") and path~="nlglass/debris_blast.lua") or path:match("^nlglass/world") then return nil end
         return assert(setfenv(assert(loadfile(root.."/"..path)),e))()
     end
     e.sentFiles={}
@@ -100,6 +101,8 @@ local function realm(server)
     function e.frame() e.frames=e.frames+1 e.run("Think") end
     e.util={AddNetworkString=function() end,Effect=function() e.effects=(e.effects or 0)+1 end,
         TraceHull=function(t) e.lastTrace=t return e.traceResult or {Hit=false} end}
+    e.util.BlastDamage=function(...)e.lastBlast={...};return "original-blast",17 end
+    e.util.BlastDamageInfo=function(...)e.lastBlastInfo={...};return "original-info" end
     e.gameevent={Listen=function(name) check(name=="break_breakable","engine break event subscribed") end}
     e.Entity=function(i) return entities[i] end e.Player=function(id) return entities[id] end
     e.LocalPlayer=function() return e.player end
@@ -500,7 +503,7 @@ elseif scenario=="tool_menu" then
     for _,lang in ipairs({"zh-CN","zh-TW","ja","ko","fr","ru"}) do
         cl.CreateConVar("gmod_language",lang)
         check(cl.NLGlass.I18n.L("Glass strength")~="Glass strength","translated menu "..lang)
-        local panel=cl.panel() cl.NLGlass.BuildSettings(panel) check(#panel.controls==16,"complete settings page")
+        local panel=cl.panel() cl.NLGlass.BuildSettings(panel) check(#panel.controls==19,"complete settings page")
         check(panel.controls[11].cvar=="rtx_glass_debris_interact" and panel.controls[11].label~="Bodies and damage affect broken pieces","translated local interaction checkbox "..lang)
     end
     local function settingPacket(index,value)
@@ -516,7 +519,7 @@ elseif scenario=="tool_menu" then
     cl.out={}
     local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     panel.controls[3].OnValueChanged(panel.controls[3],7)
-    panel.controls[16].DoClick() cl.flush()
+    panel.controls[#panel.controls].DoClick() cl.flush()
     check(cl.GetConVar("rtx_glass_debris_interact"):GetInt()==1,"reset restores local interaction default")
     local changes=0
     for _,packet in ipairs(cl.out) do if packet.name=="nlglass_setting" then changes=changes+1 sv.deliver(packet,owner) end end
@@ -524,7 +527,7 @@ elseif scenario=="tool_menu" then
     cl.player=outsider
     local localPanel=cl.panel() cl.NLGlass.BuildSettings(localPanel)
     cl.RunConsoleCommand("rtx_glass_debris_interact","0") local before=#cl.out
-    localPanel.controls[16].DoClick() cl.flush()
+    localPanel.controls[#localPanel.controls].DoClick() cl.flush()
     check(cl.GetConVar("rtx_glass_debris_interact"):GetInt()==1 and #cl.out==before,
         "non-admin resets only their local interaction setting without a server request")
 elseif scenario=="body_contact" then
@@ -588,9 +591,70 @@ elseif scenario=="blast_order" then
     sv.flush() network(cl,1)
     check(cl.events[1]=="spawn" and cl.events[#cl.events]=="impulse" and #cl.impulses==1,"deduplicated blast push follows newly spawned pane pieces")
     local native=brush() local nr=S.TrackNative(native)
-    local start=#sv.out+1 sv.tick=sv.tick+1
+    local start=#sv.out+1 sv.tick=sv.tick+1 sv.time=sv.time+.2
     sv.run("EntityTakeDamage",native,d) native:Remove() sv.flush() network(cl,start)
     check(nr.broken and cl.events[#cl.events-1]=="spawn" and cl.events[#cl.events]=="impulse","blast push also follows a native removal's deferred break")
+elseif scenario=="r9_blasts" then
+    local B=sv.NLGlass.Blasts
+    local before=#sv.out
+    local a,b=sv.util.BlastDamage(nil,nil,Vector(20,30,40),175,120)
+    check(a=="original-blast" and b==17 and sv.lastBlast[4]==175,"blast wrapper preserves arguments and returns")
+    sv.flush()
+    check(#sv.out==before+1 and sv.out[#sv.out].name=="nlglass_blast","empty-space API explosion reaches pieces with zero Source victims")
+    local packet=sv.out[#sv.out] cl.deliver(packet)
+    check(cl.impulses[#cl.impulses][2]==175,"exact blast radius preserved")
+    local grenade=newEntity("grenade",{pos=Vector(200,0,0)})
+    local dmg=damage(sv.DMG_BLAST,100,Vector(),grenade)
+    dmg.GetReportedPosition=function()return Vector(20000,0,0)end
+    sv.time=sv.time+.2 S.Blast(dmg)sv.flush()cl.deliver(sv.out[#sv.out])
+    check(cl.impulses[#cl.impulses][1].x==200,"grenade uses the explosion, not the distant thrower")
+    sv.time=sv.time+.2 before=#sv.out
+    for i=1,100 do B.Emit(Vector(i*40,500,0),100,100,"stress")end
+    sv.flush();check(#sv.out-before<=16 and B.limited>0,"pending and burst rates bound an explosion storm")
+    before=#sv.out;sv.time=sv.time+.2
+    B.Emit(Vector(0,800,0),100,100,"cancel");S.epoch=S.epoch+1;sv.flush()
+    check(#sv.out==before,"cleanup epoch cancels queued blasts")
+    local old=sv.util.BlastDamage
+    local external=function(...)return old(...)end;sv.util.BlastDamage=external
+    S.InstallBlastObserver();sv.time=sv.time+1;before=#sv.out
+    check(sv.util.BlastDamage(nil,nil,Vector(5000,0,0),100,100)=="original-blast","refresh preserves an external wrapper and the API return")
+    sv.flush();check(#sv.out==before+1,"refresh disables an older observer even under another add-on wrapper")
+    sv.NLGlass.Blasts.Restore();check(sv.util.BlastDamage==external,"restore removes only its owned wrapper")
+elseif scenario=="r9_native_signals" then
+    local ent=newEntity("env_explosion",{pos=Vector(100,200,30)})
+    ent.GetKeyValues=function()return {iMagnitude="120",iRadiusOverride="180"}end
+    local before=#sv.out
+    check(sv.run("AcceptInput",ent,"Explode")==nil,"native explosion observation preserves input returns")
+    sv.flush();check(#sv.out==before+1,"native env_explosion forwards without a damage victim")
+    cl.deliver(sv.out[#sv.out]);check(cl.impulses[#cl.impulses][2]==180 and #ent.inputs==0,"native input uses exact radius and never fires a Source input")
+    ent.class="env_physexplosion";ent.pos=Vector(1000,0,0);sv.time=sv.time+.2
+    sv.run("AcceptInput",ent,"Explode");sv.flush();check(#sv.out==before+2,"physical explosions use the same bounded route")
+    local grenade=newEntity("npc_grenade_frag",{pos=Vector(2000,0,0)})
+    grenade.GetInternalVariable=function(_,name)return name=="m_flDamage" and 75 or 250 end
+    local data={OriginalSoundName="BaseGrenade.Explode",Entity=grenade}
+    check(sv.run("EntityEmitSound",data)==nil and data.OriginalSoundName=="BaseGrenade.Explode","native grenade sound is observed without modification")
+    sv.flush();check(#sv.out==before+3,"grenade explosion forwards with no Source damage callback")
+elseif scenario=="r9_clear" then
+    local admin=newEntity("player",{admin=true});cl.player=admin
+    local panel=cl.panel();cl.NLGlass.BuildSettings(panel)
+    panel.controls[17].DoClick();check(cl.clears==1,"local Clear button clears only local debris")
+    panel.controls[18].DoClick();check(cl.out[#cl.out].name=="nlglass_clear_debris","everyone button sends the bounded admin route")
+    local outsider=newEntity("player",{admin=false});local before=#sv.out
+    sv.deliver(cl.out[#cl.out],outsider);check(#sv.out==before,"non-admin cannot clear everyone")
+    sv.deliver(cl.out[#cl.out],admin);check(#sv.out==before+1,"listen-server admin clears everyone")
+    local records=cl.NLGlass.Client.records;cl.deliver(sv.out[#sv.out])
+    check(cl.clears==2 and cl.NLGlass.Client.records==records,"debris-only clear retains authoritative pane records")
+    sv.deliver(cl.out[#cl.out],admin);check(#sv.out==before+1,"global clear has a one-second cooldown")
+    cl.game.SinglePlayer=function()return false end
+    cl.GetGlobalBool=function(name)return name=="NLGlass.ListenServer"end
+    panel=cl.panel();cl.NLGlass.BuildSettings(panel);check(#panel.controls==19,"remote listen-server admin also gets the everyone button")
+    cl.GetGlobalBool=function()return false end
+    panel=cl.panel();cl.NLGlass.BuildSettings(panel);check(#panel.controls==18,"dedicated-server admin retains local-only clearing")
+    cl.game.SinglePlayer=function()return true end
+    cl.player=outsider;panel=cl.panel();cl.NLGlass.BuildSettings(panel)
+    check(#panel.controls==18,"non-admin has local clear and no everyone button")
+    cl.RunConsoleCommand("rtx_glass_debris_sounds","0");panel.controls[#panel.controls].DoClick()
+    check(cl.GetConVar("rtx_glass_debris_sounds"):GetInt()==1,"non-admin Reset restores local sound setting")
 elseif scenario=="budget" then
     local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[10].hi==8192,"budget slider respects the debris convar's 8192 cap")
@@ -617,8 +681,9 @@ elseif scenario=="client_build" then
     local start=#sv.out+1 ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
     local physicsBuilds,meshBuilds=ent.physicsBuilds,cl.meshBuilds
     for i=start,#sv.out do cl.deliver(sv.out[i]) end
-    check(ent.physicsBuilds==physicsBuilds and cl.meshBuilds==meshBuilds,"break handler defers remaining mesh and collision builds")
-    cl.run("Think") check(cl.meshBuilds==meshBuilds,"receiving frame never drains the build queue")
+    check(ent.physicsBuilds==physicsBuilds+1 and cl.meshBuilds>meshBuilds,"break builds the visible hole and prediction in the receiving frame")
+    local built=cl.meshBuilds
+    cl.run("Think") check(cl.meshBuilds==built,"receiving frame does not repeat the immediate hole build")
     cl.frame()
     check(ent.physicsBuilds==physicsBuilds+1,"one prediction-physics build per break message")
     check(cl.meshBuilds-meshBuilds<=2,"one pane/crack mesh build per break message, no pre-state build")
@@ -703,7 +768,7 @@ elseif scenario=="walk_run" then
     end
     cl.player=ply local panel=cl.panel() cl.NLGlass.BuildSettings(panel)
     check(panel.controls[7].value==250,"menu displays the shared default")
-    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[16].DoClick()
+    sv.cvars.rtx_glass_player_break_speed.value="180" panel.controls[#panel.controls].DoClick()
     sv.deliver(cl.out[#cl.out],ply)
     check(sv.GetConVar("rtx_glass_player_break_speed"):GetFloat()==250 and panel.controls[7].value==250,"Reset to Defaults restores 250 in server and menu")
 elseif scenario=="settings_migration" then
@@ -722,11 +787,12 @@ elseif scenario=="build_queue" then
     ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) ent:OnTakeDamage(damage(sv.DMG_BULLET,15))
     local meshes,physicsBuilds=cl.meshBuilds,ent.physicsBuilds
     for i=start,#sv.out do cl.deliver(sv.out[i]) end
-    check(cl.meshBuilds==meshes and ent.physicsBuilds==physicsBuilds and #cl.debris==1,"burst spawns debris immediately without building remaining glass")
-    check(V.pendingLast-V.pendingFirst+1==1,"same-pane burst coalesces into one queued build")
+    check(cl.meshBuilds>meshes and ent.physicsBuilds==physicsBuilds+1 and #cl.debris==1,"burst spawns debris and builds hole immediately")
+    check(V.pendingLast-V.pendingFirst+1==1 and not V.records[r.id].buildQueued,"same-pane burst leaves only a cancelled weak-hit queue slot")
     local cr=V.records[r.id] local cells=cr.state.cells
+    local immediate=cl.meshBuilds
     cl.frame()
-    check(cl.meshBuilds-meshes==2 and ent.physicsBuilds==physicsBuilds+1,"one final mesh pair and collision build for the whole burst")
+    check(cl.meshBuilds==immediate and ent.physicsBuilds==physicsBuilds+1,"stale weak-hit queue cannot repeat the hole build")
     check(cr.meshCells==cells and cr.builtRevision==cr.state.visualRevision,"queue builds only the latest revision")
     -- Geometry and collision share exactly the same extruded positions.
     local positions={}
@@ -806,11 +872,13 @@ elseif scenario=="client_timings" then
     end
     for sample=1,40 do
         cl.NLGlass.Client.Clear() cl.debris={} sv.out={}
+        ent,r=pane() -- a prior full release removes its record; every sample needs a real live pane
         r.state=F.Restore(base.def,base.impacts,base.damage,base.revision,base.all,base.cells,base.pending,base.retiredEnergy,base.groups,base.nextCellID)
         S.Snapshot(r) cl.deliver(sv.out[#sv.out])
         for _,which in ipairs({"hit","break"}) do
             local start=#sv.out+1 local t=now()
-            S.Impact(r,{x=0,y=0,energy=which=="hit" and 180000 or 1200000,seed=81,kind="sharp",dx=0,dy=0,dz=1})
+            local accepted=S.Impact(r,{x=0,y=0,energy=which=="hit" and 180000 or 1200000,seed=81,kind="sharp",dx=0,dy=0,dz=1},which=="break")
+            check(accepted,"timing sample must actually process the pane impact")
             local values=times["server_"..which] values[#values+1]=(now()-t)*1000
             t=now() clientPackets(start)
             local handler=(now()-t)*1000

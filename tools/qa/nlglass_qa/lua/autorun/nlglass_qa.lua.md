@@ -180,3 +180,8 @@ R8-G also reports `retired`/`released` individual meshes. Burst eviction must no
 release a whole old pile; at most 16 individual GPU objects retire per frame. This exceeds the
 12 initial plus two split-child allocations, keeping sustained replacement bounded. Cleanup must
 leave no retired meshes. The separate settled-batch queue keeps its existing two releases/frame.
+
+
+R9-G adds r9, r9-latency and r9-velocity routing to
+[nlglass_r9_qa.lua](nlglass_r9_qa.lua.md). These print numeric latency chains, motion dot products,
+empty explosions, water and sound counters without changing the original field/r8 modes.
