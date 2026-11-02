@@ -68,7 +68,7 @@ result." Codex was restarted a few minutes in to carry the note.
 
 ## Merge, publish and field
 
-- `tools	est.ps1 -Config Release` on `r11-autopbr`: 26 of 26 CTests, the Python suites (500, 28 and 25
+- `tools\test.ps1 -Config Release` on `r11-autopbr`: 26 of 26 CTests, the Python suites (500, 28 and 25
   tests), "All checks passed". `main` fast-forwarded to `78d06b3`; the merge published Workshop item
   3829070317 as `0.0.0-dev.20261102210333+f497f506`, content digest `066ea889...`, the package checked on
   the PoC. Pushed `60ff5f6..78d06b3` with the runtime's and the fixes DLL's Git LFS objects (60 MB).
