@@ -1,4 +1,4 @@
-# MIT; translations written for G1 and R8.
+# MIT; translations written for G1.
 # Translations of the GMod native loader glass (the RTX Remix tab, the guide).
 # Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
 msgid ""
@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:103
+#: addon/lua/nlglass/menu.lua:110
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "일반 유리"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:103
+#: addon/lua/nlglass/menu.lua:110
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "강화 유리"
@@ -111,16 +111,28 @@ msgid "Default: objects and ragdolls; living entities pass through your pieces."
 msgstr "기본값: 물체와 래그돌. 살아 있는 개체는 파편을 통과합니다."
 
 #: addon/lua/nlglass/menu.lua:84
+msgid "Broken glass sounds"
+msgstr "깨진 유리 소리"
+
+#: addon/lua/nlglass/menu.lua:85
+msgid "Clear broken glass"
+msgstr "깨진 유리 치우기"
+
+#: addon/lua/nlglass/menu.lua:88
+msgid "Clear broken glass for everyone"
+msgstr "모든 플레이어의 깨진 유리 치우기"
+
+#: addon/lua/nlglass/menu.lua:91
 msgid "Reset to Defaults"
 msgstr "기본값으로 초기화"
 
-#: addon/lua/nlglass/menu.lua:95
-#: addon/lua/nlglass/menu.lua:98
-#: addon/lua/nlglass/menu.lua:100
+#: addon/lua/nlglass/menu.lua:102
+#: addon/lua/nlglass/menu.lua:105
+#: addon/lua/nlglass/menu.lua:107
 msgid "Glass settings"
 msgstr "유리 설정"
 
-#: addon/lua/nlglass/menu.lua:102
+#: addon/lua/nlglass/menu.lua:109
 msgid "Glass pane"
 msgstr "유리판"
 

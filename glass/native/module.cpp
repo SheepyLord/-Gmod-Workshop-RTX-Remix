@@ -50,7 +50,7 @@ Hull hull(ILuaBase* l,int index,bool require_volume=true) {
   Hull h;h.reserve(count);for(int i=1;i<=count;++i) { get(l,index,i);h.push_back(vector(l,-1,kCoordinateLimit));l->Pop(); }
   need(!require_volume || valid_hull(h),"flat/invalid hull");return h;
 }
-std::uint32_t id(ILuaBase* l) { return integer(l,1,1,std::numeric_limits<std::uint32_t>::max()); }
+std::uint32_t id(ILuaBase* l,int index=1) { return integer(l,index,1,std::numeric_limits<std::uint32_t>::max()); }
 World& active(ILuaBase* l) { need(l==owner && world!=nullptr,"nlglass is not initialized in this client realm");return *world; }
 template<class F> int guarded(ILuaBase* l,F&& f) noexcept {
   const int top=l->Top();
@@ -111,7 +111,7 @@ LUA_FUNCTION_STATIC(PollFinishWorld) { return guarded(LUA,[&] { LUA->PushBool(ac
 LUA_FUNCTION_STATIC(Spawn) { return guarded(LUA,[&] {
   auto& w=active(LUA);const auto points=hull(LUA,1);const auto p=vector(LUA,2,kCoordinateLimit),a=vector(LUA,3,36000,true);
   const auto v=vector(LUA,4,100000),spin=vector(LUA,5,36000);
-  const float minimum=LUA->Top()>=6?static_cast<float>(number(LUA,6,4,64)):4;
+  const float minimum=LUA->Top()>=6?static_cast<float>(number(LUA,6,1,64)):4;
   LUA->PushNumber(w.spawn(points,p,a,v,spin,minimum));return 1;
 }); }
 LUA_FUNCTION_STATIC(SpawnGroup) { return guarded(LUA,[&] {
@@ -142,6 +142,30 @@ void push_vector(ILuaBase* l,V3 v) {
 }
 LUA_FUNCTION_STATIC(SetInteraction) { return guarded(LUA,[&] {
   need(LUA->IsType(1,Type::Bool),"expected interaction boolean");active(LUA).set_interaction(LUA->GetBool(1));return success(LUA);
+}); }
+LUA_FUNCTION_STATIC(SetSounds) { return guarded(LUA,[&] {
+  need(LUA->IsType(1,Type::Bool),"expected sound boolean");active(LUA).set_sounds(LUA->GetBool(1));return success(LUA);
+}); }
+LUA_FUNCTION_STATIC(ReadSounds) { return guarded(LUA,[&] {
+  const auto events=active(LUA).take_sounds();if(events.empty()) { LUA->PushBool(false);return 1; }
+  LUA->CreateTable();unsigned i=0;
+  for(const auto& e:events) {
+    LUA->CreateTable();LUA->PushNumber(e.id);set(LUA,-2,1);push_vector(LUA,e.position);set(LUA,-2,2);
+    LUA->PushNumber(e.speed);set(LUA,-2,3);LUA->PushNumber(e.mass);set(LUA,-2,4);LUA->PushNumber(e.kind);set(LUA,-2,5);set(LUA,-2,++i);
+  }
+  return 1;
+}); }
+LUA_FUNCTION_STATIC(ReadMotion) { return guarded(LUA,[&] {
+  auto& w=active(LUA);need(LUA->IsType(1,Type::Table),"expected piece ids");
+  const int n=LUA->ObjLen(1);need(n>=0 && n<=256,"motion diagnostic limit");
+  std::vector<std::pair<std::uint32_t,Motion>> rows;rows.reserve(n);
+  for(int i=1;i<=n;++i) { get(LUA,1,i);const auto token=id(LUA,-1);LUA->Pop();rows.emplace_back(token,w.motion(token)); }
+  LUA->CreateTable();unsigned i=0;
+  for(const auto& [token,m]:rows) {
+    LUA->CreateTable();LUA->PushNumber(token);set(LUA,-2,1);push_vector(LUA,m.position);set(LUA,-2,2);
+    push_vector(LUA,m.velocity);set(LUA,-2,3);push_vector(LUA,m.spin);set(LUA,-2,4);set(LUA,-2,++i);
+  }
+  return 1;
 }); }
 LUA_FUNCTION_STATIC(SetCollisionFlags) { return guarded(LUA,[&] {
   active(LUA).set_collision_flags(integer(LUA,1,0,15));return success(LUA);
@@ -201,8 +225,9 @@ LUA_FUNCTION_STATIC(Ray) { return guarded(LUA,[&] {
   LUA->PushNumber(w.ray(from,to,energy,speed));return 1;
 }); }
 LUA_FUNCTION_STATIC(Split) { return guarded(LUA,[&] {
-  auto& w=active(LUA);const auto token=id(LUA);const auto minimum=static_cast<float>(number(LUA,2,4,64));
-  const auto fragments=w.split(token,minimum);if(fragments.empty()) { LUA->PushBool(false);return 1; }
+  auto& w=active(LUA);const auto token=id(LUA);const auto minimum=static_cast<float>(number(LUA,2,1,64));
+  const auto maximum=LUA->Top()>=3?integer(LUA,3,2,6):6;
+  const auto fragments=w.split(token,minimum,maximum);if(fragments.empty()) { LUA->PushBool(false);return 1; }
   LUA->CreateTable();unsigned i=0;
   for(const auto& f:fragments) {
     LUA->CreateTable();LUA->PushNumber(f.id);set(LUA,-2,"id");LUA->PushNumber(f.thickness);set(LUA,-2,"thickness");
@@ -217,7 +242,7 @@ LUA_FUNCTION_STATIC(Split) { return guarded(LUA,[&] {
   return 1;
 }); }
 LUA_FUNCTION_STATIC(CanSplit) { return guarded(LUA,[&] {
-  auto& w=active(LUA);const auto token=id(LUA);const float minimum=static_cast<float>(number(LUA,2,4,64));
+  auto& w=active(LUA);const auto token=id(LUA);const float minimum=static_cast<float>(number(LUA,2,1,64));
   LUA->PushBool(w.can_split(token,minimum));return 1;
 }); }
 LUA_FUNCTION_STATIC(Step) { return guarded(LUA,[&] { active(LUA).step(number(LUA,1,0,10));return success(LUA); }); }
@@ -256,6 +281,9 @@ LUA_FUNCTION_STATIC(ReadStats) { return guarded(LUA,[&] {
   add("damage_dropped",s.damage_dropped);add("ray_hits",s.ray_hits);add("splits",s.splits);
   add("collision_flags",s.collision_flags);
   add("melee_hits",s.melee_hits);add("melee_limited",s.melee_limited);
+  add("sound_events",s.sound_events);add("sound_dropped",s.sound_dropped);
+  add("water_volumes",s.water_volumes);add("water_tests",s.water_tests);add("water_applied",s.water_applied);
+  add("water_entries",s.water_entries);add("water_ms",s.water_ms);add("overlap_suppressed",s.overlap_suppressed);
   LUA->PushBool(s.interaction);set(LUA,1,"interaction");
   LUA->PushBool(s.ready);set(LUA,1,"ready");LUA->PushBool(s.busy);set(LUA,1,"busy");return success(LUA);
 }); }
@@ -276,6 +304,7 @@ GMOD_MODULE_OPEN() {
       {"BeginStep",BeginStep},{"PollStep",PollStep},
       {"SetInteraction",SetInteraction},{"SetCollisionFlags",SetCollisionFlags},{"SyncBodies",SyncBodies},{"ReadRegions",ReadRegions},
       {"ReadDamage",ReadDamage},{"Ray",Ray},{"Melee",MeleeCast},{"Split",Split},{"CanSplit",CanSplit},
+      {"SetSounds",SetSounds},{"ReadSounds",ReadSounds},{"ReadMotion",ReadMotion},
       {"Spawn",Spawn},{"SpawnGroup",SpawnGroup},{"Remove",Remove},{"Impulse",Impulse},{"SetCollide",SetCollide},{"SetGravity",SetGravity},
       {"Step",Step},{"ReadPoses",ReadPoses},{"IsSleeping",IsSleeping},{"Stats",ReadStats},{"Clear",Clear},{"Shutdown",Shutdown}};
     for(const auto& [name,fn]:functions) { LUA->PushCFunction(fn);set(LUA,-2,name); }

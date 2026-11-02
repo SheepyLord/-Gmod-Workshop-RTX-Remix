@@ -2,6 +2,9 @@
 local S={records={},byEntity={},surfaces={},epoch=0,nextID=0}
 local F,G,D,P,C=NLGlass.Fracture,NLGlass.Geometry,NLGlass.Damage,NLGlass.Protocol,NLGlass.Config
 NLGlass.Server=S
+-- A client cannot otherwise distinguish a remote listen host from a dedicated server.
+-- This advertises UI availability only; every clear request is still validated below.
+if SetGlobalBool then SetGlobalBool("NLGlass.ListenServer",not game.IsDedicated()) end
 -- Native output objects are not exposed by GetKeyValues/TriggerOutput. Capture the raw repeated
 -- map keys and let the original entity's unused OnUser channel keep Source's I/O semantics.
 S.outputs=setmetatable({},{__mode="k"})
@@ -12,7 +15,7 @@ hook.Add("EntityKeyValue","NLGlass.Outputs",function(ent,key,value)
     local o=S.outputs[ent] or {breaks={},users={}} S.outputs[ent]=o
     if key=="onbreak" then o.breaks[#o.breaks+1]=value else o.users[tonumber(key:sub(-1))]=true end
 end)
-for _,name in ipairs({"nlglass_state","nlglass_hit","nlglass_remove","nlglass_blast","nlglass_sync","nlglass_clear","nlglass_setting"}) do util.AddNetworkString(name) end
+for _,name in ipairs({"nlglass_state","nlglass_hit","nlglass_remove","nlglass_blast","nlglass_sync","nlglass_clear","nlglass_clear_debris","nlglass_setting"}) do util.AddNetworkString(name) end
 -- Glass-Rewrite-Remix archived two of these names with other meanings (contact speed 100, velocity
 -- transfer 2) and GMod restores archived values, so a walk would break glass. Reset them once;
 -- rtx_glass_settings_version records it, and later choices are kept.
@@ -125,6 +128,7 @@ function S.Impact(r,impact,forceAll)
     net.Start("nlglass_hit") net.WriteUInt(r.id,32) net.WriteUInt(old.state.revision,32)
     net.WriteBool(broke) if broke then P.WriteRecord(old) end
     P.WriteImpact(impact) net.WriteBool(forceAll or false) net.WriteBool(r.native) net.Broadcast()
+    if S.Observe then S.Observe("sent",r.id,engine.TickCount(),CurTime(),SysTime()) end
     if not r.native then
         if broke then originalOutput(r,impact) S.Collision(r) end
     elseif forceAll then
@@ -136,6 +140,7 @@ end
 function S.Damage(entity,dmg)
     local r=S.byEntity[entity] or S.surfaces[entity]
     if not r then return end
+    if S.Observe then S.Observe("damage",r.id,engine.TickCount(),CurTime(),SysTime()) end
     S.Refresh(r)
     if dmg:IsDamageType(DMG_BLAST) then S.Blast(dmg) end
     S.Impact(r,D.FromDamage(r,dmg))
@@ -181,33 +186,6 @@ hook.Add("SetupMove","NLGlass.PlayerContact",function(ply,mv)
         S.Body(tr.Entity,ply,velocity,point)
     end
 end)
-S.blasts={}
-function S.Blast(dmg)
-    local tick=engine.TickCount()
-    if S.blastTick~=tick then S.blastTick=tick S.blasts={} end
-    local origin=dmg:GetReportedPosition()
-    local reported=origin:LengthSqr()~=0
-    if origin:LengthSqr()==0 then
-        local inflictor=dmg:GetInflictor()
-        origin=IsValid(inflictor) and inflictor:WorldSpaceCenter() or dmg:GetDamagePosition()
-    end
-    local inflictor=dmg:GetInflictor()
-    local key=string.format("%s:%.1f:%.1f:%.1f",IsValid(inflictor) and inflictor:EntIndex() or 0,origin.x,origin.y,origin.z)
-    if not reported and not IsValid(inflictor) then key="unattributed" end
-    if S.blasts[key] then return end
-    S.blasts[key]=true
-    local radius,speed=math.Clamp(dmg:GetDamage()*4,64,2048),math.Clamp(dmg:GetDamage()*6,50,900)
-    local epoch=S.epoch
-    timer.Simple(0,function()
-        -- Native removal and physics callbacks also defer their break one turn. Queue after
-        -- those callbacks, so their own pieces exist before the explosion impulse arrives.
-        timer.Simple(0,function()
-            if epoch~=S.epoch then return end
-            net.Start("nlglass_blast") net.WriteVector(origin)
-            net.WriteFloat(radius) net.WriteFloat(speed) net.Broadcast()
-        end)
-    end)
-end
 function S.NativeBreak(r,breaker)
     if not r or r.broken or r.epoch~=S.epoch then return end
     S.Refresh(r)
@@ -334,4 +312,98 @@ net.Receive("nlglass_setting",function(_,ply)
     end
     RunConsoleCommand(s[1],value)
 end)
+net.Receive("nlglass_clear_debris",function(_,ply)
+    if not IsValid(ply) or not ply:IsAdmin() or (game.IsDedicated and game.IsDedicated()) then return end
+    if (S.clearDebrisAt or -10)>CurTime()-1 then return end
+    S.clearDebrisAt=CurTime()
+    net.Start("nlglass_clear_debris") net.Broadcast()
+end)
+local function installBlasts()
+    -- MIT. Observe exact Lua blasts, native explosion inputs and native grenade sounds. Never
+    -- change damage, sound tables, hook returns or Source physics. Duplicate observations coalesce.
+    local S=NLGlass.Server
+    local previous=NLGlass.Blasts
+    if previous and previous.Restore then previous.Restore() end
+    local B={active=true,sent=0,deduplicated=0,limited=0,pending=0,tokens=16,stamp=CurTime(),recent={}}
+    NLGlass.Blasts=B
+    local function finite(v) return type(v)=="number" and v==v and math.abs(v)<=131072 end
+    local function enqueue(origin,radius,damage,source)
+        if not B.active then return end
+        if not origin or not finite(origin.x) or not finite(origin.y) or not finite(origin.z) or
+            not finite(radius) or radius<=0 or not finite(damage) or damage<=0 then return end
+        local now=CurTime()
+        B.tokens=math.min(16,B.tokens+math.max(0,now-B.stamp)*32);B.stamp=now
+        for i=#B.recent,1,-1 do
+            local e=B.recent[i]
+            if now-e.time>.1 then table.remove(B.recent,i)
+            elseif (origin-e.origin):LengthSqr()<32^2 then
+                -- Exact API radius/damage replaces an attenuated victim observation before send.
+                e.radius=math.min(2048,math.max(e.radius,radius));e.damage=math.max(e.damage,damage)
+                B.deduplicated=B.deduplicated+1;return
+            end
+        end
+        if B.tokens<1 or B.pending>=32 then B.limited=B.limited+1;return end
+        B.tokens=B.tokens-1
+        local e={origin=Vector(origin.x,origin.y,origin.z),radius=math.Clamp(radius,1,2048),damage=damage,time=now,source=source}
+        if #B.recent>=32 then table.remove(B.recent,1) end
+        B.recent[#B.recent+1]=e;B.pending=B.pending+1
+        local epoch=S.epoch
+        -- Damage/OnBreak callbacks may schedule glass. Keep their ordering; the ballistic preview
+        -- and deferred queue both retain blasts received while body construction is pending.
+        timer.Simple(0,function() timer.Simple(0,function()
+            B.pending=B.pending-1
+            if not B.active or S.epoch~=epoch then return end
+            net.Start("nlglass_blast");net.WriteVector(e.origin);net.WriteFloat(e.radius)
+            net.WriteFloat(math.Clamp(e.damage*10,180,1800));net.Broadcast();B.sent=B.sent+1
+            if B.Observe then B.Observe(e) end
+        end) end)
+    end
+    B.Emit=enqueue
+    function S.Blast(dmg)
+        local inflictor=dmg:GetInflictor()
+        -- ReportedPosition is the thrower's position for CBaseGrenade, not the explosion.
+        local origin=IsValid(inflictor) and inflictor:WorldSpaceCenter() or dmg:GetDamagePosition()
+        enqueue(origin,math.Clamp(dmg:GetDamage()*4,64,2048),dmg:GetDamage(),"damage")
+    end
+    local original,wrapped={},{}
+    local function wrap(name,observe)
+        local fn=util[name]
+        if type(fn)~="function" then return end
+        original[name]=fn
+        wrapped[name]=function(...)
+            -- Cosmetic observation failure must never interfere with the caller's damage.
+            local ok,err=pcall(observe,...)
+            if not ok then ErrorNoHalt("[NLGlass] blast observation: "..tostring(err).."\n") end
+            return fn(...)
+        end
+        util[name]=wrapped[name]
+    end
+    wrap("BlastDamage",function(_,_,pos,radius,damage) enqueue(pos,radius,damage,"util.BlastDamage") end)
+    wrap("BlastDamageInfo",function(info,pos,radius) enqueue(pos,radius,info:GetDamage(),"util.BlastDamageInfo") end)
+    function B.Restore()
+        B.active=false
+        for name,fn in pairs(original) do if util[name]==wrapped[name] then util[name]=fn end end
+    end
+    hook.Add("AcceptInput","NLGlass.BlastInput",function(ent,input)
+        local class=ent:GetClass()
+        if string.lower(input)~="explode" or (class~="env_explosion" and class~="env_physexplosion") then return end
+        local keys=ent:GetKeyValues() or {}
+        local damage=tonumber(keys.iMagnitude or keys.imagnitude or keys.magnitude) or 100
+        local radius=tonumber(keys.iRadiusOverride or keys.iradiusoverride or keys.radius) or damage*2.5
+        enqueue(ent:GetPos(),radius>0 and radius or damage*2.5,damage,"input:"..class)
+    end)
+    hook.Add("EntityEmitSound","NLGlass.BlastSound",function(data)
+        if data.OriginalSoundName~="BaseGrenade.Explode" and data.SoundName~="BaseGrenade.Explode" then return end
+        local ent=data.Entity
+        if not IsValid(ent) then return end
+        local damage=ent.GetInternalVariable and ent:GetInternalVariable("m_flDamage") or 100
+        local radius=ent.GetInternalVariable and ent:GetInternalVariable("m_DmgRadius") or 250
+        enqueue(ent:GetPos(),tonumber(radius) or 250,tonumber(damage) or 100,"native-grenade")
+    end)
+    -- GMod's input hook observes native ExplosionCreate too: PoC barrels and RPGs both
+    -- reached the env_explosion route with zero damage victims. No entity polling is needed.
+    return B
+end
+S.InstallBlastObserver=installBlasts
+installBlasts()
 return S

@@ -121,15 +121,15 @@ end
 local function rings(def, hit)
     local r, limit = {0}, 1
     for _, p in ipairs(def.outline) do limit = max(limit, abs(p[1]-hit.x)+abs(p[2]-hit.y)) end
-    local radius = def.piece_size * 0.55
+    local radius = max(0.75,def.piece_size * 0.14) -- crushed impact core, down to sub-unit shards
     local reach=limit*2+def.piece_size
-    local budget=max(1,floor(F.CellLimit(def)/hit.rays))
+    local budget=max(1,floor(F.CellLimit(def)/(hit.rays*2)))
     while r[#r] < reach do
         -- Keep the small impact rings. On an enormous pane the final ring stretches to the
         -- frame instead of adding more far-away pieces; one fresh cut always fits the budget.
         if #r>=budget then radius=reach end
         r[#r+1] = snap(radius)
-        radius = radius * 1.55 + def.piece_size * 0.3
+        radius = radius * 2.15 + def.piece_size * 0.22
     end
     return r
 end
@@ -157,7 +157,17 @@ local function tiles(def, hit)
             local e = dirs[j]
             local poly = {point(d, reach[i][ring-1]), point(d, reach[i][ring]), point(e, reach[j][ring])}
             if ring > 2 then poly[#poly+1] = point(e, reach[j][ring-1]) end
-            out[#out+1] = {poly=poly, ring=ring-1}
+            if #poly==4 then
+                -- Branch between radial cracks. Shared endpoints give an exact partition;
+                -- varying diagonals leave tapered shards instead of concentric trapezoids.
+                if random(2)==0 then
+                    out[#out+1]={poly={poly[1],poly[2],poly[3]},ring=ring-1}
+                    out[#out+1]={poly={poly[1],poly[3],poly[4]},ring=ring-1}
+                else
+                    out[#out+1]={poly={poly[1],poly[2],poly[4]},ring=ring-1}
+                    out[#out+1]={poly={poly[2],poly[3],poly[4]},ring=ring-1}
+                end
+            else out[#out+1] = {poly=poly, ring=ring-1} end
         end
     end
     return out, radii
@@ -231,23 +241,63 @@ local function cache(state,topologyChanged)
     end
     state.cracks=nil state.visualRevision=state.revision
 end
-local function uniform(def)
-    local box,cells=bounds(def.outline),{}
-    local width,height=box[3]-box[1],box[4]-box[2]
-    local limit=F.CellLimit(def)
-    local size=max(def.piece_size,F.Root(width*height/limit),width/limit,height/limit)
-    local nx,ny=max(1,math.ceil(width/size)),max(1,math.ceil(height/size))
-    while nx*ny>limit do
-        if nx>1 and (ny==1 or width/nx<height/ny) then nx=nx-1 else ny=ny-1 end
+-- Clip both sides of one seeded oblique line together: intersections are shared snapped
+-- values, so recursive cuts cannot leave gaps or overlap. No trig or platform hash order.
+local function cut(poly,n,d)
+    local a,b={},{}
+    for i,p in ipairs(poly) do
+        local q=poly[i%#poly+1]
+        local dp,dq=p[1]*n[1]+p[2]*n[2]-d,q[1]*n[1]+q[2]*n[2]-d
+        if dp>=0 then a[#a+1]=p end
+        if dp<=0 then b[#b+1]=p end
+        if (dp<0 and dq>0) or (dp>0 and dq<0) then
+            local t=dp/(dp-dq)
+            local v={snap(p[1]+(q[1]-p[1])*t),snap(p[2]+(q[2]-p[2])*t)}
+            a[#a+1]=v b[#b+1]=v
+        end
     end
-    -- Divide the full bounds evenly: no tiny partial row along the far edge and no overflow
-    -- from rounding the square-root estimate on long, thin windows.
-    for i=0,nx-1 do for j=0,ny-1 do
-        local x,y=snap(box[1]+width*i/nx),snap(box[2]+height*j/ny)
-        local xx,yy=snap(box[1]+width*(i+1)/nx),snap(box[2]+height*(j+1)/ny)
-        local poly=F.Clip(def.outline,{{x,y},{xx,y},{xx,yy},{x,yy}})
-        if poly then cells[#cells+1]=cell(poly) end
-    end end
+    a,b=F.Hull(a),F.Hull(b)
+    if #a>=3 and #b>=3 and F.Area(a)>=0.2 and F.Area(b)>=0.2 then return a,b end
+end
+local function granular(def,hit)
+    local cells={cell(def.outline)}
+    local random=F.Generator(hit.seed+31337)
+    local wanted=min(F.CellLimit(def),max(1,math.ceil(F.Area(def.outline)/(def.piece_size^2*0.65))))
+    local function score(c)
+        local dx,dy=c.center[1]-hit.x,c.center[2]-hit.y
+        -- More, smaller granules by the impact. Away from it the annealed-like long rays
+        -- give way to short, differently oriented cracks typical of tempered glass.
+        return F.Area(c.poly)/(1+min(8,F.Root(dx*dx+dy*dy)/max(1,def.piece_size*2)))
+    end
+    cells[1].score=score(cells[1])
+    while #cells<wanted do
+        local index,best=1,-1
+        for i,c in ipairs(cells) do if c.score>best then index,best=i,c.score end end
+        if best<=0 then break end
+        local c=cells[index]
+        local a,b
+        -- Tempered glass dices into compact granules. Of six seeded directions, cut across the
+        -- cell's longest extent near its middle: a random direction alone often cuts along a long
+        -- side and leaves slivers. A linear scan (no sort) keeps every client's choice identical.
+        local options={}
+        for k=1,6 do
+            local n=direction(random(16384))
+            local lo,hi=math.huge,-math.huge
+            for _,p in ipairs(c.poly) do local v=p[1]*n[1]+p[2]*n[2] lo=min(lo,v) hi=max(hi,v) end
+            options[k]={n,lo,hi,(400+random(201))/1000}
+        end
+        for _=1,6 do
+            local pick,extent=1,-1
+            for k,o in ipairs(options) do if o[3]-o[2]>extent then pick,extent=k,o[3]-o[2] end end
+            local o=table.remove(options,pick)
+            a,b=cut(c.poly,o[1],o[2]+(o[3]-o[2])*o[4])
+            if a then break end
+        end
+        if a then
+            cells[index],cells[#cells+1]=cell(a),cell(b)
+            cells[index].score=score(cells[index]) cells[#cells].score=score(cells[#cells])
+        else c.score=-1 end
+    end
     return cells
 end
 
@@ -425,16 +475,19 @@ function F.Apply(state, impact, forceAll, watchOnly)
         if #refined>limit then
             -- A pane with too many non-convex hole boundaries cannot be coarsened exactly. Release
             -- the remaining bounded topology rather than moving a hit or creating invisible glass.
-            if watchOnly then
-                -- An engine-owned pane is still whole: simplify its purely visual cuts and
-                -- rebuild the latest contact instead of inventing an early native shatter.
-                nextID=nextID+1
-                cells,groups={cell(state.def.outline,{},nextID)},{}
-                refined,newGroups,newID=refine(state.def,cells,groups,nextID,hit,nearest,state.def.piece_size)
-                cells,groups,nextID=refined,newGroups,newID
+            if watchOnly or not broke then
+                -- A visual-only impact cannot release a pane just because a more detailed
+                -- cut reached the cell cap. Simplify an intact topology, preserve real holes.
+                local area=0 for _,c in ipairs(cells) do area=area+F.Area(c.poly) end
+                if area>=F.Area(state.def.outline)-0.1 then
+                    nextID=nextID+1
+                    cells,groups={cell(state.def.outline,{},nextID)},{}
+                    refined,newGroups,newID=refine(state.def,cells,groups,nextID,hit,nearest,state.def.piece_size)
+                    cells,groups,nextID=refined,newGroups,newID
+                end -- never replace a perforated topology with the original solid pane
             else whole,broke=true,true end
         else cells,groups,nextID=refined,newGroups,newID end
-    elseif whole then cells=uniform(state.def) end
+    elseif whole then cells=granular(state.def,hit) end
     if broke then
         if not whole then
             local radii=rings(state.def,hit)

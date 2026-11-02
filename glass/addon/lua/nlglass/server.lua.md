@@ -33,3 +33,17 @@ Authoritative pane registry, map glass adapters, network state and admin setting
 Server-only bootstrap include. Registers damage/input/entity/map/cleanup/movement hooks and network handlers. Inputs are engine callbacks and validated definitions; outputs are compact impacts, bounded state, blasts and removals. Builds frozen remaining-cell collision, hides original surface brushes as output bridges, and removes fully broken panes. Native glass remains engine-owned. No per-tick pane polling, per-piece server entities or direct filesystem writes.
 
 This is a runtime Lua module, not a process: it has no exit code. Engine/load errors propagate to the caller. See the glass README for the full setting and frame contract.
+
+
+R9-G owns a bounded blast observer, which observes exact Lua API calls and native
+signals independently of damage victims, with bounded duplicate/rate handling and original OnBreak
+ordering. Optional Observe callbacks report damage and sent times. The validated nlglass_clear_debris
+admin route broadcasts debris-only cleanup, limited to once per second and refused on dedicated
+servers. Panes, Source damage and trusted package policy remain authoritative and unchanged.
+
+The embedded InstallBlastObserver observes exact Lua APIs, native env_explosion/env_physexplosion
+inputs and BaseGrenade.Explode without changing arguments/returns or Source damage. Refresh
+disables old observers even below another wrapper and restores only owned wrappers. Nearby
+signals coalesce over 32 units/0.1 seconds; pending 32, 32/s burst 16, radius 2048, speed 1800.
+Two turns preserve OnBreak order and epochs cancel cleanup work. A global replicated listen-server
+boolean advertises menu availability for remote admins; the server still validates every request.

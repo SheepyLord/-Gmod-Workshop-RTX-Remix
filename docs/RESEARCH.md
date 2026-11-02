@@ -4095,3 +4095,36 @@ raw logs/data stay in `out/r8-g/release-costs`. No RTX game improvement is claim
   identity checks still pin the game: pid, exact creation time, inherited handle, parent process and
   image path. A refusal now exits with `0x4E4C0000` plus its reason, and start-up waits on readiness
   *or* the observer's exit.
+
+
+## R9-G: glass fracture, latency and environment (2026-11-02, Codex)
+
+- `glass/native/fracture.cpp:50` implements seeded oblique hit-centred 2-6-way clipping down
+  to one square unit, replacing longest-axis binary cuts and a four-unit size floor.
+  Across 40 Lua seeds per kind, smallest initial annealed/tempered fragments measure
+  0.030804/6.674136 units^2; repeated native polygon cuts retain area within 0.02 units^2 on 3072.
+- `glass/native/world.cpp:278` marks mirror overlaps; pose corrections include the next swept
+  shard extent. An initial reproduction still reversed 7/672 samples at -112.717 units/s when
+  a mirror corrected ahead of a previously swept shard; swept-extent suppression removes that
+  path. Final generated free-flight fixtures report 0/672 reversals with exact Source targets.
+- The real gm_construct BSP has one water brush: min(-3072,1985,-960), max(1856,6464,-160).
+  `nl_glass_import_probe <map.bsp> --water` parses/prints it read-only. `world.cpp` applies Jolt's
+  submerged-volume impulse at density ratio 0.4, linear drag 1.4 and angular drag 0.08. In the
+  PoC, 25 pieces entered water; mean vertical speeds were -125.234 before entry (0.2 s),
+  -22.691 at 0.5 s and -32.099 at 1 s, rather than continuing a free fall.
+- Valve's [basegrenade_shared.cpp](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/basegrenade_shared.cpp)
+  sets ReportedPosition to the thrower's location, not the explosion. The old fallback preferred
+  it. R9 uses the inflictor or an exact API origin/radius. Five PoC routes reached glass without
+  relying on damage victims: util blast, explicit env_explosion, native grenade, barrel and RPG.
+  Contrary to a source-only assumption about direct C++ InputExplode calls, GMod's AcceptInput
+  observes the native barrel/RPG env_explosion too. No polling or save-field guess is required.
+- Vanilla GMod resolves all six glass_impact_soft/hard1-3.wav and glass_sheet_break1-3.wav files.
+  Native events cap at 128; the client limits 4/frame, 24/s burst 24, 0.12 s/piece and 1536-unit
+  distance. Event callbacks never invoke Lua/Source. Empty reads avoid Lua table allocation.
+- `tools/tests/test_render_guard_addons.py:111` checks an exact source inventory. New helpers
+  must remain in existing trusted paths: Preview in debris_detail.lua, Audio in debris_draw.lua
+  and blast observation in server.lua. The loader inventory and trust rules were left intact.
+
+Raw/paired evidence: this worktree's `out/qa-r9/trusted-feature-costs`, `trusted-load-costs`,
+`native-frozen-evidence.log`, `latency-summary.json` and owned PoC sessions. See
+[the R9-G report](handover/R9-G-report.md) for the full numbers, QA and limits.

@@ -1,4 +1,4 @@
-# MIT; translations written for G1 and R8.
+# MIT; translations written for G1.
 # Translations of the GMod native loader glass (the RTX Remix tab, the guide).
 # Edit msgstr only; see glass/i18n/README.md. An empty msgstr shows the English.
 msgid ""
@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:103
+#: addon/lua/nlglass/menu.lua:110
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr "退火玻璃"
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:103
+#: addon/lua/nlglass/menu.lua:110
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr "強化玻璃"
@@ -111,16 +111,28 @@ msgid "Default: objects and ragdolls; living entities pass through your pieces."
 msgstr "預設：物體和布娃娃；活著的實體會穿過你的碎片。"
 
 #: addon/lua/nlglass/menu.lua:84
+msgid "Broken glass sounds"
+msgstr "碎玻璃音效"
+
+#: addon/lua/nlglass/menu.lua:85
+msgid "Clear broken glass"
+msgstr "清除碎玻璃"
+
+#: addon/lua/nlglass/menu.lua:88
+msgid "Clear broken glass for everyone"
+msgstr "為所有人清除碎玻璃"
+
+#: addon/lua/nlglass/menu.lua:91
 msgid "Reset to Defaults"
 msgstr "還原預設值"
 
-#: addon/lua/nlglass/menu.lua:95
-#: addon/lua/nlglass/menu.lua:98
-#: addon/lua/nlglass/menu.lua:100
+#: addon/lua/nlglass/menu.lua:102
+#: addon/lua/nlglass/menu.lua:105
+#: addon/lua/nlglass/menu.lua:107
 msgid "Glass settings"
 msgstr "玻璃設定"
 
-#: addon/lua/nlglass/menu.lua:102
+#: addon/lua/nlglass/menu.lua:109
 msgid "Glass pane"
 msgstr "玻璃板"
 

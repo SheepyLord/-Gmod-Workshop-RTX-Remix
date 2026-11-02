@@ -33,3 +33,16 @@ Pure Lua 5.1 deterministic fracture and support connectivity.
 Use dofile/include to obtain New, Apply, Restore, Remaining, Cracks, Hull and geometry helpers. Inputs are validated convex CCW definitions and quantized impacts; outputs are bounded state and piece polygons/local velocity/spin. Apply mutates its state. No GMod globals, global randomness, files or network are used.
 
 This is a runtime Lua module, not a process: it has no exit code. Engine/load errors propagate to the caller. See the glass README for the full setting and frame contract.
+
+
+R9-G: annealed rings start at max(0.75, 0.14*piece_size), branch into tapered triangles and grow
+more rapidly outside the crushed core. Tempered shatter recursively cuts oblique convex cells with
+seeded shared intersections and greater density near the impact. No uniform grid remains. The
+200/300 live and 512 wire bounds remain. A visual-only cut at capacity can simplify intact glass;
+it never refills a real hole or releases glass before the energy threshold. Follow-up local Jolt
+fracture has an independent one-unit area floor; initial spacing remains a pane setting.
+
+R9 review (Claude): each tempered cut now crosses the cell's longest extent, chosen from six seeded
+directions by a linear scan, at 40-60 % across. With purely random directions, cuts often ran along
+a long side and left full-length slivers and seams. The granules are now compact and irregular,
+like tempered glass dicing. Counts, areas, limits and determinism are unchanged.

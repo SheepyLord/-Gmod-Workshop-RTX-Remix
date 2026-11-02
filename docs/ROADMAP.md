@@ -1,5 +1,23 @@
 # Roadmap
 
+R9 (the user's glass report of 2026-11-02) is **done**: CI is green again (the glass mirrors' dropped steps
+and the exit observer's clock race), `v0.12.1` is released and only `main` remains. Glass breaks
+realistically down to tiny pieces, without visible delay, with sounds, in water and under every kind of
+explosion, without pieces flying backwards, and the settings can clear broken glass. Each was checked on
+the PoC. See [the report](handover/R9-report.md).
+
+R9-G implementation, offline validation and PoC measurements are **complete** on `r9-glass`
+(2026-11-02): irregular tiny shards, immediate visible breaks, sounds, water, native/empty blasts,
+stable transfer and local/admin clearing. Release passes 26 CTests and 515 Python tests (two
+existing skips); the measured 50-pane falling mean/p99 are 12.999/45.023 ms. Claude retains review,
+module import, two clients and repeated fully sleeping performance acceptance
+([report](handover/R9-G-report.md), [ADR 0087](decisions/0087-glass-shards-and-environment.md)).
+
+R9-G is **in progress** on `r9-glass`: irregular one-unit shards, receipt-frame break visibility,
+local contact sounds, BSP buoyancy, empty-space explosions, overlap-safe velocity transfer and
+local/admin debris clearing ([brief](handover/R9-G-glass.md),
+[ADR 0087](decisions/0087-glass-shards-and-environment.md)). Claude owns integration and field QA.
+
 R8 (the user's report after R7, 2026-11-01) is **done**: the character noise R7's runtime patch caused
 is gone (patch 0018); vanilla characters stay out of bind pose (the Backrooms add-on no longer forces
 `r_forcehwlight 1`, and the guard pins it); graphics add-ons such as GShader Library get safe fallbacks

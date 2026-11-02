@@ -18,6 +18,7 @@
 #include <Jolt/Physics/Collision/ShapeCast.h>
 #include <atomic>
 #include <array>
+#include <bitset>
 #include <limits>
 #include <chrono>
 #include <cstdarg>
@@ -113,6 +114,10 @@ struct World::Impl {
     std::atomic<float> damage{0};
     std::atomic<unsigned> kinds{0};
     std::atomic<bool> damage_queued{false};
+    std::atomic<float> hit_x{0},hit_y{0},hit_z{0};
+    std::atomic<unsigned> sound_tick{0};
+    std::bitset<kMaxSceneBodies> overlaps;
+    bool wet=false;
   };
   struct Mirror {
     std::uint32_t key=0;JPH::BodyID body;
@@ -124,25 +129,39 @@ struct World::Impl {
   struct Contacts final:JPH::ContactListener {
     Impl& world;
     explicit Contacts(Impl& w):world(w) {}
-    void contact(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m) {
+    bool suppressed(const JPH::Body& a,const JPH::Body& b) const {
       const auto la=a.GetObjectLayer(),lb=b.GetObjectLayer();
-      // No piece-piece damage cascade or work proportional to a resting pile's manifolds.
-      if((la!=0 && la!=3) && (lb!=0 && lb!=3))return;
+      if(la!=3 && lb!=3)return false;
+      const auto& p=la==3?b:a;const auto& mirror=la==3?a:b;
+      if(p.GetObjectLayer()!=1 && p.GetObjectLayer()!=2)return false;
+      return world.pieces[p.GetUserData()-1].overlaps.test(static_cast<std::size_t>(mirror.GetUserData()-1));
+    }
+    JPH::ValidateResult OnContactValidate(const JPH::Body& a,const JPH::Body& b,JPH::RVec3Arg,const JPH::CollideShapeResult&) override {
+      return suppressed(a,b)?JPH::ValidateResult::RejectAllContactsForThisBodyPair:JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+    }
+    void contact(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings& settings) {
+      if(suppressed(a,b)) { settings.mIsSensor=true;return; }
+      const auto la=a.GetObjectLayer(),lb=b.GetObjectLayer();
       const bool first=la==1 || la==2;
       const auto& piece=first?a:b;const auto& obstacle=first?b:a;
       const auto slot=static_cast<unsigned>(piece.GetUserData()-1);
       if(slot>=world.pieces.size())return;
-      if(!world.pieces[slot].splittable)return;
       const auto point=m.GetWorldSpaceContactPointOn1(0);
       const float speed=std::max(0.0f,(a.GetPointVelocity(point)-b.GetPointVelocity(point)).Dot(m.mWorldSpaceNormal))/kMetres;
+      // Only one side emits a piece-piece impact. Tiny resting contacts never reach the buffer.
+      if((la==0 || la==3 || lb==0 || lb==3) || a.GetUserData()<b.GetUserData())
+        world.sound(slot,vec(point),speed,1);
+      // Sound is independent of follow-up damage; no piece-piece damage cascade.
+      if((la!=0 && la!=3) && (lb!=0 && lb!=3))return;
+      if(!world.interaction || !world.pieces[slot].splittable)return;
       const bool source=obstacle.GetObjectLayer()==3;
       if(speed<(source?160.0f:220.0f))return;
       const auto& p=world.pieces[slot];
       const float mass=source?std::min(world.mirrors[obstacle.GetUserData()-1].mass,p.mass*8):p.mass;
-      world.damage(slot,.5f*mass*speed*speed,source?SourceBody:Fall);
+      world.damage(slot,.5f*mass*speed*speed,source?SourceBody:Fall,vec(point));
     }
-    void OnContactAdded(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings&) override { contact(a,b,m); }
-    void OnContactPersisted(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings&) override { contact(a,b,m); }
+    void OnContactAdded(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings& s) override { contact(a,b,m,s); }
+    void OnContactPersisted(const JPH::Body& a,const JPH::Body& b,const JPH::ContactManifold& m,JPH::ContactSettings& s) override { contact(a,b,m,s); }
   } contacts{*this};
   std::shared_ptr<Runtime> registry;
   BroadLayers broad;ObjectBroadFilter object_filter;PairFilter pair_filter;
@@ -154,6 +173,15 @@ struct World::Impl {
   std::array<Mirror,kMaxSceneBodies> mirrors;
   std::array<std::pair<unsigned,std::uint32_t>,kMaxDamageEvents> damage_slots{};
   std::atomic<unsigned> damage_count{0},damage_dropped{0};
+  std::array<SoundEvent,kMaxSoundEvents> sound_slots{};
+  std::atomic<unsigned> sound_count{0},sound_dropped{0},sound_events{0};
+  bool sounds=true;
+  unsigned simulation_tick=8,overlap_suppressed=0;
+  std::vector<WaterVolume> water;
+  struct WaterNode { V3 lo,hi;int left=-1,right=-1;unsigned volume=0; };
+  std::vector<WaterNode> water_tree;
+  unsigned water_tests=0,water_applied=0,water_entries=0;
+  double water_ms=0;
   unsigned scene_moves=0,scene_cooks=0,ray_hits=0,splits=0;
   unsigned collision_flags=Objects|Ragdolls;
   unsigned melee_hits=0,melee_limited=0;
@@ -176,22 +204,23 @@ struct World::Impl {
   float gravity=600;
   double accumulator=0,step_ms=0,dropped=0,last_fixed_ms=0,catch_up_ms=4;
 
-  Impl(unsigned budget,float g):registry(runtime()),pieces(budget+2),capacity(budget),gravity(g) {
+  Impl(unsigned budget,float g):registry(runtime()),pieces(budget+6),capacity(budget),gravity(g) {
     const unsigned hw=std::thread::hardware_concurrency();
     workers=std::clamp(hw>2?hw-2:1u,1u,8u);
     jobs=std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs,JPH::cMaxPhysicsBarriers,static_cast<int>(workers));
     // Scratch is allocated lazily from live demand, not the maximum menu budget.
     physics=std::make_unique<JPH::PhysicsSystem>();
-    physics->Init(static_cast<JPH::uint>(budget+2+kMaxStaticBodies+kMaxSceneBodies),0,std::max(1024u,budget*8),std::max(1024u,budget*4),broad,object_filter,pair_filter);
+    physics->Init(static_cast<JPH::uint>(budget+6+kMaxStaticBodies+kMaxSceneBodies),0,std::max(1024u,budget*8),std::max(1024u,budget*4),broad,object_filter,pair_filter);
     JPH::PhysicsSettings settings;
     settings.mTimeBeforeSleep=.35f;settings.mPointVelocitySleepThreshold=.06f;
     settings.mPenetrationSlop=.001f;settings.mSpeculativeContactDistance=.003f;
     settings.mMaxPenetrationDistance=.03f;settings.mNumVelocitySteps=6;settings.mNumPositionSteps=2;
     settings.mMaxInFlightBodyPairs=static_cast<int>(std::max(1024u,budget*16));
     physics->SetPhysicsSettings(settings);physics->SetGravity({0,0,-g*kMetres});
-    ids.reserve(budget+2);output.reserve(budget);free.reserve(budget+2);statics.reserve(kMaxStaticBodies);
-    pose_slots.reserve(budget+2);active_before.reserve(budget+kMaxSceneBodies);
-    for(unsigned i=budget+2;i>0;--i)free.push_back(i-1);
+    physics->SetContactListener(&contacts);
+    ids.reserve(budget+6);output.reserve(budget);free.reserve(budget+6);statics.reserve(kMaxStaticBodies);
+    pose_slots.reserve(budget+6);active_before.reserve(budget+kMaxSceneBodies);
+    for(unsigned i=budget+6;i>0;--i)free.push_back(i-1);
   }
   ~Impl() { clear_all(); }
   void destroy(JPH::BodyID body) {
@@ -209,12 +238,12 @@ struct World::Impl {
   void clear_pieces() {
     for(auto& p:pieces)if(p.id) { destroy(p.body);p.id=0;p.queued=no_queue;p.damage_queued=false;p.damage=0;p.kinds=0; }
     ids.clear();free.clear();for(unsigned i=static_cast<unsigned>(pieces.size());i>0;--i)free.push_back(i-1);
-    accumulator=0;output.clear();pose_slots.clear();damage_count=0;
+    accumulator=0;output.clear();pose_slots.clear();damage_count=0;sound_count=0;
     clear_scene();
   }
-  void clear_scene() { for(auto& m:mirrors)if(m.key) { destroy(m.body);m=Mirror{}; } }
+  void clear_scene() { for(auto& m:mirrors)if(m.key) { destroy(m.body);m=Mirror{}; }for(auto& p:pieces)p.overlaps.reset(); }
   void clear_all() {
-    clear_pieces();for(auto id:statics)destroy(id);statics.clear();models.clear();model_points=0;loaded=ready=false;
+    clear_pieces();for(auto id:statics)destroy(id);statics.clear();models.clear();water.clear();water_tree.clear();model_points=0;loaded=ready=false;
   }
   void add_static(JPH::RefConst<JPH::Shape> shape,V3 p={},V3 a={}) {
     need(statics.size()<kMaxStaticBodies,"static-world body limit");
@@ -226,15 +255,101 @@ struct World::Impl {
   Piece* find(std::uint32_t id) {
     const auto it=ids.find(id);return it==ids.end()?nullptr:&pieces[it->second];
   }
-  void damage(unsigned slot,float energy,unsigned kind) {
+  void sound(unsigned slot,V3 position,float speed,unsigned kind) {
+    if(!sounds || (kind==1 && speed<70))return;
+    auto& p=pieces[slot];auto before=p.sound_tick.load(std::memory_order_relaxed);
+    if(kind==1 && simulation_tick-before<8)return;
+    if(kind==1 && !p.sound_tick.compare_exchange_strong(before,simulation_tick,std::memory_order_relaxed))return;
+    const auto index=sound_count.fetch_add(1,std::memory_order_relaxed);
+    if(index<kMaxSoundEvents) { sound_slots[index]={p.id,position,speed,p.mass,kind};++sound_events; }
+    else ++sound_dropped;
+  }
+  void damage(unsigned slot,float energy,unsigned kind,V3 hit) {
     auto& p=pieces[slot];if(!interaction || !p.splittable || energy<p.threshold)return;
     auto previous=p.damage.load(std::memory_order_relaxed);
     while(previous<energy && !p.damage.compare_exchange_weak(previous,energy,std::memory_order_relaxed)) {}
+    if(previous<energy) { p.hit_x=hit.x;p.hit_y=hit.y;p.hit_z=hit.z; }
     p.kinds.fetch_or(kind,std::memory_order_relaxed);
     if(p.damage_queued.exchange(true,std::memory_order_relaxed))return;
     const auto index=damage_count.fetch_add(1,std::memory_order_relaxed);
     if(index<kMaxDamageEvents)damage_slots[index]={slot,p.id};
     else { p.damage_queued=false;++damage_dropped; }
+  }
+  void mark_overlap(unsigned mirror,bool correction=false) {
+    const auto* b=physics->GetBodyLockInterfaceNoLock().TryGetBody(mirrors[mirror].body);
+    for(auto& p:pieces)if(p.id) {
+      const auto* piece=physics->GetBodyLockInterfaceNoLock().TryGetBody(p.body);
+      auto bounds=piece->GetWorldSpaceBounds();
+      if(correction) { auto future=bounds;future.Translate(piece->GetLinearVelocity()*(1.0f/60));bounds.Encapsulate(future); }
+      if(b->GetWorldSpaceBounds().Overlaps(bounds)) {
+        if(!p.overlaps.test(mirror))++overlap_suppressed;
+        p.overlaps.set(mirror);
+      }
+    }
+  }
+  void prune_overlaps() {
+    for(auto& p:pieces)if(p.id && p.overlaps.any()) {
+      const auto* b=physics->GetBodyLockInterfaceNoLock().TryGetBody(p.body);
+      auto bounds=b->GetWorldSpaceBounds(),future=bounds;future.Translate(b->GetLinearVelocity()*(1.0f/60));bounds.Encapsulate(future);
+      for(unsigned i=0;i<kMaxSceneBodies;++i)if(p.overlaps.test(i)) {
+        const auto& m=mirrors[i];
+        if(!m.key || !bounds.Overlaps(physics->GetBodyLockInterfaceNoLock().TryGetBody(m.body)->GetWorldSpaceBounds()))p.overlaps.reset(i);
+      }
+    }
+  }
+  int build_water(std::vector<unsigned>& order,unsigned first,unsigned end) {
+    const int at=static_cast<int>(water_tree.size());water_tree.push_back({});
+    auto lo=water[order[first]].minimum,hi=water[order[first]].maximum;
+    for(unsigned i=first+1;i<end;++i) {
+      const auto& v=water[order[i]];
+      lo={std::min(lo.x,v.minimum.x),std::min(lo.y,v.minimum.y),std::min(lo.z,v.minimum.z)};
+      hi={std::max(hi.x,v.maximum.x),std::max(hi.y,v.maximum.y),std::max(hi.z,v.maximum.z)};
+    }
+    water_tree[at].lo=lo;water_tree[at].hi=hi;
+    if(end-first==1)water_tree[at].volume=order[first];
+    else {
+      const auto size=hi-lo;const unsigned axis=size.x>size.y?(size.x>size.z?0u:2u):(size.y>size.z?1u:2u);
+      auto component=[&](V3 p) { return axis==0?p.x:axis==1?p.y:p.z; };
+      const unsigned mid=(first+end)/2;
+      std::nth_element(order.begin()+first,order.begin()+mid,order.begin()+end,[&](unsigned a,unsigned b) {
+        return component(water[a].minimum+water[a].maximum)<component(water[b].minimum+water[b].maximum);
+      });
+      const auto left=build_water(order,first,mid),right=build_water(order,mid,end);
+      water_tree[at].left=left;water_tree[at].right=right;
+    }
+    return at;
+  }
+  const WaterVolume* water_at(int index,V3 point,float height) {
+    ++water_tests;const auto& n=water_tree[index];
+    if(point.x<n.lo.x || point.x>n.hi.x || point.y<n.lo.y || point.y>n.hi.y || point.z<n.lo.z || point.z>n.hi.z+height)return nullptr;
+    if(n.left>=0) { if(const auto* v=water_at(n.left,point,height))return v;return water_at(n.right,point,height); }
+    const auto& v=water[n.volume];
+    for(const auto& plane:v.planes)
+      if(plane.normal.dot(point)>plane.distance+(plane.normal.z>.7f?height:0))return nullptr;
+    return &v;
+  }
+  void buoyancy(float dt) {
+    if(water_tree.empty())return;
+    const auto start=std::chrono::steady_clock::now();
+    // Sleeping bottom piles stay asleep. A blast wakes them through the ordinary impulse path.
+    const auto n=physics->GetNumActiveBodies(JPH::EBodyType::RigidBody);
+    const auto* active=physics->GetActiveBodiesUnsafe(JPH::EBodyType::RigidBody);
+    for(unsigned i=0;i<n;++i) {
+      auto* b=physics->GetBodyLockInterfaceNoLock().TryGetBody(active[i]);if(b->GetObjectLayer()==3)continue;
+      auto& p=pieces[b->GetUserData()-1];
+      const auto* v=water_at(0,vec(b->GetCenterOfMassPosition()),b->GetWorldSpaceBounds().GetExtent().GetZ()/kMetres);
+      bool wet=false;
+      if(v) {
+        // Water/glass density = 1000/2500. Jolt integrates submerged volume, linear drag,
+        // angular drag and the off-centre buoyancy torque on the actual (also compound) hull.
+        wet=b->ApplyBuoyancyImpulse(jvec(v->surface.normal*v->surface.distance),jvec(v->surface.normal,1),.4f,1.4f,.08f,
+          JPH::Vec3::sZero(),physics->GetGravity(),dt);
+        if(wet)++water_applied;
+      }
+      if(wet && !p.wet) { ++water_entries;sound(static_cast<unsigned>(b->GetUserData()-1),vec(b->GetPosition()),b->GetLinearVelocity().Length()/kMetres,3); }
+      p.wet=wet;
+    }
+    water_ms+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
   }
   // Jolt CCD deliberately excludes kinematics. Sampled poses alone can tunnel through sleeping
   // thin glass or pin it against the floor. Sweep only actual fast mirror translations, between
@@ -244,7 +359,7 @@ struct World::Impl {
     if(velocity.LengthSq()<JPH::Square(160*kMetres))return;
     if(budget.casts==16 || budget.count==64) { ++scene_sweep_limited;return; }
     ++budget.casts;++scene_sweeps;
-    struct Hit { JPH::BodyID body;JPH::Vec3 normal; };
+    struct Hit { JPH::BodyID body;JPH::Vec3 normal;bool overlap; };
     struct Collector final:JPH::CastShapeCollector {
       std::array<Hit,8> hits;unsigned count=0,visits=0,bodies=0;
       void OnBody(const JPH::Body&) override { if(++bodies==64)ForceEarlyOut(); }
@@ -252,7 +367,7 @@ struct World::Impl {
         if(count==hits.size() || visits==64)return;
         if(++visits==64)ForceEarlyOut();
         for(unsigned i=0;i<count;++i)if(hits[i].body==hit.mBodyID2)return;
-        hits[count++]={hit.mBodyID2,hit.mPenetrationAxis};
+        hits[count++]={hit.mBodyID2,hit.mPenetrationAxis,hit.mFraction<=0};
         if(count==hits.size())ForceEarlyOut();
       }
     } collector;
@@ -270,7 +385,7 @@ struct World::Impl {
       const auto& hit=collector.hits[i];
       const auto id=hit.body.GetIndexAndSequenceNumber();
       if(std::find(budget.kicked.begin(),budget.kicked.begin()+budget.count,id)!=budget.kicked.begin()+budget.count)continue;
-      const auto normal=hit.normal.NormalizedOr(JPH::Vec3::sZero());
+      const auto normal=hit.overlap?velocity.NormalizedOr(JPH::Vec3::sZero()):hit.normal.NormalizedOr(JPH::Vec3::sZero());
       const auto before=bi.GetLinearVelocity(hit.body);
       const float closing=(velocity-before).Dot(normal);
       if(closing<160*kMetres)continue;
@@ -279,7 +394,10 @@ struct World::Impl {
       bi.ActivateBody(hit.body);bi.SetLinearVelocity(hit.body,before+normal*std::min(closing,2000*kMetres));
       p.asleep=false;p.dirty=true;queue(slot);budget.kicked[budget.count++]=id;++scene_sweep_hits;
       const float speed=closing/kMetres,mass=std::min(m.mass,p.mass*8);
-      damage(slot,.5f*mass*speed*speed,SourceBody);
+      // Swept transfer already resolved this contact. Do not let a subsequent deep
+      // kinematic overlap solve the same sample again in the opposite direction.
+      p.overlaps.set(static_cast<std::size_t>(&m-mirrors.data()));++overlap_suppressed;
+      damage(slot,.5f*mass*speed*speed,SourceBody,vec(piece->GetPosition()));
     }
   }
   // Discarded catch-up time never reaches Jolt, but Source still moved. Finish that part of each
@@ -294,6 +412,7 @@ struct World::Impl {
         bi.SetPositionAndRotation(m.body,p+(m.target-p)*t,bi.GetRotation(m.body).SLERP(m.rotation,t),JPH::EActivation::DontActivate);
       }
       m.remaining=std::max(0.0f,m.remaining-seconds);
+      mark_overlap(static_cast<unsigned>(&m-mirrors.data()),true);
     }
   }
   std::uint32_t create(JPH::RefConst<JPH::Shape> shape,V3 position,V3 a,V3 velocity,V3 spin,float minimum_size=4) {
@@ -309,12 +428,20 @@ struct World::Impl {
     try { ids.emplace(token,index); }catch(...) { destroy(id);throw; }
     free.pop_back();auto& p=pieces[index];p.id=token;p.body=id;p.previous=p.current=jvec(position);p.grouped=false;
     p.before=p.after=rotation(a);p.asleep=false;p.dirty=true;p.damage=0;p.kinds=0;p.damage_queued=false;
+    p.hit_x=position.x;p.hit_y=position.y;p.hit_z=position.z;p.sound_tick=simulation_tick-8;p.overlaps.reset();p.wet=false;
     const auto size=shape->GetLocalBounds().GetSize()/kMetres;
     p.thickness=size.GetZ();p.mass=shape->GetMassProperties().mMass;
     const float area=shape->GetVolume()/(kMetres*kMetres*kMetres*p.thickness);
     p.threshold=std::max(12000.0f,36000*std::sqrt(area/64)*p.thickness*p.thickness);
     p.splittable=area>=2*minimum_size*minimum_size && std::max(size.GetX(),size.GetY())>=2*minimum_size &&
       std::min(size.GetX(),size.GetY())>=minimum_size;
+    // Tiny fragments keep map/Source contact, but need no mutual pile constraints.
+    if(area<4)physics->GetBodyInterfaceNoLock().SetObjectLayer(id,2);
+    const auto* created=physics->GetBodyLockInterfaceNoLock().TryGetBody(id);
+    for(unsigned i=0;i<kMaxSceneBodies;++i)if(mirrors[i].key &&
+      created->GetWorldSpaceBounds().Overlaps(physics->GetBodyLockInterfaceNoLock().TryGetBody(mirrors[i].body)->GetWorldSpaceBounds())) {
+      p.overlaps.set(i);++overlap_suppressed;
+    }
     queue(index);return token;
   }
 };
@@ -349,6 +476,11 @@ std::vector<StaticProp> World::load_impl(std::span<const std::uint8_t> bytes) {
   w.brushes=w.skipped_brushes=w.refused_brushes=w.refused_convexes=w.refused_meshes=w.skipped_props=0;
   try {
     auto map=read_bsp(bytes);
+    w.water=std::move(map.water);w.water_tree.clear();
+    if(!w.water.empty()) {
+      std::vector<unsigned> order(w.water.size());for(unsigned i=0;i<order.size();++i)order[i]=i;
+      w.water_tree.reserve(w.water.size()*2);w.build_water(order,0,static_cast<unsigned>(order.size()));
+    }
     w.brushes=map.considered_brushes;w.skipped_brushes=map.skipped_brushes;
     for(const auto& hull:map.brushes) {
       const auto shape=hull_shape(hull,false);
@@ -412,7 +544,7 @@ void World::finish_impl() {
 std::uint32_t World::spawn(const Hull& hull,V3 position,V3 a,V3 velocity,V3 spin,float minimum_size) {
   auto& w=idle();need(w.ready,"world is not ready");
   need(position.valid() && a.valid(36000) && velocity.valid(100000) && spin.valid(36000),"invalid piece transform/velocity");
-  need(std::isfinite(minimum_size) && minimum_size>=4 && minimum_size<=64,"invalid minimum piece size");
+  need(std::isfinite(minimum_size) && minimum_size>=1 && minimum_size<=64,"invalid minimum piece size");
   need(w.ids.size()<w.capacity && w.next_id!=0,"piece budget/identifier exhausted");
   // A hull must remain close to its local origin; huge off-centre inputs are not debris.
   for(auto p:hull)need(p.valid(1024),"piece hull exceeds 1024 local units");
@@ -461,14 +593,16 @@ void World::impulse(V3 origin,float radius,float speed) {
     // A bounded radial velocity kick: independent of each shard's mass.
     const auto kick=jvec(direction*(speed*(1-distance/radius)));
     bi.ActivateBody(p.body);bi.SetLinearVelocity(p.body,bi.GetLinearVelocity(p.body)+kick);p.asleep=false;p.dirty=true;
-    if(w.interaction) { const float v=speed*(1-distance/radius);if(v>=220)w.damage(static_cast<unsigned>(&p-w.pieces.data()),.5f*p.mass*v*v,Blast); }
+    if(w.interaction) { const float v=speed*(1-distance/radius);if(v>=220)w.damage(static_cast<unsigned>(&p-w.pieces.data()),.5f*p.mass*v*v,Blast,origin); }
     w.queue(static_cast<unsigned>(&p-w.pieces.data()));
   }
 }
 void World::set_collide(bool enabled) {
   auto& w=idle();if(w.collide==enabled)return;w.collide=enabled;auto& bi=w.physics->GetBodyInterfaceNoLock();
   for(auto& p:w.pieces)if(p.id) {
-    bi.SetObjectLayer(p.body,enabled?1:2);bi.InvalidateContactCache(p.body);bi.ActivateBody(p.body);p.asleep=false;p.dirty=true;
+    const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p.body);
+    const bool tiny=body->GetShape()->GetVolume()/(kMetres*kMetres*kMetres*p.thickness)<4;
+    bi.SetObjectLayer(p.body,enabled && !tiny?1:2);bi.InvalidateContactCache(p.body);bi.ActivateBody(p.body);p.asleep=false;p.dirty=true;
     w.queue(static_cast<unsigned>(&p-w.pieces.data()));
   }
 }
@@ -482,7 +616,6 @@ void World::set_gravity(float gravity) {
 }
 void World::set_interaction(bool enabled) {
   auto& w=idle();if(w.interaction==enabled)return;w.interaction=enabled;
-  w.physics->SetContactListener(enabled?&w.contacts:nullptr);
   if(!enabled) { w.clear_scene();(void)take_damage(); }
 }
 void World::set_collision_flags(unsigned flags) {
@@ -544,10 +677,12 @@ unsigned World::sync_bodies(const std::vector<SceneBody>& bodies,double sample_d
     if(delta.Length()>128*kMetres) { // Teleports are pose corrections, never a giant impact.
       bi.SetPositionAndRotation(m.body,target,q,JPH::EActivation::DontActivate);
       bi.SetLinearAndAngularVelocity(m.body,JPH::Vec3::sZero(),JPH::Vec3::sZero());m.remaining=0;
+      w.mark_overlap(static_cast<unsigned>(it-w.mirrors.begin()),true);
     } else if(fresh || delta.LengthSq()>1e-10f || std::abs(bi.GetRotation(m.body).Dot(q))<.999999f) {
       m.remaining=static_cast<float>(std::clamp(sample_dt,1.0/60,4.0/60));++w.scene_moves;
       w.sweep_mirror(m,delta,m.remaining,sweep_budget);
     }
+    if(fresh)w.mark_overlap(static_cast<unsigned>(it-w.mirrors.begin()));
   }
   return w.scene_moves;
 }
@@ -597,6 +732,16 @@ std::vector<DamageEvent> World::take_damage() {
   }
   return out;
 }
+void World::set_sounds(bool enabled) { auto& w=idle();w.sounds=enabled;if(!enabled)w.sound_count=0; }
+std::vector<SoundEvent> World::take_sounds() {
+  auto& w=idle();const auto n=std::min(w.sound_count.exchange(0),kMaxSoundEvents);
+  return {w.sound_slots.begin(),w.sound_slots.begin()+n};
+}
+Motion World::motion(std::uint32_t id) const {
+  auto& w=idle();const auto* p=w.find(id);need(p!=nullptr,"unknown piece id");
+  const auto& bi=w.physics->GetBodyInterfaceNoLock();
+  return {vec(bi.GetPosition(p->body)),vec(bi.GetLinearVelocity(p->body)),vec(bi.GetAngularVelocity(p->body),1/kRadians)};
+}
 std::uint32_t World::ray(V3 from,V3 to,float energy,float speed) {
   need(from.valid() && to.valid() && (to-from).length()<=131072 && std::isfinite(energy) && energy>=0 && energy<=1e9 &&
     std::isfinite(speed) && speed>=0 && speed<=2000,"invalid debris ray");
@@ -608,7 +753,7 @@ std::uint32_t World::ray(V3 from,V3 to,float energy,float speed) {
   const auto slot=static_cast<unsigned>(body->GetUserData()-1);auto& p=w.pieces[slot];
   auto& bi=w.physics->GetBodyInterfaceNoLock();const auto kick=jvec((to-from)*(speed/(to-from).length()));
   bi.ActivateBody(p.body);bi.SetLinearVelocity(p.body,bi.GetLinearVelocity(p.body)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
-  w.damage(slot,energy,Bullet);++w.ray_hits;return p.id;
+  w.damage(slot,energy,Bullet,from+(to-from)*hit.mFraction);++w.ray_hits;return p.id;
 }
 unsigned World::melee(V3 from,V3 to,float energy,float speed,float radius) {
   need(from.valid() && to.valid() && (to-from).length()<=256 && std::isfinite(energy) && energy>=0 && energy<=1e9 &&
@@ -635,7 +780,7 @@ unsigned World::melee(V3 from,V3 to,float energy,float speed,float radius) {
     const auto id=collector.hits[i];const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(id);
     const auto slot=static_cast<unsigned>(body->GetUserData()-1);auto& p=w.pieces[slot];
     bi.ActivateBody(id);bi.SetLinearVelocity(id,bi.GetLinearVelocity(id)+kick);p.asleep=false;p.dirty=true;w.queue(slot);
-    w.damage(slot,energy,Melee);
+    w.damage(slot,energy,Melee,vec(body->GetPosition()));
   }
   w.melee_hits+=collector.count;if(collector.limited)++w.melee_limited;
   return collector.count;
@@ -647,32 +792,38 @@ bool World::can_split(std::uint32_t id,float minimum_size) const {
   const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
   Hull points;points.reserve(shape->GetNumPoints());
   for(unsigned i=0;i<shape->GetNumPoints();++i)points.push_back(vec(shape->GetPoint(i)+shape->GetCenterOfMass()));
-  return !split_polygon(outline_xy(points),minimum_size)[0].empty();
+  return !split_polygon(outline_xy(points),minimum_size).empty();
 }
-std::vector<Fragment> World::split(std::uint32_t id,float minimum_size) {
-  auto& w=idle();need(std::isfinite(minimum_size) && minimum_size>=4 && minimum_size<=64,"invalid minimum piece size");
+std::vector<Fragment> World::split(std::uint32_t id,float minimum_size,unsigned maximum) {
+  auto& w=idle();need(std::isfinite(minimum_size) && minimum_size>=1 && minimum_size<=64 && maximum>=2 && maximum<=6,"invalid minimum piece size/count");
   auto* p=w.find(id);if(!p || p->grouped || w.ids.size()>=w.capacity)return {};
   auto& bi=w.physics->GetBodyInterfaceNoLock();const auto* body=w.physics->GetBodyLockInterfaceNoLock().TryGetBody(p->body);
   const auto* shape=static_cast<const JPH::ConvexHullShape*>(body->GetShape());
   Hull points;points.reserve(shape->GetNumPoints());
   for(unsigned i=0;i<shape->GetNumPoints();++i)points.push_back(vec(shape->GetPoint(i)+shape->GetCenterOfMass()));
-  const auto polygons=split_polygon(outline_xy(points),minimum_size);if(polygons[0].empty())return {};
   const auto position=bi.GetPosition(p->body);const auto q=bi.GetRotation(p->body);
+  const auto hit=vec(q.Conjugated()*(jvec({p->hit_x.load(),p->hit_y.load(),p->hit_z.load()})-position));
+  maximum=std::min(maximum,static_cast<unsigned>(w.capacity-w.ids.size()+1));
+  const auto polygons=split_polygon(outline_xy(points),minimum_size,hit,id*7919u+w.splits,maximum);if(polygons.empty())return {};
   const auto velocity=bi.GetLinearVelocity(p->body),spin=bi.GetAngularVelocity(p->body);
   const auto thick=p->thickness;
-  std::vector<Fragment> out;out.reserve(2);std::array<JPH::RefConst<JPH::Shape>,2> shapes;
-  for(unsigned i=0;i<2;++i) {
+  std::vector<Fragment> out;out.reserve(polygons.size());std::array<JPH::RefConst<JPH::Shape>,6> shapes;
+  const auto overlaps=p->overlaps;
+  for(unsigned i=0;i<polygons.size();++i) {
     auto poly=polygons[i];const auto center=polygon_center(poly);for(auto& v:poly)v=v-center;
     shapes[i]=hull_shape(extrude(poly,thick),true);if(!shapes[i])return {};
     const auto delta=q*jvec(center);
     out.push_back({0,std::move(poly),thick,vec(position+delta),angles(q),vec(velocity+spin.Cross(delta)),vec(spin,1/kRadians)});
   }
-  // Two reserved internal slots permit a transactional replacement even at budget-1 live bodies.
+  // Six private slots permit transactional replacement; completed live counts respect capacity.
   // Public Spawn and completed Split never exceed the configured capacity.
   try {
-    for(unsigned i=0;i<2;++i)out[i].id=w.create(shapes[i],out[i].position,out[i].angles,out[i].velocity,out[i].spin,minimum_size);
+    for(unsigned i=0;i<polygons.size();++i) {
+      out[i].id=w.create(shapes[i],out[i].position,out[i].angles,out[i].velocity,out[i].spin,minimum_size);
+      w.find(out[i].id)->overlaps|=overlaps;
+    }
   } catch(...) { for(const auto& f:out)if(f.id)remove(f.id);throw; }
-  remove(id);++w.splits;return out;
+  w.sound(w.ids.at(id),vec(position),0,2);remove(id);++w.splits;return out;
 }
 void World::step(double dt) {
   (void)idle();step_impl(dt);
@@ -702,6 +853,7 @@ void World::step_impl(double dt) {
     // Always permit one fixed update; additional catch-up steps must fit a measured 4 ms budget
     // (C++ tests pin it, so their results never depend on how fast the machine steps).
     if(w.substeps && elapsed+w.last_fixed_ms>=w.catch_up_ms)break;
+    ++w.simulation_tick;w.prune_overlaps();w.buoyancy(static_cast<float>(fixed));
     if(w.interaction) {
       auto& bi=w.physics->GetBodyInterfaceNoLock();
       for(auto& m:w.mirrors)if(m.key) {
@@ -784,6 +936,9 @@ Stats World::stats() const {
   s.scene_sweeps=w.scene_sweeps;s.scene_sweep_hits=w.scene_sweep_hits;s.scene_sweep_limited=w.scene_sweep_limited;
   s.ray_hits=w.ray_hits;s.splits=w.splits;s.interaction=w.interaction;s.collision_flags=w.collision_flags;
   s.melee_hits=w.melee_hits;s.melee_limited=w.melee_limited;
+  s.sound_events=w.sound_events;s.sound_dropped=w.sound_dropped;
+  s.water_volumes=static_cast<unsigned>(w.water.size());s.water_tests=w.water_tests;s.water_applied=w.water_applied;
+  s.water_entries=w.water_entries;s.water_ms=w.water_ms;s.overlap_suppressed=w.overlap_suppressed;
   s.statics=static_cast<unsigned>(w.statics.size());s.models=static_cast<unsigned>(w.models.size());
   s.workers=w.workers;s.substeps=w.substeps;s.step_ms=w.step_ms;s.dropped_seconds=w.dropped;s.ready=w.ready;
   s.brushes=w.brushes;s.skipped_brushes=w.skipped_brushes;

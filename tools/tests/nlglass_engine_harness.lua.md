@@ -71,3 +71,10 @@ game launch, install mutation or network connection. Exit 0 passes; Lua assertio
 The bridge test proves input routing, not the engine's actual Hammer output semantics.
 
 R8-G settings panels have 16 controls, including four category bits and a synchronized mask. Reset stays local for non-admins.
+
+
+R9-G tests receipt-frame hole/prediction builds while retaining weak-hit queue limits, exact empty
+Lua blast observation, real grenade explosion positions, rate/epoch boundaries and local/admin
+clear permissions. r9_blasts and r9_clear are executable scenarios. Timing samples create a fresh
+live pane each iteration and force the break phase; assertions require every timed impact to be
+accepted, avoiding measurements of a record removed by a previous full release.

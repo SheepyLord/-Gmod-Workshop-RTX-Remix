@@ -279,3 +279,15 @@ The second-pass full Release gate passes 25 CTests and 453 Python tests (two exi
 including all 50 glass cases. Evidence is in `out/g1-lua-fix2/release.log` in this worktree.
 
 R8-G adds renewable client hit interest, stock and trace-SWEP melee, Source collision categories (objects/ragdolls default on; living actors off), and bounded deferred construction/adaptive distant rigid groups. Full detail stays near the eye. Every retained original polygon/sub-hull stays intact in a group; pane holes and server collision remain authoritative. Groups move on subsequent hits; fine pieces retain secondary fracture. Budgets count original fragments, not just grouped bodies. See [ADR 0085](../docs/decisions/0085-glass-load-collision-and-hits.md) and [R8-G QA](../tools/qa/nlglass_qa/lua/autorun/nlglass_qa.lua.md). Earlier statements above about unchanged falling performance describe R7, before R8-G.
+
+
+
+R9-G ([ADR 0087](../docs/decisions/0087-glass-shards-and-environment.md)) replaces the pane grid and
+binary follow-up rectangles with deterministic branched radial shards, irregular tempered cuts
+and hit-centred 2-6-way native splitting down to one square unit. It draws pending fragments from
+shared ballistic face meshes in the receiving frame and builds breaking holes immediately. Contact
+sounds, static BSP water buoyancy, damage-independent blast observation, mirror overlap handling
+and local/admin Clear buttons are included. Initial spacing and per-pane/wire/fragment/lifetime
+limits remain. R8 distant rigid groups keep exact polygons and still move without splitting.
+Native/API details are in [glass/native](native/README.md); measurements and remaining visual,
+frame-time and multiplayer acceptance are in [R9-G report](../docs/handover/R9-G-report.md).

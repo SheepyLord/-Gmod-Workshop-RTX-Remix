@@ -10,10 +10,16 @@ struct StaticProp {
   unsigned solid = 0;
   float scale = 1;
 };
+struct WaterVolume {
+  std::vector<Plane> planes;
+  V3 minimum,maximum;
+  Plane surface;
+};
 struct Map {
   std::vector<Hull> brushes;
   std::vector<Triangle> triangles;
   std::vector<StaticProp> props;
+  std::vector<WaterVolume> water;
   unsigned considered_brushes = 0; // solid world brushes looked at
   unsigned skipped_brushes = 0;    // of those, the ones that could not become a hull
 };

@@ -10,13 +10,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: addon/lua/nlglass/menu.lua:32
-#: addon/lua/nlglass/menu.lua:103
+#: addon/lua/nlglass/menu.lua:110
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Annealed glass"
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:33
-#: addon/lua/nlglass/menu.lua:103
+#: addon/lua/nlglass/menu.lua:110
 #: addon/lua/weapons/gmod_tool/stools/procedural_glass_tool.lua:80
 msgid "Tempered glass"
 msgstr ""
@@ -111,16 +111,28 @@ msgid "Default: objects and ragdolls; living entities pass through your pieces."
 msgstr ""
 
 #: addon/lua/nlglass/menu.lua:84
+msgid "Broken glass sounds"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:85
+msgid "Clear broken glass"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:88
+msgid "Clear broken glass for everyone"
+msgstr ""
+
+#: addon/lua/nlglass/menu.lua:91
 msgid "Reset to Defaults"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:95
-#: addon/lua/nlglass/menu.lua:98
-#: addon/lua/nlglass/menu.lua:100
+#: addon/lua/nlglass/menu.lua:102
+#: addon/lua/nlglass/menu.lua:105
+#: addon/lua/nlglass/menu.lua:107
 msgid "Glass settings"
 msgstr ""
 
-#: addon/lua/nlglass/menu.lua:102
+#: addon/lua/nlglass/menu.lua:109
 msgid "Glass pane"
 msgstr ""
 

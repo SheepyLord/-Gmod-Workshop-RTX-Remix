@@ -20,7 +20,7 @@ inline void vec(Buffer& b,std::size_t at,V3 v) { f32(b,at,v.x);f32(b,at+4,v.y);f
 inline Hull box(float x=2,float y=2,float z=.3f) {
   Hull h;for(float a:{-x,x})for(float b:{-y,y})for(float c:{-z,z})h.push_back({a,b,c});return h;
 }
-inline Buffer room(unsigned version=20,bool swapped=false) {
+inline Buffer room(unsigned version=20,bool swapped=false,bool water=false) {
   std::array<Buffer,64> l;
   auto brush=[&](V3 min,V3 max,unsigned contents=1) {
     const auto index=l[18].size()/12, first=l[19].size()/8;
@@ -37,7 +37,8 @@ inline Buffer room(unsigned version=20,bool swapped=false) {
   brush({-1056,-1056,0},{-1024,1056,512});brush({1024,-1056,0},{1056,1056,512});
   brush({-1024,-1056,0},{1024,-1024,512});brush({-1024,1024,0},{1024,1056,512});
   brush({-512,-512,0},{-500,-500,10},0x10000); // playerclip: deliberately excluded
-  l[10].resize(version==19?56:32);u16(l[10],26,6);
+  if(water)brush({-256,-256,0},{256,256,160},0x20);
+  l[10].resize(version==19?56:32);u16(l[10],26,water?7:6);
   l[14].resize(48);u32(l[14],36,0xffffffffu);u32(l[14],44,1);
   // A sloped displacement over a quad, one grid corner lifted.
   l[7].resize(56);u16(l[7],8,4);

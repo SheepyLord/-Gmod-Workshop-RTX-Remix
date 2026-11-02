@@ -44,3 +44,7 @@ LuaJIT skips executable cases, never downloads it. Python catalog checks still e
 Inputs are repository source and generated in-memory fixtures. Lua subprocesses have timeouts.
 Output is unittest diagnostics. No game, game files, user.conf, native module, network or temporary
 files outside this repo are used. Exit is unittest's (0 all pass, nonzero otherwise).
+
+
+R9-G updates tempered expectations to irregular granules and queue expectations to immediate
+breaking holes; weak crack queue bounds and deterministic area/snapshot checks remain.

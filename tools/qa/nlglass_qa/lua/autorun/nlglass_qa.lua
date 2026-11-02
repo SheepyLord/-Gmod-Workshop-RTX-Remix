@@ -304,6 +304,7 @@ if SERVER then
         if IsValid(ply) and not ply:IsListenServerHost() then return end
         owner = IsValid(ply) and ply or player.GetAll()[1]
         if not IsValid(owner) then return end
+        if args[1] and args[1]:match("^r9") and NLGlassR9QA then NLGlassR9QA.Run(owner,args);return end
         steps, tags, index = {}, {}, 0
         watch()
         if args[1] == "map" then map() elseif args[1] == "old" then old() elseif args[1] == "interact" then interact() elseif args[1]=="r8" then r8()

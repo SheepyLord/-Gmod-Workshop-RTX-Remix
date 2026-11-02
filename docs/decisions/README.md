@@ -117,3 +117,5 @@ What gets easier, what gets harder, what to watch.
 ## Alternatives considered
 Each with the reason it lost.
 ```
+
+- [0087: Irregular shards, immediate break visibility and bounded local environment effects](0087-glass-shards-and-environment.md).
