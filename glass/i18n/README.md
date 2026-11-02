@@ -17,3 +17,8 @@ python tools/glass_i18n.py build  # regenerate addon/lua/nlglass/i18n_data.lua
 The builder reuses the companion's gettext reader, completeness checks and Lua escaping. Commit
 the generated Lua with the catalogs. The package assembler can build again before importing G1.
 No game process or network access is used. The repository's [MIT license](../../LICENSE) applies.
+
+
+R9-G adds Broken glass sounds, Clear broken glass and Clear broken glass for everyone. They are
+translated in all six non-English catalogs and emitted by tools/glass_i18n.py build. New regression
+checks reject accidental question-mark substitutions from shell encodings.

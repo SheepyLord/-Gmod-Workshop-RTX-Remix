@@ -12,7 +12,7 @@ hook.Add("EntityKeyValue","NLGlass.Outputs",function(ent,key,value)
     local o=S.outputs[ent] or {breaks={},users={}} S.outputs[ent]=o
     if key=="onbreak" then o.breaks[#o.breaks+1]=value else o.users[tonumber(key:sub(-1))]=true end
 end)
-for _,name in ipairs({"nlglass_state","nlglass_hit","nlglass_remove","nlglass_blast","nlglass_sync","nlglass_clear","nlglass_setting"}) do util.AddNetworkString(name) end
+for _,name in ipairs({"nlglass_state","nlglass_hit","nlglass_remove","nlglass_blast","nlglass_sync","nlglass_clear","nlglass_clear_debris","nlglass_setting"}) do util.AddNetworkString(name) end
 -- Glass-Rewrite-Remix archived two of these names with other meanings (contact speed 100, velocity
 -- transfer 2) and GMod restores archived values, so a walk would break glass. Reset them once;
 -- rtx_glass_settings_version records it, and later choices are kept.
@@ -125,6 +125,7 @@ function S.Impact(r,impact,forceAll)
     net.Start("nlglass_hit") net.WriteUInt(r.id,32) net.WriteUInt(old.state.revision,32)
     net.WriteBool(broke) if broke then P.WriteRecord(old) end
     P.WriteImpact(impact) net.WriteBool(forceAll or false) net.WriteBool(r.native) net.Broadcast()
+    if S.Observe then S.Observe("sent",r.id,engine.TickCount(),CurTime(),SysTime()) end
     if not r.native then
         if broke then originalOutput(r,impact) S.Collision(r) end
     elseif forceAll then
@@ -136,6 +137,7 @@ end
 function S.Damage(entity,dmg)
     local r=S.byEntity[entity] or S.surfaces[entity]
     if not r then return end
+    if S.Observe then S.Observe("damage",r.id,engine.TickCount(),CurTime(),SysTime()) end
     S.Refresh(r)
     if dmg:IsDamageType(DMG_BLAST) then S.Blast(dmg) end
     S.Impact(r,D.FromDamage(r,dmg))
@@ -181,33 +183,6 @@ hook.Add("SetupMove","NLGlass.PlayerContact",function(ply,mv)
         S.Body(tr.Entity,ply,velocity,point)
     end
 end)
-S.blasts={}
-function S.Blast(dmg)
-    local tick=engine.TickCount()
-    if S.blastTick~=tick then S.blastTick=tick S.blasts={} end
-    local origin=dmg:GetReportedPosition()
-    local reported=origin:LengthSqr()~=0
-    if origin:LengthSqr()==0 then
-        local inflictor=dmg:GetInflictor()
-        origin=IsValid(inflictor) and inflictor:WorldSpaceCenter() or dmg:GetDamagePosition()
-    end
-    local inflictor=dmg:GetInflictor()
-    local key=string.format("%s:%.1f:%.1f:%.1f",IsValid(inflictor) and inflictor:EntIndex() or 0,origin.x,origin.y,origin.z)
-    if not reported and not IsValid(inflictor) then key="unattributed" end
-    if S.blasts[key] then return end
-    S.blasts[key]=true
-    local radius,speed=math.Clamp(dmg:GetDamage()*4,64,2048),math.Clamp(dmg:GetDamage()*6,50,900)
-    local epoch=S.epoch
-    timer.Simple(0,function()
-        -- Native removal and physics callbacks also defer their break one turn. Queue after
-        -- those callbacks, so their own pieces exist before the explosion impulse arrives.
-        timer.Simple(0,function()
-            if epoch~=S.epoch then return end
-            net.Start("nlglass_blast") net.WriteVector(origin)
-            net.WriteFloat(radius) net.WriteFloat(speed) net.Broadcast()
-        end)
-    end)
-end
 function S.NativeBreak(r,breaker)
     if not r or r.broken or r.epoch~=S.epoch then return end
     S.Refresh(r)
@@ -334,4 +309,11 @@ net.Receive("nlglass_setting",function(_,ply)
     end
     RunConsoleCommand(s[1],value)
 end)
+net.Receive("nlglass_clear_debris",function(_,ply)
+    if not IsValid(ply) or not ply:IsAdmin() or (game.IsDedicated and game.IsDedicated()) then return end
+    if (S.clearDebrisAt or -10)>CurTime()-1 then return end
+    S.clearDebrisAt=CurTime()
+    net.Start("nlglass_clear_debris") net.Broadcast()
+end)
+include("nlglass/debris_blast.lua")
 return S

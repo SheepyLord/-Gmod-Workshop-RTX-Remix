@@ -15,3 +15,9 @@ Client-only bootstrap include after I18n. Retains Utilities > Glass Rewrite Remi
 This is a runtime Lua module, not a process: it has no exit code. Engine/load errors propagate to the caller. See the glass README for the full setting and frame contract.
 
 R8-G replaces the obsolete piece/piece switch with four independent client Source-contact checkboxes. They read the mask on Think, so console changes and non-admin Reset stay synchronized. Map/piece contacts are always enabled; living targets default off. All labels/help are translated in seven languages.
+
+
+R9-G adds the archived local sound checkbox, local Clear broken glass button and an everyone-clear
+button for a single-player/listen host admin. The server validates the everyone request and limits
+it to once a second. Both clear paths retain pane state. All labels have seven-language catalogs.
+Non-admin Reset includes the local sound switch and never sends an admin request.

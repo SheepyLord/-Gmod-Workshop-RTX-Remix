@@ -81,6 +81,13 @@ function NLGlass.BuildSettings(panel)
     collision(panel,N("Living players"),4)
     collision(panel,N("Living NPCs and NextBots"),8)
     panel:Help(L("Default: objects and ragdolls; living entities pass through your pieces."))
+    panel:CheckBox(L("Broken glass sounds"),"rtx_glass_debris_sounds")
+    local clear=panel:Button(L("Clear broken glass"))
+    clear.DoClick=function() if NLGlassDebris then NLGlassDebris.Clear() end end
+    if admin() and (game.SinglePlayer() or (LocalPlayer().IsListenServerHost and LocalPlayer():IsListenServerHost())) then
+        local all=panel:Button(L("Clear broken glass for everyone"))
+        all.DoClick=function() net.Start("nlglass_clear_debris") net.SendToServer() end
+    end
     local reset=panel:Button(L("Reset to Defaults"))
     reset.DoClick=function()
         for _,s in ipairs(C.Debris) do RunConsoleCommand(s[1],s[2]) end

@@ -6,8 +6,8 @@ function R.Retire(mesh)
 end
 function R.Tick()
     R.released=0
-    -- Creation is capped at twelve initial meshes plus two split children per frame. Releasing
-    -- sixteen drains a burst without allowing a sustained stream to grow this queue forever.
+    -- Initial construction, up to six split children, evictions and shared preview replacements
+    -- retire here. Keep releases bounded even when a receiving-frame preview changes in a burst.
     for _=1,16 do
         local mesh=R.retired[R.retireFirst];if not mesh then break end
         mesh:Destroy();R.retired[R.retireFirst]=nil;R.retireFirst=R.retireFirst+1;R.released=R.released+1

@@ -11,6 +11,8 @@ local scene = include("nlglass/debris_scene.lua")
 local expiry = include("nlglass/debris_expiry.lua")
 local collisionFlags = include("nlglass/debris_settings.lua")
 local detail = include("nlglass/debris_detail.lua")
+local preview = include("nlglass/debris_preview.lua")
+local audio = include("nlglass/debris_sound.lua")
 local D = {}
 NLGlassDebris = D
 local lifetime = CreateClientConVar("rtx_glass_debris_lifetime", "120", true, false, "Broken glass lifetime; 0 keeps it until cleanup", 0, 86400)
@@ -131,6 +133,7 @@ end
 local function popCreation()
     local q=creation[createFirst]
     if q then
+        preview.Remove(q)
         creation[createFirst],createFirst=nil,createFirst+1
         queuedWeight,queuedCount=queuedWeight-q.weight,queuedCount-1
     end
@@ -141,7 +144,7 @@ local function popCreation()
     end
     return q
 end
-function D.Spawn(frame, fragments)
+function D.Spawn(frame, fragments, impact, traceID)
     if stopped then return end
     if type(frame) ~= "table" or type(fragments) ~= "table" or not isvector(frame.origin) or not isangle(frame.angles) then return end
     if not validVector(frame.origin, 131072) or not finite(frame.angles.p, 36000) or
@@ -157,7 +160,7 @@ function D.Spawn(frame, fragments)
     local materialName = type(frame.material) == "string" and #frame.material <= 256 and frame.material or "models/props_c17/fisheyelens"
     local material = Material(materialName)
     local size = GetConVar("rtx_glass_piece_size")
-    local minimumSize = clamp(size and size:GetFloat() or 8, 4, 64)
+    local minimumSize = world.api and world.api.ReadSounds and 1 or clamp(size and size:GetFloat() or 8, 4, 64)
     local valid={}
     for i = math.max(1, #fragments - max + 1), #fragments do
         local f = fragments[i]
@@ -177,7 +180,19 @@ function D.Spawn(frame, fragments)
     local coarse=world.api and world.api.SpawnGroup and (demand>192 or nativeMoving>256)
     local packed=detail.Pack(valid,1,#valid,coarse,eye)
     local context={origin=frame.origin,angles=frame.angles,color=color,material=material,materialName=materialName,
-        minimum=minimumSize,born=now,blastSerial=blastSerial}
+        minimum=minimumSize,born=now,blastSerial=blastSerial,traceID=traceID,receivedFrame=FrameNumber()}
+    -- Body construction prioritizes impact distance with camera distance as a deterministic
+    -- tie breaker. Everything else is already visible through the shared ballistic preview.
+    local localHit=impact and WorldToLocal(impact,angle_zero,frame.origin,frame.angles)
+    for index,q in ipairs(packed) do
+        local f=q.parts[1];local x,y=0,0
+        for _,v in ipairs(f.poly) do x=x+(v[1] or v.x);y=y+(v[2] or v.y) end
+        x,y=x/#f.poly,y/#f.poly
+        q.priority=(localHit and (x-localHit.x)^2+(y-localHit.y)^2 or 0)+(eye and ((x-eye[1])^2+(y-eye[2])^2)*.01 or 0)
+        q.index=index
+    end
+    table.sort(packed,function(a,b)return a.priority<b.priority or (a.priority==b.priority and a.index<b.index)end)
+    preview.Add(packed,context)
     for _,q in ipairs(packed) do
         q.weight,q.context=#q.parts,context
         while queuedWeight+q.weight>max do if not popCreation() then break end end
@@ -200,9 +215,11 @@ local function buildCreation()
         local q=popCreation();local c,f=q.context,q.parts[1]
         local life=lifetime:GetFloat()
         if life<=0 or CurTime()-c.born<life then
-            local g=q.weight>1 and geometry.Group(q.parts,c.color) or geometry.Geometry(f.poly,f.thickness,c.color)
+            local g=q.weight>1 and geometry.Group(q.parts,c.color) or f.previewGeometry or geometry.Geometry(f.poly,f.thickness,c.color)
             if g then
                 local position,a=LocalToWorld(g.center,angle_zero,c.origin,c.angles)
+                local offset,agedVelocity
+                if q.preview then offset,agedVelocity=preview.Offset(q.preview);position=position+offset end
                 serial=serial+1
                 local velocity,spin=f.velocity or vector_origin,f.spin or vector_origin
                 if q.weight>1 then
@@ -212,6 +229,7 @@ local function buildCreation()
                         spin=spin+(part.spin or vector_origin)/q.weight
                     end
                 end
+                if agedVelocity then velocity=velocity+agedVelocity-q.preview.velocity end
                 local px,py,pz,kicks=position.x,position.y,position.z,0
                 for i=#blastHistory,1,-1 do
                     local e=blastHistory[i];if e[1]<=c.blastSerial then break end
@@ -225,12 +243,13 @@ local function buildCreation()
                 local p={id=serial,geometry=g,position=position,angles=a,velocity=velocity,spin=spin,weight=q.weight,
                     born=CurTime(),ageBorn=c.born,color=c.color,material=c.material,materialName=c.materialName,
                     matrix=Matrix(),scale=Vector(1,1,1),poseDirty=true,sleeping=false,mass=g.mass,
-                    minimumSize=finite(f.minimum_size,64) and f.minimum_size>=4 and f.minimum_size or c.minimum}
+                    minimumSize=c.minimum==1 and 1 or (finite(f.minimum_size,64) and f.minimum_size>=4 and f.minimum_size or c.minimum)}
                 local ok,mesh=pcall(geometry.Build,g.vertices,c.material)
                 if ok then
                     p.mesh=mesh;pieces[p.id],count,represented=p,count+1,represented+q.weight
                     last=last+1;order[last]=p.id;individual.Add(p);expiry.Add(p)
                     if not physics(p) then erase(p) end
+                    if D.Observe then D.Observe("body",c.traceID,FrameNumber(),CurTime(),c.receivedFrame,queuedCount) end
                 end
                 vertices=vertices+#g.vertices
             end
@@ -259,6 +278,7 @@ end
 function D.Impulse(origin, radius, speed)
     if stopped or not validVector(origin, 131072) or not isnumber(radius) or not isnumber(speed) or radius ~= radius or speed ~= speed or
         radius <= 0 or radius > 131072 or speed < 0 or speed > 100000 then return end
+    preview.Impulse(origin,radius,speed)
     blastSerial=blastSerial+1
     if queuedCount>0 then
         if #blastHistory==64 then table.remove(blastHistory,1) end
@@ -287,6 +307,7 @@ function D.Clear()
     -- Cleanup is the one lifecycle boundary allowed to join an in-flight physics step.
     if world.state == "ready" then world.api.Clear();stepBusy = false end
     for _, piece in pairs(pieces) do piece.native = nil;erase(piece) end
+    preview.Clear(individual.Retire);audio.Clear()
     batches.Clear()
     individual.ClearRetired()
     expiry.Clear();scene.Reset()
@@ -335,9 +356,29 @@ function D.Stats()
     metrics.scene_examined, metrics.scene_fast_candidates, metrics.scene_fast_bodies = scene.examined, scene.fast_candidates, scene.fast_bodies
     metrics.scene_fast_boxes, metrics.scene_peak_bodies = scene.fast_boxes, scene.peak_bodies
     metrics.damage_pending, metrics.ray_pending = math.max(0, damageLast - damageFirst + 1), #rays
+    metrics.preview_draws,metrics.preview_uploads=preview.draws,preview.uploads
+    metrics.sounds_received,metrics.sounds_played,metrics.sounds_culled,metrics.sounds_limited=audio.received,audio.played,audio.culled,audio.limited
     if backend == "jolt" then world.api.Stats(nativeStats) end
     metrics.backend, metrics.native, metrics.skipped_models = backend, nativeStats, world.skipped
     return metrics
+end
+-- Read-only, bounded QA access. Ordinary rendering never requests per-piece motion tables.
+function D.Diagnostics(maximum)
+    if backend~="jolt" or not world.api.ReadMotion then return nil,"unavailable" end
+    -- A moving manager dispatches again in every Think. Poll non-blockingly here too;
+    -- otherwise a PostRender diagnostic can never see an idle boundary, even after the
+    -- worker has finished. Ordinary rendering does not request this QA-only accessor.
+    if stepBusy then
+        local done,why=world.api.PollStep()
+        if not done then return nil,why or "busy" end
+        stepBusy=false
+    end
+    maximum=finite(maximum,100000) and clamp(math.floor(maximum),1,256) or 256
+    local ids={}
+    for i=first,last do local p=pieces[order[i]]
+        if p and p.native then ids[#ids+1]=p.native;if #ids>=maximum then break end end
+    end
+    return world.api.ReadMotion(ids)
 end
 function D.Shutdown() D.Clear();batches.pool = {};world.Shutdown();stopped, backend = true, "none" end
 local function fractures()
@@ -361,17 +402,18 @@ local function fractures()
         damageByID[event[1]] = nil
         local parent = natives[event[1]]
         if parent and limit() >= 2 and world.api.CanSplit(parent.native, parent.minimumSize) then
+            local maximum=math.min(world.api.ReadSounds and 6 or 2,limit())
             -- The parent is being replaced. Evict the oldest *remaining* piece for the extra child.
             -- Temporarily skip a parent at the head, so a hit cannot simply erase it at budget.
-            if represented+queuedWeight >= limit() then
+            while represented+queuedWeight+maximum-1>limit() do
                 local victim = oldest()
                 if victim == parent then
                     victim = oldest();first = first - 1;order[first] = parent.id
                 end
-                if victim then erase(victim) else popCreation() end
+                if victim then erase(victim) elseif not popCreation() then break end
             end
             if pieces[parent.id] then
-                local children, err = world.api.Split(parent.native, parent.minimumSize)
+                local children, err = world.api.Split(parent.native, parent.minimumSize,maximum)
                 if children == nil then failed(err);return end
                 if children then
                     erase(parent)
@@ -428,6 +470,7 @@ local function nativeTick()
         if world.api.SetCollisionFlags then ok, reason = world.api.SetCollisionFlags(knownFlags) end
     end
     if not ok then failed(reason);return end
+    if world.api.SetSounds then world.api.SetSounds(audio.setting:GetBool());audio.Drain(world.api) end
     if interactionAvailable and knownInteraction ~= interact:GetBool() then
         knownInteraction = interact:GetBool();ok, reason = world.api.SetInteraction(knownInteraction)
         rays, damageQueue, damageByID, damageFirst, damageLast = {}, {}, {}, 1, 0;scene.Reset()
@@ -570,7 +613,9 @@ hook.Add("PostDrawTranslucentRenderables", "NLGlass.Debris", function(depth, sky
     advanceFrame();view.Capture()
     local settledCalls, settledCulled = batches.Draw(view)
     local movingCalls, movingCulled = individual.Draw(view)
-    currentDrawCalls = currentDrawCalls + settledCalls + movingCalls
+    local previewCalls=preview.Draw(geometry,individual.Retire)
+    if previewCalls>0 and D.Observe then D.Observe("preview",nil,FrameNumber(),CurTime(),previewCalls) end
+    currentDrawCalls = currentDrawCalls + settledCalls + movingCalls+previewCalls
     currentDrawTime = currentDrawTime + (SysTime() - before) * 1000
     metrics.culled_pieces = metrics.culled_pieces + settledCulled + movingCulled
     metrics.draw_calls_current = currentDrawCalls

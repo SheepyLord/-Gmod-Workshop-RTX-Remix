@@ -159,6 +159,7 @@ net.Receive("nlglass_state",function()
 end)
 net.Receive("nlglass_hit",function()
     local id,revision=net.ReadUInt(32),net.ReadUInt(32)
+    if V.Observe then V.Observe("receipt",id,FrameNumber(),CurTime(),SysTime()) end
     local breaking=net.ReadBool()
     local before=breaking and P.ReadRecord() or nil
     local impact,forceAll,native=P.ReadImpact(),net.ReadBool(),net.ReadBool()
@@ -167,15 +168,18 @@ net.Receive("nlglass_hit",function()
     if before and (not r or r.state.revision~=revision) then r=V.Store(before,true) end
     if not r or r.state.revision~=revision then sync(id) return end
     local pieces,_,broke=F.Apply(r.state,impact,forceAll,native)
-    V.QueueBuild(r,broke)
+    -- A visible hole belongs to the receiving frame. Only nonbreaking crack/collision
+    -- refreshes retain ADR 0077's coalescing queue; never show the old intact surface over debris.
+    if broke then r.buildQueued=nil;r.collisionPending=nil;V.Build(r,true) else V.QueueBuild(r,false) end
+    if broke and V.Observe then V.Observe("hole_built",id,FrameNumber(),CurTime(),SysTime()) end
     V.Pose(r)
     if #pieces>0 then
         for _,piece in ipairs(pieces) do
             piece.velocity=G.WorldVector(r.frame,piece.velocity) piece.spin=G.WorldVector(r.frame,piece.spin)
             piece.minimum_size=r.state.def.piece_size
         end
-        if NLGlassDebris then NLGlassDebris.Spawn(r.frame,pieces) end
         local point=G.WorldPoint(r.frame,Vector(impact.x,impact.y,0))
+        if NLGlassDebris then NLGlassDebris.Spawn(r.frame,pieces,point,id) end
         sound.Play("physics/glass/glass_sheet_break"..(impact.seed%3+1)..".wav",point,75,100)
         local effect=EffectData() effect:SetOrigin(point) effect:SetNormal(G.WorldVector(r.frame,{impact.dx,impact.dy,impact.dz}):GetNormalized())
         util.Effect("GlassImpact",effect)
@@ -196,6 +200,7 @@ function V.Clear()
     if NLGlassDebris then NLGlassDebris.Clear() end
 end
 net.Receive("nlglass_clear",V.Clear)
+net.Receive("nlglass_clear_debris",function() if NLGlassDebris then NLGlassDebris.Clear() end end)
 hook.Add("PreCleanupMap","NLGlass.ClientClear",V.Clear)
 hook.Add("ShutDown","NLGlass.ClientClear",V.Clear)
 hook.Add("InitPostEntity","NLGlass.Sync",initialSync)
@@ -218,6 +223,7 @@ hook.Add("PostDrawTranslucentRenderables","NLGlass.Draw",function(depth,sky)
         V.Pose(r)
         local delta=r.frame.origin-eye
         if delta:LengthSqr()<=(V.DRAW_DISTANCE+r.radius)^2 and delta:Dot(forward)>=-r.radius then
+            if V.Observe then V.Observe("pane_draw",r.id,FrameNumber(),CurTime(),SysTime(),r.builtRevision) end
             cam.PushModelMatrix(r.matrix)
             render.SetColorModulation(r.red,r.green,r.blue) render.SetBlend(r.alpha)
             if r.mesh then render.SetMaterial(r.material) r.mesh:Draw() end
