@@ -36,6 +36,11 @@ Default boxes, for Robin in a 1920x1080 frame with the player placed as
 - `--range LOW,HIGH`: an acceptance check; shots whose ratio is outside it are marked `OUTSIDE`.
 - `--json`: prints `results` (per shot: `shot`, `patches` with `box`, `mean`, `std`; `sclera`, `skin`,
   `ratio`, `sclera_ratios`), `range` and `outside`.
+- `--baseline FEATURE_OFF.png`: same-pose, same-condition comparison. Each result also contains
+  `comparison.patches`: the signed linear-luminance mean delta, relative mean delta (null for a
+  black baseline) and pixelwise mean absolute delta. Add e.g. `--patch face_control=...` alongside
+  the eye/skin patches to check a shared-atlas face region outside the eye whites. Compare a repeated
+  off shot too, to establish denoiser/sampling variation. No resizing or alignment is performed.
 
 ## Exit codes and side effects
 

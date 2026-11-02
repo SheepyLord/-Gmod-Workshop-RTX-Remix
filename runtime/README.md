@@ -1,5 +1,18 @@
 # runtime/
 
+R10-E adds `0019-Keep-imported-eye-white-emission-on-isolated-surface.patch`
+([ADR 0088](../docs/decisions/0088-imported-character-eye-whites.md)). NoSave proxy/original texture
+aliases isolate automatic emission to named eye-white surfaces; original PBR replacements retain
+precedence. A NoSave brightness multiplier scales automatic and C-16 authored adaptive emission
+through the existing luminance helper, preserving the saved adaptive scale. Its runtime unit test
+covers alias validation, isolation, material inputs, C-16 normalization, brightness and option
+lifetime/invalidation. R10-E builds with `-NoImport`; the committed packaged record intentionally
+remains at patches 0001–0018 until Claude imports the reviewed DLL.
+
+The new source files in 0019 are `src/dxvk/rtx_render/rtx_eye_whites.h` (strict aliases,
+revisioned snapshots and automatic material inputs) and `tests/rtx/unit/test_eye_whites.cpp`.
+Existing D3D9/external category snapshots preserve original atlas alpha/normal tags for proxy draws.
+
 This repository's changes to the RTX Remix runtime ([ADR 0033](../docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)).
 The runtime is the GMod fork of NVIDIA's DXVK-Remix, `sambow23/dxvk-remix-gmod`. Its source, with
 NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository holds:

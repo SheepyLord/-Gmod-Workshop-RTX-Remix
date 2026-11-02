@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R10
+
+- **Steady eye whites for imported characters.** Recognize named Model Hotloader eye-white surfaces
+  (including 白目, 眼白 and 目白), isolate them from shared face atlases, and give characters without a PBR pack
+  C-16's scene-adaptive emission from their own albedo. PBR packs keep their materials. RTX character
+  settings add an archived live checkbox and 0–200% brightness slider for automatic correction and
+  C-16 packs, translated into all seven companion languages
+  ([ADR 0088](docs/decisions/0088-imported-character-eye-whites.md)).
+
 ### R9 (in progress: the user's glass report of 2026-11-02)
 
 - **Glass breaks realistically, down to tiny pieces** (the user: always square and uniform, never very

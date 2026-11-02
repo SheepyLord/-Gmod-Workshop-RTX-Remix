@@ -89,6 +89,34 @@ def measure(path, patches, shift=(0, 0)):
             'ratio': eye / skin if skin > 0 else None, 'sclera_ratios': per_patch}
 
 
+def compare_patches(path, baseline, patches, shift=(0, 0)):
+    """Linear luminance changes in identical fixed boxes, including a face control outside the eyes."""
+    from PIL import Image
+    with Image.open(path) as src, Image.open(baseline) as ref:
+        image, reference = src.convert('RGB'), ref.convert('RGB')
+    if image.size != reference.size:
+        raise PatchError('comparison images must have identical dimensions')
+    changes = {}
+    dx, dy = shift
+    for name, (x0, y0, x1, y1) in patches.items():
+        box = x0 + dx, y0 + dy, x1 + dx, y1 + dy
+        if box[0] < 0 or box[1] < 0 or box[2] > image.width or box[3] > image.height:
+            raise PatchError(f'comparison box {box} leaves the image')
+        current = image.crop(box).tobytes()
+        old = reference.crop(box).tobytes()
+        differences, old_values = [], []
+        for i in range(0, len(current), 3):
+            a = sum(LUMA[c] * LINEAR[current[i + c]] for c in range(3))
+            b = sum(LUMA[c] * LINEAR[old[i + c]] for c in range(3))
+            differences.append(a - b)
+            old_values.append(b)
+        delta = sum(differences) / len(differences)
+        mean = sum(old_values) / len(old_values)
+        changes[name] = {'mean_delta': delta, 'relative_mean_delta': delta / mean if mean > 0 else None,
+                         'mean_absolute_delta': sum(map(abs, differences)) / len(differences)}
+    return {'baseline': str(baseline), 'patches': changes}
+
+
 def shots(paths):
     found = []
     for item in paths:
@@ -112,6 +140,7 @@ def main(argv=None):
     parser.add_argument('--shift', default='0,0', metavar='dx,dy', help='move every box by this many pixels')
     parser.add_argument('--range', metavar='LOW,HIGH', help='exit 1 when a shot\'s ratio is outside it')
     parser.add_argument('--json', action='store_true', help='print the results as JSON')
+    parser.add_argument('--baseline', type=Path, help='compare fixed boxes with this feature-off PNG (same camera/condition)')
     args = parser.parse_args(argv)
     try:
         patches = parse_patches(args.patch) if args.patch else dict(DEFAULT_PATCHES)
@@ -130,6 +159,9 @@ def main(argv=None):
             except ValueError:
                 raise PatchError(f'--range {args.range!r}: expected LOW,HIGH with LOW <= HIGH')
         results = [measure(path, patches, shift) for path in shots(args.inputs)]
+        if args.baseline:
+            for result in results:
+                result['comparison'] = compare_patches(result['shot'], args.baseline, patches, shift)
     except PatchError as error:
         print(f'eye_white_patches.py: {error}', file=sys.stderr)
         return 2

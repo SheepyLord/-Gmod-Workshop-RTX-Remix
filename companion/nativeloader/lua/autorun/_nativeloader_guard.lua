@@ -398,6 +398,7 @@ lua/autorun/client/cl_remix_portals.lua
 lua/autorun/client/cl_render_core.lua
 lua/autorun/client/hl2rtx_model_compat_viewmodels.lua
 lua/autorun/client/nativeloader.lua
+lua/autorun/client/nativeloader_eye_whites.lua
 lua/autorun/client/nativeloader_guide.lua
 lua/autorun/client/nativeloader_imported_normals.lua
 lua/autorun/client/nativeloader_menu.lua
@@ -531,6 +532,8 @@ lua/mmdhl/ui.lua
 lua/mmdhl/workshop.lua
 lua/mmdhl/workshop_export.lua
 lua/nativeloader/classic_defaults.lua
+lua/nativeloader/eye_white_names.lua
+lua/nativeloader/eye_white_vtf.lua
 lua/nativeloader/i18n.lua
 lua/nativeloader/sky_model.lua
 lua/nativeloader/weather_presets.lua

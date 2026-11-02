@@ -1,5 +1,11 @@
 # nativeloader_menu.lua
 
+R10 adds the archived, live character controls beside Model outlines: “Steady eye whites for imported
+characters” (`nativeloader_eye_whites`, default on) and “Eye-white brightness”
+(`nativeloader_eye_white_brightness`, 0–200 percent, default 100). The companion eye-white controller
+owns their transient runtime writes; this panel is present only in an RTX session. The checkbox
+controls the automatic fallback; the slider also scales existing scene-adaptive PBR eye emission.
+
 R6 adds an optional performance-tier help line to **Start here**. It reads
 `garrysmod/data/native-loader/status.json` `activation.performance_tier` (interface I2), showing the
 translated tier/source, adapter description, dedicated VRAM in MiB and the configuration/restart

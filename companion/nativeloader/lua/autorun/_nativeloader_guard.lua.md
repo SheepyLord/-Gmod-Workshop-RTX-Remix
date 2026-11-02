@@ -1,5 +1,9 @@
 # _nativeloader_guard.lua
 
+R10-E adds the three shipped eye-white controller/matcher/VTF virtual paths to the existing exact
+bundled-source set, permitting its tiny offscreen proxy-hash warmup through the same policy as other
+companion rendering code. It adds no wildcard or permission for other add-ons.
+
 Self-contained client RTX guard, identified by NATIVELOADER_RENDER_GUARD_V2. The loader embeds
 this exact catalog-SHA-verified file after the supported stock initializer, before autoruns.
 No include/require or additional runtime module is needed. The new content hash selects a new
