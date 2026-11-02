@@ -300,6 +300,8 @@ end
 local function model_layers_settings(panel)
     panel:CheckBox(L("Hide outline meshes"), "nativeloader_ignore_outlines")
     panel:ControlHelp(L("Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."))
+    panel:CheckBox(L("Imported game PBR"), "rtx_topbr_game_maps")
+    panel:ControlHelp(L("Uses shipped Wuthering Waves, Endfield and Silver Palace maps. Preserves skin and faces. Off restores the original materials."))
     panel:CheckBox(L("Steady eye whites for imported characters"), "nativeloader_eye_whites")
     panel:ControlHelp(L("Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."))
     panel:NumSlider(L("Eye-white brightness"), "nativeloader_eye_white_brightness", 0, 200, 0)

@@ -46,3 +46,21 @@ Phase 2 adds a separate default-on client setting and bounded conversion from kn
 PMX paths. Original albedo/coverage and named skin, face and eye surfaces remain protected. Shader
 channels, aggressive class recipes, tests and rendered limitations are recorded in the final report.
 No field files, Steam depot bytes, user.conf, trust rules or native ABI are changed.
+
+## Final implementation evidence and corrections
+
+The measured client snapshot initially peaked at 23.553 ms because VMT reads and companion probes
+still ran there. The final pipeline prepares two owned VMT snapshots on the worker, adds live
+IMaterial values/hashes on the client (one per frame), and decodes through two ready slots. The
+same Construct view and 45 emitted materials now peak at 0.830 ms for client inspection; conversion
+p99 is 9.133 ms rather than 23.472 ms. Registered normal/roughness values are unchanged by this split.
+
+The initial HL2 figures above are not valid acceptance measurements: the explicit camera was outside
+the map, and the default trainstation view is its scripted G-Man introduction. The report distinguishes
+those runs and uses a canal map for useful HL2 inspection. Default world conversion remains 0; game
+maps default to 1 as requested. Exact canonical stems, known local PMX sources and supported channel
+layouts are required; ambiguous/differently named inputs remain unchanged.
+
+The completed shader-channel/UV/lifecycle checks and final release gate are recorded in the R11-A
+report. No folder scan is promoted to an unconditional precedence guarantee: runtime integration
+remains required before acceptance/merge.

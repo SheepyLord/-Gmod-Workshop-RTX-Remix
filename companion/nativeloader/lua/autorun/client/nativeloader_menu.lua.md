@@ -118,3 +118,6 @@ Model outlines has a default-on suppression control (`nativeloader_ignore_outlin
 materials of loaded models, by name). The runtime's front-cull shell rule is a separate, console-only
 opt-in (`nativeloader_ignore_outline_shells`, default 0; [ADR 0059](../../../../../docs/decisions/0059-outline-shell-rule-opt-in.md)).
 Both manage only the companion's nonpersistent native options; see [nativeloader_model_layers.lua](nativeloader_model_layers.lua.md).
+
+R11 adds Imported game PBR to the character/model controls (`rtx_topbr_game_maps`, default 1).
+The bundled fixes read existing local hotloader metadata; off retracts generated game-map entries.

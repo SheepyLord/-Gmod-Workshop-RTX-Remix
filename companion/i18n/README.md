@@ -85,3 +85,6 @@ printf conversions. `companion_i18n.py update` drops agent-written `#.` comments
 catalogs. This durable note records provenance until a human review is recorded. The fix pass also
 corrected Russian Start here references to **С чего начать** and tier adjectives to masculine
 **Высокий / Средний / Низкий**, agreeing with **Уровень**.
+
+R11's Imported game PBR checkbox/help translations are agent-written and not yet human-reviewed
+in all six non-English catalogs. English supplies the seventh language.

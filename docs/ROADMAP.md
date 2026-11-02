@@ -414,3 +414,10 @@ The Release runtime is rebuilt/imported; all 28 runtime unit tests, deep input v
 Integration, actual GPU readback/log acceptance and Robin eye-white brightness measurements/tuning
 remain with Claude under the [C-16 plan](handover/C16-plan.md). C16-A runs no game and touches no
 install, user configuration or upstream fork; see [TESTING.md](TESTING.md#c-16-scene-adaptive-emission).
+
+R11-A's fixes/companion implementation and native/Lua/Release checks are **complete locally** on
+`r11-autopbr` / `codex/r11-autopbr`; Source conversion stays opt-in and imported game maps default
+on. PoC frame inspection now peaks below 1 ms in Construct/Flatgrass/Canals. **Acceptance is partial**:
+the unconditional authored-material priority requirement needs a runtime resolution change outside
+R11-A's assigned paths. See [the report](handover/R11-A-report.md) and
+[ADR 0091](decisions/0091-automatic-pbr-fallbacks.md). Nothing was merged, pushed or published.

@@ -372,3 +372,9 @@ R9-G embeds preview planning in glass debris_detail.lua, native sound consumptio
 and bounded server explosion observation in server.lua, preserving the loader's exact trusted paths.
 `tools/qa/measure_nlglass_r9.py` records paired fracture/handler/split and environment CPU costs;
 `tools/qa/nlglass_qa` includes numeric R9 latency/velocity/explosion/water/sound/performance modes.
+
+R11-A adds the packaged ToPBR driver regression in
+[`tools/tests/test_topbr.py`](../tools/tests/test_topbr.py.md), backed by
+[`topbr_harness.lua`](../tools/tests/topbr_harness.lua.md). Native ToPBR/game-map tests and their
+fixture generator are GPL corresponding source under
+[`packages/fixes/licenses/oversized-skinning/autopbr`](../packages/fixes/licenses/oversized-skinning/autopbr/Source.md).

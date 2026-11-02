@@ -15,15 +15,17 @@
 -- - rtx_topbr_debug <0/1> - Enable debug output
 -- - rtx_topbr_help - Show help
 
+if SERVER then return end
+
 if not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
 
 -- ConVars for configuration
 -- NOTE: Material discovery is handled by RTXMaterialPipeline. ToPBR only processes individual materials.
 CreateClientConVar("rtx_topbr_enabled", "0", true, false, "Enable ToPBR conversion stage")
 CreateClientConVar("rtx_topbr_debug", "0", true, false, "Enable debug output")
-CreateClientConVar("rtx_topbr_metallic", "0", true, false, "Enable experimental metallic generation from base texture brightness (may cause black materials)")
+CreateClientConVar("rtx_topbr_metallic", "0", true, false, "Compatibility flag; metallic comes only from authored maps or unmasked chrome")
 CreateClientConVar("rtx_topbr_autodiscover", "1", true, false, "Auto-discover companion textures (_normal, _mask, _spec) not explicitly referenced in VMT")
-CreateClientConVar("rtx_topbr_parse_commented_properties", "1", true, false, "Parse commented-out VMT properties (e.g., //$envmap) - useful for maps where they were disabled for vanilla Source")
+CreateClientConVar("rtx_topbr_parse_commented_properties", "0", true, false, "Parse commented-out VMT properties (e.g., //$envmap) - useful for maps where they were disabled for vanilla Source")
 
 -- Module table
 RTXToPBR = RTXToPBR or {}
@@ -74,7 +76,7 @@ function RTXToPBR.Initialize()
     -- Helper to sync all ConVars to C++
     local function SyncConVarsToProcessor()
         if processor.SetEnabled then
-            processor.SetEnabled(GetConVarBoolSafe("rtx_topbr_enabled", true))
+            processor.SetEnabled(GetConVarBoolSafe("rtx_topbr_enabled", false))
         end
         processor.SetDebugOutput(GetConVarBoolSafe("rtx_topbr_debug", false))
         if processor.SetMetallicGeneration then
@@ -84,7 +86,7 @@ function RTXToPBR.Initialize()
             processor.SetAutoDiscover(GetConVarBoolSafe("rtx_topbr_autodiscover", true))
         end
         if processor.SetParseCommentedProperties then
-            processor.SetParseCommentedProperties(GetConVarBoolSafe("rtx_topbr_parse_commented_properties", true))
+            processor.SetParseCommentedProperties(GetConVarBoolSafe("rtx_topbr_parse_commented_properties", false))
         end
     end
     
@@ -515,10 +517,13 @@ concommand.Add("rtx_topbr_stats", function()
     MsgC(Color(200, 200, 200), string.format("  Materials with roughness: %d\n", stats.materialsWithRoughness or 0))
     MsgC(Color(200, 200, 200), string.format("  Failed conversions: %d\n", stats.failedConversions or 0))
     
+    print(string.format("[RTX ToPBR] max client snapshot %.3f ms, max worker job %.3f ms", stats.snapshotMaxMs or 0, stats.decodeMaxMs or 0))
+
     -- Background processing status
-    local isProcessing = RTXToPBR.IsProcessingInBackground()
-    local queuedCount = RTXToPBR.GetQueuedCount()
-    local lastProcessed = RTXToPBR.GetLastProcessedCount()
+    local p = GetProcessor()
+    local isProcessing = p and p.IsProcessingInBackground and p.IsProcessingInBackground() or false
+    local queuedCount = p and p.GetQueuedMaterialCount and p.GetQueuedMaterialCount() or 0
+    local lastProcessed = p and p.GetLastProcessedCount and p.GetLastProcessedCount() or 0
     
     MsgC(Color(100, 200, 255), "\n  Background Processing:\n")
     if isProcessing then
@@ -527,62 +532,33 @@ concommand.Add("rtx_topbr_stats", function()
         MsgC(Color(200, 200, 200), string.format("  Idle - %d processed in last run\n", lastProcessed))
     end
     
-    -- Continuous processing status
-    if RTXToPBR.IsContinuousProcessing() then
-        local interval = GetConVarFloatSafe("rtx_topbr_continuous", 0)
-        MsgC(Color(100, 255, 100), string.format("  ✓ Continuous mode: every %.1fs\n", interval))
-    end
+
 end, nil, "Show PBR conversion statistics")
 
 concommand.Add("rtx_topbr_clear", function()
     RTXToPBR.ClearCache()
 end, nil, "Clear PBR conversion cache")
 
-concommand.Add("rtx_topbr_debug", function(ply, cmd, args)
-    local enabled = args[1] == "1" or args[1] == "true"
-    RTXToPBR.SetDebugOutput(enabled)
-    RunConsoleCommand("rtx_topbr_debug", enabled and "1" or "0")
-    MsgC(Color(100, 255, 100), string.format("[RTX ToPBR] Debug output %s\n", enabled and "enabled" or "disabled"))
-end, nil, "Enable/disable debug output")
+-- These are convars, not commands with the same name (Source refuses duplicates).
+for _, pair in ipairs({{"rtx_topbr_debug", "SetDebugOutput"},
+    {"rtx_topbr_metallic", "SetMetallicGeneration"},
+    {"rtx_topbr_autodiscover", "SetAutoDiscover"},
+    {"rtx_topbr_parse_commented_properties", "SetParseCommentedProperties"}}) do
+    cvars.AddChangeCallback(pair[1], function(_, _, value)
+        local p = GetProcessor()
+        if p and p[pair[2]] then p[pair[2]](tobool(value)) end
+    end, "RTXToPBR_" .. pair[1])
+end
 
-concommand.Add("rtx_topbr_metallic", function(ply, cmd, args)
-    local enabled = args[1] == "1" or args[1] == "true"
-    local processor = GetProcessor()
-    if processor and processor.SetMetallicGeneration then
-        processor.SetMetallicGeneration(enabled)
-        RunConsoleCommand("rtx_topbr_metallic", enabled and "1" or "0")
-    else
-        MsgC(Color(255, 100, 100), "[RTX ToPBR] Metallic generation not available (module not loaded)\n")
-    end
-end, nil, "Enable/disable experimental metallic generation (WARNING: may cause dark materials to appear black)")
+hook.Add("Think", "RTXToPBR_Snapshots", function()
+    local p = GetProcessor()
+    if p and p.PumpSnapshots then p.PumpSnapshots() end
+end)
 
-concommand.Add("rtx_topbr_autodiscover", function(ply, cmd, args)
-    local enabled = args[1] == "1" or args[1] == "true"
-    local processor = GetProcessor()
-    if processor and processor.SetAutoDiscover then
-        processor.SetAutoDiscover(enabled)
-        RunConsoleCommand("rtx_topbr_autodiscover", enabled and "1" or "0")
-    else
-        MsgC(Color(255, 100, 100), "[RTX ToPBR] Auto-discover not available (module not loaded)\n")
-    end
-end, nil, "Enable/disable auto-discovery of companion textures (_normal, _mask, _spec)")
-
-concommand.Add("rtx_topbr_parse_commented_properties", function(ply, cmd, args)
-    local enabled = args[1] == "1" or args[1] == "true"
-    local processor = GetProcessor()
-    if processor and processor.SetParseCommentedProperties then
-        processor.SetParseCommentedProperties(enabled)
-        RunConsoleCommand("rtx_topbr_parse_commented_properties", enabled and "1" or "0")
-        MsgC(Color(100, 255, 100), string.format("[RTX ToPBR] Parse commented properties %s\n", enabled and "enabled" or "disabled"))
-        if enabled then
-            MsgC(Color(255, 200, 100), "  WARNING: Commented-out VMT properties (like //\"$envmap\") will now be parsed.\n")
-            MsgC(Color(255, 200, 100), "  This may cause unexpected results if properties were commented out for a reason.\n")
-            MsgC(Color(255, 200, 100), "  Clear cache and reprocess: rtx_topbr_clear && rtx_topbr_process\n")
-        end
-    else
-        MsgC(Color(255, 100, 100), "[RTX ToPBR] Parse commented properties not available (module not loaded)\n")
-    end
-end, nil, "Enable/disable parsing of commented-out VMT properties (WARNING: may cause unexpected results)")
+concommand.Add("rtx_topbr_process", function()
+    local p = GetProcessor()
+    if p and p.QueueMaterialsForProcessing then p.QueueMaterialsForProcessing() end
+end)
 
 concommand.Add("rtx_topbr_help", function()
     MsgC(Color(100, 200, 255), "\n[RTX ToPBR] Runtime PBR Material Converter\n")
@@ -604,8 +580,7 @@ ToPBR Configuration Commands:
   rtx_topbr_stats             - Show conversion statistics
   rtx_topbr_clear             - Clear conversion cache
   rtx_topbr_debug 1/0         - Enable/disable debug output
-  rtx_topbr_metallic 1/0      - Enable/disable experimental metallic
-                                (WARNING: may cause black materials)
+  rtx_topbr_metallic 1/0      - Compatibility flag (darkness inference removed)
   rtx_topbr_autodiscover 1/0  - Enable/disable auto-discovery of 
                                 companion textures (_normal, _mask, _spec)
   rtx_topbr_parse_commented_properties 1/0
@@ -627,9 +602,8 @@ Roughness Priority (phong materials are handled first):
 5. Base texture alpha with envmap
 
 Note: Dark envmap materials (chrome balls, etc.) use low roughness
-for reflections by default. The experimental metallic mode attempts
-to make them metallic but may cause them to appear black since
-PBR metallic surfaces reflect their base color.
+for reflections by default. Darkness alone no longer makes a material metallic. Explicit community
+PBR channels and unmasked chrome remain supported.
 
 ]])
     MsgC(Color(100, 200, 255), string.rep("=", 60) .. "\n\n")
@@ -655,11 +629,56 @@ if MaterialPipeline and MaterialPipeline.ToPBR then
     -- Sync enabled state immediately at load time so a saved rtx_topbr_enabled=0
     -- takes effect before the C++ worker thread processes any queued materials
     if MaterialPipeline.ToPBR.SetEnabled then
-        MaterialPipeline.ToPBR.SetEnabled(GetConVarBoolSafe("rtx_topbr_enabled", true))
+        MaterialPipeline.ToPBR.SetEnabled(GetConVarBoolSafe("rtx_topbr_enabled", false))
     end
 else
     MsgC(Color(255, 200, 100), "  C++ MaterialPipeline.ToPBR module not loaded - waiting for binary module.\n")
 end
 MsgC(Color(200, 200, 200), "  Use 'rtx_topbr_help' for usage information.\n")
+
+
+-- The source path is local-only hotloader data; no network or importer hook is needed.
+CreateClientConVar("rtx_topbr_game_maps", "1", true, false, "Use shipped packed game PBR maps on imported characters")
+local gameAssets, gameKey, gameParts, gameSlot, gameSubmitted, gameNext = nil, nil, nil, 1, {}, 0
+local function syncGameMaps()
+    local p = GetProcessor()
+    if p and p.SetGameEnabled then p.SetGameEnabled(GetConVarBoolSafe("rtx_topbr_game_maps", true)) end
+end
+cvars.AddChangeCallback("rtx_topbr_game_maps", syncGameMaps, "RTXToPBRGameMaps")
+hook.Add("Think", "RTXToPBR_GameMaps", function()
+    local p = GetProcessor()
+    if not p or not p.QueueGameMaterial then return end
+    syncGameMaps()
+    if not GetConVarBoolSafe("rtx_topbr_game_maps", true) then return end
+    if not gameAssets then
+        if RealTime() < gameNext then return end
+        gameAssets = mmdhl and mmdhl.assets or {}
+        gameKey, gameParts, gameSlot = nil, nil, 1
+    end
+    for _ = 1, 8 do
+        if gameParts and gameParts[gameSlot] then
+            local slot = gameSlot
+            local part = gameParts[slot]
+            gameSlot = slot + 1
+            local entry = mmdhl and mmdhl.library and mmdhl.library.entries[gameKey]
+            local original = entry and entry.info and entry.info.materials and entry.info.materials[slot]
+            local name = istable(part) and part.path
+            local source = entry and entry.source
+            local base = original and original.base
+            if isstring(name) and not gameSubmitted[name] and isstring(source) and source ~= "" and isstring(base) and base ~= "" then
+                if p.QueueGameMaterial(name, source, base) then gameSubmitted[name] = true end
+            end
+        else
+            if gameKey and gameAssets[gameKey] == nil then gameKey = nil end
+            local info
+            gameKey, info = next(gameAssets, gameKey)
+            if not gameKey then
+                gameAssets, gameParts, gameNext = nil, nil, RealTime() + 5
+                break
+            end
+            gameParts, gameSlot = istable(info) and info.materials or {}, 1
+        end
+    end
+end)
 
 return RTXToPBR

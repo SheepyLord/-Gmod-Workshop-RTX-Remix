@@ -8,3 +8,5 @@ add-ons' console variables, as `return { version = N, client = {...}, server = {
 
 `version` goes up when the table changes, so each player gets the new values once more (only for
 settings still at their add-on's default).
+
+R11 keeps vanilla ToPBR opt-in and defaults commented-property parsing to 0, respecting active VMT data.

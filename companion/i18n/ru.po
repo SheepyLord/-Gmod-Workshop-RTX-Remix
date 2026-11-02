@@ -358,7 +358,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "Вкладка RTX Remix > С чего начать > «Применить классические настройки RTX» (консоль: nativeloader_rtx_defaults) снова применяет их все, в том числе поверх изменённых вами значений."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 msgid "Common Remix settings"
 msgstr "Основные опции Remix"
 
@@ -550,9 +550,9 @@ msgstr "Руководство по RTX Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Rendering"
 msgstr "Рендеринг"
 
@@ -563,13 +563,13 @@ msgid "Water and glass"
 msgstr "Вода и стекло"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
 msgid "Start here"
 msgstr "С чего начать"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 msgid "Remix settings"
 msgstr "Настройки Remix"
 
@@ -869,30 +869,38 @@ msgid "Hides incompatible outline shells that can cover or darken the model. Oth
 msgstr "Скрывать несовместимые оболочки контура, которые могут закрывать или затемнять модель. Остальные материалы модели отображаются как обычно."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:303
+msgid "Imported game PBR"
+msgstr "PBR импортированных моделей"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+msgid "Uses shipped Wuthering Waves, Endfield and Silver Palace maps. Preserves skin and faces. Off restores the original materials."
+msgstr "Использует карты Wuthering Waves, Endfield и Silver Palace. Сохраняет кожу и лица. При отключении возвращаются исходные материалы."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
 msgid "Steady eye whites for imported characters"
 msgstr "Стабильная яркость белков глаз импортированных персонажей"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
 msgid "Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."
 msgstr "Распознаёт поверхности белков глаз по названию. Персонажи с PBR-пакетом сохраняют его материалы."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:307
 msgid "Eye-white brightness"
 msgstr "Яркость белков глаз"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:308
 msgid "Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."
 msgstr "Проценты: 100 — настроенное значение по умолчанию. Сразу влияет на автоматическую коррекцию и адаптивное свечение глаз в PBR-пакетах. Ноль отключает это свечение."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Player models"
 msgstr "Модели игроков"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
 msgid "Toolgun screen"
 msgstr "Экран тулгана"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Model outlines"
 msgstr "Контуры моделей"
 

@@ -4256,3 +4256,52 @@ Final cold byte-snapshot geometry reads are 36.2/140.0 ms for Guinaifen/Robin,
 versus the first file-call implementation's 2395/3721 ms; cached reads are
 0.001–0.002 ms. Exact binding does not scan geometry. Final sessions exit 0,
 normally, with zero Lua errors; see [the report](handover/R10-H-report.md).
+
+## R11-A automatic PBR (2026-11-02)
+
+- The shipped ToPBR worker called `ExtractMaterialPBR`, which resolves live IMaterials. The R11
+  fixes branch now snapshots one name per client frame, with two ready jobs and an 8192-name cap;
+  decoding/writing use value-only jobs. Source material-name negatives are session-local. Output
+  keys include source bytes and the scalar/string recipe, rather than size/time alone.
+- The old `rtx_topbr_stats` called removed Lua methods and failed on the PoC. Disabling conversion
+  stopped work but left USD replacements active. Complete atomic snapshots now support updates,
+  removals and independent world/game switches. Native generated USD edits are preserved before
+  replacement. Full dependency verification matched 2,334 files after checkout line-ending
+  normalization, restoring 59 omitted build files under the isolated out tree.
+- [EndfieldLitInput.hlsl](https://github.com/congyuxiaoyoudao/Endfield_Character_Rendering/blob/master/Assets/Shaders/Library/EndfieldLitInput.hlsl)
+  lines 287?304 use P red for cloth metallic, alpha for smoothness, **blue for AO**, and separate
+  hair/skin rules. Treating it as HDRP's green-AO layout would be wrong. This is a community shader
+  reconstruction, not an official game specification.
+- [HoyoToon's WuWa shader](https://github.com/Hoyotoon/HoyoToon/blob/main/Shaders/Wuthering%20Waves/Include/HoyoToonWutheringWaves-program.hlsl)
+  reads RG normals, uses diffuse alpha for shadow/hair masks, and uses normal alpha to attenuate
+  specular. Those masks are not assumed to be plain metallic/roughness. R11 uses RG relief plus
+  named PMX material classes, retaining original diffuse/coverage.
+- A 512-pixel blurred curl check on the sampled normal maps favored DirectX Y for WuWa
+  (DX/GL error ratios 0.446?0.875) and Silver Palace (0.477?0.900), but OpenGL Y for Endfield
+  (1.532?1.766); R11 flips Endfield green. These are measured inferences, not official shader
+  documentation. The raw observations are in `out/r11-autopbr/normal-conventions.json`.
+- PMX `first`/`count` material spans and vertex UVs distinguish shared cloth/metal from skin.
+  The native converter bounds the file/vertex/index/string counts and raster work, preserving
+  original-class texels in overlaps. Shader maps are at most 2048, decode sources at most 4096,
+  and new DDS output at most 1 GiB per module session, with a 64 MiB free-space reserve.
+- A read-only scan of 730 installed Workshop GMAs covered 21,101 VMTs. It found MWB/BFT candidates
+  (notably items 2459720887 and 3333148722), but no ExoPBR/GPBR matches. Those formats therefore
+  have generated-fixture channel tests; absence of a local sample is not rendered acceptance.
+- Runtime `rtx_asset_replacer.cpp:getReplacementMaterial` returns the first matching mod, while
+  `rtx_mod_manager.h:ComparePtrs` uses path order for equal priority. The fixes API exposes no
+  fallback rank. Polling USD files can suppress known conflicts, including a Unicode-later folder,
+  but cannot guarantee priority at an asynchronous runtime swap. This remains the R11 integration
+  blocker ([ADR 0091](decisions/0091-automatic-pbr-fallbacks.md)).
+
+The final QA measurements, limitations, artifact identity and evidence paths are in the
+[R11-A report](handover/R11-A-report.md). No model or generated game texture is committed.
+
+R11-A profiling follow-up: Construct's 45-material conversion p99 fell from 23.472 to 9.133 ms,
+and maximum main-thread snapshot from 23.553 to 0.830 ms, after worker-side VMT preparation and
+companion probing. Steady medians were 7.270 ms off / 7.213 ms on / 7.374 ms restored, within
+run-to-run variation. Measurements use wall clock, not GMod's 100 ms-clamped frame value.
+
+The valid Unicode-later authored fixture hot-reload removed overlap hash `C5E74CB23318460D` in
+0.805 s; subsequent captures render the authored red atlas. This measured delay is why the
+fixes-side exclusion cannot be claimed as instantaneous runtime precedence. The earlier invalid USD
+fixture was rejected and is not rendered acceptance.

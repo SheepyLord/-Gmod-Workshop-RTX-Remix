@@ -8,6 +8,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R11
 
+- **Imported game characters use their shipped PBR maps automatically:** Wuthering Waves,
+  Arknights: Endfield and Silver Palace companions are detected from known local hotloader sources,
+  with the aggressive material style and protected skin/face/eye regions on shared sheets. The
+  seven-language ?Imported game PBR? checkbox turns this fallback on or off independently of world
+  conversion. Explicit authored replacement precedence during asynchronous runtime swaps remains
+  an integration blocker recorded in ADR 0091.
+
 - **Automatic PBR is safer to try:** bounded client inspection, background conversion, content-based
   texture reuse, working diagnostics and an off switch that removes generated materials. Authored
   replacements are conservatively excluded; absolute precedence during runtime hot reload still

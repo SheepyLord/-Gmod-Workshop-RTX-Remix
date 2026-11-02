@@ -1824,3 +1824,37 @@ game can be taken over. Every session uses `-multirun` via `poc_session.py`.
   field symptom from a guarded readiness defect or a runtime crash.
 
 Current outcomes and evidence paths are in [R10-H-report.md](handover/R10-H-report.md).
+
+## R11-A automatic PBR
+
+Run the Release gate and the packaged ToPBR Lua harness (`tools/tests/test_topbr.py`). Native
+production-code regressions, fixture generation, dependency pins and source reconstruction are in
+`packages/fixes/licenses/oversized-skinning/autopbr/Source.md`; build only the recorded x64 fixes
+project, with scratch under out. Do not regenerate the whole fixes input part.
+
+For PoC acceptance, acquire `out/r10/poc.lock` exclusively, preserve its loader config, and use
+`poc_session.py` with `-multirun`. Source views: Construct, Flatgrass and a non-intro HL2 map. Record
+wall-clock PostRender intervals during conversion as well as settled off/on/off windows. The
+trainstation introduction and out-of-map cameras are not useful performance acceptance views.
+Verify the USD snapshot empties on disable and deployment/update/rollback still work after writes.
+
+Import known local PMXs from the three supported games. Use a single frozen character per view,
+frame its actual render bounds, and wait for `nl_shot_taken` before changing the view or setting.
+Capture repeated off/on full-body images and close views; Robin's authored pack is the control.
+Keep faces/skin and named eye-white aliases intact. Channel tests must distinguish Endfield P blue
+AO from HDRP green AO, rebuild RG normals, and apply the measured green convention. Do not invent
+WuWa metallic/emission semantics from toon masks.
+
+Create an owned temporary authored mod whose Unicode folder sorts after `~gmod_topbr`; start it
+empty, add an overlapping material after automatic conversion, and record exclusion delay plus
+the rendered authored result. This tests settled suppression, **not absolute asynchronous priority**;
+that needs the runtime fallback-resolution change in ADR 0091. Remove only the fixture's unchanged
+owned files, restore Workshop-only configuration and release the lock. Evidence is under this
+worktree's `out/r11-autopbr`; see `docs/handover/R11-A-report.md` for measured outcomes and limits.
+
+R11-A final evidence: 26 CTests + 553 Python tests pass (two existing skips). Construct/Flatgrass/
+Canals snapshot maxima are .830/.069/.644 ms. A valid Unicode-later authored layer renders after
+.805 s conflict retraction; this delay leaves the absolute runtime requirement unresolved. Targeted
+UGC MWB inspection/rendering succeeds, while full Workshop startup hangs at the menu. Rollback and
+indexed-package reinstall succeed after generated writes; final depot verification has zero depot
+mismatches. See the report for discarded trials and unverified real-format coverage.
