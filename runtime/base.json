@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "c3c6e72692af2a18bc11072191712da5c35a7cb25863b930a0f3fddc45605257",
-  "built_from": "HEAD 6ea01e2f (with what the rest of this record names)",
+  "d3d9.dll": "c61f172586af9f7f9e8ebad74a962be65003b13fb3e96561ae3097792d7fc107",
+  "built_from": "HEAD 381271b1 (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -72,6 +72,7 @@
    "patches/0016-Add-scene-adaptive-opaque-emission.patch": "f90458cad21d1a984009797962d8f9816126344a97358a4a9eba1231dc61b001",
    "patches/0017-Apply-scoped-MMD-alpha-consistently-to-ray-materials.patch": "e89d4ba576cfcd373bb400a317e70ba09779d7312a373a9dd2dcbec78fc1c838",
    "patches/0018-Keep-denoiser-history-for-Model-Hotloader-draws-unde.patch": "38c820d10d35fd499e4e0d13a2b3c0f29b830c17cac5dd81271df11507afe48c",
+   "patches/0019-Keep-imported-eye-white-emission-on-isolated-surface.patch": "1d47f89fda7fe616d3ce6b60dd4d1e9b74a11f9239953142409df10583d4a29f",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }
