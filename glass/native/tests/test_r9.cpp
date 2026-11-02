@@ -9,11 +9,12 @@ void ready(World& w,bool water=false) { w.load_map(fixture::room(20,false,water)
 double ms(std::chrono::steady_clock::time_point t) { return std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t).count(); }
 }
 TEST_CASE("glass R9 irregular hit centred fracture conserves area down to one unit") {
-  unsigned tiny=0,multi=0,diagonal=0;
+  unsigned tiny=0,multi=0,diagonal=0;std::array<bool,7> counts{};
   for(unsigned seed=1;seed<=80;++seed) {
     const auto p=outline_xy(fixture::box(32,24,.5f));
     const auto parts=split_polygon(p,1,{17,-5,0},seed);
     REQUIRE(parts.size()>=2);CHECK(parts.size()<=6);if(parts.size()>2)++multi;
+    counts[parts.size()]=true;
     const auto repeat=split_polygon(p,1,{17,-5,0},seed);
     REQUIRE(parts.size()==repeat.size());double area=0;
     std::vector<Hull> leaves=parts;
@@ -36,6 +37,7 @@ TEST_CASE("glass R9 irregular hit centred fracture conserves area down to one un
     }
   }
   CHECK(tiny>100);CHECK(multi>40);CHECK(diagonal>100);
+  CHECK(std::count(counts.begin(),counts.end(),true)>=4);
   std::cout<<"R9 fracture tiny="<<tiny<<" multi="<<multi<<" diagonal="<<diagonal<<'\n';
 }
 TEST_CASE("glass R9 secondary replacement respects six child budget and inherited point velocity") {
@@ -106,4 +108,13 @@ TEST_CASE("glass R9 environment benchmark separates sound and buoyancy worker co
     std::cout<<"R9 environment water="<<water<<" sound="<<sound<<" pieces=1000 step_mean_ms="<<total/120
       <<" water_mean_ms="<<w.stats().water_ms/120<<" tests="<<w.stats().water_tests<<" applied="<<w.stats().water_applied<<" sound_events="<<sounds<<'\n';
   }
+  World w(8,0);ready(w);std::vector<double> times;unsigned children=0;double total=0;
+  for(unsigned i=0;i<120;++i) {
+    const auto id=w.spawn(fixture::box(16,12,.5f),{0,0,64},{},{400,0,0},{0,0,180},1);
+    const auto start=std::chrono::steady_clock::now();CHECK(w.can_split(id,1));const auto parts=w.split(id,1);
+    const double elapsed=ms(start);total+=elapsed;times.push_back(elapsed);children+=static_cast<unsigned>(parts.size());
+    REQUIRE(parts.size()>=2);CHECK(parts.size()<=6);for(const auto& f:parts)w.remove(f.id);
+  }
+  std::sort(times.begin(),times.end());
+  std::cout<<"R9 split mean_ms="<<total/120<<" p99_ms="<<times[118]<<" max_ms="<<times.back()<<" mean_children="<<double(children)/120<<'\n';
 }

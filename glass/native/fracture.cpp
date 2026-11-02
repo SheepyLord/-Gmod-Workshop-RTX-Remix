@@ -72,10 +72,10 @@ std::vector<Hull> split_polygon(const Hull& polygon,float minimum_size,V3 hit,st
   const std::array<V3,12> normals{{{13,5,0},{7,17,0},{-11,9,0},{3,19,0},{-17,4,0},{9,11,0},
     {19,-7,0},{5,-13,0},{-7,-19,0},{17,11,0},{-3,17,0},{11,-17,0}}};
   std::vector<Hull> out{polygon};
-  const unsigned wanted=std::min(maximum,2u+random()%5);
+  const unsigned wanted=std::min(maximum,2u+(random()>>16)%5);
   for(unsigned attempt=0;attempt<24 && out.size()<wanted;++attempt) {
     auto it=std::max_element(out.begin(),out.end(),[](const Hull& a,const Hull& b) { return polygon_area(a)<polygon_area(b); });
-    auto n=normals[random()%normals.size()];
+    auto n=normals[(random()>>16)%normals.size()];
     const auto c=polygon_center(*it);
     const auto target=attempt<3?hit*.7f+c*.3f:c;
     const double d=double(n.x)*target.x+double(n.y)*target.y;

@@ -145,7 +145,7 @@ TEST_CASE("glass R9 binding bounds sound motion tiny pieces and busy readers") {
   const auto bsp=nl::glass::fixture::room(20,false,true);
   m.call("LoadMap",{Value::text(std::string(bsp.begin(),bsp.end()))});m.call("FinishWorld");
   CHECK(failure(m.call("SetSounds",{num(1)})));CHECK(m.call("SetSounds",{Value::boolean(true)})[0].b);
-  CHECK(m.call("ReadSounds")[0].type==Type::Table);
+  CHECK(m.call("ReadSounds")[0].type==Type::Bool);
   const auto token=m.call("Spawn",{hull(),vector(0,0,32),vector(),vector(250,0,0),vector(),num(1)})[0];
   const auto motions=m.call("ReadMotion",{Value::array({token})})[0];
   CHECK(motions.table->at("n1").table->at("n1").n==token.n);
@@ -156,5 +156,5 @@ TEST_CASE("glass R9 binding bounds sound motion tiny pieces and busy readers") {
   CHECK(failure(m.call("Split",{token,num(1),num(7)})));
   m.call("BeginStep",{num(.016)});CHECK(failure(m.call("ReadSounds")));
   CHECK(failure(m.call("ReadMotion",{Value::array({token})})));m.call("Clear");
-  CHECK(m.call("ReadSounds")[0].table->empty());
+  CHECK(!m.call("ReadSounds")[0].b);
 }

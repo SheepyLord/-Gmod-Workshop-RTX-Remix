@@ -147,7 +147,8 @@ LUA_FUNCTION_STATIC(SetSounds) { return guarded(LUA,[&] {
   need(LUA->IsType(1,Type::Bool),"expected sound boolean");active(LUA).set_sounds(LUA->GetBool(1));return success(LUA);
 }); }
 LUA_FUNCTION_STATIC(ReadSounds) { return guarded(LUA,[&] {
-  const auto events=active(LUA).take_sounds();LUA->CreateTable();unsigned i=0;
+  const auto events=active(LUA).take_sounds();if(events.empty()) { LUA->PushBool(false);return 1; }
+  LUA->CreateTable();unsigned i=0;
   for(const auto& e:events) {
     LUA->CreateTable();LUA->PushNumber(e.id);set(LUA,-2,1);push_vector(LUA,e.position);set(LUA,-2,2);
     LUA->PushNumber(e.speed);set(LUA,-2,3);LUA->PushNumber(e.mass);set(LUA,-2,4);LUA->PushNumber(e.kind);set(LUA,-2,5);set(LUA,-2,++i);

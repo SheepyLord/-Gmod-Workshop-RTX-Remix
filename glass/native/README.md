@@ -189,3 +189,6 @@ water_entries/water_ms and overlap_suppressed. Mirror spawn/pose-correction over
 until separation; corrections also test next-step swept piece bounds. Swept overlap transfer uses
 the sampled travel direction and avoids a second opposite penetration solve. There is no Source
 response or global velocity clamp. `tests/test_r9.cpp` exercises these paths with generated fixtures.
+
+The read-only import probe accepts `<map.bsp> --water` to print parsed water bounds/surface planes
+without initializing physics, so QA can place a fixture in real water rather than guess a pool height.
