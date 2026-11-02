@@ -12,7 +12,8 @@ LUAJIT = shutil.which('luajit') or next((str(p) for p in [
 SCENARIOS = ('names', 'vtf', 'normal', 'no_api', 'late_api', 'old_runtime', 'late_material',
              'late_hash', 'invalid_hash', 'retry', 'foreign', 'edited_cache', 'disabled',
              'brightness', 'toggle', 'prune', 'user_edit', 'shutdown', 'bounded', 'wrappers',
-             'soft_normal', 'soft_late', 'soft_inherited', 'soft_foreign', 'soft_user_edit', 'soft_prune')
+             'soft_normal', 'soft_late', 'soft_inherited', 'soft_foreign', 'soft_user_edit', 'soft_prune',
+             'cache_cap')
 
 
 @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')

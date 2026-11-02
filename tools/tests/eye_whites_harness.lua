@@ -83,16 +83,37 @@ end
 function CreateMaterial(name, _, params)
     return material(name:match("_source$") and original or proxy)
 end
+local sizes, times = {}, {}
 file = {
     Exists = function(path, realm)
         if realm == "DATA" then return disk[path] ~= nil end
         return materialReady and (path == "materials/" .. matName .. ".vmt" or path == "materials/mmd/t/abc012.vtf")
     end,
-    Size = function() return #source end,
+    Size = function(path, realm)
+        if realm == "DATA" then return disk[path] and (sizes[path] or #disk[path]) or -1 end
+        return #source
+    end,
     Read = function(path, realm) return realm == "DATA" and disk[path] or source end,
     Write = function(path, bytes) disk[path] = scenario == "edited_cache" and "user edit" or bytes end,
-    CreateDir = function() end
+    CreateDir = function() end,
+    Find = function(pattern)
+        local dir, out = pattern:match("^(.*/)"), {}
+        for path in pairs(disk) do
+            if path:sub(1, #dir) == dir and path:match("%.vtf$") then out[#out + 1] = path:sub(#dir + 1) end
+        end
+        table.sort(out)
+        return out, {}
+    end,
+    Time = function(path) return times[path] or 0 end,
+    Delete = function(path) disk[path], sizes[path], times[path] = nil, nil, nil end
 }
+if scenario == "cache_cap" then
+    -- 1.2 GiB of older proxies: the oldest goes until the new one fits under 1 GiB.
+    for name, entry in pairs({old1 = {600, 1}, old2 = {500, 2}, new3 = {100, 3}}) do
+        local path = "nativeloader/eye_whites/" .. name .. ".vtf"
+        disk[path], sizes[path], times[path] = "cached", entry[1] * 1024 * 1024, entry[2]
+    end
+end
 util = {SHA256 = function() return "digest" end}
 render = {PushRenderTarget = function() end, PopRenderTarget = function() end}
 cam = {Start2D = function() end, End2D = function() end}
@@ -185,6 +206,11 @@ else
         cvs.nativeloader_eye_whites.value = "0" frames(10) assert(eye.texture == user)
     elseif scenario == "shutdown" then
         hooks.ShutDown() assert(eye.texture == original)
+    elseif scenario == "cache_cap" then
+        local dir = "nativeloader/eye_whites/"
+        assert(disk[dir .. "old1.vtf"] == nil, "the oldest proxy must go first")
+        assert(disk[dir .. "old2.vtf"] and disk[dir .. "new3.vtf"], "only what the limit needs may go")
+        assert(disk[dir .. "digest.vtf"], "the new proxy must be written")
     end
 end
 print("PASS " .. scenario)

@@ -75,7 +75,9 @@ Reuse textures across instances/players. Publish
 at most ten times per second; retry refused writes. Restore only a binding still equal to the owned
 proxy's normalized texture name, preserving subsequent user edits and entity/submaterial overrides. Lua
 ITexture wrappers need not compare equal for the same native texture. Removing an asset restores
-its binding and drops its registry entries. Owned cached images remain reusable across sessions.
+its binding and drops its registry entries. Owned cached images remain reusable across sessions,
+within 1 GiB: before writing a new proxy, the oldest cached files go first, never one this session
+bound (Claude's review: atlases are 5-85 MiB each, and nothing else would ever remove them).
 
 Discovery is client-local, including other players' loaded assets. No network message, native ABI,
 asset manifest, trust rule, shader variant or GPU record grows. Older runtimes refusing the new

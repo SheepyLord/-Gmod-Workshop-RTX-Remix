@@ -7,7 +7,8 @@ local enabled = CreateClientConVar("nativeloader_eye_whites", "1", true, false,
 local brightness = CreateClientConVar("nativeloader_eye_white_brightness", "100", true, false,
     "Eye-white brightness in percent (automatic and scene-adaptive PBR eye materials)", 0, 200)
 local PREFIX = "rtx.gmod."
-local states, atlases, sent, retries = {}, {}, {}, {}
+local CACHE, CACHE_LIMIT = "nativeloader/eye_whites/", 1024 * 1024 * 1024
+local states, atlases, sent, retries, owned = {}, {}, {}, {}, {}
 local assets, key, parts, partIndex, epoch, nextSweep = nil, nil, nil, 1, 0, 0
 local cursor, list, nextWrite, nextPrepare = 1, {}, 0, 0
 local preparedBytes, prepareMaxMs, warmQueue = 0, 0, {}
@@ -112,6 +113,23 @@ local function hashes(name, procedural)
     for hash in pairs(out) do values[#values + 1] = hash end
     return #values == 1 and values[1] or nil -- never guess between variants
 end
+-- The cache stays under CACHE_LIMIT: the oldest proxies go first (one is rebuilt when needed again);
+-- a proxy this session bound is never deleted.
+local function makeRoom(size)
+    local entries, total = {}, size
+    for _, name in ipairs(file.Find(CACHE .. "*.vtf", "DATA") or {}) do
+        local path = CACHE .. name
+        local bytes = math.max(file.Size(path, "DATA") or 0, 0)
+        total = total + bytes
+        if not owned[path] then entries[#entries + 1] = {path = path, bytes = bytes, time = file.Time(path, "DATA") or 0} end
+    end
+    table.sort(entries, function(a, b) return a.time < b.time end)
+    for _, entry in ipairs(entries) do
+        if total <= CACHE_LIMIT then break end
+        file.Delete(entry.path)
+        total = total - entry.bytes
+    end
+end
 local function prepare(state, now)
     if not file.Exists("materials/" .. state.name .. ".vmt", "GAME") then return end
     local mat = Material(state.name)
@@ -132,11 +150,15 @@ local function prepare(state, now)
         local proxyBytes, reason = vtf.proxy(bytes)
         if not proxyBytes then state.reason = reason return end
         local digest = util.SHA256(proxyBytes)
-        local path = "nativeloader/eye_whites/" .. digest .. ".vtf"
+        local path = CACHE .. digest .. ".vtf"
         file.CreateDir("nativeloader/eye_whites")
-        if not file.Exists(path, "DATA") then file.Write(path, proxyBytes) end
+        if not file.Exists(path, "DATA") then
+            makeRoom(#proxyBytes)
+            file.Write(path, proxyBytes)
+        end
         -- A user-edited or incomplete cache entry is never overwritten or bound.
         if file.Read(path, "DATA") ~= proxyBytes then state.reason = "cache differs" return end
+        owned[path] = true
         local name = "nativeloader_eye_" .. digest
         local original = CreateMaterial(name .. "_source", "UnlitGeneric", {["$basetexture"] = textureName})
         original:SetTexture("$basetexture", texture)
