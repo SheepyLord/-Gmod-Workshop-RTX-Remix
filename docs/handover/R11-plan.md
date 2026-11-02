@@ -9,6 +9,9 @@ The user's requests (2026-11-02, after R10):
 - **34.** "Validate and Improve the autopbr function to make it more robust for the PBRs in the vanilla
   source engine system and fit the RTX style."
 
+The user's note on 34, after the brief: "actual PBR replacements, if exists, should always overwrite the
+autoPBR result." The brief makes that a guarantee for both items (Codex was restarted with it).
+
 Standing permissions from R10 still apply: no questions to the user, the work goes to Codex, any running
 game may be closed, and `main` and the Workshop are updated when done.
 

@@ -37,6 +37,9 @@ setting to enable / disable this feature."
 **34.** "Validate and Improve the autopbr function to make it more robust for the PBRs in the vanilla
 source engine system and fit the RTX style."
 
+The user's note on 34 (2026-11-02, after this brief): "actual PBR replacements, if exists, should always
+overwrite the autoPBR result."
+
 ## What Claude found (starting points: verify them)
 
 1. **ToPBR.** Lua finds materials (`cl_material_pipeline.lua`: phase 1 Lua fixers, phase 2 the C++ stages
@@ -71,7 +74,11 @@ source engine system and fit the RTX style."
      roughness, B AO), `_N` (full XYZ), `_E` (emission), light-band, anisotropy and wet masks.
    Confirm the semantics (the games' shader documentation or community notes where they exist, the
    statistics, rendered checks) and the normal maps' green convention against Remix's.
-4. **Precedence.** PBR packs (the user's Workshop packs, rpai's `ai_pbr`) must keep winning. R10's
+4. **Precedence.** Any actual PBR replacement must always win over ToPBR's result (the user's note): the
+   character packs from the Workshop, rpai's `ai_pbr`, map PBR mods, the fixes' own authored mods
+   (`base_mod`...), any other mod that has a material for the same texture. Today that rests on mod folder
+   order alone ("first mod wins", `~gmod_topbr` sorting after ASCII names); a folder name sorting after `~`
+   (non-ASCII, for example) would lose to the generated material. R10's
    automatic eye whites hand the runtime `proxy=atlas` aliases, and a mod material for the atlas wins over
    the automatic emission: a generated material for a face atlas would switch the eye-white correction off.
    Faces rarely ship PBR maps; keep it that way or keep the correction.
@@ -109,6 +116,13 @@ source engine system and fit the RTX style."
 4. A setting to turn it on or off (default on), in the RTX menu's character options (or the hotloader's
    settings, if that reads better), translated into the seven languages; off restores the previous look.
 
+**Both, first of all: real replacements win, always.** Where any other mod has a material for a texture,
+that material is what renders, never ToPBR's, in both phases, whatever the mods' folder names, load order
+or loading time (a pack installed or hot-reloaded after ToPBR wrote its material included). Make it a
+guarantee, not an ordering accident: for example, do not generate (or remove) a ToPBR material for a hash
+another mod replaces, and make the generated mod rank last. Test it, including a mod whose folder name sorts
+after `~`.
+
 **Both.** Tests (native where the fixes have them, Lua harnesses, Python for any tool), ADR 0091, CHANGELOG
 lines in the user's terms, RESEARCH facts. Import the reviewed DLL and files into `packages/fixes` on your
 branch (one DLL import at the end: Git LFS storage is never freed). Report the DLL's size and SHA-256.
@@ -127,6 +141,8 @@ on gm_construct and an HL2 map, and frame times.
   still works after it wrote its files; the chosen default is backed by evidence.
 - One character from each game gets its own normal, roughness, metallic and emission in game, automatically,
   with the setting on, and looks as before with it off; packs and eye whites unaffected.
+- Wherever a real PBR replacement exists (a pack, `ai_pbr`, a map mod, a test mod named to sort after `~`),
+  it renders instead of ToPBR's material, with ToPBR on, in both phases.
 - `tools\test.ps1 -Config Release` passes on `r11-autopbr`.
 
 ## Rules for this run
