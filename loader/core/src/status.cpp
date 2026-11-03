@@ -95,7 +95,8 @@ std::string serialize(const Report& r) {
       "\"id\":" + json::quote(p.runtime_id) + ",\"version\":" + json::quote(p.runtime_version) +
       ",\"folder\":" + json::quote(a.runtime_folder) + ",\"dll\":" + json::quote(a.runtime_dll) +
       "},\"system_vulkan_path\":" + json::quote(a.vulkan_path) + ",\"gpu_vendors\":" + numbers(p.gpu_vendors) +
-      ",\"performance_tier\":" + performance::serialize(p.performance_tier) + ",\"notes\":" + strings(p.notes) +
+      ",\"performance_tier\":" + performance::serialize(p.performance_tier) +
+      ",\"memory\":" + (p.memory.reason.empty() ? std::string("null") : memory_profile::serialize(p.memory)) + ",\"notes\":" + strings(p.notes) +
       ",\"non_nvidia\":" + (p.non_nvidia ? "true" : "false") + ",\"environment\":{\"requested\":" + pairs(p.env) + ",\"set\":" + pairs(a.environment_set) +
       ",\"user_values_kept\":" + pairs(p.user_env) + "},\"layers\":{\"rtx\":" + strings(p.rtx_layers) +
       ",\"dxvk\":" + strings(p.dxvk_layers) + "},\"layer_copies\":" + copies_json(p.layer_copies) +
@@ -126,6 +127,7 @@ std::string log_fields(const Report& r) {
       << "\nactivation.system_vulkan_path=" << json::quote(a.vulkan_path)
       << "\nactivation.gpu_vendors=" << numbers(a.plan.gpu_vendors) << "\nactivation.non_nvidia=" << a.plan.non_nvidia
       << "\nactivation.performance_tier=" << performance::serialize(a.plan.performance_tier)
+      << "\nactivation.memory=" << (a.plan.memory.reason.empty() ? std::string("null") : memory_profile::serialize(a.plan.memory))
       << "\nactivation.environment.set=" << pairs(a.environment_set) << "\nactivation.environment.user_values_kept=" << pairs(a.plan.user_env)
       << "\nactivation.layers.rtx=" << strings(a.plan.rtx_layers) << "\nactivation.layers.dxvk=" << strings(a.plan.dxvk_layers)
       << "\nactivation.layer_copies=" << copies_json(a.plan.layer_copies)

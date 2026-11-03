@@ -75,7 +75,7 @@ Config parse(std::string_view json_text) {
       if (const Value* dev = allow->find("dev_folders")) c.dev_folders = unique_strings(*dev, "allow.dev_folders");
     }
     if (const Value* remix = root.find("remix")) {
-      only_keys(*remix, "remix", {"enabled", "reshade", "performance_tier"});
+      only_keys(*remix, "remix", {"enabled", "reshade", "performance_tier", "memory_profile"});
       if (const Value* enabled = remix->find("enabled")) c.remix_enabled = enabled->as_bool("remix.enabled");
       if (const Value* tier = remix->find("performance_tier")) {
         const std::string mode = tier->is_string() ? tier->as_string() : std::string{};
@@ -84,6 +84,15 @@ Config parse(std::string_view json_text) {
         else if (mode == "medium") c.performance_tier = PerformanceTier::medium;
         else if (mode == "low") c.performance_tier = PerformanceTier::low;
         else c.notes.push_back("remix.performance_tier must be auto, high, medium or low; using auto");
+      }
+      // As the tier: a wrong value costs the override (a note, then auto), never the loader.
+      if (const Value* profile = remix->find("memory_profile")) {
+        const std::string mode = profile->is_string() ? profile->as_string() : std::string{};
+        if (mode == "auto") c.memory_profile = MemoryProfile::automatic;
+        else if (mode == "minimum") c.memory_profile = MemoryProfile::minimum;
+        else if (mode == "recommended") c.memory_profile = MemoryProfile::recommended;
+        else if (mode == "high") c.memory_profile = MemoryProfile::high;
+        else c.notes.push_back("remix.memory_profile must be auto, minimum, recommended or high; using auto");
       }
       if (const Value* reshade = remix->find("reshade")) {
         const std::string& mode = reshade->as_string("remix.reshade");

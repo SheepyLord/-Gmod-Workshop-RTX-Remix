@@ -88,6 +88,30 @@ Graphics cards
 - The integrated Radeon graphics of a Ryzen processor could not run an RTX session in a test: the GPU
   was lost about a minute in. With a separate graphics card, Remix uses that card.
 
+Memory and smaller computers
+----------------------------
+
+- The minimum is a graphics card with 8 GB of video memory (VRAM) and 16 GB of system memory
+  (RAM). 16 GB and 32 GB are recommended. Smaller computers are not supported: the game may stutter
+  or run out of memory.
+- Loader 0.13.0 sizes what the game keeps in memory to your computer. It picks a memory profile from
+  whichever is smaller, VRAM or RAM:
+  - "minimum": 8 GB and 16 GB.
+  - "recommended": 16 GB and 32 GB.
+  - "high": 24 GB and 64 GB or more.
+  The "RTX Remix" tab's Start here page shows the profile.
+  - Characters you imported load when you first use them. On a minimum computer the first spawn of
+    each one can take a moment. Recommended keeps your five most recently used characters ready,
+    high ten.
+  - A bigger computer keeps more textures on the graphics card. A minimum computer keeps one copy
+    of each texture instead of two.
+- What takes the most memory:
+  - Many imported characters in one session.
+  - Hundreds of Workshop subscriptions: every map and model adds textures.
+  - The resolution: 4K needs far more than 1920x1080.
+- On an 8 GB card, play at 1920x1080 with the "low" performance tier (the loader picks it for you)
+  and unsubscribe from Workshop add-ons you no longer use.
+
 Settings (native-loader\config.json)
 ------------------------------------
 
@@ -108,6 +132,9 @@ Settings (native-loader\config.json)
     native-loader\logs\memory.csv (on by default; the last one to two hours; never uploaded).
   For example, the low tier:
   { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "performance_tier": "low" } }
+- Loader 0.13.0 also reads "remix": { "memory_profile": "minimum" }. It picks the memory profile
+  yourself: "minimum", "recommended" or "high"; "auto" (the default) lets the loader choose. As
+  above, an older loader rejects it.
 
 Long loads
 ----------

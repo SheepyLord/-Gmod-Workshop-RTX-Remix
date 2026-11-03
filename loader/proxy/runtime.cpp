@@ -232,6 +232,17 @@ bool RuntimeActivation::apply(const std::filesystem::path& root, const journal::
     }
   }
 
+  // The memory profile's runtime budgets (R13, ADR 0101). A layer that cannot be written leaves the
+  // runtime its own automatic budgets; an older memory.conf must not be read instead.
+  if (!plan.memory.layer.empty()) {
+    try {
+      layer_folder();
+      write_if_changed(root, activate::kMemoryLayer, memory_profile::layer_text(plan.memory));
+    } catch (const std::exception& error) {
+      activate::disable_memory_layer(report.plan, std::string("the memory layer was not written: ") + error.what());
+    }
+  }
+
   if (plan.gpu_crash_dumps) {
     try {
       const auto path = gpu_diagnostics::prepare(root);

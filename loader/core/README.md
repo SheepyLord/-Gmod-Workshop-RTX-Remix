@@ -18,6 +18,7 @@ exact start-marker bytes reject changed or different sessions. This code has no 
 | `include/nl/gpu_diagnostics.h`, `src/gpu_diagnostics.cpp` | Read-only one-start marker probe, local diagnostics-layer/dump-folder preparation and atomic next_start consumption (ADR 0062) |
 
 | `include/nl/memory.h`, `src/memory.cpp` | R6 local memory samples through runtime-loaded DXGI and kernel counters; UTC/byte CSV, bounded rotation with ownership receipts, strict system-commit warning thresholds and a latest-only menu snapshot |
+| `include/nl/memory_profile.h`, `src/memory_profile.cpp` | Pure R13 memory profiles (ADR 0101): below minimum, minimum, recommended or high from the largest adapter's VRAM and the total RAM, the `remix.memory_profile` override, the per-profile budgets (characters kept ready, game-texture GPU budget, CPU copies), `activation.memory` JSON and the runtime's D3D9 layer text |
 | `include/nl/evidence.h`, `src/evidence.cpp` | R6: classify the previous session, archive local logs/dumps with full source sharing before runtime log truncation, and retain five intact archives within 200 MiB; never modify original evidence or prune user-edited copies ([ADR 0063](../../docs/decisions/0063-local-session-evidence-and-memory-telemetry.md)) |
 | `CMakeLists.txt` | Defines `nl_core` (links the LZMA SDK decoder `nl_lzma` privately); generates `nl/version.h` |
 | `include/nl/core.h` | `nl::version()` |

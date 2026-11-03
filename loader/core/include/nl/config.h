@@ -28,6 +28,9 @@ enum class Reshade { automatic, on, off };
 enum class PerformanceTier { automatic, high, medium, low };
 enum class GpuCrashDumps { off, next_start, always };
 
+// R13, ADR 0101: how much the game keeps in memory, from the computer's VRAM and RAM.
+enum class MemoryProfile { automatic, minimum, recommended, high };
+
 struct Config {
   bool enabled = true;
   std::vector<std::string> workshop;     // Workshop item ids (decimal digits)
@@ -39,6 +42,7 @@ struct Config {
   bool remix_enabled = true;             // false: runtime packages are planned but not activated
   Reshade reshade = Reshade::automatic;
   PerformanceTier performance_tier = PerformanceTier::automatic;
+  MemoryProfile memory_profile = MemoryProfile::automatic;  // remix.memory_profile
   GpuCrashDumps gpu_crash_dumps = GpuCrashDumps::off;
   std::vector<std::string> notes;        // recoverable config issues, reported by activation
 

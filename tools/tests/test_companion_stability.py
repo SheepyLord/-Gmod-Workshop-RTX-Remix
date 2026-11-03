@@ -77,6 +77,13 @@ class CompanionStabilityTests(unittest.TestCase):
                 with self.subTest(language=language, scenario=scenario):
                     self.run_scenario(scenario, language)
 
+    def test_memory_profile_line_in_every_language(self):
+        for language in ('en', *companion_i18n.LANGUAGES):
+            for scenario in ('memory_below_minimum', 'memory_minimum', 'memory_recommended', 'memory_high'):
+                with self.subTest(language=language, scenario=scenario):
+                    self.run_scenario(scenario, language)
+        self.run_scenario('memory_invalid', 'en')  # an unknown profile shows no line
+
     def test_absent_or_invalid_reports_show_no_tier_line(self):
         for scenario in ('absent', 'no_activation', 'bad_field', 'missing', 'malformed',
                          'unreadable', 'bad_schema', 'invalid_tier', 'unknown_hardware',

@@ -145,7 +145,7 @@ msgid "Night"
 msgstr "Nuit"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:684
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:240
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:261
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "L'API Remix n'est pas disponible dans cette session : ces paramètres ne peuvent donc pas être appliqués. Exécutez nativeloader_status pour plus de détails."
 
@@ -248,8 +248,8 @@ msgid "Weather"
 msgstr "Météo"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:733
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:249
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:270
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:274
 msgid "(leave to Remix)"
 msgstr "(laisser à Remix)"
 
@@ -280,6 +280,67 @@ msgstr "Ciel et météo"
 #, c-format
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "Le paquet RTX %s a été mis à jour : redémarrez Garry's Mod pour l'utiliser"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
+msgid "Choose eye-white materials"
+msgstr "Choisir les matériaux du blanc des yeux"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
+msgid "Choose a spawned character, or look at one before opening this window. Choices are saved for this character and apply to all its copies, without respawning. The brightness and steady-eye-white settings still apply."
+msgstr "Choisissez un personnage présent, ou regardez-le avant d’ouvrir cette fenêtre. Les choix sont enregistrés pour ce personnage et appliqués à toutes ses copies, sans le faire réapparaître. Les réglages de luminosité et de correction du blanc des yeux restent actifs."
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+msgid "Choose a spawned character"
+msgstr "Choisir un personnage présent"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
+msgid "Spawn a Model Hotloader character first. Only generated character textures can be selected."
+msgstr "Faites d’abord apparaître un personnage Model Hotloader. Seules les textures générées pour le personnage peuvent être sélectionnées."
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
+msgid "Previous materials"
+msgstr "Matériaux précédents"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:412
+msgid "Next materials"
+msgstr "Matériaux suivants"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
+msgid "Checked materials are eye whites. Use automatic detection removes a manual choice. A shared texture thumbnail can show the face too; only the selected material changes."
+msgstr "Les matériaux cochés sont traités comme le blanc des yeux. La détection automatique efface le choix manuel. Une vignette de texture partagée peut aussi montrer le visage ; seul le matériau choisi change."
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+msgid "Eye white"
+msgstr "Blanc des yeux"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:477
+msgid "Use automatic detection"
+msgstr "Utiliser la détection automatique"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+msgid "Chosen: eye white"
+msgstr "Choix : blanc des yeux"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+msgid "Chosen: ordinary material"
+msgstr "Choix : matériau ordinaire"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+msgid "Automatic: eye white"
+msgstr "Automatique : blanc des yeux"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+msgid "Automatic: ordinary material"
+msgstr "Automatique : matériau ordinaire"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
+msgid "Generated texture unavailable"
+msgstr "Texture générée indisponible"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
+msgid "Choice could not be saved. The character may have been removed, or its saved choices were changed or are unreadable. Existing files have been kept."
+msgstr "Impossible d’enregistrer ce choix. Le personnage a peut-être été supprimé, ou les choix enregistrés ont été modifiés ou sont illisibles. Les fichiers existants ont été conservés."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
 msgid "Welcome"
@@ -358,7 +419,7 @@ msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nat
 msgstr "Onglet RTX Remix > Pour commencer > « Utiliser les paramètres RTX classiques » (console : nativeloader_rtx_defaults) les applique tous de nouveau, en écrasant aussi les valeurs que vous avez modifiées."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
 msgid "Common Remix settings"
 msgstr "Réglages Remix usuels"
 
@@ -550,9 +611,9 @@ msgstr "Guide RTX Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
 msgid "Rendering"
 msgstr "Rendu"
 
@@ -563,13 +624,13 @@ msgid "Water and glass"
 msgstr "Eau et verre"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
 msgid "Start here"
 msgstr "Pour commencer"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
 msgid "Remix settings"
 msgstr "Paramètres Remix"
 
@@ -582,17 +643,18 @@ msgid "Ultra"
 msgstr "Ultra"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:228
 msgid "High"
 msgstr "Élevé"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
 msgid "Medium"
 msgstr "Moyen"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:201
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
 msgid "Low"
 msgstr "Faible"
 
@@ -645,7 +707,7 @@ msgid "Frame generation"
 msgstr "Génération d'images"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:255
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
 msgid "Off"
 msgstr "Désactivé"
 
@@ -725,182 +787,199 @@ msgstr "Halo lumineux, flou de mouvement et grain de pellicule."
 msgid "Tone map colour purity"
 msgstr "Pureté des couleurs"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
 msgid "No tier layer is available."
 msgstr "Aucune couche de niveau n’est disponible."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:206
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
 #, c-format
 msgid "Performance tier %s is not applied: %s. See the Memory and stability guide."
 msgstr "Le niveau de performance %s n’est pas appliqué : %s. Consultez le guide Mémoire et stabilité."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:213
 msgid "Automatic selection"
 msgstr "Sélection automatique"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:213
 msgid "Configuration override"
 msgstr "Choix dans la configuration"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:214
 msgid "Compatibility fallback"
 msgstr "Repli de compatibilité"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:219
 #, c-format
 msgid "Performance tier: %s (%s; %s, %s MiB VRAM). To change it, set remix.performance_tier in native-loader\\config.json to auto, high, medium or low, then restart Garry's Mod."
 msgstr "Niveau de performance : %s (%s ; %s, %s Mio de VRAM). Pour le modifier, réglez remix.performance_tier sur auto, high, medium ou low dans native-loader\\config.json, puis redémarrez Garry's Mod."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
 msgid "Unknown source"
 msgstr "Origine inconnue"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:227
+msgid "Below the minimum"
+msgstr "Inférieur au minimum"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:227
+msgid "Minimum"
+msgstr "Minimal"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:228
+msgid "Recommended"
+msgstr "Recommandé"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:233
+#, c-format
+msgid "Memory profile: %s (%s MiB VRAM, %s MiB RAM). Characters kept ready for an instant spawn: %s; the others load when first used. To change it, set remix.memory_profile in native-loader\\config.json to auto, minimum, recommended or high, then restart Garry's Mod."
+msgstr "Profil mémoire : %s (%s Mio de VRAM, %s Mio de RAM). Personnages gardés prêts pour une apparition immédiate : %s ; les autres se chargent à leur première utilisation. Pour le modifier, réglez remix.memory_profile sur auto, minimum, recommended ou high dans native-loader\\config.json, puis redémarrez Garry's Mod."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:238
 msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
 msgstr "RTX Remix fonctionne dans cette session grâce au chargeur natif. Tout ce qui concerne RTX se trouve dans cet onglet."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:223
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
 msgid "Open the RTX Remix guide"
 msgstr "Ouvrir le guide RTX Remix"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:224
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:245
 msgid "Memory and stability guide"
 msgstr "Guide mémoire et stabilité"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:225
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
 msgid "Print the loader's status to the console"
 msgstr "Afficher l'état du chargeur dans la console"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:226
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:247
 msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
 msgstr "Paramètres classiques : les valeurs de l'installation RTX d'origine. Elles ont été appliquées une fois, seulement là où un paramètre était encore à sa valeur par défaut. Ce bouton les applique toutes de nouveau."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:227
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:248
 msgid "Use the classic RTX settings"
 msgstr "Utiliser les paramètres RTX classiques"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:228
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:249
 msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
 msgstr "Empêcher les addons d'annuler les paramètres RTX ou d'ajouter du post-traitement à l'image"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:229
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
 msgid "RTX session guard"
 msgstr "Protection de la session RTX"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:230
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
 msgid "Turn this off only to test an add-on that misbehaves."
 msgstr "Ne désactivez cette option que pour tester un addon qui fonctionne mal."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:231
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
 msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
 msgstr "Menu propre à Remix : appuyez sur Alt+X. Choisissez « Personnalisé » (Custom) comme préréglage graphique avant de modifier des paramètres un par un, puis enregistrez, sinon ils reviennent au prochain démarrage."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:232
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
 msgid "Language"
 msgstr "Langue"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:233
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:254
 msgid "Same as Garry's Mod"
 msgstr "Comme Garry's Mod"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:235
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:256
 msgid "Language of this tab and the guide"
 msgstr "Langue (onglet et guide)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:242
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
 msgid "Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."
 msgstr "Les changements faits ici s’appliquent à cette session. Enregistrez les paramètres dans le menu Alt+X pour les conserver. Les valeurs affichées sont celles imposées par ce panneau, pas les valeurs actuelles de Remix."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:243
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
 msgid "Reapply these overrides at every launch"
 msgstr "Réappliquer les valeurs de ce panneau à chaque lancement"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:265
 msgid "Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."
 msgstr "Laissez cette option désactivée pour charger les paramètres enregistrés dans Remix. Activez-la uniquement pour les remplacer par les valeurs de ce panneau."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:254
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:275
 msgid "On"
 msgstr "Activé"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
 #, c-format
 msgid "Set %s here"
 msgstr "Régler « %s » ici"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
 msgid "Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."
 msgstr "Activez le réglage correspondant avant de modifier sa valeur. La luminosité du ciel et la pureté des couleurs peuvent être réglées sur zéro."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:285
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
 msgid "Clear this panel's overrides"
 msgstr "Effacer les valeurs imposées par ce panneau"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:289
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
 msgid "Local player shadow"
 msgstr "Ombre du joueur local"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:290
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:311
 msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
 msgstr "Affiche l’ombre et le reflet de votre corps à la première personne. Les autres joueurs et les ragdolls ne sont pas affectés."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:291
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
 msgid "Body height offset (units)"
 msgstr "Décalage vertical du corps (unités)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:292
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:313
 msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
 msgstr "Une valeur positive relève uniquement le corps affiché. La caméra et les collisions restent en place."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:296
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
 msgid "Keep toolgun text sharp"
 msgstr "Garder le texte du toolgun net"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:297
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
 msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
 msgstr "Affiche le contenu de l’écran du toolgun à pleine résolution après la mise à l’échelle. Les animations et les écrans personnalisés continuent de se mettre à jour normalement."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:301
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 msgid "Hide outline meshes"
 msgstr "Masquer les maillages de contour"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:302
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
 msgstr "Masque les coques de contour incompatibles qui peuvent recouvrir ou assombrir le modèle. Les autres matériaux du modèle restent affichés normalement."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:303
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
 msgid "Imported game PBR"
 msgstr "PBR des personnages importés"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Uses shipped Wuthering Waves, Endfield and Silver Palace maps. Preserves skin and faces. Off restores the original materials."
 msgstr "Utilise les textures fournies avec Wuthering Waves, Endfield et Silver Palace. Préserve la peau et le visage. Désactiver rétablit les matériaux d’origine."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
 msgid "Steady eye whites for imported characters"
 msgstr "Stabiliser le blanc des yeux des personnages importés"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
 msgid "Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."
 msgstr "Reconnaît les surfaces du blanc des yeux par leur nom. Les personnages dotés d’un pack PBR conservent ses matériaux."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:307
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
 msgid "Eye-white brightness"
 msgstr "Luminosité du blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:308
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."
 msgstr "Pourcentage : 100 est la valeur réglée par défaut. Agit immédiatement sur la correction automatique et l’émission des yeux adaptée à la scène dans les packs PBR. Zéro supprime cette émission."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
 msgid "Player models"
 msgstr "Modèles de joueurs"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
 msgid "Toolgun screen"
 msgstr "Écran du toolgun"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
 msgid "Model outlines"
 msgstr "Contours des modèles"
 
@@ -917,63 +996,3 @@ msgstr "Importez des fichiers VMD et gérez votre bibliothèque de mouvements et
 #: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
 msgid "Open in window"
 msgstr "Ouvrir dans une fenêtre"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:390 nativeloader/lua/autorun/client/nativeloader_menu.lua:309
-msgid "Choose eye-white materials"
-msgstr "Choisir les matériaux du blanc des yeux"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:394
-msgid "Choose a spawned character, or look at one before opening this window. Choices are saved for this character and apply to all its copies, without respawning. The brightness and steady-eye-white settings still apply."
-msgstr "Choisissez un personnage présent, ou regardez-le avant d’ouvrir cette fenêtre. Les choix sont enregistrés pour ce personnage et appliqués à toutes ses copies, sans le faire réapparaître. Les réglages de luminosité et de correction du blanc des yeux restent actifs."
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
-msgid "Choose a spawned character"
-msgstr "Choisir un personnage présent"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:400
-msgid "Spawn a Model Hotloader character first. Only generated character textures can be selected."
-msgstr "Faites d’abord apparaître un personnage Model Hotloader. Seules les textures générées pour le personnage peuvent être sélectionnées."
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
-msgid "Previous materials"
-msgstr "Matériaux précédents"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:405
-msgid "Next materials"
-msgstr "Matériaux suivants"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:416
-msgid "Checked materials are eye whites. Use automatic detection removes a manual choice. A shared texture thumbnail can show the face too; only the selected material changes."
-msgstr "Les matériaux cochés sont traités comme le blanc des yeux. La détection automatique efface le choix manuel. Une vignette de texture partagée peut aussi montrer le visage ; seul le matériau choisi change."
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:459
-msgid "Eye white"
-msgstr "Blanc des yeux"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:461
-msgid "Use automatic detection"
-msgstr "Utiliser la détection automatique"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:471
-msgid "Chosen: eye white"
-msgstr "Choix : blanc des yeux"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:471
-msgid "Chosen: ordinary material"
-msgstr "Choix : matériau ordinaire"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:473
-msgid "Automatic: eye white"
-msgstr "Automatique : blanc des yeux"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:473
-msgid "Automatic: ordinary material"
-msgstr "Automatique : matériau ordinaire"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
-msgid "Generated texture unavailable"
-msgstr "Texture générée indisponible"
-
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:480
-msgid "Choice could not be saved. The character may have been removed, or its saved choices were changed or are unreadable. Existing files have been kept."
-msgstr "Impossible d’enregistrer ce choix. Le personnage a peut-être été supprimé, ou les choix enregistrés ont été modifiés ou sont illisibles. Les fichiers existants ont été conservés."

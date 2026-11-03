@@ -186,14 +186,18 @@ hook.Add("AddToolMenuCategories", "nativeloader_menu", function()
     end
 end)
 
--- I2 is optional: older loaders report no performance tier. Read the local report when the panel
--- opens, and describe the loader's choice without writing any Remix options or configuration.
-local function performance_tier_line()
+local function loader_status()
     local ok, status = pcall(function()
         local body = file.Read("native-loader/status.json", "DATA")
         return body and util.JSONToTable(body)
     end)
-    if not ok or type(status) ~= "table" or status.schema ~= 1 then return end
+    if ok and type(status) == "table" and status.schema == 1 then return status end
+end
+
+-- I2 is optional: older loaders report no performance tier. Read the local report when the panel
+-- opens, and describe the loader's choice without writing any Remix options or configuration.
+local function performance_tier_line(status)
+    if not status then return end
     local activation = status.activation
     local tier = type(activation) == "table" and activation.performance_tier
     if type(tier) ~= "table" then return end
@@ -216,10 +220,27 @@ local function performance_tier_line()
         L(levels[tier.tier]), L(sources[tier.source] or N("Unknown source")), adapter, memory)
 end
 
+-- R13 (ADR 0101): loaders from 0.13.0 report a memory profile; older ones report none.
+local function memory_profile_line(status)
+    local memory = status and type(status.activation) == "table" and status.activation.memory
+    if type(memory) ~= "table" then return end
+    local profiles = { below_minimum = N("Below the minimum"), minimum = N("Minimum"),
+        recommended = N("Recommended"), high = N("High") }
+    if not profiles[memory.profile] then return end
+    local function count(value)
+        return type(value) == "number" and value >= 0 and value < math.huge and string.format("%.0f", value) or "?"
+    end
+    return string.format(L("Memory profile: %s (%s MiB VRAM, %s MiB RAM). Characters kept ready for an instant spawn: %s; the others load when first used. To change it, set remix.memory_profile in native-loader\\config.json to auto, minimum, recommended or high, then restart Garry's Mod."),
+        L(profiles[memory.profile]), count(memory.vram_mib), count(memory.ram_mib), count(memory.warm_characters))
+end
+
 local function start_here(panel)
     panel:Help(L("RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."))
-    local tier = performance_tier_line()
+    local status = loader_status()
+    local tier = performance_tier_line(status)
     if tier then panel:Help(tier) end
+    local memory = memory_profile_line(status)
+    if memory then panel:Help(memory) end
     panel:Button(L("Open the RTX Remix guide"), "nativeloader_guide")
     panel:Button(L("Memory and stability guide"), "nativeloader_stability_guide")
     panel:Button(L("Print the loader's status to the console"), "nativeloader_status")

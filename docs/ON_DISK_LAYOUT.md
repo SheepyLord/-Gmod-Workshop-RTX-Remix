@@ -109,6 +109,8 @@ GarrysMod\
 │  ├─ remix\dxvk-<n>.conf, rtx-<n>.conf     loader 0.6.0: copies of the package's Remix layers, written at
 │  │                                         each RTX start from the checked payload; the runtime reads
 │  │                                         these (ADR 0036)
+│  ├─ remix\memory.conf                    loader 0.13.0: written at each RTX start: the memory profile's
+│  │                                         two D3D9 budgets for the runtime (ADR 0101)
 │  ├─ reshade\                             loader 0.5.0: ReShade's base folder in RTX sessions (ADR 0028):
 │  │                                         ReShade.ini, presets, ReShade.log; made once from
 │  │                                         bin\win64\ReShade.ini, then the user's (never journaled)
@@ -345,6 +347,7 @@ Schema 1 accepts these additional optional keys (older loaders reject them as un
 | Key | Default | Rule |
 |---|---|---|
 | `remix.performance_tier` | `"auto"` | `"high"`, `"medium"`, `"low"` override GPU selection; an invalid value/type uses auto and adds an activation note |
+| `remix.memory_profile` | `"auto"` | Loader 0.13.0 (ADR 0101): `"minimum"`, `"recommended"`, `"high"` override the memory profile, with that profile's computer's budgets at most the measured memory; an invalid value/type uses auto and adds an activation note |
 | `diagnostics.gpu_crash_dumps` | `"off"` | `"next_start"` once, `"always"` every RTX activation; invalid values/types use off with an activation note |
 | `diagnostics.memory_telemetry` | `"on"` | `"off"` stops the memory history (R6 T2, ADR 0063); invalid values/types use on with an activation note |
 
@@ -360,6 +363,7 @@ uses no GPU layer in auto; it honors an explicit tier override and reports "GPU 
 | `native-loader/packages/<runtime>/<version>_<generation>/config/dxvk-tiers/{medium,low}.conf` | Ordinary runtime payload, journaled and checked before activation; no new manifest field |
 | `native-loader/remix/tier.conf` | Regenerated short copy of the selected package tier; a pre-R6 package gets the built-in low fallback, or no layer for medium/high |
 | `native-loader/remix/diagnostics.conf` | Generated only when diagnostics apply; enables Aftermath, resource tracking and startup GPU crash state |
+| `native-loader/remix/memory.conf` | Loader 0.13.0 (ADR 0101): regenerated at each RTX start with `d3d9.managedTextureBudgetMiB` and `d3d9.releaseManagedHostCopies` for the memory profile; one that cannot be written is not listed (the runtime then sizes its own budgets, ADR 0100) |
 | `native-loader/remix/gpu-crash-dumps.used` | Loader-owned atomic one-start marker; any existing marker, including an empty one, counts as consumed; an RTX start in diagnostic off mode removes it best effort |
 | `native-loader/logs/gpu/` | Local dump destination; absolute path in this process's DXVK_AFTERMATH_DUMP_PATH, reported in activation.environment; Remix may upload Aftermath dumps through Sentry with the player's crash-reporting consent |
 
@@ -378,8 +382,8 @@ The loader creates the dump folder locally. Remix hands Aftermath dumps to its S
 reporter and uploads them when the player accepts Remix crash reporting. Enabling diagnostics
 does not grant that consent; R6 leaves the runtime's reporting behavior unchanged.
 
-The DXVK list is tier, non-NVIDIA (mutually exclusive), package short copies, diagnostics, then the
-user's nonempty list or root `dxvk.conf`. The RTX list is unchanged. Standard RtxOptions take the
+The DXVK list is tier, non-NVIDIA (mutually exclusive), package short copies, the memory profile's
+`memory.conf` (loader 0.13.0), diagnostics, then the user's nonempty list or root `dxvk.conf`. The RTX list is unchanged. Standard RtxOptions take the
 first DXVK layer holding the key; merged DXVK/D3D9 options take the last. Despite its prefix,
 `rtx.enableGpuCrashState` is a merged DXVK startup option, so it stays with Aftermath diagnostics.
 A player's root DXVK options or DXVK_ENABLE_* environment can override diagnostics. Saved Remix
@@ -402,6 +406,13 @@ An unwritable package copy uses its source path as ADR 0036 already does; I2 the
 An unwritable built-in fallback is omitted from the effective list/environment, with an empty I2
 layer and a note; RTX still starts and cannot read an older fallback left at that path.
 `activation.notes` reports recoverable tier/config/diagnostic issues, also in the bootstrap log.
+
+`activation.memory` (loader 0.13.0, ADR 0101) is `null` when no memory profile was chosen (RTX not
+activated), otherwise
+`{"profile":"below_minimum|minimum|recommended|high","source":"auto|config","reason":"one line","vram_mib":0,"ram_mib":0,"warm_characters":0,"warm_mib":0,"managed_texture_budget_mib":0,"release_host_copies":true,"layer":"native-loader/remix/memory.conf or empty"}`.
+`vram_mib` is the largest hardware adapter's dedicated VRAM, any vendor, and `ram_mib` the total
+physical memory; 0 means not read. The hotloader reads `warm_characters` and `warm_mib` (R13-A); an
+empty `layer` means the memory layer could not be written.
 The menu shows the effective tier and source only with a listed tier layer and an adapter name;
 high, pre-R6 medium, failed tier writes and vanilla fallback show no tier row. Read-only preview
 also applies the ADR 0056 recipe refusal. Its seven-language translations are

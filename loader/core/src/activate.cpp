@@ -206,6 +206,12 @@ std::vector<performance::Adapter> graphics_adapters() {
   return adapters;  // dxgi.dll stays loaded, as user32 does
 }
 
+std::uint64_t physical_memory() noexcept {
+  MEMORYSTATUSEX status{};
+  status.dwLength = sizeof(status);
+  return GlobalMemoryStatusEx(&status) ? status.ullTotalPhys : 0;
+}
+
 std::string non_nvidia_layer_text() {
   return "# Written by the GMod native loader at each RTX start on a computer without an NVIDIA GPU (ADR 0030).\r\n"
          "# The RTX package's settings pin Remix's graphics preset to Custom, tuned for NVIDIA GPUs; this layer\r\n"
@@ -234,7 +240,7 @@ bool late_runtime_dll(std::string_view file_name) {
 
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
           std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus,
-          const gpu_diagnostics::Probe& diagnostics) {
+          const gpu_diagnostics::Probe& diagnostics, const RamGet& ram) {
   Plan p;
   p.notes = config.notes;
   if (!config.enabled) {
@@ -288,6 +294,14 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
       p.performance_tier.reason += "; package has no medium tier file, retaining classic defaults";
     }
   }
+  // The memory profile (R13, ADR 0101) counts the largest adapter of any vendor: memory, unlike the
+  // tier, is not an NVIDIA class question.
+  if (ram) {
+    std::uint64_t vram = 0;
+    for (const auto& adapter : adapters) vram = std::max(vram, adapter.dedicated_video_memory);
+    p.memory = memory_profile::plan(vram, ram(), config.memory_profile);
+    p.memory.layer = kMemoryLayer;
+  }
   if (!diagnostics.note.empty()) p.notes.push_back(diagnostics.note);
   p.gpu_crash_dumps_once = config.gpu_crash_dumps == config::GpuCrashDumps::next_start;
   p.reset_gpu_crash_dumps = config.gpu_crash_dumps == config::GpuCrashDumps::off;
@@ -326,8 +340,10 @@ Plan plan(const journal::Generation& generation, const config::Config& config, c
   std::vector<std::string> first;
   if (!p.performance_tier.layer.empty()) first.push_back(p.performance_tier.layer);
   if (p.non_nvidia) first.emplace_back(kNonNvidiaLayer);
-  const std::vector<std::string> last = p.gpu_crash_dumps ? std::vector<std::string>{std::string(gpu_diagnostics::kLayer)}
-                                                        : std::vector<std::string>{};
+  // D3D9 options: DXVK merges every layer, the later winning, so they follow the package's layers.
+  std::vector<std::string> last;
+  if (!p.memory.layer.empty()) last.emplace_back(kMemoryLayer);
+  if (p.gpu_crash_dumps) last.emplace_back(gpu_diagnostics::kLayer);
   add_layers("DXVK_RTX_CONFIG_FILE", "rtx", remix.rtx_conf_layers, {}, {}, "rtx.conf", p.rtx_layers);
   add_layers("DXVK_CONFIG_FILE", "dxvk", remix.dxvk_conf_layers, first, last, "dxvk.conf",
              p.dxvk_layers);
@@ -409,6 +425,19 @@ void disable_performance_tier(Plan& plan, const std::string& reason) {
   for (auto& [name, value] : plan.env) if (name == "DXVK_CONFIG_FILE") value = joined(plan.dxvk_layers);
   plan.performance_tier.layer.clear();
   plan.low_tier_fallback = false;
+  plan.notes.push_back(reason);
+}
+
+void disable_memory_layer(Plan& plan, const std::string& reason) {
+  if (plan.memory.layer.empty()) return;
+  const auto layer = std::find(plan.dxvk_layers.begin(), plan.dxvk_layers.end(), kMemoryLayer);
+  if (layer != plan.dxvk_layers.end()) plan.dxvk_layers.erase(layer);  // retain a user's explicit duplicate
+  for (auto& [name, value] : plan.env) if (name == "DXVK_CONFIG_FILE") value = joined(plan.dxvk_layers);
+  const auto user = std::find_if(plan.user_env.begin(), plan.user_env.end(), [](const auto& item) { return item.first == "DXVK_CONFIG_FILE"; });
+  const auto suffix = split_layers(user == plan.user_env.end() || user->second.empty() ? "dxvk.conf" : user->second);
+  if (plan.dxvk_layers == suffix)
+    std::erase_if(plan.env, [](const auto& item) { return item.first == "DXVK_CONFIG_FILE"; });
+  plan.memory.layer.clear();
   plan.notes.push_back(reason);
 }
 

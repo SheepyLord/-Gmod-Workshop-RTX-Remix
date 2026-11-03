@@ -428,7 +428,8 @@ int cmd_activation(const fs::path& game_root, bool json) {
   if (!config.from_file) plan.reason = "native-loader/config.json is absent";
   else if (journal->pending) plan.reason = "journal has a pending transaction; activation is unsafe until recovery";
   else plan = nl::activate::plan(*journal->current, config, nl::activate::environment_value, L"", nl::activate::primary_display,
-                                 nl::activate::graphics_adapters, nl::gpu_diagnostics::probe(game_root));
+                                 nl::activate::graphics_adapters, nl::gpu_diagnostics::probe(game_root),
+                                 nl::activate::physical_memory);
   // As start-up decides it (ADR 0056), for the empty command line this preview assumes.
   if (auto refusal = nl::client::render_recipes_refusal(plan, L""); !refusal.empty()) {
     plan.activate = false;
@@ -454,6 +455,7 @@ int cmd_activation(const fs::path& game_root, bool json) {
     for (std::size_t i = 0; i < plan.gpu_vendors.size(); ++i) out += (i ? ", " : "") + std::to_string(plan.gpu_vendors[i]);
     out += "],\n  \"non_nvidia\": " + std::string(plan.non_nvidia ? "true" : "false");
     out += ",\n  \"performance_tier\": " + nl::performance::serialize(plan.performance_tier);
+    out += ",\n  \"memory\": " + (plan.memory.reason.empty() ? std::string("null") : nl::memory_profile::serialize(plan.memory));
     out += ",\n  \"notes\": " + string_array_json(plan.notes);
     out += ",\n  \"env\": [";
     for (std::size_t i = 0; i < plan.env.size(); ++i) {
@@ -500,6 +502,13 @@ int cmd_activation(const fs::path& game_root, bool json) {
   if (!plan.performance_tier.adapter.empty())
     print("tier adapter " + plan.performance_tier.adapter + " (" + std::to_string(plan.performance_tier.dedicated_vram_mib) + " MiB)\n");
   if (!plan.performance_tier.layer.empty()) print("tier layer  " + plan.performance_tier.layer + "\n");
+  if (!plan.memory.reason.empty()) {
+    const auto& m = plan.memory;
+    print("memory      " + std::string(nl::memory_profile::name(m.profile)) + " (" + m.source + "): " + m.reason + "\n");
+    print("memory use  " + std::to_string(m.warm_characters) + " characters ready (" + std::to_string(m.warm_mib) +
+          " MiB), game textures " + std::to_string(m.managed_texture_budget_mib) + " MiB on the GPU, CPU copies " +
+          (m.release_host_copies ? "released" : "kept") + (m.layer.empty() ? "" : "; layer " + m.layer) + "\n");
+  }
   for (const auto& note : plan.notes) print("note        " + note + "\n");
   for (const auto& layer : plan.layer_copies) print("layer copy  " + layer.copy + " <- " + layer.source + "\n");
   std::string args;

@@ -10,8 +10,10 @@
 #include "nl/manifest.h"
 #include "nl/journal.h"
 #include "nl/performance.h"
+#include "nl/memory_profile.h"
 #include "nl/gpu_diagnostics.h"
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -50,6 +52,11 @@ std::vector<performance::Adapter> graphics_adapters();
 // A driver description is optional; invalid UTF-16/allocation failure becomes an empty name.
 std::string adapter_description(std::wstring_view description) noexcept;
 
+// The total physical memory in bytes, 0 when unknown (R13 memory profile, ADR 0101). Only queried at
+// RTX activation; the profile policy itself lives in the pure memory_profile::plan function.
+using RamGet = std::function<std::uint64_t()>;
+std::uint64_t physical_memory() noexcept;  // Win32 GlobalMemoryStatusEx
+
 inline constexpr unsigned kNvidia = 0x10DE;
 
 // The folder of the Remix layers the bootstrap writes. The package's config layers reach the runtime
@@ -66,6 +73,10 @@ std::string non_nvidia_layer_text();
 
 inline constexpr std::string_view kTierLayer = "native-loader/remix/tier.conf";
 std::string low_tier_layer_text();  // old runtime packages without config/dxvk-tiers/low.conf
+
+// The memory profile's runtime budgets (ADR 0101; memory_profile::layer_text). D3D9 options only, read by
+// DXVK's merged config: listed after the package's layers and before the user's dxvk.conf (ADR 0062).
+inline constexpr std::string_view kMemoryLayer = "native-loader/remix/memory.conf";
 
 // The runtime's DLLs that load late by bare name (ADR 0030): the fork's FSR probe (amd_fidelityfx_vk.dll)
 // and NRC's CUDA runtime and compiler (cudart64_*, nvrtc64_*, nvrtc-builtins64_*). In GMod no search
@@ -90,6 +101,8 @@ struct Plan {
   bool non_nvidia = false;            // none of them is NVIDIA: kNonNvidiaLayer goes into DXVK_CONFIG_FILE
   performance::Selection performance_tier;  // R6 interface I2
   bool low_tier_fallback = false;
+  // R13 (ADR 0101), chosen when the plan activates with a RAM reader; its layer is kMemoryLayer then.
+  memory_profile::Budget memory;
   bool gpu_crash_dumps = false;
   bool gpu_crash_dumps_once = false;
   bool reset_gpu_crash_dumps = false;  // off on an RTX start re-arms next_start, best effort
@@ -143,10 +156,12 @@ struct Plan {
 // with remix.enabled false, the plan is inactive. `command_line` is the process command line, read
 // only to skip launch arguments the user set. `display` is called at most once, and only when the
 // plan sizes the window. `gpus` is called once when the plan activates; without it (or with no
-// adapter found) auto applies neither loader GPU layer; an explicit tier still applies.
+// adapter found) auto applies neither loader GPU layer; an explicit tier still applies. `ram` is
+// called once when the plan activates; without it the plan chooses no memory profile and lists no
+// memory layer, and the runtime sizes its own budgets.
 Plan plan(const journal::Generation& generation, const config::Config& config, const EnvGet& env,
           std::wstring_view command_line, const DisplayGet& display, const GpuGet& gpus = {},
-          const gpu_diagnostics::Probe& diagnostics = {});
+          const gpu_diagnostics::Probe& diagnostics = {}, const RamGet& ram = {});
 
 // For the copies the bootstrap could not write: their sources go into the lists and variables
 // instead, and they leave layer_copies, with a note when a list is then too long for the runtime.
@@ -154,6 +169,10 @@ void use_sources(Plan& plan, const std::vector<std::string>& unwritten);
 
 // A built-in fallback that cannot be written must not load an older tier.conf from disk.
 void disable_performance_tier(Plan& plan, const std::string& reason);
+
+// A memory layer that cannot be written must not load an older memory.conf from disk: the runtime
+// then sizes its own budgets. The profile stays in status for the hotloader.
+void disable_memory_layer(Plan& plan, const std::string& reason);
 
 // A diagnostics preparation failure costs diagnostics, not RTX. Removes its layer/environment
 // request, retaining any package DXVK layers and the user's original config-list suffix.

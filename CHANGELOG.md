@@ -6,6 +6,24 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13
+
+- **Memory profiles (loader 0.13.0):** the loader reads the largest graphics card's VRAM and the
+  computer's RAM and picks a memory profile: below minimum, minimum (8 GB / 16 GB), recommended
+  (16 GB / 32 GB) or high (24 GB / 64 GB). The smaller of the two decides, and the budgets scale with
+  what the computer has:
+  - Characters kept ready: none, five or ten.
+  - A quarter of the VRAM for game textures before idle ones leave the GPU.
+  - One copy of a game texture on the minimum, two above it.
+  - `remix.memory_profile` overrides the choice. `status.json` reports it as `activation.memory`,
+    the runtime gets its budgets in `native-loader\remix\memory.conf`, and the RTX tab shows it
+    ([ADR 0101](docs/decisions/0101-memory-profiles.md)).
+- **Memory report:** `tools/qa/memory_report.py` summarizes a session's RAM and VRAM from the
+  loader's and the companion's telemetry, by phase, with an optional address-space census of the
+  running game.
+- **A lower-end guide** in the player README: the minimum and recommended computers, the profiles,
+  and what takes memory.
+
 ### R12
 
 - **NPCs after removing and importing a character again:** prepared carriers restore missing

@@ -31,6 +31,12 @@ if report_scenario == "no_layer_medium" or report_scenario == "no_layer_low" the
     tier.layer, tier.reason = "", "package has no " .. tier.tier .. " tier file, retaining classic defaults"
 end
 if report_scenario == "no_layer_reason_missing" then tier.layer, tier.reason = "", nil end
+-- R13: loaders from 0.13.0 add activation.memory; every other scenario is an older loader without it.
+local memory_name = report_scenario:match("^memory_(.+)$")
+if memory_name then
+    status.activation.memory = {profile = memory_name, vram_mib = 8188, ram_mib = 16224,
+        warm_characters = memory_name == "high" and 10 or memory_name == "recommended" and 5 or 0}
+end
 local json_body, json_reads
 if status_path then
     local input = assert(io.open(status_path, "rb"))
@@ -155,6 +161,22 @@ else
         assert(data[code]["Memory and stability guide"] ~= "Memory and stability guide")
         assert(data[code][level] ~= level, "tier label fell back to English")
     end
+end
+local memory_format = "Memory profile: %s (%s MiB VRAM, %s MiB RAM). Characters kept ready for an instant spawn: %s; the others load when first used. To change it, set remix.memory_profile in native-loader\\config.json to auto, minimum, recommended or high, then restart Garry's Mod."
+local memory_line
+for _, text in ipairs(panel.lines) do
+    if text:find(i18n.L(memory_format):match("^(.-)%%s"), 1, true) then
+        assert(not memory_line, "more than one memory line") memory_line = text
+    end
+end
+local profile_labels = {below_minimum = "Below the minimum", minimum = "Minimum", recommended = "Recommended", high = "High"}
+if memory_name and profile_labels[memory_name] then
+    local label = profile_labels[memory_name]
+    assert(memory_line == string.format(i18n.L(memory_format), i18n.L(label), "8188", "16224",
+        tostring(status.activation.memory.warm_characters)), "wrong memory profile line")
+    if code ~= "en" then assert(data[code][label] ~= label, "memory profile label fell back to English") end
+else
+    assert(not memory_line, "a loader without a valid memory profile must show no memory line")
 end
 if scenario == "refresh" then
     tier.tier, tier.source, tier.adapter, tier.dedicated_vram_mib = "high", "config", "Second GPU", 32768

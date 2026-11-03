@@ -538,3 +538,61 @@ TEST_CASE("activate: disabling diagnostics alone restores config discovery and p
   CHECK(env_value(duplicate, "DXVK_CONFIG_FILE") == nullptr);  // the user's explicit duplicate stays in their environment
   CHECK((duplicate.dxvk_layers == std::vector<std::string>{std::string(gpu_diagnostics::kLayer), "mine.conf"}));
 }
+
+TEST_CASE("activate: the memory profile's layer follows the package's layers and precedes the user's") {
+  auto remix = base_remix();
+  remix.dxvk_conf_layers = {"config/base.conf"};
+  const auto gen = with_runtime("payload", remix);
+  const auto adapters = [] { return std::vector<performance::Adapter>{{activate::kNvidia, "NVIDIA GeForce RTX 4060", 8188ull << 20},
+                                                                     {0x8086, "Intel UHD", 128ull << 20}}; };
+  int asked = 0;
+  const auto ram = [&asked] { ++asked; return std::uint64_t{16224} << 20; };
+  auto p = activate::plan(gen, config::Config{}, values({{"DXVK_CONFIG_FILE", "mine.conf"}}), L"gmod.exe", uhd, adapters, {}, ram);
+  CHECK(asked == 1);
+  CHECK(p.memory.profile == memory_profile::Profile::minimum);
+  CHECK(p.memory.vram_mib == 8188);
+  CHECK(p.memory.layer == activate::kMemoryLayer);
+  CHECK((p.dxvk_layers == std::vector<std::string>{std::string(activate::kTierLayer), "native-loader/remix/dxvk-1.conf",
+                                                   std::string(activate::kMemoryLayer), "mine.conf"}));
+  CHECK(*env_value(p, "DXVK_CONFIG_FILE") ==
+        "native-loader/remix/tier.conf,native-loader/remix/dxvk-1.conf,native-loader/remix/memory.conf,mine.conf");
+
+  // Diagnostics stay last among the loader's layers; a failed memory layer leaves the rest as before.
+  config::Config dumps;
+  dumps.gpu_crash_dumps = config::GpuCrashDumps::always;
+  dumps.memory_profile = config::MemoryProfile::recommended;
+  auto q = activate::plan(gen, dumps, none(), L"gmod.exe", uhd, adapters, {}, ram);
+  CHECK(q.memory.source == "config");
+  CHECK(q.memory.warm_characters == 5);
+  CHECK(*env_value(q, "DXVK_CONFIG_FILE") ==
+        "native-loader/remix/tier.conf,native-loader/remix/dxvk-1.conf,native-loader/remix/memory.conf,native-loader/remix/diagnostics.conf,dxvk.conf");
+  activate::disable_memory_layer(q, "memory layer failed");
+  CHECK(q.memory.layer.empty());
+  CHECK(q.memory.warm_characters == 5);  // the profile stays for the hotloader's status
+  CHECK(*env_value(q, "DXVK_CONFIG_FILE") ==
+        "native-loader/remix/tier.conf,native-loader/remix/dxvk-1.conf,native-loader/remix/diagnostics.conf,dxvk.conf");
+  CHECK(q.notes.back() == "memory layer failed");
+}
+
+TEST_CASE("activate: without a RAM reader, or without RTX, no memory profile or layer") {
+  const auto gen = with_runtime("payload", base_remix());
+  const auto bare = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd);
+  CHECK(bare.memory.reason.empty());
+  CHECK(bare.memory.layer.empty());
+  CHECK(env_value(bare, "DXVK_CONFIG_FILE") == nullptr);
+
+  bool asked = false;
+  config::Config off;
+  off.remix_enabled = false;
+  const auto inactive = activate::plan(gen, off, none(), L"gmod.exe", uhd, {}, {}, [&asked] { asked = true; return std::uint64_t{1} << 34; });
+  CHECK(!inactive.activate);
+  CHECK(!asked);
+  CHECK(inactive.memory.reason.empty());
+
+  // Only the memory layer: disabling it removes the list and restores the runtime's own discovery.
+  auto only = activate::plan(gen, config::Config{}, none(), L"gmod.exe", uhd, {}, {}, [] { return std::uint64_t{0}; });
+  CHECK(only.memory.profile == memory_profile::Profile::minimum);
+  CHECK(*env_value(only, "DXVK_CONFIG_FILE") == "native-loader/remix/memory.conf,dxvk.conf");
+  activate::disable_memory_layer(only, "memory layer failed");
+  CHECK(env_value(only, "DXVK_CONFIG_FILE") == nullptr);
+}

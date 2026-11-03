@@ -265,8 +265,16 @@ def main():
         loader_layers = [tier['layer']] if tier['layer'] else []
         if status['activation']['non_nvidia']:
             loader_layers.append('native-loader/remix/non-nvidia.conf')
-        check(status['activation']['layers']['dxvk'] == [*loader_layers, 'native-loader/remix/dxvk-1.conf', 'dxvk.conf'],
+        memory_layer = 'native-loader/remix/memory.conf'
+        check(status['activation']['layers']['dxvk'] == [*loader_layers, 'native-loader/remix/dxvk-1.conf', memory_layer, 'dxvk.conf'],
               f'the runtime is not given the copy: {status["activation"]["layers"]}')
+        # R13 (ADR 0101): the memory profile's D3D9 layer follows the package's layers.
+        memory = status['activation']['memory']
+        check(memory['layer'] == memory_layer and memory['profile'] in ('below_minimum', 'minimum', 'recommended', 'high'),
+              f'memory profile: {memory}')
+        memory_text = (copies.root / memory_layer).read_bytes().decode('ascii')
+        check(f"\r\nd3d9.managedTextureBudgetMiB = {memory['managed_texture_budget_mib']}\r\n" in memory_text and 'rtx.' not in memory_text,
+              f'memory layer: {memory_text!r}')
         rtx_copy = copies.root / layer_copies[0]['copy']
         rtx_copy.write_text('rtx.test = False\n', encoding='ascii')
         active(copies, copies.run())
@@ -275,12 +283,23 @@ def main():
         dxvk_copy.mkdir()  # a folder in its place: the copy cannot be written
         result = copies.run()
         fallback = active(copies, result)
-        check(result[0]['environment']['DXVK_CONFIG_FILE'] == ','.join([*loader_layers, layer_copies[1]['source'], 'dxvk.conf']),
+        check(result[0]['environment']['DXVK_CONFIG_FILE'] == ','.join([*loader_layers, layer_copies[1]['source'], memory_layer, 'dxvk.conf']),
               f'an unwritten copy did not fall back to its source: {result[0]["environment"]}')
         check([layer['copy'] for layer in fallback['activation']['layer_copies']] == ['native-loader/remix/rtx-1.conf'],
               'an unwritten copy is still reported as used')
         check(any('was not written' in note for note in fallback['session']['notes']), 'no note for the unwritten copy')
-        passed('the runtime reads short copies of the package\'s layers; a changed copy is rewritten, an unwritable one falls back')
+        # A memory layer that cannot be written is not listed: the runtime then sizes its own budgets.
+        (copies.root / memory_layer).unlink()
+        (copies.root / memory_layer).mkdir()
+        result = copies.run()
+        unwritten = active(copies, result)
+        check(memory_layer not in unwritten['activation']['layers']['dxvk'] and
+              memory_layer not in result[0]['environment']['DXVK_CONFIG_FILE'], 'an unwritten memory layer is still listed')
+        check(unwritten['activation']['memory']['layer'] == '' and
+              any('memory layer was not written' in note for note in unwritten['activation']['notes']),
+              'no note for the unwritten memory layer')
+        (copies.root / memory_layer).rmdir()
+        passed('the runtime reads short copies of the package\'s layers and the memory layer; a changed copy is rewritten, an unwritable one falls back')
 
         dumps = Game('gpu-crash-diagnostics')
         dumps.config['diagnostics'] = {'gpu_crash_dumps': 'next_start'}
