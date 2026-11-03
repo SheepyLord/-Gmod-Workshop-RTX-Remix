@@ -1,5 +1,16 @@
 # runtime/
 
+R13-D adds `0029-Lock-RtxOption-edits-made-beside-the-render-thread-s.patch`
+([report](../docs/handover/R13-D-report.md)): whatever reads or writes an option's layer values or
+the dirty option map holds the update mutex (the rule is at `getUpdateMutex()` in `rtx_option.h`).
+`readOption`, which `remixapi_SetConfigVariable` calls on the game's thread, and
+`clearFromStrongerLayers` take it; `acquireLayer` and `releaseLayer` take it after the layer mutex, as
+`applyPendingValues` does; the Remix menu, which draws on the game's thread, takes it for Discard
+Changes, saving, Delete All, the migrations and its unsaved and misplaced counts, and holds the layer
+mutex over its Option Layers list. `applyPendingValues` keeps the lock between its passes unless a
+callback runs, and up to its final clear, so an edit from another thread is resolved in this frame or
+the next instead of being dropped. Stress test: `test_rtx_option_threads`.
+
 R13-B adds six patches ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md),
 [report](../docs/handover/R13-B-report.md)):
 
@@ -131,6 +142,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0026-Let-undrawn-preloaded-material-textures-...` | Under the same pressure, preloaded material textures no instance draws drop to their smallest mip, and are preloaded again when drawn ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0027-Count-what-creates-deferred-...` | The managed texture log counts what created each deferred image: sampling, a view, a flushed upload, `PreLoad`, a draw ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0028-Fix-a-hash-race-baker-sources-...` | The review's fixes of 0024 and 0026: an atomic stable hash for the API, the terrain baker's sources count as in use, `D3DLOCK_NO_DIRTY_UPDATE` keeps the CPU copy, no pass in other games ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
+| `0029-Lock-RtxOption-edits-made-beside-...` | Option layer values and the dirty option map change only under the update mutex: the Remix API, graph layers, the menu, migrations; an edit from another thread is never dropped at the end of a frame ([R13-D report](../docs/handover/R13-D-report.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).

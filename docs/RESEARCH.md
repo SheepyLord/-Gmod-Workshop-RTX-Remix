@@ -1,5 +1,53 @@
 # Research notes
 
+## R13-D: the option crash, proven (2026-11-03, Claude)
+
+The R13 integration notes below record the crash. Its cause is now proven, and runtime patch 0029
+fixes it ([R13-D report](handover/R13-D-report.md)).
+
+- **What the dump's registers say.** `RtxOptionImpl::resolveValue+0x3e` is
+  `mov edx, dword ptr [rcx+50h]` (0028 build, RVA `0x1b7dfe`), which reads `m_type`.
+  `RtxOptionImpl` lays out its vptr, `minValue` and `maxValue` (`std::optional<GenericValue>`, 16
+  bytes each), `m_hash`, `m_name`, `m_category`, `m_environment` and `m_description` first, so
+  `m_type` is at `0x50`, and `m_resolvedValue` at `0x58`.
+  - The crash had `rcx=rdi=0` (`this`), `rdx=r14=0x58` (`&m_resolvedValue`) and `rbp=r8=0` (no
+    excluded layer).
+  - So `applyPendingValues` resolved a dirty-map entry holding `nullptr`.
+  - That map is an `std::unordered_map` (`fast_unordered_cache`), and `markDirty()` is
+    `getDirtyOptionMap()[m_hash] = this`. `operator[]` links a node holding a value-initialized
+    `nullptr` before `this` is stored in it.
+- **Who wrote it without the lock.** `remixapi_SetConfigVariable` (`rtx_remix_api.cpp:1776`) calls
+  `readOption` (`rtx_option.cpp:448`) holding only the API's `s_mutex`. `readOption` inserts into
+  the option's layer values and calls `markDirty()`, while the render thread's `applyPendingValues`
+  walks the map under the update mutex.
+  - The companion's sky calls `RemixConfig.SetConfigVariable` every `nativeloader_sky_interval`
+    (0.02 s by default, `nativeloader_sky.lua:27`) for each changed sun, moon and star value (lines
+    453-461).
+  - The fixes' binary logs nothing per call: the crashed session's console has no such line.
+- **Threads.**
+  - The Remix menu draws on the game's thread: `ImGUI::render` is called from
+    `D3D9SwapChainEx::PresentImage` (`d3d9_swapchain.cpp:1297`), inside `Present`.
+  - Graph components (`RtxOptionLayerAction`, the only runtime caller of
+    `acquireLayer`/`releaseLayer`) initialize, update and clean up on the render thread:
+    `SceneManager` -> `m_graphManager.update(ctx)` (`rtx_scene_manager.cpp:707`). No mod in the RTX
+    package has graph prims.
+  - onChange callbacks run on the render thread after `applyPendingValues` has released the update
+    mutex.
+- **Reproduced.** A unit test that calls `readOption` on one thread while another loops
+  `applyPendingValues` crashes the 0028 code within 1.3-2.1 s (3 of 3 runs). A crash caught by
+  attaching a debug loop is the field crash: an access violation reading `0x50` at
+  `resolveValue+0x3e` (`rtx_option.cpp:1151`), with `rcx=rbx=rsi=rdi=rbp=r8=0` and `rdx=r14=0x58`.
+- **Lost writes.** `applyPendingValues` released the update mutex between passes even with no
+  callback to run, and its final "Don't let dirty options persist across frames" clear came after
+  another release. A burst of writes from another thread could keep it going to `maxResolves` (4),
+  and the clear then dropped the newest marks. The write took effect only when the option was marked
+  again. The test caught it in round 313 and round 208 of 500 with only the locks fixed.
+- **The minidump holds no heap.** R13's Sentry dump has only thread stacks: `d3d9.dll`'s data and
+  the heap are not in it, so the dirty map's nodes could not be read. `out/r13/verify/dirty_map.py`
+  (what the registers point at), `symaddr.py` (a function's RVA from a PDB) and `catch_crash.py` (a
+  Win32 debug loop that catches a test's first access violation, launching or attaching) are with
+  R13's tools in the main checkout.
+
 ## R13 integration: per-profile memory, an option crash, Steam Cloud (2026-11-03, Claude)
 
 - **Per-profile memory with the final package** (PoC, 1920x1080, gm_construct, the copied field

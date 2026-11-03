@@ -6,6 +6,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13-D
+
+- **Fixed an intermittent crash of the Remix runtime** (runtime patch 0029,
+  [report](docs/handover/R13-D-report.md)): an access violation in its option system on the render
+  thread, seen once in R13's PoC sessions. Lua's `RemixConfig.SetConfigVariable` (the companion's sky
+  sends its values every 20 ms) changed options without the runtime's option lock while the render
+  thread resolved them. It, the option layers that mods' graphs add and remove, and the Remix menu's
+  layer actions now take that lock.
+- **A setting sent from Lua is no longer lost now and then** (patch 0029): the end-of-frame resolve
+  could drop a value another thread had just sent, which then took effect only when it changed again.
+
 ### R14
 
 - Glass: a player in noclip no longer fractures glass it passes through (touch, contact and the
