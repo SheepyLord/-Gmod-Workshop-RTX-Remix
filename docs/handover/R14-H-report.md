@@ -141,7 +141,10 @@ gm_construct, `NL_GUIDE_SET = "check"`: every page and every section opened by `
 Captures behind the pictures: `out\r14-guide\s5\panels` (the tab's panels, External Models),
 `out\r14-guide\s6\character` (Imported game PBR, the eye-white chooser), `out\r14-guide\s2\pictures` (the
 two Alt+X menus), `out\r14-guide\s4\remix` (Settings Management). `s1` was the first survey, `s3` the
-keyboard trial that ended with the End bind.
+keyboard trial that ended with the End bind. After the main session's review reworded some help lines,
+`spawnmenu_tab`, `start_here`, `sky_weather`, `model_outlines` and `eye_whites` were captured again
+(`out\r14-guide\s9\panels`, commit `38819b3`). Longer help lines moved the controls below them by 13 or
+26 pixels, and `tools\guide_pictures.json` follows them.
 
 ## Tests
 

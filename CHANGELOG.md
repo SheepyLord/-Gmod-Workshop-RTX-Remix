@@ -33,10 +33,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   glass no longer moves for a player in noclip or spectating. In a PoC game a player flew through a
   pane at 1,500 units/s in noclip and while spectating and left it whole; running into the same kind of
   pane still broke it.
-- The in-game RTX Remix guide: a "Where to find things" orientation, a Glass section, and annotated
-  screenshots (numbered arrows) of the RTX Remix tab, Common Remix settings, Glass settings and Remix's
-  Alt+X menu, drawn from real captures (`tools\guide_annotate.py`, `tools\qa\guide_shots.lua`); the new
-  text is translated into the six languages.
+- The in-game RTX Remix guide (R14's first pass, replaced by the redesign below): a "Where to find
+  things" orientation, a Glass section, and annotated screenshots (numbered arrows) of the RTX Remix
+  tab, Common Remix settings, Glass settings and Remix's Alt+X menu, drawn from real captures
+  (`tools\guide_annotate.py`, `tools\qa\guide_shots.lua`); the new text is translated into the six
+  languages.
 - **The RTX Remix guide, redesigned** (R14-H): a window with a contents list (every page and its
   sections) instead of six tabs, and six task-ordered pages: Welcome, The RTX Remix tab (one section per
   group), The Remix menu (Alt+X), Characters, Performance and memory (was Memory and stability) and
@@ -48,8 +49,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
   opens a part directly. The help lines of the RTX Remix tab's own panels, the Sky and weather panel and
   the eye-white chooser were reworded in the same terms (the Start here button is now Performance and
   memory guide). `tools\guide_annotate.py` reads a per-picture spec (`tools\guide_pictures.json`);
-  `tools\qa\guide_shots.lua` opens each panel through `spawnmenu.ActivateTool`. The new text awaits its
-  translations (R14-T).
+  `tools\qa\guide_shots.lua` opens each panel through `spawnmenu.ActivateTool`.
+- **The guide's text checked and translated** (R14-T, Codex, as the user asked): a check of the English
+  against the code corrected the guide before translation. The memory profiles load up to five or ten
+  recently used characters in advance when a map starts, not a fixed number kept ready. DLSS has its own
+  preset beside Graphics Preset. The VRAM CSVs are kept across starts. Single game maps need Game layout.
+  The flashlight's and the steady eye whites' controls are now named exactly as shown. The 292 new and
+  reworded messages are translated into the six languages, with every on-screen name taken from the
+  translation the player sees: the RTX Remix tab, the RTX add-ons, the glass panel, the Model Hotloader
+  and Remix's own Alt+X menu. `tools\companion_i18n.py` lets DLSS, PBR, VRAM and Remix API equal the
+  English. The player READMEs name the guide's page Performance and memory.
+
 ### R13
 
 - **Imported game maps take about a sixth of the memory** (R13-M,
