@@ -45,16 +45,25 @@ with exact equality:
 - the pixels and hash after the next draw (the re-upload);
 - a rewrite of the center of mip 0 after the copies went: the drawn pixel and a refreshed hash, and
   every texel of the rewritten mip;
-- release again, a device `Reset` while released, then pixels, hashes and an untouched mip.
+- release again, a device `Reset` while released, then pixels, hashes and an untouched mip;
+- from the idle passes through the re-use, a second thread reads every texture's hash through the API in
+  a loop (as ToPBR does from Lua's thread): no read may return an error, an empty or a different hash
+  while the device releases and re-creates images (runtime patch 0028);
+- a write without a dirty region (`D3DLOCK_NO_DIRTY_UPDATE`) into the center of mip 0 of another
+  texture: the next draw still shows the old texel (D3D9 semantics), the written texels survive idle
+  passes that release CPU copies (read-only lock), and after a late `AddDirtyRect` the draw shows the
+  write (runtime patch 0028).
 
-It prints one JSON line: the hashes, the pixels and sampled texel, and memory deltas: the process's
+It prints one JSON line: the hashes, the pixels and sampled texel, the unmarked write's pixels and hash,
+the number of hash reads by the second thread and how many were wrong, and memory deltas: the process's
 private bytes, its committed read-write and write-combined private address space, and the runtime's
 app-texture bytes, after the first use, while idle and after the re-use.
 
 Run it against the original runtime and the new one with each option, through the environment:
 `DXVK_RELEASE_MANAGED_HOST_COPIES` and `DXVK_MANAGED_TEXTURE_BUDGET_MIB` (for example 1 MiB, so the
 images go), with `DXVK_MANAGED_TEXTURE_IDLE_SECONDS=0` and `DXVK_MANAGED_HOST_COPY_IDLE_SECONDS=0`, besides
-the settings above. Hashes, pixels and the sampled texel must be identical in every run; the memory
+the settings above. Hashes, pixels, the sampled texel, the unmarked write's pixels and hash, and zero
+wrong hash reads must be identical in every run; the memory
 deltas show what each option released. `R13_PROBE_CENSUS=1` (with `RTX_PROFILER_MEMORY_ENABLE=1`) also
 writes the runtime's host memory census of the idle state to its log
 ([host_memory_census.py](host_memory_census.py.md)).

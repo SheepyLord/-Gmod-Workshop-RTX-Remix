@@ -41,7 +41,7 @@ textures by path), against the lag report's 10,320 MiB. No budget could make the
 
 ## Decision
 
-Runtime patches 0023-0027 (R13-B):
+Runtime patches 0023-0028 (R13-B):
 
 ### 0023: the host memory census
 
@@ -73,7 +73,9 @@ layer, and should still get the savings.*
 - **One copy.** Once a texture's image holds its data and the texture has not been locked for
   `d3d9.managedHostCopyIdleSeconds` (10 presented seconds), its CPU copy is freed. A later lock reads the
   subresource back from the GPU first, exactly as DXVK's `evictManagedOnUnlock` path does. Textures that
-  use `AddDirtyRect` keep their copy (games that write through an old lock pointer).
+  use `AddDirtyRect` keep their copy (games that write through an old lock pointer), and so do textures
+  locked writable with `D3DLOCK_NO_DIRTY_UPDATE` (0028): such a write reaches the image only with a later
+  `AddDirtyRect`, so until then it exists only in the copy.
 - **Idle images.** Once a second, while these textures' images hold more than the budget, images not
   drawn for `d3d9.managedTextureIdleSeconds` (60 presented seconds) are released, least recently used
   first, at most 2 GiB of plain releases and 256 MiB of read-backs per pass. Bound, locked and pending
@@ -84,7 +86,9 @@ layer, and should still get the savings.*
 - **Identity.** The texture keeps its Remix hash while the image is released: `dxvk_GetTextureHash`, the
   hash-on-write rule (`rtx.recomputeTextureHashOnWrite`, including its configured-category exceptions) and
   the re-created image all use it. A rewrite while released clears it, so the re-upload hashes the new
-  data, as before.
+  data, as before. The hash lives in an atomic on the texture (0028): the API is called from other
+  threads (ToPBR from Lua) while the device's pass may release the image, so for these textures it never
+  reads the image.
 - **Remix's references.** The released image is marked application-released, so Remix's texture cache
   frees it once no instance samples it (the existing `rtx.texturemanager.releaseReplacedGameTextures`
   path); instances still drawn are rebound on their next draw. Until then the image stays alive and
@@ -130,10 +134,12 @@ budget is unchanged and the log warns while it is set. A VRAM hog in another pro
 real pressure on this computer: with 25.8 GB held beside the game, WDDM lowered the game's budget only
 to its own usage (26.15 GB, 26.14 GB used) and paged the hog instead.
 
-"Undrawn" is Remix's instance reference count, which every texture of a bound material carries
-(`retainSurfaceMaterial`). A texture that no material references any more after a USD reload is never
-drawn, so it is among the first to go under pressure; so are the preloads of every character that is
-not spawned, and of duplicate mods that lose to another for the same material.
+"Undrawn" means no instance's material retains the texture (Remix's instance reference count,
+`retainSurfaceMaterial`) and nothing tracked it in the texture cache in the last frames (0028: the
+terrain baker samples its sources through the cache every frame it bakes without retaining them, while
+the baked instance binds the baker's own material). A texture that no material references any more
+after a USD reload is never drawn, so it is among the first to go under pressure; so are the preloads of
+every character that is not spawned, and of duplicate mods that lose to another for the same material.
 
 ### 0027: what creates the images
 
@@ -141,6 +147,27 @@ The `[RTX Managed Textures]` line counts the deferred images, and their bytes, c
 patch 0022: sampling, a view, a flushed upload, `PreLoad` and a draw's upload. A burst such as the first
 `item_ammo_ar2_altfire` precache of a session (R13-A: every loaded texture made resident in one frame)
 then names the call. Diagnostics only.
+
+### 0028: the review's fixes
+
+An independent review of 0024-0027 found three defects and a nit, fixed in 0028:
+
+- **The hash API raced the image release** (0024). `dxvk_GetTextureHash` and `GetStableHash` read the
+  image and the released hash without a lock while the device's pass moved the image out first and wrote
+  the hash after, so a caller on another thread could get hash 0 with success (ToPBR then drops the
+  variant), a null image or a freed one. The texture now keeps its hash in an atomic, written with every
+  hash change (`SetupForRtxFrom`, `ClearHash`, the release, kept across re-creation); the API and
+  `GetStableHash` read only that for these textures.
+- **Terrain-bake sources could stay at their smallest mip** (0026), because the baker does not retain
+  what it samples. `addTexture`, which every consumer goes through, now stamps the frame, and a texture
+  tracked in this frame or the two before counts as in use.
+- **Writes without a dirty region could be lost** with copies released (0024): a writable
+  `D3DLOCK_NO_DIRTY_UPDATE` lock now keeps the texture's copy for good.
+- **Other games ran the once-a-second pass and its log:** with neither option on, it returns at once.
+
+The GPU probe's `r13` sequence gained a second thread reading hashes through the release and an unmarked
+write that must survive it; on the runtime before 0028 both fail (wrong hash reads with a budget, the
+write lost with copies released), on 0028 every variant matches the original runtime.
 
 ### Per profile (R13-C's loader layer)
 

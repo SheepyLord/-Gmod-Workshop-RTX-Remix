@@ -1,0 +1,330 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 08:38:13 -0700
+Subject: [PATCH] Fix a hash race, baker sources and unmarked writes of R13
+ memory patches
+
+An independent review of patches 0024-0027 found these:
+
+- The texture hash API raced the image release (0024). dxvk_GetTextureHash
+  and GetStableHash read m_image and the released hash without a lock,
+  while the device's pass on the render thread moved the image out first
+  and wrote the hash after; ToPBR calls the API from Lua's thread. A
+  memory-managed texture now keeps its hash in an atomic, written with
+  every hash change (SetupForRtxFrom, ClearHash, the release, and kept
+  across the image's re-creation), and the API and GetStableHash read only
+  that for those textures, never m_image.
+- Terrain-bake source textures could stay at their smallest mip (0026).
+  "Drawn" was Remix's instance reference count, which the terrain baker
+  does not raise: it tracks its sources in the texture cache every frame
+  it bakes, and the baked instance binds the baker's own material. Under
+  pressure such a preload was released and baked from its smallest mip,
+  and nothing restored it. addTexture, which every consumer goes through,
+  now stamps the frame, and a texture tracked in this frame or the two
+  before counts as in use (textureInUse in rtx_texture_budget.h).
+- Writes without a dirty region were lost when the CPU copy went (0024,
+  host copies released). A writable lock with D3DLOCK_NO_DIRTY_UPDATE
+  records no dirty box, so the write reaches the image only with a later
+  AddDirtyRect, however late; the copy could go before it. Such a texture
+  now keeps its CPU copy for good (lockKeepsHostCopy in
+  d3d9_managed_memory.h).
+- The once-a-second pass and its log line ran in every game (0024): with
+  neither option on, ManageManagedTextureMemory now returns at once.
+
+Unit checks for the two new rules; the GPU probe's r13 sequence gains an
+unmarked write that must survive the copy release, and a thread reading
+hashes while images are released.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/d3d9/d3d9_common_texture.cpp              | 14 +++++----
+ src/d3d9/d3d9_common_texture.h                | 13 ++++++--
+ src/d3d9/d3d9_device.cpp                      | 30 ++++++++++++-------
+ src/d3d9/d3d9_managed_memory.h                |  8 +++++
+ src/dxvk/rtx_render/rtx_fork_api_entry.cpp    | 11 +++++--
+ src/dxvk/rtx_render/rtx_texture.h             |  1 +
+ src/dxvk/rtx_render/rtx_texture_budget.h      |  9 ++++++
+ src/dxvk/rtx_render/rtx_texture_manager.cpp   |  9 ++++--
+ .../rtx/unit/test_managed_texture_memory.cpp  |  5 ++++
+ .../rtx/unit/test_texture_budget_pressure.cpp |  9 ++++++
+ 10 files changed, 88 insertions(+), 21 deletions(-)
+
+diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
+index cf9700b1..76c6d9ca 100644
+--- a/src/d3d9/d3d9_common_texture.cpp
++++ b/src/d3d9/d3d9_common_texture.cpp
+@@ -123,11 +123,12 @@ namespace dxvk {
+     const bool reupload = m_imageReleased;
+     if (m_imageReleased) {
+       m_imageReleased = false;
+-      if (m_releasedHash != kEmptyHash) {
+-        m_image->setHash(m_releasedHash);
+-        ImGUI::AddTexture(m_releasedHash, m_sampleView.Color, ImGUI::kTextureFlagsDefault);
++      // The stable hash stays as it was throughout, so the API never sees the empty new image's hash.
++      const XXH64_hash_t releasedHash = m_stableHash.load(std::memory_order_relaxed);
++      if (releasedHash != kEmptyHash) {
++        m_image->setHash(releasedHash);
++        ImGUI::AddTexture(releasedHash, m_sampleView.Color, ImGUI::kTextureFlagsDefault);
+       }
+-      m_releasedHash = kEmptyHash;
+     }
+     if (m_memoryManaged) {
+       m_device->TrackManagedTexture(this, reupload);
+@@ -768,6 +769,9 @@ namespace dxvk {
+ 
+     // save hash to dxvkImage
+     m_image->setHash(imageHash);
++    // NV-DXVK start: R13 the copy the API reads from other threads
++    m_stableHash.store(imageHash, std::memory_order_release);
++    // NV-DXVK end
+ 
+     // Let ImGUI know about this texture
+     ImGUI::AddTexture(imageHash, m_sampleView.Color, ImGUI::kTextureFlagsDefault);
+@@ -786,7 +790,7 @@ namespace dxvk {
+ 
+   void D3D9CommonTexture::ClearHash() {
+     // NV-DXVK start: R13 a rewrite while the image is released recomputes the hash on re-upload
+-    m_releasedHash = kEmptyHash;
++    m_stableHash.store(kEmptyHash, std::memory_order_release);
+     // NV-DXVK end
+     if (m_image == nullptr) {
+       return;
+diff --git a/src/d3d9/d3d9_common_texture.h b/src/d3d9/d3d9_common_texture.h
+index 4fbbb0b2..61ae8879 100644
+--- a/src/d3d9/d3d9_common_texture.h
++++ b/src/d3d9/d3d9_common_texture.h
+@@ -158,7 +158,14 @@ namespace dxvk {
+      * \returns The image's hash, the hash it had when it was released, or kEmptyHash
+      */
+     XXH64_hash_t GetStableHash() const {
+-      return m_image != nullptr ? m_image->getHash() : m_releasedHash;
++      // NV-DXVK start: R13 the device's pass may release a memory-managed texture's image on the
++      // render thread at any time, while the API reads the hash from other threads (ToPBR from Lua):
++      // for those textures read only the atomic copy, never m_image.
++      if (m_memoryManaged) {
++        return m_stableHash.load(std::memory_order_acquire);
++      }
++      return m_image != nullptr ? m_image->getHash() : XXH64_hash_t(0);
++      // NV-DXVK end
+     }
+ 
+     /**
+@@ -574,7 +581,9 @@ namespace dxvk {
+     uint32_t                      m_readbackTick = 0;
+     uint64_t                      m_readbackSequence = 0;
+     VkDeviceSize                  m_residentBytes = 0;       // image bytes counted while registered
+-    XXH64_hash_t                  m_releasedHash = 0;       // kEmptyHash
++    // The hash the image has, or had when it was released (kEmptyHash = 0). Written with every hash
++    // change on the device's threads; read from any thread (GetStableHash).
++    std::atomic<XXH64_hash_t>     m_stableHash = { 0 };
+     D3D9SubresourceBitset         m_hostCopyReleased = { };  // data only on the GPU
+     // NV-DXVK end
+ 
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index 9faaf440..d778e666 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -4866,6 +4866,12 @@ namespace dxvk {
+     pResource->SetLocked(Subresource, true);
+ 
+     const bool noDirtyUpdate = Flags & D3DLOCK_NO_DIRTY_UPDATE;
++    // NV-DXVK start: R13 a write without a dirty region lives only in the CPU copy until a later
++    // AddDirtyRect, however late: such a texture keeps its copy for good
++    if (pResource->IsMemoryManaged() && managed_memory::lockKeepsHostCopy(readOnly, noDirtyUpdate)) {
++      pResource->KeepHostCopy();
++    }
++    // NV-DXVK end
+     if (likely((pResource->IsManaged() && m_d3d9Options.evictManagedOnUnlock)
+       || ((desc.Pool == D3DPOOL_DEFAULT || !noDirtyUpdate) && !readOnly))) {
+       if (pBox && MipLevel != 0) {
+@@ -6030,6 +6036,10 @@ namespace dxvk {
+ 
+ 
+   void D3D9DeviceEx::ManageManagedTextureMemory() {
++    // Neither option is on (other games, or GMod with both turned off): no pass, no log.
++    if (!m_managedMemoryPolicy.active()) {
++      return;
++    }
+     // One pass per presented second. The tick advances once per pass, so time spent
+     // minimized or loading without presenting does not make everything look idle.
+     const auto now = std::chrono::steady_clock::now();
+@@ -6041,14 +6051,12 @@ namespace dxvk {
+     D3D9DeviceLock lock = LockDevice();
+     std::lock_guard<dxvk::mutex> guard(m_managedMutex);
+     ++m_managedTick;
+-    if (m_managedMemoryPolicy.active()) {
+-      FinishManagedReadbacks();
+-      if (m_managedMemoryPolicy.releaseHostCopies) {
+-        ReleaseIdleHostCopies();
+-      }
+-      if (m_managedMemoryPolicy.budgetBytes != 0) {
+-        ReleaseIdleManagedImages();
+-      }
++    FinishManagedReadbacks();
++    if (m_managedMemoryPolicy.releaseHostCopies) {
++      ReleaseIdleHostCopies();
++    }
++    if (m_managedMemoryPolicy.budgetBytes != 0) {
++      ReleaseIdleManagedImages();
+     }
+     LogManagedTextureMemory("pass");
+   }
+@@ -6190,10 +6198,12 @@ namespace dxvk {
+ 
+ 
+   void D3D9DeviceEx::ReleaseManagedImage(D3D9CommonTexture* pResource) {
++    // The stable hash is the API's view of the texture: it holds the image's hash before the image
++    // goes, and keeps it while released (other threads never read m_image of this class).
++    const XXH64_hash_t hash = pResource->m_image->getHash();
++    pResource->m_stableHash.store(hash, std::memory_order_release);
+     Rc<DxvkImage> image = std::move(pResource->m_image);
+     pResource->m_sampleView = D3D9ColorView();
+-    const XXH64_hash_t hash = image->getHash();
+-    pResource->m_releasedHash = hash;
+     pResource->m_imageReleased = true;
+     if (hash != kEmptyHash) {
+       ImGUI::ReleaseTextureImage(hash, image.ptr());
+diff --git a/src/d3d9/d3d9_managed_memory.h b/src/d3d9/d3d9_managed_memory.h
+index f94d8b68..23bd9b61 100644
+--- a/src/d3d9/d3d9_managed_memory.h
++++ b/src/d3d9/d3d9_managed_memory.h
+@@ -107,6 +107,14 @@ namespace dxvk::managed_memory {
+     return policy;
+   }
+ 
++  // A writable lock with D3DLOCK_NO_DIRTY_UPDATE records no dirty region: what the application
++  // writes reaches the image only after an AddDirtyRect, which may come at any time later. Until
++  // then the data exists only in the CPU copy, so such a texture keeps its copy for good (as one
++  // that uses AddDirtyRect does). A read-only lock writes nothing.
++  inline bool lockKeepsHostCopy(bool readOnly, bool noDirtyUpdate) {
++    return !readOnly && noDirtyUpdate;
++  }
++
+   struct Candidate {
+     uint64_t bytes = 0;          // GPU bytes the release frees
+     uint32_t lastUseTick = 0;    // presented second of the last draw, upload or creation
+diff --git a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+index 55601339..215cb3ad 100644
+--- a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+@@ -424,6 +424,14 @@ namespace fork_hooks {
+       return REMIXAPI_ERROR_CODE_INVALID_ARGUMENTS;
+     }
+ 
++    // R13: callers such as ToPBR run on other threads than the device's, whose pass may release a
++    // memory-managed texture's image at any time. Read only its atomic stable hash: the image's
++    // hash, or the one it had while released (empty before the first upload, as before).
++    if (commonTexture->IsMemoryManaged()) {
++      *out_hash = commonTexture->GetStableHash();
++      return REMIXAPI_ERROR_CODE_SUCCESS;
++    }
++
+     // Get the underlying DXVK image.
+     const Rc<DxvkImage>& image = commonTexture->GetImage();
+     if (image == nullptr) {
+@@ -431,8 +439,7 @@ namespace fork_hooks {
+       // Keep that API result without forcing a GPU allocation during a metadata query.
+       if (commonTexture->IsManaged() &&
+           commonTexture->GetMapMode() == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED) {
+-        // R13: an image released for the budget keeps reporting the hash it had.
+-        *out_hash = commonTexture->GetStableHash();
++        *out_hash = kEmptyHash;
+         return REMIXAPI_ERROR_CODE_SUCCESS;
+       }
+       // Texture might be in system memory (not GPU).
+diff --git a/src/dxvk/rtx_render/rtx_texture.h b/src/dxvk/rtx_render/rtx_texture.h
+index a527dfbf..326d86f3 100644
+--- a/src/dxvk/rtx_render/rtx_texture.h
++++ b/src/dxvk/rtx_render/rtx_texture.h
+@@ -65,6 +65,7 @@ namespace dxvk {
+     // true only when the texture manager released the preload (render thread).
+     bool                m_preloadYields   = false;
+     int64_t             m_preloadLastDrawnMs = -1;  // steady clock; -1: never drawn (render thread)
++    uint32_t            m_lastTrackedFrame = UINT32_MAX;  // frame of the last addTexture; never (render thread)
+     // NV-DXVK end
+ 
+     // Stage 2 - Video memory
+diff --git a/src/dxvk/rtx_render/rtx_texture_budget.h b/src/dxvk/rtx_render/rtx_texture_budget.h
+index 94c31d8b..d36f2694 100644
+--- a/src/dxvk/rtx_render/rtx_texture_budget.h
++++ b/src/dxvk/rtx_render/rtx_texture_budget.h
+@@ -76,6 +76,15 @@ namespace dxvk {
+   enum class PreloadPinChange { Keep, Release, Restore };
+   constexpr int64_t kPreloadIdleMs = 10000;
+ 
++  // A texture is in use ("drawn") while an instance's material retains it, or while something
++  // tracks it in the texture cache without retaining it: the terrain baker samples its source
++  // textures through the cache every frame it bakes, but the baked instance binds the baker's
++  // own material. Tracking in this frame or the two before counts.
++  constexpr uint32_t kNeverTracked = UINT32_MAX;
++  inline bool textureInUse(int32_t refCount, uint32_t lastTrackedFrame, uint32_t currentFrame) {
++    return refCount > 0 || (lastTrackedFrame != kNeverTracked && currentFrame - lastTrackedFrame <= 2);
++  }
++
+   // undrawnMs: how long no instance has drawn the texture (INT64_MAX if it never was drawn).
+   inline PreloadPinChange preloadPinChange(bool underPressure, bool pinned, bool drawn, int64_t undrawnMs) {
+     if (pinned) {
+diff --git a/src/dxvk/rtx_render/rtx_texture_manager.cpp b/src/dxvk/rtx_render/rtx_texture_manager.cpp
+index 0bc18a66..f7382f52 100644
+--- a/src/dxvk/rtx_render/rtx_texture_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_texture_manager.cpp
+@@ -1103,6 +1103,10 @@ namespace dxvk {
+     if (tex == nullptr) {
+       return;
+     }
++    // NV-DXVK start: R13 every consumer tracks through here, also those that do not retain the
++    // texture (the terrain baker): a preload in use this frame does not give way
++    tex->m_lastTrackedFrame = m_device->getCurrentFrameId();
++    // NV-DXVK end
+ 
+     if (!async || RtxOptions::TextureManager::neverDowngradeTextures()) {
+       tex->m_needsReloadAfterPurge.store(false);
+@@ -1613,9 +1617,10 @@ namespace dxvk {
+         assert(tex != nullptr);
+         // NV-DXVK start: R13 a released preload joins the lists below (an undrawn one drops to its
+         // smallest mip there); a restored one is pinned and loaded whole again after the lock.
+-        // Drawn means an instance holds the texture's material (retainSurfaceMaterial).
++        // Drawn means an instance holds the texture's material (retainSurfaceMaterial), or something
++        // tracked it in the last frames without retaining it (the terrain baker's sources).
+         if (tex != nullptr && tex->m_preloadYields) {
+-          const bool drawn = tex->m_refCount > 0;
++          const bool drawn = textureInUse(tex->m_refCount, tex->m_lastTrackedFrame, curframe);
+           if (drawn) {
+             tex->m_preloadLastDrawnMs = nowMs;
+           }
+diff --git a/tests/rtx/unit/test_managed_texture_memory.cpp b/tests/rtx/unit/test_managed_texture_memory.cpp
+index eff328c0..7eff9044 100644
+--- a/tests/rtx/unit/test_managed_texture_memory.cpp
++++ b/tests/rtx/unit/test_managed_texture_memory.cpp
+@@ -100,6 +100,11 @@ int main() {
+   check(selectForRelease({ { kMiB, 200, false } }, 20 * kGiB, budget, 100, 0).empty(),
+         "A use stamped after the pass's tick is never idle");
+ 
++  // A writable lock without a dirty region keeps the CPU copy for good.
++  check(lockKeepsHostCopy(false, true), "D3DLOCK_NO_DIRTY_UPDATE on a writable lock keeps the copy");
++  check(!lockKeepsHostCopy(false, false), "A writable lock with a dirty region does not");
++  check(!lockKeepsHostCopy(true, true), "A read-only lock writes nothing");
++
+   std::cout << "managed texture memory policy: all checks passed\n";
+   return 0;
+ }
+diff --git a/tests/rtx/unit/test_texture_budget_pressure.cpp b/tests/rtx/unit/test_texture_budget_pressure.cpp
+index cecec872..973d3bd8 100644
+--- a/tests/rtx/unit/test_texture_budget_pressure.cpp
++++ b/tests/rtx/unit/test_texture_budget_pressure.cpp
+@@ -79,6 +79,15 @@ int main() {
+   check(preloadPinChange(true, false, true, 0) == C::Restore, "A drawn released preload is preloaded again under pressure");
+   check(preloadPinChange(false, false, true, 0) == C::Restore, "A drawn released preload is preloaded again");
+ 
++  // In use: retained by an instance, or tracked without a retain (the terrain baker) in this frame
++  // or the two before.
++  check(textureInUse(1, kNeverTracked, 100), "A retained texture is in use");
++  check(!textureInUse(0, kNeverTracked, 100), "A texture never tracked nor retained is not in use");
++  check(textureInUse(0, 100, 100), "A texture the baker tracked this frame is in use");
++  check(textureInUse(0, 98, 100), "Tracked two frames ago is still in use");
++  check(!textureInUse(0, 97, 100), "Tracked three frames ago is not in use any more");
++  check(textureInUse(0, UINT32_MAX - 1, 0), "The frame counter may wrap");
++
+   std::cout << "texture budget pressure: all checks passed\n";
+   return 0;
+ }

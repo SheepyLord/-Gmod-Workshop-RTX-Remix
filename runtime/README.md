@@ -1,6 +1,6 @@
 # runtime/
 
-R13-B adds five patches ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md),
+R13-B adds six patches ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md),
 [report](../docs/handover/R13-B-report.md)):
 
 - `0023-Log-host-memory-by-memory-type-mapping-and-purpose-i.patch`: the opt-in census
@@ -41,6 +41,13 @@ R13-B adds five patches ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-rel
 - `0027-Count-what-creates-deferred-managed-GMod-texture-ima.patch`: the `[RTX Managed Textures]` line
   counts the deferred images (and bytes) that sampling, a view, a flushed upload, `PreLoad` and a
   draw's upload created, so a burst shows which call made it. Diagnostics only.
+- `0028-Fix-a-hash-race-baker-sources-and-unmarked-writes-of.patch`: the review's fixes. A
+  memory-managed texture keeps its hash in an atomic that the hash API and `GetStableHash` read, so a
+  caller on another thread (ToPBR from Lua) never races the image release; a texture tracked through
+  `addTexture` in the last frames counts as in use, so the terrain baker's preloaded sources do not give
+  way; a writable lock with `D3DLOCK_NO_DIRTY_UPDATE` keeps the CPU copy for good; and with neither
+  option on (other games) the once-a-second pass and its log do not run. Unit checks in
+  `test_managed_texture_memory` and `test_texture_budget_pressure`.
 
 The [GPU probe](../tools/qa/build_managed_texture_probe.ps1.md)'s `r13` sequence proves exact pixels and
 hashes through upload, released copies, read-back locks, a rewrite, image release, re-upload and a
@@ -123,6 +130,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0025-Let-replacement-textures-give-way-...` | Replacement textures stop growing near the driver's live budget and give back the overflow over it ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0026-Let-undrawn-preloaded-material-textures-...` | Under the same pressure, preloaded material textures no instance draws drop to their smallest mip, and are preloaded again when drawn ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0027-Count-what-creates-deferred-...` | The managed texture log counts what created each deferred image: sampling, a view, a flushed upload, `PreLoad`, a draw ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
+| `0028-Fix-a-hash-race-baker-sources-...` | The review's fixes of 0024 and 0026: an atomic stable hash for the API, the terrain baker's sources count as in use, `D3DLOCK_NO_DIRTY_UPDATE` keeps the CPU copy, no pass in other games ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).

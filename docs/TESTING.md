@@ -115,7 +115,10 @@ original runtime (patches 0001-0022) and the new one with the options off, CPU c
 budget, both, and both with the host memory census. Hashes, pixels and the sampled texel must be
 identical in every run, through upload, released copies, read-back locks, a rewrite, image release,
 re-upload and a device reset; the memory deltas show what each option released. The R12 sequence (`game`)
-must stay identical too.
+must stay identical too. Since patch 0028 it also runs a second thread that reads every texture's hash
+through the API from the idle passes through the re-use (no read may be wrong or empty), and writes into a
+texture with `D3DLOCK_NO_DIRTY_UPDATE`: the write must survive idle passes that release CPU copies and
+draw after a late `AddDirtyRect`. The runtime before 0028 fails both checks.
 
 PoC sessions (`out/r13-b/lab.py`, the shared PoC lock, the copied field library swapped in through
 hard links for its large files): gm_construct at 1920x1080 and 3840x2160, idle, two library characters

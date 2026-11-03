@@ -70,6 +70,26 @@ driver Vulkan memory: heap 0 device-local with type 1 `DEVICE_LOCAL` and type 4
   sampling view, a flushed upload or mip generation; the same draw burst (1,064 images, 16.91 GB)
   happens once while the map loads, before Source destroys those textures and loads them again (the
   start-up peak of 40.7 GB private bytes). The burst raised write-combined commit by 15.36 GB.
+- **The review's defects, reproduced** (GPU probe, `out/worktrees/r13-runtime/out/r13-b/probe-pre0028`,
+  runtime `0c20772f` with patches 0023-0027): with a 1 MiB budget a second thread reading
+  `dxvk_GetTextureHash` while images were released got wrong hashes (`ReleaseManagedImage` moved the image
+  out before it wrote the released hash, `d3d9_device.cpp`); with CPU copies released a
+  `D3DLOCK_NO_DIRTY_UPDATE` write was lost after idle passes (`FlushImage` uploads only the dirty box,
+  and `ReleaseIdleHostCopies` checked only `NeedsAnyUpload`). Patch 0028 passes both, about 1.2 billion
+  hash reads per run without a wrong one (`probe-0028`).
+- **The terrain baker does not retain what it samples:** it tracks its source textures through
+  `SceneManager::trackTexture` every frame it bakes (`rtx_terrain_baker.cpp:144-178`), so their
+  instance reference count stays 0, and the baked instance binds the baker's own material
+  (`rtx_context.cpp:2868-2875`). `RtxTextureManager::addTexture` is the one path every consumer takes.
+- **An intermittent option crash** (an access violation reading 0x50 in `RtxOptionImpl::resolveValue`,
+  `rtx_option.cpp:1151`, under `applyPendingValues`; one integrated PoC session, not reproduced): the
+  dirty-option loop of `RtxOptionManager::applyPendingValues` holds only the update mutex, while
+  `acquireLayer` and `releaseLayer` (`rtx_option_manager.cpp`) hold only `s_layerMutex` as they insert into
+  and erase from every option's layer queue (`readOptionLayer`, `disableLayerValue`) and call
+  `markDirty()`, which writes the dirty map without a lock (`rtx_option.cpp:355-357`). A layer acquired or
+  released on another thread during that loop (the graph's option layer actions,
+  `graph/components/rtx_option_layer_action.h:104-127`) would corrupt the queue `resolveValue` iterates.
+  A candidate, not proven: the dump showed no such thread at the crash.
 - **WDDM and a VRAM hog:** with 25.8 GB of render targets held (and cleared twice a second) by another
   process, the foreground game's `VK_EXT_memory_budget` budget fell from 32.95 only to 26.15 GB, its own
   usage at the time (26.14 GB); the hog's budget fell to 6.9 GB and its memory was paged. A background

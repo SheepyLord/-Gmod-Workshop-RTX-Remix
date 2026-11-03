@@ -75,6 +75,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
   again. Preloads were the lag report's 10.3 GB that never gave way: the field's mods preload 11.05 GB
   of files at every start, every character's maps whether spawned or not. With free memory nothing
   changes. `DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB` lets tests make that pressure on a large card.
+- **Fixes from the review of the memory patches** (runtime patch 0028): the texture hash API no longer
+  races the release of a game texture's image (a caller on another thread, such as ToPBR, could get an
+  empty hash or read a freed image); the terrain baker's preloaded source textures count as in use, so
+  they no longer drop to their smallest mip under pressure; a texture locked with
+  `D3DLOCK_NO_DIRTY_UPDATE` keeps its CPU copy, so such a write is not lost before its `AddDirtyRect`;
+  and other games no longer run the managed texture pass.
 - **A host memory census** (runtime patch 0023): the opt-in `rtx.profiler.memory.requestSnapshot` also
   accounts the process's host memory by Vulkan memory type, mapping and purpose, and its committed
   address space; [host_memory_census.py](tools/qa/host_memory_census.py.md) turns it into an account.

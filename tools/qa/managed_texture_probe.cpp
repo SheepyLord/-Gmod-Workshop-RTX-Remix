@@ -6,10 +6,12 @@
 #include <wrl/client.h>
 #include <remix/remix_c.h>
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
@@ -217,6 +219,23 @@ int runR13(remixapi_Interface& api, IDirect3DDevice9Ex* device, D3DPRESENT_PARAM
   const auto spaceUsed = addressSpace();
   const auto bytesUsed = textureBytes(api);
 
+  // From here through the re-use (step 4), another thread keeps reading the hashes through the API,
+  // as ToPBR does from Lua's thread: it must never see an empty or different hash while the device
+  // releases and re-creates images.
+  std::atomic<bool> hammering{ true };
+  std::atomic<std::uint64_t> hashReads{ 0 }, hashWrong{ 0 };
+  std::thread hammer([&] {
+    while (hammering.load()) {
+      for (unsigned i = 0; i < kCount; ++i) {
+        std::uint64_t value = 0;
+        const auto code = api.dxvk_GetTextureHash(textures[i].Get(), &value);
+        hashReads.fetch_add(1);
+        if (code != REMIXAPI_ERROR_CODE_SUCCESS || value != hashesFirst[i]) { hashWrong.fetch_add(1); }
+      }
+    }
+  });
+  struct Join { std::atomic<bool>& flag; std::thread& thread; ~Join() { flag.store(false); if (thread.joinable()) { thread.join(); } } } join{ hammering, hammer };
+
   // 2. Idle passes: the CPU copy and/or the image may go (depending on the options).
   presentSecond(device, 4);
   const auto privateIdle = privateBytes();
@@ -243,6 +262,9 @@ int runR13(remixapi_Interface& api, IDirect3DDevice9Ex* device, D3DPRESENT_PARAM
   require(hash(api, texture) == hashFirst, "the re-uploaded texture has a different hash");
   const auto bytesReuse = textureBytes(api);
   drawUntextured(device);
+  hammering.store(false);
+  hammer.join();
+  require(hashWrong.load() == 0, "another thread read an empty or different hash while images were released");
 
   // 5. Rewrite the center of mip 0 after the copies went: the hash is recomputed from the full data.
   presentSecond(device, 4);
@@ -276,18 +298,42 @@ int runR13(remixapi_Interface& api, IDirect3DDevice9Ex* device, D3DPRESENT_PARAM
   }
   drawUntextured(device);
 
+  // 7. A write without a dirty region (D3DLOCK_NO_DIRTY_UPDATE) lives only in the CPU copy until an
+  // AddDirtyRect: it must survive idle passes that release copies, and draw once marked dirty.
+  IDirect3DTexture9* unmarked = textures[2].Get();
+  const std::uint32_t unmarkedValue = 0xff55aa33u;
+  check(unmarked->LockRect(0, &data, &region, D3DLOCK_NO_DIRTY_UPDATE), "unmarked write lock");
+  for (LONG y = 0; y < region.bottom - region.top; ++y) {
+    auto* row = reinterpret_cast<std::uint32_t*>(static_cast<unsigned char*>(data.pBits) + y * data.Pitch);
+    for (LONG x = 0; x < region.right - region.left; ++x) { row[x] = unmarkedValue; }
+  }
+  check(unmarked->UnlockRect(0), "unmarked write unlock");
+  const auto pixelUnmarked = draw(device, unmarked);  // not marked dirty yet: D3D9 draws the old texel
+  const auto hashUnmarked = hash(api, unmarked);
+  drawUntextured(device);
+  presentSecond(device, 4);
+  require(mismatches(unmarked, 0, kSalt + 2, &region, unmarkedValue) == 0, "a write without a dirty region was lost while idle");
+  check(unmarked->AddDirtyRect(&region), "late AddDirtyRect");
+  const auto pixelMarked = draw(device, unmarked);
+  require(pixelMarked == (unmarkedValue & 0x00ffffff), "the write marked dirty late does not draw");
+  drawUntextured(device);
+
   auto delta = [](std::uint64_t a, std::uint64_t b) { return static_cast<long long>(a) - static_cast<long long>(b); };
   std::printf("{\"sequence\":\"r13\",\"hash_first\":\"0x%016llx\",\"hash_others\":[\"0x%016llx\",\"0x%016llx\",\"0x%016llx\"],"
               "\"hash_rewrite\":\"0x%016llx\",\"pixel_first\":%u,\"pixel_rewrite\":%u,\"sampled_texel\":[%u,%u],"
               "\"private_filled\":%lld,\"private_used\":%lld,\"private_idle\":%lld,"
               "\"rw_idle_vs_used\":%lld,\"wc_idle_vs_used\":%lld,"
-              "\"app_texture_used\":%lld,\"app_texture_idle\":%lld,\"app_texture_reuse\":%lld}\n",
+              "\"app_texture_used\":%lld,\"app_texture_idle\":%lld,\"app_texture_reuse\":%lld,"
+              "\"pixel_unmarked\":%u,\"pixel_marked\":%u,\"hash_unmarked\":\"0x%016llx\","
+              "\"hash_reads\":%llu,\"hash_wrong\":%llu}\n",
     static_cast<unsigned long long>(hashFirst), static_cast<unsigned long long>(hashesFirst[1]),
     static_cast<unsigned long long>(hashesFirst[2]), static_cast<unsigned long long>(hashesFirst[3]),
     static_cast<unsigned long long>(hashRewrite), pixelFirst, pixelRewrite, sampledX, sampledY,
     delta(privateFilled, private0), delta(privateUsed, private0), delta(privateIdle, private0),
     delta(spaceIdle.readWrite, spaceUsed.readWrite), delta(spaceIdle.writeCombined, spaceUsed.writeCombined),
-    delta(bytesUsed, bytes0), delta(bytesIdle, bytes0), delta(bytesReuse, bytes0));
+    delta(bytesUsed, bytes0), delta(bytesIdle, bytes0), delta(bytesReuse, bytes0),
+    pixelUnmarked, pixelMarked, static_cast<unsigned long long>(hashUnmarked),
+    static_cast<unsigned long long>(hashReads.load()), static_cast<unsigned long long>(hashWrong.load()));
   for (auto& t : textures) { t.Reset(); }
   return 0;
 }

@@ -1,6 +1,7 @@
 # R13-B: the runtime's memory (report)
 
-Status: done (Claude subagent, 2026-11-03). Branch `r13-runtime`; runtime source
+Status: done (Claude subagent, 2026-11-03), with the review's fixes (patch 0028, section 11). Branch
+`r13-runtime`; runtime source
 `out/worktrees/r12-vram/out/runtime-src`, branch `claude/r13-runtime`. Decision record:
 [ADR 0100](../decisions/0100-one-copy-and-idle-release-of-game-textures.md). Evidence and scratch
 tools: `out/worktrees/r13-runtime/out/r13-b/` (below, `r13-b/`).
@@ -12,9 +13,11 @@ tools: `out/worktrees/r13-runtime/out/r13-b/` (below, `r13-b/`).
   the game's own heaps. Its 11.0 GB of write-combined memory is not DXVK's: the NVIDIA driver maps the
   process's VRAM into its address space as committed write-combined memory, so it is the game's VRAM
   in use, which therefore also holds system commit.
-- **Five runtime patches**, 0023-0027: the host census; one copy and idle-image release for game
+- **Six runtime patches**, 0023-0028: the host census; one copy and idle-image release for game
   textures (automatic for gmod.exe); replacement textures within the driver's live budget; undrawn
-  preloaded textures giving way under the same pressure; counters of what creates game texture images.
+  preloaded textures giving way under the same pressure; counters of what creates game texture images;
+  and the fixes an independent review found (a hash race, the terrain baker's sources, unmarked writes,
+  the pass in other games).
 - **The lag trigger, on the new runtime** (R13-A's `item_ammo_ar2_altfire` precache, made by a plain
   Combine soldier): game textures jump 0.96 -> 17.08 GB as before, and come back to the managed budget
   75 seconds after the trigger with this computer's automatic budget (8.58 GB) and about two minutes
@@ -156,6 +159,7 @@ only `d3d9.dll` changed (`r13-b/lab.py`, `r13-b/r13b_probe.lua`).
 | `0025-Let-replacement-textures-give-way-under-real-VRAM-pr.patch` | `d48b7bec` | The replacement budget capped from the driver's live numbers under real pressure |
 | `0026-Let-undrawn-preloaded-material-textures-give-way-und.patch` | `68e92970` | Undrawn preloaded material textures give way under the same pressure; streamed textures get the limit less what pinned ones hold; a test budget |
 | `0027-Count-what-creates-deferred-managed-GMod-texture-ima.patch` | `d0a60c1e` | Counters of what creates each game texture image |
+| `0028-Fix-a-hash-race-baker-sources-and-unmarked-writes-of.patch` | `403b2336` | The review's fixes (section 11) |
 
 `runtime/README.md` describes them; `runtime/base.json` records the import; the runtime part holds the
 new `d3d9.dll` (one import). Unit tests: `test_managed_texture_memory`,
@@ -380,6 +384,7 @@ What is still the content side's (the main session's) call:
 | `q4-final-testbudget` | final (`8bdd0819`) | Replacement textures under pressure (section 4) |
 | `a4-min-4k` | final (`8bdd0819`) | The trigger on the minimum profile's values at 4K (below) |
 | `b3-orig-1080`, `a3-orig-1080`, `p5-orig-trigger` | original (`e8deaccb`) | The trigger's baseline; two device losses (below) |
+| `c1-min-1080-0028` | 0023-0028 (`c4afaa44`, the import's code) | The trigger after the review's fixes, on the integrated package (section 11) |
 
   The candidates differ from the final source only in what the later amendments added (0026's
   10-second wait, its test budget and teardown fix, 0027's counters). The imported `d3d9.dll`
@@ -397,7 +402,9 @@ Every session ran with `+fps_max 60` (the coordinator restores the field's cloud
 console quits (UTC, 2026-11-03): 11:48:36 (`a2-min-1080`), 11:54:36 (`a1-off-1080`), 13:37:56
 (`b2-min-1080`), 13:48:13 (`q1-final-default`), 13:56:11 (`b5-min-1080`), 14:08:44
 (`q3-final-trigger`), 14:18:32 (`b3-orig-1080`), 14:26:31 (`r1-default-1080`), 14:34:02
-(`q4-final-testbudget`) and 14:42:09 (`a4-min-4k`), the last session. `a3-orig-1080` (11:56:24) and
+(`q4-final-testbudget`) and 14:42:09 (`a4-min-4k`). After the review: 15:52:48 (`c1-min-1080-0028`),
+which ran the integration branch's `poc_session.py` and so ended with the field's own settings
+(`settings_back: restored` in its record). `a3-orig-1080` (11:56:24) and
 `p5-orig-trigger` (14:10:35) ended on a GPU device loss without a quit. No field game was started, and
 none was running when a session began.
 
@@ -414,13 +421,81 @@ measured on this computer: after the trigger, 8.5 GB of VRAM and of commit back 
 defaults; on the minimum profile's values the burst costs no extra private bytes and leaves 2.3 GB of
 game textures resident.
 
-## 11. Open items and decisions for the main session
+## 11. The review's fixes (patch 0028)
+
+An independent review of 0024-0027 found three defects and a nit; all are fixed in
+`0028-Fix-a-hash-race-baker-sources-and-unmarked-writes-of.patch` (runtime commit `403b2336`), and the
+runtime part holds the rebuilt `d3d9.dll` (SHA-256 `91f0696c8c1ca5c0566c470f55379ed25fcb916ca572cfd2a585fa17d5718e97`, imported once).
+
+1. **The hash API raced the image release** (0024). `dxvk_GetTextureHash` and `GetStableHash` read
+   `m_image` and the released hash without a lock; `ReleaseManagedImage` moved the image out, reset the
+   views and only then wrote the released hash, and ToPBR calls the API from Lua's thread. A
+   memory-managed texture now keeps its hash in `std::atomic<XXH64_hash_t> m_stableHash`, written with
+   every hash change (`SetupForRtxFrom`, `ClearHash`, `ReleaseManagedImage` before the image goes; kept
+   as it is across the re-creation in `EnsureImage`); for these textures the API and `GetStableHash`
+   read only the atomic and never `m_image`. Other textures read as before.
+2. **Terrain-bake sources could stay at their smallest mip** (0026). The baker tracks its sources
+   through `addTexture` every frame it bakes without retaining them. `addTexture` now stamps the frame
+   on the texture, and `textureInUse` (`rtx_texture_budget.h`) counts a texture retained by an instance
+   or tracked in this frame or the two before; only a preload not in use for 10 seconds gives way.
+3. **Writes without a dirty region could be lost** (0024, copies released). A writable lock with
+   `D3DLOCK_NO_DIRTY_UPDATE` now keeps the texture's CPU copy for good (`lockKeepsHostCopy`,
+   `d3d9_managed_memory.h`), which also covers an `AddDirtyRect` that comes more than 10 s later.
+4. **The pass ran in every game:** `ManageManagedTextureMemory` returns at once when neither option is
+   on, so other games take no lock and write no log line.
+
+**Tests.**
+
+- `tools\test.ps1 -Config Release` passes on `r13-runtime` (fast-forwarded to `r13-int` `1a7d8e2`, then
+  this round): the repository checks, 26 CTests and 592 Python tests (28 + 25 + 539)
+  (`r13-b/test-release-0028.log`).
+- Unit checks for `textureInUse` and `lockKeepsHostCopy`; both runtime unit tests pass, and 32 of the
+  33 meson tests. The 33rd, `test_remix_categories`, cannot load `d3d9.dll` under meson because its
+  test definition leaves the runtime's dependency folders off `PATH`; run with them it passes. This is
+  not caused by 0028.
+- **GPU probe** (`r13-b/probe-0028`, `r13-b/probe-pre0028`): the `r13` sequence now also runs a second
+  thread reading every texture's hash through the API from the idle passes through the re-use, and an
+  unmarked write (`D3DLOCK_NO_DIRTY_UPDATE`) that must survive idle passes and draw after a late
+  `AddDirtyRect`. On the runtime before 0028 (`0c20772f`) the budget variants failed on wrong hash reads
+  and the copy-release variants lost the write. On 0028 every variant passes and matches the original
+  runtime: the same hashes and pixels as before, the unmarked texel `3117438` before and `5614131` after
+  `AddDirtyRect`, its hash `0x7de71b987af57fd0`, and about 1.2 billion hash reads per run with none wrong.
+- **PoC** (`c1-min-1080-0028`: the integrated package from `r13-int` with loader 0.13.0 and R13-A's
+  loading on first use, the minimum profile's runtime values, copies released and a 2 GiB budget, the
+  trigger at 1920x1080):
+
+| GB | idle | characters | removed | **triggered** | **+180 s** | characters again |
+|---|---:|---:|---:|---:|---:|---:|
+| game textures | 0.29 | 0.96 | 0.96 | **6.29** | **2.35** | 2.35 |
+| private bytes | 15.10 | 17.19 | 17.25 | **16.48** | **16.05** | 16.22 |
+| texture CPU copies | 5.04 | 5.36 | 5.36 | 0.04 | 3.97 | 3.97 |
+| driver usage / budget | 5.91 / 32.95 | 6.71 | 6.84 | 11.42 | 7.62 | 7.75 |
+
+  It behaves as before: the burst (now 5.3 GB, R13-A's ready set) is back at the 2 GiB budget after the
+  idle time (72 images, 4.39 GB, released; 76 read-backs; 7 re-uploads), the copies of the burst went
+  and came back as the images went, and the respawned characters have the same 74 hashes as before the
+  release and as on the original runtime. Normal quit, no Lua error, the PoC restored exactly. With
+  R13-A, private bytes at idle are 15.1 GB against 27 GB before.
+
+**The intermittent option crash** (time-boxed, not fixed; it did not reproduce): an access violation
+reading 0x50 in `RtxOptionImpl::resolveValue` under `RtxOptionManager::applyPendingValues`. That loop
+holds only the update mutex, while `acquireLayer` and `releaseLayer` hold only `s_layerMutex` as they
+insert into and erase from every option's layer queue (`readOptionLayer`, `disableLayerValue`) and call
+`markDirty()`, which writes the dirty map without a lock. A layer acquired or released on another thread
+during that loop (the graph's option layer actions) would corrupt the queue `resolveValue` iterates. The
+dump shows no such thread, so this is a candidate, not a proven cause. A fix would hold the update mutex
+in those two loops too (lock order `s_layerMutex`, then the update mutex, as `applyPendingValues` takes
+them); `discoverDynamicOptions`, which runs inside, takes only the registry write mutex. Not done: the
+change touches option startup and the graph, and the cause is not certain.
+
+## 12. Open items and decisions for the main session
 
 - The content side's preload choices (section 5): rpai, ToPBR, the duplicate `pbr_*` mods in the field.
 - The library's CPU copies and the start-up peak: R13-A's loading on first use (section 6).
 - What in Source draws every loaded texture on the first `item_ammo_ar2_altfire` precache and during a
   map load (section 2): the draw path is known, the engine function is not.
 - Remix captures were not exercised in a session.
+- The option crash candidate (section 11) and `test_remix_categories`'s `PATH` under meson.
 - Machine load: short incremental runtime builds ran at about 12:09, 12:22 and 12:27 UTC (about a
   minute each) while R13-A's sessions 11 and 12 measured; no GPU work.
 - The runtime branch's history was rewritten twice before the import (a control character that a shell
