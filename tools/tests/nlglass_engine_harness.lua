@@ -42,7 +42,7 @@ local function realm(server)
     e.WorldToLocal=WorldToLocal
     e.IsValid=valid e.math=setmetatable({Clamp=clamp},{__index=math})
     e.FCVAR_ARCHIVE,e.FCVAR_REPLICATED,e.FCVAR_NOTIFY=1,2,4
-    e.MOVETYPE_NOCLIP=8 e.MOVETYPE_NONE,e.SOLID_VPHYSICS,e.TRANSMIT_ALWAYS,e.RENDERGROUP_TRANSLUCENT=0,6,2,1
+    e.MOVETYPE_NOCLIP,e.MOVETYPE_OBSERVER=8,10 e.MOVETYPE_NONE,e.SOLID_VPHYSICS,e.TRANSMIT_ALWAYS,e.RENDERGROUP_TRANSLUCENT=0,6,2,1
     e.DMG_BULLET,e.DMG_BUCKSHOT,e.DMG_BLAST,e.DMG_CRUSH,e.DMG_CLUB=2,4,8,16,32
     e.TOP,e.FILL=1,5
     e.tick,e.time=100,10 e.queue={} e.out={} e.receivers={} e.cvars={}
@@ -333,6 +333,13 @@ elseif scenario=="bodies" then
     ghost.movetype=sv.MOVETYPE_NOCLIP or 8
     ent:Touch(ghost) sv.flush()
     check(r.state.revision==0,"a player in noclip never fractures glass")
+    local spectator=newEntity("player",{pos=Vector(0,0,-16),velocity=Vector(0,0,400),flags={player=true}})
+    spectator.movetype=sv.MOVETYPE_OBSERVER or 10
+    ent:Touch(spectator) sv.flush()
+    check(r.state.revision==0,"a spectating player never fractures glass")
+    local runner=newEntity("player",{pos=Vector(0,0,-16),velocity=Vector(0,0,400),flags={player=true}})
+    ent:Touch(runner) sv.flush()
+    check(r.state.revision>0,"the same pane still breaks for a player who is not in noclip")
 elseif scenario=="scripted" then
     local ent,r=pane()
     local start=#sv.out+1 -- deliberately miss the initial snapshot

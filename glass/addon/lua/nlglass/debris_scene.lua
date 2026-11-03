@@ -5,12 +5,19 @@ local candidates, regions, states, serial, nextDiscovery = {}, {}, {}, 0, 0
 local MAX_BODIES, MAX_ENTITIES, MAX_BONES, MAX_EXAMINED = 96, 128, 24, 512
 local LOOKAHEAD, MAX_SWEEP, FAST_SPEED = .25, 192, 160
 local currentFlags = 3
+-- A player in noclip (flying through walls) or spectating passes through the world: broken glass
+-- neither meets nor moves for it.
+local function ghost(e)
+    if not e:IsPlayer() then return false end
+    local move = e:GetMoveType()
+    return move == MOVETYPE_NOCLIP or move == MOVETYPE_OBSERVER
+end
 local function living(e)
-    return IsValid(e) and ((e:IsPlayer() and e:Alive()) or
+    return IsValid(e) and ((e:IsPlayer() and e:Alive() and not ghost(e)) or
         ((e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health()>0))
 end
 local function kind(e)
-    if e:IsPlayer() then return e:Alive() and 4 or 0 end
+    if e:IsPlayer() then return (e:Alive() and not ghost(e)) and 4 or 0 end
     if (e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health() > 0 then return 8 end
     local class = e:GetClass()
     -- Equipped weapons/followers are not independent Source objects. The owner's hull supplies
@@ -202,7 +209,7 @@ function S.Capture(api, dt, flags)
             local lx, ly, lz = components(lo, 131072)
             local hx, hy, hz = components(hi, 131072)
             if lx and hx and near(lx, ly, lz, hx, hy, hz, sweep(e:GetVelocity())) then
-                local living = (e:IsPlayer() and e:Alive()) or ((e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health() > 0)
+                local living = (e:IsPlayer() and e:Alive() and not ghost(e)) or ((e:IsNPC() or (e.IsNextBot and e:IsNextBot())) and e:Health() > 0)
                 if living then
                     local a, b = e:GetCollisionBounds()
                     -- Source feet stay on the floor instead of stepping onto cosmetic glass.

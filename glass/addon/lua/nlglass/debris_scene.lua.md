@@ -18,6 +18,8 @@ Each Source vector is read once (every component read is an engine call, 35 ns i
 took 3.13 ms with vectors and 0.30 ms with numbers (PoC probe, 2026-11-01). Duplicates from
 overlapping region queries are dropped before any engine call.
 
+R14 (the user's item 41): a player in noclip or spectating (`MOVETYPE_NOCLIP`, `MOVETYPE_OBSERVER`)
+counts as neither living nor solid, so broken glass neither meets nor moves for a player flying through it.
 Every idle worker boundary refreshes at most 96 nearby bodies. Living players/NPCs/
 NextBots use collision hulls, dead players are excluded, ragdolls use up to 24 physics bones (or bone
 hitboxes without client physics), props use physics convexes or an oriented box. Invalid/oversized

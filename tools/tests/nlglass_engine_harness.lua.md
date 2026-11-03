@@ -28,6 +28,9 @@ public API; no G1-B code, native module or game process is used.
 luajit tools/tests/nlglass_engine_harness.lua glass/addon/lua network
 ```
 
+R14: `bodies` also checks that a touch from a player in noclip or spectating leaves the pane whole, and that
+the same touch from a walking player still breaks it (the control).
+
 Inputs: Lua root and scenario. `damage`, `collision`, `bodies`, `scripted`, `native`, `map`,
 `collision_mesh`, `network`, `blast_cleanup`, `save_dupe`, `tool_menu`, `geometry`, `late_entity`,
 `collision_failure` exercise all damage causes,

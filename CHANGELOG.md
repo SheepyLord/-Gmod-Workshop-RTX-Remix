@@ -10,6 +10,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 - Glass: a player in noclip no longer fractures glass it passes through (touch, contact and the
   pre-movement sweep ignore `MOVETYPE_NOCLIP` players).
+- Glass (R14 continued): spectating players (`MOVETYPE_OBSERVER`) are ignored the same way, and broken
+  glass no longer moves for a player in noclip or spectating. In a PoC game a player flew through a
+  pane at 1,500 units/s in noclip and while spectating and left it whole; running into the same kind of
+  pane still broke it.
 - The in-game RTX Remix guide: a "Where to find things" orientation, a Glass section, and annotated
   screenshots (numbered arrows) of the RTX Remix tab, Common Remix settings, Glass settings and Remix's
   Alt+X menu, drawn from real captures (`tools\guide_annotate.py`, `tools\qa\guide_shots.lua`); the new
