@@ -1119,6 +1119,9 @@ class InstallConfigTests(unittest.TestCase):
         written = json.loads(self.config.read_text(encoding='utf-8'))
         self.assertEqual(written['remix'], {'enabled': True, 'performance_tier': 'low'})
         self.assertEqual(written['diagnostics'], {'gpu_crash_dumps': 'next_start', 'memory_telemetry': 'off'})
+        code, record = main('--allow-local', 'b.gma', '--memory-profile', 'minimum', '--replace-config')  # loader 0.13.0
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(self.config.read_text(encoding='utf-8'))['remix'], {'enabled': True, 'memory_profile': 'minimum'})
 
 
 class PowerShellTests(unittest.TestCase):

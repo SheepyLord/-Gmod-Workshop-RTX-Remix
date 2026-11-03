@@ -757,6 +757,8 @@ def config_content(args) -> tuple[dict, bytes]:
     # Loader 0.11.0 (ADR 0062, 0063), each left out unless given: an older loader rejects these keys.
     if getattr(args, "performance_tier", None):
         value["remix"]["performance_tier"] = args.performance_tier
+    if getattr(args, "memory_profile", None):  # loader 0.13.0 (ADR 0101)
+        value["remix"]["memory_profile"] = args.memory_profile
     diagnostics = {key: getattr(args, key) for key in ("gpu_crash_dumps", "memory_telemetry") if getattr(args, key, None)}
     if diagnostics:
         value["diagnostics"] = diagnostics
@@ -1236,6 +1238,8 @@ def main(argv=None) -> int:
                              help="write remix.reshade (loader 0.5.0); left out by default")
         command.add_argument("--performance-tier", choices=["auto", "high", "medium", "low"],
                              help="write remix.performance_tier (loader 0.11.0); left out by default")
+        command.add_argument("--memory-profile", choices=["auto", "minimum", "recommended", "high"],
+                             help="write remix.memory_profile (loader 0.13.0); left out by default")
         command.add_argument("--gpu-crash-dumps", choices=["off", "next_start", "always"],
                              help="write diagnostics.gpu_crash_dumps (loader 0.11.0); left out by default")
         command.add_argument("--memory-telemetry", choices=["on", "off"],
