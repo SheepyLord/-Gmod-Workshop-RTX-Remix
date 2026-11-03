@@ -29,12 +29,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
   `d3d9.deferManagedTextures` provides a compatibility override. Local GPU tests compare exact
   pixels and texture hashes against the original runtime
   ([ADR 0096](docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
-
 - **Unused imported-character materials stay unloaded by the MMD alpha classifier.** It now waits
   for a real draw record before looking up a material or texture. Local memory census tools report
   loaded Source texture names/groups and opt-in runtime allocation size/format/pool, so VRAM costs
   can be attributed without changing texture hashes or visual quality
   ([ADR 0096](docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+- QA tools no longer wait for the field game to go idle: the field game is a test session (the
+  user, 2026-11-02). `tools/qa/mmd_reimport_session.py` ends a running field game before its PoC
+  launch and records which; R12-C's `tools/game_activity.py` gate is not kept.
 
 ### R11
 

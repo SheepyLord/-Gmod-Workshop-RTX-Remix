@@ -2,10 +2,10 @@
 
 R12-A's isolated PoC delete/reimport probe. Uses the existing `poc_session.py` owner for launch,
 health checks, screenshots, normal quit and session-only console collection. Never launches,
-focuses, sends input to, reads logs from or changes the field install.
+focuses, sends input to, reads logs from or changes the field install; a running field game is
+ended (below).
 
 ```powershell
-python tools/qa/mmd_reimport_session.py --gate
 python tools/qa/mmd_reimport_session.py --out out/r12-a/baseline --source out/r12-a/source/endminf/女管理员.pmx
 python tools/qa/mmd_reimport_session.py --out out/r12-a/fixed --source out/r12-a/source/endminf/女管理员.pmx --candidate
 # Optional cold-registration case: a saved carrier restored at startup, never spawned this session.
@@ -14,10 +14,12 @@ python tools/qa/mmd_reimport_session.py --out out/r12-a/cold --source out/r12-a/
 ```
 
 Copy the user's source folder into this worktree's `out` first. Evidence must be a new directory
-there. Checks the R12 field activity gate (foreground PID and `GetLastInputInfo`) before taking the
-exclusive shared `out/r10/poc.lock`, and again immediately before launch. Exit 2 means activity
-blocks launch: retry after five minutes while doing other work. Exit 3 means another task holds
-the PoC: retry after two minutes. Never removes another task's lock.
+there. Takes the exclusive shared `out/r10/poc.lock`; exit 3 means another task holds the PoC:
+retry after two minutes. Never removes another task's lock. The field game is a test session (the
+user, 2026-11-02): under the lock, and again immediately before launch, a running field `gmod.exe`
+is asked to close (WM_CLOSE) and ended after 60 s if it is still running. Its PIDs, and those that
+had to be forced, go to `field-games.json` / `field-games-at-launch.json` and are printed. A field
+game that cannot be ended stops the run before launch.
 
 Under the lock, temporarily moves the PoC `garrysmod/data` and generated `~gmod_topbr` directory
 into evidence, uses empty test directories, then archives generated data and restores the originals.
@@ -45,4 +47,4 @@ for deterministic placement and rendering while occluded; its saved config is re
 into the isolated cache after snapshotting; the seed stays unchanged. `--cold` deletes the entry
 before the first spawn, so saved menu registrations have mounted its carrier without warming the
 server's model lookup. This distinguishes a warm Lua cache masking a missing sidecar from a fresh
-session's lookup. Each separate launch still obtains the lock and passes the activity gate.
+session's lookup. Each separate launch still obtains the lock and ends a running field game.

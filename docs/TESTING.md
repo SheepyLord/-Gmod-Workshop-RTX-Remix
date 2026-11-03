@@ -3,8 +3,9 @@
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.
-`tools/qa/mmd_reimport_session.py` runs the isolated PoC sequence under the shared lock and R12
-activity gate; see [its usage and restoration contract](../tools/qa/mmd_reimport_session.py.md).
+`tools/qa/mmd_reimport_session.py` runs the isolated PoC sequence under the shared lock, ending a
+running field game first (the field game is a test session; R12-A itself ran under an activity gate
+that R12's integration dropped); see [its usage and restoration contract](../tools/qa/mmd_reimport_session.py.md).
 The [R12-A report](handover/R12-A-report.md) records the exact baseline error on Endministrator,
 two successful corrected delete/reimport cycles, changed carriers, positive client instances and
 stock-file verification; evidence is in the R12-A worktree's `out/r12-a/`.

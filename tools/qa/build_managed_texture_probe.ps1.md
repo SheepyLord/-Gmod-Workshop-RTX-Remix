@@ -27,5 +27,6 @@ Run twice with `DXVK_DEFER_MANAGED_TEXTURES=0` / `1`, `DXVK_ENABLE_RAYTRACING=0`
 `DXVK_CONFIG_FILE` containing `rtx.recomputeTextureHashOnWrite = True`. Compare both outputs'
 hashes/pixels exactly. Set TEMP/TMP, DXVK_LOG_PATH and the working directory inside `out/`.
 The runtime also places its own caches beside this test executable, inside `out/`.
-Follow the field activity gate before either GPU run. This host does not use a game install,
+End a running field game before either GPU run (the field game is a test session: the user,
+2026-11-02). This host does not use a game install,
 PoC files, Steam or an interactive window. No native payload or trust setting is changed.

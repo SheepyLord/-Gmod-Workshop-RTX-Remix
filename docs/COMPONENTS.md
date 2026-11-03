@@ -9,8 +9,7 @@ player panel embedded in `cl_rtx_topbr_conversion.lua`. Its corresponding source
 production corpus probe are under `packages/fixes/licenses/oversized-skinning/autopbr`.
 The [panel harness](../tools/tests/game_pbr_panel_harness.lua.md) joins the existing ToPBR checks.
 
-R12-C adds [the read-only field activity gate](../tools/game_activity.py.md),
-[the evidence reader](../tools/vram_census.py.md) and
+R12-C adds [the evidence reader](../tools/vram_census.py.md) and
 [the hotloader VTF inventory](../tools/vtf_census.py.md) under `tools/`, plus
 [a local-only Source texture probe](../tools/qa/build_vram_probe.ps1.md) and
 [its client snapshot script](../tools/qa/vram_probe.lua.md) under `tools/qa`.

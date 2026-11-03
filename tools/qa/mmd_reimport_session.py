@@ -1,9 +1,8 @@
-"""R12-A: isolated, locked PoC delete/reimport readiness probe; never targets the field game."""
+"""R12-A: isolated, locked PoC delete/reimport readiness probe; ends a running field game first."""
 from __future__ import annotations
 
 import argparse
 import ctypes
-from ctypes import wintypes
 import hashlib
 import json
 import os
@@ -58,24 +57,23 @@ def restore_video_settings(before):
     assert video_settings() == before, 'video registry restoration differs'
 
 
-def activity():
-    """Read-only R12 gate: a field game and recent input OR foreground ownership blocks launch."""
-    class LastInput(ctypes.Structure):
-        _fields_ = [('cbSize', wintypes.UINT), ('dwTime', wintypes.DWORD)]
-    user, kernel = ctypes.windll.user32, ctypes.windll.kernel32
-    kernel.GetTickCount64.restype = ctypes.c_ulonglong
-    user.GetForegroundWindow.restype = wintypes.HWND
-    user.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
-    value = LastInput()
-    value.cbSize = ctypes.sizeof(value)
-    if not user.GetLastInputInfo(ctypes.byref(value)):
-        raise RuntimeError('GetLastInputInfo failed; no launch')
-    idle = ((kernel.GetTickCount64() & 0xffffffff) - value.dwTime) % 2**32 / 1000
-    foreground = wintypes.DWORD()
-    user.GetWindowThreadProcessId(user.GetForegroundWindow(), ctypes.byref(foreground))
-    field = poc.game_processes(poc.FIELD_ROOT)
-    return dict(time=poc.now(), field_pids=field, foreground_pid=foreground.value,
-                idle_seconds=idle, blocked=bool(field) and (foreground.value in field or idle < 600))
+def end_field_games():
+    """The field game is a test session (the user, 2026-11-02): a running one is ended before a PoC
+    launch, never waited for. Asks it to close (WM_CLOSE), then ends what is left after 60 s."""
+    field = {pid: poc.process_created(pid) for pid in poc.game_processes(poc.FIELD_ROOT)}
+    field = {pid: created for pid, created in field.items() if created is not None}
+    record = dict(time=poc.now(), field_pids=sorted(field), forced=[])
+    if field:
+        for pid in field:
+            subprocess.run(['taskkill', '/PID', str(pid)], capture_output=True)
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline and set(poc.game_processes(poc.FIELD_ROOT)) & set(field):
+            time.sleep(2)
+        left = {pid: created for pid, created in field.items() if pid in poc.game_processes(poc.FIELD_ROOT)}
+        record['forced'] = poc.terminate(left)
+        print(f'ended field gmod.exe {sorted(field)} (forced: {record["forced"]})', flush=True)
+    record['remaining'] = poc.game_processes(poc.FIELD_ROOT)
+    return record
 
 
 def digest(path):
@@ -266,10 +264,10 @@ class Probe:
                     changed=changed, changed_again=changed_again)
 
     def run(self):
-        gate = activity()
-        poc.write_json(self.out / 'activity.json', gate)
-        if gate['blocked']:
-            raise RuntimeError('field activity blocks launch')
+        field = end_field_games()
+        poc.write_json(self.out / 'field-games.json', field)
+        if field['remaining']:
+            raise RuntimeError('a field game could not be ended')
         if poc.game_processes(POC):
             raise RuntimeError('PoC is already running')
         data_root = POC / 'garrysmod/data'
@@ -307,11 +305,11 @@ class Probe:
                 shutil.copytree(self.seed, cache)
             else:
                 cache.mkdir(parents=True)
-            # Gate again immediately before launch, after the reversible snapshot.
-            gate = activity()
-            poc.write_json(self.out / 'activity-at-launch.json', gate)
-            if gate['blocked']:
-                raise RuntimeError('field activity blocks launch')
+            # A field game started meanwhile is ended too, immediately before launch.
+            field = end_field_games()
+            poc.write_json(self.out / 'field-games-at-launch.json', field)
+            if field['remaining']:
+                raise RuntimeError('a field game could not be ended')
             env = dict(os.environ, TEMP=str(REPO / 'out/tmp'), TMP=str(REPO / 'out/tmp'))
             command = [sys.executable, str(REPO / 'tools/poc_session.py'), '--evidence', str(self.out),
                        'run', '--name', 'game', '--addons', '--settle', '0', '--screenshots', '0',
@@ -394,7 +392,6 @@ class Probe:
 def main():
     ctypes.windll.user32.SetProcessDPIAware()
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--gate', action='store_true', help='only check field activity; exit 2 if blocked')
     ap.add_argument('--out', type=Path)
     ap.add_argument('--source', type=Path)
     ap.add_argument('--candidate', action='store_true')
@@ -402,10 +399,6 @@ def main():
     ap.add_argument('--seed-only', action='store_true', help='import and spawn one NPC, then quit normally')
     ap.add_argument('--cold', action='store_true', help='delete the restored entry before any spawn warms its lookup')
     args = ap.parse_args()
-    if args.gate:
-        gate = activity()
-        print(json.dumps(gate))
-        return 2 if gate['blocked'] else 0
     if not args.out or not args.source:
         ap.error('--out and --source are required')
     out, source = args.out.resolve(), args.source.resolve()
@@ -416,10 +409,6 @@ def main():
     seed = args.seed_cache.resolve() if args.seed_cache else None
     if seed and (not seed.is_relative_to(REPO / 'out') or not seed.is_dir()):
         ap.error('seed cache must exist inside this worktree/out')
-    gate = activity()
-    if gate['blocked']:
-        print(json.dumps(gate))
-        return 2
     try:
         with LOCK.open('x', encoding='utf8') as handle:
             json.dump(dict(task=TASK, pid=os.getpid(), time=poc.now(), evidence=str(out)), handle)

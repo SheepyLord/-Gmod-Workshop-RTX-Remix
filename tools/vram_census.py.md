@@ -15,8 +15,8 @@ remain integers; no MB/GB rounding is used. `d3d9_pool=-1` means no D3D9 metadat
 `--telemetry PATH --since 2026-11-03T01:35:00Z` reads an existing companion `vram.csv` without
 launching or sending input to a game. It validates complete rows and integer counters, keeps
 missing counters as null, filters by an explicit time zone and reports an omitted in-progress
-trailing row. This can inspect the active field session read-only while the activity gate is
-closed. Only the named CSV is opened; it does not read the user's console history.
+trailing row. This can inspect a running field session read-only. Only the named CSV is opened;
+it does not read the user's console history.
 
 Rejects interrupted/truncated allocation snapshots, missing groups, mismatched frame IDs, invalid
 bytes/counts and whole-frame sampling (which includes resources already released in that frame).

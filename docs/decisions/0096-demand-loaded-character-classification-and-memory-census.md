@@ -63,6 +63,11 @@ Every experiment uses the shared exclusive PoC lock, restores its snapshot and c
 activity immediately before launching with `-multirun`. Unknown process paths block launches.
 Only current-session console bytes may be collected. Field library/Workshop files are read only.
 
+Integration note (Claude, 2026-11-03): the field activity check is not kept. The user's rule of
+2026-11-02 makes the field game a test session that a test may end, and a gate keyed to the user's
+input never clears while the user is talking to an agent. `tools/game_activity.py` was dropped
+when R12 was merged; a test ends a running field game instead and says which one it ended.
+
 ## Consequences
 
 Cold libraries no longer load through the alpha classifier. Materials actually drawn retain the
