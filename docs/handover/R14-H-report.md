@@ -32,9 +32,10 @@ pushed. The new text is untranslated: its translation and text check are R14-T's
 - **Loader-dependent advice** keeps R6's rule and adds R13's: items marked `r6`/`legacy` (performance
   tier) and `r13`/`pre13` (memory profile) show only what the installed `winmm.dll` supports, so an older
   loader is never told to write a key it would reject.
-- Fixed on the way: the Common Remix settings help named a "Save Settings in Alt+X" the developer menu
-  does not have; the Remix menu page now describes the real menus (below). The status button no longer
-  tries `showconsole`, which GMod blocks from Lua.
+- The Remix menu page now describes the real menus, read from captures and the fork's source: the simple
+  menu's four tabs and its Save Settings (user.conf), and the developer menu's Settings Management with its
+  two Save buttons, View Changes and the Migrate button (below). The status button runs
+  `nativeloader_status` only: `showconsole`, tried first, is blocked by GMod from Lua.
 
 **The help wording** of the companion's own panels, in the guide's terms, meaning and behaviour kept:
 Start here (opening line, classic settings, the guard's help moved under its checkbox, the Alt+X note;
@@ -124,13 +125,18 @@ gm_construct, `NL_GUIDE_SET = "check"`: every page and every section opened by `
   the widest (the 880-pixel eye-white chooser) is drawn 880 wide.
 - In French the window title, page names, group names and the earlier headings are translated, and the new
   lines show in English until R14-T translates them.
-- The RTX Water picture was added after this run; it was made by the same pipeline from the same
-  session's capture and passes the guide test, and it was checked in a short session of its own (below).
+- The RTX Water picture was added after this run, so the final package (`dist3`,
+  0.0.0-dev.20261103200132+a83df2e2, checked with `nlctl`) was checked again on the RTX Remix tab page: every
+  section, then the page scrolled to its end, where RTX Water's picture and legend show at their own size
+  and the page lists all nine of its pictures as loaded (`out\r14-guide\s8\water\`,
+  `out\r14-guide\s8\water-bottom\shot-01-water_bottom.png`). Both sessions quit normally.
 - Evidence (this worktree): `out\r14-guide\s7\check\shot-01-guide_welcome.png` to
   `shot-75-guide_fr_troubleshooting.window.png`, `out\r14-guide\s7\session.json`.
 - That session's game shut down normally (it wrote its `config.cfg`, Remix closed its log) but its process
   stayed past the quit timeout, so `poc_session.py` ended it (exit 1). No crash dump; the settings had been
-  put back before the quit. The earlier sessions quit normally.
+  put back before the quit. The other sessions quit normally, except `s3`, which the End key's bind ended
+  (exit 0, no crash; that session changed no setting). GMod's shared video settings
+  (`HKCU\Software\Valve\Source\garrysmod\Settings`) still hold the field's 3840x2160 borderless window.
 
 Captures behind the pictures: `out\r14-guide\s5\panels` (the tab's panels, External Models),
 `out\r14-guide\s6\character` (Imported game PBR, the eye-white chooser), `out\r14-guide\s2\pictures` (the
@@ -155,8 +161,10 @@ passes before the translations exist. The stability harness follows the new wind
 
 ## The PoC
 
-The lock `out\r10\poc.lock` (main checkout) was taken exclusively after R13-P released it: 18:57-19:53 UTC
-for sessions s1-s7, and again for the short final check (below). Before the first session the PoC's
+The lock `out\r10\poc.lock` (main checkout) was taken exclusively, each time after the other tasks
+released it: 18:57-19:53 UTC (after R13-P) for sessions s1-s7, and 20:31-20:34 UTC (after R13-F and R13-D)
+for the final check s8, with a fresh snapshot (`out\r14-guide\s8\poc-before`; 6 changed files put back).
+Before the first session the PoC's
 `native-loader\config.json`, `cl.db`, `garrysmod\data` (the big asset and texture folders by listing),
 spawn icons, saves and the ToPBR cache were saved (`out\r14-guide\poc_state.py`); afterwards 12 changed
 files were put back and 25 the sessions added (the two characters' rigs and names, the use history, the
