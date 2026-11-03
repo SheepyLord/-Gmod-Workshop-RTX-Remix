@@ -1,5 +1,27 @@
 # Research notes
 
+## R12-A: retained carrier archive versus metadata (2026-11-03)
+
+- PoC copy of the user's Endministrator imports as `a9c7045d38634d1d0469733b152022f5a6d47a161dffafbf0c8688d0ffd23ab3`.
+  A saved NPC carrier `5dba2333854dc362c0fc5f85f3fced0d`, deleted/reimported before its first spawn
+  in that session, reproduces the exact carrier-outdated message (`out/r12-a/baseline-cold/console-after.log:692`).
+  Source still reports a valid model, but `rig.json` is absent and the client instance is 0. A warm
+  server cache masks that error while the client remains broken. Final PoC QA restores every
+  sidecar across nine factory requests and two conversions, with seven retained-entity observations
+  unchanged and zero restore/Lua errors (`out/r12-a/qa-summary.json`).
+
+- In the read-only upstream hotloader source, `native/assets.cpp:522` collects a selected asset's
+  rig directory and short-name records for deletion. `assets.cpp:529` keeps Windows-locked files
+  in `cleanup.json`. `native/module.cpp:482` finds an existing `carrier.gma`, restores its name
+  record/retention and returns `rig.manifest`, but does not rewrite `rig.json`; only the packaging
+  branch (`native/rig.cpp:489`) writes that sidecar. Native binaries are unchanged in R12-A.
+- The shipped model lookup in `packages/model-hotloader/mmd_hotloader/lua/mmdhl/materials.lua`
+  originally required the short-name record before checking `mmdhl.rigs`. The persistence wrapper
+  (`persistence.lua`, `EnsureModel`/`SetModel`) runs before the factories' attachment step caches
+  the newly prepared manifest. R12-A remembers it and repairs only missing metadata before that
+  wrapper. Its `MMDHL.AssetForgotten` event evicts per-asset reusable rig/geometry/conversion state;
+  live entities retain their own bound manifest. See [ADR 0094](decisions/0094-reimported-carrier-metadata-and-state.md).
+
 ## R11-B review: damaged registries and durable saves (2026-11-02)
 
 - In the GPL source, `game_registry.h:98` resets load state; only a file over `MaxBytes` or an exact

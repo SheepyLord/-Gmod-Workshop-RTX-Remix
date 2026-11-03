@@ -6,6 +6,13 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R12
+
+- **NPCs after removing and importing a character again:** prepared carriers restore missing
+  metadata before ragdoll/NPC/player spawning; deletion forgets reusable rig/conversion lookups
+  in both realms while existing entities keep their bound carrier
+  ([R12-A](docs/decisions/0094-reimported-carrier-metadata-and-state.md)).
+
 ### R11
 
 - **Imported game PBR survives a missing source folder** (the user: keep game maps working after a

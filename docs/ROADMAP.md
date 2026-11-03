@@ -1,5 +1,12 @@
 # Roadmap
 
+R12-A (item 36, 2026-11-03) is **done** on `r12-hotloader`: the copied Endministrator reproduces
+the exact baseline carrier-outdated error. Retained carriers now restore metadata before every
+spawn kind, and deletion invalidates reusable rig/conversion state while live carriers remain
+bound. Two PoC delete/reimport cycles, player/ragdoll/NPC readiness, changed fits and model-only
+conversion pass with 26 CTests and 557 Python tests. See the [report](handover/R12-A-report.md)
+and [ADR 0094](decisions/0094-reimported-carrier-metadata-and-state.md).
+
 R11-B (cached imported game maps, 2026-11-02) is **done**: after one successful conversion, an
 imported game character keeps its maps when its source folder is moved or deleted (successful game
 materials persist by hotloader texture identity and restore only while their DDS validate; a damaged

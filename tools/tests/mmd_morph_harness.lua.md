@@ -14,5 +14,8 @@ memoization is checked after visibility disappears and when the requested
 model is missing. It also refuses publication when a mount fails. No game or
 user data is touched.
 
+The actor-only fixture stubs R12-A's manifest persistence boundary; its disk/deletion behavior
+is exercised separately by [mmd_reimport_harness.lua](mmd_reimport_harness.lua.md).
+
 Reads the named files, writes stdout only. Exit 0 and `PASS <mode>` on success;
 an assertion/Lua error is nonzero. Scratch files are generated under `out/tmp`.

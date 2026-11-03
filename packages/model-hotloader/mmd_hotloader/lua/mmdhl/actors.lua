@@ -41,6 +41,7 @@ function mmdhl.UnregisterActor(model)
 end
 function mmdhl.UnregisterAsset(id)
  for model,entry in pairs(mmdhl.actorRegistrations) do if entry.rig.asset==id then mmdhl.UnregisterActor(model) end end
+ mmdhl.ForgetAssetRigs(id)
 end
 -- Use the same userinfo selection and weapon whitelist as Sandbox's NPC menu.
 -- An empty selection means the profile default; "none" explicitly means unarmed.
@@ -91,6 +92,7 @@ function mmdhl.ReadyActor(rig,arms)
  -- different lifetimes. Publish menu entries only once this map can
  -- actually spawn them, including a cached carrier after a full `map` change.
  local function ready(r)
+  if not mmdhl.RememberRig(r) then return false end
   if r.materialGma and not mmdhl.MountPackage(r.materialGma) then return false end
   if not mmdhl.MountPackage('data/mmd_hotloader/rigs/'..r.key..'/carrier.gma',r.model) then return false end
   if SERVER then util.PrecacheModel(r.model) return util.IsValidModel(r.model) end

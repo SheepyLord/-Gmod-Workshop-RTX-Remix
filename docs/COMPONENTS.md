@@ -1,5 +1,9 @@
 # Components
 
+R12-A adds the [isolated reimport session](../tools/qa/mmd_reimport_session.py.md) and
+[two-realm probe](../tools/qa/mmd_reimport_probe.lua.md) under `tools/qa`, with the
+[Lua lifecycle regression](../tools/tests/mmd_reimport_harness.lua.md) under `tools/tests`.
+
 R10-E adds the companion's
 [`nativeloader_eye_whites.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_eye_whites.lua.md),
 pure [name matcher](../companion/nativeloader/lua/nativeloader/eye_white_names.lua.md) and
