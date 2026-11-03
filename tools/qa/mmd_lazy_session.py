@@ -688,6 +688,34 @@ class Session:
         self.lua('R13A.ErrorModels()')
         self.step('loaded-save', settle=10)
 
+    def seq_integrated(self):
+        """R13's integrated check of one memory profile: idle memory, the newest character and the
+        oldest one from the NPC tab, their removal, then the lag report's trigger (a plain Combine
+        soldier), the runtime's release after it, and the same two characters again."""
+        self.inject()
+        self.lua('R13A.CloseWindows()')
+        self.step('idle', settle=self.args.idle)
+        self.step('idle-late', settle=30)
+        listed = self.entries()
+        poc.write_json(self.out / 'entries.json', listed)
+        picks = self.pick(listed)
+        self.npc_tab_spawn('npc-tab-newest', picks['ready'])
+        self.step('after-newest', settle=8)
+        self.npc_tab_spawn('npc-tab-oldest', picks['cold'])
+        self.step('characters', settle=20)
+        self.lua('R13A.RemoveMMD()', True)
+        self.step('removed', settle=10)
+        self.lua('R13A.Aim(30)', True)
+        self.step('combine-plain', 'R13A.SpawnClassic("npc_combine_s","combine-plain")', settle=15)
+        self.lua('R13A.RemoveClass("npc_combine_s") R13A.EnsureAlive()', True)
+        self.step('trigger-30s', settle=15)
+        self.step('trigger-90s', settle=60)
+        self.step('trigger-150s', settle=60)
+        self.npc_tab_spawn('npc-tab-newest-again', picks['ready'])
+        self.npc_tab_spawn('npc-tab-oldest-again', picks['cold'])
+        self.lua('R13A.ErrorModels()')
+        self.step('characters-again', settle=20)
+
     def seq_idle(self):
         """Idle memory only: registrations at map start, nothing spawned."""
         self.inject()
@@ -876,6 +904,7 @@ class Session:
                        '--width', str(args.width), '--height', str(args.height), '--players', str(args.players)]
             if args.workshop:
                 command += ['--workshop']
+            command += [f'--extra={extra}' for extra in args.extra]
             with (self.out / 'owner.log').open('w', encoding='utf8') as output:
                 self.session = subprocess.Popen(command, cwd=REPO, env=env, stdout=output, stderr=subprocess.STDOUT)
                 deadline = time.monotonic() + 300
@@ -1009,6 +1038,7 @@ def main():
     ap.add_argument('--workshop', action='store_true')
     ap.add_argument('--lock-wait', type=float, default=120, help='minutes to wait for the PoC lock')
     ap.add_argument('--cooldown', type=float, default=45, help='seconds to wait before the launch')
+    ap.add_argument('--extra', action='append', default=[], help='an extra launch option for the game, such as -insecure (repeatable)')
     args = ap.parse_args()
     args.out, args.library = args.out.resolve(), args.library.resolve()
     args.textures = args.textures.resolve() if args.textures else None

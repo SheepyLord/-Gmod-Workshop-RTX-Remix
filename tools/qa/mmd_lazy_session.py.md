@@ -30,7 +30,11 @@ python tools\qa\mmd_lazy_session.py --out out\r13-a\<run> --library out\r13-a\li
   system's reloads `mat_reloadallmaterials` and `mat_reloadtextures` with `sv_cheats 1`), `measure`
   (idle memory, then first spawns timed on every route: a ready and a cold character from the NPC
   tab, the hotloader's NPC and ragdoll, a player model, a dupe, a save and its load, removal, the
-  fixes' manual purge `rtx_flush_textures`, and a map change with an NPC-tab spawn).
+  fixes' manual purge `rtx_flush_textures`, and a map change with an NPC-tab spawn), `integrated`
+  (R13's check of one memory profile with the built package: idle memory, the newest and the oldest
+  character from the NPC tab, their removal, a plain Combine soldier (the lag report's trigger) with
+  phases 30, 90 and 150 seconds after it while the runtime releases idle textures, then the same two
+  characters again).
 - `--candidate`: at the main menu (the loader has deployed; no game Lua realm exists yet) copies this
   worktree's hotloader files that differ from the deployed ones into the PoC add-on, and puts the
   deployed ones back after the run (hash-checked).
@@ -40,7 +44,9 @@ python tools\qa\mmd_lazy_session.py --out out\r13-a\<run> --library out\r13-a\li
 - `--status-memory`: `key=value,...` (or a JSON object) merged into this session's
   `native-loader/status.json` `activation.memory` before the map, as R13-C's loader writes it.
 - `--console`, `--map`, `--idle`, `--width`/`--height` (1920x1080), `--players`, `--workshop`
-  (waits for the Workshop mount before the map), `--lock-wait` (minutes, 120).
+  (waits for the Workshop mount before the map), `--lock-wait` (minutes, 120), `--extra` (a launch
+  option passed to the game, such as `-insecure` for a loader config with
+  `patch_sets.require_insecure`; repeatable).
 
 Takes the exclusive `out\r10\poc.lock` (retries every two minutes; never removes another task's
 lock), ends a running field game first (WM_CLOSE, then forced after 60 s; `field-games*.json` name the
