@@ -108,6 +108,29 @@ if mode == "structure" then
     return
 end
 
+if mode == "scale" then
+    -- A GUI scaler draws DermaDefault 31/14 times as tall as the guide's Tahoma 13 probe: the guide's
+    -- fonts follow, its pictures by a whole step; nativeloader_guide_scale overrides the measurement.
+    local derma = 31
+    draw.GetFontHeight = function(name)
+        if name == "DermaDefault" then return derma end
+        return fonts[name] and fonts[name].size + 1 or 14
+    end
+    commands.nativeloader_guide(nil, "nativeloader_guide", { "tab" })
+    assert(math.abs(G.scale - 31 / 14) < 1e-9, "scale " .. tostring(G.scale))
+    assert(G.picture_scale == 2, "pictures " .. tostring(G.picture_scale))
+    assert(fonts.NLGuideBody.size == math.floor(15 * 31 / 14 + 0.5), "body font " .. fonts.NLGuideBody.size)
+    values.nativeloader_guide_scale = "1"
+    commands.nativeloader_guide(nil, "nativeloader_guide", { "tab" })
+    assert(G.scale == 1 and G.picture_scale == 1 and fonts.NLGuideBody.size == 15, "the setting overrides the measurement")
+    values.nativeloader_guide_scale = "0"
+    derma = 14
+    commands.nativeloader_guide(nil, "nativeloader_guide", { "tab" })
+    assert(G.scale == 1 and fonts.NLGuideBody.size == 15, "a plain game draws the guide at its own size")
+    print("PASS scale")
+    return
+end
+
 -- render: open every page and every section by its command; check what was drawn.
 local function check_texts(where)
     local shown = assert(G.shown, where .. ": nothing shown")
