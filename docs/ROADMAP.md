@@ -27,6 +27,9 @@ R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the
   blurry maps for 0.15-0.9 s whenever a character appears. A runtime load on first draw and the field's
   duplicate mods are left for the user to decide ([report](handover/R13-P-report.md),
   [ADR 0102](decisions/0102-character-pbr-maps-stay-preloaded.md)).
+- R13-D (Claude): the intermittent option crash of R13's PoC sessions. The Remix API changed options
+  without the runtime's option lock while the render thread resolved them; runtime patch 0029
+  ([report](handover/R13-D-report.md)).
 
 R12 (the user's report after R11-B, 2026-11-02; [plan](handover/R12-plan.md)) is **done**, merged
 into `main` from `r12-int`; see [the R12 report](handover/R12-report.md):
