@@ -5,3 +5,6 @@ convar/command collisions, callbacks, independent game/world switches, hash retr
 metadata submission, source-less queueing, and clear/requeue while preserving the off switch.
 Usage: `luajit tools/tests/topbr_harness.lua <driver.lua>`. Reads only its driver;
 no game, network or filesystem mutation. Exit 0 on success, nonzero on a failed assertion.
+
+The driver includes the R12 panel under its existing trusted path; registration is exercised here,
+and `game_pbr_panel_harness.lua` separately executes that exact marked section with Derma stubs.

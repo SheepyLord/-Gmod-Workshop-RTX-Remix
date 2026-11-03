@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R12
+
+- Imported game PBR can match renamed character textures by their UV features, with name support
+  and conservative abstention. Its RTX menu panel lets players select map families/files, disable
+  game maps for a texture, or return to automatic; choices follow that texture across characters
+  and survive a missing source. Library enumeration checks drawn hashes before loading a material
+  ([R12-B](docs/decisions/0095-texture-features-and-imported-pbr-overrides.md)).
+
 ### R11
 
 - **Imported game PBR survives a missing source folder** (the user: keep game maps working after a

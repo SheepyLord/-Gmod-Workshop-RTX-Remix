@@ -1,5 +1,43 @@
 # R11 ToPBR
 
+## R12 feature matching and player overrides
+
+`game_matching.inl` compares UV-coordinate spatial edge distributions from base images against
+normal/packed families. Canonical `_D` stems remain authoritative. Renamed bases need raw spatial
+correlation >= .28, supported score >= .36 and runner-up margin >= .12. Vocabulary support adds
+at most .08 and cannot rescue a mismatched layout. Flat images, differing aspects, ambiguous
+families and exhausted/incomplete scans abstain. Every attempted automatic pairing logs its base,
+family, score, margin, spatial evidence and reason. Names-hidden measurement uses this same function.
+No rotations, translations or UV warps are searched. Original PMX face/eye/skin masks remain in force.
+
+Worker-local discovery caches at most eight folders. Each has <=4096 entries, depth <=6, <=64
+family stems, <=96 feature decodes, <=256 MiB compressed inputs and <=256 million source pixels.
+Descriptors are <=128 pixels on the long edge; source image dimensions remain <=4096 squared.
+Descriptor reuse is per worker; clear/restart observes source edits. Source bytes, semantic map roles
+and game layout participate in generator v6's DDS key.
+
+`game_overrides.h` atomically saves `game_overrides.registry` beside the automatic registry. Choices
+are keyed by live `mmd/t/<16 hex>` identities and take precedence over fresh/cached automatic maps.
+Manual maps record source/base/map paths, explicit layout, generator, live-hash provenance and
+published DDS filenames/byte counts/digests/constants. None is durable; automatic removes the choice.
+Only current drawn hashes register. Missing/changed DDS suppress an override without falling back.
+Unreadable/unknown choices remain intact and suppress automatic use until readable. A failed save
+retains the current choice. Registry edits are preserved through the shared durable writer.
+Changing a choice retracts/refreshes all observed aliases, including while game maps are switched off.
+The ordinary authored-hash guard and runtime patch 0020 still rank every authored mod first.
+
+The R12 panel section in `cl_rtx_topbr_conversion.lua` adds the Imported game PBR panel to the RTX menu and the console command
+`rtx_topbr_game_editor`. It lists the looked-at character's materials, drawn-only thumbnails/states,
+candidate families and individual source-folder files, with explicit layout/none/automatic actions.
+It uses the bundle i18n function and supplies the new GPL phrases for all six bundled languages.
+Native work is asynchronous. The standalone DForm and spawn-menu wrapper both use the common
+`Clear` method; the polling hook preserves their base Think behavior. The engine resolves material identity only after drawn-hash evidence,
+preventing unseen library materials from loading textures during Lua enumeration.
+
+The SDK-free `game_matching_test.cpp` covers spatial abstention and override precedence, persistence,
+source-less restoration, invalid DDS, durable failure and drawn-before-load ordering. The CLI
+`game_match_probe.cpp` measures actual production discovery; see `tests/game_match_probe.md`.
+
 GPL-2.0. Phase 1 snapshots one live IMaterial per client frame and hands value-only jobs to the
 worker. It caps images/queues, validates offsets before decoding, keys DDS on source content and
 conversion recipe, atomically publishes complete USD snapshots and retracts output on disable.

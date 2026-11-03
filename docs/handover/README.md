@@ -71,3 +71,8 @@ The next QoL batch fixes Modern House glass disappearing without shards. Source 
 The QoL shader batch is on codex/hotloader-depth in out/worktrees/hotloader-depth. See
 [QoL-report.md](QoL-report.md#hotloader-depthwrite-shader-errors-2026-10-30) and
 [ADR 0041](../decisions/0041-hotloader-remix-depth-materials.md).
+
+
+## R12-B: renamed game maps and manual choices
+
+[Report](R12-B-report.md); [brief](R12-B-game-pbr-matching.md); fixes branch `codex/r12-pbr`.
