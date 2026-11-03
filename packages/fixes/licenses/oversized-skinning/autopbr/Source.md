@@ -1,20 +1,25 @@
-# R11 automatic PBR corresponding source (GPL-2.0)
+# R12 imported PBR corresponding source (GPL-2.0)
 
 The fixes [LICENSE](../../../LICENSE) applies. This layer builds on the shipped R8 native source
 `7094baf6edf6797fd5c3f0b58ca668f9307b4906`, reconstructed through the
-[preceding source record](../backrooms/Source.md). The local fixes branch `codex/r11-autopbr` ends at
+[preceding source record](../backrooms/Source.md). The R11 base branch `codex/r11-autopbr` ended at
 `633fd5e000aca862a8ae58b5c722d678ac4fa053`. Phase 1 is `72d53f4`; phase 2 is `5ad6f23`;
 `1679a99` moves VMT I/O off frame after profiling, and `6e33b90` adds R11-B's source-less game-map
 registry. `cc77daa` fixes damaged-registry recovery, durable saves and session-scoped save warnings.
 `633fd5e` resolves each live texture identity once per worker and persists USD publication ownership.
 Nothing was pushed.
 
+The current fixes branch is `codex/r12-pbr`, commit `43d40a4ba349e4fdaed05e74333bd90681d30072`.
+R12 adds conservative UV-feature pairing, texture-scoped durable player choices, the embedded
+translated editor, and drawn-before-load identity capture. The source/DLL identity below supersedes
+the R11 build identity; the earlier history remains documented for reconstruction.
+
 [autopbr.patch](autopbr.patch) is the complete change from that base. Complete changed files are
 also included at their native-repository paths; [source-files.json](source-files.json) records their
 SHA-256 values and the built source/DLL identity. Overlay them onto the exact base, or apply the patch.
 The tests generate synthetic fixtures; no user model or texture is distributed here.
 Copies retain the native working-tree bytes/line endings. Applying the canonical Git patch to the
-base reproduces all 23 changed files after CRLF normalization; build hashes record the raw source bytes.
+base reproduces all 30 changed files after CRLF normalization; build hashes record the raw source bytes.
 
 ## Behavior
 
@@ -74,12 +79,12 @@ while reading the same isolated dependencies and fixes source. No source or libr
 From an x64 VS shell in the R11-B loader worktree:
 
 ```powershell
-MSBuild.exe out/r11-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0
+MSBuild.exe out/r12-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0
 ```
 
-The DLL is **5,167,104 bytes**, SHA-256
-`526a6584d4ab68e657b7f1cead25db88beb6cbfa568ad31f92028ddc3345f792`.
-The matching PDB remains beside it under the loader worktree's `out/r11-b/module`.
+The current DLL is **5,379,072 bytes**, SHA-256
+`716fcf222ee711dd591244a8940c7e704ac2d860fcad8d2db1bf867274b51217`.
+The matching PDB remains beside it under the R12-B loader worktree's `out/r12-b/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
 the existing VTF filesystem/logging stubs and assertions enabled. They cover malformed/resource VTFs,
@@ -102,3 +107,30 @@ Source/VTF/USD and game-channel harnesses pass on the rebuilt source.
 
 PoC profiling reduced the maximum client snapshot from 23.553 to 0.830 ms by moving VMT reads and
 companion discovery off frame. Construct conversion p99 fell from 23.472 to 9.133 ms.
+
+## R12 build and validation
+
+R12 rebases the prepared R11-B projects and intermediates into `out/r12-b/build` and `module`.
+They read the same pinned dependency copy; no dependency is downloaded or changed. Generator v6
+includes map roles and layout in content keys. The automatic registry format stays unchanged.
+`game_matching.inl` and `game_overrides.h` contain the production matcher and independent durable
+choices; the new panel is embedded in the existing trusted ToPBR Lua driver, with viewport sizing,
+scrolling and all six bundled translations. No companion exemption or runtime source is changed.
+
+The SDK-free `tests/game_matching_test.cpp` uses the production matcher/choice selector and tests
+spatial selection, ambiguity/flat/aspect/path/family bounds, canonical normal-only Silver families,
+conflicting layouts, drawn-before-load, override/none/automatic precedence, current-hash restoration
+without source, changed DDS and atomic-save failure. It compiles with assertions and `/W4 /WX`.
+`tests/game_match_probe.cpp` runs production discovery with ordinary/name-hidden pairing and
+reports its actual layout; usage is in `tests/game_match_probe.md`. The corpus is 1,133 unique
+folder/base pairs from 121 PMX files; 259 canonical references yield 135 agreements, 124 abstentions
+and no disagreements with names hidden. This is a naming comparison, not independent human labels.
+No model/texture from that corpus is distributed.
+
+The native-loader Release suite also executes the actual embedded Lua panel section under its
+Derma/native harness. PoC checks use two model-name-only variants with identical texture bytes,
+distinct asset/material names and a shared live texture. The R12-B handover report records rendered
+on/off, shared choices, source-hidden restoration, exact PoC rollback and the final Release gate.
+
+The rendered editor check also verified stock Derma compatibility: both panel types clear through
+`DForm:Clear`, and native-state polling preserves the base Think handler. The DLL is unchanged.

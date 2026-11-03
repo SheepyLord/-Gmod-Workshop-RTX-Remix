@@ -26,6 +26,23 @@ validates the template and all six catalogs. The [R12-D report](handover/R12-D-r
 the copied Baizhi fixture, its missed `bai3` surface, the activity gate/shared lock, before/after
 screenshots and PoC restoration. No field session or package input is changed by this task.
 
+## R12-B: game features and texture overrides
+
+The [report](handover/R12-B-report.md) records production corpus matching, native/Lua checks and PoC
+acceptance/restoration. `test_topbr_registry.py` now also compiles the GPL production feature/override
+regression with assertions and `/W4 /WX`: conservative spatial selection, ambiguity/aspect/flat/path
+abstention, drawn-before-load ordering, map/none/automatic precedence and persistence, missing-source
+restore with current hashes, changed DDS rejection and failed atomic-save preservation. The
+[panel harness](../tools/tests/game_pbr_panel_harness.lua.md) checks the actual packaged Lua actions,
+shared identities, source-less choices, menu registration and drawn-only thumbnails.
+
+
+R12-B final acceptance: **26 CTests + 555 Python tests**, two existing skips, `All checks passed.`
+The two distinct characters share `mmd/t/4550924997c00f56`; on/off is 3/0, none removes only their
+shared clothing entry, and override/cached automatic data restore without source. The accepted
+indexed editor shows its 35 material records at 720p and exits normally with zero Lua/device errors.
+All snapshots, prior payload/library files, user.conf and depot checks validate after restoration.
+
 ## R10-E: imported eye whites
 
 The [R10-E report](handover/R10-E-report.md) records six-condition PoC measurements, material binding

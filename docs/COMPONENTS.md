@@ -4,6 +4,12 @@ R12-A adds the [isolated reimport session](../tools/qa/mmd_reimport_session.py.m
 [two-realm probe](../tools/qa/mmd_reimport_probe.lua.md) under `tools/qa`, with the
 [Lua lifecycle regression](../tools/tests/mmd_reimport_harness.lua.md) under `tools/tests`.
 
+R12-B extends the GPL fixes' ToPBR with `game_matching.inl`, `game_overrides.h` and the
+player panel embedded in `cl_rtx_topbr_conversion.lua`. Its corresponding source, SDK-free native regressions and
+production corpus probe are under `packages/fixes/licenses/oversized-skinning/autopbr`.
+The [panel harness](../tools/tests/game_pbr_panel_harness.lua.md) joins the existing ToPBR checks.
+
+
 R10-E adds the companion's
 [`nativeloader_eye_whites.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_eye_whites.lua.md),
 pure [name matcher](../companion/nativeloader/lua/nativeloader/eye_white_names.lua.md) and

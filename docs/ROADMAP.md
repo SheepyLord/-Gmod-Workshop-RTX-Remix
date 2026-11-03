@@ -13,6 +13,13 @@ Release passes 26 CTests and 572 Python tests; the copied Baizhi PoC changes onl
 surface, persists through controller reload, restores all bindings and leaves the PoC snapshot intact
 ([report](handover/R12-D-report.md), [ADR 0097](decisions/0097-manual-eye-white-materials.md)).
 
+R12-B (renamed game PBR and texture-scoped manual choices, 2026-11-02) is **done** on `r12-pbr`,
+with GPL fixes on `codex/r12-pbr`. Names-hidden production matching agrees on 135 canonical references,
+abstains on 124 and disagrees on none. The two-character PoC proves shared overrides/none/automatic
+and source-hidden restoration; final indexed editor, native/Lua/Release checks and exact PoC
+restoration pass. See the [report](handover/R12-B-report.md) and
+[ADR 0095](decisions/0095-texture-features-and-imported-pbr-overrides.md).
+
 R11-B (cached imported game maps, 2026-11-02) is **done**: after one successful conversion, an
 imported game character keeps its maps when its source folder is moved or deleted (successful game
 materials persist by hotloader texture identity and restore only while their DDS validate; a damaged

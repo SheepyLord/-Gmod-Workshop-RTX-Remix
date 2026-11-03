@@ -34,6 +34,12 @@ inline std::string Identity(std::string name) {
         if (!((name[i] >= '0' && name[i] <= '9') || (name[i] >= 'a' && name[i] <= 'f'))) return {};
     return name;
 }
+template<class Resolve>
+inline std::string DrawnIdentity(const std::vector<uint64_t>& hashes,Resolve resolve) {
+    if(hashes.empty() || hashes.size()>MaxHashes)return {};
+    for(auto h:hashes)if(!h)return {};
+    return Identity(resolve());
+}
 inline bool SafeFile(const std::string& file) {
     if (file.size() < 5 || file.size() > 128 || file.substr(file.size() - 4) != ".dds") return false;
     for (unsigned char c : file)
@@ -77,11 +83,50 @@ inline std::optional<Texture> Inspect(const fs::path& path, bool digest) {
     }
     return texture;
 }
+inline bool SaveText(const fs::path& path,const std::string& bytes,std::optional<std::string>& lastPublished) {
+        // Preserve pre-existing and subsequently edited registry bytes just as USD
+        // publication does. Ordinary repeated writes in this worker need no backup.
+        const DWORD attrs = GetFileAttributesW(path.c_str());
+        if (attrs != INVALID_FILE_ATTRIBUTES) {
+            if (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) return false;
+            std::ifstream file(path, std::ios::binary | std::ios::ate);
+            const auto size = file.tellg();
+            if (!file || size < 0 || uint64_t(size) > MaxBytes) return false;
+            std::string previous(size_t(size), '\0'); file.seekg(0);
+            if (!file.read(previous.data(), std::streamsize(previous.size()))) return false;
+            if (previous == bytes) { lastPublished = bytes; return true; }
+            if (!lastPublished || previous != *lastPublished) {
+                uint64_t hash = 14695981039346656037ull;
+                for (unsigned char c : previous) { hash ^= c; hash *= 1099511628211ull; }
+                std::ostringstream suffix; suffix << ".before-r11b-" << std::hex << hash << ".bak";
+                const fs::path backup(path.wstring() + fs::u8path(suffix.str()).wstring());
+                if (!CopyFileW(path.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(path, backup)) return false;
+                if (!Policy::SameFile(path, backup)) return false;
+            }
+        }
+        const fs::path staged(path.wstring() + L".tmp");
+        HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        bool written = file != INVALID_HANDLE_VALUE;
+        size_t offset = 0;
+        while (written && offset < bytes.size()) {
+            DWORD count = 0;
+            written = WriteFile(file, bytes.data() + offset, DWORD(bytes.size() - offset), &count, nullptr) != 0 && count != 0;
+            offset += count;
+        }
+        if (written) written = FlushFileBuffers(file) != 0;
+        if (file != INVALID_HANDLE_VALUE && !CloseHandle(file)) written = false;
+        if (!written) { DeleteFileW(staged.c_str()); return false; }
+        if (MoveFileExW(staged.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+            lastPublished = bytes; return true;
+        }
+        DeleteFileW(staged.c_str()); return false;
+}
 // One instance per worker invocation. Cache successes and no-maps results by the
 // actual live texture identity, regardless of material/source metadata aliases.
 // All registry/converter I/O belongs inside resolve, so a hit does no disk work.
 class Session {
 public:
+    void Erase(const std::string& identity){resolved_.erase(identity);}
     template<class Resolve>
     std::optional<Record> ResolveOnce(const std::string& identity, const std::vector<uint64_t>& liveHashes,
                                       bool enabled, Resolve resolve) {
@@ -183,42 +228,7 @@ public:
         }
         const std::string bytes = text.str();
         if (bytes.size() > MaxBytes) return false;
-        // Preserve pre-existing and subsequently edited registry bytes just as USD
-        // publication does. Ordinary repeated writes in this worker need no backup.
-        const DWORD attrs = GetFileAttributesW(path_.c_str());
-        if (attrs != INVALID_FILE_ATTRIBUTES) {
-            if (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) return false;
-            std::ifstream file(path_, std::ios::binary | std::ios::ate);
-            const auto size = file.tellg();
-            if (!file || size < 0 || uint64_t(size) > MaxBytes) return false;
-            std::string previous(size_t(size), '\0'); file.seekg(0);
-            if (!file.read(previous.data(), std::streamsize(previous.size()))) return false;
-            if (previous == bytes) { lastPublished_ = bytes; return true; }
-            if (!lastPublished_ || previous != *lastPublished_) {
-                uint64_t hash = 14695981039346656037ull;
-                for (unsigned char c : previous) { hash ^= c; hash *= 1099511628211ull; }
-                std::ostringstream suffix; suffix << ".before-r11b-" << std::hex << hash << ".bak";
-                const fs::path backup(path_.wstring() + fs::u8path(suffix.str()).wstring());
-                if (!CopyFileW(path_.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(path_, backup)) return false;
-                if (!Policy::SameFile(path_, backup)) return false;
-            }
-        }
-        const fs::path staged(path_.wstring() + L".tmp");
-        HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-        bool written = file != INVALID_HANDLE_VALUE;
-        size_t offset = 0;
-        while (written && offset < bytes.size()) {
-            DWORD count = 0;
-            written = WriteFile(file, bytes.data() + offset, DWORD(bytes.size() - offset), &count, nullptr) != 0 && count != 0;
-            offset += count;
-        }
-        if (written) written = FlushFileBuffers(file) != 0;
-        if (file != INVALID_HANDLE_VALUE && !CloseHandle(file)) written = false;
-        if (!written) { DeleteFileW(staged.c_str()); return false; }
-        if (MoveFileExW(staged.c_str(), path_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-            lastPublished_ = bytes; return true;
-        }
-        DeleteFileW(staged.c_str()); return false;
+        return SaveText(path_,bytes,lastPublished_);
     }
     // A readable source always calls today's converter; failed/empty conversion cannot revive old maps.
     // The generator number is provenance, not an expiry check for source-less records.
@@ -247,6 +257,8 @@ public:
     std::string TexturePath(const Texture& texture) const {
         return texture.file.empty() ? std::string{} : (output_ / fs::u8path(texture.file)).u8string();
     }
+public: // Also validates immutable override records against their published DDS.
+    bool ValidateRecord(const Record& r,bool digest=true) const{return ValidRecord(r) && Validate(r,digest);}
 private:
     bool DiscardDamaged() {
         // Save preserves the damaged bytes before replacing them with a fresh registry.

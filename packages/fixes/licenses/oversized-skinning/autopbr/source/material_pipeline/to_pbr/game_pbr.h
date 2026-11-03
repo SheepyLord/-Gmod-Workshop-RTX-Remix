@@ -1,6 +1,8 @@
 // GPL-2.0. Local authored game-map conversion, independent of Source material objects.
 #pragma once
+#ifndef GAME_PBR_TYPES_PROVIDED
 #include "to_pbr.h"
+#endif
 #include "pbr_policy.h"
 #include <Windows.h>
 #include <wincodec.h>
@@ -18,7 +20,7 @@
 
 namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 namespace fs = std::filesystem;
-constexpr unsigned GeneratorVersion = 5; // Registry provenance; content-key/marker version below.
+constexpr unsigned GeneratorVersion = 6; // Registry provenance; content-key/marker version below.
 using Microsoft::WRL::ComPtr;
 inline std::string Lower(std::string s) {
     for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -162,7 +164,7 @@ inline std::vector<uint8_t> Mask(const Mesh& mesh,const std::string& base,uint32
     for(auto& c:mask)if(c==255)c=Original;return mask;
 }
 struct Image { uint32_t w=0,h=0;std::vector<uint8_t> rgba; };
-inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0) {
+inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0,uint32_t limit=2048,uint64_t* pixelBudget=nullptr) {
     auto bytes=Read(path); // Bound compressed input before WIC allocates.
     ComPtr<IWICImagingFactory> factory;ComPtr<IWICStream> stream;
     ComPtr<IWICBitmapDecoder> decoder;ComPtr<IWICBitmapFrameDecode> frame;
@@ -174,53 +176,15 @@ inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0) {
     UINT count=0;check(decoder->GetFrameCount(&count));if(count!=1)throw std::runtime_error("animated image");
     check(decoder->GetFrame(0,&frame));UINT sw=0,sh=0;check(frame->GetSize(&sw,&sh));
     if(!Policy::ValidImage(sw,sh))throw std::runtime_error("image dimensions exceed bound");
-    if(!w || !h) { const float scale=(std::min)(1.0f,2048.0f/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
+    if(pixelBudget){const uint64_t pixels=uint64_t(sw)*sh;if(pixels>*pixelBudget)throw std::runtime_error("feature pixel budget exhausted");*pixelBudget-=pixels;}
+    if(!w || !h) { const float scale=(std::min)(1.0f,float(limit)/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
     if(!Policy::ValidImage(w,h) || uint64_t(sw)*h!=uint64_t(sh)*w)throw std::runtime_error("map aspect mismatch");
     check(factory->CreateBitmapScaler(&scaler));check(scaler->Initialize(frame.Get(),w,h,WICBitmapInterpolationModeFant));
     check(factory->CreateFormatConverter(&converter));check(converter->Initialize(scaler.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom));
     Image image{w,h,std::vector<uint8_t>(size_t(w)*h*4)};check(converter->CopyPixels(nullptr,w*4,UINT(image.rgba.size()),image.rgba.data()));return image;
 }
 struct Maps { bool recognized=false; fs::path normal,packed,emission;enum Layout{Wuwa,Endfield,Silver}layout=Wuwa; };
-inline Maps Discover(const fs::path& root,const std::string& base) {
-    const auto basePath=fs::u8path(base);if(basePath.has_root_path())throw std::runtime_error("rooted texture path");
-    for(const auto& part:basePath)if(part=="..")throw std::runtime_error("texture traversal");
-    auto stem=Lower(basePath.stem().u8string());if(stem.size()<3 || stem.substr(stem.size()-2)!="_d")return {};
-    stem.resize(stem.size()-2);
-    std::map<std::string,std::vector<fs::path>> files;size_t count=0;std::error_code ec;
-    fs::recursive_directory_iterator it(root,ec),end;
-    if(ec)throw std::runtime_error("cannot scan model folder");
-    for(;it!=end;it.increment(ec)) {
-        if(ec || ++count>4096)throw std::runtime_error("model folder scan exceeds bound");
-        if(it.depth()>6 || (GetFileAttributesW(it->path().c_str())&FILE_ATTRIBUTE_REPARSE_POINT)){it.disable_recursion_pending();continue;}
-        if(it->is_regular_file(ec)) {
-            auto ext=Lower(it->path().extension().u8string());
-            if(ext==".png"||ext==".bmp"||ext==".tga"||ext==".jpg")files[Lower(it->path().stem().u8string())].push_back(it->path());
-        }
-    }
-    if(ec)throw std::runtime_error("model folder scan failed");
-    auto find=[&](const char* suffix) {
-        auto p=files.find(stem+suffix);if(p==files.end())return fs::path{};
-        std::vector<fs::path> candidates;
-        const auto beside=Lower((root/basePath.parent_path()).lexically_normal().u8string());
-        for(const auto& candidate:p->second)
-            if(Lower(candidate.parent_path().lexically_normal().u8string())==beside)candidates.push_back(candidate);
-        if(candidates.empty())candidates=p->second;
-        const auto bytes=Read(candidates[0]);
-        for(size_t i=1;i<candidates.size();++i)
-            if(Read(candidates[i])!=bytes)throw std::runtime_error("ambiguous companion texture");
-        return candidates[0]; // Identical duplicate exports are the same authored input.
-    };
-    Maps m;m.normal=find("_n");m.packed=find("_mra");m.emission=find("_e");
-    bool silverFamily=false;for(const auto& pair:files)if(pair.first.size()>4 && pair.first.substr(pair.first.size()-4)=="_mra")silverFamily=true;
-    if(!m.packed.empty() || silverFamily)m.layout=Maps::Silver;
-    else if(stem.find("t_actor_")==0) {m.layout=Maps::Endfield;m.packed=find("_p");if(m.normal.empty())m.normal=find("_hn");}
-    else {
-        // WuWa toon inputs need family evidence, not a generic suffix guess.
-        if(find("_id").empty() && find("_hm").empty())return {};
-        m.layout=Maps::Wuwa;m.emission.clear();
-    }
-    m.recognized=true;return m;
-}
+#include "game_matching.inl"
 inline bool PlausibleNormal(const Image& n) {
     size_t valid=0,count=0;double sx=0,sy=0;
     const size_t pixels=n.rgba.size()/4,step=(std::max)(size_t(1),pixels/8192);
@@ -233,21 +197,26 @@ inline bool PlausibleNormal(const Image& n) {
 struct Output { std::string normal,roughness,metallic,emission,ao;size_t protectedPixels=0; };
 using Writer=std::function<bool(const ConvertedTexture&,const std::string&)>;
 inline Output Convert(const std::string& source,const std::string& base,const std::string& out,
-                      const Writer& write,const std::function<void(ConvertedTexture&)>& oct) {
+                      const Writer& write,const std::function<void(ConvertedTexture&)>& oct,
+                      DiscoveryCache* discovery=nullptr,const Maps* selected=nullptr,const DecisionLog& log={}) {
     const fs::path pmx=fs::u8path(source);if(!pmx.is_absolute() || Lower(pmx.extension().u8string())!=".pmx")throw std::runtime_error("not a local PMX");
-    auto maps=Discover(pmx.parent_path(),base);if(!maps.recognized)return {};
+    auto maps=selected?*selected:Discover(pmx.parent_path(),base,false,log,discovery);if(!maps.recognized)return {};
     auto modelBytes=Read(pmx,256*1024*1024);
     uint64_t key=Hash(Read(pmx.parent_path()/fs::u8path(base)),Hash(modelBytes));
     // Every input byte participates, including a changed file with the same size/time.
-    for(const auto& path:{maps.normal,maps.packed,maps.emission})if(!path.empty())key=Hash(Read(path),key);
-    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313147414d4505ull;
+    unsigned role=0;
+    for(const auto& path:{maps.normal,maps.packed,maps.emission}) {
+        key=Hash(std::vector<uint8_t>{uint8_t(++role),uint8_t(!path.empty())},key);
+        if(!path.empty())key=Hash(Read(path),key);
+    }
+    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4506ull ^ uint64_t(maps.layout);
     char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));
     Output result;
     auto path=[&](const char* suffix){return (fs::u8path(out)/(std::string(id)+suffix+".dds")).u8string();};
     const fs::path marker=fs::u8path(out)/(std::string(id)+"_complete.txt");
     {
         std::ifstream cache(marker);std::string version;int glow=0;cache>>version>>glow;
-        if(cache && version=="r11-game-v5" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
+        if(cache && version=="r12-game-v6" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
            Policy::ValidDDS(fs::u8path(path("_roughness"))) && Policy::ValidDDS(fs::u8path(path("_metallic"))) &&
            (!glow || Policy::ValidDDS(fs::u8path(path("_emission"))))) {
             result.normal=path("_normal");result.roughness=path("_roughness");result.metallic=path("_metallic");
@@ -259,6 +228,8 @@ inline Output Convert(const std::string& source,const std::string& base,const st
     Image packed=maps.packed.empty()?Image{}:Decode(maps.packed,n.w,n.h);
     uint32_t w=n.w?n.w:packed.w,h=n.h?n.h:packed.h;
     if(!w||!h) {auto diffuse=Decode(pmx.parent_path()/fs::u8path(base));w=diffuse.w;h=diffuse.h;}
+    const auto diffuseSize=Decode(pmx.parent_path()/RelativeTexture(pmx.parent_path(),base),0,0,128);
+    if(uint64_t(diffuseSize.w)*h!=uint64_t(diffuseSize.h)*w)throw std::runtime_error("base/map aspect mismatch");
     auto classes=Mask(mesh,base,w,h);size_t changed=0;for(auto c:classes)changed+=c!=Original;
     if(!changed)return {};
     if(n.w && !PlausibleNormal(n))throw std::runtime_error("normal channels fail sanity check");
@@ -300,7 +271,7 @@ inline Output Convert(const std::string& source,const std::string& base,const st
     if(!packed.rgba.empty())result.ao=save(ao,"_ao"); // Kept as data; do not bake occlusion into painted albedo under path tracing.
     if(anyGlow)result.emission=save(glow,"_emission");
     const fs::path staged=fs::path(marker.wstring()+L".tmp");
-    { std::ofstream done(staged);done<<"r11-game-v5 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
+    { std::ofstream done(staged);done<<"r12-game-v6 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
     if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
     return result;
 }

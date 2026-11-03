@@ -1,10 +1,48 @@
 diff --git a/docs/TOPBR_R11.md b/docs/TOPBR_R11.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..b09827077036cb393793ac35102e5dd8bfd9d59d
+index 0000000000000000000000000000000000000000..2db17130f141490e5f8c04e175567c51e1078e9b
 --- /dev/null
 +++ b/docs/TOPBR_R11.md
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,151 @@
 +# R11 ToPBR
++
++## R12 feature matching and player overrides
++
++`game_matching.inl` compares UV-coordinate spatial edge distributions from base images against
++normal/packed families. Canonical `_D` stems remain authoritative. Renamed bases need raw spatial
++correlation >= .28, supported score >= .36 and runner-up margin >= .12. Vocabulary support adds
++at most .08 and cannot rescue a mismatched layout. Flat images, differing aspects, ambiguous
++families and exhausted/incomplete scans abstain. Every attempted automatic pairing logs its base,
++family, score, margin, spatial evidence and reason. Names-hidden measurement uses this same function.
++No rotations, translations or UV warps are searched. Original PMX face/eye/skin masks remain in force.
++
++Worker-local discovery caches at most eight folders. Each has <=4096 entries, depth <=6, <=64
++family stems, <=96 feature decodes, <=256 MiB compressed inputs and <=256 million source pixels.
++Descriptors are <=128 pixels on the long edge; source image dimensions remain <=4096 squared.
++Descriptor reuse is per worker; clear/restart observes source edits. Source bytes, semantic map roles
++and game layout participate in generator v6's DDS key.
++
++`game_overrides.h` atomically saves `game_overrides.registry` beside the automatic registry. Choices
++are keyed by live `mmd/t/<16 hex>` identities and take precedence over fresh/cached automatic maps.
++Manual maps record source/base/map paths, explicit layout, generator, live-hash provenance and
++published DDS filenames/byte counts/digests/constants. None is durable; automatic removes the choice.
++Only current drawn hashes register. Missing/changed DDS suppress an override without falling back.
++Unreadable/unknown choices remain intact and suppress automatic use until readable. A failed save
++retains the current choice. Registry edits are preserved through the shared durable writer.
++Changing a choice retracts/refreshes all observed aliases, including while game maps are switched off.
++The ordinary authored-hash guard and runtime patch 0020 still rank every authored mod first.
++
++The R12 panel section in `cl_rtx_topbr_conversion.lua` adds the Imported game PBR panel to the RTX menu and the console command
++`rtx_topbr_game_editor`. It lists the looked-at character's materials, drawn-only thumbnails/states,
++candidate families and individual source-folder files, with explicit layout/none/automatic actions.
++It uses the bundle i18n function and supplies the new GPL phrases for all six bundled languages.
++Native work is asynchronous. The standalone DForm and spawn-menu wrapper both use the common
++`Clear` method; the polling hook preserves their base Think behavior. The engine resolves material identity only after drawn-hash evidence,
++preventing unseen library materials from loading textures during Lua enumeration.
++
++The SDK-free `game_matching_test.cpp` covers spatial abstention and override precedence, persistence,
++source-less restoration, invalid DDS, durable failure and drawn-before-load ordering. The CLI
++`game_match_probe.cpp` measures actual production discovery; see `tests/game_match_probe.md`.
 +
 +GPL-2.0. Phase 1 snapshots one live IMaterial per client frame and hands value-only jobs to the
 +worker. It caps images/queues, validates offsets before decoding, keys DDS on source content and
@@ -118,7 +156,7 @@ index 0000000000000000000000000000000000000000..b09827077036cb393793ac35102e5dd8
 +`to_pbr_test.cpp` republishes in separate child processes to verify restart ownership, same-size
 +USD edits, missing/damaged/stale records and failed USD/sidecar replacement with staging cleanup.
 diff --git a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
-index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..a6b9d9b0e284f5822b2e5705c2098bce2971bdc5 100644
+index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..f0eec48641577ad33549d29acd28a3f17f0abc08 100644
 --- a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
 +++ b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
 @@ -15,15 +15,17 @@
@@ -294,7 +332,7 @@ index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..a6b9d9b0e284f5822b2e5705c2098bce
  
  ]])
      MsgC(Color(100, 200, 255), string.rep("=", 60) .. "\n\n")
-@@ -655,11 +631,58 @@ if MaterialPipeline and MaterialPipeline.ToPBR then
+@@ -655,11 +631,406 @@ if MaterialPipeline and MaterialPipeline.ToPBR then
      -- Sync enabled state immediately at load time so a saved rtx_topbr_enabled=0
      -- takes effect before the C++ worker thread processes any queued materials
      if MaterialPipeline.ToPBR.SetEnabled then
@@ -353,7 +391,384 @@ index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..a6b9d9b0e284f5822b2e5705c2098bce
 +    end
 +end)
 +
++-- BEGIN R12 IMPORTED GAME PBR PANEL
++do
++-- GPL-2.0. Imported-game PBR choices, shared by the actual base texture.
++if SERVER or not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
++RTXGamePBRPanel = RTXGamePBRPanel or {}
++local P = RTXGamePBRPanel
++local i18n = file.Exists("nativeloader/i18n.lua", "LUA") and include("nativeloader/i18n.lua") or nil
++-- New panel phrases live in the GPL part; use the bundle catalog first.
++local panelPhrases = {
++    ["zh-CN"] = {
++        ["Character"] = "角色",
++        ["Selected maps use another game layout."] = "所选贴图使用另一种游戏格式。",
++        ["Imported game PBR"] = "导入的游戏 PBR",
++        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "看向角色后列出材质。选择适用于所有共用此纹理的角色。",
++        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "手工制作的 Remix 替换优先。脸和眼睛保护仍然有效。",
++        ["Select a material"] = "选择材质",
++        ["Map family"] = "贴图组",
++        ["Normal map"] = "法线贴图",
++        ["Packed map"] = "打包贴图",
++        ["Emission map"] = "自发光贴图",
++        ["Game layout"] = "游戏格式",
++        ["List looked-at character"] = "列出所看角色",
++        ["Use selected family"] = "使用所选贴图组",
++        ["Use individual maps"] = "使用单独贴图",
++        ["No game maps for this texture"] = "此纹理不使用游戏贴图",
++        ["Return to automatic"] = "恢复自动",
++        ["None"] = "无",
++        ["waiting"] = "等待中",
++        ["automatic"] = "自动",
++        ["cached"] = "已缓存",
++        ["override"] = "手动覆盖",
++        ["none"] = "无",
++        ["error"] = "错误",
++    },
++    ["zh-TW"] = {
++        ["Character"] = "角色",
++        ["Selected maps use another game layout."] = "所選貼圖使用另一種遊戲格式。",
++        ["Imported game PBR"] = "匯入的遊戲 PBR",
++        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "看向角色後列出材質。選擇適用於所有共用此紋理的角色。",
++        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "手工製作的 Remix 替換優先。臉和眼睛保護仍然有效。",
++        ["Select a material"] = "選擇材質",
++        ["Map family"] = "貼圖組",
++        ["Normal map"] = "法線貼圖",
++        ["Packed map"] = "打包貼圖",
++        ["Emission map"] = "自發光貼圖",
++        ["Game layout"] = "遊戲格式",
++        ["List looked-at character"] = "列出所看角色",
++        ["Use selected family"] = "使用所選貼圖組",
++        ["Use individual maps"] = "使用個別貼圖",
++        ["No game maps for this texture"] = "此紋理不使用遊戲貼圖",
++        ["Return to automatic"] = "恢復自動",
++        ["None"] = "無",
++        ["waiting"] = "等待中",
++        ["automatic"] = "自動",
++        ["cached"] = "已快取",
++        ["override"] = "手動覆寫",
++        ["none"] = "無",
++        ["error"] = "錯誤",
++    },
++    ["ja"] = {
++        ["Character"] = "キャラクター",
++        ["Selected maps use another game layout."] = "選択したマップは別のゲーム形式です。",
++        ["Imported game PBR"] = "インポートしたゲームの PBR",
++        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "キャラクターを見て材質を一覧表示します。同じテクスチャを使う全キャラクターに適用されます。",
++        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "作成済みの Remix 置換が優先されます。顔と目の保護は有効です。",
++        ["Select a material"] = "材質を選択",
++        ["Map family"] = "マップの組",
++        ["Normal map"] = "法線マップ",
++        ["Packed map"] = "パックマップ",
++        ["Emission map"] = "発光マップ",
++        ["Game layout"] = "ゲーム形式",
++        ["List looked-at character"] = "見ているキャラを一覧表示",
++        ["Use selected family"] = "選択した組を使用",
++        ["Use individual maps"] = "個別のマップを使用",
++        ["No game maps for this texture"] = "このテクスチャのゲームマップを無効化",
++        ["Return to automatic"] = "自動に戻す",
++        ["None"] = "なし",
++        ["waiting"] = "待機中",
++        ["automatic"] = "自動",
++        ["cached"] = "キャッシュ済み",
++        ["override"] = "手動設定",
++        ["none"] = "なし",
++        ["error"] = "エラー",
++    },
++    ["ko"] = {
++        ["Character"] = "캐릭터",
++        ["Selected maps use another game layout."] = "선택한 맵은 다른 게임 형식입니다.",
++        ["Imported game PBR"] = "가져온 게임 PBR",
++        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "캐릭터를 바라본 뒤 재질을 나열하세요. 같은 텍스처를 쓰는 모든 캐릭터에 적용됩니다.",
++        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "제작된 Remix 교체가 우선합니다. 얼굴과 눈 보호는 유지됩니다.",
++        ["Select a material"] = "재질 선택",
++        ["Map family"] = "맵 그룹",
++        ["Normal map"] = "노멀 맵",
++        ["Packed map"] = "패킹 맵",
++        ["Emission map"] = "발광 맵",
++        ["Game layout"] = "게임 형식",
++        ["List looked-at character"] = "바라보는 캐릭터 나열",
++        ["Use selected family"] = "선택한 그룹 사용",
++        ["Use individual maps"] = "개별 맵 사용",
++        ["No game maps for this texture"] = "이 텍스처의 게임 맵 끄기",
++        ["Return to automatic"] = "자동으로 복귀",
++        ["None"] = "없음",
++        ["waiting"] = "대기 중",
++        ["automatic"] = "자동",
++        ["cached"] = "캐시됨",
++        ["override"] = "수동 설정",
++        ["none"] = "없음",
++        ["error"] = "오류",
++    },
++    ["fr"] = {
++        ["Character"] = "Personnage",
++        ["Selected maps use another game layout."] = "Ces cartes utilisent un autre format de jeu.",
++        ["Imported game PBR"] = "PBR des jeux importés",
++        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "Visez un personnage, puis listez ses matériaux. Les choix concernent tous les personnages partageant cette texture.",
++        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "Les remplacements Remix créés ont priorité. La protection du visage et des yeux reste active.",
++        ["Select a material"] = "Choisir un matériau",
++        ["Map family"] = "Famille de cartes",
++        ["Normal map"] = "Carte normale",
++        ["Packed map"] = "Carte groupée",
++        ["Emission map"] = "Carte émissive",
++        ["Game layout"] = "Format du jeu",
++        ["List looked-at character"] = "Lister le personnage visé",
++        ["Use selected family"] = "Utiliser cette famille",
++        ["Use individual maps"] = "Utiliser des cartes séparées",
++        ["No game maps for this texture"] = "Aucune carte de jeu pour cette texture",
++        ["Return to automatic"] = "Revenir au mode automatique",
++        ["None"] = "Aucune",
++        ["waiting"] = "en attente",
++        ["automatic"] = "automatique",
++        ["cached"] = "en cache",
++        ["override"] = "personnalisé",
++        ["none"] = "aucune",
++        ["error"] = "erreur",
++    },
++    ["ru"] = {
++        ["Character"] = "Персонаж",
++        ["Selected maps use another game layout."] = "Выбранные карты используют другой формат игры.",
++        ["Imported game PBR"] = "PBR импортированных игр",
++        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "Посмотрите на персонажа и откройте список материалов. Выбор применяется ко всем персонажам с этой текстурой.",
++        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "Авторские замены Remix имеют приоритет. Защита лица и глаз сохраняется.",
++        ["Select a material"] = "Выберите материал",
++        ["Map family"] = "Набор карт",
++        ["Normal map"] = "Карта нормалей",
++        ["Packed map"] = "Упакованная карта",
++        ["Emission map"] = "Карта свечения",
++        ["Game layout"] = "Формат игры",
++        ["List looked-at character"] = "Материалы выбранного персонажа",
++        ["Use selected family"] = "Применить набор",
++        ["Use individual maps"] = "Применить отдельные карты",
++        ["No game maps for this texture"] = "Без игровых карт для этой текстуры",
++        ["Return to automatic"] = "Вернуть автоматический выбор",
++        ["None"] = "Нет",
++        ["waiting"] = "ожидание",
++        ["automatic"] = "автоматически",
++        ["cached"] = "из кеша",
++        ["override"] = "переопределение",
++        ["none"] = "нет",
++        ["error"] = "ошибка",
++    },
++}
++local function L(text)
++    local translated = i18n and i18n.A(text) or text
++    if translated ~= text then return translated end
++    local cv = GetConVar("nativeloader_language")
++    local code = cv and cv:GetString() or ""
++    if code == "" then local game = GetConVar("gmod_language") code = game and game:GetString() or "en" end
++    code = ({zh="zh-CN", ["zh-cn"]="zh-CN", ["zh-tw"]="zh-TW"})[code] or code
++    local phrases = panelPhrases[code]
++    return phrases and phrases[text] or text
++end
++local function processor() return MaterialPipeline and MaterialPipeline.ToPBR end
++local actionErrors = {}
++
++function P.Materials(ent)
++    local id = IsValid(ent) and mmdhl and mmdhl.GetAsset and mmdhl.GetAsset(ent)
++    local asset = id and mmdhl.assets and mmdhl.assets[id]
++    local entry = id and mmdhl.library and mmdhl.library.entries and mmdhl.library.entries[id]
++    local rows = {}
++    for slot, part in ipairs(asset and asset.materials or {}) do
++        local original = entry and entry.info and entry.info.materials and entry.info.materials[slot] or {}
++        if isstring(part.path) then rows[#rows + 1] = {name=part.path, source=entry and entry.source or "",
++            base=original.base or "", label=original.name or part.name or original.base or part.path} end
++    end
++    return rows
++end
++function P.Targets()
++    local targets = {}
++    for _, ent in ipairs(mmdhl and mmdhl.Entities and mmdhl.Entities() or {}) do
++        if #targets >= 128 then break end
++        if IsValid(ent) and not (mmdhl.PresentationSuppressed and mmdhl.PresentationSuppressed(ent)) and #P.Materials(ent) > 0 then
++            local id = mmdhl.GetAsset(ent)
++            local entry = mmdhl.library and mmdhl.library.entries and mmdhl.library.entries[id]
++            local asset = mmdhl.assets[id]
++            local label = entry and (entry.name or entry.info and entry.info.name) or asset and asset.name
++            if not isstring(label) or label == "" then label = L("Character") end
++            if mmdhl.names and mmdhl.names.Display then label = mmdhl.names.Display(label, id) end
++            targets[#targets + 1] = {entity=ent, label=label}
++        end
++    end
++    return targets
++end
++function P.Action(row, action, maps)
++    local p = processor()
++    if not p or not p.GameMaterialAction or not row then return false end
++    maps = maps or {}
++    if action == "maps" and p.GetGameMaterial then
++        local function path(value) return (value or ""):gsub("\\", "/"):lower() end
++        for _, choice in ipairs(p.GetGameMaterial(row.name).choices or {}) do
++            if choice.layout ~= (maps.layout or 0) then
++                for _, selected in ipairs({maps.normal or "", maps.packed or "", maps.emission or ""}) do
++                    if selected ~= "" then
++                        for _, known in ipairs({choice.normal or "", choice.packed or "", choice.emission or ""}) do
++                            if path(selected) == path(known) then
++                                actionErrors[row.name] = L("Selected maps use another game layout.")
++                                return false
++                            end
++                        end
++                    end
++                end
++            end
++        end
++    end
++    actionErrors[row.name] = nil
++    return p.GameMaterialAction(row.name, row.source, row.base, action,
++        maps.normal or "", maps.packed or "", maps.emission or "", maps.layout or 0)
++end
++function P.State(row)
++    local p = processor()
++    local view = p and p.GetGameMaterial and p.GetGameMaterial(row.name) or {state="waiting", identity=""}
++    if actionErrors[row.name] then view.error = actionErrors[row.name] end
++    return view
++end
++
++function P.Build(panel)
++    panel:Clear()
++    panel:CheckBox(L("Imported game PBR"), "rtx_topbr_game_maps")
++    panel:Help(L("Look at a character, then list its materials. Choices apply to every character sharing the same texture."))
++    panel:Help(L("Authored Remix replacements take priority. Face and eye protection stays active."))
++    local characters = panel:ComboBox(L("Character"))
++    local list = vgui.Create("DScrollPanel", panel)
++    list:SetTall(240) panel:AddItem(list)
++    local selected, signature, family, files = nil, nil, nil, nil
++    local rowUpdates = {}
++    local status = panel:Help(L("Select a material"))
++    local families = panel:ComboBox(L("Map family"))
++    local normal = panel:ComboBox(L("Normal map"))
++    local packed = panel:ComboBox(L("Packed map"))
++    local emission = panel:ComboBox(L("Emission map"))
++    local layout = panel:ComboBox(L("Game layout"))
++    for i, name in ipairs({"Wuthering Waves", "Endfield", "Silver Palace"}) do layout:AddChoice(name, i-1) end
++    layout:ChooseOptionID(1)
++    local function rebuild(target)
++        list:Clear() rowUpdates = {}
++        local default, defaultRank = nil, -1
++        local ply = LocalPlayer()
++        local trace = IsValid(ply) and (ply.GetEyeTraceNoCursor and ply:GetEyeTraceNoCursor() or ply:GetEyeTrace())
++        local ent = target or trace and trace.Entity
++        for _, row in ipairs(P.Materials(ent)) do
++            local button = list:Add("DButton")
++            button:Dock(TOP) button:SetTall(64) button:DockMargin(0, 0, 0, 4)
++            button:SetText("")
++            local image = vgui.Create("DImage", button) image:Dock(LEFT) image:SetWide(60)
++            local label = vgui.Create("DLabel", button) label:Dock(FILL) label:SetWrap(true) label:SetDark(true)
++            local thumbnail = ""
++            local function update()
++                local state = P.State(row)
++                -- Never load an unseen material just to show a thumbnail.
++                if state.identity ~= "" and thumbnail ~= state.identity then
++                    image:SetMaterial(Material(row.name)) thumbnail = state.identity
++                end
++                label:SetText(tostring(row.label) .. "\n" .. L(state.state or "waiting"))
++                return state
++            end
++            rowUpdates[#rowUpdates + 1] = update
++            local state = update()
++            local rank = state.state == "override" and 3 or (state.state == "automatic" or state.state == "cached") and 2 or 0
++            if state.identity ~= "" and rank > defaultRank then default, defaultRank = button, rank end
++            button.DoClick = function()
++                selected, signature, family, files = row, nil, nil, nil
++                P.Action(row, "options")
++            end
++        end
++        if default then default.DoClick() list:ScrollToChild(default) end
++    end
++    local refresh = panel:Button(L("List looked-at character")) refresh.DoClick = function() rebuild() end
++    families.OnSelect = function(_, _, _, data) family = data if data then layout:ChooseOptionID(data.layout + 1) end end
++    local function chosen(combo) local _, data = combo:GetSelected() return data or "" end
++    local useFamily = panel:Button(L("Use selected family"))
++    useFamily.DoClick = function() if family then P.Action(selected, "maps", family) end end
++    local useFiles = panel:Button(L("Use individual maps"))
++    useFiles.DoClick = function()
++        local _, gameLayout = layout:GetSelected()
++        P.Action(selected, "maps", {normal=chosen(normal), packed=chosen(packed), emission=chosen(emission), layout=gameLayout or 0})
++    end
++    local none = panel:Button(L("No game maps for this texture")) none.DoClick = function() P.Action(selected, "none") end
++    local automatic = panel:Button(L("Return to automatic")) automatic.DoClick = function() P.Action(selected, "automatic") end
++    local nextPoll = 0
++    if not panel.RTXGamePBRThinkInstalled then
++        panel.RTXGamePBRThinkInstalled = true
++        panel.RTXGamePBRBaseThink = panel.Think
++    end
++    panel.Think = function(self)
++        if self.RTXGamePBRBaseThink then self:RTXGamePBRBaseThink() end
++        if RealTime() < nextPoll then return end
++        nextPoll = RealTime() + .5
++        for _, update in ipairs(rowUpdates) do update() end
++        if not selected then return end
++        local view = P.State(selected)
++        status:SetText(tostring(selected.label) .. "\n" .. (view.identity or "") .. "\n" .. L(view.state or "waiting") ..
++            " " .. (view.family or "") .. "\n" .. (view.error or ""))
++        local key = tostring(selected.name) .. ":" .. #(view.choices or {}) .. ":" .. #(view.files or {})
++        if signature == key then return end
++        signature = key families:Clear() normal:Clear() packed:Clear() emission:Clear()
++        for index, choice in ipairs(view.choices or {}) do
++            families:AddChoice(choice.name, choice)
++            if choice.name == view.family then families:ChooseOptionID(index) end
++        end
++        for _, combo in ipairs({normal, packed, emission}) do
++            combo:AddChoice(L("None"), "")
++            for _, path in ipairs(view.files or {}) do combo:AddChoice(path, path) end
++            combo:ChooseOptionID(1)
++        end
++    end
++    characters.OnSelect = function(_, _, _, target) rebuild(target) end
++    local ply = LocalPlayer()
++    local trace = IsValid(ply) and (ply.GetEyeTraceNoCursor and ply:GetEyeTraceNoCursor() or ply:GetEyeTrace())
++    local wanted = trace and trace.Entity
++    local targets, index = P.Targets(), 1
++    for number, target in ipairs(targets) do
++        characters:AddChoice(target.label, target.entity)
++        if target.entity == wanted then index = number end
++    end
++    if #targets > 0 then characters:ChooseOptionID(index) rebuild(targets[index].entity) else rebuild() end
++end
++hook.Add("PopulateToolMenu", "RTXImportedGamePBR", function()
++    spawnmenu.AddToolMenuOption("Utilities", "RTX Remix", "RTX_ImportedGamePBR", L("Imported game PBR"), "", "", P.Build)
++end)
++concommand.Add("rtx_topbr_game_editor", function()
++    local frame = vgui.Create("DFrame") frame:SetSize(math.min(620, ScrW()-40), math.min(820, ScrH()-40)) frame:Center()
++    P.Frame = frame
++    frame:SetTitle(L("Imported game PBR")) frame:MakePopup()
++    local scroll = vgui.Create("DScrollPanel", frame) scroll:Dock(FILL)
++    local panel = vgui.Create("DForm", scroll) panel:SetName(L("Imported game PBR")) panel:Dock(TOP) P.Build(panel)
++end)
++
++end
++-- END R12 IMPORTED GAME PBR PANEL
++
  return RTXToPBR
+diff --git a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua.md b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e1c34ba613c9b842995ff78eba6993b7d6c83b3
+--- /dev/null
++++ b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua.md
+@@ -0,0 +1,23 @@
++# cl_rtx_topbr_conversion.lua
++
++GPL client ToPBR driver and imported-game PBR editor, loaded by remixbinary on x86-64/Chromium.
++World conversion defaults off; imported game maps default on. It synchronizes client convars,
++pumps native snapshots and submits bounded hotloader metadata; unresolved drawn hashes retry.
++Clear retracts/requeues registrations while native DDS and persistent records remain available.
++
++Commands: `rtx_topbr_stats`, `rtx_topbr_inspect`, `rtx_topbr_clear`, `rtx_topbr_process`,
++`rtx_topbr_help`, and `rtx_topbr_game_editor`. The editor is also the RTX menu's Imported game PBR
++panel. It offers a selector for visible imported characters, uses the cursor-independent eye trace when
++possible, and lists the chosen character's materials, thumbnails for drawn materials, live states,
++candidate families and individual source-folder files. Choose maps with an explicit layout, none,
++or automatic. The console editor fits the viewport and scrolls, initially selects a drawn material, and refreshes row states. Bundled i18n is preferred, with
++new GPL phrases supplied for all six bundled languages. It stays in this existing trusted Lua path.
++
++Reads hotloader source/library metadata and native worker snapshots. Map discovery, conversion,
++durable texture-scoped choices and DDS validation run on the native worker. Changes apply across
++all observed materials/characters sharing a live texture. Authored replacements and the independent
++game-map switch retain publication priority. Lua does not decode images, write source files, change
++Steam settings or touch Remix user.conf. Saved convars use the ordinary game configuration.
++Known discovered map layouts are checked case-insensitively before a manual submission.
++No standalone exit code; queue failures remain retryable and native conversion/save errors appear
++in the editor/console. Native and Lua regressions are described in `docs/TOPBR_R11.md`.
 diff --git a/source/material_pipeline/to_pbr/fallback_guard.h b/source/material_pipeline/to_pbr/fallback_guard.h
 new file mode 100644
 index 0000000000000000000000000000000000000000..70a6f2465e6c351e241afb13e0c7065f39b70251
@@ -1124,15 +1539,281 @@ index acfea746c19f77b5960f17337e93b94450a93e2a..5ac1e6d1963e42cb3c4961fa7281967f
      // Always matches as fallback
      void ExtractProperties(const VMTParseResult& vmt, MaterialPBRProperties& props);
      ProcessedMaterial ProcessTextures(const MaterialPBRProperties& props,
+diff --git a/source/material_pipeline/to_pbr/game_matching.inl b/source/material_pipeline/to_pbr/game_matching.inl
+new file mode 100644
+index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6eee06e4b
+--- /dev/null
++++ b/source/material_pipeline/to_pbr/game_matching.inl
+@@ -0,0 +1,171 @@
++// GPL-2.0. Included inside GamePBR, after Image/Decode/Maps.
++// Spatial edges are compared at identical normalized UV coordinates. No rotations,
++// translations or best-fit warps: a similar object with a different atlas must abstain.
++struct Features {
++    uint32_t w=0,h=0; std::vector<float> edges; double mean=0,energy=0;
++};
++inline Features Describe(const Image& image) {
++    Features f;f.w=image.w;f.h=image.h;f.edges.resize(size_t(f.w)*f.h);
++    for(uint32_t y=0;y<f.h;++y)for(uint32_t x=0;x<f.w;++x) {
++        const size_t i=size_t(y)*f.w+x;float dx=0,dy=0;
++        for(size_t c=0;c<3;++c) {
++            if(x)dx=(std::max)(dx,float(std::abs(int(image.rgba[i*4+c])-int(image.rgba[(i-1)*4+c])))/255);
++            if(y)dy=(std::max)(dy,float(std::abs(int(image.rgba[i*4+c])-int(image.rgba[(i-f.w)*4+c])))/255);
++        }
++        f.edges[i]=dx+dy;
++    }
++    auto sorted=f.edges;std::sort(sorted.begin(),sorted.end());
++    const float scale=sorted[sorted.size()*9/10]+.0001f;
++    for(auto& e:f.edges){e=std::sqrt((std::min)(2.f,e/scale));f.mean+=e;}
++    f.mean/=double(f.edges.size());
++    for(auto e:f.edges)f.energy+=(e-f.mean)*(e-f.mean);
++    return f;
++}
++inline double Similarity(const Features& a,const Features& b) {
++    if(a.w!=b.w || a.h!=b.h || a.energy<.01 || b.energy<.01)return -1;
++    double sum=0;for(size_t i=0;i<a.edges.size();++i)sum+=(a.edges[i]-a.mean)*(b.edges[i]-b.mean);
++    return sum/std::sqrt(a.energy*b.energy);
++}
++inline int Vocabulary(const std::string& value) {
++    const auto s=Lower(value);
++    if(Has(s,{"hair","bang",u8"头发",u8"頭髮"}))return 1;
++    if(Has(s,{"sock","stock","tight",u8"丝袜",u8"絲襪"}))return 2;
++    if(Has(s,{"hat","head",u8"头饰",u8"頭飾"}))return 3;
++    if(Has(s,{"skin",u8"皮肤",u8"皮膚"}))return 4;
++    if(Has(s,{"pupil","eye",u8"眼睛"}))return 5;
++    if(Has(s,{"face",u8"脸",u8"臉"}))return 6;
++    if(Has(s,{"lava","reactor",u8"熔岩"}))return 7;
++    if(Has(s,{"cloth","body","dress","coat",u8"衣服",u8"衣饰"}))return 8;
++    return 0;
++}
++struct Decision { std::string base,family,reason;double score=0,margin=0,feature=0;bool accepted=false; };
++using DecisionLog=std::function<void(const Decision&)>;
++struct Family { std::string stem;Maps maps;std::vector<Features> features; };
++inline fs::path RelativeTexture(const fs::path& root,const std::string& value) {
++    const auto p=fs::u8path(Lower(value));
++    if(p.empty() || p.has_root_path())throw std::runtime_error("rooted/empty texture path");
++    for(const auto& part:p)if(part==".." || part.u8string().find(':')!=std::string::npos)throw std::runtime_error("texture traversal");
++    auto cursor=root;
++    for(const auto& part:p){cursor/=part;auto a=GetFileAttributesW(cursor.c_str());
++        if(a!=INVALID_FILE_ATTRIBUTES && (a&FILE_ATTRIBUTE_REPARSE_POINT))throw std::runtime_error("linked texture path");}
++    return p;
++}
++class Discovery {
++public:
++    explicit Discovery(fs::path root):root_(std::move(root)) {
++        const auto attrs=GetFileAttributesW(root_.c_str());
++        if(attrs==INVALID_FILE_ATTRIBUTES || (attrs&FILE_ATTRIBUTE_REPARSE_POINT))throw std::runtime_error("invalid model folder");
++        size_t count=0;std::error_code ec;fs::recursive_directory_iterator it(root_,ec),end;
++        if(ec)throw std::runtime_error("cannot scan model folder");
++        for(;it!=end;it.increment(ec)) {
++            if(ec || ++count>4096)throw std::runtime_error("model folder scan exceeds bound");
++            if(it.depth()>6 || (GetFileAttributesW(it->path().c_str())&FILE_ATTRIBUTE_REPARSE_POINT)){it.disable_recursion_pending();continue;}
++            if(it->is_regular_file(ec)) {
++                const auto ext=Lower(it->path().extension().u8string());
++                if(ext==".png"||ext==".bmp"||ext==".tga"||ext==".jpg")files_[Lower(it->path().stem().u8string())].push_back(it->path());
++            }
++        }
++        if(ec)throw std::runtime_error("model folder scan failed");
++    }
++    fs::path Find(const std::string& stem,const fs::path& beside) const {
++        auto p=files_.find(stem);if(p==files_.end())return {};
++        std::vector<fs::path> candidates;
++        for(const auto& c:p->second)if(Lower(c.parent_path().lexically_normal().u8string())==Lower(beside.lexically_normal().u8string()))candidates.push_back(c);
++        if(candidates.empty())candidates=p->second;
++        const auto bytes=Read(candidates[0]);
++        for(size_t i=1;i<candidates.size();++i)if(Read(candidates[i])!=bytes)throw std::runtime_error("ambiguous companion texture");
++        return candidates[0];
++    }
++    Maps Named(const std::string& stem,const fs::path& beside) const {
++        Maps m;m.normal=Find(stem+"_n",beside);m.packed=Find(stem+"_mra",beside);m.emission=Find(stem+"_e",beside);
++        if(!m.packed.empty()) {
++            if(stem.find("t_actor_")==0)throw std::runtime_error("conflicting packed game layouts");
++            m.layout=Maps::Silver;
++        }
++        else if(stem.find("t_actor_")==0){m.layout=Maps::Endfield;m.packed=Find(stem+"_p",beside);if(m.normal.empty())m.normal=Find(stem+"_hn",beside);}
++        else if(!Find(stem+"_id",beside).empty() || !Find(stem+"_hm",beside).empty()){m.layout=Maps::Wuwa;m.emission.clear();}
++        else {
++            // Silver families without an MRA (e.g. hair) need explicit game-family evidence.
++            bool silver=false;
++            const auto split=stem.find('_',2);
++            const auto prefix=split==std::string::npos?std::string{}:stem.substr(0,split+1);
++            if(stem.find("t_")==0 && !prefix.empty())for(const auto& p:files_)
++                if(p.first.compare(0,prefix.size(),prefix)==0 && p.first.size()>4 && p.first.substr(p.first.size()-4)=="_mra")silver=true;
++            if(!silver)return {};
++            m.layout=Maps::Silver;
++        }
++        m.recognized=!m.normal.empty() || !m.packed.empty();return m;
++    }
++    const std::vector<Family>& Families() {
++        if(ready_)return families_;
++        families_.clear();
++        std::map<std::string,bool> stems;
++        for(const auto& p:files_)for(const auto suffix:{"_n","_hn","_mra","_p"}) {
++            const size_t n=std::strlen(suffix);if(p.first.size()>n && p.first.substr(p.first.size()-n)==suffix)stems[p.first.substr(0,p.first.size()-n)]=true;
++        }
++        if(stems.size()>64)throw std::runtime_error("family count exceeds bound");
++        for(const auto& stem:stems) {
++                auto m=Named(stem.first,root_);if(!m.recognized)continue;
++                Family family{stem.first,m,{}};
++                for(const auto& path:{m.normal,m.packed})if(!path.empty())family.features.push_back(Feature(path));
++                families_.push_back(std::move(family));
++        }
++        ready_=true;
++        return families_;
++    }
++    Features Feature(const fs::path& path) {
++        const auto found=features_.find(path);if(found!=features_.end())return found->second;
++        // Bound cumulative compressed input and original decode pixels, including bases.
++        const auto bytes=fs::file_size(path);if(++decodes_>96 || bytes>64*1024*1024 || compressed_+bytes>256*1024*1024)throw std::runtime_error("feature decode budget exhausted");
++        compressed_+=bytes;
++        auto image=Decode(path,0,0,128,&pixels_);
++        auto result=Describe(image);features_[path]=result;return result;
++    }
++    const fs::path& Root() const{return root_;}
++    std::vector<std::string> Files() const {
++        std::vector<std::string> result;
++        for(const auto& entry:files_)for(const auto& p:entry.second) {
++            if(result.size()>=256)return result;
++            result.push_back(p.lexically_relative(root_).u8string());
++        }
++        return result;
++    }
++private:
++    fs::path root_;std::map<std::string,std::vector<fs::path>> files_;std::vector<Family> families_;
++    std::map<fs::path,Features> features_;
++    bool ready_=false;size_t decodes_=0;uint64_t compressed_=0,pixels_=256ull*1024*1024;
++};
++class DiscoveryCache {
++public:
++    Discovery& Get(const fs::path& root) {
++        auto found=folders_.find(root);if(found!=folders_.end())return *found->second;
++        if(folders_.size()>=8)folders_.erase(folders_.begin());
++        auto folder=std::make_unique<Discovery>(root);auto& result=*folder;folders_[root]=std::move(folder);return result;
++    }
++private:std::map<fs::path,std::unique_ptr<Discovery>> folders_;
++};
++inline Maps Discover(const fs::path& root,const std::string& base,bool hideNames=false,const DecisionLog& log={},DiscoveryCache* cache=nullptr) {
++    Decision d;d.base=base;
++    auto done=[&](const Maps& m){d.accepted=m.recognized;if(log)log(d);return m;};
++    const auto p=RelativeTexture(root,base);const auto stem=Lower(p.stem().u8string());
++    std::unique_ptr<Discovery> owned;if(!cache)owned=std::make_unique<Discovery>(root);
++    Discovery& folder=cache?cache->Get(root):*owned;
++    if(!hideNames && stem.size()>2 && stem.substr(stem.size()-2)=="_d") {
++        auto m=folder.Named(stem.substr(0,stem.size()-2),root/p.parent_path());
++        if(m.recognized){d.family=stem.substr(0,stem.size()-2);d.score=1;d.margin=1;d.reason="exact stem";return done(m);}
++    }
++    const auto baseFeatures=folder.Feature(root/p);
++    double best=-1,runner=-1;const Family* chosen=nullptr;
++    for(const auto& family:folder.Families()) {
++        double feature=-1;for(const auto& f:family.features)feature=(std::max)(feature,Similarity(baseFeatures,f));
++        // Names only add support after spatial evidence; they never rescue a mismatched layout.
++        const int group=hideNames?0:Vocabulary(stem);
++        const double score=feature+(group && group==Vocabulary(family.stem)?.08:0);
++        if(score>best){runner=best;best=score;chosen=&family;d.feature=feature;}else runner=(std::max)(runner,score);
++    }
++    d.score=best;d.margin=best-runner;if(chosen)d.family=chosen->stem;
++    if(!chosen || d.feature<.28 || best<.36){d.reason="insufficient UV edge evidence";return done({});}
++    if(d.margin<.12){d.reason="ambiguous UV layout";return done({});}
++    d.reason=hideNames?"UV edges (names hidden)":"UV edges with name support";
++    return done(chosen->maps);
++}
+diff --git a/source/material_pipeline/to_pbr/game_overrides.h b/source/material_pipeline/to_pbr/game_overrides.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..070eac9b3d1734fb6aeb1d35b972aa1a8552eb25
+--- /dev/null
++++ b/source/material_pipeline/to_pbr/game_overrides.h
+@@ -0,0 +1,81 @@
++// GPL-2.0. Player choices keyed by live texture identity, never a character name.
++#pragma once
++#include "game_registry.h"
++namespace MaterialPipeline { namespace ToPBR { namespace GameOverrides {
++namespace fs=std::filesystem;
++struct Choice {
++    std::string mode,source,base,normal,packed,emission;unsigned layout=0;
++    GameRegistry::Record record;
++};
++inline bool Text(const std::string& s,size_t limit=2048) {
++    return s.size()<=limit && std::none_of(s.begin(),s.end(),[](unsigned char c){return c<32;});
++}
++class Store {
++public:
++    explicit Store(fs::path output):output_(std::move(output)),path_(output_.parent_path()/"game_overrides.registry"),validator_(output_){}
++    bool Load() {
++        choices_.clear();writable_=true;
++        std::error_code ec;if(!fs::exists(path_,ec))return writable_=!ec;
++        const auto size=fs::file_size(path_,ec);if(ec || size>GameRegistry::MaxBytes)return writable_=false;
++        std::ifstream f(path_,std::ios::binary);std::string line;
++        if(!std::getline(f,line) || line!="TOPBR_GAME_OVERRIDES 1")return writable_=false;
++        while(std::getline(f,line)) {
++            if(line.size()>16384 || choices_.size()>=GameRegistry::MaxRecords)return writable_=false;
++            std::istringstream row(line);row.imbue(std::locale::classic());std::string id;Choice c;
++            if(!(row>>id>>c.mode>>c.layout>>std::quoted(c.source)>>std::quoted(c.base)>>std::quoted(c.normal)>>std::quoted(c.packed)>>std::quoted(c.emission)))return writable_=false;
++            c.record.identity=id;
++            if(c.mode=="maps") {
++                size_t count=0;
++                if(!(row>>c.record.version>>c.record.generator>>count) || count>GameRegistry::MaxHashes)return writable_=false;
++                c.record.hashes.resize(count);for(auto& h:c.record.hashes)row>>std::hex>>h>>std::dec;
++                for(auto& t:c.record.textures){row>>std::quoted(t.file)>>t.bytes>>std::hex>>t.digest>>std::dec;}
++                row>>c.record.roughness>>c.record.metallic>>c.record.emission;
++                if(!row || !GameRegistry::ValidRecord(c.record))return writable_=false;
++            }
++            row>>std::ws;
++            if(!row.eof() || !Valid(id,c) || !choices_.emplace(id,c).second)return writable_=false;
++        }
++        return writable_=!f.bad();
++    }
++    bool Readable() const{return writable_;}
++    const Choice* Find(const std::string& id) const {if(!writable_)return nullptr;auto i=choices_.find(id);return i==choices_.end()?nullptr:&i->second;}
++    // Commit is atomic: an unsuccessful save never changes the current choice.
++    bool Set(const std::string& id,const Choice& choice) {
++        if(!writable_ || GameRegistry::Identity(id)!=id || id.empty() || (choice.mode!="automatic" && !Valid(id,choice)))return false;
++        auto next=choices_;
++        if(choice.mode=="automatic")next.erase(id);else next[id]=choice;
++        if(next.size()>GameRegistry::MaxRecords)return false;
++        std::ostringstream out;out.imbue(std::locale::classic());out<<"TOPBR_GAME_OVERRIDES 1\n"<<std::setprecision(std::numeric_limits<float>::max_digits10);
++        for(const auto& pair:next){const auto& c=pair.second;out<<pair.first<<' '<<c.mode<<' '<<c.layout<<' '<<std::quoted(c.source)<<' '<<std::quoted(c.base)<<' '<<std::quoted(c.normal)<<' '<<std::quoted(c.packed)<<' '<<std::quoted(c.emission);
++            if(c.mode=="maps") {
++                const auto& r=c.record;out<<' '<<r.version<<' '<<r.generator<<' '<<r.hashes.size();
++                for(auto h:r.hashes)out<<' '<<std::hex<<h<<std::dec;
++                for(const auto& t:r.textures)out<<' '<<std::quoted(t.file)<<' '<<t.bytes<<' '<<std::hex<<t.digest<<std::dec;
++                out<<' '<<r.roughness<<' '<<r.metallic<<' '<<r.emission;
++            }out<<'\n';
++        }
++        const auto bytes=out.str();if(bytes.size()>GameRegistry::MaxBytes || !GameRegistry::SaveText(path_,bytes,last_))return false;
++        choices_=std::move(next);return true;
++    }
++    std::optional<GameRegistry::Record> Resolve(const std::string& id,const std::vector<uint64_t>& live) const {
++        auto c=Find(id);if(!c || c->mode!="maps" || live.empty() || live.size()>GameRegistry::MaxHashes || !validator_.ValidateRecord(c->record))return {};
++        for(auto h:live)if(!h)return {};
++        auto r=c->record;r.hashes=live;return r;
++    }
++    template<class Automatic>
++    std::optional<GameRegistry::Record> Select(const std::string& id,const std::vector<uint64_t>& live,bool enabled,Automatic automatic) const {
++        if(!enabled || !writable_ || id.empty() || GameRegistry::Identity(id)!=id || live.empty() || live.size()>GameRegistry::MaxHashes)return {};
++        for(auto h:live)if(!h)return {};
++        if(Find(id))return Resolve(id,live); // Includes None and a damaged DDS: never revive automatic maps.
++        return automatic();
++    }
++private:
++    static bool Valid(const std::string& id,const Choice& c) {
++        return !id.empty() && GameRegistry::Identity(id)==id && (c.mode=="none" || c.mode=="maps") && c.layout<=2 &&
++            Text(c.source) && Text(c.base,1024) && Text(c.normal) && Text(c.packed) && Text(c.emission) &&
++            (c.mode!="maps" || (c.record.identity==id && GameRegistry::ValidRecord(c.record)));
++    }
++    fs::path output_,path_;GameRegistry::Registry validator_;std::map<std::string,Choice> choices_;
++    bool writable_=true;std::optional<std::string> last_;
++};
++}}}
 diff --git a/source/material_pipeline/to_pbr/game_pbr.h b/source/material_pipeline/to_pbr/game_pbr.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1bec8bc08f2
+index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9ea198c914
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_pbr.h
-@@ -0,0 +1,307 @@
+@@ -0,0 +1,278 @@
 +// GPL-2.0. Local authored game-map conversion, independent of Source material objects.
 +#pragma once
++#ifndef GAME_PBR_TYPES_PROVIDED
 +#include "to_pbr.h"
++#endif
 +#include "pbr_policy.h"
 +#include <Windows.h>
 +#include <wincodec.h>
@@ -1150,7 +1831,7 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +
 +namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 +namespace fs = std::filesystem;
-+constexpr unsigned GeneratorVersion = 5; // Registry provenance; content-key/marker version below.
++constexpr unsigned GeneratorVersion = 6; // Registry provenance; content-key/marker version below.
 +using Microsoft::WRL::ComPtr;
 +inline std::string Lower(std::string s) {
 +    for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -1294,7 +1975,7 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +    for(auto& c:mask)if(c==255)c=Original;return mask;
 +}
 +struct Image { uint32_t w=0,h=0;std::vector<uint8_t> rgba; };
-+inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0) {
++inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0,uint32_t limit=2048,uint64_t* pixelBudget=nullptr) {
 +    auto bytes=Read(path); // Bound compressed input before WIC allocates.
 +    ComPtr<IWICImagingFactory> factory;ComPtr<IWICStream> stream;
 +    ComPtr<IWICBitmapDecoder> decoder;ComPtr<IWICBitmapFrameDecode> frame;
@@ -1306,53 +1987,15 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +    UINT count=0;check(decoder->GetFrameCount(&count));if(count!=1)throw std::runtime_error("animated image");
 +    check(decoder->GetFrame(0,&frame));UINT sw=0,sh=0;check(frame->GetSize(&sw,&sh));
 +    if(!Policy::ValidImage(sw,sh))throw std::runtime_error("image dimensions exceed bound");
-+    if(!w || !h) { const float scale=(std::min)(1.0f,2048.0f/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
++    if(pixelBudget){const uint64_t pixels=uint64_t(sw)*sh;if(pixels>*pixelBudget)throw std::runtime_error("feature pixel budget exhausted");*pixelBudget-=pixels;}
++    if(!w || !h) { const float scale=(std::min)(1.0f,float(limit)/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
 +    if(!Policy::ValidImage(w,h) || uint64_t(sw)*h!=uint64_t(sh)*w)throw std::runtime_error("map aspect mismatch");
 +    check(factory->CreateBitmapScaler(&scaler));check(scaler->Initialize(frame.Get(),w,h,WICBitmapInterpolationModeFant));
 +    check(factory->CreateFormatConverter(&converter));check(converter->Initialize(scaler.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom));
 +    Image image{w,h,std::vector<uint8_t>(size_t(w)*h*4)};check(converter->CopyPixels(nullptr,w*4,UINT(image.rgba.size()),image.rgba.data()));return image;
 +}
 +struct Maps { bool recognized=false; fs::path normal,packed,emission;enum Layout{Wuwa,Endfield,Silver}layout=Wuwa; };
-+inline Maps Discover(const fs::path& root,const std::string& base) {
-+    const auto basePath=fs::u8path(base);if(basePath.has_root_path())throw std::runtime_error("rooted texture path");
-+    for(const auto& part:basePath)if(part=="..")throw std::runtime_error("texture traversal");
-+    auto stem=Lower(basePath.stem().u8string());if(stem.size()<3 || stem.substr(stem.size()-2)!="_d")return {};
-+    stem.resize(stem.size()-2);
-+    std::map<std::string,std::vector<fs::path>> files;size_t count=0;std::error_code ec;
-+    fs::recursive_directory_iterator it(root,ec),end;
-+    if(ec)throw std::runtime_error("cannot scan model folder");
-+    for(;it!=end;it.increment(ec)) {
-+        if(ec || ++count>4096)throw std::runtime_error("model folder scan exceeds bound");
-+        if(it.depth()>6 || (GetFileAttributesW(it->path().c_str())&FILE_ATTRIBUTE_REPARSE_POINT)){it.disable_recursion_pending();continue;}
-+        if(it->is_regular_file(ec)) {
-+            auto ext=Lower(it->path().extension().u8string());
-+            if(ext==".png"||ext==".bmp"||ext==".tga"||ext==".jpg")files[Lower(it->path().stem().u8string())].push_back(it->path());
-+        }
-+    }
-+    if(ec)throw std::runtime_error("model folder scan failed");
-+    auto find=[&](const char* suffix) {
-+        auto p=files.find(stem+suffix);if(p==files.end())return fs::path{};
-+        std::vector<fs::path> candidates;
-+        const auto beside=Lower((root/basePath.parent_path()).lexically_normal().u8string());
-+        for(const auto& candidate:p->second)
-+            if(Lower(candidate.parent_path().lexically_normal().u8string())==beside)candidates.push_back(candidate);
-+        if(candidates.empty())candidates=p->second;
-+        const auto bytes=Read(candidates[0]);
-+        for(size_t i=1;i<candidates.size();++i)
-+            if(Read(candidates[i])!=bytes)throw std::runtime_error("ambiguous companion texture");
-+        return candidates[0]; // Identical duplicate exports are the same authored input.
-+    };
-+    Maps m;m.normal=find("_n");m.packed=find("_mra");m.emission=find("_e");
-+    bool silverFamily=false;for(const auto& pair:files)if(pair.first.size()>4 && pair.first.substr(pair.first.size()-4)=="_mra")silverFamily=true;
-+    if(!m.packed.empty() || silverFamily)m.layout=Maps::Silver;
-+    else if(stem.find("t_actor_")==0) {m.layout=Maps::Endfield;m.packed=find("_p");if(m.normal.empty())m.normal=find("_hn");}
-+    else {
-+        // WuWa toon inputs need family evidence, not a generic suffix guess.
-+        if(find("_id").empty() && find("_hm").empty())return {};
-+        m.layout=Maps::Wuwa;m.emission.clear();
-+    }
-+    m.recognized=true;return m;
-+}
++#include "game_matching.inl"
 +inline bool PlausibleNormal(const Image& n) {
 +    size_t valid=0,count=0;double sx=0,sy=0;
 +    const size_t pixels=n.rgba.size()/4,step=(std::max)(size_t(1),pixels/8192);
@@ -1365,21 +2008,26 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +struct Output { std::string normal,roughness,metallic,emission,ao;size_t protectedPixels=0; };
 +using Writer=std::function<bool(const ConvertedTexture&,const std::string&)>;
 +inline Output Convert(const std::string& source,const std::string& base,const std::string& out,
-+                      const Writer& write,const std::function<void(ConvertedTexture&)>& oct) {
++                      const Writer& write,const std::function<void(ConvertedTexture&)>& oct,
++                      DiscoveryCache* discovery=nullptr,const Maps* selected=nullptr,const DecisionLog& log={}) {
 +    const fs::path pmx=fs::u8path(source);if(!pmx.is_absolute() || Lower(pmx.extension().u8string())!=".pmx")throw std::runtime_error("not a local PMX");
-+    auto maps=Discover(pmx.parent_path(),base);if(!maps.recognized)return {};
++    auto maps=selected?*selected:Discover(pmx.parent_path(),base,false,log,discovery);if(!maps.recognized)return {};
 +    auto modelBytes=Read(pmx,256*1024*1024);
 +    uint64_t key=Hash(Read(pmx.parent_path()/fs::u8path(base)),Hash(modelBytes));
 +    // Every input byte participates, including a changed file with the same size/time.
-+    for(const auto& path:{maps.normal,maps.packed,maps.emission})if(!path.empty())key=Hash(Read(path),key);
-+    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313147414d4505ull;
++    unsigned role=0;
++    for(const auto& path:{maps.normal,maps.packed,maps.emission}) {
++        key=Hash(std::vector<uint8_t>{uint8_t(++role),uint8_t(!path.empty())},key);
++        if(!path.empty())key=Hash(Read(path),key);
++    }
++    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4506ull ^ uint64_t(maps.layout);
 +    char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));
 +    Output result;
 +    auto path=[&](const char* suffix){return (fs::u8path(out)/(std::string(id)+suffix+".dds")).u8string();};
 +    const fs::path marker=fs::u8path(out)/(std::string(id)+"_complete.txt");
 +    {
 +        std::ifstream cache(marker);std::string version;int glow=0;cache>>version>>glow;
-+        if(cache && version=="r11-game-v5" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
++        if(cache && version=="r12-game-v6" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
 +           Policy::ValidDDS(fs::u8path(path("_roughness"))) && Policy::ValidDDS(fs::u8path(path("_metallic"))) &&
 +           (!glow || Policy::ValidDDS(fs::u8path(path("_emission"))))) {
 +            result.normal=path("_normal");result.roughness=path("_roughness");result.metallic=path("_metallic");
@@ -1391,6 +2039,8 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +    Image packed=maps.packed.empty()?Image{}:Decode(maps.packed,n.w,n.h);
 +    uint32_t w=n.w?n.w:packed.w,h=n.h?n.h:packed.h;
 +    if(!w||!h) {auto diffuse=Decode(pmx.parent_path()/fs::u8path(base));w=diffuse.w;h=diffuse.h;}
++    const auto diffuseSize=Decode(pmx.parent_path()/RelativeTexture(pmx.parent_path(),base),0,0,128);
++    if(uint64_t(diffuseSize.w)*h!=uint64_t(diffuseSize.h)*w)throw std::runtime_error("base/map aspect mismatch");
 +    auto classes=Mask(mesh,base,w,h);size_t changed=0;for(auto c:classes)changed+=c!=Original;
 +    if(!changed)return {};
 +    if(n.w && !PlausibleNormal(n))throw std::runtime_error("normal channels fail sanity check");
@@ -1432,17 +2082,17 @@ index 0000000000000000000000000000000000000000..8ef0af39000a1bcace37c0527806f1be
 +    if(!packed.rgba.empty())result.ao=save(ao,"_ao"); // Kept as data; do not bake occlusion into painted albedo under path tracing.
 +    if(anyGlow)result.emission=save(glow,"_emission");
 +    const fs::path staged=fs::path(marker.wstring()+L".tmp");
-+    { std::ofstream done(staged);done<<"r11-game-v5 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
++    { std::ofstream done(staged);done<<"r12-game-v6 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
 +    if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
 +    return result;
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/game_registry.h b/source/material_pipeline/to_pbr/game_registry.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..53e905deb1e9342ac5c987af26ddc0adeaa19e38
+index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca818c54a693
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_registry.h
-@@ -0,0 +1,270 @@
+@@ -0,0 +1,282 @@
 +// GPL-2.0. Worker-owned records for imported textures whose local source is unavailable.
 +#pragma once
 +#include "pbr_policy.h"
@@ -1478,6 +2128,12 @@ index 0000000000000000000000000000000000000000..53e905deb1e9342ac5c987af26ddc0ad
 +    for (size_t i = 6; i < name.size(); ++i)
 +        if (!((name[i] >= '0' && name[i] <= '9') || (name[i] >= 'a' && name[i] <= 'f'))) return {};
 +    return name;
++}
++template<class Resolve>
++inline std::string DrawnIdentity(const std::vector<uint64_t>& hashes,Resolve resolve) {
++    if(hashes.empty() || hashes.size()>MaxHashes)return {};
++    for(auto h:hashes)if(!h)return {};
++    return Identity(resolve());
 +}
 +inline bool SafeFile(const std::string& file) {
 +    if (file.size() < 5 || file.size() > 128 || file.substr(file.size() - 4) != ".dds") return false;
@@ -1522,11 +2178,50 @@ index 0000000000000000000000000000000000000000..53e905deb1e9342ac5c987af26ddc0ad
 +    }
 +    return texture;
 +}
++inline bool SaveText(const fs::path& path,const std::string& bytes,std::optional<std::string>& lastPublished) {
++        // Preserve pre-existing and subsequently edited registry bytes just as USD
++        // publication does. Ordinary repeated writes in this worker need no backup.
++        const DWORD attrs = GetFileAttributesW(path.c_str());
++        if (attrs != INVALID_FILE_ATTRIBUTES) {
++            if (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) return false;
++            std::ifstream file(path, std::ios::binary | std::ios::ate);
++            const auto size = file.tellg();
++            if (!file || size < 0 || uint64_t(size) > MaxBytes) return false;
++            std::string previous(size_t(size), '\0'); file.seekg(0);
++            if (!file.read(previous.data(), std::streamsize(previous.size()))) return false;
++            if (previous == bytes) { lastPublished = bytes; return true; }
++            if (!lastPublished || previous != *lastPublished) {
++                uint64_t hash = 14695981039346656037ull;
++                for (unsigned char c : previous) { hash ^= c; hash *= 1099511628211ull; }
++                std::ostringstream suffix; suffix << ".before-r11b-" << std::hex << hash << ".bak";
++                const fs::path backup(path.wstring() + fs::u8path(suffix.str()).wstring());
++                if (!CopyFileW(path.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(path, backup)) return false;
++                if (!Policy::SameFile(path, backup)) return false;
++            }
++        }
++        const fs::path staged(path.wstring() + L".tmp");
++        HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
++        bool written = file != INVALID_HANDLE_VALUE;
++        size_t offset = 0;
++        while (written && offset < bytes.size()) {
++            DWORD count = 0;
++            written = WriteFile(file, bytes.data() + offset, DWORD(bytes.size() - offset), &count, nullptr) != 0 && count != 0;
++            offset += count;
++        }
++        if (written) written = FlushFileBuffers(file) != 0;
++        if (file != INVALID_HANDLE_VALUE && !CloseHandle(file)) written = false;
++        if (!written) { DeleteFileW(staged.c_str()); return false; }
++        if (MoveFileExW(staged.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++            lastPublished = bytes; return true;
++        }
++        DeleteFileW(staged.c_str()); return false;
++}
 +// One instance per worker invocation. Cache successes and no-maps results by the
 +// actual live texture identity, regardless of material/source metadata aliases.
 +// All registry/converter I/O belongs inside resolve, so a hit does no disk work.
 +class Session {
 +public:
++    void Erase(const std::string& identity){resolved_.erase(identity);}
 +    template<class Resolve>
 +    std::optional<Record> ResolveOnce(const std::string& identity, const std::vector<uint64_t>& liveHashes,
 +                                      bool enabled, Resolve resolve) {
@@ -1628,42 +2323,7 @@ index 0000000000000000000000000000000000000000..53e905deb1e9342ac5c987af26ddc0ad
 +        }
 +        const std::string bytes = text.str();
 +        if (bytes.size() > MaxBytes) return false;
-+        // Preserve pre-existing and subsequently edited registry bytes just as USD
-+        // publication does. Ordinary repeated writes in this worker need no backup.
-+        const DWORD attrs = GetFileAttributesW(path_.c_str());
-+        if (attrs != INVALID_FILE_ATTRIBUTES) {
-+            if (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) return false;
-+            std::ifstream file(path_, std::ios::binary | std::ios::ate);
-+            const auto size = file.tellg();
-+            if (!file || size < 0 || uint64_t(size) > MaxBytes) return false;
-+            std::string previous(size_t(size), '\0'); file.seekg(0);
-+            if (!file.read(previous.data(), std::streamsize(previous.size()))) return false;
-+            if (previous == bytes) { lastPublished_ = bytes; return true; }
-+            if (!lastPublished_ || previous != *lastPublished_) {
-+                uint64_t hash = 14695981039346656037ull;
-+                for (unsigned char c : previous) { hash ^= c; hash *= 1099511628211ull; }
-+                std::ostringstream suffix; suffix << ".before-r11b-" << std::hex << hash << ".bak";
-+                const fs::path backup(path_.wstring() + fs::u8path(suffix.str()).wstring());
-+                if (!CopyFileW(path_.c_str(), backup.c_str(), TRUE) && !Policy::SameFile(path_, backup)) return false;
-+                if (!Policy::SameFile(path_, backup)) return false;
-+            }
-+        }
-+        const fs::path staged(path_.wstring() + L".tmp");
-+        HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-+        bool written = file != INVALID_HANDLE_VALUE;
-+        size_t offset = 0;
-+        while (written && offset < bytes.size()) {
-+            DWORD count = 0;
-+            written = WriteFile(file, bytes.data() + offset, DWORD(bytes.size() - offset), &count, nullptr) != 0 && count != 0;
-+            offset += count;
-+        }
-+        if (written) written = FlushFileBuffers(file) != 0;
-+        if (file != INVALID_HANDLE_VALUE && !CloseHandle(file)) written = false;
-+        if (!written) { DeleteFileW(staged.c_str()); return false; }
-+        if (MoveFileExW(staged.c_str(), path_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-+            lastPublished_ = bytes; return true;
-+        }
-+        DeleteFileW(staged.c_str()); return false;
++        return SaveText(path_,bytes,lastPublished_);
 +    }
 +    // A readable source always calls today's converter; failed/empty conversion cannot revive old maps.
 +    // The generator number is provenance, not an expiry check for source-less records.
@@ -1692,6 +2352,8 @@ index 0000000000000000000000000000000000000000..53e905deb1e9342ac5c987af26ddc0ad
 +    std::string TexturePath(const Texture& texture) const {
 +        return texture.file.empty() ? std::string{} : (output_ / fs::u8path(texture.file)).u8string();
 +    }
++public: // Also validates immutable override records against their published DDS.
++    bool ValidateRecord(const Record& r,bool digest=true) const{return ValidRecord(r) && Validate(r,digest);}
 +private:
 +    bool DiscardDamaged() {
 +        // Save preserves the damaged bytes before replacing them with a fresh registry.
@@ -1776,10 +2438,10 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9fa5968a35 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..e0d063e516821e1e031a0e78b80004f16eb8ffc5 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
-@@ -4,6 +4,12 @@
+@@ -4,6 +4,13 @@
  #include "formats.h"
  #include "vtf.h"
  #include "usda.h"
@@ -1787,12 +2449,13 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 +#include "pbr_policy.h"
 +#include "game_pbr.h"
 +#include "game_registry.h"
++#include "game_overrides.h"
 +#include <filesystem>
 +#include <iomanip>
  #include "../material_filter.h"
  #include <tier0/dbg.h>
  #include <materialsystem/imaterialsystem.h>
-@@ -183,55 +189,12 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
+@@ -183,55 +190,12 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
          }
      }
      
@@ -1854,7 +2517,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      m_initialized = true;
      Msg("[MaterialPipeline::ToPBR] Initialized successfully\n");
      Msg("[MaterialPipeline::ToPBR] Output directory: %s\n", m_outputDirectory.c_str());
-@@ -241,8 +204,6 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
+@@ -241,8 +205,6 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
  void TextureProcessor::Shutdown() {
      if (!m_initialized) return;
      
@@ -1863,7 +2526,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      // Stop background worker thread first
      StopWorkerThread();
-@@ -255,6 +216,8 @@ void TextureProcessor::Shutdown() {
+@@ -255,6 +217,8 @@ void TextureProcessor::Shutdown() {
      }
      m_textureHandles.clear();
      
@@ -1872,7 +2535,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      m_uploadedTextures.clear();
      m_processedMaterials.clear();
      m_processedMaterialInfo.clear();
-@@ -266,6 +229,9 @@ void TextureProcessor::Shutdown() {
+@@ -266,6 +230,9 @@ void TextureProcessor::Shutdown() {
          std::lock_guard<std::mutex> lock(m_queueMutex);
          while (!m_materialQueue.empty()) m_materialQueue.pop();
          m_queuedMaterials.clear();
@@ -1882,7 +2545,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      }
      
      // Clear pending USDA
-@@ -370,6 +336,7 @@ void TextureProcessor::SaveIneligibleCache(bool force) {
+@@ -370,6 +337,7 @@ void TextureProcessor::SaveIneligibleCache(bool force) {
  }
  
  void TextureProcessor::SetOutputDirectory(const std::string& path) {
@@ -1890,7 +2553,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      m_outputDirectory = path;
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Output directory set to: %s\n", path.c_str());
-@@ -452,16 +419,12 @@ std::string TextureProcessor::GenerateOutputPath(const std::string& sourceName,
+@@ -452,16 +420,12 @@ std::string TextureProcessor::GenerateOutputPath(const std::string& sourceName,
      });
      if (key.compare(0, 10, "materials/") == 0) key.erase(0, 10);
      if (key.size() > 4 && key.compare(key.size() - 4, 4, ".vtf") == 0) key.resize(key.size() - 4);
@@ -1911,7 +2574,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  
      // Keep the full path under MAX_PATH by truncating the readable part.
      constexpr size_t kMaxNameLength = 140;
-@@ -511,12 +474,27 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
+@@ -511,12 +475,27 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
  }
  
  bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
@@ -1941,7 +2604,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      if (!file.is_open()) {
          Warning("[MaterialPipeline::ToPBR] Failed to open file for writing: %s\n", outputPath.c_str());
          return false;
-@@ -598,6 +576,8 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const
+@@ -598,6 +577,8 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const
      }
      
      file.close();
@@ -1950,7 +2613,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Wrote DDS file: %s (%dx%d, %d mips)\n", outputPath.c_str(), texture.width, texture.height, mipCount);
-@@ -992,6 +972,7 @@ bool TextureProcessor::ExtractVTFPixelData(const std::vector<uint8_t>& fileData,
+@@ -992,6 +973,7 @@ bool TextureProcessor::ExtractVTFPixelData(const std::vector<uint8_t>& fileData,
                                                 ConvertedTexture& outTexture, 
                                                 bool isNormalMap) {
      // Delegate to VTF module
@@ -1958,7 +2621,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      return VTF::ExtractVTFPixelData(fileData, header, outTexture, isNormalMap, m_debugOutput);
  }
  
-@@ -1393,140 +1374,18 @@ uint64_t TextureProcessor::ConvertAndUploadTexture(const std::string& vtfPath, b
+@@ -1393,140 +1375,18 @@ uint64_t TextureProcessor::ConvertAndUploadTexture(const std::string& vtfPath, b
      return texture.hash;
  }
  
@@ -2104,7 +2767,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  bool TextureProcessor::AnalyzeBaseTextureBrightness(const std::string& texturePath, float& outBrightness) {
      if (texturePath.empty()) {
          return false;
-@@ -1848,7 +1707,18 @@ struct VMTProperties {
+@@ -1848,7 +1708,18 @@ struct VMTProperties {
  // Parse a VMT file and extract properties that FindVar doesn't reliably expose
  // This is crucial because when running with DX6 fallback shaders, FindVar() returns
  // incorrect or missing values for many material properties
@@ -2123,7 +2786,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      if (!fileSystem) return false;
      
      // Guard against include cycles in patch VMT chains
-@@ -2035,7 +1905,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2035,7 +1906,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
      
      // Convert to lowercase for case-insensitive matching
      std::string contentLower = content;
@@ -2132,7 +2795,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      // Extract shader name (first non-whitespace word, possibly in quotes)
      // Skip any comment lines (// or /* */) at the start
-@@ -2673,7 +2543,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2673,7 +2544,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
      // ExoPBR uses screenspace_general_8tex shader with ExoPBR proxy
      // =========================================================================
      std::string shaderLower = outProps.shaderName;
@@ -2141,7 +2804,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      if (shaderLower == "screenspace_general_8tex") {
          // Check for ExoPBR proxy
-@@ -2931,6 +2801,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2931,6 +2802,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
  
  bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName, 
                                                MaterialPBRProperties& outProps) {
@@ -2149,7 +2812,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      if (!materials) {
          Warning("[MaterialPipeline::ToPBR] Material system not available\n");
          return false;
-@@ -3909,7 +3780,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3909,7 +3781,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          bool isRefractShader = false;
          if (!outProps.shaderName.empty()) {
              std::string shaderLower = outProps.shaderName;
@@ -2158,7 +2821,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              isRefractShader = (shaderLower == "refract");
          }
          
-@@ -3917,7 +3788,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3917,7 +3789,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          bool isSurfaceGlass = false;
          if (!outProps.surfaceProp.empty()) {
              std::string surfaceLower = outProps.surfaceProp;
@@ -2167,7 +2830,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              isSurfaceGlass = (surfaceLower == "glass" || surfaceLower.find("glass") != std::string::npos);
          }
          
-@@ -3930,7 +3801,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3930,7 +3802,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          if (hasVMTParsed) {
              if (!vmtParsed.shaderName.empty()) {
                  std::string vmtShaderLower = vmtParsed.shaderName;
@@ -2176,7 +2839,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
                  vmtIsRefract = (vmtShaderLower == "refract");
              }
              vmtHasRefractAmount = vmtParsed.hasRefractAmount;
-@@ -4001,48 +3872,8 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -4001,48 +3873,8 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          }
      }
      
@@ -2227,7 +2890,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      // Calculate PBR values with enhanced logic
      // Skip Source Engine heuristics for direct-PBR formats (ExoPBR, GPBR) - they already
      // set their own appropriate defaults (roughness=0.5, metallic=0.0) and rely on
-@@ -4060,12 +3891,191 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -4060,12 +3892,191 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
              outProps.hasEnvMapMask, outProps.hasPhongExponentTexture, outProps.hasEnvMapTint, outProps.hasEnvMap, outProps.normalMapAlphaEnvMapMask, outProps.isGlass);
      }
      
@@ -2420,7 +3083,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      ProcessingContext ctx;
      
      // Bind member functions to the context
-@@ -4092,13 +4102,13 @@ ProcessingContext TextureProcessor::CreateProcessingContext() {
+@@ -4092,13 +4103,13 @@ ProcessingContext TextureProcessor::CreateProcessingContext() {
          return GenerateOutputPath(sourceName, suffix);
      };
      ctx.fileExists = [this](const std::string& path) {
@@ -2437,7 +3100,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      return ctx;
  }
-@@ -4235,11 +4245,17 @@ static std::vector<uint64_t> CollectMaterialFrameHashes(const std::string& mater
+@@ -4235,11 +4246,17 @@ static std::vector<uint64_t> CollectMaterialFrameHashes(const std::string& mater
  void TextureProcessor::RegisterProcessedMaterial(const std::vector<uint64_t>& hashes,
                                                   ProcessedMaterialInfo info) {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -2456,7 +3119,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  }
  
  bool TextureProcessor::RegisterChromeMaterial(uint64_t hash) {
-@@ -4340,7 +4356,7 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4340,7 +4357,7 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      matInfo.emissionIntensity = props.hasEmissionScale ? props.emissionScale : 1.0f;
      
      // Create processing context for modular handlers
@@ -2465,7 +3128,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      // =========================================================================
      // Delegate to format-specific handlers (defined in separate files)
-@@ -4350,7 +4366,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4350,7 +4367,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // ExoPBR format
      if (props.isExoPBR) {
          ProcessedMaterial result = ExoPBR::ProcessTextures(props, textureHash, ctx);
@@ -2475,7 +3138,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4361,7 +4378,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4361,7 +4379,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // GPBR format
      if (props.isGPBR) {
          ProcessedMaterial result = GPBR::ProcessTextures(props, textureHash, ctx);
@@ -2485,7 +3148,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4372,7 +4390,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4372,7 +4391,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // MWB PBR Gen format (must check before BFT - it has more specific patterns)
      if (props.isMWBPBR) {
          ProcessedMaterial result = MWBPBR::ProcessTextures(props, textureHash, ctx);
@@ -2495,7 +3158,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4383,7 +4402,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4383,7 +4403,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // BlueFlyTrap PseudoPBR format
      if (props.isBFTPseudoPBR) {
          ProcessedMaterial result = BFTPseudoPBR::ProcessTextures(props, textureHash, ctx);
@@ -2505,7 +3168,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4391,6 +4411,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4391,6 +4412,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
          }
      }
      
@@ -2514,7 +3177,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      // =========================================================================
      // Standard Source Engine material processing (fallback)
      // For non-PBR format materials, use the SourceEngine handler
-@@ -4423,143 +4445,11 @@ int TextureProcessor::ProcessAllTrackedMaterials() {
+@@ -4423,143 +4446,11 @@ int TextureProcessor::ProcessAllTrackedMaterials() {
      return ProcessTrackedMaterialsBatch(0);
  }
  
@@ -2661,7 +3324,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) const {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
      return m_processedMaterials.find(materialName) != m_processedMaterials.end();
-@@ -4567,19 +4457,24 @@ bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) cons
+@@ -4567,19 +4458,24 @@ bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) cons
  
  TextureProcessor::Stats TextureProcessor::GetStats() const {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -2688,7 +3351,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      m_stats = {};
      
      // Clear persistent ineligible cache and delete the file
-@@ -4590,72 +4485,80 @@ void TextureProcessor::ClearCache() {
+@@ -4590,72 +4486,93 @@ void TextureProcessor::ClearCache() {
          DeleteFileA(cachePath.c_str());
      }
      
@@ -2759,26 +3422,39 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 +    if (m_gameEnabled.exchange(enabled) != enabled) m_publishRequested.store(true);
 +}
 +
-+bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::string& source, const std::string& base) {
-+    if (!m_initialized || !m_gameEnabled.load() || name.size() > 256 || source.size() > 2048 || base.size() > 1024 ||
++TextureProcessor::GameView TextureProcessor::GetGameView(const std::string& name) {
++    std::lock_guard<std::mutex> lock(m_queueMutex);
++    const auto found=m_gameViews.find(name);return found==m_gameViews.end()?GameView{}:found->second;
++}
++bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::string& source, const std::string& base,
++    const std::string& action,const std::string& normal,const std::string& packed,const std::string& emission,int layout) {
++    if (!m_initialized || (action.empty() && !m_gameEnabled.load()) || name.size() > 256 || source.size() > 2048 || base.size() > 1024 ||
 +        name.compare(0,4,"mmd/") != 0 || name.size() < 22 || name[20] != '/' ||
 +        source.find(char(0)) != std::string::npos || base.find(char(0)) != std::string::npos) return false;
 +    for (size_t i=4;i<20;++i) if (!std::isxdigit(uint8_t(name[i]))) return false;
-+    if (!materials) return false;
-+    IMaterial* material = materials->FindMaterial(name.c_str(), TEXTURE_GROUP_OTHER, false);
-+    if (!material || material->IsErrorMaterial()) return false;
-+    bool found = false;
-+    IMaterialVar* baseVar = material->FindVar("$basetexture", &found, false);
-+    ITexture* texture = found && baseVar ? baseVar->GetTextureValue() : nullptr;
-+    const std::string identity = texture ? GameRegistry::Identity(texture->GetName()) : std::string{};
-+    if (identity.empty()) return false; // A model/material name is not a texture identity.
++    if(action!="" && action!="options" && action!="automatic" && action!="none" && action!="maps")return false;
++    if(!GameOverrides::Text(source) || !GameOverrides::Text(base,1024) || !GameOverrides::Text(normal) ||
++       !GameOverrides::Text(packed) || !GameOverrides::Text(emission) || layout<0 || layout>2)return false;
++    // Do not load unspawned characters just to discover their identities.
 +    auto hashes = CollectMaterialFrameHashes(name);
-+    if (hashes.empty() || hashes.size() > GameRegistry::MaxHashes) return false; // Retry after draw.
++    if (hashes.empty() || hashes.size() > GameRegistry::MaxHashes) return false;
++    const auto identity=GameRegistry::DrawnIdentity(hashes,[&]()->std::string {
++        if (!materials) return {};
++        IMaterial* material=materials->FindMaterial(name.c_str(),TEXTURE_GROUP_OTHER,false);
++        if(!material || material->IsErrorMaterial())return {};
++        bool found=false;
++        IMaterialVar* baseVar=material->FindVar("$basetexture",&found,false);
++        ITexture* texture=found && baseVar?baseVar->GetTextureValue():nullptr;
++        return texture?texture->GetName():std::string{};
++    });
++    if (identity.empty()) return false; // A model/material name is not a texture identity.
 +    std::lock_guard<std::mutex> lock(m_queueMutex);
-+    if (m_gameSubmitted.count(name)) return true;
++    if (action.empty() && m_gameSubmitted.count(name)) return true;
++    if(m_gameViews.size()>=4096 && !m_gameViews.count(name))return false;
 +    if (m_gameSubmitted.size() >= 4096 || m_gameQueue.size() >= 128) return false;
-+    m_gameSubmitted.insert(name);
-+    m_gameQueue.push({name,source,base,identity,std::move(hashes)});
++    if(action.empty())m_gameSubmitted.insert(name);
++    m_gameQueue.push({name,source,base,identity,std::move(hashes),action,normal,packed,emission,layout});
++    if(m_gameViews.size()<4096)m_gameViews[name].identity=identity;
 +    m_queueCondition.notify_one();
 +    return true;
 +}
@@ -2830,7 +3506,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  }
  
  void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, uint64_t textureHash) {
-@@ -4703,91 +4606,48 @@ void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, ui
+@@ -4703,91 +4620,48 @@ void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, ui
  }
  
  void TextureProcessor::WriteUSDAIfNeeded() {
@@ -2950,7 +3626,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      if (m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Already running
      }
-@@ -4795,7 +4655,13 @@ void TextureProcessor::StartWorkerThread() {
+@@ -4795,7 +4669,13 @@ void TextureProcessor::StartWorkerThread() {
      m_shutdownRequested.store(false, std::memory_order_relaxed);
      m_workerRunning.store(true, std::memory_order_relaxed);
      
@@ -2965,7 +3641,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Background worker thread started\n");
-@@ -4807,9 +4673,13 @@ void TextureProcessor::CancelPendingWork() {
+@@ -4807,9 +4687,13 @@ void TextureProcessor::CancelPendingWork() {
      std::lock_guard<std::mutex> lock(m_queueMutex);
      while (!m_materialQueue.empty()) m_materialQueue.pop();
      m_queuedMaterials.clear();
@@ -2979,7 +3655,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      if (!m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Not running
      }
-@@ -4833,183 +4703,150 @@ void TextureProcessor::StopWorkerThread() {
+@@ -4833,183 +4717,225 @@ void TextureProcessor::StopWorkerThread() {
  }
  
  void TextureProcessor::WorkerThreadFunc() {
@@ -2998,6 +3674,11 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 -        // Get next material from queue, with a timeout so we can
 -        // flush USDA after a quiet period even if no new work arrives
 +    const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++    GamePBR::DiscoveryCache discovery;
++    GameOverrides::Store overrides(std::filesystem::u8path(m_outputDirectory));
++    if(!overrides.Load())Warning("[MaterialPipeline::ToPBR] Game overrides unreadable; retained without automatic fallback for unknown choices\n");
++    std::map<std::string,GameJob> liveJobs;
++    std::map<std::string,GameView> identityViews;
 +    GameRegistry::Session gameSession; // ClearCache stops this worker; every restart starts fresh.
 +    const auto saveRegistry = [this]() {
 +        if (!m_gameRegistry->Save() && !m_gameRegistrySaveWarned) {
@@ -3029,26 +3710,6 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 -                        std::chrono::seconds(USDA_WRITE_DEBOUNCE_SECONDS),
 -                        [this] {
 -                            return !m_materialQueue.empty() || m_shutdownRequested.load(std::memory_order_relaxed);
--                        });
--                    
--                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
--                        break;
--                    }
--                    
--                    if (!waitResult) {
--                        // Timeout expired with no new work - flush USDA now
--                        lock.unlock();
--                        Msg("[MaterialPipeline::ToPBR] Debounce period elapsed, flushing USDA to disk\n");
--                        AppendMaterialsToUSDA();
--                        hasPendingUSDA = false;
--                        m_backgroundProcessing.store(false, std::memory_order_relaxed);
--                        continue;
--                    }
--                    // Otherwise new work arrived - fall through to process it
--                } else {
--                    // No pending USDA data - block indefinitely until work arrives
--                    m_queueCondition.wait(lock, [this] {
--                        return !m_materialQueue.empty() || m_shutdownRequested.load(std::memory_order_relaxed);
 +            m_queueCondition.wait_for(lock, std::chrono::milliseconds(500), [this] {
 +                return m_shutdownRequested.load() || !m_readyQueue.empty() || !m_gameQueue.empty() ||
 +                    (IsEnabled() && !m_materialQueue.empty() && m_metadataReady.size() < 2);
@@ -3077,34 +3738,119 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 +        if (gotGame) {
 +            m_backgroundProcessing.store(true);
 +            try {
++                liveJobs[gameJob.name]=gameJob;
++                GameView view=GetGameView(gameJob.name);view.identity=gameJob.identity;view.error.clear();
++                if(const auto known=identityViews.find(gameJob.identity);known!=identityViews.end()) {
++                    view.state=known->second.state;view.family=known->second.family;view.error=known->second.error;
++                }
 +                bool restored = false;
++                auto convert=[&](const GamePBR::Maps* selected)->std::optional<GameRegistry::Record> {
++                    const auto output=GamePBR::Convert(gameJob.source,gameJob.base,m_outputDirectory,
++                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path);},
++                        [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
++                        [&](const GamePBR::Decision& d){
++                            view.family=d.accepted?d.family:"";
++                            Msg("[MaterialPipeline::ToPBR] Game pairing: base=%s family=%s score=%.4f margin=%.4f feature=%.4f accepted=%d reason=%s\n",
++                                d.base.c_str(),d.family.c_str(),d.score,d.margin,d.feature,int(d.accepted),d.reason.c_str());
+                         });
+-                    
+-                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
+-                        break;
++                    if(output.normal.empty() && output.roughness.empty())return {};
++                    GameRegistry::Record r;r.identity=gameJob.identity;r.hashes=gameJob.hashes;r.generator=GamePBR::GeneratorVersion;
++                    if(!m_gameRegistry->Capture(r,{output.normal,output.roughness,output.metallic,output.emission}))return {};
++                    return r;
++                };
++                if(gameJob.action=="options") {
++                    view.choices.clear();view.files.clear();
++                    if(!gameJob.source.empty()) {
++                        const auto pmx=std::filesystem::u8path(gameJob.source);
++                        if(!pmx.is_absolute() || GamePBR::Lower(pmx.extension().u8string())!=".pmx")throw std::runtime_error("not a local PMX");
++                        auto& folder=discovery.Get(pmx.parent_path());
++                        for(const auto& f:folder.Families()) {
++                            auto relative=[&](const std::filesystem::path& p){return p.empty()?std::string{}:p.lexically_relative(pmx.parent_path()).u8string();};
++                            view.choices.push_back({f.stem,relative(f.maps.normal),relative(f.maps.packed),relative(f.maps.emission),int(f.maps.layout)});
++                        }
++                        view.files=folder.Files();
+                     }
+-                    
+-                    if (!waitResult) {
+-                        // Timeout expired with no new work - flush USDA now
+-                        lock.unlock();
+-                        Msg("[MaterialPipeline::ToPBR] Debounce period elapsed, flushing USDA to disk\n");
+-                        AppendMaterialsToUSDA();
+-                        hasPendingUSDA = false;
+-                        m_backgroundProcessing.store(false, std::memory_order_relaxed);
+-                        continue;
++                    std::lock_guard<std::mutex> lock(m_queueMutex);m_gameViews[gameJob.name]=view;
++                    continue;
++                }
++                if(!gameJob.action.empty()) {
++                    GameOverrides::Choice choice;choice.mode=gameJob.action;choice.source=gameJob.source;choice.base=gameJob.base;
++                    choice.normal=gameJob.normal;choice.packed=gameJob.packed;choice.emission=gameJob.emission;choice.layout=unsigned(gameJob.layout);
++                    if(choice.mode=="maps") {
++                        const auto pmx=std::filesystem::u8path(gameJob.source);
++                        if(!pmx.is_absolute() || GamePBR::Lower(pmx.extension().u8string())!=".pmx")throw std::runtime_error("not a local PMX");
++                        const auto root=pmx.parent_path();auto& folder=discovery.Get(root);
++                        GamePBR::Maps selected;selected.layout=GamePBR::Maps::Layout(choice.layout);selected.recognized=true;
++                        auto path=[&](const std::string& s){return s.empty()?std::filesystem::path{}:root/GamePBR::RelativeTexture(root,s);};
++                        selected.normal=path(choice.normal);selected.packed=path(choice.packed);selected.emission=path(choice.emission);
++                        if(selected.normal.empty() && selected.packed.empty())throw std::runtime_error("choose a normal or packed map, or None");
++                        for(const auto& f:folder.Families())for(const auto& p:{selected.normal,selected.packed,selected.emission})
++                            if(!p.empty() && (p==f.maps.normal || p==f.maps.packed || p==f.maps.emission) && selected.layout!=f.maps.layout)
++                                throw std::runtime_error("selected game layout does not match these maps");
++                        const auto r=convert(&selected);if(!r)throw std::runtime_error("selected maps produce no eligible material (face/eye protection remains active)");
++                        choice.record=*r;
+                     }
+-                    // Otherwise new work arrived - fall through to process it
+-                } else {
+-                    // No pending USDA data - block indefinitely until work arrives
+-                    m_queueCondition.wait(lock, [this] {
+-                        return !m_materialQueue.empty() || m_shutdownRequested.load(std::memory_order_relaxed);
++                    if(!overrides.Set(gameJob.identity,choice))throw std::runtime_error("override could not be saved; previous choice retained");
++                    view.family=choice.mode=="maps"?(choice.packed.empty()?choice.normal:choice.packed):std::string{};
++                    view.error.clear();
++                    gameSession.Erase(gameJob.identity);
++                    // Remove every observed alias of this texture before republishing current hashes.
++                    std::lock_guard<std::recursive_mutex> lock(m_mutex);
++                    for(const auto& item:liveJobs)if(item.second.identity==gameJob.identity)
++                        for(auto h:item.second.hashes){auto i=m_processedMaterialInfo.find(h);if(i!=m_processedMaterialInfo.end() && i->second.importedGame)m_processedMaterialInfo.erase(i);}
++                    m_publishRequested.store(true);
++                }
 +                const auto record = gameSession.ResolveOnce(gameJob.identity, gameJob.hashes,
-+                    m_gameEnabled.load(), [&]() {
++                    m_gameEnabled.load() || !gameJob.action.empty(), [&]() {
++                    if(!overrides.Readable()){view.state="error";view.error="Saved override file is unreadable; automatic maps suppressed";return std::optional<GameRegistry::Record>{};}
++                    auto selected=overrides.Select(gameJob.identity,gameJob.hashes,true,[&]() {
 +                    // Resolve each identity once per worker, including source probing,
 +                    // DDS validation and registry saves. Later jobs only register live hashes.
 +                    std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
 +                    const bool sourceReadable = !gameJob.base.empty() && source.good();
 +                    auto resolved = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
 +                        true, sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
-+                        auto output = GamePBR::Convert(gameJob.source, gameJob.base, m_outputDirectory,
-+                            [this](const ConvertedTexture& t, const std::string& path) { return WriteTextureToDDS(t,path); },
-+                            [this](ConvertedTexture& t) { ConvertNormalMapToOctahedral(t); });
-+                        if (output.normal.empty() && output.roughness.empty()) return {};
-+                        GameRegistry::Record result;
-+                        result.identity = gameJob.identity; result.hashes = gameJob.hashes; result.generator = GamePBR::GeneratorVersion;
-+                        if (!m_gameRegistry->Capture(result, {output.normal, output.roughness, output.metallic, output.emission})) return {};
-+                        Msg("[MaterialPipeline::ToPBR] Imported game maps: %s normal=%d packed=%d emission=%d protected_pixels=%zu\n",
-+                            gameJob.base.c_str(), !output.normal.empty(), !output.metallic.empty(), !output.emission.empty(), output.protectedPixels);
++                        auto result=convert(nullptr);
++                        if(result)Msg("[MaterialPipeline::ToPBR] Imported game maps: %s identity=%s\n",gameJob.base.c_str(),gameJob.identity.c_str());
 +                        return result;
                      });
 -                    
 -                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
 -                        break;
--                    }
 +                    saveRegistry();
 +                    restored = !sourceReadable;
++                    view.state=resolved?(restored?"cached":"automatic"):"none";
 +                    return resolved;
++                    });
++                    if(const auto c=overrides.Find(gameJob.identity)) {
++                        view.state=c->mode=="none"?"none":"override";
++                        if(c->mode=="maps" && !selected)view.error="Saved override maps are unavailable or changed";
+                     }
++                    return selected;
 +                });
++                if(const auto c=overrides.Find(gameJob.identity))view.state=c->mode=="none"?"none":"override";
++                else if(view.state=="waiting")view.state=record?"automatic":"none";
++                identityViews[gameJob.identity]=view;
++                {std::lock_guard<std::mutex> lock(m_queueMutex);
++                    for(const auto& item:liveJobs)if(item.second.identity==gameJob.identity){auto& v=m_gameViews[item.first];
++                        v.identity=view.identity;v.state=view.state;v.family=view.family;v.error=view.error;}}
 +                if (record) {
 +                    ProcessedMaterialInfo info{};
 +                    info.importedGame = true; info.normalPath = m_gameRegistry->TexturePath(record->textures[0]);
@@ -3112,21 +3858,22 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 +                    info.metallicPath = m_gameRegistry->TexturePath(record->textures[2]);
 +                    info.emissivePath = m_gameRegistry->TexturePath(record->textures[3]);
 +                    info.roughnessConstant = record->roughness; info.metallicConstant = record->metallic; info.emissionIntensity = record->emission;
-+                    RegisterProcessedMaterial(record->hashes, info);
++                    for(const auto& item:liveJobs)if(item.second.identity==gameJob.identity)RegisterProcessedMaterial(item.second.hashes,info);
 +                    if (restored) Msg("[MaterialPipeline::ToPBR] Restored cached game maps: %s (%zu live hashes, generator=%u)\n",
 +                        record->identity.c_str(), record->hashes.size(), record->generator);
                  }
--            }
++            } catch (const std::exception& e) {
++                {std::lock_guard<std::mutex> lock(m_queueMutex);auto& v=m_gameViews[gameJob.name];v.error=e.what();}
++                Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
++                std::lock_guard<std::recursive_mutex> lock(m_mutex); ++m_stats.failedConversions;
+             }
 -            
 -            if (!m_materialQueue.empty()) {
 -                materialName = m_materialQueue.front();
 -                m_materialQueue.pop();
 -                gotWork = true;
-+            } catch (const std::exception& e) {
-+                Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
-+                std::lock_guard<std::recursive_mutex> lock(m_mutex); ++m_stats.failedConversions;
-             }
-         }
+-            }
+-        }
 -        
 -        if (!gotWork) {
 -            continue;
@@ -3138,7 +3885,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 -            std::lock_guard<std::mutex> lock(m_queueMutex);
 -            m_queuedMaterials.erase(materialName);
 -            continue;
--        }
+         }
 -        
 -        // Process the material (outside of queue lock)
 -        m_backgroundProcessing.store(true, std::memory_order_relaxed);
@@ -3266,11 +4013,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 -        if (success) {
 -            m_stats.materialsProcessed++;
 -        }
-+        m_processedMaterials.insert(props.materialName);
-+        m_processedFrameCounts[props.materialName] = job.hashes.size();
-+        if (ok) { m_lastProcessedCount.fetch_add(1); }
-+        else ++m_stats.failedConversions;
-     }
+-    }
 -    
 -    // Always log when a material is processed (not just in debug mode) so user knows it's working
 -    if (success) {
@@ -3278,7 +4021,11 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 -    } else if (m_debugOutput) {
 -        Msg("[MaterialPipeline::ToPBR] [BG] Skipped: %s (hash 0x%llX)\n", 
 -            materialName.c_str(), frameHashes[0]);
--    }
++        m_processedMaterials.insert(props.materialName);
++        m_processedFrameCounts[props.materialName] = job.hashes.size();
++        if (ok) { m_lastProcessedCount.fetch_add(1); }
++        else ++m_stats.failedConversions;
+     }
 -    
 -    return success;
 +    return ok;
@@ -3289,7 +4036,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  int TextureProcessor::QueueMaterialsForProcessing() {
      if (!m_enabled.load(std::memory_order_relaxed)) {
          return 0;
-@@ -5049,6 +4886,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5049,6 +4975,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
          std::lock_guard<std::recursive_mutex> lock(m_mutex);
          for (size_t i = 0; i < cachedMaterials.size(); i++) {
              const std::string& matName = cachedMaterials[i];
@@ -3297,7 +4044,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              if (MaterialFilter::IsNonSceneMaterialName(matName)) {
                  m_processedMaterials.insert(matName);
                  continue;
-@@ -5082,6 +4920,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5082,6 +5009,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
                  continue;
              }
              
@@ -3305,7 +4052,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
              m_materialQueue.push(matName);
              m_queuedMaterials.insert(matName);
              queuedCount++;
-@@ -5102,87 +4941,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5102,87 +5030,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
  
  size_t TextureProcessor::GetQueuedMaterialCount() const {
      std::lock_guard<std::mutex> lock(m_queueMutex);
@@ -3399,7 +4146,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  } // namespace ToPBR
  } // namespace MaterialPipeline
  
-@@ -5190,6 +4962,23 @@ void TextureProcessor::AppendToUSDAAsync() {
+@@ -5190,6 +5051,43 @@ void TextureProcessor::AppendToUSDAAsync() {
  // Lua Bindings - Must be at global scope
  //=============================================================================
  
@@ -3415,6 +4162,26 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
 +    return 1;
 +}
 +
++LUA_FUNCTION(ToPBR_GameMaterialAction) {
++    for(int i=1;i<=7;++i)LUA->CheckType(i,GarrysMod::Lua::Type::String);
++    LUA->CheckType(8,GarrysMod::Lua::Type::Number);
++    LUA->PushBool(MaterialPipeline::ToPBR::TextureProcessor::Instance().QueueGameMaterial(
++        LUA->GetString(1),LUA->GetString(2),LUA->GetString(3),LUA->GetString(4),
++        LUA->GetString(5),LUA->GetString(6),LUA->GetString(7),int(LUA->GetNumber(8))));return 1;
++}
++LUA_FUNCTION(ToPBR_GetGameMaterial) {
++    LUA->CheckType(1,GarrysMod::Lua::Type::String);
++    const auto v=MaterialPipeline::ToPBR::TextureProcessor::Instance().GetGameView(LUA->GetString(1));
++    auto field=[&](const char* k,const std::string& value){LUA->PushString(value.c_str());LUA->SetField(-2,k);};
++    LUA->CreateTable();field("identity",v.identity);field("state",v.state);field("error",v.error);field("family",v.family);
++    LUA->CreateTable();int n=0;
++    for(const auto& c:v.choices){LUA->PushNumber(++n);LUA->CreateTable();field("name",c.name);field("normal",c.normal);field("packed",c.packed);field("emission",c.emission);
++        LUA->PushNumber(c.layout);LUA->SetField(-2,"layout");LUA->SetTable(-3);}
++    LUA->SetField(-2,"choices");LUA->CreateTable();n=0;
++    for(const auto& f:v.files){LUA->PushNumber(++n);LUA->PushString(f.c_str());LUA->SetTable(-3);}
++    LUA->SetField(-2,"files");return 1;
++}
++
 +LUA_FUNCTION(ToPBR_PumpSnapshots) {
 +    MaterialPipeline::ToPBR::TextureProcessor::Instance().PumpSnapshots();
 +    return 0;
@@ -3423,7 +4190,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
  LUA_FUNCTION(ToPBR_Initialize) {
      // If already initialized (by C++ during RemixAPI init), return success
      if (MaterialPipeline::ToPBR::TextureProcessor::Instance().IsInitialized()) {
-@@ -5297,14 +5086,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
+@@ -5297,14 +5195,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
      bool enabled = LUA->GetBool(1);
      MaterialPipeline::ToPBR::TextureProcessor::Instance().SetMetallicGeneration(enabled);
      
@@ -3439,7 +4206,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      return 0;
  }
  
-@@ -5382,6 +5164,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
+@@ -5382,6 +5273,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
      LUA->PushNumber(stats.failedConversions);
      LUA->SetField(-2, "failedConversions");
      
@@ -3448,10 +4215,12 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      return 1;
  }
  
-@@ -5789,6 +5573,13 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
+@@ -5789,6 +5682,15 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
      LUA->PushCFunction(ToPBR_Initialize);
      LUA->SetField(-2, "Initialize");
      
++    LUA->PushCFunction(ToPBR_GameMaterialAction);LUA->SetField(-2,"GameMaterialAction");
++    LUA->PushCFunction(ToPBR_GetGameMaterial);LUA->SetField(-2,"GetGameMaterial");
 +    LUA->PushCFunction(ToPBR_SetGameEnabled);
 +    LUA->SetField(-2, "SetGameEnabled");
 +    LUA->PushCFunction(ToPBR_QueueGameMaterial);
@@ -3463,10 +4232,16 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..83c2d3f97c9acff10e58319536429b9f
      LUA->SetField(-2, "IsInitialized");
      
 diff --git a/source/material_pipeline/to_pbr/to_pbr.h b/source/material_pipeline/to_pbr/to_pbr.h
-index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e20504b10 100644
+index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b346216030 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.h
 +++ b/source/material_pipeline/to_pbr/to_pbr.h
-@@ -14,6 +14,7 @@
+@@ -1,4 +1,5 @@
+ #pragma once
++#include <map>
+ 
+ #ifdef _WIN64
+ 
+@@ -14,6 +15,7 @@
  #include <condition_variable>
  #include <queue>
  #include <chrono>
@@ -3474,7 +4249,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
  
  #include <remix/remix.h>
  #include <remix/remix_c.h>
-@@ -39,6 +40,8 @@ namespace ToPBR {
+@@ -39,6 +41,8 @@ namespace ToPBR {
  
  // Forward declaration for modular format handlers
  struct ProcessingContext;
@@ -3483,7 +4258,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
  
  // VTF file format structures
  #pragma pack(push, 1)
-@@ -313,12 +316,15 @@ public:
+@@ -313,12 +317,15 @@ public:
          int materialsWithNormals;
          int materialsWithRoughness;
          int failedConversions;
@@ -3499,7 +4274,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
          std::string normalPath;
          std::string roughnessPath;
          std::string metallicPath;
-@@ -344,13 +350,15 @@ public:
+@@ -344,13 +351,19 @@ public:
      // Clear processed materials cache (for map changes)
      void ClearCache();
  
@@ -3515,11 +4290,15 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
 +    void SetEnabled(bool enabled);
 +    void PumpSnapshots();
 +    void SetGameEnabled(bool enabled);
-+    bool QueueGameMaterial(const std::string& name, const std::string& source, const std::string& base);
++    struct GameOption { std::string name,normal,packed,emission;int layout=0; };
++    struct GameView { std::string identity,state="waiting",error,family;std::vector<GameOption> choices;std::vector<std::string> files; };
++    GameView GetGameView(const std::string& name);
++    bool QueueGameMaterial(const std::string& name, const std::string& source, const std::string& base,
++        const std::string& action="",const std::string& normal="",const std::string& packed="",const std::string& emission="",int layout=0);
      bool IsEnabled() const { return m_enabled.load(std::memory_order_relaxed); }
      
      // Enable/disable auto-processing of new materials
-@@ -501,10 +509,11 @@ private:
+@@ -501,10 +514,11 @@ private:
      
      // Discover companion textures that might not be explicitly referenced in the VMT
      // E.g., if basetexture is "metal/metal001", look for "metal/metal001_normal", "_height", "_mask", "_spec"
@@ -3532,7 +4311,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
      
      // Get filesystem interface
      IFileSystem* GetFileSystem();
-@@ -512,12 +521,12 @@ private:
+@@ -512,12 +526,12 @@ private:
      remix::Interface* m_remixInterface;
      IFileSystem* m_fileSystem;
      bool m_initialized;
@@ -3551,7 +4330,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
      std::string m_outputDirectory;       // Absolute output directory for writing DDS files
      size_t m_lastKnownMaterialCount;     // Cache to avoid expensive GetCachedMaterials() calls
      std::atomic<bool> m_allMaterialsProcessed; // Lock-free flag for instant early exit
-@@ -574,7 +583,7 @@ private:
+@@ -574,7 +588,7 @@ private:
      // an implicit roughness map on non-reflective materials.
      // Version 24 prevents additive effects with a glass physics surface from
      // being emitted as refractive translucent replacements.
@@ -3560,7 +4339,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
      std::unordered_set<std::string> m_ineligibleCache;
      bool m_ineligibleCacheDirty = false;
      
-@@ -599,7 +608,7 @@ private:
+@@ -599,7 +613,7 @@ private:
      std::unordered_set<uint64_t> m_materialsWrittenToUSDA;
      
      // Flag to indicate USDA needs to be rewritten
@@ -3569,7 +4348,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
      
      // Debounce timer for USDA writes - prevents Remix from constantly reloading
      // the mod layer while materials are still being processed
-@@ -616,10 +625,29 @@ private:
+@@ -616,10 +630,31 @@ private:
      // =========================================================================
      
      // Background worker thread
@@ -3582,7 +4361,9 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
 +        MaterialPBRProperties props{};
 +        std::vector<uint64_t> hashes;
 +    };
-+    struct GameJob { std::string name, source, base, identity; std::vector<uint64_t> hashes; };
++    struct GameJob { std::string name, source, base, identity; std::vector<uint64_t> hashes;
++        std::string action,normal,packed,emission;int layout=0; };
++    std::map<std::string,GameView> m_gameViews; // m_queueMutex protects UI snapshots.
 +    std::queue<GameJob> m_gameQueue;
 +    std::unordered_set<std::string> m_gameSubmitted;
 +    std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
@@ -3599,7 +4380,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..cd2fc62ae447b299e94b60ea4b878c8e
      // Work queue for materials to process
      std::queue<std::string> m_materialQueue;
      std::unordered_set<std::string> m_queuedMaterials;  // Fast lookup to avoid duplicates
-@@ -638,7 +666,7 @@ private:
+@@ -638,7 +673,7 @@ private:
      void WorkerThreadFunc();
      
      // Process a single material on the worker thread (no main thread locks)
@@ -4011,6 +4792,167 @@ index ac2e3e036c763d40d87cd5cb07375604fa04d7a7..2bf94f3584e2b6e92080b5d1255aba38
      // Convert to ConvertedTexture
      outTexture.width = parserTexture.width;
      outTexture.height = parserTexture.height;
+diff --git a/tests/game_match_probe.cpp b/tests/game_match_probe.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..087a2c8ae8502ec8b9641ae9f0b4dc67b4e2f0c8
+--- /dev/null
++++ b/tests/game_match_probe.cpp
+@@ -0,0 +1,20 @@
++// GPL-2.0. Read-only corpus probe using the production Discover implementation.
++#include "game_pbr_types.h"
++#include "../source/material_pipeline/to_pbr/game_pbr.h"
++#include <iostream>
++using namespace MaterialPipeline::ToPBR;
++int wmain(int argc,wchar_t** argv) {
++    if(argc!=3)return 2;
++    const auto com=CoInitializeEx(nullptr,COINIT_MULTITHREADED);
++    std::ifstream in(argv[1]);std::ofstream out(argv[2]);
++    if(!in || !out)return 3;
++    out<<"pmx\tbase\thidden\taccepted\tfamily\tscore\tmargin\tfeature\treason\tnormal\tpacked\tlayout\n";
++    std::string pmx,base;GamePBR::DiscoveryCache cache;
++    while(std::getline(in,pmx) && std::getline(in,base))for(bool hidden:{false,true}) {
++        GamePBR::Decision d;GamePBR::Maps maps;
++        try{maps=GamePBR::Discover(std::filesystem::u8path(pmx).parent_path(),base,hidden,[&](const auto& decision){d=decision;},&cache);}
++        catch(const std::exception& e){d.reason=e.what();}
++        out<<pmx<<'\t'<<base<<'\t'<<hidden<<'\t'<<maps.recognized<<'\t'<<d.family<<'\t'<<d.score<<'\t'<<d.margin<<'\t'<<d.feature<<'\t'<<d.reason<<'\t'<<maps.normal.u8string()<<'\t'<<maps.packed.u8string()<<'\t'<<int(maps.layout)<<'\n';out.flush();
++    }
++    if(SUCCEEDED(com))CoUninitialize();return 0;
++}
+diff --git a/tests/game_match_probe.md b/tests/game_match_probe.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..12b349ee3327bf7060873b8b7919500c3363c606
+--- /dev/null
++++ b/tests/game_match_probe.md
+@@ -0,0 +1,19 @@
++# game_match_probe
++
++Measures production `GamePBR::Discover` with normal name support and with pair names hidden.
++Takes a UTF-8 descriptor and an output TSV path. Each pair of descriptor lines is an absolute
++PMX filename followed by a base texture path relative to that PMX. No user source is written.
++The report includes source/base, accepted family, score/margin/spatial feature, reason and selected
++normal/packed paths. Discovery/decode limits are identical to conversion; the folder cache is local.
++
++From an x64 MSVC shell inside repository `out` scratch:
++
++```powershell
++cl /nologo /std:c++17 /EHsc /DNOMINMAX /utf-8 <repo>/tests/game_match_probe.cpp /Fegame_match_probe.exe
++./game_match_probe.exe corpus.txt pairings.tsv
++```
++
++Windows WIC/COM libraries are linked by the production header. No game/SDK is needed:
++`game_pbr_types.h` supplies unused converter transport types. Decoding, discovery, scoring and
++acceptance are production code. Exit 0 on completion, 2 on bad argument count, 3 if an input/output
++cannot open. Per-base failures become abstention rows.
+diff --git a/tests/game_matching_test.cpp b/tests/game_matching_test.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..782aa669ce204e46a96038ff8eb5ad7962854a84
+--- /dev/null
++++ b/tests/game_matching_test.cpp
+@@ -0,0 +1,104 @@
++// GPL-2.0. Production discovery/override/queue-order regressions without game or SDK.
++#include <algorithm>
++#include <cmath>
++#include <cstdint>
++#include <memory>
++#include <vector>
++#include <cassert>
++#include <iostream>
++#include <stdexcept>
++#include "game_pbr_types.h"
++#include "../source/material_pipeline/to_pbr/game_pbr.h"
++#include "../source/material_pipeline/to_pbr/game_overrides.h"
++#include "../source/material_pipeline/to_pbr/fallback_guard.h"
++using namespace MaterialPipeline::ToPBR;
++namespace fs=std::filesystem;
++static void BMP(const fs::path& path,int variant,bool colour=false) {
++    const int w=128,h=128;uint8_t header[54]{};header[0]='B';header[1]='M';
++    auto value=[&](size_t at,uint32_t v){memcpy(header+at,&v,4);};
++    value(2,54+w*h*4);value(10,54);value(14,40);value(18,w);value(22,h);header[26]=1;header[28]=32;
++    std::ofstream f(path,std::ios::binary);f.write(reinterpret_cast<char*>(header),54);
++    for(int y=0;y<h;++y)for(int x=0;x<w;++x){
++        const bool island=variant==0?((x>12 && x<60 && y>8 && y<90) || (x>80 && y>60 && y<110)):
++            ((x>50 && y<40) || (x<25 && y>80));
++        const uint8_t v=island?200:30;
++        const uint8_t pixel[4]={uint8_t(colour?255-v:v),uint8_t(colour?v/2:v),v,255};
++        f.write(reinterpret_cast<const char*>(pixel),4);
++    }
++}
++static void DDS(const fs::path& p) {
++    uint32_t h[32]{};h[0]=0x20534444;h[1]=124;h[3]=h[4]=h[7]=1;h[19]=32;h[20]=0x41;h[22]=32;
++    h[23]=0xff0000;h[24]=0xff00;h[25]=0xff;h[26]=0xff000000;
++    std::ofstream f(p,std::ios::binary);f.write(reinterpret_cast<char*>(h),128);f<<"abcd";
++}
++static std::string Bytes(const fs::path& p){std::ifstream f(p,std::ios::binary);return {std::istreambuf_iterator<char>(f),{}};}
++int wmain(int argc,wchar_t** argv) {
++    assert(argc==2);const auto com=CoInitializeEx(nullptr,COINIT_MULTITHREADED);
++    const fs::path root=argv[1];fs::create_directories(root/"maps");fs::create_directories(root/"textures");
++    BMP(root/"renamed.bmp",0,true);BMP(root/"maps/One_MRA.bmp",0);BMP(root/"maps/Two_MRA.bmp",1);
++    GamePBR::Decision d;
++    auto discover=[&](){return GamePBR::Discover(root,"renamed.bmp",true,[&](const auto& v){d=v;});};
++    assert(discover().recognized && d.family=="one" && d.score>.99 && d.margin>.12);
++    // Equal UV layouts must abstain, even if one has an attractive filename.
++    BMP(root/"maps/Three_MRA.bmp",0);
++    assert(!discover().recognized && d.reason=="ambiguous UV layout");
++    fs::remove(root/"maps/Three_MRA.bmp");
++    GamePBR::Image blank{128,128,std::vector<uint8_t>(128*128*4,128)};
++    const auto flat=GamePBR::Describe(blank);assert(GamePBR::Similarity(flat,flat)<0);
++    auto stretched=flat;stretched.w=64;stretched.h=256;assert(GamePBR::Similarity(flat,stretched)<0);
++    // Name hints can never revive a spatial mismatch or a missing supported family.
++    BMP(root/"hair.bmp",0);fs::remove(root/"maps/One_MRA.bmp");
++    assert(!GamePBR::Discover(root,"hair.bmp").recognized);
++    for(const auto& bad:{"../x.bmp","C:x.bmp","/x.bmp"}){bool threw=false;try{GamePBR::Discover(root,bad);}catch(...){threw=true;}assert(threw);}
++    const auto silver=root/"silver";fs::create_directory(silver);
++    BMP(silver/"T_OtherDefault_Cloth_MRA.bmp",0);BMP(silver/"T_OtherDefault_Hair_N.bmp",1);BMP(silver/"T_OtherDefault_Hair_D.bmp",1,true);
++    auto silverHair=GamePBR::Discover(silver,"T_OtherDefault_Hair_D.bmp");
++    assert(silverHair.recognized && silverHair.layout==GamePBR::Maps::Silver && silverHair.packed.empty());
++    const auto conflicting=root/"conflicting";fs::create_directory(conflicting);
++    BMP(conflicting/"T_actor_wrong_D.bmp",0);BMP(conflicting/"T_actor_wrong_MRA.bmp",0);
++    bool conflict=false;try{GamePBR::Discover(conflicting,"T_actor_wrong_D.bmp");}catch(...){conflict=true;}assert(conflict);
++    const auto bounded=root/"bounded";fs::create_directory(bounded);BMP(bounded/"base.bmp",0);
++    for(int i=0;i<65;++i){std::ofstream f(bounded/(std::to_string(i)+"_MRA.bmp"));}
++    bool over=false;try{GamePBR::Discover(bounded,"base.bmp");}catch(...){over=true;}assert(over);
++    // Drawn-hash evidence precedes material loading, including invalid/over-budget jobs.
++    int loads=0;auto load=[&](){++loads;return "mmd/t/0123456789abcdef";};
++    assert(GameRegistry::DrawnIdentity({},load).empty());assert(GameRegistry::DrawnIdentity({0},load).empty());
++    assert(GameRegistry::DrawnIdentity(std::vector<uint64_t>(65,1),load).empty() && loads==0);
++    assert(!GameRegistry::DrawnIdentity({7},load).empty() && loads==1);
++    const std::string id="mmd/t/0123456789abcdef";
++    const auto output=root/"textures";DDS(output/"manual.dds");
++    GameRegistry::Registry registry(output);assert(registry.Load());
++    GameOverrides::Choice c;c.mode="maps";c.source="E:/source/角色.pmx";c.base="衣服.bmp";c.normal="maps/One_N.bmp";c.layout=2;
++    c.record.identity=id;c.record.hashes={7};c.record.generator=6;
++    assert(registry.Capture(c.record,{(output/"manual.dds").u8string(),{},{},{}}));
++    GameOverrides::Store store(output);assert(store.Load() && store.Set(id,c));
++    GameOverrides::Store restart(output);assert(restart.Load());
++    // No original source exists: only recorded DDS are required. New material hashes are used.
++    assert(restart.Find(id)->source==c.source);
++    auto restored=restart.Resolve(id,{9,11});assert(restored && restored->hashes==std::vector<uint64_t>({9,11}));
++    int autoCalls=0;
++    auto automatic=[&]()->std::optional<GameRegistry::Record>{++autoCalls;return {};};
++    assert(restart.Select(id,{9},true,automatic) && autoCalls==0);
++    assert(!restart.Select(id,{9},false,automatic) && autoCalls==0);
++    c.mode="none";assert(restart.Set(id,c) && restart.Find(id)->mode=="none" && !restart.Resolve(id,{12}));
++    assert(!restart.Select(id,{9},true,automatic) && autoCalls==0);
++    GameOverrides::Store noneReload(output);assert(noneReload.Load() && noneReload.Find(id)->mode=="none");
++    c.mode="automatic";assert(noneReload.Set(id,c) && !noneReload.Find(id));
++    assert(!noneReload.Select(id,{9},true,automatic) && autoCalls==1);
++    c.mode="maps";assert(noneReload.Set(id,c));
++    // Changed DDS suppress the override rather than silently restoring automatic maps.
++    {std::fstream f(output/"manual.dds",std::ios::in|std::ios::out|std::ios::binary);f.seekp(128);f.put('z');}
++    assert(noneReload.Find(id) && !noneReload.Resolve(id,{8}));
++    assert(!noneReload.Select(id,{9},true,automatic) && autoCalls==1);
++    // Failed durable replacement preserves both disk choice and in-memory choice.
++    const auto path=root/"game_overrides.registry";const auto before=Bytes(path);
++    HANDLE held=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,0,nullptr);assert(held!=INVALID_HANDLE_VALUE);
++    c.mode="none";assert(!noneReload.Set(id,c) && noneReload.Find(id)->mode=="maps" && Bytes(path)==before);CloseHandle(held);
++    assert(!fs::exists(path.wstring()+L".tmp"));
++    {std::ofstream f(path,std::ios::binary);f<<"TOPBR_GAME_OVERRIDES 999\n";}
++    GameOverrides::Store unknown(output);assert(!unknown.Load() && !unknown.Readable() && !unknown.Set(id,c));
++    assert(!unknown.Select(id,{9},true,automatic) && autoCalls==1);
++    assert(Bytes(path)=="TOPBR_GAME_OVERRIDES 999\n");
++    std::cout<<"PASS R12 matching: spatial selection/abstention/layouts/bounds; drawn-before-load; texture override persistence/none/automatic/restore/integrity/atomic failure\n";
++    if(SUCCEEDED(com))CoUninitialize();return 0;
++}
 diff --git a/tests/game_pbr_test.cpp b/tests/game_pbr_test.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc6346668178a74fbf5
@@ -4092,6 +5034,24 @@ index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc634666817
 +    }
 +    if(SUCCEEDED(com))CoUninitialize();
 +}
+diff --git a/tests/game_pbr_types.h b/tests/game_pbr_types.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..cdb4093d7732c8209fbfacb5d8a531c803babbfe
+--- /dev/null
++++ b/tests/game_pbr_types.h
+@@ -0,0 +1,12 @@
++// GPL-2.0. SDK-free test/probe transport types; algorithms come from production headers.
++#pragma once
++#include <algorithm>
++#include <cmath>
++#include <cstdint>
++#include <memory>
++#include <vector>
++#define GAME_PBR_TYPES_PROVIDED
++constexpr int REMIXAPI_FORMAT_R8G8B8A8_UNORM=0;
++namespace MaterialPipeline {namespace ToPBR {
++struct ConvertedTexture {uint32_t width=0,height=0,mipLevels=0;int format=0;bool isNormalMap=false;std::vector<uint8_t> pixelData;};
++}}
 diff --git a/tests/game_registry_test.cpp b/tests/game_registry_test.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e58a00f5a

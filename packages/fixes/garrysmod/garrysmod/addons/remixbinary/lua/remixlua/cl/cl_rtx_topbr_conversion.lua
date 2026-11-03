@@ -685,4 +685,352 @@ hook.Add("Think", "RTXToPBR_GameMaps", function()
     end
 end)
 
+-- BEGIN R12 IMPORTED GAME PBR PANEL
+do
+-- GPL-2.0. Imported-game PBR choices, shared by the actual base texture.
+if SERVER or not (BRANCH == "x86-64" or BRANCH == "chromium") then return end
+RTXGamePBRPanel = RTXGamePBRPanel or {}
+local P = RTXGamePBRPanel
+local i18n = file.Exists("nativeloader/i18n.lua", "LUA") and include("nativeloader/i18n.lua") or nil
+-- New panel phrases live in the GPL part; use the bundle catalog first.
+local panelPhrases = {
+    ["zh-CN"] = {
+        ["Character"] = "角色",
+        ["Selected maps use another game layout."] = "所选贴图使用另一种游戏格式。",
+        ["Imported game PBR"] = "导入的游戏 PBR",
+        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "看向角色后列出材质。选择适用于所有共用此纹理的角色。",
+        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "手工制作的 Remix 替换优先。脸和眼睛保护仍然有效。",
+        ["Select a material"] = "选择材质",
+        ["Map family"] = "贴图组",
+        ["Normal map"] = "法线贴图",
+        ["Packed map"] = "打包贴图",
+        ["Emission map"] = "自发光贴图",
+        ["Game layout"] = "游戏格式",
+        ["List looked-at character"] = "列出所看角色",
+        ["Use selected family"] = "使用所选贴图组",
+        ["Use individual maps"] = "使用单独贴图",
+        ["No game maps for this texture"] = "此纹理不使用游戏贴图",
+        ["Return to automatic"] = "恢复自动",
+        ["None"] = "无",
+        ["waiting"] = "等待中",
+        ["automatic"] = "自动",
+        ["cached"] = "已缓存",
+        ["override"] = "手动覆盖",
+        ["none"] = "无",
+        ["error"] = "错误",
+    },
+    ["zh-TW"] = {
+        ["Character"] = "角色",
+        ["Selected maps use another game layout."] = "所選貼圖使用另一種遊戲格式。",
+        ["Imported game PBR"] = "匯入的遊戲 PBR",
+        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "看向角色後列出材質。選擇適用於所有共用此紋理的角色。",
+        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "手工製作的 Remix 替換優先。臉和眼睛保護仍然有效。",
+        ["Select a material"] = "選擇材質",
+        ["Map family"] = "貼圖組",
+        ["Normal map"] = "法線貼圖",
+        ["Packed map"] = "打包貼圖",
+        ["Emission map"] = "自發光貼圖",
+        ["Game layout"] = "遊戲格式",
+        ["List looked-at character"] = "列出所看角色",
+        ["Use selected family"] = "使用所選貼圖組",
+        ["Use individual maps"] = "使用個別貼圖",
+        ["No game maps for this texture"] = "此紋理不使用遊戲貼圖",
+        ["Return to automatic"] = "恢復自動",
+        ["None"] = "無",
+        ["waiting"] = "等待中",
+        ["automatic"] = "自動",
+        ["cached"] = "已快取",
+        ["override"] = "手動覆寫",
+        ["none"] = "無",
+        ["error"] = "錯誤",
+    },
+    ["ja"] = {
+        ["Character"] = "キャラクター",
+        ["Selected maps use another game layout."] = "選択したマップは別のゲーム形式です。",
+        ["Imported game PBR"] = "インポートしたゲームの PBR",
+        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "キャラクターを見て材質を一覧表示します。同じテクスチャを使う全キャラクターに適用されます。",
+        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "作成済みの Remix 置換が優先されます。顔と目の保護は有効です。",
+        ["Select a material"] = "材質を選択",
+        ["Map family"] = "マップの組",
+        ["Normal map"] = "法線マップ",
+        ["Packed map"] = "パックマップ",
+        ["Emission map"] = "発光マップ",
+        ["Game layout"] = "ゲーム形式",
+        ["List looked-at character"] = "見ているキャラを一覧表示",
+        ["Use selected family"] = "選択した組を使用",
+        ["Use individual maps"] = "個別のマップを使用",
+        ["No game maps for this texture"] = "このテクスチャのゲームマップを無効化",
+        ["Return to automatic"] = "自動に戻す",
+        ["None"] = "なし",
+        ["waiting"] = "待機中",
+        ["automatic"] = "自動",
+        ["cached"] = "キャッシュ済み",
+        ["override"] = "手動設定",
+        ["none"] = "なし",
+        ["error"] = "エラー",
+    },
+    ["ko"] = {
+        ["Character"] = "캐릭터",
+        ["Selected maps use another game layout."] = "선택한 맵은 다른 게임 형식입니다.",
+        ["Imported game PBR"] = "가져온 게임 PBR",
+        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "캐릭터를 바라본 뒤 재질을 나열하세요. 같은 텍스처를 쓰는 모든 캐릭터에 적용됩니다.",
+        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "제작된 Remix 교체가 우선합니다. 얼굴과 눈 보호는 유지됩니다.",
+        ["Select a material"] = "재질 선택",
+        ["Map family"] = "맵 그룹",
+        ["Normal map"] = "노멀 맵",
+        ["Packed map"] = "패킹 맵",
+        ["Emission map"] = "발광 맵",
+        ["Game layout"] = "게임 형식",
+        ["List looked-at character"] = "바라보는 캐릭터 나열",
+        ["Use selected family"] = "선택한 그룹 사용",
+        ["Use individual maps"] = "개별 맵 사용",
+        ["No game maps for this texture"] = "이 텍스처의 게임 맵 끄기",
+        ["Return to automatic"] = "자동으로 복귀",
+        ["None"] = "없음",
+        ["waiting"] = "대기 중",
+        ["automatic"] = "자동",
+        ["cached"] = "캐시됨",
+        ["override"] = "수동 설정",
+        ["none"] = "없음",
+        ["error"] = "오류",
+    },
+    ["fr"] = {
+        ["Character"] = "Personnage",
+        ["Selected maps use another game layout."] = "Ces cartes utilisent un autre format de jeu.",
+        ["Imported game PBR"] = "PBR des jeux importés",
+        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "Visez un personnage, puis listez ses matériaux. Les choix concernent tous les personnages partageant cette texture.",
+        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "Les remplacements Remix créés ont priorité. La protection du visage et des yeux reste active.",
+        ["Select a material"] = "Choisir un matériau",
+        ["Map family"] = "Famille de cartes",
+        ["Normal map"] = "Carte normale",
+        ["Packed map"] = "Carte groupée",
+        ["Emission map"] = "Carte émissive",
+        ["Game layout"] = "Format du jeu",
+        ["List looked-at character"] = "Lister le personnage visé",
+        ["Use selected family"] = "Utiliser cette famille",
+        ["Use individual maps"] = "Utiliser des cartes séparées",
+        ["No game maps for this texture"] = "Aucune carte de jeu pour cette texture",
+        ["Return to automatic"] = "Revenir au mode automatique",
+        ["None"] = "Aucune",
+        ["waiting"] = "en attente",
+        ["automatic"] = "automatique",
+        ["cached"] = "en cache",
+        ["override"] = "personnalisé",
+        ["none"] = "aucune",
+        ["error"] = "erreur",
+    },
+    ["ru"] = {
+        ["Character"] = "Персонаж",
+        ["Selected maps use another game layout."] = "Выбранные карты используют другой формат игры.",
+        ["Imported game PBR"] = "PBR импортированных игр",
+        ["Look at a character, then list its materials. Choices apply to every character sharing the same texture."] = "Посмотрите на персонажа и откройте список материалов. Выбор применяется ко всем персонажам с этой текстурой.",
+        ["Authored Remix replacements take priority. Face and eye protection stays active."] = "Авторские замены Remix имеют приоритет. Защита лица и глаз сохраняется.",
+        ["Select a material"] = "Выберите материал",
+        ["Map family"] = "Набор карт",
+        ["Normal map"] = "Карта нормалей",
+        ["Packed map"] = "Упакованная карта",
+        ["Emission map"] = "Карта свечения",
+        ["Game layout"] = "Формат игры",
+        ["List looked-at character"] = "Материалы выбранного персонажа",
+        ["Use selected family"] = "Применить набор",
+        ["Use individual maps"] = "Применить отдельные карты",
+        ["No game maps for this texture"] = "Без игровых карт для этой текстуры",
+        ["Return to automatic"] = "Вернуть автоматический выбор",
+        ["None"] = "Нет",
+        ["waiting"] = "ожидание",
+        ["automatic"] = "автоматически",
+        ["cached"] = "из кеша",
+        ["override"] = "переопределение",
+        ["none"] = "нет",
+        ["error"] = "ошибка",
+    },
+}
+local function L(text)
+    local translated = i18n and i18n.A(text) or text
+    if translated ~= text then return translated end
+    local cv = GetConVar("nativeloader_language")
+    local code = cv and cv:GetString() or ""
+    if code == "" then local game = GetConVar("gmod_language") code = game and game:GetString() or "en" end
+    code = ({zh="zh-CN", ["zh-cn"]="zh-CN", ["zh-tw"]="zh-TW"})[code] or code
+    local phrases = panelPhrases[code]
+    return phrases and phrases[text] or text
+end
+local function processor() return MaterialPipeline and MaterialPipeline.ToPBR end
+local actionErrors = {}
+
+function P.Materials(ent)
+    local id = IsValid(ent) and mmdhl and mmdhl.GetAsset and mmdhl.GetAsset(ent)
+    local asset = id and mmdhl.assets and mmdhl.assets[id]
+    local entry = id and mmdhl.library and mmdhl.library.entries and mmdhl.library.entries[id]
+    local rows = {}
+    for slot, part in ipairs(asset and asset.materials or {}) do
+        local original = entry and entry.info and entry.info.materials and entry.info.materials[slot] or {}
+        if isstring(part.path) then rows[#rows + 1] = {name=part.path, source=entry and entry.source or "",
+            base=original.base or "", label=original.name or part.name or original.base or part.path} end
+    end
+    return rows
+end
+function P.Targets()
+    local targets = {}
+    for _, ent in ipairs(mmdhl and mmdhl.Entities and mmdhl.Entities() or {}) do
+        if #targets >= 128 then break end
+        if IsValid(ent) and not (mmdhl.PresentationSuppressed and mmdhl.PresentationSuppressed(ent)) and #P.Materials(ent) > 0 then
+            local id = mmdhl.GetAsset(ent)
+            local entry = mmdhl.library and mmdhl.library.entries and mmdhl.library.entries[id]
+            local asset = mmdhl.assets[id]
+            local label = entry and (entry.name or entry.info and entry.info.name) or asset and asset.name
+            if not isstring(label) or label == "" then label = L("Character") end
+            if mmdhl.names and mmdhl.names.Display then label = mmdhl.names.Display(label, id) end
+            targets[#targets + 1] = {entity=ent, label=label}
+        end
+    end
+    return targets
+end
+function P.Action(row, action, maps)
+    local p = processor()
+    if not p or not p.GameMaterialAction or not row then return false end
+    maps = maps or {}
+    if action == "maps" and p.GetGameMaterial then
+        local function path(value) return (value or ""):gsub("\\", "/"):lower() end
+        for _, choice in ipairs(p.GetGameMaterial(row.name).choices or {}) do
+            if choice.layout ~= (maps.layout or 0) then
+                for _, selected in ipairs({maps.normal or "", maps.packed or "", maps.emission or ""}) do
+                    if selected ~= "" then
+                        for _, known in ipairs({choice.normal or "", choice.packed or "", choice.emission or ""}) do
+                            if path(selected) == path(known) then
+                                actionErrors[row.name] = L("Selected maps use another game layout.")
+                                return false
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    actionErrors[row.name] = nil
+    return p.GameMaterialAction(row.name, row.source, row.base, action,
+        maps.normal or "", maps.packed or "", maps.emission or "", maps.layout or 0)
+end
+function P.State(row)
+    local p = processor()
+    local view = p and p.GetGameMaterial and p.GetGameMaterial(row.name) or {state="waiting", identity=""}
+    if actionErrors[row.name] then view.error = actionErrors[row.name] end
+    return view
+end
+
+function P.Build(panel)
+    panel:Clear()
+    panel:CheckBox(L("Imported game PBR"), "rtx_topbr_game_maps")
+    panel:Help(L("Look at a character, then list its materials. Choices apply to every character sharing the same texture."))
+    panel:Help(L("Authored Remix replacements take priority. Face and eye protection stays active."))
+    local characters = panel:ComboBox(L("Character"))
+    local list = vgui.Create("DScrollPanel", panel)
+    list:SetTall(240) panel:AddItem(list)
+    local selected, signature, family, files = nil, nil, nil, nil
+    local rowUpdates = {}
+    local status = panel:Help(L("Select a material"))
+    local families = panel:ComboBox(L("Map family"))
+    local normal = panel:ComboBox(L("Normal map"))
+    local packed = panel:ComboBox(L("Packed map"))
+    local emission = panel:ComboBox(L("Emission map"))
+    local layout = panel:ComboBox(L("Game layout"))
+    for i, name in ipairs({"Wuthering Waves", "Endfield", "Silver Palace"}) do layout:AddChoice(name, i-1) end
+    layout:ChooseOptionID(1)
+    local function rebuild(target)
+        list:Clear() rowUpdates = {}
+        local default, defaultRank = nil, -1
+        local ply = LocalPlayer()
+        local trace = IsValid(ply) and (ply.GetEyeTraceNoCursor and ply:GetEyeTraceNoCursor() or ply:GetEyeTrace())
+        local ent = target or trace and trace.Entity
+        for _, row in ipairs(P.Materials(ent)) do
+            local button = list:Add("DButton")
+            button:Dock(TOP) button:SetTall(64) button:DockMargin(0, 0, 0, 4)
+            button:SetText("")
+            local image = vgui.Create("DImage", button) image:Dock(LEFT) image:SetWide(60)
+            local label = vgui.Create("DLabel", button) label:Dock(FILL) label:SetWrap(true) label:SetDark(true)
+            local thumbnail = ""
+            local function update()
+                local state = P.State(row)
+                -- Never load an unseen material just to show a thumbnail.
+                if state.identity ~= "" and thumbnail ~= state.identity then
+                    image:SetMaterial(Material(row.name)) thumbnail = state.identity
+                end
+                label:SetText(tostring(row.label) .. "\n" .. L(state.state or "waiting"))
+                return state
+            end
+            rowUpdates[#rowUpdates + 1] = update
+            local state = update()
+            local rank = state.state == "override" and 3 or (state.state == "automatic" or state.state == "cached") and 2 or 0
+            if state.identity ~= "" and rank > defaultRank then default, defaultRank = button, rank end
+            button.DoClick = function()
+                selected, signature, family, files = row, nil, nil, nil
+                P.Action(row, "options")
+            end
+        end
+        if default then default.DoClick() list:ScrollToChild(default) end
+    end
+    local refresh = panel:Button(L("List looked-at character")) refresh.DoClick = function() rebuild() end
+    families.OnSelect = function(_, _, _, data) family = data if data then layout:ChooseOptionID(data.layout + 1) end end
+    local function chosen(combo) local _, data = combo:GetSelected() return data or "" end
+    local useFamily = panel:Button(L("Use selected family"))
+    useFamily.DoClick = function() if family then P.Action(selected, "maps", family) end end
+    local useFiles = panel:Button(L("Use individual maps"))
+    useFiles.DoClick = function()
+        local _, gameLayout = layout:GetSelected()
+        P.Action(selected, "maps", {normal=chosen(normal), packed=chosen(packed), emission=chosen(emission), layout=gameLayout or 0})
+    end
+    local none = panel:Button(L("No game maps for this texture")) none.DoClick = function() P.Action(selected, "none") end
+    local automatic = panel:Button(L("Return to automatic")) automatic.DoClick = function() P.Action(selected, "automatic") end
+    local nextPoll = 0
+    if not panel.RTXGamePBRThinkInstalled then
+        panel.RTXGamePBRThinkInstalled = true
+        panel.RTXGamePBRBaseThink = panel.Think
+    end
+    panel.Think = function(self)
+        if self.RTXGamePBRBaseThink then self:RTXGamePBRBaseThink() end
+        if RealTime() < nextPoll then return end
+        nextPoll = RealTime() + .5
+        for _, update in ipairs(rowUpdates) do update() end
+        if not selected then return end
+        local view = P.State(selected)
+        status:SetText(tostring(selected.label) .. "\n" .. (view.identity or "") .. "\n" .. L(view.state or "waiting") ..
+            " " .. (view.family or "") .. "\n" .. (view.error or ""))
+        local key = tostring(selected.name) .. ":" .. #(view.choices or {}) .. ":" .. #(view.files or {})
+        if signature == key then return end
+        signature = key families:Clear() normal:Clear() packed:Clear() emission:Clear()
+        for index, choice in ipairs(view.choices or {}) do
+            families:AddChoice(choice.name, choice)
+            if choice.name == view.family then families:ChooseOptionID(index) end
+        end
+        for _, combo in ipairs({normal, packed, emission}) do
+            combo:AddChoice(L("None"), "")
+            for _, path in ipairs(view.files or {}) do combo:AddChoice(path, path) end
+            combo:ChooseOptionID(1)
+        end
+    end
+    characters.OnSelect = function(_, _, _, target) rebuild(target) end
+    local ply = LocalPlayer()
+    local trace = IsValid(ply) and (ply.GetEyeTraceNoCursor and ply:GetEyeTraceNoCursor() or ply:GetEyeTrace())
+    local wanted = trace and trace.Entity
+    local targets, index = P.Targets(), 1
+    for number, target in ipairs(targets) do
+        characters:AddChoice(target.label, target.entity)
+        if target.entity == wanted then index = number end
+    end
+    if #targets > 0 then characters:ChooseOptionID(index) rebuild(targets[index].entity) else rebuild() end
+end
+hook.Add("PopulateToolMenu", "RTXImportedGamePBR", function()
+    spawnmenu.AddToolMenuOption("Utilities", "RTX Remix", "RTX_ImportedGamePBR", L("Imported game PBR"), "", "", P.Build)
+end)
+concommand.Add("rtx_topbr_game_editor", function()
+    local frame = vgui.Create("DFrame") frame:SetSize(math.min(620, ScrW()-40), math.min(820, ScrH()-40)) frame:Center()
+    P.Frame = frame
+    frame:SetTitle(L("Imported game PBR")) frame:MakePopup()
+    local scroll = vgui.Create("DScrollPanel", frame) scroll:Dock(FILL)
+    local panel = vgui.Create("DForm", scroll) panel:SetName(L("Imported game PBR")) panel:Dock(TOP) P.Build(panel)
+end)
+
+end
+-- END R12 IMPORTED GAME PBR PANEL
+
 return RTXToPBR

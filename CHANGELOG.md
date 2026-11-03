@@ -18,6 +18,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   returning to automatic detection clears a choice. Unspawned library characters load no textures
   for this feature. All seven interface languages are supported
   ([ADR 0097](docs/decisions/0097-manual-eye-white-materials.md)).
+- Imported game PBR can match renamed character textures by their UV features, with name support
+  and conservative abstention. Its RTX menu panel lets players select map families/files, disable
+  game maps for a texture, or return to automatic; choices follow that texture across characters
+  and survive a missing source. Library enumeration checks drawn hashes before loading a material
+  ([R12-B](docs/decisions/0095-texture-features-and-imported-pbr-overrides.md)).
 
 ### R11
 

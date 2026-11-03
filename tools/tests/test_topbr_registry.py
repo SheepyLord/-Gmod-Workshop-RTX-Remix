@@ -28,6 +28,10 @@ Set-Location -LiteralPath $Scratch
 & cl.exe /nologo /EHsc /std:c++17 /W4 /WX /UNDEBUG /DWIN32_LEAN_AND_MEAN /DNOMINMAX /utf-8 (Join-Path $Source 'tests/game_registry_test.cpp') /Fegame_registry_test.exe /Fogame_registry_test.obj
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & (Join-Path $Scratch 'game_registry_test.exe') (Join-Path $Scratch 'fixture')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& cl.exe /nologo /EHsc /std:c++17 /W4 /WX /UNDEBUG /DWIN32_LEAN_AND_MEAN /DNOMINMAX /utf-8 (Join-Path $Source 'tests/game_matching_test.cpp') /Fegame_matching_test.exe /Fogame_matching_test.obj
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& (Join-Path $Scratch 'game_matching_test.exe') (Join-Path $Scratch 'matching')
 exit $LASTEXITCODE
 ''', encoding='utf-8')
             result = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(script),
@@ -35,3 +39,4 @@ exit $LASTEXITCODE
                                     capture_output=True, text=True, timeout=120)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn('PASS game registry:', result.stdout)
+            self.assertIn('PASS R12 matching:', result.stdout)

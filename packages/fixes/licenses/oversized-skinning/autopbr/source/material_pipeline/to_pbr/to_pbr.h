@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 
 #ifdef _WIN64
 
@@ -358,7 +359,11 @@ public:
     void SetEnabled(bool enabled);
     void PumpSnapshots();
     void SetGameEnabled(bool enabled);
-    bool QueueGameMaterial(const std::string& name, const std::string& source, const std::string& base);
+    struct GameOption { std::string name,normal,packed,emission;int layout=0; };
+    struct GameView { std::string identity,state="waiting",error,family;std::vector<GameOption> choices;std::vector<std::string> files; };
+    GameView GetGameView(const std::string& name);
+    bool QueueGameMaterial(const std::string& name, const std::string& source, const std::string& base,
+        const std::string& action="",const std::string& normal="",const std::string& packed="",const std::string& emission="",int layout=0);
     bool IsEnabled() const { return m_enabled.load(std::memory_order_relaxed); }
     
     // Enable/disable auto-processing of new materials
@@ -634,7 +639,9 @@ private:
         MaterialPBRProperties props{};
         std::vector<uint64_t> hashes;
     };
-    struct GameJob { std::string name, source, base, identity; std::vector<uint64_t> hashes; };
+    struct GameJob { std::string name, source, base, identity; std::vector<uint64_t> hashes;
+        std::string action,normal,packed,emission;int layout=0; };
+    std::map<std::string,GameView> m_gameViews; // m_queueMutex protects UI snapshots.
     std::queue<GameJob> m_gameQueue;
     std::unordered_set<std::string> m_gameSubmitted;
     std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.

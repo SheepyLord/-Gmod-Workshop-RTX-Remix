@@ -60,6 +60,43 @@
   visibly stall, and is not a steady rendering cost or a measured GPU-allocation total. Broader VRAM
   reclamation remains R12-C's work. Evidence: `scope-qa2.json`, `poc/manual-eyes-final/console.log`.
 
+## R12-B: features without pairing names (2026-11-02)
+
+- The production `GamePBR::Discover` probe covered **1,133 distinct folder/base pairs** from 121 PMX
+  sources under the user's read-only `E:/G/Upload`, including Wuthering Waves, Endfield and Silver
+  Palace. Deduplicating repeated model variants avoids counting the same folder/base repeatedly.
+  The 259 accepted exact-stem pairs provide a naming reference. With pairing names hidden, **135
+  agree, 0 disagree, 124 abstain**. By production layout: WuWa 38/0/37, Endfield 69/0/59, Silver 28/0/28.
+  This measures agreement with the existing naming route, not independent human annotations.
+- The 阿芙2.0 folder's three PMX files reference 16 distinct bases, including gun/strap/box props
+  beyond the 13 character bases. Feature matching accepts clothing → Body01_A (.7301, margin .6686), stockings →
+  Socks01_A (.6932, .6362), hat → Hat01_A (.6548, .4170), and an eye-reflection base → Pupil01_A
+  (.5208, .3257). The eye atlas remains protected at conversion. Hair and accessories abstain;
+  their weak feature evidence is not rescued by vocabulary. The player can explicitly choose them.
+- Features are spatial edge correlations from actual production WIC thumbnails, not an image
+  classifier. Score thresholds are .28 raw/.36 supported/.12 margin; vocabulary contributes .08.
+  Debug base/normal/packed comparisons and complete per-base decisions are under `out/r12-b`.
+  Production source is included in the GPL corresponding-source tree's `game_matching.inl`.
+- `QueueGameMaterial` now collects frame hashes before `DrawnIdentity` invokes `FindMaterial`.
+  Its regression proves the resolver is never called for empty, zero or excessive hashes. This
+  removes the specific R11-B eager-load path identified by R12-C; it is not a total VRAM measurement.
+  `CollectMaterialFrameHashes` (`to_pbr.cpp:4229`) queries only tracked texture variants;
+  `D3D9TextureTracker::GetTextureVariantsForMaterial` (`d3d9_texture_tracker.cpp:446`) performs a
+  cache lookup/AddRef without resolving a material, so the ordering does not hide another eager load.
+- The exact bundled-path regression (`tools/tests/test_render_guard_addons.py:111`) requires the
+  render guard's Lua exemptions to match the indexed inputs. A new standalone panel therefore
+  failed the Release gate. The final panel is embedded in the existing ToPBR driver path; the
+  exemption table and companion files stay unchanged. The targeted 25-test path suite passes.
+- Stock `garrysmod/lua/vgui/dform.lua:30` defines `Clear`; only the sandbox control-panel wrapper
+  adds `ClearControls` (`gamemodes/sandbox/gamemode/spawnmenu/controlpanel.lua:19`). The first actual
+  console-editor smoke caught this difference. The editor now uses their common `Clear` method;
+  its harness deliberately omits `ClearControls`, and polling preserves the base Think handler.
+- UI QA must remove `poc_session.py:696`'s `nl_session_close` timer before testing a Derma window
+  with `--hide-hud`. The material picker uses `GetEyeTraceNoCursor`: a popup's mouse cursor must
+  not redirect the looked-at character selection. The final probe aims the actual player and
+  checks its 35 material records, rather than trying to shadow a player method on one entity.
+
+
 ## R11-B review: damaged registries and durable saves (2026-11-02)
 
 - In the GPL source, `game_registry.h:98` resets load state; only a file over `MaxBytes` or an exact

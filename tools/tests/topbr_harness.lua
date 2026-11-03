@@ -1,5 +1,6 @@
 -- Regression for the packaged client driver and independent imported-game setting.
 SERVER=false BRANCH="x86-64"
+file={Exists=function() return false end}
 local vars,callbacks,commands,hooks={},{},{},{}
 local calls={}
 function Color(...) return {...} end
