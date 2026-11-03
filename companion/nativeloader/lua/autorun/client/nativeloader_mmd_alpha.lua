@@ -78,6 +78,17 @@ local function discover(now)
 end
 
 local function hashesOf(state)
+    -- This is a read of the draw tracker, not a material lookup. Material/TrackMaterial below would
+    -- load the library's unspawned characters; wait until this exact material has a real draw.
+    local hashes = {}
+    for _, hash in ipairs(RemixMaterial.GetAllTextureHashes(state.name) or {}) do
+        local digits = isstring(hash) and hash:match("^0[xX](%x+)$")
+        if digits and #digits <= 16 then
+            digits = digits:lower():gsub("^0+", "")
+            if digits ~= "" then hashes["0x" .. string.rep("0", 16 - #digits) .. digits] = true end
+        end
+    end
+    if not next(hashes) then return end
     -- Never tag Source's shared error/white/fallback textures or a user override from another namespace.
     -- A not-yet-mounted VMT or VTF remains retryable; TrackMaterial is only called once it is real.
     -- A soft copy is made with CreateMaterial: no VMT on disk, found by its "!" name.
@@ -90,14 +101,6 @@ local function hashesOf(state)
     if textureName:sub(1, 4) ~= "mmd/" then return end
     if not state.tracked and isfunction(RemixMaterial.TrackMaterial) then
         state.tracked = RemixMaterial.TrackMaterial(state.name) ~= false
-    end
-    local hashes = {}
-    for _, hash in ipairs(RemixMaterial.GetAllTextureHashes(state.name) or {}) do
-        local digits = isstring(hash) and hash:match("^0[xX](%x+)$")
-        if digits and #digits <= 16 then
-            digits = digits:lower():gsub("^0+", "")
-            if digits ~= "" then hashes["0x" .. string.rep("0", 16 - #digits) .. digits] = true end
-        end
     end
     local values = {}
     for hash in pairs(hashes) do values[#values + 1] = hash end

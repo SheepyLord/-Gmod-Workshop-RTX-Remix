@@ -126,3 +126,4 @@ Each with the reason it lost.
 - [0091: Bounded automatic PBR fallbacks and imported game maps](0091-automatic-pbr-fallbacks.md).
 - [0092: Generated fallback mods rank after every authored mod](0092-generated-fallback-mods-rank-last.md).
 - [0093: Retain imported game materials when their local source is unavailable](0093-cached-imported-game-materials.md).
+- [0096: Draw-gated character classification and an opt-in memory census](0096-demand-loaded-character-classification-and-memory-census.md).

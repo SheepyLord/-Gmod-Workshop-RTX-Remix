@@ -6,6 +6,21 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R12
+
+- **Imported-model catalogs no longer need GPU backing for every unused managed texture.** The
+  runtime keeps static managed texture data ready in CPU memory and creates its original GPU image
+  on first sampling, upload or `PreLoad`. Dimensions, mips and captured hashes stay the same;
+  `d3d9.deferManagedTextures` provides a compatibility override. Local GPU tests compare exact
+  pixels and texture hashes against the original runtime
+  ([ADR 0096](docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+
+- **Unused imported-character materials stay unloaded by the MMD alpha classifier.** It now waits
+  for a real draw record before looking up a material or texture. Local memory census tools report
+  loaded Source texture names/groups and opt-in runtime allocation size/format/pool, so VRAM costs
+  can be attributed without changing texture hashes or visual quality
+  ([ADR 0096](docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+
 ### R11
 
 - **Imported game PBR survives a missing source folder** (the user: keep game maps working after a

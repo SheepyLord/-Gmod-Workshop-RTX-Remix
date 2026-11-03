@@ -1,0 +1,439 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 19:38:33 -0700
+Subject: [PATCH] Allocate unused managed GMod textures only on GPU use
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ src/d3d9/d3d9_common_texture.cpp           | 38 +++++++++-
+ src/d3d9/d3d9_common_texture.h             | 17 ++++-
+ src/d3d9/d3d9_device.cpp                   | 21 +++++-
+ src/d3d9/d3d9_device.h                     |  4 ++
+ src/d3d9/d3d9_initializer.cpp              | 84 +++++++++++-----------
+ src/d3d9/d3d9_initializer.h                |  6 +-
+ src/d3d9/d3d9_options.cpp                  | 16 ++++-
+ src/d3d9/d3d9_options.h                    |  4 ++
+ src/d3d9/d3d9_rtx.cpp                      |  3 +-
+ src/dxvk/dxvk_memory_tracker.cpp           |  4 +-
+ src/dxvk/rtx_render/rtx_fork_api_entry.cpp |  7 ++
+ 11 files changed, 155 insertions(+), 49 deletions(-)
+
+diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
+index b4e8f1c5..7c4be7b0 100644
+--- a/src/d3d9/d3d9_common_texture.cpp
++++ b/src/d3d9/d3d9_common_texture.cpp
+@@ -47,7 +47,14 @@ namespace dxvk {
+     m_shadow         = DetermineShadowState();
+     m_supportsFetch4 = DetermineFetch4Compatibility();
+ 
+-    if (m_mapMode == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED) {
++    // NV-DXVK start: keep the existing CPU backing; allocate static managed 2D images on demand
++    const bool deferImage = m_device->GetOptions()->deferManagedTextures &&
++      !m_device->GetOptions()->evictManagedOnUnlock && m_desc.Pool == D3DPOOL_MANAGED &&
++      m_type == D3DRTYPE_TEXTURE && m_desc.Usage == 0 && !m_shadow &&
++      m_mapping.FormatColor != VK_FORMAT_UNDEFINED &&
++      m_mapping.ConversionFormatInfo.FormatType == D3D9ConversionFormat_None;
++    if (m_mapMode == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED && !deferImage) {
++      // NV-DXVK end
+       bool plainSurface = m_type == D3DRTYPE_SURFACE &&
+                           !(m_desc.Usage & (D3DUSAGE_RENDERTARGET | D3DUSAGE_DEPTHSTENCIL));
+ 
+@@ -89,6 +96,24 @@ namespace dxvk {
+       m_exposedMipLevels = 1;
+   }
+ 
++  // NV-DXVK start: initialize on the same ordered command stream as the first use/upload
++  void D3D9CommonTexture::EnsureImage() {
++    if (m_image != nullptr || m_mapMode != D3D9_COMMON_TEXTURE_MAP_MODE_BACKED) {
++      return;
++    }
++    ScopedCpuProfileZone();
++    m_image = CreatePrimaryImage(m_type, false, nullptr);
++    try {
++      m_device->InitDeferredTexture(this);
++      CreateSampleView(m_sampleLod);
++    } catch (...) {
++      m_sampleView = {};
++      m_image = nullptr;
++      throw;
++    }
++  }
++  // NV-DXVK end
++
+ 
+   D3D9CommonTexture::~D3D9CommonTexture() {
+     if (m_size != 0)
+@@ -578,7 +603,10 @@ namespace dxvk {
+           UINT                   Layer,
+           UINT                   Lod,
+           VkImageUsageFlags      UsageFlags,
+-          bool                   Srgb) {    
++          bool                   Srgb) {
++    // NV-DXVK start: subresource views also require GPU backing
++    EnsureImage();
++    // NV-DXVK end
+     DxvkImageViewCreateInfo viewInfo;
+     viewInfo.format    = m_mapping.ConversionFormatInfo.FormatColor != VK_FORMAT_UNDEFINED
+                        ? PickSRGB(m_mapping.ConversionFormatInfo.FormatColor, m_mapping.ConversionFormatInfo.FormatSrgb, Srgb)
+@@ -637,6 +665,12 @@ namespace dxvk {
+ 
+ 
+   void D3D9CommonTexture::CreateSampleView(UINT Lod) {
++    // NV-DXVK start: SetLOD does not preload a managed resource
++    m_sampleLod = Lod;
++    if (m_image == nullptr) {
++      return;
++    }
++    // NV-DXVK end
+     // This will be a no-op for SYSTEMMEM types given we
+     // don't expose the cap to allow texturing with them.
+     if (unlikely(m_mapMode == D3D9_COMMON_TEXTURE_MAP_MODE_SYSTEMMEM))
+diff --git a/src/d3d9/d3d9_common_texture.h b/src/d3d9/d3d9_common_texture.h
+index 075f79d7..a43d0ad3 100644
+--- a/src/d3d9/d3d9_common_texture.h
++++ b/src/d3d9/d3d9_common_texture.h
+@@ -131,14 +131,21 @@ namespace dxvk {
+       return m_mapMode;
+     }
+ 
++    // NV-DXVK start: a metadata query may observe deferred backing
+     /**
+      * \brief The DXVK image
+-     * Note, this will be nullptr if the map mode is D3D9_COMMON_TEXTURE_MAP_MODE_SYSTEMMEM
++     * Note, this may be nullptr for system memory or a deferred managed image.
++     * GPU consumers must ensure backing; metadata queries must not allocate it.
+      * \returns The DXVK image
+      */
+     const Rc<DxvkImage>& GetImage() const {
+       return m_image;
+     }
++    // NV-DXVK end
++
++    // NV-DXVK start: metadata/CPU access must not make an unused managed image resident
++    void EnsureImage();
++    // NV-DXVK end
+ 
+     /**
+      * \brief Get a copy of the main image, but with a single sample
+@@ -350,6 +357,11 @@ namespace dxvk {
+     bool GetReadOnlyLocked(UINT Subresource) const { return m_readOnly.get(Subresource); }
+ 
+     const Rc<DxvkImageView>& GetSampleView(bool srgb) const {
++      // NV-DXVK start: a sampling view is a real GPU use
++      if (unlikely(m_image == nullptr)) {
++        const_cast<D3D9CommonTexture*>(this)->EnsureImage();
++      }
++      // NV-DXVK end
+       return m_sampleView.Pick(srgb && IsSrgbCompatible());
+     }
+ 
+@@ -505,6 +517,9 @@ namespace dxvk {
+     bool                          m_hazardous = false;
+ 
+     D3D9ColorView                 m_sampleView;
++    // NV-DXVK start: SetLOD before first use remains a metadata operation
++    UINT                          m_sampleLod = 0;
++    // NV-DXVK end
+ 
+     D3D9SubresourceBitset         m_locked = { };
+ 
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index 2f3f54ba..fdbb202a 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -4915,6 +4915,11 @@ namespace dxvk {
+         D3D9CommonTexture*      pResource,
+         UINT                    Subresource) {
+     ScopedCpuProfileZone();
++    // NV-DXVK start: a real GPU upload creates the managed backing
++    if (pResource->GetImage() == nullptr) {
++      pResource->EnsureImage();
++    }
++    // NV-DXVK end
+     const Rc<DxvkImage> image = pResource->GetImage();
+ 
+     // Now that data has been written into the buffer,
+@@ -5861,6 +5866,11 @@ namespace dxvk {
+ 
+   void D3D9DeviceEx::UploadManagedTexture(D3D9CommonTexture* pResource) {
+     ScopedCpuProfileZone();
++    // NV-DXVK start: PreLoad and draws initialize even an unwritten texture exactly once
++    if (pResource->GetImage() == nullptr) {
++      pResource->EnsureImage();
++    }
++    // NV-DXVK end
+     for (uint32_t subresource = 0; subresource < pResource->CountSubresources(); subresource++) {
+       if (!pResource->NeedsUpload(subresource) || pResource->GetBuffer(subresource) == nullptr)
+         continue;
+@@ -5872,6 +5882,14 @@ namespace dxvk {
+     pResource->ClearNeedsUpload();
+   }
+ 
++  // NV-DXVK start: preserve clear-before-upload ordering without an extra queue submission
++  void D3D9DeviceEx::InitDeferredTexture(D3D9CommonTexture* pResource) {
++    EmitCs([cImage = pResource->GetImage()] (DxvkContext* ctx) {
++      D3D9Initializer::InitImage(ctx, cImage);
++    });
++  }
++  // NV-DXVK end
++
+ 
+   void D3D9DeviceEx::UploadManagedTextures(uint32_t mask) {
+     ScopedCpuProfileZone();
+@@ -7316,7 +7334,8 @@ namespace dxvk {
+                                       (uint32_t stageIdx, bool isLastStage) {
+         auto shouldOmitTextureAtStage = [this, &numActiveStages](uint32_t stageIdx, bool isLastStage) {
+           if (const auto tex = GetCommonTexture(m_state.textures[stageIdx])) {
+-            XXH64_hash_t texHash = tex->GetImage()->getHash();
++            const auto& image = tex->GetImage();
++            XXH64_hash_t texHash = image != nullptr ? image->getHash() : kEmptyHash;
+             if (texHash != kEmptyHash) {
+               if (isLastStage && numActiveStages > 1 && RtxOptions::ignoreLastTextureStage()) {
+                 return true;
+diff --git a/src/d3d9/d3d9_device.h b/src/d3d9/d3d9_device.h
+index 6306c15a..64b4f5b8 100644
+--- a/src/d3d9/d3d9_device.h
++++ b/src/d3d9/d3d9_device.h
+@@ -768,6 +768,10 @@ namespace dxvk {
+ 
+     void UploadManagedTexture(D3D9CommonTexture* pResource);
+ 
++    // NV-DXVK start: ordered zero initialization for demand-created managed images
++    void InitDeferredTexture(D3D9CommonTexture* pResource);
++    // NV-DXVK end
++
+     void UploadManagedTextures(uint32_t mask);
+ 
+     void GenerateTextureMips(uint32_t mask);
+diff --git a/src/d3d9/d3d9_initializer.cpp b/src/d3d9/d3d9_initializer.cpp
+index 38c3f111..426bbaa4 100644
+--- a/src/d3d9/d3d9_initializer.cpp
++++ b/src/d3d9/d3d9_initializer.cpp
+@@ -91,48 +91,52 @@ namespace dxvk {
+           D3D9CommonTexture* pTexture) {
+     std::lock_guard<dxvk::mutex> lock(m_mutex);
+ 
+-    auto InitImage = [&](Rc<DxvkImage> image) {
+-      if (image == nullptr)
+-        return;
+-
+-      auto formatInfo = imageFormatInfo(image->info().format);
+-
+-      m_transferCommands += 1;
+-      
+-      // While the Microsoft docs state that resource contents are
+-      // undefined if no initial data is provided, some applications
+-      // expect a resource to be pre-cleared. We can only do that
+-      // for non-compressed images, but that should be fine.
+-      VkImageSubresourceRange subresources;
+-      subresources.aspectMask     = formatInfo->aspectMask;
+-      subresources.baseMipLevel   = 0;
+-      subresources.levelCount     = image->info().mipLevels;
+-      subresources.baseArrayLayer = 0;
+-      subresources.layerCount     = image->info().numLayers;
+-
+-      if (formatInfo->flags.test(DxvkFormatFlag::BlockCompressed)) {
+-        m_context->clearCompressedColorImage(image, subresources);
+-      } else {
+-        if (subresources.aspectMask == VK_IMAGE_ASPECT_COLOR_BIT) {
+-          VkClearColorValue value = { };
+-
+-          m_context->clearColorImage(
+-            image, value, subresources);
+-        } else {
+-          VkClearDepthStencilValue value;
+-          value.depth   = 0.0f;
+-          value.stencil = 0;
+-          
+-          m_context->clearDepthStencilImage(
+-            image, value, subresources);
+-        }
+-      }
+-    };
++    // NV-DXVK start: reuse the same clear on the initializer and main command streams
++    const auto image = pTexture->GetImage();
++    if (image != nullptr) {
++      ++m_transferCommands;
++      InitImage(m_context.ptr(), image);
++    }
++    FlushImplicit();
++  }
+ 
+-    InitImage(pTexture->GetImage());
++  void D3D9Initializer::InitImage(DxvkContext* context, const Rc<DxvkImage>& image) {
++    if (image == nullptr) {
++      return;
++    }
+ 
+-    FlushImplicit();
++    auto formatInfo = imageFormatInfo(image->info().format);
++
++    // While the Microsoft docs state that resource contents are
++    // undefined if no initial data is provided, some applications
++    // expect a resource to be pre-cleared. We can only do that
++    // for non-compressed images, but that should be fine.
++    VkImageSubresourceRange subresources;
++    subresources.aspectMask     = formatInfo->aspectMask;
++    subresources.baseMipLevel   = 0;
++    subresources.levelCount     = image->info().mipLevels;
++    subresources.baseArrayLayer = 0;
++    subresources.layerCount     = image->info().numLayers;
++
++    if (formatInfo->flags.test(DxvkFormatFlag::BlockCompressed)) {
++      context->clearCompressedColorImage(image, subresources);
++    } else {
++      if (subresources.aspectMask == VK_IMAGE_ASPECT_COLOR_BIT) {
++        VkClearColorValue value = { };
++
++        context->clearColorImage(
++          image, value, subresources);
++      } else {
++        VkClearDepthStencilValue value;
++        value.depth   = 0.0f;
++        value.stencil = 0;
++        
++        context->clearDepthStencilImage(
++          image, value, subresources);
++      }
++    }
+   }
++  // NV-DXVK end
+ 
+ 
+   void D3D9Initializer::InitHostVisibleTexture(
+@@ -190,4 +194,4 @@ namespace dxvk {
+     m_transferMemory   = 0;
+   }
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/src/d3d9/d3d9_initializer.h b/src/d3d9/d3d9_initializer.h
+index 59802f95..eae2b0da 100644
+--- a/src/d3d9/d3d9_initializer.h
++++ b/src/d3d9/d3d9_initializer.h
+@@ -30,6 +30,10 @@ namespace dxvk {
+     void InitTexture(
+             D3D9CommonTexture* pTexture,
+             void*              pInitialData = nullptr);
++
++    // NV-DXVK start: share identical initial contents with demand-created managed images
++    static void InitImage(DxvkContext* context, const Rc<DxvkImage>& image);
++    // NV-DXVK end
+     
+   private:
+ 
+@@ -59,4 +63,4 @@ namespace dxvk {
+ 
+   };
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/src/d3d9/d3d9_options.cpp b/src/d3d9/d3d9_options.cpp
+index 580c363b..6c368751 100644
+--- a/src/d3d9/d3d9_options.cpp
++++ b/src/d3d9/d3d9_options.cpp
+@@ -19,10 +19,16 @@
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
++// NV-DXVK start: normalize the executable name for the managed-texture policy
++#include <cctype>
++// NV-DXVK end
+ #include "d3d9_options.h"
+ #include "../dxvk/dxvk_device.h"
+ 
+ #include "d3d9_caps.h"
++// NV-DXVK start: scope demand allocation to GMod by default
++#include "../util/util_env.h"
++// NV-DXVK end
+ 
+ namespace dxvk {
+ 
+@@ -72,6 +78,14 @@ namespace dxvk {
+     this->vsShaderModel                 = config.getOption<int32_t>     ("d3d9.vsShaderModel",                 this->shaderModel);
+     // NV-DXVK end
+     this->evictManagedOnUnlock          = config.getOption<bool>        ("d3d9.evictManagedOnUnlock",          false);
++    // NV-DXVK start: a server model precache is not a GPU texture use
++    auto appName = env::getExeName();
++    for (char& c : appName) {
++      c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++    }
++    this->deferManagedTextures = config.getOption<bool>("d3d9.deferManagedTextures",
++      appName == "gmod.exe", "DXVK_DEFER_MANAGED_TEXTURES");
++    // NV-DXVK end
+     this->dpiAware                      = config.getOption<bool>        ("d3d9.dpiAware",                      true);
+     this->strictConstantCopies          = config.getOption<bool>        ("d3d9.strictConstantCopies",          false);
+     this->strictPow                     = config.getOption<bool>        ("d3d9.strictPow",                     true);
+@@ -132,4 +146,4 @@ namespace dxvk {
+     }
+   }
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/src/d3d9/d3d9_options.h b/src/d3d9/d3d9_options.h
+index f2e3b8aa..c37eefee 100644
+--- a/src/d3d9/d3d9_options.h
++++ b/src/d3d9/d3d9_options.h
+@@ -57,6 +57,10 @@ namespace dxvk {
+     /// Limit frame rate
+     int32_t maxFrameRate;
+ 
++    // NV-DXVK start: managed catalog textures need GPU storage only when used
++    bool deferManagedTextures;
++    // NV-DXVK end
++
+     /// Set the max shader model the device can support in the caps.
+     int32_t shaderModel;
+ 
+diff --git a/src/d3d9/d3d9_rtx.cpp b/src/d3d9/d3d9_rtx.cpp
+index 90ab13df..c71e5f2e 100644
+--- a/src/d3d9/d3d9_rtx.cpp
++++ b/src/d3d9/d3d9_rtx.cpp
+@@ -1182,7 +1182,8 @@ namespace dxvk {
+       if (textureID == 0) {
+         // ColorTexture2 is optional and currently only used as RayPortal material, the material type will be checked in the submitDrawState.
+         // So we don't use it to check valid drawcall or not here.
+-        if (pTexInfo->GetImage()->getHash() == kEmptyHash) {
++        const auto& image = pTexInfo->GetImage();
++        if (image == nullptr || image->getHash() == kEmptyHash) {
+           ONCE(Logger::info("[RTX-Compatibility-Info] Texture 0 without valid hash detected, skipping drawcall."));
+           return false;
+         }
+diff --git a/src/dxvk/dxvk_memory_tracker.cpp b/src/dxvk/dxvk_memory_tracker.cpp
+index 741409b3..4ac81f42 100644
+--- a/src/dxvk/dxvk_memory_tracker.cpp
++++ b/src/dxvk/dxvk_memory_tracker.cpp
+@@ -1,10 +1,10 @@
+ #pragma once
++#include <map>
++#include <tuple>
+ #include "dxvk_memory_tracker.h"
+ #include "rtx_render/rtx_imgui.h"
+ #include "rtx_render/rtx_option.h"
+ #include "imgui/imgui.h"
+-#include <map>
+-#include <tuple>
+ 
+ namespace dxvk {
+   struct MemoryTrackerSettings {
+diff --git a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+index b69853a5..477b514c 100644
+--- a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+@@ -427,6 +427,13 @@ namespace fork_hooks {
+     // Get the underlying DXVK image.
+     const Rc<DxvkImage>& image = commonTexture->GetImage();
+     if (image == nullptr) {
++      // An unuploaded managed texture previously had an allocated image with an empty hash.
++      // Keep that API result without forcing a GPU allocation during a metadata query.
++      if (commonTexture->IsManaged() &&
++          commonTexture->GetMapMode() == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED) {
++        *out_hash = 0;
++        return REMIXAPI_ERROR_CODE_SUCCESS;
++      }
+       // Texture might be in system memory (not GPU).
+       return REMIXAPI_ERROR_CODE_GENERAL_FAILURE;
+     }

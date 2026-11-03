@@ -1,5 +1,14 @@
 # Components
 
+R12-C adds [the read-only field activity gate](../tools/game_activity.py.md),
+[the evidence reader](../tools/vram_census.py.md) and
+[the hotloader VTF inventory](../tools/vtf_census.py.md) under `tools/`, plus
+[a local-only Source texture probe](../tools/qa/build_vram_probe.ps1.md) and
+[its client snapshot script](../tools/qa/vram_probe.lua.md) under `tools/qa`.
+The companion's MMD alpha classifier waits for existing draw hashes before loading a material.
+Runtime patch 0021 adds opt-in allocation census rows with D3D9 metadata; no diagnostic module
+is shipped and native trust rules are unchanged.
+
 R10-E adds the companion's
 [`nativeloader_eye_whites.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_eye_whites.lua.md),
 pure [name matcher](../companion/nativeloader/lua/nativeloader/eye_white_names.lua.md) and
