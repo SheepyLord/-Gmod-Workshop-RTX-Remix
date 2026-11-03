@@ -4,15 +4,15 @@
 -- console (nativeloader_guide [page] [section]) or the RTX Remix tab's Start here;
 -- nativeloader_stability_guide opens the Performance and memory page. The pages are in
 -- nativeloader/guide_pages.lua; pictures are in materials/nativeloader/guide/ (a missing one is left
--- out with its legend). The text is translated (nativeloader/i18n.lua). The guide is as large as the
--- game draws its own interface text (a GUI scaler makes it larger; nativeloader_guide_scale overrides
+-- out with its legend). The text is translated (nativeloader/i18n.lua). The guide grows with the
+-- screen's height past 1080 lines, and with a larger DermaDefault (nativeloader_guide_scale overrides
 -- it). Documented in nativeloader_guide.lua.md beside this file.
 local SHOWN = "nativeloader_companion/guide_shown.txt"
 local i18n = include("nativeloader/i18n.lua")
 local L = i18n.L
 local PAGES = include("nativeloader/guide_pages.lua").pages
 local SCALE_SETTING = CreateClientConVar("nativeloader_guide_scale", "0", true, false,
-    "RTX Remix guide size: 0 follows the game's interface text; 1 to 4 sets it")
+    "RTX Remix guide size: 0 follows the screen's height and the game's interface text; 1 to 4 sets it")
 
 NATIVELOADER_GUIDE = NATIVELOADER_GUIDE or {}
 local GUIDE = NATIVELOADER_GUIDE
@@ -30,17 +30,24 @@ local COLOR = {
 local SCALE, PICTURE = 1, 1
 local function px(n) return math.floor(n * SCALE + 0.5) end
 
--- How large the game draws its own interface text: DermaDefault against the same Tahoma 13 it is in a
--- plain game. A GUI scaler add-on makes it larger, and the guide follows; never smaller than 1.
-local function measure_scale()
-    local forced = tonumber(SCALE_SETTING:GetString())
-    if forced and forced > 0 then return math.min(4, math.max(1, forced)) end
+-- How large DermaDefault is against the same Tahoma 13 it is in a plain game: an add-on that enlarges
+-- the game's interface text everywhere makes it larger (1 when it cannot be measured).
+local function derma_ratio()
     if type(draw) ~= "table" or type(draw.GetFontHeight) ~= "function" then return 1 end
     surface.CreateFont("NLGuideProbe", { font = "Tahoma", size = 13, weight = 500, extended = true })
     local ok, derma, probe = pcall(function() return draw.GetFontHeight("DermaDefault"), draw.GetFontHeight("NLGuideProbe") end)
     if not ok or type(derma) ~= "number" or type(probe) ~= "number" or probe <= 0 then return 1 end
-    local ratio = derma / probe
-    return ratio < 1.15 and 1 or math.min(4, ratio)
+    return derma / probe
+end
+
+-- The guide's sizes are for a 1080-line screen: a taller one draws them larger, as GUI scalers do for
+-- the spawn menu (R14's field check: 2160 lines, a spawn menu twice as large and a guide left at half
+-- its size), and so does a larger DermaDefault. Never smaller than 1, at most 4.
+local function measure_scale()
+    local forced = tonumber(SCALE_SETTING:GetString())
+    if forced and forced > 0 then return math.min(4, math.max(1, forced)) end
+    local scale = math.max(ScrH() / 1080, derma_ratio())
+    return scale < 1.15 and 1 or math.min(4, scale)
 end
 
 -- Which loader wrote native-loader/status.json: the guide shows only advice that loader supports.

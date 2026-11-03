@@ -19,13 +19,16 @@ A second opening reuses the open window and shows the page asked for.
 
 ## Its size
 
-The guide is as large as the game draws its own interface text. At every opening it compares the
-height of `DermaDefault` with a Tahoma 13 font of its own, which `DermaDefault` is in a plain game:
-- A plain game gives 1.
-- A GUI scaler add-on that enlarges Derma's fonts gives more (R14's field check: 2.2 on a 3840x2160
-  screen).
+The guide's sizes are for a 1080-line screen. At every opening its scale is the larger of two numbers:
+- **The screen's height over 1080:** 2 on a 3840x2160 screen, 1.33 at 1440 lines. This is what GUI
+  scaler add-ons do for the spawn menu. R14's field check had one that, by default, scales only the
+  spawn menu (`guiscaler_only_spawnmenu 1`), with fonts of its own; the guide stayed at half the spawn
+  menu's size.
+- **`DermaDefault`'s height** over a Tahoma 13 font of the guide's own, which `DermaDefault` is in a
+  plain game: more than 1 when an add-on enlarges it everywhere.
 
-Below 1.15 counts as 1, the guide is never smaller than 1, and at most 4.
+Below 1.15 counts as 1, the guide is never smaller than 1, and at most 4. A 1920x1080 or smaller game
+keeps the plain sizes.
 
 - **Fonts, margins and the window's size** follow that scale; at 1 they are the sizes below.
 - **The pictures** grow only by whole steps: 2 from a scale of 1.75. They are drawn point-sampled, so
