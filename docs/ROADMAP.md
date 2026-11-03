@@ -1,42 +1,26 @@
 # Roadmap
 
-R12-A (item 36, 2026-11-03) is **done** on `r12-hotloader`: the copied Endministrator reproduces
-the exact baseline carrier-outdated error. Retained carriers now restore metadata before every
-spawn kind, and deletion invalidates reusable rig/conversion state while live carriers remain
-bound. Two PoC delete/reimport cycles, player/ragdoll/NPC readiness, changed fits and model-only
-conversion pass with 26 CTests and 557 Python tests. See the [report](handover/R12-A-report.md)
-and [ADR 0094](decisions/0094-reimported-carrier-metadata-and-state.md).
+R12 (the user's report after R11-B, 2026-11-02; [plan](handover/R12-plan.md)) is **done**, merged
+into `main` from `r12-int`; see [the R12 report](handover/R12-report.md):
 
-R12-D (item 38, manual eye-white materials) is **complete** on `r12-eyes`: a live material chooser,
-per-asset persistent marks/exclusions, bounded spawned-only discovery and six translated catalogs.
-Release passes 26 CTests and 572 Python tests; the copied Baizhi PoC changes only its missed eye-white
-surface, persists through controller reload, restores all bindings and leaves the PoC snapshot intact
-([report](handover/R12-D-report.md), [ADR 0097](decisions/0097-manual-eye-white-materials.md)).
-
-R12-B2's decode/mask follow-up is **done locally** on `r12-pbr` / fixes `codex/r12-pbr`:
-straight-alpha resampling (generator 7), independent bad-family handling and name-confirmed data
-masks; 146/0/113 over the same corpus, 14 inspected new acceptances, automatic Alf2 hair/accessories
-in a normal-exit PoC with exact restoration. The [follow-up report](handover/R12-B-report.md#follow-up-r12-b2)
-records all 16 bases and final identities. No push, merge or publication is performed.
-
-R12-B (renamed game PBR and texture-scoped manual choices, 2026-11-02) is **done** on `r12-pbr`,
-with GPL fixes on `codex/r12-pbr`. Names-hidden production matching agrees on 135 canonical references,
-abstains on 124 and disagrees on none. The two-character PoC proves shared overrides/none/automatic
-and source-hidden restoration; final indexed editor, native/Lua/Release checks and exact PoC
-restoration pass. See the [report](handover/R12-B-report.md) and
-[ADR 0095](decisions/0095-texture-features-and-imported-pbr-overrides.md).
-
-R12-C (VRAM attribution and demand allocation) is **done** on `r12-vram`: saved actor precaches
-account for the large app-texture category; the runtime preserves those registrations while
-allocating unused managed images only on GPU use (**13.51 → 0.91 GB**, 93.3% less, in the copied
-field-cache replay). Draw-gated alpha avoids another eager scan; original/new GPU pixels and
-hashes match, game/Release/package checks pass. Integration remains Claude's
-([report](handover/R12-C-report.md), [ADR 0096](decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
-
-R12-C (VRAM attribution and demand loading) is **in progress** on `r12-vram`: measure Source
-texture names and D3D9 allocation size/format/pool, isolate library/Workshop/helper costs and gate
-the MMD alpha classifier on actual draws ([brief](handover/R12-C-vram.md),
-[ADR 0096](decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+- R12-A (item 36): an imported character removed and imported again in the same session spawns as an
+  NPC again: prepared carriers restore their metadata before every spawn kind, and deletion forgets
+  reusable rig/conversion state ([report](handover/R12-A-report.md),
+  [ADR 0094](decisions/0094-reimported-carrier-metadata-and-state.md)).
+- R12-B and its follow-up R12-B2 (items 37, 39): renamed character textures pair with the game's own
+  maps by their UV features, with name support (146 of 259 canonical pairs agree with names hidden,
+  none wrong; 阿芙2.0's clothes, accessories, hair, headwear and stockings pair); game maps decode
+  without WIC's premultiplied alpha; an Imported game PBR panel keeps a manual choice per texture
+  identity, so it applies to every character sharing the texture ([report](handover/R12-B-report.md),
+  [ADR 0095](decisions/0095-texture-features-and-imported-pbr-overrides.md)).
+- R12-C (item 40): saved actor registrations made the GPU hold every library character's textures
+  (about 12.4 GB of D3D9 app textures); runtime patch 0022 creates a managed texture's GPU image on first
+  use (13.51 to 0.91 GB on the copied field library at 4K), and the alpha classifier and game-PBR
+  queue wait for real draws ([report](handover/R12-C-report.md),
+  [ADR 0096](decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+- R12-D (item 38): a chooser marks or unmarks a spawned character's materials as eye whites, saved
+  per character ([report](handover/R12-D-report.md),
+  [ADR 0097](decisions/0097-manual-eye-white-materials.md)).
 
 R11-B (cached imported game maps, 2026-11-02) is **done**: after one successful conversion, an
 imported game character keeps its maps when its source folder is moved or deleted (successful game

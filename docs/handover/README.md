@@ -1,8 +1,6 @@
 # Handovers
 
-R12-C: [VRAM attribution brief](R12-C-vram.md),
-[implementation/evidence report](R12-C-report.md),
-[ADR 0096](../decisions/0096-demand-loaded-character-classification-and-memory-census.md).
+The latest round is R12, the user's report after R11-B: [R12-report.md](R12-report.md).
 
 The latest QoL batch fixes [player bodies, arms and shadows](../decisions/0043-player-body-viewmodel-and-shadows.md).
 The previous batch adds legacy Remix migration in loader 0.8.0. GarrysMod_RTX_c now runs our implementation and is no longer the classic baseline.
@@ -11,13 +9,8 @@ When a milestone moves to another agent (or person), the giver writes a **brief*
 receiver writes a **report** here when done or blocked. Both are committed on the milestone branch,
 so the next agent has the full story without the chat transcripts.
 
-R12-B's [decode/mask follow-up brief](R12-B2-decode-and-masks.md) is complete; see the
-[R12-B2 report section](R12-B-report.md#follow-up-r12-b2) for the corpus, all 16 Alf2 bases,
-conversion/PoC evidence and exact restoration.
-
 | Milestone | Brief | Prompt | Report | Assignee | Branch / worktree |
 |---|---|---|---|---|---|
-| R12-A: NPCs after delete/reimport | [R12-A](R12-A-hotloader-npc.md), [plan](R12-plan.md) | | [R12-A report](R12-A-report.md) | Codex (gpt-6.1-sol) | `r12-hotloader` / `out/worktrees/r12-hotloader` |
 | M1 inert bootstrap | [M1-handover.md](M1-handover.md) | [M1-codex-prompt.md](M1-codex-prompt.md) | [M1-report.md](M1-report.md), [review](M1-review.md) | Codex | `m1-bootstrap` in `H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap` (user-selected output root); merged into `main` 2026-10-27 |
 | M2 core + CLI | (none: Claude, who wrote the plan) | | (none: evidence in the [roadmap](../ROADMAP.md) M2 row) | Claude | `m2-core` in the main checkout; merged into `main` 2026-10-27 |
 | M3 deployer | (none: Claude; design in [ADR 0007](../decisions/0007-transactional-deployment.md)) | | (none: evidence in the [roadmap](../ROADMAP.md) M3 row) | Claude | `m3-deployer` in the main checkout; merged into `main` 2026-10-27 |
@@ -34,7 +27,7 @@ conversion/PoC evidence and exact restoration.
 | G1 glass overhaul | [G1-plan.md](G1-plan.md) | two briefs: [G1-A Lua](G1-A-lua.md), [G1-B native](G1-B-native.md); fix passes [1](G1-fix-pass.md), [2](G1-fix-pass-2.md) | [G1-report.md](G1-report.md): what was built, the integration findings and fixes, the PoC measurements (old and new system), open issues | Codex (gpt-6.1-sol); Claude as project manager | `g1-lua`, `g1-native` and their fix branches in `out/worktrees`, integrated on `g1-int` |
 | R7 the user's report of 2026-11-01 | [R7-plan.md](R7-plan.md) | three briefs: [R7-A MMD alpha under Remix](R7-A-mmd-alpha.md) (after Claude's investigation), [R7-B crash report and diagnostics](R7-B-crash-diagnostics.md), [R7-C glass interaction](R7-C-glass-interaction.md) | [R7-report.md](R7-report.md) (with [R7-A](R7-A-report.md), [R7-B](R7-B-report.md), [R7-C](R7-C-report.md)) | Codex (gpt-6.1-sol); Claude as project manager | `r7-crash-diag`, `r7-glass-interact` in `out/worktrees`, integrated on `r7-int` |
 | R11 automatic PBR (2026-11-02) | [R11-plan.md](R11-plan.md) | one brief: [R11-A automatic PBR for vanilla Source materials and imported game characters](R11-A-autopbr.md) | [R11-report.md](R11-report.md) (with [R11-A](R11-A-report.md)) | Codex (gpt-6.1-sol); Claude as project manager | `r11-autopbr` in `out/worktrees`, with the fixes branch `codex/r11-autopbr` in `out/worktrees/r11-fixes` |
-| R12 the user's report after R11-B (2026-11-02) | [R12-plan.md](R12-plan.md) | four briefs: [R12-A NPCs after a re-import](R12-A-hotloader-npc.md), [R12-B game PBR by texture features and manual overrides](R12-B-game-pbr-matching.md), [R12-C VRAM](R12-C-vram.md), [R12-D manual eye whites](R12-D-eye-white-assignment.md) | (in progress) | Codex (gpt-6.1-sol); Claude as project manager | `r12-hotloader`, `r12-pbr` (fixes `codex/r12-pbr` in `out/worktrees/r12-fixes`), `r12-vram`, `r12-eyes` in `out/worktrees` |
+| R12 the user's report after R11-B (2026-11-02) | [R12-plan.md](R12-plan.md) | four briefs: [R12-A NPCs after a re-import](R12-A-hotloader-npc.md), [R12-B game PBR by texture features and manual overrides](R12-B-game-pbr-matching.md), [R12-C VRAM](R12-C-vram.md), [R12-D manual eye whites](R12-D-eye-white-assignment.md); a follow-up after review: [R12-B2 straight-alpha decoding and mask evidence](R12-B2-decode-and-masks.md) | [R12-report.md](R12-report.md) (with [R12-A](R12-A-report.md), [R12-B and B2](R12-B-report.md), [R12-C](R12-C-report.md), [R12-D](R12-D-report.md)) | Codex (gpt-6.1-sol); Claude as project manager | `r12-hotloader`, `r12-pbr` (fixes `codex/r12-pbr` in `out/worktrees/r12-fixes`), `r12-vram`, `r12-eyes` in `out/worktrees`, integrated on `r12-int` |
 | R11-B cached imported game maps (2026-11-02) | [R11-B brief](R11-B-cached-game-maps.md) | (the user's request) | [R11-B-report.md](R11-B-report.md) | Codex (gpt-6.1-sol); Claude as project manager | `r11-cache` in `out/worktrees/r11-cache`, fixes `codex/r11-autopbr` in `out/worktrees/r11-fixes` |
 | R10 the user's character report (2026-11-02) | [R10-plan.md](R10-plan.md) | two briefs: [R10-E steady eye whites for imported characters](R10-E-eye-whites.md), [R10-H imported NPCs after a map change and VMD expressions](R10-H-hotloader-expressions.md) | [R10-report.md](R10-report.md) (with [R10-E](R10-E-report.md), [R10-H](R10-H-report.md)) | Codex (gpt-6.1-sol); Claude as project manager | `r10-eyes`, `r10-hotloader` in `out/worktrees` |
 | R9 the user's glass report (2026-11-02) | [R9-plan.md](R9-plan.md) | one brief: [R9-G realistic fracture, instant breaks, sounds, water, blasts, stable pushes, a clear button](R9-G-glass.md); the CI fixes and the melee error are Claude's | [R9-report.md](R9-report.md) (with [R9-G](R9-G-report.md)) | Codex (gpt-6.1-sol); Claude as project manager | `r9-glass` in `out/worktrees` |
@@ -47,9 +40,6 @@ integration/game acceptance remain separate from that native/debris report.
 G1-B's post-game fix pass is complete for implementation/offline checks:
 [G1-B fix report](G1-B-fix-report.md), branch `g1-native-fix`. Integration/game acceptance remains
 with Claude; the report includes real-map import counts and before/after timing limits.
-
-R12-D's manual eye-white chooser, validation and PoC evidence are recorded in
-[R12-D-report.md](R12-D-report.md); its changes stay on `r12-eyes` for Claude's integration.
 
 ## Rules for briefs
 
@@ -83,8 +73,3 @@ The next QoL batch fixes Modern House glass disappearing without shards. Source 
 The QoL shader batch is on codex/hotloader-depth in out/worktrees/hotloader-depth. See
 [QoL-report.md](QoL-report.md#hotloader-depthwrite-shader-errors-2026-10-30) and
 [ADR 0041](../decisions/0041-hotloader-remix-depth-materials.md).
-
-
-## R12-B: renamed game maps and manual choices
-
-[Report](R12-B-report.md); [brief](R12-B-game-pbr-matching.md); fixes branch `codex/r12-pbr`.
