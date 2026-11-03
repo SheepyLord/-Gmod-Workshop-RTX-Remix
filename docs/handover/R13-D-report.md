@@ -1,7 +1,8 @@
 # R13-D: the option crash (runtime patch 0029)
 
-**Status:** done. The cause is proven, and runtime patch 0029 fixes it. The new `d3d9.dll` is
-imported, and `main` publishes it to Workshop item 3829070317.
+**Status:** done. The cause is proven, and runtime patch 0029 fixes it. `main` `d2cf1bf` is pushed
+and published to Workshop item 3829070317: version `0.0.0-dev.20261103205209+3061335f`, digest
+`9366a66b...`, carrying `d3d9.dll` `b6fc1ae2`.
 
 The task came from R13's project manager ([R13 report](R13-report.md), open items). One R13 PoC
 session died about 15 s into idle with an access violation reading `0x50` in
@@ -229,6 +230,15 @@ R13's crash.
 
 `tools\test.ps1 -Config Release` passes on the branch, run twice (before and after the commit): the
 repository checks, 26 CTests, and 28 + 25 + 539 Python tests.
+
+After `main`'s R13-P commit (docs only) was merged in, `tools\test.ps1 -SkipNative` first failed in
+one test. `test_poc_parity`'s round trip requires 20 GiB free on H:, and the labs' set-aside folders
+had left 19 GiB. With 26 GiB free it passes: the repository checks and 28 + 25 + 539 Python tests.
+
+**Publication.** `main` `d2cf1bf` was pushed (59 MB of LFS objects: the new `d3d9.dll.xz`). The merge
+hook uploaded item 3829070317 as version `0.0.0-dev.20261103205209+3061335f` (digest `9366a66b...`).
+Its manifest names `d3d9.dll` `b6fc1ae2`. The push hook found its inputs unchanged. The field
+install takes it from the Workshop: its first start downloads, the second deploys.
 
 ## 7. Deviations and open items
 
