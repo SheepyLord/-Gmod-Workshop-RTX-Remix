@@ -271,7 +271,7 @@ msgstr "重置天空和天气"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:744
 #: nativeloader/lua/autorun/nativeloader_sky.lua:744
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:59
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:71
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Sky and weather"
 msgstr "天空与天气"
@@ -359,253 +359,289 @@ msgid "Everything RTX is in the spawn menu's RTX Remix tab: the settings of the 
 msgstr "与 RTX 有关的一切都在生成菜单的「RTX Remix」选项卡中：RTX 插件的设置、常用 Remix 设置，以及本指南。"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:38
+msgid "Where to find things"
+msgstr "各项功能在哪里"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
+msgid "1. The RTX Remix tab in the spawn menu (hold Q): every setting of this package, in groups on the left."
+msgstr "1. 生成菜单（按住 Q）中的 RTX Remix 选项卡：本包的所有设置，按分组排列在左侧。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
+msgid "2. Remix's own menu (Alt+X): the renderer's settings, such as DLSS, frame generation and the graphics preset."
+msgstr "2. Remix 自带的菜单（Alt+X）：渲染器的设置，例如 DLSS、帧生成和图形预设。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:41
+msgid "3. This guide: open it again from the RTX Remix tab > Start here, or with the console command nativeloader_guide."
+msgstr "3. 本指南：可从 RTX Remix 选项卡 > Start here 或控制台命令 nativeloader_guide 再次打开。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:43
+msgid "In the picture: (1) the RTX Remix tab, (2) the groups of settings, (3) the panel of the group you chose. If the tab is missing, RTX is off in this session; see Troubleshooting."
+msgstr "图中：(1) RTX Remix 选项卡，(2) 设置分组，(3) 所选分组的面板。如果没有该选项卡，说明本次游戏未启用 RTX，请参阅“故障排除”。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
 msgid "Turning RTX off or on"
 msgstr "关闭或开启 RTX"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
 msgid "RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too."
 msgstr "暂时关闭 RTX 而不卸载：在 native-loader\\config.json 中添加  \"remix\": { \"enabled\": false }  后重新启动游戏。此时游戏就是原版 Garry's Mod，RTX 插件也不会加载。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
 msgid "The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam."
 msgstr "游戏在与屏幕同样大小的无边框窗口中运行。独占全屏会导致 Remix 崩溃。如需其他尺寸，请在 Steam 中将 -w <width> -h <height>（宽度和高度）填入本游戏的「启动选项」。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:42
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
 msgid "Remix menu"
 msgstr "Remix 菜单"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
+msgid "In the picture: (1) switch between the simple Graphics Settings menu and this developer menu, (2) the tabs of the developer menu, (3) how much video memory Remix uses, (4) frame generation, (5) the upscaler. Click a setting's round dot to see it differ from the default."
+msgstr "图中：(1) 在简易图形设置菜单与此开发者菜单之间切换，(2) 开发者菜单的选项卡，(3) Remix 使用的显存，(4) 帧生成，(5) 放大器。点击设置旁的圆点，可查看它与默认值是否不同。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:51
 msgid "Alt+X opens Remix's own menu"
 msgstr "按 Alt+X 打开 Remix 自带的菜单"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
 msgid "The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option."
 msgstr "简易菜单中有图形预设、DLSS 和帧生成。开发者菜单「开发者设置」(Developer Settings) 包含全部选项。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
 msgid "Making changes stick"
 msgstr "让更改保持生效"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:47
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
 msgid "1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed."
 msgstr "1. 先将「图形预设」(Graphics Preset) 设为「自定义」(Custom)。其他任何预设都会在每次启动时重新应用，并覆盖您单独更改过的设置。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
 msgid "2. Change what you want."
 msgstr "2. 按需更改设置。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:49
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
 msgid "3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults."
 msgstr "3. 保存：图形设置用「用户设置 (user.conf)：保存」(User Settings (user.conf): Save)，开发者设置用「Remix 配置 (rtx.conf)：保存」(Remix Config (rtx.conf): Save)。这两个文件都位于 Garry's Mod 文件夹中，并优先于 RTX 包的默认值。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:57
 msgid "Do not press 'Migrate developer settings to rtx.conf'. Before saving, check 'View Changes': the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map."
 msgstr "请勿点击「将开发者设置迁移到 rtx.conf」(Migrate developer settings to rtx.conf)，保存前请先在「查看更改」(View Changes) 中检查一遍：RTX 修复插件会通过 Remix API 为当前地图设置一些值，保存这些值会让它们作用于所有地图。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:59
 msgid "Settings"
 msgstr "设置"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:60
 msgid "Defaults from the original RTX install"
 msgstr "来自原始 RTX 安装的默认值"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:61
 msgid "Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet."
 msgstr "Remix 启动时使用原始 RTX 安装的设置（其 rtx.conf、dxvk.conf 和 user.conf）。RTX 插件自身的设置也曾一次性采用该安装中的值，仅限于您当时尚未改动过的设置。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:62
 msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed."
 msgstr "「RTX Remix」选项卡 >「从这里开始」>「使用经典 RTX 设置」（控制台命令：nativeloader_rtx_defaults）会重新应用以上所有值，您改过的值也会被覆盖。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:63
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
 msgid "Common Remix settings"
 msgstr "常用 Remix 设置"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:57
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:65
+msgid "In the picture: (1) apply this panel's choices at every launch (leave it off to keep Remix's saved settings), (2) the presets and quality choices; '(leave to Remix)' changes nothing, (3) a number you enable first with its checkbox, (4) fog presets, (5) clears everything this panel changed."
+msgstr "图中：(1) 每次启动时应用此面板的选择（保持关闭则使用 Remix 已保存的设置），(2) 预设和画质选项，“(leave to Remix)”不会改变任何内容，(3) 需先勾选复选框才能编辑的数值，(4) 雾预设，(5) 清除此面板所做的全部更改。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:66
 msgid "RTX Remix tab > Remix settings changes common settings for this session. Save them in Alt+X to keep them. Reapplying this panel's choices at launch is off by default; enable it only to override Remix's saved settings. Select a numeric override before editing it."
 msgstr "在“RTX Remix”标签页的“Remix 设置”中更改通用设置后，这些更改会在本次游戏中生效。要保留更改，请在 Alt+X 菜单中保存。默认不会在启动时重新应用本面板的选项；只有希望覆盖 Remix 已保存的设置时，才启用此功能。编辑数值前，请先选中对应的覆盖选项。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:58
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:67
 msgid "Fog: Remix's own volumetric presets, from light mist to heavy fog, dust and smoke. A preset replaces the weather's fog until you set it back to '(leave to Remix)'."
 msgstr "雾：Remix 自带的体积雾预设，从轻雾到浓雾、沙尘和烟雾。选择预设后会取代天气的雾，直到您把它设回「（由 Remix 决定）」。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:60
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:68
+msgid "Glass"
+msgstr "玻璃"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:70
+msgid "RTX Remix tab > Glass settings. In the picture: (1) glass strength, (2) whether cracks show, (3) how fast you must move to break a window (walking does not), (4) how long broken pieces stay. Walking through glass in noclip never breaks it."
+msgstr "RTX Remix 选项卡 > Glass settings。图中：(1) 玻璃强度，(2) 是否显示裂纹，(3) 打碎窗户所需的速度（走路不会打碎），(4) 碎片保留的时间。用穿墙模式（noclip）穿过玻璃不会将其打碎。"
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:72
 msgid "RTX Remix tab > Sky and weather. The physical sky has a real sun, clouds, stars and a moon that light the map. By default the sun stands where the map's own sun is; move the time of day or the sun's direction to choose your own, or let the time pass."
 msgstr "「RTX Remix」选项卡 >「天空与天气」。物理天空有真实的太阳、云、星星和月亮，它们照亮地图。默认情况下，太阳位于地图自身太阳所在的位置；移动时间或太阳方向即可自行选择，也可以让时间流逝。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:61
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:73
 msgid "The moon has the real Moon's face and goes through its phases, lit from the sun's side. The night sky is a detailed image of stars, a galaxy and nebulae that turns with the hour and the season; 'Night sky' switches to simulated stars."
 msgstr "月亮有真实月球的面貌，并随月相变化，从太阳一侧被照亮。夜空是一幅细致的星星、银河与星云图像，随时辰和季节转动；「夜空」可切换为模拟的星星。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:62
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:74
 msgid "Eclipse: a lunar eclipse turns the full moon copper red in Earth's shadow; a solar eclipse covers the sun, darkens the day and shows the corona and the stars. 'Eclipse progress' moves from first contact to the middle."
 msgstr "日月食：月食时，满月在地球的影子里变成古铜般的红色；日食时，太阳被遮住，白天变暗，露出日冕和星星。「日月食进度」从初亏移到食甚。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:63
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:75
 msgid "Weather: twelve kinds, from clear to thunderstorm, snow and sandstorm, changing over the time you choose. Console: nativeloader_sky_time sunset (or noon, night, 18:30 ...), nativeloader_sky_status."
 msgstr "天气：共十二种，从晴朗到雷雨、雪和沙尘暴，会在您选择的时间内逐渐变化。控制台：nativeloader_sky_time sunset（或 noon、night、18:30 等）、nativeloader_sky_status。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:65
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 msgid "Lights"
 msgstr "灯光"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:66
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
 msgid "Flashlight"
 msgstr "手电筒"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:67
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:79
 msgid "The flashlight key gives a path-traced flashlight. Its brightness, cone and offsets are under RTX Remix tab > Lights > Flashlight."
 msgstr "按手电筒键即可打开路径追踪的手电筒。它的亮度、光锥和偏移量可在「RTX Remix」选项卡 >「灯光」>「Flashlight」中调整。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:68
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:80
 msgid "Map lights"
 msgstr "地图灯光"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:69
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:81
 msgid "By default the map's own lights are lit by Remix from the game's lights (the 'light updater'). 'Disable Remix API Lights' under Rendering > Base Options switches between that and converting every map light into a Remix light."
 msgstr "默认情况下，地图自带的灯光由 Remix 根据游戏自身的光源进行照明（即「light updater」）。「渲染」>「Base Options」中的「Disable Remix API Lights」可在这种方式与将每个地图灯光都转换为 Remix 灯光之间切换。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:70
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:82
 msgid "Advanced MMD Animation Player"
 msgstr "Advanced MMD Animation Player"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:71
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:83
 msgid "Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start."
 msgstr "当 RTX 修复插件的模块已接入 Remix API 时（nativeloader_status 显示「Remix API: ready」），该插件的手电筒会变成 Remix 灯光。灯光强度随半径增大而增强：半径为 1 时几乎看不见；建议从 20 到 30 开始。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:73
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
 msgid "Memory and stability"
 msgstr "内存与稳定性"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:74
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
 msgid "For 8 GB GPUs and 16 GB of RAM"
 msgstr "适用于 8 GB 显卡和 16 GB 内存的电脑"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:75
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:87
 msgid "Use a system-managed Windows page file on a drive with at least 30 GB free. Close browsers and stop OBS recording before playing. In Task Manager > Performance > Memory, watch Committed: the first number is in use, the second is the limit. If they are close, close other apps or use fewer heavy models."
 msgstr "在至少有 30 GB 可用空间的驱动器上使用由 Windows 系统管理的分页文件。游戏前关闭浏览器并停止 OBS 录制。在任务管理器 > 性能 > 内存中查看“已提交”（Committed）：第一个数是已用量，第二个数是上限。如果两者接近，请关闭其他应用或减少高负载模型。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:76
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
 msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Save' so a saved value does not return next start. Keep Garry's Mod's texture detail at its highest: lowering it changes the textures Remix hashes and can break replacement matching. Use fewer heavy characters to reduce memory pressure."
 msgstr "在 Alt+X 中关闭帧生成，并点击 'User Settings (user.conf): Save'，以免保存的值在下次启动时恢复。将 Garry's Mod 的纹理细节保持为最高：降低此设置会改变 Remix 用于计算哈希的纹理，可能导致替换失效。减少高负载角色的数量以降低内存压力。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
 msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
 msgstr "更改性能档位或 GPU 崩溃诊断之前，请将 bin\\win64\\winmm.dll 更新为 0.11.0 加载器。旧加载器会拒绝这些配置键，并在不启用 RTX 的情况下启动。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
 msgid "Performance tiers"
 msgstr "性能档位"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:79
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:91
 msgid "The loader chooses high, medium or low from the NVIDIA GPU's model and VRAM; recognized laptop models step down one class tier. High keeps the classic defaults. Medium and low reduce rendering work and memory use when their tier layer is available; the package's low layer also uses smaller night-sky textures. Your saved Remix settings can override these defaults."
 msgstr "加载器根据 NVIDIA GPU 的型号和显存选择 high、medium 或 low；识别出的笔记本型号会将型号档位降低一级。High 保留经典默认设置。Medium 和 low 在对应档位配置层可用时减少渲染负载和内存用量；软件包的 low 配置层还使用较小的夜空纹理。您保存的 Remix 设置可以覆盖这些默认值。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:80
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
 msgid "RTX Remix tab > Start here shows the tier and GPU, or the reason a tier layer was not applied. To override it, use auto, high, medium or low for remix.performance_tier in native-loader\\config.json, then restart Garry's Mod. Loader tiers are separate from Graphics Preset in Alt+X."
 msgstr "RTX Remix 选项卡 > 从这里开始会显示档位和 GPU，或未应用档位配置层的原因。要手动选择，请在 native-loader\\config.json 中将 remix.performance_tier 设为 auto、high、medium 或 low，然后重启 Garry's Mod。加载器档位与 Alt+X 中的 Graphics Preset 相互独立。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:81
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:93
 msgid "Complete minimal config.json example for the shipped allowlist, with the low tier and GPU dumps off. If you customized the file, keep your allow entries and other settings when adding these objects. Invalid JSON turns RTX off."
 msgstr "以下是保留随附允许列表的完整最小 config.json 示例，使用 low 档位并关闭 GPU 转储。如果您修改过此文件，添加这些对象时请保留自己的 allow 条目和其他设置。无效的 JSON 会使 RTX 关闭。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:83
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:95
 msgid "Local memory readings"
 msgstr "本地内存读数"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:84
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:96
 msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fixes are available. The companion records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. After three failed API calls it stops for this map; toggle nativeloader_vram_telemetry off (0) and on (1) to retry. These files stay local."
 msgstr "控制台：RTX 修复可用时，rtx_vram_stats 会显示显存总量和分类。伴随插件每 30 秒记录 garrysmod\\data\\native-loader\\vram.csv 和 vram.previous.csv。API 连续调用失败三次后，本地图中将停止采样；将 nativeloader_vram_telemetry 关闭 (0) 再开启 (1) 可重试。这些文件仅保存在本地。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:97
 msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
 msgstr "此 0.11.0 加载器还会将进程 RAM 和系统提交量记录到 native-loader\\logs\\memory.csv。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:98
 msgid "After a crash"
 msgstr "崩溃之后"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:87
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:99
 msgid "Before restarting, copy status.json and session.json from garrysmod\\data\\native-loader\\, both vram CSV files and rtx-remix\\logs\\. The next start rewrites both JSON reports and can overwrite runtime logs; the session evidence folder does not keep these JSON reports."
 msgstr "重启之前，请复制 garrysmod\\data\\native-loader\\ 中的 status.json 和 session.json、两个 vram CSV 文件以及 rtx-remix\\logs\\。下次启动会重写这两个 JSON 报告，也可能覆盖运行时日志；会话证据文件夹不会保存这两个 JSON 报告。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:100
 msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
 msgstr "下次启动时，此 0.11.0 加载器会将可用的上一会话日志、转储和内存历史复制到 native-loader\\logs\\sessions\\（最近五次会话，总计最多 200 MB）。原始文件保留在原处；这些副本不会上传。请在轮换前复制相应的会话文件夹。如果未保留文件夹，请手动保存 crashes\\、native-loader\\logs\\gpu\\ 和内存 CSV 文件。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:101
 msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
 msgstr "此旧加载器不会收集会话证据文件夹。重启游戏之前，请复制 rtx-remix\\logs\\ 和 crashes\\ 中对应的转储；更新 bin\\win64\\winmm.dll 后才能使用 0.11.0 证据收集。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:102
 msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
 msgstr "请发送保存的日志和 JSON 报告、两个 vram CSV 文件及任何保留的会话文件夹。再附上根目录 rtx.conf、dxvk.conf 和 user.conf 的副本，以及可用的 garrysmod\\console.log。请说明地图、模型/模组、崩溃前的操作、当地时间和时区、帧率，以及任务管理器的提交量 (Committed)。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:91
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:103
 msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\ and shaderDebugInfo\\*.nvdbg if no session folder kept them. For a GPU hang, include nearby Event Viewer System events from Display or nvlddmkm and any matching Windows LiveKernelReports\\WATCHDOG dump. Dumps can contain process memory; review what you share."
 msgstr "如果会话文件夹未保存相应文件，请保留 crashes\\ 或 native-loader\\logs\\gpu\\ 中的原始转储和 shaderDebugInfo\\*.nvdbg。GPU 挂起时，请附上事件查看器中时间相近的 Display 或 nvlddmkm 系统事件，以及对应的 Windows LiveKernelReports\\WATCHDOG 转储。转储可能包含进程内存；分享前请检查内容。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:104
 msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
 msgstr "如果被要求在此 0.11.0 加载器上复现 GPU 崩溃，请在上方完整 config.json 示例中将 diagnostics.gpu_crash_dumps 从 \"off\" 改为 \"next_start\" 并重启。配置值会保持为 \"next_start\"；如需再次启用一个诊断启动，请删除 native-loader\\remix\\gpu-crash-dumps.used。诊断会增加开销；只有受支持的诊断捕获到崩溃时才会生成 GPU 转储。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:94
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:106
 msgid "Troubleshooting"
 msgstr "故障排除"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:95
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:107
 msgid "First look"
 msgstr "首先检查"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:96
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:108
 msgid "Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready."
 msgstr "在控制台输入 nativeloader_status。它会输出加载器部署和激活了哪些内容、本次运行应用的补丁，以及 Remix API 是否就绪。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:97
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:109
 msgid "Files to look at"
 msgstr "可查看的文件"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:98
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:110
 msgid "native-loader\\logs\\loader.log - what the loader did at this start."
 msgstr "native-loader\\logs\\loader.log：加载器本次启动时的操作记录。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:99
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:111
 msgid "garrysmod\\data\\native-loader\\status.json and session.json - the same as data."
 msgstr "garrysmod\\data\\native-loader\\status.json 和 session.json：同样的信息，以数据形式保存。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:100
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:112
 msgid "rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top."
 msgstr "rtx-remix\\logs\\remix-dxvk.log：Remix 自身的日志，开头附近列出了所有实际生效的设置。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:101
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:113
 msgid "Common problems"
 msgstr "常见问题"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:102
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:114
 msgid "The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default)."
 msgstr "游戏在启动过程中自行关闭：请在 rtx-remix\\logs 中查找「last_crash」，并查看 remix-dxvk.log 的末尾。游戏应保持窗口模式运行（默认即是如此）。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:103
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:115
 msgid "An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare."
 msgstr "某个插件在画面上叠加绘制，或还原了 RTX 设置：控制台会指出是哪个插件（「[nativeloader] kept ...」）。在控制台输入 nativeloader_guard 0 可关闭这项保护，以便对比。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:104
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:116
 msgid "Low frame rate: choose a lower graphics preset or DLSS quality. Frame generation is off by default for stability."
 msgstr "帧率过低：请选择较低的图形预设或 DLSS 质量。为保证稳定性，帧生成默认关闭。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:105
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:117
 msgid "'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game."
 msgstr "RTX 创意工坊物品出现「Couldn't mount file」是正常的：它由加载器部署，而不是由游戏挂载。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:106
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:118
 msgid "Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu')."
 msgstr "重启后设置又恢复原样：请将预设设为「自定义」(Custom) 并保存（见「Remix 菜单」）。"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:136
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:148
 msgid "RTX Remix guide"
 msgstr "RTX Remix 指南"
 

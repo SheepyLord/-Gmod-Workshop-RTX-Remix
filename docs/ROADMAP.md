@@ -1,5 +1,7 @@
 # Roadmap
 
+R14 (noclip no longer fractures glass; the guide gains an orientation, a glass section and annotated screenshots, 2026-11-03; [plan](handover/R14-plan.md), [report](handover/R14-report.md)) is **done**.
+
 R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the computer, 2026-11-03;
 [plan](handover/R13-plan.md)) is **done**, merged into `main` from `r13-int`; see
 [the R13 report](handover/R13-report.md). Loader 0.13.0.

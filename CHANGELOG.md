@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R14
+
+- Glass: a player in noclip no longer fractures glass it passes through (touch, contact and the
+  pre-movement sweep ignore `MOVETYPE_NOCLIP` players).
+- The in-game RTX Remix guide: a "Where to find things" orientation, a Glass section, and annotated
+  screenshots (numbered arrows) of the RTX Remix tab, Common Remix settings, Glass settings and Remix's
+  Alt+X menu, drawn from real captures (`tools\guide_annotate.py`, `tools\qa\guide_shots.lua`); the new
+  text is translated into the six languages.
 ### R13
 
 - **Imported game maps take about a sixth of the memory** (R13-M,
