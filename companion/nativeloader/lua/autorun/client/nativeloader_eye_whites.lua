@@ -13,6 +13,66 @@ local assets, key, parts, partIndex, epoch, nextSweep = nil, nil, nil, 1, 0, 0
 local cursor, list, nextWrite, nextPrepare = 1, {}, 0, 0
 local preparedBytes, prepareMaxMs, warmQueue = 0, 0, {}
 local supported = false
+-- Full content ID + slot/native name survive a re-import and do not depend on a source folder.
+local CHOICES, MAX_CHOICES, MAX_JSON = "nativeloader/eye_white_choices.json", 4096, 1024 * 1024
+local storedExists = file.Exists(CHOICES, "DATA")
+local storedSize = storedExists and file.Size(CHOICES, "DATA") or -1
+local choices, loadedBytes, choicesOK = {}, nil, not storedExists or (storedSize >= 0 and storedSize <= MAX_JSON)
+if choicesOK and storedExists then
+    loadedBytes = file.Read(CHOICES, "DATA")
+    choicesOK = loadedBytes ~= nil
+end
+local function assetID(id)
+    return type(id) == "string" and #id == 64 and id:match("^[0-9a-f]+$") and id or nil
+end
+local function materialKey(part, index)
+    if not istable(part) or type(part.name) ~= "string" or #part.name > 512 or
+        type(index) ~= "number" or index < 1 or index > 4096 or index % 1 ~= 0 then return end
+    return tostring(index) .. ":" .. part.name
+end
+if loadedBytes then
+    local ok, data = false, nil
+    if #loadedBytes <= MAX_JSON then ok, data = pcall(util.JSONToTable, loadedBytes) end
+    choicesOK = ok and istable(data) and data.version == 1 and istable(data.assets)
+    local count = 0
+    if choicesOK then
+        for id, materials in pairs(data.assets) do
+            if not assetID(id) or not istable(materials) then choicesOK = false break end
+            choices[id] = {}
+            for name, value in pairs(materials) do
+                local slot = type(name) == "string" and name:match("^(%d+):")
+                count = count + 1
+                if not slot or tonumber(slot) < 1 or tonumber(slot) > 4096 or #name > 517 or
+                    type(value) ~= "boolean" or count > MAX_CHOICES then choicesOK = false break end
+                choices[id][name] = value
+            end
+            if not choicesOK then break end
+        end
+    end
+    if not choicesOK then choices = {} end -- Keep unreadable/foreign data on disk, never overwrite it.
+end
+local function choice(id, part, index)
+    local name = materialKey(part, index)
+    if name and choices[id] then return choices[id][name] end
+end
+local function selected(id, part, index)
+    local value = choice(id, part, index)
+    if value ~= nil then return value end
+    return matcher.matches(part.name, part.en or part.englishName or part.nameEnglish)
+end
+-- Metadata is not evidence of use: the library keeps it for characters never spawned this map.
+-- This public entity list includes native NPCs/players and client ragdolls without requesting assets.
+local function spawned()
+    local live = {}
+    if not istable(mmdhl) or not isfunction(mmdhl.Entities) or not isfunction(mmdhl.GetAsset) then return live end
+    for _, ent in ipairs(mmdhl.Entities()) do
+        if IsValid(ent) and not ent.MMDHLPreviewRig then
+            local id = assetID(mmdhl.GetAsset(ent))
+            if id and istable(mmdhl.assets) and istable(mmdhl.assets[id]) then live[id] = mmdhl.assets[id] end
+        end
+    end
+    return live
+end
 local function sameTexture(a, b)
     -- GMod may return distinct Lua userdata wrappers for the same native ITexture.
     return a and b and a:GetName():lower():gsub("\\", "/") == b:GetName():lower():gsub("\\", "/")
@@ -29,11 +89,11 @@ local function write(option, value, now)
     retry.at, retry.delay = now + retry.delay, math.min(retry.delay * 2, 8)
     return false
 end
-local function normalize(name)
+local function normalize(name, asset)
     if type(name) ~= "string" then return end
     name = name:lower():gsub("\\", "/"):gsub("^!", ""):gsub("%.vmt$", "")
     local id = name:match("^mmd/(%x+)/[^/]+$")
-    return id and #id == 16 and name or nil
+    return id and #id == 16 and (not asset or id == asset:sub(1, 16)) and name or nil
 end
 local function restore(state)
     if state.mat and state.proxy and sameTexture(state.mat:GetTexture("$basetexture"), state.proxy) then
@@ -55,19 +115,19 @@ end
 local function discover(now)
     if not assets then
         if now < nextSweep then return end
-        assets = istable(mmdhl) and istable(mmdhl.assets) and mmdhl.assets or {}
+        assets = spawned()
         key, parts, partIndex, epoch = nil, nil, 1, epoch + 1
     end
     for _ = 1, 128 do
         if parts and parts[partIndex] ~= nil then
             local part = parts[partIndex]
             partIndex = partIndex + 1
-            if istable(part) and matcher.matches(part.name, part.en or part.englishName or part.nameEnglish) then
-                local name = normalize(part.path)
+            if istable(part) and selected(key, part, partIndex - 1) then
+                local name = normalize(part.path, key)
                 if name then
                     local state = states[name]
                     if not state then
-                        state = {name = name, at = 0}
+                        state = {name = name, asset = key, index = partIndex - 1, at = 0}
                         states[name], list[#list + 1] = state, state
                     end
                     state.epoch = epoch
@@ -260,6 +320,192 @@ local function sync()
 end
 hook.Add("Think", "nativeloader_eye_whites", sync)
 hook.Add("ShutDown", "nativeloader_eye_whites", function() for _, state in ipairs(list) do restore(state) end end)
+local function partFor(id, index)
+    local info = assetID(id) and spawned()[id]
+    local part = info and istable(info.materials) and info.materials[index]
+    if not materialKey(part, index) or not normalize(part.path, id) then return end
+    return part
+end
+local function inspect(id, index)
+    local part = partFor(id, index)
+    if not part or not file.Exists("materials/" .. normalize(part.path, id) .. ".vmt", "GAME") then return end
+    local name = normalize(part.path, id)
+    local mat = Material(name)
+    local texture = mat and not mat:IsError() and mat:GetTexture("$basetexture")
+    local state = states[name]
+    if state and state.original and sameTexture(texture, state.proxy) then texture = state.original end
+    local texName = texture and not texture:IsError() and texture:GetName():lower():gsub("\\", "/")
+    if not texName or not texName:match("^mmd/t/%x+$") or
+        not file.Exists("materials/" .. texName .. ".vtf", "GAME") then return end
+    return mat, texture
+end
+local function setChoice(id, index, value)
+    if value ~= nil and type(value) ~= "boolean" then return false end
+    local part = partFor(id, index)
+    if not part or not inspect(id, index) or not choicesOK or file.Size(CHOICES, "DATA") > MAX_JSON or
+        file.Read(CHOICES, "DATA") ~= loadedBytes then return false end
+    local name, count = materialKey(part, index), 0
+    for _, materials in pairs(choices) do for _ in pairs(materials) do count = count + 1 end end
+    local previous = choice(id, part, index)
+    if previous == value then return true end
+    if previous == nil and value ~= nil and count >= MAX_CHOICES then return false end
+    choices[id] = choices[id] or {}
+    choices[id][name] = value
+    if next(choices[id]) == nil then choices[id] = nil end
+    local bytes = util.TableToJSON({version = 1, assets = choices}, true)
+    if not bytes or #bytes > MAX_JSON then
+        choices[id] = choices[id] or {} choices[id][name] = previous
+        return false
+    end
+    file.CreateDir("nativeloader")
+    file.Write(CHOICES, bytes)
+    if file.Read(CHOICES, "DATA") ~= bytes then
+        choices[id] = choices[id] or {} choices[id][name] = previous
+        return false
+    end
+    loadedBytes = bytes
+    -- Restore immediately, then let the usual validated alias publication bind any new selection.
+    -- Retire the old state even when a re-import replaces the metadata table during this session.
+    for i = #list, 1, -1 do
+        local state = list[i]
+        if state.asset == id and state.index == index then
+            restore(state)
+            states[state.name], list[i] = nil, list[#list]
+            list[#list] = nil
+        end
+    end
+    assets, parts, nextSweep, nextWrite = nil, nil, 0, 0
+    return true
+end
+local function materials(id)
+    local info, out = assetID(id) and spawned()[id], {}
+    for index, part in ipairs(info and info.materials or {}) do
+        if index > 4096 then break end
+        if materialKey(part, index) and normalize(part.path, id) then
+            out[#out + 1] = {index = index, name = part.name, path = part.path,
+                automatic = matcher.matches(part.name, part.en or part.englishName or part.nameEnglish),
+                choice = choice(id, part, index), selected = selected(id, part, index)}
+        end
+    end
+    return out
+end
+local function openAssignments(target)
+    local L = include("nativeloader/i18n.lua").L
+    local frame = vgui.Create("DFrame")
+    frame:SetSize(math.min(860, ScrW() - 40), math.min(680, ScrH() - 40))
+    frame:Center()
+    frame:SetTitle(L("Choose eye-white materials"))
+    frame:MakePopup()
+    local help = frame:Add("DLabel")
+    help:Dock(TOP) help:SetTall(60) help:SetWrap(true)
+    help:SetText(L("Choose a spawned character, or look at one before opening this window. Choices are saved for this character and apply to all its copies, without respawning. The brightness and steady-eye-white settings still apply."))
+    local picker = frame:Add("DComboBox")
+    picker:Dock(TOP) picker:SetTall(28)
+    picker:SetValue(L("Choose a spawned character"))
+    local message = frame:Add("DLabel")
+    message:Dock(TOP) message:SetTall(42) message:SetWrap(true)
+    message:SetText(L("Spawn a Model Hotloader character first. Only generated character textures can be selected."))
+    local navigation = frame:Add("DPanel")
+    navigation:Dock(BOTTOM) navigation:SetTall(30)
+    local previous, nextPage = navigation:Add("DButton"), navigation:Add("DButton")
+    previous:Dock(LEFT) previous:SetWide(180) previous:SetText(L("Previous materials"))
+    nextPage:Dock(RIGHT) nextPage:SetWide(180) nextPage:SetText(L("Next materials"))
+    previous:SetEnabled(false) nextPage:SetEnabled(false)
+    local scroll = frame:Add("DScrollPanel")
+    scroll:Dock(FILL)
+    local current, rows, page, pending, stop = nil, {}, 1, 1, 0
+    local function showPage()
+        scroll:Clear()
+        pending, stop = (page - 1) * 24 + 1, math.min(page * 24, #rows)
+        previous:SetEnabled(page > 1) nextPage:SetEnabled(stop < #rows)
+    end
+    local function choose(id)
+        current, rows, page = id, materials(id), 1
+        message:SetText(L("Checked materials are eye whites. Use automatic detection removes a manual choice. A shared texture thumbnail can show the face too; only the selected material changes."))
+        showPage()
+    end
+    previous.DoClick = function() page = math.max(1, page - 1) showPage() end
+    nextPage.DoClick = function() page = page + 1 showPage() end
+    picker.OnSelect = function(_, _, _, id) choose(id) end
+    local live, ids = spawned(), {}
+    for id in pairs(live) do ids[#ids + 1] = id end
+    table.sort(ids)
+    if not IsValid(target) then
+        local player = LocalPlayer()
+        target = IsValid(player) and player:GetEyeTrace().Entity or nil
+    end
+    local wanted = IsValid(target) and istable(mmdhl) and isfunction(mmdhl.GetAsset) and mmdhl.GetAsset(target)
+    for _, id in ipairs(ids) do
+        local name = type(live[id].name) == "string" and live[id].name or id:sub(1, 16)
+        local number = picker:AddChoice(name .. " (" .. id:sub(1, 8) .. ")", id)
+        if id == wanted or (#ids == 1) then picker:ChooseOptionID(number) end
+    end
+    -- Populate only one page, at most four rows per frame. No library textures or atlas clones here.
+    local frameThink = frame.Think
+    frame.Think = function(self)
+        if frameThink then frameThink(self) end -- Keep DFrame's normal dragging/resizing behavior.
+        for _ = 1, 4 do
+            if pending > stop then return end
+            local entry, id = rows[pending], current
+            pending = pending + 1
+            local row = scroll:Add("DPanel")
+            row:Dock(TOP) row:SetTall(118) row:DockMargin(0, 0, 0, 5)
+            row.Paint = function(_, width, height)
+                surface.SetDrawColor(240, 240, 240, 255) surface.DrawRect(0, 0, width, height)
+            end
+            local preview = row:Add("DImage")
+            preview:Dock(LEFT) preview:SetWide(104) preview:DockMargin(4, 4, 8, 4) preview:SetKeepAspect(true)
+            local _, texture = inspect(id, entry.index)
+            if texture then
+                local thumb = CreateMaterial("nativeloader_eye_thumb_" .. util.SHA256(texture:GetName()), "UnlitGeneric",
+                    {["$basetexture"] = texture:GetName(), ["$translucent"] = 1, ["$vertexcolor"] = 1})
+                thumb:SetTexture("$basetexture", texture) preview:SetMaterial(thumb)
+            end
+            local label = row:Add("DLabel")
+            label:Dock(TOP) label:SetTall(36) label:SetWrap(true)
+            label:SetTextColor(Color(25, 25, 25))
+            label:SetText(tostring(entry.index) .. ". " .. entry.name) label:SetTooltip(entry.name .. "\n" .. entry.path)
+            local status = row:Add("DLabel")
+            status:Dock(TOP) status:SetTall(26)
+            status:SetTextColor(Color(60, 60, 60))
+            local controls = row:Add("DPanel")
+            controls:Dock(TOP) controls:SetTall(32)
+            controls.Paint = function() end
+            local toggle = controls:Add("DCheckBoxLabel")
+            toggle:Dock(LEFT) toggle:SetWide(220) toggle:SetText(L("Eye white")) toggle:SetTextColor(Color(25, 25, 25))
+            local reset = controls:Add("DButton")
+            reset:Dock(FILL) reset:SetText(L("Use automatic detection"))
+            local updating = false
+            local function refresh()
+                local part = partFor(id, entry.index)
+                local manual = part and choice(id, part, entry.index)
+                updating = true
+                toggle:SetChecked(part and selected(id, part, entry.index) or false)
+                toggle:SetEnabled(texture ~= nil and part ~= nil)
+                reset:SetEnabled(texture ~= nil and part ~= nil and manual ~= nil)
+                if manual ~= nil then
+                    status:SetText(manual and L("Chosen: eye white") or L("Chosen: ordinary material"))
+                else
+                    status:SetText(entry.automatic and L("Automatic: eye white") or L("Automatic: ordinary material"))
+                end
+                if not texture then status:SetText(L("Generated texture unavailable")) end
+                updating = false
+            end
+            local function change(value)
+                if not setChoice(id, entry.index, value) then
+                    message:SetText(L("Choice could not be saved. The character may have been removed, or its saved choices were changed or are unreadable. Existing files have been kept."))
+                end
+                refresh()
+            end
+            toggle.OnChange = function(_, value) if not updating then change(value) end end
+            reset.DoClick = function() change(nil) end
+            refresh()
+        end
+    end
+    return frame
+end
+NATIVELOADER_EYE_WHITES = {SetChoice = setChoice, Materials = materials, Open = openAssignments}
+concommand.Add("nativeloader_eye_white_materials", function() openAssignments() end)
 concommand.Add("nativeloader_eye_whites_status", function()
     local applied = 0
     for _, state in ipairs(list) do if state.applied then applied = applied + 1 end end

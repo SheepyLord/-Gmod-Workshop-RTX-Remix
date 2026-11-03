@@ -6,6 +6,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R12
+
+- **Choose an imported character's eye-white materials by hand**: the button beside eye-white
+  brightness lists spawned characters' materials with thumbnails, automatic/manual status and live
+  toggles. Manual marks and exclusions survive map changes, restarts and same-asset re-imports;
+  returning to automatic detection clears a choice. Unspawned library characters load no textures
+  for this feature. All seven interface languages are supported
+  ([ADR 0097](docs/decisions/0097-manual-eye-white-materials.md)).
+
 ### R11
 
 - **Imported game PBR survives a missing source folder** (the user: keep game maps working after a

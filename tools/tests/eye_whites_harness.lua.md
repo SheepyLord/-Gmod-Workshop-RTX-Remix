@@ -1,5 +1,14 @@
 # eye_whites_harness.lua
 
+R12-D extends the real-controller fixture with a spawned entity list, strict full asset ownership,
+in-memory DATA/JSON round trips and a minimal Derma tree. Tests mark/unmark live bindings, saved true
+and false outranking names, exclusions overridden manually, source-independent full asset isolation,
+fresh controller/map/restart, remove/re-import, reset, unreadable/changed files, the saved-choice cap,
+and the actual chooser's thumbnail, checkbox, reset and 24-row pagination. Metadata listing and
+unspawned/preview/foreign assets must do no texture work. The JSON fixture round-trips deep copies;
+GMod owns the actual JSON parser and file implementation, exercised separately on the PoC.
+The missing-file size-0 regression models the measured GMod API result and must permit a first save.
+
 Soft-copy cases cover immediate/late copies, a copy inheriting the proxy, foreign asset/slot rejection,
 user edits and pruning/restoration. Public and soft eye draws share one alias, while the face stays original.
 

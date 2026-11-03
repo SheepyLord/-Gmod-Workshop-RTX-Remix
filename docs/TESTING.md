@@ -1,5 +1,22 @@
 # Testing
 
+## R12-D manual eye-white assignment
+
+`python -m unittest discover -s tools/tests -p test_eye_whites.py -v` runs 45 LuaJIT fixtures against
+the shipped controller/matcher/VTF code. They cover live mark/unmark, explicit true and false over
+automatic names/exclusions, shared-atlas isolation, resetting to automatic, full asset identity,
+same-session removal/re-import, a fresh controller's persisted choices, invalid/external/oversized
+choice sets, and actual chooser callbacks/thumbnails/24-row pages. Unspawned library metadata,
+editor previews and another asset's public path must cause no texture loading or proxy writes.
+The existing option retry, brightness, byte/alpha/mip identity, cache cap, soft-copy lifecycle and
+work-budget regressions remain included. Fixture JSON round-trips deep copies; actual GMod DATA
+and JSON operations are checked on the PoC.
+
+`tools/test.ps1 -Config Release` remains the delivery gate; `python tools/companion_i18n.py check`
+validates the template and all six catalogs. The [R12-D report](handover/R12-D-report.md) records
+the copied Baizhi fixture, its missed `bai3` surface, the activity gate/shared lock, before/after
+screenshots and PoC restoration. No field session or package input is changed by this task.
+
 ## R10-E: imported eye whites
 
 The [R10-E report](handover/R10-E-report.md) records six-condition PoC measurements, material binding

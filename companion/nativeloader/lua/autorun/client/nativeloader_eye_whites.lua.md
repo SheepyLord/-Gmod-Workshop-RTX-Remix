@@ -1,5 +1,30 @@
 # nativeloader_eye_whites.lua
 
+R12-D adds `nativeloader_eye_white_materials`, opened by **Choose eye-white materials** beside
+brightness in RTX Remix → Rendering → Model outlines. It preselects the character being looked at
+(or the only spawned character). The window lists names, original texture thumbnails, automatic/manual
+status, a live eye-white checkbox and **Use automatic detection**. Pages contain at most 24 materials,
+populated four per frame; thumbnails share the original texture without creating another atlas.
+Rows use explicit light backgrounds and dark names/status/checkbox text for readable contrast.
+The global enablement and brightness still apply, as do real PBR replacements' precedence.
+
+Client-local choices, including explicit `false`, live in DATA `nativeloader/eye_white_choices.json`
+(schema 1, at most 1 MiB / 4,096 choices). File existence is tested separately from file size so a
+missing file cannot be mistaken for an unreadable empty file. A full 64-hex content asset ID plus slot/native material name
+identifies a choice independently of the source location and generated renderer version. Re-importing
+the same asset, changing map or restarting preserves it. Reset removes the manual value. A malformed,
+oversized or unknown-version file is kept and blocks saving; an externally changed file also blocks
+saving. Writes are read back before applying a choice. A failed write leaves the previous live choice.
+No network, hotloader manifest or Remix user.conf is written.
+
+`NATIVELOADER_EYE_WHITES.Materials(asset)` reads spawned character metadata without loading textures;
+`SetChoice(asset, oneBasedSlot, true|false|nil)` validates the spawned owner, public VMT and generated
+VTF before persisting and scheduling the existing alias path. `Open(entity)` opens the same window.
+Discovery now uses `mmdhl.Entities()` / `GetAsset()` and already available `mmdhl.assets` metadata;
+unspawned library entries and editor previews cause no Material calls or proxy work. Public paths must
+belong to the asset's first 16 hex digits. Removing the last instance restores owned bindings at the
+next discovery sweep. See [ADR 0097](../../../../../docs/decisions/0097-manual-eye-white-materials.md).
+
 Generated `mmdhl.softMaterials[asset].soft[slot]` copies of an eligible eye part receive the same
 identity, including copies created late or inheriting the proxy. Only a strict generated name matching
 that asset's full 64-digit ID and slot is accepted. Owned soft bindings are restored on disable,

@@ -1,5 +1,8 @@
 # nativeloader_menu.lua
 
+R12-D registers **Choose eye-white materials** beside the eye-white brightness slider, invoking
+`nativeloader_eye_white_materials`. The controller owns the translated material chooser and saved choices.
+
 R10 adds the archived, live character controls beside Model outlines: “Steady eye whites for imported
 characters” (`nativeloader_eye_whites`, default on) and “Eye-white brightness”
 (`nativeloader_eye_white_brightness`, 0–200 percent, default 100). The companion eye-white controller

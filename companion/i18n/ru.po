@@ -917,3 +917,63 @@ msgstr "Импортируйте файлы VMD и управляйте библ
 #: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
 msgid "Open in window"
 msgstr "Открыть в окне"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:390 nativeloader/lua/autorun/client/nativeloader_menu.lua:309
+msgid "Choose eye-white materials"
+msgstr "Выбрать материалы белков глаз"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:394
+msgid "Choose a spawned character, or look at one before opening this window. Choices are saved for this character and apply to all its copies, without respawning. The brightness and steady-eye-white settings still apply."
+msgstr "Выберите созданного персонажа или посмотрите на него перед открытием окна. Выбор сохраняется для персонажа и сразу применяется ко всем его копиям без повторного создания. Настройки яркости и коррекции белков глаз продолжают действовать."
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
+msgid "Choose a spawned character"
+msgstr "Выбрать созданного персонажа"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:400
+msgid "Spawn a Model Hotloader character first. Only generated character textures can be selected."
+msgstr "Сначала создайте персонажа Model Hotloader. Можно выбирать только текстуры, созданные при импорте персонажа."
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+msgid "Previous materials"
+msgstr "Предыдущие материалы"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:405
+msgid "Next materials"
+msgstr "Следующие материалы"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:416
+msgid "Checked materials are eye whites. Use automatic detection removes a manual choice. A shared texture thumbnail can show the face too; only the selected material changes."
+msgstr "Отмеченные материалы считаются белками глаз. Автоматическое определение удаляет ручной выбор. Миниатюра общей текстуры может содержать лицо, но меняется только выбранный материал."
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:459
+msgid "Eye white"
+msgstr "Белок глаза"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:461
+msgid "Use automatic detection"
+msgstr "Автоматическое определение"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:471
+msgid "Chosen: eye white"
+msgstr "Вручную: белок глаза"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:471
+msgid "Chosen: ordinary material"
+msgstr "Вручную: обычный материал"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:473
+msgid "Automatic: eye white"
+msgstr "Автоматически: белок глаза"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:473
+msgid "Automatic: ordinary material"
+msgstr "Автоматически: обычный материал"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+msgid "Generated texture unavailable"
+msgstr "Созданная текстура недоступна"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:480
+msgid "Choice could not be saved. The character may have been removed, or its saved choices were changed or are unreadable. Existing files have been kept."
+msgstr "Не удалось сохранить выбор. Персонаж мог быть удалён, либо сохранённые настройки изменены или не читаются. Существующие файлы сохранены."

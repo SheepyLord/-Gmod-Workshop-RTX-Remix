@@ -39,6 +39,9 @@ G1-B's post-game fix pass is complete for implementation/offline checks:
 [G1-B fix report](G1-B-fix-report.md), branch `g1-native-fix`. Integration/game acceptance remains
 with Claude; the report includes real-map import counts and before/after timing limits.
 
+R12-D's manual eye-white chooser, validation and PoC evidence are recorded in
+[R12-D-report.md](R12-D-report.md); its changes stay on `r12-eyes` for Claude's integration.
+
 ## Rules for briefs
 
 - Self-contained for someone who has read [AGENTS.md](../../AGENTS.md) and nothing else.
