@@ -24,7 +24,9 @@ write.
 In the game: `out/r13-d/lab.py` (the shared PoC lock, an exact snapshot and restore of the PoC's
 mutable trees) runs a package with R13's crashed settings (memory profile recommended, tier medium),
 optionally with `r13d_stress.lua`, which calls `RemixConfig.SetConfigVariable` 250 times a frame for
-the sky's values and opens the user menu (which asks `user.conf`'s unsaved state every frame). The
+the sky's values and opens the user menu (which asks `user.conf`'s unsaved state every frame). With
+`--render --fps-max 0` it also writes from two render hooks with the frame rate uncapped, and the
+runtime before 0029 crashes within seconds with R13's signature. The
 [R13-D report](handover/R13-D-report.md) has the results.
 
 ## R13-M: compact imported game maps and reuse across versions

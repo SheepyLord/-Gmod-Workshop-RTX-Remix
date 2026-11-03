@@ -37,6 +37,16 @@ fixes it ([R13-D report](handover/R13-D-report.md)).
   `applyPendingValues` crashes the 0028 code within 1.3-2.1 s (3 of 3 runs). A crash caught by
   attaching a debug loop is the field crash: an access violation reading `0x50` at
   `resolveValue+0x3e` (`rtx_option.cpp:1151`), with `rcx=rbx=rsi=rdi=rbp=r8=0` and `rdx=r14=0x58`.
+- **Reproduced in the game** (PoC, gm_construct, R13's settings; `out/r13-d` in the
+  `r13-option-lock` worktree). On the published runtime (`91f0696c`), Lua's
+  `RemixConfig.SetConfigVariable` at 250 calls per Think plus 250 in each of two render hooks, frame
+  rate uncapped, crashed it within 10 s with the field signature:
+  - `d3d9.dll+0x1b7dfe` = `resolveValue+0x3e`, reading `0x50`;
+  - `applyPendingValues+0x2b9` on the stack.
+
+  The same writes at the 60 fps cap from Think alone (3.3 million in 220 s) did not crash it.
+  Capped, the game's thread mostly sleeps while the render thread ends the frame, so the two seldom
+  overlap. Patch 0029 took the uncapped load: 21 million writes in 220 s, normal quit.
 - **Lost writes.** `applyPendingValues` released the update mutex between passes even with no
   callback to run, and its final "Don't let dirty options persist across frames" clear came after
   another release. A burst of writes from another thread could keep it going to `maxResolves` (4),

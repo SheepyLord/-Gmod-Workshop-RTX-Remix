@@ -39,7 +39,9 @@ fix, and ship it.
   - all 34 runtime unit tests, including the new `test_rtx_option_threads` (15 of 15 runs);
   - the GPU probe's `r13` and `game` sequences, identical to the published runtime in every memory
     mode;
-  - three PoC sessions;
+  - seven PoC sessions. A Lua stress crashed the published runtime in the game within 10 s, with
+    R13's signature; 0029 took the same load for 220 s. One idle 0029 start ended in NVIDIA's Vulkan
+    driver, outside the option code, and two repeats were clean;
   - `tools\test.ps1 -Config Release`.
 
 ## 1. The crash, read from the dump
@@ -183,12 +185,50 @@ including the 308-line test.
   - `game`: `0x93e625c1683421dc`, pixel 1122867.
 
   These are the values R13-B recorded.
-- **PoC sessions:** section 6.
-- **`tools\test.ps1 -Config Release`:** section 6.
+- **PoC sessions and `tools\test.ps1 -Config Release`:** section 6.
 
 ## 6. In the game
 
-(PoC results.)
+The PoC sessions ran through `out/r13-d/lab.py`, on gm_construct at 1920x1080 with R13's crashed
+settings: memory profile recommended, tier medium, `-insecure`. Each hold did the following:
+
+- took the shared PoC lock;
+- snapshotted the PoC's mutable trees (large files hard-linked, the rest copied);
+- allowed only the given package;
+- restored everything exactly afterwards, checking `user.conf` and GMod's shared video settings.
+
+The stress (`r13d_stress.lua`) calls `RemixConfig.SetConfigVariable` 250 times per Think for the
+sky's seven sun, moon and star values. It opens the user menu after 20 s; that menu asks
+`user.conf`'s unsaved state every frame. It stops 20 s before the session ends. "Render" adds 250
+calls in each of two render hooks, so the game's thread also writes while it issues draws, as in
+R13's crash.
+
+| Session | Runtime | Load | Result |
+|---|---|---|---|
+| s1 | 0028 (published, `91f0696c`) | stress, 60 fps cap | 3.3 million writes in 220 s, normal quit |
+| s4 | 0028 | stress and render, uncapped | **crashed within 10 s of the stress**, before its first 10-second report. Access violation reading `0x50` at `d3d9.dll+0x1b7dfe` = `resolveValue+0x3e`, `rcx=rbx=rsi=rdi=rbp=r8=0`, `rdx=r14=0x58`. On the stack: `updateResolvedValue+0x15`, `applyPendingValues+0x2b9`, the update mutex and the dirty map. This is R13's crash |
+| s2 | 0029 (`b6fc1ae2`) | stress, 60 fps cap | 4.2 million writes in 280 s at the 60 fps cap (as s1), normal quit |
+| s5 | 0029 | stress and render, uncapped | 21 million writes in 220 s at 127 fps, normal quit |
+| s3 | 0029 | idle | Ended 12.6 s after launch, at the menu, in NVIDIA's Vulkan driver (see below) |
+| s6, s7 | 0029 | idle, 120 s each | normal quits |
+
+- **R13's crash is reproduced in the game.** It happens on the published runtime as soon as Lua's
+  writes overlap the render thread's frame end. With the 60 fps cap, the game's thread mostly sleeps
+  while the render thread ends its frame, so s1 did not crash, which fits about one session in ten
+  in R13. 0029 survives the load that crashes 0028.
+- **s3's crash is a different failure.** It is an access violation reading `0xffffffffffffffff` in
+  `nvoglv64.dll+0xe622f8`, on the render thread. The thread was in `DxvkDevice::createCommandList` ->
+  `DxvkCommandList::beginRecording`, while two driver threads were busy (start-up pipeline
+  compilation). There is no option code on that stack, and no driver reset in the System log. Two
+  idle repeats on the same package ran cleanly. It is recorded as an open item.
+- **The restores.** Every hold restored the PoC exactly (4,145 files each), and `user.conf` and the
+  video settings stayed unchanged.
+- **Disk space.** The snapshot copies and the set-aside session files (1.2-1.3 GB each) filled H:
+  until they were deleted after the seventh hold. Each hold's records (`snapshot.json`,
+  `restoration.json`, the session record) are kept.
+
+`tools\test.ps1 -Config Release` passes on the branch, run twice (before and after the commit): the
+repository checks, 26 CTests, and 28 + 25 + 539 Python tests.
 
 ## 7. Deviations and open items
 
@@ -206,3 +246,11 @@ including the 308-line test.
 - **A callback cycle still loses marks.** A cycle that runs `maxResolves` passes in one frame still
   drops marks another thread made during the last pass's callbacks (upstream's cycle guard). Nothing
   in GMod forms such a cycle.
+- **s3's start-up crash in NVIDIA's Vulkan driver** (section 6) did not repeat, and nothing ties it
+  to this patch. The R13-B report has device losses on the original runtime, and a separate
+  device-loss session exists for this machine.
+- **Patch number 0029 is also R13-F's.** R13-F (runtime: material preloads at their first draw) is
+  writing its own 0029 in parallel; it was told. Whichever lands second renumbers to 0030 and
+  rebuilds on top.
+- **The PDB.** The tested DLL and its PDB, for symbolizing a crash of this runtime, are kept in this
+  worktree's `out/r13-d/runtime-0029`.

@@ -135,6 +135,10 @@ session crashed this way. R13-B's time-boxed look found a candidate: `acquireLay
 recorded as a follow-up, not fixed, because the dump does not prove it. Dump and tools:
 `out/r13/int/rec-medium/game/crash-reports/` (this worktree) and `out/r13/verify/` (main checkout).
 
+**Follow-up, R13-D:** the cause was the Remix API's `SetConfigVariable` on the game's thread (the
+companion's sky sends values every 20 ms), not the layer actions. Runtime patch 0029 fixes it and
+the other unlocked paths ([R13-D report](R13-D-report.md)).
+
 ## Publication and field check (Claude)
 
 `main` at `c367169` was pushed (118 MB of LFS objects) and published: Workshop item 3829070317,
