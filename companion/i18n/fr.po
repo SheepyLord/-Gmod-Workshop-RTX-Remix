@@ -1074,7 +1074,7 @@ msgid "Imported game PBR: the game maps of imported characters, described in Cha
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:130
-msgid "Player models: your own body's shadow, and its height."
+msgid "Player models: your own body's shadow and reflection, and the height it is drawn at."
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:131
@@ -1546,7 +1546,7 @@ msgid "RTX Remix needs a graphics card with hardware ray tracing: NVIDIA RTX 20 
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:269
-msgid "The minimum is 8 GB of VRAM and 16 GB of system memory (RAM); 16 GB and 32 GB are recommended. On a smaller computer the game may stutter or run out of memory."
+msgid "The minimum is 8 GB of VRAM and 16 GB of system memory (RAM). With the recommended 16 GB of VRAM and 32 GB of RAM, everything runs smoothly. Computers below the minimum are not supported: the game may stutter or run out of memory on them."
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:270
@@ -1570,11 +1570,11 @@ msgid "The memory profile"
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:275
-msgid "Loader 0.13.0 or later also picks a memory profile from your VRAM and RAM, whichever is smaller. It decides how much the game keeps ready:"
+msgid "Loader 0.13.0 or later also picks a memory profile from your VRAM and your RAM: the smaller of the two decides. The profile sets how much the game keeps ready:"
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:277
-msgid "Minimum (8 GB VRAM, 16 GB RAM): no character is kept ready, and the game keeps one copy of each texture."
+msgid "Minimum (8 GB VRAM, 16 GB RAM): no character is kept ready, and game textures are not also kept in system memory."
 msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:278

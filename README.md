@@ -182,7 +182,7 @@ launch options.
 | Problem | What to try |
 |---|---|
 | The game crashes or closes when RTX starts | Check that your graphics card supports hardware ray tracing (see [Requirements](#requirements)). Start once with `-nonativeloader` to confirm the game itself runs, then read the message shown after the crash. |
-| Low frame rate, stutter or running out of video memory | Set a lower performance tier in `config.json`, lower the resolution, or try frame generation. The guide's *Memory and stability* page covers 8 GB cards and PCs with 16 GB of RAM. |
+| Low frame rate, stutter or running out of video memory | Set a lower performance tier in `config.json`, lower the resolution, or try frame generation. The guide's *Performance and memory* page covers 8 GB cards and PCs with 16 GB of RAM. |
 | The window shows "Not Responding" while a big map loads | The game is still working: mounting hundreds of add-ons or loading a large map can take minutes. Loader 0.12.1 and later keep Windows from marking the window during these loads. |
 | My ReShade presets don't appear with RTX | RTX Remix draws through Vulkan, so a Direct3D 9 ReShade has nothing to work on. The package brings its own ReShade for RTX sessions and copies your settings on the first RTX start. Press **Home** to open it. |
 | A package from the Workshop doesn't load | Content packages (Remix mods and Lua add-ons) load from any subscription. A package that contains native code is skipped until you add its Workshop ID to `"allow"`. Only do that for authors you trust. |
