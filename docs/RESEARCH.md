@@ -58,6 +58,40 @@ fixes it ([R13-D report](handover/R13-D-report.md)).
   Win32 debug loop that catches a test's first access violation, launching or attaching) are with
   R13's tools in the main checkout.
 
+## R13-P: how a streamed replacement texture reaches its mips (2026-11-03, Claude)
+
+Runtime source `out/worktrees/r12-vram/out/runtime-src` at `403b2336`; the A/B and its evidence are in
+the [R13-P report](handover/R13-P-report.md).
+
+- **A material's sampler-feedback stamp is its first replaced texture**, in the order albedo,
+  roughness, metallic, secondary, normal, tangent, height, emissive (`trackTexture`,
+  `rtx_scene_manager.cpp:1824-1841`, called at `:2215-2229`). The others are associated with it, at most
+  8 per stamp. A material that keeps the game's albedo (ToPBR's game maps, 54 of `ai_pbr`'s 219
+  materials) still gets feedback through its roughness, metallic or normal map.
+- **Feedback** is written only in the primary and PSR passes (`RAY_TRACING_PRIMARY_RAY`,
+  `opaque_surface_material_interaction.slangh:727-740`). It is the mip level a pixel needs, measured
+  against a fixed 4096 texture (`:443-455`), kept with an atomic minimum per stamp. The host reads the
+  previous frame's copy (`rtx_texture_manager.cpp:1448-1474`) and turns it into a count of mips: the
+  owner's mip count minus that level, given to the associated textures too (`:1500-1561`). An owner
+  smaller than 4096 therefore asks one level too few per halving. The largest count seen is kept until
+  budget pressure (`:1563-1588`).
+- **An undrawn streamed texture drops to its tail at once**: `garbageCollection` requests 0 mips for a
+  demotable texture no instance holds (`:1676-1682`), and the DDS loaders keep a five-mip tail
+  (`kMipLevelsToCache`, `rtx_asset_data_manager.cpp:35`, `:354`). Removing four characters freed 1.39 GB
+  within about 105 ms. Anti-culling keeps the instances of characters the camera turns away from
+  (`rtx.antiCulling.object.enable`), so turning away freed nothing.
+- **Load path**: one lowest-priority thread memory-maps each DDS, copies the requested mip range into a
+  96 MiB staging ring and hands at most 32 textures per frame to the render thread
+  (`rtx_texture_manager.cpp:472-706`, `:1051-1085`).
+- **Measured on the PoC** (3840x2160, NVMe, warm file cache): a streamed character's first upgrade
+  arrived 2-5 frames after it was first drawn, and the last 155-880 ms after it (251-464 MB per
+  character). The PoC's three character packs (2.22 GB) preloaded cost 2.23 GB of replacement textures,
+  1.64-1.71 GB of driver VRAM and 1.70 GB of private bytes at idle, with an unchanged working set.
+- **Mod precedence for a material defined twice**: `getReplacementMaterial` returns the first mod's
+  (`rtx_asset_replacer.cpp:110-121`), and mods sort by fallback priority, then path
+  (`rtx_mod_manager.h:130-140`). In the field `ai_pbr` therefore wins over the `pbr_*` packs, whose
+  copies of the same files are preloaded anyway.
+
 ## R13 integration: per-profile memory, an option crash, Steam Cloud (2026-11-03, Claude)
 
 - **Per-profile memory with the final package** (PoC, 1920x1080, gm_construct, the copied field
