@@ -1,5 +1,8 @@
 # nativeloader_eye_whites.lua
 
+R14-H rewords the chooser's help, its empty-state and selection notes, the unavailable-texture status
+("Texture not available") and the save-failure message in the guide's terms; behaviour is unchanged.
+
 R12-D adds `nativeloader_eye_white_materials`, opened by **Choose eye-white materials** beside
 brightness in RTX Remix → Rendering → Model outlines. It preselects the character being looked at
 (or the only spawned character). The window lists names, original texture thumbnails, automatic/manual

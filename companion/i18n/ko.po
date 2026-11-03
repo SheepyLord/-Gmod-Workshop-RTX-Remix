@@ -145,7 +145,7 @@ msgid "Night"
 msgstr "밤"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:684
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:261
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:260
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "이번 세션에서는 Remix API를 사용할 수 없어 이 설정들을 적용할 수 없습니다. 자세한 내용은 nativeloader_status를 실행하세요."
 
@@ -175,8 +175,8 @@ msgid "Follow the map's sun"
 msgstr "맵의 태양 따르기"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:695
-msgid "The time and direction of the map's own sun. Moving the time or the direction turns this off."
-msgstr "맵의 태양에 맞춰 시각과 방향을 설정합니다. 시각이나 방향을 변경하면 이 옵션이 꺼집니다."
+msgid "Puts the sun where the map's own sun is. Moving Time of day or Sun direction turns this off."
+msgstr ""
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:696
 msgid "Time of day"
@@ -204,16 +204,16 @@ msgid "Day length (min)"
 msgstr "하루 길이(분)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:722
-msgid "Real minutes for a whole day while the time passes."
-msgstr "시간 흐름이 켜져 있을 때 게임 속 하루에 걸리는 실제 시간(분)입니다."
+msgid "How many real minutes a whole day takes while Time passes is ticked."
+msgstr ""
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:723
 msgid "Sky update interval (s)"
 msgstr "하늘 갱신 간격(초)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:724
-msgid "How often the sun, moon, stars and weather move on: 0.02 is 50 times a second, 0 every frame. Longer saves a little time but the sky moves in steps."
-msgstr "해, 달, 별, 날씨를 얼마나 자주 갱신할지 정합니다. 0.02는 초당 50번, 0은 매 프레임입니다. 길게 하면 조금 가벼워지지만 하늘이 끊기듯 움직입니다."
+msgid "How often the sun, moon, stars and weather move: 0.02 is 50 times a second, 0 is every frame. A longer interval saves a little time, but the sky moves in steps."
+msgstr ""
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:725
 msgid "Season"
@@ -248,14 +248,14 @@ msgid "Weather"
 msgstr "날씨"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:733
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:270
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:274
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:273
 msgid "(leave to Remix)"
 msgstr "(Remix에 맡김)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:735
-msgid "Clouds, haze, fog, rain and snow. The runtime's own weather presets."
-msgstr "구름, 연무, 안개, 비, 눈. Remix 런타임 자체의 날씨 프리셋입니다."
+msgid "Clouds, haze, fog, rain and snow, from Remix's own weather presets."
+msgstr ""
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:736
 msgid "Weather change (s)"
@@ -271,8 +271,8 @@ msgstr "하늘과 날씨 초기화"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:744
 #: nativeloader/lua/autorun/nativeloader_sky.lua:744
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:71
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/nativeloader/guide_pages.lua:108
 msgid "Sky and weather"
 msgstr "하늘과 날씨"
 
@@ -282,21 +282,21 @@ msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "RTX 패키지 %s이(가) 업데이트되었습니다. 사용하려면 Garry's Mod를 재시작하세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Choose eye-white materials"
 msgstr "눈 흰자 머티리얼 선택"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
-msgid "Choose a spawned character, or look at one before opening this window. Choices are saved for this character and apply to all its copies, without respawning. The brightness and steady-eye-white settings still apply."
-msgstr "생성된 캐릭터를 선택하거나 캐릭터를 바라본 뒤 이 창을 여세요. 선택은 캐릭터별로 저장되며 같은 캐릭터의 모든 개체에 즉시 적용됩니다. 다시 생성할 필요가 없습니다. 밝기와 눈 흰자 보정 설정도 적용됩니다."
+msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites and Eye-white brightness still apply."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 msgid "Choose a spawned character"
 msgstr "생성된 캐릭터 선택"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
-msgid "Spawn a Model Hotloader character first. Only generated character textures can be selected."
-msgstr "먼저 Model Hotloader 캐릭터를 생성하세요. 캐릭터를 가져올 때 생성된 텍스처만 선택할 수 있습니다."
+msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Previous materials"
@@ -307,8 +307,8 @@ msgid "Next materials"
 msgstr "다음 머티리얼"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
-msgid "Checked materials are eye whites. Use automatic detection removes a manual choice. A shared texture thumbnail can show the face too; only the selected material changes."
-msgstr "체크한 머티리얼을 눈 흰자로 처리합니다. 자동 감지를 사용하면 수동 선택이 해제됩니다. 공유 텍스처의 미리보기에 얼굴도 보일 수 있지만 선택한 머티리얼만 바뀝니다."
+msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
 msgid "Eye white"
@@ -335,342 +335,68 @@ msgid "Automatic: ordinary material"
 msgstr "자동: 일반 머티리얼"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
-msgid "Generated texture unavailable"
-msgstr "생성된 텍스처를 사용할 수 없음"
+msgid "Texture not available"
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
-msgid "Choice could not be saved. The character may have been removed, or its saved choices were changed or are unreadable. Existing files have been kept."
-msgstr "선택을 저장할 수 없습니다. 캐릭터가 제거되었거나 저장된 선택이 변경되었거나 읽을 수 없습니다. 기존 파일은 보존되었습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:33
-msgid "Welcome"
-msgstr "환영합니다"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:35
-msgid "RTX Remix is running"
-msgstr "RTX Remix가 실행 중입니다"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:36
-msgid "Garry's Mod is path traced by NVIDIA RTX Remix. The native loader (bin\\win64\\winmm.dll) put the RTX package from the Workshop in place and started Remix before the game made its renderer."
-msgstr "Garry's Mod는 NVIDIA RTX Remix로 패스 트레이싱되고 있습니다. 네이티브 로더(bin\\win64\\winmm.dll)가 창작마당의 RTX 패키지를 배치하고, 게임이 렌더러를 만들기 전에 Remix를 시작했습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:37
-msgid "Everything RTX is in the spawn menu's RTX Remix tab: the settings of the RTX add-ons, the common Remix settings, and this guide."
-msgstr "RTX에 관한 모든 것은 스폰 메뉴의 'RTX Remix' 탭에 있습니다. RTX 애드온의 설정, 주요 Remix 설정, 그리고 이 가이드입니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:38
-msgid "Where to find things"
-msgstr "어디에 무엇이 있는지"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:39
-msgid "1. The RTX Remix tab in the spawn menu (hold Q): every setting of this package, in groups on the left."
-msgstr "1. 스폰 메뉴(Q를 누르고 있기)의 RTX Remix 탭: 이 패키지의 모든 설정이 왼쪽 그룹별로 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:40
-msgid "2. Remix's own menu (Alt+X): the renderer's settings, such as DLSS, frame generation and the graphics preset."
-msgstr "2. Remix 자체 메뉴(Alt+X): DLSS, 프레임 생성, 그래픽 프리셋 같은 렌더러 설정입니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:41
-msgid "3. This guide: open it again from the RTX Remix tab > Start here, or with the console command nativeloader_guide."
-msgstr "3. 이 안내서: RTX Remix 탭 > Start here 또는 콘솔 명령 nativeloader_guide로 다시 열 수 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:43
-msgid "In the picture: (1) the RTX Remix tab, (2) the groups of settings, (3) the panel of the group you chose. If the tab is missing, RTX is off in this session; see Troubleshooting."
-msgstr "그림 설명: (1) RTX Remix 탭, (2) 설정 그룹, (3) 선택한 그룹의 패널. 탭이 없으면 이 세션에서 RTX가 꺼져 있는 것입니다. 문제 해결을 참고하세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:44
-msgid "Turning RTX off or on"
-msgstr "RTX 끄기와 켜기"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:45
-msgid "RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too."
-msgstr "제거하지 않고 잠시 RTX를 끄려면 native-loader\\config.json에  \"remix\": { \"enabled\": false }  항목을 추가하고 게임을 다시 시작하세요. 그러면 게임은 일반 Garry's Mod가 되며, RTX 애드온도 불러오지 않습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:46
-msgid "The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam."
-msgstr "게임은 화면과 같은 크기의 테두리 없는 창으로 실행됩니다. 독점 전체 화면에서는 Remix가 충돌합니다. 다른 크기를 원하면 Steam에서 게임의 실행 옵션에 -w <width> -h <height>를 넣으세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:48
-msgid "Remix menu"
-msgstr "Remix 메뉴"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:50
-msgid "In the picture: (1) switch between the simple Graphics Settings menu and this developer menu, (2) the tabs of the developer menu, (3) how much video memory Remix uses, (4) frame generation, (5) the upscaler. Click a setting's round dot to see it differ from the default."
-msgstr "그림 설명: (1) 간단한 그래픽 설정 메뉴와 이 개발자 메뉴 전환, (2) 개발자 메뉴의 탭, (3) Remix가 사용하는 비디오 메모리, (4) 프레임 생성, (5) 업스케일러. 설정 옆의 둥근 점을 누르면 기본값과 다른지 볼 수 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:51
-msgid "Alt+X opens Remix's own menu"
-msgstr "Alt+X로 Remix 자체 메뉴가 열립니다"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:52
-msgid "The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option."
-msgstr "간단한 메뉴에는 그래픽 프리셋, DLSS, 프레임 생성이 있습니다. 개발자 메뉴인 '개발자 설정'(Developer Settings)에는 모든 옵션이 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:53
-msgid "Making changes stick"
-msgstr "변경 사항 유지하기"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:54
-msgid "1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed."
-msgstr "1. 먼저 '그래픽 프리셋'(Graphics Preset)을 '사용자 지정'(Custom)으로 설정하세요. 다른 프리셋은 실행할 때마다 다시 적용되어 개별적으로 바꾼 설정을 덮어씁니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:55
-msgid "2. Change what you want."
-msgstr "2. 원하는 설정을 바꾸세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:56
-msgid "3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults."
-msgstr "3. 저장: 그래픽 설정은 '사용자 설정(user.conf): 저장'(User Settings (user.conf): Save)으로, 개발자 설정은 'Remix 설정(rtx.conf): 저장'(Remix Config (rtx.conf): Save)으로 저장하세요. 두 파일 모두 Garry's Mod 폴더에 있으며 패키지의 기본값보다 우선합니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:57
-msgid "Do not press 'Migrate developer settings to rtx.conf'. Before saving, check 'View Changes': the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map."
-msgstr "'개발자 설정을 rtx.conf로 이전'(Migrate developer settings to rtx.conf)은 누르지 말고, 저장하기 전에 '변경 사항 보기'(View Changes)에서 내용을 확인하세요. RTX fixes가 Remix API를 통해 현재 맵에 맞춘 값을 일부 설정하므로, 이를 저장하면 모든 맵에 적용됩니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:59
-msgid "Settings"
-msgstr "설정"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:60
-msgid "Defaults from the original RTX install"
-msgstr "기존 RTX 환경의 기본값"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:61
-msgid "Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet."
-msgstr "Remix는 기존 RTX 환경의 설정(그 환경의 rtx.conf, dxvk.conf, user.conf)으로 시작합니다. RTX 애드온 자체의 설정에도, 아직 바꾸지 않은 항목에 한해 같은 환경의 값이 한 번 적용되었습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:62
-msgid "RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed."
-msgstr "'RTX Remix' 탭 > '시작하기' > '클래식 RTX 설정 사용'(콘솔: nativeloader_rtx_defaults)은 이 값들을 모두 다시 적용하며, 바꾼 값도 덮어씁니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:63
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
-msgid "Common Remix settings"
-msgstr "주요 Remix 설정"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:65
-msgid "In the picture: (1) apply this panel's choices at every launch (leave it off to keep Remix's saved settings), (2) the presets and quality choices; '(leave to Remix)' changes nothing, (3) a number you enable first with its checkbox, (4) fog presets, (5) clears everything this panel changed."
-msgstr "그림 설명: (1) 이 패널의 선택을 실행할 때마다 적용(끄면 Remix에 저장된 설정을 사용), (2) 프리셋과 품질 선택. '(leave to Remix)'는 아무것도 바꾸지 않음, (3) 먼저 체크 상자로 켜야 하는 숫자, (4) 안개 프리셋, (5) 이 패널이 바꾼 모든 것을 지움."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:66
-msgid "RTX Remix tab > Remix settings changes common settings for this session. Save them in Alt+X to keep them. Reapplying this panel's choices at launch is off by default; enable it only to override Remix's saved settings. Select a numeric override before editing it."
-msgstr "RTX Remix 탭의 Remix 설정에서 이번 게임에 적용할 공통 설정을 변경할 수 있습니다. 유지하려면 Alt+X 메뉴에서 저장하세요. 이 패널의 값을 시작할 때 다시 적용하는 기능은 기본적으로 꺼져 있습니다. Remix에 저장된 설정을 덮어쓰려는 경우에만 켜세요. 숫자를 편집하기 전에 해당 항목의 덮어쓰기를 선택하세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:67
-msgid "Fog: Remix's own volumetric presets, from light mist to heavy fog, dust and smoke. A preset replaces the weather's fog until you set it back to '(leave to Remix)'."
-msgstr "안개: Remix 자체의 볼류메트릭 프리셋으로, 옅은 박무부터 짙은 안개, 먼지, 연기까지 있습니다. 프리셋은 '(Remix에 맡김)'으로 되돌릴 때까지 날씨의 안개를 대신합니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:68
-msgid "Glass"
-msgstr "유리"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:70
-msgid "RTX Remix tab > Glass settings. In the picture: (1) glass strength, (2) whether cracks show, (3) how fast you must move to break a window (walking does not), (4) how long broken pieces stay. Walking through glass in noclip never breaks it."
-msgstr "RTX Remix 탭 > Glass settings. 그림 설명: (1) 유리 강도, (2) 금 표시 여부, (3) 창을 깨는 데 필요한 속도(걷기는 깨지 않음), (4) 깨진 조각이 남는 시간. 노클립으로 유리를 통과해도 깨지지 않습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:72
-msgid "RTX Remix tab > Sky and weather. The physical sky has a real sun, clouds, stars and a moon that light the map. By default the sun stands where the map's own sun is; move the time of day or the sun's direction to choose your own, or let the time pass."
-msgstr "'RTX Remix' 탭 > '하늘과 날씨'. 물리 기반 하늘에는 실제 태양, 구름, 별, 달이 있어 맵을 비춥니다. 기본적으로 태양은 맵 자체의 태양이 있는 곳에 있습니다. 시각이나 태양 방향을 움직여 직접 고르거나 시간이 흐르게 할 수 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:73
-msgid "The moon has the real Moon's face and goes through its phases, lit from the sun's side. The night sky is a detailed image of stars, a galaxy and nebulae that turns with the hour and the season; 'Night sky' switches to simulated stars."
-msgstr "달은 실제 달의 표면을 가지며 태양 쪽에서 비춰져 위상이 바뀝니다. 밤하늘은 별, 은하, 성운을 담은 정밀한 이미지로 시각과 계절에 따라 회전합니다. '밤하늘'에서 절차적으로 생성한 별로 바꿀 수 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:74
-msgid "Eclipse: a lunar eclipse turns the full moon copper red in Earth's shadow; a solar eclipse covers the sun, darkens the day and shows the corona and the stars. 'Eclipse progress' moves from first contact to the middle."
-msgstr "일식·월식: 월식에서는 보름달이 지구의 그림자 속에서 구릿빛 붉은색이 되고, 일식에서는 태양이 가려져 낮이 어두워지며 코로나와 별이 드러납니다. '식 진행'으로 첫 접촉부터 식의 최대까지 움직입니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:75
-msgid "Weather: twelve kinds, from clear to thunderstorm, snow and sandstorm, changing over the time you choose. Console: nativeloader_sky_time sunset (or noon, night, 18:30 ...), nativeloader_sky_status."
-msgstr "날씨: 맑음부터 뇌우, 눈, 모래폭풍까지 12가지이며, 고른 시간에 걸쳐 바뀝니다. 콘솔: nativeloader_sky_time sunset (또는 noon, night, 18:30 ...), nativeloader_sky_status."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:77
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-msgid "Lights"
-msgstr "조명"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:78
-msgid "Flashlight"
-msgstr "손전등"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:79
-msgid "The flashlight key gives a path-traced flashlight. Its brightness, cone and offsets are under RTX Remix tab > Lights > Flashlight."
-msgstr "손전등 키를 누르면 패스 트레이싱된 손전등이 켜집니다. 밝기, 원뿔 각도, 오프셋은 'RTX Remix' 탭 > '조명' > 'Flashlight'에 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:80
-msgid "Map lights"
-msgstr "맵 조명"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:81
-msgid "By default the map's own lights are lit by Remix from the game's lights (the 'light updater'). 'Disable Remix API Lights' under Rendering > Base Options switches between that and converting every map light into a Remix light."
-msgstr "기본적으로 맵 자체의 조명은 게임의 조명을 바탕으로 Remix가 밝힙니다('light updater'). '렌더링' > 'Base Options'의 'Disable Remix API Lights'로 이 방식과, 맵의 모든 조명을 Remix 조명으로 바꾸는 방식 사이를 전환합니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:82
-msgid "Advanced MMD Animation Player"
-msgstr "Advanced MMD Animation Player"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:83
-msgid "Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start."
-msgstr "이 애드온의 손전등은 RTX fixes의 모듈이 Remix API에 연결되면 Remix 조명이 됩니다(nativeloader_status에 'Remix API: ready'라고 표시됩니다). 조명의 세기는 반경에 따라 커집니다. 반경 1은 거의 보이지 않으며, 20~30으로 시작하는 것이 좋습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:85
-msgid "Memory and stability"
-msgstr "메모리와 안정성"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:86
-msgid "For 8 GB GPUs and 16 GB of RAM"
-msgstr "8 GB GPU와 16 GB RAM을 사용하는 PC"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:87
-msgid "Use a system-managed Windows page file on a drive with at least 30 GB free. Close browsers and stop OBS recording before playing. In Task Manager > Performance > Memory, watch Committed: the first number is in use, the second is the limit. If they are close, close other apps or use fewer heavy models."
-msgstr "여유 공간이 30 GB 이상인 드라이브에서 Windows 시스템 관리 크기의 페이지 파일을 사용하세요. 플레이 전에 브라우저를 닫고 OBS 녹화를 중지하세요. 작업 관리자 > 성능 > 메모리에서 커밋됨(Committed)을 확인하세요. 첫 번째 숫자는 사용량, 두 번째는 한도입니다. 두 값이 가까우면 다른 앱을 닫거나 메모리를 많이 쓰는 모델을 줄이세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:88
-msgid "Turn frame generation off in Alt+X and use 'User Settings (user.conf): Save' so a saved value does not return next start. Keep Garry's Mod's texture detail at its highest: lowering it changes the textures Remix hashes and can break replacement matching. Use fewer heavy characters to reduce memory pressure."
-msgstr "Alt+X에서 프레임 생성을 끄고 'User Settings (user.conf): Save'로 저장하세요. 저장하지 않으면 다음 시작 때 이전 값이 돌아올 수 있습니다. Garry's Mod의 텍스처 세부 수준은 최대로 유지하세요. 낮추면 Remix가 해시를 계산하는 텍스처가 바뀌어 교체가 일치하지 않을 수 있습니다. 무거운 캐릭터 수를 줄여 메모리 부담을 낮추세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:89
-msgid "Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."
-msgstr "성능 등급이나 GPU 충돌 진단을 변경하기 전에 bin\\win64\\winmm.dll을 0.11.0 로더로 업데이트하세요. 이전 로더는 이 설정 키를 거부하고 RTX 없이 시작합니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:90
-msgid "Performance tiers"
-msgstr "성능 등급"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:91
-msgid "The loader chooses high, medium or low from the NVIDIA GPU's model and VRAM; recognized laptop models step down one class tier. High keeps the classic defaults. Medium and low reduce rendering work and memory use when their tier layer is available; the package's low layer also uses smaller night-sky textures. Your saved Remix settings can override these defaults."
-msgstr "로더는 NVIDIA GPU 모델과 VRAM을 기준으로 high, medium, low를 선택합니다. 인식된 노트북 모델은 모델 등급이 한 단계 낮아집니다. High는 기존 기본값을 유지합니다. Medium과 low는 해당 등급 레이어가 있을 때 렌더링 작업과 메모리 사용을 줄이며, 패키지의 low 레이어는 더 작은 밤하늘 텍스처도 사용합니다. 저장한 Remix 설정이 이 기본값을 덮어쓸 수 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:92
-msgid "RTX Remix tab > Start here shows the tier and GPU, or the reason a tier layer was not applied. To override it, use auto, high, medium or low for remix.performance_tier in native-loader\\config.json, then restart Garry's Mod. Loader tiers are separate from Graphics Preset in Alt+X."
-msgstr "RTX Remix 탭 > 여기서 시작에는 등급과 GPU 또는 등급 레이어가 적용되지 않은 이유가 표시됩니다. 변경하려면 native-loader\\config.json의 remix.performance_tier를 auto, high, medium, low 중 하나로 설정하고 Garry's Mod를 다시 시작하세요. 로더 등급은 Alt+X의 Graphics Preset과 별개입니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:93
-msgid "Complete minimal config.json example for the shipped allowlist, with the low tier and GPU dumps off. If you customized the file, keep your allow entries and other settings when adding these objects. Invalid JSON turns RTX off."
-msgstr "아래는 기본 허용 목록을 유지하고 low 등급을 선택하며 GPU 덤프를 끄는 완전한 최소 config.json 예제입니다. 파일을 수정했다면 이 객체를 추가할 때 자신의 allow 항목과 다른 설정을 유지하세요. 잘못된 JSON은 RTX를 끕니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:95
-msgid "Local memory readings"
-msgstr "로컬 메모리 측정값"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:96
-msgid "Console: rtx_vram_stats prints VRAM totals and categories when the RTX fixes are available. The companion records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. After three failed API calls it stops for this map; toggle nativeloader_vram_telemetry off (0) and on (1) to retry. These files stay local."
-msgstr "콘솔: RTX 수정 모듈을 사용할 수 있으면 rtx_vram_stats가 VRAM 합계와 범주를 표시합니다. 동반 애드온은 garrysmod\\data\\native-loader\\vram.csv와 vram.previous.csv에 30초마다 기록합니다. API 호출이 세 번 연속 실패하면 이 맵에서 샘플링을 중단합니다. 다시 시도하려면 nativeloader_vram_telemetry를 끄고 (0) 켜세요 (1). 이 파일은 로컬에만 남습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:97
-msgid "This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."
-msgstr "이 0.11.0 로더는 native-loader\\logs\\memory.csv에 프로세스 RAM과 시스템 커밋 값도 기록합니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:98
-msgid "After a crash"
-msgstr "충돌 후"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:99
-msgid "Before restarting, copy status.json and session.json from garrysmod\\data\\native-loader\\, both vram CSV files and rtx-remix\\logs\\. The next start rewrites both JSON reports and can overwrite runtime logs; the session evidence folder does not keep these JSON reports."
-msgstr "다시 시작하기 전에 garrysmod\\data\\native-loader\\의 status.json과 session.json, 두 vram CSV 파일 및 rtx-remix\\logs\\를 복사하세요. 다음 시작 때 두 JSON 보고서가 다시 작성되며 런타임 로그도 덮어쓸 수 있습니다. 세션 증거 폴더는 이 JSON 보고서를 보관하지 않습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:100
-msgid "At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."
-msgstr "다음 시작 때 이 0.11.0 로더는 사용 가능한 이전 세션 로그, 덤프, 메모리 기록을 native-loader\\logs\\sessions\\에 복사합니다(최근 5개 세션, 총 200 MB 이하). 원본은 그대로 두며 복사본은 업로드하지 않습니다. 교체되기 전에 해당 세션 폴더를 복사하세요. 폴더가 보관되지 않았다면 crashes\\, native-loader\\logs\\gpu\\ 및 메모리 CSV 파일을 직접 보존하세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:101
-msgid "This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."
-msgstr "이 이전 로더는 세션 증거 폴더를 수집하지 않습니다. 게임을 다시 시작하기 전에 rtx-remix\\logs\\와 crashes\\의 해당 덤프를 복사하세요. 0.11.0 증거 수집을 사용하려면 bin\\win64\\winmm.dll을 업데이트하세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:102
-msgid "Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading."
-msgstr "저장한 로그와 JSON 보고서, 두 vram CSV 파일 및 보관된 세션 폴더를 보내세요. 루트의 rtx.conf, dxvk.conf, user.conf 사본과 가능한 경우 garrysmod\\console.log도 첨부하세요. 맵, 모델/모드, 충돌 직전 동작, 현지 시각과 시간대, 프레임 속도 및 작업 관리자의 커밋됨 (Committed) 값을 포함하세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:103
-msgid "Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\ and shaderDebugInfo\\*.nvdbg if no session folder kept them. For a GPU hang, include nearby Event Viewer System events from Display or nvlddmkm and any matching Windows LiveKernelReports\\WATCHDOG dump. Dumps can contain process memory; review what you share."
-msgstr "세션 폴더에 보관되지 않았다면 crashes\\ 또는 native-loader\\logs\\gpu\\의 해당 원본 덤프와 shaderDebugInfo\\*.nvdbg를 보존하세요. GPU가 멈췄다면 시간상 가까운 이벤트 뷰어 System 이벤트(Display 또는 nvlddmkm)와 해당 Windows LiveKernelReports\\WATCHDOG 덤프도 포함하세요. 덤프에 프로세스 메모리가 포함될 수 있으므로 공유할 내용을 확인하세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:104
-msgid "For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."
-msgstr "이 0.11.0 로더에서 GPU 충돌 재현을 요청받았다면 위의 완전한 config.json 예제에서 diagnostics.gpu_crash_dumps를 \"off\"에서 \"next_start\"로 바꾸고 다시 시작하세요. 설정 값은 \"next_start\"로 유지됩니다. 진단 시작을 다시 요청하려면 native-loader\\remix\\gpu-crash-dumps.used를 삭제하세요. 진단은 부하를 추가하며, 지원되는 진단이 충돌을 포착한 경우에만 GPU 덤프가 생성됩니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:106
-msgid "Troubleshooting"
-msgstr "문제 해결"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:107
-msgid "First look"
-msgstr "먼저 확인하기"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:108
-msgid "Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready."
-msgstr "콘솔: nativeloader_status. 로더가 배치하고 활성화한 항목, 세션의 패치, Remix API 준비 여부를 출력합니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:109
-msgid "Files to look at"
-msgstr "확인할 파일"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:110
-msgid "native-loader\\logs\\loader.log - what the loader did at this start."
-msgstr "native-loader\\logs\\loader.log - 이번 실행에서 로더가 한 작업."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:111
-msgid "garrysmod\\data\\native-loader\\status.json and session.json - the same as data."
-msgstr "garrysmod\\data\\native-loader\\status.json 및 session.json - 같은 내용을 데이터로 기록한 것."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:112
-msgid "rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top."
-msgstr "rtx-remix\\logs\\remix-dxvk.log - Remix 자체 로그. 실제로 적용되는 모든 설정이 앞부분에 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:113
-msgid "Common problems"
-msgstr "자주 발생하는 문제"
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:114
-msgid "The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default)."
-msgstr "시작 도중 게임이 종료되는 경우: rtx-remix\\logs에서 'last_crash'를 찾고 remix-dxvk.log의 끝부분을 확인하세요. 게임은 창 모드로 두세요(기본값이 창 모드입니다)."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:115
-msgid "An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare."
-msgstr "애드온이 화면 위에 그리거나 RTX 설정을 되돌리는 경우: 콘솔에 해당 애드온의 이름이 표시됩니다('[nativeloader] kept ...'). 비교하려면 nativeloader_guard 0으로 보호 기능을 끄세요."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:116
-msgid "Low frame rate: choose a lower graphics preset or DLSS quality. Frame generation is off by default for stability."
-msgstr "프레임 속도가 낮으면 그래픽 프리셋이나 DLSS 품질을 낮추세요. 안정성을 위해 프레임 생성은 기본적으로 꺼져 있습니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:117
-msgid "'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game."
-msgstr "RTX 창작마당 아이템에 대한 'Couldn't mount file'은 정상입니다. 게임 대신 로더가 이 아이템을 배치하기 때문입니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:118
-msgid "Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu')."
-msgstr "재시작하면 설정이 원래대로 돌아오는 경우: 프리셋을 '사용자 지정'(Custom)으로 설정하고 '저장'(Save)을 누르세요('Remix 메뉴' 참고)."
-
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:148
+msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:275
+#, c-format
+msgid "Previous: %s"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:282
+#, c-format
+msgid "Next: %s"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:345
+msgid "Contents"
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:375
 msgid "RTX Remix guide"
 msgstr "RTX Remix 가이드"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
+#: nativeloader/lua/nativeloader/guide_pages.lua:124
 msgid "Rendering"
 msgstr "렌더링"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/nativeloader/guide_pages.lua:146
+msgid "Lights"
+msgstr "조명"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:19
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:20
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
+#: nativeloader/lua/nativeloader/guide_pages.lua:158
 msgid "Water and glass"
 msgstr "물과 유리"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:342
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:342
+#: nativeloader/lua/nativeloader/guide_pages.lua:87
 msgid "Start here"
 msgstr "시작하기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
+#: nativeloader/lua/nativeloader/guide_pages.lua:98
 msgid "Remix settings"
 msgstr "Remix 설정"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:73
+#: nativeloader/lua/nativeloader/guide_pages.lua:70
 msgid "Graphics preset"
 msgstr "그래픽 프리셋"
 
@@ -739,11 +465,12 @@ msgid "Full resolution (DLAA)"
 msgstr "전체 해상도(DLAA)"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:81
+#: nativeloader/lua/nativeloader/guide_pages.lua:69
 msgid "Frame generation"
 msgstr "프레임 생성"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:276
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:275
 msgid "Off"
 msgstr "끄기"
 
@@ -829,8 +556,8 @@ msgstr "사용 가능한 등급 레이어가 없습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
 #, c-format
-msgid "Performance tier %s is not applied: %s. See the Memory and stability guide."
-msgstr "성능 등급 %s이(가) 적용되지 않았습니다: %s. 메모리 및 안정성 가이드를 참고하세요."
+msgid "Performance tier %s is not applied: %s. See Performance and memory in the guide."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:213
 msgid "Automatic selection"
@@ -871,151 +598,152 @@ msgid "Memory profile: %s (%s MiB VRAM, %s MiB RAM). Characters kept ready for a
 msgstr "메모리 프로필: %s(VRAM %s MiB, RAM %s MiB). 바로 스폰할 수 있게 준비해 두는 캐릭터: %s개, 나머지는 처음 사용할 때 불러옵니다. 변경하려면 native-loader\\config.json의 remix.memory_profile을 auto, minimum, recommended, high 중 하나로 설정한 뒤 Garry's Mod를 다시 시작하세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:238
-msgid "RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."
-msgstr "이번 세션에서는 RTX Remix가 네이티브 로더를 통해 실행되고 있습니다. RTX에 관한 모든 것은 이 탭에 있습니다."
+msgid "RTX Remix is running in this session. Every setting of the RTX package is in this tab, in the groups on the left."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
 msgid "Open the RTX Remix guide"
 msgstr "RTX Remix 가이드 열기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:245
-msgid "Memory and stability guide"
-msgstr "메모리와 안정성 가이드"
+msgid "Performance and memory guide"
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
+#: nativeloader/lua/nativeloader/guide_pages.lua:323
 msgid "Print the loader's status to the console"
 msgstr "로더 상태를 콘솔에 출력"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:247
-msgid "Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."
-msgstr "클래식 설정: 기존 RTX 환경의 값입니다. 아직 기본값이던 설정에만 한 번 적용되었습니다. 이 버튼은 이 값들을 모두 다시 적용합니다."
+msgid "The RTX add-ons started with the settings of the original RTX install, where you had not changed them yet. This button applies all of them again, also over your own changes."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:248
 msgid "Use the classic RTX settings"
 msgstr "클래식 RTX 설정 사용"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:249
-msgid "Keep add-ons from undoing RTX settings or drawing post-processing over the image"
-msgstr "애드온이 RTX 설정을 되돌리거나 화면에 후처리를 덧그리지 못하게 막기"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
 msgid "RTX session guard"
 msgstr "RTX 세션 보호"
 
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
+msgid "Stops other add-ons from undoing RTX settings or drawing post-processing over the picture. Turn it off only to test an add-on that misbehaves."
+msgstr ""
+
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
-msgid "Turn this off only to test an add-on that misbehaves."
-msgstr "오작동하는 애드온을 테스트할 때만 끄세요."
+msgid "Remix's own menu: press Alt+X. A change made there is lost at the next start unless you set Graphics Preset to Custom first and then save it; the guide shows how."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
-msgid "Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."
-msgstr "Remix 자체 메뉴: Alt+X를 누르세요. 개별 설정을 바꾸기 전에 그래픽 프리셋으로 '사용자 지정'(Custom)을 고르고, 그다음 '저장'(Save)을 누르세요. 그렇지 않으면 다음 실행 시 원래대로 돌아갑니다."
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
 msgid "Language"
 msgstr "언어"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:254
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
 msgid "Same as Garry's Mod"
 msgstr "Garry's Mod와 동일"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:256
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:255
 msgid "Language of this tab and the guide"
 msgstr "언어(이 탭과 가이드)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
-msgid "Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."
-msgstr "여기서 변경한 값은 이번 게임에 적용됩니다. 유지하려면 Alt+X 메뉴에서 설정을 저장하세요. 여기에 표시되는 값은 이 패널의 덮어쓰기 값이며, Remix의 현재 값을 실시간으로 표시하는 것은 아닙니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+msgid "Changes here apply at once, for this session. To keep them, press Alt+X and save them there. The values shown are this panel's own choices, not a live reading of Remix."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
 msgid "Reapply these overrides at every launch"
 msgstr "시작할 때마다 이 덮어쓰기 값 다시 적용"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:265
-msgid "Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."
-msgstr "끄면 Remix에 저장된 설정을 불러옵니다. 이 패널의 값으로 덮어쓰려는 경우에만 켜세요."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
+msgid "Off (the default), Remix starts with its own saved settings. On, this panel applies its choices at every start, over those settings."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:275
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:274
 msgid "On"
 msgstr "켜기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
 #, c-format
 msgid "Set %s here"
 msgstr "여기서 %s 설정"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
-msgid "Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."
-msgstr "숫자를 편집하기 전에 해당 항목의 덮어쓰기를 켜세요. 하늘 밝기와 색 순도는 0으로 설정할 수도 있습니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+msgid "A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:306
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
 msgid "Clear this panel's overrides"
 msgstr "이 패널의 덮어쓰기 값 지우기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:309
 msgid "Local player shadow"
 msgstr "내 플레이어 그림자"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:311
-msgid "Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."
-msgstr "1인칭 시점에서 내 몸의 그림자와 반사를 표시합니다. 다른 플레이어와 래그돌에는 영향을 주지 않습니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
+msgid "Shows the shadow and reflection of your own body while you play in first person. Other players and ragdolls are not affected."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:311
 msgid "Body height offset (units)"
 msgstr "몸 높이 오프셋(유닛)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:313
-msgid "Positive values raise only the rendered body. Your camera and collision stay in place."
-msgstr "양수 값은 화면에 그려지는 몸만 위로 올립니다. 카메라와 충돌 판정 위치는 바뀌지 않습니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
+msgid "Raises (positive) or lowers (negative) only that body. Your view and your collisions stay where they are."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
 msgid "Keep toolgun text sharp"
 msgstr "툴건 글자를 선명하게 표시"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
-msgid "Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."
-msgstr "업스케일링 후 툴건 화면을 전체 해상도로 그립니다. 애니메이션과 사용자 지정 화면도 정상적으로 갱신됩니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+msgid "Draws the toolgun's screen at full resolution after DLSS or another upscaler, so its text stays readable. Animated and custom screens keep working."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
 msgid "Hide outline meshes"
 msgstr "외곽선 메시 숨기기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
-msgid "Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."
-msgstr "모델을 덮거나 어둡게 만드는 호환되지 않는 외곽선 셸을 숨깁니다. 다른 모델 재질은 정상적으로 렌더링됩니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+msgid "Hides the outline shells that many anime models have: path tracing draws them as a dark layer over the model. The model's other materials are not changed."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Imported game PBR"
 msgstr "가져온 캐릭터 PBR"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
-msgid "Uses shipped Wuthering Waves, Endfield and Silver Palace maps. Preserves skin and faces. Off restores the original materials."
-msgstr "명조, 엔드필드, 실버 팰리스의 동봉 맵을 사용합니다. 피부와 얼굴을 유지하며, 끄면 원래 재질로 돌아갑니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+msgid "Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Steady eye whites for imported characters"
 msgstr "가져온 캐릭터의 흰자 밝기 안정화"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
-msgid "Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."
-msgstr "이름으로 흰자 표면을 식별합니다. PBR 팩이 있는 캐릭터는 팩의 머티리얼을 유지합니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
+msgid "Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
 msgid "Eye-white brightness"
 msgstr "흰자 밝기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
-msgid "Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."
-msgstr "백분율: 100은 조정된 기본값입니다. 자동 흰자 보정과 PBR 팩의 장면 적응형 눈 발광에 즉시 적용됩니다. 0은 이 발광을 끕니다."
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
+msgid "In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the scene-adapted eye glow of PBR packs; 0 removes that glow."
+msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
+msgid "Common Remix settings"
+msgstr "주요 Remix 설정"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
 msgid "Player models"
 msgstr "플레이어 모델"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
 msgid "Toolgun screen"
 msgstr "툴건 화면"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
 msgid "Model outlines"
 msgstr "모델 외곽선"
 
@@ -1032,3 +760,1093 @@ msgstr "VMD 파일을 가져오고 모션 라이브러리와 재생을 관리합
 #: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
 msgid "Open in window"
 msgstr "창으로 열기"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:44
+msgid "Welcome"
+msgstr "환영합니다"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:46
+msgid "RTX Remix is running"
+msgstr "RTX Remix가 실행 중입니다"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:47
+msgid "Garry's Mod is now path traced by NVIDIA RTX Remix: Remix follows rays of light as they bounce through the scene, so lighting, shadows and reflections look real."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:48
+msgid "The native loader (bin\\win64\\winmm.dll) installed the RTX package from the Steam Workshop and started Remix before the game opened its window. There is nothing else to install."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:49
+msgid "Where to find things"
+msgstr "어디에 무엇이 있는지"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:50
+msgid "Everything happens in three places:"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:52
+msgid "The RTX Remix tab of the spawn menu: hold Q and click RTX Remix at the top right. It holds every setting of the RTX package, in groups on the left."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:53
+msgid "Remix's own menu: press Alt+X. It holds the renderer's settings, such as the graphics preset, DLSS and frame generation."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:54
+msgid "This guide: open it again from the RTX Remix tab > Start here, or type nativeloader_guide in the console."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:56
+msgid "The RTX Remix tab, next to Tools, Options and Utilities."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:57
+msgid "The groups. Click a name in a group to open its panel."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:58
+msgid "The panel you opened."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:59
+msgid "First steps"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:61
+msgid "Hold Q to open the spawn menu, then click the RTX Remix tab."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:62
+msgid "Click Start here. It shows what the loader chose for your computer."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:63
+msgid "Press Alt+X and choose a graphics preset that keeps the game smooth."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:64
+msgid "To keep a change you make in Alt+X, save it there, as The Remix menu (Alt+X) shows."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:65
+msgid "If something looks wrong, read Troubleshooting."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:66
+msgid "Words used in this guide"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:67
+msgid "Path tracing"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:67
+msgid "Lighting computed by tracing rays of light through the scene. It makes RTX look real, and it is demanding for the graphics card."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:68
+msgid "DLSS"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:68
+msgid "NVIDIA's upscaler: the game is drawn at a lower resolution and enlarged with AI, which raises the frame rate."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:69
+msgid "Extra frames made between the drawn ones: smoother motion, with a little more input delay."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:70
+msgid "A set of Remix's quality settings chosen together: Ultra, High, Medium, Low or Custom."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:71
+msgid "PBR"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:71
+msgid "Physically based rendering: extra texture maps tell the path tracer how rough, metallic or bumpy a surface is."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:72
+msgid "Remix mod"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:72
+msgid "A folder in rtx-remix\\mods with replacements: better textures, materials or models that Remix shows instead of the game's own."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:73
+msgid "Remix API"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:73
+msgid "The connection through which the RTX add-ons control Remix: its settings, lights and materials."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:74
+msgid "VRAM"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:74
+msgid "The graphics card's own memory. Textures, characters and the path tracer all need it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:76
+msgid "The RTX Remix tab"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:77
+msgid "Hold Q and click RTX Remix at the top right of the spawn menu. Its list has six groups: click a name in a group, and its panel opens on the right. Most changes apply at once and are kept for your next game."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:79
+msgid "Quick Filter: type part of a name to find a panel."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:80
+msgid "Start here: the loader's choices for your computer, this guide and the language."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:81
+msgid "Remix settings: the Remix options people change most."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:82
+msgid "Sky and weather: the sun, moon, stars and weather."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:83
+msgid "Rendering: characters, materials and performance."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:84
+msgid "Lights: the flashlight and the map's lights."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:85
+msgid "Water and glass."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:86
+msgid "Drag the divider between the two halves of the spawn menu to give the RTX Remix tab more room."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:89
+msgid "What the loader chose for your computer: the performance tier and the memory profile."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:90
+msgid "Open the RTX Remix guide: opens this guide."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:91
+msgid "Performance and memory guide: opens the guide's page about memory and crashes."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:92
+msgid "Print the loader's status to the console: the loader's report, for when something is wrong."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:93
+msgid "Use the classic RTX settings: applies the original RTX install's settings again."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:94
+msgid "RTX session guard: stops other add-ons from undoing RTX settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:95
+msgid "Language: the language of this tab and this guide."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:96
+msgid "The RTX add-ons start with the settings of the original RTX install. Use the classic RTX settings applies all of them again, also over values you changed: use it to undo your own experiments."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:97
+msgid "Leave RTX session guard on. Turn it off only for a moment, to find out whether an add-on that misbehaves is the cause."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:99
+msgid "Common Remix settings changes the Remix options people change most, without opening Alt+X. A change applies at once, for this session."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:101
+msgid "Reapply these overrides at every launch: leave it off, and save in Alt+X instead."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:102
+msgid "A choice. (leave to Remix) means this panel does not touch that option."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:103
+msgid "A number is used only while the box above it, Set ... here, is ticked."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:104
+msgid "Fog: Remix's fog presets, from light mist to heavy fog, dust and smoke."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:105
+msgid "Clear this panel's overrides: forgets every choice made here."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:106
+msgid "To keep a change for your next game, press Alt+X and save it there, as The Remix menu (Alt+X) shows. Or tick Reapply these overrides at every launch: this panel then applies its choices at every start, over Remix's saved settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:107
+msgid "Max light bounces: more bounces light rooms more fully, and cost frame rate. Sky brightness changes only the map's own skybox. Post effects are bloom, motion blur and film grain. The other choices are the same settings as in Alt+X."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:110
+msgid "Sky: the physical sky, or the map's own skybox."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:111
+msgid "Follow the map's sun: the sun stands where the map's own sun is."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:112
+msgid "Time of day, with buttons for sunrise, morning, noon, sunset and night."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:113
+msgid "Sun direction: turns the sun's path around the map."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:114
+msgid "Time passes, and how many minutes a whole day takes."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:115
+msgid "Season, moon phase and eclipse."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:116
+msgid "Night sky: the detailed image of the stars, or simulated stars."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:117
+msgid "Weather, and how long a change of weather takes."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:118
+msgid "Reset the sky and weather."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:119
+msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the sun stands where the map's own sun is. Move Time of day or Sun direction to choose your own, or tick Time passes."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:120
+msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:121
+msgid "Eclipse: a lunar eclipse turns the full moon copper red; a solar eclipse covers the sun, darkens the day and shows the corona. Eclipse progress moves it from first contact (0) to the middle (100)."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:122
+msgid "Weather has twelve kinds, from clear to thunderstorm, snow and sandstorm. A fog preset chosen in Remix settings replaces the weather's fog until you set Fog back to (leave to Remix)."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:123
+msgid "Console shortcuts: nativeloader_sky_time sunset (or sunrise, noon, night, 18:30) sets the time; nativeloader_sky_status prints the sky's state."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:125
+msgid "Rendering holds the panels for characters, materials and performance:"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:127
+msgid "Base Options: your own body's shadow and reflection, map fixes, and which lights Remix uses."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:128
+msgid "Model outlines: outline shells, imported game PBR and eye whites, described in Characters."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:129
+msgid "Imported game PBR: the game maps of imported characters, described in Characters."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:130
+msgid "Player models: your own body's shadow, and its height."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:131
+msgid "Performance: draws the map faster. Mesh replacements stop working while Performance Mode is on."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:132
+msgid "ToPBR: makes PBR maps from the game's own materials. It uses a lot of VRAM and needs a map reload."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:133
+msgid "Auto-Categorization: sorts textures into Remix's categories automatically."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:134
+msgid "Toolgun screen: keeps the toolgun's screen text sharp."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:136
+msgid "Pseudoplayer Enabled: lets you see your own shadow and reflection."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:137
+msgid "Pseudoweapon Enabled: the same for the weapon you hold."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:138
+msgid "Hardware Skinning: needed by some mesh replacements; experimental."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:139
+msgid "Fix Skybox Leaking: hides parts of the map that show through the sky."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:140
+msgid "Disable Remix API Lights: ticked (the default), Remix uses the game's own lights; unticked, every map light becomes a Remix light."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:141
+msgid "Map Fixes: repairs broken map geometry on this map, at some cost in frame rate."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:143
+msgid "Performance Mode: draws the map's world and props faster, and breaks mesh replacements."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:144
+msgid "Culling and 3D Sky: which props are skipped, and the map's 3D skybox. Both need Performance Mode."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:145
+msgid "Advanced: Engine Patches. Leave them alone unless you are asked to change them."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:147
+msgid "Press your flashlight key (F by default) for a path-traced flashlight. Lights > Flashlight sets how it looks."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:149
+msgid "Brightness and radius of the light."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:150
+msgid "Cone angle and softness: the width of the beam and how soft its edge is."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:151
+msgid "Volumetric scale: how much the beam lights up fog and dust."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:152
+msgid "The light's color."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:153
+msgid "Position offset: moves the light away from your eyes."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:154
+msgid "Reset: back to the defaults."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:155
+msgid "Map: by default Remix lights the map from the game's own lights. When Disable Remix API Lights (Rendering > Base Options) is unticked, every map light becomes a Remix light, and the Map panel scales the brightness, size and glow in fog of point lights, spot lights and the sun."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:156
+msgid "Wrapper - Basic, Wrapper - Dynamic and Wrapper - Projected Texture turn the lights of other add-ons into Remix lights. Entity Light HUD shows the Remix lights near you."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:157
+msgid "Advanced MMD Animation Player: its flashlight becomes a Remix light when the Remix API is ready (nativeloader_status says Remix API: ready). The light's strength grows with its radius: a radius of 1 is almost invisible; start with 20 to 30."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:160
+msgid "Map windows and Spawned glass: annealed glass breaks into large shards, tempered glass into many small pieces."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:161
+msgid "Glass strength."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:162
+msgid "Show cracks."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:163
+msgid "Player break speed: how fast you must move to break a window. Walking stays below it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:164
+msgid "Debris lifetime and budget: how long broken pieces stay, and how many there may be."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:165
+msgid "Clear broken glass."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:166
+msgid "The server settings need an administrator; in a single-player game that is you. Kind, strength and piece size apply to new panes: clean up the map to replace its windows. Flying through glass in noclip never breaks it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:167
+msgid "RTX Water makes the map's water path traced, with waves, ripples from players, objects and bullets, and splashes. Choose the water type and the waves there, or leave them on Auto (map default)."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:169
+msgid "Enable RTX Water."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:170
+msgid "Water type and Waves: Auto (map default) uses what the map sets."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:171
+msgid "The waves: strength, speed, direction and size."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:172
+msgid "Waves from players, NPCs, objects and bullets, and how far they travel."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:173
+msgid "Splashes thrown up by bodies and bullets."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:175
+msgid "The Remix menu (Alt+X)"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:176
+msgid "Alt+X opens and closes Remix's own menu, drawn over the game. It comes in two forms: the simple menu, User Graphics Settings, and the developer menu with every option. While the menu is open, the mouse works in the menu."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:177
+msgid "The simple menu"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:179
+msgid "The tabs. General: the language, DLSS and frame generation. Graphics: Graphics Preset and the quality settings. Content: Remix's replacements on or off. Permissions: what NVIDIA may collect."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:180
+msgid "DLSS Preset: Custom lets you choose the DLSS settings below yourself."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:181
+msgid "DLSS Mode: how much smaller the game is drawn before DLSS enlarges it. Performance is fastest, Quality sharpest."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:182
+msgid "Frame Generation."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:183
+msgid "Developer Settings Menu: opens the developer menu."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:184
+msgid "Save Settings: keeps your changes in user.conf. It is orange while something is not saved."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:185
+msgid "Delete All User Settings: forgets everything saved in user.conf."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:186
+msgid "The developer menu"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:188
+msgid "Graphics Settings Menu: back to the simple menu."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:189
+msgid "Default Menu: when ticked, Alt+X opens this developer menu instead of the simple one."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:190
+msgid "The tabs: Rendering, Game Setup, Enhancements, About and Dev Settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:191
+msgid "How much video memory Remix uses."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:192
+msgid "A blue dot marks a setting that differs from its default."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:193
+msgid "Each section of a tab opens and closes with a click on its name. At the very end of the developer menu is Settings Management, where its changes are saved."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:194
+msgid "Keeping your changes"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:195
+msgid "Remix reads its settings from files at every start. A change you make in the menu lasts until you quit, unless you save it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:197
+msgid "Set the preset to Custom first: Graphics Preset on the simple menu's Graphics tab, and DLSS Preset on its General tab if you change DLSS. Any other preset is applied again at every start, over the single settings you changed."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:198
+msgid "Change the settings you want."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:199
+msgid "Check what will be saved: hold the mouse over Save Settings, or open View Changes in the developer menu's Settings Management."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:200
+msgid "Save. In the simple menu, click Save Settings. In the developer menu, User Settings (user.conf): Save keeps graphics settings such as the presets, DLSS and frame generation, and Remix Config (rtx.conf): Save keeps developer settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:201
+msgid "Start the game again once, to check that your settings came back."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:203
+msgid "View Changes: the list of what Save would write to user.conf."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:204
+msgid "User Settings (user.conf): Save keeps your graphics settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:205
+msgid "Migrate developer settings to rtx.conf: do not press it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:206
+msgid "Remix Config (rtx.conf): Save keeps developer settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:207
+msgid "Do not press Migrate developer settings to rtx.conf. Before you save, check what will be saved: the RTX add-ons set some values for the current map through the Remix API, and saving them would apply them to every map."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:208
+msgid "Both files are in the Garry's Mod folder, and they win over the RTX package's defaults."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:209
+msgid "The graphics preset and the loader's tier"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:210
+msgid "The loader's performance tier, shown in Start here, only sets the package's starting values for your graphics card. The graphics preset and everything you save in Alt+X win over it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:212
+msgid "Characters"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:213
+msgid "Characters from MMD and from other games come into Garry's Mod through the Model Hotloader. The RTX package adds automatic PBR for characters from some games, and steady eye whites."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:214
+msgid "Importing a character"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:216
+msgid "Hold Q and click External Models at the top left of the spawn menu. For the same in a window of its own, type mmdhl_open in the console."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:217
+msgid "Click Import Character Models and choose the model's file."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:218
+msgid "Wait until the import is done. The character then appears in your library."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:220
+msgid "Import Character Models: choose a model's file to import."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:221
+msgid "Your library, in folders. Click a character to select it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:222
+msgid "The selected character, with a preview you can turn with the mouse."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:223
+msgid "Spawn it: as a ragdoll, as a friendly or hostile NPC, or as your player model."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:224
+msgid "Spawning"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:225
+msgid "Select a character in the library, then click Spawn Ragdoll, Spawn Friendly NPC, Spawn Hostile NPC or Use as Player Model. Characters you saved as NPCs also appear in the spawn menu's NPCs tab."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:226
+msgid "To save memory, a character is loaded the first time you use it in a game. A large character can take a few seconds then; after that it spawns at once. Your most recently used characters stay ready: five on a recommended computer, ten on a high one, as Performance and memory explains."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:227
+msgid "Automatic PBR for game characters"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:228
+msgid "Characters imported from Wuthering Waves, Endfield and Silver Palace bring the game's own normal and material maps. The RTX package uses them automatically, so these characters look right under path tracing. Skin and faces stay as they are, and a real Remix replacement, such as a PBR pack you installed, always comes first."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:230
+msgid "Imported game PBR: ticked, the game's maps are used; unticked, the original materials."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:231
+msgid "The character: the one you look at, or choose another here."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:232
+msgid "Its materials, each with its state: automatic or cached (the game's maps are used), override (your choice), none, or waiting (not drawn yet)."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:233
+msgid "Map family: a set of maps that belong together."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:234
+msgid "Single maps: normal, packed and emission."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:235
+msgid "The buttons that apply your choice."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:237
+msgid "Spawn the character and look at it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:238
+msgid "Open Rendering > Imported game PBR. For a separate window, type rtx_topbr_game_editor in the console."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:239
+msgid "Click List looked-at character, then click a material in the list."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:240
+msgid "Choose a Map family and click Use selected family, or choose single maps and click Use individual maps."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:241
+msgid "No game maps for this texture turns the maps off for this material. Return to automatic undoes your choice."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:242
+msgid "A choice applies to every character that shows the same texture, and it is kept for your next games."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:243
+msgid "Eye whites"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:244
+msgid "Under path tracing, the whites of anime eyes can look grey or dirty. Steady eye whites for imported characters, in Rendering > Model outlines, keeps them clean and bright on imported characters without a PBR pack. It recognizes eye-white materials by their names; when it misses one, or takes a wrong one, choose them yourself."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:246
+msgid "Hide outline meshes: hides the outline shells of anime models."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:247
+msgid "Imported game PBR."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:248
+msgid "Steady eye whites for imported characters."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:249
+msgid "Eye-white brightness, in percent: 100 is the tuned default."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:250
+msgid "Choose eye-white materials: opens the chooser."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:252
+msgid "Spawn the character."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:253
+msgid "Open Rendering > Model outlines and click Choose eye-white materials."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:254
+msgid "Choose the character at the top, if it is not chosen already."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:255
+msgid "Tick Eye white on the eye-white materials, and untick it on the others."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:257
+msgid "The character whose materials are listed."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:258
+msgid "A material's texture; its name and its state are beside it. Here the state says Automatic: eye white."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:259
+msgid "Eye white: ticked for eye whites. Use automatic detection undoes your choice for this material."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:260
+msgid "More materials, 24 to a page."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:261
+msgid "Your choice is saved for this character and applies to all its copies at once, without respawning."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:262
+msgid "Open the eye-white chooser"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:263
+msgid "Motions"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:264
+msgid "The Motion importer tab, next to External Models, imports MMD motions (VMD files) with their music, and plays them on characters."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:266
+msgid "Performance and memory"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:267
+msgid "What your computer needs"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:268
+msgid "RTX Remix needs a graphics card with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or newer, or Intel Arc."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:269
+msgid "The minimum is 8 GB of VRAM and 16 GB of system memory (RAM); 16 GB and 32 GB are recommended. On a smaller computer the game may stutter or run out of memory."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:270
+msgid "The performance tier"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:271
+msgid "At every start the loader picks a performance tier for your NVIDIA graphics card: high, medium or low. High keeps the package's full settings. Medium and low use fewer light bounces and smaller memory budgets, so the frame rate holds up. A laptop graphics card counts one step lower."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:272
+msgid "Start here shows the tier, your graphics card and why the tier was chosen. Settings you save in Alt+X still win over it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:273
+msgid "Your loader is older than 0.11.0 and has no performance tiers. Update bin\\win64\\winmm.dll to loader 0.11.0 or later before you change tiers or GPU crash diagnostics: older loaders reject those settings and start without RTX."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:274
+msgid "The memory profile"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:275
+msgid "Loader 0.13.0 or later also picks a memory profile from your VRAM and RAM, whichever is smaller. It decides how much the game keeps ready:"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:277
+msgid "Minimum (8 GB VRAM, 16 GB RAM): no character is kept ready, and the game keeps one copy of each texture."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:278
+msgid "Recommended (16 GB, 32 GB): your five most recently used characters stay ready."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:279
+msgid "High (24 GB, 64 GB or more): ten characters stay ready."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:280
+msgid "On every profile, game textures that nothing has drawn for a minute leave the graphics card once they fill a quarter of its memory, and come back when they are used again."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:281
+msgid "Start here shows your profile and how many characters it keeps ready."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:282
+msgid "Your loader reports no memory profile, so every character loads when it is first used. Update bin\\win64\\winmm.dll to loader 0.13.0 or later to get one."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:283
+msgid "Choosing the tier or profile yourself"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:285
+#: nativeloader/lua/nativeloader/guide_pages.lua:351
+msgid "Close Garry's Mod."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:286
+#: nativeloader/lua/nativeloader/guide_pages.lua:352
+msgid "Open native-loader\\config.json in the Garry's Mod folder with a text editor."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:287
+msgid "Add the settings you want, as in this complete example. If you changed the file before, keep your own allow entries and other settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:288
+msgid "Save the file and start the game. Start here shows the result."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:290
+msgid "remix.performance_tier is auto, high, medium or low; auto lets the loader choose."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:291
+msgid "For the memory profile, add \"memory_profile\" to \"remix\" with auto, minimum, recommended or high."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:292
+msgid "Invalid JSON turns RTX off: keep every brace, comma and quote. Restart Garry's Mod after each change."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:293
+msgid "Tips for 8 GB graphics cards and 16 GB of RAM"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:295
+msgid "Play at 1920x1080: 4K needs far more memory."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:296
+msgid "Use a system-managed Windows page file on a drive with at least 30 GB free."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:297
+msgid "Close browsers and stop OBS recording before you play."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:298
+msgid "Spawn fewer heavy characters at once, and unsubscribe from Workshop add-ons you no longer use."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:299
+msgid "Remove Remix mods you no longer use from rtx-remix\\mods: most load all their textures at every start."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:300
+msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:301
+msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:302
+msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:303
+msgid "Reading memory in the game"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:304
+msgid "Console: rtx_vram_stats prints how much VRAM the game uses, by category."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:305
+msgid "The RTX package records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. nativeloader_vram_telemetry 0 stops it, and 1 starts it again. After three failed readings it stops for the map; switch it off and on to retry. These files stay on your computer."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:306
+msgid "The loader also records native-loader\\logs\\memory.csv: the game's RAM and the system's commit, every 10 seconds."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:307
+msgid "After a crash"
+msgstr "충돌 후"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:309
+msgid "Before you start the game again, copy status.json and session.json from garrysmod\\data\\native-loader\\, both vram CSV files and the rtx-remix\\logs\\ folder. The next start overwrites them."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:310
+msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:311
+msgid "This loader keeps no copies of earlier sessions: also copy the matching dumps from crashes\\ before you restart, and update bin\\win64\\winmm.dll to loader 0.11.0 or later."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:312
+msgid "To report the crash, send those files, copies of rtx.conf, dxvk.conf and user.conf from the Garry's Mod folder, and garrysmod\\console.log if you have it."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:313
+msgid "Say which map, characters and mods you used, what you did just before, the time and time zone, the frame rate and the Committed reading."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:314
+msgid "For a GPU hang, also send the Display or nvlddmkm events from Event Viewer > Windows Logs > System, and any matching dump in C:\\Windows\\LiveKernelReports\\WATCHDOG. Dumps can hold some of the game's memory: check what you share."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:315
+msgid "If you are asked for a GPU crash dump: change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete example above, and restart. The value stays \"next_start\"; to ask for another diagnostic start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics slow the game a little."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:317
+msgid "Troubleshooting"
+msgstr "문제 해결"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:318
+msgid "First look"
+msgstr "먼저 확인하기"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:320
+msgid "Open the console with the ~ key. If it does not open, turn on Options > Keyboard > Advanced > Enable developer console."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:321
+msgid "Type nativeloader_status and press Enter, or click the button below and then open the console."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:322
+msgid "nativeloader_status prints what the loader installed and started, and whether the Remix API is ready. activation: active means that RTX is on."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:324
+msgid "Common problems"
+msgstr "자주 발생하는 문제"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:325
+msgid "The RTX Remix tab is missing."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:326
+msgid "RTX is off in this session. Run nativeloader_status: it says why, for example \"enabled\": false under \"remix\" in config.json, or a graphics card without ray tracing."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:327
+msgid "The game closes while it starts."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:328
+msgid "Look in rtx-remix\\logs for a file named last_crash, and at the end of remix-dxvk.log. Keep the game in its window, as it is by default: exclusive fullscreen crashes Remix."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:329
+msgid "Settings come back after a restart."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:330
+msgid "Set Graphics Preset to Custom and save in Alt+X, as The Remix menu (Alt+X) shows."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:331
+msgid "The frame rate is low."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:332
+msgid "Choose a lower graphics preset, or a faster DLSS mode such as Performance. Frame generation is off by default; on RTX 40 and 50 cards it can make motion smoother."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:333
+msgid "An add-on draws over the picture or undoes RTX settings."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:334
+msgid "The console names it, in a line that starts with [nativeloader] RTX guard. To compare, untick RTX session guard in Start here, and tick it again afterwards."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:335
+msgid "Couldn't mount file appears for the RTX Workshop item."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:336
+msgid "That is expected: the loader installs this item itself, instead of the game."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:337
+msgid "An imported character looks grey, or its eyes look dirty."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:338
+msgid "Check Rendering > Model outlines: Imported game PBR and Steady eye whites for imported characters should be ticked. Characters explains both."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:339
+msgid "The first spawn of a character takes a few seconds."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:340
+msgid "That is expected: a character is loaded the first time you use it in a game."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:341
+msgid "Files to look at"
+msgstr "확인할 파일"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:342
+msgid "These paths start in the Garry's Mod folder, the one that holds gmod.exe."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:344
+msgid "native-loader\\logs\\loader.log: what the loader did at this start."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:345
+msgid "garrysmod\\data\\native-loader\\status.json and session.json: the same, as data."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:346
+msgid "rtx-remix\\logs\\remix-dxvk.log: Remix's own log, with every setting in effect near the top."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:347
+msgid "native-loader\\logs\\sessions\\: copies kept from earlier sessions."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:348
+msgid "After a crash: what to copy and send"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:349
+msgid "Turning RTX off for a while"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:353
+msgid "Replace its text with the example below. If you changed the file before, keep your own entries and add only the remix part."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:354
+msgid "Start the game: it is plain Garry's Mod, without the RTX add-ons. Remove the remix part again to turn RTX back on."
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:356
+msgid "The game window"
+msgstr ""
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:357
+msgid "With RTX the game runs in a borderless window as large as your screen, because exclusive fullscreen crashes Remix. For another size, add -w and -h to the game's launch options in Steam, for example -w 1920 -h 1080."
+msgstr ""

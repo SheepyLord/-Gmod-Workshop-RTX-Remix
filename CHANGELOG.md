@@ -18,6 +18,19 @@ Versions follow the loader's CMake project version once it ships; until then eve
   screenshots (numbered arrows) of the RTX Remix tab, Common Remix settings, Glass settings and Remix's
   Alt+X menu, drawn from real captures (`tools\guide_annotate.py`, `tools\qa\guide_shots.lua`); the new
   text is translated into the six languages.
+- **The RTX Remix guide, redesigned** (R14-H): a window with a contents list (every page and its
+  sections) instead of six tabs, and six task-ordered pages: Welcome, The RTX Remix tab (one section per
+  group), The Remix menu (Alt+X), Characters, Performance and memory (was Memory and stability) and
+  Troubleshooting. Short task-first steps, the words it uses explained, symptoms with what to do, and
+  sharp labeled pictures of every place a player goes (the tab and its panels, both forms of the Alt+X
+  menu and its Save buttons, External Models, Imported game PBR and the eye-white chooser with a
+  character): real 1920x1080 captures, cropped, never scaled, with numbered badges and arrows that never
+  cover what they point at, and a translated legend under each. `nativeloader_guide <page> [section]`
+  opens a part directly. The help lines of the RTX Remix tab's own panels, the Sky and weather panel and
+  the eye-white chooser were reworded in the same terms (the Start here button is now Performance and
+  memory guide). `tools\guide_annotate.py` reads a per-picture spec (`tools\guide_pictures.json`);
+  `tools\qa\guide_shots.lua` opens each panel through `spawnmenu.ActivateTool`. The new text awaits its
+  translations (R14-T).
 ### R13
 
 - **Imported game maps take about a sixth of the memory** (R13-M,

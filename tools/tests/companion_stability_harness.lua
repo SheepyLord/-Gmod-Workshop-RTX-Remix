@@ -96,6 +96,8 @@ RunConsoleCommand = refuse
 local i18n
 include = function(path)
     if path == "nativeloader/i18n_data.lua" then return data end
+    -- R14-H: the guide's pages are a module beside i18n.lua.
+    if path == "nativeloader/guide_pages.lua" then return dofile((i18n_path:gsub("i18n%.lua$", "guide_pages.lua"))) end
     assert(path == "nativeloader/i18n.lua")
     if not i18n then i18n = dofile(i18n_path) end
     return i18n
@@ -113,13 +115,13 @@ local function start_panel()
     return panel
 end
 local panel = start_panel()
-assert(panel.buttons.nativeloader_stability_guide == i18n.L("Memory and stability guide"))
+assert(panel.buttons.nativeloader_stability_guide == i18n.L("Performance and memory guide"))
 if code == "ru" then
     assert(i18n.L("High") == "Высокий" and i18n.L("Medium") == "Средний" and i18n.L("Low") == "Низкий",
         "Russian tier adjectives must agree with masculine Уровень")
 end
 local normal_format = "Performance tier: %s (%s; %s, %s MiB VRAM). To change it, set remix.performance_tier in native-loader\\config.json to auto, high, medium or low, then restart Garry's Mod."
-local unapplied_format = "Performance tier %s is not applied: %s. See the Memory and stability guide."
+local unapplied_format = "Performance tier %s is not applied: %s. See Performance and memory in the guide."
 local function find_tier(p)
     local found
     for _, line in ipairs(p.lines) do
@@ -158,7 +160,7 @@ else
         assert(line:find("native-loader\\config.json", 1, true) and line:find("auto", 1, true))
     end
     if code ~= "en" then
-        assert(data[code]["Memory and stability guide"] ~= "Memory and stability guide")
+        assert(data[code]["Performance and memory guide"] ~= "Performance and memory guide")
         assert(data[code][level] ~= level, "tier label fell back to English")
     end
 end
@@ -185,34 +187,27 @@ if scenario == "refresh" then
     assert(refreshed:find(i18n.L("Configuration override"), 1, true))
 end
 if scenario:find("^guide") or json_body then
-    TOP, FILL = 1, 2
+    -- R14-H: the guide is a window with its pages listed on the left; it records what the open page
+    -- shows (NATIVELOADER_GUIDE.shown), in the order drawn.
+    TOP, FILL, LEFT, RIGHT, BOTTOM = 1, 2, 3, 4, 5
     Color = function() return {} end
     ScrW, ScrH = function() return 1920 end, function() return 1080 end
-    local sheet
+    IsValid = function(value) return value ~= nil end
+    surface.CreateFont = function() end
     local function widget(class, parent)
-        local result = {class = class, parent = parent, labels = {}, tabs = {}}
+        local result = {class = class, parent = parent}
         setmetatable(result, {__index = function() return function() end end})
         function result:Add(kind) return vgui.Create(kind, self) end
-        function result:SetText(text)
-            if self.class == "DLabel" then self.parent.labels[#self.parent.labels + 1] = text end
-        end
         function result:SetWrap(wrap) assert(wrap, "guide text must wrap") end
         function result:SetAutoStretchVertical(stretch) assert(stretch, "guide text must stretch") end
-        function result:AddSheet(title, content)
-            local tab = {title = title, content = content}
-            self.tabs[#self.tabs + 1] = tab
-            if not rawget(self, "active") then self.active = tab end
-            return {Tab = tab}
-        end
-        function result:SetActiveTab(tab) self.active = tab end
-        if class == "DPropertySheet" then sheet = result end
         return result
     end
     vgui = {Create = widget}
     dofile(guide)
     commands.nativeloader_stability_guide(nil, "nativeloader_stability_guide", {})
-    assert(#sheet.tabs == 6 and sheet.active.title == i18n.L("Memory and stability"))
-    local body = table.concat(sheet.active.content.labels, "\n")
+    local shown = NATIVELOADER_GUIDE.shown
+    assert(#NATIVELOADER_GUIDE.pages == 6 and shown.id == "memory" and shown.title == i18n.L("Performance and memory"))
+    local body = table.concat(shown.texts, "\n")
     for _, token in ipairs({"30", "OBS", "Committed", "Alt+X", "User Settings (user.conf): Save",
         "rtx_vram_stats", "vram.previous.csv", "status.json", "session.json", "rtx-remix\\logs\\",
         "nvlddmkm", "WATCHDOG", "nativeloader_vram_telemetry"}) do
@@ -230,7 +225,7 @@ if scenario:find("^guide") or json_body then
             assert(body:find(i18n.L("Start here"), 1, true), "Russian guide must use the tab's navigation label")
         end
         local example
-        for _, label in ipairs(sheet.active.content.labels) do
+        for _, label in ipairs(shown.texts) do
             if label:sub(1, 1) == "{" then example = label end
         end
         assert(example, "missing complete JSON example")
@@ -241,12 +236,12 @@ if scenario:find("^guide") or json_body then
     if scenario == "guide_refresh" then
         status.activation.performance_tier = nil
         commands.nativeloader_stability_guide()
-        local refreshed = table.concat(sheet.active.content.labels, "\n")
+        local refreshed = table.concat(NATIVELOADER_GUIDE.shown.texts, "\n")
         assert(not refreshed:find("diagnostics.gpu_crash_dumps", 1, true), "guide reused stale R6 capability")
         assert(refreshed:find("bin\\win64\\winmm.dll", 1, true))
     end
     commands.nativeloader_guide(nil, "nativeloader_guide", {})
-    assert(sheet.active.title == i18n.L("Welcome"), "default guide navigation changed")
+    assert(NATIVELOADER_GUIDE.shown.title == i18n.L("Welcome"), "default guide navigation changed")
 end
 if json_body then assert(json_reads >= 2, "menu and guide must actually parse the JSON report") end
 print("PASS " .. scenario .. " " .. code)

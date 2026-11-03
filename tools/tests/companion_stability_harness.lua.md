@@ -12,6 +12,11 @@ with no new config keys, loader CSV or automatic-session promise. R6 instruction
 the marker path and a complete config example (printed for Python JSON/allowlist validation).
 Russian tier adjectives must agree with Уровень, and guide navigation must match the tab label.
 
+R14-H: the guide is a window with a contents list (no property sheet); the harness reads the open
+page from `NATIVELOADER_GUIDE.shown` (its `id`, translated `title` and drawn `texts`). The stability
+link must open `memory`, titled Performance and memory; its Start here button is **Performance and
+memory guide**. The guide includes `nativeloader/guide_pages.lua`, read from beside `i18n.lua`.
+
 The integration scenarios read a complete schema-1 JSON report from `out/tmp`. Their JSONToTable
 replacement invokes `python <decoder> --decode-status <path>` to actually parse the report into
 Lua data, including nested objects, arrays, booleans, null and escaped Windows paths. It checks

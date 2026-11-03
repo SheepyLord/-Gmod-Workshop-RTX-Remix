@@ -2,6 +2,8 @@
 
 For players with an 8 GB GPU or 16 GB of system RAM. The same guidance is in the game's **RTX Remix
 tab > Start here > Memory and stability guide** (console: `nativeloader_stability_guide`).
+Since R14-H the button is **Performance and memory guide** and the guide's page is **Performance and
+memory**, with the memory profile and the crash advice shortened to what a player does.
 
 ## Before playing
 

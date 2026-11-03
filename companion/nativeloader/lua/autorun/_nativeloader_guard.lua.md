@@ -77,6 +77,8 @@ There are no prefix/wildcard exemptions. Source labels omit the add-on directory
 add-on at an identical virtual path, or code forging that chunk label, can bypass material filters.
 Catalog hashes verify shipped bytes, not the runtime source label. This is a compatibility rule,
 not authentication or a native permission; details and collision consequences are in ADR 0086.
+R14-H adds the companion's new `lua/nativeloader/guide_pages.lua` (the guide's pages; data only) to
+the table, which now has 345 paths; nothing else in the guard changes.
 
 Depth/inert textures cannot be bound or copied. Non-nil MRT slots 1-3 are refused, so mismatched MRT
 attachments never reach native. Valid slot zero, nil MRT clears, normal color copies and fresh

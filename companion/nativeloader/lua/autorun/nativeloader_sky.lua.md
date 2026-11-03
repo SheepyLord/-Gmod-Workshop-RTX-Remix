@@ -1,5 +1,8 @@
 # nativeloader_sky.lua
 
+R14-H rewords four help lines of the Sky and weather panel (Follow the map's sun, Day length, Sky
+update interval, Weather) in the guide's terms; the controls and their behaviour are unchanged.
+
 Common Remix fog presets take precedence only when the menu's `NativeLoaderRemixFogOverride` hook
 returns true, after a preset was applied in this session. An archived draft with startup replay off
 does not suppress the weather's fog (ADR 0044).
