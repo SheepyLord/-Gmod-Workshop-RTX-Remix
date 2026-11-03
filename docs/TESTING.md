@@ -10,6 +10,25 @@ The [R12-A report](handover/R12-A-report.md) records the exact baseline error on
 two successful corrected delete/reimport cycles, changed carriers, positive client instances and
 stock-file verification; evidence is in the R12-A worktree's `out/r12-a/`.
 
+## R13-D: option locking
+
+`test_rtx_option_threads` (runtime unit test, meson, `_CompRelease_x64`) runs the game's side against
+a stand-in render thread that resolves options in a loop: the Remix API's writes (`readOption`, as
+`remixapi_SetConfigVariable` makes them), an option layer acquired and released by the render thread
+(a graph's layer action) while the game's thread writes and asks `getBlockingLayer`, and the menu's
+actions (migrate, Discard Changes, Unblock) while the render thread edits options. After each round of
+writes it waits for two whole resolves, and every write must have resolved. The runtime before patch
+0029 crashes in it within two seconds (R13's crash: the same instruction and registers) or loses a
+write.
+
+In the game: `out/r13-d/lab.py` (the shared PoC lock, an exact snapshot and restore of the PoC's
+mutable trees) runs a package with R13's crashed settings (memory profile recommended, tier medium),
+optionally with `r13d_stress.lua`, which calls `RemixConfig.SetConfigVariable` 250 times a frame for
+the sky's values and opens the user menu (which asks `user.conf`'s unsaved state every frame). With
+`--render --fps-max 0` it also writes from two render hooks with the frame rate uncapped, and the
+runtime before 0029 crashes within seconds with R13's signature. The
+[R13-D report](handover/R13-D-report.md) has the results.
+
 ## R13-M: compact imported game maps and reuse across versions
 
 `python -m unittest discover -s tools/tests -p "test_topbr*.py" -v` builds the packaged GPL

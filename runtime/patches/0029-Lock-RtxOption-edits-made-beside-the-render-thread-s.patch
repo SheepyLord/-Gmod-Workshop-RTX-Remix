@@ -1,0 +1,773 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 11:46:08 -0700
+Subject: [PATCH] Lock RtxOption edits made beside the render thread's resolve
+
+An R13 PoC session died 15 s into idle: an access violation reading 0x50
+in RtxOptionImpl::resolveValue under RtxOptionManager::applyPendingValues
+on the render thread. 0x50 is m_type, read through a null this: the dirty
+option map handed the loop a nullptr. An entry holds nullptr only while
+another thread is inside markDirty's operator[] (the node is linked before
+the option is stored in it), or once concurrent changes corrupted the map.
+
+remixapi_SetConfigVariable is that thread. It calls readOption, which
+inserted into the option's layer values, wrote the value and marked the
+option dirty holding only the API's own mutex, on the game's thread; the
+companion's sky sends its changed values every 20 ms. A unit test that
+does the same while another thread resolves crashes the old code within
+two seconds at the same instruction, with the same registers.
+
+Whatever reads or writes option layer values or the dirty map now holds
+the update mutex (order: the layer mutex, the update mutex, the registry
+mutexes):
+
+- readOption (the Remix API) and clearFromStrongerLayers (the menu's
+  Unblock, deprecated-option migrations in onChange callbacks) take it;
+- acquireLayer and releaseLayer take it after the layer mutex, as
+  applyPendingValues does: the graph's option layer actions changed the
+  registry and every option's values beside the readers;
+- the menu, which draws on the game's thread: Discard Changes (reload),
+  save, Delete All, the migrations, the unsaved-change and misplaced
+  counts, forEachChange; its Option Layers list holds the layer mutex;
+- graphicsPresetOnChange's move of the Quality layer to the User layer;
+- logEffectiveValues.
+
+applyPendingValues also lost edits made on other threads. It unlocked
+between passes even with no callback to run, so a burst of edits kept it
+going to maxResolves, and the final clear, taken after a moment without
+the lock, dropped the last marks unresolved: such an edit took effect only
+when the option changed again. It now keeps the lock unless a callback
+runs, and holds it to the final clear.
+
+test_rtx_option_threads runs the API's writes, layer churn and the menu's
+actions against a resolving thread and checks that every write resolves.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/dxvk/imgui/dxvk_imgui.cpp                 |   4 +
+ src/dxvk/imgui/rtx_user_menu.cpp              |   1 +
+ src/dxvk/rtx_render/rtx_option.cpp            |   4 +
+ src/dxvk/rtx_render/rtx_option.h              |  12 +-
+ .../rtx_render/rtx_option_blocking_popup.cpp  |   7 +-
+ src/dxvk/rtx_render/rtx_option_layer.cpp      |  38 ++-
+ src/dxvk/rtx_render/rtx_option_layer.h        |   5 +-
+ src/dxvk/rtx_render/rtx_option_layer_gui.cpp  |   1 +
+ src/dxvk/rtx_render/rtx_option_manager.cpp    |  26 +-
+ src/dxvk/rtx_render/rtx_option_manager.h      |   6 +-
+ src/dxvk/rtx_render/rtx_options.cpp           |   2 +
+ tests/rtx/unit/meson.build                    |   6 +
+ tests/rtx/unit/test_rtx_option_threads.cpp    | 308 ++++++++++++++++++
+ 13 files changed, 392 insertions(+), 28 deletions(-)
+ create mode 100644 tests/rtx/unit/test_rtx_option_threads.cpp
+
+diff --git a/src/dxvk/imgui/dxvk_imgui.cpp b/src/dxvk/imgui/dxvk_imgui.cpp
+index 7ca5b40c..2e1a73d1 100644
+--- a/src/dxvk/imgui/dxvk_imgui.cpp
++++ b/src/dxvk/imgui/dxvk_imgui.cpp
+@@ -1883,6 +1883,8 @@ namespace dxvk {
+       std::transform(filterLower.begin(), filterLower.end(), filterLower.begin(), ::tolower);
+ 
+       uint32_t optionLayerCounter = 1;
++      // The render thread's graph acquires and releases layers; nothing below takes the layer mutex.
++      std::lock_guard<std::mutex> layerLock(RtxOptionManager::getLayerMutex());
+       for (auto& [layerKey, optionLayerPtr] : RtxOptionManager::getLayerRegistry()) {
+         RtxOptionLayer& optionLayer = *optionLayerPtr;
+ 
+@@ -3213,6 +3215,7 @@ namespace dxvk {
+         const RtxOptionLayer* userLayer = RtxOptionLayer::getUserLayer();
+         bool hasTexturesInUserConf = false;
+         if (userLayer) {
++          std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+           for (const auto& rtxOption : rtxTextureOptions) {
+             if (rtxOption.textureSetOption && rtxOption.textureSetOption->hasValueInLayer(userLayer)) {
+               hasTexturesInUserConf = true;
+@@ -3231,6 +3234,7 @@ namespace dxvk {
+               "After clicking, use 'Save rtx.conf Layer' to write changes to disk.")) {
+             RtxOptionLayer* rtxConfLayer = RtxOptionLayer::getRtxConfLayer();
+             if (rtxConfLayer) {
++              std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+               for (auto& rtxOption : rtxTextureOptions) {
+                 if (rtxOption.textureSetOption) {
+                   rtxOption.textureSetOption->moveLayerValue(userLayer, rtxConfLayer);
+diff --git a/src/dxvk/imgui/rtx_user_menu.cpp b/src/dxvk/imgui/rtx_user_menu.cpp
+index bb7d5f01..78393105 100644
+--- a/src/dxvk/imgui/rtx_user_menu.cpp
++++ b/src/dxvk/imgui/rtx_user_menu.cpp
+@@ -306,6 +306,7 @@ namespace dxvk {
+       // Clear User Settings button
+       if (ImGui::Button("Delete All User Settings", buttonSize)) {
+         if (userLayer) {
++          std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+           userLayer->removeFromAllOptions();
+         }
+       }
+diff --git a/src/dxvk/rtx_render/rtx_option.cpp b/src/dxvk/rtx_render/rtx_option.cpp
+index 2d55e847..847f457e 100644
+--- a/src/dxvk/rtx_render/rtx_option.cpp
++++ b/src/dxvk/rtx_render/rtx_option.cpp
+@@ -457,6 +457,9 @@ namespace dxvk {
+       return;
+     }
+     
++    // The Remix API calls this on the game's thread while the render thread resolves the dirty options.
++    std::lock_guard<std::mutex> lock(getUpdateMutex());
++
+     // Read into the specified layer (create entry since we know option exists)
+     auto [layerValue, _] = getOrCreateGenericValue(layer);
+     if (layerValue) {
+@@ -731,6 +734,7 @@ namespace dxvk {
+ 
+   void RtxOptionImpl::clearFromStrongerLayers(const RtxOptionLayer* targetLayer,
+                                                std::optional<XXH64_hash_t> hash) {
++    std::lock_guard<std::mutex> lock(getUpdateMutex());
+     const RtxOptionLayerKey targetKey = targetLayer ? targetLayer->getLayerKey() : kRtxOptionLayerDefaultKey;
+     
+     bool anyModified = false;
+diff --git a/src/dxvk/rtx_render/rtx_option.h b/src/dxvk/rtx_render/rtx_option.h
+index a1508c6e..8bb88145 100644
+--- a/src/dxvk/rtx_render/rtx_option.h
++++ b/src/dxvk/rtx_render/rtx_option.h
+@@ -99,6 +99,12 @@ namespace dxvk {
+     // Static synchronization and initialization state
+     // These use function-local statics to avoid static initialization order issues
+     // (RtxOption<T> instances may be constructed before file-scope statics)
++
++    // Guards every option's layer values, the resolved values that own memory and the dirty option map. The render
++    // thread resolves options under it while other threads change them (the Remix API, the menu, which draws on the
++    // game's thread), so whatever reads or writes those holds it; functions marked "Caller holds the update mutex"
++    // do not take it themselves. Layers join and leave the registry under RtxOptionManager's layer mutex and then
++    // this one, so holding either keeps the registry stable. Order: layer mutex, update mutex, registry mutexes.
+     static std::mutex& getUpdateMutex() {
+       static std::mutex mutex;
+       return mutex;
+@@ -231,13 +237,15 @@ namespace dxvk {
+     std::optional<GenericValue> minValue;
+     std::optional<GenericValue> maxValue;
+     
+-    // Layer value operations
++    // Layer value operations. Caller holds the update mutex, except where noted.
+     void readOptionLayer(const RtxOptionLayer& optionLayer);
++    // Reads the option from options into layer, as the Remix API's SetConfigVariable does. Takes the update mutex.
+     void readOption(const Config& options, const RtxOptionLayer* layer);
+     bool loadFromEnvironmentVariable(const RtxOptionLayer* envLayer, std::string* outValue = nullptr);
+     void disableLayerValue(const RtxOptionLayer* layer);
+     void updateLayerBlendStrength(const RtxOptionLayer& optionLayer);
+     void moveLayerValue(const RtxOptionLayer* sourceLayer, const RtxOptionLayer* destLayer);
++    // Takes the update mutex: the menu and onChange callbacks call it.
+     void clearFromStrongerLayers(const RtxOptionLayer* targetLayer = nullptr,
+                                   std::optional<XXH64_hash_t> hash = std::nullopt);
+     const RtxOptionLayer* getBlockingLayer(const RtxOptionLayer* targetLayer = nullptr,
+@@ -256,7 +264,7 @@ namespace dxvk {
+                            std::optional<XXH64_hash_t> hash = std::nullopt,
+                            bool includeInactiveLayers = false) const;
+     
+-    // Change tracking
++    // Change tracking. Caller holds the update mutex: applyPendingValues walks the dirty map on the render thread.
+     void markDirty();
+     bool isDirty() const;
+     void invokeOnChangeCallback(DxvkDevice* device) const;
+diff --git a/src/dxvk/rtx_render/rtx_option_blocking_popup.cpp b/src/dxvk/rtx_render/rtx_option_blocking_popup.cpp
+index 0957b630..d12d20a0 100644
+--- a/src/dxvk/rtx_render/rtx_option_blocking_popup.cpp
++++ b/src/dxvk/rtx_render/rtx_option_blocking_popup.cpp
+@@ -91,7 +91,12 @@ namespace RemixGui {
+ 
+       if (dxvk::RtxOptions::autoUnblockOptionEdits()) {
+         impl->clearFromStrongerLayers(targetLayer, hash);
+-        if (targetLayer != qualityLayer && impl->hasValueInLayer(qualityLayer, hash)) {
++        bool setByPreset = false;
++        if (targetLayer != qualityLayer) {
++          std::lock_guard<std::mutex> lock(dxvk::RtxOptionImpl::getUpdateMutex());
++          setByPreset = impl->hasValueInLayer(qualityLayer, hash);
++        }
++        if (setByPreset) {
+           // editing a value that's set by the quality preset, need to change the preset to custom
+           dxvk::RtxOptionLayerTarget userTarget(dxvk::RtxOptionEditTarget::User);
+           dxvk::RtxOptions::graphicsPreset.setDeferred(dxvk::GraphicsPreset::Custom);
+diff --git a/src/dxvk/rtx_render/rtx_option_layer.cpp b/src/dxvk/rtx_render/rtx_option_layer.cpp
+index e50d186d..d4ded311 100644
+--- a/src/dxvk/rtx_render/rtx_option_layer.cpp
++++ b/src/dxvk/rtx_render/rtx_option_layer.cpp
+@@ -203,6 +203,7 @@ namespace dxvk {
+     }
+     
+     // Dynamically verify by checking if any option has a value in this layer
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     const auto globalRtxOptions = RtxOptionImpl::getGlobalOptionMap();
+     for (const auto& [hash, optionPtr] : *globalRtxOptions) {
+       if (optionPtr->hasValueInLayer(this)) {
+@@ -221,7 +222,8 @@ namespace dxvk {
+       return false;
+     }
+     
+-    // Lazy evaluation - only recalculate if cache is dirty
++    // Lazy evaluation - only recalculate if cache is dirty. The menu asks on the game's thread.
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     if (m_unsavedChangesCacheDirty) {
+       recalculateUnsavedChangesInternal();
+     }
+@@ -321,6 +323,7 @@ namespace dxvk {
+   }
+ 
+   uint32_t RtxOptionLayer::countMiscategorizedOptions() const {
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     // Return cached value if still valid
+     if (!m_miscategorizedOptionCountDirty) {
+       return m_miscategorizedOptionCount;
+@@ -362,6 +365,8 @@ namespace dxvk {
+   uint32_t RtxOptionLayer::migrateMiscategorizedOptions() {
+     uint32_t migratedCount = 0;
+     
++    // A menu button on the game's thread; moveLayerValue expects the update mutex.
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     const auto globalRtxOptions = RtxOptionImpl::getGlobalOptionMap();
+     for (const auto& [hash, optionPtr] : *globalRtxOptions) {
+       if (optionPtr->hasValueInLayer(this)) {
+@@ -419,17 +424,21 @@ namespace dxvk {
+     // Keep rtx keys that no option manages (e.g. a dynamic namespace registered later) and values
+     // that failed dynamic option parsing. Managed values written below take precedence.
+     Config layerConfig;
+-    for (const auto& [key, value] : m_config.getOptions()) {
+-      if (key.find("rtx.") == std::string::npos) {
+-        continue;
+-      }
+-      if (isKeyRejected(key) || RtxOptionImpl::getOptionByFullName(key) == nullptr) {
+-        layerConfig.setOption(key, value);
++    {
++      // The values are copied under the update mutex and written after it is released: a save retries held files.
++      std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
++      for (const auto& [key, value] : m_config.getOptions()) {
++        if (key.find("rtx.") == std::string::npos) {
++          continue;
++        }
++        if (isKeyRejected(key) || RtxOptionImpl::getOptionByFullName(key) == nullptr) {
++          layerConfig.setOption(key, value);
++        }
+       }
+-    }
+ 
+-    // Write all options from this layer into a Config (save all values, not just changed)
+-    RtxOptionManager::writeOptions(layerConfig, this, false);
++      // Write all options from this layer into a Config (save all values, not just changed)
++      RtxOptionManager::writeOptions(layerConfig, this, false);
++    }
+     
+     // Save the config to disk using the layer's stored file path
+     if (!Config::serializeCustomConfig(layerConfig, getFilePath(), "rtx.")) {
+@@ -437,12 +446,12 @@ namespace dxvk {
+       Logger::err(str::format("[RTX Option]: Layer '", getName(), "' was not saved; its changes remain unsaved."));
+       return false;
+     }
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     setConfig(layerConfig);
+     m_saveFailed = false;
+     
+-    // Clear the unsaved changes cache since we just saved
+-    m_hasUnsavedChanges = false;
+-    m_unsavedChangesCacheDirty = false;
++    // Recalculated when next asked: the layer may have changed while the file was written.
++    m_unsavedChangesCacheDirty = true;
+     
+     Logger::info(str::format("[RTX Option]: Saved layer config to '", getFilePath(), "'"));
+     return true;
+@@ -461,6 +470,8 @@ namespace dxvk {
+       Logger::err(str::format("[RTX Option]: Cannot reload '", getFilePath(), "'. Current values kept."));
+       return false;
+     }
++    // Replaces the layer's values as a layer change in applyPendingValues does; the menu calls this on the game's thread.
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     // A missing file reads as complete and empty, so its unsaved values are discarded too.
+     m_readFailed = false;
+     m_saveFailed = false;
+@@ -574,6 +585,7 @@ namespace dxvk {
+     const RemovedOptionCallback& removedCallback,
+     const OptionChangeCallback& unchangedCallback
+   ) const {
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     const bool hasSaveableConfig = hasSaveableConfigFile();
+     
+     // First pass: iterate through runtime options
+diff --git a/src/dxvk/rtx_render/rtx_option_layer.h b/src/dxvk/rtx_render/rtx_option_layer.h
+index 53f6c7ab..b6918cdc 100644
+--- a/src/dxvk/rtx_render/rtx_option_layer.h
++++ b/src/dxvk/rtx_render/rtx_option_layer.h
+@@ -128,10 +128,10 @@ namespace dxvk {
+     // Mark this layer as dirty (e.g., changed values need reprocessing).
+     void markDirty() { m_dirty = true; }
+ 
+-    // Apply this layer's values to all options
++    // Apply this layer's values to all options. Caller holds the update mutex.
+     void applyToAllOptions();
+     
+-    // Remove this layer's values from all options (NoReset options are preserved)
++    // Remove this layer's values from all options (NoReset options are preserved). Caller holds the update mutex.
+     void removeFromAllOptions() const;
+ 
+     void setConfig(const Config& config) {
+@@ -273,6 +273,7 @@ namespace dxvk {
+     // - modifiedCallback: called for options present in both runtime and saved config, but with different values
+     // - removedCallback: called for options present in saved config but not in runtime (only if the layer has an associated .conf file)
+     // - unchangedCallback: called for options present in both runtime and saved config with same values
++    // The callbacks run under the update mutex and must not take it.
+     void forEachChange(
+       const OptionChangeCallback& addedCallback,
+       const OptionChangeCallback& modifiedCallback,
+diff --git a/src/dxvk/rtx_render/rtx_option_layer_gui.cpp b/src/dxvk/rtx_render/rtx_option_layer_gui.cpp
+index 1d10e643..89d1317a 100644
+--- a/src/dxvk/rtx_render/rtx_option_layer_gui.cpp
++++ b/src/dxvk/rtx_render/rtx_option_layer_gui.cpp
+@@ -333,6 +333,7 @@ namespace dxvk {
+     // Reset button
+     const std::string resetId = std::string("Delete All##") + idSuffix;
+     if (ImGui::Button(resetId.c_str(), ImVec2(buttonWidth, 0))) {
++      std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+       layer->removeFromAllOptions();
+       anyClicked = true;
+     }
+diff --git a/src/dxvk/rtx_render/rtx_option_manager.cpp b/src/dxvk/rtx_render/rtx_option_manager.cpp
+index c2959bac..13472ca1 100644
+--- a/src/dxvk/rtx_render/rtx_option_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_option_manager.cpp
+@@ -121,8 +121,10 @@ namespace dxvk {
+       layer = std::make_unique<RtxOptionLayer>(Config(), configPath, effectiveLayerKey, blendStrength, blendThreshold);
+     }
+     
+-    // Insert into the registry
++    // Insert into the registry. Its file is read; what follows changes the registry and every option's layer
++    // values, which other threads read and write holding only the update mutex.
+     RtxOptionLayer* result = layer.get();
++    std::lock_guard<std::mutex> updateLock(RtxOptionImpl::getUpdateMutex());
+     layerMap.emplace(result->getLayerKey(), std::move(layer));
+     
+     // Increment reference count for the new layer
+@@ -181,10 +183,13 @@ namespace dxvk {
+     constexpr static int32_t maxResolves = 4;
+     int32_t numResolves = 0;
+ 
++    // Other threads mark options dirty too (the Remix API, the menu). The lock is released only while callbacks run,
++    // which may set options: a mark that arrives meanwhile is resolved by the next pass, so with no callbacks to run
++    // nothing can arrive, and only a pass that runs callbacks can lead to the next one and up to maxResolves.
++    std::unique_lock<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
++
+     // Iteratively resolve dirty options, invoke callbacks, repeat until none left
+     while (numResolves < maxResolves) {
+-      std::unique_lock<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+-
+       auto& dirtyOptions = getDirtyOptionMap();
+ 
+       // Need a second array to invoke onChange callbacks after updating values
+@@ -199,7 +204,11 @@ namespace dxvk {
+         }
+       }
+       dirtyOptions.clear();
+-      lock.unlock();
++      const bool runsCallbacks = std::any_of(dirtyOptionsVector.begin(), dirtyOptionsVector.end(),
++                                             [](const RtxOptionImpl* rtxOption) { return rtxOption->m_onChangeCallback != nullptr; });
++      if (runsCallbacks) {
++        lock.unlock();
++      }
+ 
+       // Invoke onChange callbacks after promoting all values
+       for (RtxOptionImpl* rtxOption : dirtyOptionsVector) {
+@@ -212,15 +221,14 @@ namespace dxvk {
+       numResolves++;
+ 
+       // If callbacks didn't generate any dirtied options, bail
+-      lock.lock();
++      if (runsCallbacks) {
++        lock.lock();
++      }
+       if (dirtyOptions.empty()) {
+         break;
+       }
+     }
+ 
+-    // Dynamic namespace registration can mark options dirty from other threads.
+-    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+-
+ #if RTX_OPTION_DEBUG_LOGGING
+     const bool unresolvedChanges = numResolves == maxResolves && !getDirtyOptionMap().empty();
+     if (unresolvedChanges) {
+@@ -247,6 +255,7 @@ namespace dxvk {
+   void RtxOptionManager::logEffectiveValues() {
+     Logger::info("Effective RtxOption values (after all config layers and migrations):");
+     
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+     const auto globalRtxOptions = RtxOptionImpl::getGlobalOptionMap();
+     for (const auto& [hash, optionPtr] : *globalRtxOptions) {
+       const RtxOptionImpl& rtxOption = *optionPtr;
+@@ -517,6 +526,7 @@ This file is auto-generated by RTX Remix. To regenerate it, run Remix with `DXVK
+     
+     // If reference count reached zero, remove the layer
+     if (layer->getRefCount() == 0) {
++      std::lock_guard<std::mutex> updateLock(RtxOptionImpl::getUpdateMutex());
+       unregisterLayer(layer);
+     }
+   }
+diff --git a/src/dxvk/rtx_render/rtx_option_manager.h b/src/dxvk/rtx_render/rtx_option_manager.h
+index 692cb763..d0b4aec5 100644
+--- a/src/dxvk/rtx_render/rtx_option_manager.h
++++ b/src/dxvk/rtx_render/rtx_option_manager.h
+@@ -67,8 +67,10 @@ namespace dxvk {
+     // Map of options that have pending value changes
+     static fast_unordered_cache<RtxOptionImpl*>& getDirtyOptionMap();
+     
+-    // Global registry of all option layers
++    // Global registry of all option layers. Layers join and leave it under the layer mutex and then the update
++    // mutex; hold either to walk it (the render thread's graph acquires and releases layers).
+     static RtxOptionLayerMap& getLayerRegistry();
++    static std::mutex& getLayerMutex() { return s_layerMutex; }
+     
+     // Lookup a layer by its key
+     static RtxOptionLayer* getLayer(const RtxOptionLayerKey& layerKey);
+@@ -173,7 +175,7 @@ namespace dxvk {
+     static std::mutex s_layerMutex;
+     static bool s_drawcallTranslationInvalid;
+     
+-    // Remove a layer from the registry and all options (internal use only)
++    // Remove a layer from the registry and all options (internal use only). Caller holds the layer and update mutexes.
+     static bool unregisterLayer(const RtxOptionLayer* layer);
+ 
+     // Applies queued dynamic value requests. Caller holds the update mutex.
+diff --git a/src/dxvk/rtx_render/rtx_options.cpp b/src/dxvk/rtx_render/rtx_options.cpp
+index 39d06844..c0bf2227 100644
+--- a/src/dxvk/rtx_render/rtx_options.cpp
++++ b/src/dxvk/rtx_render/rtx_options.cpp
+@@ -69,6 +69,8 @@ namespace dxvk {
+       
+       if (qualityLayer && userLayer) {
+         // Migrate ALL options from Quality layer to User layer (not just those with the flag)
++        // onChange callbacks run without the update mutex, while the game's thread can write the User layer.
++        std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
+         const auto globalRtxOptions = RtxOptionImpl::getGlobalOptionMap();
+         for (auto& [hash, optionPtr] : *globalRtxOptions) {
+           optionPtr->moveLayerValue(qualityLayer, userLayer);
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index af30cffb..faeb2707 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -194,4 +194,10 @@ exe = executable('test_texture_budget_pressure', files('test_texture_budget_pres
+ test('test_texture_budget_pressure', exe)
+ tests += exe
+ 
++exe = executable('test_rtx_option_threads', files('test_rtx_option_threads.cpp'),
++  include_directories: test_include_path, dependencies: [d3d9_dep, test_unit_deps],
++  link_with: [dxvk_lib], win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_rtx_option_threads', exe, env: test_env, timeout: 120)
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_rtx_option_threads.cpp b/tests/rtx/unit/test_rtx_option_threads.cpp
+new file mode 100644
+index 00000000..aee5e2f9
+--- /dev/null
++++ b/tests/rtx/unit/test_rtx_option_threads.cpp
+@@ -0,0 +1,308 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "../../../src/dxvk/rtx_render/rtx_option.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_layer.h"
++#include "../../../src/dxvk/rtx_render/rtx_option_manager.h"
++#include "../../../src/util/config/config.h"
++
++#include "../../test_utils.h"
++
++#include <atomic>
++#include <chrono>
++#include <filesystem>
++#include <fstream>
++#include <functional>
++#include <iostream>
++#include <sstream>
++#include <string>
++#include <thread>
++#include <vector>
++
++namespace dxvk {
++  // Logger needed by some shared code used in this Unit Test.
++  Logger Logger::s_instance("test_rtx_option_threads.log");
++
++namespace rtx_option_threads_test {
++
++  #define TEST_ASSERT(condition, message) \
++    do { \
++      if (!(condition)) { \
++        std::ostringstream oss; \
++        oss << "FAILED: " << __FUNCTION__ << " line " << __LINE__ << ": " << message; \
++        throw DxvkError(oss.str()); \
++      } \
++    } while(0)
++
++  // In a game the render thread resolves options at the end of every frame (applyPendingValues), and its graph
++  // acquires and releases option layers, while the game's own thread sets options through the Remix API
++  // (remixapi_SetConfigVariable calls readOption) and draws the Remix menu. These tests run those paths against
++  // each other. A missing lock shows as a crash, or as a write that is never resolved.
++
++#define THREAD_TEST_OPTION(index) RTX_OPTION("rtx.threadTest", float, value##index, 0.0f, "Option for the threading tests.")
++  class TestOptions {
++  public:
++    THREAD_TEST_OPTION(0)  THREAD_TEST_OPTION(1)  THREAD_TEST_OPTION(2)  THREAD_TEST_OPTION(3)
++    THREAD_TEST_OPTION(4)  THREAD_TEST_OPTION(5)  THREAD_TEST_OPTION(6)  THREAD_TEST_OPTION(7)
++    THREAD_TEST_OPTION(8)  THREAD_TEST_OPTION(9)  THREAD_TEST_OPTION(10) THREAD_TEST_OPTION(11)
++    THREAD_TEST_OPTION(12) THREAD_TEST_OPTION(13) THREAD_TEST_OPTION(14) THREAD_TEST_OPTION(15)
++    THREAD_TEST_OPTION(16) THREAD_TEST_OPTION(17) THREAD_TEST_OPTION(18) THREAD_TEST_OPTION(19)
++    THREAD_TEST_OPTION(20) THREAD_TEST_OPTION(21) THREAD_TEST_OPTION(22) THREAD_TEST_OPTION(23)
++    THREAD_TEST_OPTION(24) THREAD_TEST_OPTION(25) THREAD_TEST_OPTION(26) THREAD_TEST_OPTION(27)
++    THREAD_TEST_OPTION(28) THREAD_TEST_OPTION(29) THREAD_TEST_OPTION(30) THREAD_TEST_OPTION(31)
++  };
++#undef THREAD_TEST_OPTION
++
++  constexpr int kOptionCount = 32;
++
++  std::string optionName(int index) {
++    return "rtx.threadTest.value" + std::to_string(index);
++  }
++
++  std::vector<RtxOption<float>*> testOptions() {
++    std::vector<RtxOption<float>*> options;
++    for (int i = 0; i < kOptionCount; ++i) {
++      options.push_back(static_cast<RtxOption<float>*>(RtxOptionImpl::getOptionByFullName(optionName(i))));
++    }
++    return options;
++  }
++
++  // What remixapi_SetConfigVariable does with a key that is not in a dynamic namespace.
++  void setConfigVariable(RtxOptionImpl& option, const std::string& value) {
++    Config setting;
++    setting.setOption(option.getFullName(), value);
++    option.readOption(setting, option.getTargetLayer(RtxOptionLayer::getUserLayer()));
++  }
++
++  // Stands in for the render thread: resolves options like the end of a frame, after its own work, until stopped.
++  class RenderThread {
++  public:
++    explicit RenderThread(std::function<void()> work = {})
++      : m_work(std::move(work))
++      , m_thread([this] { run(); }) { }
++
++    ~RenderThread() {
++      stop();
++    }
++
++    void stop() {
++      m_stop = true;
++      if (m_thread.joinable()) {
++        m_thread.join();
++      }
++    }
++
++    // Returns once two whole passes have run after the call, so every write made before it has been resolved.
++    void waitForPasses() const {
++      const uint64_t target = m_passes.load() + 2;
++      while (m_passes.load() < target) {
++        std::this_thread::yield();
++      }
++    }
++
++  private:
++    void run() {
++      while (!m_stop.load()) {
++        if (m_work) {
++          m_work();
++        }
++        RtxOptionManager::applyPendingValues(nullptr, false);
++        m_passes.fetch_add(1);
++      }
++    }
++
++    std::function<void()> m_work;
++    std::atomic<bool> m_stop { false };
++    std::atomic<uint64_t> m_passes { 0 };
++    std::thread m_thread;  // Last, so the members above exist when it starts.
++  };
++
++  // Writes round * 100 + index to every option, then checks each was resolved once the render thread has caught up.
++  void writeRoundAndCheck(const std::vector<RtxOption<float>*>& options, const RenderThread& render, int round) {
++    for (int i = 0; i < kOptionCount; ++i) {
++      setConfigVariable(*options[i], std::to_string(round * 100 + i));
++    }
++    render.waitForPasses();
++    for (int i = 0; i < kOptionCount; ++i) {
++      const float expected = static_cast<float>(round * 100 + i);
++      TEST_ASSERT(options[i]->get() == expected,
++                  "round " << round << ": " << optionName(i) << " resolved to " << options[i]->get() << ", not "
++                  << expected << "; the write was not resolved");
++    }
++  }
++
++  // ============================================================================
++  // remixapi_SetConfigVariable on the game's thread while the render thread resolves: the R13 crash. readOption
++  // inserted into the option's layer values and the dirty option map without the update mutex, while
++  // applyPendingValues walked that map under it (an entry still holding nullptr was resolved: 0x50 is m_type).
++  // ============================================================================
++
++  void test_apiWritesDuringResolve() {
++    std::cout << "  Running test_apiWritesDuringResolve..." << std::endl;
++    const std::vector<RtxOption<float>*> options = testOptions();
++    RenderThread render;
++
++    // As fast as the API allows; the companion's sky sends each changed value every 20 ms.
++    const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(2);
++    uint64_t writes = 0;
++    while (std::chrono::steady_clock::now() < end) {
++      for (RtxOption<float>* option : options) {
++        setConfigVariable(*option, std::to_string(writes++ % 1000));
++      }
++    }
++
++    // A write made while applyPendingValues ends its frame must be resolved too, not dropped with the frame's marks.
++    for (int round = 1; round <= 500; ++round) {
++      writeRoundAndCheck(options, render, round);
++    }
++    render.stop();
++    std::cout << "    " << writes << " writes; PASSED" << std::endl;
++  }
++
++  // ============================================================================
++  // The render thread's graph acquires and releases an option layer (RtxOptionLayerAction) while the game's thread
++  // sets options and the menu asks which layer blocks an edit. acquireLayer and releaseLayer added to and removed from
++  // every option's layer values, marked them dirty and changed the layer registry holding only the layer mutex.
++  // ============================================================================
++
++  void test_layerChurnDuringApiWrites() {
++    std::cout << "  Running test_layerChurnDuringApiWrites..." << std::endl;
++    const std::vector<RtxOption<float>*> options = testOptions();
++    Config graphConfig;
++    for (int i = 0; i < kOptionCount; ++i) {
++      graphConfig.setOption(optionName(i), std::string("-1"));
++    }
++    const RtxOptionLayerKey graphKey = { kDefaultDynamicRtxOptionLayerPriority, "ThreadTestGraphLayer" };
++    std::atomic<uint64_t> cycles { 0 };
++    RenderThread render([&] {
++      const RtxOptionLayer* layer = RtxOptionManager::acquireLayer("", graphKey, 1.0f, 0.1f, false, &graphConfig);
++      RtxOptionManager::applyPendingValues(nullptr, false);
++      RtxOptionManager::releaseLayer(layer);
++      cycles.fetch_add(1);
++    });
++
++    const RtxOptionLayer* userLayer = RtxOptionLayer::getUserLayer();
++    const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(2);
++    uint64_t writes = 0;
++    while (std::chrono::steady_clock::now() < end) {
++      for (RtxOption<float>* option : options) {
++        setConfigVariable(*option, std::to_string(writes++ % 1000));
++        TEST_ASSERT(option->getBlockingLayer(userLayer) == nullptr, "only the quality layer is stronger, and it is empty");
++      }
++    }
++
++    // The user layer is stronger than the graph's, so the last API write wins whether or not the graph layer is there.
++    for (int round = 1; round <= 100; ++round) {
++      writeRoundAndCheck(options, render, round);
++    }
++    render.stop();
++    RtxOptionManager::applyPendingValues(nullptr, false);
++    TEST_ASSERT(RtxOptionManager::getLayer(graphKey) == nullptr, "the graph layer is released");
++    std::cout << "    " << writes << " writes, " << cycles.load() << " layer cycles; PASSED" << std::endl;
++  }
++
++  // ============================================================================
++  // The Remix menu runs on the game's thread (ImGUI::render, from Present). Its migration moves a layer's misplaced
++  // values, Discard Changes reloads a layer from its file, and Unblock clears the layers stronger than the one edited.
++  // None held the update mutex, while the render thread resolved and edited options (onChange callbacks do).
++  // ============================================================================
++
++  void test_menuActionsDuringResolve() {
++    std::cout << "  Running test_menuActionsDuringResolve..." << std::endl;
++    const std::vector<RtxOption<float>*> options = testOptions();
++    const std::filesystem::path path = std::filesystem::temp_directory_path() / "rtx_option_threads_menu.conf";
++    {
++      std::ofstream file(path, std::ios::trunc);
++      for (int i = 0; i < kOptionCount; ++i) {
++        file << optionName(i) << " = " << (7 + i) << "\n";
++      }
++    }
++    const RtxOptionLayerKey fileKey = { kDefaultDynamicRtxOptionLayerPriority + 1, "ThreadTestFileLayer" };
++    RtxOptionLayer* fileLayer = RtxOptionManager::acquireLayer(path.string(), fileKey, 1.0f, 0.1f, false, nullptr);
++    TEST_ASSERT(fileLayer != nullptr && fileLayer->isValid(), "the file layer was read");
++
++    std::atomic<uint64_t> edits { 0 };
++    RenderThread render([&] {
++      const uint64_t edit = edits.fetch_add(1);
++      options[edit % kOptionCount]->setDeferred(static_cast<float>(edit % 1000), fileLayer);
++    });
++
++    RtxOptionLayer* userLayer = const_cast<RtxOptionLayer*>(RtxOptionLayer::getUserLayer());
++    uint64_t actions = 0;
++    const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(2);
++    while (std::chrono::steady_clock::now() < end) {
++      // The test options lack the UserSetting flag, so in user.conf they are developer settings for rtx.conf.
++      setConfigVariable(*options[actions % kOptionCount], "3");
++      userLayer->migrateMiscategorizedOptions();
++      fileLayer->reload();
++      for (RtxOption<float>* option : options) {
++        option->clearFromStrongerLayers(fileLayer);
++      }
++      ++actions;
++    }
++    render.stop();
++
++    // With the render thread's edits discarded and nothing stronger, every option has the file's value.
++    TEST_ASSERT(fileLayer->reload(), "the file layer reloads");
++    for (RtxOption<float>* option : options) {
++      option->clearFromStrongerLayers(fileLayer);
++    }
++    RtxOptionManager::applyPendingValues(nullptr, false);
++    for (int i = 0; i < kOptionCount; ++i) {
++      TEST_ASSERT(options[i]->get() == static_cast<float>(7 + i),
++                  optionName(i) << " resolved to " << options[i]->get() << ", not the file's " << (7 + i));
++    }
++    RtxOptionManager::releaseLayer(fileLayer);
++    RtxOptionManager::applyPendingValues(nullptr, false);
++    std::filesystem::remove(path);
++    std::cout << "    " << actions << " menu rounds, " << edits.load() << " render-thread edits; PASSED" << std::endl;
++  }
++
++  void runAllTests() {
++    std::cout << "Running RtxOption threading tests" << std::endl;
++
++    RtxOptionLayer::initializeSystemLayers();
++    RtxOptionImpl::setInitialized(true);
++    RtxOptionManager::markOptionsWithCallbacksDirty();
++    RtxOptionManager::applyPendingValues(nullptr, true);
++
++    test_apiWritesDuringResolve();
++    test_layerChurnDuringApiWrites();
++    test_menuActionsDuringResolve();
++
++    std::cout << "All RtxOption threading tests PASSED" << std::endl;
++  }
++
++}  // namespace rtx_option_threads_test
++}  // namespace dxvk
++
++int main() {
++  try {
++    dxvk::rtx_option_threads_test::runAllTests();
++  } catch (const dxvk::DxvkError& error) {
++    std::cerr << "TEST FAILED: " << error.message() << std::endl;
++    return -1;
++  } catch (const std::exception& e) {
++    std::cerr << "TEST FAILED with exception: " << e.what() << std::endl;
++    return -1;
++  }
++  return 0;
++}
