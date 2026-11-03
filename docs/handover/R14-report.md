@@ -244,6 +244,51 @@ sizes. The harness's `scale` mode checks the ratio, the setting, a plain game, 2
 The first full run on the merged branch failed only on the untranslated text. It also hit a disk-space
 guard: `test_poc_parity` keeps 20 GiB spare, and H: had 19.8 GiB free.
 
+**Later runs.**
+- Each later commit passed again: 545 Python tests with the scale test.
+- The last run was on the merged `main` `5be211a`, which also holds R13-F's runtime patch 0030
+  (`out/r14/tests/main-5be211a.log` in the main checkout).
+
+## Publication and the field check
+
+**Three publications.** Workshop item 3829070317 was published three times. Each time the push's second
+hook run found the inputs unchanged.
+
+| Merge on `main` | Version | What it carried |
+|---|---|---|
+| `c66ab5c` | 0.0.0-dev.20261103223347+be2ba4fd | R14 |
+| `5f4956d` | 0.0.0-dev.20261103231759+0d3b2c60 | The first size fix |
+| `5be211a` | 0.0.0-dev.20261103233057+1d6fd9f5 | The size fix by the screen's height, with R13-F's patch 0030 |
+
+**Before the first field start.**
+- `tools\steam\verify_install.py` found the field install intact. Only the user's `autoexec.cfg`
+  differs.
+- `garrysmod\cl.db`, which holds the spawn menu's group cookies, was saved to `out\r14\field\backup` in
+  the main checkout.
+
+The sessions ran through `poc_session.py --root <field> --allow-steam-managed`, with Workshop and local
+add-ons, no `-windowed` and no `+map` before the subscriptions. Evidence: `out\r14\field\` in the main
+checkout.
+
+| Start | Package | Result |
+|---|---|---|
+| 01-download | (be2ba4fd downloaded) | The game ended with code 1, 45 s after the map, no crash dump: R13-F's PoC lab ends any running game before its runs, and its next run started 3 s later |
+| 02-r14 | be2ba4fd deployed | The same: ended by R13-F's next run, before the probe |
+| 03-r14-guide | be2ba4fd | Passed: Start here unfolded, every page and picture shown; the guide at its 1080p size on the 3840x2160 screen |
+| 04-download, 05-r14-scale | 0d3b2c60 | Normal quits; the measurement gave 1 (above) |
+| 06-download, 07-r14-screen | 1d6fd9f5 | Normal quits; scale 2, a 2480x1880 window, pictures at 2, on every page opened |
+
+**R13-F's lab.** R13-F apologized: its lab came from R13-P and ended any running game before a PoC
+launch. It now waits until no field game runs, and it messages before any PoC session. The loader
+recorded starts 01 and 02 as crashes in `native-loader\logs\sessions` (exit code 1, `abnormal`). They
+were not crashes.
+
+**The unfolded group.** The probe toggled only the Start here group (the cookie the first pass had
+folded), and it stayed open in the later starts. Sky and weather is folded in the field, and was left
+as the user has it.
+
+Every session quit with the field's own settings. The field game's language is English.
+
 ## Open items
 
 - **Not pictured.**
