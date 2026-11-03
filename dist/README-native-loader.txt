@@ -164,8 +164,9 @@ After a crash
   native-loader\logs\sessions (the last five sessions, at most 200 MB). Nothing is uploaded, and the
   originals stay where they are. The home menu shows what probably went wrong last time and where
   the copies are.
-- The in-game guide (console command nativeloader_guide) has a "Memory and stability" page: what to
-  try with an 8 GB card or 16 GB of RAM, and what to send with a crash report.
+- The in-game guide (console command nativeloader_guide) has a "Performance and memory" page: the
+  performance tier and the memory profile, what to try with an 8 GB card or 16 GB of RAM, and what
+  to send with a crash report.
 - The runtime keeps unused static managed textures in CPU memory and creates their GPU images
   when first sampled, uploaded or explicitly preloaded. A large imported-model catalog therefore
   does not need GPU storage for every character before you use it. Texture detail, captured hashes

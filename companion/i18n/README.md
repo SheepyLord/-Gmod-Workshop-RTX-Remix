@@ -88,3 +88,8 @@ corrected Russian Start here references to **С чего начать** and tier
 
 R11's Imported game PBR checkbox/help translations are agent-written and not yet human-reviewed
 in all six non-English catalogs. English supplies the seventh language.
+
+R14-H rewrote the guide (`guide_pages.lua`) and reworded help lines of the RTX Remix tab, the Sky and
+weather panel and the eye-white chooser. Its new and changed English messages were merged in
+untranslated (they show in English meanwhile); their translation and a text check are R14-T's (Codex),
+and `check` and the package build fail until then. Unchanged messages kept their translations.

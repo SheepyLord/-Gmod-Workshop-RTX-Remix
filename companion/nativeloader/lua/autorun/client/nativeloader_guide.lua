@@ -1,179 +1,418 @@
--- The in-game RTX Remix guide (nativeloader_guide): how to use the RTX package and Remix, and how to
--- find out what went wrong. Opens once by itself on the first RTX session, then from the console or
--- the RTX Remix tab's "Start here". Images are in materials/nativeloader/guide/; a missing image is
--- left out. Its text is translated (nativeloader/i18n.lua). Documented in nativeloader_guide.lua.md beside this file.
+-- The in-game RTX Remix guide (nativeloader_guide): how to find, understand and use every setting of
+-- the RTX package and Remix, with labeled pictures. A window with the pages and their sections on the
+-- left and the page on the right. It opens once by itself on the first RTX session, then from the
+-- console (nativeloader_guide [page] [section]) or the RTX Remix tab's Start here;
+-- nativeloader_stability_guide opens the Performance and memory page. The pages are in
+-- nativeloader/guide_pages.lua; pictures are in materials/nativeloader/guide/ (a missing one is left
+-- out with its legend). The text is translated (nativeloader/i18n.lua). Documented in
+-- nativeloader_guide.lua.md beside this file.
 local SHOWN = "nativeloader_companion/guide_shown.txt"
 local i18n = include("nativeloader/i18n.lua")
-local L, N = i18n.L, i18n.N
+local L = i18n.L
+local PAGES = include("nativeloader/guide_pages.lua").pages
 
--- Workshop updates can reach an older winmm.dll. Its config parser rejects unknown R6 keys.
-local function r6_loader()
+NATIVELOADER_GUIDE = NATIVELOADER_GUIDE or {}
+local GUIDE = NATIVELOADER_GUIDE
+GUIDE.pages = PAGES
+
+local COLOR = {
+    text = Color(228, 230, 234), dim = Color(160, 166, 174), green = Color(118, 185, 0),
+    page = Color(33, 35, 40), nav = Color(25, 27, 31), hover = Color(44, 48, 55), active = Color(52, 72, 26),
+    tip = Color(31, 46, 22), warn = Color(62, 46, 17), amber = Color(232, 168, 40), code = Color(16, 17, 20),
+    frame = Color(74, 79, 88), badge = Color(12, 12, 12),
+}
+
+-- Which loader wrote native-loader/status.json: the guide shows only advice that loader supports.
+-- Workshop updates can reach an older winmm.dll, whose config parser rejects newer keys.
+local function loader()
     local ok, status = pcall(function()
         local body = file.Read("native-loader/status.json", "DATA")
         return body and util.JSONToTable(body)
     end)
-    return ok and type(status) == "table" and status.schema == 1 and
-        type(status.activation) == "table" and type(status.activation.performance_tier) == "table"
+    local activation = ok and type(status) == "table" and status.schema == 1 and status.activation
+    local r6 = type(activation) == "table" and type(activation.performance_tier) == "table"
+    local r13 = r6 and type(activation.memory) == "table"
+    return { r6 = r6, legacy = not r6, r13 = r13, pre13 = not r13 }
 end
 
-local R6_CONFIG = [[{
-  "schema": 1,
-  "allow": {
-    "workshop": ["3829070317"]
-  },
-  "remix": {
-    "performance_tier": "low"
-  },
-  "diagnostics": {
-    "gpu_crash_dumps": "off"
-  }
-}]]
-
-local PAGES = {
-    { N("Welcome"), "icon16/star.png", {
-        { "image", "nativeloader/guide/rtx_on.jpg" },
-        { "h", N("RTX Remix is running") },
-        { "p", N("Garry's Mod is path traced by NVIDIA RTX Remix. The native loader (bin\\win64\\winmm.dll) put the RTX package from the Workshop in place and started Remix before the game made its renderer.") },
-        { "p", N("Everything RTX is in the spawn menu's RTX Remix tab: the settings of the RTX add-ons, the common Remix settings, and this guide.") },
-        { "h", N("Where to find things") },
-        { "p", N("1. The RTX Remix tab in the spawn menu (hold Q): every setting of this package, in groups on the left.") },
-        { "p", N("2. Remix's own menu (Alt+X): the renderer's settings, such as DLSS, frame generation and the graphics preset.") },
-        { "p", N("3. This guide: open it again from the RTX Remix tab > Start here, or with the console command nativeloader_guide.") },
-        { "image", "nativeloader/guide/tab_overview.jpg", 440 },
-        { "p", N("In the picture: (1) the RTX Remix tab, (2) the groups of settings, (3) the panel of the group you chose. If the tab is missing, RTX is off in this session; see Troubleshooting.") },
-        { "h", N("Turning RTX off or on") },
-        { "p", N("RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too.") },
-        { "p", N("The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam.") },
-    } },
-    { N("Remix menu"), "icon16/application_view_list.png", {
-        { "image", "nativeloader/guide/remix_menu_marked.jpg", 540 },
-        { "p", N("In the picture: (1) switch between the simple Graphics Settings menu and this developer menu, (2) the tabs of the developer menu, (3) how much video memory Remix uses, (4) frame generation, (5) the upscaler. Click a setting's round dot to see it differ from the default.") },
-        { "h", N("Alt+X opens Remix's own menu") },
-        { "p", N("The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option.") },
-        { "h", N("Making changes stick") },
-        { "p", N("1. Set Graphics Preset to Custom first. Any other preset is applied again at every start and replaces the single settings you changed.") },
-        { "p", N("2. Change what you want.") },
-        { "p", N("3. Save: graphics settings with 'User Settings (user.conf): Save', developer settings with 'Remix Config (rtx.conf): Save'. Both files are in the Garry's Mod folder and win over the package's defaults.") },
-        { "p", N("Do not press 'Migrate developer settings to rtx.conf'. Before saving, check 'View Changes': the RTX fixes set some values for the current map through the Remix API, and saving them would apply them to every map.") },
-    } },
-    { N("Settings"), "icon16/cog.png", {
-        { "h", N("Defaults from the original RTX install") },
-        { "p", N("Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet.") },
-        { "p", N("RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed.") },
-        { "h", N("Common Remix settings") },
-        { "image", "nativeloader/guide/remix_settings.jpg", 520 },
-        { "p", N("In the picture: (1) apply this panel's choices at every launch (leave it off to keep Remix's saved settings), (2) the presets and quality choices; '(leave to Remix)' changes nothing, (3) a number you enable first with its checkbox, (4) fog presets, (5) clears everything this panel changed.") },
-        { "p", N("RTX Remix tab > Remix settings changes common settings for this session. Save them in Alt+X to keep them. Reapplying this panel's choices at launch is off by default; enable it only to override Remix's saved settings. Select a numeric override before editing it.") },
-        { "p", N("Fog: Remix's own volumetric presets, from light mist to heavy fog, dust and smoke. A preset replaces the weather's fog until you set it back to '(leave to Remix)'.") },
-        { "h", N("Glass") },
-        { "image", "nativeloader/guide/glass_settings.jpg", 560 },
-        { "p", N("RTX Remix tab > Glass settings. In the picture: (1) glass strength, (2) whether cracks show, (3) how fast you must move to break a window (walking does not), (4) how long broken pieces stay. Walking through glass in noclip never breaks it.") },
-        { "h", N("Sky and weather") },
-        { "p", N("RTX Remix tab > Sky and weather. The physical sky has a real sun, clouds, stars and a moon that light the map. By default the sun stands where the map's own sun is; move the time of day or the sun's direction to choose your own, or let the time pass.") },
-        { "p", N("The moon has the real Moon's face and goes through its phases, lit from the sun's side. The night sky is a detailed image of stars, a galaxy and nebulae that turns with the hour and the season; 'Night sky' switches to simulated stars.") },
-        { "p", N("Eclipse: a lunar eclipse turns the full moon copper red in Earth's shadow; a solar eclipse covers the sun, darkens the day and shows the corona and the stars. 'Eclipse progress' moves from first contact to the middle.") },
-        { "p", N("Weather: twelve kinds, from clear to thunderstorm, snow and sandstorm, changing over the time you choose. Console: nativeloader_sky_time sunset (or noon, night, 18:30 ...), nativeloader_sky_status.") },
-    } },
-    { N("Lights"), "icon16/lightbulb.png", {
-        { "h", N("Flashlight") },
-        { "p", N("The flashlight key gives a path-traced flashlight. Its brightness, cone and offsets are under RTX Remix tab > Lights > Flashlight.") },
-        { "h", N("Map lights") },
-        { "p", N("By default the map's own lights are lit by Remix from the game's lights (the 'light updater'). 'Disable Remix API Lights' under Rendering > Base Options switches between that and converting every map light into a Remix light.") },
-        { "h", N("Advanced MMD Animation Player") },
-        { "p", N("Its flashlight becomes a Remix light when the RTX fixes' module reached the Remix API (nativeloader_status says 'Remix API: ready'). The light's strength grows with its radius: a radius of 1 is almost invisible; 20 to 30 is a good start.") },
-    } },
-    { N("Memory and stability"), "icon16/chart_bar.png", {
-        { "h", N("For 8 GB GPUs and 16 GB of RAM") },
-        { "p", N("Use a system-managed Windows page file on a drive with at least 30 GB free. Close browsers and stop OBS recording before playing. In Task Manager > Performance > Memory, watch Committed: the first number is in use, the second is the limit. If they are close, close other apps or use fewer heavy models.") },
-        { "p", N("Turn frame generation off in Alt+X and use 'User Settings (user.conf): Save' so a saved value does not return next start. Keep Garry's Mod's texture detail at its highest: lowering it changes the textures Remix hashes and can break replacement matching. Use fewer heavy characters to reduce memory pressure.") },
-        { "p", N("Update bin\\win64\\winmm.dll to loader 0.11.0 or later before changing performance tiers or GPU-crash diagnostics. Older loaders reject these configuration keys and start without RTX."), "legacy" },
-        { "h", N("Performance tiers"), "r6" },
-        { "p", N("The loader chooses high, medium or low from the NVIDIA GPU's model and VRAM; recognized laptop models step down one class tier. High keeps the classic defaults. Medium and low reduce rendering work and memory use when their tier layer is available; the package's low layer also uses smaller night-sky textures. Your saved Remix settings can override these defaults."), "r6" },
-        { "p", N("RTX Remix tab > Start here shows the tier and GPU, or the reason a tier layer was not applied. To override it, use auto, high, medium or low for remix.performance_tier in native-loader\\config.json, then restart Garry's Mod. Loader tiers are separate from Graphics Preset in Alt+X."), "r6" },
-        { "p", N("Complete minimal config.json example for the shipped allowlist, with the low tier and GPU dumps off. If you customized the file, keep your allow entries and other settings when adding these objects. Invalid JSON turns RTX off."), "r6" },
-        { "code", R6_CONFIG, "r6" },
-        { "h", N("Local memory readings") },
-        { "p", N("Console: rtx_vram_stats prints VRAM totals and categories when the RTX fixes are available. The companion records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. After three failed API calls it stops for this map; toggle nativeloader_vram_telemetry off (0) and on (1) to retry. These files stay local.") },
-        { "p", N("This loader (0.11.0 or later) also records native-loader\\logs\\memory.csv with process RAM and system commit readings."), "r6" },
-        { "h", N("After a crash") },
-        { "p", N("Before restarting, copy status.json and session.json from garrysmod\\data\\native-loader\\, both vram CSV files and rtx-remix\\logs\\. The next start rewrites both JSON reports and can overwrite runtime logs; the session evidence folder does not keep these JSON reports.") },
-        { "p", N("At the next start, this loader (0.11.0 or later) copies available previous-session logs, dumps and memory history into native-loader\\logs\\sessions\\ (last five sessions, at most 200 MB). Originals stay in place; these copies are never uploaded. Copy the relevant session folder before it rotates. If no folder was kept, preserve crashes\\, native-loader\\logs\\gpu\\ and memory CSV files manually."), "r6" },
-        { "p", N("This older loader does not collect a session evidence folder. Copy rtx-remix\\logs\\ and matching crashes\\ dumps before restarting the game; update bin\\win64\\winmm.dll to loader 0.11.0 or later for evidence collection."), "legacy" },
-        { "p", N("Send the saved logs and JSON reports, both vram CSV files and any retained session folder. Add copies of root rtx.conf, dxvk.conf and user.conf, plus garrysmod\\console.log if available. Include the map, models/mods, steps before the crash, local time and time zone, frame rate and Task Manager Committed reading.") },
-        { "p", N("Keep matching original dumps from crashes\\ or native-loader\\logs\\gpu\\ and shaderDebugInfo\\*.nvdbg if no session folder kept them. For a GPU hang, include nearby Event Viewer System events from Display or nvlddmkm and any matching Windows LiveKernelReports\\WATCHDOG dump. Dumps can contain process memory; review what you share.") },
-        { "p", N("For a requested GPU-crash reproduction on this loader (0.11.0 or later), change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete config.json example above and restart. The config value stays \"next_start\"; to request another start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics add overhead; a GPU dump is created only when supported diagnostics capture a crash."), "r6" },
-    } },
-    { N("Troubleshooting"), "icon16/wrench.png", {
-        { "h", N("First look") },
-        { "p", N("Console: nativeloader_status. It prints what the loader deployed and activated, the session's patches, and whether the Remix API is ready.") },
-        { "h", N("Files to look at") },
-        { "p", N("native-loader\\logs\\loader.log - what the loader did at this start.") },
-        { "p", N("garrysmod\\data\\native-loader\\status.json and session.json - the same as data.") },
-        { "p", N("rtx-remix\\logs\\remix-dxvk.log - Remix's own log, with every effective setting near the top.") },
-        { "h", N("Common problems") },
-        { "p", N("The game closes during start-up: check rtx-remix\\logs for 'last_crash' and the end of remix-dxvk.log. Keep the game windowed (it is by default).") },
-        { "p", N("An add-on draws over the picture or undoes RTX settings: the console names it ('[nativeloader] kept ...'). nativeloader_guard 0 turns the protection off to compare.") },
-        { "p", N("Low frame rate: choose a lower graphics preset or DLSS quality. Frame generation is off by default for stability.") },
-        { "p", N("'Couldn't mount file' for the RTX Workshop item is expected: the loader deploys it instead of the game.") },
-        { "p", N("Settings come back after a restart: set the preset to Custom and Save (see 'Remix menu').") },
-    } },
-}
-
-local function add_text(parent, text, font, color)
-    local label = parent:Add("DLabel")
-    label:Dock(TOP)
-    label:DockMargin(8, font == "DermaLarge" and 10 or 2, 8, 2)
-    label:SetFont(font)
-    label:SetTextColor(color or Color(230, 230, 230))
-    label:SetText(text)
-    label:SetWrap(true)
-    label:SetAutoStretchVertical(true)
+local function shown(item, caps)
+    return item.when == nil or caps[item.when] == true
 end
 
-local function add_image(parent, path, height)
-    if not file.Exists("materials/" .. path, "GAME") then return end
-    local material = Material(path, "smooth")
-    if material:IsError() then return end
-    local image = parent:Add("DImage")
-    image:Dock(TOP)
-    image:DockMargin(8, 8, 8, 4)
-    image:SetMaterial(material)
-    image:SetKeepAspect(true)
-    image:SetTall(height or 300)
+local fonts = false
+local function make_fonts()
+    if fonts then return end
+    fonts = true
+    -- Tahoma, as DermaDefault: Windows supplies the glyphs of the other languages.
+    local function font(name, size, weight)
+        surface.CreateFont(name, { font = "Tahoma", size = size, weight = weight, antialias = true, extended = true })
+    end
+    font("NLGuideTitle", 27, 800)
+    font("NLGuideHeading", 20, 800)
+    font("NLGuideBody", 15, 500)
+    font("NLGuideBold", 15, 800)
+    font("NLGuideNav", 15, 800)
+    font("NLGuideNavSection", 14, 500)
+    font("NLGuideBadge", 14, 900)
+    surface.CreateFont("NLGuideCode", { font = "Lucida Console", size = 14, weight = 500, antialias = true })
 end
 
-local function open_guide(selected)
-    local r6 = r6_loader()
-    local frame = vgui.Create("DFrame")
-    frame:SetTitle(L("RTX Remix guide"))
-    frame:SetSize(math.min(960, ScrW() - 40), math.min(720, ScrH() - 40))
-    frame:Center()
-    frame:MakePopup()
-    local sheet = frame:Add("DPropertySheet")
-    sheet:Dock(FILL)
-    for _, page in ipairs(PAGES) do
-        local scroll = vgui.Create("DScrollPanel", sheet)
-        for _, item in ipairs(page[3]) do
-            if not item[3] or type(item[3]) == "number" or (item[3] == "r6" and r6) or (item[3] == "legacy" and not r6) then
-                if item[1] == "image" then add_image(scroll, item[2], item[3])
-                elseif item[1] == "h" then add_text(scroll, L(item[2]), "DermaLarge", Color(118, 185, 0))
-                elseif item[1] == "code" then add_text(scroll, item[2], "DermaDefault")
-                else add_text(scroll, L(item[2]), "DermaDefault") end
-            end
+-- The text the open page shows, in order (for tests and the in-game check).
+local function record(text)
+    if GUIDE.shown then GUIDE.shown.texts[#GUIDE.shown.texts + 1] = text end
+end
+
+local function label(parent, text, font, color, left, top)
+    local item = parent:Add("DLabel")
+    item:Dock(TOP)
+    item:DockMargin(left or 18, top or 3, 18, 3)
+    item:SetFont(font or "NLGuideBody")
+    item:SetTextColor(color or COLOR.text)
+    item:SetText(text)
+    item:SetWrap(true)
+    item:SetAutoStretchVertical(true)
+    record(text)
+    return item
+end
+
+-- A row: a marker painted on the left (a badge, a step number or a bullet) and wrapped text.
+local function row(parent, text, paint_marker, indent)
+    local holder = parent:Add("DPanel")
+    holder:Dock(TOP)
+    holder:DockMargin(18, 3, 18, 3)
+    holder:SetPaintBackground(false)
+    local body = holder:Add("DLabel")
+    body:Dock(TOP)
+    body:DockMargin(indent or 32, 2, 0, 0)
+    body:SetFont("NLGuideBody")
+    body:SetTextColor(COLOR.text)
+    body:SetText(text)
+    body:SetWrap(true)
+    body:SetAutoStretchVertical(true)
+    record(text)
+    holder.Paint = function(_, w, h) paint_marker(w, h) end
+    holder.Think = function(self)
+        local tall = math.max(24, body:GetTall() + 4)
+        if self:GetTall() ~= tall then self:SetTall(tall) end
+    end
+    return holder
+end
+
+local function badge(x, y, number)
+    draw.RoundedBox(11, x, y, 22, 22, COLOR.green)
+    draw.SimpleText(tostring(number), "NLGuideBadge", x + 11, y + 11, COLOR.badge, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
+local function entries(item, caps)
+    local out = {}
+    for index = 2, #item do
+        local entry = item[index]
+        if type(entry) == "table" then
+            if shown(entry, caps) then out[#out + 1] = entry[1] end
+        else
+            out[#out + 1] = entry
         end
-        local added = sheet:AddSheet(L(page[1]), scroll, page[2])
-        if page[1] == selected then sheet:SetActiveTab(added.Tab) end
+    end
+    return out
+end
+
+local function add_steps(parent, item, caps)
+    for number, text in ipairs(entries(item, caps)) do
+        row(parent, L(text), function()
+            draw.SimpleText(number .. ".", "NLGuideBold", 4, 4, COLOR.green)
+        end)
     end
 end
 
-concommand.Add("nativeloader_guide", function() open_guide() end, nil, "Opens the RTX Remix guide")
-concommand.Add("nativeloader_stability_guide", function() open_guide("Memory and stability") end, nil,
-    "Opens the RTX Remix guide's memory and stability page")
+local function add_list(parent, item, caps)
+    for _, text in ipairs(entries(item, caps)) do
+        row(parent, L(text), function()
+            surface.SetDrawColor(COLOR.green)
+            surface.DrawRect(8, 10, 6, 6)
+        end, 26)
+    end
+end
+
+-- A box with a colored bar: a tip or a caution.
+local function add_box(parent, text, background, bar)
+    local holder = parent:Add("DPanel")
+    holder:Dock(TOP)
+    holder:DockMargin(18, 8, 18, 8)
+    local body = holder:Add("DLabel")
+    body:Dock(TOP)
+    body:DockMargin(16, 8, 12, 0)
+    body:SetFont("NLGuideBody")
+    body:SetTextColor(COLOR.text)
+    body:SetText(text)
+    body:SetWrap(true)
+    body:SetAutoStretchVertical(true)
+    record(text)
+    holder.Paint = function(_, w, h)
+        draw.RoundedBox(4, 0, 0, w, h, background)
+        surface.SetDrawColor(bar)
+        surface.DrawRect(0, 0, 5, h)
+    end
+    holder.Think = function(self)
+        local tall = body:GetTall() + 16
+        if self:GetTall() ~= tall then self:SetTall(tall) end
+    end
+end
+
+local function add_code(parent, text)
+    local item = label(parent, text, "NLGuideCode", COLOR.text, 30, 6)
+    item:SetTextInset(10, 0)
+    item.Paint = function(_, w, h) draw.RoundedBox(4, 0, 0, w, h, COLOR.code) end
+end
+
+-- A picture at its own size (made from sharp captures; never enlarged, only made smaller to fit), and
+-- its legend: entry n explains the badge numbered n.
+local function add_image(parent, item)
+    local path = item[2]
+    if not file.Exists("materials/" .. path, "GAME") then return end
+    local material = Material(path, "smooth")
+    if material:IsError() then return end
+    local width, height = material:Width(), material:Height()
+    if width <= 0 or height <= 0 then return end
+    local holder = parent:Add("DPanel")
+    holder:Dock(TOP)
+    holder:DockMargin(18, 10, 18, 6)
+    holder:SetTall(height + 2)
+    holder.Paint = function(_, w)
+        local scale = math.min(1, (w - 2) / width)
+        local dw, dh = math.floor(width * scale), math.floor(height * scale)
+        surface.SetDrawColor(COLOR.frame)
+        surface.DrawOutlinedRect(0, 0, dw + 2, dh + 2)
+        surface.SetDrawColor(255, 255, 255, 255)
+        surface.SetMaterial(material)
+        surface.DrawTexturedRect(1, 1, dw, dh)
+    end
+    holder.PerformLayout = function(self, w)
+        local tall = math.floor(height * math.min(1, (w - 2) / width)) + 2
+        if self:GetTall() ~= tall then self:SetTall(tall) end
+    end
+    GUIDE.shown.images[#GUIDE.shown.images + 1] = path
+    for number = 3, #item do
+        row(parent, L(item[number]), function() badge(0, 1, number - 2) end)
+    end
+end
+
+local function add_term(parent, word, meaning)
+    local title = label(parent, L(word), "NLGuideBold", COLOR.green, 18, 8)
+    title:DockMargin(18, 8, 18, 0)
+    label(parent, L(meaning), "NLGuideBody", COLOR.text, 32, 1)
+end
+
+local function add_button(parent, text, action)
+    local button = parent:Add("DButton")
+    button:Dock(TOP)
+    button:DockMargin(18, 6, 18, 6)
+    button:SetTall(30)
+    button:SetFont("NLGuideBold")
+    button:SetText(text)
+    button.DoClick = action
+    record(text)
+    return button
+end
+
+local open_guide
+
+-- The page, built into the content area; heading panels are kept by section id for the navigation.
+local function build_page(view, page, caps)
+    local content = view.content
+    content:Clear()
+    GUIDE.shown = { id = page.id, title = L(page.title), texts = {}, images = {} }
+    view.sections = {}
+    local title = label(content, L(page.title), "NLGuideTitle", COLOR.text, 18, 14)
+    title:DockMargin(18, 14, 18, 6)
+    for _, item in ipairs(page.items) do
+        if shown(item, caps) then
+            local kind = item[1]
+            if kind == "h" then
+                local heading = label(content, L(item[2]), "NLGuideHeading", COLOR.green, 18, 18)
+                heading:DockMargin(18, 20, 18, 4)
+                if item.id then view.sections[item.id] = heading end
+            elseif kind == "p" then
+                label(content, L(item[2]))
+            elseif kind == "q" then
+                label(content, L(item[2]), "NLGuideBold", COLOR.text, 18, 10)
+            elseif kind == "steps" then
+                add_steps(content, item, caps)
+            elseif kind == "list" then
+                add_list(content, item, caps)
+            elseif kind == "image" then
+                add_image(content, item)
+            elseif kind == "term" then
+                add_term(content, item[2], item[3])
+            elseif kind == "tip" then
+                add_box(content, L(item[2]), COLOR.tip, COLOR.green)
+            elseif kind == "warn" then
+                add_box(content, L(item[2]), COLOR.warn, COLOR.amber)
+            elseif kind == "code" then
+                add_code(content, item[2])
+            elseif kind == "button" then
+                local commands = { unpack(item, 3) }
+                add_button(content, L(item[2]), function()
+                    for _, command in ipairs(commands) do RunConsoleCommand(command) end
+                end)
+            elseif kind == "link" then
+                local target, section = item[3], item[4]
+                add_button(content, "> " .. L(item[2]), function() open_guide(target, section) end)
+            end
+        end
+    end
+    -- The way on: the previous and the next page.
+    local index
+    for i, other in ipairs(PAGES) do if other == page then index = i end end
+    local bar = content:Add("DPanel")
+    bar:Dock(TOP)
+    bar:DockMargin(18, 24, 18, 18)
+    bar:SetTall(32)
+    bar:SetPaintBackground(false)
+    if PAGES[index - 1] then
+        local previous = bar:Add("DButton")
+        previous:Dock(LEFT)
+        previous:SetWide(300)
+        previous:SetText(string.format(L("Previous: %s"), L(PAGES[index - 1].title)))
+        previous.DoClick = function() open_guide(PAGES[index - 1].id) end
+    end
+    if PAGES[index + 1] then
+        local following = bar:Add("DButton")
+        following:Dock(RIGHT)
+        following:SetWide(300)
+        following:SetText(string.format(L("Next: %s"), L(PAGES[index + 1].title)))
+        following.DoClick = function() open_guide(PAGES[index + 1].id) end
+    end
+end
+
+local function scroll_to(view, section)
+    local target = section and view.sections[section]
+    timer.Simple(0.15, function()
+        if not IsValid(view.content) then return end
+        local bar = view.content:GetVBar()
+        if not IsValid(target) then bar:SetScroll(0) return end
+        local _, y = view.content:GetCanvas():GetChildPosition(target)
+        bar:AnimateTo(math.max(0, y - 10), 0.25, 0, 0.5)
+    end)
+end
+
+-- An entry of the navigation: its text wraps (translations are often longer than the English).
+local function nav_button(parent, text, font, indent, is_active, icon)
+    local button = parent:Add("DButton")
+    button:Dock(TOP)
+    button:DockMargin(0, 0, 0, 1)
+    button:SetText("")
+    local caption = button:Add("DLabel")
+    caption:Dock(TOP)
+    caption:DockMargin(indent + (icon and 24 or 0), 5, 8, 0)
+    caption:SetFont(font)
+    caption:SetText(text)
+    caption:SetWrap(true)
+    caption:SetAutoStretchVertical(true)
+    caption:SetMouseInputEnabled(false)
+    local material
+    button.Think = function(self)
+        local tall = caption:GetTall() + 10
+        if self:GetTall() ~= tall then self:SetTall(tall) end
+        caption:SetTextColor((icon or is_active()) and COLOR.text or COLOR.dim)
+    end
+    button.Paint = function(self, w, h)
+        if is_active() then
+            draw.RoundedBox(0, 0, 0, w, h, COLOR.active)
+            surface.SetDrawColor(COLOR.green)
+            surface.DrawRect(0, 0, 4, h)
+        elseif self:IsHovered() then
+            draw.RoundedBox(0, 0, 0, w, h, COLOR.hover)
+        end
+        if icon then
+            material = material or Material(icon)
+            surface.SetDrawColor(255, 255, 255, 255)
+            surface.SetMaterial(material)
+            surface.DrawTexturedRect(indent, 7, 16, 16)
+        end
+    end
+    return button
+end
+
+-- The left side: every page, and under it the sections of its headings.
+local function build_nav(view, caps)
+    local nav = view.nav
+    nav:Clear()
+    local heading = nav:Add("DLabel")
+    heading:Dock(TOP)
+    heading:DockMargin(12, 10, 8, 8)
+    heading:SetFont("NLGuideHeading")
+    heading:SetTextColor(COLOR.green)
+    heading:SetText(L("Contents"))
+    heading:SetWrap(true)
+    heading:SetAutoStretchVertical(true)
+    for _, page in ipairs(PAGES) do
+        local pageButton = nav_button(nav, L(page.title), "NLGuideNav", 10,
+            function() return view.page == page and view.section == nil end, page.icon)
+        pageButton.DoClick = function() open_guide(page.id) end
+        for _, item in ipairs(page.items) do
+            if item[1] == "h" and item.id and shown(item, caps) then
+                local section = item.id
+                local button = nav_button(nav, L(item[2]), "NLGuideNavSection", 44,
+                    function() return view.page == page and view.section == section end)
+                button.DoClick = function() open_guide(page.id, section) end
+            end
+        end
+    end
+end
+
+local function find_page(id)
+    for _, page in ipairs(PAGES) do if page.id == id then return page end end
+    return PAGES[1]
+end
+
+open_guide = function(id, section)
+    make_fonts()
+    local caps = loader()
+    local page = find_page(id)
+    local view = GUIDE.view
+    if not (view and IsValid(view.frame)) then
+        local frame = vgui.Create("DFrame")
+        frame:SetTitle(L("RTX Remix guide"))
+        frame:SetSize(math.min(1240, ScrW() - 40), math.min(940, ScrH() - 40))
+        frame:SetSizable(true)
+        frame:SetMinWidth(math.min(760, ScrW() - 40))
+        frame:SetMinHeight(math.min(480, ScrH() - 40))
+        frame:Center()
+        frame:MakePopup()
+        local nav = frame:Add("DScrollPanel")
+        nav:Dock(LEFT)
+        nav:SetWide(270)
+        nav:DockMargin(0, 0, 6, 0)
+        nav.Paint = function(_, w, h) draw.RoundedBox(4, 0, 0, w, h, COLOR.nav) end
+        local content = frame:Add("DScrollPanel")
+        content:Dock(FILL)
+        content.Paint = function(_, w, h) draw.RoundedBox(4, 0, 0, w, h, COLOR.page) end
+        view = { frame = frame, nav = nav, content = content }
+        GUIDE.view = view
+    end
+    view.frame:MoveToFront()
+    -- The loader is read again at every opening: a reopened guide never shows stale advice.
+    view.page, view.section = page, section
+    build_nav(view, caps)
+    build_page(view, page, caps)
+    scroll_to(view, section)
+end
+GUIDE.open = open_guide
+
+local function complete(command, text)
+    local out = {}
+    for _, page in ipairs(PAGES) do out[#out + 1] = command .. " " .. page.id end
+    return out
+end
+concommand.Add("nativeloader_guide", function(_, _, args) open_guide(args and args[1], args and args[2]) end, complete,
+    "Opens the RTX Remix guide; optionally a page: welcome, tab, remix_menu, characters, memory, troubleshooting")
+concommand.Add("nativeloader_stability_guide", function() open_guide("memory") end, nil,
+    "Opens the RTX Remix guide's Performance and memory page")
 
 -- Once, on the first RTX session: open the guide a moment after the player has spawned.
 hook.Add("InitPostEntity", "nativeloader_guide", function()
     if file.Exists(SHOWN, "DATA") then return end
     file.CreateDir("nativeloader_companion")
     file.Write(SHOWN, os.date("!%Y-%m-%dT%H:%M:%SZ") .. "\n")
-    timer.Simple(8, open_guide)
+    timer.Simple(8, function() open_guide() end)
 end)

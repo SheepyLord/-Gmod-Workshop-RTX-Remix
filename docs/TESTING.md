@@ -626,7 +626,7 @@ were changed, and no game was started.
 ## R6 testers: reading memory
 
 The player checklist and crash handoff are in [STABILITY.md](STABILITY.md), also available through
-RTX Remix > Start here > Memory and stability guide. Record UTC/local time, map, models/mods,
+RTX Remix > Start here > Performance and memory guide. Record UTC/local time, map, models/mods,
 the action being tested and frame rate alongside each reading. Compare the same scene and camera,
 with the same settings and elapsed time after loading; change one setting per comparison.
 

@@ -398,13 +398,13 @@ local function openAssignments(target)
     frame:MakePopup()
     local help = frame:Add("DLabel")
     help:Dock(TOP) help:SetTall(60) help:SetWrap(true)
-    help:SetText(L("Choose a spawned character, or look at one before opening this window. Choices are saved for this character and apply to all its copies, without respawning. The brightness and steady-eye-white settings still apply."))
+    help:SetText(L("Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."))
     local picker = frame:Add("DComboBox")
     picker:Dock(TOP) picker:SetTall(28)
     picker:SetValue(L("Choose a spawned character"))
     local message = frame:Add("DLabel")
     message:Dock(TOP) message:SetTall(42) message:SetWrap(true)
-    message:SetText(L("Spawn a Model Hotloader character first. Only generated character textures can be selected."))
+    message:SetText(L("Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."))
     local navigation = frame:Add("DPanel")
     navigation:Dock(BOTTOM) navigation:SetTall(30)
     local previous, nextPage = navigation:Add("DButton"), navigation:Add("DButton")
@@ -421,7 +421,7 @@ local function openAssignments(target)
     end
     local function choose(id)
         current, rows, page = id, materials(id), 1
-        message:SetText(L("Checked materials are eye whites. Use automatic detection removes a manual choice. A shared texture thumbnail can show the face too; only the selected material changes."))
+        message:SetText(L("Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."))
         showPage()
     end
     previous.DoClick = function() page = math.max(1, page - 1) showPage() end
@@ -488,12 +488,12 @@ local function openAssignments(target)
                 else
                     status:SetText(entry.automatic and L("Automatic: eye white") or L("Automatic: ordinary material"))
                 end
-                if not texture then status:SetText(L("Generated texture unavailable")) end
+                if not texture then status:SetText(L("Texture not available")) end
                 updating = false
             end
             local function change(value)
                 if not setChoice(id, entry.index, value) then
-                    message:SetText(L("Choice could not be saved. The character may have been removed, or its saved choices were changed or are unreadable. Existing files have been kept."))
+                    message:SetText(L("Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."))
                 end
                 refresh()
             end

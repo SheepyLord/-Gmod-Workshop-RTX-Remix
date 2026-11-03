@@ -8,6 +8,9 @@ The pre-movement player sweep uses the shared 250-unit/s default/fallback contac
 
 Player contact also uses a pre-movement hull trace in SetupMove, with incoming movement velocity;
 this includes GetBaseVelocity (the QA SetVelocity push), just as the engine's mover does.
+R14 (the user's item 41): `S.Ghost` is true for a player in noclip (`MOVETYPE_NOCLIP`, flying through
+walls) or spectating (`MOVETYPE_OBSERVER`). Touch, physics contact and the SetupMove sweep all go through
+`S.Body`, which ignores such a player, so passing through a pane never cracks or breaks it.
 On load it resets, once, the two settings Glass-Rewrite-Remix archived under the same names with
 other meanings (`rtx_glass_player_break_speed` 100, `rtx_glass_velocity_transfer` 2): GMod restores
 archived values, so with them a 200-unit/s walk broke glass (G1 QA run 08, an 80 left in the PoC's

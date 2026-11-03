@@ -2,6 +2,8 @@
 
 MIT LuaJIT harness for the actual `debris_scene.lua` and `debris_bullets.lua`. Run through
 `test_glass_interaction.py`, or `luajit tools/tests/glass_interaction_harness.lua glass/addon/lua CASE`.
+R14: `scene_kinds` adds a player in noclip and a spectating player, which get no hull in the scene.
+
 Cases: `scene_kinds`, `scene_caps`, `scene_fallback`, `bullets_filter`, `bullets_rate`, `bullets_client`.
 
 `scene_sweep_bounds` verifies approaching/away/distant bodies, the 192-unit lookahead cap,

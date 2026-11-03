@@ -1,5 +1,12 @@
 # Components
 
+R14-H splits the companion's guide into its window ([`nativeloader_guide.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_guide.lua.md))
+and its pages ([`guide_pages.lua`](../companion/nativeloader/lua/nativeloader/guide_pages.lua.md)). The
+guide's pictures are made by [`tools/guide_annotate.py`](../tools/guide_annotate.py.md) from the spec
+`tools/guide_pictures.json` and captures of [`tools/qa/guide_shots.lua`](../tools/qa/guide_shots.lua.md);
+[`tools/tests/test_companion_guide.py`](../tools/tests/test_companion_guide.py.md) with its
+[harness](../tools/tests/companion_guide_harness.lua.md) checks pages, sections and pictures.
+
 R12-A adds the [isolated reimport session](../tools/qa/mmd_reimport_session.py.md) and
 [two-realm probe](../tools/qa/mmd_reimport_probe.lua.md) under `tools/qa`, with the
 [Lua lifecycle regression](../tools/tests/mmd_reimport_harness.lua.md) under `tools/tests`.

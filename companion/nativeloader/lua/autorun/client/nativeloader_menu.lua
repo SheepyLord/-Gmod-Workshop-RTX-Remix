@@ -207,7 +207,7 @@ local function performance_tier_line(status)
     if tier.tier ~= "high" and (type(tier.layer) ~= "string" or tier.layer == "") then
         local reason = type(tier.reason) == "string" and tier.reason ~= "" and tier.reason or
             L("No tier layer is available.")
-        return string.format(L("Performance tier %s is not applied: %s. See the Memory and stability guide."),
+        return string.format(L("Performance tier %s is not applied: %s. See Performance and memory in the guide."),
             L(levels[tier.tier]), reason)
     end
     local sources = { auto = N("Automatic selection"), config = N("Configuration override"),
@@ -235,21 +235,20 @@ local function memory_profile_line(status)
 end
 
 local function start_here(panel)
-    panel:Help(L("RTX Remix runs in this session through the native loader. Everything RTX lives in this tab."))
+    panel:Help(L("RTX Remix is running in this session. Every setting of the RTX package is in this tab, in the groups on the left."))
     local status = loader_status()
     local tier = performance_tier_line(status)
     if tier then panel:Help(tier) end
     local memory = memory_profile_line(status)
     if memory then panel:Help(memory) end
     panel:Button(L("Open the RTX Remix guide"), "nativeloader_guide")
-    panel:Button(L("Memory and stability guide"), "nativeloader_stability_guide")
+    panel:Button(L("Performance and memory guide"), "nativeloader_stability_guide")
     panel:Button(L("Print the loader's status to the console"), "nativeloader_status")
-    panel:Help(L("Classic settings: the values of the original RTX install. They were applied once, only where a setting was still at its default. This button applies all of them again."))
+    panel:Help(L("When RTX first ran, the RTX add-ons took the settings of the original RTX install, except for settings you had already changed. This button applies all of them again, also over your own changes."))
     panel:Button(L("Use the classic RTX settings"), "nativeloader_rtx_defaults")
-    panel:Help(L("Keep add-ons from undoing RTX settings or drawing post-processing over the image"))
     panel:CheckBox(L("RTX session guard"), "nativeloader_guard")
-    panel:ControlHelp(L("Turn this off only to test an add-on that misbehaves."))
-    panel:Help(L("Remix's own menu: press Alt+X. Choose Custom as the graphics preset before changing single settings, then use Save, or they come back at the next start."))
+    panel:ControlHelp(L("Stops other add-ons from undoing RTX settings or drawing post-processing over the picture. Turn it off only to test an add-on that misbehaves."))
+    panel:Help(L("Remix's own menu: press Alt+X, and save your changes there to keep them. Before you change single settings, set Graphics Preset, or DLSS Preset for the DLSS settings, to Custom; the guide shows how."))
     local box = panel:ComboBox(L("Language"), "nativeloader_language")
     box:AddChoice(L("Same as Garry's Mod"), "")
     for _, language in ipairs(i18n.languages) do box:AddChoice(language[2], language[1]) end
@@ -260,9 +259,9 @@ local function remix_settings(panel)
     if not remix_ready() then
         panel:Help(L("The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."))
     end
-    panel:Help(L("Changes here apply to this session. Use Save Settings in Alt+X to keep them. Values shown here are this panel's overrides, not a live readout of Remix."))
+    panel:Help(L("Changes here apply at once, for this session. To keep them, press Alt+X and save them there. The values shown are this panel's own choices, not a live reading of Remix."))
     panel:CheckBox(L("Reapply these overrides at every launch"), "nativeloader_remix_reapply")
-    panel:ControlHelp(L("Leave this off to load Remix's saved settings. Turn it on only if you want this panel to override them."))
+    panel:ControlHelp(L("Off (the default), Remix starts with its own saved settings. On, this panel applies its choices at every start, over those settings."))
     for _, option in ipairs(OPTIONS) do
         local name = "nativeloader_remix_" .. option[1]
         if option[4] == "choice" then
@@ -302,31 +301,31 @@ local function remix_settings(panel)
         -- A label holds about 100 pixels; what does not fit goes below the control.
         if option[6] then panel:ControlHelp(L(option[6])) end
     end
-    panel:ControlHelp(L("Enable a numeric override before editing it. Zero is a valid value for sky brightness and colour purity."))
+    panel:ControlHelp(L("A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."))
     panel:Button(L("Clear this panel's overrides"), "nativeloader_remix_reset")
 end
 
 local function player_settings(panel)
     panel:CheckBox(L("Local player shadow"), "rtx_pseudoplayer")
-    panel:ControlHelp(L("Create your first-person body shadow and reflection. Other players and ragdolls are unaffected."))
+    panel:ControlHelp(L("Shows the shadow and reflection of your own body while you play in first person. Other players and ragdolls are not affected."))
     panel:NumSlider(L("Body height offset (units)"), "rtx_pseudoplayer_offset_z", -32, 64, 1)
-    panel:ControlHelp(L("Positive values raise only the rendered body. Your camera and collision stay in place."))
+    panel:ControlHelp(L("Raises (positive) or lowers (negative) only that body. Your view and your collisions stay where they are."))
 end
 
 local function toolgun_settings(panel)
     panel:CheckBox(L("Keep toolgun text sharp"), "nativeloader_toolgun_screen")
-    panel:ControlHelp(L("Draw the live toolgun screen at full resolution after upscaling. Animated and custom screens keep updating normally."))
+    panel:ControlHelp(L("Draws the toolgun's screen at full resolution after DLSS or another upscaler, so its text stays readable. Animated and custom screens keep working."))
 end
 
 local function model_layers_settings(panel)
     panel:CheckBox(L("Hide outline meshes"), "nativeloader_ignore_outlines")
-    panel:ControlHelp(L("Hides incompatible outline shells that can cover or darken the model. Other model materials keep their normal rendering."))
+    panel:ControlHelp(L("Hides the outline shells that many anime models have: path tracing draws them as a dark layer over the model. The model's other materials are not changed."))
     panel:CheckBox(L("Imported game PBR"), "rtx_topbr_game_maps")
-    panel:ControlHelp(L("Uses shipped Wuthering Waves, Endfield and Silver Palace maps. Preserves skin and faces. Off restores the original materials."))
+    panel:ControlHelp(L("Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."))
     panel:CheckBox(L("Steady eye whites for imported characters"), "nativeloader_eye_whites")
-    panel:ControlHelp(L("Recognizes named eye-white surfaces. Characters with a PBR pack keep its materials."))
+    panel:ControlHelp(L("Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."))
     panel:NumSlider(L("Eye-white brightness"), "nativeloader_eye_white_brightness", 0, 200, 0)
-    panel:ControlHelp(L("Percent: 100 is the tuned default. Applies live to automatic eye whites and scene-adaptive eye emission in PBR packs. Zero removes that emission."))
+    panel:ControlHelp(L("In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."))
     panel:Button(L("Choose eye-white materials"), "nativeloader_eye_white_materials")
 end
 

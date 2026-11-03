@@ -65,7 +65,7 @@ if SERVER then
         local area = 0 for _, poly in ipairs(F.Remaining(r.state)) do area = area + F.Area(poly) end
         return area / F.Area(r.state.def.outline)
     end
-    local function field()
+    local function field(mode)
         local A = ORIGIN + Vector(-220, 0, 52)
         -- 1. bullets: one round cracks, more grow the cracks, then the pane breaks
         add(function() clear() local e = pane(A) steps.e = e timer.Simple(0.5, function() shoot(point(e, 24, 14), 15) say("bullet 1") view("bullet_crack1", A) end) end)
@@ -87,7 +87,7 @@ if SERVER then
             say("ragdoll thrown") view("prop_ragdoll", A, 0.6) end) end)
         -- 6. walking into a pane leaves it whole, 7. running into one breaks it: the player's own movement,
         -- forward held (and sprint for the run) from 160 units away, facing the pane
-        local function walk(label, sprint)
+        local function walk(label, sprint, tag)
             add(function() clear() local e = pane(A + Vector(0, 0, -16), "annealed", 64, 96)
                 local id = S.byEntity[e] and S.byEntity[e].id
                 owner:SetPos(Vector(A.x + 160, A.y, ORIGIN.z)) owner:SetEyeAngles(Angle(0, 180, 0)) owner:SetVelocity(-owner:GetVelocity())
@@ -96,10 +96,30 @@ if SERVER then
                 -- annealed glass keeps its frame after a breakout: count impacts and the glass left, not only the entity
                 timer.Simple(1.7, function() say("%s: pane valid %s, impacts %d, glass left %.0f%%, speed reached %.0f", label, tostring(IsValid(e)),
                     impacts[id] or 0, left(id) * 100, owner.NLGlassQASpeed or 0) view(label, A, 0.1) end)
-            end, "contact")
+            end, tag or "contact")
         end
         hook.Add("Move", "nlglass_qa_speed", function(ply, mv) if ply == owner then ply.NLGlassQASpeed = math.max(ply.NLGlassQASpeed or 0, mv:GetVelocity():Length2D()) end end)
         walk("walk", false) walk("run", true)
+        -- R14 (the user's item 41), `nlglass_qa noclip` only: flying through a pane in noclip, and
+        -- spectating through one, leave it whole; the same pane run into still breaks (the control).
+        -- The player's own movement, forward and sprint held as in steps 6 and 7.
+        local function fly(label, mode)
+            add(function() clear() local e = pane(A + Vector(0, 0, -16), "annealed", 64, 96)
+                local id = S.byEntity[e] and S.byEntity[e].id
+                if mode == "spectate" then owner:Spectate(OBS_MODE_ROAMING) else owner:SetMoveType(MOVETYPE_NOCLIP) end
+                owner:SetPos(Vector(A.x + 160, A.y, ORIGIN.z)) owner:SetEyeAngles(Angle(0, 180, 0)) owner:SetVelocity(-owner:GetVelocity())
+                owner.NLGlassQASpeed = 0
+                owner:SetNW2Bool("nlglass_qa_sprint", true) owner:SetNW2Float("nlglass_qa_move_until", CurTime() + 1.6)
+                timer.Simple(1.7, function()
+                    say("%s: pane valid %s, impacts %d, glass left %.0f%%, speed reached %.0f, passed the pane %s, move type %d", label,
+                        tostring(IsValid(e)), impacts[id] or 0, left(id) * 100, owner.NLGlassQASpeed or 0,
+                        tostring(owner:GetPos().x < A.x), owner:GetMoveType())
+                    if mode == "spectate" then owner:UnSpectate() owner:Spawn() else owner:SetMoveType(MOVETYPE_WALK) end
+                    view(label, A, 0.1)
+                end)
+            end, "noclip")
+        end
+        if mode == "noclip" then fly("noclip", "noclip") fly("spectate", "spectate") walk("run control", true, "noclip") end
         -- 7. an explosion, 8. tempered: rounds, then a blast, 9. a scripted break
         add(function() clear() pane(A) timer.Simple(0.5, function() util.BlastDamage(owner, owner, A + Vector(40, 10, 0), 200, 120) say("blast") view("blast", A, 0.4) end) end)
         add(function() clear() local e = pane(A, "tempered") steps.e = e
@@ -308,9 +328,9 @@ if SERVER then
         steps, tags, index = {}, {}, 0
         watch()
         if args[1] == "map" then map() elseif args[1] == "old" then old() elseif args[1] == "interact" then interact() elseif args[1]=="r8" then r8()
-        else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field() end
-        if args[1] == "contact" then -- only the walk and run steps
-            local only = {} for i, fn in ipairs(steps) do if tags[i] == "contact" then only[#only + 1] = fn end end steps = only
+        else owner:SetPos(ORIGIN) owner:SetEyeAngles(Angle(0, 180, 0)) field(args[1]) end
+        if args[1] == "contact" or args[1] == "noclip" then -- only the walk and run steps, or R14's noclip steps
+            local only = {} for i, fn in ipairs(steps) do if tags[i] == args[1] then only[#only + 1] = fn end end steps = only
         end
         say("start %s, %d steps", args[1] or "field", #steps) timer.Simple(1, nextStep)
     end)

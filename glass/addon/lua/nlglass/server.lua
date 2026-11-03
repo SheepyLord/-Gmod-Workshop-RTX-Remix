@@ -162,9 +162,12 @@ function S.Contact(entity,data)
     -- Source prohibits destroying/rebuilding a physics object during its collision callback.
     timer.Simple(0,function() if IsValid(entity) then S.Impact(r,impact) end end)
 end
--- A player in noclip passes through the world: it never touches, so it never fractures glass.
+-- A player in noclip (flying through walls) or spectating passes through the world: it never
+-- touches, so it never fractures glass.
 function S.Ghost(body)
-    return IsValid(body) and body:IsPlayer() and body:GetMoveType()==MOVETYPE_NOCLIP
+    if not IsValid(body) or not body:IsPlayer() then return false end
+    local move=body:GetMoveType()
+    return move==MOVETYPE_NOCLIP or move==MOVETYPE_OBSERVER
 end
 function S.Body(entity,body,velocity,point)
     local r=S.byEntity[entity]

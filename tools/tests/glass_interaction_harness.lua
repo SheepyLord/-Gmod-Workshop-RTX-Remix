@@ -29,6 +29,7 @@ function CurTime() return now end
 -- Windows; a loaded CI runner deferred a cook). sceneperf alone measures QueryPerformanceCounter.
 function SysTime() return now end
 angle_zero,vector_origin,SOLID_NONE=Angle(),Vector(),0
+MOVETYPE_WALK,MOVETYPE_NOCLIP,MOVETYPE_OBSERVER=2,8,10
 function LocalToWorld(p,_,o,a)
     local c,s=math.cos(math.rad(a.y)),math.sin(math.rad(a.y))
     return o+Vector(c*p.x-s*p.y,s*p.x+c*p.y,p.z),Angle(a.p,a.y,a.r)
@@ -53,6 +54,7 @@ local function entity(kind,position,bodies)
         IsWorld=function(self)return self.kind=="worldspawn"end,GetClass=function(self)return self.kind end,
         IsPlayer=function(self)return self.kind=="player"end,IsNPC=function(self)return self.kind=="npc_citizen"end,
         IsNextBot=function(self)return self.kind=="nextbot"end,Alive=function(self)return self.alive end,Health=function(self)return self.alive and 100 or 0 end,
+        GetMoveType=function(self)return self.movetype or MOVETYPE_WALK end,
         WorldSpaceAABB=function(self)return self.position-Vector(16,16,32),self.position+Vector(16,16,32)end,
         GetCollisionBounds=function()return Vector(-16,-16,0),Vector(16,16,72)end,
         OBBMins=function()return Vector(-8,-4,-4)end,OBBMaxs=function()return Vector(8,4,4)end,
@@ -174,9 +176,13 @@ elseif scenario:match("^scene") then
         local rag=entity("prop_ragdoll",nil,{phys(Vector(0,0,8)),phys(Vector(0,0,16)),phys(Vector(0,0,24))})
         local prop=entity("prop_physics",nil,{phys()})
         local dead=entity("player");dead.alive=false
-        nearby={player,npc,rag,prop,entity("prop_dynamic"),dead,entity("worldspawn"),entity("nlglass_pane"),entity("prop_physics",Vector(9000,0,0))}
+        -- R14 (item 41): players in noclip or spectating pass through the world, so broken glass
+        -- neither meets nor moves for them.
+        local flying=entity("player");flying.movetype=MOVETYPE_NOCLIP
+        local spectator=entity("player");spectator.movetype=MOVETYPE_OBSERVER
+        nearby={player,npc,rag,prop,entity("prop_dynamic"),dead,flying,spectator,entity("worldspawn"),entity("nlglass_pane"),entity("prop_physics",Vector(9000,0,0))}
         local rows=capture(S,n)
-        check(#rows==7,"living hulls, per-physics-bone ragdoll, physics prop and box fallback")
+        check(#rows==7,"living hulls, per-physics-bone ragdoll, physics prop and box fallback; no hull for players in noclip or spectating")
         check(cooks>=1 and cooks<=2 and queries==2,"bounded new shapes and duplicate region candidates deduplicated")
         check(rows[1][5]==85 and rows[1][6]==nil and rows[1][2].z==32 and rows[1][4].z==40,
             "player uses its hull plus the floor-piece sole skirt, not shadow mass/shape")

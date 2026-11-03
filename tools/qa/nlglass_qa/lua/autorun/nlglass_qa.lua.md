@@ -25,6 +25,19 @@ each waiting for the client to report its screenshot, and prints `NL_QA <step>` 
 
 `nlglass_qa contact` runs only steps 6 and 7.
 
+`nlglass_qa noclip` (R14, the user's item 41; start it with
+[`nlglass_noclip_start.lua`](../../../nlglass_noclip_start.lua.md)) runs three steps on the same 64x96 pane
+setup, with forward and sprint held for 1.6 s:
+
+1. The player flies through the pane in noclip.
+2. The player passes through a pane while spectating (`Spectate(OBS_MODE_ROAMING)`; afterwards
+   `UnSpectate` and a respawn).
+3. The control: the player runs into a pane on foot.
+
+Each step prints the same line as steps 6 and 7, plus whether the player ended up past the pane and its
+move type. Steps 1 and 2 must leave the pane whole (no impact, 100 % left) with the player past it;
+step 3 must break it.
+
 `old` (gm_construct, with the package from before G1, whose fixes part still carries Glass-Rewrite-Remix):
 the performance scene of step 11 with the old system, for the before/after comparison: 50 96x64
 `procedural_shard` panes built the way that add-on's map replacement builds one (its block model scaled
