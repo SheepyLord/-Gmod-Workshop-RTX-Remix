@@ -1657,7 +1657,7 @@ msgstr "使わなくなった Remix MOD を rtx-remix\\mods から取り除い�
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
-msgstr "Alt+X でフレーム生成をオフにし、オフのまま保持されるように「設定を保存」、または開発者メニューの「ユーザー設定 (user.conf):」の「保存」で保存してください。"
+msgstr "Alt+X でフレーム生成をオフにし、オフのまま保持されるように「設定を保存」、または開発者メニューの「ユーザー設定 (user.conf):」の「保存」(User Settings (user.conf): Save) で保存してください。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
@@ -1665,7 +1665,7 @@ msgstr "Garry's Mod のテクスチャの詳細度は最高のままにしてく
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
-msgstr "「タスク マネージャー」>「パフォーマンス」>「メモリ」の「コミット済み」を確認してください。使用中のメモリと上限が表示されます。両者が近づいたら、他のプログラムを閉じてください。"
+msgstr "「タスク マネージャー」>「パフォーマンス」>「メモリ」の「コミット済み」(Committed) を確認してください。使用中のメモリと上限が表示されます。両者が近づいたら、他のプログラムを閉じてください。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Reading memory in the game"

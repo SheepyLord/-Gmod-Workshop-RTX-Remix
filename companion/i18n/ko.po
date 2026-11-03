@@ -1657,7 +1657,7 @@ msgstr "더 이상 사용하지 않는 Remix 모드를 rtx-remix\\mods에서 제
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
-msgstr "Alt+X에서 프레임 생성을 끄고, 설정 저장 또는 개발자 메뉴의 사용자 설정(user.conf): 저장으로 저장해 꺼진 상태를 유지하세요."
+msgstr "Alt+X에서 프레임 생성을 끄고, 설정 저장 또는 개발자 메뉴의 사용자 설정(user.conf): 저장(User Settings (user.conf): Save)으로 저장해 꺼진 상태를 유지하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
@@ -1665,7 +1665,7 @@ msgstr "Garry's Mod의 텍스처 세부 수준은 최대로 유지하세요. 낮
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
-msgstr "작업 관리자 > 성능 > 메모리에서 커밋됨을 확인하세요. 사용 중인 메모리와 한도를 보여 줍니다. 두 값이 가까워지면 다른 프로그램을 닫으세요."
+msgstr "작업 관리자 > 성능 > 메모리에서 커밋됨(Committed)을 확인하세요. 사용 중인 메모리와 한도를 보여 줍니다. 두 값이 가까워지면 다른 프로그램을 닫으세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Reading memory in the game"

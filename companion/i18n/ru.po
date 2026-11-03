@@ -1657,7 +1657,7 @@ msgstr "Удалите неиспользуемые моды Remix из rtx-remi
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
-msgstr "Отключите генерацию кадров в Alt+X и сохраните это кнопкой «Сохранить» или, в меню разработчика, кнопкой «Сохранить» в разделе «Пользовательские настройки (user.conf):», чтобы она оставалась отключённой."
+msgstr "Отключите генерацию кадров в Alt+X и сохраните это кнопкой «Сохранить» или, в меню разработчика, кнопкой «Сохранить» в разделе «Пользовательские настройки (user.conf):» (User Settings (user.conf): Save), чтобы она оставалась отключённой."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
@@ -1665,7 +1665,7 @@ msgstr "Оставьте детализацию текстур Garry's Mod на 
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
-msgstr "Следите за показателем «Выделено» в «Диспетчер задач» > «Производительность» > «Память»: это используемая память и её предел. Когда они близки, закройте другие программы."
+msgstr "Следите за показателем «Выделено» (Committed) в «Диспетчер задач» > «Производительность» > «Память»: это используемая память и её предел. Когда они близки, закройте другие программы."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Reading memory in the game"

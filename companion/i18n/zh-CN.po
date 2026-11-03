@@ -1657,7 +1657,7 @@ msgstr "从 rtx-remix\\mods 中移除不再使用的 Remix 模组：大多数模
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
-msgstr "在 Alt+X 中关闭帧生成，然后点击“保存设置”，或在开发者菜单中点击“用户设置 (user.conf)：”下的“保存”，以保持关闭。"
+msgstr "在 Alt+X 中关闭帧生成，然后点击“保存设置”，或在开发者菜单中点击“用户设置 (user.conf)：”下的“保存”（User Settings (user.conf): Save），以保持关闭。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
@@ -1665,7 +1665,7 @@ msgstr "将 Garry's Mod 的纹理细节保持在最高级别。降低细节会�
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
-msgstr "留意“任务管理器 > 性能 > 内存”中的“已提交”：分别为正在使用的内存量和上限。两者接近时，请关闭其他程序。"
+msgstr "留意“任务管理器 > 性能 > 内存”中的“已提交”（Committed）：分别为正在使用的内存量和上限。两者接近时，请关闭其他程序。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Reading memory in the game"
