@@ -27,6 +27,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod_PoC")
 FIELD_ROOT = Path(r"H:\SteamLibrary\steamapps\common\GarrysMod")
+# GMod keeps cfg/config.cfg in Steam Cloud, one copy for every install of app 4000: a game takes the
+# cloud copy at start and writes its own settings back at its quit. A session's settings (+fps_max, a
+# player model) would therefore reach the user's game at its next start, so every session ends with
+# the field game's own config.cfg, read before the launch (R13-A).
+FIELD_SETTINGS = FIELD_ROOT / "garrysmod" / "cfg" / "config.cfg"
+SETTINGS_BACK = "nl_settings_back.cfg"
 MAP_MARKER = re.compile(r"(?m)^Clientside Lua startup!\s*$")
 MOUNT_MARKER = re.compile(r"(?m)^NL_SESSION_MOUNT true")
 EYE_MARKER = re.compile(r"(?m)^NL_SESSION_EYE ")
@@ -848,6 +854,36 @@ def step_nlctl(args) -> dict:
     return {"step": "nlctl", "command": command[1:], "exit": result.returncode, "stdout": result.stdout[-4000:], "stderr": result.stderr[-2000:]}
 
 
+def field_settings() -> bytes | None:
+    """The field game's own config.cfg (read only), or None without one."""
+    try:
+        return FIELD_SETTINGS.read_bytes()
+    except OSError:
+        return None
+
+
+def settings_back(root: Path, settings: bytes, send, sleep) -> str:
+    """Executes the field game's settings in the running session and writes them, so its quit leaves
+    the user's own values in Steam Cloud. The copy in the session's cfg folder is removed again."""
+    copy = root / "garrysmod" / "cfg" / SETTINGS_BACK
+    outcome = "not sent"
+    try:
+        copy.write_bytes(settings)
+        sent = send("exec " + SETTINGS_BACK)
+        sleep(2)
+        sent = send("host_writeconfig") and sent
+        sleep(2)
+        outcome = "restored" if sent else "not sent"
+    except OSError as error:
+        outcome = f"not restored: {error}"
+    finally:
+        try:
+            copy.unlink(missing_ok=True)
+        except OSError as error:
+            outcome += f"; {SETTINGS_BACK} left: {error}"
+    return outcome
+
+
 def step_run(args) -> dict:
     root = Path(args.root)
     evidence = Path(args.evidence) / args.name
@@ -883,6 +919,8 @@ def step_run(args) -> dict:
     environment["NATIVE_LOADER_EXIT_REPORT"] = "quiet"  # keep JSON/evidence; no post-exit loader window
     environment.pop("RTX_AUTOMATION_DISABLE_BLOCKING_DIALOG_BOXES", None)  # would grant upload consent
     record = {"step": "run", "name": args.name, "root": str(root), "started": now(), "arguments": arguments}
+    settings = field_settings()
+    record["settings_source"] = hashlib.sha256(settings).hexdigest() if settings is not None else None
     # This start declines the crash-report prompt of an earlier crash, and Remix then deletes the report:
     # keep its minidumps first.
     waiting = keep_crash_reports(root, evidence / "crash-reports-before")
@@ -1124,6 +1162,9 @@ def step_run(args) -> dict:
             if hwnd and args.hide_hud:
                 send(hwnd, "cl_drawhud 1")
                 send(hwnd, "r_drawviewmodel 1")
+            if hwnd and settings is not None:
+                record["settings_back"] = settings_back(root, settings, lambda command: send(hwnd, command),
+                                                        health.sleep)
             record["quit"] = "console" if hwnd and send(hwnd, "quit") else "console unavailable"
             if wait_exit(process, args.quit_timeout, health.check):
                 record["normal_quit"] = record["quit"] == "console" and process.returncode == 0

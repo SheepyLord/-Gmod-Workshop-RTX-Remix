@@ -1124,6 +1124,41 @@ class InstallConfigTests(unittest.TestCase):
         self.assertEqual(json.loads(self.config.read_text(encoding='utf-8'))['remix'], {'enabled': True, 'memory_profile': 'minimum'})
 
 
+class SettingsBackTests(unittest.TestCase):
+    """R13: a session ends with the field game's own settings, because GMod writes config.cfg to
+    Steam Cloud at its quit and the user's game takes that copy at its next start."""
+
+    def test_the_field_settings_are_executed_written_and_the_copy_removed(self):
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=SCRATCH) as directory:
+            root = Path(directory)
+            (root / 'garrysmod' / 'cfg').mkdir(parents=True)
+            copy = root / 'garrysmod' / 'cfg' / ps.SETTINGS_BACK
+            sent, seen = [], []
+
+            def send(command):
+                sent.append(command)
+                if command.startswith('exec '):
+                    seen.append(copy.read_bytes())
+                return True
+            outcome = ps.settings_back(root, b'fps_max "300"\n', send, lambda seconds: None)
+            self.assertEqual(outcome, 'restored')
+            self.assertEqual(sent, ['exec ' + ps.SETTINGS_BACK, 'host_writeconfig'])
+            self.assertEqual(seen, [b'fps_max "300"\n'])
+            self.assertFalse(copy.exists())
+
+    def test_a_lost_command_or_a_missing_cfg_folder_is_reported(self):
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=SCRATCH) as directory:
+            root = Path(directory)
+            self.assertTrue(ps.settings_back(root, b'x', lambda command: True, lambda s: None)
+                            .startswith('not restored:'))
+            (root / 'garrysmod' / 'cfg').mkdir(parents=True)
+            self.assertEqual(ps.settings_back(root, b'x', lambda command: command != 'host_writeconfig',
+                                              lambda s: None), 'not sent')
+            self.assertFalse((root / 'garrysmod' / 'cfg' / ps.SETTINGS_BACK).exists())
+
+
 class PowerShellTests(unittest.TestCase):
     """R1-029: every Windows PowerShell child starts without an inherited PSModulePath."""
 

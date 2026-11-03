@@ -53,6 +53,18 @@ dropped, so before a save or the camera the script waits until `console.log` has
 (at most 90 s), and it sends the camera Lua again until that Lua prints its `NL_SESSION_EYE` line
 (three tries).
 
+## The user's settings in Steam Cloud
+
+GMod keeps `cfg\config.cfg` in Steam Cloud (`Steam\userdata\<account>\4000\remote\cfg\config.cfg`),
+one copy for every install of the game: a game takes the cloud copy at start and writes its own
+settings back at its quit. A session's settings (`+fps_max 60`, a player model chosen in a test)
+would therefore reach the user's field game at its next start (found in R13-A). So `run` reads the
+field game's own `garrysmod\cfg\config.cfg` before the launch (read only; its SHA-256 is the record's
+`settings_source`), and before the `quit` writes a copy as `garrysmod\cfg\nl_settings_back.cfg` in
+the session's game root, sends `exec nl_settings_back.cfg` and `host_writeconfig`, and removes the
+copy. The record's `settings_back` is `restored`, `not sent` (a command was not delivered) or
+`not restored: <error>`. Without a field `config.cfg` nothing is done.
+
 ## Steps
 
 - `install`: runs [`install-loader.ps1`](install-loader.ps1.md) for `--config` (Release by default)

@@ -52,7 +52,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   (5.0 GB with a high computer's 10). The engine-side step itself remains
   ([R13-A report](docs/handover/R13-A-report.md)).
 - QA: GMod keeps `cfg/config.cfg` in Steam Cloud, so a PoC session's last settings reached the
-  field game's next start. R13-A's PoC driver ends each session with the field game's own settings.
+  field game's next start. R13-A's PoC driver ends each session with the field game's own settings,
+  and so does every `tools/poc_session.py` run (`exec` of a copy of the field's `config.cfg`, then
+  `host_writeconfig`, before the quit).
 
 ### R12
 
