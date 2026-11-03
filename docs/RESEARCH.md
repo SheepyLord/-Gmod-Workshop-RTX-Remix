@@ -36,6 +36,15 @@
   field's `config.cfg` only in `fps_max` (60 against 300). After sessions that execute the field's
   `config.cfg` and `host_writeconfig` before the quit (now every `poc_session.py` run), the two were
   byte-identical (`0ebf6a15`).
+- **The field game after R13** (loader 0.13.0, high profile, gm_construct, 3840x2160, 767 Workshop
+  subscriptions; `out/r13/field/05-r13-steady`, main checkout): working set 10.86 GB idle and 11.17 GB
+  with two characters (R12 baseline 17.98 and 18.47 GB); private bytes 27.23 GB idle (28.70 GB);
+  the Combine trigger +5.43 GB of game textures, driver 22.4 of 32.95 GB. Replacement textures
+  10.27 GB (R12 baseline session 4.05 GB; the user's R12 session in the lag report 10.3 GB). They are
+  the user's preloading mods: the field's mods preload 11.05 GB of files (R13-B), ToPBR's published
+  `~gmod_topbr` references 1.22 GB of game maps (8 preloading materials), and on the PoC the R12 and
+  R13 runtimes hold the same replacement textures for the same content (2.68 GB idle). Private bytes
+  count the VRAM the driver maps into the process, so the working set is the RAM measure here.
 
 ## R13-B: where the runtime's host memory goes, and the texture budget (2026-11-03)
 

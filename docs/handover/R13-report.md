@@ -1,6 +1,6 @@
 # R13 report: less RAM and VRAM, with budgets that scale with the computer
 
-Status: **in progress** (the integration is done; publication and the field check follow)
+Status: **done** (2026-11-03): integrated, published and checked in the field game
 
 [Plan](R13-plan.md), with the user's words verbatim. Claude was the project manager and did R13-C
 itself. Three Claude subagents did R13-M, R13-A and R13-B in parallel; Codex was not used, as the user
@@ -133,7 +133,61 @@ session crashed this way. R13-B's time-boxed look found a candidate: `acquireLay
 recorded as a follow-up, not fixed, because the dump does not prove it. Dump and tools:
 `out/r13/int/rec-medium/game/crash-reports/` (this worktree) and `out/r13/verify/` (main checkout).
 
-<!-- R13-REPORT: publication and the field check go here. -->
+## Publication and field check (Claude)
+
+`main` at `c367169` was pushed (118 MB of LFS objects) and published: Workshop item 3829070317,
+version `0.0.0-dev.20261103163012+ba38998d` (the input fingerprint of the package measured on the
+PoC), digest `1f856352...`.
+
+- **Before:** the field install verified vanilla (2,877 depot files; only the user's `autoexec.cfg`
+  differs). No field game was running.
+- **The bootstrap.** Loader 0.12.1, its install receipt, `config.json` and `config.cfg` were backed up
+  to `out/r13/field/backup-20261103T163045Z` (main checkout). Then loader 0.13.0 was installed with
+  `tools\install-loader.ps1 -AllowSteamManaged`. The user's `config.json` is unchanged, so the profile
+  is automatic: high (32,187 MiB VRAM, 63,116 MiB RAM), 10 characters kept ready (6,311 MiB), a
+  8,046 MiB budget for game textures, CPU copies kept.
+- **Start 1** (16:31-16:34 UTC) ran the old package while Steam downloaded the new one.
+- **Start 2** (16:34-16:45) deployed generation 51 and ran the new runtime, and **start 3**
+  (16:48-16:59) measured the same again.
+- Each quit normally with exit 0 and zero Lua errors. Every start put the user's settings back
+  (`fps_max "300"`, `cl_playermodel "Bai Mei"`; the cloud copy matches the field's `config.cfg`).
+- Settings: gm_construct, 3840x2160, the user's add-ons and 767 Workshop subscriptions.
+- The hotloader logged "Saved characters: 12 entries ready (10 characters, 4.8 GiB of material
+  archives; memory profile high), 86 load when first used."
+
+The same probe as the R12 baseline (`out/r13/field/r13_field_probe.lua`: idle, endminf and 阿芙2.0,
+their removal), with the lag report's trigger added at the end (a plain Combine soldier), and the
+same RAM sampler:
+
+| Field game | R12 baseline (04:49 UTC) | R13 (start 3) |
+|---|---:|---:|
+| Working set, idle | 17.98 GB | **10.86 GB** |
+| Working set, two characters spawned | 18.47 GB | **11.17 GB** |
+| Private bytes, idle | 28.70 GB | 27.23 GB |
+| Game textures, idle | 0.99 GB | 1.01 GB |
+| Replacement textures | 4.05 GB (10.3 GB in the lag report's session) | 10.27 GB |
+| Driver VRAM, idle | 10.64 GB | 16.47 GB |
+| First spawns (endminf, 阿芙2.0) | at map start | 0.54 s, 0.95 s |
+| The Combine trigger | lag report: +14.35 GB, 2.5 GB over the driver's budget | +5.43 GB (1.37 -> 6.80 GB), driver 22.4 of 32.95 GB |
+
+- **The RAM saving is the working set:** 7.1 GB less with nothing spawned, 7.3 GB less with two
+  characters.
+- **Private bytes barely moved** because they also count the VRAM the driver maps into the process
+  (R13-B section 1). Here replacement textures held 10.3 GB, against 4.05 GB in the R12 baseline
+  session.
+- **The replacement textures are the user's preloading mods,** not R13. The field's mods preload
+  11.05 GB (R13-B), and the user's own R12 session in the lag report held 10.3 GB.
+  - On the PoC the R12 and R13 runtimes hold the same replacement textures for the same content:
+    2.68 GB at idle in R13-A's ten runs on the R12 runtime and in this report's recommended and high
+    runs. The minimum run's 2.52 GB comes from the low tier.
+  - ToPBR's own published maps in the field are 1.22 GB.
+  - Why the R12 baseline session held only 4.05 GB was not found. Start 2 held 10.08 GB.
+- **After the trigger** the game textures stayed under this computer's 8 GB budget, so nothing needed
+  releasing, and the driver stayed 10 GB within its budget. In the lag report it went over.
+- **The start-up peak** (private bytes while the map loads) was 36.6 GB, against 37.2 GB before. It is
+  Source's draw of every loaded texture during the load (R13-B section 6) plus the preloaded mods.
+- Evidence: `out/r13/field/04-r13`, `05-r13-steady`, `ram-r13*.csv` and the summaries from
+  `out/r13/summarize_ram.py` (main checkout).
 
 ## Open items and follow-ups
 
@@ -144,6 +198,8 @@ recorded as a follow-up, not fixed, because the dump does not prove it. Dump and
 - **The user's duplicate mods:** `pbr_robin`, `pbr_guinaifen` and `pbr_evernight_march7th` hold the
   same 2.22 GB of files as `ai_pbr`'s folders for those characters, and Remix loads them twice. That is
   the user's content.
+- **The field's replacement textures (10.3 GB)** are those preloads, held from every start; on this
+  32 GB card they never come under pressure. The R12 baseline session's 4.05 GB was not reproduced.
 - **The engine step** that draws every loaded texture once on the first AR2 alt-fire ammo precache
   (and during a map load) is unchanged; the runtime now releases what it makes resident.
 - **`rtx_flush_textures` after removing lazily loaded characters** releases their CPU copies but not
