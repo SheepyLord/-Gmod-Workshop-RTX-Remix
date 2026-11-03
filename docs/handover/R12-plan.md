@@ -81,11 +81,11 @@ additive edits only. Each task ends with `docs/handover/R12-<X>-report.md`.
   exclusively; if it exists, another task holds the PoC: wait (retry every two minutes) and never remove
   a lock you did not create. Snapshot what you change, restore it exactly, then release the lock. Keep each
   hold short: prepare everything first.
-- **The user may be playing the field game.** Before any game launch, wait while a field `gmod.exe` runs
-  and either owns the foreground window or the user's last input (GetLastInputInfo) is under 10 minutes
-  old; check every 5 minutes and keep working on other parts meanwhile. Never end, focus or send input to
-  a field game; never write the field install, Steam's files or a Remix `user.conf`. `-multirun` always.
-  R12-C may run read-only field sessions (no spawn, no setting written) only under the same gate.
+- **The field game is a test session** (the user, 2026-11-02: "you can always consider the field as a
+  test session and terminate it when needed"; this replaces the activity gate first written here). When
+  a game launch needs the GPU or the PoC, end a running field `gmod.exe` instead of waiting, and say in
+  your report which one you ended. Never write the field install, Steam's files or a Remix `user.conf`.
+  `-multirun` always. R12-C may run read-only field sessions (no spawn, no setting written).
 - The user's models under `E:\G\Upload` are read only: copy what you test under your worktree's `out\`.
 - Never read the user's own GMod console logs: only the part of `console.log` your session wrote.
 - No questions to the user: decide, record why, carry on. Commit with
