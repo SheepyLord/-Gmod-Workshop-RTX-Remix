@@ -1411,7 +1411,7 @@ msgstr "명조, 엔드필드, 실버 팰리스에서 가져온 캐릭터에는 �
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:230
 msgid "Imported game PBR: ticked, the game's texture maps are used; unticked, the original materials."
-msgstr "가져온 캐릭터 PBR: 체크하면 게임의 텍스처 맵을, 해제하면 원래 머티리얼을 사용합니다."
+msgstr "가져온 게임 PBR: 체크하면 게임의 텍스처 맵을, 해제하면 원래 머티리얼을 사용합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:231
 msgid "The character: the one you look at, or choose another here."
@@ -1689,7 +1689,7 @@ msgstr "충돌 후"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:309
 msgid "Before you start the game again, copy status.json, session.json and both vram CSV files from garrysmod\\data\\native-loader\\, and copy the rtx-remix\\logs\\ folder. The next start replaces the two JSON files and Remix's logs."
-msgstr ""
+msgstr "게임을 다시 시작하기 전에 garrysmod\\data\\native-loader\\에서 status.json, session.json, vram CSV 파일 두 개를 모두 복사하고 rtx-remix\\logs\\ 폴더도 복사하세요. 다음 시작 시 두 JSON 파일과 Remix 로그가 교체됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
@@ -1829,7 +1829,7 @@ msgstr "native-loader\\logs\\sessions\\: 이전 세션에서 보관한 복사본
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:348
 msgid "After a crash: what to copy and send"
-msgstr "크래시 후: 복사하고 보낼 항목"
+msgstr "충돌 후: 복사하고 보낼 항목"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:349
 msgid "Turning RTX off for a while"

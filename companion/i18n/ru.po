@@ -1587,7 +1587,7 @@ msgstr "Высокий (24 GB VRAM и 64 GB RAM или больше): заран
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:280
 msgid "On every profile, game textures that nothing has drawn for a minute leave the graphics card once they fill a quarter of its memory, and come back when they are used again."
-msgstr "При любом профиле игровые текстуры, которые не отрисовывались в течение минуты, выгружаются из видеокарты, когда они заполняют четверть её памяти, и возвращаются при повторном использовании."
+msgstr "При любом профиле, когда игровые текстуры заполняют четверть памяти видеокарты, из неё выгружаются текстуры, которые не отрисовывались в течение минуты. При повторном использовании они загружаются снова."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:281
 msgid "Start here shows your profile and how many characters it keeps ready."
@@ -1689,7 +1689,7 @@ msgstr "После сбоя"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:309
 msgid "Before you start the game again, copy status.json, session.json and both vram CSV files from garrysmod\\data\\native-loader\\, and copy the rtx-remix\\logs\\ folder. The next start replaces the two JSON files and Remix's logs."
-msgstr ""
+msgstr "Перед следующим запуском игры скопируйте status.json, session.json и оба CSV-файла vram из garrysmod\\data\\native-loader\\, а также папку rtx-remix\\logs\\. При следующем запуске оба JSON-файла и журналы Remix будут заменены."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
