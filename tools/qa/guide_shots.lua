@@ -289,9 +289,11 @@ end, 5)
 -- The guide: every page, and every section of every page.
 local function add_guide(set, prefix)
     for _, page in ipairs(NATIVELOADER_GUIDE and NATIVELOADER_GUIDE.pages or {}) do
-        add(set, prefix .. page.id, guide(page.id), 2)
-        for _, item in ipairs(page.items) do
-            if item[1] == "h" and item.id then add(set, prefix .. page.id .. "." .. item.id, guide(page.id, item.id), 2) end
+        if NL_GUIDE_PAGE == nil or NL_GUIDE_PAGE == page.id then -- NL_GUIDE_PAGE: only that page
+            add(set, prefix .. page.id, guide(page.id), 2)
+            for _, item in ipairs(page.items) do
+                if item[1] == "h" and item.id then add(set, prefix .. page.id .. "." .. item.id, guide(page.id, item.id), 2) end
+            end
         end
     end
 end

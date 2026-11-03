@@ -28,6 +28,7 @@ Set the global `NL_GUIDE_SET` in a Lua file run before this one (default `all`: 
 | `guide` | `guide_<page>`, `guide_<page>.<section>` | `nativeloader_guide <page> [section]` for every page and every section of the guide |
 | `guide_lang` | `language_<language>`, `guide_<language>_<page>...` | The same in `NL_GUIDE_LANGUAGE` (default `fr`), after a step that sets `nativeloader_language` (the spawn menu is rebuilt in that language) |
 
+`NL_GUIDE_PAGE` (a page id) limits the guide sets to that page and its sections.
 `NL_GUIDE_TOOL_WIDTH` (default 640) is the width the spawn menu's tool half is given, so panels are
 captured with room for their help lines. Diagnostics are printed as `NL_GUIDE <text>` (the steps, a
 panel that did not open, the spawn's progress).

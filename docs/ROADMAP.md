@@ -2,6 +2,10 @@
 
 R14 (noclip no longer fractures glass; the guide gains an orientation, a glass section and annotated screenshots, 2026-11-03; [plan](handover/R14-plan.md), [report](handover/R14-report.md)) is **done**.
 
+R14-H (the guide redesigned with sharp labeled pictures of every place a player goes, and the help
+wording; [brief](handover/R14-H-guide.md), [report](handover/R14-H-report.md)) is **done** on `r14-guide`,
+for review and integration on `r14-int`; its new text awaits R14-T's translations.
+
 R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the computer, 2026-11-03;
 [plan](handover/R13-plan.md)) is **done**, merged into `main` from `r13-int`; see
 [the R13 report](handover/R13-report.md). Loader 0.13.0.

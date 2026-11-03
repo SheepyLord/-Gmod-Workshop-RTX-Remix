@@ -4858,3 +4858,45 @@ Steam's Workshop package had advanced since the PoC's previous deployment, so re
 `nlctl rollback` (generation 145), verifying all 1,871 deployed files against actual pre-pair hashes
 instead of applying the newer archive. All 191 snapshot files and 2,877 depot files validate; the
 same `autoexec.cfg` user-config difference remains. The PoC lock is released.
+
+## R14-H: capturing the guide's pictures (2026-11-03, Claude)
+
+**The spawn menu's tool panels.** `spawnmenu.GetTools()` is a list sorted by tab name, and the tool
+menu keys its panels by place in it (`toolmenu.lua:24-46`), so `GetToolMenu():GetToolPanel("RTX Remix")`
+is nil; look the place up by `Name`. `spawnmenu.ActivateTool(<item>)` (`includes/modules/spawnmenu.lua:101`)
+opens an item's panel as a click on it does, and highlights it without unfolding its group. A click on
+a group's header (`DCategoryHeader`) folds the group instead: the header of Start here has the same text
+as its item, which is why the first pass's label clicks left the previous panel showing.
+`DHorizontalDivider:SetLeftWidth` applies at the next layout, and the spawn menu's first layout after
+opening puts back the cookie's share (`dhorizontaldivider.lua:85-98`); set it, `InvalidateLayout(true)`,
+and set it again a moment later. A 640-pixel tool half shows the RTX Remix panels without most of their
+wrapping at 1920x1080 (the default is the 460-pixel minimum).
+
+**GMod blocks** `showconsole` and `hideconsole` from `RunConsoleCommand` ("Command is blocked!").
+
+**Remix's menus (Alt+X) from outside.** `RemixConfig.SetConfigVariable("rtx.showUI", "1"/"2"/"0")`
+opens the simple menu, the developer menu, or closes them (the option is NoSave). Mouse messages posted
+to the game window do not reach them while the real cursor is elsewhere: the ImGui backend polls
+`GetCursorPos` and `TrackMouseEvent` reports the mouse leaving. Posted keyboard messages do (Path A of
+`rtx_fork_overlay.cpp:115-126`, keyboard navigation is on at `dxvk_imgui.cpp:664`), and Page Down pages
+the developer menu down to its Settings Management section (`dxvk_imgui.cpp:1166`); but the keys also
+reach the game's binds (the field's `config.cfg` binds End to `quit`, the arrows turn the view).
+- The simple menu is **User Graphics Settings**, tabs General, Graphics, Content, Permissions
+  (`rtx_user_menu.cpp:214-241`); its buttons are Developer Settings Menu, **Save Settings** (saves the
+  user layer, user.conf; orange while it has unsaved changes, `rtx_user_menu.cpp:261-292`) and Delete
+  All User Settings. Graphics Preset is on its Graphics tab; DLSS Preset (Disabled, Enabled, Custom)
+  on General.
+- The developer menu ends with **Settings Management** (`dxvk_imgui.cpp:1166-1290`): "User Settings
+  (user.conf):", View Changes (only with unsaved changes), Save, Discard Changes, Delete All, Remove Dupes
+  (`rtx_option_layer_gui.cpp:289-350`), then "Developer settings to migrate: N" and the yellow Migrate
+  button only when user.conf holds developer settings (83 on the PoC), then the same for "Remix Config
+  (rtx.conf):".
+
+**The guide's pictures in the game.** A JPEG material drawn with `surface.DrawTexturedRect` at its own
+size and an integer position is pixel-exact (`out/r14-guide/s7/check` in the r14-guide worktree):
+pictures are captured at 1920x1080, cropped and never scaled, and are at most 900 pixels wide, the
+guide page's width in a 1280x720 game.
+
+**The PoC's characters.** Of the PoC library's nine characters, Karin (`c329babf`) is an Endfield
+character with game maps (`t_actor_karin_hair_01`) whose `目白` the eye-white rules detect; 鳴潮_白蓮's
+`eye` and `eye+` are not detected.

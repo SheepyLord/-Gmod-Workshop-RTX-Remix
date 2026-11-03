@@ -11,7 +11,7 @@ reports a skip if it is absent. Each scenario runs in a separate process with a 
 Only repository code/fixtures are read; no third-party Lua, native game, GPU or config is used.
 Inputs are the actual companion guard and harness paths. One additional static test checks exact
 bundled path exemptions against package file indexes/SHA-256 values and the companion/glass Lua,
-with no internal collisions or extra trusted names. The Lua cases replay all 344 exemptions and
+with no internal collisions or extra trusted names. The Lua cases replay all 345 exemptions and
 both PBR readers/hotloader, untrusted shader draws/reuse, label collisions, material mutations,
 1,200-path/image/trusted/repeat cost bounds. No wall-time threshold is asserted. No persistent side effects. A failed
 assertion/process makes unittest exit nonzero; zero means success. The combined guard suite has

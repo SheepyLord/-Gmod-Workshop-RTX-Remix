@@ -534,6 +534,7 @@ lua/mmdhl/workshop_export.lua
 lua/nativeloader/classic_defaults.lua
 lua/nativeloader/eye_white_names.lua
 lua/nativeloader/eye_white_vtf.lua
+lua/nativeloader/guide_pages.lua
 lua/nativeloader/i18n.lua
 lua/nativeloader/sky_model.lua
 lua/nativeloader/weather_presets.lua
