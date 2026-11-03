@@ -1,5 +1,32 @@
 # Testing
 
+## R12-B2: straight-alpha images and name-confirmed masks
+
+The [follow-up brief](handover/R12-B2-decode-and-masks.md) and
+[report](handover/R12-B-report.md#follow-up-r12-b2) record the complete rerun. The packaged GPL
+SDK-free regression generates a PNG with coloured alpha-zero pixels and checks 7x7→3x3 exact
+fractional straight-RGBA averaging; the previous decode fails that regression. It also exercises
+ambiguous/unreadable family isolation, auxiliary name gating, broken optional images, self-vote and
+explicit-family rejection, and base-before-mask decode priority. The full native game test checks
+16x16 transparent packed data converted to an 8x8 normal, alongside existing channels/protection.
+
+Run `tests/game_match_probe.cpp` on the retained 1,133-pair descriptor, comparing with the original
+259 canonical references; optional `--blur` measures a single 3x3 edge pass. Final unblurred
+results are 146/0/113; all 14 new names-visible acceptances have inspected contact sheets. The
+report lists all 16 Alf2 bases. The real Body01_B 128x128 conversion verifies all eligible channels.
+
+PoC evidence `out/r12-b2/poc/01-alf2`: the exact final DLL, copied Alf2, 1280x720 low profile,
+`-multirun`, no Workshop, hair and two accessory materials `automatic`, screenshot, normal exit 0,
+zero Lua errors/device loss. The user's standing R12-B2 instruction permitted normally ending
+field validation PID 52192 (gm_flatgrass). All 3,284 snapshot files (18,895,376,101 bytes), their
+timestamps and the exact journal restore; the prior console is moved back unread. User.conf is
+unchanged, 2,877 depot files validate, no PoC process remains and the owned lock is released.
+
+
+R12-B2 final gate: **26 CTests + 555 Python tests**, two existing skips, `All checks passed.`
+Deep input verification: 11 parts, zero problems; the indexed 1,097-file package validates with
+Release `nlctl`. The brief is retained unchanged and both branches are committed locally.
+
 ## R12-B: game features and texture overrides
 
 The [report](handover/R12-B-report.md) records production corpus matching, native/Lua checks and PoC

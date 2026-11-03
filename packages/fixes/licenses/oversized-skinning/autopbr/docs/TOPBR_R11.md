@@ -1,5 +1,36 @@
 # R11 ToPBR
 
+## R12-B2: straight-alpha decode and name-confirmed data masks
+
+`GamePBR::Decode` converts the bounded source frame to straight RGBA before resampling.
+An integer-weighted area average treats all four channels independently, including colour
+under alpha zero. WIC Fant used to replace that colour with black on downsampling. Source
+dimensions, compressed bytes, output/aspect checks and cumulative source-pixel budgets remain
+bounded. Generator 7, the content-key salt and `r12-game-v7` markers rebuild present-source
+outputs; registry schemas and missing-source retention stay unchanged.
+
+Known auxiliary data roles (LBMask, AnisoMask, PromMask, Specular, DynAO, ExpMask and Caustic,
+including their variants) may contribute only when base and family share a vocabulary group.
+Diffuse/emission variants and the base itself never vote as auxiliary evidence. A conflicting
+explicit `T_*_D` family abstains. Core normal/packed features, .28/.36/.12 thresholds and .08
+name support stay unchanged. Core maps and possible bases consume the existing budget first;
+optional decode failures never fail the folder. Ambiguous/unreadable families are skipped and
+logged; budget-exhausted core scans still fail closed. Pairing logs include the winning image.
+
+The SDK-free matching test generates a two-colour PNG with coloured alpha-zero pixels and checks
+7x7 to 3x3 fractional resampling. It also checks isolated broken families, mask name gating,
+self-vote/exported-family rejection and base-before-mask budget priority. The game-channel
+test additionally converts a 16x16 transparent packed map with an 8x8 normal. The unchanged
+automatic/override/registry regressions still pass with assertions and `/W4 /WX` where recorded.
+
+The same 121-PMX / 1,133-base corpus and 259 canonical references yield 146 agreements,
+zero disagreements and 113 abstentions with names hidden (WuWa 39/0/36, Endfield 75/0/53,
+Silver 32/0/24). Fourteen newly accepted names-visible pairs were individually reviewed.
+A one-pass 3x3 edge blur was measured and rejected after it added a wrong iris/body pairing;
+`game_match_probe --blur` retains that measurement route, with unblurred production defaults.
+阿芙2.0 衣饰 uses Body01_B_MRA (.8602, margin .7470); 头发 uses Hair01_A_AnisoMaskPS
+(.5989, .5212). 熔岩 and 眉毛 abstain. Original PMX protection still applies to every conversion.
+
 ## R12 feature matching and player overrides
 
 `game_matching.inl` compares UV-coordinate spatial edge distributions from base images against

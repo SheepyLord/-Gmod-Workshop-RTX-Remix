@@ -1,5 +1,11 @@
 # Roadmap
 
+R12-B2's decode/mask follow-up is **done locally** on `r12-pbr` / fixes `codex/r12-pbr`:
+straight-alpha resampling (generator 7), independent bad-family handling and name-confirmed data
+masks; 146/0/113 over the same corpus, 14 inspected new acceptances, automatic Alf2 hair/accessories
+in a normal-exit PoC with exact restoration. The [follow-up report](handover/R12-B-report.md#follow-up-r12-b2)
+records all 16 bases and final identities. No push, merge or publication is performed.
+
 R12-B (renamed game PBR and texture-scoped manual choices, 2026-11-02) is **done** on `r12-pbr`,
 with GPL fixes on `codex/r12-pbr`. Names-hidden production matching agrees on 135 canonical references,
 abstains on 124 and disagrees on none. The two-character PoC proves shared overrides/none/automatic

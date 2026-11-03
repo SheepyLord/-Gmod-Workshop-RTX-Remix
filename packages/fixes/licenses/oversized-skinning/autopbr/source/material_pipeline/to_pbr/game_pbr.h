@@ -20,7 +20,7 @@
 
 namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 namespace fs = std::filesystem;
-constexpr unsigned GeneratorVersion = 6; // Registry provenance; content-key/marker version below.
+constexpr unsigned GeneratorVersion = 7; // Registry provenance; content-key/marker version below.
 using Microsoft::WRL::ComPtr;
 inline std::string Lower(std::string s) {
     for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -168,7 +168,7 @@ inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0,uint32_t limi
     auto bytes=Read(path); // Bound compressed input before WIC allocates.
     ComPtr<IWICImagingFactory> factory;ComPtr<IWICStream> stream;
     ComPtr<IWICBitmapDecoder> decoder;ComPtr<IWICBitmapFrameDecode> frame;
-    ComPtr<IWICBitmapScaler> scaler;ComPtr<IWICFormatConverter> converter;
+    ComPtr<IWICFormatConverter> converter;
     auto check=[](HRESULT hr){if(FAILED(hr))throw std::runtime_error("unsupported/broken image");};
     check(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)));
     check(factory->CreateStream(&stream));check(stream->InitializeFromMemory(bytes.data(),DWORD(bytes.size())));
@@ -179,9 +179,26 @@ inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0,uint32_t limi
     if(pixelBudget){const uint64_t pixels=uint64_t(sw)*sh;if(pixels>*pixelBudget)throw std::runtime_error("feature pixel budget exhausted");*pixelBudget-=pixels;}
     if(!w || !h) { const float scale=(std::min)(1.0f,float(limit)/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
     if(!Policy::ValidImage(w,h) || uint64_t(sw)*h!=uint64_t(sh)*w)throw std::runtime_error("map aspect mismatch");
-    check(factory->CreateBitmapScaler(&scaler));check(scaler->Initialize(frame.Get(),w,h,WICBitmapInterpolationModeFant));
-    check(factory->CreateFormatConverter(&converter));check(converter->Initialize(scaler.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom));
-    Image image{w,h,std::vector<uint8_t>(size_t(w)*h*4)};check(converter->CopyPixels(nullptr,w*4,UINT(image.rgba.size()),image.rgba.data()));return image;
+    // WIC's Fant scaler premultiplies transparent PNG colour. These channels hold
+    // packed game data, so decode straight RGBA first and average each independently.
+    check(factory->CreateFormatConverter(&converter));check(converter->Initialize(frame.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom));
+    Image source{sw,sh,std::vector<uint8_t>(size_t(sw)*sh*4)};
+    check(converter->CopyPixels(nullptr,sw*4,UINT(source.rgba.size()),source.rgba.data()));
+    if(w==sw && h==sh)return source;
+    Image image{w,h,std::vector<uint8_t>(size_t(w)*h*4)};
+    const uint64_t area=uint64_t(sw)*sh;
+    for(uint32_t y=0;y<h;++y)for(uint32_t x=0;x<w;++x) {
+        const uint32_t x0=x*sw,x1=(x+1)*sw,y0=y*sh,y1=(y+1)*sh;
+        uint64_t sum[4]{};
+        for(uint32_t sy=y0/h;sy<(y1+h-1)/h;++sy)for(uint32_t sx=x0/w;sx<(x1+w-1)/w;++sx) {
+            const auto wx=(std::min)(x1,(sx+1)*w)-(std::max)(x0,sx*w);
+            const auto wy=(std::min)(y1,(sy+1)*h)-(std::max)(y0,sy*h);
+            const uint64_t weight=uint64_t(wx)*wy;
+            for(size_t c=0;c<4;++c)sum[c]+=source.rgba[(size_t(sy)*sw+sx)*4+c]*weight;
+        }
+        for(size_t c=0;c<4;++c)image.rgba[(size_t(y)*w+x)*4+c]=uint8_t((sum[c]+area/2)/area);
+    }
+    return image;
 }
 struct Maps { bool recognized=false; fs::path normal,packed,emission;enum Layout{Wuwa,Endfield,Silver}layout=Wuwa; };
 #include "game_matching.inl"
@@ -209,14 +226,14 @@ inline Output Convert(const std::string& source,const std::string& base,const st
         key=Hash(std::vector<uint8_t>{uint8_t(++role),uint8_t(!path.empty())},key);
         if(!path.empty())key=Hash(Read(path),key);
     }
-    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4506ull ^ uint64_t(maps.layout);
+    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4507ull ^ uint64_t(maps.layout);
     char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));
     Output result;
     auto path=[&](const char* suffix){return (fs::u8path(out)/(std::string(id)+suffix+".dds")).u8string();};
     const fs::path marker=fs::u8path(out)/(std::string(id)+"_complete.txt");
     {
         std::ifstream cache(marker);std::string version;int glow=0;cache>>version>>glow;
-        if(cache && version=="r12-game-v6" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
+        if(cache && version=="r12-game-v7" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
            Policy::ValidDDS(fs::u8path(path("_roughness"))) && Policy::ValidDDS(fs::u8path(path("_metallic"))) &&
            (!glow || Policy::ValidDDS(fs::u8path(path("_emission"))))) {
             result.normal=path("_normal");result.roughness=path("_roughness");result.metallic=path("_metallic");
@@ -271,7 +288,7 @@ inline Output Convert(const std::string& source,const std::string& base,const st
     if(!packed.rgba.empty())result.ao=save(ao,"_ao"); // Kept as data; do not bake occlusion into painted albedo under path tracing.
     if(anyGlow)result.emission=save(glow,"_emission");
     const fs::path staged=fs::path(marker.wstring()+L".tmp");
-    { std::ofstream done(staged);done<<"r12-game-v6 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
+    { std::ofstream done(staged);done<<"r12-game-v7 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
     if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
     return result;
 }

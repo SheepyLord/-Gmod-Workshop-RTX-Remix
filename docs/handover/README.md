@@ -7,6 +7,10 @@ When a milestone moves to another agent (or person), the giver writes a **brief*
 receiver writes a **report** here when done or blocked. Both are committed on the milestone branch,
 so the next agent has the full story without the chat transcripts.
 
+R12-B's [decode/mask follow-up brief](R12-B2-decode-and-masks.md) is complete; see the
+[R12-B2 report section](R12-B-report.md#follow-up-r12-b2) for the corpus, all 16 Alf2 bases,
+conversion/PoC evidence and exact restoration.
+
 | Milestone | Brief | Prompt | Report | Assignee | Branch / worktree |
 |---|---|---|---|---|---|
 | M1 inert bootstrap | [M1-handover.md](M1-handover.md) | [M1-codex-prompt.md](M1-codex-prompt.md) | [M1-report.md](M1-report.md), [review](M1-review.md) | Codex | `m1-bootstrap` in `H:\BACKUP_20260815\Modding\!NVIDIA-RTX-Remix\out\worktrees\m1-bootstrap` (user-selected output root); merged into `main` 2026-10-27 |

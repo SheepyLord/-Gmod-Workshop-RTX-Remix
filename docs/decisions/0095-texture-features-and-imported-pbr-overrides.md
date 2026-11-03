@@ -58,3 +58,33 @@ unknown game formats and unsupported images are not guessed into a family. A man
 is explicit player intent and still uses the original UV protection and known-layout validation.
 The [R12-B report](../handover/R12-B-report.md) records the measured agreement/abstention, rendered
 PoC evidence and restoration, final DLL identity and remaining limitations.
+
+## Follow-up (R12-B2)
+
+Review reproduced WIC Fant losing packed-map RGB under alpha zero while shrinking.
+Decode the bounded source frame to straight 32bppRGBA first, then area-average each of
+R/G/B/A independently in code with exact integer overlap weights. Keep compressed-file,
+ValidImage/aspect and cumulative source-pixel limits. Generator 7, content-key salt 7 and
+`r12-game-v7` markers rebuild affected present-source outputs. Registry schemas and validated
+missing-source retention stay unchanged.
+
+Keep core normal/packed edge evidence, .28 raw/.36 supported/.12 margin thresholds and .08
+vocabulary support. Auxiliary data roles LBMask*, AnisoMask*, PromMask*, Specular*, DynAO*,
+ExpMask* and Caustic* may vote only when base/family names share a vocabulary group. Diffuse
+and emission variants, arbitrary siblings and the base itself cannot vote as auxiliaries.
+An explicit exported `T_*_D` name conflicting with the winning family abstains, even within
+the same vocabulary group. This prevents Hair_02 borrowing Hair_01 and EyeTrans borrowing Pupil.
+
+Prepare core descriptors and all possible base images before spending the existing folder
+budget on auxiliary maps. Exhausted/failed optional work never fails the folder. Ambiguous or
+unreadable families are skipped and logged independently; core resource exhaustion still
+fails closed. Logs and the production probe identify the actual winning evidence image.
+
+Measure the suggested one-pass 3x3 edge blur, but leave production edges unblurred: the trial
+raised canonical agreement from 148 to 167 yet added an iris/body mismatch on visual review.
+The final conservative rules yield 146/0/113 against the same 259 references, versus R12-B's
+135/0/124. Every one of the 14 new names-visible acceptances was visually inspected; the report
+lists them, the six conservative lost acceptances and all 16 阿芙2.0 folder bases. Hair and 衣饰
+now match; 熔岩 and 眉毛 abstain. Native regressions cover transparent PNG downsampling and
+fractional weights, conversion at a smaller normal size, independent family failures, name and
+self-vote guards, and core/base budget priority.

@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R12
 
+- Imported game maps retain their packed colour channels when transparent images are resized.
+  Name-confirmed data masks recover 阿芙2.0 hair, and corrected decoding recovers its accessories;
+  a broken or ambiguous map family no longer suppresses the whole folder. Existing conservative
+  thresholds remain, with explicit exported-family and self-vote guards (R12-B2, ADR 0095).
+
 - Imported game PBR can match renamed character textures by their UV features, with name support
   and conservative abstention. Its RTX menu panel lets players select map families/files, disable
   game maps for a texture, or return to automatic; choices follow that texture across characters
