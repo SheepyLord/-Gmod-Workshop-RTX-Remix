@@ -88,6 +88,11 @@ public:
         }
         if(ec)throw std::runtime_error("model folder scan failed");
     }
+    // Whether any scanned image stem ends with `suffix` (lower case), e.g. "_mra".
+    bool HasStemSuffix(const std::string& suffix) const {
+        for(const auto& p:files_)if(p.first.size()>suffix.size() && p.first.compare(p.first.size()-suffix.size(),suffix.size(),suffix)==0)return true;
+        return false;
+    }
     fs::path Find(const std::string& stem,const fs::path& beside) const {
         auto p=files_.find(stem);if(p==files_.end())return {};
         std::vector<fs::path> candidates;

@@ -8,6 +8,8 @@
 #include <vector>
 #include <string>
 #include <cctype>
+#include <optional>
+#include "dds_codec.h"
 
 namespace MaterialPipeline { namespace ToPBR { namespace Policy {
 inline bool IsImportedMaterialName(std::string name) {
@@ -36,21 +38,35 @@ inline bool SameFile(const std::filesystem::path& a, const std::filesystem::path
     } while (x.gcount());
     return !x.bad() && !y.bad();
 }
-inline bool ValidDDS(const std::filesystem::path& path) {
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if (!file) return false;
-    auto size = file.tellg(); file.seekg(0);
-    uint32_t header[32]{};
-    if (!file.read(reinterpret_cast<char*>(header), sizeof(header))) return false;
-    if (header[0] != 0x20534444 || header[1] != 124 || header[19] != 32 ||
-        header[21] != 0 || header[22] != 32 || !ValidImage(header[4], header[3])) return false;
-    uint64_t expected = 128;
-    uint32_t w = header[4], h = header[3], levels = 0;
-    do {
-        expected += uint64_t(w) * h * 4; ++levels;
-        if (w == 1 && h == 1) break;
-        w = (std::max)(1u, w / 2); h = (std::max)(1u, h / 2);
-    } while (true);
-    return header[7] == levels && uint64_t(size) == expected;
+// The layout of a complete generated DDS: the legacy uncompressed one, or (R13-M) DX10 BC4/BC5,
+// each with a full mip chain, an exact file size and the module's image bound.
+inline std::optional<DDS::Format> DDSFormat(const std::filesystem::path& path) {
+    DDS::Info info;
+    if (!DDS::Probe(path, info) || !ValidImage(info.width, info.height)) return {};
+    return info.format;
+}
+inline bool ValidDDS(const std::filesystem::path& path) { return DDSFormat(path).has_value(); }
+inline bool ValidDDS(const std::filesystem::path& path, DDS::Format format) {
+    const auto found = DDSFormat(path);
+    return found && *found == format;
+}
+
+// One clear line per refusal, naming the limit and its numbers (R13-M). The imported game PBR
+// panel shows the same text.
+constexpr uint64_t WorldMapBudget = 1024ull * 1024 * 1024, DiskHeadroom = 64ull * 1024 * 1024;
+inline std::string ImageRefusal(uint32_t w, uint32_t h, const std::string& what = "map") {
+    return "image bounds exceeded: " + what + " is " + std::to_string(w) + "x" + std::to_string(h) + " (" +
+        std::to_string(uint64_t(w) * h) + " pixels); the limit is 4096x4096 and 16777216 pixels";
+}
+inline std::string BudgetRefusal(uint64_t used, uint64_t requested) {
+    return "session budget used up: " + std::to_string(used) + " of " + std::to_string(WorldMapBudget) +
+        " bytes of world maps written this session, " + std::to_string(requested) +
+        " more requested; restart the game to convert more world materials (imported game maps are not limited)";
+}
+inline std::string DiskRefusal(std::optional<uint64_t> available, uint64_t requested, const std::string& folder) {
+    const auto mib = [](uint64_t bytes) { return std::to_string(bytes / (1024 * 1024)); };
+    return "free disk space limit: " + (available ? mib(*available) + " MiB free" : std::string("free space unknown")) +
+        " in " + folder + ", " + mib(requested + DiskHeadroom) + " MiB needed (" + std::to_string(requested) +
+        " bytes for this map plus 64 MiB kept free)";
 }
 }}}

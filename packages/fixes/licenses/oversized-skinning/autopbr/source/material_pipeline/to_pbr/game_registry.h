@@ -1,6 +1,7 @@
 // GPL-2.0. Worker-owned records for imported textures whose local source is unavailable.
 #pragma once
 #include "pbr_policy.h"
+#include "dds_publish.h"
 #include <Windows.h>
 #include <array>
 #include <iomanip>
@@ -61,11 +62,14 @@ inline bool ValidRecord(const Record& record) {
     }
     return true;
 }
-inline std::optional<Texture> Inspect(const fs::path& path, bool digest) {
+// role: 0 normal, 1 roughness, 2 metallic, 3 emission; each accepts its compact format (R13-M)
+// or the uncompressed layout every record had before. A negative role accepts any valid layout.
+inline std::optional<Texture> Inspect(const fs::path& path, bool digest, int role = -1) {
     // No links/junctions, traversal or alternate data streams in recorded paths.
     const DWORD attrs = GetFileAttributesW(path.c_str());
-    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) ||
-        !Policy::ValidDDS(path)) return {};
+    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY))) return {};
+    const auto format = Policy::DDSFormat(path);
+    if (!format || (role >= 0 && !DDS::RoleAccepts(size_t(role), *format))) return {};
     std::error_code ec;
     Texture texture{path.filename().u8string(), fs::file_size(path, ec), 0};
     if (ec || !SafeFile(texture.file)) return {};
@@ -159,7 +163,7 @@ public:
             if (paths[i].empty()) continue;
             const auto path = fs::u8path(paths[i]).lexically_normal();
             if (path.parent_path() != output_.lexically_normal()) return false;
-            auto texture = Inspect(path, true);
+            auto texture = Inspect(path, true, int(i));
             if (!texture) return false;
             record.textures[i] = *texture;
         }
@@ -259,6 +263,56 @@ public:
     }
 public: // Also validates immutable override records against their published DDS.
     bool ValidateRecord(const Record& r,bool digest=true) const{return ValidRecord(r) && Validate(r,digest);}
+    // R13-M: re-encodes a valid record's uncompressed normal/roughness/metallic maps in their
+    // compact formats beside the originals (`<name>_bc5.dds` / `<name>_bc4.dds`), without any
+    // source. New files are complete and validated before the record refers to them; the
+    // originals stay untouched. Returns how many maps changed. Emission stays uncompressed.
+    template<class Transcode> // void(const fs::path& from, const fs::path& to, DDS::Format)
+    size_t CompactRecord(Record& record, Transcode transcode) const {
+        // Header probes first: an already compact record costs no content hashing here.
+        std::array<DDS::Format, 3> wanted{DDS::Format::RGBA8, DDS::Format::RGBA8, DDS::Format::RGBA8};
+        size_t pending = 0;
+        for (size_t role = 0; role < 3; ++role) {
+            const auto& texture = record.textures[role];
+            DDS::Info info;
+            if (texture.file.empty() || !DDS::Probe(output_ / fs::u8path(texture.file), info) || info.format != DDS::Format::RGBA8) continue;
+            wanted[role] = DDS::GameFormat(role, info.width, info.height);
+            pending += wanted[role] != DDS::Format::RGBA8;
+        }
+        if (!pending || !ValidateRecord(record)) return 0;
+        Record next = record;
+        size_t changed = 0;
+        for (size_t role = 0; role < 3; ++role) {
+            auto& texture = next.textures[role];
+            const auto format = wanted[role];
+            if (format == DDS::Format::RGBA8) continue;
+            const auto from = output_ / fs::u8path(texture.file);
+            const auto name = texture.file.substr(0, texture.file.size() - 4) + (format == DDS::Format::BC5 ? "_bc5.dds" : "_bc4.dds");
+            if (!SafeFile(name)) continue;
+            const auto to = output_ / fs::u8path(name);
+            auto compact = Inspect(to, true, int(role));
+            if (!compact || Policy::DDSFormat(to) != format) { transcode(from, to, format); compact = Inspect(to, true, int(role)); }
+            if (!compact || Policy::DDSFormat(to) != format) throw std::runtime_error("compact map failed validation: " + name);
+            texture = *compact; ++changed;
+        }
+        if (changed && ValidateRecord(next)) record = next;
+        else changed = 0;
+        return changed;
+    }
+    // Source-less migration of one stored record: compact maps first, then the whole registry is
+    // saved atomically. A failed save keeps the previous (still valid) record in memory and on disk.
+    template<class Transcode>
+    size_t Compact(const std::string& identity, Transcode transcode) {
+        auto found = records_.find(identity);
+        if (found == records_.end()) return 0;
+        Record next = found->second;
+        const size_t changed = CompactRecord(next, transcode);
+        if (!changed) return 0;
+        const Record previous = found->second;
+        found->second = next;
+        if (!Save()) { found->second = previous; throw std::runtime_error("registry could not be saved; cached maps stay uncompressed"); }
+        return changed;
+    }
 private:
     bool DiscardDamaged() {
         // Save preserves the damaged bytes before replacing them with a fresh registry.
@@ -267,8 +321,10 @@ private:
     bool Validate(const Record& record, bool digest) const {
         const DWORD attrs = GetFileAttributesW(output_.c_str());
         if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_REPARSE_POINT)) return false;
-        for (const auto& texture : record.textures) if (!texture.file.empty()) {
-            const auto checked = Inspect(output_ / fs::u8path(texture.file), digest);
+        for (size_t role = 0; role < record.textures.size(); ++role) {
+            const auto& texture = record.textures[role];
+            if (texture.file.empty()) continue;
+            const auto checked = Inspect(output_ / fs::u8path(texture.file), digest, int(role));
             if (!checked || checked->bytes != texture.bytes || (digest && checked->digest != texture.digest)) return false;
         }
         return true;

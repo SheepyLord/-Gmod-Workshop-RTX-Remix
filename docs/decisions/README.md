@@ -131,4 +131,5 @@ Each with the reason it lost.
 - [0095: Texture features and texture-scoped imported PBR overrides](0095-texture-features-and-imported-pbr-overrides.md).
 - [0096: Draw-gated character classification and an opt-in memory census](0096-demand-loaded-character-classification-and-memory-census.md).
 - [0097: Persistent manual eye-white choices for spawned characters](0097-manual-eye-white-materials.md).
+- [0098: Compact imported game maps, no session budget for them, and recipe-keyed reuse](0098-compact-imported-game-maps-and-recipe-keys.md).
 - [0101: Memory profiles that scale with the computer](0101-memory-profiles.md).

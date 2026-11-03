@@ -7,7 +7,7 @@
 #include "../source/material_pipeline/to_pbr/fallback_guard.h"
 using namespace MaterialPipeline::ToPBR;
 namespace fs = std::filesystem;
-static void DDS(const fs::path& path, char pixel = 17) {
+static void MakeDDS(const fs::path& path, char pixel = 17) {
     uint32_t h[32]{};
     h[0] = 0x20534444; h[1] = 124; h[3] = h[4] = 1; h[7] = 1;
     h[19] = 32; h[20] = 0x41; h[22] = 32;
@@ -22,7 +22,7 @@ static std::string Bytes(const fs::path& path) {
 static void SessionCases(const fs::path& output) {
     fs::create_directories(output);
     const auto texture = output / "session.dds";
-    DDS(texture);
+    MakeDDS(texture);
     GameRegistry::Registry registry(output);
     assert(registry.Load());
     GameRegistry::Session session;
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     std::array<std::string, 4> paths;
     for (size_t i = 0; i < paths.size(); ++i) {
         const auto path = output / ("game_test_" + std::to_string(i) + ".dds");
-        DDS(path); paths[i] = path.u8string();
+        MakeDDS(path); paths[i] = path.u8string();
     }
     GameRegistry::Registry registry(output);
     assert(registry.Load() && registry.Size() == 0);
@@ -165,20 +165,20 @@ int main(int argc, char** argv) {
     GameRegistry::Registry cleared(output);
     assert(cleared.Load() && cleared.Resolve(identity, {0x888}, true, false, absent));
     // Same-length pixel corruption has a valid DDS header, but must not restore.
-    DDS(fs::u8path(paths[2]), 18);
+    MakeDDS(fs::u8path(paths[2]), 18);
     assert(Policy::ValidDDS(fs::u8path(paths[2])));
     assert(!cleared.Resolve(identity, {0x888}, true, false, absent) && cleared.Size() == 0);
     assert(cleared.Save());
-    DDS(fs::u8path(paths[2]));
+    MakeDDS(fs::u8path(paths[2]));
     assert(cleared.Resolve(identity, {0x888}, true, true, convert) && cleared.Save());
     // Missing and truncated files prune the record at load, and persist the pruning.
     fs::remove(fs::u8path(paths[1]));
     GameRegistry::Registry missing(output); assert(missing.Load() && missing.Size() == 0 && missing.Save());
-    DDS(fs::u8path(paths[1]));
+    MakeDDS(fs::u8path(paths[1]));
     assert(missing.Resolve(identity, {0x888}, true, true, convert) && missing.Save());
     { std::ofstream bad(fs::u8path(paths[3]), std::ios::binary); bad << "DDS truncated"; }
     GameRegistry::Registry invalid(output); assert(invalid.Load() && invalid.Size() == 0);
-    DDS(fs::u8path(paths[3]));
+    MakeDDS(fs::u8path(paths[3]));
     // Reject retired record versions, traversal, malformed rows, unknown schema and oversized input.
     { auto text = original; text.replace(text.find(identity) + identity.size(), 2, " 0");
       std::ofstream file(registry.Path(), std::ios::binary); file << text; }

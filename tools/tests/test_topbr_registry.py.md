@@ -23,3 +23,13 @@ Review cases cover damaged empty/garbage/duplicate/excess-row registries, exact 
 fresh reload/record/restore; malformed decimal headers recover, while other well-formed versions and
 oversized files stay read-only and byte-identical. A Windows sharing violation at replacement verifies
 staging cleanup and preservation of the prior registry.
+
+R13-M (`test_compact_game_maps`) compiles the packaged `game_dds_test.cpp` twice, the second time with
+`/DTOPBR_GAME_GENERATOR_VERSION=999`, and runs it on fixtures from the packaged
+`make_game_pbr_fixtures.py` (the current Python). It checks compact imported game maps (BC5 normal,
+BC4 roughness/metallic, uncompressed emission, no AO), the DX10 and uncompressed layouts and their
+refusals, the per-block error bound, the disk/bounds/budget refusal lines, the recipe marker,
+half-family completion, transcoding of finished v7/v6/v5 families (byte-identical to a fresh
+conversion) and the cases that convert again, source-less registry and manual-choice migration with
+a failed save, and that a build with another generator number converts and writes nothing. Writes
+only its own directory under `out/tmp`; timeout 300 s.

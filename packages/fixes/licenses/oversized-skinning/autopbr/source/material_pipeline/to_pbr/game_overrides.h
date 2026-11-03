@@ -57,6 +57,16 @@ public:
         const auto bytes=out.str();if(bytes.size()>GameRegistry::MaxBytes || !GameRegistry::SaveText(path_,bytes,last_))return false;
         choices_=std::move(next);return true;
     }
+    // R13-M: a saved manual choice's uncompressed maps move to their compact formats without a
+    // source. The choice is replaced atomically through Set; any failure keeps the previous one.
+    template<class Transcode>
+    size_t Compact(const std::string& id,Transcode transcode) {
+        const auto* c=Find(id);if(!c || c->mode!="maps")return 0;
+        Choice next=*c;const size_t changed=validator_.CompactRecord(next.record,transcode);
+        if(!changed)return 0;
+        if(!Set(id,next))throw std::runtime_error("saved choice could not be updated; its maps stay uncompressed");
+        return changed;
+    }
     std::optional<GameRegistry::Record> Resolve(const std::string& id,const std::vector<uint64_t>& live) const {
         auto c=Find(id);if(!c || c->mode!="maps" || live.empty() || live.size()>GameRegistry::MaxHashes || !validator_.ValidateRecord(c->record))return {};
         for(auto h:live)if(!h)return {};

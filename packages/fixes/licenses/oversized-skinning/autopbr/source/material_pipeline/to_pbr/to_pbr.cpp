@@ -474,34 +474,34 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
     return file.good();
 }
 
-bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget) {
-    if (!Policy::ValidImage(texture.width, texture.height) ||
-        texture.pixelData.size() != size_t(texture.width) * texture.height * 4) {
+// The opt-in world conversion only. Imported game maps publish through DDS::Publish
+// (game_pbr.h), with no session budget and in compact formats (R13-M).
+bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
+    if (!Policy::ValidImage(texture.width, texture.height)) {
+        Warning("[MaterialPipeline::ToPBR] World map refused: %s\n",
+            Policy::ImageRefusal(texture.width, texture.height, std::filesystem::u8path(outputPath).filename().u8string()).c_str());
+        return false;
+    }
+    if (texture.pixelData.size() != size_t(texture.width) * texture.height * 4) {
         Warning("[MaterialPipeline::ToPBR] Cannot write empty texture\n");
         return false;
     }
-    
-    uint64_t expected=128;
-    for (uint32_t w=texture.width,h=texture.height;;w=(std::max)(1u,w/2),h=(std::max)(1u,h/2)) {
-        expected+=uint64_t(w)*h*4;
-        if(w==1 && h==1)break;
-    }
-    if (sessionBudget && m_generatedDDSBytes + expected > 1024ull*1024*1024) {
+
+    const uint64_t expected = DDS::FileBytes(texture.width, texture.height, DDS::Format::RGBA8);
+    if (m_generatedDDSBytes + expected > Policy::WorldMapBudget) {
         if (!m_budgetWarned) {
             m_budgetWarned = true;
-            Warning("[MaterialPipeline::ToPBR] Generated-map budget used up: %llu of %llu bytes of world maps written this session; restart the game to convert more world materials (imported game maps are not limited)\n",
-                static_cast<unsigned long long>(m_generatedDDSBytes), 1024ull*1024*1024);
+            Warning("[MaterialPipeline::ToPBR] World map refused: %s\n", Policy::BudgetRefusal(m_generatedDDSBytes, expected).c_str());
         }
         return false;
     }
     std::error_code spaceError;
     const auto space=std::filesystem::space(std::filesystem::u8path(m_outputDirectory),spaceError);
-    if (spaceError || space.available < expected + 64ull*1024*1024) {
+    if (spaceError || space.available < expected + Policy::DiskHeadroom) {
         if (!m_diskWarned) {
             m_diskWarned = true;
-            Warning("[MaterialPipeline::ToPBR] Not enough free disk space for generated maps: %llu MiB free, %llu MiB needed (with 64 MiB kept free) in %s\n",
-                static_cast<unsigned long long>(spaceError ? 0 : space.available / (1024*1024)),
-                static_cast<unsigned long long>((expected + 64ull*1024*1024) / (1024*1024)), m_outputDirectory.c_str());
+            Warning("[MaterialPipeline::ToPBR] World map refused: %s\n", Policy::DiskRefusal(
+                spaceError ? std::optional<uint64_t>{} : std::optional<uint64_t>{space.available}, expected, m_outputDirectory).c_str());
         }
         return false;
     }
@@ -593,7 +593,7 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const 
     
     file.close();
     if (!file || !USDA::PublishStagedFile(stagingPath, outputPath)) return false;
-    if (sessionBudget) m_generatedDDSBytes += expected;
+    m_generatedDDSBytes += expected;
     
     if (m_debugOutput) {
         Msg("[MaterialPipeline::ToPBR] Wrote DDS file: %s (%dx%d, %d mips)\n", outputPath.c_str(), texture.width, texture.height, mipCount);
@@ -4793,9 +4793,13 @@ void TextureProcessor::WorkerThreadFunc() {
                     view.state=known->second.state;view.family=known->second.family;view.error=known->second.error;
                 }
                 bool restored = false;
+                std::string via;
                 auto convert=[&](const GamePBR::Maps* selected)->std::optional<GameRegistry::Record> {
+                    // Imported game maps: compact formats, no session budget; a refusal throws
+                    // its one-line reason, which the log and the panel show (R13-M).
                     const auto output=GamePBR::Convert(gameJob.source,gameJob.base,m_outputDirectory,
-                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path,false);},
+                        [](const std::vector<DDS::Level>& levels,const std::string& path,DDS::Format format){
+                            DDS::Publish(std::filesystem::u8path(path),levels,format);return true;},
                         [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
                         [&](const GamePBR::Decision& d){
                             view.family=d.accepted?d.family:"";
@@ -4803,10 +4807,13 @@ void TextureProcessor::WorkerThreadFunc() {
                                 d.base.c_str(),d.family.c_str(),d.score,d.margin,d.feature,int(d.accepted),d.reason.c_str(),d.evidence.c_str());
                         });
                     if(output.normal.empty() && output.roughness.empty())return {};
+                    via=output.via+" ("+std::to_string(output.written)+" maps written)";
                     GameRegistry::Record r;r.identity=gameJob.identity;r.hashes=gameJob.hashes;r.generator=GamePBR::GeneratorVersion;
                     if(!m_gameRegistry->Capture(r,{output.normal,output.roughness,output.metallic,output.emission}))return {};
                     return r;
                 };
+                // Stored maps from before R13 move to compact formats without their source.
+                auto transcode=[](const std::filesystem::path& from,const std::filesystem::path& to,DDS::Format format){DDS::Transcode(from,to,format);};
                 if(gameJob.action=="options") {
                     view.choices.clear();view.files.clear();
                     if(!gameJob.source.empty()) {
@@ -4852,15 +4859,29 @@ void TextureProcessor::WorkerThreadFunc() {
                 const auto record = gameSession.ResolveOnce(gameJob.identity, gameJob.hashes,
                     m_gameEnabled.load() || !gameJob.action.empty(), [&]() {
                     if(!overrides.Readable()){view.state="error";view.error="Saved override file is unreadable; automatic maps suppressed";return std::optional<GameRegistry::Record>{};}
+                    try {
+                        if(const auto maps=overrides.Compact(gameJob.identity,transcode))
+                            Msg("[MaterialPipeline::ToPBR] Saved game-map choice stored compactly: identity=%s maps=%zu (no source conversion)\n",gameJob.identity.c_str(),maps);
+                    } catch(const std::exception& e) {
+                        Warning("[MaterialPipeline::ToPBR] Saved game-map choice kept uncompressed: identity=%s (%s)\n",gameJob.identity.c_str(),e.what());
+                    }
                     auto selected=overrides.Select(gameJob.identity,gameJob.hashes,true,[&]() {
                     // Resolve each identity once per worker, including source probing,
                     // DDS validation and registry saves. Later jobs only register live hashes.
                     std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
                     const bool sourceReadable = !gameJob.base.empty() && source.good();
+                    if(!sourceReadable) {
+                        try {
+                            if(const auto maps=m_gameRegistry->Compact(gameJob.identity,transcode))
+                                Msg("[MaterialPipeline::ToPBR] Cached game maps stored compactly without their source: identity=%s maps=%zu\n",gameJob.identity.c_str(),maps);
+                        } catch(const std::exception& e) {
+                            Warning("[MaterialPipeline::ToPBR] Cached game maps kept uncompressed: identity=%s (%s)\n",gameJob.identity.c_str(),e.what());
+                        }
+                    }
                     auto resolved = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
                         true, sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
                         auto result=convert(nullptr);
-                        if(result)Msg("[MaterialPipeline::ToPBR] Imported game maps: %s identity=%s\n",gameJob.base.c_str(),gameJob.identity.c_str());
+                        if(result)Msg("[MaterialPipeline::ToPBR] Imported game maps: %s identity=%s via=%s\n",gameJob.base.c_str(),gameJob.identity.c_str(),via.c_str());
                         return result;
                     });
                     saveRegistry();
@@ -4892,7 +4913,17 @@ void TextureProcessor::WorkerThreadFunc() {
                         record->identity.c_str(), record->hashes.size(), record->generator);
                 }
             } catch (const std::exception& e) {
-                {std::lock_guard<std::mutex> lock(m_queueMutex);auto& v=m_gameViews[gameJob.name];v.error=e.what();}
+                // The panel shows the same line the log does (a refusal names its limit and numbers).
+                // An automatic resolution's error applies to every material sharing the texture;
+                // a failed manual action leaves the applied state as it was.
+                {std::lock_guard<std::mutex> lock(m_queueMutex);auto& v=m_gameViews[gameJob.name];v.error=e.what();
+                    if(gameJob.action.empty()) {
+                        v.state="error";
+                        for(const auto& item:liveJobs)if(item.second.identity==gameJob.identity){auto& a=m_gameViews[item.first];a.state="error";a.error=e.what();}
+                    }}
+                if(gameJob.action.empty() && !gameJob.identity.empty()) {
+                    auto& known=identityViews[gameJob.identity];known.identity=gameJob.identity;known.state="error";known.error=e.what();
+                }
                 Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
                 std::lock_guard<std::recursive_mutex> lock(m_mutex); ++m_stats.failedConversions;
             }

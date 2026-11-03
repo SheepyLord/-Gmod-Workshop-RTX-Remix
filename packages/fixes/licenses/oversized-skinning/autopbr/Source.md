@@ -9,7 +9,7 @@ registry. `cc77daa` fixes damaged-registry recovery, durable saves and session-s
 `633fd5e` resolves each live texture identity once per worker and persists USD publication ownership.
 Nothing was pushed.
 
-The current fixes branch is `codex/r12-hotfix`, commit `26aec12deb2372e48ebd82e1ff62850f40840226`.
+The current fixes branch is `claude/r13-maps`, commit `913bb6b83fc0830f901cbe54904e843cef8ea61d`.
 R12 adds conservative UV-feature pairing, texture-scoped durable player choices, the embedded
 translated editor, and drawn-before-load identity capture. The source/DLL identity below supersedes
 the R11 build identity; the earlier history remains documented for reconstruction.
@@ -19,7 +19,7 @@ also included at their native-repository paths; [source-files.json](source-files
 SHA-256 values and the built source/DLL identity. Overlay them onto the exact base, or apply the patch.
 The tests generate synthetic fixtures; no user model or texture is distributed here.
 Copies retain the native working-tree bytes/line endings. Applying the canonical Git patch to the
-base reproduces all 30 changed files after CRLF normalization; build hashes record the raw source bytes.
+base reproduces all 35 changed files after CRLF normalization; build hashes record the raw source bytes.
 
 ## Behavior
 
@@ -82,9 +82,9 @@ From an x64 VS shell in the R11-B loader worktree:
 MSBuild.exe out/r12-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal /p:Configuration=ReleaseWithSymbols /p:Platform=x64 /p:VCToolsVersion=14.44.35207 /p:WindowsTargetPlatformVersion=10.0.26100.0
 ```
 
-The current DLL is **5,379,072 bytes**, SHA-256
-`a6432a44b7b5f922ef02caf88545ef33ae31f38d4898e33a12df3d5b72182f2c`.
-The matching PDB remains beside it under the main checkout's `out/r12/hotfix/module`.
+The current DLL is **5,491,712 bytes**, SHA-256
+`447b9dde0a201e50320e1225330354e0316eedf93fd2b7bce2f610288da9c4d2`.
+The matching PDB remains beside it under the R13-M loader worktree's `out/r13-m/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
 the existing VTF filesystem/logging stubs and assertions enabled. They cover malformed/resource VTFs,
@@ -169,3 +169,17 @@ false). A budget or free-space refusal logs one clear warning per session instea
 generic "DDS publication failed". The field game had stopped converting after 56 maps
 (1,068,156,512 bytes), so later characters such as 洛茜 got no maps until a restart. Built with a
 full rebuild of the same project; published without the usual tests at the user's request.
+
+## Follow-up: R13-M (compact maps, reuse across versions; the user's R12-B3 request)
+
+Imported game maps are stored compactly: the octahedral normal in BC5, roughness and metallic in
+BC4 (DX10 headers, full mip chains, `dds_codec.h`), emission uncompressed; the unused AO map is no
+longer written. A 2048x2048 family is 11,185,308 bytes instead of 89,478,992, and what Remix loads
+for it falls from 67,109,244 to 11,185,308 bytes. Validation still accepts the uncompressed layout.
+Content keys and completion markers carry the conversion recipe instead of a generator salt, so a
+release that changes no conversion reuses every map. Finished earlier families are re-encoded
+instead of converted again (resized v5/v6 maps and ambiguous v5 layouts convert from source);
+records without a source are re-encoded and saved atomically. Imported game maps have no session
+budget; each refusal names its limit and numbers in the log and the panel, and a family stopped
+halfway completes. `tests/game_dds_test.cpp` covers these without an SDK; the loader's Release
+suite runs it from this copy. See the loader's ADR 0098 and `docs/TOPBR_R11.md`.

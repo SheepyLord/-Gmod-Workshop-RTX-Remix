@@ -24,10 +24,12 @@ local p={GetGameMaterial=function(name) return {identity=name=="unseen" and "" o
     GameMaterialAction=function(...) calls[#calls+1]={...} return true end}
 MaterialPipeline={ToPBR=p}
 function Material(name) assert(name~="unseen") images=images+1 return name end
+local helps={}
 local function widget()
     local w={choices={}}
-    for _,key in ipairs({"CheckBox","SetTall","AddItem","Dock","DockMargin","SetText","SetWrap","SetDark","SetWide","SetMaterial","SetSize","Center","SetTitle","SetName","MakePopup","Clear","ScrollToChild"}) do w[key]=function() end end
-    function w:Help() return widget() end
+    for _,key in ipairs({"CheckBox","SetTall","AddItem","Dock","DockMargin","SetWrap","SetDark","SetWide","SetMaterial","SetSize","Center","SetTitle","SetName","MakePopup","Clear","ScrollToChild"}) do w[key]=function() end end
+    function w:SetText(text) self.text=text end
+    function w:Help(text) local h=widget() h.text=text helps[#helps+1]=h return h end
     function w:ComboBox() return widget() end
     function w:Button(label) local b=widget() buttons[label]=b return b end
     function w:Add() return widget() end
@@ -63,4 +65,18 @@ assert(commands.rtx_topbr_game_editor)
 commands.rtx_topbr_game_editor()
 assert(RTXGamePBRPanel.Frame and images==4)
 assert(#RTXGamePBRPanel.Targets()==1)
-print("PASS imported game PBR panel: metadata, shared identities, family/files/none/automatic, missing source, drawn-only thumbnails")
+-- R13-M: a refused conversion's one-line reason (never "DDS publication failed") reaches the
+-- selected material's status, with the native error state.
+mmdhl.library.entries.asset={source="E:/model.pmx",info={materials={{base="衣服.png"},{base="copy.png"},{base="unseen.png"}}}}
+local refusal="free disk space limit: 3 MiB free in C:\\game\\textures, 69 MiB needed (5592580 bytes for this map plus 64 MiB kept free)"
+p.GetGameMaterial=function(name) return {identity=name=="unseen" and "" or identity,state="error",error=refusal,choices={},files={}} end
+helps={}
+local form=widget()
+RTXGamePBRPanel.Build(form)
+buttons["List looked-at character"].DoClick()
+form:Think()
+local shown=false
+for _,h in ipairs(helps) do if type(h.text)=="string" and h.text:find(refusal,1,true) then shown=true end end
+assert(shown,"refusal line not shown in the panel status")
+p.GetGameMaterial=originalView
+print("PASS imported game PBR panel: metadata, shared identities, family/files/none/automatic, missing source, drawn-only thumbnails, refusal reason shown")

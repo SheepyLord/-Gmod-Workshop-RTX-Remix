@@ -26,7 +26,7 @@ static void BMP(const fs::path& path,int variant,bool colour=false) {
         f.write(reinterpret_cast<const char*>(pixel),4);
     }
 }
-static void DDS(const fs::path& p) {
+static void MakeDDS(const fs::path& p) {
     uint32_t h[32]{};h[0]=0x20534444;h[1]=124;h[3]=h[4]=h[7]=1;h[19]=32;h[20]=0x41;h[22]=32;
     h[23]=0xff0000;h[24]=0xff00;h[25]=0xff;h[26]=0xff000000;
     std::ofstream f(p,std::ios::binary);f.write(reinterpret_cast<char*>(h),128);f<<"abcd";
@@ -132,7 +132,7 @@ int wmain(int argc,wchar_t** argv) {
     assert(GameRegistry::DrawnIdentity(std::vector<uint64_t>(65,1),load).empty() && loads==0);
     assert(!GameRegistry::DrawnIdentity({7},load).empty() && loads==1);
     const std::string id="mmd/t/0123456789abcdef";
-    const auto output=root/"textures";DDS(output/"manual.dds");
+    const auto output=root/"textures";MakeDDS(output/"manual.dds");
     GameRegistry::Registry registry(output);assert(registry.Load());
     GameOverrides::Choice c;c.mode="maps";c.source="E:/source/角色.pmx";c.base="衣服.bmp";c.normal="maps/One_N.bmp";c.layout=2;
     c.record.identity=id;c.record.hashes={7};c.record.generator=6;
