@@ -211,21 +211,26 @@ plain game:
 The guide created its fonts at fixed pixel sizes. On the user's 3840x2160 screen it was therefore less
 than half as large as the panels around it.
 
-**The fix.**
-- At every opening the guide compares `DermaDefault`'s height with a Tahoma 13 font of its own, and
-  scales its fonts, margins and window by the ratio (1 in a plain game; below 1.15 counts as 1).
-- Its pictures grow by whole steps (2 from 1.75), point-sampled, so they stay sharp.
+**The first fix** (published as `0d3b2c60`):
+- At every opening the guide compared `DermaDefault`'s height with a Tahoma 13 font of its own, and
+  scaled its fonts, margins and window by the ratio.
+- Its pictures grew by whole steps (2 from 1.75), point-sampled, so they stay sharp.
 - `nativeloader_guide_scale` overrides the measurement: 0 measures, 1 to 4 sets it.
 - The previous and next buttons now use the guide's font.
-- The harness's new `scale` mode checks the measurement, the setting and a plain game.
 
-**Checked in a 3840x2160 PoC game.**
-- With the measurement, the PoC gave 1 and the 1240x940 window it always had.
-- With the setting at 2.2, the field's scale: a 2728x2068 window, pictures at 2, readable text in the
-  contents, the page and the legends.
-- The setting was put back to 0 before the quit.
+In a 3840x2160 PoC game with the setting at 2.2, the field's scale, the window was 2728x2068 with
+pictures at 2 and readable text (`out/worktrees/r14-int/out/r14/guide-scale/scale/`). But the field
+measured 1.
 
-Evidence: `out/worktrees/r14-int/out/r14/guide-scale/scale/`.
+**Why the field measured 1.** The scaler is Workshop item 3495129511, whose file is named
+`gmpublisher.gma`:
+- Its factor is the screen's height over 1080, times `guiscaler_scale_multiplier`.
+- With `guiscaler_only_spawnmenu 1`, its default, it gives only the spawn menu its own enlarged fonts.
+- `DermaDefault` stays as it is, and no other window grows.
+
+**The fix.** The guide's scale is now the larger of the screen's height over 1080 and the `DermaDefault`
+ratio. That is 2 on the field's 3840x2160 and 1.33 at 1440 lines, and 1920x1080 games keep the plain
+sizes. The harness's `scale` mode checks the ratio, the setting, a plain game, 2160 lines and 1440 lines.
 
 ## Tests
 

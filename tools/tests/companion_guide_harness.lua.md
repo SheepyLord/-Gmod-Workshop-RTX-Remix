@@ -21,6 +21,10 @@ from memory, and file, setting and console writes that fail the run.
 - `scale`: `draw.GetFontHeight` reports a `DermaDefault` 31/14 times as tall as the guide's probe,
   as a GUI scaler does. The guide must take that scale, pictures at 2 and a body font of 33. Then
   `nativeloader_guide_scale 1` must give 1 and the plain sizes, and so must a plain `DermaDefault` with
-  the setting back at 0. Prints `PASS scale`.
+  the setting back at 0.
+  - A 2160-line screen must give 2: pictures at 2 and a body font of 30.
+  - A 1440-line screen must give 4/3: pictures at their own size and a body font of 20.
+
+  Prints `PASS scale`.
 
 Exit 0 on success; an assertion's message and a nonzero exit otherwise. Reads only its inputs.

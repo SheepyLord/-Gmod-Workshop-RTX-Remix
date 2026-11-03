@@ -126,7 +126,16 @@ if mode == "scale" then
     values.nativeloader_guide_scale = "0"
     derma = 14
     commands.nativeloader_guide(nil, "nativeloader_guide", { "tab" })
-    assert(G.scale == 1 and fonts.NLGuideBody.size == 15, "a plain game draws the guide at its own size")
+    assert(G.scale == 1 and fonts.NLGuideBody.size == 15, "a plain 1080-line game draws the guide at its own size")
+    -- A taller screen: 2160 lines (the field's 3840x2160) draws it twice as large, 1440 lines a third larger
+    -- with the pictures at their own size.
+    ScrH = function() return 2160 end
+    commands.nativeloader_guide(nil, "nativeloader_guide", { "tab" })
+    assert(G.scale == 2 and G.picture_scale == 2 and fonts.NLGuideBody.size == 30, "2160 lines: scale " .. tostring(G.scale))
+    ScrH = function() return 1440 end
+    commands.nativeloader_guide(nil, "nativeloader_guide", { "tab" })
+    assert(math.abs(G.scale - 4 / 3) < 1e-9 and G.picture_scale == 1 and fonts.NLGuideBody.size == 20, "1440 lines: scale " .. tostring(G.scale))
+    ScrH = function() return 1080 end
     print("PASS scale")
     return
 end
