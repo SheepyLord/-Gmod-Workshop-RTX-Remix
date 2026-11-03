@@ -10,7 +10,7 @@ local function available(rig)
  if not rig or not mmdhl.IsLoadableRig(rig) then return nil,L'persistence.error.carrier_outdated' end
  if SERVER and not mmdhl.CanUseAsset(nil,rig.asset) then return nil,L'persistence.error.asset_not_approved' end
  if rig.materialGma and not mmdhl.MountPackage(rig.materialGma) then return nil,L'persistence.error.mount_materials' end
- if not mmdhl.MountPackage('data/mmd_hotloader/rigs/'..rig.key..'/carrier.gma') then return nil,L'persistence.error.mount_carrier' end
+ if not mmdhl.MountPackage('data/mmd_hotloader/rigs/'..rig.key..'/carrier.gma',rig.model) then return nil,L'persistence.error.mount_carrier' end
  return rig
 end
 function mmdhl.EnsureModel(model)
@@ -100,7 +100,11 @@ local function optionsFor(rig,state)
  o.mass=rig.mass o.rigManifest=rig
  return o
 end
-local variants={}
+mmdhl.restoreVariants=mmdhl.restoreVariants or {}
+local variants=mmdhl.restoreVariants
+hook.Add('MMDHL.AssetForgotten','MMDHL.RestoreVariants',function(id)
+ for key,rig in pairs(variants) do if rig.asset==id then variants[key]=nil end end
+end)
 local function rigForClass(rig,class,state)
  local role=class=='npc_citizen' and 'citizen' or class=='npc_combine_s' and 'combine'
  if not role or rig.role==role then return rig,optionsFor(rig,state) end
@@ -111,6 +115,7 @@ local function rigForClass(rig,class,state)
   (rig.animation and rig.animation.profile:find('_male$') and 'male') or 'female'
  local key=rig.key..':'..role..':'..gender
  local converted=variants[key]
+ if converted and (not file.Exists('mmd_hotloader/rigs/'..converted.key..'/rig.json','DATA') or not available(converted)) then variants[key]=nil converted=nil end
  local o=optionsFor(rig,state) o.role=role o.gender=gender o.rigManifest=nil
  -- A new fit takes the server's current bone pins, not those a save or dupe carries.
  o.boneMap=mmdhl.SavedBoneMap and mmdhl.SavedBoneMap(rig.asset) or nil
@@ -125,6 +130,7 @@ local function rigForClass(rig,class,state)
   end
   if not raw then return nil,e end
   converted=util.JSONToTable(raw)
+  if not mmdhl.RememberRig(converted) then return nil,L'persistence.error.carrier_outdated' end
   local mounted,error=available(converted) if not mounted then return nil,error end
   variants[key]=converted
   mmdhl.RegisterActor(converted) mmdhl.PublishRig(converted)

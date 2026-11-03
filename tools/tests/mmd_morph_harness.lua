@@ -12,6 +12,7 @@ function string.GetFileFromFilename(v) return v:match('[^/]+$') or v end
 function math.Clamp(v,a,b) return math.max(a,math.min(b,v)) end
 local function eq(a,b) assert(a==b,tostring(a)..' ~= '..tostring(b)) end
 local function noop() end
+hook={Add=noop}
 timer={Create=noop,Simple=noop}
 util={JSONToTable=function(v) return data[v] end,TableToJSON=function() return '{}' end,AddNetworkString=noop}
 file={Read=function(path)
@@ -58,6 +59,7 @@ if mode=='actor' then
  player_manager={AddValidModel=noop,AddValidHands=noop,RemoveValidModel=noop}
  mmdhl={native={GetCapabilities=function() return {rigGenerator=31,rigGeneratorMin=30,rigVersion=1} end},
   Decode=function(v) return v end,L=function(v) return v end,Localize=function(v) return v end,
+  RememberRig=function() return true end,
   MountPackage=function(path) if not mountOK then return false end
    if path:find('carrier.gma',1,true) then mounted['models/mmd/test/a.mdl']=true mounted['models/mmd/test/arms.mdl']=true end
    return true

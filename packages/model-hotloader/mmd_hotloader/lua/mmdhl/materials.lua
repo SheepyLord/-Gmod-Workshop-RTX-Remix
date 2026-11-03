@@ -198,10 +198,12 @@ end
 
 function mmdhl.GetRigForModel(model)
  if not isstring(model) then return end
+ model=model:lower()
+ local known=mmdhl.rigsByModel[model] if known then return known end
  local short=model:match('^models/mmd/([a-f0-9]+)/[^/]+%.mdl$') if not short or #short~=16 then return end
  local entry=util.JSONToTable(file.Read('mmd_hotloader/names/rigs/'..short..'.json','DATA') or '') local key=entry and entry.id if not key then return end
  local r=mmdhl.rigs[key] or util.JSONToTable(file.Read('mmd_hotloader/rigs/'..key..'/rig.json','DATA') or '')
- if r and r.model==model then mmdhl.rigs[key]=r return r end
+ if r and r.key==key and r.model==model then mmdhl.rigs[key]=r mmdhl.rigsByModel[model]=r return r end
 end
 if CLIENT then
  mmdhl.editorPreviews=mmdhl.editorPreviews or {}

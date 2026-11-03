@@ -173,14 +173,14 @@
    "imported": "2026-11-02T11:03:55+00:00"
   },
   "mmd_hotloader/lua/mmdhl/actors.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\actors.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\actors.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
     "dirty": false
    },
-   "imported": "2026-11-02T11:05:12+00:00"
+   "imported": "2026-11-03T01:28:39+00:00"
   },
   "mmd_hotloader/lua/mmdhl/morph_geometry.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\morph_geometry.lua",
@@ -193,14 +193,44 @@
    "imported": "2026-11-02T10:27:32+00:00"
   },
   "mmd_hotloader/lua/mmdhl/carrier.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\carrier.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\carrier.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
+    "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
     "dirty": false
    },
-   "imported": "2026-11-02T11:36:57+00:00"
+   "imported": "2026-11-03T01:39:36+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/library.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\library.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
+    "dirty": false
+   },
+   "imported": "2026-11-03T01:28:39+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/materials.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\materials.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
+    "dirty": false
+   },
+   "imported": "2026-11-03T01:28:39+00:00"
+  },
+  "mmd_hotloader/lua/mmdhl/persistence.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\persistence.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
+    "dirty": false
+   },
+   "imported": "2026-11-03T02:16:38+00:00"
   }
  },
  "files": {
@@ -491,9 +521,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/actors.lua": {
-   "size": 29943,
-   "sha256": "f4e997b32b1e7233e84c25620b3c5653cbad27645a9852be4ba6946c9f6c8bf2",
-   "mtime_ns": 1793617512009796100,
+   "size": 30024,
+   "sha256": "e2018032f187b793b6bc627003c83c22eefa58489bc3dd2bde989aed1f7e53f6",
+   "mtime_ns": 1793669069089823000,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/bodygroups.lua": {
@@ -521,9 +551,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/carrier.lua": {
-   "size": 28577,
-   "sha256": "7992a4933a4aa0e5ad872f8d1e45688d36a1c95e63cfc67c52dad2972845d07e",
-   "mtime_ns": 1793619417298396000,
+   "size": 31267,
+   "sha256": "103a66eb5910021a63868821159c87a16d4e57f4a2b3184d483be0e3bf0314e5",
+   "mtime_ns": 1793669966777932300,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/client.lua": {
@@ -611,15 +641,15 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/library.lua": {
-   "size": 65863,
-   "sha256": "5ba448b77c72edf00484ae65cf58ce5f2171bd3ef8068f1f533b5e9e5eb49e19",
-   "mtime_ns": 1792920923341382300,
+   "size": 65775,
+   "sha256": "179211f463cdd1a062924ae20467c19e7882bd3e724895279f77693a835629be",
+   "mtime_ns": 1793669069091825000,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/materials.lua": {
-   "size": 16755,
-   "sha256": "6876408b6b4cdbf9d080cb5b72351ebf85ca9bd0f64abbd6b61582b5cd63b6ba",
-   "mtime_ns": 1792920438693233400,
+   "size": 16889,
+   "sha256": "3e68ecae5afbe845c0969abb204ce15e7ffa31a10cc70a1fe41453dec5222dbb",
+   "mtime_ns": 1793669069089823000,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/menu.lua": {
@@ -665,9 +695,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/persistence.lua": {
-   "size": 16299,
-   "sha256": "0953eeaacd725c51e6a9104b32b718e823df011eebe86bbe18999668eb580d6f",
-   "mtime_ns": 1792920438695230100,
+   "size": 16800,
+   "sha256": "06962a9df7740308f43cccbd6fdc557c53ea8f7001248326d9f644bfe645bce5",
+   "mtime_ns": 1793672197606630800,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/physics_editor.lua": {

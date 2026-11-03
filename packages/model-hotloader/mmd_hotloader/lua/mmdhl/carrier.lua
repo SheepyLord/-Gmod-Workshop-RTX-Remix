@@ -2,6 +2,41 @@
 local native=mmdhl.native
 local L=mmdhl.L
 mmdhl.rigs=mmdhl.rigs or {}
+mmdhl.rigsByModel=mmdhl.rigsByModel or {}
+local rigWriteSerial=0
+-- A mounted carrier can survive deletion on Windows while rig.json does not.
+-- PrepareCarrier then returns its manifest from the native fit cache instead of
+-- packaging it again. Save that authoritative manifest before any SetModel or
+-- client notification; a mounted MDL alone cannot restore its MMD identity.
+function mmdhl.RememberRig(rig)
+ if not mmdhl.IsLoadableRig(rig) or not isstring(rig.key) or (#rig.key~=32 and #rig.key~=64) or rig.key:find('[^a-f0-9]') or
+  not isstring(rig.asset) or #rig.asset~=64 or rig.asset:find('[^a-f0-9]') or not isstring(rig.model) or
+  not rig.model:match('^models/mmd/'..rig.key:sub(1,16)..'/[^/]+%.mdl$') then return false end
+ local path='mmd_hotloader/rigs/'..rig.key..'/rig.json'
+ if not file.Exists(path,'DATA') then
+  if not file.Exists('mmd_hotloader/rigs/'..rig.key..'/carrier.gma','DATA') then return false end
+  local json=util.TableToJSON(rig,true) if not json then return false end
+  -- A short/failed write must not leave a final sidecar that the next attempt
+  -- mistakes for existing metadata. Never overwrite an existing sidecar.
+  local staged
+  repeat rigWriteSerial=rigWriteSerial+1 staged='mmd_hotloader/rigs/'..rig.key..'/rig-restore-'..os.time()..'-'..rigWriteSerial..'.json' until not file.Exists(staged,'DATA')
+  file.Write(staged,json)
+  if file.Read(staged,'DATA')~=json then return false end
+  if not file.Exists(path,'DATA') then file.Rename(staged,path) end
+  local saved=file.Read(path,'DATA')==json
+  if file.Read(staged,'DATA')==json then file.Delete(staged) end
+  if not saved then return false end
+ end
+ mmdhl.rigs[rig.key]=rig mmdhl.rigsByModel[rig.model]=rig
+ return true
+end
+-- Reusable lookup/fit state belongs to a library entry's lifetime. Live
+-- entities retain their bound immutable manifest instead of using these maps.
+function mmdhl.ForgetAssetRigs(id)
+ for key,rig in pairs(mmdhl.rigs) do if rig.asset==id then mmdhl.rigs[key]=nil end end
+ for model,rig in pairs(mmdhl.rigsByModel) do if rig.asset==id then mmdhl.rigsByModel[model]=nil end end
+ hook.Run('MMDHL.AssetForgotten',id)
+end
 -- On the client, networked strings change only while network updates are processed
 -- between frames, so each is read once per frame. Rendering asks for the asset and
 -- rig of every model dozens of times per frame through these helpers.
@@ -113,9 +148,11 @@ function mmdhl.GetRig(ent)
  if not IsValid(ent) then return end
  if ent.MMDHLLocalRig then return ent.MMDHLLocalRig end
  if ent.MMDHLPreviewRig then return ent.MMDHLPreviewRig end
- local key=ent.MMDHLLocalRigKey or networkedRig(ent) if key=='' then return end
+ local key=ent.MMDHLLocalRigKey or networkedRig(ent) if key=='' then ent.MMDHLBoundRig=nil return end
+ if ent.MMDHLBoundRig and ent.MMDHLBoundRig.key==key then return ent.MMDHLBoundRig end
  if not mmdhl.rigs[key] then mmdhl.rigs[key]=util.JSONToTable(file.Read('mmd_hotloader/rigs/'..key..'/rig.json','DATA') or '') end
- return mmdhl.rigs[key]
+ ent.MMDHLBoundRig=mmdhl.rigs[key]
+ return ent.MMDHLBoundRig
 end
 function mmdhl.GetMetadata(ent) local info=mmdhl.assets and mmdhl.assets[mmdhl.GetAsset(ent)] if not info then info=mmdhl.Decode(native.AssetInfo(mmdhl.GetAsset(ent))) end return {asset=mmdhl.GetAsset(ent),rig=mmdhl.GetRig(ent),model=info} end
 function mmdhl.GetMorphs(ent) local rig=mmdhl.GetRig(ent) return rig and rig.morphs or {} end
@@ -124,6 +161,9 @@ do
 -- Read only the geometry needed to classify a PMX expression. The immutable imported
 -- model.bin is the source of truth; controller suffixes are never a side measurement.
 local cache,order={},{}
+hook.Add('MMDHL.AssetForgotten','MMDHL.MorphGeometry',function(id)
+ cache[id]=nil for i=#order,1,-1 do if order[i]==id then table.remove(order,i) end end
+end)
 local function side(left)
  if not left then return 'unknown' end
  return left>=.8 and 'left' or left<=.2 and 'right' or 'both'
@@ -356,6 +396,7 @@ if SERVER then
   end
   local rig=options.rigManifest
   if not rig then local raw,err=native.PrepareCarrier(id,util.TableToJSON(options)) if not raw then return nil,err end rig=util.JSONToTable(raw) end
+  if not mmdhl.RememberRig(rig) then return nil,L'persistence.error.carrier_outdated' end
   if rig.materialGma and not mmdhl.MountPackage(rig.materialGma) then return nil,L'carrier.error.mount_materials' end
   rig.gma=rig.gma or ('data/mmd_hotloader/rigs/'..rig.key..'/carrier.gma')
   local mounted=mmdhl.MountPackage(rig.gma) if not mounted then return nil,L'carrier.error.mount_carrier' end
@@ -367,7 +408,7 @@ if SERVER then
   ent:SetNW2Int('MMDHLCollisionFlags',mmdhl.ValidCollisionFlags(options.collisionFlags) or mmdhl.CollideDefault)
   ent:SetNW2String('MMDHLSecondaryBackend',options.secondaryBackend or 'reference')
   ent.MMDOptions=table.Copy(options) ent.MMDPose={} ent.MMDManipulation={} ent.MMDMorphs={}
-  mmdhl.rigs[rig.key]=rig
+  ent.MMDHLBoundRig=rig
   if mmdhl.PublishRig then mmdhl.PublishRig(rig) end
   if not ent.MMDHLCopyHook then
    local previous=ent.PreEntityCopy
@@ -380,6 +421,7 @@ if SERVER then
  function mmdhl.SpawnNative(p,id,options,done,flags)
   options=mmdhl.WithSpawnDefaults(p,options)
   local raw,err=native.PrepareCarrier(id,util.TableToJSON(options)) if not raw then if done then done(nil,err) end return end local rig=util.JSONToTable(raw)
+  if not mmdhl.RememberRig(rig) then if done then done(nil,L'persistence.error.carrier_outdated') end return end
   if rig.materialGma and not mmdhl.MountPackage(rig.materialGma) then if done then done(nil,L'carrier.error.mount_materials') end return end
   if not mmdhl.MountPackage(rig.gma) then if done then done(nil,L'carrier.error.mount_carrier') end return end
   if options.role and options.role~='ragdoll' then return mmdhl.SpawnActorNative(p,id,options,rig,done) end

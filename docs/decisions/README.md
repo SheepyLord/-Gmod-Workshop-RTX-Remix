@@ -6,6 +6,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 | # | Decision | Status |
 |---|---|---|
+| [0094](0094-reimported-carrier-metadata-and-state.md) | Restore prepared carrier metadata and forget deleted entry state | Accepted 2026-11-03 (R12-A) |
 | [0086](0086-inert-shader-effects-and-safe-guard-fallbacks.md) | Non-throwing guard fallbacks and inert GShader-style effects under RTX | Accepted 2026-11-01 |
 | [0081](0081-mmd-alpha-texture-category.md) | Scoped MMD alpha cutoff and opaque blend coverage, joined transient character texture tags | Accepted 2026-11-01 |
 | [0077](0077-glass-client-build-queue.md) | Coalesce remaining-pane client builds across bounded later frames and share extrusion positions | Accepted 2026-11-01 |

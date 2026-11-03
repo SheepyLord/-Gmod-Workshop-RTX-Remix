@@ -155,10 +155,9 @@ function library.Delete(ids,done)
   for _,id in ipairs(ids) do
    mmdhl.assets[id]=nil
    if mmdhl.sharedAssets then mmdhl.sharedAssets[id]=nil end
-   if hostsServer and mmdhl.UnregisterAsset then mmdhl.UnregisterAsset(id) end
+   if hostsServer then mmdhl.UnregisterAsset(id) else mmdhl.ForgetAssetRigs(id) end
    for _,cache in ipairs({'sourceMaterials','depthMaterials','sourceBlendMaterials','shadowMaterials','materials'}) do if mmdhl[cache] then mmdhl[cache][id]=nil end end
   end
-  for key,rig in pairs(mmdhl.rigs) do if wanted[rig.asset] then mmdhl.rigs[key]=nil end end
   net.Start('mmdhl_forget_assets') net.WriteString(util.TableToJSON(ids)) net.SendToServer()
   if mmdhl.terms then mmdhl.terms.Forget(ids) end
   if mmdhl.names then mmdhl.names.Forget(ids) end
