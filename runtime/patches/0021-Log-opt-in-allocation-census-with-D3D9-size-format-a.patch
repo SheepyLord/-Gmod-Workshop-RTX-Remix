@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 18:25:47 -0700
+Subject: [PATCH] Log opt-in allocation census with D3D9 size format and pool
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ src/d3d9/d3d9_common_texture.cpp         |  7 ++-
+ src/dxvk/dxvk_image.h                    |  6 +++
+ src/dxvk/dxvk_memory_tracker.cpp         | 61 +++++++++++++++++++++++-
+ src/dxvk/dxvk_memory_tracker.h           |  7 ++-
+ src/dxvk/rtx_render/rtx_memory_stats.cpp |  1 +
+ 5 files changed, 78 insertions(+), 4 deletions(-)
+
+diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
+index 3c8e1f7b..b4e8f1c5 100644
+--- a/src/d3d9/d3d9_common_texture.cpp
++++ b/src/d3d9/d3d9_common_texture.cpp
+@@ -348,6 +348,7 @@ namespace dxvk {
+     
+     // NV-DXVK start: add debug names to VkImage objects
+     auto image = m_device->GetDXVKDevice()->createImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DxvkMemoryStats::Category::AppTexture, "D3D9 texture primary");
++    image->setD3D9MemoryInfo(m_desc.Pool, uint32_t(m_desc.Format), m_desc.MipLevels);
+     // Calculate hash for the render target textures
+     if (image->getHash() == kEmptyHash && IsRenderTarget()) {
+       static uint32_t renderTargetHashCounter = 0;
+@@ -372,7 +373,9 @@ namespace dxvk {
+     imageInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+ 
+     // NV-DXVK start: add debug names to VkImage objects
+-    return m_device->GetDXVKDevice()->createImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DxvkMemoryStats::Category::AppTexture, "D3D9 texture resolve");
++    auto image = m_device->GetDXVKDevice()->createImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DxvkMemoryStats::Category::AppTexture, "D3D9 texture resolve");
++    image->setD3D9MemoryInfo(m_desc.Pool, uint32_t(m_desc.Format), m_desc.MipLevels);
++    return image;
+     // NV-DXVK end
+   }
+ 
+@@ -718,4 +721,4 @@ namespace dxvk {
+     }
+   }
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/src/dxvk/dxvk_image.h b/src/dxvk/dxvk_image.h
+index 3915d9bb..6dd307ec 100644
+--- a/src/dxvk/dxvk_image.h
++++ b/src/dxvk/dxvk_image.h
+@@ -347,6 +347,12 @@ namespace dxvk {
+       return m_image.memory.length();
+     }
+ 
++    // NV-DXVK start: opt-in D3D9 allocation census metadata
++    void setD3D9MemoryInfo(uint32_t pool, uint32_t format, uint32_t mips) {
++      m_tracker.setD3D9Info(pool, format, mips);
++    }
++    // NV-DXVK end
++
+     // NV-DXVK start: Hashes to identify textures.
+     void setHash(XXH64_hash_t hash) {
+       m_hash = hash;
+diff --git a/src/dxvk/dxvk_memory_tracker.cpp b/src/dxvk/dxvk_memory_tracker.cpp
+index 8e7b5ca3..741409b3 100644
+--- a/src/dxvk/dxvk_memory_tracker.cpp
++++ b/src/dxvk/dxvk_memory_tracker.cpp
+@@ -3,9 +3,12 @@
+ #include "rtx_render/rtx_imgui.h"
+ #include "rtx_render/rtx_option.h"
+ #include "imgui/imgui.h"
++#include <map>
++#include <tuple>
+ 
+ namespace dxvk {
+   struct MemoryTrackerSettings {
++    RTX_OPTION_FLAG("rtx.profiler.memory", bool, requestSnapshot, false, RtxOptionFlags::NoSave, "Write a local allocation census to the runtime log on the next present. Requires the memory profiler enabled at launch. Resets after each request; no GPU synchronization.");
+     RTX_OPTION_FLAG_ENV("rtx.profiler.memory", bool, enable, false, RtxOptionFlags::NoSave, "RTX_PROFILER_MEMORY_ENABLE", "Enables the memory profiler which allows users to inspect Remix resources using the profiler tool in the Dev Settings Remix window.  This option is disabled by default, and must be enabled from application launch to work correctly.");
+     RTX_OPTION_FLAG_ENV("rtx.profiler.memory", bool, includeWholeFrame, false, RtxOptionFlags::NoSave, "RTX_PROFILER_MEMORY_INCLUDE_WHOLE_FRAME", "Profiles memory across the entire frame when enabled.  When disabled we only see a snapshot of memory at the time of sampling.  This has some additional CPU performance overhead so is disabled by default.");
+   };
+@@ -82,15 +85,71 @@ namespace dxvk {
+ 
+ 
+   void GpuMemoryTracker::finalize(size_t size, bool isDeviceResident, bool wasDemoted) {
++    if (!MemoryTrackerSettings::enable()) {
++      return;
++    }
++    std::lock_guard<mutex> lock(s_mutex);
+     m_stats.size = size;
+     m_stats.isDeviceResident = isDeviceResident;
+     m_stats.wasDemoted = isDeviceResident && wasDemoted;
+   }
+ 
+   void GpuMemoryTracker::updateSize(size_t size) {
++    if (!MemoryTrackerSettings::enable()) {
++      return;
++    }
++    std::lock_guard<mutex> lock(s_mutex);
+     m_stats.size = size;
+   }
+ 
++  void GpuMemoryTracker::setD3D9Info(uint32_t pool, uint32_t format, uint32_t mips) {
++    if (!MemoryTrackerSettings::enable()) {
++      return;
++    }
++    std::lock_guard<mutex> lock(s_mutex);
++    m_stats.d3d9Pool = int32_t(pool);
++    m_stats.d3d9Format = format;
++    m_stats.mipLevels = mips;
++  }
++
++  void GpuMemoryTracker::logSnapshotIfRequested(uint32_t frame) {
++    if (!MemoryTrackerSettings::requestSnapshot()) {
++      return;
++    }
++    MemoryTrackerSettings::requestSnapshotObject().setImmediately(false);
++    if (!MemoryTrackerSettings::enable()) {
++      Logger::info("[RTX Allocation] unavailable: enable RTX_PROFILER_MEMORY_ENABLE=1 before launch");
++      return;
++    }
++    const auto snapshot = copyToVector();
++    using Key = std::tuple<int, int, bool, bool, uint32_t, uint32_t, uint32_t, int, int32_t, uint32_t, uint32_t>;
++    struct Total { uint64_t count = 0; uint64_t bytes = 0; };
++    std::map<Key, Total> groups;
++    for (const auto& row : snapshot) {
++      if (!row.size) {
++        continue;
++      }
++      auto& total = groups[{int(row.category), int(row.type), row.isDeviceResident, row.wasDemoted,
++        row.extents.width, row.extents.height, row.extents.depth, int(row.format), row.d3d9Pool,
++        row.d3d9Format, row.mipLevels}];
++      ++total.count;
++      total.bytes += row.size;
++    }
++    Logger::info(str::format("[RTX Allocation] {\"event\":\"begin\",\"frame\":", frame,
++      ",\"groups\":", groups.size(), ",\"records\":", snapshot.size(),
++      ",\"whole_frame\":", MemoryTrackerSettings::includeWholeFrame() ? "true" : "false", "}"));
++    for (const auto& [key, total] : groups) {
++      const auto& [category, type, local, demoted, width, height, depth, format, pool, d3dFormat, mips] = key;
++      Logger::info(str::format("[RTX Allocation] {\"event\":\"group\",\"frame\":", frame,
++        ",\"category\":", category, ",\"type\":", type, ",\"device_local\":", local ? "true" : "false",
++        ",\"demoted\":", demoted ? "true" : "false", ",\"width\":", width, ",\"height\":", height,
++        ",\"depth\":", depth, ",\"vk_format\":", format, ",\"d3d9_pool\":", pool,
++        ",\"d3d9_format\":", d3dFormat, ",\"mips\":", mips,
++        ",\"count\":", total.count, ",\"bytes\":", total.bytes, "}"));
++    }
++    Logger::info(str::format("[RTX Allocation] {\"event\":\"end\",\"frame\":", frame, "}"));
++  }
++
+   const char* GpuMemoryTracker::Stats::getName() const {
+ #ifdef REMIX_SHIPPING
+     return &name[0];
+@@ -384,4 +443,4 @@ namespace dxvk {
+                  "  DeviceResident: ", isDeviceResident ? "true" : "false", "\n",
+                  "  WasDemoted: ", wasDemoted ? "true" : "false"));
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/dxvk/dxvk_memory_tracker.h b/src/dxvk/dxvk_memory_tracker.h
+index 5b4e478b..75ca23be 100644
+--- a/src/dxvk/dxvk_memory_tracker.h
++++ b/src/dxvk/dxvk_memory_tracker.h
+@@ -23,12 +23,14 @@ namespace dxvk {
+ 
+     static void onFrameEnd();
+     static void renderGui();
++    static void logSnapshotIfRequested(uint32_t frame);
+ 
+     // Sometimes we dont know these things until the memory is allocated, so allow users to finalize this tracker.
+     void finalize(size_t size, bool isDeviceResident, bool wasDemoted);
+ 
+     // Sometimes a buffer can increase its size we need to allow that in tracking too.
+     void updateSize(size_t size);
++    void setD3D9Info(uint32_t pool, uint32_t format, uint32_t mips);
+ 
+   private:
+ 
+@@ -47,6 +49,9 @@ namespace dxvk {
+       VkFormat format = VK_FORMAT_UNDEFINED;
+       bool isDeviceResident = false;
+       bool wasDemoted = false;
++      int32_t d3d9Pool = -1;
++      uint32_t d3d9Format = 0;
++      uint32_t mipLevels = 0;
+ 
+       const char* getName() const;
+ 
+@@ -67,4 +72,4 @@ namespace dxvk {
+     inline static mutex s_mutex;
+ 
+   };
+-}
+\ No newline at end of file
++}
+diff --git a/src/dxvk/rtx_render/rtx_memory_stats.cpp b/src/dxvk/rtx_render/rtx_memory_stats.cpp
+index d00affc1..a29d0b74 100644
+--- a/src/dxvk/rtx_render/rtx_memory_stats.cpp
++++ b/src/dxvk/rtx_render/rtx_memory_stats.cpp
+@@ -61,6 +61,7 @@ namespace dxvk {
+ 
+   void RtxMemoryDiagnostics::onFrame(bool cameraCut) noexcept {
+     try {
++      GpuMemoryTracker::logSnapshotIfRequested(m_device->getCurrentFrameId());
+       if (m_schedule.update(m_device->getCurrentFrameId(), cameraCut, MemoryLogSchedule::Clock::now())) {
+         Logger::info(str::format("[RTX Memory] ", capture().toJson(cameraCut ? "camera_cut" : "periodic")));
+       }

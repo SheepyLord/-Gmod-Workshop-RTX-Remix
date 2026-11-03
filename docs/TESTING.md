@@ -43,6 +43,30 @@ shared clothing entry, and override/cached automatic data restore without source
 indexed editor shows its 35 material records at 720p and exits normally with zero Lua/device errors.
 All snapshots, prior payload/library files, user.conf and depot checks validate after restoration.
 
+## R12-C: memory attribution and managed texture backing
+
+`tools/test.ps1 -Config Release` passes **26 CTests + 562 Python tests** (509/28/25, two
+existing skips), with the imported final runtime. The separate companion MMD alpha suite passes
+**21/21**. Deep input verification reports **11 parts / 0 problems** and `nlctl` accepts the final
+combined package (**1,091 files**, digest `1752e36d84749042...`). Receipts:
+`out/r12-vram/release-tests-final.log`, `inputs-final-verify.log`, `final-package.log`.
+
+The [R12-C report](handover/R12-C-report.md) records current-session evidence and exact restoration
+receipts. The local [Source texture probe](../tools/qa/build_vram_probe.ps1.md) is SHA/vtable-pinned;
+[the parser](../tools/vram_census.py.md) rejects partial/unstable rows and whole-frame samples.
+[The header-only inventory](../tools/vtf_census.py.md) keeps logical bytes separate from VRAM.
+The real MMD alpha script's 4,096-material cold-library test loads nothing until a draw hash exists.
+
+[The standalone GPU host](../tools/qa/build_managed_texture_probe.ps1.md) creates four 1024-square
+managed textures: the original/new eager controls allocate **22,376,448 bytes**, deferred mode
+allocates **0** across creation, metadata, CPU writes/readback and LOD changes; one explicit
+`PreLoad` allocates **5,594,112**. Original, new eager and deferred produce the same first-draw,
+preload and partial-write hashes (`93e625c1683421dc` / `655231f5133bd2cc`) and exact mip-1 RGB
+`0x112233`. Unwritten image initialization, first draw without preload, default/system pools,
+managed cubes and invalid managed/dynamic combinations also pass. The existing API-host
+common-device-object teardown warning occurs in the original binary too. The host is never
+installed into a game; all builds, dependencies, configs and output stay below this worktree's `out/`.
+
 ## R10-E: imported eye whites
 
 The [R10-E report](handover/R10-E-report.md) records six-condition PoC measurements, material binding

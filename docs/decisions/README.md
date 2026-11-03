@@ -129,4 +129,5 @@ Each with the reason it lost.
 - [0093: Retain imported game materials when their local source is unavailable](0093-cached-imported-game-materials.md).
 
 - [0095: Texture features and texture-scoped imported PBR overrides](0095-texture-features-and-imported-pbr-overrides.md).
+- [0096: Draw-gated character classification and an opt-in memory census](0096-demand-loaded-character-classification-and-memory-census.md).
 - [0097: Persistent manual eye-white choices for spawned characters](0097-manual-eye-white-materials.md).

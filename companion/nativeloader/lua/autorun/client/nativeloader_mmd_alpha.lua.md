@@ -5,6 +5,11 @@ Registers Model Hotloader character base-texture hashes with the runtime's MMD a
 provides the public `mmd/<16 hex digits>/<part>` material names. Soft copies, depth copies and
 public parts share the same textures, so they inherit the category without editing any material.
 
+R12-C: the first lookup reads the existing draw tracker. Until that exact material has a valid,
+nonzero draw hash, no `Material`, `TrackMaterial` or VMT existence lookup occurs. An unused library
+therefore does not become resident just because the alpha classifier visited its metadata. The
+public and soft-copy paths use the same gate; late draws remain retryable within the same budgets.
+
 A part whose every texel is partly transparent (Columbina's lattice mask) is drawn only through the
 hotloader's soft copy, never through its public material, so the runtime reports no hash for the
 public name (PoC runs `14-mask-diag` and `16-mask-diag2`, 2026-11-01). The soft copy, tracked by its

@@ -8,6 +8,9 @@ code), `soft_late` (a soft copy created later joins at the next sweep; fails on 
 `soft_budget` (1,024 soft copies stay within the 16-lookup budget) and `soft_namespace` (only
 hotloader soft-copy names are tracked).
 
+R12-C adds a cold 4,096-material library: no material/VMT/tracking loads until an actual draw hash
+exists, followed by successful classification of the one newly drawn material.
+
 Usage: `python -m unittest discover -s companion/tests -v` from the repository root. Inputs are
 the companion and harness sources and an installed LuaJIT (PATH or the standard local install).
 Output is a unittest result. No game, network, files or persistent settings are touched.

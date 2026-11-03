@@ -1,5 +1,9 @@
 # Handovers
 
+R12-C: [VRAM attribution brief](R12-C-vram.md),
+[implementation/evidence report](R12-C-report.md),
+[ADR 0096](../decisions/0096-demand-loaded-character-classification-and-memory-census.md).
+
 The latest QoL batch fixes [player bodies, arms and shadows](../decisions/0043-player-body-viewmodel-and-shadows.md).
 The previous batch adds legacy Remix migration in loader 0.8.0. GarrysMod_RTX_c now runs our implementation and is no longer the classic baseline.
 

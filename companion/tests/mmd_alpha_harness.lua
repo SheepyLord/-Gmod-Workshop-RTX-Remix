@@ -2,6 +2,7 @@
 local source, scenario = arg[1], arg[2]
 local now, think, calls, tracks, lookups, writes = 0, nil, {}, {}, 0, 0
 local revision = 1
+local materialLookups, fileLookups = 0, 0
 local name = "mmd/0123456789abcdef/mask"
 local hash = "0xFB1616F217669E2E"
 local bindings, hashes, materialErrors = {[name] = name}, {[name] = {hash}}, {}
@@ -10,11 +11,13 @@ function istable(v) return type(v) == "table" end
 function isfunction(v) return type(v) == "function" end
 function RealTime() return now end
 file = {Exists = function(path, realm)
+    fileLookups = fileLookups + 1
     assert(realm == "GAME")
     local material = path:match("^materials/(.+)%.vmt$")
     return material and not materialErrors[material] or false
 end}
 function Material(path)
+    materialLookups = materialLookups + 1
     return {
         IsError = function() return materialErrors[path] or false end,
         GetTexture = function()
@@ -64,6 +67,14 @@ if scenario == "nil_revision" then RemixMaterial.GetMaterialHashRevision = nil e
 if scenario == "no_tracking" then RemixMaterial.TrackMaterial = nil end
 if scenario == "retry" then refuse = true end
 if scenario == "track_retry" then refuseTrack = true hashes[name] = nil end
+if scenario == "cold_library" then
+    for i = 1, 4096 do
+        local path = "mmd/0123456789abcdef/unused" .. i
+        mmdhl.assets.asset.materials[i] = {path = path}
+        bindings[path] = path
+    end
+    hashes = {}
+end
 -- Every texel partly transparent: the hotloader draws only the soft copy, so only its name has a hash.
 local softName = "mmdhl_soft_v1_" .. string.rep("ab", 32) .. "_16"
 local softHash = "0x4F9DC84370047174"
@@ -83,8 +94,11 @@ elseif scenario == "late_api" then
     frames(120)
     assert(contains(hash))
 elseif scenario == "track_retry" then
-    assert(value() == "" and trackAttempts > 0 and not tracks[name])
-    refuseTrack, hashes[name], revision = false, {hash}, revision + 1
+    assert(value() == "" and trackAttempts == 0 and materialLookups == 0)
+    hashes[name], revision = {hash}, revision + 1
+    frames(120)
+    assert(contains(hash) and trackAttempts > 0 and not tracks[name])
+    refuseTrack, revision = false, revision + 1
     frames(120)
     assert(contains(hash) and tracks[name] == 1)
 elseif scenario == "late_hash" or scenario == "late_material" then
@@ -93,7 +107,7 @@ elseif scenario == "late_hash" or scenario == "late_material" then
     frames(300)
     assert(contains(hash), "late upload/mount was never tagged")
 elseif scenario == "fallback" then
-    assert(value() == "" and lookups == 0, "shared fallback textures must not enter the category")
+    assert(value() == "" and not tracks[name], "shared fallback textures must not enter the category")
     bindings[name] = name
     frames(300)
     assert(contains(hash))
@@ -125,6 +139,15 @@ elseif scenario == "revision" or scenario == "nil_revision" then
     hashes[name], revision = {"0x5555"}, revision + 1
     frames(scenario == "revision" and 60 or 600)
     assert(contains("0x0000000000005555") and not contains(hash), "changed bindings must replace old hashes")
+elseif scenario == "cold_library" then
+    frames(600)
+    assert(materialLookups == 0 and fileLookups == 0 and trackAttempts == 0,
+        "an unspawned library must never load a material, texture or VMT")
+    local active = mmdhl.assets.asset.materials[2000].path
+    hashes[active], revision = {hash}, revision + 1
+    frames(600)
+    assert(contains(hash) and tracks[active] == 1, "drawn materials must still be classified")
+    for path in pairs(tracks) do assert(path == active, "another library material was loaded") end
 elseif scenario == "bounded" then
     local parts = {}
     for i = 1, 4096 do

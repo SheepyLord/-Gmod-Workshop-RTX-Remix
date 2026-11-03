@@ -96,6 +96,65 @@
   not redirect the looked-at character selection. The final probe aims the actual player and
   checks its 35 material records, rather than trying to shadow a player method on one entity.
 
+## R12-C: VRAM attribution and Source census (2026-11-03)
+
+- Copied-field-cache controls at 3840×2160/high, gm_construct, no Workshop, stock Kleiner,
+  no active imported character and all three suspect helpers disabled: **68** published actor
+  registrations use **13,511,942,144** app-texture bytes; the control with an empty copied rig
+  approval map uses **1,065,893,888**. Source's `mmd/t/` estimates fall from **12,432,024,184**
+  to zero while other Source estimates stay exactly **900,475,060**. The readiness path calls
+  `util.PrecacheModel` / `util.IsValidModel` (`actors.lua:87-103`, restored from `sharing.lua:237`).
+  These are registered models, not active imported-character entities.
+- Runtime patch 0022 preserves those **68** registrations and **49** visible library entries,
+  but allocates the unused static managed GPU images only on first GPU use. The same replay
+  drops app textures to **908,630,016** bytes: **12,603,312,128 bytes / 11.74 GiB / 93.3%** less.
+  Replacement textures (**2,656,725,504**) and Remix targets (**1,333,341,184**) stay exact.
+  DXVK used falls **18,094,716,224 → 5,490,795,072**; driver allocation
+  **20,776,869,888 → 8,171,347,968**. Source's logical MMD estimates stay unchanged, because
+  its CPU objects remain cached. Evidence: `out/r12-vram/{04,05,16}-census.json` and matching
+  session/restoration receipts; byte values in these files remain integers or exactly
+  representable JSON Lua numbers, not rounded GB values.
+
+- Read-only capture of the active field's existing `garrysmod/data/native-loader/vram.csv` at
+  `2026-11-03T01:40:49Z`: DXVK used **22,858,297,408 bytes**, exactly the sum of its eight
+  categories. App textures **14,380,545,024**, replacement textures **5,856,326,144**, render
+  targets **1,417,882,624**, OMM **603,456,768**, buffers **397,831,744**, acceleration structures
+  **153,115,392**, app buffers **49,139,712**, replacement geometry **0**. Allocated
+  **24,040,001,024** includes **1,181,703,616** retained allocator bytes; do not add retained to
+  used and allocated together. The driver reported **25,935,142,912** allocated and a
+  **31,739,682,816** budget. Local evidence: `out/r12-vram/field-active-vram.json`.
+- Read-only module inventory binds that session (PID 8488) to the R11-B fixes
+  `526a6584...` and runtime `f76c316a...`, the shipped binaries at `2dd3033`; no field module,
+  window or setting was changed. The independent WDDM process counters are not the same metric
+  as the runtime's allocation accounting (`field-runtime-identity.json`, `field-gpu-processes.json`).
+- Header-only inventory selects the highest numbered `materials-v*.gma` per asset, rather than
+  adding historical versions: PoC **9 archives / 111 supported RGBA8888 texture variants /
+  3,281,798,328 logical texel bytes**; field **146 / 1,244 / 45,853,418,624**. No unsupported
+  layouts or conflicting names occurred. Field's **279** 4096-square/13-mip atlases account for
+  **24,964,497,036** of those logical bytes, **10** 8192-square/14-mip atlases another
+  **3,579,139,400**. These are disk inventory estimates, not residency; all source payloads
+  stay byte-identical (`tools/vtf_census.py`, `out/r12-vram/poc-vtfs.json`, `field-vtfs.json`).
+- The ordinary MMD alpha classifier used to call `Material` before obtaining draw hashes.
+  R12-C's actual-script harness proves that 4,096 cold material records incur no
+  VMT/material/tracker loads with the draw gate and that a new draw still becomes classified.
+- Stock x64 `shaderapidx9.dll` SHA-256 is
+  `7534cd56738f3f729dab0b88fce7f5fa224898fc15c28021762f3352643f8ca9`. REA/Ghidra shipped-artifact
+  observations in `out/r12-vram/rea-*.json` validate the six `DebugTextureInfo001` slots at RVAs
+  `15490/155f0/17b30/181f0/18a70/1dbc0` (hex). They set byte flags at +9/+10, return the list at
+  +16, read **64-bit** byte totals (the older SDK declares int), check freshness and set debug
+  rendering. The public list is empty on the tested Remix render path; an empty list is not
+  evidence of no loaded textures.
+- REA evidence `ev_ab674a6ef1d3ae41042a2c6db8ba073203e8c8febe27e79eb6181000c6a37144`
+  observes the stock list builder at RVA `15eb0`: it is conditional on the enable flag and two
+  non-null surface fields, walks the existing host registry and writes Name/TexGroup/Size/Format/
+  dimensions/bind counts. `Size` is in bytes. Pooled-name lookup (`3d090`, evidence
+  `ev_2cf8e0af51b79ff916205119c5020cff7a8fee9d80d981b50dbe9684220dfe95`) takes a read lock;
+  format lookup (`35550`, `ev_09a6c4532c96a033cf70155d368e2de18c8d0ec1b377750e865a3ce15eb48d96`)
+  reads a static table. These are static observations, not original source or proof of execution.
+  The local-only probe's fallback is gated by that file SHA plus all six vtable RVAs, reads only
+  its own registry and rejects read failures, cycles and a changed head/frame. Back/depth-buffer
+  entries added separately by the public list are excluded; runtime allocation rows still cover
+  them. Unsupported engine builds do not use private offsets.
 
 ## R11-B review: damaged registries and durable saves (2026-11-02)
 

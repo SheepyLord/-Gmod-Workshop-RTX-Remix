@@ -1,5 +1,27 @@
 # runtime/
 
+R12-C patch `0022-Allocate-unused-managed-GMod-textures-only-on-GPU-us.patch` defers GPU backing
+for unused static 2D managed GMod textures ([ADR 0096](../docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+The model catalog and CPU buffers remain ready; sampling, upload or `PreLoad` creates the original
+image without changing its format/mips/hash. `d3d9.deferManagedTextures` defaults on for `gmod.exe`
+only, with an explicit config or `DXVK_DEFER_MANAGED_TEXTURES` override. Other pools/types/usages,
+conversion formats and `evictManagedOnUnlock` keep their existing paths. The shared initializer
+preserves zero contents and queues a deferred clear before the upload on the same command stream.
+The [GPU probe](../tools/qa/build_managed_texture_probe.ps1.md) compares allocation, exact pixels,
+LOD, partial writes and original/new texture hashes. See the [R12-C report](../docs/handover/R12-C-report.md).
+
+R12-C adds `0021-Log-opt-in-allocation-census-with-D3D9-size-format-a.patch`
+([ADR 0096](../docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+Enable the existing memory profiler at process launch with `RTX_PROFILER_MEMORY_ENABLE=1`, then
+request `rtx.profiler.memory.requestSnapshot = True` through the Remix API. On the next present it
+resets that NoSave request and logs `[RTX Allocation]` begin/group/end JSON rows, with actual live
+allocation slices grouped by category/type/locality, dimensions, Vulkan format and D3D9
+pool/format/mip count (primary and resolve images). Pool `-1` means unavailable. It keeps images
+still held by the renderer visible after the application's D3D9 texture is released. The registry
+copy/update lock protects diagnostic metadata; grouping and log I/O happen after releasing it.
+No hashes, resource contents or allocation/eviction policy change. The ordinary profiler remains
+disabled. See [the parser](../tools/vram_census.py.md) and [Source probe](../tools/qa/vram_probe.lua.md).
+
 R10-E adds `0019-Keep-imported-eye-white-emission-on-isolated-surface.patch`
 ([ADR 0088](../docs/decisions/0088-imported-character-eye-whites.md)). NoSave proxy/original texture
 aliases isolate automatic emission to named eye-white surfaces; original PBR replacements retain

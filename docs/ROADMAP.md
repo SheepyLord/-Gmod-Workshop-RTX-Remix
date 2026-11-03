@@ -20,6 +20,18 @@ and source-hidden restoration; final indexed editor, native/Lua/Release checks a
 restoration pass. See the [report](handover/R12-B-report.md) and
 [ADR 0095](decisions/0095-texture-features-and-imported-pbr-overrides.md).
 
+R12-C (VRAM attribution and demand allocation) is **done** on `r12-vram`: saved actor precaches
+account for the large app-texture category; the runtime preserves those registrations while
+allocating unused managed images only on GPU use (**13.51 → 0.91 GB**, 93.3% less, in the copied
+field-cache replay). Draw-gated alpha avoids another eager scan; original/new GPU pixels and
+hashes match, game/Release/package checks pass. Integration remains Claude's
+([report](handover/R12-C-report.md), [ADR 0096](decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+
+R12-C (VRAM attribution and demand loading) is **in progress** on `r12-vram`: measure Source
+texture names and D3D9 allocation size/format/pool, isolate library/Workshop/helper costs and gate
+the MMD alpha classifier on actual draws ([brief](handover/R12-C-vram.md),
+[ADR 0096](decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
+
 R11-B (cached imported game maps, 2026-11-02) is **done**: after one successful conversion, an
 imported game character keeps its maps when its source folder is moved or deleted (successful game
 materials persist by hotloader texture identity and restore only while their DDS validate; a damaged
