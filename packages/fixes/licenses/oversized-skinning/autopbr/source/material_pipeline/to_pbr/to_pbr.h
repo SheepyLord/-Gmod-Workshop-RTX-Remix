@@ -469,9 +469,9 @@ private:
     // Upload texture to Remix
     bool UploadTextureToRemix(const ConvertedTexture& texture, remixapi_TextureHandle* outHandle);
     
-    // Write texture to DDS file
-    // Imported game maps pass sessionBudget=false: only world conversion counts toward the 1 GiB.
-    bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget = true);
+    // Write a world-conversion texture to an uncompressed DDS file (1 GiB per module session).
+    // Imported game maps use DDS::Publish instead: compact formats and no session budget.
+    bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath);
     bool WriteDDSHeader(std::ofstream& file, uint32_t width, uint32_t height, bool hasAlpha, uint32_t mipCount);
     
     // Generate roughness texture from envmap mask or phong constant
@@ -654,7 +654,7 @@ private:
     std::atomic<double> m_maxSnapshotMs{0};
     std::atomic<double> m_maxDecodeMs{0};
     uint64_t m_generatedDDSBytes = 0; // Single worker; at most 1 GiB of new world DDS per module session.
-    bool m_budgetWarned = false, m_diskWarned = false; // Each refusal reason is logged once per session.
+    bool m_budgetWarned = false, m_diskWarned = false; // Each world refusal reason is logged once per session.
     std::string m_recipeKey; // Owned by the single decode worker.
 
     // Work queue for materials to process

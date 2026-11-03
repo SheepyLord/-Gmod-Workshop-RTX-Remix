@@ -4584,3 +4584,55 @@ Steam's Workshop package had advanced since the PoC's previous deployment, so re
 `nlctl rollback` (generation 145), verifying all 1,871 deployed files against actual pre-pair hashes
 instead of applying the newer archive. All 191 snapshot files and 2,877 depot files validate; the
 same `autoexec.cfg` user-config difference remains. The PoC lock is released.
+
+## R13-M: compact imported game maps and reuse across versions (2026-11-03, Claude)
+
+- **What Remix samples from each map.** Roughness and metallic read only `.x` and the octahedral
+  normal only `.xy` (runtime fork `src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_interaction.slangh:863`,
+  `:908`, `:927`), so BC4 (one channel) and BC5 (two) carry everything the uncompressed maps did.
+  The fixes' octahedral encoder writes B = 0 and A = 255 (`source/material_pipeline/to_pbr/vtf.cpp:253-256`).
+- **Remix's DDS reader.** `rtx_asset_data_manager.cpp:123-194` parses DX10 headers through gli's
+  format table, sizes each level in whole blocks (`max(1, ceil(w/4)) * max(1, ceil(h/4)) * block`),
+  needs `DDSD_MIPMAPCOUNT` for more than one level and holds at most 16 levels. It maps a DDS with
+  `FILE_SHARE_READ` only (`:286-295`): while Remix streams a file, nothing can replace, rename or
+  delete it, so migrated maps are written under new names.
+- **Sizes, 2048x2048 with a full chain:** uncompressed 22,369,748 bytes, BC5 5,592,580, BC4
+  2,796,364. A family was normal + roughness + metallic + AO = 89,478,992 bytes on disk, of which
+  Remix loaded 67,109,244; now 11,185,308 for both. Emission (22,369,748) is unchanged.
+- **The field cache (read only, 2026-11-03):** `rtx-remix/mods/~gmod_topbr/textures` holds 384 files,
+  4,567,891,854 bytes; 301 are imported game files (4,425,021,500 bytes of DDS). 58 families are
+  finished (27 `r11-game-v5`, 31 `r12-game-v7`); `game_991AF3B052DC62B2` stopped after its metallic
+  map (no marker), as the bug report found. 49 AO maps hold 886,402,452 bytes that nothing reads.
+  17 families (29%) have an emission map, 308,982,548 bytes; half of those maps light at most 1.1% of
+  their texels (median lit fraction 0.01091, `out/r13-m/emission-field.json` in the R13-M worktree).
+- **The shipped key formulas check out against real data.** For all 12 converted families of 洛茜,
+  阿芙2.0 and endminf, the v7 formula (and for endminf's three families also v5) finds the field's
+  finished family; every stored base level equals today's conversion of the same inputs, and the
+  R13-M uncompressed writer reproduces those files byte for byte (`game_dds_probe`, `out/r13-m/probe-field-2.log`).
+  v5 keys hash the present maps without role tags or layout, so the same bytes can belong to a
+  different layout: v5 chose Silver for every family in a folder holding any `*_MRA` file.
+- **BC4 encoder quality on real maps** (field files, 1,500-20,000 sampled blocks, 8-bit RMS):
+  min/max endpoints give normal maps 4.44/2.79/3.28; with least squares 3.96/2.44/2.96; the
+  exhaustive optimum is 3.50/2.13/2.63, and restricting it to the per-texel bound changes it by
+  under 0.02. Quantized roughness is the outlier: least squares 1.12, optimum 0.54, because its few
+  levels lie on a palette whose endpoint extends past the data (for example {65, 118, 170} on
+  r0 = 249, r1 = 65). Aligning the block's minimum and maximum to two palette positions for blocks of
+  at most four levels reaches 0.53 at about 1.7 us per block; on normal maps it would cost 5x for 1%.
+- **Real maps after R13-M** (`game_dds_probe`, three characters, 12 families, every block within
+  (max - min) / 14): normal RMS 0.27-3.30, roughness 0.12-1.20, metallic 0-1.18 (8-bit units);
+  conversion with encoding 0.44-2.90 s per family. Disk 945,122,708 -> 145,408,760 bytes; what Remix
+  loads 732,609,912 -> 145,408,760 bytes.
+- **Remix debug views for these maps** (`src/dxvk/shaders/rtx/utility/debug_view_indices.h`):
+  25 roughness, 16 shading normal, 94 primary base reflectivity (raw; metals show their albedo),
+  set with `RemixConfig.SetConfigVariable("rtx.debugView.debugViewIdx", n)`.
+- **PoC, the same three characters (high tier, 1280x720, gm_flatgrass; `out/r13-m/poc`):** spawning them
+  with the shipped uncompressed maps raised Remix's replacement-texture bytes (`usedMaterialTextureBytes`)
+  by 732,669,952, within 60 KB of the files' sum; with R13-M's compact maps by 139,901,952 (the
+  compact files new to that session, predicted 139,816,228).
+- **Remix preloads a previous session's game maps at startup.** Game-map materials carry
+  `preload_textures = 1` (`usda.cpp:350-357`, so generated normals do not stay at their smallest mip).
+  Before any character was drawn, the session after the uncompressed run already held 705,814,528
+  more replacement bytes than a clean start (the published normal/roughness/metallic maps; emission
+  loads when drawn), and still held them after ToPBR replaced the USD and its characters used new
+  files. After a compact run the startup surplus was 118,640,640 bytes. So every map of every
+  character the last session published is resident from the next start until the game exits.

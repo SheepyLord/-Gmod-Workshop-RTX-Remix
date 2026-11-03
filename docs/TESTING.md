@@ -10,6 +10,35 @@ The [R12-A report](handover/R12-A-report.md) records the exact baseline error on
 two successful corrected delete/reimport cycles, changed carriers, positive client instances and
 stock-file verification; evidence is in the R12-A worktree's `out/r12-a/`.
 
+## R13-M: compact imported game maps and reuse across versions
+
+`python -m unittest discover -s tools/tests -p "test_topbr*.py" -v` builds the packaged GPL
+`tests/game_dds_test.cpp` twice (the second build with `/DTOPBR_GAME_GENERATOR_VERSION=999`) and runs
+it on generated fixtures: the shipped uncompressed DDS bytes, DX10 BC4/BC5 layouts and refusals,
+exact two-value blocks, the (max - min) / 14 per-block bound on gradients, edges, noise and real
+quantized roughness blocks, atomic publication, the disk/bounds/budget refusal lines, compact
+conversion without AO, the recipe marker, half-family completion, a refusal mid-family, v7/v6/v5
+transcoding byte-identical to fresh conversion, resized v6 and v5-MRA and manual cases converting
+again, source-less registry and manual-choice migration (including a failed save), role formats,
+and a build with another generator number converting and writing nothing. The panel harness checks
+that a refusal reason reaches the selected material's status.
+
+In the fixes repository, the R13-M worktree's `out/r13-m/native.ps1 [-Bulk]` runs every SDK-free
+native regression (`-Bulk` adds 49 game-map publications past 1 GiB), and `out/r13-m/probe.ps1
+[-Earlier <textures folder>]` runs `tests/game_dds_probe.cpp` on copies of 洛茜, 阿芙2.0 and endminf
+(error bounds and sizes on real maps; with a read-only earlier-outputs folder, the shipped keys
+and byte-exact uncompressed writer). See the [R13-M report](handover/R13-M-report.md).
+
+PoC (R13-M worktree `out/r13-m/poc`, scripts `take.py`, `phase.py A|B|C`, `restore.py`, `analyze.py`,
+`interior.py`): under the shared lock, the library and ToPBR cache are moved aside whole (an empty
+library, so only the test's characters load) and the loader state, deployed files, bootstrap and
+`config.cfg` are copied file by file. Phase A deploys the committed package (shipped DLL), imports the
+three copies, spawns them frozen and records Remix VRAM and seven screenshots (final image; roughness,
+shading-normal and base-reflectivity debug views 25/16/94; close-ups). Phase B deploys the candidate
+DLL with endminf's source hidden; phase C again with every source back. Restoration moves the
+originals back, restores every copied file with its timestamp, archives new files, moves the old
+console back unread, checks `user.conf` and verifies the depot before releasing the lock.
+
 ## R12-D manual eye-white assignment
 
 `python -m unittest discover -s tools/tests -p test_eye_whites.py -v` runs 45 LuaJIT fixtures against

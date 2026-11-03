@@ -1,9 +1,9 @@
 diff --git a/docs/TOPBR_R11.md b/docs/TOPBR_R11.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..e06de642bc6dfb870cf9b8f0f4e9430240fc1819
+index 0000000000000000000000000000000000000000..4da86611a64b992e9f389b0aca1da318f5e37d78
 --- /dev/null
 +++ b/docs/TOPBR_R11.md
-@@ -0,0 +1,182 @@
+@@ -0,0 +1,248 @@
 +# R11 ToPBR
 +
 +## R12-B2: straight-alpha decode and name-confirmed data masks
@@ -186,6 +186,72 @@ index 0000000000000000000000000000000000000000..e06de642bc6dfb870cf9b8f0f4e94302
 +inputs, distinct identities, no-maps/rejection, disabled/invalid jobs and a new worker session.
 +`to_pbr_test.cpp` republishes in separate child processes to verify restart ownership, same-size
 +USD edits, missing/damaged/stale records and failed USD/sidecar replacement with staging cleanup.
++
++## R13-M: compact imported game maps, reuse across versions
++
++The user's R12-B3 request (2026-11-03): no 1 GiB stop for imported game maps, compact roughness,
++metallic and normal maps without the unused AO map, and no reconversion after a version change when
++nothing that changes the bytes changed. The loader repository's ADR 0098 records the decision.
++
++**Formats.** `dds_codec.h` (standard C++ only) writes and validates two layouts: the uncompressed
++legacy one, field for field and byte for byte as `TextureProcessor::WriteDDSHeader` and its 2x2
++floor-mean mip loop wrote it, and DX10 `BC4_UNORM` / `BC5_UNORM` with full mip chains. Imported game
++maps store the octahedral normal in BC5 (R and G; Remix reads `.xy`), roughness and metallic in BC4
++(R; Remix reads `.x`), and emission uncompressed. A base whose sides are not multiples of four keeps
++the uncompressed layout. The packed map's blue (AO) channel has no Remix input and is no longer
++stored. A 2048x2048 family is 11,185,308 bytes (BC5 5,592,580 + 2 x BC4 2,796,364) instead of
++89,478,992 (four 22,369,748-byte maps); what Remix loads drops from 67,109,244 to 11,185,308 bytes.
++
++**Encoder.** Per 4x4 block and channel: endpoints at the block's extremes, which bound every texel's
++error by (max - min) / 14; two integer least-squares refinements; the exact-0/255 mode; and for
++blocks of at most four levels (quantized roughness), endpoints that put the minimum and maximum on
++two palette positions. A candidate replaces the extremes only with a lower squared error and no
++worse texel, so the bound always holds. Integer arithmetic makes the bytes deterministic.
++`DDS::EncoderId` is part of the recipe.
++
++**Validation.** `Policy::ValidDDS` accepts both layouts (the uncompressed rule is unchanged, so every
++existing record and cache entry stays valid). `GameRegistry::Inspect`, `Capture` and `Validate` also
++check each role's format: normal RGBA8 or BC5, roughness/metallic RGBA8 or BC4, emission RGBA8.
++
++**Publication and refusals.** `dds_publish.h` writes a flushed staging file, validates it and replaces
++the target with a write-through move; an invalid file in the way is kept as `.rejected-<tick>`.
++Imported game maps have no session budget. Each refusal throws one line naming the limit and its
++numbers ("free disk space limit: ...", "image bounds exceeded: ..."), which the worker logs as
++"Game maps skipped: <base> (<line>)" and shows in the Imported game PBR panel (state "error" for
++every material sharing the texture). The opt-in world conversion keeps its 1 GiB per session and
++its uncompressed writer; its three refusals log the same lines once per session.
++
++**Keys and markers.** `GamePBR::Recipe()` lists what changes the bytes: decoding, masks, the class
++tables (printed from the values in use), channel rules, the octahedral encoding, mips, formats and
++the encoder. The content key hashes the PMX, the base bytes and name, each map role with its bytes,
++the layout and the recipe; the generator number (8) is provenance only. The completion marker's
++first line is `<recipe> <glow>`, the second its origin (`converted` or `transcoded <marker> <id>`).
++A map already stored in its format survives an interrupted pass, so a family stopped halfway
++completes on its next pass.
++
++**Migration.** With the source present, a missing current family is re-encoded from a finished
++earlier family with the same inputs (v7, v6, then v5 keys, each by its shipped formula) instead of
++converted again: the stored uncompressed levels become the compact files, byte-identical to a fresh
++conversion. A v5/v6 family whose normal, packed or emission map was resized is converted again (it
++came from WIC's premultiplying Fant scale); v5 keys carry neither roles nor layout, so v5 families
++are not used for manual choices or for an Endfield/WuWa family in a folder holding a `*_MRA` map
++(v5 chose Silver there). Without the source, `Registry::Compact` re-encodes a stored record's maps
++beside the originals (`<name>_bc5.dds` / `_bc4.dds`), validates them and saves the registry
++atomically; `GameOverrides::Store::Compact` does the same for a manual choice through `Set`. A failed
++save keeps the previous record. Earlier files are left in place.
++
++**Tests.** `tests/game_dds_test.cpp` (SDK-free; MSVC C++17 `/EHsc /UNDEBUG /W4 /WX /DNOMINMAX`,
++with a fixture from `tests/make_game_pbr_fixtures.py`): the shipped uncompressed bytes, DX10 layout
++acceptance and refusals, exact two-value blocks, the per-block bound on generated gradients, edges
++and noise, real quantized roughness blocks, atomic publication, disk/bounds/budget refusal lines,
++compact conversion without AO, the recipe marker, half-family completion, a refusal mid-family,
++v7/v6/v5 transcoding byte-identical to fresh conversion, resized v6 and v5-MRA and manual cases
++converting again, source-less registry and manual-choice migration with a failed save, role
++formats, and uncompressed records staying valid. `bulk` adds 49 game-map publications past 1 GiB.
++Built a second time with `/DTOPBR_GAME_GENERATOR_VERSION=999`, `bump-check` after `bump-prepare`
++shows that a build with another generator number converts and writes nothing. The loader's Release
++suite runs it from the GPL source copy. `tests/game_dds_probe.cpp` runs production conversion on
++real PMX folders (see `tests/game_dds_probe.md`).
 diff --git a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua b/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
 index 911eca840ed59dbbfc619cebec237c8bb1dbdb9c..f0eec48641577ad33549d29acd28a3f17f0abc08 100644
 --- a/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua
@@ -800,6 +866,398 @@ index 0000000000000000000000000000000000000000..7e1c34ba613c9b842995ff78eba6993b
 +Known discovered map layouts are checked case-insensitively before a manual submission.
 +No standalone exit code; queue failures remain retryable and native conversion/save errors appear
 +in the editor/console. Native and Lua regressions are described in `docs/TOPBR_R11.md`.
+diff --git a/source/material_pipeline/to_pbr/dds_codec.h b/source/material_pipeline/to_pbr/dds_codec.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..0b3edd38232d919f96f7be69667068fea97c103d
+--- /dev/null
++++ b/source/material_pipeline/to_pbr/dds_codec.h
+@@ -0,0 +1,303 @@
++// GPL-2.0. DDS layouts and the BC4/BC5 block encoder for generated maps (R13-M).
++// Standard C++ only: production and the SDK-free native regressions share this code.
++#pragma once
++#include <algorithm>
++#include <array>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <filesystem>
++#include <fstream>
++#include <istream>
++#include <optional>
++#include <ostream>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++namespace MaterialPipeline { namespace ToPBR { namespace DDS {
++// RGBA8 is the pre-R13 uncompressed layout: a 32-bit legacy header with B8G8R8A8 masks.
++// BC4/BC5 use a DX10 header with DXGI_FORMAT_BC4_UNORM (80) / DXGI_FORMAT_BC5_UNORM (83).
++enum class Format : uint32_t { RGBA8 = 0, BC4 = 80, BC5 = 83 };
++inline const char* Name(Format format) {
++    return format == Format::BC4 ? "BC4" : format == Format::BC5 ? "BC5" : "RGBA8";
++}
++// Encoder identity. Change it whenever encoded bytes can change: it is part of the game-map recipe.
++constexpr const char* EncoderId = "bc4-minmax-ls2-align4-bounded-1";
++
++constexpr uint32_t Magic = 0x20534444, FourCCDX10 = 0x30315844;
++constexpr uint32_t FlagCaps = 0x1, FlagHeight = 0x2, FlagWidth = 0x4, FlagPixelFormat = 0x1000,
++                   FlagMipCount = 0x20000, FlagLinearSize = 0x80000;
++constexpr uint32_t PixelAlpha = 0x1, PixelFourCC = 0x4, PixelRGB = 0x40;
++constexpr uint32_t CapsTexture = 0x1000, CapsMipmap = 0x400000, CapsComplex = 0x8;
++constexpr uint32_t Caps2Cubemap = 0x200, Caps2Volume = 0x200000, MiscTextureCube = 0x4;
++
++struct Info { uint32_t width = 0, height = 0, levels = 0; Format format = Format::RGBA8; uint64_t bytes = 0; };
++struct Level { uint32_t width = 0, height = 0; std::vector<uint8_t> rgba; }; // straight RGBA8 texels
++
++inline uint32_t LevelCount(uint32_t w, uint32_t h) {
++    uint32_t levels = 1;
++    while (w > 1 || h > 1) { w = (std::max)(1u, w / 2); h = (std::max)(1u, h / 2); ++levels; }
++    return levels;
++}
++inline uint64_t LevelBytes(uint32_t w, uint32_t h, Format format) {
++    if (format == Format::RGBA8) return uint64_t(w) * h * 4;
++    return uint64_t((w + 3) / 4) * ((h + 3) / 4) * (format == Format::BC4 ? 8 : 16);
++}
++inline uint64_t HeaderBytes(Format format) { return format == Format::RGBA8 ? 128 : 148; }
++inline uint64_t FileBytes(uint32_t w, uint32_t h, Format format) {
++    uint64_t bytes = HeaderBytes(format);
++    for (;;) {
++        bytes += LevelBytes(w, h, format);
++        if (w == 1 && h == 1) return bytes;
++        w = (std::max)(1u, w / 2); h = (std::max)(1u, h / 2);
++    }
++}
++// Block-compressed maps are written only for a base whose sides are multiples of four, so every
++// reader (gli, DXVK/Vulkan) sees whole blocks at the top level. Other sizes keep the legacy layout.
++inline bool BlockAligned(uint32_t w, uint32_t h) { return w && h && w % 4 == 0 && h % 4 == 0; }
++
++// Parses exactly the two layouts this module writes. The uncompressed rule is the pre-R13
++// validator's (magic, header sizes, no FourCC, 32 bits, full chain), so every existing record and
++// cache entry keeps validating. Dimension bounds and the file size are checked by the caller.
++inline bool Probe(std::istream& file, Info& info) {
++    uint32_t h[32]{};
++    if (!file.read(reinterpret_cast<char*>(h), sizeof(h))) return false;
++    if (h[0] != Magic || h[1] != 124 || h[19] != 32 || !h[3] || !h[4]) return false;
++    info.width = h[4]; info.height = h[3]; info.levels = h[7];
++    if (h[21] == 0) {
++        if (h[22] != 32) return false;
++        info.format = Format::RGBA8;
++    } else if (h[21] == FourCCDX10 && (h[20] & PixelFourCC)) {
++        uint32_t dx[5]{};
++        if (!file.read(reinterpret_cast<char*>(dx), sizeof(dx))) return false;
++        if ((dx[0] != uint32_t(Format::BC4) && dx[0] != uint32_t(Format::BC5)) || dx[1] != 3 ||
++            (dx[2] & MiscTextureCube) || dx[3] != 1 || (h[28] & (Caps2Cubemap | Caps2Volume)) ||
++            !(h[2] & FlagMipCount) || !BlockAligned(info.width, info.height)) return false;
++        info.format = Format(dx[0]);
++    } else return false;
++    if (info.levels != LevelCount(info.width, info.height)) return false;
++    info.bytes = FileBytes(info.width, info.height, info.format);
++    return true;
++}
++// Header and exact file size. Callers add their own dimension bound (Policy::ValidImage).
++inline bool Probe(const std::filesystem::path& path, Info& info) {
++    std::ifstream file(path, std::ios::binary | std::ios::ate);
++    if (!file) return false;
++    const auto size = file.tellg();
++    if (size < 0) return false;
++    file.seekg(0);
++    return Probe(file, info) && uint64_t(size) == info.bytes;
++}
++
++// The legacy writer's box filter, exactly: per channel, the floor of the mean of the texels a
++// 2x2 footprint covers inside the previous level. Transcoded legacy mips therefore equal the
++// mips a fresh conversion generates from the same base level.
++inline std::vector<Level> Chain(uint32_t w, uint32_t h, std::vector<uint8_t> rgba) {
++    if (!w || !h || rgba.size() != size_t(w) * h * 4) throw std::runtime_error("image data size does not match its dimensions");
++    std::vector<Level> chain;
++    chain.push_back({w, h, std::move(rgba)});
++    while (w > 1 || h > 1) {
++        const auto& old = chain.back();
++        const uint32_t nw = (std::max)(1u, w / 2), nh = (std::max)(1u, h / 2);
++        Level next{nw, nh, std::vector<uint8_t>(size_t(nw) * nh * 4)};
++        for (uint32_t y = 0; y < nh; ++y) for (uint32_t x = 0; x < nw; ++x) {
++            uint32_t sum[4]{}, count = 0;
++            for (uint32_t dy = 0; dy < 2 && y * 2 + dy < h; ++dy)
++                for (uint32_t dx = 0; dx < 2 && x * 2 + dx < w; ++dx) {
++                    const size_t at = (size_t(y * 2 + dy) * w + x * 2 + dx) * 4;
++                    for (int c = 0; c < 4; ++c) sum[c] += old.rgba[at + c];
++                    ++count;
++                }
++            for (int c = 0; c < 4; ++c) next.rgba[(size_t(y) * nw + x) * 4 + c] = uint8_t(sum[c] / count);
++        }
++        chain.push_back(std::move(next));
++        w = nw; h = nh;
++    }
++    return chain;
++}
++
++// BC4: two 8-bit endpoints and sixteen 3-bit indices. r0 > r1 interpolates six values between
++// them; r0 <= r1 interpolates four and adds exact 0 and 255. Palettes are exact rationals: in
++// units of 1/35 both modes compare without rounding, as the GPU decodes them.
++inline void Palette35(uint8_t r0, uint8_t r1, int out[8]) {
++    out[0] = 35 * r0; out[1] = 35 * r1;
++    if (r0 > r1) { for (int i = 1; i <= 6; ++i) out[i + 1] = 5 * ((7 - i) * r0 + i * r1); }
++    else { for (int i = 1; i <= 4; ++i) out[i + 1] = 7 * ((5 - i) * r0 + i * r1); out[6] = 0; out[7] = 35 * 255; }
++}
++struct BlockFit { std::array<uint8_t, 8> block{}; uint64_t error = 0; int worst = 0; }; // squared/worst error, 1/35 units
++inline BlockFit FitBC4(const uint8_t v[16], uint8_t r0, uint8_t r1) {
++    int palette[8]; Palette35(r0, r1, palette);
++    BlockFit fit; uint64_t bits = 0;
++    for (int i = 0; i < 16; ++i) {
++        const int x = 35 * v[i];
++        int pick = 0, best = std::abs(x - palette[0]);
++        for (int k = 1; k < 8; ++k) { const int e = std::abs(x - palette[k]); if (e < best) { best = e; pick = k; } }
++        bits |= uint64_t(pick) << (3 * i);
++        fit.error += uint64_t(best) * uint64_t(best);
++        fit.worst = (std::max)(fit.worst, best);
++    }
++    fit.block[0] = r0; fit.block[1] = r1;
++    for (int i = 0; i < 6; ++i) fit.block[2 + i] = uint8_t(bits >> (8 * i));
++    return fit;
++}
++inline int64_t RoundDiv(int64_t num, int64_t den) { // den > 0, round half up, exact for negatives
++    const int64_t q = (2 * num + den) / (2 * den), r = (2 * num + den) % (2 * den);
++    return r < 0 ? q - 1 : q;
++}
++// Endpoints at the block's extremes bound every texel's error by (max - min) / 14. Two
++// least-squares refinements, the exact-0/255 mode and (for blocks of at most four levels, such as
++// quantized roughness) endpoints that put the minimum and maximum on two palette positions may
++// replace them only with a lower squared error and no worse texel, so that bound always holds.
++// Integer arithmetic: deterministic bytes.
++inline std::array<uint8_t, 8> EncodeBC4(const uint8_t v[16]) {
++    uint8_t lo = 255, hi = 0;
++    for (int i = 0; i < 16; ++i) { lo = (std::min)(lo, v[i]); hi = (std::max)(hi, v[i]); }
++    BlockFit best = FitBC4(v, hi, lo);
++    if (!best.error) return best.block;
++    const int bound = best.worst;
++    auto consider = [&](const BlockFit& fit) { if (fit.error < best.error && fit.worst <= bound) best = fit; };
++    auto pair = [&](int64_t r0, int64_t r1) { if (r0 >= 0 && r0 <= 255 && r1 >= 0 && r1 <= 255) consider(FitBC4(v, uint8_t(r0), uint8_t(r1))); };
++    uint8_t ilo = 255, ihi = 0; bool extremes = false, inner = false;
++    for (int i = 0; i < 16; ++i) {
++        if (v[i] == 0 || v[i] == 255) { extremes = true; continue; }
++        inner = true; ilo = (std::min)(ilo, v[i]); ihi = (std::max)(ihi, v[i]);
++    }
++    if (extremes && inner) consider(FitBC4(v, ilo, ihi));
++    for (int pass = 0; pass < 2 && best.block[0] > best.block[1]; ++pass) {
++        // Weight of r0 in sevenths for each index: 0 -> 7, 1 -> 0, k >= 2 -> 8 - k.
++        uint64_t bits = 0;
++        for (int i = 0; i < 6; ++i) bits |= uint64_t(best.block[2 + i]) << (8 * i);
++        int64_t a = 0, b = 0, c = 0, e = 0, f = 0;
++        for (int i = 0; i < 16; ++i) {
++            const int k = int((bits >> (3 * i)) & 7), s = k == 0 ? 7 : k == 1 ? 0 : 8 - k;
++            a += s * s; b += s * (7 - s); c += (7 - s) * (7 - s);
++            e += 7 * s * v[i]; f += 7 * (7 - s) * v[i];
++        }
++        const int64_t det = a * c - b * b;
++        if (det <= 0) break;
++        const int64_t r0 = std::clamp<int64_t>(RoundDiv(e * c - b * f, det), 0, 255);
++        const int64_t r1 = std::clamp<int64_t>(RoundDiv(a * f - b * e, det), 0, 255);
++        if (r0 <= r1) break;
++        const auto fit = FitBC4(v, uint8_t(r0), uint8_t(r1));
++        if (!(fit.error < best.error && fit.worst <= bound)) break;
++        best = fit;
++    }
++    uint64_t seen[4]{}; int levels = 0;
++    for (int i = 0; i < 16; ++i) { const uint64_t bit = 1ull << (v[i] & 63); if (!(seen[v[i] >> 6] & bit)) { seen[v[i] >> 6] |= bit; ++levels; } }
++    if (best.error && levels <= 4) {
++        // Eight values: s/7 of r0, s = 0..7, with r0 > r1; the minimum sits at s0 < s1 of the maximum.
++        for (int s0 = 0; s0 < 8; ++s0) for (int s1 = s0 + 1; s1 < 8; ++s1) {
++            const int64_t d = RoundDiv(7 * int64_t(hi - lo), s1 - s0), r1 = RoundDiv(7 * int64_t(lo) - s0 * d, 7);
++            if (d > 0) pair(r1 + d, r1);
++        }
++        // Six values: s/5 of r0, s = 0..5, with r0 <= r1; the minimum sits at s0 > s1 of the maximum.
++        for (int s1 = 0; s1 < 6; ++s1) for (int s0 = s1 + 1; s0 < 6; ++s0) {
++            const int64_t d = RoundDiv(5 * int64_t(hi - lo), s0 - s1), r0 = RoundDiv(5 * int64_t(lo) - (5 - s0) * d, 5);
++            if (d > 0) pair(r0, r0 + d);
++        }
++    }
++    return best.block;
++}
++// Exact decode in 1/35 units (GPU precision); Decode8 rounds to the nearest 8-bit value.
++inline void DecodeBC4(const uint8_t* block, int out35[16]) {
++    int palette[8]; Palette35(block[0], block[1], palette);
++    uint64_t bits = 0;
++    for (int i = 0; i < 6; ++i) bits |= uint64_t(block[2 + i]) << (8 * i);
++    for (int i = 0; i < 16; ++i) out35[i] = palette[(bits >> (3 * i)) & 7];
++}
++inline uint8_t Decode8(int value35) { return uint8_t((value35 + 17) / 35); }
++
++inline void Put(std::vector<uint8_t>& out, uint32_t value) {
++    for (int i = 0; i < 4; ++i) out.push_back(uint8_t(value >> (8 * i)));
++}
++inline std::vector<uint8_t> Header(uint32_t w, uint32_t h, uint32_t levels, Format format) {
++    uint32_t hd[32]{};
++    hd[0] = Magic; hd[1] = 124; hd[3] = h; hd[4] = w; hd[6] = 1; hd[7] = levels; hd[19] = 32;
++    hd[27] = CapsTexture | CapsMipmap | CapsComplex;
++    hd[2] = FlagCaps | FlagHeight | FlagWidth | FlagPixelFormat | FlagLinearSize | FlagMipCount;
++    if (format == Format::RGBA8) {
++        // Field-for-field the header TextureProcessor::WriteDDSHeader wrote before R13.
++        hd[5] = w * h * 4; hd[20] = PixelRGB | PixelAlpha; hd[22] = 32;
++        hd[23] = 0x00ff0000; hd[24] = 0x0000ff00; hd[25] = 0x000000ff; hd[26] = 0xff000000;
++    } else {
++        hd[5] = uint32_t(LevelBytes(w, h, format)); hd[20] = PixelFourCC; hd[21] = FourCCDX10;
++    }
++    std::vector<uint8_t> out;
++    out.reserve(size_t(HeaderBytes(format)));
++    for (auto value : hd) Put(out, value);
++    if (format != Format::RGBA8) { Put(out, uint32_t(format)); Put(out, 3); Put(out, 0); Put(out, 1); Put(out, 0); }
++    return out;
++}
++// A whole file in memory. Levels must form the full chain of the base level.
++inline std::vector<uint8_t> Encode(const std::vector<Level>& chain, Format format) {
++    if (chain.empty()) throw std::runtime_error("no image levels");
++    const uint32_t w = chain[0].width, h = chain[0].height;
++    if (chain.size() != LevelCount(w, h)) throw std::runtime_error("incomplete mip chain");
++    if (format != Format::RGBA8 && !BlockAligned(w, h)) throw std::runtime_error("block-compressed map needs sides that are multiples of 4");
++    auto out = Header(w, h, uint32_t(chain.size()), format);
++    out.reserve(size_t(FileBytes(w, h, format)));
++    uint32_t lw = w, lh = h;
++    for (const auto& level : chain) {
++        if (level.width != lw || level.height != lh || level.rgba.size() != size_t(lw) * lh * 4)
++            throw std::runtime_error("mip level size does not match its chain");
++        if (format == Format::RGBA8) {
++            for (size_t i = 0; i < level.rgba.size(); i += 4) {
++                out.push_back(level.rgba[i + 2]); out.push_back(level.rgba[i + 1]);
++                out.push_back(level.rgba[i]); out.push_back(level.rgba[i + 3]);
++            }
++        } else {
++            const int channels = format == Format::BC4 ? 1 : 2;
++            for (uint32_t by = 0; by < lh; by += 4) for (uint32_t bx = 0; bx < lw; bx += 4)
++                for (int c = 0; c < channels; ++c) {
++                    uint8_t v[16];
++                    // Texels past a small level's edge repeat its last row/column.
++                    for (uint32_t y = 0; y < 4; ++y) for (uint32_t x = 0; x < 4; ++x)
++                        v[y * 4 + x] = level.rgba[(size_t((std::min)(by + y, lh - 1)) * lw + (std::min)(bx + x, lw - 1)) * 4 + c];
++                    const auto block = EncodeBC4(v);
++                    out.insert(out.end(), block.begin(), block.end());
++                }
++        }
++        lw = (std::max)(1u, lw / 2); lh = (std::max)(1u, lh / 2);
++    }
++    return out;
++}
++// Reads every level as straight RGBA8. Uncompressed files return their stored texels; BC4
++// returns the value in R, G and B (alpha 255), BC5 returns R and G with B 0 and alpha 255:
++// the channel layouts the uncompressed roughness/metallic and octahedral normal maps use.
++inline std::vector<Level> Read(const std::filesystem::path& path, Info& info) {
++    if (!Probe(path, info)) throw std::runtime_error("not a valid generated DDS: " + path.filename().u8string());
++    std::ifstream file(path, std::ios::binary);
++    file.seekg(std::streamoff(HeaderBytes(info.format)));
++    std::vector<Level> chain;
++    uint32_t w = info.width, h = info.height;
++    for (uint32_t i = 0; i < info.levels; ++i) {
++        std::vector<uint8_t> data(size_t(LevelBytes(w, h, info.format)));
++        if (!file.read(reinterpret_cast<char*>(data.data()), std::streamsize(data.size()))) throw std::runtime_error("truncated DDS: " + path.filename().u8string());
++        Level level{w, h, std::vector<uint8_t>(size_t(w) * h * 4)};
++        if (info.format == Format::RGBA8) {
++            for (size_t p = 0; p < data.size(); p += 4) {
++                level.rgba[p] = data[p + 2]; level.rgba[p + 1] = data[p + 1];
++                level.rgba[p + 2] = data[p]; level.rgba[p + 3] = data[p + 3];
++            }
++        } else {
++            const int channels = info.format == Format::BC4 ? 1 : 2;
++            size_t at = 0;
++            for (uint32_t by = 0; by < h; by += 4) for (uint32_t bx = 0; bx < w; bx += 4)
++                for (int c = 0; c < channels; ++c, at += 8) {
++                    int values[16]; DecodeBC4(data.data() + at, values);
++                    for (uint32_t y = 0; y < 4 && by + y < h; ++y) for (uint32_t x = 0; x < 4 && bx + x < w; ++x) {
++                        auto* texel = level.rgba.data() + (size_t(by + y) * w + bx + x) * 4;
++                        const uint8_t value = Decode8(values[y * 4 + x]);
++                        if (channels == 1) { texel[0] = texel[1] = texel[2] = value; }
++                        else texel[c] = value;
++                        texel[3] = 255;
++                    }
++                }
++        }
++        chain.push_back(std::move(level));
++        w = (std::max)(1u, w / 2); h = (std::max)(1u, h / 2);
++    }
++    return chain;
++}
++}}}
+diff --git a/source/material_pipeline/to_pbr/dds_publish.h b/source/material_pipeline/to_pbr/dds_publish.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..84ebd444264db40157626798096ba9d41bf29de2
+--- /dev/null
++++ b/source/material_pipeline/to_pbr/dds_publish.h
+@@ -0,0 +1,77 @@
++// GPL-2.0. Atomic publication of imported game maps and the legacy-map transcoder (R13-M).
++// Worker-only; no session budget applies: free disk space and the image bound are the limits.
++#pragma once
++#include "pbr_policy.h"
++#include <Windows.h>
++#include <functional>
++
++namespace MaterialPipeline { namespace ToPBR { namespace DDS {
++namespace fs = std::filesystem;
++using SpaceQuery = std::function<std::optional<uint64_t>(const fs::path&)>;
++inline std::optional<uint64_t> FreeSpace(const fs::path& folder) {
++    std::error_code ec;
++    const auto space = fs::space(folder, ec);
++    if (ec) return {};
++    return space.available;
++}
++// Writes the full chain as `format` through a flushed staging file and a write-through
++// replacement. An existing file at `path` is one the caller found invalid: it is kept as
++// `<path>.rejected-<tick>`, as the uncompressed writer always did. Every refusal throws one line.
++inline void Publish(const fs::path& path, const std::vector<Level>& chain, Format format,
++                    const SpaceQuery& space = FreeSpace) {
++    if (chain.empty()) throw std::runtime_error("image bounds exceeded: map has no levels");
++    const uint32_t w = chain[0].width, h = chain[0].height;
++    if (!Policy::ValidImage(w, h)) throw std::runtime_error(Policy::ImageRefusal(w, h, path.filename().u8string()));
++    const auto bytes = Encode(chain, format);
++    const auto available = space(path.parent_path());
++    if (!available || *available < bytes.size() + Policy::DiskHeadroom)
++        throw std::runtime_error(Policy::DiskRefusal(available, bytes.size(), path.parent_path().u8string()));
++    const DWORD attrs = GetFileAttributesW(path.c_str());
++    if (attrs != INVALID_FILE_ATTRIBUTES) {
++        if (attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))
++            throw std::runtime_error("DDS destination is a folder or link: " + path.filename().u8string());
++        const fs::path rejected(path.wstring() + L".rejected-" + std::to_wstring(GetTickCount64()));
++        if (!MoveFileExW(path.c_str(), rejected.c_str(), MOVEFILE_WRITE_THROUGH))
++            throw std::runtime_error("cannot move the invalid DDS aside: " + path.filename().u8string());
++    }
++    const fs::path staged(path.wstring() + L".tmp");
++    HANDLE file = CreateFileW(staged.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
++    bool written = file != INVALID_HANDLE_VALUE;
++    for (size_t offset = 0; written && offset < bytes.size();) {
++        DWORD count = 0;
++        const DWORD chunk = DWORD((std::min)(bytes.size() - offset, size_t(64) * 1024 * 1024));
++        written = WriteFile(file, bytes.data() + offset, chunk, &count, nullptr) != 0 && count != 0;
++        offset += count;
++    }
++    if (written) written = FlushFileBuffers(file) != 0;
++    DWORD error = written ? ERROR_SUCCESS : GetLastError();
++    if (file != INVALID_HANDLE_VALUE && !CloseHandle(file) && written) { written = false; error = GetLastError(); }
++    if (written && !Policy::ValidDDS(staged, format)) { written = false; error = ERROR_INVALID_DATA; }
++    if (!written) {
++        DeleteFileW(staged.c_str());
++        throw std::runtime_error("DDS write failed: " + path.filename().u8string() + " (Windows error " + std::to_string(error) + ")");
++    }
++    if (!MoveFileExW(staged.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
++        const auto moveError = GetLastError();
++        DeleteFileW(staged.c_str());
++        throw std::runtime_error("DDS publication failed: " + path.filename().u8string() + " (Windows error " + std::to_string(moveError) + ")");
++    }
++}
++// The format a role is stored in. Roles: 0 normal (octahedral RG), 1 roughness, 2 metallic,
++// 3 emission. Emission and maps whose base is not block-aligned stay uncompressed.
++inline Format GameFormat(size_t role, uint32_t w, uint32_t h) {
++    if (role > 2 || !BlockAligned(w, h)) return Format::RGBA8;
++    return role == 0 ? Format::BC5 : Format::BC4;
++}
++// A stored map may be in its compact format or (records written before R13) uncompressed.
++inline bool RoleAccepts(size_t role, Format format) {
++    return format == Format::RGBA8 || (role == 0 && format == Format::BC5) || ((role == 1 || role == 2) && format == Format::BC4);
++}
++// Re-encodes a finished uncompressed map's stored levels. No source image is read.
++inline void Transcode(const fs::path& from, const fs::path& to, Format format, const SpaceQuery& space = FreeSpace) {
++    Info info;
++    const auto chain = Read(from, info);
++    if (info.format != Format::RGBA8) throw std::runtime_error("only uncompressed maps are transcoded: " + from.filename().u8string());
++    Publish(to, chain, format, space);
++}
++}}}
 diff --git a/source/material_pipeline/to_pbr/fallback_guard.h b/source/material_pipeline/to_pbr/fallback_guard.h
 new file mode 100644
 index 0000000000000000000000000000000000000000..70a6f2465e6c351e241afb13e0c7065f39b70251
@@ -1572,10 +2030,10 @@ index acfea746c19f77b5960f17337e93b94450a93e2a..5ac1e6d1963e42cb3c4961fa7281967f
      ProcessedMaterial ProcessTextures(const MaterialPBRProperties& props,
 diff --git a/source/material_pipeline/to_pbr/game_matching.inl b/source/material_pipeline/to_pbr/game_matching.inl
 new file mode 100644
-index 0000000000000000000000000000000000000000..84a00af1fa132269bc68580d9e4f155f8d10c3bd
+index 0000000000000000000000000000000000000000..719d7cd84069eccf5bc55ec018044b82cc3f1162
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_matching.inl
-@@ -0,0 +1,251 @@
+@@ -0,0 +1,256 @@
 +// GPL-2.0. Included inside GamePBR, after Image/Decode/Maps.
 +// Spatial edges are compared at identical normalized UV coordinates. No rotations,
 +// translations or best-fit warps: a similar object with a different atlas must abstain.
@@ -1665,6 +2123,11 @@ index 0000000000000000000000000000000000000000..84a00af1fa132269bc68580d9e4f155f
 +            }
 +        }
 +        if(ec)throw std::runtime_error("model folder scan failed");
++    }
++    // Whether any scanned image stem ends with `suffix` (lower case), e.g. "_mra".
++    bool HasStemSuffix(const std::string& suffix) const {
++        for(const auto& p:files_)if(p.first.size()>suffix.size() && p.first.compare(p.first.size()-suffix.size(),suffix.size(),suffix)==0)return true;
++        return false;
 +    }
 +    fs::path Find(const std::string& stem,const fs::path& beside) const {
 +        auto p=files_.find(stem);if(p==files_.end())return {};
@@ -1829,10 +2292,10 @@ index 0000000000000000000000000000000000000000..84a00af1fa132269bc68580d9e4f155f
 +}
 diff --git a/source/material_pipeline/to_pbr/game_overrides.h b/source/material_pipeline/to_pbr/game_overrides.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..070eac9b3d1734fb6aeb1d35b972aa1a8552eb25
+index 0000000000000000000000000000000000000000..74d2d1f99ba17b25072074e56c3a95015f7f9119
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_overrides.h
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,91 @@
 +// GPL-2.0. Player choices keyed by live texture identity, never a character name.
 +#pragma once
 +#include "game_registry.h"
@@ -1892,6 +2355,16 @@ index 0000000000000000000000000000000000000000..070eac9b3d1734fb6aeb1d35b972aa1a
 +        const auto bytes=out.str();if(bytes.size()>GameRegistry::MaxBytes || !GameRegistry::SaveText(path_,bytes,last_))return false;
 +        choices_=std::move(next);return true;
 +    }
++    // R13-M: a saved manual choice's uncompressed maps move to their compact formats without a
++    // source. The choice is replaced atomically through Set; any failure keeps the previous one.
++    template<class Transcode>
++    size_t Compact(const std::string& id,Transcode transcode) {
++        const auto* c=Find(id);if(!c || c->mode!="maps")return 0;
++        Choice next=*c;const size_t changed=validator_.CompactRecord(next.record,transcode);
++        if(!changed)return 0;
++        if(!Set(id,next))throw std::runtime_error("saved choice could not be updated; its maps stay uncompressed");
++        return changed;
++    }
 +    std::optional<GameRegistry::Record> Resolve(const std::string& id,const std::vector<uint64_t>& live) const {
 +        auto c=Find(id);if(!c || c->mode!="maps" || live.empty() || live.size()>GameRegistry::MaxHashes || !validator_.ValidateRecord(c->record))return {};
 +        for(auto h:live)if(!h)return {};
@@ -1916,22 +2389,27 @@ index 0000000000000000000000000000000000000000..070eac9b3d1734fb6aeb1d35b972aa1a
 +}}}
 diff --git a/source/material_pipeline/to_pbr/game_pbr.h b/source/material_pipeline/to_pbr/game_pbr.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce3f64c4f4
+index 0000000000000000000000000000000000000000..01251421d9318f35f350489e842b2c62d0803829
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_pbr.h
-@@ -0,0 +1,295 @@
+@@ -0,0 +1,422 @@
 +// GPL-2.0. Local authored game-map conversion, independent of Source material objects.
 +#pragma once
 +#ifndef GAME_PBR_TYPES_PROVIDED
 +#include "to_pbr.h"
 +#endif
 +#include "pbr_policy.h"
++#include "dds_publish.h"
 +#include <Windows.h>
 +#include <wincodec.h>
 +#include <wrl/client.h>
 +#include <filesystem>
 +#include <fstream>
++#include <locale>
 +#include <map>
++#include <memory>
++#include <optional>
++#include <sstream>
 +#include <stdexcept>
 +#include <array>
 +#include <cctype>
@@ -1942,7 +2420,12 @@ index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce
 +
 +namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 +namespace fs = std::filesystem;
-+constexpr unsigned GeneratorVersion = 7; // Registry provenance; content-key/marker version below.
++#ifndef TOPBR_GAME_GENERATOR_VERSION
++#define TOPBR_GAME_GENERATOR_VERSION 8
++#endif
++// Registry provenance only (R13-M). Cached maps are keyed by their inputs and Recipe(), never by
++// this number, so a release that changes no conversion reuses every map. Tests override it.
++constexpr unsigned GeneratorVersion = TOPBR_GAME_GENERATOR_VERSION;
 +using Microsoft::WRL::ComPtr;
 +inline std::string Lower(std::string s) {
 +    for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -1980,13 +2463,19 @@ index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce
 +inline std::vector<uint8_t> Read(const fs::path& p, uint64_t limit=64*1024*1024) {
 +    std::ifstream f(p,std::ios::binary|std::ios::ate);
 +    if (!f) throw std::runtime_error("source is unavailable");
-+    const auto n=f.tellg(); if (n<0 || uint64_t(n)>limit) throw std::runtime_error("source exceeds bound");
++    const auto n=f.tellg();
++    if (n<0) throw std::runtime_error("source is unreadable");
++    if (uint64_t(n)>limit) throw std::runtime_error("source file exceeds bound: "+p.filename().u8string()+" is "+
++        std::to_string(uint64_t(n))+" bytes; the limit is "+std::to_string(limit)+" bytes");
 +    std::vector<uint8_t> b(size_t(n),0); f.seekg(0);
 +    if (!f.read(reinterpret_cast<char*>(b.data()),std::streamsize(b.size()))) throw std::runtime_error("short source read");
 +    return b;
 +}
++inline uint64_t Hash(const uint8_t* data,size_t size,uint64_t seed=14695981039346656037ull) {
++    for (size_t i=0;i<size;++i) { seed^=data[i]; seed*=1099511628211ull; } return seed;
++}
 +inline uint64_t Hash(const std::vector<uint8_t>& b,uint64_t seed=14695981039346656037ull) {
-+    for (auto x:b) { seed^=x; seed*=1099511628211ull; } return seed;
++    return Hash(b.data(),b.size(),seed);
 +}
 +struct Reader {
 +    const std::vector<uint8_t>& bytes; size_t at=0; bool utf8=true;
@@ -2097,7 +2586,7 @@ index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce
 +    check(factory->CreateDecoderFromStream(stream.Get(),nullptr,WICDecodeMetadataCacheOnDemand,&decoder));
 +    UINT count=0;check(decoder->GetFrameCount(&count));if(count!=1)throw std::runtime_error("animated image");
 +    check(decoder->GetFrame(0,&frame));UINT sw=0,sh=0;check(frame->GetSize(&sw,&sh));
-+    if(!Policy::ValidImage(sw,sh))throw std::runtime_error("image dimensions exceed bound");
++    if(!Policy::ValidImage(sw,sh))throw std::runtime_error(Policy::ImageRefusal(sw,sh,path.filename().u8string()));
 +    if(pixelBudget){const uint64_t pixels=uint64_t(sw)*sh;if(pixels>*pixelBudget)throw std::runtime_error("feature pixel budget exhausted");*pixelBudget-=pixels;}
 +    if(!w || !h) { const float scale=(std::min)(1.0f,float(limit)/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
 +    if(!Policy::ValidImage(w,h) || uint64_t(sw)*h!=uint64_t(sh)*w)throw std::runtime_error("map aspect mismatch");
@@ -2133,34 +2622,142 @@ index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce
 +    }
 +    return count && valid>count*.90 && sx/count>.3 && sx/count<.7 && sy/count>.3 && sy/count<.7;
 +}
-+struct Output { std::string normal,roughness,metallic,emission,ao;size_t protectedPixels=0; };
-+using Writer=std::function<bool(const ConvertedTexture&,const std::string&)>;
++// Everything that changes converted bytes (R13-M): decoding, masks, class tables, channel math,
++// octahedral encoding, mips, stored formats and the block encoder. Content keys and completion
++// markers carry it, so a release that changes none of it reuses every cached map. Change the tag
++// of whatever step a code change touches; the tables are printed from the values in use.
++inline const std::string& Recipe() {
++    static const std::string recipe=[] {
++        std::ostringstream s;s.imbue(std::locale::classic());
++        s<<"game-maps-1;decode=wic-straight-rgba8+area-integer,limit2048;mask=pmx-uv-raster,gutter4,original-first;classes=";
++        for(unsigned c=0;c<8;++c)s<<(c?",":"")<<Roughness(uint8_t(c))<<"/"<<Strength(uint8_t(c));
++        s<<";roughness=clamp0.08-0.95,metal-r,rough-g|endfield-1-a,hair-and-original-class"
++         <<";normal=rebuild-z(wuwa,endfield),endfield-flip-y,silver-blue-z-min0.01,class-strength,octahedral-hemi-8bit"
++         <<";emission=rgb-outside-original;mips=box2x2-floor"
++         <<";formats=normal-BC5,roughness-BC4,metallic-BC4,emission-RGBA8,unaligned-RGBA8;encoder="<<DDS::EncoderId;
++        return s.str();
++    }();
++    return recipe;
++}
++inline std::string Id(uint64_t key) {
++    char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));return id;
++}
++// The current key and the keys earlier generators gave the same inputs (their formulas, exactly).
++struct Keys { uint64_t current=0,v7=0,v6=0,v5=0; };
++inline Keys ContentKeys(const std::vector<uint8_t>& model,const std::vector<uint8_t>& baseBytes,
++                        const std::array<std::vector<uint8_t>,3>& inputs,const std::array<bool,3>& present,
++                        const std::string& base,Maps::Layout layout) {
++    const uint64_t seed=Hash(baseBytes,Hash(model));
++    uint64_t roles=seed,v5=seed;
++    for(size_t i=0;i<3;++i) {
++        const uint8_t tag[2]{uint8_t(i+1),uint8_t(present[i])};roles=Hash(tag,2,roles);
++        if(present[i]){roles=Hash(inputs[i],roles);v5=Hash(inputs[i],v5);}
++    }
++    const auto name=reinterpret_cast<const uint8_t*>(base.data());
++    const uint64_t named=Hash(name,base.size(),roles);
++    Keys keys;
++    keys.v7=named^0x52313247414d4507ull^uint64_t(layout);
++    keys.v6=named^0x52313247414d4506ull^uint64_t(layout);
++    keys.v5=Hash(name,base.size(),v5)^0x52313147414d4505ull;
++    const uint8_t layoutTag=uint8_t(layout);
++    keys.current=Hash(reinterpret_cast<const uint8_t*>(Recipe().data()),Recipe().size(),Hash(&layoutTag,1,named));
++    return keys;
++}
++// Image dimensions from the encoded header, without decoding pixels.
++inline std::pair<uint32_t,uint32_t> ImageSize(const std::vector<uint8_t>& bytes) {
++    ComPtr<IWICImagingFactory> factory;ComPtr<IWICStream> stream;ComPtr<IWICBitmapDecoder> decoder;ComPtr<IWICBitmapFrameDecode> frame;
++    auto check=[](HRESULT hr){if(FAILED(hr))throw std::runtime_error("unsupported/broken image");};
++    check(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)));
++    check(factory->CreateStream(&stream));check(stream->InitializeFromMemory(const_cast<BYTE*>(bytes.data()),DWORD(bytes.size())));
++    check(factory->CreateDecoderFromStream(stream.Get(),nullptr,WICDecodeMetadataCacheOnDemand,&decoder));
++    check(decoder->GetFrame(0,&frame));UINT w=0,h=0;check(frame->GetSize(&w,&h));return {w,h};
++}
++// via: "cached", "converted" or "transcoded from <marker>"; written counts the maps stored now.
++struct Output { std::string normal,roughness,metallic,emission,via;size_t protectedPixels=0;unsigned written=0; };
++// Stores a complete mip chain as `format` at a path. Production publishes atomically and throws
++// one clear line on a refusal; returning false reports a generic publication failure.
++using Writer=std::function<bool(const std::vector<DDS::Level>&,const std::string&,DDS::Format)>;
 +inline Output Convert(const std::string& source,const std::string& base,const std::string& out,
 +                      const Writer& write,const std::function<void(ConvertedTexture&)>& oct,
 +                      DiscoveryCache* discovery=nullptr,const Maps* selected=nullptr,const DecisionLog& log={}) {
 +    const fs::path pmx=fs::u8path(source);if(!pmx.is_absolute() || Lower(pmx.extension().u8string())!=".pmx")throw std::runtime_error("not a local PMX");
 +    auto maps=selected?*selected:Discover(pmx.parent_path(),base,false,log,discovery);if(!maps.recognized)return {};
-+    auto modelBytes=Read(pmx,256*1024*1024);
-+    uint64_t key=Hash(Read(pmx.parent_path()/fs::u8path(base)),Hash(modelBytes));
++    const auto modelBytes=Read(pmx,256*1024*1024);
++    const auto baseBytes=Read(pmx.parent_path()/fs::u8path(base));
 +    // Every input byte participates, including a changed file with the same size/time.
-+    unsigned role=0;
-+    for(const auto& path:{maps.normal,maps.packed,maps.emission}) {
-+        key=Hash(std::vector<uint8_t>{uint8_t(++role),uint8_t(!path.empty())},key);
-+        if(!path.empty())key=Hash(Read(path),key);
-+    }
-+    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4507ull ^ uint64_t(maps.layout);
-+    char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));
++    std::array<std::vector<uint8_t>,3> inputs;std::array<bool,3> present{};
++    {size_t i=0;for(const auto& path:{maps.normal,maps.packed,maps.emission}){present[i]=!path.empty();if(present[i])inputs[i]=Read(path);++i;}}
++    const auto keys=ContentKeys(modelBytes,baseBytes,inputs,present,base,maps.layout);
++    const fs::path folder=fs::u8path(out);
++    static constexpr const char* suffix[4]={"_normal","_roughness","_metallic","_emission"};
++    auto file=[&](uint64_t key,size_t role){return folder/(Id(key)+suffix[role]+".dds");};
++    const fs::path marker=folder/(Id(keys.current)+"_complete.txt");
 +    Output result;
-+    auto path=[&](const char* suffix){return (fs::u8path(out)/(std::string(id)+suffix+".dds")).u8string();};
-+    const fs::path marker=fs::u8path(out)/(std::string(id)+"_complete.txt");
++    auto finish=[&](bool glow,const std::string& via) {
++        result.normal=file(keys.current,0).u8string();result.roughness=file(keys.current,1).u8string();
++        result.metallic=file(keys.current,2).u8string();if(glow)result.emission=file(keys.current,3).u8string();
++        result.via=via;return result;
++    };
++    auto mark=[&](bool glow,const std::string& origin) {
++        const fs::path staged(marker.wstring()+L".tmp");
++        {std::ofstream done(staged,std::ios::binary|std::ios::trunc);done<<Recipe()<<' '<<(glow?1:0)<<"\norigin "<<origin<<"\n";done.close();
++         if(!done)throw std::runtime_error("cache marker write failed");}
++        if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
++    };
++    // A map is current when it is complete, bounded and in its role's format for its own size.
++    auto current=[&](const fs::path& path,size_t role) {
++        DDS::Info info;
++        return DDS::Probe(path,info) && Policy::ValidImage(info.width,info.height) && info.format==DDS::GameFormat(role,info.width,info.height);
++    };
 +    {
-+        std::ifstream cache(marker);std::string version;int glow=0;cache>>version>>glow;
-+        if(cache && version=="r12-game-v7" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
-+           Policy::ValidDDS(fs::u8path(path("_roughness"))) && Policy::ValidDDS(fs::u8path(path("_metallic"))) &&
-+           (!glow || Policy::ValidDDS(fs::u8path(path("_emission"))))) {
-+            result.normal=path("_normal");result.roughness=path("_roughness");result.metallic=path("_metallic");
-+            if(glow)result.emission=path("_emission");return result;
++        std::ifstream cache(marker,std::ios::binary);std::string recipe;int glow=-1;cache>>recipe>>glow;
++        if(cache && recipe==Recipe() && (glow==0 || glow==1) && current(file(keys.current,0),0) && current(file(keys.current,1),1) &&
++           current(file(keys.current,2),2) && (!glow || current(file(keys.current,3),3)))return finish(glow!=0,"cached");
++    }
++    // A finished family from an earlier generator with these inputs is re-encoded, not converted
++    // again (the uncompressed RGBA8 maps before R13). Half-finished families convert normally.
++    struct Earlier { unsigned version;uint64_t key;const char* marker; };
++    const Earlier earlier[]{{7,keys.v7,"r12-game-v7"},{6,keys.v6,"r12-game-v6"},{5,keys.v5,"r11-game-v5"}};
++    std::optional<bool> mraInFolder;
++    for(const auto& legacy:earlier) {
++        // v5 keys carry neither roles nor layout, and manual choices did not exist then.
++        if(legacy.version==5 && selected)continue;
++        std::ifstream cache(folder/(Id(legacy.key)+"_complete.txt"),std::ios::binary);std::string version;int glow=-1;cache>>version>>glow;
++        if(!cache || version!=legacy.marker || (glow!=0 && glow!=1))continue;
++        DDS::Info info;bool complete=true;
++        for(size_t role=0;role<(glow?4u:3u) && complete;++role) {
++            DDS::Info map;
++            complete=DDS::Probe(file(legacy.key,role),map) && Policy::ValidImage(map.width,map.height) && map.format==DDS::Format::RGBA8 &&
++                (!role || (map.width==info.width && map.height==info.height));
++            if(!role)info=map;
 +        }
++        if(!complete)continue;
++        if(legacy.version<7) {
++            // v5/v6 decoded through WIC's premultiplying Fant scaler whenever a map was resized
++            // (R12-B2): such outputs are converted again from their readable source.
++            bool resized=false;
++            for(size_t i=0;i<3;++i)if(present[i]){const auto size=ImageSize(inputs[i]);resized|=size.first!=info.width || size.second!=info.height;}
++            if(resized)continue;
++        }
++        if(legacy.version==5 && maps.layout!=Maps::Silver) {
++            // v5 chose Silver for every family in a folder holding any *_MRA map; otherwise its
++            // canonical layout rules are today's.
++            if(!mraInFolder) {
++                std::unique_ptr<Discovery> owned;
++                Discovery& scan=discovery?discovery->Get(pmx.parent_path()):*(owned=std::make_unique<Discovery>(pmx.parent_path()));
++                mraInFolder=scan.HasStemSuffix("_mra");
++            }
++            if(*mraInFolder)continue;
++        }
++        for(size_t role=0;role<(glow?4u:3u);++role) {
++            const auto target=file(keys.current,role);
++            if(current(target,role))continue;
++            DDS::Info stored;auto chain=DDS::Read(file(legacy.key,role),stored);
++            if(!write(chain,target.u8string(),DDS::GameFormat(role,stored.width,stored.height)))throw std::runtime_error("DDS publication failed");
++            ++result.written;
++        }
++        mark(glow!=0,std::string("transcoded ")+legacy.marker+" "+Id(legacy.key));
++        return finish(glow!=0,std::string("transcoded from ")+legacy.marker);
 +    }
 +    auto mesh=ParsePMX(modelBytes);
 +    Image n=maps.normal.empty()?Image{}:Decode(maps.normal);
@@ -2174,22 +2771,28 @@ index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce
 +    if(n.w && !PlausibleNormal(n))throw std::runtime_error("normal channels fail sanity check");
 +    Image emission=maps.emission.empty()?Image{}:Decode(maps.emission,w,h);
 +    result.protectedPixels=classes.size()-changed;
-+    auto save=[&](ConvertedTexture& t,const char* suffix) {
-+        auto p=path(suffix);if(!Policy::ValidDDS(fs::u8path(p)) && !write(t,p))throw std::runtime_error("DDS publication failed");return p;
++    // A map already stored in its format survives an interrupted pass: the family completes.
++    auto save=[&](ConvertedTexture& t,size_t role) {
++        const auto p=file(keys.current,role);
++        if(!current(p,role)) {
++            if(!write(DDS::Chain(t.width,t.height,std::move(t.pixelData)),p.u8string(),DDS::GameFormat(role,t.width,t.height)))
++                throw std::runtime_error("DDS publication failed");
++            ++result.written;
++        }
 +    };
 +    auto texture=[&](){ConvertedTexture t{};t.width=w;t.height=h;t.mipLevels=1;t.format=REMIXAPI_FORMAT_R8G8B8A8_UNORM;t.pixelData.resize(size_t(w)*h*4,255);return t;};
-+    auto rough=texture(),metal=texture(),ao=texture(),normal=texture(),glow=texture();
++    auto rough=texture(),metal=texture(),normal=texture(),glow=texture();
 +    bool anyGlow=false;
 +    for(size_t i=0;i<classes.size();++i) {
-+        const auto cls=classes[i];const size_t j=i*4;float r=Roughness(cls),m=cls==Metal?1.0f:0,a=1;
++        const auto cls=classes[i];const size_t j=i*4;float r=Roughness(cls),m=cls==Metal?1.0f:0;
++        // Packed blue (Endfield P / Silver MRA occlusion) has no Remix input and is not stored.
 +        if(cls!=Original && !packed.rgba.empty() && cls!=Hair) {
 +            m=packed.rgba[j]/255.0f;
 +            r=maps.layout==Maps::Endfield?1-packed.rgba[j+3]/255.0f:packed.rgba[j+1]/255.0f;
-+            a=packed.rgba[j+2]/255.0f;
 +        }
 +        r=std::clamp(r,.08f,.95f);
 +        for(int ch=0;ch<3;++ch) {
-+            rough.pixelData[j+ch]=uint8_t(r*255+.5f);metal.pixelData[j+ch]=uint8_t(m*255+.5f);ao.pixelData[j+ch]=uint8_t(a*255+.5f);
++            rough.pixelData[j+ch]=uint8_t(r*255+.5f);metal.pixelData[j+ch]=uint8_t(m*255+.5f);
 +            glow.pixelData[j+ch]=cls!=Original && !emission.rgba.empty()?emission.rgba[j+ch]:0;
 +            anyGlow|=glow.pixelData[j+ch]>0;
 +        }
@@ -2206,24 +2809,22 @@ index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce
 +        normal.pixelData[j]=uint8_t((x*.5f+.5f)*255+.5f);normal.pixelData[j+1]=uint8_t((y*.5f+.5f)*255+.5f);normal.pixelData[j+2]=uint8_t((z*.5f+.5f)*255+.5f);
 +    }
 +    oct(normal);normal.isNormalMap=true;
-+    result.normal=save(normal,"_normal");result.roughness=save(rough,"_roughness");result.metallic=save(metal,"_metallic");
-+    if(!packed.rgba.empty())result.ao=save(ao,"_ao"); // Kept as data; do not bake occlusion into painted albedo under path tracing.
-+    if(anyGlow)result.emission=save(glow,"_emission");
-+    const fs::path staged=fs::path(marker.wstring()+L".tmp");
-+    { std::ofstream done(staged);done<<"r12-game-v7 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
-+    if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
-+    return result;
++    save(normal,0);save(rough,1);save(metal,2);
++    if(anyGlow)save(glow,3);
++    mark(anyGlow,"converted");
++    return finish(anyGlow,"converted");
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/game_registry.h b/source/material_pipeline/to_pbr/game_registry.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca818c54a693
+index 0000000000000000000000000000000000000000..ea6132a02b7c89f7de6b28ea3fe9dfce35a2d1bf
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_registry.h
-@@ -0,0 +1,282 @@
+@@ -0,0 +1,338 @@
 +// GPL-2.0. Worker-owned records for imported textures whose local source is unavailable.
 +#pragma once
 +#include "pbr_policy.h"
++#include "dds_publish.h"
 +#include <Windows.h>
 +#include <array>
 +#include <iomanip>
@@ -2284,11 +2885,14 @@ index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca81
 +    }
 +    return true;
 +}
-+inline std::optional<Texture> Inspect(const fs::path& path, bool digest) {
++// role: 0 normal, 1 roughness, 2 metallic, 3 emission; each accepts its compact format (R13-M)
++// or the uncompressed layout every record had before. A negative role accepts any valid layout.
++inline std::optional<Texture> Inspect(const fs::path& path, bool digest, int role = -1) {
 +    // No links/junctions, traversal or alternate data streams in recorded paths.
 +    const DWORD attrs = GetFileAttributesW(path.c_str());
-+    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) ||
-+        !Policy::ValidDDS(path)) return {};
++    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY))) return {};
++    const auto format = Policy::DDSFormat(path);
++    if (!format || (role >= 0 && !DDS::RoleAccepts(size_t(role), *format))) return {};
 +    std::error_code ec;
 +    Texture texture{path.filename().u8string(), fs::file_size(path, ec), 0};
 +    if (ec || !SafeFile(texture.file)) return {};
@@ -2382,7 +2986,7 @@ index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca81
 +            if (paths[i].empty()) continue;
 +            const auto path = fs::u8path(paths[i]).lexically_normal();
 +            if (path.parent_path() != output_.lexically_normal()) return false;
-+            auto texture = Inspect(path, true);
++            auto texture = Inspect(path, true, int(i));
 +            if (!texture) return false;
 +            record.textures[i] = *texture;
 +        }
@@ -2482,6 +3086,56 @@ index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca81
 +    }
 +public: // Also validates immutable override records against their published DDS.
 +    bool ValidateRecord(const Record& r,bool digest=true) const{return ValidRecord(r) && Validate(r,digest);}
++    // R13-M: re-encodes a valid record's uncompressed normal/roughness/metallic maps in their
++    // compact formats beside the originals (`<name>_bc5.dds` / `<name>_bc4.dds`), without any
++    // source. New files are complete and validated before the record refers to them; the
++    // originals stay untouched. Returns how many maps changed. Emission stays uncompressed.
++    template<class Transcode> // void(const fs::path& from, const fs::path& to, DDS::Format)
++    size_t CompactRecord(Record& record, Transcode transcode) const {
++        // Header probes first: an already compact record costs no content hashing here.
++        std::array<DDS::Format, 3> wanted{DDS::Format::RGBA8, DDS::Format::RGBA8, DDS::Format::RGBA8};
++        size_t pending = 0;
++        for (size_t role = 0; role < 3; ++role) {
++            const auto& texture = record.textures[role];
++            DDS::Info info;
++            if (texture.file.empty() || !DDS::Probe(output_ / fs::u8path(texture.file), info) || info.format != DDS::Format::RGBA8) continue;
++            wanted[role] = DDS::GameFormat(role, info.width, info.height);
++            pending += wanted[role] != DDS::Format::RGBA8;
++        }
++        if (!pending || !ValidateRecord(record)) return 0;
++        Record next = record;
++        size_t changed = 0;
++        for (size_t role = 0; role < 3; ++role) {
++            auto& texture = next.textures[role];
++            const auto format = wanted[role];
++            if (format == DDS::Format::RGBA8) continue;
++            const auto from = output_ / fs::u8path(texture.file);
++            const auto name = texture.file.substr(0, texture.file.size() - 4) + (format == DDS::Format::BC5 ? "_bc5.dds" : "_bc4.dds");
++            if (!SafeFile(name)) continue;
++            const auto to = output_ / fs::u8path(name);
++            auto compact = Inspect(to, true, int(role));
++            if (!compact || Policy::DDSFormat(to) != format) { transcode(from, to, format); compact = Inspect(to, true, int(role)); }
++            if (!compact || Policy::DDSFormat(to) != format) throw std::runtime_error("compact map failed validation: " + name);
++            texture = *compact; ++changed;
++        }
++        if (changed && ValidateRecord(next)) record = next;
++        else changed = 0;
++        return changed;
++    }
++    // Source-less migration of one stored record: compact maps first, then the whole registry is
++    // saved atomically. A failed save keeps the previous (still valid) record in memory and on disk.
++    template<class Transcode>
++    size_t Compact(const std::string& identity, Transcode transcode) {
++        auto found = records_.find(identity);
++        if (found == records_.end()) return 0;
++        Record next = found->second;
++        const size_t changed = CompactRecord(next, transcode);
++        if (!changed) return 0;
++        const Record previous = found->second;
++        found->second = next;
++        if (!Save()) { found->second = previous; throw std::runtime_error("registry could not be saved; cached maps stay uncompressed"); }
++        return changed;
++    }
 +private:
 +    bool DiscardDamaged() {
 +        // Save preserves the damaged bytes before replacing them with a fresh registry.
@@ -2490,8 +3144,10 @@ index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca81
 +    bool Validate(const Record& record, bool digest) const {
 +        const DWORD attrs = GetFileAttributesW(output_.c_str());
 +        if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_REPARSE_POINT)) return false;
-+        for (const auto& texture : record.textures) if (!texture.file.empty()) {
-+            const auto checked = Inspect(output_ / fs::u8path(texture.file), digest);
++        for (size_t role = 0; role < record.textures.size(); ++role) {
++            const auto& texture = record.textures[role];
++            if (texture.file.empty()) continue;
++            const auto checked = Inspect(output_ / fs::u8path(texture.file), digest, int(role));
 +            if (!checked || checked->bytes != texture.bytes || (digest && checked->digest != texture.digest)) return false;
 +        }
 +        return true;
@@ -2505,10 +3161,10 @@ index 0000000000000000000000000000000000000000..21d86d05029e84d6ed9449b1f27cca81
 +}}}
 diff --git a/source/material_pipeline/to_pbr/pbr_policy.h b/source/material_pipeline/to_pbr/pbr_policy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8ddc6ed53
+index 0000000000000000000000000000000000000000..30f6d64e988bf1dcfdf934cf86992a3d94d37667
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/pbr_policy.h
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,72 @@
 +// GPL-2.0. Shared by the production converter and its offline regressions.
 +#pragma once
 +#include <algorithm>
@@ -2519,6 +3175,8 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +#include <vector>
 +#include <string>
 +#include <cctype>
++#include <optional>
++#include "dds_codec.h"
 +
 +namespace MaterialPipeline { namespace ToPBR { namespace Policy {
 +inline bool IsImportedMaterialName(std::string name) {
@@ -2547,26 +3205,40 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +    } while (x.gcount());
 +    return !x.bad() && !y.bad();
 +}
-+inline bool ValidDDS(const std::filesystem::path& path) {
-+    std::ifstream file(path, std::ios::binary | std::ios::ate);
-+    if (!file) return false;
-+    auto size = file.tellg(); file.seekg(0);
-+    uint32_t header[32]{};
-+    if (!file.read(reinterpret_cast<char*>(header), sizeof(header))) return false;
-+    if (header[0] != 0x20534444 || header[1] != 124 || header[19] != 32 ||
-+        header[21] != 0 || header[22] != 32 || !ValidImage(header[4], header[3])) return false;
-+    uint64_t expected = 128;
-+    uint32_t w = header[4], h = header[3], levels = 0;
-+    do {
-+        expected += uint64_t(w) * h * 4; ++levels;
-+        if (w == 1 && h == 1) break;
-+        w = (std::max)(1u, w / 2); h = (std::max)(1u, h / 2);
-+    } while (true);
-+    return header[7] == levels && uint64_t(size) == expected;
++// The layout of a complete generated DDS: the legacy uncompressed one, or (R13-M) DX10 BC4/BC5,
++// each with a full mip chain, an exact file size and the module's image bound.
++inline std::optional<DDS::Format> DDSFormat(const std::filesystem::path& path) {
++    DDS::Info info;
++    if (!DDS::Probe(path, info) || !ValidImage(info.width, info.height)) return {};
++    return info.format;
++}
++inline bool ValidDDS(const std::filesystem::path& path) { return DDSFormat(path).has_value(); }
++inline bool ValidDDS(const std::filesystem::path& path, DDS::Format format) {
++    const auto found = DDSFormat(path);
++    return found && *found == format;
++}
++
++// One clear line per refusal, naming the limit and its numbers (R13-M). The imported game PBR
++// panel shows the same text.
++constexpr uint64_t WorldMapBudget = 1024ull * 1024 * 1024, DiskHeadroom = 64ull * 1024 * 1024;
++inline std::string ImageRefusal(uint32_t w, uint32_t h, const std::string& what = "map") {
++    return "image bounds exceeded: " + what + " is " + std::to_string(w) + "x" + std::to_string(h) + " (" +
++        std::to_string(uint64_t(w) * h) + " pixels); the limit is 4096x4096 and 16777216 pixels";
++}
++inline std::string BudgetRefusal(uint64_t used, uint64_t requested) {
++    return "session budget used up: " + std::to_string(used) + " of " + std::to_string(WorldMapBudget) +
++        " bytes of world maps written this session, " + std::to_string(requested) +
++        " more requested; restart the game to convert more world materials (imported game maps are not limited)";
++}
++inline std::string DiskRefusal(std::optional<uint64_t> available, uint64_t requested, const std::string& folder) {
++    const auto mib = [](uint64_t bytes) { return std::to_string(bytes / (1024 * 1024)); };
++    return "free disk space limit: " + (available ? mib(*available) + " MiB free" : std::string("free space unknown")) +
++        " in " + folder + ", " + mib(requested + DiskHeadroom) + " MiB needed (" + std::to_string(requested) +
++        " bytes for this map plus 64 MiB kept free)";
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e02cce6093 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..24b35e7d2d31243468b2ef2083231a1de8d9a75b 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
 @@ -4,6 +4,13 @@
@@ -2706,37 +3378,37 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
      return file.good();
  }
  
--bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
++// The opt-in world conversion only. Imported game maps publish through DDS::Publish
++// (game_pbr.h), with no session budget and in compact formats (R13-M).
+ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
 -    if (texture.pixelData.empty()) {
-+bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget) {
-+    if (!Policy::ValidImage(texture.width, texture.height) ||
-+        texture.pixelData.size() != size_t(texture.width) * texture.height * 4) {
++    if (!Policy::ValidImage(texture.width, texture.height)) {
++        Warning("[MaterialPipeline::ToPBR] World map refused: %s\n",
++            Policy::ImageRefusal(texture.width, texture.height, std::filesystem::u8path(outputPath).filename().u8string()).c_str());
++        return false;
++    }
++    if (texture.pixelData.size() != size_t(texture.width) * texture.height * 4) {
          Warning("[MaterialPipeline::ToPBR] Cannot write empty texture\n");
          return false;
      }
-     
+-    
 -    std::ofstream file(outputPath, std::ios::binary);
-+    uint64_t expected=128;
-+    for (uint32_t w=texture.width,h=texture.height;;w=(std::max)(1u,w/2),h=(std::max)(1u,h/2)) {
-+        expected+=uint64_t(w)*h*4;
-+        if(w==1 && h==1)break;
-+    }
-+    if (sessionBudget && m_generatedDDSBytes + expected > 1024ull*1024*1024) {
++
++    const uint64_t expected = DDS::FileBytes(texture.width, texture.height, DDS::Format::RGBA8);
++    if (m_generatedDDSBytes + expected > Policy::WorldMapBudget) {
 +        if (!m_budgetWarned) {
 +            m_budgetWarned = true;
-+            Warning("[MaterialPipeline::ToPBR] Generated-map budget used up: %llu of %llu bytes of world maps written this session; restart the game to convert more world materials (imported game maps are not limited)\n",
-+                static_cast<unsigned long long>(m_generatedDDSBytes), 1024ull*1024*1024);
++            Warning("[MaterialPipeline::ToPBR] World map refused: %s\n", Policy::BudgetRefusal(m_generatedDDSBytes, expected).c_str());
 +        }
 +        return false;
 +    }
 +    std::error_code spaceError;
 +    const auto space=std::filesystem::space(std::filesystem::u8path(m_outputDirectory),spaceError);
-+    if (spaceError || space.available < expected + 64ull*1024*1024) {
++    if (spaceError || space.available < expected + Policy::DiskHeadroom) {
 +        if (!m_diskWarned) {
 +            m_diskWarned = true;
-+            Warning("[MaterialPipeline::ToPBR] Not enough free disk space for generated maps: %llu MiB free, %llu MiB needed (with 64 MiB kept free) in %s\n",
-+                static_cast<unsigned long long>(spaceError ? 0 : space.available / (1024*1024)),
-+                static_cast<unsigned long long>((expected + 64ull*1024*1024) / (1024*1024)), m_outputDirectory.c_str());
++            Warning("[MaterialPipeline::ToPBR] World map refused: %s\n", Policy::DiskRefusal(
++                spaceError ? std::optional<uint64_t>{} : std::optional<uint64_t>{space.available}, expected, m_outputDirectory).c_str());
 +        }
 +        return false;
 +    }
@@ -2754,7 +3426,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
      
      file.close();
 +    if (!file || !USDA::PublishStagedFile(stagingPath, outputPath)) return false;
-+    if (sessionBudget) m_generatedDDSBytes += expected;
++    m_generatedDDSBytes += expected;
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Wrote DDS file: %s (%dx%d, %d mips)\n", outputPath.c_str(), texture.width, texture.height, mipCount);
@@ -3738,11 +4410,6 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
 -    std::string stagingPath = modDir + "/materials.usda.tmp";
 -    if (!USDA::WriteMaterialsUSDAFile(modDir, m_outputDirectory, m_processedMaterialInfo, m_debugOutput, stagingPath)) {
 -        return false;
--    }
--    
--    // Atomic replace: staging -> final
--    if (!USDA::PublishStagedFile(stagingPath, materialsUsdaPath)) {
--        return false;
 +    if (!USDA::PublishStagedFile(staging, target)) return false;
 +    // Remix watches the root layer's time, not only its sublayer's.
 +    HANDLE file = CreateFileW(std::filesystem::u8path(modDir + "/mod.usda").c_str(), FILE_WRITE_ATTRIBUTES,
@@ -3750,6 +4417,11 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
 +    if (file != INVALID_HANDLE_VALUE) {
 +        FILETIME now; GetSystemTimeAsFileTime(&now); SetFileTime(file, nullptr, nullptr, &now); CloseHandle(file);
      }
+-    
+-    // Atomic replace: staging -> final
+-    if (!USDA::PublishStagedFile(stagingPath, materialsUsdaPath)) {
+-        return false;
+-    }
 -    
 -    m_lastUSDAWriteTime = std::chrono::steady_clock::now();
 -    
@@ -3800,7 +4472,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
      if (!m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Not running
      }
-@@ -4833,183 +4732,225 @@ void TextureProcessor::StopWorkerThread() {
+@@ -4833,183 +4732,256 @@ void TextureProcessor::StopWorkerThread() {
  }
  
  void TextureProcessor::WorkerThreadFunc() {
@@ -3889,9 +4561,13 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
 +                    view.state=known->second.state;view.family=known->second.family;view.error=known->second.error;
 +                }
 +                bool restored = false;
++                std::string via;
 +                auto convert=[&](const GamePBR::Maps* selected)->std::optional<GameRegistry::Record> {
++                    // Imported game maps: compact formats, no session budget; a refusal throws
++                    // its one-line reason, which the log and the panel show (R13-M).
 +                    const auto output=GamePBR::Convert(gameJob.source,gameJob.base,m_outputDirectory,
-+                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path,false);},
++                        [](const std::vector<DDS::Level>& levels,const std::string& path,DDS::Format format){
++                            DDS::Publish(std::filesystem::u8path(path),levels,format);return true;},
 +                        [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
 +                        [&](const GamePBR::Decision& d){
 +                            view.family=d.accepted?d.family:"";
@@ -3902,10 +4578,13 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
 -                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
 -                        break;
 +                    if(output.normal.empty() && output.roughness.empty())return {};
++                    via=output.via+" ("+std::to_string(output.written)+" maps written)";
 +                    GameRegistry::Record r;r.identity=gameJob.identity;r.hashes=gameJob.hashes;r.generator=GamePBR::GeneratorVersion;
 +                    if(!m_gameRegistry->Capture(r,{output.normal,output.roughness,output.metallic,output.emission}))return {};
 +                    return r;
 +                };
++                // Stored maps from before R13 move to compact formats without their source.
++                auto transcode=[](const std::filesystem::path& from,const std::filesystem::path& to,DDS::Format format){DDS::Transcode(from,to,format);};
 +                if(gameJob.action=="options") {
 +                    view.choices.clear();view.files.clear();
 +                    if(!gameJob.source.empty()) {
@@ -3965,15 +4644,29 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
 +                const auto record = gameSession.ResolveOnce(gameJob.identity, gameJob.hashes,
 +                    m_gameEnabled.load() || !gameJob.action.empty(), [&]() {
 +                    if(!overrides.Readable()){view.state="error";view.error="Saved override file is unreadable; automatic maps suppressed";return std::optional<GameRegistry::Record>{};}
++                    try {
++                        if(const auto maps=overrides.Compact(gameJob.identity,transcode))
++                            Msg("[MaterialPipeline::ToPBR] Saved game-map choice stored compactly: identity=%s maps=%zu (no source conversion)\n",gameJob.identity.c_str(),maps);
++                    } catch(const std::exception& e) {
++                        Warning("[MaterialPipeline::ToPBR] Saved game-map choice kept uncompressed: identity=%s (%s)\n",gameJob.identity.c_str(),e.what());
++                    }
 +                    auto selected=overrides.Select(gameJob.identity,gameJob.hashes,true,[&]() {
 +                    // Resolve each identity once per worker, including source probing,
 +                    // DDS validation and registry saves. Later jobs only register live hashes.
 +                    std::ifstream source(std::filesystem::u8path(gameJob.source), std::ios::binary);
 +                    const bool sourceReadable = !gameJob.base.empty() && source.good();
++                    if(!sourceReadable) {
++                        try {
++                            if(const auto maps=m_gameRegistry->Compact(gameJob.identity,transcode))
++                                Msg("[MaterialPipeline::ToPBR] Cached game maps stored compactly without their source: identity=%s maps=%zu\n",gameJob.identity.c_str(),maps);
++                        } catch(const std::exception& e) {
++                            Warning("[MaterialPipeline::ToPBR] Cached game maps kept uncompressed: identity=%s (%s)\n",gameJob.identity.c_str(),e.what());
++                        }
++                    }
 +                    auto resolved = m_gameRegistry->Resolve(gameJob.identity, gameJob.hashes,
 +                        true, sourceReadable, [&]() -> std::optional<GameRegistry::Record> {
 +                        auto result=convert(nullptr);
-+                        if(result)Msg("[MaterialPipeline::ToPBR] Imported game maps: %s identity=%s\n",gameJob.base.c_str(),gameJob.identity.c_str());
++                        if(result)Msg("[MaterialPipeline::ToPBR] Imported game maps: %s identity=%s via=%s\n",gameJob.base.c_str(),gameJob.identity.c_str(),via.c_str());
 +                        return result;
                      });
 -                    
@@ -4008,7 +4701,17 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
 +                        record->identity.c_str(), record->hashes.size(), record->generator);
                  }
 +            } catch (const std::exception& e) {
-+                {std::lock_guard<std::mutex> lock(m_queueMutex);auto& v=m_gameViews[gameJob.name];v.error=e.what();}
++                // The panel shows the same line the log does (a refusal names its limit and numbers).
++                // An automatic resolution's error applies to every material sharing the texture;
++                // a failed manual action leaves the applied state as it was.
++                {std::lock_guard<std::mutex> lock(m_queueMutex);auto& v=m_gameViews[gameJob.name];v.error=e.what();
++                    if(gameJob.action.empty()) {
++                        v.state="error";
++                        for(const auto& item:liveJobs)if(item.second.identity==gameJob.identity){auto& a=m_gameViews[item.first];a.state="error";a.error=e.what();}
++                    }}
++                if(gameJob.action.empty() && !gameJob.identity.empty()) {
++                    auto& known=identityViews[gameJob.identity];known.identity=gameJob.identity;known.state="error";known.error=e.what();
++                }
 +                Warning("[MaterialPipeline::ToPBR] Game maps skipped: %s (%s)\n", gameJob.base.c_str(), e.what());
 +                std::lock_guard<std::recursive_mutex> lock(m_mutex); ++m_stats.failedConversions;
              }
@@ -4181,7 +4884,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
  int TextureProcessor::QueueMaterialsForProcessing() {
      if (!m_enabled.load(std::memory_order_relaxed)) {
          return 0;
-@@ -5049,6 +4990,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5049,6 +5021,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
          std::lock_guard<std::recursive_mutex> lock(m_mutex);
          for (size_t i = 0; i < cachedMaterials.size(); i++) {
              const std::string& matName = cachedMaterials[i];
@@ -4189,7 +4892,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
              if (MaterialFilter::IsNonSceneMaterialName(matName)) {
                  m_processedMaterials.insert(matName);
                  continue;
-@@ -5082,6 +5024,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5082,6 +5055,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
                  continue;
              }
              
@@ -4197,7 +4900,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
              m_materialQueue.push(matName);
              m_queuedMaterials.insert(matName);
              queuedCount++;
-@@ -5102,87 +5045,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5102,87 +5076,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
  
  size_t TextureProcessor::GetQueuedMaterialCount() const {
      std::lock_guard<std::mutex> lock(m_queueMutex);
@@ -4291,7 +4994,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
  } // namespace ToPBR
  } // namespace MaterialPipeline
  
-@@ -5190,6 +5066,43 @@ void TextureProcessor::AppendToUSDAAsync() {
+@@ -5190,6 +5097,43 @@ void TextureProcessor::AppendToUSDAAsync() {
  // Lua Bindings - Must be at global scope
  //=============================================================================
  
@@ -4335,7 +5038,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
  LUA_FUNCTION(ToPBR_Initialize) {
      // If already initialized (by C++ during RemixAPI init), return success
      if (MaterialPipeline::ToPBR::TextureProcessor::Instance().IsInitialized()) {
-@@ -5297,14 +5210,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
+@@ -5297,14 +5241,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
      bool enabled = LUA->GetBool(1);
      MaterialPipeline::ToPBR::TextureProcessor::Instance().SetMetallicGeneration(enabled);
      
@@ -4351,7 +5054,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
      return 0;
  }
  
-@@ -5382,6 +5288,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
+@@ -5382,6 +5319,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
      LUA->PushNumber(stats.failedConversions);
      LUA->SetField(-2, "failedConversions");
      
@@ -4360,7 +5063,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
      return 1;
  }
  
-@@ -5789,6 +5697,15 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
+@@ -5789,6 +5728,15 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
      LUA->PushCFunction(ToPBR_Initialize);
      LUA->SetField(-2, "Initialize");
      
@@ -4377,7 +5080,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e0
      LUA->SetField(-2, "IsInitialized");
      
 diff --git a/source/material_pipeline/to_pbr/to_pbr.h b/source/material_pipeline/to_pbr/to_pbr.h
-index 895cc47f2dd5352c0563c7dc37bc565cb961c492..722a69214987a362178a39a49292b7e2b5e62cc0 100644
+index 895cc47f2dd5352c0563c7dc37bc565cb961c492..dd6c21b4a8354a8562cbd350ecc01ce18113b004 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.h
 +++ b/source/material_pipeline/to_pbr/to_pbr.h
 @@ -1,4 +1,5 @@
@@ -4443,16 +5146,16 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..722a69214987a362178a39a49292b7e2
      bool IsEnabled() const { return m_enabled.load(std::memory_order_relaxed); }
      
      // Enable/disable auto-processing of new materials
-@@ -457,7 +470,8 @@ private:
+@@ -456,7 +469,8 @@ private:
+     // Upload texture to Remix
      bool UploadTextureToRemix(const ConvertedTexture& texture, remixapi_TextureHandle* outHandle);
      
-     // Write texture to DDS file
--    bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath);
-+    // Imported game maps pass sessionBudget=false: only world conversion counts toward the 1 GiB.
-+    bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget = true);
+-    // Write texture to DDS file
++    // Write a world-conversion texture to an uncompressed DDS file (1 GiB per module session).
++    // Imported game maps use DDS::Publish instead: compact formats and no session budget.
+     bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath);
      bool WriteDDSHeader(std::ofstream& file, uint32_t width, uint32_t height, bool hasAlpha, uint32_t mipCount);
      
-     // Generate roughness texture from envmap mask or phong constant
 @@ -501,10 +515,11 @@ private:
      
      // Discover companion textures that might not be explicitly referenced in the VMT
@@ -4530,7 +5233,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..722a69214987a362178a39a49292b7e2
 +    std::atomic<double> m_maxSnapshotMs{0};
 +    std::atomic<double> m_maxDecodeMs{0};
 +    uint64_t m_generatedDDSBytes = 0; // Single worker; at most 1 GiB of new world DDS per module session.
-+    bool m_budgetWarned = false, m_diskWarned = false; // Each refusal reason is logged once per session.
++    bool m_budgetWarned = false, m_diskWarned = false; // Each world refusal reason is logged once per session.
 +    std::string m_recipeKey; // Owned by the single decode worker.
 +
      // Work queue for materials to process
@@ -4948,6 +5651,672 @@ index ac2e3e036c763d40d87cd5cb07375604fa04d7a7..2bf94f3584e2b6e92080b5d1255aba38
      // Convert to ConvertedTexture
      outTexture.width = parserTexture.width;
      outTexture.height = parserTexture.height;
+diff --git a/tests/game_dds_probe.cpp b/tests/game_dds_probe.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..22492f974b721b3741fffa37964b5cd1b8d23f59
+--- /dev/null
++++ b/tests/game_dds_probe.cpp
+@@ -0,0 +1,120 @@
++// GPL-2.0. R13-M evidence probe: runs production game-map conversion on real PMX folders and
++// reports, per map, its compact format, bytes before and after, and the BC error of every block
++// against the uncompressed map. With a read-only folder of earlier outputs, it also checks that
++// the earlier generators' keys find their finished families, that those families' stored base
++// levels equal today's conversion, and that today's uncompressed writer reproduces their bytes.
++// Usage: game_dds_probe <descriptor: UTF-8 lines "pmx path" then "base", repeated> <scratch folder> [<earlier outputs folder>]
++#include "../source/material_pipeline/to_pbr/game_pbr.h"
++#include "../source/material_pipeline/to_pbr/vtf.h"
++#include <cassert>
++#include <chrono>
++#include <cmath>
++#include <iostream>
++using namespace MaterialPipeline::ToPBR;
++namespace fs = std::filesystem;
++
++static std::string Bytes(const fs::path& p) { std::ifstream f(p, std::ios::binary); return {std::istreambuf_iterator<char>(f), {}}; }
++struct Error { double worst = 0, sum2 = 0; uint64_t count = 0; bool bounded = true; };
++static void Measure(const std::vector<DDS::Level>& chain, DDS::Format format, Error& error) {
++    if (format == DDS::Format::RGBA8) return;
++    const auto bytes = DDS::Encode(chain, format);
++    size_t at = size_t(DDS::HeaderBytes(format));
++    const int channels = format == DDS::Format::BC4 ? 1 : 2;
++    for (const auto& level : chain)
++        for (uint32_t by = 0; by < level.height; by += 4) for (uint32_t bx = 0; bx < level.width; bx += 4)
++            for (int c = 0; c < channels; ++c, at += 8) {
++                int decoded[16]; DDS::DecodeBC4(bytes.data() + at, decoded);
++                int lo = 255, hi = 0, worst35 = 0;
++                for (uint32_t y = 0; y < 4 && by + y < level.height; ++y) for (uint32_t x = 0; x < 4 && bx + x < level.width; ++x) {
++                    const int v = level.rgba[(size_t(by + y) * level.width + bx + x) * 4 + c];
++                    lo = (std::min)(lo, v); hi = (std::max)(hi, v);
++                    const int e35 = std::abs(35 * v - decoded[y * 4 + x]);
++                    worst35 = (std::max)(worst35, e35);
++                    error.sum2 += (e35 / 35.0) * (e35 / 35.0); ++error.count;
++                }
++                if (2 * worst35 > 5 * (hi - lo)) error.bounded = false;
++                error.worst = (std::max)(error.worst, worst35 / 35.0);
++            }
++}
++int wmain(int argc, wchar_t** argv) {
++    if (argc != 3 && argc != 4) { std::cerr << "usage: game_dds_probe <descriptor> <scratch> [<earlier outputs>]\n"; return 2; }
++    std::cout.setf(std::ios::unitbuf);
++    const auto com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++    const fs::path scratch = fs::absolute(argv[2]); fs::create_directories(scratch);
++    const fs::path earlier = argc == 4 ? fs::path(argv[3]) : fs::path();
++    std::ifstream input(fs::path(argv[1]), std::ios::binary);
++    std::string pmx, base;
++    bool allBounded = true; uint64_t families = 0, before = 0, after = 0, loadedBefore = 0, loadedAfter = 0;
++    static const char* suffix[4]{"_normal", "_roughness", "_metallic", "_emission"};
++    while (std::getline(input, pmx) && std::getline(input, base)) {
++        if (!pmx.empty() && pmx.back() == '\r') pmx.pop_back();
++        if (!base.empty() && base.back() == '\r') base.pop_back();
++        try {
++            const auto source = fs::u8path(pmx);
++            const auto maps = GamePBR::Discover(source.parent_path(), base);
++            if (!maps.recognized) { std::cout << "ABSTAIN " << base << "\n"; continue; }
++            std::array<std::vector<uint8_t>, 3> inputs; std::array<bool, 3> present{};
++            { size_t i = 0; for (const auto& p : {maps.normal, maps.packed, maps.emission}) { present[i] = !p.empty(); if (present[i]) inputs[i] = GamePBR::Read(p); ++i; } }
++            const auto keys = GamePBR::ContentKeys(GamePBR::Read(source, 256 * 1024 * 1024), GamePBR::Read(source.parent_path() / fs::u8path(base)), inputs, present, base, maps.layout);
++            std::map<std::string, std::pair<std::vector<DDS::Level>, DDS::Format>> written;
++            const auto out = scratch / "compact";
++            fs::create_directories(out);
++            const auto started = std::chrono::steady_clock::now();
++            const auto result = GamePBR::Convert(pmx, base, out.u8string(),
++                [&](const std::vector<DDS::Level>& levels, const std::string& path, DDS::Format format) {
++                    written[fs::u8path(path).filename().u8string()] = {levels, format};
++                    DDS::Publish(fs::u8path(path), levels, format);
++                    return true;
++                }, [](ConvertedTexture& t) { VTF::ConvertNormalMapToOctahedral(t); });
++            if (result.normal.empty() && result.roughness.empty()) { std::cout << "NOMAPS " << base << "\n"; continue; }
++            const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
++            ++families;
++            const std::array<std::string, 4> paths{result.normal, result.roughness, result.metallic, result.emission};
++            uint64_t familyBefore = 0, familyAfter = 0;
++            for (size_t role = 0; role < 4; ++role) {
++                if (paths[role].empty()) continue;
++                const auto name = fs::u8path(paths[role]).filename().u8string();
++                DDS::Info info; DDS::Probe(fs::u8path(paths[role]), info);
++                const auto legacy = DDS::FileBytes(info.width, info.height, DDS::Format::RGBA8);
++                Error e;
++                if (written.count(name)) Measure(written[name].first, written[name].second, e);
++                allBounded &= e.bounded;
++                familyBefore += legacy; familyAfter += info.bytes;
++                loadedBefore += legacy; loadedAfter += info.bytes;
++                std::cout << "MAP " << base << " " << suffix[role] + 1 << " " << info.width << "x" << info.height << " " << DDS::Name(info.format)
++                          << " bytes=" << info.bytes << " uncompressed=" << legacy;
++                if (e.count) std::cout << " max=" << e.worst << " rms=" << std::sqrt(e.sum2 / double(e.count)) << " bounded=" << e.bounded;
++                std::cout << "\n";
++            }
++            if (present[1]) { DDS::Info info; DDS::Probe(fs::u8path(paths[1]), info); familyBefore += DDS::FileBytes(info.width, info.height, DDS::Format::RGBA8); } // the AO map stored before R13
++            before += familyBefore; after += familyAfter;
++            std::cout << "FAMILY " << base << " layout=" << int(maps.layout) << " id=" << GamePBR::Id(keys.current) << " via=" << result.via
++                      << " disk-before=" << familyBefore << " disk-after=" << familyAfter << " seconds=" << seconds << "\n";
++            if (earlier.empty()) continue;
++            struct Old { const char* marker; uint64_t key; };
++            for (const Old& old : {Old{"r12-game-v7", keys.v7}, Old{"r12-game-v6", keys.v6}, Old{"r11-game-v5", keys.v5}}) {
++                const auto marker = earlier / (GamePBR::Id(old.key) + "_complete.txt");
++                std::ifstream m(marker, std::ios::binary); std::string version; int glow = -1; m >> version >> glow;
++                if (!m) { std::cout << "EARLIER " << base << " " << old.marker << " " << GamePBR::Id(old.key) << " absent\n"; continue; }
++                std::cout << "EARLIER " << base << " " << old.marker << " " << GamePBR::Id(old.key) << " found marker=" << version << " glow=" << glow;
++                bool sameBase = true, sameBytes = true; size_t compared = 0;
++                for (size_t role = 0; role < (glow ? 4u : 3u); ++role) {
++                    const auto file = earlier / (GamePBR::Id(old.key) + suffix[role] + ".dds");
++                    DDS::Info info;
++                    if (!DDS::Probe(file, info) || info.format != DDS::Format::RGBA8) { sameBase = false; continue; }
++                    const auto chain = DDS::Read(file, info);
++                    const auto mine = written.find(GamePBR::Id(keys.current) + suffix[role] + ".dds");
++                    if (mine != written.end()) sameBase &= mine->second.first[0].rgba == chain[0].rgba;
++                    const auto reencoded = DDS::Encode(DDS::Chain(info.width, info.height, chain[0].rgba), DDS::Format::RGBA8);
++                    sameBytes &= std::string(reencoded.begin(), reencoded.end()) == Bytes(file);
++                    ++compared;
++                }
++                std::cout << " maps=" << compared << " base-level-equals-today=" << sameBase << " shipped-writer-bytes-reproduced=" << sameBytes << "\n";
++            }
++        } catch (const std::exception& e) { std::cout << "REJECT " << base << " " << e.what() << "\n"; }
++    }
++    std::cout << "TOTAL families=" << families << " disk-before=" << before << " disk-after=" << after
++              << " loaded-before=" << loadedBefore << " loaded-after=" << loadedAfter << " all-blocks-bounded=" << allBounded << "\n";
++    if (SUCCEEDED(com)) CoUninitialize();
++    return allBounded ? 0 : 1;
++}
+diff --git a/tests/game_dds_probe.md b/tests/game_dds_probe.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..83892875876916bbb2b9ba7a124fb99f135df7dc
+--- /dev/null
++++ b/tests/game_dds_probe.md
+@@ -0,0 +1,26 @@
++# game_dds_probe
++
++R13-M evidence for compact imported game maps on real characters. Runs production
++`GamePBR::Convert` (with the real octahedral encoder from `vtf.cpp`) for each PMX/base pair of a
++UTF-8 descriptor (two lines per pair: absolute PMX path, then the base texture exactly as the
++hotloader submits it, since its bytes are part of the content key) and writes the compact maps into
++`<scratch>/compact`. Prints per map its size, format, bytes and the uncompressed size it replaces,
++plus the maximum and RMS BC error against the uncompressed map and whether every block kept the
++(max - min) / 14 bound; per family the disk bytes before (with the AO map) and after and the
++conversion time; and a total.
++
++With a third argument, a folder of earlier outputs (read only, for example a game's
++`rtx-remix/mods/~gmod_topbr/textures`), it computes the v7, v6 and v5 keys by their shipped
++formulas, reports which finished families exist, and checks that each one's stored base levels
++equal today's conversion and that today's uncompressed writer reproduces its files byte for byte.
++
++From an x64 MSVC shell inside an `out` scratch folder (the same include paths and sources as
++`game_pbr_test.cpp`):
++
++```powershell
++cl /nologo /std:c++17 /EHsc /O2 /UNDEBUG /DNOMINMAX /utf-8 /I<repo>/tests/vtf_parser/stubs /I<repo>/public/include /I<deps>/garrysmod_common/include <repo>/tests/game_dds_probe.cpp <repo>/source/material_pipeline/to_pbr/vtf.cpp <repo>/source/vtf_parser.cpp /Fegame_dds_probe.exe
++./game_dds_probe.exe descriptor.txt scratch [earlier-outputs]
++```
++
++Writes only into the scratch folder; sources and earlier outputs are read. Exit 0 when every block
++kept its bound, 1 otherwise, 2 on a bad argument count. Per-base failures print `REJECT` lines.
+diff --git a/tests/game_dds_test.cpp b/tests/game_dds_test.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..91ff76383beffb8a086611657b49eabb3a6b93cf
+--- /dev/null
++++ b/tests/game_dds_test.cpp
+@@ -0,0 +1,502 @@
++// GPL-2.0. SDK-free regressions for R13-M: compact game maps (BC4/BC5), their validation and
++// publication, refusals, recipe keys, reuse across versions and the legacy-map migration.
++// Usage: game_dds_test <fresh fixture from make_game_pbr_fixtures.py> [bulk | bump-prepare | bump-check]
++#include "game_pbr_types.h"
++#include "../source/material_pipeline/to_pbr/game_pbr.h"
++#include "../source/material_pipeline/to_pbr/game_registry.h"
++#include "../source/material_pipeline/to_pbr/game_overrides.h"
++#include <cassert>
++#include <cmath>
++#include <iostream>
++#include <random>
++using namespace MaterialPipeline::ToPBR;
++namespace fs = std::filesystem;
++
++static std::string Bytes(const fs::path& p) { std::ifstream f(p, std::ios::binary); return {std::istreambuf_iterator<char>(f), {}}; }
++static std::vector<uint8_t> Data(const fs::path& p) { const auto s = Bytes(p); return {s.begin(), s.end()}; }
++static void Put(const fs::path& p, const std::string& s) { std::ofstream f(p, std::ios::binary | std::ios::trunc); f << s; }
++static uint64_t Fnv(const std::vector<uint8_t>& b, uint64_t seed = 14695981039346656037ull) {
++    for (auto x : b) { seed ^= x; seed *= 1099511628211ull; }
++    return seed;
++}
++static bool Throws(const std::function<void()>& f, std::string* what = nullptr) {
++    try { f(); } catch (const std::exception& e) { if (what) *what = e.what(); return true; }
++    return false;
++}
++
++// The header TextureProcessor::WriteDDSHeader wrote before R13, from its own constants.
++static std::vector<uint8_t> ShippedHeader(uint32_t w, uint32_t h, uint32_t levels) {
++    uint32_t hd[32]{};
++    hd[0] = 0x20534444; hd[1] = 124; hd[2] = 0x1 | 0x2 | 0x4 | 0x1000 | 0x80000 | 0x20000; hd[3] = h; hd[4] = w;
++    hd[5] = w * h * 4; hd[6] = 1; hd[7] = levels; hd[19] = 32; hd[20] = 0x40 | 0x1; hd[22] = 32;
++    hd[23] = 0x00FF0000; hd[24] = 0x0000FF00; hd[25] = 0x000000FF; hd[26] = 0xFF000000; hd[27] = 0x1000 | 0x400000 | 0x8;
++    std::vector<uint8_t> out(128);
++    memcpy(out.data(), hd, 128);
++    return out;
++}
++// The shipped writer's mip loop, transcribed: BGRA, 2x2 box, integer floor of the mean.
++static std::vector<uint8_t> ShippedFile(uint32_t width, uint32_t height, const std::vector<uint8_t>& rgba) {
++    uint32_t mipCount = 1;
++    for (uint32_t size = (std::max)(width, height); size > 1; size /= 2) ++mipCount;
++    auto out = ShippedHeader(width, height, mipCount);
++    std::vector<uint8_t> current(rgba.size());
++    for (size_t i = 0; i < rgba.size(); i += 4) { current[i] = rgba[i + 2]; current[i + 1] = rgba[i + 1]; current[i + 2] = rgba[i]; current[i + 3] = rgba[i + 3]; }
++    out.insert(out.end(), current.begin(), current.end());
++    uint32_t mipWidth = width, mipHeight = height;
++    for (uint32_t mip = 1; mip < mipCount; mip++) {
++        const uint32_t newWidth = (std::max)(1u, mipWidth / 2), newHeight = (std::max)(1u, mipHeight / 2);
++        std::vector<uint8_t> next(size_t(newWidth) * newHeight * 4);
++        for (uint32_t y = 0; y < newHeight; y++) for (uint32_t x = 0; x < newWidth; x++) {
++            uint32_t r = 0, g = 0, b = 0, a = 0; int count = 0;
++            for (uint32_t dy = 0; dy < 2 && (y * 2 + dy) < mipHeight; dy++)
++                for (uint32_t dx = 0; dx < 2 && (x * 2 + dx) < mipWidth; dx++) {
++                    const size_t at = (size_t(y * 2 + dy) * mipWidth + (x * 2 + dx)) * 4;
++                    b += current[at]; g += current[at + 1]; r += current[at + 2]; a += current[at + 3]; count++;
++                }
++            const size_t at = (size_t(y) * newWidth + x) * 4;
++            next[at] = uint8_t(b / count); next[at + 1] = uint8_t(g / count); next[at + 2] = uint8_t(r / count); next[at + 3] = uint8_t(a / count);
++        }
++        out.insert(out.end(), next.begin(), next.end());
++        current = std::move(next); mipWidth = newWidth; mipHeight = newHeight;
++    }
++    return out;
++}
++// The shipped content-key formulas, transcribed: 6e33b90 (v5), e223e4e (v6), 026708a (v7).
++static uint64_t ShippedKey(unsigned version, const fs::path& pmx, const std::string& base, const GamePBR::Maps& maps) {
++    uint64_t key = Fnv(Data(pmx.parent_path() / fs::u8path(base)), Fnv(Data(pmx)));
++    unsigned role = 0;
++    for (const auto& path : {maps.normal, maps.packed, maps.emission}) {
++        if (version != 5) key = Fnv(std::vector<uint8_t>{uint8_t(++role), uint8_t(!path.empty())}, key);
++        if (!path.empty()) key = Fnv(Data(path), key);
++    }
++    key = Fnv(std::vector<uint8_t>(base.begin(), base.end()), key);
++    if (version == 5) return key ^ 0x52313147414d4505ull;
++    return key ^ (version == 6 ? 0x52313247414d4506ull : 0x52313247414d4507ull) ^ uint64_t(maps.layout);
++}
++static void PNG(const fs::path& path, uint32_t w, uint32_t h, uint8_t value) {
++    GamePBR::ComPtr<IWICImagingFactory> factory; GamePBR::ComPtr<IWICStream> stream;
++    GamePBR::ComPtr<IWICBitmapEncoder> encoder; GamePBR::ComPtr<IWICBitmapFrameEncode> frame;
++    auto check = [](HRESULT hr) { assert(SUCCEEDED(hr)); (void)hr; };
++    check(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
++    check(factory->CreateStream(&stream)); check(stream->InitializeFromFilename(path.c_str(), GENERIC_WRITE));
++    check(factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder)); check(encoder->Initialize(stream.Get(), WICBitmapEncoderNoCache));
++    check(encoder->CreateNewFrame(&frame, nullptr)); check(frame->Initialize(nullptr)); check(frame->SetSize(w, h));
++    auto format = GUID_WICPixelFormat32bppBGRA; check(frame->SetPixelFormat(&format));
++    std::vector<uint8_t> pixels(size_t(w) * h * 4, value);
++    check(frame->WritePixels(h, w * 4, UINT(pixels.size()), pixels.data()));
++    check(frame->Commit()); check(encoder->Commit());
++}
++
++// Every texel's exact decoded error (GPU precision) against its source, per block and overall.
++struct Error { double worst = 0, worstBase = 0, sum2 = 0; uint64_t count = 0, blocks = 0; bool bounded = true; };
++static void Measure(const std::vector<DDS::Level>& chain, DDS::Format format, Error& error) {
++    const auto bytes = DDS::Encode(chain, format);
++    size_t at = size_t(DDS::HeaderBytes(format));
++    const int channels = format == DDS::Format::BC4 ? 1 : 2;
++    for (const auto& level : chain)
++        for (uint32_t by = 0; by < level.height; by += 4) for (uint32_t bx = 0; bx < level.width; bx += 4)
++            for (int c = 0; c < channels; ++c, at += 8) {
++                int decoded[16]; DDS::DecodeBC4(bytes.data() + at, decoded);
++                int lo = 255, hi = 0, worst35 = 0;
++                for (uint32_t y = 0; y < 4 && by + y < level.height; ++y) for (uint32_t x = 0; x < 4 && bx + x < level.width; ++x) {
++                    const int v = level.rgba[(size_t(by + y) * level.width + bx + x) * 4 + c];
++                    lo = (std::min)(lo, v); hi = (std::max)(hi, v);
++                    const int e35 = std::abs(35 * v - decoded[y * 4 + x]);
++                    worst35 = (std::max)(worst35, e35);
++                    error.sum2 += (e35 / 35.0) * (e35 / 35.0); ++error.count;
++                }
++                // Proven bound: endpoints at the extremes put every texel within (max-min)/14.
++                if (2 * worst35 > 5 * (hi - lo)) error.bounded = false;
++                if (hi - lo <= 0 && worst35) error.bounded = false;
++                error.worst = (std::max)(error.worst, worst35 / 35.0); ++error.blocks;
++                if (&level == &chain[0]) error.worstBase = (std::max)(error.worstBase, worst35 / 35.0);
++            }
++    assert(at == bytes.size());
++}
++static std::vector<DDS::Level> Pattern(uint32_t w, uint32_t h, const std::function<uint8_t(uint32_t, uint32_t, int)>& f) {
++    std::vector<uint8_t> rgba(size_t(w) * h * 4);
++    for (uint32_t y = 0; y < h; ++y) for (uint32_t x = 0; x < w; ++x) for (int c = 0; c < 4; ++c) rgba[(size_t(y) * w + x) * 4 + c] = f(x, y, c);
++    return DDS::Chain(w, h, rgba);
++}
++
++static void Codec(const fs::path& root) {
++    // Uncompressed files are byte-identical to the shipped writer: header, BGRA order and mips.
++    for (auto size : {std::pair<uint32_t, uint32_t>{1, 1}, {13, 7}, {64, 64}, {2048, 1024}, {1500, 1500}}) {
++        std::mt19937 random(size.first * 31 + size.second);
++        std::vector<uint8_t> rgba(size_t(size.first) * size.second * 4);
++        for (auto& v : rgba) v = uint8_t(random());
++        const auto shipped = ShippedFile(size.first, size.second, rgba);
++        const auto ours = DDS::Encode(DDS::Chain(size.first, size.second, rgba), DDS::Format::RGBA8);
++        assert(ours == shipped && ours.size() == DDS::FileBytes(size.first, size.second, DDS::Format::RGBA8));
++        Put(root / "shipped.dds", std::string(shipped.begin(), shipped.end()));
++        DDS::Info info;
++        const auto back = DDS::Read(root / "shipped.dds", info);
++        assert(info.format == DDS::Format::RGBA8 && back[0].rgba == rgba && Policy::ValidDDS(root / "shipped.dds", DDS::Format::RGBA8));
++    }
++    const uint64_t rgba8 = DDS::FileBytes(2048, 2048, DDS::Format::RGBA8), bc4 = DDS::FileBytes(2048, 2048, DDS::Format::BC4),
++                   bc5 = DDS::FileBytes(2048, 2048, DDS::Format::BC5);
++    assert(rgba8 == 22369748 && bc4 == 2796364 && bc5 == 5592580);
++    std::cout << "SIZE 2048x2048 full chain: RGBA8=" << rgba8 << " BC4=" << bc4 << " BC5=" << bc5 << "\n";
++    std::cout << "SIZE family before (normal+roughness+metallic+ao, RGBA8)=" << 4 * rgba8 << " after (BC5+2xBC4)=" << bc5 + 2 * bc4
++              << " emission (RGBA8, unchanged)=" << rgba8 << " loaded by Remix before=" << 3 * rgba8 << " after=" << bc5 + 2 * bc4 << "\n";
++    // Layout validation: complete DX10 BC4/BC5 accepted, anything else this module never writes refused.
++    const auto chain = Pattern(16, 8, [](uint32_t x, uint32_t y, int c) { return uint8_t(c == 0 ? x * 16 : c == 1 ? y * 32 : 255); });
++    for (auto format : {DDS::Format::BC4, DDS::Format::BC5}) {
++        const auto bytes = DDS::Encode(chain, format);
++        const auto good = std::string(bytes.begin(), bytes.end());
++        const auto p = root / "layout.dds";
++        Put(p, good); assert(Policy::ValidDDS(p, format) && !Policy::ValidDDS(p, DDS::Format::RGBA8));
++        Put(p, good + "x"); assert(!Policy::ValidDDS(p));
++        Put(p, good.substr(0, good.size() - 1)); assert(!Policy::ValidDDS(p));
++        auto patch = [&](size_t offset, uint32_t value) { auto s = good; memcpy(s.data() + offset, &value, 4); Put(p, s); return Policy::ValidDDS(p); };
++        assert(!patch(28, 3));          // wrong mip count
++        assert(!patch(112, 0x200));     // cube map caps
++        assert(!patch(128, 71));        // BC1: not a layout this module writes
++        assert(!patch(140, 2));         // array of two
++        assert(!patch(132, 4));         // 3D texture
++        assert(!patch(80, 0));          // FourCC flag missing
++        assert(patch(128, uint32_t(format)));
++    }
++    {
++        auto s = DDS::Encode(Pattern(8, 8, [](uint32_t, uint32_t, int) { return uint8_t(7); }), DDS::Format::BC4);
++        const uint32_t six = 6; memcpy(s.data() + 12, &six, 4); memcpy(s.data() + 16, &six, 4);
++        Put(root / "unaligned.dds", std::string(s.begin(), s.end()));
++        assert(!Policy::ValidDDS(root / "unaligned.dds"));
++        assert(Throws([] { DDS::Encode(Pattern(6, 6, [](uint32_t, uint32_t, int) { return uint8_t(1); }), DDS::Format::BC5); }));
++    }
++    // Every two-valued block is exact, in both modes and every arrangement tested.
++    for (unsigned a = 0; a < 256; ++a) for (unsigned b = 0; b < 256; ++b) for (unsigned pattern = 0; pattern < 3; ++pattern) {
++        uint8_t v[16];
++        for (unsigned i = 0; i < 16; ++i) v[i] = uint8_t((pattern == 0 ? i % 2 : pattern == 1 ? i < 3 : (i * 7) % 5 == 0) ? a : b);
++        int decoded[16]; const auto block = DDS::EncodeBC4(v); DDS::DecodeBC4(block.data(), decoded);
++        for (unsigned i = 0; i < 16; ++i) assert(decoded[i] == 35 * v[i]);
++    }
++    // Real quantized roughness blocks (field maps): a few evenly spaced levels lie exactly on a
++    // palette whose endpoint extends past the data, in eight- or six-value mode.
++    for (const std::array<uint8_t, 16>& v : {
++             std::array<uint8_t, 16>{170, 170, 118, 65, 118, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 118},
++             std::array<uint8_t, 16>{66, 51, 36, 36, 81, 66, 51, 36, 81, 66, 51, 36, 81, 81, 66, 51},
++             std::array<uint8_t, 16>{177, 211, 211, 211, 143, 143, 143, 177, 109, 109, 143, 143, 109, 109, 109, 109},
++             std::array<uint8_t, 16>{40, 40, 40, 40, 40, 40, 40, 81, 40, 40, 81, 121, 40, 81, 121, 121}}) {
++        int decoded[16]; const auto block = DDS::EncodeBC4(v.data()); DDS::DecodeBC4(block.data(), decoded);
++        int worst = 0; for (unsigned i = 0; i < 16; ++i) worst = (std::max)(worst, std::abs(decoded[i] - 35 * v[i]));
++        assert(worst <= 35); // within one level (exact where the levels are exactly evenly spaced)
++    }
++    // Generated gradients, edges and noise: the per-block bound holds; report the error.
++    struct Case { const char* name; std::function<uint8_t(uint32_t, uint32_t, int)> f; };
++    std::mt19937 noise(7);
++    const std::vector<Case> cases{
++        {"horizontal-gradient", [](uint32_t x, uint32_t, int) { return uint8_t(x * 255 / 255); }},
++        {"diagonal-gradient", [](uint32_t x, uint32_t y, int c) { return uint8_t(c ? (x * 3 + y) / 4 : (x + y) / 2); }},
++        {"hard-edges", [](uint32_t x, uint32_t y, int c) { return uint8_t(((x / 3 + y / 5 + c) % 2) ? 255 : 0); }},
++        {"edge-plus-gradient", [](uint32_t x, uint32_t y, int) { return uint8_t(x < 128 ? y : 255 - (x + y) % 64); }},
++        {"anti-aliased-mask", [](uint32_t x, uint32_t y, int) { const int d = int(x) - int(y); return uint8_t(d < -2 ? 0 : d > 2 ? 255 : 128 + 60 * d); }},
++        {"noise", [&](uint32_t, uint32_t, int) { return uint8_t(noise()); }},
++    };
++    for (const auto& c : cases) for (auto format : {DDS::Format::BC4, DDS::Format::BC5}) {
++        Error e; Measure(Pattern(256, 256, c.f), format, e);
++        assert(e.bounded);
++        std::cout << "ERROR " << c.name << " " << DDS::Name(format) << " max=" << e.worst << " base-level max=" << e.worstBase
++                  << " rms=" << std::sqrt(e.sum2 / double(e.count)) << " texels=" << e.count << " blocks=" << e.blocks << "\n";
++        // A smooth gradient (a few levels per 4x4 block) is reproduced within one level at full size.
++        if (std::string(c.name).find("gradient") != std::string::npos && std::string(c.name) != "edge-plus-gradient") assert(e.worstBase <= 1.0);
++    }
++    std::cout << "PASS codec: shipped uncompressed bytes, DX10 BC4/BC5 layouts and refusals, exact two-value blocks, (max-min)/14 bound\n";
++}
++
++static void Publication(const fs::path& root, bool bulk) {
++    const auto folder = root / "publish"; fs::create_directories(folder);
++    const auto chain = Pattern(64, 32, [](uint32_t x, uint32_t y, int c) { return uint8_t(c == 3 ? 255 : (x * 4 + y * c) % 256); });
++    const auto target = folder / "map_bc5.dds";
++    DDS::Publish(target, chain, DDS::Format::BC5);
++    assert(Policy::ValidDDS(target, DDS::Format::BC5) && fs::file_size(target) == DDS::FileBytes(64, 32, DDS::Format::BC5));
++    assert(!fs::exists(target.wstring() + L".tmp"));
++    // An invalid existing file is kept aside byte for byte, never overwritten.
++    Put(target, "damaged generated map");
++    DDS::Publish(target, chain, DDS::Format::BC5);
++    bool kept = false;
++    for (const auto& f : fs::directory_iterator(folder)) if (f.path().filename().u8string().find("map_bc5.dds.rejected-") == 0 && Bytes(f.path()) == "damaged generated map") kept = true;
++    assert(kept && Policy::ValidDDS(target, DDS::Format::BC5));
++    // Refusals: one line naming the limit and its numbers. Nothing is written.
++    std::string what;
++    const auto expected = DDS::FileBytes(64, 32, DDS::Format::BC4);
++    assert(Throws([&] { DDS::Publish(folder / "full.dds", chain, DDS::Format::BC4, [&](const fs::path&) { return std::optional<uint64_t>(expected + Policy::DiskHeadroom - 1); }); }, &what));
++    assert(what.find("free disk space limit: 64 MiB free in ") == 0 && what.find("(" + std::to_string(expected) + " bytes for this map plus 64 MiB kept free)") != std::string::npos);
++    assert(!fs::exists(folder / "full.dds") && !fs::exists(folder / "full.dds.tmp"));
++    std::cout << "REFUSAL " << what << "\n";
++    assert(Throws([&] { DDS::Publish(folder / "unknown.dds", chain, DDS::Format::BC4, [](const fs::path&) { return std::optional<uint64_t>(); }); }, &what));
++    assert(what.find("free disk space limit: free space unknown in ") == 0);
++    std::vector<DDS::Level> wide{{4097, 1, std::vector<uint8_t>(4097 * 4, 1)}};
++    assert(Throws([&] { DDS::Publish(folder / "wide.dds", wide, DDS::Format::RGBA8); }, &what));
++    assert(what == "image bounds exceeded: wide.dds is 4097x1 (4097 pixels); the limit is 4096x4096 and 16777216 pixels");
++    std::cout << "REFUSAL " << what << "\n";
++    PNG(root / "wide.png", 4097, 1, 9);
++    assert(Throws([&] { GamePBR::Decode(root / "wide.png"); }, &what));
++    assert(what == "image bounds exceeded: wide.png is 4097x1 (4097 pixels); the limit is 4096x4096 and 16777216 pixels");
++    what = Policy::BudgetRefusal(Policy::WorldMapBudget, 22369748);
++    assert(what == "session budget used up: 1073741824 of 1073741824 bytes of world maps written this session, 22369748 more requested; restart the game to convert more world materials (imported game maps are not limited)");
++    std::cout << "REFUSAL " << what << "\n";
++    // Imported game maps carry no session budget: more than 1 GiB in one session publishes.
++    if (bulk) {
++        const auto big = DDS::Chain(2048, 2048, std::vector<uint8_t>(size_t(2048) * 2048 * 4, 127));
++        uint64_t total = 0;
++        for (unsigned i = 0; i < 49; ++i) {
++            const auto p = folder / ("bulk_" + std::to_string(i % 2) + ".dds");
++            if (fs::exists(p)) fs::remove(p);
++            DDS::Publish(p, big, DDS::Format::RGBA8);
++            total += fs::file_size(p);
++        }
++        assert(total > Policy::WorldMapBudget);
++        std::cout << "PASS game maps past 1 GiB: " << total << " bytes in 49 publications, none refused\n";
++    }
++    std::cout << "PASS publication: atomic, invalid files kept aside, disk/bounds/budget refusal lines\n";
++}
++
++struct Run { unsigned oct = 0, writes = 0; };
++static Run run;
++static void Oct(ConvertedTexture& t) {
++    ++run.oct; // Deterministic stand-in for the octahedral encoder: the converted bytes are compared, not its math.
++    for (size_t i = 0; i < t.pixelData.size(); i += 4) { t.pixelData[i + 2] = 0; t.pixelData[i + 3] = 255; }
++}
++static std::map<std::string, DDS::Level> captured;
++static bool Write(const std::vector<DDS::Level>& levels, const std::string& path, DDS::Format format) {
++    ++run.writes; captured[fs::u8path(path).filename().u8string()] = levels[0];
++    DDS::Publish(fs::u8path(path), levels, format);
++    return true;
++}
++static const char* Suffix(size_t role) { static const char* s[4]{"_normal", "_roughness", "_metallic", "_emission"}; return s[role]; }
++// A finished family as an earlier generator stored it: uncompressed files and its marker line.
++static std::array<fs::path, 4> Legacy(const fs::path& out, uint64_t key, const char* marker, const std::array<DDS::Level, 4>& base, bool glow = true) {
++    std::array<fs::path, 4> paths;
++    for (size_t role = 0; role < (glow ? 4u : 3u); ++role) {
++        paths[role] = out / (GamePBR::Id(key) + Suffix(role) + ".dds");
++        const auto bytes = ShippedFile(base[role].width, base[role].height, base[role].rgba);
++        Put(paths[role], std::string(bytes.begin(), bytes.end()));
++    }
++    Put(out / (GamePBR::Id(key) + "_ao.dds"), Bytes(paths[1]));
++    Put(out / (GamePBR::Id(key) + "_complete.txt"), std::string(marker) + " " + (glow ? "1" : "0") + "\n");
++    return paths;
++}
++
++static void Conversion(const fs::path& root) {
++    const auto pmx = root / "test.pmx";
++    const std::string base = "tex/T_actor_test_cloth_D.png";
++    const auto maps = GamePBR::Discover(root, base);
++    assert(maps.recognized && maps.layout == GamePBR::Maps::Endfield && !maps.emission.empty());
++    // Production keys reproduce the shipped formulas for these inputs.
++    std::array<std::vector<uint8_t>, 3> inputs{Data(maps.normal), Data(maps.packed), Data(maps.emission)};
++    const auto keys = GamePBR::ContentKeys(Data(pmx), Data(root / base), inputs, {true, true, true}, base, maps.layout);
++    assert(keys.v7 == ShippedKey(7, pmx, base, maps) && keys.v6 == ShippedKey(6, pmx, base, maps) && keys.v5 == ShippedKey(5, pmx, base, maps));
++    assert(keys.current != keys.v7 && keys.current != keys.v6 && keys.current != keys.v5);
++    const auto fresh = root / "fresh"; fs::create_directories(fresh);
++    auto convert = [&](const fs::path& out, const GamePBR::Maps* selected = nullptr) {
++        return GamePBR::Convert(pmx.u8string(), base, out.u8string(), Write, Oct, nullptr, selected);
++    };
++    run = {};
++    auto first = convert(fresh);
++    assert(first.via == "converted" && first.written == 4 && run.oct == 1 && run.writes == 4);
++    assert(Policy::ValidDDS(fs::u8path(first.normal), DDS::Format::BC5) && Policy::ValidDDS(fs::u8path(first.roughness), DDS::Format::BC4) &&
++           Policy::ValidDDS(fs::u8path(first.metallic), DDS::Format::BC4) && Policy::ValidDDS(fs::u8path(first.emission), DDS::Format::RGBA8));
++    for (const auto& f : fs::directory_iterator(fresh)) assert(f.path().filename().u8string().find("_ao") == std::string::npos);
++    const auto marker = fresh / (GamePBR::Id(keys.current) + "_complete.txt");
++    assert(Bytes(marker) == GamePBR::Recipe() + " 1\norigin converted\n");
++    std::cout << "RECIPE " << GamePBR::Recipe() << "\n";
++    std::array<DDS::Level, 4> base4;
++    for (size_t role = 0; role < 4; ++role) base4[role] = captured.at(GamePBR::Id(keys.current) + Suffix(role) + ".dds");
++    std::array<std::string, 4> freshBytes{Bytes(fs::u8path(first.normal)), Bytes(fs::u8path(first.roughness)), Bytes(fs::u8path(first.metallic)), Bytes(fs::u8path(first.emission))};
++    // Cached: nothing decoded, converted or written.
++    run = {};
++    auto again = convert(fresh);
++    assert(again.via == "cached" && again.written == 0 && run.oct == 0 && run.writes == 0 && again.normal == first.normal);
++    // A family stopped halfway completes on its next pass, keeping the maps it already stored.
++    const auto normalTime = fs::last_write_time(fs::u8path(first.normal));
++    fs::remove(fs::u8path(first.roughness)); fs::remove(fs::u8path(first.metallic)); fs::remove(marker);
++    run = {};
++    auto resumed = convert(fresh);
++    assert(resumed.via == "converted" && resumed.written == 2 && run.writes == 2 && fs::last_write_time(fs::u8path(first.normal)) == normalTime);
++    assert(Bytes(fs::u8path(first.roughness)) == freshBytes[1] && Bytes(marker) == GamePBR::Recipe() + " 1\norigin converted\n");
++    // A forced refusal mid-family: the exact refusal line propagates (log and panel), the maps
++    // written before it stay, and the next pass completes the rest.
++    fs::remove(fs::u8path(first.metallic)); fs::remove(fs::u8path(first.emission)); fs::remove(marker);
++    std::string what;
++    unsigned attempts = 0;
++    run = {};
++    assert(Throws([&] {
++        GamePBR::Convert(pmx.u8string(), base, fresh.u8string(), [&](const std::vector<DDS::Level>& levels, const std::string& path, DDS::Format format) {
++            if (++attempts == 2) DDS::Publish(fs::u8path(path), levels, format, [](const fs::path&) { return std::optional<uint64_t>(1024); });
++            return Write(levels, path, format);
++        }, Oct);
++    }, &what));
++    assert(what.find("free disk space limit: 0 MiB free in ") == 0 && attempts == 2 && Policy::ValidDDS(fs::u8path(first.metallic)));
++    assert(!Policy::ValidDDS(fs::u8path(first.emission)) && !fs::exists(marker));
++    run = {};
++    auto completed = convert(fresh);
++    assert(completed.via == "converted" && completed.written == 1 && run.writes == 1);
++    for (size_t role = 0; role < 4; ++role) assert(Bytes(fs::u8path(role == 0 ? first.normal : role == 1 ? first.roughness : role == 2 ? first.metallic : first.emission)) == freshBytes[role]);
++
++    // Format migration with the source present: a finished v7 family is re-encoded, never
++    // converted again, and the result is byte-identical to a fresh conversion.
++    auto expectTranscode = [&](const fs::path& out, const char* marker7, const GamePBR::Maps* selected) {
++        run = {};
++        const auto result = convert(out, selected);
++        assert(result.via == std::string("transcoded from ") + marker7 && run.oct == 0 && run.writes == 4 && result.written == 4);
++        const std::array<std::string, 4> paths{result.normal, result.roughness, result.metallic, result.emission};
++        for (size_t role = 0; role < 4; ++role) assert(Bytes(fs::u8path(paths[role])) == freshBytes[role]);
++        assert(Bytes(fs::u8path(paths[0]).parent_path() / (GamePBR::Id(keys.current) + "_complete.txt")).find(std::string("origin transcoded ") + marker7) != std::string::npos);
++        // The migrated family is then simply current.
++        run = {};
++        assert(convert(out, selected).via == "cached" && run.writes == 0);
++    };
++    for (auto version : {7u, 6u, 5u}) {
++        const auto out = root / ("legacy-v" + std::to_string(version)); fs::create_directories(out);
++        const char* name = version == 7 ? "r12-game-v7" : version == 6 ? "r12-game-v6" : "r11-game-v5";
++        const auto old = Legacy(out, ShippedKey(version, pmx, base, maps), name, base4);
++        const auto oldBytes = Bytes(old[0]);
++        expectTranscode(out, name, nullptr);
++        assert(Bytes(old[0]) == oldBytes); // the earlier family is left as it was
++    }
++    // A half-finished earlier family (no marker) converts normally.
++    {
++        const auto out = root / "legacy-partial"; fs::create_directories(out);
++        Legacy(out, keys.v7, "r12-game-v7", base4);
++        fs::remove(out / (GamePBR::Id(keys.v7) + "_complete.txt"));
++        run = {};
++        assert(convert(out).via == "converted" && run.oct == 1);
++    }
++    // v5 keys carry no layout: v5 chose Silver whenever any *_MRA was in the folder, so such a
++    // folder's Endfield family converts again. Manual choices never use v5 families.
++    {
++        const auto out = root / "legacy-v5-mra"; fs::create_directories(out);
++        Legacy(out, keys.v5, "r11-game-v5", base4);
++        fs::copy_file(root / "tex/T_actor_test_cloth_N.png", root / "tex/T_other_family_MRA.png");
++        run = {};
++        assert(convert(out).via == "converted" && run.oct == 1);
++        fs::remove(root / "tex/T_other_family_MRA.png");
++        const auto manual = root / "legacy-v5-manual"; fs::create_directories(manual);
++        Legacy(manual, keys.v5, "r11-game-v5", base4);
++        run = {};
++        assert(convert(manual, &maps).via == "converted" && run.oct == 1);
++    }
++    // A v5/v6 output whose packed map was resized came from the premultiplying WIC decode: it is
++    // converted again from its readable source. The same v7 output is transcoded.
++    {
++        GamePBR::Maps resized = maps; resized.packed = root / "straight-packed.png"; // 16x16 packed beside an 8x8 normal
++        run = {};
++        const auto reference = root / "resized-fresh"; fs::create_directories(reference);
++        auto fresh16 = convert(reference, &resized);
++        assert(fresh16.via == "converted" && run.oct == 1);
++        std::array<DDS::Level, 4> resizedBase;
++        const auto resizedKeys = GamePBR::ContentKeys(Data(pmx), Data(root / base), {Data(resized.normal), Data(resized.packed), Data(resized.emission)}, {true, true, true}, base, resized.layout);
++        for (size_t role = 0; role < 4; ++role) resizedBase[role] = captured.at(GamePBR::Id(resizedKeys.current) + Suffix(role) + ".dds");
++        const auto v6 = root / "legacy-v6-resized"; fs::create_directories(v6);
++        Legacy(v6, ShippedKey(6, pmx, base, resized), "r12-game-v6", resizedBase);
++        run = {};
++        assert(convert(v6, &resized).via == "converted" && run.oct == 1);
++        const auto v7 = root / "legacy-v7-resized"; fs::create_directories(v7);
++        Legacy(v7, ShippedKey(7, pmx, base, resized), "r12-game-v7", resizedBase);
++        run = {};
++        assert(convert(v7, &resized).via == "transcoded from r12-game-v7" && run.oct == 0);
++    }
++    std::cout << "PASS conversion: compact formats without AO, recipe marker, cache, half-family completion, refusal mid-family, "
++                 "v7/v6/v5 transcoding byte-identical to fresh conversion, resized v6 and v5-MRA and manual cases convert again\n";
++
++    // Source-less migration of stored records (R11-B registry, R12-B manual choices).
++    const auto textures = root / "registry" / "textures"; fs::create_directories(textures);
++    const auto v7 = Legacy(textures, keys.v7, "r12-game-v7", base4);
++    GameRegistry::Registry registry(textures);
++    assert(registry.Load());
++    const std::string identity = "mmd/t/0123456789abcdef";
++    GameRegistry::Record legacy; legacy.identity = identity; legacy.hashes = {0x11}; legacy.generator = 7;
++    assert(registry.Capture(legacy, {v7[0].u8string(), v7[1].u8string(), v7[2].u8string(), v7[3].u8string()}));
++    assert(registry.ValidateRecord(legacy)); // uncompressed records stay valid
++    assert(registry.Resolve(identity, {0x11}, true, true, [&] { return std::optional<GameRegistry::Record>(legacy); }) && registry.Save());
++    fs::rename(pmx, root / "test.pmx.hidden"); fs::rename(root / "tex", root / "tex.hidden");
++    unsigned transcodes = 0;
++    auto transcode = [&](const fs::path& from, const fs::path& to, DDS::Format format) { ++transcodes; DDS::Transcode(from, to, format); };
++    auto absent = []() -> std::optional<GameRegistry::Record> { assert(false); return {}; };
++    const auto before = Bytes(registry.Path());
++    assert(registry.Compact(identity, transcode) == 3 && transcodes == 3);
++    assert(Bytes(registry.Path()) != before);
++    {
++        GameRegistry::Registry reloaded(textures);
++        assert(reloaded.Load() && reloaded.Size() == 1);
++        const auto record = reloaded.Resolve(identity, {0x22}, true, false, absent);
++        assert(record && record->generator == 7 && record->hashes == std::vector<uint64_t>{0x22});
++        assert(record->textures[0].file == GamePBR::Id(keys.v7) + "_normal_bc5.dds" && record->textures[1].file == GamePBR::Id(keys.v7) + "_roughness_bc4.dds" &&
++               record->textures[2].file == GamePBR::Id(keys.v7) + "_metallic_bc4.dds" && record->textures[3].file == legacy.textures[3].file);
++        assert(record->textures[3].digest == legacy.textures[3].digest && record->textures[0].bytes == DDS::FileBytes(8, 8, DDS::Format::BC5));
++        for (size_t role = 0; role < 3; ++role) assert(Bytes(fs::u8path(reloaded.TexturePath(record->textures[role]))) == freshBytes[role]);
++        assert(reloaded.Compact(identity, transcode) == 0 && transcodes == 3);
++    }
++    // A failed registry save keeps the previous record, in memory and on disk.
++    {
++        const auto other = root / "registry-locked" / "textures"; fs::create_directories(other);
++        const auto files = Legacy(other, keys.v7, "r12-game-v7", base4);
++        GameRegistry::Registry locked(other); assert(locked.Load());
++        GameRegistry::Record r = legacy;
++        assert(locked.Capture(r, {files[0].u8string(), files[1].u8string(), files[2].u8string(), files[3].u8string()}));
++        assert(locked.Resolve(identity, {0x11}, true, true, [&] { return std::optional<GameRegistry::Record>(r); }) && locked.Save());
++        const auto saved = Bytes(locked.Path());
++        fs::create_directory(locked.Path().wstring() + L".tmp");
++        assert(Throws([&] { locked.Compact(identity, transcode); }, &what) && what == "registry could not be saved; cached maps stay uncompressed");
++        assert(Bytes(locked.Path()) == saved && locked.Resolve(identity, {0x33}, true, false, absent)->textures[0].file == r.textures[0].file);
++        fs::remove(locked.Path().wstring() + L".tmp");
++        const auto count = transcodes;
++        assert(locked.Compact(identity, transcode) == 3 && transcodes == count); // already-valid compact files are reused
++    }
++    // Manual choices migrate the same way, atomically through the store.
++    {
++        GameOverrides::Store store(textures); assert(store.Load());
++        GameOverrides::Choice choice; choice.mode = "maps"; choice.source = "E:/gone/model.pmx"; choice.base = base; choice.packed = "tex/T_actor_test_cloth_P.png"; choice.layout = 1;
++        choice.record = legacy; choice.record.identity = "mmd/t/1123456789abcdef";
++        assert(store.Set(choice.record.identity, choice));
++        assert(store.Compact(choice.record.identity, transcode) == 3 && transcodes >= 3);
++        GameOverrides::Store reloaded(textures); assert(reloaded.Load());
++        const auto restored = reloaded.Resolve(choice.record.identity, {0x44});
++        assert(restored && restored->textures[0].file == GamePBR::Id(keys.v7) + "_normal_bc5.dds" && restored->textures[3].file == legacy.textures[3].file);
++        assert(reloaded.Compact(choice.record.identity, transcode) == 0);
++    }
++    // Role formats: each role accepts its compact format or the uncompressed one, nothing else.
++    {
++        const auto bc4 = textures / (GamePBR::Id(keys.v7) + "_roughness_bc4.dds"), bc5 = textures / (GamePBR::Id(keys.v7) + "_normal_bc5.dds");
++        assert(GameRegistry::Inspect(bc5, false, 0) && !GameRegistry::Inspect(bc5, false, 1) && !GameRegistry::Inspect(bc5, false, 3));
++        assert(GameRegistry::Inspect(bc4, false, 1) && GameRegistry::Inspect(bc4, false, 2) && !GameRegistry::Inspect(bc4, false, 0) && !GameRegistry::Inspect(bc4, false, 3));
++        assert(GameRegistry::Inspect(v7[3], false, 3) && GameRegistry::Inspect(v7[0], false, 0));
++        GameRegistry::Record swapped = legacy;
++        swapped.textures[0] = *GameRegistry::Inspect(bc4, true);
++        assert(!registry.ValidateRecord(swapped));
++    }
++    fs::rename(root / "test.pmx.hidden", pmx); fs::rename(root / "tex.hidden", root / "tex");
++    std::cout << "PASS migration without source: registry and manual choices transcoded and saved atomically, failed save keeps the "
++                 "previous record, compact files reused, role formats enforced, uncompressed records still valid\n";
++}
++
++// An unrelated version bump: a build with another generator number converts nothing.
++static void Bump(const fs::path& root, bool prepare) {
++    const auto out = root / "bump"; fs::create_directories(out);
++    run = {};
++    const auto result = GamePBR::Convert((root / "test.pmx").u8string(), "tex/T_actor_test_cloth_D.png", out.u8string(), Write, Oct);
++    if (prepare) {
++        assert(result.via == "converted" && run.oct == 1 && GamePBR::GeneratorVersion != 999);
++        std::cout << "PASS bump-prepare: converted with generator " << GamePBR::GeneratorVersion << "\n";
++    } else {
++        assert(GamePBR::GeneratorVersion == 999 && result.via == "cached" && run.oct == 0 && run.writes == 0);
++        std::cout << "PASS bump-check: generator " << GamePBR::GeneratorVersion << " reused every map (0 conversions, 0 writes)\n";
++    }
++}
++
++int wmain(int argc, wchar_t** argv) {
++    assert(argc == 2 || argc == 3);
++    const fs::path root = fs::absolute(argv[1]);
++    const std::wstring mode = argc == 3 ? argv[2] : L"";
++    std::cout.setf(std::ios::unitbuf); // keep every line before a failed assertion
++    const auto com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++    if (mode == L"bump-prepare" || mode == L"bump-check") Bump(root, mode == L"bump-prepare");
++    else {
++        Codec(root);
++        Publication(root, mode == L"bulk");
++        Conversion(root);
++    }
++    if (SUCCEEDED(com)) CoUninitialize();
++    return 0;
++}
 diff --git a/tests/game_match_probe.cpp b/tests/game_match_probe.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..d6c96a779a8e11ffef5647517bb6e174004cadcc
@@ -5008,7 +6377,7 @@ index 0000000000000000000000000000000000000000..0807d15d711ccbedc0e761ece8e62ee1
 +cannot open. Per-base failures become abstention rows.
 diff --git a/tests/game_matching_test.cpp b/tests/game_matching_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..40ab9705d060416de2db9c3941dded84fd03354a
+index 0000000000000000000000000000000000000000..12868d026fa12c0f23e9d8679a35afa5f878d032
 --- /dev/null
 +++ b/tests/game_matching_test.cpp
 @@ -0,0 +1,170 @@
@@ -5040,7 +6409,7 @@ index 0000000000000000000000000000000000000000..40ab9705d060416de2db9c3941dded84
 +        f.write(reinterpret_cast<const char*>(pixel),4);
 +    }
 +}
-+static void DDS(const fs::path& p) {
++static void MakeDDS(const fs::path& p) {
 +    uint32_t h[32]{};h[0]=0x20534444;h[1]=124;h[3]=h[4]=h[7]=1;h[19]=32;h[20]=0x41;h[22]=32;
 +    h[23]=0xff0000;h[24]=0xff00;h[25]=0xff;h[26]=0xff000000;
 +    std::ofstream f(p,std::ios::binary);f.write(reinterpret_cast<char*>(h),128);f<<"abcd";
@@ -5146,7 +6515,7 @@ index 0000000000000000000000000000000000000000..40ab9705d060416de2db9c3941dded84
 +    assert(GameRegistry::DrawnIdentity(std::vector<uint64_t>(65,1),load).empty() && loads==0);
 +    assert(!GameRegistry::DrawnIdentity({7},load).empty() && loads==1);
 +    const std::string id="mmd/t/0123456789abcdef";
-+    const auto output=root/"textures";DDS(output/"manual.dds");
++    const auto output=root/"textures";MakeDDS(output/"manual.dds");
 +    GameRegistry::Registry registry(output);assert(registry.Load());
 +    GameOverrides::Choice c;c.mode="maps";c.source="E:/source/角色.pmx";c.base="衣服.bmp";c.normal="maps/One_N.bmp";c.layout=2;
 +    c.record.identity=id;c.record.hashes={7};c.record.generator=6;
@@ -5184,10 +6553,10 @@ index 0000000000000000000000000000000000000000..40ab9705d060416de2db9c3941dded84
 +}
 diff --git a/tests/game_pbr_test.cpp b/tests/game_pbr_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..65b88c4ea2c5628954fa07c83be9793f44d223b2
+index 0000000000000000000000000000000000000000..00a61bbe807e055e6b7019b0f4f8f6cb5d55b99f
 --- /dev/null
 +++ b/tests/game_pbr_test.cpp
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,106 @@
 +// GPL-2.0. Run against generated PMX/PNG fixtures, or a read-only corpus descriptor.
 +#include "../source/material_pipeline/to_pbr/game_pbr.h"
 +#include "../source/material_pipeline/to_pbr/vtf.h"
@@ -5205,11 +6574,11 @@ index 0000000000000000000000000000000000000000..65b88c4ea2c5628954fa07c83be9793f
 +            size_t count=0;
 +            try {
 +                auto output=GamePBR::Convert(pmx,base,(root/"output").u8string(),
-+                    [&](const ConvertedTexture& t,const std::string& path) {
-+                        ++count; uint64_t sums[4]{};
-+                        for(size_t i=0;i<t.pixelData.size();++i)sums[i%4]+=t.pixelData[i];
-+                        std::cout<<"MAP "<<path<<" "<<t.width<<"x"<<t.height<<" rgbmean="
-+                                 <<double(sums[0])/(t.pixelData.size()/4)<<","<<double(sums[1])/(t.pixelData.size()/4)<<","<<double(sums[2])/(t.pixelData.size()/4)<<"\n";
++                    [&](const std::vector<DDS::Level>& levels,const std::string& path,DDS::Format format) {
++                        ++count; uint64_t sums[4]{};const auto& t=levels[0];
++                        for(size_t i=0;i<t.rgba.size();++i)sums[i%4]+=t.rgba[i];
++                        std::cout<<"MAP "<<path<<" "<<t.width<<"x"<<t.height<<" "<<DDS::Name(format)<<" rgbmean="
++                                 <<double(sums[0])/(t.rgba.size()/4)<<","<<double(sums[1])/(t.rgba.size()/4)<<","<<double(sums[2])/(t.rgba.size()/4)<<"\n";
 +                        return true;
 +                    },[](ConvertedTexture& t){VTF::ConvertNormalMapToOctahedral(t);});
 +                std::cout<<"RESULT "<<base<<" maps="<<count<<" protected="<<output.protectedPixels<<"\n";
@@ -5247,28 +6616,33 @@ index 0000000000000000000000000000000000000000..65b88c4ea2c5628954fa07c83be9793f
 +        assert(classes[2*8+1]==Original && classes[2*8+6]==Cloth);
 +        auto truncated=bytes;truncated.resize(30);bool rejected=false;
 +        try{ParsePMX(truncated);}catch(...){rejected=true;}assert(rejected);
-+        std::map<std::string,ConvertedTexture> written;
++        std::map<std::string,DDS::Level> written;std::map<std::string,DDS::Format> formats;
++        auto record=[&](const std::vector<DDS::Level>& levels,const std::string& path,DDS::Format format){
++            assert(levels.size()==DDS::LevelCount(levels[0].width,levels[0].height));
++            written[path]=levels[0];formats[path]=format;return true;};
 +        auto output=Convert((root/"test.pmx").u8string(),"tex/T_actor_test_cloth_D.png",(root/"output").u8string(),
-+            [&](const ConvertedTexture& t,const std::string& path){written[path]=t;return true;},
-+            [](ConvertedTexture& t){VTF::ConvertNormalMapToOctahedral(t);});
++            record,[](ConvertedTexture& t){VTF::ConvertNormalMapToOctahedral(t);});
 +        assert(!output.normal.empty() && !output.roughness.empty() && !output.metallic.empty() && !output.emission.empty());
 +        const auto& rough=written.at(output.roughness);const auto& metal=written.at(output.metallic);
 +        const auto& normal=written.at(output.normal);const auto& glow=written.at(output.emission);
 +        const size_t skin=(2*8+1)*4, cloth=(2*8+6)*4;
-+        assert(rough.pixelData[skin]==179 && metal.pixelData[skin]==0 && glow.pixelData[skin]==0);
-+        assert(std::abs(int(normal.pixelData[skin])-128)<=1 && std::abs(int(normal.pixelData[skin+1])-128)<=1);
-+        assert(normal.pixelData[cloth] > 128);
-+        assert(rough.pixelData[cloth]==55 && metal.pixelData[cloth]==220 && glow.pixelData[cloth]>0);
-+        // _P blue is AO, alpha is smoothness; green is deliberately unrelated.
-+        assert(written.at(output.ao).pixelData[cloth]==199);
++        assert(rough.rgba[skin]==179 && metal.rgba[skin]==0 && glow.rgba[skin]==0);
++        assert(std::abs(int(normal.rgba[skin])-128)<=1 && std::abs(int(normal.rgba[skin+1])-128)<=1);
++        assert(normal.rgba[cloth] > 128);
++        assert(rough.rgba[cloth]==55 && metal.rgba[cloth]==220 && glow.rgba[cloth]>0);
++        // _P blue is AO, which has no Remix input: R13-M stores no AO map. Alpha is smoothness.
++        assert(written.size()==4 && output.via=="converted" && output.written==4);
++        for(const auto& pair:written)assert(pair.first.find("_ao")==std::string::npos);
++        // 8x8 maps are block-aligned: compact normal/roughness/metallic, uncompressed emission.
++        assert(formats.at(output.normal)==DDS::Format::BC5 && formats.at(output.roughness)==DDS::Format::BC4 &&
++               formats.at(output.metallic)==DDS::Format::BC4 && formats.at(output.emission)==DDS::Format::RGBA8);
 +        // Production conversion decodes a larger packed map to its normal's size.
 +        Maps selected;selected.recognized=true;selected.layout=Maps::Silver;
 +        selected.normal=root/"tex/T_actor_test_cloth_N.png";selected.packed=root/"straight-packed.png";
 +        const auto silver=Convert((root/"test.pmx").u8string(),"tex/T_actor_test_cloth_D.png",(root/"output").u8string(),
-+            [&](const ConvertedTexture& t,const std::string& path){written[path]=t;return true;},
-+            [](ConvertedTexture&){},nullptr,&selected);
-+        assert(written.at(silver.roughness).pixelData[cloth]==64);
-+        assert(written.at(silver.metallic).pixelData[cloth]==220 && written.at(silver.ao).pixelData[cloth]==199);
++            record,[](ConvertedTexture&){},nullptr,&selected);
++        assert(written.at(silver.roughness).rgba[cloth]==64);
++        assert(written.at(silver.metallic).rgba[cloth]==220);
 +        assert(!PlausibleNormal(Image{2,2,std::vector<uint8_t>(16,0)}));
 +        for(const auto& bad:{"../bad_D.png","C:bad_D.png","/bad_D.png"}) {
 +            rejected=false;try{Discover(root,bad);}catch(...){rejected=true;}assert(rejected);
@@ -5309,7 +6683,7 @@ index 0000000000000000000000000000000000000000..cdb4093d7732c8209fbfacb5d8a531c8
 +}}
 diff --git a/tests/game_registry_test.cpp b/tests/game_registry_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e58a00f5a
+index 0000000000000000000000000000000000000000..9a8ea32c3501d723fdd827194a96ff913adbdfd7
 --- /dev/null
 +++ b/tests/game_registry_test.cpp
 @@ -0,0 +1,246 @@
@@ -5322,7 +6696,7 @@ index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e
 +#include "../source/material_pipeline/to_pbr/fallback_guard.h"
 +using namespace MaterialPipeline::ToPBR;
 +namespace fs = std::filesystem;
-+static void DDS(const fs::path& path, char pixel = 17) {
++static void MakeDDS(const fs::path& path, char pixel = 17) {
 +    uint32_t h[32]{};
 +    h[0] = 0x20534444; h[1] = 124; h[3] = h[4] = 1; h[7] = 1;
 +    h[19] = 32; h[20] = 0x41; h[22] = 32;
@@ -5337,7 +6711,7 @@ index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e
 +static void SessionCases(const fs::path& output) {
 +    fs::create_directories(output);
 +    const auto texture = output / "session.dds";
-+    DDS(texture);
++    MakeDDS(texture);
 +    GameRegistry::Registry registry(output);
 +    assert(registry.Load());
 +    GameRegistry::Session session;
@@ -5408,7 +6782,7 @@ index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e
 +    std::array<std::string, 4> paths;
 +    for (size_t i = 0; i < paths.size(); ++i) {
 +        const auto path = output / ("game_test_" + std::to_string(i) + ".dds");
-+        DDS(path); paths[i] = path.u8string();
++        MakeDDS(path); paths[i] = path.u8string();
 +    }
 +    GameRegistry::Registry registry(output);
 +    assert(registry.Load() && registry.Size() == 0);
@@ -5480,20 +6854,20 @@ index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e
 +    GameRegistry::Registry cleared(output);
 +    assert(cleared.Load() && cleared.Resolve(identity, {0x888}, true, false, absent));
 +    // Same-length pixel corruption has a valid DDS header, but must not restore.
-+    DDS(fs::u8path(paths[2]), 18);
++    MakeDDS(fs::u8path(paths[2]), 18);
 +    assert(Policy::ValidDDS(fs::u8path(paths[2])));
 +    assert(!cleared.Resolve(identity, {0x888}, true, false, absent) && cleared.Size() == 0);
 +    assert(cleared.Save());
-+    DDS(fs::u8path(paths[2]));
++    MakeDDS(fs::u8path(paths[2]));
 +    assert(cleared.Resolve(identity, {0x888}, true, true, convert) && cleared.Save());
 +    // Missing and truncated files prune the record at load, and persist the pruning.
 +    fs::remove(fs::u8path(paths[1]));
 +    GameRegistry::Registry missing(output); assert(missing.Load() && missing.Size() == 0 && missing.Save());
-+    DDS(fs::u8path(paths[1]));
++    MakeDDS(fs::u8path(paths[1]));
 +    assert(missing.Resolve(identity, {0x888}, true, true, convert) && missing.Save());
 +    { std::ofstream bad(fs::u8path(paths[3]), std::ios::binary); bad << "DDS truncated"; }
 +    GameRegistry::Registry invalid(output); assert(invalid.Load() && invalid.Size() == 0);
-+    DDS(fs::u8path(paths[3]));
++    MakeDDS(fs::u8path(paths[3]));
 +    // Reject retired record versions, traversal, malformed rows, unknown schema and oversized input.
 +    { auto text = original; text.replace(text.find(identity) + identity.size(), 2, " 0");
 +      std::ofstream file(registry.Path(), std::ios::binary); file << text; }

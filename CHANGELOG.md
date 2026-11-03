@@ -6,6 +6,21 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13
+
+- **Imported game maps take about a sixth of the memory** (R13-M,
+  [ADR 0098](docs/decisions/0098-compact-imported-game-maps-and-recipe-keys.md)): normals are stored
+  as BC5, roughness and metallic as BC4, and the unused AO map is no longer written. A 2048x2048
+  family needs 11.2 MB of replacement-texture VRAM instead of 67.1 MB (11.2 MB on disk instead of
+  89.5 MB); emission maps are unchanged. Maps converted before are re-encoded on first use, without
+  converting them again, also for characters whose source folder is gone.
+- **Updates no longer convert every character again** (R13-M): converted maps are keyed by what
+  changes their bytes, so a release that changes no conversion reuses them all.
+- **Imported game PBR refusals say why** (R13-M): when free disk space or an image's size stops a
+  conversion, the log and the Imported game PBR panel show the limit and its numbers instead of
+  "DDS publication failed", and a character interrupted halfway completes on its next pass.
+  Imported game maps have no per-session budget; the opt-in world conversion keeps its 1 GiB.
+
 ### R12
 
 - **NPCs after removing and importing a character again:** prepared carriers restore missing

@@ -15,11 +15,11 @@ int main(int argc,char** argv) {
             size_t count=0;
             try {
                 auto output=GamePBR::Convert(pmx,base,(root/"output").u8string(),
-                    [&](const ConvertedTexture& t,const std::string& path) {
-                        ++count; uint64_t sums[4]{};
-                        for(size_t i=0;i<t.pixelData.size();++i)sums[i%4]+=t.pixelData[i];
-                        std::cout<<"MAP "<<path<<" "<<t.width<<"x"<<t.height<<" rgbmean="
-                                 <<double(sums[0])/(t.pixelData.size()/4)<<","<<double(sums[1])/(t.pixelData.size()/4)<<","<<double(sums[2])/(t.pixelData.size()/4)<<"\n";
+                    [&](const std::vector<DDS::Level>& levels,const std::string& path,DDS::Format format) {
+                        ++count; uint64_t sums[4]{};const auto& t=levels[0];
+                        for(size_t i=0;i<t.rgba.size();++i)sums[i%4]+=t.rgba[i];
+                        std::cout<<"MAP "<<path<<" "<<t.width<<"x"<<t.height<<" "<<DDS::Name(format)<<" rgbmean="
+                                 <<double(sums[0])/(t.rgba.size()/4)<<","<<double(sums[1])/(t.rgba.size()/4)<<","<<double(sums[2])/(t.rgba.size()/4)<<"\n";
                         return true;
                     },[](ConvertedTexture& t){VTF::ConvertNormalMapToOctahedral(t);});
                 std::cout<<"RESULT "<<base<<" maps="<<count<<" protected="<<output.protectedPixels<<"\n";
@@ -57,28 +57,33 @@ int main(int argc,char** argv) {
         assert(classes[2*8+1]==Original && classes[2*8+6]==Cloth);
         auto truncated=bytes;truncated.resize(30);bool rejected=false;
         try{ParsePMX(truncated);}catch(...){rejected=true;}assert(rejected);
-        std::map<std::string,ConvertedTexture> written;
+        std::map<std::string,DDS::Level> written;std::map<std::string,DDS::Format> formats;
+        auto record=[&](const std::vector<DDS::Level>& levels,const std::string& path,DDS::Format format){
+            assert(levels.size()==DDS::LevelCount(levels[0].width,levels[0].height));
+            written[path]=levels[0];formats[path]=format;return true;};
         auto output=Convert((root/"test.pmx").u8string(),"tex/T_actor_test_cloth_D.png",(root/"output").u8string(),
-            [&](const ConvertedTexture& t,const std::string& path){written[path]=t;return true;},
-            [](ConvertedTexture& t){VTF::ConvertNormalMapToOctahedral(t);});
+            record,[](ConvertedTexture& t){VTF::ConvertNormalMapToOctahedral(t);});
         assert(!output.normal.empty() && !output.roughness.empty() && !output.metallic.empty() && !output.emission.empty());
         const auto& rough=written.at(output.roughness);const auto& metal=written.at(output.metallic);
         const auto& normal=written.at(output.normal);const auto& glow=written.at(output.emission);
         const size_t skin=(2*8+1)*4, cloth=(2*8+6)*4;
-        assert(rough.pixelData[skin]==179 && metal.pixelData[skin]==0 && glow.pixelData[skin]==0);
-        assert(std::abs(int(normal.pixelData[skin])-128)<=1 && std::abs(int(normal.pixelData[skin+1])-128)<=1);
-        assert(normal.pixelData[cloth] > 128);
-        assert(rough.pixelData[cloth]==55 && metal.pixelData[cloth]==220 && glow.pixelData[cloth]>0);
-        // _P blue is AO, alpha is smoothness; green is deliberately unrelated.
-        assert(written.at(output.ao).pixelData[cloth]==199);
+        assert(rough.rgba[skin]==179 && metal.rgba[skin]==0 && glow.rgba[skin]==0);
+        assert(std::abs(int(normal.rgba[skin])-128)<=1 && std::abs(int(normal.rgba[skin+1])-128)<=1);
+        assert(normal.rgba[cloth] > 128);
+        assert(rough.rgba[cloth]==55 && metal.rgba[cloth]==220 && glow.rgba[cloth]>0);
+        // _P blue is AO, which has no Remix input: R13-M stores no AO map. Alpha is smoothness.
+        assert(written.size()==4 && output.via=="converted" && output.written==4);
+        for(const auto& pair:written)assert(pair.first.find("_ao")==std::string::npos);
+        // 8x8 maps are block-aligned: compact normal/roughness/metallic, uncompressed emission.
+        assert(formats.at(output.normal)==DDS::Format::BC5 && formats.at(output.roughness)==DDS::Format::BC4 &&
+               formats.at(output.metallic)==DDS::Format::BC4 && formats.at(output.emission)==DDS::Format::RGBA8);
         // Production conversion decodes a larger packed map to its normal's size.
         Maps selected;selected.recognized=true;selected.layout=Maps::Silver;
         selected.normal=root/"tex/T_actor_test_cloth_N.png";selected.packed=root/"straight-packed.png";
         const auto silver=Convert((root/"test.pmx").u8string(),"tex/T_actor_test_cloth_D.png",(root/"output").u8string(),
-            [&](const ConvertedTexture& t,const std::string& path){written[path]=t;return true;},
-            [](ConvertedTexture&){},nullptr,&selected);
-        assert(written.at(silver.roughness).pixelData[cloth]==64);
-        assert(written.at(silver.metallic).pixelData[cloth]==220 && written.at(silver.ao).pixelData[cloth]==199);
+            record,[](ConvertedTexture&){},nullptr,&selected);
+        assert(written.at(silver.roughness).rgba[cloth]==64);
+        assert(written.at(silver.metallic).rgba[cloth]==220);
         assert(!PlausibleNormal(Image{2,2,std::vector<uint8_t>(16,0)}));
         for(const auto& bad:{"../bad_D.png","C:bad_D.png","/bad_D.png"}) {
             rejected=false;try{Discover(root,bad);}catch(...){rejected=true;}assert(rejected);

@@ -180,3 +180,69 @@ These digests detect accidental changes, not adversarial modification.
 inputs, distinct identities, no-maps/rejection, disabled/invalid jobs and a new worker session.
 `to_pbr_test.cpp` republishes in separate child processes to verify restart ownership, same-size
 USD edits, missing/damaged/stale records and failed USD/sidecar replacement with staging cleanup.
+
+## R13-M: compact imported game maps, reuse across versions
+
+The user's R12-B3 request (2026-11-03): no 1 GiB stop for imported game maps, compact roughness,
+metallic and normal maps without the unused AO map, and no reconversion after a version change when
+nothing that changes the bytes changed. The loader repository's ADR 0098 records the decision.
+
+**Formats.** `dds_codec.h` (standard C++ only) writes and validates two layouts: the uncompressed
+legacy one, field for field and byte for byte as `TextureProcessor::WriteDDSHeader` and its 2x2
+floor-mean mip loop wrote it, and DX10 `BC4_UNORM` / `BC5_UNORM` with full mip chains. Imported game
+maps store the octahedral normal in BC5 (R and G; Remix reads `.xy`), roughness and metallic in BC4
+(R; Remix reads `.x`), and emission uncompressed. A base whose sides are not multiples of four keeps
+the uncompressed layout. The packed map's blue (AO) channel has no Remix input and is no longer
+stored. A 2048x2048 family is 11,185,308 bytes (BC5 5,592,580 + 2 x BC4 2,796,364) instead of
+89,478,992 (four 22,369,748-byte maps); what Remix loads drops from 67,109,244 to 11,185,308 bytes.
+
+**Encoder.** Per 4x4 block and channel: endpoints at the block's extremes, which bound every texel's
+error by (max - min) / 14; two integer least-squares refinements; the exact-0/255 mode; and for
+blocks of at most four levels (quantized roughness), endpoints that put the minimum and maximum on
+two palette positions. A candidate replaces the extremes only with a lower squared error and no
+worse texel, so the bound always holds. Integer arithmetic makes the bytes deterministic.
+`DDS::EncoderId` is part of the recipe.
+
+**Validation.** `Policy::ValidDDS` accepts both layouts (the uncompressed rule is unchanged, so every
+existing record and cache entry stays valid). `GameRegistry::Inspect`, `Capture` and `Validate` also
+check each role's format: normal RGBA8 or BC5, roughness/metallic RGBA8 or BC4, emission RGBA8.
+
+**Publication and refusals.** `dds_publish.h` writes a flushed staging file, validates it and replaces
+the target with a write-through move; an invalid file in the way is kept as `.rejected-<tick>`.
+Imported game maps have no session budget. Each refusal throws one line naming the limit and its
+numbers ("free disk space limit: ...", "image bounds exceeded: ..."), which the worker logs as
+"Game maps skipped: <base> (<line>)" and shows in the Imported game PBR panel (state "error" for
+every material sharing the texture). The opt-in world conversion keeps its 1 GiB per session and
+its uncompressed writer; its three refusals log the same lines once per session.
+
+**Keys and markers.** `GamePBR::Recipe()` lists what changes the bytes: decoding, masks, the class
+tables (printed from the values in use), channel rules, the octahedral encoding, mips, formats and
+the encoder. The content key hashes the PMX, the base bytes and name, each map role with its bytes,
+the layout and the recipe; the generator number (8) is provenance only. The completion marker's
+first line is `<recipe> <glow>`, the second its origin (`converted` or `transcoded <marker> <id>`).
+A map already stored in its format survives an interrupted pass, so a family stopped halfway
+completes on its next pass.
+
+**Migration.** With the source present, a missing current family is re-encoded from a finished
+earlier family with the same inputs (v7, v6, then v5 keys, each by its shipped formula) instead of
+converted again: the stored uncompressed levels become the compact files, byte-identical to a fresh
+conversion. A v5/v6 family whose normal, packed or emission map was resized is converted again (it
+came from WIC's premultiplying Fant scale); v5 keys carry neither roles nor layout, so v5 families
+are not used for manual choices or for an Endfield/WuWa family in a folder holding a `*_MRA` map
+(v5 chose Silver there). Without the source, `Registry::Compact` re-encodes a stored record's maps
+beside the originals (`<name>_bc5.dds` / `_bc4.dds`), validates them and saves the registry
+atomically; `GameOverrides::Store::Compact` does the same for a manual choice through `Set`. A failed
+save keeps the previous record. Earlier files are left in place.
+
+**Tests.** `tests/game_dds_test.cpp` (SDK-free; MSVC C++17 `/EHsc /UNDEBUG /W4 /WX /DNOMINMAX`,
+with a fixture from `tests/make_game_pbr_fixtures.py`): the shipped uncompressed bytes, DX10 layout
+acceptance and refusals, exact two-value blocks, the per-block bound on generated gradients, edges
+and noise, real quantized roughness blocks, atomic publication, disk/bounds/budget refusal lines,
+compact conversion without AO, the recipe marker, half-family completion, a refusal mid-family,
+v7/v6/v5 transcoding byte-identical to fresh conversion, resized v6 and v5-MRA and manual cases
+converting again, source-less registry and manual-choice migration with a failed save, role
+formats, and uncompressed records staying valid. `bulk` adds 49 game-map publications past 1 GiB.
+Built a second time with `/DTOPBR_GAME_GENERATOR_VERSION=999`, `bump-check` after `bump-prepare`
+shows that a build with another generator number converts and writes nothing. The loader's Release
+suite runs it from the GPL source copy. `tests/game_dds_probe.cpp` runs production conversion on
+real PMX folders (see `tests/game_dds_probe.md`).

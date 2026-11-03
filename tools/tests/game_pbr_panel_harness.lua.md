@@ -11,4 +11,6 @@ The fake DForm exposes `Clear`, matching the stock API, and deliberately lacks t
 Known map-layout conflicts are rejected before native submission, including Windows case variants.
 The cursor trace points elsewhere while the cursor-independent trace selects the character, guarding
 against popup mouse position changing the material picker target.
+R13-M: when the native view reports a refusal (state `error` with its one-line reason, such as a
+free-disk-space limit), the selected material's status text shows that reason.
 Reads its input; no filesystem writes, game or network. Exit 0 on success, nonzero on assertion.

@@ -4,12 +4,17 @@
 #include "to_pbr.h"
 #endif
 #include "pbr_policy.h"
+#include "dds_publish.h"
 #include <Windows.h>
 #include <wincodec.h>
 #include <wrl/client.h>
 #include <filesystem>
 #include <fstream>
+#include <locale>
 #include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <array>
 #include <cctype>
@@ -20,7 +25,12 @@
 
 namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 namespace fs = std::filesystem;
-constexpr unsigned GeneratorVersion = 7; // Registry provenance; content-key/marker version below.
+#ifndef TOPBR_GAME_GENERATOR_VERSION
+#define TOPBR_GAME_GENERATOR_VERSION 8
+#endif
+// Registry provenance only (R13-M). Cached maps are keyed by their inputs and Recipe(), never by
+// this number, so a release that changes no conversion reuses every map. Tests override it.
+constexpr unsigned GeneratorVersion = TOPBR_GAME_GENERATOR_VERSION;
 using Microsoft::WRL::ComPtr;
 inline std::string Lower(std::string s) {
     for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -58,13 +68,19 @@ inline float Strength(uint8_t c) {
 inline std::vector<uint8_t> Read(const fs::path& p, uint64_t limit=64*1024*1024) {
     std::ifstream f(p,std::ios::binary|std::ios::ate);
     if (!f) throw std::runtime_error("source is unavailable");
-    const auto n=f.tellg(); if (n<0 || uint64_t(n)>limit) throw std::runtime_error("source exceeds bound");
+    const auto n=f.tellg();
+    if (n<0) throw std::runtime_error("source is unreadable");
+    if (uint64_t(n)>limit) throw std::runtime_error("source file exceeds bound: "+p.filename().u8string()+" is "+
+        std::to_string(uint64_t(n))+" bytes; the limit is "+std::to_string(limit)+" bytes");
     std::vector<uint8_t> b(size_t(n),0); f.seekg(0);
     if (!f.read(reinterpret_cast<char*>(b.data()),std::streamsize(b.size()))) throw std::runtime_error("short source read");
     return b;
 }
+inline uint64_t Hash(const uint8_t* data,size_t size,uint64_t seed=14695981039346656037ull) {
+    for (size_t i=0;i<size;++i) { seed^=data[i]; seed*=1099511628211ull; } return seed;
+}
 inline uint64_t Hash(const std::vector<uint8_t>& b,uint64_t seed=14695981039346656037ull) {
-    for (auto x:b) { seed^=x; seed*=1099511628211ull; } return seed;
+    return Hash(b.data(),b.size(),seed);
 }
 struct Reader {
     const std::vector<uint8_t>& bytes; size_t at=0; bool utf8=true;
@@ -175,7 +191,7 @@ inline Image Decode(const fs::path& path,uint32_t w=0,uint32_t h=0,uint32_t limi
     check(factory->CreateDecoderFromStream(stream.Get(),nullptr,WICDecodeMetadataCacheOnDemand,&decoder));
     UINT count=0;check(decoder->GetFrameCount(&count));if(count!=1)throw std::runtime_error("animated image");
     check(decoder->GetFrame(0,&frame));UINT sw=0,sh=0;check(frame->GetSize(&sw,&sh));
-    if(!Policy::ValidImage(sw,sh))throw std::runtime_error("image dimensions exceed bound");
+    if(!Policy::ValidImage(sw,sh))throw std::runtime_error(Policy::ImageRefusal(sw,sh,path.filename().u8string()));
     if(pixelBudget){const uint64_t pixels=uint64_t(sw)*sh;if(pixels>*pixelBudget)throw std::runtime_error("feature pixel budget exhausted");*pixelBudget-=pixels;}
     if(!w || !h) { const float scale=(std::min)(1.0f,float(limit)/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
     if(!Policy::ValidImage(w,h) || uint64_t(sw)*h!=uint64_t(sh)*w)throw std::runtime_error("map aspect mismatch");
@@ -211,34 +227,142 @@ inline bool PlausibleNormal(const Image& n) {
     }
     return count && valid>count*.90 && sx/count>.3 && sx/count<.7 && sy/count>.3 && sy/count<.7;
 }
-struct Output { std::string normal,roughness,metallic,emission,ao;size_t protectedPixels=0; };
-using Writer=std::function<bool(const ConvertedTexture&,const std::string&)>;
+// Everything that changes converted bytes (R13-M): decoding, masks, class tables, channel math,
+// octahedral encoding, mips, stored formats and the block encoder. Content keys and completion
+// markers carry it, so a release that changes none of it reuses every cached map. Change the tag
+// of whatever step a code change touches; the tables are printed from the values in use.
+inline const std::string& Recipe() {
+    static const std::string recipe=[] {
+        std::ostringstream s;s.imbue(std::locale::classic());
+        s<<"game-maps-1;decode=wic-straight-rgba8+area-integer,limit2048;mask=pmx-uv-raster,gutter4,original-first;classes=";
+        for(unsigned c=0;c<8;++c)s<<(c?",":"")<<Roughness(uint8_t(c))<<"/"<<Strength(uint8_t(c));
+        s<<";roughness=clamp0.08-0.95,metal-r,rough-g|endfield-1-a,hair-and-original-class"
+         <<";normal=rebuild-z(wuwa,endfield),endfield-flip-y,silver-blue-z-min0.01,class-strength,octahedral-hemi-8bit"
+         <<";emission=rgb-outside-original;mips=box2x2-floor"
+         <<";formats=normal-BC5,roughness-BC4,metallic-BC4,emission-RGBA8,unaligned-RGBA8;encoder="<<DDS::EncoderId;
+        return s.str();
+    }();
+    return recipe;
+}
+inline std::string Id(uint64_t key) {
+    char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));return id;
+}
+// The current key and the keys earlier generators gave the same inputs (their formulas, exactly).
+struct Keys { uint64_t current=0,v7=0,v6=0,v5=0; };
+inline Keys ContentKeys(const std::vector<uint8_t>& model,const std::vector<uint8_t>& baseBytes,
+                        const std::array<std::vector<uint8_t>,3>& inputs,const std::array<bool,3>& present,
+                        const std::string& base,Maps::Layout layout) {
+    const uint64_t seed=Hash(baseBytes,Hash(model));
+    uint64_t roles=seed,v5=seed;
+    for(size_t i=0;i<3;++i) {
+        const uint8_t tag[2]{uint8_t(i+1),uint8_t(present[i])};roles=Hash(tag,2,roles);
+        if(present[i]){roles=Hash(inputs[i],roles);v5=Hash(inputs[i],v5);}
+    }
+    const auto name=reinterpret_cast<const uint8_t*>(base.data());
+    const uint64_t named=Hash(name,base.size(),roles);
+    Keys keys;
+    keys.v7=named^0x52313247414d4507ull^uint64_t(layout);
+    keys.v6=named^0x52313247414d4506ull^uint64_t(layout);
+    keys.v5=Hash(name,base.size(),v5)^0x52313147414d4505ull;
+    const uint8_t layoutTag=uint8_t(layout);
+    keys.current=Hash(reinterpret_cast<const uint8_t*>(Recipe().data()),Recipe().size(),Hash(&layoutTag,1,named));
+    return keys;
+}
+// Image dimensions from the encoded header, without decoding pixels.
+inline std::pair<uint32_t,uint32_t> ImageSize(const std::vector<uint8_t>& bytes) {
+    ComPtr<IWICImagingFactory> factory;ComPtr<IWICStream> stream;ComPtr<IWICBitmapDecoder> decoder;ComPtr<IWICBitmapFrameDecode> frame;
+    auto check=[](HRESULT hr){if(FAILED(hr))throw std::runtime_error("unsupported/broken image");};
+    check(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)));
+    check(factory->CreateStream(&stream));check(stream->InitializeFromMemory(const_cast<BYTE*>(bytes.data()),DWORD(bytes.size())));
+    check(factory->CreateDecoderFromStream(stream.Get(),nullptr,WICDecodeMetadataCacheOnDemand,&decoder));
+    check(decoder->GetFrame(0,&frame));UINT w=0,h=0;check(frame->GetSize(&w,&h));return {w,h};
+}
+// via: "cached", "converted" or "transcoded from <marker>"; written counts the maps stored now.
+struct Output { std::string normal,roughness,metallic,emission,via;size_t protectedPixels=0;unsigned written=0; };
+// Stores a complete mip chain as `format` at a path. Production publishes atomically and throws
+// one clear line on a refusal; returning false reports a generic publication failure.
+using Writer=std::function<bool(const std::vector<DDS::Level>&,const std::string&,DDS::Format)>;
 inline Output Convert(const std::string& source,const std::string& base,const std::string& out,
                       const Writer& write,const std::function<void(ConvertedTexture&)>& oct,
                       DiscoveryCache* discovery=nullptr,const Maps* selected=nullptr,const DecisionLog& log={}) {
     const fs::path pmx=fs::u8path(source);if(!pmx.is_absolute() || Lower(pmx.extension().u8string())!=".pmx")throw std::runtime_error("not a local PMX");
     auto maps=selected?*selected:Discover(pmx.parent_path(),base,false,log,discovery);if(!maps.recognized)return {};
-    auto modelBytes=Read(pmx,256*1024*1024);
-    uint64_t key=Hash(Read(pmx.parent_path()/fs::u8path(base)),Hash(modelBytes));
+    const auto modelBytes=Read(pmx,256*1024*1024);
+    const auto baseBytes=Read(pmx.parent_path()/fs::u8path(base));
     // Every input byte participates, including a changed file with the same size/time.
-    unsigned role=0;
-    for(const auto& path:{maps.normal,maps.packed,maps.emission}) {
-        key=Hash(std::vector<uint8_t>{uint8_t(++role),uint8_t(!path.empty())},key);
-        if(!path.empty())key=Hash(Read(path),key);
-    }
-    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4507ull ^ uint64_t(maps.layout);
-    char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));
+    std::array<std::vector<uint8_t>,3> inputs;std::array<bool,3> present{};
+    {size_t i=0;for(const auto& path:{maps.normal,maps.packed,maps.emission}){present[i]=!path.empty();if(present[i])inputs[i]=Read(path);++i;}}
+    const auto keys=ContentKeys(modelBytes,baseBytes,inputs,present,base,maps.layout);
+    const fs::path folder=fs::u8path(out);
+    static constexpr const char* suffix[4]={"_normal","_roughness","_metallic","_emission"};
+    auto file=[&](uint64_t key,size_t role){return folder/(Id(key)+suffix[role]+".dds");};
+    const fs::path marker=folder/(Id(keys.current)+"_complete.txt");
     Output result;
-    auto path=[&](const char* suffix){return (fs::u8path(out)/(std::string(id)+suffix+".dds")).u8string();};
-    const fs::path marker=fs::u8path(out)/(std::string(id)+"_complete.txt");
+    auto finish=[&](bool glow,const std::string& via) {
+        result.normal=file(keys.current,0).u8string();result.roughness=file(keys.current,1).u8string();
+        result.metallic=file(keys.current,2).u8string();if(glow)result.emission=file(keys.current,3).u8string();
+        result.via=via;return result;
+    };
+    auto mark=[&](bool glow,const std::string& origin) {
+        const fs::path staged(marker.wstring()+L".tmp");
+        {std::ofstream done(staged,std::ios::binary|std::ios::trunc);done<<Recipe()<<' '<<(glow?1:0)<<"\norigin "<<origin<<"\n";done.close();
+         if(!done)throw std::runtime_error("cache marker write failed");}
+        if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
+    };
+    // A map is current when it is complete, bounded and in its role's format for its own size.
+    auto current=[&](const fs::path& path,size_t role) {
+        DDS::Info info;
+        return DDS::Probe(path,info) && Policy::ValidImage(info.width,info.height) && info.format==DDS::GameFormat(role,info.width,info.height);
+    };
     {
-        std::ifstream cache(marker);std::string version;int glow=0;cache>>version>>glow;
-        if(cache && version=="r12-game-v7" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
-           Policy::ValidDDS(fs::u8path(path("_roughness"))) && Policy::ValidDDS(fs::u8path(path("_metallic"))) &&
-           (!glow || Policy::ValidDDS(fs::u8path(path("_emission"))))) {
-            result.normal=path("_normal");result.roughness=path("_roughness");result.metallic=path("_metallic");
-            if(glow)result.emission=path("_emission");return result;
+        std::ifstream cache(marker,std::ios::binary);std::string recipe;int glow=-1;cache>>recipe>>glow;
+        if(cache && recipe==Recipe() && (glow==0 || glow==1) && current(file(keys.current,0),0) && current(file(keys.current,1),1) &&
+           current(file(keys.current,2),2) && (!glow || current(file(keys.current,3),3)))return finish(glow!=0,"cached");
+    }
+    // A finished family from an earlier generator with these inputs is re-encoded, not converted
+    // again (the uncompressed RGBA8 maps before R13). Half-finished families convert normally.
+    struct Earlier { unsigned version;uint64_t key;const char* marker; };
+    const Earlier earlier[]{{7,keys.v7,"r12-game-v7"},{6,keys.v6,"r12-game-v6"},{5,keys.v5,"r11-game-v5"}};
+    std::optional<bool> mraInFolder;
+    for(const auto& legacy:earlier) {
+        // v5 keys carry neither roles nor layout, and manual choices did not exist then.
+        if(legacy.version==5 && selected)continue;
+        std::ifstream cache(folder/(Id(legacy.key)+"_complete.txt"),std::ios::binary);std::string version;int glow=-1;cache>>version>>glow;
+        if(!cache || version!=legacy.marker || (glow!=0 && glow!=1))continue;
+        DDS::Info info;bool complete=true;
+        for(size_t role=0;role<(glow?4u:3u) && complete;++role) {
+            DDS::Info map;
+            complete=DDS::Probe(file(legacy.key,role),map) && Policy::ValidImage(map.width,map.height) && map.format==DDS::Format::RGBA8 &&
+                (!role || (map.width==info.width && map.height==info.height));
+            if(!role)info=map;
         }
+        if(!complete)continue;
+        if(legacy.version<7) {
+            // v5/v6 decoded through WIC's premultiplying Fant scaler whenever a map was resized
+            // (R12-B2): such outputs are converted again from their readable source.
+            bool resized=false;
+            for(size_t i=0;i<3;++i)if(present[i]){const auto size=ImageSize(inputs[i]);resized|=size.first!=info.width || size.second!=info.height;}
+            if(resized)continue;
+        }
+        if(legacy.version==5 && maps.layout!=Maps::Silver) {
+            // v5 chose Silver for every family in a folder holding any *_MRA map; otherwise its
+            // canonical layout rules are today's.
+            if(!mraInFolder) {
+                std::unique_ptr<Discovery> owned;
+                Discovery& scan=discovery?discovery->Get(pmx.parent_path()):*(owned=std::make_unique<Discovery>(pmx.parent_path()));
+                mraInFolder=scan.HasStemSuffix("_mra");
+            }
+            if(*mraInFolder)continue;
+        }
+        for(size_t role=0;role<(glow?4u:3u);++role) {
+            const auto target=file(keys.current,role);
+            if(current(target,role))continue;
+            DDS::Info stored;auto chain=DDS::Read(file(legacy.key,role),stored);
+            if(!write(chain,target.u8string(),DDS::GameFormat(role,stored.width,stored.height)))throw std::runtime_error("DDS publication failed");
+            ++result.written;
+        }
+        mark(glow!=0,std::string("transcoded ")+legacy.marker+" "+Id(legacy.key));
+        return finish(glow!=0,std::string("transcoded from ")+legacy.marker);
     }
     auto mesh=ParsePMX(modelBytes);
     Image n=maps.normal.empty()?Image{}:Decode(maps.normal);
@@ -252,22 +376,28 @@ inline Output Convert(const std::string& source,const std::string& base,const st
     if(n.w && !PlausibleNormal(n))throw std::runtime_error("normal channels fail sanity check");
     Image emission=maps.emission.empty()?Image{}:Decode(maps.emission,w,h);
     result.protectedPixels=classes.size()-changed;
-    auto save=[&](ConvertedTexture& t,const char* suffix) {
-        auto p=path(suffix);if(!Policy::ValidDDS(fs::u8path(p)) && !write(t,p))throw std::runtime_error("DDS publication failed");return p;
+    // A map already stored in its format survives an interrupted pass: the family completes.
+    auto save=[&](ConvertedTexture& t,size_t role) {
+        const auto p=file(keys.current,role);
+        if(!current(p,role)) {
+            if(!write(DDS::Chain(t.width,t.height,std::move(t.pixelData)),p.u8string(),DDS::GameFormat(role,t.width,t.height)))
+                throw std::runtime_error("DDS publication failed");
+            ++result.written;
+        }
     };
     auto texture=[&](){ConvertedTexture t{};t.width=w;t.height=h;t.mipLevels=1;t.format=REMIXAPI_FORMAT_R8G8B8A8_UNORM;t.pixelData.resize(size_t(w)*h*4,255);return t;};
-    auto rough=texture(),metal=texture(),ao=texture(),normal=texture(),glow=texture();
+    auto rough=texture(),metal=texture(),normal=texture(),glow=texture();
     bool anyGlow=false;
     for(size_t i=0;i<classes.size();++i) {
-        const auto cls=classes[i];const size_t j=i*4;float r=Roughness(cls),m=cls==Metal?1.0f:0,a=1;
+        const auto cls=classes[i];const size_t j=i*4;float r=Roughness(cls),m=cls==Metal?1.0f:0;
+        // Packed blue (Endfield P / Silver MRA occlusion) has no Remix input and is not stored.
         if(cls!=Original && !packed.rgba.empty() && cls!=Hair) {
             m=packed.rgba[j]/255.0f;
             r=maps.layout==Maps::Endfield?1-packed.rgba[j+3]/255.0f:packed.rgba[j+1]/255.0f;
-            a=packed.rgba[j+2]/255.0f;
         }
         r=std::clamp(r,.08f,.95f);
         for(int ch=0;ch<3;++ch) {
-            rough.pixelData[j+ch]=uint8_t(r*255+.5f);metal.pixelData[j+ch]=uint8_t(m*255+.5f);ao.pixelData[j+ch]=uint8_t(a*255+.5f);
+            rough.pixelData[j+ch]=uint8_t(r*255+.5f);metal.pixelData[j+ch]=uint8_t(m*255+.5f);
             glow.pixelData[j+ch]=cls!=Original && !emission.rgba.empty()?emission.rgba[j+ch]:0;
             anyGlow|=glow.pixelData[j+ch]>0;
         }
@@ -284,12 +414,9 @@ inline Output Convert(const std::string& source,const std::string& base,const st
         normal.pixelData[j]=uint8_t((x*.5f+.5f)*255+.5f);normal.pixelData[j+1]=uint8_t((y*.5f+.5f)*255+.5f);normal.pixelData[j+2]=uint8_t((z*.5f+.5f)*255+.5f);
     }
     oct(normal);normal.isNormalMap=true;
-    result.normal=save(normal,"_normal");result.roughness=save(rough,"_roughness");result.metallic=save(metal,"_metallic");
-    if(!packed.rgba.empty())result.ao=save(ao,"_ao"); // Kept as data; do not bake occlusion into painted albedo under path tracing.
-    if(anyGlow)result.emission=save(glow,"_emission");
-    const fs::path staged=fs::path(marker.wstring()+L".tmp");
-    { std::ofstream done(staged);done<<"r12-game-v7 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
-    if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
-    return result;
+    save(normal,0);save(rough,1);save(metal,2);
+    if(anyGlow)save(glow,3);
+    mark(anyGlow,"converted");
+    return finish(anyGlow,"converted");
 }
 }}}
