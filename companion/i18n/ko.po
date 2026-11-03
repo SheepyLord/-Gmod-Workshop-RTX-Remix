@@ -176,7 +176,7 @@ msgstr "맵의 태양 따르기"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:695
 msgid "Puts the sun where the map's own sun is. Moving Time of day or Sun direction turns this off."
-msgstr ""
+msgstr "태양을 맵 자체의 태양 위치에 맞춥니다. 시각이나 태양 방향을 변경하면 이 옵션이 꺼집니다."
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:696
 msgid "Time of day"
@@ -205,7 +205,7 @@ msgstr "하루 길이(분)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:722
 msgid "How many real minutes a whole day takes while Time passes is ticked."
-msgstr ""
+msgstr "시간 흐름을 체크했을 때 게임 속 하루에 걸리는 실제 시간(분)입니다."
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:723
 msgid "Sky update interval (s)"
@@ -213,7 +213,7 @@ msgstr "하늘 갱신 간격(초)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:724
 msgid "How often the sun, moon, stars and weather move, in seconds: 0.02 is 50 times a second, 0 is every frame. A longer interval costs a little less frame time, but the sky moves in steps."
-msgstr ""
+msgstr "해, 달, 별, 날씨를 갱신하는 간격(초)입니다. 0.02는 초당 50번, 0은 매 프레임입니다. 간격을 늘리면 프레임 시간이 조금 줄지만 하늘이 끊기듯 움직입니다."
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:725
 msgid "Season"
@@ -255,7 +255,7 @@ msgstr "(Remix에 맡김)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:735
 msgid "Clouds, haze, fog, rain and snow, from Remix's own weather presets."
-msgstr ""
+msgstr "Remix 자체의 날씨 프리셋으로 표현하는 구름, 연무, 안개, 비, 눈입니다."
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:736
 msgid "Weather change (s)"
@@ -288,7 +288,7 @@ msgstr "눈 흰자 머티리얼 선택"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
 msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."
-msgstr ""
+msgstr "생성된 캐릭터를 여기서 선택하거나 캐릭터를 바라본 뒤 이 창을 여세요. 선택은 이 캐릭터에 저장되며 같은 캐릭터의 모든 개체에 즉시 적용됩니다. 다시 생성할 필요가 없습니다. '가져온 캐릭터의 흰자 밝기 안정화'와 '흰자 밝기'도 계속 적용됩니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 msgid "Choose a spawned character"
@@ -296,7 +296,7 @@ msgstr "생성된 캐릭터 선택"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
 msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
-msgstr ""
+msgstr "먼저 외부 모델에서 가져온 캐릭터를 생성하세요. 가져온 캐릭터의 머티리얼만 선택할 수 있습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Previous materials"
@@ -308,7 +308,7 @@ msgstr "다음 머티리얼"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
 msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
-msgstr ""
+msgstr "체크한 머티리얼을 눈 흰자로 처리합니다. 자동 감지 사용을 누르면 해당 머티리얼의 수동 선택이 해제됩니다. 눈과 얼굴이 텍스처를 공유하면 미리보기에 얼굴도 보이지만 체크한 머티리얼만 바뀝니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
 msgid "Eye white"
@@ -336,25 +336,25 @@ msgstr "자동: 일반 머티리얼"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
 msgid "Texture not available"
-msgstr ""
+msgstr "텍스처를 사용할 수 없음"
 
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
-msgstr ""
+msgstr "선택을 저장할 수 없습니다. 캐릭터가 제거되었거나, 선택을 저장한 파일이 변경되었거나 읽을 수 없는 상태일 수 있습니다. 어떤 파일도 덮어쓰지 않았습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:275
 #, c-format
 msgid "Previous: %s"
-msgstr ""
+msgstr "이전: %s"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:282
 #, c-format
 msgid "Next: %s"
-msgstr ""
+msgstr "다음: %s"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:345
 msgid "Contents"
-msgstr ""
+msgstr "목차"
 
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:375
 msgid "RTX Remix guide"
@@ -557,7 +557,7 @@ msgstr "사용 가능한 등급 레이어가 없습니다."
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
 #, c-format
 msgid "Performance tier %s is not applied: %s. See Performance and memory in the guide."
-msgstr ""
+msgstr "성능 등급 %s이(가) 적용되지 않았습니다: %s. 가이드의 성능과 메모리를 참고하세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:213
 msgid "Automatic selection"
@@ -599,7 +599,7 @@ msgstr "메모리 프로필: %s(VRAM %s MiB, RAM %s MiB). 바로 스폰할 수 �
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:238
 msgid "RTX Remix is running in this session. Every setting of the RTX package is in this tab, in the groups on the left."
-msgstr ""
+msgstr "이번 세션에서는 RTX Remix가 실행 중입니다. RTX 패키지의 모든 설정은 이 탭 왼쪽의 그룹에 있습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
 msgid "Open the RTX Remix guide"
@@ -607,7 +607,7 @@ msgstr "RTX Remix 가이드 열기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:245
 msgid "Performance and memory guide"
-msgstr ""
+msgstr "성능과 메모리 가이드"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
 #: nativeloader/lua/nativeloader/guide_pages.lua:323
@@ -616,7 +616,7 @@ msgstr "로더 상태를 콘솔에 출력"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:247
 msgid "When RTX first ran, the RTX add-ons took the settings of the original RTX install, except for settings you had already changed. This button applies all of them again, also over your own changes."
-msgstr ""
+msgstr "RTX를 처음 실행했을 때 이미 변경한 설정을 제외하고 RTX 애드온에 기존 RTX 설치 환경의 설정이 적용되었습니다. 이 버튼은 직접 변경한 값까지 덮어쓰며 모든 설정을 다시 적용합니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:248
 msgid "Use the classic RTX settings"
@@ -628,11 +628,11 @@ msgstr "RTX 세션 보호"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
 msgid "Stops other add-ons from undoing RTX settings or drawing post-processing over the picture. Turn it off only to test an add-on that misbehaves."
-msgstr ""
+msgstr "다른 애드온이 RTX 설정을 되돌리거나 화면에 후처리를 덧그리지 못하게 막습니다. 오작동하는 애드온을 테스트할 때만 끄세요."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
 msgid "Remix's own menu: press Alt+X, and save your changes there to keep them. Before you change single settings, set Graphics Preset, or DLSS Preset for the DLSS settings, to Custom; the guide shows how."
-msgstr ""
+msgstr "Remix 자체 메뉴는 Alt+X로 엽니다. 변경 사항을 유지하려면 그 메뉴에서 저장하세요. 개별 설정을 바꾸기 전에 그래픽 프리셋을 사용자 지정으로 설정하세요. DLSS 설정은 DLSS 프리셋을 사용자 지정으로 설정하세요. 방법은 가이드에 나와 있습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
 msgid "Language"
@@ -648,7 +648,7 @@ msgstr "언어(이 탭과 가이드)"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
 msgid "Changes here apply at once, for this session. To keep them, press Alt+X and save them there. The values shown are this panel's own choices, not a live reading of Remix."
-msgstr ""
+msgstr "여기서 변경한 값은 이번 세션에 즉시 적용됩니다. 유지하려면 Alt+X를 눌러 그 메뉴에서 저장하세요. 표시된 값은 이 패널에서 선택한 값이며, Remix의 현재 값을 실시간으로 표시하는 것은 아닙니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
 msgid "Reapply these overrides at every launch"
@@ -656,7 +656,7 @@ msgstr "시작할 때마다 이 덮어쓰기 값 다시 적용"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
 msgid "Off (the default), Remix starts with its own saved settings. On, this panel applies its choices at every start, over those settings."
-msgstr ""
+msgstr "끄기(기본값)에서는 Remix에 저장된 설정으로 시작합니다. 켜기에서는 이 패널의 선택이 시작할 때마다 저장된 설정을 덮어씁니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:274
 msgid "On"
@@ -669,7 +669,7 @@ msgstr "여기서 %s 설정"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
 msgid "A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."
-msgstr ""
+msgstr "숫자는 바로 위의 '여기서 ... 설정' 상자를 체크했을 때만 사용됩니다. 하늘 밝기와 색 순도는 0으로 설정할 수도 있습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
 msgid "Clear this panel's overrides"
@@ -681,7 +681,7 @@ msgstr "내 플레이어 그림자"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
 msgid "Shows the shadow and reflection of your own body while you play in first person. Other players and ragdolls are not affected."
-msgstr ""
+msgstr "1인칭 시점에서 내 몸의 그림자와 반사를 표시합니다. 다른 플레이어와 래그돌에는 영향을 주지 않습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:311
 msgid "Body height offset (units)"
@@ -689,7 +689,7 @@ msgstr "몸 높이 오프셋(유닛)"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
 msgid "Raises (positive) or lowers (negative) only that body. Your view and your collisions stay where they are."
-msgstr ""
+msgstr "양수는 그 몸만 위로 올리고 음수는 아래로 내립니다. 시점과 충돌 판정 위치는 바뀌지 않습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
 msgid "Keep toolgun text sharp"
@@ -697,7 +697,7 @@ msgstr "툴건 글자를 선명하게 표시"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
 msgid "Draws the toolgun's screen at full resolution after DLSS or another upscaler, so its text stays readable. Animated and custom screens keep working."
-msgstr ""
+msgstr "DLSS나 다른 업스케일러로 처리한 뒤 툴건 화면을 전체 해상도로 그려 글자를 읽기 쉽게 유지합니다. 애니메이션과 사용자 지정 화면도 계속 작동합니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
 msgid "Hide outline meshes"
@@ -705,7 +705,7 @@ msgstr "외곽선 메시 숨기기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
 msgid "Hides the outline shells that many anime models have: path tracing draws them as a dark layer over the model. The model's other materials are not changed."
-msgstr ""
+msgstr "많은 애니메이션풍 모델에 있는 외곽선 셸을 숨깁니다. 패스 트레이싱에서는 이 셸이 모델을 덮는 어두운 층으로 그려집니다. 모델의 다른 머티리얼은 바뀌지 않습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
 msgid "Imported game PBR"
@@ -713,7 +713,7 @@ msgstr "가져온 캐릭터 PBR"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
 msgid "Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."
-msgstr ""
+msgstr "명조, 엔드필드, 실버 팰리스에서 가져온 캐릭터에 해당 게임의 맵을 사용합니다. 피부와 얼굴은 그대로 유지됩니다. 끄면 원래 머티리얼로 돌아갑니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Steady eye whites for imported characters"
@@ -721,7 +721,7 @@ msgstr "가져온 캐릭터의 흰자 밝기 안정화"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
 msgid "Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."
-msgstr ""
+msgstr "가져온 캐릭터의 눈 흰자를 깨끗하고 밝게 유지합니다. 머티리얼 이름으로 흰자를 찾으며, 놓친 것이 있으면 아래에서 직접 선택할 수 있습니다. PBR 팩이 있는 캐릭터는 팩의 머티리얼을 유지합니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
 msgid "Eye-white brightness"
@@ -729,7 +729,7 @@ msgstr "흰자 밝기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
 msgid "In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."
-msgstr ""
+msgstr "백분율이며 100은 조정된 기본값입니다. 변경하면 흰자 밝기 안정화와 장면의 조명에 맞춰 변하는 PBR 팩의 눈 발광에 즉시 적용됩니다. 0은 이 발광을 끕니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
 msgid "Common Remix settings"
@@ -771,11 +771,11 @@ msgstr "RTX Remix가 실행 중입니다"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:47
 msgid "Garry's Mod is now path traced by NVIDIA RTX Remix: Remix follows rays of light as they bounce through the scene, so lighting, shadows and reflections look real."
-msgstr ""
+msgstr "이제 Garry's Mod에 NVIDIA RTX Remix의 패스 트레이싱이 적용됩니다. Remix는 광선이 장면 안에서 반사되는 경로를 따라가므로 조명, 그림자, 반사가 사실적으로 보입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:48
 msgid "The native loader (bin\\win64\\winmm.dll) installed the RTX package from the Steam Workshop and started Remix before the game opened its window. There is nothing else to install."
-msgstr ""
+msgstr "네이티브 로더(bin\\win64\\winmm.dll)가 Steam Workshop에서 RTX 패키지를 설치하고 게임 창이 열리기 전에 Remix를 시작했습니다. 따로 설치할 것은 없습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:49
 msgid "Where to find things"
@@ -783,905 +783,905 @@ msgstr "어디에 무엇이 있는지"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:50
 msgid "Everything happens in three places:"
-msgstr ""
+msgstr "사용할 곳은 세 군데입니다:"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:52
 msgid "The RTX Remix tab of the spawn menu: hold Q and click RTX Remix at the top right. It holds every setting of the RTX package, in groups on the left."
-msgstr ""
+msgstr "생성 메뉴의 RTX Remix 탭: Q를 누른 채 오른쪽 위의 RTX Remix를 클릭하세요. RTX 패키지의 모든 설정이 왼쪽의 그룹에 모여 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:53
 msgid "Remix's own menu: press Alt+X. It holds the renderer's settings, such as the graphics preset, DLSS and frame generation."
-msgstr ""
+msgstr "Remix 자체 메뉴: Alt+X를 누르세요. 그래픽 프리셋, DLSS, 프레임 생성 같은 렌더러 설정이 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:54
 msgid "This guide: open it again from the RTX Remix tab > Start here, or type nativeloader_guide in the console."
-msgstr ""
+msgstr "이 가이드: RTX Remix 탭 > 시작하기에서 다시 열거나 콘솔에 nativeloader_guide를 입력하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:56
 msgid "The RTX Remix tab, next to Tools, Options and Utilities."
-msgstr ""
+msgstr "도구, 옵션, 유틸리티 옆의 RTX Remix 탭입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:57
 msgid "The groups. Click a name in a group to open its panel."
-msgstr ""
+msgstr "그룹입니다. 그룹 안의 이름을 클릭하면 해당 패널이 열립니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:58
 msgid "The panel you opened."
-msgstr ""
+msgstr "열어 둔 패널입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:59
 msgid "First steps"
-msgstr ""
+msgstr "첫 단계"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:61
 msgid "Hold Q to open the spawn menu, then click the RTX Remix tab."
-msgstr ""
+msgstr "Q를 누른 채 생성 메뉴를 열고 RTX Remix 탭을 클릭하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:62
 msgid "Click Start here. It shows what the loader chose for your computer."
-msgstr ""
+msgstr "시작하기를 클릭하세요. 로더가 컴퓨터에 맞춰 선택한 설정을 보여 줍니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:63
 msgid "Press Alt+X and choose a graphics preset that keeps the game smooth."
-msgstr ""
+msgstr "Alt+X를 누르고 게임이 원활하게 실행되는 그래픽 프리셋을 선택하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:64
 msgid "To keep a change you make in Alt+X, save it there, as The Remix menu (Alt+X) shows."
-msgstr ""
+msgstr "Alt+X에서 변경한 값을 유지하려면 Remix 메뉴(Alt+X)의 설명대로 그 메뉴에서 저장하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:65
 msgid "If something looks wrong, read Troubleshooting."
-msgstr ""
+msgstr "화면에 이상이 있으면 문제 해결을 읽어 보세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:66
 msgid "Words used in this guide"
-msgstr ""
+msgstr "가이드에서 사용하는 용어"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:67
 msgid "Path tracing"
-msgstr ""
+msgstr "패스 트레이싱"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:67
 msgid "Lighting computed by tracing rays of light through the scene. It makes RTX look real, and it is demanding for the graphics card."
-msgstr ""
+msgstr "장면 안에서 광선의 경로를 추적해 조명을 계산하는 방식입니다. RTX 화면을 사실적으로 만들지만 그래픽 카드에 큰 부담을 줍니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:68
 msgid "DLSS"
-msgstr ""
+msgstr "DLSS"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:68
 msgid "NVIDIA's upscaler: the game is drawn at a lower resolution and enlarged with AI, which raises the frame rate."
-msgstr ""
+msgstr "NVIDIA의 업스케일러입니다. 게임을 낮은 해상도로 그린 뒤 AI로 확대해 프레임 속도를 높입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:69
 msgid "Extra frames made between the drawn ones: smoother motion, with a little more input delay."
-msgstr ""
+msgstr "그려진 프레임 사이에 추가 프레임을 만듭니다. 움직임이 더 부드러워지지만 입력 지연이 조금 늘어납니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:70
 msgid "A set of Remix's quality settings chosen together: Ultra, High, Medium, Low or Custom."
-msgstr ""
+msgstr "Remix의 품질 설정을 한꺼번에 선택하는 묶음입니다. 울트라, 높음, 중간, 낮음, 사용자 지정이 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:71
 msgid "PBR"
-msgstr ""
+msgstr "PBR"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:71
 msgid "Physically based rendering: extra texture maps tell the path tracer how rough, metallic or bumpy a surface is."
-msgstr ""
+msgstr "물리 기반 렌더링입니다. 추가 텍스처 맵이 패스 트레이서에 표면의 거칠기, 금속성, 요철을 알려 줍니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:72
 msgid "Remix mod"
-msgstr ""
+msgstr "Remix 모드"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:72
 msgid "A folder in rtx-remix\\mods with replacements: better textures, materials or models that Remix shows instead of the game's own."
-msgstr ""
+msgstr "rtx-remix\\mods 안의 교체 에셋 폴더입니다. Remix가 게임 자체의 텍스처, 머티리얼, 모델 대신 표시할 향상된 에셋이 들어 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:73
 msgid "Remix API"
-msgstr ""
+msgstr "Remix API"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:73
 msgid "The connection through which the RTX add-ons control Remix: its settings, lights and materials."
-msgstr ""
+msgstr "RTX 애드온이 Remix의 설정, 조명, 머티리얼을 제어하는 연결 통로입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:74
 msgid "VRAM"
-msgstr ""
+msgstr "VRAM"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:74
 msgid "The graphics card's own memory. Textures, characters and the path tracer all need it."
-msgstr ""
+msgstr "그래픽 카드 자체의 메모리입니다. 텍스처, 캐릭터, 패스 트레이서 모두 이 메모리가 필요합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:76
 msgid "The RTX Remix tab"
-msgstr ""
+msgstr "RTX Remix 탭"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:77
 msgid "Hold Q and click RTX Remix at the top right of the spawn menu. Its list has six groups: click a name in a group, and its panel opens on the right. Most changes apply at once and are kept for your next game."
-msgstr ""
+msgstr "Q를 누른 채 생성 메뉴 오른쪽 위의 RTX Remix를 클릭하세요. 목록에는 여섯 그룹이 있습니다. 그룹 안의 이름을 클릭하면 오른쪽에 패널이 열립니다. 대부분의 변경은 즉시 적용되며 다음 게임에도 유지됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:79
 msgid "Quick Filter: type part of a name to find a panel."
-msgstr ""
+msgstr "빠른 필터링: 이름의 일부를 입력해 패널을 찾으세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:80
 msgid "Start here: the loader's choices for your computer, this guide and the language."
-msgstr ""
+msgstr "시작하기: 로더가 컴퓨터에 맞춰 선택한 설정, 이 가이드, 언어 설정입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:81
 msgid "Remix settings: the Remix options people change most."
-msgstr ""
+msgstr "Remix 설정: 자주 바꾸는 Remix 옵션입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:82
 msgid "Sky and weather: the sun, moon, stars and weather."
-msgstr ""
+msgstr "하늘과 날씨: 해, 달, 별, 날씨입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:83
 msgid "Rendering: characters, materials and performance."
-msgstr ""
+msgstr "렌더링: 캐릭터, 머티리얼, 성능입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:84
 msgid "Lights: the flashlight and the map's lights."
-msgstr ""
+msgstr "조명: 손전등과 맵 조명입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:85
 msgid "Water and glass."
-msgstr ""
+msgstr "물과 유리."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:86
 msgid "Drag the divider between the two halves of the spawn menu to give the RTX Remix tab more room."
-msgstr ""
+msgstr "생성 메뉴의 두 영역 사이에 있는 구분선을 드래그해 RTX Remix 탭을 넓히세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:89
 msgid "What the loader chose for your computer: the performance tier and the memory profile."
-msgstr ""
+msgstr "로더가 컴퓨터에 맞춰 선택한 성능 등급과 메모리 프로필입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:90
 msgid "Open the RTX Remix guide: opens this guide."
-msgstr ""
+msgstr "RTX Remix 가이드 열기: 이 가이드를 엽니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:91
 msgid "Performance and memory guide: opens the guide's page about memory and crashes."
-msgstr ""
+msgstr "성능과 메모리 가이드: 메모리와 크래시에 관한 가이드 페이지를 엽니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:92
 msgid "Print the loader's status to the console: the loader's report, for when something is wrong."
-msgstr ""
+msgstr "로더 상태를 콘솔에 출력: 문제가 있을 때 확인할 로더 보고서입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:93
 msgid "Use the classic RTX settings: applies the original RTX install's settings again."
-msgstr ""
+msgstr "클래식 RTX 설정 사용: 기존 RTX 설치 환경의 설정을 다시 적용합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:94
 msgid "RTX session guard: stops other add-ons from undoing RTX settings."
-msgstr ""
+msgstr "RTX 세션 보호: 다른 애드온이 RTX 설정을 되돌리지 못하게 막습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:95
 msgid "Language: the language of this tab and this guide."
-msgstr ""
+msgstr "언어: 이 탭과 가이드의 언어입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:96
 msgid "When RTX first ran, the RTX add-ons took the settings of the original RTX install, except for settings you had already changed. Use the classic RTX settings applies all of them again, also over your own changes: use it to undo your own experiments."
-msgstr ""
+msgstr "RTX를 처음 실행했을 때 이미 변경한 설정을 제외하고 RTX 애드온에 기존 RTX 설치 환경의 설정이 적용되었습니다. 클래식 RTX 설정 사용은 직접 변경한 값까지 덮어쓰며 모든 설정을 다시 적용합니다. 직접 시험한 설정을 되돌릴 때 사용하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:97
 msgid "Leave RTX session guard on. Turn it off only for a moment, to find out whether an add-on that misbehaves is the cause."
-msgstr ""
+msgstr "RTX 세션 보호는 켜 두세요. 오작동하는 애드온이 원인인지 확인할 때만 잠시 끄세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:99
 msgid "Common Remix settings changes the Remix options people change most, without opening Alt+X. A change applies at once, for this session."
-msgstr ""
+msgstr "주요 Remix 설정에서는 Alt+X를 열지 않고 자주 바꾸는 Remix 옵션을 변경할 수 있습니다. 변경은 이번 세션에 즉시 적용됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:101
 msgid "Reapply these overrides at every launch: leave it off, and save in Alt+X instead."
-msgstr ""
+msgstr "시작할 때마다 이 덮어쓰기 값 다시 적용: 꺼 두고 Alt+X에서 저장하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:102
 msgid "A choice. (leave to Remix) means this panel does not touch that option."
-msgstr ""
+msgstr "선택 항목입니다. (Remix에 맡김)은 이 패널이 해당 옵션을 건드리지 않는다는 뜻입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:103
 msgid "A number is used only while the box above it, Set ... here, is ticked."
-msgstr ""
+msgstr "숫자는 바로 위의 '여기서 ... 설정' 상자를 체크했을 때만 사용됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:104
 msgid "Fog: Remix's fog presets, from light mist to heavy fog, dust and smoke."
-msgstr ""
+msgstr "안개: 옅은 박무부터 짙은 안개, 먼지, 연기까지 선택할 수 있는 Remix의 안개 프리셋입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:105
 msgid "Clear this panel's overrides: forgets every choice made here."
-msgstr ""
+msgstr "이 패널의 덮어쓰기 값 지우기: 여기서 선택한 값을 모두 지웁니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:106
 msgid "To keep a change for your next game, press Alt+X and save it there, as The Remix menu (Alt+X) shows. Or tick Reapply these overrides at every launch: this panel then applies its choices at every start, over Remix's saved settings."
-msgstr ""
+msgstr "다음 게임에도 변경 사항을 유지하려면 Alt+X를 눌러 Remix 메뉴(Alt+X)의 설명대로 저장하세요. 또는 시작할 때마다 이 덮어쓰기 값 다시 적용을 체크하세요. 그러면 시작할 때마다 이 패널의 선택이 Remix에 저장된 설정을 덮어씁니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:107
 msgid "Max light bounces: more bounces light rooms more fully, and cost frame rate. Sky brightness changes only the map's own skybox. Post effects are bloom, motion blur and film grain. The other choices are the same settings as in Alt+X."
-msgstr ""
+msgstr "최대 광선 반사 수: 반사 횟수가 많으면 방 안을 더 구석구석 비추지만 프레임 속도가 낮아집니다. 하늘 밝기는 맵 자체의 스카이박스에만 영향을 줍니다. 후처리 효과는 블룸, 모션 블러, 필름 그레인입니다. 다른 항목은 Alt+X에 있는 것과 같은 설정입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:110
 msgid "Sky: the physical sky, or the map's own skybox."
-msgstr ""
+msgstr "하늘: 물리 기반 하늘 또는 맵 자체의 스카이박스입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:111
 msgid "Follow the map's sun: the sun stands where the map's own sun is."
-msgstr ""
+msgstr "맵의 태양 따르기: 맵 자체의 태양 위치에 태양을 놓습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:112
 msgid "Time of day, with buttons for sunrise, morning, noon, sunset and night."
-msgstr ""
+msgstr "시각과 일출, 아침, 정오, 일몰, 밤 버튼입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:113
 msgid "Sun direction: turns the sun's path around the map."
-msgstr ""
+msgstr "태양 방향: 맵을 기준으로 태양의 이동 경로를 회전합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:114
 msgid "Time passes, and how many minutes a whole day takes."
-msgstr ""
+msgstr "시간 흐름과 하루에 걸리는 시간(분)입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:115
 msgid "Season, moon phase and eclipse."
-msgstr ""
+msgstr "계절, 달의 위상, 일식·월식입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:116
 msgid "Night sky: the detailed image of the stars, or simulated stars."
-msgstr ""
+msgstr "밤하늘: 정밀한 별 이미지 또는 절차적으로 생성한 별입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:117
 msgid "Weather, and how long a change of weather takes."
-msgstr ""
+msgstr "날씨와 날씨가 바뀌는 데 걸리는 시간입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:118
 msgid "Reset the sky and weather."
-msgstr ""
+msgstr "하늘과 날씨 초기화."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
 msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the sun stands where the map's own sun is. Move Time of day or Sun direction to choose your own, or tick Time passes."
-msgstr ""
+msgstr "물리 기반 하늘은 실제 같은 태양, 구름, 달, 별로 맵을 비춥니다. 기본적으로 맵 자체의 태양 위치에 태양이 놓입니다. 직접 정하려면 시각이나 태양 방향을 바꾸거나 시간 흐름을 체크하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."
-msgstr ""
+msgstr "달에는 실제 달 표면이 보이며 위상이 변합니다. 밤에는 정밀한 별 이미지와 은하, 성운이 시각과 계절에 따라 회전합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:121
 msgid "Eclipse: a lunar eclipse turns the full moon copper red; a solar eclipse covers the sun, darkens the day and shows the corona. Eclipse progress moves it from first contact (0) to the middle (100)."
-msgstr ""
+msgstr "일식·월식: 월식은 보름달을 구릿빛 붉은색으로 물들입니다. 일식은 태양을 가리고 낮을 어둡게 하며 코로나를 드러냅니다. 식 진행으로 처음 접하는 순간(0)부터 중앙(100)까지 움직일 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:122
 msgid "Weather has twelve kinds, from clear to thunderstorm, snow and sandstorm. A fog preset chosen in Remix settings replaces the weather's fog until you set Fog back to (leave to Remix)."
-msgstr ""
+msgstr "날씨는 맑음부터 뇌우, 눈, 모래폭풍까지 열두 종류입니다. Remix 설정에서 안개 프리셋을 선택하면 안개를 (Remix에 맡김)으로 되돌릴 때까지 날씨의 안개 대신 적용됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:123
 msgid "Console shortcuts: nativeloader_sky_time sunset (or sunrise, noon, night, 18:30) sets the time; nativeloader_sky_status prints the sky's state."
-msgstr ""
+msgstr "콘솔 단축 명령: nativeloader_sky_time sunset(또는 sunrise, noon, night, 18:30)은 시각을 설정하고, nativeloader_sky_status는 하늘 상태를 출력합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:125
 msgid "Rendering holds the panels for characters, materials and performance:"
-msgstr ""
+msgstr "렌더링에는 캐릭터, 머티리얼, 성능 관련 패널이 있습니다:"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:127
 msgid "Base Options: your own body's shadow and reflection, map fixes, and which lights Remix uses."
-msgstr ""
+msgstr "기본 옵션: 내 몸의 그림자와 반사, 맵 수정, Remix가 사용할 조명입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:128
 msgid "Model outlines: outline shells, imported game PBR and eye whites, described in Characters."
-msgstr ""
+msgstr "모델 외곽선: 캐릭터에서 설명하는 외곽선 셸, 가져온 캐릭터 PBR, 눈 흰자 설정입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:129
 msgid "Imported game PBR: the texture maps that imported characters bring from their games, described in Characters."
-msgstr ""
+msgstr "가져온 게임 PBR: 캐릭터에서 설명하는, 가져온 캐릭터에 동봉된 게임의 텍스처 맵입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:130
 msgid "Player models: your own body's shadow and reflection, and the height it is drawn at."
-msgstr ""
+msgstr "플레이어 모델: 내 몸의 그림자와 반사, 몸이 그려지는 높이입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:131
 msgid "Performance: draws the map faster. Mesh replacements stop working while Performance Mode is on."
-msgstr ""
+msgstr "성능: 맵을 더 빠르게 그립니다. 성능 모드가 켜져 있으면 메시 교체가 작동하지 않습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:132
 msgid "ToPBR: makes PBR maps from the game's own materials. It uses a lot of VRAM and needs a map reload."
-msgstr ""
+msgstr "ToPBR: 게임 자체의 머티리얼에서 PBR 맵을 만듭니다. VRAM을 많이 사용하며 맵을 다시 불러와야 합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:133
 msgid "Auto-Categorization: sorts textures into Remix's categories automatically."
-msgstr ""
+msgstr "자동 분류: 텍스처를 Remix의 범주에 맞춰 자동으로 분류합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:134
 msgid "Toolgun screen: keeps the toolgun's screen text sharp."
-msgstr ""
+msgstr "툴건 화면: 툴건 화면의 글자를 선명하게 유지합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:136
 msgid "Pseudoplayer Enabled: lets you see your own shadow and reflection."
-msgstr ""
+msgstr "플레이어 모델 복제본 활성화: 내 몸의 그림자와 반사를 볼 수 있게 합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:137
 msgid "Pseudoweapon Enabled: the same for the weapon you hold."
-msgstr ""
+msgstr "무기 모델 복제본 활성화: 들고 있는 무기에도 같은 효과를 적용합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:138
 msgid "Hardware Skinning: needed by some mesh replacements; experimental."
-msgstr ""
+msgstr "하드웨어 스키닝: 일부 메시 교체에 필요하며, 실험적 기능입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:139
 msgid "Fix Skybox Leaking: hides parts of the map that show through the sky."
-msgstr ""
+msgstr "스카이박스 너머의 도형 노출 수정: 하늘 너머로 비쳐 보이는 맵 부분을 숨깁니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:140
 msgid "Disable Remix API Lights: ticked (the default), Remix uses the game's own lights; unticked, every map light becomes a Remix light."
-msgstr ""
+msgstr "Remix API 조명 비활성화: 체크하면(기본값) Remix가 게임 자체의 조명을 사용합니다. 체크를 해제하면 모든 맵 조명이 Remix 조명으로 바뀝니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:141
 msgid "Map Fixes: repairs broken map geometry on this map, at some cost in frame rate."
-msgstr ""
+msgstr "맵 수정: 이 맵의 잘못된 지오메트리를 수정하며, 프레임 속도가 다소 낮아집니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:143
 msgid "Performance Mode: draws the map's world and props faster, and breaks mesh replacements."
-msgstr ""
+msgstr "성능 모드: 맵의 월드와 소품을 더 빠르게 그리며, 메시 교체가 작동하지 않게 됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:144
 msgid "Culling and 3D Sky: which props are skipped, and the map's 3D skybox. Both need Performance Mode."
-msgstr ""
+msgstr "컬링과 3D 스카이박스: 그리기를 생략할 소품과 맵의 3D 스카이박스 설정입니다. 둘 다 성능 모드가 필요합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:145
 msgid "Advanced: Engine Patches. Leave them alone unless you are asked to change them."
-msgstr ""
+msgstr "고급: 엔진 패치. 변경하라는 요청을 받지 않았다면 그대로 두세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:147
 msgid "Press your flashlight key (F by default) for a path-traced flashlight. Lights > Flashlight sets how it looks."
-msgstr ""
+msgstr "손전등 키(기본값 F)를 누르면 패스 트레이싱 손전등을 사용합니다. 조명 > 손전등에서 모양을 설정할 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:149
 msgid "Brightness and radius of the light."
-msgstr ""
+msgstr "조명의 밝기와 반경입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:150
 msgid "Cone Angle and Cone Softness: the width of the beam and how soft its edge is."
-msgstr ""
+msgstr "광원 원뿔 각도와 원뿔 가장자리 부드러움: 광선의 폭과 가장자리가 부드러운 정도입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:151
 msgid "Volumetric Scale: how much the beam lights up fog and dust."
-msgstr ""
+msgstr "볼류메트릭 조명 배율: 광선이 안개와 먼지를 밝히는 정도입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:152
 msgid "The light's color."
-msgstr ""
+msgstr "조명의 색상입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:153
 msgid "Position Offset: where the light sits relative to your eyes: forward, right and up."
-msgstr ""
+msgstr "위치 오프셋: 눈을 기준으로 조명이 놓일 위치입니다. 앞, 오른쪽, 위 방향으로 조절합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:154
 msgid "Reset: back to the defaults."
-msgstr ""
+msgstr "초기화: 기본값으로 되돌립니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:155
 msgid "Map: by default Remix lights the map from the game's own lights. When Disable Remix API Lights (Rendering > Base Options) is unticked, every map light becomes a Remix light, and the Map panel scales the brightness, size and glow in fog of point lights, spot lights and the sun."
-msgstr ""
+msgstr "맵: 기본적으로 Remix는 게임 자체의 조명으로 맵을 비춥니다. Remix API 조명 비활성화(렌더링 > 기본 옵션)의 체크를 해제하면 모든 맵 조명이 Remix 조명으로 바뀝니다. 이때 맵 패널에서 점 광원, 스포트라이트, 태양의 밝기, 크기, 안개 속에서 빛나는 정도를 조절할 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:156
 msgid "Wrapper - Basic, Wrapper - Dynamic and Wrapper - Projected Texture turn the lights of other add-ons into Remix lights. Entity Light HUD shows the Remix lights near you."
-msgstr ""
+msgstr "기본 광원 변환, 동적 광원 변환, 투영 텍스처 광원 변환은 다른 애드온의 조명을 Remix 조명으로 바꿉니다. 엔티티 조명 HUD는 주변의 Remix 조명을 표시합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:157
 msgid "Advanced MMD Animation Player: its flashlight becomes a Remix light when the Remix API is ready (nativeloader_status says Remix API: ready). The light's strength grows with its radius: a radius of 1 is almost invisible; start with 20 to 30."
-msgstr ""
+msgstr "Advanced MMD Animation Player: Remix API가 준비되면(nativeloader_status에 Remix API: ready가 표시됨) 손전등이 Remix 조명으로 바뀝니다. 조명의 세기는 반경에 따라 커집니다. 반경이 1이면 거의 보이지 않으니 20~30부터 시작하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:160
 msgid "Map windows and Spawned glass: annealed glass breaks into large shards, tempered glass into many small pieces."
-msgstr ""
+msgstr "맵 창문과 생성할 유리: 일반 유리는 큰 파편으로, 강화 유리는 많은 작은 파편으로 깨집니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:161
 msgid "Glass strength."
-msgstr ""
+msgstr "유리 강도."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:162
 msgid "Show cracks."
-msgstr ""
+msgstr "균열 표시."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:163
 msgid "Player break speed: how fast you must move to break a window. At the default of 250, walking does not break windows."
-msgstr ""
+msgstr "플레이어 충돌 파괴 속도: 창문을 깨뜨리는 데 필요한 이동 속도입니다. 기본값인 250에서는 걸어서 창문을 깨뜨릴 수 없습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:164
 msgid "Debris lifetime and budget: how long broken pieces stay, and how many there may be."
-msgstr ""
+msgstr "파편 수명과 파편 수 제한: 깨진 파편이 남아 있는 시간과 최대 개수입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:165
 msgid "Clear broken glass."
-msgstr ""
+msgstr "깨진 유리 치우기."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:166
 msgid "The server settings need an administrator; in a single-player game that is you. Kind, strength and piece size apply to new panes: clean up the map to replace its windows. Flying through glass in noclip never breaks it."
-msgstr ""
+msgstr "서버 설정에는 관리자 권한이 필요합니다. 싱글플레이에서는 자신이 관리자입니다. 유리 종류, 강도, 파편 크기는 새 유리판에 적용됩니다. 창문을 교체하려면 맵을 정리하세요. 노클립으로 유리를 통과하면 절대 깨지지 않습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:167
 msgid "RTX Water makes the map's water path traced, with waves, ripples from players, objects and bullets, and splashes. Choose the water type and the waves there, or leave them on Auto (map default)."
-msgstr ""
+msgstr "RTX Water는 맵의 물에 패스 트레이싱과 파도를 적용하고, 플레이어, 물체, 탄환이 만드는 물결과 물보라를 더합니다. 물 종류와 파도를 선택하거나 자동(맵 기본값)으로 두세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:169
 msgid "Enable RTX Water."
-msgstr ""
+msgstr "RTX Water 활성화."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:170
 msgid "Water type and Waves: Auto (map default) uses what the map sets."
-msgstr ""
+msgstr "물 종류와 파도: 자동(맵 기본값)은 맵에 지정된 설정을 사용합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:171
 msgid "The waves: strength, speed, direction and size."
-msgstr ""
+msgstr "파도의 세기, 속도, 방향, 크기입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:172
 msgid "Waves from players, NPCs, objects and bullets, and how far they travel."
-msgstr ""
+msgstr "플레이어, NPC, 물체, 탄환이 만드는 물결과 물결이 퍼지는 거리입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:173
 msgid "Splashes thrown up by bodies and bullets."
-msgstr ""
+msgstr "물체와 탄환이 튀기는 물보라입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:175
 msgid "The Remix menu (Alt+X)"
-msgstr ""
+msgstr "Remix 메뉴(Alt+X)"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:176
 msgid "Alt+X opens and closes Remix's own menu, drawn over the game. It comes in two forms: the simple menu, User Graphics Settings, and the developer menu with every option. While the menu is open, the mouse works in the menu."
-msgstr ""
+msgstr "Alt+X는 게임 화면 위에 표시되는 Remix 자체 메뉴를 열고 닫습니다. 간단한 메뉴인 사용자 그래픽 설정과 모든 옵션이 있는 개발자 메뉴, 두 형태가 있습니다. 메뉴가 열려 있으면 마우스는 메뉴 안에서 작동합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:177
 msgid "The simple menu"
-msgstr ""
+msgstr "간단한 메뉴"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:179
 msgid "The tabs. General: the language, DLSS and frame generation. Graphics: Graphics Preset and the quality settings. Content: Remix's replacements on or off. Permissions: what NVIDIA may collect."
-msgstr ""
+msgstr "탭입니다. 일반: 언어, DLSS, 프레임 생성. 그래픽: 그래픽 프리셋과 품질 설정. 콘텐츠: Remix 교체 에셋 켜기와 끄기. 권한: NVIDIA가 수집할 수 있는 정보."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:180
 msgid "DLSS Preset: Custom lets you choose the DLSS settings below yourself."
-msgstr ""
+msgstr "DLSS 프리셋: 사용자 지정을 고르면 아래의 DLSS 설정을 직접 선택할 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:181
 msgid "DLSS Mode: how much smaller the game is drawn before DLSS enlarges it. Performance is faster, Quality is sharper."
-msgstr ""
+msgstr "DLSS 모드: DLSS로 확대하기 전에 게임을 얼마나 작게 그릴지 정합니다. 성능은 더 빠르고, 품질은 더 선명합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:182
 msgid "Frame Generation."
-msgstr ""
+msgstr "프레임 생성."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:183
 msgid "Developer Settings Menu: opens the developer menu."
-msgstr ""
+msgstr "개발자 설정 메뉴: 개발자 메뉴를 엽니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:184
 msgid "Save Settings: keeps your changes in user.conf. It is orange while something is not saved."
-msgstr ""
+msgstr "설정 저장: 변경 사항을 user.conf에 저장합니다. 저장하지 않은 변경이 있으면 주황색으로 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:185
 msgid "Delete All User Settings: forgets everything saved in user.conf."
-msgstr ""
+msgstr "모든 사용자 설정 삭제: user.conf에 저장된 설정을 모두 지웁니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:186
 msgid "The developer menu"
-msgstr ""
+msgstr "개발자 메뉴"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:188
 msgid "Graphics Settings Menu: back to the simple menu."
-msgstr ""
+msgstr "그래픽 설정 메뉴: 간단한 메뉴로 돌아갑니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:189
 msgid "Default Menu: when ticked, Alt+X opens this developer menu instead of the simple one."
-msgstr ""
+msgstr "기본 메뉴: 체크하면 Alt+X로 간단한 메뉴 대신 이 개발자 메뉴가 열립니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:190
 msgid "The tabs: Rendering, Game Setup, Enhancements, About and Dev Settings."
-msgstr ""
+msgstr "렌더링, 게임 설정, 향상, 정보, 개발자 설정 탭입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:191
 msgid "How much video memory Remix uses."
-msgstr ""
+msgstr "Remix가 사용하는 비디오 메모리 양입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:192
 msgid "A blue dot marks a setting that differs from its default."
-msgstr ""
+msgstr "기본값과 다른 설정에는 파란 점이 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:193
 msgid "Each section of a tab opens and closes with a click on its name. At the very end of the developer menu is Settings Management, where its changes are saved."
-msgstr ""
+msgstr "탭 안의 각 섹션은 이름을 클릭하면 열리고 닫힙니다. 개발자 메뉴 맨 아래에는 변경 사항을 저장하는 설정 관리가 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:194
 msgid "Keeping your changes"
-msgstr ""
+msgstr "변경 사항 유지하기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:195
 msgid "Remix reads its settings from files at every start. A change you make in the menu lasts until you quit, unless you save it."
-msgstr ""
+msgstr "Remix는 시작할 때마다 파일에서 설정을 읽습니다. 메뉴에서 바꾼 값은 저장하지 않으면 게임을 종료할 때까지만 유지됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:197
 msgid "To change single settings, first set the preset to Custom: Graphics Preset on the simple menu's Graphics tab, and DLSS Preset on its General tab for the DLSS settings. Another preset is applied again at every start, over the single settings you changed. To use a whole preset instead, just choose it."
-msgstr ""
+msgstr "개별 설정을 바꾸려면 먼저 프리셋을 사용자 지정으로 설정하세요. 간단한 메뉴의 그래픽 탭에 있는 그래픽 프리셋을 바꾸고, DLSS 설정은 일반 탭에 있는 DLSS 프리셋을 바꾸세요. 다른 프리셋을 사용하면 시작할 때마다 직접 바꾼 개별 설정을 덮어씁니다. 프리셋 전체를 사용하려면 원하는 프리셋을 선택하기만 하면 됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:198
 msgid "Change the settings you want."
-msgstr ""
+msgstr "원하는 설정을 바꾸세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:199
 msgid "Check what will be saved: hold the mouse over Save Settings, or open View Changes in the developer menu's Settings Management."
-msgstr ""
+msgstr "저장될 내용을 확인하세요. 설정 저장 위에 마우스를 올리거나, 개발자 메뉴의 설정 관리에서 변경 사항 보기를 여세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:200
 msgid "Save. In the simple menu, click Save Settings. In the developer menu, User Settings (user.conf): Save keeps graphics settings such as the presets, DLSS and frame generation, and Remix Config (rtx.conf): Save keeps developer settings."
-msgstr ""
+msgstr "저장하세요. 간단한 메뉴에서는 설정 저장을 클릭하세요. 개발자 메뉴에서는 사용자 설정(user.conf): 저장이 프리셋, DLSS, 프레임 생성 같은 그래픽 설정을 저장하고, Remix 설정(rtx.conf): 저장이 개발자 설정을 저장합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:201
 msgid "Start the game again once, to check that your settings came back."
-msgstr ""
+msgstr "게임을 한 번 다시 시작해 설정이 유지되는지 확인하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:203
 msgid "View Changes: the list of what Save would write to user.conf."
-msgstr ""
+msgstr "변경 사항 보기: 저장을 누르면 user.conf에 기록될 내용의 목록입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:204
 msgid "User Settings (user.conf): Save keeps your graphics settings."
-msgstr ""
+msgstr "사용자 설정(user.conf): 저장은 그래픽 설정을 저장합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:205
 msgid "Migrate developer settings to rtx.conf: do not press it."
-msgstr ""
+msgstr "개발자 설정을 rtx.conf로 이전: 누르지 마세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:206
 msgid "Remix Config (rtx.conf): Save keeps developer settings."
-msgstr ""
+msgstr "Remix 설정(rtx.conf): 저장은 개발자 설정을 저장합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:207
 msgid "Do not press Migrate developer settings to rtx.conf. Before you save, check what will be saved: the RTX add-ons set some values for the current map through the Remix API, and saving them would apply them to every map."
-msgstr ""
+msgstr "개발자 설정을 rtx.conf로 이전은 누르지 마세요. 저장하기 전에 저장될 내용을 확인하세요. RTX 애드온은 Remix API로 현재 맵에 맞는 일부 값을 설정하며, 이 값을 저장하면 모든 맵에 적용됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:208
 msgid "Both files are in the Garry's Mod folder, and they win over the RTX package's defaults."
-msgstr ""
+msgstr "두 파일 모두 Garry's Mod 폴더에 있으며 RTX 패키지의 기본값보다 우선합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:209
 msgid "The graphics preset and the loader's tier"
-msgstr ""
+msgstr "그래픽 프리셋과 로더의 등급"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:210
 msgid "The loader's performance tier, shown in Start here, only sets the package's starting values for your graphics card. The graphics preset and everything you save in Alt+X win over it."
-msgstr ""
+msgstr "시작하기에 표시되는 로더의 성능 등급은 그래픽 카드에 맞는 패키지의 시작 값만 정합니다. 그래픽 프리셋과 Alt+X에서 저장한 모든 설정이 이보다 우선합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:212
 msgid "Characters"
-msgstr ""
+msgstr "캐릭터"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:213
 msgid "Characters from MMD and from other games come into Garry's Mod through the Model Hotloader. The RTX package adds automatic PBR for characters from some games, and steady eye whites."
-msgstr ""
+msgstr "MMD와 다른 게임의 캐릭터는 Model Hotloader를 통해 Garry's Mod로 가져옵니다. RTX 패키지는 일부 게임 캐릭터에 자동 PBR을 적용하고 눈 흰자 밝기를 안정화합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:214
 msgid "Importing a character"
-msgstr ""
+msgstr "캐릭터 가져오기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:216
 msgid "Hold Q and click External Models at the top left of the spawn menu. For the same in a window of its own, type mmdhl_open in the console."
-msgstr ""
+msgstr "Q를 누른 채 생성 메뉴 왼쪽 위의 외부 모델을 클릭하세요. 같은 기능을 별도 창에서 사용하려면 콘솔에 mmdhl_open을 입력하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:217
 msgid "Click Import Character Models and choose the model's file."
-msgstr ""
+msgstr "캐릭터 모델 가져오기를 클릭하고 모델 파일을 선택하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:218
 msgid "Wait until the import is done. The character then appears in your library."
-msgstr ""
+msgstr "가져오기가 끝날 때까지 기다리세요. 완료되면 캐릭터가 라이브러리에 나타납니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:220
 msgid "Import Character Models: choose a model's file to import."
-msgstr ""
+msgstr "캐릭터 모델 가져오기: 가져올 모델 파일을 선택합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:221
 msgid "Your library, in folders. Click a character to select it."
-msgstr ""
+msgstr "폴더별로 정리된 라이브러리입니다. 캐릭터를 클릭해 선택하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:222
 msgid "The selected character, with a preview you can turn with the mouse."
-msgstr ""
+msgstr "선택한 캐릭터와 마우스로 회전할 수 있는 미리보기입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:223
 msgid "Spawn it: as a ragdoll, as a friendly or hostile NPC, or as your player model."
-msgstr ""
+msgstr "래그돌, 우호적 또는 적대적 NPC, 내 플레이어 모델로 생성합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:224
 msgid "Spawning"
-msgstr ""
+msgstr "생성하기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:225
 msgid "Select a character in the library, then click Spawn Ragdoll, Spawn Friendly NPC, Spawn Hostile NPC or Use as Player Model. Characters you saved as NPCs also appear in the spawn menu's NPCs tab."
-msgstr ""
+msgstr "라이브러리에서 캐릭터를 선택한 다음 래그돌 스폰, 우호적 NPC 스폰, 적대적 NPC 스폰, 플레이어 모델로 사용 중 하나를 클릭하세요. NPC로 저장한 캐릭터는 생성 메뉴의 NPC 탭에도 나타납니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:226
 msgid "To save memory, a character is loaded the first time you use it on a map. A large character can take a few seconds then; after that it spawns at once. When a map starts, your most recently used characters are loaded in advance: up to five on a recommended computer and ten on a high one, as Performance and memory explains."
-msgstr ""
+msgstr "메모리를 절약하기 위해 캐릭터는 맵에서 처음 사용할 때 불러옵니다. 이때 용량이 큰 캐릭터는 몇 초 걸릴 수 있지만 그다음부터는 즉시 생성됩니다. 맵이 시작되면 최근에 사용한 캐릭터를 미리 불러옵니다. 성능과 메모리에서 설명하듯 권장 사양 컴퓨터에서는 최대 다섯 개, 고사양 컴퓨터에서는 최대 열 개입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:227
 msgid "Automatic PBR for game characters"
-msgstr ""
+msgstr "게임 캐릭터의 자동 PBR"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:228
 msgid "Characters imported from Wuthering Waves, Endfield and Silver Palace bring the game's own normal and material maps. The RTX package uses them automatically, so these characters look right under path tracing. Skin and faces stay as they are, and a real Remix replacement, such as a PBR pack you installed, always comes first."
-msgstr ""
+msgstr "명조, 엔드필드, 실버 팰리스에서 가져온 캐릭터에는 해당 게임의 노멀 맵과 머티리얼 맵이 동봉되어 있습니다. RTX 패키지는 이 맵을 자동으로 사용해 패스 트레이싱에서도 캐릭터가 올바르게 보이게 합니다. 피부와 얼굴은 그대로 유지되며, 설치한 PBR 팩 같은 실제 Remix 교체 에셋이 항상 우선합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:230
 msgid "Imported game PBR: ticked, the game's texture maps are used; unticked, the original materials."
-msgstr ""
+msgstr "가져온 캐릭터 PBR: 체크하면 게임의 텍스처 맵을, 해제하면 원래 머티리얼을 사용합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:231
 msgid "The character: the one you look at, or choose another here."
-msgstr ""
+msgstr "캐릭터: 현재 바라보는 캐릭터입니다. 여기서 다른 캐릭터를 선택할 수도 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:232
 msgid "Its materials, each with its state: automatic or cached (the game's maps are used), override (your choice), none, or waiting (not drawn yet)."
-msgstr ""
+msgstr "캐릭터의 머티리얼과 각 상태입니다. 자동 또는 캐시됨(게임의 맵 사용), 수동 설정(직접 선택한 값), 없음, 대기 중(아직 그려지지 않음)으로 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:233
 msgid "Map family: a set of maps that belong together."
-msgstr ""
+msgstr "맵 그룹: 함께 사용하는 맵의 묶음입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:234
 msgid "Single maps: normal, packed and emission."
-msgstr ""
+msgstr "개별 맵: 노멀 맵, 패킹 맵, 발광 맵입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:235
 msgid "The buttons that apply your choice."
-msgstr ""
+msgstr "선택한 값을 적용하는 버튼입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:237
 msgid "Spawn the character and look at it."
-msgstr ""
+msgstr "캐릭터를 생성하고 바라보세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:238
 msgid "Open Rendering > Imported game PBR. For a separate window, type rtx_topbr_game_editor in the console."
-msgstr ""
+msgstr "렌더링 > 가져온 게임 PBR을 여세요. 별도 창으로 열려면 콘솔에 rtx_topbr_game_editor를 입력하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:239
 msgid "Click List looked-at character, then click a material in the list."
-msgstr ""
+msgstr "바라보는 캐릭터 나열을 클릭하고 목록에서 머티리얼을 클릭하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:240
 msgid "Choose a Map family and click Use selected family. Or choose single maps, set Game layout to the character's game, and click Use individual maps."
-msgstr ""
+msgstr "맵 그룹을 선택하고 선택한 그룹 사용을 클릭하세요. 또는 개별 맵을 선택하고 게임 형식을 캐릭터의 게임으로 설정한 뒤 개별 맵 사용을 클릭하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:241
 msgid "No game maps for this texture turns the maps off for this material. Return to automatic undoes your choice."
-msgstr ""
+msgstr "이 텍스처의 게임 맵 끄기는 해당 머티리얼의 맵을 끕니다. 자동으로 복귀는 직접 선택한 값을 해제합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:242
 msgid "A choice applies to every character that shows the same texture, and it is kept for your next games."
-msgstr ""
+msgstr "선택은 같은 텍스처를 표시하는 모든 캐릭터에 적용되며 다음 게임에도 유지됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:243
 msgid "Eye whites"
-msgstr ""
+msgstr "눈 흰자"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:244
 msgid "Under path tracing, the whites of anime eyes can look grey or dirty. Steady eye whites for imported characters, in Rendering > Model outlines, keeps them clean and bright on imported characters without a PBR pack. It recognizes eye-white materials by their names; when it misses one, or takes a wrong one, choose them yourself."
-msgstr ""
+msgstr "패스 트레이싱에서는 애니메이션풍 캐릭터의 눈 흰자가 회색이나 탁한 색으로 보일 수 있습니다. 렌더링 > 모델 외곽선의 '가져온 캐릭터의 흰자 밝기 안정화'는 PBR 팩이 없는 가져온 캐릭터의 흰자를 깨끗하고 밝게 유지합니다. 이름으로 눈 흰자 머티리얼을 식별하므로 놓치거나 잘못 고른 것이 있으면 직접 선택하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:246
 msgid "Hide outline meshes: hides the outline shells of anime models."
-msgstr ""
+msgstr "외곽선 메시 숨기기: 애니메이션풍 모델의 외곽선 셸을 숨깁니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:247
 msgid "Imported game PBR."
-msgstr ""
+msgstr "가져온 캐릭터 PBR."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:248
 msgid "Steady eye whites for imported characters."
-msgstr ""
+msgstr "가져온 캐릭터의 흰자 밝기 안정화."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:249
 msgid "Eye-white brightness, in percent: 100 is the tuned default."
-msgstr ""
+msgstr "흰자 밝기: 백분율이며 100은 조정된 기본값입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:250
 msgid "Choose eye-white materials: opens the chooser."
-msgstr ""
+msgstr "눈 흰자 머티리얼 선택: 선택 창을 엽니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:252
 msgid "Spawn the character."
-msgstr ""
+msgstr "캐릭터를 생성하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:253
 msgid "Open Rendering > Model outlines and click Choose eye-white materials."
-msgstr ""
+msgstr "렌더링 > 모델 외곽선을 열고 눈 흰자 머티리얼 선택을 클릭하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:254
 msgid "Choose the character at the top, if it is not chosen already."
-msgstr ""
+msgstr "아직 캐릭터가 선택되지 않았다면 위에서 선택하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:255
 msgid "Tick Eye white on the eye-white materials, and untick it on the others."
-msgstr ""
+msgstr "눈 흰자 머티리얼에는 눈 흰자를 체크하고 나머지에서는 해제하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:257
 msgid "The character whose materials are listed."
-msgstr ""
+msgstr "머티리얼 목록이 표시된 캐릭터입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:258
 msgid "A material's texture; its name and its state are beside it. Here the state says Automatic: eye white."
-msgstr ""
+msgstr "머티리얼의 텍스처이며, 옆에 이름과 상태가 있습니다. 여기서는 상태가 자동: 눈 흰자로 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:259
 msgid "Eye white: ticked for eye whites. Use automatic detection undoes your choice for this material."
-msgstr ""
+msgstr "눈 흰자: 흰자에 체크합니다. 자동 감지 사용은 해당 머티리얼의 수동 선택을 해제합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:260
 msgid "More materials, 24 to a page."
-msgstr ""
+msgstr "다른 머티리얼입니다. 한 페이지에 24개씩 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:261
 msgid "Your choice is saved for this character and applies to all its copies at once, without respawning."
-msgstr ""
+msgstr "선택은 이 캐릭터에 저장되며 같은 캐릭터의 모든 개체에 즉시 적용됩니다. 다시 생성할 필요가 없습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:262
 msgid "Open the eye-white chooser"
-msgstr ""
+msgstr "눈 흰자 선택 창 열기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:263
 msgid "Motions"
-msgstr ""
+msgstr "모션"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:264
 msgid "The Motion importer tab, next to External Models, imports MMD motions (VMD files) with their music, and plays them on characters."
-msgstr ""
+msgstr "외부 모델 옆의 모션 가져오기 탭은 MMD 모션(VMD 파일)을 음악과 함께 가져와 캐릭터에서 재생합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:266
 msgid "Performance and memory"
-msgstr ""
+msgstr "성능과 메모리"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:267
 msgid "What your computer needs"
-msgstr ""
+msgstr "필요한 컴퓨터 사양"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:268
 msgid "RTX Remix needs a graphics card with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or newer, or Intel Arc."
-msgstr ""
+msgstr "RTX Remix에는 하드웨어 레이 트레이싱을 지원하는 그래픽 카드가 필요합니다. NVIDIA RTX 20 이상, AMD Radeon RX 6000 이상 또는 Intel Arc가 필요합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:269
 msgid "The minimum is 8 GB of VRAM and 16 GB of system memory (RAM). With the recommended 16 GB of VRAM and 32 GB of RAM, the game should run smoothly. Computers below the minimum are not supported: the game may stutter or run out of memory on them."
-msgstr ""
+msgstr "최소 사양은 VRAM 8 GB와 시스템 메모리(RAM) 16 GB입니다. 권장 사양인 VRAM 16 GB와 RAM 32 GB에서는 게임이 원활하게 실행될 것입니다. 최소 사양 미만의 컴퓨터는 지원하지 않습니다. 게임이 끊기거나 메모리가 부족해질 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:270
 msgid "The performance tier"
-msgstr ""
+msgstr "성능 등급"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:271
 msgid "At every start the loader picks a performance tier for your NVIDIA graphics card: high, medium or low. High keeps the package's full settings. Medium and low use fewer light bounces and smaller memory budgets, so the frame rate holds up. A laptop graphics card counts one step lower."
-msgstr ""
+msgstr "로더는 시작할 때마다 NVIDIA 그래픽 카드에 맞춰 성능 등급을 high, medium, low 중에서 선택합니다. high는 패키지의 전체 설정을 유지합니다. medium과 low는 광선 반사 횟수와 메모리 예산을 줄여 프레임 속도를 유지합니다. 노트북 그래픽 카드는 한 단계 낮게 분류됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:272
 msgid "Start here shows the tier, your graphics card, and whether the tier was chosen automatically or set in config.json. Settings you save in Alt+X still win over it."
-msgstr ""
+msgstr "시작하기에는 등급, 그래픽 카드, 등급이 자동으로 선택되었는지 또는 config.json에서 지정되었는지가 표시됩니다. Alt+X에서 저장한 설정이 여전히 우선합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:273
 msgid "Your loader is older than 0.11.0 and has no performance tiers. Update bin\\win64\\winmm.dll to loader 0.11.0 or later before you change tiers or GPU crash diagnostics: older loaders reject those settings and start without RTX."
-msgstr ""
+msgstr "현재 로더는 0.11.0 이전 버전으로 성능 등급이 없습니다. 등급이나 GPU 크래시 진단을 변경하기 전에 bin\\win64\\winmm.dll을 로더 0.11.0 이상으로 업데이트하세요. 이전 로더는 이 설정을 거부하고 RTX 없이 시작합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:274
 msgid "The memory profile"
-msgstr ""
+msgstr "메모리 프로필"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:275
 msgid "Loader 0.13.0 or later also picks a memory profile from your VRAM and your RAM: the smaller of the two decides. The profile sets how much the game keeps ready:"
-msgstr ""
+msgstr "로더 0.13.0 이상은 VRAM과 RAM을 기준으로 메모리 프로필도 선택합니다. 두 용량 중 더 낮은 사양이 기준이 됩니다. 프로필은 게임이 미리 준비해 두는 양을 정합니다:"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:277
 msgid "Minimum (8 GB VRAM, 16 GB RAM): no character is loaded in advance, and the game frees the system-memory copies of its textures."
-msgstr ""
+msgstr "최소 사양(8 GB VRAM, 16 GB RAM): 캐릭터를 미리 불러오지 않으며, 게임 텍스처의 시스템 메모리 복사본을 해제합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:278
 msgid "Recommended (16 GB VRAM, 32 GB RAM): up to five recently used characters are loaded in advance when a map starts."
-msgstr ""
+msgstr "권장 사양(16 GB VRAM, 32 GB RAM): 맵이 시작되면 최근 사용한 캐릭터를 최대 다섯 개 미리 불러옵니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:279
 msgid "High (24 GB VRAM and 64 GB RAM, or more): up to ten characters are loaded in advance."
-msgstr ""
+msgstr "높음(24 GB VRAM, 64 GB RAM 이상): 캐릭터를 최대 열 개 미리 불러옵니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:280
 msgid "On every profile, game textures that nothing has drawn for a minute leave the graphics card once they fill a quarter of its memory, and come back when they are used again."
-msgstr ""
+msgstr "모든 프로필에서 게임 텍스처가 그래픽 카드 메모리의 4분의 1을 채우면, 1분간 그려지지 않은 텍스처를 그래픽 카드에서 해제합니다. 다시 사용되면 불러옵니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:281
 msgid "Start here shows your profile and how many characters it keeps ready."
-msgstr ""
+msgstr "시작하기에는 프로필과 미리 준비하는 캐릭터 수가 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:282
 msgid "Your loader reports no memory profile, so every character loads when it is first used. Update bin\\win64\\winmm.dll to loader 0.13.0 or later to get one."
-msgstr ""
+msgstr "현재 로더가 메모리 프로필을 보고하지 않으므로 모든 캐릭터는 처음 사용할 때 불러옵니다. 프로필을 사용하려면 bin\\win64\\winmm.dll을 로더 0.13.0 이상으로 업데이트하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:283
 msgid "Choosing the tier or profile yourself"
-msgstr ""
+msgstr "등급이나 프로필 직접 선택하기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:285
 #: nativeloader/lua/nativeloader/guide_pages.lua:351
 msgid "Close Garry's Mod."
-msgstr ""
+msgstr "Garry's Mod를 종료하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:286
 #: nativeloader/lua/nativeloader/guide_pages.lua:352
 msgid "Open native-loader\\config.json in the Garry's Mod folder with a text editor."
-msgstr ""
+msgstr "텍스트 편집기로 Garry's Mod 폴더의 native-loader\\config.json을 여세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:287
 msgid "Add the settings you want, as in this complete example. If you changed the file before, keep your own allow entries and other settings."
-msgstr ""
+msgstr "아래의 전체 예시처럼 원하는 설정을 추가하세요. 이전에 파일을 변경했다면 직접 설정한 allow 항목과 다른 설정은 유지하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:288
 msgid "Save the file and start the game. Start here shows the result."
-msgstr ""
+msgstr "파일을 저장하고 게임을 시작하세요. 시작하기에 결과가 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:290
 msgid "remix.performance_tier is auto, high, medium or low; auto lets the loader choose."
-msgstr ""
+msgstr "remix.performance_tier의 값은 auto, high, medium, low입니다. auto는 로더가 선택하게 합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:291
 msgid "For the memory profile, put a comma after \"low\" and add \"memory_profile\": \"recommended\" on the next line. The value is auto, minimum, recommended or high; auto lets the loader choose."
-msgstr ""
+msgstr "메모리 프로필을 지정하려면 \"low\" 뒤에 쉼표를 넣고 다음 줄에 \"memory_profile\": \"recommended\"를 추가하세요. 값은 auto, minimum, recommended, high입니다. auto는 로더가 선택하게 합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:292
 msgid "Invalid JSON turns RTX off: keep every brace, comma and quote. Restart Garry's Mod after each change."
-msgstr ""
+msgstr "JSON이 잘못되면 RTX가 꺼집니다. 모든 중괄호, 쉼표, 따옴표를 유지하세요. 변경할 때마다 Garry's Mod를 다시 시작하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:293
 msgid "Tips for 8 GB graphics cards and 16 GB of RAM"
-msgstr ""
+msgstr "8 GB 그래픽 카드와 RAM 16 GB를 위한 팁"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:295
 msgid "Play at 1920x1080: 4K needs far more memory."
-msgstr ""
+msgstr "1920x1080으로 플레이하세요. 4K는 훨씬 많은 메모리가 필요합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:296
 msgid "Use a system-managed Windows page file on a drive with at least 30 GB free."
-msgstr ""
+msgstr "여유 공간이 30 GB 이상인 드라이브에서 시스템이 관리하는 Windows 페이지 파일을 사용하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:297
 msgid "Close browsers and stop OBS recording before you play."
-msgstr ""
+msgstr "플레이하기 전에 브라우저를 닫고 OBS 녹화를 중지하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:298
 msgid "Spawn fewer heavy characters at once, and unsubscribe from Workshop add-ons you no longer use."
-msgstr ""
+msgstr "무거운 캐릭터를 한꺼번에 생성하는 수를 줄이고 더 이상 사용하지 않는 Workshop 애드온은 구독을 해제하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:299
 msgid "Remove Remix mods you no longer use from rtx-remix\\mods: most load all their textures at every start."
-msgstr ""
+msgstr "더 이상 사용하지 않는 Remix 모드를 rtx-remix\\mods에서 제거하세요. 대부분 시작할 때마다 모든 텍스처를 불러옵니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
-msgstr ""
+msgstr "Alt+X에서 프레임 생성을 끄고, 설정 저장 또는 개발자 메뉴의 사용자 설정(user.conf): 저장으로 저장해 꺼진 상태를 유지하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
-msgstr ""
+msgstr "Garry's Mod의 텍스처 세부 수준은 최대로 유지하세요. 낮추면 Remix가 인식하는 텍스처가 달라져 교체 에셋이 더 이상 일치하지 않습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
-msgstr ""
+msgstr "작업 관리자 > 성능 > 메모리에서 커밋됨을 확인하세요. 사용 중인 메모리와 한도를 보여 줍니다. 두 값이 가까워지면 다른 프로그램을 닫으세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Reading memory in the game"
-msgstr ""
+msgstr "게임에서 메모리 사용량 확인하기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:304
 msgid "Console: rtx_vram_stats prints how much VRAM the game uses, by category."
-msgstr ""
+msgstr "콘솔: rtx_vram_stats는 게임의 VRAM 사용량을 범주별로 출력합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:305
 msgid "The RTX package records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. nativeloader_vram_telemetry 0 stops it, and 1 starts it again. After three failed readings it stops for the map; switch it off and on to retry. These files stay on your computer."
-msgstr ""
+msgstr "RTX 패키지는 30초마다 garrysmod\\data\\native-loader\\vram.csv와 vram.previous.csv를 기록합니다. nativeloader_vram_telemetry 0은 기록을 중지하고 1은 다시 시작합니다. 세 번 읽기에 실패하면 해당 맵에서는 기록이 중지됩니다. 다시 시도하려면 껐다가 켜세요. 이 파일들은 컴퓨터 안에만 남습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:306
 msgid "The loader also records native-loader\\logs\\memory.csv: the game's RAM and the system's commit, every 10 seconds."
-msgstr ""
+msgstr "로더는 native-loader\\logs\\memory.csv도 기록합니다. 게임의 RAM 사용량과 시스템의 커밋을 10초마다 기록합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:307
 msgid "After a crash"
@@ -1689,31 +1689,31 @@ msgstr "충돌 후"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:309
 msgid "Before you start the game again, copy status.json and session.json from garrysmod\\data\\native-loader\\ and the rtx-remix\\logs\\ folder: the next start replaces them. Copy both vram CSV files from the same folder too."
-msgstr ""
+msgstr "게임을 다시 시작하기 전에 garrysmod\\data\\native-loader\\의 status.json과 session.json, 그리고 rtx-remix\\logs\\ 폴더를 복사하세요. 다음 시작 시 덮어씁니다. 같은 폴더의 VRAM CSV 파일 두 개도 복사하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
-msgstr ""
+msgstr "다음 시작 시 로더는 직전 세션의 로그, 크래시 덤프, 메모리 기록을 native-loader\\logs\\sessions\\에 복사해 둡니다. 최근 다섯 세션, 최대 200 MB까지 보관합니다. 새 세션이 덮어쓰기 전에 이 폴더를 복사하세요. 보관된 것이 없으면 crashes\\와 native-loader\\logs\\gpu\\를 직접 복사하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:311
 msgid "This loader keeps no copies of earlier sessions: also copy the matching dumps from crashes\\ before you restart, and update bin\\win64\\winmm.dll to loader 0.11.0 or later."
-msgstr ""
+msgstr "이 로더는 이전 세션의 복사본을 보관하지 않습니다. 다시 시작하기 전에 crashes\\에서 해당 덤프도 복사하고, bin\\win64\\winmm.dll을 로더 0.11.0 이상으로 업데이트하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:312
 msgid "To report the crash, send those files, copies of rtx.conf, dxvk.conf and user.conf from the Garry's Mod folder, and garrysmod\\console.log if you have it."
-msgstr ""
+msgstr "크래시를 보고하려면 이 파일들과 Garry's Mod 폴더의 rtx.conf, dxvk.conf, user.conf 복사본을 보내세요. garrysmod\\console.log가 있다면 함께 보내세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:313
 msgid "Say which map, characters and mods you used, what you did just before, the time and time zone, the frame rate and the Committed reading."
-msgstr ""
+msgstr "사용한 맵, 캐릭터, 모드와 직전에 한 일, 발생 시각과 시간대, 프레임 속도, 커밋됨 수치를 알려 주세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:314
 msgid "For a GPU hang, also send the Display or nvlddmkm events from Event Viewer > Windows Logs > System, and any matching dump in C:\\Windows\\LiveKernelReports\\WATCHDOG. Dumps can hold some of the game's memory: check what you share."
-msgstr ""
+msgstr "GPU가 멈췄다면 이벤트 뷰어 > Windows 로그 > 시스템의 Display 또는 nvlddmkm 이벤트와 C:\\Windows\\LiveKernelReports\\WATCHDOG의 해당 덤프도 보내세요. 덤프에는 게임 메모리의 일부가 포함될 수 있으니 공유할 내용을 확인하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:315
 msgid "If you are asked for a GPU crash dump: change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete example above, and restart. The value stays \"next_start\"; to ask for another diagnostic start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics slow the game a little."
-msgstr ""
+msgstr "GPU 크래시 덤프를 요청받았다면 위의 전체 예시에서 diagnostics.gpu_crash_dumps를 \"off\"에서 \"next_start\"로 바꾸고 다시 시작하세요. 값은 \"next_start\"로 유지됩니다. 진단을 위한 시작을 다시 요청하려면 native-loader\\remix\\gpu-crash-dumps.used를 삭제하세요. 진단 중에는 게임이 조금 느려집니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:317
 msgid "Troubleshooting"
@@ -1725,15 +1725,15 @@ msgstr "먼저 확인하기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:320
 msgid "Open the console with the ~ key. If it does not open, turn on Options > Keyboard > Advanced > Enable developer console."
-msgstr ""
+msgstr "~ 키로 콘솔을 여세요. 열리지 않으면 옵션 > 키보드 > 고급 > 개발자 콘솔 사용을 켜세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:321
 msgid "Type nativeloader_status and press Enter, or click the button below and then open the console."
-msgstr ""
+msgstr "nativeloader_status를 입력하고 Enter를 누르거나 아래 버튼을 클릭한 다음 콘솔을 여세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:322
 msgid "nativeloader_status prints what the loader installed and started, and whether the Remix API is ready. activation: active means that RTX is on."
-msgstr ""
+msgstr "nativeloader_status는 로더가 설치하고 시작한 항목과 Remix API의 준비 여부를 출력합니다. activation: active는 RTX가 켜졌다는 뜻입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:324
 msgid "Common problems"
@@ -1741,67 +1741,67 @@ msgstr "자주 발생하는 문제"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:325
 msgid "The RTX Remix tab is missing."
-msgstr ""
+msgstr "RTX Remix 탭이 없습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:326
 msgid "RTX is off in this session. Run nativeloader_status: it says why, for example \"enabled\": false under \"remix\" in config.json, or a graphics card without ray tracing."
-msgstr ""
+msgstr "이번 세션에서는 RTX가 꺼져 있습니다. nativeloader_status를 실행하면 이유가 나옵니다. 예를 들어 config.json의 \"remix\" 아래에 \"enabled\": false가 있거나, 그래픽 카드가 레이 트레이싱을 지원하지 않을 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:327
 msgid "The game closes while it starts."
-msgstr ""
+msgstr "게임이 시작하는 도중에 종료됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:328
 msgid "Look in rtx-remix\\logs for a file named last_crash, and at the end of remix-dxvk.log. Keep the game in its window, as it is by default: exclusive fullscreen crashes Remix."
-msgstr ""
+msgstr "rtx-remix\\logs에서 last_crash라는 파일과 remix-dxvk.log의 끝부분을 확인하세요. 기본 설정대로 게임을 창 모드로 유지하세요. 독점 전체 화면에서는 Remix가 크래시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:329
 msgid "Changes made in Alt+X are lost when the game restarts."
-msgstr ""
+msgstr "게임을 다시 시작하면 Alt+X에서 바꾼 값이 사라집니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:330
 msgid "Save them in Alt+X. For single settings, first set Graphics Preset, or DLSS Preset for the DLSS settings, to Custom. The Remix menu (Alt+X) shows the steps."
-msgstr ""
+msgstr "Alt+X에서 저장하세요. 개별 설정은 먼저 그래픽 프리셋을 사용자 지정으로 설정하세요. DLSS 설정은 DLSS 프리셋을 사용자 지정으로 설정하세요. Remix 메뉴(Alt+X)에 순서가 나와 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:331
 msgid "The frame rate is low."
-msgstr ""
+msgstr "프레임 속도가 낮습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:332
 msgid "Choose a lower graphics preset, or a faster DLSS mode such as Performance. Frame generation is off by default; on RTX 40 and 50 cards it can make motion smoother."
-msgstr ""
+msgstr "더 낮은 그래픽 프리셋이나 성능 같은 더 빠른 DLSS 모드를 선택하세요. 프레임 생성은 기본적으로 꺼져 있습니다. RTX 40과 50 카드에서는 켜면 움직임이 더 부드러워질 수 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:333
 msgid "An add-on draws over the picture or undoes RTX settings."
-msgstr ""
+msgstr "애드온이 화면에 덧그리거나 RTX 설정을 되돌립니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:334
 msgid "The console names it, in a line that starts with [nativeloader] RTX guard. To compare, untick RTX session guard in Start here, and tick it again afterwards."
-msgstr ""
+msgstr "콘솔의 [nativeloader] RTX guard로 시작하는 줄에 해당 애드온 이름이 나옵니다. 비교하려면 시작하기에서 RTX 세션 보호를 해제한 다음, 확인 후 다시 체크하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:335
 msgid "Couldn't mount file appears for the RTX Workshop item."
-msgstr ""
+msgstr "RTX Workshop 항목에 Couldn't mount file이 표시됩니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:336
 msgid "That is expected: the loader installs this item itself, instead of the game."
-msgstr ""
+msgstr "정상입니다. 이 항목은 게임 대신 로더가 직접 설치합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:337
 msgid "An imported character looks grey, or its eyes look dirty."
-msgstr ""
+msgstr "가져온 캐릭터가 회색으로 보이거나 눈이 탁해 보입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:338
 msgid "Check Rendering > Model outlines: Imported game PBR and Steady eye whites for imported characters should be ticked. Characters explains both."
-msgstr ""
+msgstr "렌더링 > 모델 외곽선을 확인하세요. '가져온 캐릭터 PBR'과 '가져온 캐릭터의 흰자 밝기 안정화'가 체크되어 있어야 합니다. 캐릭터에서 두 기능을 설명합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:339
 msgid "The first spawn of a character takes a few seconds."
-msgstr ""
+msgstr "캐릭터를 처음 생성할 때 몇 초가 걸립니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:340
 msgid "That is expected: a character is loaded the first time you use it in a game."
-msgstr ""
+msgstr "정상입니다. 캐릭터는 게임에서 처음 사용할 때 불러옵니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:341
 msgid "Files to look at"
@@ -1809,44 +1809,44 @@ msgstr "확인할 파일"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:342
 msgid "These paths start in the Garry's Mod folder, the one that holds gmod.exe."
-msgstr ""
+msgstr "이 경로는 gmod.exe가 있는 Garry's Mod 폴더를 기준으로 합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:344
 msgid "native-loader\\logs\\loader.log: what the loader did at this start."
-msgstr ""
+msgstr "native-loader\\logs\\loader.log: 이번 시작 시 로더가 한 작업입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:345
 msgid "garrysmod\\data\\native-loader\\status.json and session.json: the same, as data."
-msgstr ""
+msgstr "garrysmod\\data\\native-loader\\status.json과 session.json: 같은 내용을 데이터로 담은 파일입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:346
 msgid "rtx-remix\\logs\\remix-dxvk.log: Remix's own log, with every setting in effect near the top."
-msgstr ""
+msgstr "rtx-remix\\logs\\remix-dxvk.log: Remix 자체 로그입니다. 위쪽에 현재 적용 중인 모든 설정이 있습니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:347
 msgid "native-loader\\logs\\sessions\\: copies kept from earlier sessions."
-msgstr ""
+msgstr "native-loader\\logs\\sessions\\: 이전 세션에서 보관한 복사본입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:348
 msgid "After a crash: what to copy and send"
-msgstr ""
+msgstr "크래시 후: 복사하고 보낼 항목"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:349
 msgid "Turning RTX off for a while"
-msgstr ""
+msgstr "RTX 잠시 끄기"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:353
 msgid "Add \"enabled\": false inside \"remix\", as in the example below. If the file has no \"remix\" part yet, add the one shown. Keep your other settings."
-msgstr ""
+msgstr "아래 예시처럼 \"remix\" 안에 \"enabled\": false를 추가하세요. 파일에 아직 \"remix\" 부분이 없으면 예시의 해당 부분을 추가하세요. 다른 설정은 유지하세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:354
 msgid "Save the file and start the game: it is plain Garry's Mod, without the RTX add-ons. To turn RTX back on, change false to true."
-msgstr ""
+msgstr "파일을 저장하고 게임을 시작하세요. RTX 애드온 없이 일반 Garry's Mod로 실행됩니다. RTX를 다시 켜려면 false를 true로 바꾸세요."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:356
 msgid "The game window"
-msgstr ""
+msgstr "게임 창"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:357
 msgid "With RTX the game runs in a borderless window as large as your screen, because exclusive fullscreen crashes Remix. For another size, add -w and -h to the game's launch options in Steam, for example -w 1920 -h 1080."
-msgstr ""
+msgstr "RTX를 사용하면 독점 전체 화면에서 Remix가 크래시되므로 화면 전체 크기의 테두리 없는 창으로 실행됩니다. 크기를 바꾸려면 Steam의 게임 시작 옵션에 -w와 -h를 추가하세요. 예: -w 1920 -h 1080."
