@@ -669,7 +669,7 @@ msgstr "Régler « %s » ici"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
 msgid "A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."
-msgstr "Une valeur num?rique n'est utilis?e que si la case au-dessus, R?gler ? ... ? ici, est coch?e. Z?ro est une valeur valide pour la luminosit? du ciel et la puret? des couleurs."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
 msgid "Clear this panel's overrides"
@@ -713,7 +713,7 @@ msgstr "PBR des personnages importés"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
 msgid "Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."
-msgstr "Utilise les cartes du jeu pour les personnages import?s de Wuthering Waves, Endfield et Silver Palace. La peau et les visages restent inchang?s. D?sactiver cette option r?tablit les mat?riaux d'origine."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Steady eye whites for imported characters"
@@ -721,7 +721,7 @@ msgstr "Stabiliser le blanc des yeux des personnages importés"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
 msgid "Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."
-msgstr "Garde le blanc des yeux des personnages import?s propre et lumineux. Les mat?riaux sont reconnus par leur nom ; si l'un n'est pas d?tect?, s?lectionnez-les vous-m?me ci-dessous. Les personnages dot?s d'un pack PBR conservent ses mat?riaux."
+msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
 msgid "Eye-white brightness"
@@ -967,7 +967,7 @@ msgstr "Au premier lancement de RTX, les addons RTX ont repris les paramètres d
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:97
 msgid "Leave RTX session guard on. Turn it off only for a moment, to find out whether an add-on that misbehaves is the cause."
-msgstr "Laissez l'option ? Protection de la session RTX ? activ?e. Ne la d?sactivez qu'un instant pour d?terminer si un addon qui fonctionne mal est en cause."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:99
 msgid "Common Remix settings changes the Remix options people change most, without opening Alt+X. A change applies at once, for this session."
@@ -983,7 +983,7 @@ msgstr "Un choix. « (laisser à Remix) » signifie que ce panneau ne modifie pa
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:103
 msgid "A number is used only while the box above it, Set ... here, is ticked."
-msgstr "Une valeur num?rique n'est utilis?e que si la case au-dessus, R?gler ? ... ? ici, est coch?e."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:104
 msgid "Fog: Remix's fog presets, from light mist to heavy fog, dust and smoke."
@@ -1103,7 +1103,7 @@ msgstr "Activer la copie du modèle de l'arme : la même chose pour l'arme que v
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:138
 msgid "Hardware Skinning: needed by some mesh replacements; experimental."
-msgstr "D?formation par le GPU : n?cessaire pour certains remplacements de maillage ; fonction exp?rimentale."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:139
 msgid "Fix Skybox Leaking: hides parts of the map that show through the sky."
@@ -1187,7 +1187,7 @@ msgstr "Vitesse de bris par contact : la vitesse à laquelle vous devez vous dé
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:164
 msgid "Debris lifetime and budget: how long broken pieces stay, and how many there may be."
-msgstr "? Dur?e des ?clats (s ; 0 = nettoyage) ? et ? Nombre maximal d??clats ? : combien de temps les morceaux bris?s restent et combien il peut y en avoir."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:165
 msgid "Clear broken glass."
@@ -1235,7 +1235,7 @@ msgstr "Le menu simple"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:179
 msgid "The tabs. General: the language, DLSS and frame generation. Graphics: Graphics Preset and the quality settings. Content: Remix's replacements on or off. Permissions: what NVIDIA may collect."
-msgstr "Les onglets. G?n?ral : la langue, DLSS et la g?n?ration d'images. Graphismes : ? Pr?r?glage graphique ? et les param?tres de qualit?. Contenu : activer ou d?sactiver les remplacements de Remix. Autorisations : ce que NVIDIA peut collecter."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:180
 msgid "DLSS Preset: Custom lets you choose the DLSS settings below yourself."
@@ -1355,7 +1355,7 @@ msgstr "Personnages"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:213
 msgid "Characters from MMD and from other games come into Garry's Mod through the Model Hotloader. The RTX package adds automatic PBR for characters from some games, and steady eye whites."
-msgstr "Les personnages MMD et ceux d'autres jeux sont import?s dans Garry's Mod avec Model Hotloader. Le paquet RTX ajoute le PBR automatique pour les personnages de certains jeux, ainsi que la stabilisation du blanc des yeux."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:214
 msgid "Importing a character"
@@ -1423,11 +1423,11 @@ msgstr "Ses matériaux, chacun avec son état : automatique ou en cache (les car
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:233
 msgid "Map family: a set of maps that belong together."
-msgstr "Famille de cartes : un ensemble de cartes associ?es."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:234
 msgid "Single maps: normal, packed and emission."
-msgstr "Cartes s?par?es : ? Carte normale ?, ? Carte group?e ? et ? Carte ?missive ?."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:235
 msgid "The buttons that apply your choice."
@@ -1463,7 +1463,7 @@ msgstr "Blanc des yeux"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:244
 msgid "Under path tracing, the whites of anime eyes can look grey or dirty. Steady eye whites for imported characters, in Rendering > Model outlines, keeps them clean and bright on imported characters without a PBR pack. It recognizes eye-white materials by their names; when it misses one, or takes a wrong one, choose them yourself."
-msgstr "En path tracing, le blanc des yeux de style anime peut para?tre gris ou sale. ? Stabiliser le blanc des yeux des personnages import?s ?, dans ? Rendu > Contours des mod?les ?, le garde propre et lumineux sur les personnages import?s sans pack PBR. Cette option reconna?t les mat?riaux du blanc des yeux par leur nom ; lorsqu'un mat?riau lui ?chappe ou qu'elle en choisit un ? tort, s?lectionnez-les vous-m?me."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:246
 msgid "Hide outline meshes: hides the outline shells of anime models."
@@ -1531,7 +1531,7 @@ msgstr "Mouvements"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:264
 msgid "The Motion importer tab, next to External Models, imports MMD motions (VMD files) with their music, and plays them on characters."
-msgstr "L'onglet ? Importateur de mouvements ?, ? c?t? de ? Mod?les externes ?, importe des mouvements MMD (fichiers VMD) avec leur musique et anime les personnages avec ces mouvements."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:266
 msgid "Performance and memory"
@@ -1688,8 +1688,8 @@ msgid "After a crash"
 msgstr "Après un plantage"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:309
-msgid "Before you start the game again, copy status.json and session.json from garrysmod\\data\\native-loader\\ and the rtx-remix\\logs\\ folder: the next start replaces them. Copy both vram CSV files from the same folder too."
-msgstr "Avant de relancer le jeu, copiez status.json et session.json depuis garrysmod\\data\\native-loader\\, ainsi que le dossier rtx-remix\\logs\\ : le prochain démarrage les remplace. Copiez aussi les deux fichiers CSV vram du même dossier."
+msgid "Before you start the game again, copy status.json, session.json and both vram CSV files from garrysmod\\data\\native-loader\\, and copy the rtx-remix\\logs\\ folder. The next start replaces the two JSON files and Remix's logs."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
@@ -1725,7 +1725,7 @@ msgstr "Où regarder d'abord"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:320
 msgid "Open the console with the ~ key. If it does not open, turn on Options > Keyboard > Advanced > Enable developer console."
-msgstr "Ouvrez la console avec la touche ~. Si elle ne s'ouvre pas, activez ? Options > Clavier > Avanc? > Activer la console du d?veloppeur ?."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:321
 msgid "Type nativeloader_status and press Enter, or click the button below and then open the console."

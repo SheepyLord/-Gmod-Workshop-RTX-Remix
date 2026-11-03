@@ -1688,8 +1688,8 @@ msgid "After a crash"
 msgstr "クラッシュ後"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:309
-msgid "Before you start the game again, copy status.json and session.json from garrysmod\\data\\native-loader\\ and the rtx-remix\\logs\\ folder: the next start replaces them. Copy both vram CSV files from the same folder too."
-msgstr "ゲームを起動し直す前に、garrysmod\\data\\native-loader\\ 内の status.json と session.json、および rtx-remix\\logs\\ フォルダーをコピーしてください。次回の起動で置き換わります。同じフォルダーにある 2 つの VRAM の CSV ファイルもコピーしてください。"
+msgid "Before you start the game again, copy status.json, session.json and both vram CSV files from garrysmod\\data\\native-loader\\, and copy the rtx-remix\\logs\\ folder. The next start replaces the two JSON files and Remix's logs."
+msgstr ""
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
