@@ -106,3 +106,41 @@ replacement textures in one workload). Details: [R12-C report](R12-C-report.md#p
   530/28/25 Python tests (two existing skips), `All checks passed.`
 - No separate integrated PoC run: each task passed its own PoC check, and the field game, a test
   session by the user's rule, was the integrated check after publication (below).
+
+## Publication and field check (Claude)
+
+`main` at `7c2c8f4` was pushed and published: Workshop item 3829070317, version
+`0.0.0-dev.20261103042843+84d5e7b4`, digest `10823c3e…`, 1,793,132,608-byte GMA. The field install
+verified vanilla first (only the user's `autoexec.cfg` differs). Field game PID 2788 was ended at
+04:30 UTC (forced after 60 s); it was an automated validation session (`gm_flatgrass`,
+`-additional_validation_session 3a50c478…`), not the user's game.
+
+- Start 1 (04:31-04:33 UTC) downloaded the new GMA and quit normally on the old package.
+- Start 2 (04:33-04:39 UTC) deployed generation 49 (248 changes), ran the new runtime, and quit
+  normally with exit 0 and zero Lua errors. Settings: gm_construct, 3840x2160, the user's add-ons and
+  767 Workshop subscriptions.
+
+VRAM against the field's own telemetry before R12 (R11-B package, an active session at 01:40 UTC,
+from the [R12-C report](R12-C-report.md#active-field-read-only-category-attribution)):
+
+| GB | Before R12 | R12, nothing spawned | R12, two characters spawned |
+|---|---:|---:|---:|
+| D3D9 app textures | 14.38 | **0.99** | 1.35 |
+| Replacement textures | 5.86 | 4.13 | 4.60 |
+| Render targets | 1.42 | 1.42 | 1.42 |
+| DXVK used | 22.86 | **7.02** | 8.39 |
+| DXVK allocated | 24.04 | 8.46 | 9.80 |
+| Driver allocated (budget 32.95) | 25.94 | **10.63** | 11.69 |
+
+The sessions differ (an active session against a fresh one), but the drop matches R12-C's
+controlled replay.
+
+- **Item 36:** endminf spawned as an NPC (`npc_citizen`, `models/mmd/cdc60d5c735e867d/endminf.mdl`),
+  with no carrier error. Deleting and re-importing in the field was not done, because it would delete
+  the user's library entry; R12-A proved that on a PoC copy.
+- **Item 37:** the user's own 阿芙2.0 import (`f68499a5…`) pairs and converts 衣服, 衣饰, 头发, 头饰
+  and 丝袜 with the same scores as the corpus. 眼睛 pairs but stays protected; the rest abstain.
+  endminf's exact-name families still pair first. Its face and iris bases, named after families that
+  ship no maps, abstain ("conflicting exported family").
+- **Screenshot:** `out/r12/field/02-check/shot-01-alf2.png`, with endminf standing behind 阿芙2.0.
+  Both render normally.
