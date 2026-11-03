@@ -376,3 +376,9 @@ Lock `out\r10\poc.lock`, task `R13-F` (UTC):
   - **So on this computer the frame that first draws a character takes 0.11-0.58 s**, against 0.04-0.11 s
     today, depending on the machine's state as well as the character. A persistent staging pool for these
     loads would take the allocation out of that frame (not built; with the options in section 5).
+- **Merged and published.** The tests ran on the final tree (`test-release3.log`; the three CTests above
+  passed from a short alias). The merge (`main` `67098a1`, pushed) published
+  `0.0.0-dev.20261103232723+ae1bd041` to item 3829070317 (`out/workshop/logs/publish-20261103232721-29356.log`;
+  the push's run found the inputs unchanged). R14's merge right after it (`5be211a`) published
+  `0.0.0-dev.20261103233057+1d6fd9f5`, which carries the same `d3d9.dll` (`a5dbe933...`). The field game
+  takes it on its second start after the publish (the first only downloads the item).
