@@ -1,5 +1,11 @@
 # Roadmap
 
+R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the computer, 2026-11-03;
+[plan](handover/R13-plan.md)) is **in progress** on `r13-int`. Claude runs three subagent tasks in
+parallel: R13-M (compact imported game maps, reuse across versions), R13-A (characters load on first
+use, the lag report's trigger) and R13-B (the runtime's texture memory). Claude does R13-C, the
+loader's memory profiles ([ADR 0101](decisions/0101-memory-profiles.md)).
+
 R12 (the user's report after R11-B, 2026-11-02; [plan](handover/R12-plan.md)) is **done**, merged
 into `main` from `r12-int`; see [the R12 report](handover/R12-report.md):
 
