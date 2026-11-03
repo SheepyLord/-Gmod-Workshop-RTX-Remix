@@ -234,14 +234,21 @@ if SERVER then
  end
  mmdhl.SendSharedCatalog=catalog
  hook.Add('InitPostEntity','MMDHL.RestorePublishedActors',function()
+  local entries={}
   for id,entry in pairs(approved.rigs) do if entry.role~='ragdoll' and entry.role~='arms' and approved.assets[entry.asset] then
    local r=util.JSONToTable(file.Read('mmd_hotloader/rigs/'..id..'/rig.json','DATA') or '')
-   local a=entry.arms and util.JSONToTable(file.Read('mmd_hotloader/rigs/'..entry.arms..'/rig.json','DATA') or '')
+   local a=entry.arms and util.JSONToTable(file.Read('mmd_hotloader/rigs/'..entry.arms..'/rig.json','DATA') or '') or nil
    if mmdhl.IsLoadableRig(r) and (not entry.arms or mmdhl.IsLoadableRig(a)) and file.Exists('mmd_hotloader/rigs/'..id..'/carrier.gma','DATA') then
-    mmdhl.MountPackage('data/mmd_hotloader/rigs/'..id..'/carrier.gma') if a then mmdhl.MountPackage('data/mmd_hotloader/rigs/'..a.key..'/carrier.gma') end
-    mmdhl.RegisterActor(r,a)
+    entries[#entries+1]={rig=r,arms=a}
    end
   end end
+  -- Every map publishes each saved character; the most recently used are made ready now and the
+  -- others right before their first use (mmdhl.readiness in actors.lua, ADR 0099).
+  if mmdhl.RestoreActors then mmdhl.RestoreActors(entries) return end
+  for _,e in ipairs(entries) do
+   mmdhl.MountPackage('data/mmd_hotloader/rigs/'..e.rig.key..'/carrier.gma') if e.arms then mmdhl.MountPackage('data/mmd_hotloader/rigs/'..e.arms.key..'/carrier.gma') end
+   mmdhl.RegisterActor(e.rig,e.arms)
+  end
  end)
 else
  mmdhl.sharedAssets=mmdhl.sharedAssets or {}

@@ -4584,3 +4584,37 @@ Steam's Workshop package had advanced since the PoC's previous deployment, so re
 `nlctl rollback` (generation 145), verifying all 1,871 deployed files against actual pre-pair hashes
 instead of applying the newer archive. All 191 snapshot files and 2,877 depot files validate; the
 same `autoexec.cfg` user-config difference remains. The PoC lock is released.
+
+## R13-A: what loads a saved character, and when (2026-11-03, Claude)
+
+- **Map start loaded every saved character.** `sharing.lua`'s `InitPostEntity` registered each
+  approved citizen/combine/player rig through `ReadyActor` (`actors.lua:88-103` before R13-A):
+  mount the material archive and carrier, then `util.PrecacheModel` and `util.IsValidModel` on the
+  server. Precaching loads the model, its materials and its textures. On the copied field library
+  (57 characters; 98 loadable saved NPC/player rigs of generator 30-31 across 55 characters; 20.5 GB
+  of material archives) the PoC at 1920x1080 held, with nothing spawned: private bytes 27.0 GB,
+  working set 20.9 GB, game textures on the GPU 0.29 GB (patch 0022 defers their GPU images).
+- **Carrier spawn icons are empty.** A carrier has no visible mesh: every engine spawn icon of a
+  hotloader carrier in the field's `materials/spawnicons/models/mmd/<16 hex>/` is a 215-byte PNG. The
+  PoC's Player Model window drew one for each of 7 saved player models (it writes them to
+  `garrysmod/materials/spawnicons`), loading each model to do so.
+- **Sandbox precaches before `SetModel`.** The base player class runs `util.PrecacheModel(modelname)`
+  then `self.Player:SetModel(modelname)` (`gamemodes/base/gamemode/player_class/player_default.lua:71-72`);
+  `InternalSpawnNPC` sets an NPC-list entry's model before `Spawn` (`sandbox/gamemode/commands.lua:481-485`).
+- **The native module's name records date the last use.** `registerShortName` rewrites
+  `names/<kind>/<short>.json` on every call (`native/assets.cpp:132-137`): `PrepareCarrier` (cached or
+  packaged, `module.cpp:482`, `rig.cpp:487`) rewrites `names/rigs/<key>.json`, `loadAsset` /
+  `prepareSourceMaterials` rewrite `names/assets/<id>.json` (`assets.cpp:217-220`, `:472`). A map start
+  also rewrites `approved.json` (`sharing.lua`'s `ForgetPublishedAssets`, even with nothing missing).
+  The field's writes of `names/assets` (02:41:07, 02:41:10) and `approved.json` (02:41:16) before the
+  lag report's jump are the same pattern as a PoC map start.
+- **The native module needs `textures/<sha256>.png`.** `loadAsset` reads an asset's PNG textures to
+  build it for spawning and presentation; the main session's field-cache copy has none, so a spawn
+  failed with `Cannot read ...textures\<hash>.png` until the 546 PNGs its manifests name (1.35 GB)
+  were added to the test copy. The native module keeps at most 8 loaded assets (`module.cpp:240`).
+- **The game cuts a printed line at about 4 KB** (a 4,011-character `R13A_ENTRIES` line was cut);
+  probes print one JSON object per line.
+- **Intermittent PoC start crash:** two of nine launches made shortly after another game exited
+  stopped at the main menu with `0xC0000005` in `nvoglv64.dll+0xe622f8` (reading address 0 /
+  0xffffffffffffffff), as R12-C's `07` control (`+0xe6230a`). A 45 s pause before launching avoided it
+  in the later runs; no hotloader code had run.

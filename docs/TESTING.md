@@ -2007,3 +2007,36 @@ with seven cached restores, zero conversions, 7/0/7 on/off/restored and zero aft
 restored, and offline `nlctl apply` restores the original Workshop deployment without another game
 launch. The only payload-verifier drift is the generated USD, matching its original snapshot with
 zero registrations. Depot verification passes 2,877 files; the lock is released.
+
+## R13-A: saved characters load on first use
+
+[test_mmd_lazy_load.py](../tools/tests/test_mmd_lazy_load.py.md) runs the packaged readiness,
+registration, persistence and sharing Lua under LuaJIT (part of `tools\test.ps1`): no memory
+profile, a profile's count and MiB cap, the ConVar override, first use through `SetModel`,
+`util.PrecacheModel` and `util.IsValidModel`, the use record and its fallback, a map change,
+deletion, host clients that mount nothing at registration, menu icons that never load a character's
+model, and a remote client that still mounts at registration.
+
+PoC sessions use [mmd_lazy_session.py](../tools/qa/mmd_lazy_session.py.md) with a working copy of
+the main session's read-only field library (`out\r13\field-cache`, 57 characters) inside this
+worktree's `out`, plus the 546 `textures\<sha256>.png` its manifests name (the field cache has none;
+the native module reads them to load a character; copied read-only from the field library and
+checked by name). The driver takes the shared `out\r10\poc.lock`, ends a running field game, swaps
+the copy in as the PoC's cache, samples RAM, and restores everything after a normal quit.
+
+- `--sequence reproduce` on the current package (the PoC's Workshop item): each candidate action of
+  the lag report with a phase after it (catalog broadcast, the hotloader window with a preview, the
+  NPC tab, the Player Model window, an NPC-tab spawn, a player model, a manhack left to attack, an
+  archive mount, an unregistered ragdoll, a new fit, a map change and a reload of that map). The probe
+  reports any rise of game textures above 256 MB with the last action.
+- `--sequence measure`, on the current package and with `--candidate` and each memory profile
+  (`--status-memory profile=minimum,warm_characters=0`, and the recommended
+  `profile=recommended,warm_characters=5,warm_mib=3260`): idle RAM and game textures,
+  then timed first spawns (a ready and a cold character from the NPC tab, the hotloader's NPC and
+  ragdoll, a player model), a dupe, a save and its load, removal, and a map change with an NPC-tab
+  spawn. Screenshots show each first spawn.
+- `--players 2` repeats the routes on a listen server. A second player on another computer still
+  mounts at registration (unchanged code, covered by the LuaJIT `client_remote` case).
+
+Results, evidence paths and the PIDs of field games a run ended are in the
+[R13-A report](handover/R13-A-report.md).

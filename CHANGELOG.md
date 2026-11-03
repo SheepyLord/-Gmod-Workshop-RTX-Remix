@@ -6,6 +6,18 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13
+
+- **Saved characters load when they are first used (R13-A).** A map no longer loads every saved
+  NPC and player-model character: the NPC tab and the player-model selector list them from their
+  metadata, and a character is mounted and precached right before its first real use (the NPC tab,
+  the hotloader's own spawns, the player's model, saves, dupes and tools). The most recently used
+  characters stay ready at map start, as many as the memory profile in
+  `native-loader/status.json` keeps (`activation.memory.warm_characters`, `warm_mib`; none
+  without it); `mmdhl_warm_characters` and `mmdhl_warm_mib` override them for tests. Menu icons of
+  characters show their name or a real cached image instead of loading the model
+  ([ADR 0099](docs/decisions/0099-saved-characters-load-on-first-use.md)).
+
 ### R12
 
 - **NPCs after removing and importing a character again:** prepared carriers restore missing

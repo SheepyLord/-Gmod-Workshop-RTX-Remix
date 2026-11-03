@@ -131,3 +131,4 @@ Each with the reason it lost.
 - [0095: Texture features and texture-scoped imported PBR overrides](0095-texture-features-and-imported-pbr-overrides.md).
 - [0096: Draw-gated character classification and an opt-in memory census](0096-demand-loaded-character-classification-and-memory-census.md).
 - [0097: Persistent manual eye-white choices for spawned characters](0097-manual-eye-white-materials.md).
+- [0099: Saved characters load on first use; the most recently used stay ready](0099-saved-characters-load-on-first-use.md) (R13-A; supersedes the publication rule of 0090).

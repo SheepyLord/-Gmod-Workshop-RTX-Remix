@@ -45,6 +45,9 @@ duplicator={CopyEntTable=noop,CreateEntityFromTable=noop,DoGeneric=noop,Register
  StoreEntityModifier=noop,ClearEntityModifier=noop}
 undo={Create=noop,AddEntity=noop,SetPlayer=noop,Finish=noop}
 gamemode={Call=noop} player={GetAll=function() return {} end}
+-- actors.lua's ready-set budget (R13-A) creates its two server ConVars at load.
+FCVAR_NONE=0 cvars={AddChangeCallback=noop}
+function CreateConVar() return {GetInt=function() return -1 end} end
 local E={} E.__index=E
 function FindMetaTable() return E end
 function E:SetModel(p) self.model=p end
