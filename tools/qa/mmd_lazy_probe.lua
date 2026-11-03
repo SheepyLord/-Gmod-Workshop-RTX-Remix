@@ -138,6 +138,25 @@ if SERVER then
   local raw=file.Read('mmd_hotloader/recent.json','DATA')
   emit('RECENT',{present=raw~=nil,body=raw and util.JSONToTable(raw) or nil})
  end
+ -- The lag trigger's steps on the server, on the clock both realms share (SysTime): a new
+ -- entry's publication, its registration message and the hotloader's own spawn.
+ function Q.TraceServer()
+  if Q.tracingServer then return end
+  Q.tracingServer=true
+  for _,name in ipairs({'PublishActor','SendActorRegistration','RegisterActor','PublishRig','SpawnActorNative','AttachNative'}) do
+   local original=mmdhl[name]
+   if isfunction(original) then
+    mmdhl[name]=function(...)
+     local first=select(1,...)
+     local key=istable(first) and first.key or (isentity(first) and first:GetClass()) or nil
+     emit('TRACE',{t=SysTime(),realm='server',event=name..'-before',key=key})
+     local result={original(...)}
+     emit('TRACE',{t=SysTime(),realm='server',event=name..'-after',key=key})
+     return unpack(result)
+    end
+   end
+  end
+ end
  print('R13A_INSTALLED server')
  return
 end
@@ -157,6 +176,45 @@ function Q.Watch()
   end
   Q.watchLast=now
  end)
+end
+-- The client side of the trace: every frame's game-texture GPU memory (a line when it moved by
+-- more than 64 MB), the registration message and what it publishes, on the shared clock.
+function Q.Trace()
+ if Q.tracing then return end
+ Q.tracing=true
+ local function app()
+  local ok,stats=pcall(function() return RemixResource and RemixResource.GetVramStats and RemixResource.GetVramStats() end)
+  return ok and istable(stats) and stats.usedAppTextureBytes or nil
+ end
+ local last=app()
+ emit('TRACE',{t=SysTime(),realm='client',event='sample',app=last})
+ hook.Add('Think','R13A.Trace',function()
+  local now=app()
+  if now and last and math.abs(now-last)>64*1048576 then
+   emit('TRACE',{t=SysTime(),realm='client',event='sample',app=now,from=last,frame=FrameNumber()})
+   last=now
+  end
+ end)
+ local receive=net.Receivers and net.Receivers['mmdhl_actor_registration']
+ if isfunction(receive) then
+  net.Receivers['mmdhl_actor_registration']=function(...)
+   emit('TRACE',{t=SysTime(),realm='client',event='registration-before',app=app()})
+   receive(...)
+   emit('TRACE',{t=SysTime(),realm='client',event='registration-after',app=app()})
+  end
+ end
+ for _,name in ipairs({'RegisterActor','PublishActorEntry','UnregisterActor'}) do
+  local original=mmdhl[name]
+  if isfunction(original) then
+   mmdhl[name]=function(...)
+    local first=select(1,...)
+    local key=istable(first) and first.key or (isstring(first) and first) or nil
+    local result={original(...)}
+    emit('TRACE',{t=SysTime(),realm='client',event=name,key=key,app=app()})
+    return unpack(result)
+   end
+  end
+ end
 end
 function Q.Phase(name)
  local ok,stats=pcall(function() return RemixResource and RemixResource.GetVramStats and RemixResource.GetVramStats() end)

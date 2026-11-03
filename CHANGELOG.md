@@ -17,6 +17,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
   without it); `mmdhl_warm_characters` and `mmdhl_warm_mib` override them for tests. Menu icons of
   characters show their name or a real cached image instead of loading the model
   ([ADR 0099](docs/decisions/0099-saved-characters-load-on-first-use.md)).
+- **The lag after a Combine soldier no longer grows with the character library (R13-A).** The first
+  Combine soldier of a session (the NPC tab's, or a character spawned in that role; the AR2 alt-fire
+  ammo it precaches) makes every texture the game has loaded GPU-resident at once. With every saved
+  character precached that was
+  17 GB on a copy of the field library; now it is the ready set and the characters already used
+  (5.0 GB with a high computer's 10). The engine-side step itself remains
+  ([R13-A report](docs/handover/R13-A-report.md)).
+- QA: GMod keeps `cfg/config.cfg` in Steam Cloud, so a PoC session's last settings reached the
+  field game's next start. R13-A's PoC driver ends each session with the field game's own settings.
 
 ### R12
 

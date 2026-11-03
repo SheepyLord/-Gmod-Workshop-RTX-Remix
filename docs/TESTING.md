@@ -2029,14 +2029,21 @@ the copy in as the PoC's cache, samples RAM, and restores everything after a nor
   NPC tab, the Player Model window, an NPC-tab spawn, a player model, a manhack left to attack, an
   archive mount, an unregistered ragdoll, a new fit, a map change and a reload of that map). The probe
   reports any rise of game textures above 256 MB with the last action.
+- `--sequence trigger` splits the trigger that `reproduce` found (a Combine soldier) and traces it
+  per frame on `SysTime()`, with screenshots of the NPC tab and the Player Model window first;
+  `--sequence combine` spawns the stock parts of a Combine soldier one at a time.
 - `--sequence measure`, on the current package and with `--candidate` and each memory profile
-  (`--status-memory profile=minimum,warm_characters=0`, and the recommended
-  `profile=recommended,warm_characters=5,warm_mib=3260`): idle RAM and game textures,
+  (`--status-memory profile=minimum,warm_characters=0,warm_mib=0`, the recommended
+  `profile=recommended,warm_characters=5,warm_mib=3260`, and this computer's
+  `profile=high,warm_characters=10,warm_mib=6311`): idle RAM and game textures,
   then timed first spawns (a ready and a cold character from the NPC tab, the hotloader's NPC and
   ragdoll, a player model), a dupe, a save and its load, removal, and a map change with an NPC-tab
   spawn. Screenshots show each first spawn.
 - `--players 2` repeats the routes on a listen server. A second player on another computer still
   mounts at registration (unchanged code, covered by the LuaJIT `client_remote` case).
+- GMod keeps `cfg/config.cfg` in Steam Cloud: a PoC session's last settings reach the field game's
+  next start. The driver executes the field game's own `config.cfg` before the quit and records the
+  field and cloud hashes (`settings.json`); other drivers that quit the PoC do not yet.
 
 Results, evidence paths and the PIDs of field games a run ended are in the
 [R13-A report](handover/R13-A-report.md).

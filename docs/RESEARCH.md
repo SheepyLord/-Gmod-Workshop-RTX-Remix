@@ -4605,16 +4605,53 @@ same `autoexec.cfg` user-config difference remains. The PoC lock is released.
   `names/<kind>/<short>.json` on every call (`native/assets.cpp:132-137`): `PrepareCarrier` (cached or
   packaged, `module.cpp:482`, `rig.cpp:487`) rewrites `names/rigs/<key>.json`, `loadAsset` /
   `prepareSourceMaterials` rewrite `names/assets/<id>.json` (`assets.cpp:217-220`, `:472`). A map start
-  also rewrites `approved.json` (`sharing.lua`'s `ForgetPublishedAssets`, even with nothing missing).
-  The field's writes of `names/assets` (02:41:07, 02:41:10) and `approved.json` (02:41:16) before the
-  lag report's jump are the same pattern as a PoC map start.
+  also rewrites `approved.json` (`sharing.lua`'s `ForgetPublishedAssets`, even with nothing missing),
+  and so does a hotloader spawn that publishes a new entry (`PublishActor` → `PublishRig`). The
+  field's writes of `names/assets` (02:41:07, 02:41:10) and `approved.json` (02:41:16) before the lag
+  report's jump are what the PoC's hotloader spawn as a Combine soldier wrote (run 09).
+- **The lag trigger: the first Combine soldier makes every loaded texture GPU-resident.** On the
+  current package with the copied library (every saved character precached, game textures 0.29 GB),
+  a stock `gmod_spawnnpc npc_combine_s` raised game textures to 17.07 GB and private bytes from 26.96
+  to 43.31 GB between two frames 1.4 s after the command, with no hotloader call in between (R13-A
+  run 19, per-frame trace on `SysTime()`). A character spawned as a Combine soldier from the hotloader
+  does the same (run 09: 1.54 → 17.12 GB). With only the ready set loaded (R13-A, high profile, 10
+  characters with 4.8 GiB of archives) the same soldier raised them 0.30 → 5.32 GB (run 20). None of
+  these raised game textures: the catalog broadcast, the hotloader window's preview, the NPC tab, the
+  Player Model window, NPC-tab and player-model spawns, a manhack attacking for 25 s, an archive
+  mount, a ragdoll new fit, a citizen new fit, a map change, a reload of the map,
+  `mat_reloadallmaterials`, `mat_reloadtextures` (runs 08, 09, 13, 19, 20). No packaged Lua names
+  Combine soldiers or reacts to one in a way that loads materials.
+- **The part of the Combine soldier that does it is `item_ammo_ar2_altfire`.** Every
+  `npc_combine_s` precaches that item with `item_healthvial` and `weapon_frag`. Spawned one at a time
+  on the current package (R13-A run 21), a Metro Police officer, a citizen with an AR2, a frag
+  grenade and a health vial left game textures at 0.29 GB; the AR2's alt-fire ammo item raised them to
+  17.07 GB (private 26.89 → 43.44 GB) within two seconds. A soldier that never dropped one did it
+  too (run 19), so its precache does, not a draw. The item's precache loads its model
+  `models/items/combine_rifle_ammo01.mdl` and, as recalled from the Source SDK 2013 code (not
+  checked here), the `combineball` particle system; `mmd_lazy_session.py --sequence ammo` splits them.
+- **GMod keeps `cfg/config.cfg` in Steam Cloud.** A game takes
+  `Steam\userdata\<account>\4000\remote\cfg\config.cfg` at start (the PoC's local `config.cfg` was
+  rewritten with the cloud copy seconds after a launch) and writes its settings back at its quit, so
+  a PoC session's last settings reach the field game at its next start. After R13-A runs 08-13 the
+  cloud held `cl_playermodel "kleiner"` (the measure sequence's reset) and `fps_max "60"`
+  (`mmd_reimport_session.py` sends it), against the field's own `"Bai Mei"` and `300`; a player
+  model chosen in run 08 was the player's model at the start of runs 10 and 11 although each run
+  restored the PoC's local `config.cfg`. Executing the field's `config.cfg` and `host_writeconfig`
+  before the quit leaves the cloud copy byte-identical to the field's (R13-A runs 09 onwards).
 - **The native module needs `textures/<sha256>.png`.** `loadAsset` reads an asset's PNG textures to
   build it for spawning and presentation; the main session's field-cache copy has none, so a spawn
   failed with `Cannot read ...textures\<hash>.png` until the 546 PNGs its manifests name (1.35 GB)
   were added to the test copy. The native module keeps at most 8 loaded assets (`module.cpp:240`).
 - **The game cuts a printed line at about 4 KB** (a 4,011-character `R13A_ENTRIES` line was cut);
   probes print one JSON object per line.
-- **Intermittent PoC start crash:** two of nine launches made shortly after another game exited
-  stopped at the main menu with `0xC0000005` in `nvoglv64.dll+0xe622f8` (reading address 0 /
-  0xffffffffffffffff), as R12-C's `07` control (`+0xe6230a`). A 45 s pause before launching avoided it
-  in the later runs; no hotloader code had run.
+- **Intermittent PoC start crash:** two of the first eight launches (runs 03 and 06, each within a
+  minute of another game's exit) stopped at the main menu with `0xC0000005` in
+  `nvoglv64.dll+0xe622f8` (reading address 0 / 0xffffffffffffffff), as R12-C's `07` control
+  (`+0xe6230a`). With a 45 s pause before launching, none of the later launches crashed; no hotloader
+  code had run.
+- **What a used character keeps after removal.** Source keeps its model, materials and textures until
+  the map changes (no unprecache). The fixes' `rtx_flush_textures` (`UncacheAllMaterials`, then a
+  renderer purge) released 2.2 GB of game textures and 20 GB of private bytes in the current package
+  (run 12); with R13-A it released the CPU copies (private 19.74 → 14.79 GB) while 2.5 GB of game
+  textures stayed until the map changed (run 16). The next map loads none of them unless they are in
+  the ready set.

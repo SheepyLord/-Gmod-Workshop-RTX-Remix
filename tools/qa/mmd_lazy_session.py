@@ -35,6 +35,10 @@ ICONS = POC / 'garrysmod/materials/spawnicons'  # model panels write the icons t
 ADDON = POC / 'garrysmod/addons/mmd_hotloader'
 SOURCE_ADDON = REPO / 'packages/model-hotloader/mmd_hotloader'
 PROBE = Path(__file__).with_name('mmd_lazy_probe.lua')
+# GMod keeps cfg/config.cfg in Steam Cloud: it takes the cloud copy at start and writes the session's
+# settings back at its quit, so a PoC session's last settings reach the user's game at its next start.
+FIELD_CONFIG = Path(r'H:\SteamLibrary\steamapps\common\GarrysMod\garrysmod\cfg\config.cfg')
+SETTINGS_BACK = 'r13a_settings_back.cfg'
 # PoC data folders that stay where they are: the cache swapped in below, and an old test cache.
 KEEP_OUT = {'mmd_hotloader', 'mmd_hotloader.after-evernight-test'}
 PHASE = re.compile(r'^R13_PHASE (\S+) (\S+) lua_kb=(\d+) vram=(.*)$')
@@ -47,6 +51,16 @@ def digest(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 22), b''):
             h.update(chunk)
     return h.hexdigest()
+
+
+def settings_state() -> dict:
+    """The field game's config.cfg and the Steam Cloud copies of GMod's (app 4000), read only."""
+    state = dict(field=digest(FIELD_CONFIG) if FIELD_CONFIG.is_file() else None, cloud=[])
+    steam = Path(os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)')) / 'Steam/userdata'
+    for path in sorted(steam.glob('*/4000/remote/cfg/config.cfg')) if steam.is_dir() else []:
+        state['cloud'].append(dict(path=str(path), sha256=digest(path), modified=path.stat().st_mtime,
+                                   same_as_field=digest(path) == state['field']))
+    return state
 
 
 def inside(path: Path, *roots: Path) -> bool:
@@ -448,6 +462,76 @@ class Session:
         self.inject()
 
     # -- sequences
+    def seq_trigger(self):
+        """The trigger the reproduction found (a hotloader spawn that made a new fit and published it),
+        split up and traced on the clock both realms share: a plain Combine soldier, a character
+        with no saved entry spawned as a citizen (a new fit and a new citizen entry), then a saved
+        character spawned as a Combine soldier (a new fit and a new entry of another role)."""
+        plan = self.plan
+        self.inject()
+        self.lua('R13A.CloseWindows()')
+        self.step('idle', settle=self.args.idle)
+        listed = self.entries()
+        poc.write_json(self.out / 'entries.json', listed)
+        # The menus as a player sees them, with what they load (nothing, for a saved character).
+        self.step('npc-tab', 'R13A.NPCTab()', settle=8)
+        self.shot('menu-npc-tab')
+        self.lua('R13A.CloseMenu()')
+        self.step('player-models', 'R13A.PlayerModels()', settle=8)
+        self.shot('menu-player-models')
+        self.lua('R13A.CloseWindows()')
+        self.lua('R13A.TraceServer()', True)
+        self.lua('R13A.Trace()')
+        self.lua('R13A.Aim(30)', True)
+        self.step('combine-plain', 'R13A.SpawnClassic("npc_combine_s","combine-plain")', settle=20)
+        self.lua('R13A.RemoveClass("npc_combine_s") R13A.EnsureAlive()', True)
+        self.step('after-combine-plain', settle=10)
+        if plan['others']:
+            self.spawn('new-fit-citizen', plan['others'][0], 'citizen', extra={'gender': 'female'})
+            self.step('after-new-fit-citizen', settle=15)
+        registered = [a for a in plan['actors'] if not any(e['asset'] == a and e['role'] == 'combine' for e in listed)]
+        if registered:
+            self.spawn('new-fit-combine', registered[-1], 'combine', extra={'gender': 'female'})
+            self.step('after-new-fit-combine', settle=15)
+
+    def seq_combine(self):
+        """Which part of a first Combine soldier makes every loaded texture GPU-resident: what its
+        class precaches (the Combine faction, the AR2, the frag grenade, items), one at a time and
+        stock only, then the soldier itself. After the first jump the rest cannot show another."""
+        self.inject()
+        self.lua('R13A.CloseWindows()')
+        self.step('idle', settle=self.args.idle)
+        self.lua('R13A.Aim(30)', True)
+        parts = [('metropolice', 'gmod_spawnnpc npc_metropolice none', 'npc_metropolice'),
+                 ('citizen-ar2', 'gmod_spawnnpc npc_citizen weapon_ar2', 'npc_citizen'),
+                 ('weapon-frag', 'gm_spawnswep weapon_frag', 'weapon_frag'),
+                 ('item-healthvial', 'gm_spawnsent item_healthvial', 'item_healthvial'),
+                 ('item-ar2-altfire', 'gm_spawnsent item_ammo_ar2_altfire', 'item_ammo_ar2_altfire'),
+                 ('combine-unarmed', 'gmod_spawnnpc npc_combine_s none', 'npc_combine_s')]
+        for label, command, cls in parts:
+            self.action(label)
+            self.send(command)
+            self.step(label, settle=12)
+            self.lua(f'R13A.RemoveClass({json.dumps(cls)}) R13A.EnsureAlive()', True)
+
+    def seq_ammo(self):
+        """The part `combine` found (HL2's AR2 alt-fire ammo item, which every Combine soldier
+        precaches), split: its particle system precache, then its model precache, then the item."""
+        self.inject()
+        self.lua('R13A.CloseWindows()')
+        self.step('idle', settle=self.args.idle)
+        self.lua('R13A.Aim(30)', True)
+        parts = [('particle-combineball', 'PrecacheParticleSystem("combineball") print("R13A_PRECACHED particle")'),
+                 ('model-ammo', 'util.PrecacheModel("models/items/combine_rifle_ammo01.mdl") print("R13A_PRECACHED model")')]
+        for label, code in parts:
+            self.action(label)
+            self.lua(code, True)
+            self.step(label, settle=12)
+        self.action('item-ar2-altfire')
+        self.send('gm_spawnsent item_ammo_ar2_altfire')
+        self.step('item-ar2-altfire', settle=12)
+        self.lua('R13A.RemoveClass("item_ammo_ar2_altfire")', True)
+
     def seq_reproduce(self):
         """Every candidate action of the lag report, one at a time, with a phase after each."""
         plan = self.plan
@@ -515,7 +599,8 @@ class Session:
         entry, and the oldest ones for cold first spawns."""
         times = {}
         for asset, rigs in self.plan['actors'].items():
-            stamps = [(CACHE / 'names/rigs' / (r['key'][:16] + '.json')) for r in rigs]
+            keys = [r['key'] for r in rigs] + [r['arms'] for r in rigs if r.get('arms')]
+            stamps = [(CACHE / 'names/rigs' / (key[:16] + '.json')) for key in keys]
             times[asset] = max([p.stat().st_mtime for p in stamps if p.exists()] or [0])
         citizens = sorted((e for e in listed if e['role'] == 'citizen'), key=lambda e: (times.get(e['asset'], 0), e['rig']))
         players = sorted((e for e in listed if e['role'] == 'player'), key=lambda e: (times.get(e['asset'], 0), e['rig']))
@@ -555,6 +640,12 @@ class Session:
         self.save_and_load()
         self.lua('R13A.RemoveMMD()', True)
         self.step('removed', settle=10)
+        # What still holds the removed characters: the fixes' manual purge uncaches every Source
+        # material (their textures go until something draws them again) and asks Remix to clean up.
+        self.action('rtx-flush-textures')
+        self.send('rtx_flush_textures')
+        self.quiet(5, 120)
+        self.step('after-flush', settle=15)
         if picks['player']:
             self.lua('RunConsoleCommand("cl_playermodel","kleiner")')
             time.sleep(1)
@@ -583,10 +674,15 @@ class Session:
         at = self.size()
         relative = made.relative_to(POC / 'garrysmod').as_posix()
         self.events.append(dict(save=relative))
+        self.action('load-save')
         self.send(f'gm_load "{relative}"')
-        self.wait(r'^Clientside Lua startup!\s*$', at, 600)
+        # A save of the current map is restored in place (GMod cleans the map up and pastes the
+        # saved entities); another map loads first, with new Lua states.
+        time.sleep(10)
         self.quiet(8, 240)
-        self.inject()
+        if re.search(r'^Clientside Lua startup!\s*$', self.text(at), re.M):
+            self.quiet(8, 240)
+            self.inject()
         time.sleep(5)
         self.lua('R13A.InspectMMD("loaded-save")', True)
         self.lua('R13A.ErrorModels()')
@@ -606,7 +702,8 @@ class Session:
         at the main menu (the loader has deployed; no game Lua realm exists yet)."""
         backups, created = self.out / 'lua-before', []
         changed = []
-        for source in sorted(SOURCE_ADDON.rglob('*')):
+        # Lua only: the part stores its binaries as .xz for Git LFS, deployed decompressed.
+        for source in sorted((SOURCE_ADDON / 'lua').rglob('*.lua')):
             if not source.is_file():
                 continue
             rel = source.relative_to(SOURCE_ADDON)
@@ -654,6 +751,26 @@ class Session:
                 memory[key.strip()] = int(value) if value.strip().lstrip('-').isdigit() else value.strip()
         path.write_text(json.dumps(status, indent=2), encoding='utf-8')
         self.events.append(dict(status_memory=memory))
+
+    def settings_back(self):
+        """Ends the session with the user's own settings. GMod writes config.cfg to Steam Cloud at its
+        quit and the user's game takes that copy at its next start, so the player-model steps
+        (cl_playermodel) and other drivers' settings (fps_max) would reach the field game. The field
+        game's own last config.cfg is read (never written) and executed from a copy in the PoC's cfg
+        folder, removed again; the quit then writes those values."""
+        if not FIELD_CONFIG.is_file():
+            self.events.append(dict(settings_back='no field config.cfg'))
+            return
+        copy = POC / 'garrysmod/cfg' / SETTINGS_BACK
+        shutil.copyfile(FIELD_CONFIG, copy)
+        try:
+            self.send('exec ' + SETTINGS_BACK)
+            time.sleep(3)
+            self.send('host_writeconfig')
+            time.sleep(3)
+        finally:
+            copy.unlink(missing_ok=True)
+        self.events.append(dict(settings_back=digest(FIELD_CONFIG)))
 
     def snapshot_rest(self):
         """The PoC's other data folders, copied (empty folders too) so they can be put back exactly."""
@@ -721,6 +838,7 @@ class Session:
         config_saved = self.out / 'config-before.cfg'
         if config.exists():
             shutil.copy2(config, config_saved)
+        poc.write_json(self.out / 'settings-before.json', settings_state())
         registry = r12a.video_settings()
         poc.write_json(self.out / 'video-before.json', registry)
         saves_before = {p.relative_to(POC).as_posix() for p in [SAVES, *SAVES.rglob('*')]} if SAVES.exists() else set()
@@ -785,6 +903,10 @@ class Session:
             try:
                 if self.session and self.session.poll() is None:
                     try:
+                        self.settings_back()
+                    except (RuntimeError, OSError) as error:
+                        self.events.append(dict(settings_back_failed=str(error)))
+                    try:
                         self.lua('print("NL_SHOT_DONE")')
                     except RuntimeError:
                         try:
@@ -836,6 +958,7 @@ class Session:
             if config_saved.exists():
                 shutil.copy2(config_saved, config)
                 assert digest(config) == digest(config_saved)
+            poc.write_json(self.out / 'settings.json', settings_state())
             r12a.restore_video_settings(registry)
             if self.log.exists():
                 self.log.rename(self.out / 'console-after.log')

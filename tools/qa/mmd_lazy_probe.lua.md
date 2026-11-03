@@ -12,6 +12,12 @@ Not an autorun and never installed. It drives the routes a player uses and repor
   `R13A_JUMP` with the last action the driver announced (`R13A.Action`).
 - Wraps `game.MountGMA` (both realms) and the server's carrier `util.PrecacheModel` to report each
   mount and precache with its time and action (`R13A_MOUNT`, `R13A_PRECACHE`).
+- `R13A.TraceServer()` / `R13A.Trace()`: the lag trigger traced on `SysTime()`, the clock both
+  realms of one process share (`R13A_TRACE` lines). The server reports before and after the
+  hotloader's `PublishActor`, `SendActorRegistration`, `RegisterActor`, `PublishRig`,
+  `SpawnActorNative` and `AttachNative`; the client reports its registration message and the
+  `RegisterActor`, `PublishActorEntry` and `UnregisterActor` calls with the game-texture GPU memory,
+  and every frame whose game-texture memory moved by more than 64 MB.
 - Actions: the NPC tab with the imported characters' category populated, the hotloader window with
   one character previewed, Sandbox's Player Model window, a stock NPC from the NPC tab's own command,
   spawns through the library's `RequestSpawn`, the NPC tab's `gmod_spawnnpc` for a saved entry, a

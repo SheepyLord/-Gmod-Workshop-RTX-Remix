@@ -10,11 +10,15 @@
 saved NPC and player-model character before its NPC-tab or player-model entry was published, so the
 entries work after a map change. Precaching a model loads it with its materials and textures: on the
 copied field library (57 characters, 98 loadable saved NPC/player rigs) a map start held every
-character's textures in memory with nothing spawned. R12-C measured 12.4 GB of them; runtime patch
-0022 keeps their GPU backing away until a texture is first used, but their CPU copies stay, and
-anything that touches all loaded textures at once makes them all GPU-resident (the lag report:
-14.35 GB within 30 seconds). See the [R13-A report](../handover/R13-A-report.md) for the
-reproduction and the measurements.
+character's textures in memory with nothing spawned (private bytes 27.0 GB, working set 20.9 GB on
+this computer). Runtime patch 0022 keeps their GPU backing away until a texture is first used, but
+their CPU copies stay, and anything that touches all loaded textures at once makes them all
+GPU-resident. The [R13-A report](../handover/R13-A-report.md) found that step: the first Combine
+soldier of a session (the NPC tab's, or a character spawned in that role) raised game textures
+0.29 → 17.07 GB within one frame on the copied library, the lag report's 14.35 GB within 30 seconds;
+the AR2 alt-fire ammo item the soldier precaches does it on its own.
+The step itself is in the engine or the runtime, outside the hotloader; the hotloader decides how
+much is loaded for it to touch.
 
 ## Decision
 
@@ -53,7 +57,12 @@ reproduction and the measurements.
 
 ## Consequences
 
-- With nothing spawned, no character outside the ready set is mounted, precached or loaded.
+- With nothing spawned, no character outside the ready set is mounted, precached or loaded: private
+  bytes 14.97 GB and working set 9.09 GB with a high computer's ready set of 10 characters, 9.56 GB
+  and 3.53 GB with none (from 27.03 GB and 20.87 GB).
+- The first Combine soldier makes the ready set and the characters used so far resident instead of
+  every saved character (5.0 GB instead of 16.8 GB with 10 ready). The ready set's archive cap
+  (`warm_mib`) bounds that part until the engine-side step is fixed.
 - A character's first use loads it then; the delay is measured in the report. Characters in the
   ready set and characters used earlier in the session spawn as before.
 - Source keeps a used character's model, materials and textures until the map changes: GMod has
