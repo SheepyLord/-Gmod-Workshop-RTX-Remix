@@ -102,12 +102,17 @@ Memory and smaller computers
   The "RTX Remix" tab's Start here page shows the profile.
   - Characters you imported load when you first use them. On a minimum computer the first spawn of
     each one can take a moment. Recommended keeps your five most recently used characters ready,
-    high ten.
-  - A bigger computer keeps more textures on the graphics card. A minimum computer keeps one copy
-    of each texture instead of two.
+    high ten. With an older loader none is kept ready, so every character loads on first use.
+  - Game textures that nothing has drawn for a minute leave the graphics card once they take more
+    than a quarter of its memory, and come back when they are used again. A minimum computer keeps
+    one copy of each texture instead of two.
+  - When the graphics card runs short, RTX Remix's own textures that nothing has drawn for a few
+    seconds shrink until something draws them again.
 - What takes the most memory:
   - Many imported characters in one session.
   - Hundreds of Workshop subscriptions: every map and model adds textures.
+  - RTX Remix mods in rtx-remix\mods: most load all their textures at start, used or not. Remove
+    the ones you no longer use, and keep each character's PBR in one mod only.
   - The resolution: 4K needs far more than 1920x1080.
 - On an 8 GB card, play at 1920x1080 with the "low" performance tier (the loader picks it for you)
   and unsubscribe from Workshop add-ons you no longer use.

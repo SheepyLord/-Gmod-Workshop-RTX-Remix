@@ -42,7 +42,7 @@ little less (an 8 GB card as 8,188 MiB, 16 GB of RAM as about 16,200 MiB):
 
 | Budget | below_minimum, minimum | recommended | high |
 |---|---|---|---|
-| Characters kept ready (most recently used; R13-A, ADR 0099) | 0 | 5 | 10 |
+| Characters kept ready (most recently used; R13-A, [ADR 0099](0099-saved-characters-load-on-first-use.md)) | 0 | 5 | 10 |
 | Their material archives, at most | 0 | RAM / 10 | RAM / 10 |
 | GPU memory of game textures before idle ones are released (`d3d9.managedTextureBudgetMiB`) | VRAM / 4 | VRAM / 4 | VRAM / 4 |
 | A game texture's CPU copy once it is on the GPU (`d3d9.releaseManagedHostCopies`) | released | kept | kept |
@@ -77,7 +77,7 @@ little less (an 8 GB card as 8,188 MiB, 16 GB of RAM as about 16,200 MiB):
 - The profile is independent of the R6 performance tier, which is unchanged.
 
 **Older loaders.** Without the layer, the runtime computes the same budgets itself from the device's
-VRAM and the RAM (ADR 0100). The hotloader keeps no character ready
+VRAM and the RAM ([ADR 0100](0100-one-copy-and-idle-release-of-game-textures.md)). The hotloader keeps no character ready
 when `status.json` has no `activation.memory`.
 
 - The companion never writes `remix.memory_profile`, because a loader before 0.13.0 rejects unknown
