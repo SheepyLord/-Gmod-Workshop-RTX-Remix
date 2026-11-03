@@ -423,6 +423,6 @@ game textures resident.
 - Remix captures were not exercised in a session.
 - Machine load: short incremental runtime builds ran at about 12:09, 12:22 and 12:27 UTC (about a
   minute each) while R13-A's sessions 11 and 12 measured; no GPU work.
-- The scratch branches `r13b-before-backspace-fix` and `r13b-before-test-budget` in the runtime source
-  keep the commits before two history rewrites (a control character in a comment of 0024, and the test
-  budget folded into 0026); delete them when the runtime branch is merged.
+- The runtime branch's history was rewritten twice before the import (a control character that a shell
+  heredoc had put into a comment of 0024, and the test budget folded into 0026); the patches and
+  `runtime/base.json` record the final commits, and nothing was pushed.
