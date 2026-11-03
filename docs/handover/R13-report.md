@@ -1,6 +1,8 @@
 # R13 report: less RAM and VRAM, with budgets that scale with the computer
 
-Status: **done** (2026-11-03): integrated, published and checked in the field game
+Status: **done**
+
+Finished 2026-11-03: integrated, published and checked in the field game.
 
 [Plan](R13-plan.md), with the user's words verbatim. Claude was the project manager and did R13-C
 itself. Three Claude subagents did R13-M, R13-A and R13-B in parallel; Codex was not used, as the user
