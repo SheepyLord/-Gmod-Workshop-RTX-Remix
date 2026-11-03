@@ -5,6 +5,7 @@ Shared autorun file. On the server it sends the companion's translations to clie
 RTX package's build writes it, [`tools/companion_i18n.py`](../../../../tools/companion_i18n.py.md)).
 Files under `lua/autorun/client` reach clients by themselves; the module they include does not, so
 without this a client joining a server would run the tab and guide without their translations.
+R14-H: it also sends `nativeloader/guide_pages.lua`, the guide's pages, which the guide includes.
 
 On the client it does nothing. See [`../nativeloader/i18n.lua.md`](../nativeloader/i18n.lua.md) and
 [ADR 0029](../../../../docs/decisions/0029-companion-translations.md).
