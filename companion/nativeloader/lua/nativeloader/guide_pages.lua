@@ -165,6 +165,12 @@ local PAGES = {
             N("Clear broken glass.") },
         { "p", N("The server settings need an administrator; in a single-player game that is you. Kind, strength and piece size apply to new panes: clean up the map to replace its windows. Flying through glass in noclip never breaks it.") },
         { "p", N("RTX Water makes the map's water path traced, with waves, ripples from players, objects and bullets, and splashes. Choose the water type and the waves there, or leave them on Auto (map default).") },
+        { "image", "nativeloader/guide/rtx_water.jpg",
+            N("Enable RTX Water."),
+            N("Water type and Waves: Auto (map default) uses what the map sets."),
+            N("The waves: strength, speed, direction and size."),
+            N("Waves from players, NPCs, objects and bullets, and how far they travel."),
+            N("Splashes thrown up by bodies and bullets.") },
     } },
     { id = "remix_menu", title = N("The Remix menu (Alt+X)"), icon = "icon16/application_view_list.png", items = {
         { "p", N("Alt+X opens and closes Remix's own menu, drawn over the game. It comes in two forms: the simple menu, User Graphics Settings, and the developer menu with every option. While the menu is open, the mouse works in the menu.") },
