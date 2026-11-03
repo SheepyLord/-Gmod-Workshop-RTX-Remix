@@ -139,11 +139,13 @@ keyboard trial that ended with the End bind.
 
 ## Tests
 
-`tools\test.ps1 -Config Release`: see the final line below. With the committed catalogs, the failures are
-only those of the untranslated IDs: `test_companion_i18n` (shipping catalogs complete), `test_companion_ui_i18n`
-and `test_companion_stability` (both build complete catalogs), and 17 `test_package_fixes` cases (the package
-build refuses incomplete catalogs). With the untranslated entries filled with English, every Python test
-passes except `test_companion_stability`'s Russian guide case, which needs the Russian of "Start here"
+`tools\test.ps1 -Config Release` on the final commit (`out\r14-guide\test-final.log`): repository conventions
+pass, the C++ build and all 26 CTests pass, the gmapack and steam Python tests pass; the tools' Python
+tests run 536 with 3 errors and 18 failures, **all from the untranslated IDs**: `test_companion_i18n`
+(shipping catalogs complete), `test_companion_ui_i18n` and `test_companion_stability` (both build complete
+catalogs), and 18 `test_package_fixes` cases (the package build refuses incomplete catalogs). With the
+untranslated entries filled with English (`out\r14-guide\test-placeholders.log`), every one of them passes
+except `test_companion_stability`'s Russian guide case, which needs the Russian of "Start here"
 (С чего начать) in the translated memory page.
 
 New: `tools\tests\test_companion_guide.py` with `companion_guide_harness.lua` (pages, sections, links,
