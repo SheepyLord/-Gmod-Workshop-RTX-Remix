@@ -6,6 +6,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13-F
+
+- **Material preloads load at their first draw** (runtime patch 0030, accepted by the user;
+  [ADR 0103](docs/decisions/0103-material-preloads-load-at-their-first-draw.md),
+  [report](docs/handover/R13-F-report.md)). A USD material's `preload_textures` no longer loads every
+  mip when its mod loads. The frame that first draws the material loads them, synchronously, before it
+  renders, so a character still appears with its whole maps. In the PoC's A/B the start-up held 2.4 GB
+  less of replacement textures and about 1.7 GB less VRAM and commit. The frame that first draws a
+  character lasted 0.11-0.58 s (with the machine's state as well as the character) instead of
+  0.04-0.11 s, once per character and session. `rtx.texturemanager.preloadOnFirstDraw` turns it off.
+
 ### R13-D
 
 - **Fixed an intermittent crash of the Remix runtime** (runtime patch 0029,

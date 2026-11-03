@@ -135,4 +135,5 @@ Each with the reason it lost.
 - [0099: Saved characters load on first use; the most recently used stay ready](0099-saved-characters-load-on-first-use.md) (R13-A; supersedes the publication rule of 0090).
 - [0100: One copy of each game texture, idle image release and replacement textures under pressure](0100-one-copy-and-idle-release-of-game-textures.md).
 - [0101: Memory profiles that scale with the computer](0101-memory-profiles.md).
-- [0102: Character PBR maps stay preloaded](0102-character-pbr-maps-stay-preloaded.md) (R13-P: streaming them is visible at every first appearance).
+- [0102: Character PBR maps stay preloaded](0102-character-pbr-maps-stay-preloaded.md) (R13-P: streaming them is visible at every first appearance; superseded in part by 0103).
+- [0103: Material preloads load at their first draw](0103-material-preloads-load-at-their-first-draw.md) (R13-F, the user accepted the hitch; runtime patch 0030; supersedes part of 0102).

@@ -1,6 +1,8 @@
 # 0102: Character PBR maps stay preloaded
 
-- Status: Accepted 2026-11-03
+- Status: Accepted 2026-11-03; superseded in part by
+  [0103](0103-material-preloads-load-at-their-first-draw.md) (preloads now load at their first draw;
+  the generators keep the flag)
 - Decided by: the user's rule for R13's memory work, "visible quality unchanged"
   ([R13-plan.md](../handover/R13-plan.md)), applied to the A/B measured in
   [R13-P](../handover/R13-P-report.md)
