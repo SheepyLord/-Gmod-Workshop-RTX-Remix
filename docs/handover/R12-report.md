@@ -144,3 +144,22 @@ controlled replay.
   ship no maps, abstain ("conflicting exported family").
 - **Screenshot:** `out/r12/field/02-check/shot-01-alf2.png`, with endminf standing behind 阿芙2.0.
   Both render normally.
+
+## Hotfix: imported game maps stopped after 1 GiB (Claude, 2026-11-03)
+
+The user's session "Case Resolve" found it (`out/r12/rossina/FINDINGS.md`). ToPBR refused every new
+map once a session had written 1 GiB of generated DDS. In the field (PID 4120) that happened after 56
+maps, because R12-B2's generator change made every drawn character convert again. 洛茜, imported
+later, got no maps.
+
+The user asked for the limit to be removed and published at once, without tests and without waiting
+for Codex. Fixes commit `26aec12` (`codex/r12-hotfix`, from the shipped `026708a`): imported game
+maps no longer count toward the budget; the opt-in world conversion still does, and a budget or
+free-space refusal logs one clear warning per session. Full rebuild; DLL 5,415,424 bytes, SHA-256
+`a6432a44b7b5f922ef02caf88545ef33ae31f38d4898e33a12df3d5b72182f2c`. GPL source copy refreshed.
+Not tested.
+
+Codex's unfinished R12-B3 work (compact BC4/BC5 maps without the unused AO map, reuse across
+versions; [brief](R12-B3-game-maps-budget-formats-reuse.md) on `r12-pbr`) is kept on the fixes branch
+`codex/r12-b3-wip` (`44559f4`). It was stopped so it would not end the testers' field games, and
+resumes on top of this fix when the user agrees.

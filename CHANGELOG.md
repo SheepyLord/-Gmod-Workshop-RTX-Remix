@@ -41,6 +41,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - QA tools no longer wait for the field game to go idle: the field game is a test session (the
   user, 2026-11-02). `tools/qa/mmd_reimport_session.py` ends a running field game before its PoC
   launch and records which; R12-C's `tools/game_activity.py` gate is not kept.
+- **Imported game PBR no longer stops partway through a session** (the user's urgent fix,
+  2026-11-03). ToPBR stopped writing game maps once a session had generated 1 GiB of them, so later
+  characters (such as 洛茜) got none until a restart. Only the opt-in world conversion counts toward
+  that budget now, and a budget or disk-space refusal logs a clear warning. Published without the
+  usual tests at the user's request; compact maps and reuse across versions follow.
 
 ### R11
 

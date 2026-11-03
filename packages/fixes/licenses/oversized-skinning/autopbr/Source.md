@@ -9,7 +9,7 @@ registry. `cc77daa` fixes damaged-registry recovery, durable saves and session-s
 `633fd5e` resolves each live texture identity once per worker and persists USD publication ownership.
 Nothing was pushed.
 
-The current fixes branch is `codex/r12-pbr`, commit `026708ae03c05ba6a06fc2f74c19493c9618eda5`.
+The current fixes branch is `codex/r12-hotfix`, commit `26aec12deb2372e48ebd82e1ff62850f40840226`.
 R12 adds conservative UV-feature pairing, texture-scoped durable player choices, the embedded
 translated editor, and drawn-before-load identity capture. The source/DLL identity below supersedes
 the R11 build identity; the earlier history remains documented for reconstruction.
@@ -83,8 +83,8 @@ MSBuild.exe out/r12-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal 
 ```
 
 The current DLL is **5,379,072 bytes**, SHA-256
-`ce41b8b00abce2b4cdc0d0b04b7a0183c778dd04673abb890354c414503bc496`.
-The matching PDB remains beside it under the R12-B loader worktree's `out/r12-b2/module`.
+`a6432a44b7b5f922ef02caf88545ef33ae31f38d4898e33a12df3d5b72182f2c`.
+The matching PDB remains beside it under the main checkout's `out/r12/hotfix/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
 the existing VTF filesystem/logging stubs and assertions enabled. They cover malformed/resource VTFs,
@@ -160,3 +160,12 @@ The tested DLL gives Alf2 hair and two accessory materials automatic game maps i
 The screenshot and normal exit 0 have zero Lua/device errors. All 3,284 snapshot files and their
 timestamps, the exact prior journal, prior console (restored unread), user.conf and Steam depot
 checks match after restoration; the owned PoC lock is released. Evidence is in `out/r12-b2`.
+
+## Follow-up: R12 hotfix (the user's urgent request, 2026-11-03)
+
+Imported game maps no longer stop at ToPBR's 1 GiB of new DDS per module session: only the opt-in
+world conversion counts toward it (`WriteTextureToDDS(..., sessionBudget)`; the game converter passes
+false). A budget or free-space refusal logs one clear warning per session instead of only the
+generic "DDS publication failed". The field game had stopped converting after 56 maps
+(1,068,156,512 bytes), so later characters such as 洛茜 got no maps until a restart. Built with a
+full rebuild of the same project; published without the usual tests at the user's request.

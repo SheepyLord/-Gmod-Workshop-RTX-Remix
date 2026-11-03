@@ -2566,7 +2566,7 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb941e4c482 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..a8244d6e16c2c0220eb53bcda778c0e02cce6093 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
 @@ -4,6 +4,13 @@
@@ -2702,11 +2702,13 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  
      // Keep the full path under MAX_PATH by truncating the readable part.
      constexpr size_t kMaxNameLength = 140;
-@@ -511,12 +475,27 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
+@@ -510,13 +474,43 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
+     return file.good();
  }
  
- bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
+-bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
 -    if (texture.pixelData.empty()) {
++bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget) {
 +    if (!Policy::ValidImage(texture.width, texture.height) ||
 +        texture.pixelData.size() != size_t(texture.width) * texture.height * 4) {
          Warning("[MaterialPipeline::ToPBR] Cannot write empty texture\n");
@@ -2719,10 +2721,25 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
 +        expected+=uint64_t(w)*h*4;
 +        if(w==1 && h==1)break;
 +    }
-+    if (m_generatedDDSBytes + expected > 1024ull*1024*1024) return false;
++    if (sessionBudget && m_generatedDDSBytes + expected > 1024ull*1024*1024) {
++        if (!m_budgetWarned) {
++            m_budgetWarned = true;
++            Warning("[MaterialPipeline::ToPBR] Generated-map budget used up: %llu of %llu bytes of world maps written this session; restart the game to convert more world materials (imported game maps are not limited)\n",
++                static_cast<unsigned long long>(m_generatedDDSBytes), 1024ull*1024*1024);
++        }
++        return false;
++    }
 +    std::error_code spaceError;
 +    const auto space=std::filesystem::space(std::filesystem::u8path(m_outputDirectory),spaceError);
-+    if (spaceError || space.available < expected + 64ull*1024*1024) return false;
++    if (spaceError || space.available < expected + 64ull*1024*1024) {
++        if (!m_diskWarned) {
++            m_diskWarned = true;
++            Warning("[MaterialPipeline::ToPBR] Not enough free disk space for generated maps: %llu MiB free, %llu MiB needed (with 64 MiB kept free) in %s\n",
++                static_cast<unsigned long long>(spaceError ? 0 : space.available / (1024*1024)),
++                static_cast<unsigned long long>((expected + 64ull*1024*1024) / (1024*1024)), m_outputDirectory.c_str());
++        }
++        return false;
++    }
 +    const std::string stagingPath = outputPath + ".tmp";
 +    if (GetFileAttributesA(outputPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
 +        const auto backup = outputPath + ".rejected-" + std::to_string(GetTickCount64());
@@ -2732,16 +2749,16 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      if (!file.is_open()) {
          Warning("[MaterialPipeline::ToPBR] Failed to open file for writing: %s\n", outputPath.c_str());
          return false;
-@@ -598,6 +577,8 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const
+@@ -598,6 +592,8 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const
      }
      
      file.close();
 +    if (!file || !USDA::PublishStagedFile(stagingPath, outputPath)) return false;
-+    m_generatedDDSBytes += expected;
++    if (sessionBudget) m_generatedDDSBytes += expected;
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Wrote DDS file: %s (%dx%d, %d mips)\n", outputPath.c_str(), texture.width, texture.height, mipCount);
-@@ -992,6 +973,7 @@ bool TextureProcessor::ExtractVTFPixelData(const std::vector<uint8_t>& fileData,
+@@ -992,6 +988,7 @@ bool TextureProcessor::ExtractVTFPixelData(const std::vector<uint8_t>& fileData,
                                                 ConvertedTexture& outTexture, 
                                                 bool isNormalMap) {
      // Delegate to VTF module
@@ -2749,7 +2766,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      return VTF::ExtractVTFPixelData(fileData, header, outTexture, isNormalMap, m_debugOutput);
  }
  
-@@ -1393,140 +1375,18 @@ uint64_t TextureProcessor::ConvertAndUploadTexture(const std::string& vtfPath, b
+@@ -1393,140 +1390,18 @@ uint64_t TextureProcessor::ConvertAndUploadTexture(const std::string& vtfPath, b
      return texture.hash;
  }
  
@@ -2895,7 +2912,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  bool TextureProcessor::AnalyzeBaseTextureBrightness(const std::string& texturePath, float& outBrightness) {
      if (texturePath.empty()) {
          return false;
-@@ -1848,7 +1708,18 @@ struct VMTProperties {
+@@ -1848,7 +1723,18 @@ struct VMTProperties {
  // Parse a VMT file and extract properties that FindVar doesn't reliably expose
  // This is crucial because when running with DX6 fallback shaders, FindVar() returns
  // incorrect or missing values for many material properties
@@ -2914,7 +2931,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      if (!fileSystem) return false;
      
      // Guard against include cycles in patch VMT chains
-@@ -2035,7 +1906,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2035,7 +1921,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
      
      // Convert to lowercase for case-insensitive matching
      std::string contentLower = content;
@@ -2923,7 +2940,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      
      // Extract shader name (first non-whitespace word, possibly in quotes)
      // Skip any comment lines (// or /* */) at the start
-@@ -2673,7 +2544,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2673,7 +2559,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
      // ExoPBR uses screenspace_general_8tex shader with ExoPBR proxy
      // =========================================================================
      std::string shaderLower = outProps.shaderName;
@@ -2932,7 +2949,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      
      if (shaderLower == "screenspace_general_8tex") {
          // Check for ExoPBR proxy
-@@ -2931,6 +2802,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+@@ -2931,6 +2817,7 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
  
  bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName, 
                                                MaterialPBRProperties& outProps) {
@@ -2940,7 +2957,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      if (!materials) {
          Warning("[MaterialPipeline::ToPBR] Material system not available\n");
          return false;
-@@ -3909,7 +3781,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3909,7 +3796,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          bool isRefractShader = false;
          if (!outProps.shaderName.empty()) {
              std::string shaderLower = outProps.shaderName;
@@ -2949,7 +2966,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              isRefractShader = (shaderLower == "refract");
          }
          
-@@ -3917,7 +3789,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3917,7 +3804,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          bool isSurfaceGlass = false;
          if (!outProps.surfaceProp.empty()) {
              std::string surfaceLower = outProps.surfaceProp;
@@ -2958,7 +2975,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              isSurfaceGlass = (surfaceLower == "glass" || surfaceLower.find("glass") != std::string::npos);
          }
          
-@@ -3930,7 +3802,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -3930,7 +3817,7 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          if (hasVMTParsed) {
              if (!vmtParsed.shaderName.empty()) {
                  std::string vmtShaderLower = vmtParsed.shaderName;
@@ -2967,7 +2984,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
                  vmtIsRefract = (vmtShaderLower == "refract");
              }
              vmtHasRefractAmount = vmtParsed.hasRefractAmount;
-@@ -4001,48 +3873,8 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -4001,48 +3888,8 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
          }
      }
      
@@ -3018,7 +3035,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      // Calculate PBR values with enhanced logic
      // Skip Source Engine heuristics for direct-PBR formats (ExoPBR, GPBR) - they already
      // set their own appropriate defaults (roughness=0.5, metallic=0.0) and rely on
-@@ -4060,12 +3892,191 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
+@@ -4060,12 +3907,191 @@ bool TextureProcessor::ExtractMaterialPBR(const std::string& materialName,
              outProps.hasEnvMapMask, outProps.hasPhongExponentTexture, outProps.hasEnvMapTint, outProps.hasEnvMap, outProps.normalMapAlphaEnvMapMask, outProps.isGlass);
      }
      
@@ -3211,7 +3228,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      ProcessingContext ctx;
      
      // Bind member functions to the context
-@@ -4092,13 +4103,13 @@ ProcessingContext TextureProcessor::CreateProcessingContext() {
+@@ -4092,13 +4118,13 @@ ProcessingContext TextureProcessor::CreateProcessingContext() {
          return GenerateOutputPath(sourceName, suffix);
      };
      ctx.fileExists = [this](const std::string& path) {
@@ -3228,7 +3245,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      
      return ctx;
  }
-@@ -4235,11 +4246,17 @@ static std::vector<uint64_t> CollectMaterialFrameHashes(const std::string& mater
+@@ -4235,11 +4261,17 @@ static std::vector<uint64_t> CollectMaterialFrameHashes(const std::string& mater
  void TextureProcessor::RegisterProcessedMaterial(const std::vector<uint64_t>& hashes,
                                                   ProcessedMaterialInfo info) {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -3247,7 +3264,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  }
  
  bool TextureProcessor::RegisterChromeMaterial(uint64_t hash) {
-@@ -4340,7 +4357,7 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4340,7 +4372,7 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      matInfo.emissionIntensity = props.hasEmissionScale ? props.emissionScale : 1.0f;
      
      // Create processing context for modular handlers
@@ -3256,7 +3273,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      
      // =========================================================================
      // Delegate to format-specific handlers (defined in separate files)
-@@ -4350,7 +4367,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4350,7 +4382,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // ExoPBR format
      if (props.isExoPBR) {
          ProcessedMaterial result = ExoPBR::ProcessTextures(props, textureHash, ctx);
@@ -3266,7 +3283,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4361,7 +4379,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4361,7 +4394,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // GPBR format
      if (props.isGPBR) {
          ProcessedMaterial result = GPBR::ProcessTextures(props, textureHash, ctx);
@@ -3276,7 +3293,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4372,7 +4391,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4372,7 +4406,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // MWB PBR Gen format (must check before BFT - it has more specific patterns)
      if (props.isMWBPBR) {
          ProcessedMaterial result = MWBPBR::ProcessTextures(props, textureHash, ctx);
@@ -3286,7 +3303,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4383,7 +4403,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4383,7 +4418,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
      // BlueFlyTrap PseudoPBR format
      if (props.isBFTPseudoPBR) {
          ProcessedMaterial result = BFTPseudoPBR::ProcessTextures(props, textureHash, ctx);
@@ -3296,7 +3313,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              AddGlassTransmittance(props, ctx, result);
              CopyProcessedMaterial(result, matInfo);
              RegisterProcessedMaterial(newHashes, matInfo);
-@@ -4391,6 +4412,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
+@@ -4391,6 +4427,8 @@ bool TextureProcessor::CreatePBRMaterial(const MaterialPBRProperties& props, con
          }
      }
      
@@ -3305,7 +3322,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      // =========================================================================
      // Standard Source Engine material processing (fallback)
      // For non-PBR format materials, use the SourceEngine handler
-@@ -4423,143 +4446,11 @@ int TextureProcessor::ProcessAllTrackedMaterials() {
+@@ -4423,143 +4461,11 @@ int TextureProcessor::ProcessAllTrackedMaterials() {
      return ProcessTrackedMaterialsBatch(0);
  }
  
@@ -3452,7 +3469,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) const {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
      return m_processedMaterials.find(materialName) != m_processedMaterials.end();
-@@ -4567,19 +4458,24 @@ bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) cons
+@@ -4567,19 +4473,24 @@ bool TextureProcessor::IsMaterialProcessed(const std::string& materialName) cons
  
  TextureProcessor::Stats TextureProcessor::GetStats() const {
      std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -3479,7 +3496,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      m_stats = {};
      
      // Clear persistent ineligible cache and delete the file
-@@ -4590,72 +4486,93 @@ void TextureProcessor::ClearCache() {
+@@ -4590,72 +4501,93 @@ void TextureProcessor::ClearCache() {
          DeleteFileA(cachePath.c_str());
      }
      
@@ -3634,7 +3651,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  }
  
  void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, uint64_t textureHash) {
-@@ -4703,91 +4620,48 @@ void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, ui
+@@ -4703,91 +4635,48 @@ void TextureProcessor::OnNewMaterialDetected(const std::string& materialName, ui
  }
  
  void TextureProcessor::WriteUSDAIfNeeded() {
@@ -3754,7 +3771,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      if (m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Already running
      }
-@@ -4795,7 +4669,13 @@ void TextureProcessor::StartWorkerThread() {
+@@ -4795,7 +4684,13 @@ void TextureProcessor::StartWorkerThread() {
      m_shutdownRequested.store(false, std::memory_order_relaxed);
      m_workerRunning.store(true, std::memory_order_relaxed);
      
@@ -3769,7 +3786,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      
      if (m_debugOutput) {
          Msg("[MaterialPipeline::ToPBR] Background worker thread started\n");
-@@ -4807,9 +4687,13 @@ void TextureProcessor::CancelPendingWork() {
+@@ -4807,9 +4702,13 @@ void TextureProcessor::CancelPendingWork() {
      std::lock_guard<std::mutex> lock(m_queueMutex);
      while (!m_materialQueue.empty()) m_materialQueue.pop();
      m_queuedMaterials.clear();
@@ -3783,7 +3800,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      if (!m_workerRunning.load(std::memory_order_relaxed)) {
          return; // Not running
      }
-@@ -4833,183 +4717,225 @@ void TextureProcessor::StopWorkerThread() {
+@@ -4833,183 +4732,225 @@ void TextureProcessor::StopWorkerThread() {
  }
  
  void TextureProcessor::WorkerThreadFunc() {
@@ -3874,7 +3891,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
 +                bool restored = false;
 +                auto convert=[&](const GamePBR::Maps* selected)->std::optional<GameRegistry::Record> {
 +                    const auto output=GamePBR::Convert(gameJob.source,gameJob.base,m_outputDirectory,
-+                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path);},
++                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path,false);},
 +                        [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
 +                        [&](const GamePBR::Decision& d){
 +                            view.family=d.accepted?d.family:"";
@@ -4164,7 +4181,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  int TextureProcessor::QueueMaterialsForProcessing() {
      if (!m_enabled.load(std::memory_order_relaxed)) {
          return 0;
-@@ -5049,6 +4975,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5049,6 +4990,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
          std::lock_guard<std::recursive_mutex> lock(m_mutex);
          for (size_t i = 0; i < cachedMaterials.size(); i++) {
              const std::string& matName = cachedMaterials[i];
@@ -4172,7 +4189,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              if (MaterialFilter::IsNonSceneMaterialName(matName)) {
                  m_processedMaterials.insert(matName);
                  continue;
-@@ -5082,6 +5009,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5082,6 +5024,7 @@ int TextureProcessor::QueueMaterialsForProcessing() {
                  continue;
              }
              
@@ -4180,7 +4197,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
              m_materialQueue.push(matName);
              m_queuedMaterials.insert(matName);
              queuedCount++;
-@@ -5102,87 +5030,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
+@@ -5102,87 +5045,20 @@ int TextureProcessor::QueueMaterialsForProcessing() {
  
  size_t TextureProcessor::GetQueuedMaterialCount() const {
      std::lock_guard<std::mutex> lock(m_queueMutex);
@@ -4274,7 +4291,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  } // namespace ToPBR
  } // namespace MaterialPipeline
  
-@@ -5190,6 +5051,43 @@ void TextureProcessor::AppendToUSDAAsync() {
+@@ -5190,6 +5066,43 @@ void TextureProcessor::AppendToUSDAAsync() {
  // Lua Bindings - Must be at global scope
  //=============================================================================
  
@@ -4318,7 +4335,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
  LUA_FUNCTION(ToPBR_Initialize) {
      // If already initialized (by C++ during RemixAPI init), return success
      if (MaterialPipeline::ToPBR::TextureProcessor::Instance().IsInitialized()) {
-@@ -5297,14 +5195,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
+@@ -5297,14 +5210,7 @@ LUA_FUNCTION(ToPBR_SetMetallicGeneration) {
      bool enabled = LUA->GetBool(1);
      MaterialPipeline::ToPBR::TextureProcessor::Instance().SetMetallicGeneration(enabled);
      
@@ -4334,7 +4351,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      return 0;
  }
  
-@@ -5382,6 +5273,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
+@@ -5382,6 +5288,8 @@ LUA_FUNCTION(ToPBR_GetStats) {
      LUA->PushNumber(stats.failedConversions);
      LUA->SetField(-2, "failedConversions");
      
@@ -4343,7 +4360,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      return 1;
  }
  
-@@ -5789,6 +5682,15 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
+@@ -5789,6 +5697,15 @@ void InitializeToPBRLuaBindings(GarrysMod::Lua::ILuaBase* LUA) {
      LUA->PushCFunction(ToPBR_Initialize);
      LUA->SetField(-2, "Initialize");
      
@@ -4360,7 +4377,7 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb9
      LUA->SetField(-2, "IsInitialized");
      
 diff --git a/source/material_pipeline/to_pbr/to_pbr.h b/source/material_pipeline/to_pbr/to_pbr.h
-index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b346216030 100644
+index 895cc47f2dd5352c0563c7dc37bc565cb961c492..722a69214987a362178a39a49292b7e2b5e62cc0 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.h
 +++ b/source/material_pipeline/to_pbr/to_pbr.h
 @@ -1,4 +1,5 @@
@@ -4426,7 +4443,17 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b3
      bool IsEnabled() const { return m_enabled.load(std::memory_order_relaxed); }
      
      // Enable/disable auto-processing of new materials
-@@ -501,10 +514,11 @@ private:
+@@ -457,7 +470,8 @@ private:
+     bool UploadTextureToRemix(const ConvertedTexture& texture, remixapi_TextureHandle* outHandle);
+     
+     // Write texture to DDS file
+-    bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath);
++    // Imported game maps pass sessionBudget=false: only world conversion counts toward the 1 GiB.
++    bool WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget = true);
+     bool WriteDDSHeader(std::ofstream& file, uint32_t width, uint32_t height, bool hasAlpha, uint32_t mipCount);
+     
+     // Generate roughness texture from envmap mask or phong constant
+@@ -501,10 +515,11 @@ private:
      
      // Discover companion textures that might not be explicitly referenced in the VMT
      // E.g., if basetexture is "metal/metal001", look for "metal/metal001_normal", "_height", "_mask", "_spec"
@@ -4439,7 +4466,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b3
      
      // Get filesystem interface
      IFileSystem* GetFileSystem();
-@@ -512,12 +526,12 @@ private:
+@@ -512,12 +527,12 @@ private:
      remix::Interface* m_remixInterface;
      IFileSystem* m_fileSystem;
      bool m_initialized;
@@ -4458,7 +4485,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b3
      std::string m_outputDirectory;       // Absolute output directory for writing DDS files
      size_t m_lastKnownMaterialCount;     // Cache to avoid expensive GetCachedMaterials() calls
      std::atomic<bool> m_allMaterialsProcessed; // Lock-free flag for instant early exit
-@@ -574,7 +588,7 @@ private:
+@@ -574,7 +589,7 @@ private:
      // an implicit roughness map on non-reflective materials.
      // Version 24 prevents additive effects with a glass physics surface from
      // being emitted as refractive translucent replacements.
@@ -4467,7 +4494,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b3
      std::unordered_set<std::string> m_ineligibleCache;
      bool m_ineligibleCacheDirty = false;
      
-@@ -599,7 +613,7 @@ private:
+@@ -599,7 +614,7 @@ private:
      std::unordered_set<uint64_t> m_materialsWrittenToUSDA;
      
      // Flag to indicate USDA needs to be rewritten
@@ -4476,7 +4503,7 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b3
      
      // Debounce timer for USDA writes - prevents Remix from constantly reloading
      // the mod layer while materials are still being processed
-@@ -616,10 +630,31 @@ private:
+@@ -616,10 +631,32 @@ private:
      // =========================================================================
      
      // Background worker thread
@@ -4502,13 +4529,14 @@ index 895cc47f2dd5352c0563c7dc37bc565cb961c492..a3afa7f1258a59bbb72097cbfffea0b3
 +    std::atomic<bool> m_publishRequested{true};
 +    std::atomic<double> m_maxSnapshotMs{0};
 +    std::atomic<double> m_maxDecodeMs{0};
-+    uint64_t m_generatedDDSBytes = 0; // Single worker; at most 1 GiB of new DDS per module session.
++    uint64_t m_generatedDDSBytes = 0; // Single worker; at most 1 GiB of new world DDS per module session.
++    bool m_budgetWarned = false, m_diskWarned = false; // Each refusal reason is logged once per session.
 +    std::string m_recipeKey; // Owned by the single decode worker.
 +
      // Work queue for materials to process
      std::queue<std::string> m_materialQueue;
      std::unordered_set<std::string> m_queuedMaterials;  // Fast lookup to avoid duplicates
-@@ -638,7 +673,7 @@ private:
+@@ -638,7 +675,7 @@ private:
      void WorkerThreadFunc();
      
      // Process a single material on the worker thread (no main thread locks)

@@ -474,7 +474,7 @@ bool TextureProcessor::WriteDDSHeader(std::ofstream& file, uint32_t width, uint3
     return file.good();
 }
 
-bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath) {
+bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const std::string& outputPath, bool sessionBudget) {
     if (!Policy::ValidImage(texture.width, texture.height) ||
         texture.pixelData.size() != size_t(texture.width) * texture.height * 4) {
         Warning("[MaterialPipeline::ToPBR] Cannot write empty texture\n");
@@ -486,10 +486,25 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const 
         expected+=uint64_t(w)*h*4;
         if(w==1 && h==1)break;
     }
-    if (m_generatedDDSBytes + expected > 1024ull*1024*1024) return false;
+    if (sessionBudget && m_generatedDDSBytes + expected > 1024ull*1024*1024) {
+        if (!m_budgetWarned) {
+            m_budgetWarned = true;
+            Warning("[MaterialPipeline::ToPBR] Generated-map budget used up: %llu of %llu bytes of world maps written this session; restart the game to convert more world materials (imported game maps are not limited)\n",
+                static_cast<unsigned long long>(m_generatedDDSBytes), 1024ull*1024*1024);
+        }
+        return false;
+    }
     std::error_code spaceError;
     const auto space=std::filesystem::space(std::filesystem::u8path(m_outputDirectory),spaceError);
-    if (spaceError || space.available < expected + 64ull*1024*1024) return false;
+    if (spaceError || space.available < expected + 64ull*1024*1024) {
+        if (!m_diskWarned) {
+            m_diskWarned = true;
+            Warning("[MaterialPipeline::ToPBR] Not enough free disk space for generated maps: %llu MiB free, %llu MiB needed (with 64 MiB kept free) in %s\n",
+                static_cast<unsigned long long>(spaceError ? 0 : space.available / (1024*1024)),
+                static_cast<unsigned long long>((expected + 64ull*1024*1024) / (1024*1024)), m_outputDirectory.c_str());
+        }
+        return false;
+    }
     const std::string stagingPath = outputPath + ".tmp";
     if (GetFileAttributesA(outputPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
         const auto backup = outputPath + ".rejected-" + std::to_string(GetTickCount64());
@@ -578,7 +593,7 @@ bool TextureProcessor::WriteTextureToDDS(const ConvertedTexture& texture, const 
     
     file.close();
     if (!file || !USDA::PublishStagedFile(stagingPath, outputPath)) return false;
-    m_generatedDDSBytes += expected;
+    if (sessionBudget) m_generatedDDSBytes += expected;
     
     if (m_debugOutput) {
         Msg("[MaterialPipeline::ToPBR] Wrote DDS file: %s (%dx%d, %d mips)\n", outputPath.c_str(), texture.width, texture.height, mipCount);
@@ -4780,7 +4795,7 @@ void TextureProcessor::WorkerThreadFunc() {
                 bool restored = false;
                 auto convert=[&](const GamePBR::Maps* selected)->std::optional<GameRegistry::Record> {
                     const auto output=GamePBR::Convert(gameJob.source,gameJob.base,m_outputDirectory,
-                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path);},
+                        [this](const ConvertedTexture& t,const std::string& path){return WriteTextureToDDS(t,path,false);},
                         [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
                         [&](const GamePBR::Decision& d){
                             view.family=d.accepted?d.family:"";
