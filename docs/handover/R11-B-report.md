@@ -191,6 +191,18 @@ user-config difference. No PoC process remains; the lock was released. No Remix 
 character folder or field-install file was written, and no field process was focused, sent input or
 ended. Neither branch was pushed, merged or published.
 
+## Field check of the second publication (Claude)
+
+`main` fast-forwarded to `626226b`; the merge published item 3829070317 as
+`0.0.0-dev.20261103000000+7fe80b5c` (digest `2a313fcc...`, the package validated below), and the push
+carried one LFS object (1.0 MB). Evidence: the main checkout's `out/r11b/field2`. Start 01 fetched the
+archive; start 02 deployed it (generation 48) and spawned endminf again: **three** `Imported game maps`
+lines, one per texture (`cloth_01` once, where the first publication converted it twice), `Published 3
+fallback materials (1640 authored hashes, scan=complete)`, normal quit, no Lua error. `materials.usda`
+now has its `materials.usda.last-published` record and no backup was added (the five existing ones
+are untouched: four are the field's own R11 output from 2026-11-02, the 2026-10-29 one is the pre-R11
+file).
+
 ## Second review fixes
 
 Claude's published field check found duplicate conversions for Endfield's shared cloth texture and
