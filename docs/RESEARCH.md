@@ -1,5 +1,42 @@
 # Research notes
 
+## R13 integration: per-profile memory, an option crash, Steam Cloud (2026-11-03, Claude)
+
+- **Per-profile memory with the final package** (PoC, 1920x1080, gm_construct, the copied field
+  library of 98 saved NPC/player rigs, no Workshop add-ons; `remix.memory_profile` set on the 32 GB
+  card; `out/r13/int/final-*` in the `r13-int` worktree). Private / working set / driver VRAM:
+
+  | Profile | Idle | Four characters spawned | Peak |
+  |---|---|---|---|
+  | minimum (low tier) | 9.2 / 3.5 / 5.6 GB | 12.8 / 4.9 / 7.7 GB | 12.8 / 5.0 / 7.7 GB |
+  | recommended (medium tier) | 11.7 / 5.7 / 5.8 GB | 15.3 / 7.2 / 7.9 GB | 15.7 / 7.2 / 8.3 GB |
+  | high (auto) | 15.1 / 9.1 / 5.9 GB | 18.8 / 10.6 / 8.0 GB | 22.5 / 10.7 / 11.6 GB |
+
+  The PoC's own Remix mods preload 2.5-2.7 GB of replacement textures in every profile. A plain
+  Combine soldier after the four were removed raised game textures 2.44 -> 2.66 GB (minimum), 2.49 ->
+  3.07 GB (recommended) and 2.49 -> 6.36 GB (high); only the minimum exceeded its budget (2 GiB) and
+  came back under it: 2,770 CPU copies and 48 images released, 42 re-uploads on later use
+  (`[RTX Managed Textures]` lines).
+- **First spawns from the NPC tab:** 阮·梅 R18 (about 1.2 GB of game textures) 4.0 s when ready
+  (recommended, high), 6.0 s cold (minimum); other characters 0.5-2.1 s; a loaded character again
+  0.04-0.07 s.
+- **An intermittent crash in Remix's option system.** One recommended/medium session (runtime
+  `0c20772f`) ended about 15 s into idle with an access violation reading 0x50 on the render thread:
+  `RtxOptionImpl::resolveValue+0x3e` (`rtx_option.cpp:1151`) <- `updateResolvedValue` <-
+  `RtxOptionManager::applyPendingValues+0x2b9` (`rtx_option_manager.cpp:196`, iterating the dirty
+  option map under `getUpdateMutex()`) <- `RtxContext::injectRTX+0x2729` (a heuristic stack from the
+  Sentry minidump, symbolized with dbghelp against the build's PDB). The main thread was waiting on the
+  same mutex. The repeat and seven other sessions ran cleanly. Candidate (R13-B, unproven):
+  `acquireLayer`/`releaseLayer` change every option's layer list under the layer mutex only. Tools:
+  `out/r13/verify/read_dump.py`, `stack_scan.py`, `threads_scan.py`, `symbolize.py` in the main
+  checkout; the Python `minidump` package reads the dump.
+- **Steam Cloud carries a PoC session's settings to the field game** (R13-A found it): GMod reads
+  `Steam\userdata\<account>\4000\remote\cfg\config.cfg` at start and writes it at its quit, one copy
+  for every install. After R13-B's sessions with `+fps_max 60` the cloud copy differed from the
+  field's `config.cfg` only in `fps_max` (60 against 300). After sessions that execute the field's
+  `config.cfg` and `host_writeconfig` before the quit (now every `poc_session.py` run), the two were
+  byte-identical (`0ebf6a15`).
+
 ## R13-B: where the runtime's host memory goes, and the texture budget (2026-11-03)
 
 Read from the runtime fork at `fc62f44f` (patches 0001-0022) and measured on this machine (RTX 5090,
@@ -104,6 +141,129 @@ driver Vulkan memory: heap 0 device-local with type 1 `DEVICE_LOCAL` and type 4
   application-released image's slot once no bound instance samples it; no other path frees a game
   texture's slot). An image drawn once therefore stayed referenced until the next map even if Source
   never drew it again; R13-B's release marks the image application-released for that reason.
+
+## R13-M: compact imported game maps and reuse across versions (2026-11-03, Claude)
+
+- **What Remix samples from each map.** Roughness and metallic read only `.x` and the octahedral
+  normal only `.xy` (runtime fork `src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_interaction.slangh:863`,
+  `:908`, `:927`), so BC4 (one channel) and BC5 (two) carry everything the uncompressed maps did.
+  The fixes' octahedral encoder writes B = 0 and A = 255 (`source/material_pipeline/to_pbr/vtf.cpp:253-256`).
+- **Remix's DDS reader.** `rtx_asset_data_manager.cpp:123-194` parses DX10 headers through gli's
+  format table, sizes each level in whole blocks (`max(1, ceil(w/4)) * max(1, ceil(h/4)) * block`),
+  needs `DDSD_MIPMAPCOUNT` for more than one level and holds at most 16 levels. It maps a DDS with
+  `FILE_SHARE_READ` only (`:286-295`): while Remix streams a file, nothing can replace, rename or
+  delete it, so migrated maps are written under new names.
+- **Sizes, 2048x2048 with a full chain:** uncompressed 22,369,748 bytes, BC5 5,592,580, BC4
+  2,796,364. A family was normal + roughness + metallic + AO = 89,478,992 bytes on disk, of which
+  Remix loaded 67,109,244; now 11,185,308 for both. Emission (22,369,748) is unchanged.
+- **The field cache (read only, 2026-11-03):** `rtx-remix/mods/~gmod_topbr/textures` holds 384 files,
+  4,567,891,854 bytes; 301 are imported game files (4,425,021,500 bytes of DDS). 58 families are
+  finished (27 `r11-game-v5`, 31 `r12-game-v7`); `game_991AF3B052DC62B2` stopped after its metallic
+  map (no marker), as the bug report found. 49 AO maps hold 886,402,452 bytes that nothing reads.
+  17 families (29%) have an emission map, 308,982,548 bytes; half of those maps light at most 1.1% of
+  their texels (median lit fraction 0.01091, `out/r13-m/emission-field.json` in the R13-M worktree).
+- **The shipped key formulas check out against real data.** For all 12 converted families of 洛茜,
+  阿芙2.0 and endminf, the v7 formula (and for endminf's three families also v5) finds the field's
+  finished family; every stored base level equals today's conversion of the same inputs, and the
+  R13-M uncompressed writer reproduces those files byte for byte (`game_dds_probe`, `out/r13-m/probe-field-2.log`).
+  v5 keys hash the present maps without role tags or layout, so the same bytes can belong to a
+  different layout: v5 chose Silver for every family in a folder holding any `*_MRA` file.
+- **BC4 encoder quality on real maps** (field files, 1,500-20,000 sampled blocks, 8-bit RMS):
+  min/max endpoints give normal maps 4.44/2.79/3.28; with least squares 3.96/2.44/2.96; the
+  exhaustive optimum is 3.50/2.13/2.63, and restricting it to the per-texel bound changes it by
+  under 0.02. Quantized roughness is the outlier: least squares 1.12, optimum 0.54, because its few
+  levels lie on a palette whose endpoint extends past the data (for example {65, 118, 170} on
+  r0 = 249, r1 = 65). Aligning the block's minimum and maximum to two palette positions for blocks of
+  at most four levels reaches 0.53 at about 1.7 us per block; on normal maps it would cost 5x for 1%.
+- **Real maps after R13-M** (`game_dds_probe`, three characters, 12 families, every block within
+  (max - min) / 14): normal RMS 0.27-3.30, roughness 0.12-1.20, metallic 0-1.18 (8-bit units);
+  conversion with encoding 0.44-2.90 s per family. Disk 945,122,708 -> 145,408,760 bytes; what Remix
+  loads 732,609,912 -> 145,408,760 bytes.
+- **Remix debug views for these maps** (`src/dxvk/shaders/rtx/utility/debug_view_indices.h`):
+  25 roughness, 16 shading normal, 94 primary base reflectivity (raw; metals show their albedo),
+  set with `RemixConfig.SetConfigVariable("rtx.debugView.debugViewIdx", n)`.
+- **PoC, the same three characters (high tier, 1280x720, gm_flatgrass; `out/r13-m/poc`):** spawning them
+  with the shipped uncompressed maps raised Remix's replacement-texture bytes (`usedMaterialTextureBytes`)
+  by 732,669,952, within 60 KB of the files' sum; with R13-M's compact maps by 139,901,952 (the
+  compact files new to that session, predicted 139,816,228).
+- **Remix preloads a previous session's game maps at startup.** Game-map materials carry
+  `preload_textures = 1` (`usda.cpp:350-357`, so generated normals do not stay at their smallest mip).
+  Before any character was drawn, the session after the uncompressed run already held 705,814,528
+  more replacement bytes than a clean start (the published normal/roughness/metallic maps; emission
+  loads when drawn), and still held them after ToPBR replaced the USD and its characters used new
+  files. After a compact run the startup surplus was 118,640,640 bytes. So every map of every
+  character the last session published is resident from the next start until the game exits.
+
+## R13-A: what loads a saved character, and when (2026-11-03, Claude)
+
+- **Map start loaded every saved character.** `sharing.lua`'s `InitPostEntity` registered each
+  approved citizen/combine/player rig through `ReadyActor` (`actors.lua:88-103` before R13-A):
+  mount the material archive and carrier, then `util.PrecacheModel` and `util.IsValidModel` on the
+  server. Precaching loads the model, its materials and its textures. On the copied field library
+  (57 characters; 98 loadable saved NPC/player rigs of generator 30-31 across 55 characters; 20.5 GB
+  of material archives) the PoC at 1920x1080 held, with nothing spawned: private bytes 27.0 GB,
+  working set 20.9 GB, game textures on the GPU 0.29 GB (patch 0022 defers their GPU images).
+- **Carrier spawn icons are empty.** A carrier has no visible mesh: every engine spawn icon of a
+  hotloader carrier in the field's `materials/spawnicons/models/mmd/<16 hex>/` is a 215-byte PNG. The
+  PoC's Player Model window drew one for each of 7 saved player models (it writes them to
+  `garrysmod/materials/spawnicons`), loading each model to do so.
+- **Sandbox precaches before `SetModel`.** The base player class runs `util.PrecacheModel(modelname)`
+  then `self.Player:SetModel(modelname)` (`gamemodes/base/gamemode/player_class/player_default.lua:71-72`);
+  `InternalSpawnNPC` sets an NPC-list entry's model before `Spawn` (`sandbox/gamemode/commands.lua:481-485`).
+- **The native module's name records date the last use.** `registerShortName` rewrites
+  `names/<kind>/<short>.json` on every call (`native/assets.cpp:132-137`): `PrepareCarrier` (cached or
+  packaged, `module.cpp:482`, `rig.cpp:487`) rewrites `names/rigs/<key>.json`, `loadAsset` /
+  `prepareSourceMaterials` rewrite `names/assets/<id>.json` (`assets.cpp:217-220`, `:472`). A map start
+  also rewrites `approved.json` (`sharing.lua`'s `ForgetPublishedAssets`, even with nothing missing),
+  and so does a hotloader spawn that publishes a new entry (`PublishActor` → `PublishRig`). The
+  field's writes of `names/assets` (02:41:07, 02:41:10) and `approved.json` (02:41:16) before the lag
+  report's jump are what the PoC's hotloader spawn as a Combine soldier wrote (run 09).
+- **The lag trigger: the first Combine soldier makes every loaded texture GPU-resident.** On the
+  current package with the copied library (every saved character precached, game textures 0.29 GB),
+  a stock `gmod_spawnnpc npc_combine_s` raised game textures to 17.07 GB and private bytes from 26.96
+  to 43.31 GB between two frames 1.4 s after the command, with no hotloader call in between (R13-A
+  run 19, per-frame trace on `SysTime()`). A character spawned as a Combine soldier from the hotloader
+  does the same (run 09: 1.54 → 17.12 GB). With only the ready set loaded (R13-A, high profile, 10
+  characters with 4.8 GiB of archives) the same soldier raised them 0.30 → 5.32 GB (run 20). None of
+  these raised game textures: the catalog broadcast, the hotloader window's preview, the NPC tab, the
+  Player Model window, NPC-tab and player-model spawns, a manhack attacking for 25 s, an archive
+  mount, a ragdoll new fit, a citizen new fit, a map change, a reload of the map,
+  `mat_reloadallmaterials`, `mat_reloadtextures` (runs 08, 09, 13, 19, 20). No packaged Lua names
+  Combine soldiers or reacts to one in a way that loads materials.
+- **The part of the Combine soldier that does it is `item_ammo_ar2_altfire`.** Every
+  `npc_combine_s` precaches that item with `item_healthvial` and `weapon_frag`. Spawned one at a time
+  on the current package (R13-A run 21), a Metro Police officer, a citizen with an AR2, a frag
+  grenade and a health vial left game textures at 0.29 GB; the AR2's alt-fire ammo item raised them to
+  17.07 GB (private 26.89 → 43.44 GB) within two seconds. A soldier that never dropped one did it
+  too (run 19), so its precache does, not a draw. The item's precache loads its model
+  `models/items/combine_rifle_ammo01.mdl` and, as recalled from the Source SDK 2013 code (not
+  checked here), the `combineball` particle system; `mmd_lazy_session.py --sequence ammo` splits them.
+- **GMod keeps `cfg/config.cfg` in Steam Cloud.** A game takes
+  `Steam\userdata\<account>\4000\remote\cfg\config.cfg` at start (the PoC's local `config.cfg` was
+  rewritten with the cloud copy seconds after a launch) and writes its settings back at its quit, so
+  a PoC session's last settings reach the field game at its next start. After R13-A runs 08-13 the
+  cloud held `cl_playermodel "kleiner"` (the measure sequence's reset) and `fps_max "60"`
+  (`mmd_reimport_session.py` sends it), against the field's own `"Bai Mei"` and `300`; a player
+  model chosen in run 08 was the player's model at the start of runs 10 and 11 although each run
+  restored the PoC's local `config.cfg`. Executing the field's `config.cfg` and `host_writeconfig`
+  before the quit leaves the cloud copy byte-identical to the field's (R13-A runs 09 onwards).
+- **The native module needs `textures/<sha256>.png`.** `loadAsset` reads an asset's PNG textures to
+  build it for spawning and presentation; the main session's field-cache copy has none, so a spawn
+  failed with `Cannot read ...textures\<hash>.png` until the 546 PNGs its manifests name (1.35 GB)
+  were added to the test copy. The native module keeps at most 8 loaded assets (`module.cpp:240`).
+- **The game cuts a printed line at about 4 KB** (a 4,011-character `R13A_ENTRIES` line was cut);
+  probes print one JSON object per line.
+- **Intermittent PoC start crash:** two of the first eight launches (runs 03 and 06, each within a
+  minute of another game's exit) stopped at the main menu with `0xC0000005` in
+  `nvoglv64.dll+0xe622f8` (reading address 0 / 0xffffffffffffffff), as R12-C's `07` control
+  (`+0xe6230a`). With a 45 s pause before launching, none of the later launches crashed; no hotloader
+  code had run.
+- **What a used character keeps after removal.** Source keeps its model, materials and textures until
+  the map changes (no unprecache). The fixes' `rtx_flush_textures` (`UncacheAllMaterials`, then a
+  renderer purge) released 2.2 GB of game textures and 20 GB of private bytes in the current package
+  (run 12); with R13-A it released the CPU copies (private 19.74 → 14.79 GB) while 2.5 GB of game
+  textures stayed until the map changed (run 16). The next map loads none of them unless they are in
+  the ready set.
 
 ## R12-A: retained carrier archive versus metadata (2026-11-03)
 
@@ -4689,126 +4849,3 @@ Steam's Workshop package had advanced since the PoC's previous deployment, so re
 `nlctl rollback` (generation 145), verifying all 1,871 deployed files against actual pre-pair hashes
 instead of applying the newer archive. All 191 snapshot files and 2,877 depot files validate; the
 same `autoexec.cfg` user-config difference remains. The PoC lock is released.
-
-## R13-M: compact imported game maps and reuse across versions (2026-11-03, Claude)
-
-- **What Remix samples from each map.** Roughness and metallic read only `.x` and the octahedral
-  normal only `.xy` (runtime fork `src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_interaction.slangh:863`,
-  `:908`, `:927`), so BC4 (one channel) and BC5 (two) carry everything the uncompressed maps did.
-  The fixes' octahedral encoder writes B = 0 and A = 255 (`source/material_pipeline/to_pbr/vtf.cpp:253-256`).
-- **Remix's DDS reader.** `rtx_asset_data_manager.cpp:123-194` parses DX10 headers through gli's
-  format table, sizes each level in whole blocks (`max(1, ceil(w/4)) * max(1, ceil(h/4)) * block`),
-  needs `DDSD_MIPMAPCOUNT` for more than one level and holds at most 16 levels. It maps a DDS with
-  `FILE_SHARE_READ` only (`:286-295`): while Remix streams a file, nothing can replace, rename or
-  delete it, so migrated maps are written under new names.
-- **Sizes, 2048x2048 with a full chain:** uncompressed 22,369,748 bytes, BC5 5,592,580, BC4
-  2,796,364. A family was normal + roughness + metallic + AO = 89,478,992 bytes on disk, of which
-  Remix loaded 67,109,244; now 11,185,308 for both. Emission (22,369,748) is unchanged.
-- **The field cache (read only, 2026-11-03):** `rtx-remix/mods/~gmod_topbr/textures` holds 384 files,
-  4,567,891,854 bytes; 301 are imported game files (4,425,021,500 bytes of DDS). 58 families are
-  finished (27 `r11-game-v5`, 31 `r12-game-v7`); `game_991AF3B052DC62B2` stopped after its metallic
-  map (no marker), as the bug report found. 49 AO maps hold 886,402,452 bytes that nothing reads.
-  17 families (29%) have an emission map, 308,982,548 bytes; half of those maps light at most 1.1% of
-  their texels (median lit fraction 0.01091, `out/r13-m/emission-field.json` in the R13-M worktree).
-- **The shipped key formulas check out against real data.** For all 12 converted families of 洛茜,
-  阿芙2.0 and endminf, the v7 formula (and for endminf's three families also v5) finds the field's
-  finished family; every stored base level equals today's conversion of the same inputs, and the
-  R13-M uncompressed writer reproduces those files byte for byte (`game_dds_probe`, `out/r13-m/probe-field-2.log`).
-  v5 keys hash the present maps without role tags or layout, so the same bytes can belong to a
-  different layout: v5 chose Silver for every family in a folder holding any `*_MRA` file.
-- **BC4 encoder quality on real maps** (field files, 1,500-20,000 sampled blocks, 8-bit RMS):
-  min/max endpoints give normal maps 4.44/2.79/3.28; with least squares 3.96/2.44/2.96; the
-  exhaustive optimum is 3.50/2.13/2.63, and restricting it to the per-texel bound changes it by
-  under 0.02. Quantized roughness is the outlier: least squares 1.12, optimum 0.54, because its few
-  levels lie on a palette whose endpoint extends past the data (for example {65, 118, 170} on
-  r0 = 249, r1 = 65). Aligning the block's minimum and maximum to two palette positions for blocks of
-  at most four levels reaches 0.53 at about 1.7 us per block; on normal maps it would cost 5x for 1%.
-- **Real maps after R13-M** (`game_dds_probe`, three characters, 12 families, every block within
-  (max - min) / 14): normal RMS 0.27-3.30, roughness 0.12-1.20, metallic 0-1.18 (8-bit units);
-  conversion with encoding 0.44-2.90 s per family. Disk 945,122,708 -> 145,408,760 bytes; what Remix
-  loads 732,609,912 -> 145,408,760 bytes.
-- **Remix debug views for these maps** (`src/dxvk/shaders/rtx/utility/debug_view_indices.h`):
-  25 roughness, 16 shading normal, 94 primary base reflectivity (raw; metals show their albedo),
-  set with `RemixConfig.SetConfigVariable("rtx.debugView.debugViewIdx", n)`.
-- **PoC, the same three characters (high tier, 1280x720, gm_flatgrass; `out/r13-m/poc`):** spawning them
-  with the shipped uncompressed maps raised Remix's replacement-texture bytes (`usedMaterialTextureBytes`)
-  by 732,669,952, within 60 KB of the files' sum; with R13-M's compact maps by 139,901,952 (the
-  compact files new to that session, predicted 139,816,228).
-- **Remix preloads a previous session's game maps at startup.** Game-map materials carry
-  `preload_textures = 1` (`usda.cpp:350-357`, so generated normals do not stay at their smallest mip).
-  Before any character was drawn, the session after the uncompressed run already held 705,814,528
-  more replacement bytes than a clean start (the published normal/roughness/metallic maps; emission
-  loads when drawn), and still held them after ToPBR replaced the USD and its characters used new
-  files. After a compact run the startup surplus was 118,640,640 bytes. So every map of every
-  character the last session published is resident from the next start until the game exits.
-
-## R13-A: what loads a saved character, and when (2026-11-03, Claude)
-
-- **Map start loaded every saved character.** `sharing.lua`'s `InitPostEntity` registered each
-  approved citizen/combine/player rig through `ReadyActor` (`actors.lua:88-103` before R13-A):
-  mount the material archive and carrier, then `util.PrecacheModel` and `util.IsValidModel` on the
-  server. Precaching loads the model, its materials and its textures. On the copied field library
-  (57 characters; 98 loadable saved NPC/player rigs of generator 30-31 across 55 characters; 20.5 GB
-  of material archives) the PoC at 1920x1080 held, with nothing spawned: private bytes 27.0 GB,
-  working set 20.9 GB, game textures on the GPU 0.29 GB (patch 0022 defers their GPU images).
-- **Carrier spawn icons are empty.** A carrier has no visible mesh: every engine spawn icon of a
-  hotloader carrier in the field's `materials/spawnicons/models/mmd/<16 hex>/` is a 215-byte PNG. The
-  PoC's Player Model window drew one for each of 7 saved player models (it writes them to
-  `garrysmod/materials/spawnicons`), loading each model to do so.
-- **Sandbox precaches before `SetModel`.** The base player class runs `util.PrecacheModel(modelname)`
-  then `self.Player:SetModel(modelname)` (`gamemodes/base/gamemode/player_class/player_default.lua:71-72`);
-  `InternalSpawnNPC` sets an NPC-list entry's model before `Spawn` (`sandbox/gamemode/commands.lua:481-485`).
-- **The native module's name records date the last use.** `registerShortName` rewrites
-  `names/<kind>/<short>.json` on every call (`native/assets.cpp:132-137`): `PrepareCarrier` (cached or
-  packaged, `module.cpp:482`, `rig.cpp:487`) rewrites `names/rigs/<key>.json`, `loadAsset` /
-  `prepareSourceMaterials` rewrite `names/assets/<id>.json` (`assets.cpp:217-220`, `:472`). A map start
-  also rewrites `approved.json` (`sharing.lua`'s `ForgetPublishedAssets`, even with nothing missing),
-  and so does a hotloader spawn that publishes a new entry (`PublishActor` → `PublishRig`). The
-  field's writes of `names/assets` (02:41:07, 02:41:10) and `approved.json` (02:41:16) before the lag
-  report's jump are what the PoC's hotloader spawn as a Combine soldier wrote (run 09).
-- **The lag trigger: the first Combine soldier makes every loaded texture GPU-resident.** On the
-  current package with the copied library (every saved character precached, game textures 0.29 GB),
-  a stock `gmod_spawnnpc npc_combine_s` raised game textures to 17.07 GB and private bytes from 26.96
-  to 43.31 GB between two frames 1.4 s after the command, with no hotloader call in between (R13-A
-  run 19, per-frame trace on `SysTime()`). A character spawned as a Combine soldier from the hotloader
-  does the same (run 09: 1.54 → 17.12 GB). With only the ready set loaded (R13-A, high profile, 10
-  characters with 4.8 GiB of archives) the same soldier raised them 0.30 → 5.32 GB (run 20). None of
-  these raised game textures: the catalog broadcast, the hotloader window's preview, the NPC tab, the
-  Player Model window, NPC-tab and player-model spawns, a manhack attacking for 25 s, an archive
-  mount, a ragdoll new fit, a citizen new fit, a map change, a reload of the map,
-  `mat_reloadallmaterials`, `mat_reloadtextures` (runs 08, 09, 13, 19, 20). No packaged Lua names
-  Combine soldiers or reacts to one in a way that loads materials.
-- **The part of the Combine soldier that does it is `item_ammo_ar2_altfire`.** Every
-  `npc_combine_s` precaches that item with `item_healthvial` and `weapon_frag`. Spawned one at a time
-  on the current package (R13-A run 21), a Metro Police officer, a citizen with an AR2, a frag
-  grenade and a health vial left game textures at 0.29 GB; the AR2's alt-fire ammo item raised them to
-  17.07 GB (private 26.89 → 43.44 GB) within two seconds. A soldier that never dropped one did it
-  too (run 19), so its precache does, not a draw. The item's precache loads its model
-  `models/items/combine_rifle_ammo01.mdl` and, as recalled from the Source SDK 2013 code (not
-  checked here), the `combineball` particle system; `mmd_lazy_session.py --sequence ammo` splits them.
-- **GMod keeps `cfg/config.cfg` in Steam Cloud.** A game takes
-  `Steam\userdata\<account>\4000\remote\cfg\config.cfg` at start (the PoC's local `config.cfg` was
-  rewritten with the cloud copy seconds after a launch) and writes its settings back at its quit, so
-  a PoC session's last settings reach the field game at its next start. After R13-A runs 08-13 the
-  cloud held `cl_playermodel "kleiner"` (the measure sequence's reset) and `fps_max "60"`
-  (`mmd_reimport_session.py` sends it), against the field's own `"Bai Mei"` and `300`; a player
-  model chosen in run 08 was the player's model at the start of runs 10 and 11 although each run
-  restored the PoC's local `config.cfg`. Executing the field's `config.cfg` and `host_writeconfig`
-  before the quit leaves the cloud copy byte-identical to the field's (R13-A runs 09 onwards).
-- **The native module needs `textures/<sha256>.png`.** `loadAsset` reads an asset's PNG textures to
-  build it for spawning and presentation; the main session's field-cache copy has none, so a spawn
-  failed with `Cannot read ...textures\<hash>.png` until the 546 PNGs its manifests name (1.35 GB)
-  were added to the test copy. The native module keeps at most 8 loaded assets (`module.cpp:240`).
-- **The game cuts a printed line at about 4 KB** (a 4,011-character `R13A_ENTRIES` line was cut);
-  probes print one JSON object per line.
-- **Intermittent PoC start crash:** two of the first eight launches (runs 03 and 06, each within a
-  minute of another game's exit) stopped at the main menu with `0xC0000005` in
-  `nvoglv64.dll+0xe622f8` (reading address 0 / 0xffffffffffffffff), as R12-C's `07` control
-  (`+0xe6230a`). With a 45 s pause before launching, none of the later launches crashed; no hotloader
-  code had run.
-- **What a used character keeps after removal.** Source keeps its model, materials and textures until
-  the map changes (no unprecache). The fixes' `rtx_flush_textures` (`UncacheAllMaterials`, then a
-  renderer purge) released 2.2 GB of game textures and 20 GB of private bytes in the current package
-  (run 12); with R13-A it released the CPU copies (private 19.74 → 14.79 GB) while 2.5 GB of game
-  textures stayed until the map changed (run 16). The next map loads none of them unless they are in
-  the ready set.

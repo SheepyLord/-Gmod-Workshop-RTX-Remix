@@ -1,10 +1,22 @@
 # Roadmap
 
 R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the computer, 2026-11-03;
-[plan](handover/R13-plan.md)) is **in progress** on `r13-int`. Claude runs three subagent tasks in
-parallel: R13-M (compact imported game maps, reuse across versions), R13-A (characters load on first
-use, the lag report's trigger) and R13-B (the runtime's texture memory). Claude does R13-C, the
-loader's memory profiles ([ADR 0101](decisions/0101-memory-profiles.md)).
+[plan](handover/R13-plan.md)) is **done**, merged into `main` from `r13-int`; see
+[the R13 report](handover/R13-report.md). Loader 0.13.0.
+
+- R13-C (Claude): memory profiles from the computer's VRAM and RAM (minimum 8 GB / 16 GB,
+  recommended 16 GB / 32 GB, high 24 GB / 64 GB), with budgets sized from what the computer has
+  ([ADR 0101](decisions/0101-memory-profiles.md)).
+- R13-A: the lag report's trigger was the first Combine soldier of a session; saved characters now
+  load when first used and the most recently used stay ready ([report](handover/R13-A-report.md),
+  [ADR 0099](decisions/0099-saved-characters-load-on-first-use.md)).
+- R13-B: one copy of each game texture on small computers, idle game textures leave the GPU over a
+  quarter of the VRAM, Remix's own textures give way under real VRAM pressure; runtime patches
+  0023-0028 ([report](handover/R13-B-report.md),
+  [ADR 0100](decisions/0100-one-copy-and-idle-release-of-game-textures.md)).
+- R13-M: imported game maps as BC5/BC4 (about a sixth of the VRAM and disk), reused across versions
+  ([report](handover/R13-M-report.md),
+  [ADR 0098](decisions/0098-compact-imported-game-maps-and-recipe-keys.md)).
 
 R12 (the user's report after R11-B, 2026-11-02; [plan](handover/R12-plan.md)) is **done**, merged
 into `main` from `r12-int`; see [the R12 report](handover/R12-report.md):

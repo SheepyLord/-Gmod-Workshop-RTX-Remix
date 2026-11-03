@@ -55,6 +55,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
   field game's next start. R13-A's PoC driver ends each session with the field game's own settings,
   and so does every `tools/poc_session.py` run (`exec` of a copy of the field's `config.cfg`, then
   `host_writeconfig`, before the quit).
+- QA: `tools/qa/mmd_lazy_session.py --sequence integrated` checks one memory profile with the built
+  package (idle, four characters, the Combine trigger and the runtime's release after it); the
+  [R13 report](docs/handover/R13-report.md) has the three profiles' numbers.
 - **One copy of each game texture, and idle textures leave the GPU** (runtime patch 0024,
   [ADR 0100](docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)): on computers below
   28 GiB of RAM or 15 GiB of VRAM a game texture's CPU copy is freed once the GPU holds its data
