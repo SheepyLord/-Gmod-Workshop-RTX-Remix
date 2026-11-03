@@ -1,10 +1,41 @@
 diff --git a/docs/TOPBR_R11.md b/docs/TOPBR_R11.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..2db17130f141490e5f8c04e175567c51e1078e9b
+index 0000000000000000000000000000000000000000..e06de642bc6dfb870cf9b8f0f4e9430240fc1819
 --- /dev/null
 +++ b/docs/TOPBR_R11.md
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,182 @@
 +# R11 ToPBR
++
++## R12-B2: straight-alpha decode and name-confirmed data masks
++
++`GamePBR::Decode` converts the bounded source frame to straight RGBA before resampling.
++An integer-weighted area average treats all four channels independently, including colour
++under alpha zero. WIC Fant used to replace that colour with black on downsampling. Source
++dimensions, compressed bytes, output/aspect checks and cumulative source-pixel budgets remain
++bounded. Generator 7, the content-key salt and `r12-game-v7` markers rebuild present-source
++outputs; registry schemas and missing-source retention stay unchanged.
++
++Known auxiliary data roles (LBMask, AnisoMask, PromMask, Specular, DynAO, ExpMask and Caustic,
++including their variants) may contribute only when base and family share a vocabulary group.
++Diffuse/emission variants and the base itself never vote as auxiliary evidence. A conflicting
++explicit `T_*_D` family abstains. Core normal/packed features, .28/.36/.12 thresholds and .08
++name support stay unchanged. Core maps and possible bases consume the existing budget first;
++optional decode failures never fail the folder. Ambiguous/unreadable families are skipped and
++logged; budget-exhausted core scans still fail closed. Pairing logs include the winning image.
++
++The SDK-free matching test generates a two-colour PNG with coloured alpha-zero pixels and checks
++7x7 to 3x3 fractional resampling. It also checks isolated broken families, mask name gating,
++self-vote/exported-family rejection and base-before-mask budget priority. The game-channel
++test additionally converts a 16x16 transparent packed map with an 8x8 normal. The unchanged
++automatic/override/registry regressions still pass with assertions and `/W4 /WX` where recorded.
++
++The same 121-PMX / 1,133-base corpus and 259 canonical references yield 146 agreements,
++zero disagreements and 113 abstentions with names hidden (WuWa 39/0/36, Endfield 75/0/53,
++Silver 32/0/24). Fourteen newly accepted names-visible pairs were individually reviewed.
++A one-pass 3x3 edge blur was measured and rejected after it added a wrong iris/body pairing;
++`game_match_probe --blur` retains that measurement route, with unblurred production defaults.
++阿芙2.0 衣饰 uses Body01_B_MRA (.8602, margin .7470); 头发 uses Hair01_A_AnisoMaskPS
++(.5989, .5212). 熔岩 and 眉毛 abstain. Original PMX protection still applies to every conversion.
 +
 +## R12 feature matching and player overrides
 +
@@ -1541,17 +1572,17 @@ index acfea746c19f77b5960f17337e93b94450a93e2a..5ac1e6d1963e42cb3c4961fa7281967f
      ProcessedMaterial ProcessTextures(const MaterialPBRProperties& props,
 diff --git a/source/material_pipeline/to_pbr/game_matching.inl b/source/material_pipeline/to_pbr/game_matching.inl
 new file mode 100644
-index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6eee06e4b
+index 0000000000000000000000000000000000000000..84a00af1fa132269bc68580d9e4f155f8d10c3bd
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_matching.inl
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,251 @@
 +// GPL-2.0. Included inside GamePBR, after Image/Decode/Maps.
 +// Spatial edges are compared at identical normalized UV coordinates. No rotations,
 +// translations or best-fit warps: a similar object with a different atlas must abstain.
 +struct Features {
 +    uint32_t w=0,h=0; std::vector<float> edges; double mean=0,energy=0;
 +};
-+inline Features Describe(const Image& image) {
++inline Features Describe(const Image& image,bool blur=false) {
 +    Features f;f.w=image.w;f.h=image.h;f.edges.resize(size_t(f.w)*f.h);
 +    for(uint32_t y=0;y<f.h;++y)for(uint32_t x=0;x<f.w;++x) {
 +        const size_t i=size_t(y)*f.w+x;float dx=0,dy=0;
@@ -1563,7 +1594,21 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +    }
 +    auto sorted=f.edges;std::sort(sorted.begin(),sorted.end());
 +    const float scale=sorted[sorted.size()*9/10]+.0001f;
-+    for(auto& e:f.edges){e=std::sqrt((std::min)(2.f,e/scale));f.mean+=e;}
++    for(auto& e:f.edges)e=std::sqrt((std::min)(2.f,e/scale));
++    // A single 3x3 pass tolerates one descriptor pixel of filtering variation.
++    // Clamp at the atlas boundary; UV coordinates are never moved or searched.
++    if(blur) {
++        const auto old=f.edges;
++        for(uint32_t y=0;y<f.h;++y)for(uint32_t x=0;x<f.w;++x) {
++            float sum=0;
++            for(int dy=-1;dy<=1;++dy)for(int dx=-1;dx<=1;++dx) {
++                const auto xx=std::clamp(int(x)+dx,0,int(f.w)-1),yy=std::clamp(int(y)+dy,0,int(f.h)-1);
++                sum+=old[size_t(yy)*f.w+size_t(xx)];
++            }
++            f.edges[size_t(y)*f.w+x]=sum/9;
++        }
++    }
++    for(auto e:f.edges)f.mean+=e;
 +    f.mean/=double(f.edges.size());
 +    for(auto e:f.edges)f.energy+=(e-f.mean)*(e-f.mean);
 +    return f;
@@ -1585,9 +1630,16 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +    if(Has(s,{"cloth","body","dress","coat",u8"衣服",u8"衣饰"}))return 8;
 +    return 0;
 +}
-+struct Decision { std::string base,family,reason;double score=0,margin=0,feature=0;bool accepted=false; };
++struct Decision { std::string base,family,reason,evidence;double score=0,margin=0,feature=0;bool accepted=false; };
 +using DecisionLog=std::function<void(const Decision&)>;
-+struct Family { std::string stem;Maps maps;std::vector<Features> features; };
++struct Evidence { fs::path path;Features features; };
++struct Family { std::string stem;Maps maps;std::vector<Evidence> features; };
++inline bool AuxiliarySuffix(const std::string& suffix) {
++    // Only data-map roles, never diffuse/emission variants or arbitrary siblings.
++    for(const auto prefix:{"_lbmask","_anisomask","_prommask","_specular","_dynao","_expmask","_caustic"})
++        if(suffix.compare(0,std::strlen(prefix),prefix)==0)return true;
++    return false;
++}
 +inline fs::path RelativeTexture(const fs::path& root,const std::string& value) {
 +    const auto p=fs::u8path(Lower(value));
 +    if(p.empty() || p.has_root_path())throw std::runtime_error("rooted/empty texture path");
@@ -1599,7 +1651,7 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +}
 +class Discovery {
 +public:
-+    explicit Discovery(fs::path root):root_(std::move(root)) {
++    explicit Discovery(fs::path root,bool blur=false):root_(std::move(root)),blur_(blur) {
 +        const auto attrs=GetFileAttributesW(root_.c_str());
 +        if(attrs==INVALID_FILE_ATTRIBUTES || (attrs&FILE_ATTRIBUTE_REPARSE_POINT))throw std::runtime_error("invalid model folder");
 +        size_t count=0;std::error_code ec;fs::recursive_directory_iterator it(root_,ec),end;
@@ -1643,7 +1695,7 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +        }
 +        m.recognized=!m.normal.empty() || !m.packed.empty();return m;
 +    }
-+    const std::vector<Family>& Families() {
++    const std::vector<Family>& Families(const DecisionLog& log={}) {
 +        if(ready_)return families_;
 +        families_.clear();
 +        std::map<std::string,bool> stems;
@@ -1652,21 +1704,62 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +        }
 +        if(stems.size()>64)throw std::runtime_error("family count exceeds bound");
 +        for(const auto& stem:stems) {
++            try {
 +                auto m=Named(stem.first,root_);if(!m.recognized)continue;
 +                Family family{stem.first,m,{}};
-+                for(const auto& path:{m.normal,m.packed})if(!path.empty())family.features.push_back(Feature(path));
++                for(const auto& path:{m.normal,m.packed})if(!path.empty())family.features.push_back({path,Feature(path)});
 +                families_.push_back(std::move(family));
++            }catch(const std::exception& e) {
++                // Resource exhaustion still fails closed: it is not evidence that a
++                // candidate is bad. A broken/ambiguous family must not poison others.
++                if(std::string(e.what()).find("budget")!=std::string::npos)throw;
++                LogSkip(log,stem.first,"skipped family: "+std::string(e.what()));
++            }
 +        }
 +        ready_=true;
 +        return families_;
 +    }
++    const std::vector<Evidence>& Auxiliary(const Family& family,const DecisionLog& log={}) {
++        // Reserve all core maps and possible bases before spending leftover work on
++        // masks. Known data-map roles are maps; every other image is a possible
++        // base. Cache failures too, so bad files cannot consume retries.
++        if(!auxiliaryReady_) {
++            auxiliaryReady_=true;
++            for(const auto& entry:files_) {
++                bool map=false;
++                for(const auto& f:families_)if(entry.first.compare(0,f.stem.size()+1,f.stem+"_")==0) {
++                    const auto role=entry.first.substr(f.stem.size());
++                    if(AuxiliarySuffix(role) || role=="_n" || role=="_hn" || role=="_mra" || role=="_p" || role=="_e"){map=true;break;}
++                }
++                if(map)continue;
++                for(const auto& path:entry.second)try{Feature(path);}catch(const std::exception& e) {
++                    if(std::string(e.what()).find("budget")!=std::string::npos)auxiliaryAllowed_=false;
++                }
++            }
++        }
++        auto found=auxiliary_.find(family.stem);if(found!=auxiliary_.end())return found->second;
++        auto& result=auxiliary_[family.stem];
++        if(!auxiliaryAllowed_){LogSkip(log,family.stem,"skipped auxiliary: core/base budget reserved");return result;}
++        const auto prefix=family.stem+"_";
++        for(const auto& entry:files_) {
++            if(entry.first.compare(0,prefix.size(),prefix)!=0)continue;
++            const auto suffix=entry.first.substr(family.stem.size());
++            if(!AuxiliarySuffix(suffix))continue;
++            try{const auto path=Find(entry.first,root_);result.push_back({path,Feature(path)});}
++            catch(const std::exception& e){LogSkip(log,family.stem,"skipped auxiliary: "+std::string(e.what()));}
++        }
++        return result;
++    }
 +    Features Feature(const fs::path& path) {
 +        const auto found=features_.find(path);if(found!=features_.end())return found->second;
++        const auto failed=failures_.find(path);if(failed!=failures_.end())throw std::runtime_error(failed->second);
 +        // Bound cumulative compressed input and original decode pixels, including bases.
-+        const auto bytes=fs::file_size(path);if(++decodes_>96 || bytes>64*1024*1024 || compressed_+bytes>256*1024*1024)throw std::runtime_error("feature decode budget exhausted");
-+        compressed_+=bytes;
-+        auto image=Decode(path,0,0,128,&pixels_);
-+        auto result=Describe(image);features_[path]=result;return result;
++        try {
++            const auto bytes=fs::file_size(path);if(decodes_>=96 || bytes>64*1024*1024 || compressed_+bytes>256*1024*1024)throw std::runtime_error("feature decode budget exhausted");
++            ++decodes_;compressed_+=bytes;
++            auto image=Decode(path,0,0,128,&pixels_);
++            auto result=Describe(image,blur_);features_[path]=result;return result;
++        }catch(const std::exception& e){failures_[path]=e.what();throw;}
 +    }
 +    const fs::path& Root() const{return root_;}
 +    std::vector<std::string> Files() const {
@@ -1678,18 +1771,25 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +        return result;
 +    }
 +private:
++    static void LogSkip(const DecisionLog& log,const std::string& family,const std::string& reason) {
++        if(log){Decision d;d.family=family;d.reason=reason;log(d);}
++    }
 +    fs::path root_;std::map<std::string,std::vector<fs::path>> files_;std::vector<Family> families_;
 +    std::map<fs::path,Features> features_;
-+    bool ready_=false;size_t decodes_=0;uint64_t compressed_=0,pixels_=256ull*1024*1024;
++    std::map<fs::path,std::string> failures_;
++    std::map<std::string,std::vector<Evidence>> auxiliary_;
++    bool ready_=false,blur_=false,auxiliaryReady_=false,auxiliaryAllowed_=true;
++    size_t decodes_=0;uint64_t compressed_=0,pixels_=256ull*1024*1024;
 +};
 +class DiscoveryCache {
 +public:
++    explicit DiscoveryCache(bool blur=false):blur_(blur){}
 +    Discovery& Get(const fs::path& root) {
 +        auto found=folders_.find(root);if(found!=folders_.end())return *found->second;
 +        if(folders_.size()>=8)folders_.erase(folders_.begin());
-+        auto folder=std::make_unique<Discovery>(root);auto& result=*folder;folders_[root]=std::move(folder);return result;
++        auto folder=std::make_unique<Discovery>(root,blur_);auto& result=*folder;folders_[root]=std::move(folder);return result;
 +    }
-+private:std::map<fs::path,std::unique_ptr<Discovery>> folders_;
++private:std::map<fs::path,std::unique_ptr<Discovery>> folders_;bool blur_=false;
 +};
 +inline Maps Discover(const fs::path& root,const std::string& base,bool hideNames=false,const DecisionLog& log={},DiscoveryCache* cache=nullptr) {
 +    Decision d;d.base=base;
@@ -1699,18 +1799,29 @@ index 0000000000000000000000000000000000000000..36db8597ba7af66a82534b3a9086cae6
 +    Discovery& folder=cache?cache->Get(root):*owned;
 +    if(!hideNames && stem.size()>2 && stem.substr(stem.size()-2)=="_d") {
 +        auto m=folder.Named(stem.substr(0,stem.size()-2),root/p.parent_path());
-+        if(m.recognized){d.family=stem.substr(0,stem.size()-2);d.score=1;d.margin=1;d.reason="exact stem";return done(m);}
++        if(m.recognized){d.family=stem.substr(0,stem.size()-2);d.score=1;d.margin=1;d.reason="exact stem";d.evidence=(m.normal.empty()?m.packed:m.normal).u8string();return done(m);}
 +    }
 +    const auto baseFeatures=folder.Feature(root/p);
 +    double best=-1,runner=-1;const Family* chosen=nullptr;
-+    for(const auto& family:folder.Families()) {
-+        double feature=-1;for(const auto& f:family.features)feature=(std::max)(feature,Similarity(baseFeatures,f));
++    for(const auto& family:folder.Families(log)) {
++        double feature=-1;std::string evidence;
++        auto compare=[&](const Evidence& e){const auto s=Similarity(baseFeatures,e.features);if(s>feature){feature=s;evidence=e.path.u8string();}};
++        for(const auto& f:family.features)compare(f);
 +        // Names only add support after spatial evidence; they never rescue a mismatched layout.
 +        const int group=hideNames?0:Vocabulary(stem);
-+        const double score=feature+(group && group==Vocabulary(family.stem)?.08:0);
-+        if(score>best){runner=best;best=score;chosen=&family;d.feature=feature;}else runner=(std::max)(runner,score);
++        const bool sameGroup=group && group==Vocabulary(family.stem);
++        // An explicit exported family is negative name evidence too: EyeTrans and
++        // Pupil, or Hair_02 and Hair_01, are not interchangeable because both are eyes/hair.
++        const bool conflictingStem=stem.compare(0,2,"t_")==0 && stem.size()>2 && stem.substr(stem.size()-2)=="_d" && stem.substr(0,stem.size()-2)!=family.stem;
++        if(sameGroup && !conflictingStem)for(const auto& f:folder.Auxiliary(family,log))
++            if(Lower(f.path.lexically_normal().u8string())!=Lower((root/p).lexically_normal().u8string()))compare(f);
++        const double score=feature+(sameGroup?.08:0);
++        if(score>best){runner=best;best=score;chosen=&family;d.feature=feature;d.evidence=evidence;}else runner=(std::max)(runner,score);
 +    }
 +    d.score=best;d.margin=best-runner;if(chosen)d.family=chosen->stem;
++    if(!hideNames && chosen && stem.compare(0,2,"t_")==0 && stem.size()>2 && stem.substr(stem.size()-2)=="_d" && stem.substr(0,stem.size()-2)!=chosen->stem) {
++        d.reason="conflicting exported family";return done({});
++    }
 +    if(!chosen || d.feature<.28 || best<.36){d.reason="insufficient UV edge evidence";return done({});}
 +    if(d.margin<.12){d.reason="ambiguous UV layout";return done({});}
 +    d.reason=hideNames?"UV edges (names hidden)":"UV edges with name support";
@@ -1805,10 +1916,10 @@ index 0000000000000000000000000000000000000000..070eac9b3d1734fb6aeb1d35b972aa1a
 +}}}
 diff --git a/source/material_pipeline/to_pbr/game_pbr.h b/source/material_pipeline/to_pbr/game_pbr.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9ea198c914
+index 0000000000000000000000000000000000000000..f45aa2183ec57daed4b10da1aa3215ce3f64c4f4
 --- /dev/null
 +++ b/source/material_pipeline/to_pbr/game_pbr.h
-@@ -0,0 +1,278 @@
+@@ -0,0 +1,295 @@
 +// GPL-2.0. Local authored game-map conversion, independent of Source material objects.
 +#pragma once
 +#ifndef GAME_PBR_TYPES_PROVIDED
@@ -1831,7 +1942,7 @@ index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9e
 +
 +namespace MaterialPipeline { namespace ToPBR { namespace GamePBR {
 +namespace fs = std::filesystem;
-+constexpr unsigned GeneratorVersion = 6; // Registry provenance; content-key/marker version below.
++constexpr unsigned GeneratorVersion = 7; // Registry provenance; content-key/marker version below.
 +using Microsoft::WRL::ComPtr;
 +inline std::string Lower(std::string s) {
 +    for (auto& c:s) { if (c=='\\') c='/'; else if (uint8_t(c)<128) c=char(std::tolower(uint8_t(c))); }
@@ -1979,7 +2090,7 @@ index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9e
 +    auto bytes=Read(path); // Bound compressed input before WIC allocates.
 +    ComPtr<IWICImagingFactory> factory;ComPtr<IWICStream> stream;
 +    ComPtr<IWICBitmapDecoder> decoder;ComPtr<IWICBitmapFrameDecode> frame;
-+    ComPtr<IWICBitmapScaler> scaler;ComPtr<IWICFormatConverter> converter;
++    ComPtr<IWICFormatConverter> converter;
 +    auto check=[](HRESULT hr){if(FAILED(hr))throw std::runtime_error("unsupported/broken image");};
 +    check(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)));
 +    check(factory->CreateStream(&stream));check(stream->InitializeFromMemory(bytes.data(),DWORD(bytes.size())));
@@ -1990,9 +2101,26 @@ index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9e
 +    if(pixelBudget){const uint64_t pixels=uint64_t(sw)*sh;if(pixels>*pixelBudget)throw std::runtime_error("feature pixel budget exhausted");*pixelBudget-=pixels;}
 +    if(!w || !h) { const float scale=(std::min)(1.0f,float(limit)/float((std::max)(sw,sh)));w=uint32_t(sw*scale);h=uint32_t(sh*scale); }
 +    if(!Policy::ValidImage(w,h) || uint64_t(sw)*h!=uint64_t(sh)*w)throw std::runtime_error("map aspect mismatch");
-+    check(factory->CreateBitmapScaler(&scaler));check(scaler->Initialize(frame.Get(),w,h,WICBitmapInterpolationModeFant));
-+    check(factory->CreateFormatConverter(&converter));check(converter->Initialize(scaler.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom));
-+    Image image{w,h,std::vector<uint8_t>(size_t(w)*h*4)};check(converter->CopyPixels(nullptr,w*4,UINT(image.rgba.size()),image.rgba.data()));return image;
++    // WIC's Fant scaler premultiplies transparent PNG colour. These channels hold
++    // packed game data, so decode straight RGBA first and average each independently.
++    check(factory->CreateFormatConverter(&converter));check(converter->Initialize(frame.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom));
++    Image source{sw,sh,std::vector<uint8_t>(size_t(sw)*sh*4)};
++    check(converter->CopyPixels(nullptr,sw*4,UINT(source.rgba.size()),source.rgba.data()));
++    if(w==sw && h==sh)return source;
++    Image image{w,h,std::vector<uint8_t>(size_t(w)*h*4)};
++    const uint64_t area=uint64_t(sw)*sh;
++    for(uint32_t y=0;y<h;++y)for(uint32_t x=0;x<w;++x) {
++        const uint32_t x0=x*sw,x1=(x+1)*sw,y0=y*sh,y1=(y+1)*sh;
++        uint64_t sum[4]{};
++        for(uint32_t sy=y0/h;sy<(y1+h-1)/h;++sy)for(uint32_t sx=x0/w;sx<(x1+w-1)/w;++sx) {
++            const auto wx=(std::min)(x1,(sx+1)*w)-(std::max)(x0,sx*w);
++            const auto wy=(std::min)(y1,(sy+1)*h)-(std::max)(y0,sy*h);
++            const uint64_t weight=uint64_t(wx)*wy;
++            for(size_t c=0;c<4;++c)sum[c]+=source.rgba[(size_t(sy)*sw+sx)*4+c]*weight;
++        }
++        for(size_t c=0;c<4;++c)image.rgba[(size_t(y)*w+x)*4+c]=uint8_t((sum[c]+area/2)/area);
++    }
++    return image;
 +}
 +struct Maps { bool recognized=false; fs::path normal,packed,emission;enum Layout{Wuwa,Endfield,Silver}layout=Wuwa; };
 +#include "game_matching.inl"
@@ -2020,14 +2148,14 @@ index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9e
 +        key=Hash(std::vector<uint8_t>{uint8_t(++role),uint8_t(!path.empty())},key);
 +        if(!path.empty())key=Hash(Read(path),key);
 +    }
-+    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4506ull ^ uint64_t(maps.layout);
++    key=Hash(std::vector<uint8_t>(base.begin(),base.end()),key)^0x52313247414d4507ull ^ uint64_t(maps.layout);
 +    char id[32];snprintf(id,sizeof(id),"game_%016llX",static_cast<unsigned long long>(key));
 +    Output result;
 +    auto path=[&](const char* suffix){return (fs::u8path(out)/(std::string(id)+suffix+".dds")).u8string();};
 +    const fs::path marker=fs::u8path(out)/(std::string(id)+"_complete.txt");
 +    {
 +        std::ifstream cache(marker);std::string version;int glow=0;cache>>version>>glow;
-+        if(cache && version=="r12-game-v6" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
++        if(cache && version=="r12-game-v7" && Policy::ValidDDS(fs::u8path(path("_normal"))) &&
 +           Policy::ValidDDS(fs::u8path(path("_roughness"))) && Policy::ValidDDS(fs::u8path(path("_metallic"))) &&
 +           (!glow || Policy::ValidDDS(fs::u8path(path("_emission"))))) {
 +            result.normal=path("_normal");result.roughness=path("_roughness");result.metallic=path("_metallic");
@@ -2082,7 +2210,7 @@ index 0000000000000000000000000000000000000000..c3e93afd988929f0827eabb987029b9e
 +    if(!packed.rgba.empty())result.ao=save(ao,"_ao"); // Kept as data; do not bake occlusion into painted albedo under path tracing.
 +    if(anyGlow)result.emission=save(glow,"_emission");
 +    const fs::path staged=fs::path(marker.wstring()+L".tmp");
-+    { std::ofstream done(staged);done<<"r12-game-v6 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
++    { std::ofstream done(staged);done<<"r12-game-v7 "<<(anyGlow?1:0)<<"\n";if(!done)throw std::runtime_error("cache marker write failed"); }
 +    if(!MoveFileExW(staged.c_str(),marker.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))throw std::runtime_error("cache marker publication failed");
 +    return result;
 +}
@@ -2438,7 +2566,7 @@ index 0000000000000000000000000000000000000000..f619b64492c678518f1664d4c8bf3af8
 +}
 +}}}
 diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
-index 2be46fde333cc788e91e83903517cd6021978f3a..e0d063e516821e1e031a0e78b80004f16eb8ffc5 100644
+index 2be46fde333cc788e91e83903517cd6021978f3a..d78e2a2f1cc0ff9e281ab487bd656fb941e4c482 100644
 --- a/source/material_pipeline/to_pbr/to_pbr.cpp
 +++ b/source/material_pipeline/to_pbr/to_pbr.cpp
 @@ -4,6 +4,13 @@
@@ -3750,8 +3878,8 @@ index 2be46fde333cc788e91e83903517cd6021978f3a..e0d063e516821e1e031a0e78b80004f1
 +                        [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
 +                        [&](const GamePBR::Decision& d){
 +                            view.family=d.accepted?d.family:"";
-+                            Msg("[MaterialPipeline::ToPBR] Game pairing: base=%s family=%s score=%.4f margin=%.4f feature=%.4f accepted=%d reason=%s\n",
-+                                d.base.c_str(),d.family.c_str(),d.score,d.margin,d.feature,int(d.accepted),d.reason.c_str());
++                            Msg("[MaterialPipeline::ToPBR] Game pairing: base=%s family=%s score=%.4f margin=%.4f feature=%.4f accepted=%d reason=%s evidence=%s\n",
++                                d.base.c_str(),d.family.c_str(),d.score,d.margin,d.feature,int(d.accepted),d.reason.c_str(),d.evidence.c_str());
                          });
 -                    
 -                    if (m_shutdownRequested.load(std::memory_order_relaxed)) {
@@ -4794,43 +4922,50 @@ index ac2e3e036c763d40d87cd5cb07375604fa04d7a7..2bf94f3584e2b6e92080b5d1255aba38
      outTexture.height = parserTexture.height;
 diff --git a/tests/game_match_probe.cpp b/tests/game_match_probe.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..087a2c8ae8502ec8b9641ae9f0b4dc67b4e2f0c8
+index 0000000000000000000000000000000000000000..d6c96a779a8e11ffef5647517bb6e174004cadcc
 --- /dev/null
 +++ b/tests/game_match_probe.cpp
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,22 @@
 +// GPL-2.0. Read-only corpus probe using the production Discover implementation.
 +#include "game_pbr_types.h"
 +#include "../source/material_pipeline/to_pbr/game_pbr.h"
 +#include <iostream>
 +using namespace MaterialPipeline::ToPBR;
 +int wmain(int argc,wchar_t** argv) {
-+    if(argc!=3)return 2;
++    if(argc!=3 && !(argc==4 && std::wstring(argv[3])==L"--blur"))return 2;
 +    const auto com=CoInitializeEx(nullptr,COINIT_MULTITHREADED);
 +    std::ifstream in(argv[1]);std::ofstream out(argv[2]);
 +    if(!in || !out)return 3;
-+    out<<"pmx\tbase\thidden\taccepted\tfamily\tscore\tmargin\tfeature\treason\tnormal\tpacked\tlayout\n";
-+    std::string pmx,base;GamePBR::DiscoveryCache cache;
++    out<<"pmx\tbase\thidden\taccepted\tfamily\tscore\tmargin\tfeature\treason\tnormal\tpacked\tlayout\tevidence\twarnings\n";
++    std::string pmx,base;GamePBR::DiscoveryCache cache(argc==4);
 +    while(std::getline(in,pmx) && std::getline(in,base))for(bool hidden:{false,true}) {
-+        GamePBR::Decision d;GamePBR::Maps maps;
-+        try{maps=GamePBR::Discover(std::filesystem::u8path(pmx).parent_path(),base,hidden,[&](const auto& decision){d=decision;},&cache);}
++        GamePBR::Decision d;GamePBR::Maps maps;std::string warnings;
++        try{maps=GamePBR::Discover(std::filesystem::u8path(pmx).parent_path(),base,hidden,[&](const auto& decision){
++            if(decision.base.empty())warnings+=decision.family+": "+decision.reason+"; ";else d=decision;
++        },&cache);}
 +        catch(const std::exception& e){d.reason=e.what();}
-+        out<<pmx<<'\t'<<base<<'\t'<<hidden<<'\t'<<maps.recognized<<'\t'<<d.family<<'\t'<<d.score<<'\t'<<d.margin<<'\t'<<d.feature<<'\t'<<d.reason<<'\t'<<maps.normal.u8string()<<'\t'<<maps.packed.u8string()<<'\t'<<int(maps.layout)<<'\n';out.flush();
++        out<<pmx<<'\t'<<base<<'\t'<<hidden<<'\t'<<maps.recognized<<'\t'<<d.family<<'\t'<<d.score<<'\t'<<d.margin<<'\t'<<d.feature<<'\t'<<d.reason<<'\t'<<maps.normal.u8string()<<'\t'<<maps.packed.u8string()<<'\t'<<int(maps.layout)<<'\t'<<d.evidence<<'\t'<<warnings<<'\n';out.flush();
 +    }
 +    if(SUCCEEDED(com))CoUninitialize();return 0;
 +}
 diff --git a/tests/game_match_probe.md b/tests/game_match_probe.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..12b349ee3327bf7060873b8b7919500c3363c606
+index 0000000000000000000000000000000000000000..0807d15d711ccbedc0e761ece8e62ee1464bf8b7
 --- /dev/null
 +++ b/tests/game_match_probe.md
-@@ -0,0 +1,19 @@
+@@ -0,0 +1,24 @@
 +# game_match_probe
 +
 +Measures production `GamePBR::Discover` with normal name support and with pair names hidden.
 +Takes a UTF-8 descriptor and an output TSV path. Each pair of descriptor lines is an absolute
 +PMX filename followed by a base texture path relative to that PMX. No user source is written.
 +The report includes source/base, accepted family, score/margin/spatial feature, reason and selected
-+normal/packed paths. Discovery/decode limits are identical to conversion; the folder cache is local.
++normal/packed paths, the winning evidence image and skipped-family/auxiliary warnings.
++Discovery/decode limits are identical to conversion; the folder cache is local.
++An optional third argument `--blur` measures a single 3x3 edge blur; ordinary conversion
++keeps the original unblurred edges. Corpus review found additional wrong matches with blur.
++Names-hidden runs never
++use auxiliary evidence, including when a mask shares the base's vocabulary group.
 +
 +From an x64 MSVC shell inside repository `out` scratch:
 +
@@ -4845,10 +4980,10 @@ index 0000000000000000000000000000000000000000..12b349ee3327bf7060873b8b7919500c
 +cannot open. Per-base failures become abstention rows.
 diff --git a/tests/game_matching_test.cpp b/tests/game_matching_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..782aa669ce204e46a96038ff8eb5ad7962854a84
+index 0000000000000000000000000000000000000000..40ab9705d060416de2db9c3941dded84fd03354a
 --- /dev/null
 +++ b/tests/game_matching_test.cpp
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,170 @@
 +// GPL-2.0. Production discovery/override/queue-order regressions without game or SDK.
 +#include <algorithm>
 +#include <cmath>
@@ -4883,9 +5018,36 @@ index 0000000000000000000000000000000000000000..782aa669ce204e46a96038ff8eb5ad79
 +    std::ofstream f(p,std::ios::binary);f.write(reinterpret_cast<char*>(h),128);f<<"abcd";
 +}
 +static std::string Bytes(const fs::path& p){std::ifstream f(p,std::ios::binary);return {std::istreambuf_iterator<char>(f),{}};}
++static void PNG(const fs::path& path,const GamePBR::Image& image) {
++    GamePBR::ComPtr<IWICImagingFactory> factory;GamePBR::ComPtr<IWICStream> stream;
++    GamePBR::ComPtr<IWICBitmapEncoder> encoder;GamePBR::ComPtr<IWICBitmapFrameEncode> frame;
++    auto check=[](HRESULT hr){assert(SUCCEEDED(hr));};
++    check(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)));
++    check(factory->CreateStream(&stream));check(stream->InitializeFromFilename(path.c_str(),GENERIC_WRITE));
++    check(factory->CreateEncoder(GUID_ContainerFormatPng,nullptr,&encoder));check(encoder->Initialize(stream.Get(),WICBitmapEncoderNoCache));
++    check(encoder->CreateNewFrame(&frame,nullptr));check(frame->Initialize(nullptr));check(frame->SetSize(image.w,image.h));
++    auto format=GUID_WICPixelFormat32bppBGRA;check(frame->SetPixelFormat(&format));assert(IsEqualGUID(format,GUID_WICPixelFormat32bppBGRA));
++    auto bgra=image.rgba;for(size_t i=0;i<bgra.size();i+=4)std::swap(bgra[i],bgra[i+2]);
++    check(frame->WritePixels(image.h,image.w*4,UINT(bgra.size()),bgra.data()));
++    check(frame->Commit());check(encoder->Commit());
++}
 +int wmain(int argc,wchar_t** argv) {
 +    assert(argc==2);const auto com=CoInitializeEx(nullptr,COINIT_MULTITHREADED);
 +    const fs::path root=argv[1];fs::create_directories(root/"maps");fs::create_directories(root/"textures");
++    // Generated PNG regression also runs in the loader's Release gate, without SDK.
++    GamePBR::Image transparent{7,7,std::vector<uint8_t>(7*7*4)};
++    for(size_t i=0;i<49;++i) {
++        const uint8_t left[4]{210,90,30,0},right[4]{0,90,180,210};
++        memcpy(transparent.rgba.data()+i*4,i%7<3?left:right,4);
++    }
++    PNG(root/"straight.png",transparent);uint64_t pixels=49;
++    const auto shrunk=GamePBR::Decode(root/"straight.png",3,3,2048,&pixels);assert(pixels==0);
++    for(size_t y=0;y<3;++y) {
++        const size_t i=y*12;
++        assert(shrunk.rgba[i]==210 && shrunk.rgba[i+2]==30 && shrunk.rgba[i+3]==0);
++        assert(shrunk.rgba[i+4]==60 && shrunk.rgba[i+5]==90 && shrunk.rgba[i+6]==137 && shrunk.rgba[i+7]==150);
++        assert(shrunk.rgba[i+8]==0 && shrunk.rgba[i+10]==180 && shrunk.rgba[i+11]==210);
++    }
 +    BMP(root/"renamed.bmp",0,true);BMP(root/"maps/One_MRA.bmp",0);BMP(root/"maps/Two_MRA.bmp",1);
 +    GamePBR::Decision d;
 +    auto discover=[&](){return GamePBR::Discover(root,"renamed.bmp",true,[&](const auto& v){d=v;});};
@@ -4911,6 +5073,45 @@ index 0000000000000000000000000000000000000000..782aa669ce204e46a96038ff8eb5ad79
 +    const auto bounded=root/"bounded";fs::create_directory(bounded);BMP(bounded/"base.bmp",0);
 +    for(int i=0;i<65;++i){std::ofstream f(bounded/(std::to_string(i)+"_MRA.bmp"));}
 +    bool over=false;try{GamePBR::Discover(bounded,"base.bmp");}catch(...){over=true;}assert(over);
++    // One ambiguous or undecodable family does not suppress an unrelated good one.
++    const auto isolated=root/"isolated";fs::create_directories(isolated/"a");fs::create_directory(isolated/"b");
++    BMP(isolated/"base.bmp",0);BMP(isolated/"Good_MRA.bmp",0);
++    BMP(isolated/"a/Bad_MRA.bmp",0);BMP(isolated/"b/Bad_MRA.bmp",1);
++    {std::ofstream f(isolated/"Unreadable_MRA.bmp");f<<"not an image";}
++    std::vector<std::string> warnings;
++    auto isolatedMaps=GamePBR::Discover(isolated,"base.bmp",true,[&](const auto& v){
++        if(v.base.empty())warnings.push_back(v.reason);else d=v;
++    });
++    assert(isolatedMaps.recognized && d.family=="good" && warnings.size()==2);
++    assert(warnings[0].find("ambiguous companion")!=std::string::npos);
++    assert(warnings[1].find("unsupported/broken image")!=std::string::npos);
++    // Only matching vocabulary groups may use a family's auxiliary masks.
++    const auto auxiliary=root/"auxiliary";fs::create_directory(auxiliary);
++    BMP(auxiliary/"hair.bmp",0);BMP(auxiliary/"lava.bmp",0);
++    BMP(auxiliary/"Hair_MRA.bmp",1);BMP(auxiliary/"Hair_AnisoMask.bmp",0);
++    {std::ofstream f(auxiliary/"Hair_ExpMaskBroken.bmp");f<<"broken auxiliary";}
++    GamePBR::DiscoveryCache auxiliaryCache;
++    auto auxMaps=GamePBR::Discover(auxiliary,"hair.bmp",false,[&](const auto& v){if(!v.base.empty())d=v;},&auxiliaryCache);
++    assert(auxMaps.recognized && d.family=="hair" && d.evidence.find("Hair_AnisoMask")!=std::string::npos);
++    assert(!GamePBR::Discover(auxiliary,"hair.bmp",true,{},&auxiliaryCache).recognized);
++    assert(!GamePBR::Discover(auxiliary,"lava.bmp",false,{},&auxiliaryCache).recognized);
++    const auto explicitNames=root/"explicit";fs::create_directory(explicitNames);
++    BMP(explicitNames/"T_TestDefault_Hair02_A_D.bmp",0);
++    BMP(explicitNames/"T_TestDefault_Hair01_A_MRA.bmp",0);
++    BMP(explicitNames/"T_TestDefault_Hair01_A_AnisoMask.bmp",0);
++    assert(!GamePBR::Discover(explicitNames,"T_TestDefault_Hair02_A_D.bmp").recognized);
++    const auto selfVote=root/"self";fs::create_directory(selfVote);
++    BMP(selfVote/"T_TestDefault_Hair01_A_MRA.bmp",1);
++    BMP(selfVote/"T_TestDefault_Hair01_A_Specular.bmp",0);
++    assert(!GamePBR::Discover(selfVote,"T_TestDefault_Hair01_A_Specular.bmp").recognized);
++    // All possible bases have first claim on the 96-decode budget, even when an
++    // earlier hair job wants masks. A failed optional decode never poisons the folder.
++    const auto reserve=root/"reserve";fs::create_directory(reserve);
++    BMP(reserve/"hair.bmp",0);BMP(reserve/"Hair_MRA.bmp",1);BMP(reserve/"Hair_AnisoMask.bmp",0);
++    for(int i=0;i<94;++i)BMP(reserve/("base"+std::to_string(i)+".bmp"),0);
++    GamePBR::DiscoveryCache reserveCache;
++    assert(!GamePBR::Discover(reserve,"hair.bmp",false,{},&reserveCache).recognized);
++    assert(!GamePBR::Discover(reserve,"base93.bmp",true,{},&reserveCache).recognized);
 +    // Drawn-hash evidence precedes material loading, including invalid/over-budget jobs.
 +    int loads=0;auto load=[&](){++loads;return "mmd/t/0123456789abcdef";};
 +    assert(GameRegistry::DrawnIdentity({},load).empty());assert(GameRegistry::DrawnIdentity({0},load).empty());
@@ -4955,10 +5156,10 @@ index 0000000000000000000000000000000000000000..782aa669ce204e46a96038ff8eb5ad79
 +}
 diff --git a/tests/game_pbr_test.cpp b/tests/game_pbr_test.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc6346668178a74fbf5
+index 0000000000000000000000000000000000000000..65b88c4ea2c5628954fa07c83be9793f44d223b2
 --- /dev/null
 +++ b/tests/game_pbr_test.cpp
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,101 @@
 +// GPL-2.0. Run against generated PMX/PNG fixtures, or a read-only corpus descriptor.
 +#include "../source/material_pipeline/to_pbr/game_pbr.h"
 +#include "../source/material_pipeline/to_pbr/vtf.h"
@@ -4988,6 +5189,24 @@ index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc634666817
 +        }
 +    } else {
 +        using namespace GamePBR;
++        // PNG colour channels are data even where alpha is zero. Shrinking must not
++        // pass through WIC's premultiplying Fant scaler (R12-B2).
++        uint64_t budget=256;
++        const auto straight=Decode(root/"straight-packed.png",8,8,2048,&budget);
++        assert(budget==0 && straight.w==8 && straight.h==8);
++        for(size_t i=0;i<straight.rgba.size();i+=4) {
++            assert(straight.rgba[i]==220 && straight.rgba[i+1]==64 && straight.rgba[i+2]==199 && straight.rgba[i+3]==0);
++        }
++        bool budgetRejected=false;
++        try{Decode(root/"straight-packed.png",8,8,2048,&budget);}catch(...){budgetRejected=true;}
++        assert(budgetRejected && budget==0);
++        const auto fractional=Decode(root/"fractional.png",3,3);
++        for(size_t y=0;y<3;++y) {
++            const size_t first=y*12,middle=first+4,last=first+8;
++            assert(fractional.rgba[first]==210 && fractional.rgba[first+2]==30 && fractional.rgba[first+3]==0);
++            assert(fractional.rgba[middle]==60 && fractional.rgba[middle+1]==90 && fractional.rgba[middle+2]==137 && fractional.rgba[middle+3]==150);
++            assert(fractional.rgba[last]==0 && fractional.rgba[last+2]==180 && fractional.rgba[last+3]==210);
++        }
 +        assert(Classify(u8"\u808c", "T_actor_x_body_D.png")==Original);
 +        assert(Classify("MI_Skin01", "T_Skin01_D.png")==Original);
 +        assert(Classify(u8"\u773c\u767d", "atlas.png")==Original);
@@ -5014,6 +5233,14 @@ index 0000000000000000000000000000000000000000..6724b97a439ee9fc8639dcc634666817
 +        assert(rough.pixelData[cloth]==55 && metal.pixelData[cloth]==220 && glow.pixelData[cloth]>0);
 +        // _P blue is AO, alpha is smoothness; green is deliberately unrelated.
 +        assert(written.at(output.ao).pixelData[cloth]==199);
++        // Production conversion decodes a larger packed map to its normal's size.
++        Maps selected;selected.recognized=true;selected.layout=Maps::Silver;
++        selected.normal=root/"tex/T_actor_test_cloth_N.png";selected.packed=root/"straight-packed.png";
++        const auto silver=Convert((root/"test.pmx").u8string(),"tex/T_actor_test_cloth_D.png",(root/"output").u8string(),
++            [&](const ConvertedTexture& t,const std::string& path){written[path]=t;return true;},
++            [](ConvertedTexture&){},nullptr,&selected);
++        assert(written.at(silver.roughness).pixelData[cloth]==64);
++        assert(written.at(silver.metallic).pixelData[cloth]==220 && written.at(silver.ao).pixelData[cloth]==199);
 +        assert(!PlausibleNormal(Image{2,2,std::vector<uint8_t>(16,0)}));
 +        for(const auto& bad:{"../bad_D.png","C:bad_D.png","/bad_D.png"}) {
 +            rejected=false;try{Discover(root,bad);}catch(...){rejected=true;}assert(rejected);
@@ -5306,20 +5533,23 @@ index 0000000000000000000000000000000000000000..89ad119238b24c4041e3b06259ddeb3e
 +}
 diff --git a/tests/make_game_pbr_fixtures.py b/tests/make_game_pbr_fixtures.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..4d721e6e2e4c7c18924d3ad05b7dfaaa31a44345
+index 0000000000000000000000000000000000000000..3fa7ebf116955299582a0bdb8d5893eb324ed6e3
 --- /dev/null
 +++ b/tests/make_game_pbr_fixtures.py
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,24 @@
 +"""GPL-2.0. Generate the native game-PBR regression's tiny synthetic PMX and PNG inputs."""
 +from pathlib import Path
 +import struct, sys, zlib, binascii
 +root=Path(sys.argv[1]);(root/'tex').mkdir(parents=True,exist_ok=True)
 +def chunk(kind,data): return struct.pack('>I',len(data))+kind+data+struct.pack('>I',binascii.crc32(kind+data)&0xffffffff)
-+def png(path,pixel):
-+    data=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',8,8,8,6,0,0,0))
-+    data+=chunk(b'IDAT',zlib.compress((b'\0'+bytes(pixel)*8)*8))+chunk(b'IEND',b'')
++def png(path,pixel,size=8):
++    data=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',size,size,8,6,0,0,0))
++    rows=b''.join(b'\0'+b''.join(bytes(pixel(x,y) if callable(pixel) else pixel) for x in range(size)) for y in range(size))
++    data+=chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b'')
 +    path.write_bytes(data)
 +for suffix,pixel in {'D':(128,128,128,255),'N':(145,110,0,255),'P':(220,17,199,200),'E':(30,50,70,255)}.items():png(root/'tex'/f'T_actor_test_cloth_{suffix}.png',pixel)
++png(root/'straight-packed.png',(220,64,199,0),16)
++png(root/'fractional.png',lambda x,y:(210,90,30,0) if x<3 else (0,90,180,210),7)
 +def text(s):
 +    b=s.encode('utf-8');return struct.pack('<i',len(b))+b
 +b=b'PMX '+struct.pack('<fB',2.,8)+bytes([1,0,1,1,1,1,1,1])+text('test')+text('')+text('')+text('')
@@ -5333,13 +5563,16 @@ index 0000000000000000000000000000000000000000..4d721e6e2e4c7c18924d3ad05b7dfaaa
 +(root/'test.pmx').write_bytes(b)
 diff --git a/tests/make_game_pbr_fixtures.py.md b/tests/make_game_pbr_fixtures.py.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..4fc2637a53d0912e2c9834191e264ebce08c6180
+index 0000000000000000000000000000000000000000..1301234c15c515c5c7582420e093160065b4e4d9
 --- /dev/null
 +++ b/tests/make_game_pbr_fixtures.py.md
-@@ -0,0 +1,6 @@
+@@ -0,0 +1,9 @@
 +# make_game_pbr_fixtures.py
 +
-+GPL-2.0. Generate an 8x8 two-material PMX and four tiny PNGs for game_pbr_test.cpp.
++GPL-2.0. Generate an 8x8 two-material PMX, four 8x8 maps and a 16x16 coloured,
++fully transparent packed PNG for game_pbr_test.cpp. The latter checks straight-alpha
++downsampling and conversion at the normal map's smaller size.
++A 7x7 two-colour PNG checks exact fractional area weights and independent alpha at 3x3.
 +Run `python tests/make_game_pbr_fixtures.py <scratch-under-out>`. Uses only Python's standard
 +library. Writes synthetic files below the given scratch folder; overwrites only these fixtures.
 +Exit 0 on success, nonzero on filesystem/encoding failure. No game or network access.

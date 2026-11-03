@@ -23,6 +23,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   game maps for a texture, or return to automatic; choices follow that texture across characters
   and survive a missing source. Library enumeration checks drawn hashes before loading a material
   ([R12-B](docs/decisions/0095-texture-features-and-imported-pbr-overrides.md)).
+- Imported game maps retain their packed colour channels when transparent images are resized.
+  Name-confirmed data masks recover 阿芙2.0 hair, and corrected decoding recovers its accessories;
+  a broken or ambiguous map family no longer suppresses the whole folder. Existing conservative
+  thresholds remain, with explicit exported-family and self-vote guards (R12-B2, ADR 0095).
 - **Imported-model catalogs no longer need GPU backing for every unused managed texture.** The
   runtime keeps static managed texture data ready in CPU memory and creates its original GPU image
   on first sampling, upload or `PreLoad`. Dimensions, mips and captured hashes stay the same;

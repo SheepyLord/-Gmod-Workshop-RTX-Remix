@@ -60,6 +60,36 @@
   visibly stall, and is not a steady rendering cost or a measured GPU-allocation total. Broader VRAM
   reclamation remains R12-C's work. Evidence: `scope-qa2.json`, `poc/manual-eyes-final/console.log`.
 
+## R12-B2: WIC transparent colour and optional evidence (2026-11-03)
+
+- Review's unchanged `out/r12/wic_alpha_test.exe` reproduces the old production path on the
+  copied Body01_B_MRA: source 2048x2048 has 97.7% alpha-zero pixels, mean RGB 167.6 there and
+  166.1 overall; WIC Fant at 128x128 has 97.1% alpha zero, mean RGB **0.0** there and **3.1**
+  overall. `game_pbr.h:167` now converts the source frame directly to straight RGBA before
+  independent integer-area averaging. At 128x128, mean R/G/B is 154.561/113.404/230.281 versus
+  source 154.556/113.407/230.278; alpha-zero mean RGB stays 167.34. The real production conversion
+  at 128 checks all 16,384 eligible pixels, 15,904 under alpha zero, for exact roughness/metallic/AO.
+- `game_matching.inl:120` isolates ambiguous/unreadable families. `:144` prepares core/base
+  descriptors before optional data roles; `:238` requires equal nonzero vocabulary groups for
+  auxiliary evidence. Self-votes, diffuse variants and conflicting explicit `T_*_D` families
+  abstain. Decode, input/pixel/file/depth/family bounds remain. Core resource exhaustion still
+  fails closed; optional failure does not fail the folder. Logs include the winning image.
+- The same 1,133 folder/base pairs, 121 PMX files and 259 naming references now give **146/0/113**
+  agree/disagree/abstain, versus 135/0/124. WuWa is 39/0/36 (+1 agree); Endfield 75/0/53 (+6);
+  Silver 32/0/24 (+4). Fourteen new names-visible acceptances were visually reviewed. Six prior
+  acceptances now abstain: three explicit-family conflicts, two weak features, one decode-budget
+  exhaustion. These are naming-reference comparisons, not independent annotations.
+- The measured one-pass 3x3 edge blur increased the trial from 148/0/111 to 167/0/92, but its
+  names-visible results included Avywenna's iris matched to body; reject the blur and retain
+  unblurred production. Initial broad auxiliary siblings also self-voted diffuse bases and crossed
+  EyeTrans/Pupil and Hair_02/Hair_01; final data-role and exported-family guards remove those cases.
+- The Alf2 copy's 衣饰→Body01_B uses MRA RGB (.8602 total, .7802 spatial, .7470 margin).
+  头发→Hair01_A uses AnisoMaskPS (.5989 total, .5189 spatial, .5212 margin). 熔岩 and 眉毛 abstain.
+  The PoC confirms hair and two accessories `automatic`; existing face/eye/skin protection remains.
+  Generated PNG fractional/downsample and smaller-normal conversion regressions pass. Evidence:
+  `out/r12-b2`, with every new acceptance and all 16 bases in the R12-B report.
+
+
 ## R12-B: features without pairing names (2026-11-02)
 
 - The production `GamePBR::Discover` probe covered **1,133 distinct folder/base pairs** from 121 PMX

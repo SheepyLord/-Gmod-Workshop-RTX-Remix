@@ -16,6 +16,9 @@ Also compiles the production R12 feature discovery and texture override regressi
 stubs: spatial matching, ambiguity/flat/aspect abstention, path bounds, drawn-hash gating before
 material loading, manual-map/none/automatic persistence, current-hash restoration without source,
 changed DDS rejection, and failed atomic replacement without changing the current choice.
+R12-B2 adds a generated straight-alpha PNG downsample (including exact fractional weights),
+independent ambiguous/unreadable families, name-gated auxiliary data, self-vote/exported-family
+rejection, and base-before-mask decode-budget priority to that same native regression.
 Review cases cover damaged empty/garbage/duplicate/excess-row registries, exact backup bytes and
 fresh reload/record/restore; malformed decimal headers recover, while other well-formed versions and
 oversized files stay read-only and byte-identical. A Windows sharing violation at replacement verifies

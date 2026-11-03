@@ -9,7 +9,7 @@ registry. `cc77daa` fixes damaged-registry recovery, durable saves and session-s
 `633fd5e` resolves each live texture identity once per worker and persists USD publication ownership.
 Nothing was pushed.
 
-The current fixes branch is `codex/r12-pbr`, commit `43d40a4ba349e4fdaed05e74333bd90681d30072`.
+The current fixes branch is `codex/r12-pbr`, commit `026708ae03c05ba6a06fc2f74c19493c9618eda5`.
 R12 adds conservative UV-feature pairing, texture-scoped durable player choices, the embedded
 translated editor, and drawn-before-load identity capture. The source/DLL identity below supersedes
 the R11 build identity; the earlier history remains documented for reconstruction.
@@ -83,8 +83,8 @@ MSBuild.exe out/r12-b/build/gmcl_RTXFixesBinary.vcxproj /nologo /m:4 /v:minimal 
 ```
 
 The current DLL is **5,379,072 bytes**, SHA-256
-`716fcf222ee711dd591244a8940c7e704ac2d860fcad8d2db1bf867274b51217`.
-The matching PDB remains beside it under the R12-B loader worktree's `out/r12-b/module`.
+`ce41b8b00abce2b4cdc0d0b04b7a0183c778dd04673abb890354c414503bc496`.
+The matching PDB remains beside it under the R12-B loader worktree's `out/r12-b2/module`.
 
 Native regressions compile the production format handlers, VTF wrapper/core and USD writer with
 the existing VTF filesystem/logging stubs and assertions enabled. They cover malformed/resource VTFs,
@@ -108,7 +108,7 @@ Source/VTF/USD and game-channel harnesses pass on the rebuilt source.
 PoC profiling reduced the maximum client snapshot from 23.553 to 0.830 ms by moving VMT reads and
 companion discovery off frame. Construct conversion p99 fell from 23.472 to 9.133 ms.
 
-## R12 build and validation
+## R12-B original validation
 
 R12 rebases the prepared R11-B projects and intermediates into `out/r12-b/build` and `module`.
 They read the same pinned dependency copy; no dependency is downloaded or changed. Generator v6
@@ -134,3 +134,29 @@ on/off, shared choices, source-hidden restoration, exact PoC rollback and the fi
 
 The rendered editor check also verified stock Derma compatibility: both panel types clear through
 `DForm:Clear`, and native-state polling preserves the base Think handler. The DLL is unchanged.
+
+## Follow-up: R12-B2
+
+The current commit/DLL above includes straight-alpha source decode followed by independent
+integer-area RGBA averaging, generator/key/marker v7, isolated bad families and name-confirmed
+auxiliary data masks. Core/base descriptors take the existing budget first. Unknown siblings,
+diffuse variants, self-votes and conflicting explicit exported families cannot supply auxiliary
+matches. Names-hidden core scoring and the .28/.36/.12 thresholds stay unchanged.
+
+The generated PNG regression is SDK-free and runs in the loader Release gate; it verifies
+alpha-zero RGB and fractional 7x7 to 3x3 averaging. The native game test also verifies a larger
+transparent packed map converted at the normal's smaller size. The real Body01_B map at 128x128
+retains mean R/G/B 154.561/113.404/230.281 versus 154.556/113.407/230.278 at source size.
+Its conversion checks 16,384 eligible pixels, including 15,904 under alpha zero, for exact
+roughness/metallic/AO values. The old Fant path had mean RGB 3.1, with 0.0 under alpha zero.
+
+The unchanged 121-PMX / 1,133-base / 259-reference corpus now measures 146 agree, 0 disagree,
+113 abstain with names hidden (WuWa 39/0/36, Endfield 75/0/53, Silver 32/0/24). All 14 new
+names-visible acceptances were inspected. A measured 3x3 blur was rejected after a wrong
+iris/body pairing; production stays unblurred. The report lists every new acceptance and all
+16 Alf2 bases. Hair uses Hair01_A_AnisoMaskPS and 衣饰 uses Body01_B_MRA; 熔岩 and 眉毛 abstain.
+
+The tested DLL gives Alf2 hair and two accessory materials automatic game maps in the PoC.
+The screenshot and normal exit 0 have zero Lua/device errors. All 3,284 snapshot files and their
+timestamps, the exact prior journal, prior console (restored unread), user.conf and Steam depot
+checks match after restoration; the owned PoC lock is released. Evidence is in `out/r12-b2`.

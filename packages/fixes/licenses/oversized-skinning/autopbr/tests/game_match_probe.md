@@ -4,7 +4,12 @@ Measures production `GamePBR::Discover` with normal name support and with pair n
 Takes a UTF-8 descriptor and an output TSV path. Each pair of descriptor lines is an absolute
 PMX filename followed by a base texture path relative to that PMX. No user source is written.
 The report includes source/base, accepted family, score/margin/spatial feature, reason and selected
-normal/packed paths. Discovery/decode limits are identical to conversion; the folder cache is local.
+normal/packed paths, the winning evidence image and skipped-family/auxiliary warnings.
+Discovery/decode limits are identical to conversion; the folder cache is local.
+An optional third argument `--blur` measures a single 3x3 edge blur; ordinary conversion
+keeps the original unblurred edges. Corpus review found additional wrong matches with blur.
+Names-hidden runs never
+use auxiliary evidence, including when a mask shares the base's vocabulary group.
 
 From an x64 MSVC shell inside repository `out` scratch:
 

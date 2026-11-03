@@ -4784,8 +4784,8 @@ void TextureProcessor::WorkerThreadFunc() {
                         [this](ConvertedTexture& t){ConvertNormalMapToOctahedral(t);},&discovery,selected,
                         [&](const GamePBR::Decision& d){
                             view.family=d.accepted?d.family:"";
-                            Msg("[MaterialPipeline::ToPBR] Game pairing: base=%s family=%s score=%.4f margin=%.4f feature=%.4f accepted=%d reason=%s\n",
-                                d.base.c_str(),d.family.c_str(),d.score,d.margin,d.feature,int(d.accepted),d.reason.c_str());
+                            Msg("[MaterialPipeline::ToPBR] Game pairing: base=%s family=%s score=%.4f margin=%.4f feature=%.4f accepted=%d reason=%s evidence=%s\n",
+                                d.base.c_str(),d.family.c_str(),d.score,d.margin,d.feature,int(d.accepted),d.reason.c_str(),d.evidence.c_str());
                         });
                     if(output.normal.empty() && output.roughness.empty())return {};
                     GameRegistry::Record r;r.identity=gameJob.identity;r.hashes=gameJob.hashes;r.generator=GamePBR::GeneratorVersion;

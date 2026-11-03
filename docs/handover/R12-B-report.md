@@ -184,3 +184,159 @@ retakes are diagnostic, not acceptance. The final setup uses a fresh local packa
 it offline, and checks the deployed DLL/Lua SHA-256 values before launch. It also snapshots and
 temporarily uses the worktree's Release bootstrap, restoring the prior bootstrap afterward. These
 preflights prevent testing an older payload left by another milestone or by a rollback hold.
+
+## Follow-up: R12-B2
+
+[Brief](R12-B2-decode-and-masks.md), committed unchanged; ADR 0095's follow-up supersedes the
+original decode/mask behavior above. Completed locally, including the final PoC and exact restore.
+The fixes commit is **`026708ae03c05ba6a06fc2f74c19493c9618eda5`**. No push, merge or publication is performed.
+
+### Decode and bounded matching
+
+WIC Fant premultiplied transparent PNG RGB when shrinking. The unchanged review executable
+reproduces Body01_B's 2048→128 loss: alpha-zero RGB **167.6→0.0**, overall RGB **166.1→3.1**.
+The converter now decodes bounded source-size straight RGBA, then independently area-averages
+R/G/B/A with integer overlap weights. Every previous image/compressed-input/aspect/pixel bound
+remains. Generator, content salt and completion marker advance to **7 / `r12-game-v7`** so
+present-source outputs rebuild; registry schemas and validated source-less retention stay intact.
+
+The generated transparent-PNG regression was first run against `43d40a4` and fails at its colour
+assertion (`regression-old.log`). The corrected native suite passes, including 7x7→3x3 fractional
+weights, pixel budget exhaustion and a 16x16 transparent packed map converted at an 8x8 normal.
+The SDK-free generated-PNG check also runs through the loader's normal Release regression.
+
+Known auxiliary data roles LBMask*, AnisoMask*, PromMask*, Specular*, DynAO*, ExpMask* and Caustic*
+may vote only for equal nonzero vocabulary groups. Diffuse/emission variants, arbitrary siblings
+and the base itself cannot vote. An explicit exported `T_*_D` name conflicting with the selected
+family abstains. Core normal/packed evidence and .28/.36/.12 thresholds, with .08 name support,
+stay unchanged. Core maps and possible bases get the existing work budget before auxiliaries.
+Optional failures never fail the folder; ambiguous/unreadable families are skipped and logged.
+Exhausted core scans still fail closed. Winning evidence paths appear in production/probe logs.
+
+### Corpus rerun and review
+
+The retained descriptor has **1,133 distinct folder/base pairs, 121 PMX files and the same 259
+canonical references**. Production names-hidden results (agree / disagree / abstain):
+
+| Layout | R12-B | R12-B2 | Change in agreement |
+|---|---:|---:|---:|
+| Wuthering Waves | 38 / 0 / 37 | 39 / 0 / 36 | +1 |
+| Endfield | 69 / 0 / 59 | 75 / 0 / 53 | +6 |
+| Silver Palace | 28 / 0 / 28 | 32 / 0 / 24 | +4 |
+| Total | **135 / 0 / 124** | **146 / 0 / 113** | **+11** |
+
+This remains agreement with canonical names, not independent ground truth. The optional one-pass
+3x3 edge blur was measured: the initial corrected-decode trial changed **148/0/111→167/0/92**,
+and hair's supported score .5989→.6648, skin .2375→.3084 (still abstained). Visual review found an
+iris/body mismatch, so production remains unblurred. Broad sibling trials also self-voted bases
+and crossed exported EyeTrans/Pupil and Hair_02/Hair_01 families; these diagnostic results were
+rejected and the final role/self/exported-family guards rerun over the complete corpus.
+
+Every **14** acceptance missing from the original names-visible `corpus-final.tsv` was inspected
+beside its actual winning image. No wrong pairing remains among these final additions. The final
+TSV is `out/r12-b2/corpus-accepted.tsv`; contact sheets are `contact-accepted/new-00..02.jpg`,
+with per-pair notes in `visual-review.json`. Files below are relative PMX texture names; evidence
+is the family basename (the TSV retains absolute paths).
+
+| Model folder | New base | Family | Winning evidence | Score / margin |
+|---|---|---|---|---:|
+| Alf | `Textures/T_AlfDefault_Pupil01_A_D+.png` | `t_alfdefault_pupil01_a` | `T_AlfDefault_Pupil01_A_Caustic.png` | 0.6248 / 0.4444 |
+| Alf | `眼睛.png` | `t_alfdefault_pupil01_a` | `T_AlfDefault_Pupil01_A_Caustic.png` | 0.5625 / 0.4335 |
+| Alf | `衣饰.png` | `t_alfdefault_body01_b` | `T_AlfDefault_Body01_B_MRA.png` | 0.8602 / 0.7470 |
+| Alf | `头发.png` | `t_alfdefault_hair01_a` | `T_AlfDefault_Hair01_A_AnisoMaskPS.png` | 0.5989 / 0.5212 |
+| augusta | `tex/T_R2T1AogusitaMd10011Up_D1.1.png` | `t_r2t1aogusitamd10011up` | `T_R2T1AogusitaMd10011Up_N.png` | 0.4127 / 1.4127 |
+| camellya | `textures/T_NHT1ChunXinrenDown_Metal.png` | `t_nht1chunxinrendown` | `T_NHT1ChunXinrenDown_N.png` | 0.4652 / 0.4836 |
+| Cynthia | `Textures/T_CynthiaDefault_Hair01_A_D1.png` | `t_cynthiadefault_hair01_a` | `T_CynthiaDefault_Hair01_A_PromMask.png` | 0.5716 / 0.4583 |
+| fluorite | `Textures/t_actor_bounda_cloth_01_Alpha.png` | `t_actor_bounda_cloth_01` | `T_actor_bounda_cloth_01_P.png` | 0.6970 / 0.6480 |
+| iuno | `tex1/Up-Skin.png` | `t_r2t1younuomd10011up` | `T_R2T1YounuoMd10011Up_N.png` | 0.5093 / 0.4952 |
+| iuno | `tex1/Up M.png` | `t_r2t1younuomd10011up` | `T_R2T1YounuoMd10011Up_N.png` | 0.5116 / 0.5057 |
+| iuno | `tex1/Down-Skin.png` | `t_r2t1younuomd10011down` | `T_R2T1YounuoMd10011Down_N.png` | 0.3842 / 0.4191 |
+| sanhua_alt | `textures/Body_Skin.png` | `body` | `Body_N.png` | 0.3867 / 1.3867 |
+| the_detective | `Textures/T_MuninDefault_Pupil01_A_D1.png` | `t_munindefault_pupil01_a` | `T_MuninDefault_Pupil01_A_Caustic.png` | 0.4751 / 0.3425 |
+| the_detective | `Textures/T_MuninDefault_Body01_A_D1.png` | `t_munindefault_body01_a` | `T_MuninDefault_Body01_A_MRA.png` | 0.7247 / 0.6142 |
+
+Six prior names-visible acceptances now abstain: three explicit exported-family conflicts
+(camellya Up03 and two zankou swimsuit sources), two weak-feature cases (camellya Down_Metal,
+margherita Suit_D2), and one folder decode-budget case (Gilberta hair_DnoA). These conservative
+losses are retained in `summary-accepted.json`. A subset albedo such as camellya's accepted
+XinrenDown_Metal has omitted painted regions, but its accessory strip/corner/pleated UV positions
+match the selected normal; original PMX masks continue to bound the actual conversion.
+
+### 阿芙2.0: all 16 folder bases
+
+The original character's 13 bases plus the gun/box PMXs give 16 distinct references. The unchanged
+copy is `out/r12-b/source/Alf2`; its rerun is `alf-copy.tsv` and matches the corpus decisions.
+Eye pairings below remain protected at conversion. Rejected rows show their best candidate's
+score/margin, not an accepted family.
+
+| Base | Result | Evidence | Score / margin |
+|---|---|---|---:|
+| 枪.png | abstain | — | -1.0000 / 0.0000 |
+| 枪带.png | abstain | — | -1.0000 / 0.0000 |
+| 熔岩.png | abstain | T_AlfDefault_Glass01_A_N.png | 0.1745 / 0.0135 |
+| 箱子.png | abstain | T_AlfDefault_Body01_A_MRA.png | 0.0478 / 0.0180 |
+| 脸.png | abstain | T_AlfDefault_Body01_A_MRA.png | 0.1081 / 0.0139 |
+| 眼睛.png | pupil01_a | T_AlfDefault_Pupil01_A_Caustic.png | 0.5625 / 0.4335 |
+| 眼睛1.png | abstain | T_AlfDefault_Pupil01_A_Caustic.png | 0.0781 / 0.0530 |
+| 眼睛2.png | pupil01_a | T_AlfDefault_Pupil01_A_N.png | 0.5776 / 0.3687 |
+| 眉毛.png | abstain | T_AlfDefault_Skin01_A_N.png | 0.1264 / 0.0107 |
+| 表情1.png | abstain | T_AlfDefault_Pupil01_A_N.png | 0.1357 / 0.0841 |
+| 皮肤.png | abstain | T_AlfDefault_Skin01_A_N.png | 0.2375 / 0.1936 |
+| 丝袜.png | socks01_a | T_AlfDefault_Socks01_A_MRA.png | 0.6907 / 0.6288 |
+| 衣服.png | body01_a | T_AlfDefault_Body01_A_MRA.png | 0.7302 / 0.6686 |
+| 衣饰.png | body01_b | T_AlfDefault_Body01_B_MRA.png | 0.8602 / 0.7470 |
+| 头发.png | hair01_a | T_AlfDefault_Hair01_A_AnisoMaskPS.png | 0.5989 / 0.5212 |
+| 头饰.png | hat01_a | T_AlfDefault_Hat01_A_MRA.png | 0.6462 / 0.4455 |
+
+衣饰 is recovered from Body01_B_MRA's real RGB (**.7802 spatial**); hair is recovered from
+Hair01_A_AnisoMaskPS (**.5189 spatial**). Both retain .08 name support. The gun's 熔岩 and 眉毛
+still abstain. Original PMX masks protect faces/eyes/skin and shared atlas texels as before.
+
+### Real conversion, PoC and restoration
+
+Body01_B's 2048x2048 mean R/G/B is **154.556 / 113.407 / 230.278**; straight RGBA at 128x128 is
+**154.561 / 113.404 / 230.281** (alpha-zero RGB mean **167.34**). A production `Convert` check
+with the real packed map and a 128 normal validates **16,384** eligible pixels, including
+**15,904** under alpha zero, for exact roughness/metallic/AO. The full-resolution copied PMX
+also converts 衣饰 (five maps, 822,041 protected texels) and hair (three, 994,094 protected).
+
+Following the user's R12-B2 standing instruction, normally ended field test **PID 52192**,
+`GarrysMod/bin/win64/gmod.exe`, `gm_flatgrass`, validation session
+`60fac74506e04fadaa8b8ce535ced0a9`, at 04:10:49 UTC. No field console log was read.
+The shared PoC lock was free and was exclusively created at **04:12:05 UTC**; no other lock
+was removed. The actual low-profile 1280x720, `-multirun`, no-Workshop run starts at 04:13:23 UTC.
+
+The exact final DLL reports **hair=1 / accessory=2** in `automatic` state, with Hair01_A and
+Body01_B, and publishes five fallback materials. It captures
+`out/r12-b2/poc/01-alf2/shot-01-alf2-hair-and-accessories.png`, quits **normally with exit 0**,
+and records **zero Lua errors and no device loss**. The captured rendered character was inspected.
+No QA attempt had to be repeated in this follow-up.
+
+All **3,284** snapshot files (**18,895,376,101 bytes**) restore with identical bytes and timestamps,
+including the exact pre-run journal and prior native/library/cache content. New QA files are
+archived under `after-new`; the old console was moved back without reading its contents. User.conf
+hashes are unchanged. Depot verification reports **2,877 OK, zero missing/size/hash/reparse
+mismatches**, with the same permitted autoexec user-config difference. No PoC process remains;
+the owned lock is released at **04:16:46 UTC**. Facts are in `restoration.json`.
+
+### Delivery and gates
+
+Fixes source commit **`026708ae03c05ba6a06fc2f74c19493c9618eda5`**, branch `codex/r12-pbr`; corresponding source,
+`autopbr.patch`, `source-files.json` and `Source.md` reconstruct all **30** changed files from
+`7094baf` after CRLF normalization. The source-copy hashes preserve native working-tree bytes.
+The final DLL/PDB are retained under `out/r12-b2/module`. DLL: **5,379,072 bytes**, SHA-256
+`ce41b8b00abce2b4cdc0d0b04b7a0183c778dd04673abb890354c414503bc496`. It was imported **once** with `tools/inputs.py import fixes --file`; only that indexed
+input changed in this follow-up, with no additions/removals; compressed input is **1,054,360 bytes**.
+
+Native decode/game-channel, matching/mask/family/budget, registry and override regressions pass.
+The final repository Release gate and package verification are recorded in the final gate paragraph
+below. The R12-B2 brief is committed byte-for-byte as supplied (SHA-256
+`5d821fc8ef86418703e5537ffd008a18cbccc409a1a5a0733c5ae0e4f24c61b8`).
+
+Final gates: **`tools/test.ps1 -Config Release` passes**, **26 CTests + 555 Python tests**
+(502 tools, 28 gmapack, 25 Steam; two existing skips), with `All checks passed.` Deep input
+verification reports **11 parts, 0 problems**. The indexed combined package, validated by Release
+`nlctl`, is **`0.0.0-dev.20261103042050+8b127c22`**, **1097 files**, digest
+`42fc120b5686c932fe84cc3e08160f8186c9fdf76792e8407fbe4eee540c37ec`. Intentional raw GPL CRLF copies pass the whitespace check with
+`core.whitespace=cr-at-eol`; source hashes/reconstruction remain unchanged. Both commits carry the
+requested Codex co-author line. Nothing is pushed, merged, tagged or published.

@@ -11,6 +11,10 @@ When a milestone moves to another agent (or person), the giver writes a **brief*
 receiver writes a **report** here when done or blocked. Both are committed on the milestone branch,
 so the next agent has the full story without the chat transcripts.
 
+R12-B's [decode/mask follow-up brief](R12-B2-decode-and-masks.md) is complete; see the
+[R12-B2 report section](R12-B-report.md#follow-up-r12-b2) for the corpus, all 16 Alf2 bases,
+conversion/PoC evidence and exact restoration.
+
 | Milestone | Brief | Prompt | Report | Assignee | Branch / worktree |
 |---|---|---|---|---|---|
 | R12-A: NPCs after delete/reimport | [R12-A](R12-A-hotloader-npc.md), [plan](R12-plan.md) | | [R12-A report](R12-A-report.md) | Codex (gpt-6.1-sol) | `r12-hotloader` / `out/worktrees/r12-hotloader` |
