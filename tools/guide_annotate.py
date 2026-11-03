@@ -50,23 +50,42 @@ def nearest_on_box(box, point):
 
 def arrow_end(badge, target, box):
     if box:
-        return nearest_on_box(box, badge)
+        # The outline is drawn 4 pixels outside the box; the arrow ends on it.
+        x0, y0, x1, y1 = box
+        return nearest_on_box((x0 - 5, y0 - 5, x1 + 5, y1 + 5), badge)
     return target
 
 
+def padding(spec):
+    left, top, right, bottom = spec.get('pad', [0, 0, 0, 0])
+    return left, top, right, bottom
+
+
 def check(name, spec, size, style):
-    """Problems a reader would see: a crop off the capture, a badge off the crop, over its target or over
-    another badge, an arrow too short to read."""
+    """Problems a reader would see: a crop off the capture, a badge off the picture, over its target, over
+    another badge's target or over another badge, an arrow too short to read."""
     problems = []
     x0, y0, x1, y1 = spec['crop']
+    left, top, right, bottom = padding(spec)
     if not (0 <= x0 < x1 <= size[0] and 0 <= y0 < y1 <= size[1]):
         problems.append(f'{name}: crop {spec["crop"]} is outside the {size[0]}x{size[1]} capture')
     radius = style['radius']
     centres = []
+    targets = [b.get('box') or b.get('target') for b in spec['badges']]
     for number, badge in enumerate(spec['badges'], 1):
         bx, by = badge['at']
-        if not (x0 + radius <= bx <= x1 - radius and y0 + radius <= by <= y1 - radius):
-            problems.append(f'{name} badge {number}: {badge["at"]} is not inside the crop')
+        if not (x0 - left + radius + 2 <= bx <= x1 + right - radius - 2 and
+                y0 - top + radius + 2 <= by <= y1 + bottom - radius - 2):
+            problems.append(f'{name} badge {number}: {badge["at"]} is not inside the picture')
+        for other, target in enumerate(targets, 1):
+            if other == number or not target:
+                continue
+            if len(target) == 4:
+                cx, cy = nearest_on_box(target, (bx, by))
+            else:
+                cx, cy = target
+            if math.hypot(cx - bx, cy - by) < radius + 3:
+                problems.append(f'{name} badge {number}: it covers what badge {other} points at')
         box = badge.get('box')
         target = badge.get('target') or (box and ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2))
         if not target:
@@ -123,16 +142,20 @@ def render(spec, shots: Path, style) -> Image.Image:
     if problems:
         raise SpecError('\n'.join(problems))
     x0, y0, x1, y1 = spec['crop']
-    image = capture.crop((x0, y0, x1, y1))
+    left, top, right, bottom = padding(spec)
+    # A plain margin around the crop, for badges where the capture has no free space (never scaled).
+    image = Image.new('RGB', (x1 - x0 + left + right, y1 - y0 + top + bottom), tuple(style['pad']))
+    image.paste(capture.crop((x0, y0, x1, y1)), (left, top))
     draw = ImageDraw.Draw(image)
-    shift = lambda p: (p[0] - x0, p[1] - y0)  # noqa: E731
+    shift = lambda p: (p[0] - x0 + left, p[1] - y0 + top)  # noqa: E731
     # Boxes and arrows first, badges on top, so no line crosses a number.
     for badge in spec['badges']:
         box = badge.get('box')
         if box:
+            # Outside the control's own edges, so the outline never hides any of it.
             bx0, by0, bx1, by1 = shift(box[:2]) + shift(box[2:])
-            draw.rounded_rectangle([bx0 - 1, by0 - 1, bx1 + 1, by1 + 1], radius=4, outline=tuple(style['outline']), width=4)
-            draw.rounded_rectangle([bx0, by0, bx1, by1], radius=3, outline=tuple(style['color']), width=2)
+            draw.rounded_rectangle([bx0 - 5, by0 - 5, bx1 + 5, by1 + 5], radius=5, outline=tuple(style['outline']), width=4)
+            draw.rounded_rectangle([bx0 - 4, by0 - 4, bx1 + 4, by1 + 4], radius=4, outline=tuple(style['color']), width=2)
         target = badge.get('target')
         end = arrow_end(badge['at'], target, box)
         draw_arrow(draw, shift(badge['at']), shift(end), style, style['radius'] + 2)

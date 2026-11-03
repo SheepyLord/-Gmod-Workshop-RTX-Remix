@@ -119,7 +119,8 @@ class CompanionGuideTests(unittest.TestCase):
             total += size
             self.assertLessEqual(size, MAX_BYTES, f'{path.name}: {size:,} bytes')
             width, height = jpeg_size(path)
-            self.assertLessEqual(width, MAX_WIDTH, f'{path.name} is {width} wide: shrunk in a 1280x720 game')
+            if path.name not in README_PICTURES:  # views of the game, not captures of controls to read
+                self.assertLessEqual(width, MAX_WIDTH, f'{path.name} is {width} wide: shrunk in a 1280x720 game')
             self.assertLessEqual(height, 1000, f'{path.name} is {height} high')
         self.assertLessEqual(total, MAX_TOTAL, f'the pictures take {total:,} bytes')
         self.assertFalse(list(PICTURES.glob('*.png')), 'pictures ship as JPEG')

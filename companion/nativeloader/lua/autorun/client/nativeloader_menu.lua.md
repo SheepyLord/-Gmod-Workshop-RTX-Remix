@@ -1,5 +1,12 @@
 # nativeloader_menu.lua
 
+R14-H rewords the help lines in the guide's terms, keeping their meaning: Start here (the opening
+line, the classic settings, the guard's help after its checkbox, the Alt+X note), Common Remix
+settings (its Save advice names Alt+X instead of a "Save Settings" button the runtime does not have;
+the startup replay and the numeric override), Player models, Toolgun screen and Model outlines. The
+stability button is now **Performance and memory guide**, after the guide's page, and an unapplied
+tier line points to that page. Labels, controls, ConVars and behaviour are unchanged.
+
 R12-D registers **Choose eye-white materials** beside the eye-white brightness slider, invoking
 `nativeloader_eye_white_materials`. The controller owns the translated material chooser and saved choices.
 
