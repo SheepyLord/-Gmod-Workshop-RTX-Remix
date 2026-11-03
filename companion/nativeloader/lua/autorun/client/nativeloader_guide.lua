@@ -4,12 +4,15 @@
 -- console (nativeloader_guide [page] [section]) or the RTX Remix tab's Start here;
 -- nativeloader_stability_guide opens the Performance and memory page. The pages are in
 -- nativeloader/guide_pages.lua; pictures are in materials/nativeloader/guide/ (a missing one is left
--- out with its legend). The text is translated (nativeloader/i18n.lua). Documented in
--- nativeloader_guide.lua.md beside this file.
+-- out with its legend). The text is translated (nativeloader/i18n.lua). The guide is as large as the
+-- game draws its own interface text (a GUI scaler makes it larger; nativeloader_guide_scale overrides
+-- it). Documented in nativeloader_guide.lua.md beside this file.
 local SHOWN = "nativeloader_companion/guide_shown.txt"
 local i18n = include("nativeloader/i18n.lua")
 local L = i18n.L
 local PAGES = include("nativeloader/guide_pages.lua").pages
+local SCALE_SETTING = CreateClientConVar("nativeloader_guide_scale", "0", true, false,
+    "RTX Remix guide size: 0 follows the game's interface text; 1 to 4 sets it")
 
 NATIVELOADER_GUIDE = NATIVELOADER_GUIDE or {}
 local GUIDE = NATIVELOADER_GUIDE
@@ -21,6 +24,24 @@ local COLOR = {
     tip = Color(31, 46, 22), warn = Color(62, 46, 17), amber = Color(232, 168, 40), code = Color(16, 17, 20),
     frame = Color(74, 79, 88), badge = Color(12, 12, 12),
 }
+
+-- Every size below is for a game that draws its interface text at the usual size; px() scales it.
+-- Pictures grow only by whole steps (PICTURE), drawn pixel for pixel, so they stay sharp.
+local SCALE, PICTURE = 1, 1
+local function px(n) return math.floor(n * SCALE + 0.5) end
+
+-- How large the game draws its own interface text: DermaDefault against the same Tahoma 13 it is in a
+-- plain game. A GUI scaler add-on makes it larger, and the guide follows; never smaller than 1.
+local function measure_scale()
+    local forced = tonumber(SCALE_SETTING:GetString())
+    if forced and forced > 0 then return math.min(4, math.max(1, forced)) end
+    if type(draw) ~= "table" or type(draw.GetFontHeight) ~= "function" then return 1 end
+    surface.CreateFont("NLGuideProbe", { font = "Tahoma", size = 13, weight = 500, extended = true })
+    local ok, derma, probe = pcall(function() return draw.GetFontHeight("DermaDefault"), draw.GetFontHeight("NLGuideProbe") end)
+    if not ok or type(derma) ~= "number" or type(probe) ~= "number" or probe <= 0 then return 1 end
+    local ratio = derma / probe
+    return ratio < 1.15 and 1 or math.min(4, ratio)
+end
 
 -- Which loader wrote native-loader/status.json: the guide shows only advice that loader supports.
 -- Workshop updates can reach an older winmm.dll, whose config parser rejects newer keys.
@@ -39,13 +60,13 @@ local function shown(item, caps)
     return item.when == nil or caps[item.when] == true
 end
 
-local fonts = false
+local fonts_scale
 local function make_fonts()
-    if fonts then return end
-    fonts = true
+    if fonts_scale == SCALE then return end
+    fonts_scale = SCALE
     -- Tahoma, as DermaDefault: Windows supplies the glyphs of the other languages.
     local function font(name, size, weight)
-        surface.CreateFont(name, { font = "Tahoma", size = size, weight = weight, antialias = true, extended = true })
+        surface.CreateFont(name, { font = "Tahoma", size = px(size), weight = weight, antialias = true, extended = true })
     end
     font("NLGuideTitle", 27, 800)
     font("NLGuideHeading", 20, 800)
@@ -54,7 +75,7 @@ local function make_fonts()
     font("NLGuideNav", 15, 800)
     font("NLGuideNavSection", 14, 500)
     font("NLGuideBadge", 14, 900)
-    surface.CreateFont("NLGuideCode", { font = "Lucida Console", size = 14, weight = 500, antialias = true })
+    surface.CreateFont("NLGuideCode", { font = "Lucida Console", size = px(14), weight = 500, antialias = true })
 end
 
 -- The text the open page shows, in order (for tests and the in-game check).
@@ -65,7 +86,7 @@ end
 local function label(parent, text, font, color, left, top)
     local item = parent:Add("DLabel")
     item:Dock(TOP)
-    item:DockMargin(left or 18, top or 3, 18, 3)
+    item:DockMargin(px(left or 18), px(top or 3), px(18), px(3))
     item:SetFont(font or "NLGuideBody")
     item:SetTextColor(color or COLOR.text)
     item:SetText(text)
@@ -79,11 +100,11 @@ end
 local function row(parent, text, paint_marker, indent)
     local holder = parent:Add("DPanel")
     holder:Dock(TOP)
-    holder:DockMargin(18, 3, 18, 3)
+    holder:DockMargin(px(18), px(3), px(18), px(3))
     holder:SetPaintBackground(false)
     local body = holder:Add("DLabel")
     body:Dock(TOP)
-    body:DockMargin(indent or 32, 2, 0, 0)
+    body:DockMargin(px(indent or 32), px(2), 0, 0)
     body:SetFont("NLGuideBody")
     body:SetTextColor(COLOR.text)
     body:SetText(text)
@@ -92,15 +113,15 @@ local function row(parent, text, paint_marker, indent)
     record(text)
     holder.Paint = function(_, w, h) paint_marker(w, h) end
     holder.Think = function(self)
-        local tall = math.max(24, body:GetTall() + 4)
+        local tall = math.max(px(24), body:GetTall() + px(4))
         if self:GetTall() ~= tall then self:SetTall(tall) end
     end
     return holder
 end
 
 local function badge(x, y, number)
-    draw.RoundedBox(11, x, y, 22, 22, COLOR.green)
-    draw.SimpleText(tostring(number), "NLGuideBadge", x + 11, y + 11, COLOR.badge, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    draw.RoundedBox(px(11), x, y, px(22), px(22), COLOR.green)
+    draw.SimpleText(tostring(number), "NLGuideBadge", x + px(11), y + px(11), COLOR.badge, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end
 
 local function entries(item, caps)
@@ -119,7 +140,7 @@ end
 local function add_steps(parent, item, caps)
     for number, text in ipairs(entries(item, caps)) do
         row(parent, L(text), function()
-            draw.SimpleText(number .. ".", "NLGuideBold", 4, 4, COLOR.green)
+            draw.SimpleText(number .. ".", "NLGuideBold", px(4), px(4), COLOR.green)
         end)
     end
 end
@@ -128,7 +149,7 @@ local function add_list(parent, item, caps)
     for _, text in ipairs(entries(item, caps)) do
         row(parent, L(text), function()
             surface.SetDrawColor(COLOR.green)
-            surface.DrawRect(8, 10, 6, 6)
+            surface.DrawRect(px(8), px(10), px(6), px(6))
         end, 26)
     end
 end
@@ -137,10 +158,10 @@ end
 local function add_box(parent, text, background, bar)
     local holder = parent:Add("DPanel")
     holder:Dock(TOP)
-    holder:DockMargin(18, 8, 18, 8)
+    holder:DockMargin(px(18), px(8), px(18), px(8))
     local body = holder:Add("DLabel")
     body:Dock(TOP)
-    body:DockMargin(16, 8, 12, 0)
+    body:DockMargin(px(16), px(8), px(12), 0)
     body:SetFont("NLGuideBody")
     body:SetTextColor(COLOR.text)
     body:SetText(text)
@@ -148,24 +169,24 @@ local function add_box(parent, text, background, bar)
     body:SetAutoStretchVertical(true)
     record(text)
     holder.Paint = function(_, w, h)
-        draw.RoundedBox(4, 0, 0, w, h, background)
+        draw.RoundedBox(px(4), 0, 0, w, h, background)
         surface.SetDrawColor(bar)
-        surface.DrawRect(0, 0, 5, h)
+        surface.DrawRect(0, 0, px(5), h)
     end
     holder.Think = function(self)
-        local tall = body:GetTall() + 16
+        local tall = body:GetTall() + px(16)
         if self:GetTall() ~= tall then self:SetTall(tall) end
     end
 end
 
 local function add_code(parent, text)
     local item = label(parent, text, "NLGuideCode", COLOR.text, 30, 6)
-    item:SetTextInset(10, 0)
-    item.Paint = function(_, w, h) draw.RoundedBox(4, 0, 0, w, h, COLOR.code) end
+    item:SetTextInset(px(10), 0)
+    item.Paint = function(_, w, h) draw.RoundedBox(px(4), 0, 0, w, h, COLOR.code) end
 end
 
--- A picture at its own size (made from sharp captures; never enlarged, only made smaller to fit), and
--- its legend: entry n explains the badge numbered n.
+-- A picture at its own size times PICTURE (made from sharp captures; drawn pixel for pixel, only made
+-- smaller, and then smoothed, to fit), and its legend: entry n explains the badge numbered n.
 local function add_image(parent, item)
     local path = item[2]
     if not file.Exists("materials/" .. path, "GAME") then return end
@@ -173,40 +194,41 @@ local function add_image(parent, item)
     if material:IsError() then return end
     local width, height = material:Width(), material:Height()
     if width <= 0 or height <= 0 then return end
+    local sharp = PICTURE > 1 and Material(path) or material  -- point sampled: whole steps stay crisp
     local holder = parent:Add("DPanel")
     holder:Dock(TOP)
-    holder:DockMargin(18, 10, 18, 6)
-    holder:SetTall(height + 2)
+    holder:DockMargin(px(18), px(10), px(18), px(6))
+    holder:SetTall(height * PICTURE + 2)
     holder.Paint = function(_, w)
-        local scale = math.min(1, (w - 2) / width)
+        local scale = math.min(PICTURE, (w - 2) / width)
         local dw, dh = math.floor(width * scale), math.floor(height * scale)
         surface.SetDrawColor(COLOR.frame)
         surface.DrawOutlinedRect(0, 0, dw + 2, dh + 2)
         surface.SetDrawColor(255, 255, 255, 255)
-        surface.SetMaterial(material)
+        surface.SetMaterial(scale == PICTURE and sharp or material)
         surface.DrawTexturedRect(1, 1, dw, dh)
     end
     holder.PerformLayout = function(self, w)
-        local tall = math.floor(height * math.min(1, (w - 2) / width)) + 2
+        local tall = math.floor(height * math.min(PICTURE, (w - 2) / width)) + 2
         if self:GetTall() ~= tall then self:SetTall(tall) end
     end
     GUIDE.shown.images[#GUIDE.shown.images + 1] = path
     for number = 3, #item do
-        row(parent, L(item[number]), function() badge(0, 1, number - 2) end)
+        row(parent, L(item[number]), function() badge(0, px(1), number - 2) end)
     end
 end
 
 local function add_term(parent, word, meaning)
     local title = label(parent, L(word), "NLGuideBold", COLOR.green, 18, 8)
-    title:DockMargin(18, 8, 18, 0)
+    title:DockMargin(px(18), px(8), px(18), 0)
     label(parent, L(meaning), "NLGuideBody", COLOR.text, 32, 1)
 end
 
 local function add_button(parent, text, action)
     local button = parent:Add("DButton")
     button:Dock(TOP)
-    button:DockMargin(18, 6, 18, 6)
-    button:SetTall(30)
+    button:DockMargin(px(18), px(6), px(18), px(6))
+    button:SetTall(px(30))
     button:SetFont("NLGuideBold")
     button:SetText(text)
     button.DoClick = action
@@ -223,13 +245,13 @@ local function build_page(view, page, caps)
     GUIDE.shown = { id = page.id, title = L(page.title), texts = {}, images = {} }
     view.sections = {}
     local title = label(content, L(page.title), "NLGuideTitle", COLOR.text, 18, 14)
-    title:DockMargin(18, 14, 18, 6)
+    title:DockMargin(px(18), px(14), px(18), px(6))
     for _, item in ipairs(page.items) do
         if shown(item, caps) then
             local kind = item[1]
             if kind == "h" then
                 local heading = label(content, L(item[2]), "NLGuideHeading", COLOR.green, 18, 18)
-                heading:DockMargin(18, 20, 18, 4)
+                heading:DockMargin(px(18), px(20), px(18), px(4))
                 if item.id then view.sections[item.id] = heading end
             elseif kind == "p" then
                 label(content, L(item[2]))
@@ -265,20 +287,22 @@ local function build_page(view, page, caps)
     for i, other in ipairs(PAGES) do if other == page then index = i end end
     local bar = content:Add("DPanel")
     bar:Dock(TOP)
-    bar:DockMargin(18, 24, 18, 18)
-    bar:SetTall(32)
+    bar:DockMargin(px(18), px(24), px(18), px(18))
+    bar:SetTall(px(32))
     bar:SetPaintBackground(false)
     if PAGES[index - 1] then
         local previous = bar:Add("DButton")
         previous:Dock(LEFT)
-        previous:SetWide(300)
+        previous:SetWide(px(300))
+        previous:SetFont("NLGuideBody")
         previous:SetText(string.format(L("Previous: %s"), L(PAGES[index - 1].title)))
         previous.DoClick = function() open_guide(PAGES[index - 1].id) end
     end
     if PAGES[index + 1] then
         local following = bar:Add("DButton")
         following:Dock(RIGHT)
-        following:SetWide(300)
+        following:SetWide(px(300))
+        following:SetFont("NLGuideBody")
         following:SetText(string.format(L("Next: %s"), L(PAGES[index + 1].title)))
         following.DoClick = function() open_guide(PAGES[index + 1].id) end
     end
@@ -291,7 +315,7 @@ local function scroll_to(view, section)
         local bar = view.content:GetVBar()
         if not IsValid(target) then bar:SetScroll(0) return end
         local _, y = view.content:GetCanvas():GetChildPosition(target)
-        bar:AnimateTo(math.max(0, y - 10), 0.25, 0, 0.5)
+        bar:AnimateTo(math.max(0, y - px(10)), 0.25, 0, 0.5)
     end)
 end
 
@@ -303,7 +327,7 @@ local function nav_button(parent, text, font, indent, is_active, icon)
     button:SetText("")
     local caption = button:Add("DLabel")
     caption:Dock(TOP)
-    caption:DockMargin(indent + (icon and 24 or 0), 5, 8, 0)
+    caption:DockMargin(px(indent + (icon and 24 or 0)), px(5), px(8), 0)
     caption:SetFont(font)
     caption:SetText(text)
     caption:SetWrap(true)
@@ -311,7 +335,7 @@ local function nav_button(parent, text, font, indent, is_active, icon)
     caption:SetMouseInputEnabled(false)
     local material
     button.Think = function(self)
-        local tall = caption:GetTall() + 10
+        local tall = caption:GetTall() + px(10)
         if self:GetTall() ~= tall then self:SetTall(tall) end
         caption:SetTextColor((icon or is_active()) and COLOR.text or COLOR.dim)
     end
@@ -319,7 +343,7 @@ local function nav_button(parent, text, font, indent, is_active, icon)
         if is_active() then
             draw.RoundedBox(0, 0, 0, w, h, COLOR.active)
             surface.SetDrawColor(COLOR.green)
-            surface.DrawRect(0, 0, 4, h)
+            surface.DrawRect(0, 0, px(4), h)
         elseif self:IsHovered() then
             draw.RoundedBox(0, 0, 0, w, h, COLOR.hover)
         end
@@ -327,7 +351,7 @@ local function nav_button(parent, text, font, indent, is_active, icon)
             material = material or Material(icon)
             surface.SetDrawColor(255, 255, 255, 255)
             surface.SetMaterial(material)
-            surface.DrawTexturedRect(indent, 7, 16, 16)
+            surface.DrawTexturedRect(px(indent), px(7), px(16), px(16))
         end
     end
     return button
@@ -339,7 +363,7 @@ local function build_nav(view, caps)
     nav:Clear()
     local heading = nav:Add("DLabel")
     heading:Dock(TOP)
-    heading:DockMargin(12, 10, 8, 8)
+    heading:DockMargin(px(12), px(10), px(8), px(8))
     heading:SetFont("NLGuideHeading")
     heading:SetTextColor(COLOR.green)
     heading:SetText(L("Contents"))
@@ -366,28 +390,36 @@ local function find_page(id)
 end
 
 open_guide = function(id, section)
+    -- The size is measured again at every opening: a changed GUI scale or setting rebuilds the window.
+    SCALE = measure_scale()
+    PICTURE = math.max(1, math.floor(SCALE + 0.25))
+    GUIDE.scale, GUIDE.picture_scale = SCALE, PICTURE
     make_fonts()
     local caps = loader()
     local page = find_page(id)
     local view = GUIDE.view
+    if view and IsValid(view.frame) and view.scale ~= SCALE then
+        view.frame:Remove()
+        view = nil
+    end
     if not (view and IsValid(view.frame)) then
         local frame = vgui.Create("DFrame")
         frame:SetTitle(L("RTX Remix guide"))
-        frame:SetSize(math.min(1240, ScrW() - 40), math.min(940, ScrH() - 40))
+        frame:SetSize(math.min(px(1240), ScrW() - 40), math.min(px(940), ScrH() - 40))
         frame:SetSizable(true)
-        frame:SetMinWidth(math.min(760, ScrW() - 40))
-        frame:SetMinHeight(math.min(480, ScrH() - 40))
+        frame:SetMinWidth(math.min(px(760), ScrW() - 40))
+        frame:SetMinHeight(math.min(px(480), ScrH() - 40))
         frame:Center()
         frame:MakePopup()
         local nav = frame:Add("DScrollPanel")
         nav:Dock(LEFT)
-        nav:SetWide(270)
-        nav:DockMargin(0, 0, 6, 0)
-        nav.Paint = function(_, w, h) draw.RoundedBox(4, 0, 0, w, h, COLOR.nav) end
+        nav:SetWide(px(270))
+        nav:DockMargin(0, 0, px(6), 0)
+        nav.Paint = function(_, w, h) draw.RoundedBox(px(4), 0, 0, w, h, COLOR.nav) end
         local content = frame:Add("DScrollPanel")
         content:Dock(FILL)
-        content.Paint = function(_, w, h) draw.RoundedBox(4, 0, 0, w, h, COLOR.page) end
-        view = { frame = frame, nav = nav, content = content }
+        content.Paint = function(_, w, h) draw.RoundedBox(px(4), 0, 0, w, h, COLOR.page) end
+        view = { frame = frame, nav = nav, content = content, scale = SCALE }
         GUIDE.view = view
     end
     view.frame:MoveToFront()

@@ -132,6 +132,10 @@ class CompanionGuideTests(unittest.TestCase):
                     rows = self.run_harness('render', language, caps)
                     self.assertIn(['PASS render ' + language + ' ' + caps + ' 6'], rows)
 
+    def test_the_guide_follows_the_games_interface_scale(self):
+        # A GUI scaler makes the game's text larger: the guide follows, its pictures by whole steps.
+        self.assertIn(['PASS scale'], self.run_harness('scale', 'en', 'r13'))
+
     def test_loader_conditions_choose_the_advice(self):
         # The same page text for each loader: older loaders never get keys they would reject.
         def memory_page(caps):

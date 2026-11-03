@@ -201,6 +201,32 @@ the field game's settings.
 Evidence: `out/worktrees/r14-int/out/r14/guide-lang/lang-zh-CN/` and `lang-ru/`; the script is
 `out/r14/guide_lang_session.py`.
 
+### The guide's size
+
+**Found in the field check.** The field game draws its interface text about 2.2 times larger than a
+plain game:
+- Its console says "GUI SCALER INITIALIZED", from one of the user's Workshop add-ons.
+- A Start here line is about 1,100 pixels wide there, against about 490 in the PoC.
+
+The guide created its fonts at fixed pixel sizes. On the user's 3840x2160 screen it was therefore less
+than half as large as the panels around it.
+
+**The fix.**
+- At every opening the guide compares `DermaDefault`'s height with a Tahoma 13 font of its own, and
+  scales its fonts, margins and window by the ratio (1 in a plain game; below 1.15 counts as 1).
+- Its pictures grow by whole steps (2 from 1.75), point-sampled, so they stay sharp.
+- `nativeloader_guide_scale` overrides the measurement: 0 measures, 1 to 4 sets it.
+- The previous and next buttons now use the guide's font.
+- The harness's new `scale` mode checks the measurement, the setting and a plain game.
+
+**Checked in a 3840x2160 PoC game.**
+- With the measurement, the PoC gave 1 and the 1240x940 window it always had.
+- With the setting at 2.2, the field's scale: a 2728x2068 window, pictures at 2, readable text in the
+  contents, the page and the legends.
+- The setting was put back to 0 before the quit.
+
+Evidence: `out/worktrees/r14-int/out/r14/guide-scale/scale/`.
+
 ## Tests
 
 `tools\test.ps1 -Config Release` on `r14-int` passed (`out/r14/tests/final2.log`):

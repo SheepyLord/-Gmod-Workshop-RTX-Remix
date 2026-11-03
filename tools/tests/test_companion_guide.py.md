@@ -10,6 +10,8 @@ under LuaJIT with [`companion_guide_harness.lua`](companion_guide_harness.lua.md
 - **Every page opens:** every page and every section, in English and the six languages, for an older
   loader (`legacy`), a 0.11.0 one (`r6`) and a 0.13.0 one (`r13`); in English everything shown is in
   the catalog template. The memory page shows more advice the newer the loader.
+- **Its size:** with a GUI scaler's larger `DermaDefault` the guide takes that scale (pictures by whole
+  steps); `nativeloader_guide_scale` overrides it, and a plain game keeps the plain sizes.
 - **Pictures:** each picture a page shows is in `companion/nativeloader/materials/nativeloader/guide/`;
   each picture with a legend has a spec in [`tools/guide_pictures.json`](../guide_pictures.json) with
   as many badges as legend entries; no spec without a page, no picture without a page (the README's

@@ -17,9 +17,27 @@ package is, what it does and when to change it, with labeled pictures of each pl
 
 A second opening reuses the open window and shows the page asked for.
 
+## Its size
+
+The guide is as large as the game draws its own interface text. At every opening it compares the
+height of `DermaDefault` with a Tahoma 13 font of its own, which `DermaDefault` is in a plain game:
+- A plain game gives 1.
+- A GUI scaler add-on that enlarges Derma's fonts gives more (R14's field check: 2.2 on a 3840x2160
+  screen).
+
+Below 1.15 counts as 1, the guide is never smaller than 1, and at most 4.
+
+- **Fonts, margins and the window's size** follow that scale; at 1 they are the sizes below.
+- **The pictures** grow only by whole steps: 2 from a scale of 1.75. They are drawn point-sampled, so
+  their pixels stay sharp, and are smoothed only when made smaller to fit a narrow window.
+
+`nativeloader_guide_scale` (client, archived, default 0) overrides the scale: 0 measures, 1 to 4 sets
+it. A change of scale rebuilds the window at the next opening. `NATIVELOADER_GUIDE.scale` and
+`.picture_scale` show what the last opening used.
+
 ## The window
 
-A `DFrame` (at most 1240 x 940, resizable) with two parts:
+A `DFrame` (at most 1240 x 940 at scale 1, resizable) with two parts:
 
 - **Left, the contents:** every page with its icon, and under each page its sections (each heading
   with an `id`). A click opens the page, or the page scrolled to the section. Entries wrap, so long

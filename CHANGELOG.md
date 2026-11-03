@@ -59,6 +59,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
   translation the player sees: the RTX Remix tab, the RTX add-ons, the glass panel, the Model Hotloader
   and Remix's own Alt+X menu. `tools\companion_i18n.py` lets DLSS, PBR, VRAM and Remix API equal the
   English. The player READMEs name the guide's page Performance and memory.
+- **The guide follows the game's interface scale** (found in R14's field check). A GUI scaler add-on
+  that enlarges the game's own text (2.2 times on the user's 3840x2160 screen) left the guide at its
+  plain size, less than half as large as the panels around it. At every opening the guide now measures
+  how large the game draws `DermaDefault`, and scales its fonts, margins and window to match. Its
+  pictures grow by whole steps, point-sampled, so they stay sharp. `nativeloader_guide_scale` (0
+  measures, 1 to 4 sets it) overrides the measurement.
 
 ### R13
 
