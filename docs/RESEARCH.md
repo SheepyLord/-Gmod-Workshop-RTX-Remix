@@ -22,6 +22,44 @@
   wrapper. Its `MMDHL.AssetForgotten` event evicts per-asset reusable rig/geometry/conversion state;
   live entities retain their own bound manifest. See [ADR 0094](decisions/0094-reimported-carrier-metadata-and-state.md).
 
+## R12-D: manual eye-white identity and a missed Baizhi surface (2026-11-02)
+
+- `companion/nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:65` now restricts discovery
+  to existing hotloader entities and already available asset metadata. The public list is
+  `packages/model-hotloader/mmd_hotloader/lua/mmdhl/carrier.lua:83`; it includes native actors and
+  client ragdolls, while an asset table can outlive its last spawned instance. Library metadata is
+  therefore insufficient evidence for a texture lookup. The harness verifies zero Material calls
+  and zero writes for unspawned assets, previews and foreign public paths.
+- Choices use the complete content ID plus one-based material slot/native name, independently of
+  renderer-generated paths (`nativeloader_eye_whites.lua:17`). The setter validates current spawned
+  ownership and real generated VMT/VTF inputs, compares the existing DATA bytes before writing, and
+  verifies persistence before applying the selection (`nativeloader_eye_whites.lua:342`). False is
+  distinct from absent and outranks a positive automatic name (`nativeloader_eye_whites.lua:58`).
+- A read-only source from `E:\G\Upload\1_fin\Baizhi\1_PMX\鸣潮_白芷1.12_by_鸣潮_b1b864afc9b3711e895c34a155eb3d84\鸣潮_白莲1.12.pmx`
+  was copied with its textures into `out/r12-d/model/baizhi` (30,699,734 bytes). PMX SHA-256 is
+  `3b31d7f554d8dbdbb229185ea39db53d213b941e9e6836853a946701287d4ad8`. The shipped worker imports this
+  copy as asset `489c095ce90ee2dcfdefa669febcd7ec875ebcec0c865b7164d184e73d921cd8`, 31 materials.
+  Slots 10 `bai` and 16 `bai3` both miss automatic names. UV inspection shows `bai` samples pink
+  backing from the eye atlas; `bai3` samples the white eye region of the shared face atlas. The
+  manual fixture therefore selects only slot 16. Evidence: `out/r12-d/model-copy.json`,
+  `status.json`, `model-surfaces.json`, `uv-slot-10.png`, `uv-slot-16.png`.
+- The PoC's real API returns **0**, not -1, for `file.Size` on the nonexistent choices file:
+  `file.Exists=false`, `file.Read=nil`, while the generated VMT/VTF both exist (VTF 22,369,700 bytes).
+  Inferring existence from size originally blocked the first save. The controller now tests existence
+  independently before bounded reading; `manual_missing_size_zero` fails before and passes after
+  this correction. `out/r12-d/scope-qa2.json` records the actual API result and JSON reload.
+- The actual capture helper at `tools/poc_session.py:698` creates `nl_session_close` with repeat
+  count **0** (continuous), despite its documentation saying 30 seconds. For UI captures the probe
+  explicitly removes that test-only timer; it never changes the product's UI hooks. The first run's
+  removed chooser and refused choices are excluded from acceptance.
+- The accepted behavior matrix changes only `mmd/489c095ce90ee2dc/bai3_16` out of 31 materials.
+  The other 30, including the shared-atlas face surfaces, retain their texture bindings. Unmark/reset
+  restore all 31; native JSON reload keeps the explicit true choice. The alias is
+  `0x71f624d5c68def10=0x872f42a9c3b2ca2f`. Its single 22,369,700-byte VTF took 1,960.334 ms on first
+  preparation and 127.548 ms after controller reload in this run: one-time cold resource work can
+  visibly stall, and is not a steady rendering cost or a measured GPU-allocation total. Broader VRAM
+  reclamation remains R12-C's work. Evidence: `scope-qa2.json`, `poc/manual-eyes-final/console.log`.
+
 ## R11-B review: damaged registries and durable saves (2026-11-02)
 
 - In the GPL source, `game_registry.h:98` resets load state; only a file over `MaxBytes` or an exact

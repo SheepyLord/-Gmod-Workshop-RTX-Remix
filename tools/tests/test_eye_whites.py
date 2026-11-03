@@ -13,7 +13,10 @@ SCENARIOS = ('names', 'vtf', 'normal', 'no_api', 'late_api', 'old_runtime', 'lat
              'late_hash', 'invalid_hash', 'retry', 'foreign', 'edited_cache', 'disabled',
              'brightness', 'toggle', 'prune', 'user_edit', 'shutdown', 'bounded', 'wrappers',
              'soft_normal', 'soft_late', 'soft_inherited', 'soft_foreign', 'soft_user_edit', 'soft_prune',
-             'cache_cap')
+             'cache_cap', 'manual_mark', 'manual_unmark', 'manual_exclusion', 'manual_reimport',
+             'manual_reload', 'manual_reset', 'manual_corrupt', 'manual_external', 'manual_limit',
+             'manual_asset_scope', 'manual_ui', 'manual_oversize', 'manual_write_fail', 'manual_missing_size_zero',
+             'unspawned', 'preview', 'wrong_owner', 'despawn')
 
 
 @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')

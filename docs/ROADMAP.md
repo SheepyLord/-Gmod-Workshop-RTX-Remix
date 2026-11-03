@@ -7,6 +7,12 @@ bound. Two PoC delete/reimport cycles, player/ragdoll/NPC readiness, changed fit
 conversion pass with 26 CTests and 557 Python tests. See the [report](handover/R12-A-report.md)
 and [ADR 0094](decisions/0094-reimported-carrier-metadata-and-state.md).
 
+R12-D (item 38, manual eye-white materials) is **complete** on `r12-eyes`: a live material chooser,
+per-asset persistent marks/exclusions, bounded spawned-only discovery and six translated catalogs.
+Release passes 26 CTests and 572 Python tests; the copied Baizhi PoC changes only its missed eye-white
+surface, persists through controller reload, restores all bindings and leaves the PoC snapshot intact
+([report](handover/R12-D-report.md), [ADR 0097](decisions/0097-manual-eye-white-materials.md)).
+
 R11-B (cached imported game maps, 2026-11-02) is **done**: after one successful conversion, an
 imported game character keeps its maps when its source folder is moved or deleted (successful game
 materials persist by hotloader texture identity and restore only while their DDS validate; a damaged
