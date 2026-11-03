@@ -1,5 +1,7 @@
 // Isolated GPU regression for managed-texture allocation, contents, LOD and Remix hashes.
+// R13: a second sequence (argument "r13") checks one copy and idle image release.
 #include <windows.h>
+#include <psapi.h>
 #include <d3d9.h>
 #include <wrl/client.h>
 #include <remix/remix_c.h>
@@ -8,6 +10,7 @@
 #include <cstdio>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 using Microsoft::WRL::ComPtr;
 namespace {
@@ -86,11 +89,215 @@ std::uint32_t draw(IDirect3DDevice9Ex* device, IDirect3DTexture9* texture) {
   check(readback->UnlockRect(), "readback unlock");
   return pixel & 0x00ffffff;
 }
+
+// R13: content that varies per texel, so a hash or a read-back notices any lost or moved byte.
+std::uint32_t texel(unsigned level, unsigned x, unsigned y, std::uint32_t salt) {
+  std::uint32_t v = (x * 73856093u) ^ (y * 19349663u) ^ (level * 83492791u) ^ salt;
+  v ^= v >> 13; v *= 0x5bd1e995u; v ^= v >> 15;
+  return v | 0xff000000u;
+}
+void fillPattern(IDirect3DTexture9* texture, std::uint32_t salt) {
+  for (unsigned mip = 0; mip < texture->GetLevelCount(); ++mip) {
+    D3DSURFACE_DESC desc{}; check(texture->GetLevelDesc(mip, &desc), "pattern mip description");
+    D3DLOCKED_RECT data{}; check(texture->LockRect(mip, &data, nullptr, 0), "pattern write lock");
+    for (unsigned y = 0; y < desc.Height; ++y) {
+      auto* row = reinterpret_cast<std::uint32_t*>(static_cast<unsigned char*>(data.pBits) + y * data.Pitch);
+      for (unsigned x = 0; x < desc.Width; ++x) { row[x] = texel(mip, x, y, salt); }
+    }
+    check(texture->UnlockRect(mip), "pattern write unlock");
+  }
+}
+// Reads every texel of a mip through a read-only lock; returns the number of texels that differ.
+std::uint64_t mismatches(IDirect3DTexture9* texture, unsigned mip, std::uint32_t salt, const RECT* rewritten = nullptr,
+                         std::uint32_t rewriteValue = 0) {
+  D3DSURFACE_DESC desc{}; check(texture->GetLevelDesc(mip, &desc), "verify mip description");
+  D3DLOCKED_RECT data{}; check(texture->LockRect(mip, &data, nullptr, D3DLOCK_READONLY), "verify read-only lock");
+  std::uint64_t wrong = 0;
+  for (unsigned y = 0; y < desc.Height; ++y) {
+    const auto* row = reinterpret_cast<const std::uint32_t*>(static_cast<const unsigned char*>(data.pBits) + y * data.Pitch);
+    for (unsigned x = 0; x < desc.Width; ++x) {
+      const bool inside = rewritten && LONG(x) >= rewritten->left && LONG(x) < rewritten->right &&
+                          LONG(y) >= rewritten->top && LONG(y) < rewritten->bottom;
+      wrong += row[x] != (inside ? rewriteValue : texel(mip, x, y, salt));
+    }
+  }
+  check(texture->UnlockRect(mip), "verify unlock");
+  return wrong;
+}
+std::uint64_t privateBytes() {
+  PROCESS_MEMORY_COUNTERS_EX counters{}; counters.cb = sizeof(counters);
+  require(K32GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&counters), sizeof(counters)) != 0,
+          "process memory counters");
+  return counters.PrivateUsage;
+}
+// One presented second: the runtime's managed texture passes run at most once per second.
+void presentSecond(IDirect3DDevice9Ex* device, int seconds = 1) {
+  for (int i = 0; i < seconds; ++i) {
+    Sleep(1100);
+    check(device->Present(nullptr, nullptr, nullptr, nullptr), "present");
+  }
+}
+// The draw samples one texel near the center of the base level (point filter, no mip filter);
+// find which, so later checks know the rewrite covers it.
+bool sampledTexel(std::uint32_t pixel, unsigned side, std::uint32_t salt, unsigned& tx, unsigned& ty) {
+  for (unsigned y = side / 2 - 48; y < side / 2 + 48; ++y) {
+    for (unsigned x = side / 2 - 48; x < side / 2 + 48; ++x) {
+      if ((texel(0, x, y, salt) & 0x00ffffff) == pixel) { tx = x; ty = y; return true; }
+    }
+  }
+  return false;
+}
+
+// Committed private address space of this process: read-write and write-combined bytes.
+struct AddressSpace { std::uint64_t readWrite = 0; std::uint64_t writeCombined = 0; };
+AddressSpace addressSpace() {
+  AddressSpace result;
+  MEMORY_BASIC_INFORMATION info{};
+  std::uintptr_t address = 0;
+  while (VirtualQuery(reinterpret_cast<LPCVOID>(address), &info, sizeof(info)) == sizeof(info)) {
+    if (info.State == MEM_COMMIT && info.Type == MEM_PRIVATE) {
+      if (info.Protect == PAGE_READWRITE) { result.readWrite += info.RegionSize; }
+      if (info.Protect == (PAGE_READWRITE | PAGE_WRITECOMBINE)) { result.writeCombined += info.RegionSize; }
+    }
+    const auto next = reinterpret_cast<std::uintptr_t>(info.BaseAddress) + info.RegionSize;
+    if (next <= address) { break; }
+    address = next;
+  }
+  return result;
+}
+
+// Draws without a texture, so the context drops its view of the last texture drawn.
+void drawUntextured(IDirect3DDevice9Ex* device) {
+  check(device->SetTexture(0, nullptr), "unbind");
+  check(device->Clear(0, nullptr, D3DCLEAR_TARGET, 0xff000000, 1, 0), "untextured clear");
+  struct Vertex { float x, y, z, rhw; };
+  const std::array<Vertex, 3> tri = {{{0, 0, .5f, 1}, {8, 0, .5f, 1}, {0, 8, .5f, 1}}};
+  check(device->SetFVF(D3DFVF_XYZRHW), "untextured FVF");
+  device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+  device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+  check(device->BeginScene(), "untextured begin");
+  check(device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, 1, tri.data(), sizeof(Vertex)), "untextured draw");
+  check(device->EndScene(), "untextured end");
+}
+
+// R13 sequence: upload, CPU copy released, read-back lock, rewrite, image release and re-upload,
+// device reset. Prints pixels/hashes (identical for every runtime and option) and memory deltas.
+// Four 4096-square textures span several of DXVK's 128 MiB host chunks, so a released CPU copy
+// shows in the process's private bytes (one empty chunk per memory type stays allocated).
+int runR13(remixapi_Interface& api, IDirect3DDevice9Ex* device, D3DPRESENT_PARAMETERS& present) {
+  constexpr unsigned kSide = 4096;
+  constexpr unsigned kCount = 4;
+  constexpr std::uint32_t kSalt = 0x13b00001u;
+  check(device->Present(nullptr, nullptr, nullptr, nullptr), "warm-up present");
+  const auto bytes0 = textureBytes(api);
+  const auto private0 = privateBytes();
+  std::array<ComPtr<IDirect3DTexture9>, kCount> textures;
+  for (unsigned i = 0; i < kCount; ++i) {
+    check(device->CreateTexture(kSide, kSide, 0, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &textures[i], nullptr), "r13 managed texture");
+    fillPattern(textures[i].Get(), kSalt + i);
+  }
+  IDirect3DTexture9* texture = textures[0].Get();
+  const auto privateFilled = privateBytes();
+
+  // 1. First use uploads and hashes the original data.
+  std::array<std::uint64_t, kCount> hashesFirst{};
+  std::uint32_t pixelFirst = 0;
+  for (unsigned i = 0; i < kCount; ++i) {
+    const auto pixel = draw(device, textures[i].Get());
+    if (i == 0) { pixelFirst = pixel; }
+    hashesFirst[i] = hash(api, textures[i].Get());
+    require(hashesFirst[i] != 0, "first draw did not hash the texture");
+  }
+  unsigned sampledX = 0, sampledY = 0;
+  require(sampledTexel(pixelFirst, kSide, kSalt, sampledX, sampledY), "first draw pixel is not a texel of the texture's data");
+  const auto hashFirst = hashesFirst[0];
+  drawUntextured(device);
+  check(device->Present(nullptr, nullptr, nullptr, nullptr), "present after first use");
+  const auto privateUsed = privateBytes();
+  const auto spaceUsed = addressSpace();
+  const auto bytesUsed = textureBytes(api);
+
+  // 2. Idle passes: the CPU copy and/or the image may go (depending on the options).
+  presentSecond(device, 4);
+  const auto privateIdle = privateBytes();
+  const auto spaceIdle = addressSpace();
+  const auto bytesIdle = textureBytes(api);
+  if (GetEnvironmentVariableW(L"R13_PROBE_CENSUS", nullptr, 0) != 0) {
+    // The allocation census of the idle state goes to the runtime log on the next present.
+    api.SetConfigVariable("rtx.profiler.memory.requestSnapshot", "True");
+    check(device->Present(nullptr, nullptr, nullptr, nullptr), "census present");
+  }
+  for (unsigned i = 0; i < kCount; ++i) {
+    require(hash(api, textures[i].Get()) == hashesFirst[i], "the hash changed while the texture was idle (released image or copy)");
+  }
+
+  // 3. Read-back lock: every texel of two mips equals what the application wrote.
+  require(mismatches(texture, 0, kSalt) == 0, "read-only lock of mip 0 returned different data");
+  require(mismatches(texture, 3, kSalt) == 0, "read-only lock of mip 3 returned different data");
+  require(mismatches(textures[3].Get(), 0, kSalt + 3) == 0, "read-only lock of another texture returned different data");
+  require(hash(api, texture) == hashFirst, "a read-only lock changed the hash");
+
+  // 4. Re-use after release: same pixels, same hash.
+  const auto pixelReuse = draw(device, texture);
+  require(pixelReuse == pixelFirst, "the re-uploaded texture draws different pixels");
+  require(hash(api, texture) == hashFirst, "the re-uploaded texture has a different hash");
+  const auto bytesReuse = textureBytes(api);
+  drawUntextured(device);
+
+  // 5. Rewrite the center of mip 0 after the copies went: the hash is recomputed from the full data.
+  presentSecond(device, 4);
+  const RECT region{ LONG(kSide / 2 - 64), LONG(kSide / 2 - 64), LONG(kSide / 2 + 64), LONG(kSide / 2 + 64) };
+  const std::uint32_t rewriteValue = 0xff336699u;
+  D3DLOCKED_RECT data{};
+  check(texture->LockRect(0, &data, &region, 0), "rewrite lock");
+  for (LONG y = 0; y < region.bottom - region.top; ++y) {
+    auto* row = reinterpret_cast<std::uint32_t*>(static_cast<unsigned char*>(data.pBits) + y * data.Pitch);
+    for (LONG x = 0; x < region.right - region.left; ++x) { row[x] = rewriteValue; }
+  }
+  check(texture->UnlockRect(0), "rewrite unlock");
+  const auto pixelRewrite = draw(device, texture);
+  require(pixelRewrite == (rewriteValue & 0x00ffffff), "the rewritten texel does not draw");
+  const auto hashRewrite = hash(api, texture);
+  require(hashRewrite != 0 && hashRewrite != hashFirst, "the rewrite did not refresh the hash");
+  drawUntextured(device);
+  require(mismatches(texture, 0, kSalt, &region, rewriteValue) == 0, "the rewritten mip reads back differently");
+
+  // 6. Release again, then a device reset while released; managed data survives both.
+  presentSecond(device, 4);
+  require(hash(api, texture) == hashRewrite, "the rewritten hash changed while idle");
+  check(device->Reset(&present), "device reset");
+  const auto pixelAfterReset = draw(device, texture);
+  require(pixelAfterReset == pixelRewrite, "pixels changed across a device reset");
+  require(hash(api, texture) == hashRewrite, "the hash changed across a device reset");
+  require(mismatches(texture, 1, kSalt) == 0, "an untouched mip changed across release and reset");
+  for (unsigned i = 1; i < kCount; ++i) {
+    require(draw(device, textures[i].Get()) == (texel(0, sampledX, sampledY, kSalt + i) & 0x00ffffff), "another texture draws wrong pixels");
+    require(hash(api, textures[i].Get()) == hashesFirst[i], "another texture's hash changed");
+  }
+  drawUntextured(device);
+
+  auto delta = [](std::uint64_t a, std::uint64_t b) { return static_cast<long long>(a) - static_cast<long long>(b); };
+  std::printf("{\"sequence\":\"r13\",\"hash_first\":\"0x%016llx\",\"hash_others\":[\"0x%016llx\",\"0x%016llx\",\"0x%016llx\"],"
+              "\"hash_rewrite\":\"0x%016llx\",\"pixel_first\":%u,\"pixel_rewrite\":%u,\"sampled_texel\":[%u,%u],"
+              "\"private_filled\":%lld,\"private_used\":%lld,\"private_idle\":%lld,"
+              "\"rw_idle_vs_used\":%lld,\"wc_idle_vs_used\":%lld,"
+              "\"app_texture_used\":%lld,\"app_texture_idle\":%lld,\"app_texture_reuse\":%lld}\n",
+    static_cast<unsigned long long>(hashFirst), static_cast<unsigned long long>(hashesFirst[1]),
+    static_cast<unsigned long long>(hashesFirst[2]), static_cast<unsigned long long>(hashesFirst[3]),
+    static_cast<unsigned long long>(hashRewrite), pixelFirst, pixelRewrite, sampledX, sampledY,
+    delta(privateFilled, private0), delta(privateUsed, private0), delta(privateIdle, private0),
+    delta(spaceIdle.readWrite, spaceUsed.readWrite), delta(spaceIdle.writeCombined, spaceUsed.writeCombined),
+    delta(bytesUsed, bytes0), delta(bytesIdle, bytes0), delta(bytesReuse, bytes0));
+  for (auto& t : textures) { t.Reset(); }
+  return 0;
+}
 }
 
 int wmain(int argc, wchar_t** argv) {
   try {
-    require(argc == 3 || argc == 4, "usage: managed_texture_probe.exe <runtime d3d9.dll> <dependency folder> [game]");
+    require(argc == 3 || argc == 4, "usage: managed_texture_probe.exe <runtime d3d9.dll> <dependency folder> [game|r13]");
+    // R13: the one-copy/release sequence runs on the game's standard device path.
+    const bool r13 = argc == 4 && std::wstring(argv[3]) == L"r13";
     const bool gameMode = argc == 4;
     SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     require(AddDllDirectory(argv[2]) != nullptr, "dependency directory");
@@ -131,6 +338,14 @@ int wmain(int argc, wchar_t** argv) {
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED, &present, nullptr, &device), "device");
     }
     apiCheck(api.dxvk_RegisterD3D9Device(device.Get()), "register device");
+    if (r13) {
+      const int result = runR13(api, device.Get(), present);
+      check(device->SetTexture(0, nullptr), "unbind for shutdown");
+      device.Detach(); d3d.Detach();
+      apiCheck(api.Shutdown(), "Remix shutdown");
+      DestroyWindow(window);
+      return result;
+    }
     const bool deferred = GetEnvironmentVariableW(L"DXVK_DEFER_MANAGED_TEXTURES", nullptr, 0) != 0 &&
       [] { wchar_t value[16]; GetEnvironmentVariableW(L"DXVK_DEFER_MANAGED_TEXTURES", value, 16); return value[0] == L'1'; }();
     const auto before = textureBytes(api);

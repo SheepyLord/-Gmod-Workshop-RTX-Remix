@@ -1,0 +1,1227 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 04:01:21 -0700
+Subject: [PATCH] Keep one copy of managed GMod textures and release idle
+ images
+
+Static managed 2D textures (patch 0022's class) get two memory options,
+automatic for gmod.exe and off for other games:
+
+- d3d9.releaseManagedHostCopies (DXVK_RELEASE_MANAGED_HOST_COPIES; Auto, True,
+  False): once the image holds a texture's data and the texture was not locked
+  for d3d9.managedHostCopyIdleSeconds (10), its CPU copy is freed. A later lock
+  reads the subresource back from the GPU first, as DXVK's evictManagedOnUnlock
+  path does. Auto is on below 28 GiB of RAM or 15 GiB of VRAM. Textures that
+  use AddDirtyRect keep their copy.
+- d3d9.managedTextureBudgetMiB (DXVK_MANAGED_TEXTURE_BUDGET_MIB; -1 automatic
+  = VRAM / 4, 0 off, else MiB): while these textures hold more GPU memory than
+  the budget, images not drawn for d3d9.managedTextureIdleSeconds (60 presented
+  seconds) are released, least recently used first, a few per second. Their
+  data stays (read back first when only the GPU had it), every subresource is
+  marked for upload, and the next use recreates the image with the hash it
+  had. Bound, locked and pending textures are never chosen. The released image
+  is marked application-released, so Remix frees it once no instance samples
+  it; ImGui drops only its own entry for that image.
+
+The hash API and the hash-on-write rule see the kept hash while an image is
+released. The resolved values are logged at startup; [RTX Managed Textures]
+lines report the passes and the bytes of texture CPU copies, which the census
+now names "d3d9 texture copy". Pure policy in d3d9_managed_memory.h with
+test_managed_texture_memory.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/d3d9/d3d9_common_texture.cpp              |  47 ++-
+ src/d3d9/d3d9_common_texture.h                |  57 ++-
+ src/d3d9/d3d9_device.cpp                      | 369 +++++++++++++++++-
+ src/d3d9/d3d9_device.h                        |  72 ++++
+ src/d3d9/d3d9_managed_memory.h                | 162 ++++++++
+ src/d3d9/d3d9_options.cpp                     |  15 +
+ src/d3d9/d3d9_options.h                       |  13 +
+ src/d3d9/d3d9_rtx.cpp                         |   4 +
+ src/d3d9/d3d9_texture.cpp                     |   3 +
+ src/dxvk/imgui/dxvk_imgui.cpp                 |  13 +
+ src/dxvk/imgui/dxvk_imgui.h                   |   6 +
+ src/dxvk/rtx_render/rtx_fork_api_entry.cpp    |   3 +-
+ tests/rtx/unit/meson.build                    |   5 +
+ .../rtx/unit/test_managed_texture_memory.cpp  | 105 +++++
+ 14 files changed, 863 insertions(+), 11 deletions(-)
+ create mode 100644 src/d3d9/d3d9_managed_memory.h
+ create mode 100644 tests/rtx/unit/test_managed_texture_memory.cpp
+
+diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
+index 7c4be7b0..81c2dc43 100644
+--- a/src/d3d9/d3d9_common_texture.cpp
++++ b/src/d3d9/d3d9_common_texture.cpp
+@@ -48,11 +48,15 @@ namespace dxvk {
+     m_supportsFetch4 = DetermineFetch4Compatibility();
+ 
+     // NV-DXVK start: keep the existing CPU backing; allocate static managed 2D images on demand
+-    const bool deferImage = m_device->GetOptions()->deferManagedTextures &&
++    // R13: the same class of textures has its memory managed (one copy, idle image release).
++    const bool staticManaged2D =
+       !m_device->GetOptions()->evictManagedOnUnlock && m_desc.Pool == D3DPOOL_MANAGED &&
+       m_type == D3DRTYPE_TEXTURE && m_desc.Usage == 0 && !m_shadow &&
+       m_mapping.FormatColor != VK_FORMAT_UNDEFINED &&
+       m_mapping.ConversionFormatInfo.FormatType == D3D9ConversionFormat_None;
++    const bool deferImage = m_device->GetOptions()->deferManagedTextures && staticManaged2D;
++    m_memoryManaged = staticManaged2D && m_mapMode == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED &&
++      m_device->GetManagedMemoryPolicy().active();
+     if (m_mapMode == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED && !deferImage) {
+       // NV-DXVK end
+       bool plainSurface = m_type == D3DRTYPE_SURFACE &&
+@@ -111,11 +115,44 @@ namespace dxvk {
+       m_image = nullptr;
+       throw;
+     }
++    // NV-DXVK start: R13 a released image comes back with the identity it had; its data
++    // follows through the pending uploads of every subresource
++    const bool reupload = m_imageReleased;
++    if (m_imageReleased) {
++      m_imageReleased = false;
++      if (m_releasedHash != kEmptyHash) {
++        m_image->setHash(m_releasedHash);
++        ImGUI::AddTexture(m_releasedHash, m_sampleView.Color, ImGUI::kTextureFlagsDefault);
++      }
++      m_releasedHash = kEmptyHash;
++    }
++    if (m_memoryManaged) {
++      m_device->TrackManagedTexture(this, reupload);
++    }
++    // NV-DXVK end
++  }
++  // NV-DXVK end
++
++
++  // NV-DXVK start: R13 CPU copy accounting
++  void D3D9CommonTexture::DropBuffer(UINT Subresource) {
++    if (m_buffers[Subresource] != nullptr) {
++      m_device->CountTextureCopy(-int64_t(m_buffers[Subresource]->info().size), IsManaged());
++      m_buffers[Subresource] = nullptr;
++    }
+   }
+   // NV-DXVK end
+ 
+ 
+   D3D9CommonTexture::~D3D9CommonTexture() {
++    // NV-DXVK start: R13 leave the device's resident set before any member goes; count the copies out
++    if (m_memoryManaged) {
++      m_device->ForgetManagedTexture(this);
++    }
++    for (uint32_t i = 0; i < CountSubresources(); i++) {
++      DropBuffer(i);
++    }
++    // NV-DXVK end
+     if (m_size != 0)
+       m_device->ChangeReportedMemory(m_size);
+ 
+@@ -233,7 +270,10 @@ namespace dxvk {
+                                   | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                                   | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+ 
+-    m_buffers[Subresource] = m_device->GetDXVKDevice()->createBuffer(info, memType, DxvkMemoryStats::Category::AppBuffer, "d3d9 buffer");
++    // NV-DXVK start: R13 the census names texture copies apart from vertex/index buffers
++    m_buffers[Subresource] = m_device->GetDXVKDevice()->createBuffer(info, memType, DxvkMemoryStats::Category::AppBuffer, "d3d9 texture copy");
++    m_device->CountTextureCopy(int64_t(info.size), IsManaged());
++    // NV-DXVK end
+     m_mappedSlices[Subresource] = m_buffers[Subresource]->getSliceHandle();
+ 
+     return true;
+@@ -740,6 +780,9 @@ namespace dxvk {
+   }
+ 
+   void D3D9CommonTexture::ClearHash() {
++    // NV-DXVK start: R13 a rewrite while the image is released recomputes the hash on re-upload
++    m_releasedHash = kEmptyHash;
++    // NV-DXVK end
+     if (m_image == nullptr) {
+       return;
+     }
+diff --git a/src/d3d9/d3d9_common_texture.h b/src/d3d9/d3d9_common_texture.h
+index a43d0ad3..325d99e0 100644
+--- a/src/d3d9/d3d9_common_texture.h
++++ b/src/d3d9/d3d9_common_texture.h
+@@ -77,6 +77,9 @@ namespace dxvk {
+   using D3D9SubresourceBitset = bit::bitset<caps::MaxSubresources>;
+ 
+   class D3D9CommonTexture {
++    // NV-DXVK start: R13 managed texture memory; the device owns the release passes
++    friend class D3D9DeviceEx;
++    // NV-DXVK end
+ 
+   public:
+ 
+@@ -147,6 +150,37 @@ namespace dxvk {
+     void EnsureImage();
+     // NV-DXVK end
+ 
++    // NV-DXVK start: R13 managed texture memory
++    /**
++     * \brief The texture's Remix hash, also while its image is released for the budget
++     * \returns The image's hash, the hash it had when it was released, or kEmptyHash
++     */
++    XXH64_hash_t GetStableHash() const {
++      return m_image != nullptr ? m_image->getHash() : m_releasedHash;
++    }
++
++    /**
++     * \brief Whether the device manages this texture's memory (static managed 2D textures)
++     */
++    bool IsMemoryManaged() const {
++      return m_memoryManaged;
++    }
++
++    /**
++     * \brief Records a draw, upload or creation in presented seconds
++     */
++    void MarkUsed(uint32_t tick) {
++      m_lastUseTick = tick;
++    }
++
++    /**
++     * \brief Keeps the CPU copy for good: the application may write through an old lock pointer
++     */
++    void KeepHostCopy() {
++      m_keepHostCopy = true;
++    }
++    // NV-DXVK end
++
+     /**
+      * \brief Get a copy of the main image, but with a single sample
+      * This function will allocate/reuse an image with the same info
+@@ -258,10 +292,16 @@ namespace dxvk {
+      * Destroys mapping and staging buffers for a given subresource
+      */
+     void DestroyBufferSubresource(UINT Subresource) {
+-      m_buffers[Subresource] = nullptr;
++      // NV-DXVK start: R13 CPU copy accounting
++      DropBuffer(Subresource);
++      // NV-DXVK end
+       SetWrittenByGPU(Subresource, true);
+     }
+ 
++    // NV-DXVK start: R13 frees one subresource's CPU copy and keeps the device's count of them
++    void DropBuffer(UINT Subresource);
++    // NV-DXVK end
++
+     bool IsDynamic() const {
+       return m_desc.Usage & D3DUSAGE_DYNAMIC;
+     }
+@@ -521,6 +561,21 @@ namespace dxvk {
+     UINT                          m_sampleLod = 0;
+     // NV-DXVK end
+ 
++    // NV-DXVK start: R13 managed texture memory (see D3D9DeviceEx::ManageManagedTextureMemory)
++    bool                          m_memoryManaged = false;   // static managed 2D, patch 0022's class
++    bool                          m_registered = false;      // counted in the device's resident set
++    bool                          m_keepHostCopy = false;    // never release the CPU copy
++    bool                          m_imageReleased = false;   // image dropped; data in m_buffers or zero
++    bool                          m_readbackPending = false; // CPU copies being read back before a release
++    uint32_t                      m_lastUseTick = 0;
++    uint32_t                      m_lastLockTick = 0;
++    uint32_t                      m_readbackTick = 0;
++    uint64_t                      m_readbackSequence = 0;
++    VkDeviceSize                  m_residentBytes = 0;       // image bytes counted while registered
++    XXH64_hash_t                  m_releasedHash = 0;       // kEmptyHash
++    D3D9SubresourceBitset         m_hostCopyReleased = { };  // data only on the GPU
++    // NV-DXVK end
++
+     D3D9SubresourceBitset         m_locked = { };
+ 
+     D3D9SubresourceBitset         m_readOnly = { };
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index fdbb202a..ceb1e839 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -155,6 +155,10 @@ namespace dxvk {
+ 
+     m_availableMemory = DetermineInitialTextureMemory();
+ 
++    // NV-DXVK start: R13 managed texture memory; resolved before any texture exists
++    InitManagedTextureMemory();
++    // NV-DXVK end
++
+     // NV-DXVK start: Consolidate RTX state
+     m_rtx.Initialize();
+     // NV-DXVK
+@@ -4310,6 +4314,13 @@ namespace dxvk {
+     const uint32_t usedSamplerMask = m_psShaderMasks.samplerMask | m_vsShaderMasks.samplerMask;
+     const uint32_t usedTextureMask = m_activeTextures & usedSamplerMask;
+ 
++    // NV-DXVK start: R13 a draw is a use of every texture it samples
++    if (m_managedMemoryPolicy.active()) {
++      for (uint32_t texIdx : bit::BitMask(usedTextureMask))
++        GetCommonTexture(m_state.textures[texIdx])->MarkUsed(m_managedTick);
++    }
++    // NV-DXVK end
++
+     const uint32_t texturesToUpload = m_activeTexturesToUpload & usedTextureMask;
+     if (unlikely(texturesToUpload != 0))
+       UploadManagedTextures(texturesToUpload);
+@@ -4601,6 +4612,14 @@ namespace dxvk {
+ 
+     auto& desc = *(pResource->Desc());
+ 
++    // NV-DXVK start: R13 a lock keeps the CPU copy for a while; a released one is read back below
++    const bool hostCopyReleased = pResource->m_hostCopyReleased.get(Subresource);
++    const bool readbackPending = pResource->m_readbackPending;
++    if (pResource->IsMemoryManaged()) {
++      pResource->m_lastLockTick = m_managedTick;
++    }
++    // NV-DXVK end
++
+     bool alloced = pResource->CreateBufferSubresource(Subresource);
+ 
+     const Rc<DxvkBuffer> mappedBuffer = pResource->GetBuffer(Subresource);
+@@ -4654,9 +4673,11 @@ namespace dxvk {
+     // Some games update them after setup, but Remix still needs the original
+     // hash to classify terrain and omit auxiliary textures like lightmaps.
+     if (MipLevel == 0 && !readOnly && RtxOptions::recomputeTextureHashOnWrite()) {
+-      Rc<DxvkImage> image = pResource->GetImage();
+-      if (image != nullptr) {
+-        const XXH64_hash_t imageHash = image->getHash();
++      // NV-DXVK start: R13 a released image keeps its hash on the texture; treat it the same
++      const XXH64_hash_t stableHash = pResource->GetStableHash();
++      if (pResource->GetImage() != nullptr || stableHash != kEmptyHash) {
++        const XXH64_hash_t imageHash = stableHash;
++      // NV-DXVK end
+         // Not a per-draw path: look up under the option mutex rather than through D3D9Rtx's copies.
+         const bool keepConfiguredHash =
+           RtxOptions::terrainTexturesObject().containsHash(imageHash) ||
+@@ -4694,7 +4715,9 @@ namespace dxvk {
+         ctx->invalidateBuffer(cImageBuffer, cBufferSlice);
+       });
+     }
+-    else if ((managed && !m_d3d9Options.evictManagedOnUnlock) || scratch || systemmem) {
++    // NV-DXVK start: R13 a released CPU copy is read back from the image like DXVK's evictManagedOnUnlock
++    else if (((managed && !m_d3d9Options.evictManagedOnUnlock) || scratch || systemmem) && !hostCopyReleased) {
++    // NV-DXVK end
+       // Managed and scratch resources
+       // are meant to be able to provide readback without waiting.
+       // We always keep a copy of them in system memory for this reason.
+@@ -4706,8 +4729,10 @@ namespace dxvk {
+       // or is reading. Remember! This will only trigger for MANAGED resources
+       // that cannot get affected by GPU, therefore readonly is A-OK for NOT waiting.
+       const bool usesStagingBuffer = pResource->DoesStagingBufferUploads(Subresource);
+-      const bool skipWait = (scratch || managed || (systemmem && !wasWrittenByGPU))
++      // NV-DXVK start: R13 a pending read-back is a GPU write into this copy; always wait for it
++      const bool skipWait = !readbackPending && (scratch || managed || (systemmem && !wasWrittenByGPU))
+         && (usesStagingBuffer || readOnly);
++      // NV-DXVK end
+ 
+       if (alloced) {
+         std::memset(physSlice.mapPtr, 0, physSlice.length);
+@@ -4723,6 +4748,14 @@ namespace dxvk {
+     else {
+       physSlice = pResource->GetMappedSlice(Subresource);
+ 
++      // NV-DXVK start: R13 never expected: a released CPU copy always has its image
++      if (unlikely(hostCopyReleased && pResource->GetImage() == nullptr)) {
++        Logger::err("D3D9: a managed texture lost both its CPU copy and its image; its data reads as zero");
++        wasWrittenByGPU = false;
++        alloced = true;
++      }
++      // NV-DXVK end
++
+       if (!alloced || wasWrittenByGPU) {
+         if (unlikely(wasWrittenByGPU)) {
+           Rc<DxvkImage> resourceImage = pResource->GetImage();
+@@ -4804,6 +4837,16 @@ namespace dxvk {
+         // avoid a wait here.
+         std::memset(physSlice.mapPtr, 0, physSlice.length);
+       }
++
++      // NV-DXVK start: R13 the CPU copy is back; it is released again once the texture is idle
++      if (hostCopyReleased) {
++        std::lock_guard<dxvk::mutex> guard(m_managedMutex);
++        pResource->m_hostCopyReleased.set(Subresource, false);
++        m_managedCounters.hostCopyBytes -= std::min(m_managedCounters.hostCopyBytes, uint64_t(physSlice.length));
++        m_managedCounters.readbacks += 1;
++        m_managedCounters.readbackBytes += physSlice.length;
++      }
++      // NV-DXVK end
+     }
+ 
+     const bool atiHack = desc.Format == D3D9Format::ATI1 || desc.Format == D3D9Format::ATI2;
+@@ -5871,6 +5914,11 @@ namespace dxvk {
+       pResource->EnsureImage();
+     }
+     // NV-DXVK end
++    // NV-DXVK start: R13 an upload is a use; an image created eagerly joins the resident set here
++    if (pResource->IsMemoryManaged()) {
++      TrackManagedTexture(pResource);
++    }
++    // NV-DXVK end
+     for (uint32_t subresource = 0; subresource < pResource->CountSubresources(); subresource++) {
+       if (!pResource->NeedsUpload(subresource) || pResource->GetBuffer(subresource) == nullptr)
+         continue;
+@@ -5891,6 +5939,312 @@ namespace dxvk {
+   // NV-DXVK end
+ 
+ 
++  // NV-DXVK start: R13 managed texture memory
++  //
++  // Static managed 2D textures (patch 0022's class) keep their data in exactly one place when
++  // the policy asks for it: the CPU copy (m_buffers) goes once the image holds the data and the
++  // texture has not been locked for a while; a later lock reads the subresource back from the
++  // GPU first. While those textures hold more GPU memory than the budget, images not drawn for
++  // a while are released, least recently used first. Their data stays (read back first if
++  // only the GPU had it) and every subresource is marked for upload, so the next use creates
++  // the image again through patch 0022's path with the hash it had. The renderer may still
++  // hold a released image (cached or anti-culled instances); markApplicationReleased lets the
++  // texture cache free it once no instance samples it, which is when its memory goes.
++  void D3D9DeviceEx::InitManagedTextureMemory() {
++    uint64_t vram = 0;
++    const VkPhysicalDeviceMemoryProperties memory = m_dxvkDevice->adapter()->memoryProperties();
++    for (uint32_t i = 0; i < memory.memoryHeapCount; i++) {
++      if (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
++        vram = std::max<uint64_t>(vram, memory.memoryHeaps[i].size);
++    }
++    uint64_t ram = 0;
++    MEMORYSTATUSEX status = { };
++    status.dwLength = sizeof(status);
++    if (GlobalMemoryStatusEx(&status))
++      ram = status.ullTotalPhys;
++
++    m_managedMemoryPolicy = managed_memory::resolvePolicy(m_d3d9Options.managedTextureBudgetMiB,
++      managed_memory::Mode(m_d3d9Options.releaseManagedHostCopies), vram, ram);
++    m_managedMemoryPolicy.imageIdleSeconds = m_d3d9Options.managedTextureIdleSeconds;
++    m_managedMemoryPolicy.hostCopyIdleSeconds = m_d3d9Options.managedHostCopyIdleSeconds;
++    if (m_d3d9Options.evictManagedOnUnlock) {
++      // DXVK's own eviction already keeps no CPU copy; its textures are not in the managed class.
++      m_managedMemoryPolicy.budgetBytes = 0;
++      m_managedMemoryPolicy.releaseHostCopies = false;
++    }
++
++    const auto& policy = m_managedMemoryPolicy;
++    Logger::info(str::format("[RTX Managed Textures] budget: ", policy.budgetBytes >> 20, " MiB (",
++      policy.budgetAuto ? "auto: VRAM/4" : (policy.budgetBytes != 0 ? "set" : "off"), "); VRAM ", vram >> 20, " MiB"));
++    Logger::info(str::format("[RTX Managed Textures] release host copies: ", policy.releaseHostCopies ? "on" : "off", " (",
++      policy.releaseAuto ? str::format("auto: RAM ", ram >> 20, " MiB, VRAM ", vram >> 20, " MiB; on below 28 GiB RAM or 15 GiB VRAM")
++                         : std::string("set"), ")"));
++    Logger::info(str::format("[RTX Managed Textures] idle seconds: image ", policy.imageIdleSeconds,
++      ", host copy ", policy.hostCopyIdleSeconds));
++  }
++
++
++  void D3D9DeviceEx::TrackManagedTexture(D3D9CommonTexture* pResource, bool reupload) {
++    pResource->MarkUsed(m_managedTick);
++    if (pResource->m_registered || pResource->m_image == nullptr) {
++      return;
++    }
++    std::lock_guard<dxvk::mutex> lock(m_managedMutex);
++    m_managedCounters.reuploads += reupload ? 1 : 0;
++    pResource->m_registered = true;
++    pResource->m_residentBytes = pResource->m_image->memSize();
++    m_managedResident.insert(pResource);
++    m_managedResidentBytes += pResource->m_residentBytes;
++  }
++
++
++  void D3D9DeviceEx::ForgetManagedTexture(D3D9CommonTexture* pResource) {
++    std::lock_guard<dxvk::mutex> lock(m_managedMutex);
++    if (pResource->m_registered) {
++      m_managedResident.erase(pResource);
++      m_managedResidentBytes -= std::min(m_managedResidentBytes, uint64_t(pResource->m_residentBytes));
++      pResource->m_registered = false;
++    }
++    if (pResource->m_readbackPending) {
++      m_managedReadbacks.erase(std::remove(m_managedReadbacks.begin(), m_managedReadbacks.end(), pResource),
++        m_managedReadbacks.end());
++      pResource->m_readbackPending = false;
++    }
++    for (uint32_t i = 0; i < pResource->CountSubresources(); i++) {
++      if (pResource->m_hostCopyReleased.get(i)) {
++        m_managedCounters.hostCopyBytes -= std::min(m_managedCounters.hostCopyBytes, uint64_t(pResource->GetMipSize(i)));
++      }
++    }
++    pResource->m_hostCopyReleased.clearAll();
++  }
++
++
++  bool D3D9DeviceEx::IsManagedTextureBound(const D3D9CommonTexture* pResource) const {
++    for (IDirect3DBaseTexture9* texture : m_state.textures) {
++      if (texture != nullptr && GetCommonTexture(texture) == pResource) {
++        return true;
++      }
++    }
++    return false;
++  }
++
++
++  void D3D9DeviceEx::ManageManagedTextureMemory() {
++    // One pass per presented second. The tick advances once per pass, so time spent
++    // minimized or loading without presenting does not make everything look idle.
++    const auto now = std::chrono::steady_clock::now();
++    if (now - m_managedPassTime < std::chrono::seconds(1)) {
++      return;
++    }
++    m_managedPassTime = now;
++
++    D3D9DeviceLock lock = LockDevice();
++    std::lock_guard<dxvk::mutex> guard(m_managedMutex);
++    ++m_managedTick;
++    if (m_managedMemoryPolicy.active()) {
++      FinishManagedReadbacks();
++      if (m_managedMemoryPolicy.releaseHostCopies) {
++        ReleaseIdleHostCopies();
++      }
++      if (m_managedMemoryPolicy.budgetBytes != 0) {
++        ReleaseIdleManagedImages();
++      }
++    }
++    LogManagedTextureMemory("pass");
++  }
++
++
++  void D3D9DeviceEx::ReleaseIdleHostCopies() {
++    const uint32_t idle = m_managedMemoryPolicy.hostCopyIdleSeconds;
++    m_managedCounters.keptHostCopyTextures = 0;
++    for (D3D9CommonTexture* texture : m_managedResident) {
++      m_managedCounters.keptHostCopyTextures += texture->m_keepHostCopy ? 1 : 0;
++      if (texture->m_keepHostCopy || texture->m_readbackPending || texture->m_image == nullptr ||
++          texture->IsAnySubresourceLocked() || texture->NeedsAnyUpload() ||
++          m_managedTick - texture->m_lastLockTick < idle) {
++        continue;
++      }
++      // The image holds every subresource: uploads already in the command stream keep their
++      // own reference to the buffer, so dropping ours frees it once they ran.
++      for (uint32_t i = 0; i < texture->CountSubresources(); i++) {
++        if (texture->m_buffers[i] == nullptr) {
++          continue;
++        }
++        const uint64_t bytes = texture->GetMipSize(i);
++        texture->DropBuffer(i);
++        texture->m_mappedSlices[i] = DxvkBufferSliceHandle();
++        texture->m_hostCopyReleased.set(i, true);
++        texture->SetWrittenByGPU(i, true);
++        m_managedCounters.hostCopiesReleased += 1;
++        m_managedCounters.hostCopyBytesReleased += bytes;
++        m_managedCounters.hostCopyBytes += bytes;
++      }
++    }
++  }
++
++
++  void D3D9DeviceEx::ReleaseIdleManagedImages() {
++    if (RtxOptions::keepTexturesForTagging()) {
++      return; // the texture browser keeps every image anyway
++    }
++    uint64_t pending = 0;
++    for (const D3D9CommonTexture* texture : m_managedReadbacks) {
++      pending += texture->m_residentBytes;
++    }
++    const uint64_t resident = m_managedResidentBytes > pending ? m_managedResidentBytes - pending : 0;
++    if (resident <= m_managedMemoryPolicy.budgetBytes) {
++      return;
++    }
++
++    std::vector<const D3D9CommonTexture*> bound;
++    for (IDirect3DBaseTexture9* texture : m_state.textures) {
++      if (texture != nullptr) {
++        bound.push_back(GetCommonTexture(texture));
++      }
++    }
++    std::vector<managed_memory::Candidate> candidates;
++    std::vector<D3D9CommonTexture*> textures;
++    candidates.reserve(m_managedResident.size());
++    textures.reserve(m_managedResident.size());
++    for (D3D9CommonTexture* texture : m_managedResident) {
++      if (texture->m_readbackPending || texture->m_image == nullptr || texture->IsAnySubresourceLocked() ||
++          std::find(bound.begin(), bound.end(), texture) != bound.end()) {
++        continue;
++      }
++      candidates.push_back({ uint64_t(texture->m_residentBytes), texture->m_lastUseTick, texture->m_hostCopyReleased.any() });
++      textures.push_back(texture);
++    }
++    const auto selected = managed_memory::selectForRelease(candidates, resident,
++      m_managedMemoryPolicy.budgetBytes, m_managedTick, m_managedMemoryPolicy.imageIdleSeconds);
++    for (size_t index : selected) {
++      if (candidates[index].needsReadback) {
++        StartManagedReadback(textures[index]);
++      } else {
++        ReleaseManagedImage(textures[index]);
++      }
++    }
++  }
++
++
++  void D3D9DeviceEx::StartManagedReadback(D3D9CommonTexture* pResource) {
++    // The same copy LockImage makes for a subresource the GPU wrote: 4-byte rows,
++    // exactly the layout of the CPU copy the application filled.
++    const Rc<DxvkImage> image = pResource->GetImage();
++    const DxvkFormatInfo* formatInfo = imageFormatInfo(pResource->GetFormatMapping().FormatColor);
++    for (uint32_t i = 0; i < pResource->CountSubresources(); i++) {
++      if (!pResource->m_hostCopyReleased.get(i)) {
++        continue;
++      }
++      pResource->CreateBufferSubresource(i);
++      const VkImageSubresource subresource = pResource->GetSubresourceFromIndex(formatInfo->aspectMask, i);
++      EmitCs([
++        cBuffer       = pResource->GetBuffer(i),
++        cImage        = image,
++        cSubresources = vk::makeSubresourceLayers(subresource),
++        cLevelExtent  = pResource->GetExtentMip(i)
++      ] (DxvkContext* ctx) {
++        ctx->copyImageToBuffer(cBuffer, 0, 4, 0,
++          cImage, cSubresources, VkOffset3D { 0, 0, 0 }, cLevelExtent);
++      });
++      const uint64_t bytes = pResource->GetMipSize(i);
++      pResource->m_hostCopyReleased.set(i, false);
++      pResource->SetWrittenByGPU(i, false);
++      m_managedCounters.hostCopyBytes -= std::min(m_managedCounters.hostCopyBytes, bytes);
++      m_managedCounters.readbackBytes += bytes;
++    }
++    pResource->m_readbackPending = true;
++    pResource->m_readbackTick = m_managedTick;
++    pResource->m_readbackSequence = GetCurrentSequenceNumber();
++    m_managedReadbacks.push_back(pResource);
++    m_managedCounters.readbacks += 1;
++  }
++
++
++  void D3D9DeviceEx::FinishManagedReadbacks() {
++    if (m_managedReadbacks.empty()) {
++      return;
++    }
++    const uint64_t executed = m_csThread.lastSequenceNumber();
++    std::vector<D3D9CommonTexture*> waiting;
++    for (D3D9CommonTexture* texture : m_managedReadbacks) {
++      bool busy = executed < texture->m_readbackSequence;
++      for (uint32_t i = 0; i < texture->CountSubresources() && !busy; i++) {
++        busy = texture->m_buffers[i] != nullptr && texture->m_buffers[i]->isInUse(DxvkAccess::Write);
++      }
++      if (busy) {
++        waiting.push_back(texture);
++        continue;
++      }
++      texture->m_readbackPending = false;
++      // A draw or lock since the read-back started means the texture is in use again:
++      // keep the image (the CPU copies just made are current and go again when idle).
++      if (texture->m_lastUseTick >= texture->m_readbackTick || texture->m_lastLockTick >= texture->m_readbackTick ||
++          texture->IsAnySubresourceLocked() || IsManagedTextureBound(texture)) {
++        m_managedCounters.cancelledReleases += 1;
++        continue;
++      }
++      ReleaseManagedImage(texture);
++    }
++    m_managedReadbacks = std::move(waiting);
++  }
++
++
++  void D3D9DeviceEx::ReleaseManagedImage(D3D9CommonTexture* pResource) {
++    Rc<DxvkImage> image = std::move(pResource->m_image);
++    pResource->m_sampleView = D3D9ColorView();
++    const XXH64_hash_t hash = image->getHash();
++    pResource->m_releasedHash = hash;
++    pResource->m_imageReleased = true;
++    if (hash != kEmptyHash) {
++      ImGUI::ReleaseTextureImage(hash, image.ptr());
++    }
++    // Remix's texture cache frees the image once no instance samples it any more.
++    image->markApplicationReleased();
++    if (pResource->m_registered) {
++      m_managedResident.erase(pResource);
++      m_managedResidentBytes -= std::min(m_managedResidentBytes, uint64_t(pResource->m_residentBytes));
++      pResource->m_registered = false;
++    }
++    // Every subresource that has data uploads again on the next use; the others are zero
++    // and the new image is cleared to zero.
++    for (uint32_t i = 0; i < pResource->CountSubresources(); i++) {
++      pResource->SetNeedsUpload(i, true);
++    }
++    for (uint32_t layer = 0; layer < pResource->Desc()->ArraySize; layer++) {
++      pResource->AddDirtyBox(nullptr, layer);
++    }
++    m_managedCounters.imagesReleased += 1;
++    m_managedCounters.imageBytesReleased += pResource->m_residentBytes;
++  }
++
++
++  void D3D9DeviceEx::LogManagedTextureMemory(const char* reason) {
++    const auto& c = m_managedCounters;
++    // Any change: releases, read-backs, re-uploads, resident images or CPU copies (in MiB).
++    const uint64_t changes = c.hostCopiesReleased + c.readbacks + c.imagesReleased + c.reuploads + c.cancelledReleases
++      + (m_managedResidentBytes >> 20) + (uint64_t(std::max<int64_t>(m_managedCopyBytes.load(), 0)) >> 20);
++    // After a change at most every fifteen presented seconds; otherwise once a minute.
++    const uint32_t since = m_managedTick - m_managedLogTick;
++    if (since < 15 || (changes == m_managedLoggedChanges && since < 60)) {
++      return;
++    }
++    m_managedLoggedChanges = changes;
++    m_managedLogTick = m_managedTick;
++    Logger::info(str::format("[RTX Managed Textures] {\"event\":\"", reason, "\",\"tick\":", m_managedTick,
++      ",\"resident_textures\":", m_managedResident.size(), ",\"resident_bytes\":", m_managedResidentBytes,
++      ",\"budget_bytes\":", m_managedMemoryPolicy.budgetBytes,
++      ",\"host_copy_bytes_released_now\":", c.hostCopyBytes,
++      ",\"host_copies_released\":", c.hostCopiesReleased, ",\"host_copy_bytes_released\":", c.hostCopyBytesReleased,
++      ",\"readbacks\":", c.readbacks, ",\"readback_bytes\":", c.readbackBytes,
++      ",\"pending_readbacks\":", m_managedReadbacks.size(),
++      ",\"images_released\":", c.imagesReleased, ",\"image_bytes_released\":", c.imageBytesReleased,
++      ",\"reuploads\":", c.reuploads, ",\"cancelled_releases\":", c.cancelledReleases,
++      ",\"kept_host_copy_textures\":", c.keptHostCopyTextures,
++      ",\"managed_copy_bytes\":", m_managedCopyBytes.load(), ",\"other_copy_bytes\":", m_otherCopyBytes.load(), "}"));
++  }
++  // NV-DXVK end
++
++
+   void D3D9DeviceEx::UploadManagedTextures(uint32_t mask) {
+     ScopedCpuProfileZone();
+     // Guaranteed to not be nullptr...
+@@ -7334,8 +7688,9 @@ namespace dxvk {
+                                       (uint32_t stageIdx, bool isLastStage) {
+         auto shouldOmitTextureAtStage = [this, &numActiveStages](uint32_t stageIdx, bool isLastStage) {
+           if (const auto tex = GetCommonTexture(m_state.textures[stageIdx])) {
+-            const auto& image = tex->GetImage();
+-            XXH64_hash_t texHash = image != nullptr ? image->getHash() : kEmptyHash;
++            // NV-DXVK start: R13 a released image keeps its hash on the texture
++            XXH64_hash_t texHash = tex->GetStableHash();
++            // NV-DXVK end
+             if (texHash != kEmptyHash) {
+               if (isLastStage && numActiveStages > 1 && RtxOptions::ignoreLastTextureStage()) {
+                 return true;
+diff --git a/src/d3d9/d3d9_device.h b/src/d3d9/d3d9_device.h
+index 64b4f5b8..6eb9f1bc 100644
+--- a/src/d3d9/d3d9_device.h
++++ b/src/d3d9/d3d9_device.h
+@@ -29,6 +29,11 @@
+ #include <vector>
+ #include <type_traits>
+ #include <unordered_map>
++// NV-DXVK start: R13 managed texture memory
++#include <chrono>
++#include <unordered_set>
++#include "d3d9_managed_memory.h"
++// NV-DXVK end
+ #include "d3d9_rtx.h"
+ 
+ #include "../util/util_flush.h"
+@@ -772,6 +777,35 @@ namespace dxvk {
+     void InitDeferredTexture(D3D9CommonTexture* pResource);
+     // NV-DXVK end
+ 
++    // NV-DXVK start: R13 managed texture memory (one copy, idle image release; d3d9_managed_memory.h)
++    const managed_memory::Policy& GetManagedMemoryPolicy() const {
++      return m_managedMemoryPolicy;
++    }
++
++    /**
++     * \brief Counts a memory-managed texture's new image as resident and marks it used
++     */
++    void TrackManagedTexture(D3D9CommonTexture* pResource, bool reupload = false);
++
++    /**
++     * \brief Removes a texture from the resident set; called first by its destructor
++     */
++    void ForgetManagedTexture(D3D9CommonTexture* pResource);
++
++    /**
++     * \brief Once per presented second: finishes read-backs, releases idle CPU copies,
++     *   then idle images while static managed textures hold more than the budget
++     */
++    void ManageManagedTextureMemory();
++
++    /**
++     * \brief Counts CPU copies of textures (bytes, managed pool or not) for the memory log
++     */
++    void CountTextureCopy(int64_t bytes, bool managed) {
++      (managed ? m_managedCopyBytes : m_otherCopyBytes).fetch_add(bytes, std::memory_order_relaxed);
++    }
++    // NV-DXVK end
++
+     void UploadManagedTextures(uint32_t mask);
+ 
+     void GenerateTextureMips(uint32_t mask);
+@@ -1009,6 +1043,17 @@ namespace dxvk {
+ 
+     void DetermineConstantLayouts(bool canSWVP);
+ 
++    // NV-DXVK start: R13 managed texture memory
++    void InitManagedTextureMemory();
++    bool IsManagedTextureBound(const D3D9CommonTexture* pResource) const;
++    void ReleaseIdleHostCopies();
++    void ReleaseIdleManagedImages();
++    void FinishManagedReadbacks();
++    void StartManagedReadback(D3D9CommonTexture* pResource);
++    void ReleaseManagedImage(D3D9CommonTexture* pResource);
++    void LogManagedTextureMemory(const char* reason);
++    // NV-DXVK end
++
+     template<bool UpBuffer, bool ShaderBuffer = false>
+     D3D9BufferSlice AllocTempBuffer(VkDeviceSize size);
+ 
+@@ -1261,6 +1306,33 @@ namespace dxvk {
+     uint32_t                        m_activeTexturesToUpload = 0;
+     uint32_t                        m_activeTexturesToGen    = 0;
+ 
++    // NV-DXVK start: R13 managed texture memory. The resident set and the read-back list are
++    // guarded by m_managedMutex; the passes also hold the device lock, like every lock and upload.
++    managed_memory::Policy          m_managedMemoryPolicy;
++    dxvk::mutex                     m_managedMutex;
++    std::unordered_set<D3D9CommonTexture*> m_managedResident;
++    std::vector<D3D9CommonTexture*> m_managedReadbacks;
++    uint64_t                        m_managedResidentBytes = 0;
++    uint32_t                        m_managedTick = 1;     // presented seconds, at most one per pass
++    std::chrono::steady_clock::time_point m_managedPassTime = { };
++    struct ManagedMemoryCounters {
++      uint64_t hostCopiesReleased = 0;
++      uint64_t hostCopyBytesReleased = 0;
++      uint64_t hostCopyBytes = 0;         // CPU copies currently released (data on the GPU only)
++      uint64_t readbacks = 0;
++      uint64_t readbackBytes = 0;
++      uint64_t imagesReleased = 0;
++      uint64_t imageBytesReleased = 0;
++      uint64_t reuploads = 0;
++      uint64_t cancelledReleases = 0;
++      uint64_t keptHostCopyTextures = 0;  // resident textures that keep their CPU copy (AddDirtyRect)
++    }                               m_managedCounters;
++    std::atomic<int64_t>            m_managedCopyBytes = { 0 };  // CPU copies of managed-pool textures
++    std::atomic<int64_t>            m_otherCopyBytes = { 0 };    // CPU copies of other textures (system memory, staging)
++    uint64_t                        m_managedLoggedChanges = 0;
++    uint32_t                        m_managedLogTick = 0;
++    // NV-DXVK end
++
+     uint32_t                        m_fetch4Enabled = 0;
+     uint32_t                        m_fetch4        = 0;
+ 
+diff --git a/src/d3d9/d3d9_managed_memory.h b/src/d3d9/d3d9_managed_memory.h
+new file mode 100644
+index 00000000..f94d8b68
+--- /dev/null
++++ b/src/d3d9/d3d9_managed_memory.h
+@@ -0,0 +1,162 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#pragma once
++
++// Policy for the memory of static managed textures (R13): one copy of each texture's data,
++// and GPU images released when they hold more than a budget and were not used for a while.
++// Pure functions, so the unit tests can check the rules without a device.
++
++#include <algorithm>
++#include <cctype>
++#include <cstdint>
++#include <string>
++#include <vector>
++
++namespace dxvk::managed_memory {
++
++  constexpr uint64_t kMiB = 1ull << 20;
++  constexpr uint64_t kGiB = 1ull << 30;
++
++  // The R13 plan's minimum profile: computers below 28 GiB of RAM or 15 GiB of VRAM
++  // release the CPU copy of a texture once its data is on the GPU.
++  constexpr uint64_t kHostCopyAutoRamLimit  = 28 * kGiB;
++  constexpr uint64_t kHostCopyAutoVramLimit = 15 * kGiB;
++
++  // An image is released only after this many presented seconds without a draw: a minute
++  // covers turning around, menus and short trips, so normal play never re-uploads.
++  constexpr uint32_t kDefaultImageIdleSeconds = 60;
++  // A CPU copy is released this many presented seconds after the texture's last lock, so a
++  // texture the game keeps writing or reading never pays a read-back per lock.
++  constexpr uint32_t kDefaultHostCopyIdleSeconds = 10;
++  // Work per one-second pass: read-backs cross PCIe and are spread out; plain releases only
++  // drop references, but freeing thousands of images at once would still stall a frame.
++  constexpr uint64_t kReadbackBytesPerPass = 256 * kMiB;
++  constexpr uint64_t kReleaseBytesPerPass  = 2 * kGiB;
++
++  enum class Mode : int32_t { Auto = -1, Off = 0, On = 1 };
++
++  // True/False/Auto as DXVK writes them, and 1/0/-1 as environment variables do.
++  inline Mode parseMode(std::string value, Mode fallback) {
++    std::string text;
++    for (char c : value) {
++      if (!std::isspace(static_cast<unsigned char>(c)))
++        text += char(std::tolower(static_cast<unsigned char>(c)));
++    }
++    if (text == "true" || text == "1" || text == "on")
++      return Mode::On;
++    if (text == "false" || text == "0" || text == "off")
++      return Mode::Off;
++    if (text == "auto" || text == "-1")
++      return Mode::Auto;
++    return fallback;
++  }
++
++  inline const char* toString(Mode mode) {
++    return mode == Mode::Auto ? "Auto" : mode == Mode::On ? "True" : "False";
++  }
++
++  struct Policy {
++    uint64_t budgetBytes = 0;        // 0: images are never released for a budget
++    bool     budgetAuto = false;     // the budget is a quarter of the VRAM
++    bool     releaseHostCopies = false;
++    bool     releaseAuto = false;    // decided from the computer's RAM and VRAM
++    uint32_t imageIdleSeconds = kDefaultImageIdleSeconds;
++    uint32_t hostCopyIdleSeconds = kDefaultHostCopyIdleSeconds;
++
++    bool active() const {
++      return budgetBytes != 0 || releaseHostCopies;
++    }
++  };
++
++  // budgetMiB: -1 automatic (VRAM / 4), 0 off, otherwise MiB. vramBytes is the largest
++  // device-local heap, ramBytes the installed physical memory; 0 means unknown.
++  inline Policy resolvePolicy(int32_t budgetMiB, Mode releaseHostCopies, uint64_t vramBytes, uint64_t ramBytes) {
++    Policy policy;
++    if (budgetMiB < 0) {
++      policy.budgetAuto = true;
++      policy.budgetBytes = vramBytes / 4;
++    } else {
++      policy.budgetBytes = uint64_t(budgetMiB) * kMiB;
++    }
++    if (releaseHostCopies == Mode::Auto) {
++      policy.releaseAuto = true;
++      policy.releaseHostCopies = (ramBytes != 0 && ramBytes < kHostCopyAutoRamLimit)
++                              || (vramBytes != 0 && vramBytes < kHostCopyAutoVramLimit);
++    } else {
++      policy.releaseHostCopies = releaseHostCopies == Mode::On;
++    }
++    return policy;
++  }
++
++  struct Candidate {
++    uint64_t bytes = 0;          // GPU bytes the release frees
++    uint32_t lastUseTick = 0;    // presented second of the last draw, upload or creation
++    bool     needsReadback = false; // its CPU copy was released: read it back before the image goes
++  };
++
++  // Indices of the candidates to release, least recently used first, until the resident
++  // bytes fit the budget. Candidates used within idleTicks are never chosen, so the result
++  // may leave the resident bytes over the budget. Read-backs and releases are capped per pass;
++  // the first candidate of each kind is always allowed so one huge texture cannot stall it.
++  inline std::vector<size_t> selectForRelease(const std::vector<Candidate>& candidates,
++                                              uint64_t residentBytes, uint64_t budgetBytes,
++                                              uint32_t nowTick, uint32_t idleTicks,
++                                              uint64_t maxReadbackBytes = kReadbackBytesPerPass,
++                                              uint64_t maxReleaseBytes = kReleaseBytesPerPass) {
++    std::vector<size_t> result;
++    if (budgetBytes == 0 || residentBytes <= budgetBytes)
++      return result;
++
++    std::vector<size_t> order;
++    for (size_t i = 0; i < candidates.size(); i++) {
++      const Candidate& c = candidates[i];
++      if (c.bytes != 0 && nowTick >= c.lastUseTick && nowTick - c.lastUseTick >= idleTicks)
++        order.push_back(i);
++    }
++    std::stable_sort(order.begin(), order.end(), [&candidates] (size_t a, size_t b) {
++      if (candidates[a].lastUseTick != candidates[b].lastUseTick)
++        return candidates[a].lastUseTick < candidates[b].lastUseTick;
++      return candidates[a].bytes > candidates[b].bytes;
++    });
++
++    uint64_t excess = residentBytes - budgetBytes;
++    uint64_t readback = 0, released = 0;
++    for (size_t index : order) {
++      if (excess == 0)
++        break;
++      const Candidate& c = candidates[index];
++      if (c.needsReadback) {
++        if (readback != 0 && readback + c.bytes > maxReadbackBytes)
++          continue;
++        readback += c.bytes;
++      } else {
++        if (released != 0 && released + c.bytes > maxReleaseBytes)
++          continue;
++        released += c.bytes;
++      }
++      result.push_back(index);
++      excess -= std::min(excess, c.bytes);
++    }
++    return result;
++  }
++
++}
+diff --git a/src/d3d9/d3d9_options.cpp b/src/d3d9/d3d9_options.cpp
+index 6c368751..fb37dfa4 100644
+--- a/src/d3d9/d3d9_options.cpp
++++ b/src/d3d9/d3d9_options.cpp
+@@ -29,6 +29,9 @@
+ // NV-DXVK start: scope demand allocation to GMod by default
+ #include "../util/util_env.h"
+ // NV-DXVK end
++// NV-DXVK start: R13 managed texture memory
++#include "d3d9_managed_memory.h"
++// NV-DXVK end
+ 
+ namespace dxvk {
+ 
+@@ -86,6 +89,18 @@ namespace dxvk {
+     this->deferManagedTextures = config.getOption<bool>("d3d9.deferManagedTextures",
+       appName == "gmod.exe", "DXVK_DEFER_MANAGED_TEXTURES");
+     // NV-DXVK end
++    // NV-DXVK start: R13 managed texture memory; automatic for GMod, off for other games
++    const bool isGmod = appName == "gmod.exe";
++    this->managedTextureBudgetMiB = config.getOption<int32_t>("d3d9.managedTextureBudgetMiB",
++      isGmod ? -1 : 0, "DXVK_MANAGED_TEXTURE_BUDGET_MIB");
++    this->releaseManagedHostCopies = int32_t(managed_memory::parseMode(
++      config.getOption<std::string>("d3d9.releaseManagedHostCopies", "", "DXVK_RELEASE_MANAGED_HOST_COPIES"),
++      isGmod ? managed_memory::Mode::Auto : managed_memory::Mode::Off));
++    this->managedTextureIdleSeconds = config.getOption<uint32_t>("d3d9.managedTextureIdleSeconds",
++      managed_memory::kDefaultImageIdleSeconds, "DXVK_MANAGED_TEXTURE_IDLE_SECONDS");
++    this->managedHostCopyIdleSeconds = config.getOption<uint32_t>("d3d9.managedHostCopyIdleSeconds",
++      managed_memory::kDefaultHostCopyIdleSeconds, "DXVK_MANAGED_HOST_COPY_IDLE_SECONDS");
++    // NV-DXVK end
+     this->dpiAware                      = config.getOption<bool>        ("d3d9.dpiAware",                      true);
+     this->strictConstantCopies          = config.getOption<bool>        ("d3d9.strictConstantCopies",          false);
+     this->strictPow                     = config.getOption<bool>        ("d3d9.strictPow",                     true);
+diff --git a/src/d3d9/d3d9_options.h b/src/d3d9/d3d9_options.h
+index c37eefee..6ca08cbe 100644
+--- a/src/d3d9/d3d9_options.h
++++ b/src/d3d9/d3d9_options.h
+@@ -61,6 +61,19 @@ namespace dxvk {
+     bool deferManagedTextures;
+     // NV-DXVK end
+ 
++    // NV-DXVK start: R13 managed texture memory (d3d9_managed_memory.h)
++    /// GPU bytes static managed textures may hold before idle images are released:
++    /// -1 automatic (a quarter of the VRAM; gmod.exe's default), 0 off, otherwise MiB.
++    int32_t managedTextureBudgetMiB;
++    /// Free a static managed texture's CPU copy once its data is on the GPU (managed_memory::Mode;
++    /// Auto, gmod.exe's default, decides from the computer's RAM and VRAM).
++    int32_t releaseManagedHostCopies;
++    /// Presented seconds without use before an image may be released, and after the last
++    /// lock before a CPU copy may be released.
++    uint32_t managedTextureIdleSeconds;
++    uint32_t managedHostCopyIdleSeconds;
++    // NV-DXVK end
++
+     /// Set the max shader model the device can support in the caps.
+     int32_t shaderModel;
+ 
+diff --git a/src/d3d9/d3d9_rtx.cpp b/src/d3d9/d3d9_rtx.cpp
+index c71e5f2e..3794fb72 100644
+--- a/src/d3d9/d3d9_rtx.cpp
++++ b/src/d3d9/d3d9_rtx.cpp
+@@ -1466,6 +1466,10 @@ namespace dxvk {
+     m_seenCameraPositionsPrev = std::move(m_seenCameraPositions);
+ 
+     m_stagedBones.clear();
++
++    // NV-DXVK start: R13 managed texture memory, once per presented second
++    m_parent->ManageManagedTextureMemory();
++    // NV-DXVK end
+   }
+ 
+   void D3D9Rtx::OnPresent(const Rc<DxvkImage>& targetImage) {
+diff --git a/src/d3d9/d3d9_texture.cpp b/src/d3d9/d3d9_texture.cpp
+index db527bde..181987e9 100644
+--- a/src/d3d9/d3d9_texture.cpp
++++ b/src/d3d9/d3d9_texture.cpp
+@@ -98,6 +98,9 @@ namespace dxvk {
+     // and purely rely on AddDirtyRect to notify D3D9 that contents have changed.
+     // We have no way of knowing which mip levels were actually changed.
+     m_texture.SetAllNeedUpload();
++    // NV-DXVK start: R13 such a texture keeps its CPU copy, which that pointer writes into
++    m_texture.KeepHostCopy();
++    // NV-DXVK end
+     return D3D_OK;
+   }
+ 
+diff --git a/src/dxvk/imgui/dxvk_imgui.cpp b/src/dxvk/imgui/dxvk_imgui.cpp
+index 774a2a1a..7ca5b40c 100644
+--- a/src/dxvk/imgui/dxvk_imgui.cpp
++++ b/src/dxvk/imgui/dxvk_imgui.cpp
+@@ -719,6 +719,19 @@ namespace dxvk {
+     g_imguiTextureMap.erase(hash);
+   }
+ 
++  // NV-DXVK start: R13 managed texture memory
++  void ImGUI::ReleaseTextureImage(const XXH64_hash_t hash, const DxvkImage* image) {
++    if (RtxOptions::keepTexturesForTagging()) {
++      return;
++    }
++
++    auto it = g_imguiTextureMap.find(hash);
++    if (it != g_imguiTextureMap.end() && it->second.imageView != nullptr && it->second.imageView->image().ptr() == image) {
++      g_imguiTextureMap.erase(it);
++    }
++  }
++  // NV-DXVK end
++
+   void ImGUI::SetFogStates(const fast_unordered_cache<FogState>& fogStates, XXH64_hash_t usedFogHash) {
+     const std::lock_guard<std::mutex> lock(g_imguiFogMapMutex);
+     g_imguiFogMap = fogStates;
+diff --git a/src/dxvk/imgui/dxvk_imgui.h b/src/dxvk/imgui/dxvk_imgui.h
+index 7fc06a3e..88be235f 100644
+--- a/src/dxvk/imgui/dxvk_imgui.h
++++ b/src/dxvk/imgui/dxvk_imgui.h
+@@ -49,6 +49,9 @@ namespace dxvk {
+   class DxvkDevice;
+   class DxvkContext;
+   class RtxGraphGUI;
++  // NV-DXVK start: R13 managed texture memory
++  class DxvkImage;
++  // NV-DXVK end
+ 
+   /**
+    * \brief DXVK ImGUI
+@@ -96,6 +99,9 @@ namespace dxvk {
+     
+     static void AddTexture(const XXH64_hash_t hash, const Rc<DxvkImageView>& imageView, uint32_t textureFeatureFlags);
+     static void ReleaseTexture(const XXH64_hash_t hash);
++    // NV-DXVK start: R13 drop the entry only if it holds this image (textures may share a hash)
++    static void ReleaseTextureImage(const XXH64_hash_t hash, const DxvkImage* image);
++    // NV-DXVK end
+     static bool checkHotkeyState(const VirtualKeys& virtKeys, const bool allowContinuousPress = false);
+     static void SetFogStates(const fast_unordered_cache<FogState>& fogStates, XXH64_hash_t usedFogHash);
+ 
+diff --git a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+index 477b514c..55601339 100644
+--- a/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
++++ b/src/dxvk/rtx_render/rtx_fork_api_entry.cpp
+@@ -431,7 +431,8 @@ namespace fork_hooks {
+       // Keep that API result without forcing a GPU allocation during a metadata query.
+       if (commonTexture->IsManaged() &&
+           commonTexture->GetMapMode() == D3D9_COMMON_TEXTURE_MAP_MODE_BACKED) {
+-        *out_hash = 0;
++        // R13: an image released for the budget keeps reporting the hash it had.
++        *out_hash = commonTexture->GetStableHash();
+         return REMIXAPI_ERROR_CODE_SUCCESS;
+       }
+       // Texture might be in system memory (not GPU).
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index 782ba6de..91affbc4 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -184,4 +184,9 @@ exe = executable('test_eye_whites', files('test_eye_whites.cpp'),
+ test('test_eye_whites', exe, env: test_env)
+ tests += exe
+ 
++exe = executable('test_managed_texture_memory', files('test_managed_texture_memory.cpp'),
++  win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_managed_texture_memory', exe)
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_managed_texture_memory.cpp b/tests/rtx/unit/test_managed_texture_memory.cpp
+new file mode 100644
+index 00000000..eff328c0
+--- /dev/null
++++ b/tests/rtx/unit/test_managed_texture_memory.cpp
+@@ -0,0 +1,105 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "../../../src/d3d9/d3d9_managed_memory.h"
++
++#include <cstdlib>
++#include <iostream>
++
++int main() {
++  using namespace dxvk::managed_memory;
++  const auto check = [](bool passed, const char* message) {
++    if (!passed) {
++      std::cerr << message << '\n';
++      std::exit(1);
++    }
++  };
++
++  // Options: DXVK's Tristate words and the environment's numbers.
++  check(parseMode("True", Mode::Off) == Mode::On, "True turns host copy release on");
++  check(parseMode(" false ", Mode::On) == Mode::Off, "False turns it off, ignoring spaces and case");
++  check(parseMode("AUTO", Mode::Off) == Mode::Auto, "Auto is accepted in any case");
++  check(parseMode("1", Mode::Off) == Mode::On && parseMode("0", Mode::On) == Mode::Off && parseMode("-1", Mode::Off) == Mode::Auto,
++        "1, 0 and -1 are the environment forms");
++  check(parseMode("", Mode::Auto) == Mode::Auto && parseMode("maybe", Mode::Off) == Mode::Off,
++        "An empty or unknown value keeps the default");
++
++  // The automatic budget is a quarter of the VRAM; 0 is off; a positive value is MiB.
++  const uint64_t vram8 = 8176 * kMiB, vram16 = 16376 * kMiB, vram32 = 32607 * kMiB;
++  const uint64_t ram16 = 16 * kGiB - 512 * kMiB, ram32 = 32 * kGiB - 600 * kMiB, ram64 = 64 * kGiB - kGiB;
++  Policy p = resolvePolicy(-1, Mode::Off, vram16, ram32);
++  check(p.budgetAuto && p.budgetBytes == vram16 / 4, "Auto budget is VRAM / 4");
++  check(resolvePolicy(0, Mode::Off, vram16, ram32).budgetBytes == 0 && !resolvePolicy(0, Mode::Off, vram16, ram32).active(),
++        "Budget 0 with host copies off leaves the policy inactive");
++  check(resolvePolicy(3000, Mode::Off, vram16, ram32).budgetBytes == 3000 * kMiB, "An explicit budget is MiB");
++  check(resolvePolicy(-1, Mode::Off, 0, ram32).budgetBytes == 0, "Unknown VRAM gives no automatic budget");
++
++  // Automatic host copy release matches the plan's minimum profile: below 28 GiB RAM or 15 GiB VRAM.
++  check(resolvePolicy(-1, Mode::Auto, vram8, ram16).releaseHostCopies, "8 GB / 16 GB computers release host copies");
++  check(resolvePolicy(-1, Mode::Auto, vram16, ram16).releaseHostCopies, "16 GB RAM alone is below the recommended profile");
++  check(resolvePolicy(-1, Mode::Auto, vram8, ram64).releaseHostCopies, "8 GB VRAM alone is below the recommended profile");
++  check(!resolvePolicy(-1, Mode::Auto, vram16, ram32).releaseHostCopies, "16 GB / 32 GB computers keep host copies");
++  check(!resolvePolicy(-1, Mode::Auto, vram32, ram64).releaseHostCopies, "Large computers keep host copies");
++  check(resolvePolicy(-1, Mode::Auto, vram32, ram64).releaseAuto, "The automatic choice is reported as automatic");
++  check(!resolvePolicy(-1, Mode::Auto, 0, 0).releaseHostCopies, "Unknown RAM and VRAM keep host copies");
++  check(resolvePolicy(-1, Mode::On, vram32, ram64).releaseHostCopies && !resolvePolicy(-1, Mode::Off, vram8, ram16).releaseHostCopies,
++        "Explicit values win over the automatic choice");
++
++  // Release selection: least recently used first, only idle candidates, until the budget fits.
++  const uint64_t budget = 100 * kMiB;
++  std::vector<Candidate> candidates = {
++    { 40 * kMiB, 50, false },   // 0: idle since tick 50
++    { 40 * kMiB, 10, false },   // 1: oldest
++    { 40 * kMiB, 115, false },  // 2: used 5 ticks ago, never chosen with a 60 tick idle time
++    { 40 * kMiB, 30, false },   // 3
++  };
++  check(selectForRelease(candidates, budget, budget, 120, 60).empty(), "Nothing is released at or under the budget");
++  auto chosen = selectForRelease(candidates, 160 * kMiB, budget, 120, 60);
++  check(chosen.size() == 2 && chosen[0] == 1 && chosen[1] == 3, "The two oldest idle images cover a 60 MiB excess");
++  chosen = selectForRelease(candidates, 400 * kMiB, budget, 120, 60);
++  check(chosen.size() == 3 && chosen[2] == 0, "Every idle image may go, oldest first");
++  for (size_t index : chosen)
++    check(index != 2, "A recently used image is never released, even over the budget");
++  chosen = selectForRelease(candidates, 160 * kMiB, budget, 120, 0);
++  check(chosen.size() == 2 && chosen[0] == 1, "An idle time of zero still releases the oldest first");
++
++  // Ties: the larger image first, so fewer releases cover the excess.
++  std::vector<Candidate> tied = { { 10 * kMiB, 5, false }, { 90 * kMiB, 5, false } };
++  chosen = selectForRelease(tied, 150 * kMiB, budget, 100, 60);
++  check(chosen.size() == 1 && chosen[0] == 1, "Equally old: the larger image covers the excess alone");
++
++  // Caps per pass: read-backs and plain releases are limited separately; the first of each kind always fits.
++  std::vector<Candidate> readbacks = {
++    { 200 * kMiB, 1, true }, { 200 * kMiB, 2, true }, { 10 * kMiB, 3, false }, { 300 * kMiB, 4, true },
++  };
++  chosen = selectForRelease(readbacks, 10 * kGiB, budget, 100, 60, 256 * kMiB, 2 * kGiB);
++  check(chosen.size() == 2 && chosen[0] == 0 && chosen[1] == 2,
++        "One 200 MiB read-back fits the 256 MiB cap; the next waits, plain releases go on");
++  std::vector<Candidate> huge = { { 4 * kGiB, 1, false }, { 4 * kGiB, 2, false } };
++  chosen = selectForRelease(huge, 20 * kGiB, budget, 100, 60, 256 * kMiB, 2 * kGiB);
++  check(chosen.size() == 1 && chosen[0] == 0, "A single image larger than the cap still goes, one per pass");
++  check(selectForRelease({ { 0, 1, false } }, 20 * kGiB, budget, 100, 60).empty(), "Empty candidates are ignored");
++  check(selectForRelease({ { kMiB, 200, false } }, 20 * kGiB, budget, 100, 0).empty(),
++        "A use stamped after the pass's tick is never idle");
++
++  std::cout << "managed texture memory policy: all checks passed\n";
++  return 0;
++}

@@ -6,6 +6,37 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13
+
+- **One copy of each game texture, and idle textures leave the GPU** (runtime patch 0024,
+  [ADR 0100](docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)): on computers below
+  28 GiB of RAM or 15 GiB of VRAM a game texture's CPU copy is freed once the GPU holds its data
+  (`d3d9.releaseManagedHostCopies`); on every computer, while game textures hold more than a quarter of
+  the VRAM, those not drawn for a minute give their GPU memory back (`d3d9.managedTextureBudgetMiB`).
+  The data stays and returns on the next use with the same Remix hash; nothing visible changes. Both
+  are automatic in GMod, so a player with an older loader gets them with the new runtime; explicit values
+  from the loader's memory profile win. The lag report's 14 GB of suddenly resident character textures
+  now return within about 75 seconds instead of staying until the game restarts: with R13-A's trigger
+  (a plain Combine soldier) on the copied field library, game textures went 17.08 -> 8.58 GB and
+  private bytes 43.69 -> 35.22 GB with this computer's defaults (the original runtime kept 17.08 GB).
+  The `[RTX Managed Textures]` line also counts what created each image (runtime patch 0027): the
+  burst's images all come from draws.
+- **Replacement textures give way under real VRAM pressure** (runtime patches 0025 and 0026): near or
+  over the driver's live budget, replacement textures stop growing or give back the overflow, whatever
+  the configured texture budget (percentage or fixed), and preloaded textures (`preload_textures`, which
+  rpai, ToPBR and the material editor set) that nothing draws drop to their smallest mip until drawn
+  again. Preloads were the lag report's 10.3 GB that never gave way: the field's mods preload 11.05 GB
+  of files at every start, every character's maps whether spawned or not. With free memory nothing
+  changes. `DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB` lets tests make that pressure on a large card.
+- **A host memory census** (runtime patch 0023): the opt-in `rtx.profiler.memory.requestSnapshot` also
+  accounts the process's host memory by Vulkan memory type, mapping and purpose, and its committed
+  address space; [host_memory_census.py](tools/qa/host_memory_census.py.md) turns it into an account.
+  It found that the driver maps the game's VRAM into its address space as write-combined memory that
+  counts in its commit, so VRAM the game holds also holds system commit.
+- QA: the [GPU probe](tools/qa/build_managed_texture_probe.ps1.md)'s `r13` sequence and a
+  [VRAM pressure tool](tools/qa/build_vram_pressure.ps1.md), which showed that a background process
+  holding VRAM does not lower a foreground game's budget here (WDDM pages the tool instead).
+
 ### R12
 
 - **NPCs after removing and importing a character again:** prepared carriers restore missing

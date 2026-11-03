@@ -1,5 +1,90 @@
 # Research notes
 
+## R13-B: where the runtime's host memory goes, and the texture budget (2026-11-03)
+
+Read from the runtime fork at `fc62f44f` (patches 0001-0022) and measured on this machine (RTX 5090,
+driver Vulkan memory: heap 0 device-local with type 1 `DEVICE_LOCAL` and type 4
+`DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT` (resizable BAR); heap 1 system with type 2
+`HOST_VISIBLE|HOST_COHERENT` and type 3 `HOST_VISIBLE|HOST_COHERENT|HOST_CACHED`).
+
+- **Chunks.** DXVK sub-allocates device-local memory in 320 MiB chunks and every other type in
+  128 MiB chunks (`dxvk.deviceLocalMemoryChunkSizeMB` / `dxvk.otherMemoryChunkSizeMB`,
+  `dxvk_options.cpp:64-65`; `pickChunkSize`, `dxvk_memory.cpp:722-748`); a request of a chunk's size or
+  more, or one the driver prefers dedicated, gets its own memory object (`tryAllocFromType`,
+  `:555-568`). Host-visible memory objects are mapped for their whole life (`tryAllocDeviceMemory`,
+  `:653-661`).
+- **Texture CPU copies.** Every managed-pool texture keeps one buffer per mip in
+  `HOST_VISIBLE|HOST_COHERENT|HOST_CACHED` memory (`D3D9CommonTexture::CreateBufferSubresource`,
+  `d3d9_common_texture.cpp:214-240`): type 3, mapped read-write. A 4096-square A8R8G8B8 mip 0 (64 MiB)
+  shares a 128 MiB chunk; an 8192-square one (256 MiB) or the 11059x8847 one (391 MB) is a dedicated
+  allocation, the 268.4 MB and 391.4 MB blocks of the field's idle census.
+- **Write-combined private memory is mostly VRAM.** The NVIDIA driver maps the process's device-local
+  allocations into its address space as committed `PAGE_READWRITE|PAGE_WRITECOMBINE` private memory, and
+  they count in its private bytes (commit). The GPU probe's census: 2.03 GB write-combined committed, of
+  which DXVK's own mappings (type 2 staging chunks and the type 4 chunk) were 0.60 GB; releasing four
+  89.5 MB images (358 MB) lowered write-combined commit and private bytes by 358 MB while read-write was
+  unchanged. Releasing their CPU copies lowered read-write commit by 402 MB. So the field's 11.0 GB of
+  write-combined memory is the game's VRAM in use plus DXVK's staging, and it holds system commit.
+- **The replacement texture budget** (`calcTextureMemoryBudget_Megabytes`,
+  `rtx_texture_manager.cpp:1817-1873`) is `rtx.texturemanager.budgetPercentageOfAvailableVram` (50 %) of
+  the free VRAM plus what replacement textures hold, the free VRAM being the device-local heap's driver
+  budget minus the process's usage (less DXVK's free chunk space), or `fixedBudgetMiB` when
+  `fixedBudgetEnable`; a 2 GiB reserve applies before Remix's resources exist. It is recomputed in every
+  ray-traced frame's garbage collection (`garbageCollection`, `:1563-1648`), so it follows the driver's
+  live budget. Textures bound to instances are kept at the mip count sampler feedback asked for, best
+  first, while they fit; the rest are demoted to their 5-mip tail (`kMipLevelsToCache`,
+  `rtx_asset_data_manager.cpp:35`; `requestMips` clamps to at least one mip, `rtx_texture.cpp:189-198`).
+  Unbound ones stay at the tail. Textures too large for the 96 MiB staging ring, sky textures and
+  USD materials with `preloadTextures` are never demoted. The Remix menu's "Texture Streaming" section
+  sets a fixed budget up to 32 GB or the percentage from 10 to 100 % (`dxvk_imgui.cpp:4869-4912`),
+  saved in `user.conf`: a fixed budget does not follow the driver at all.
+- **Preloaded replacement textures are pinned for the session.** A USD shader's
+  `inputs:preload_textures` makes `preloadTextureAsset` create the texture with `m_canDemote = false` and
+  every mip requested (`rtx_mod_usd.cpp:677`, `:731-757`; `rtx_texture_manager.cpp` `preloadTextureAsset`);
+  `requestMips` then forces every mip (`rtx_texture.cpp:188-197`), and both lists of the budget pass and
+  `manageBudgetWithPriority` take only `m_canDemote` textures. The texture is created when the mod loads,
+  before anything is drawn, and `m_assetHashToTextures` and the sampler-feedback table keep it for the
+  session, also after a USD reload leaves no material referencing it. Only the explicit purge
+  (`requestTextureVramFree`, the fixes' `rtx_flush_textures` and their map-exit purge) drops its image,
+  and it comes back only when drawn. Remix keys replacement textures by file path
+  (`rtx_asset_data_manager.cpp:85`), so the same file under two mods is loaded twice. Who sets the flag:
+  rpai on every material (`skills/mmd-remix-pbr/tool/rpai/usda.py:61`), the material editor by default
+  (`sh_36_rtx_schema.lua:159`), the fixes' ToPBR for game maps (R13-M), `gm_poolrooms_rtx`, `rtx_water`,
+  `blood_overhaul_rtx`.
+- **"Drawn" for a replacement texture** is its `m_refCount`: every texture index of a bound material is
+  retained by the instance (`SceneManager::retainSurfaceMaterial`, `rtx_scene_manager.cpp:1720-1754`)
+  and released when it goes, and Remix destroys an instance one frame after its last draw
+  (`rtx.numFramesToKeepInstances` = 1, `rtx_options.h:698`). The non-sampler-feedback list already uses
+  it: unbound demotable textures drop to their smallest mip (`garbageCollection`).
+- **Preloads measured** (`out/r13-b/preload_survey.py`, read-only): the field's mods preload 889 files,
+  11,048,853,372 bytes (`ai_pbr` 8,496,386,704 in 219 shaders; `pbr_evernight_march7th`,
+  `pbr_guinaifen`, `pbr_robin` 2,220,023,384 bytes with the same file names and sizes as `ai_pbr`'s
+  folders for those characters; `blood_overhaul_rtx` 171,647,308; `gm_poolrooms_rtx` 149,599,544;
+  `rtx_water` 11,196,432). The lag report's replacement textures were 10,320 MiB, the files 10,537 MiB.
+  The PoC's mods preload 170 files, 2,380,819,360 bytes; its census at idle on gm_construct, with no
+  character spawned, held 2,425,102,336 bytes of material textures in 691 images.
+- **The lag trigger in numbers** (PoC, copied field library, 1920x1080, `out/worktrees/r13-runtime/out/r13-b`):
+  a plain Combine soldier raised game textures 0.96 -> 17.08 GB and private bytes 28.27 -> 43.69 GB on
+  the original runtime, which kept them (`b3-orig-1080`). Patch 0027's counters: all 1,128 new images
+  came from the draw path (`UploadManagedTextures` from `PrepareTextures`), none from `PreLoad`, a
+  sampling view, a flushed upload or mip generation; the same draw burst (1,064 images, 16.91 GB)
+  happens once while the map loads, before Source destroys those textures and loads them again (the
+  start-up peak of 40.7 GB private bytes). The burst raised write-combined commit by 15.36 GB.
+- **WDDM and a VRAM hog:** with 25.8 GB of render targets held (and cleared twice a second) by another
+  process, the foreground game's `VK_EXT_memory_budget` budget fell from 32.95 only to 26.15 GB, its own
+  usage at the time (26.14 GB); the hog's budget fell to 6.9 GB and its memory was paged. A background
+  process does not create real pressure for the game on this computer.
+- **DXVK chunk space after a release:** after the minimum profile released 14.7 GB of the burst's
+  images, the device-local chunks held 9.14 GB with 5.32 GB used (a chunk is freed only when empty), so
+  the driver's usage stayed 3.7 GB above its level before the burst; releasing the large dedicated
+  images instead (the default budget) stranded nothing.
+- **Remix holds game textures** in its texture cache (one slot per image view) until the scene is cleared
+  (a map change or an explicit cleanup) or the D3D9 texture is destroyed
+  (`releaseApplicationReleasedTextures`, `rtx_texture_manager.cpp:1191-1217`, frees an
+  application-released image's slot once no bound instance samples it; no other path frees a game
+  texture's slot). An image drawn once therefore stayed referenced until the next map even if Source
+  never drew it again; R13-B's release marks the image application-released for that reason.
+
 ## R12-A: retained carrier archive versus metadata (2026-11-03)
 
 - PoC copy of the user's Endministrator imports as `a9c7045d38634d1d0469733b152022f5a6d47a161dffafbf0c8688d0ffd23ab3`.
