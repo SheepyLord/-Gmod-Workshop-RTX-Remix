@@ -702,6 +702,9 @@ class Session:
         self.npc_tab_spawn('npc-tab-newest', picks['ready'])
         self.step('after-newest', settle=8)
         self.npc_tab_spawn('npc-tab-oldest', picks['cold'])
+        # Two more, so the minimum profile's 2 GiB of game textures is exceeded and released later.
+        self.npc_tab_spawn('npc-tab-third', picks['menu'])
+        self.npc_tab_spawn('npc-tab-fourth', picks['ragdoll'])
         self.step('characters', settle=20)
         self.lua('R13A.RemoveMMD()', True)
         self.step('removed', settle=10)

@@ -32,7 +32,7 @@ python tools\qa\mmd_lazy_session.py --out out\r13-a\<run> --library out\r13-a\li
   tab, the hotloader's NPC and ragdoll, a player model, a dupe, a save and its load, removal, the
   fixes' manual purge `rtx_flush_textures`, and a map change with an NPC-tab spawn), `integrated`
   (R13's check of one memory profile with the built package: idle memory, the newest and the oldest
-  character from the NPC tab, their removal, a plain Combine soldier (the lag report's trigger) with
+  character and two more from the NPC tab (enough to exceed the minimum profile's 2 GiB), their removal, a plain Combine soldier (the lag report's trigger) with
   phases 30, 90 and 150 seconds after it while the runtime releases idle textures, then the same two
   characters again).
 - `--candidate`: at the main menu (the loader has deployed; no game Lua realm exists yet) copies this

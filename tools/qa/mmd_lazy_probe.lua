@@ -369,7 +369,8 @@ function Q.View(index)
   if not IsValid(e) then return end
   local at=e:GetPos()+Vector(0,0,45)
   local eye=at+(e:IsRagdoll() and Vector(-130,-60,25) or e:GetForward()*120+Vector(0,0,10))
-  return {origin=eye,angles=(at-eye):Angle(),fov=55,drawviewer=true}
+  -- The camera stands where the spawning player does: draw the player only when it is the subject.
+  return {origin=eye,angles=(at-eye):Angle(),fov=55,drawviewer=e==LocalPlayer()}
  end)
  hook.Add('HUDShouldDraw','R13A.View',function(name) if name~='CHudGMod' then return false end end)
 end
