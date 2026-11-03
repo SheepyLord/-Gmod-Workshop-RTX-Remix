@@ -1,0 +1,390 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 05:15:31 -0700
+Subject: [PATCH] Let undrawn preloaded material textures give way under VRAM
+ pressure
+
+A USD material with preload_textures pins its textures at all their mips
+from the moment the mod loads: requestMips forces every mip while
+m_canDemote is false, and the budget pass and manageBudgetWithPriority skip
+such textures. So every preloaded map of every character in the mods folder
+stays whole for the whole session, drawn or not, and also after a USD
+reload leaves no material referencing it. The budget, and patch 0025's
+pressure cap, never reach them.
+
+Such a texture now gives way under real pressure (patch 0025's limit
+applies) once no instance has drawn it for 10 seconds: it streams like any
+texture and drops to its smallest mip. Remix drops an instance one frame
+after its last draw, so the wait keeps a character the camera turned away
+from for a moment whole; textures never drawn go at once. As soon as an
+instance draws it again it is pinned and loaded whole again, in the
+background. While memory is free nothing changes. Only a material's own
+preload yields: dome lights, textures too large for the streaming staging
+buffer and rtx.texturemanager.neverDowngradeTextures stay as they were.
+
+Patch 0025's limit is for all replacement textures, but the budget pass can
+only shrink those that stream. Under pressure they now get the limit less
+what pinned textures hold, so the overflow is taken from them and not left
+to the driver.
+
+The [RTX Texture Budget] line reports what pinned textures hold and counts
+the releases and restores. Pure rules preloadPinChange and
+streamedTextureLimitMib in rtx_texture_budget.h with checks in
+test_texture_budget_pressure.
+
+For tests, DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB caps the budget this rule
+sees (logged as a warning when set; the driver's own budget is unchanged):
+on a large card WDDM pages another process's memory before it lowers a
+foreground game's budget, so real pressure is hard to make there.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/dxvk/rtx_render/rtx_mod_usd.cpp           |   4 +-
+ src/dxvk/rtx_render/rtx_texture.h             |   6 +
+ src/dxvk/rtx_render/rtx_texture_budget.h      |  26 +++-
+ src/dxvk/rtx_render/rtx_texture_manager.cpp   | 117 ++++++++++++++++--
+ src/dxvk/rtx_render/rtx_texture_manager.h     |   5 +-
+ .../rtx/unit/test_texture_budget_pressure.cpp |  20 +++
+ 6 files changed, 168 insertions(+), 10 deletions(-)
+
+diff --git a/src/dxvk/rtx_render/rtx_mod_usd.cpp b/src/dxvk/rtx_render/rtx_mod_usd.cpp
+index cbd428a3..66c2adb7 100644
+--- a/src/dxvk/rtx_render/rtx_mod_usd.cpp
++++ b/src/dxvk/rtx_render/rtx_mod_usd.cpp
+@@ -674,7 +674,9 @@ Rc<ManagedTexture> UsdMod::Impl::getTexture(const Args& args, const pxr::UsdPrim
+     if (assetData != nullptr) {
+       auto device = args.context->getDevice();
+       auto& textureManager = device->getCommon()->getTextureManager();
+-      return textureManager.preloadTextureAsset(assetData, colorSpace, forcePreload);
++      // NV-DXVK start: R13 a material's preload gives way under real memory pressure while undrawn
++      return textureManager.preloadTextureAsset(assetData, colorSpace, forcePreload, /*preloadYields=*/true);
++      // NV-DXVK end
+     } else if (RtxOptions::Automation::suppressAssetLoadingErrors()) {
+       Logger::warn(str::format("Texture ", resolvedTexturePath, " asset data cannot be found or corrupted."));
+     } else {
+diff --git a/src/dxvk/rtx_render/rtx_texture.h b/src/dxvk/rtx_render/rtx_texture.h
+index bb7af50b..a527dfbf 100644
+--- a/src/dxvk/rtx_render/rtx_texture.h
++++ b/src/dxvk/rtx_render/rtx_texture.h
+@@ -60,6 +60,12 @@ namespace dxvk {
+     ColorSpace          m_colorSpace    = { ColorSpace::AUTO };
+     size_t              m_uniqueKey     = kInvalidTextureKey;
+     bool                m_canDemote       = true;
++    // NV-DXVK start: R13 a USD material's preload may give way under real memory pressure
++    // Set at creation for a material's preload that can stream; while it is so, m_canDemote is
++    // true only when the texture manager released the preload (render thread).
++    bool                m_preloadYields   = false;
++    int64_t             m_preloadLastDrawnMs = -1;  // steady clock; -1: never drawn (render thread)
++    // NV-DXVK end
+ 
+     // Stage 2 - Video memory
+     // The range [m_currentMip_begin, m_currentMip_end) defines the mip-levels that were used to create m_currentMipView.
+diff --git a/src/dxvk/rtx_render/rtx_texture_budget.h b/src/dxvk/rtx_render/rtx_texture_budget.h
+index 82d7ee25..94c31d8b 100644
+--- a/src/dxvk/rtx_render/rtx_texture_budget.h
++++ b/src/dxvk/rtx_render/rtx_texture_budget.h
+@@ -21,7 +21,8 @@
+ */
+ #pragma once
+ 
+-// R13: the replacement texture budget under real memory pressure. Pure, for the unit tests.
++// R13: the replacement texture budget under real memory pressure, and when a material's preload
++// gives way. Pure, for the unit tests.
+ 
+ #include <algorithm>
+ #include <cstdint>
+@@ -60,4 +61,27 @@ namespace dxvk {
+     return std::max(limit, minimumMib);
+   }
+ 
++  // The limit above is for all replacement textures. The budget pass can only shrink those that
++  // stream, so under pressure they get the limit less what pinned textures hold (-1: no limit).
++  inline int64_t streamedTextureLimitMib(int64_t limitMib, int64_t pinnedMib, int64_t minimumMib) {
++    return limitMib < 0 ? -1 : std::max(limitMib - pinnedMib, minimumMib);
++  }
++
++  // A USD material's preloaded texture (preload_textures) is pinned at all its mips, which the
++  // budget above never touches. It stays so while memory is free. Under real pressure (the limit
++  // above applies), one that no instance has drawn for kPreloadIdleMs gives way: it streams like
++  // any texture and drops to its smallest mip. Remix drops an instance one frame after its last
++  // draw, so the wait keeps a character the camera turned away from for a moment whole. As soon as
++  // an instance draws it, it is preloaded again.
++  enum class PreloadPinChange { Keep, Release, Restore };
++  constexpr int64_t kPreloadIdleMs = 10000;
++
++  // undrawnMs: how long no instance has drawn the texture (INT64_MAX if it never was drawn).
++  inline PreloadPinChange preloadPinChange(bool underPressure, bool pinned, bool drawn, int64_t undrawnMs) {
++    if (pinned) {
++      return underPressure && !drawn && undrawnMs >= kPreloadIdleMs ? PreloadPinChange::Release : PreloadPinChange::Keep;
++    }
++    return drawn ? PreloadPinChange::Restore : PreloadPinChange::Keep;
++  }
++
+ }
+diff --git a/src/dxvk/rtx_render/rtx_texture_manager.cpp b/src/dxvk/rtx_render/rtx_texture_manager.cpp
+index 04ca226e..0bc18a66 100644
+--- a/src/dxvk/rtx_render/rtx_texture_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_texture_manager.cpp
+@@ -53,9 +53,17 @@ namespace dxvk {
+     TextureBudgetPressure pressure;
+     size_t configuredMib = 0;
+     int64_t limitMib = -1;
++    int64_t pinnedMib = -1;  // what pinned textures held, summed only under pressure
+   };
+   static LastTextureBudget g_lastTextureBudget;
+   static void logTextureBudget(size_t budgetBytes, size_t requestedBytes, size_t prioritized, size_t demoted);
++  static TextureBudgetPressure calcTexturePressure(DxvkDevice* device);
++  // Materials' preloads released under pressure and preloaded again when drawn, this session.
++  static size_t g_preloadsReleased = 0;
++  static size_t g_preloadsRestored = 0;
++  // Restored preloads until all their mips are back (textures of the live manager, which never drops
++  // one before its destructor clears this list).
++  static std::vector<ManagedTexture*> g_restoringPreloads;
+   // NV-DXVK end
+   
+   // Returns current VRAM usage by material textures in bytes
+@@ -983,6 +991,9 @@ namespace dxvk {
+ 
+   RtxTextureManager::~RtxTextureManager() {
+     FileWatch::get().clearTextureManager(this);
++    // NV-DXVK start: R13 the listed textures go with this manager
++    g_restoringPreloads.clear();
++    // NV-DXVK end
+ 
+     delete m_sf.m_cachedGpubuf;
+     delete m_sf.m_cachedAssetMipcount;
+@@ -1584,12 +1595,51 @@ namespace dxvk {
+     
+     static auto prioritylist = std::vector<ManagedTexture*>{};
+     static auto checkonlyframes = std::vector<ManagedTexture*>{};
++    // NV-DXVK start: R13 a material's preload gives way under real memory pressure while undrawn.
++    // Restored preloads stay listed until all their mips are back: pinned textures leave the lists
++    // below, so nothing else would reschedule one whose 1-mip load was already under way.
++    std::vector<ManagedTexture*>& restoringPreloads = g_restoringPreloads;
++    const bool underPressure = !RtxOptions::TextureManager::neverDowngradeTextures() &&
++                               textureBudgetPressureLimitMib(calcTexturePressure(m_device), 32) >= 0;
++    size_t pinnedBytes = 0;
++    const int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
++      std::chrono::steady_clock::now().time_since_epoch()).count();
++    // NV-DXVK end
+     {
+       prioritylist.clear();
+       checkonlyframes.clear();
+       auto ls = std::unique_lock{ m_sf.m_idToTexture_mutex };
+       for (const auto& tex : m_sf.m_idToTexture) {
+         assert(tex != nullptr);
++        // NV-DXVK start: R13 a released preload joins the lists below (an undrawn one drops to its
++        // smallest mip there); a restored one is pinned and loaded whole again after the lock.
++        // Drawn means an instance holds the texture's material (retainSurfaceMaterial).
++        if (tex != nullptr && tex->m_preloadYields) {
++          const bool drawn = tex->m_refCount > 0;
++          if (drawn) {
++            tex->m_preloadLastDrawnMs = nowMs;
++          }
++          const int64_t undrawnMs = tex->m_preloadLastDrawnMs < 0 ? INT64_MAX : nowMs - tex->m_preloadLastDrawnMs;
++          switch (preloadPinChange(underPressure, !tex->m_canDemote, drawn, undrawnMs)) {
++          case PreloadPinChange::Release:
++            tex->m_canDemote = true;
++            ++g_preloadsReleased;
++            break;
++          case PreloadPinChange::Restore:
++            tex->m_canDemote = false;
++            tex->requestMips(MAX_MIPS);
++            restoringPreloads.push_back(tex.ptr());
++            ++g_preloadsRestored;
++            break;
++          case PreloadPinChange::Keep:
++            break;
++          }
++        }
++        // Under pressure, what pinned textures hold: the budget below cannot shrink it.
++        if (underPressure && tex != nullptr && !tex->m_canDemote && tex->m_currentMipView.ptr() != nullptr) {
++          pinnedBytes += calcSizeForAsset(*tex->m_assetData, tex->m_currentMip_begin, tex->m_currentMip_end);
++        }
++        // NV-DXVK end
+         if (tex != nullptr && tex->m_canDemote) {
+           if (tex->m_refCount > 0 && tex->m_samplerFeedbackStamp != SAMPLER_FEEDBACK_INVALID) {
+             prioritylist.push_back(tex.ptr());
+@@ -1600,6 +1650,23 @@ namespace dxvk {
+       }
+     }
+ 
++    // NV-DXVK start: R13 restored preloads load whole again, in the background
++    for (size_t i = 0; i < restoringPreloads.size();) {
++      ManagedTexture* tex = restoringPreloads[i];
++      const ManagedTexture::State state = tex->m_state.load();
++      const bool done = tex->m_canDemote                       // released again
++                     || state == ManagedTexture::State::kFailed
++                     || (state == ManagedTexture::State::kVidMem && tex->hasUploadedMips(MAX_MIPS, false));
++      if (done) {
++        restoringPreloads[i] = restoringPreloads.back();
++        restoringPreloads.pop_back();
++        continue;
++      }
++      scheduleTextureLoad(tex, true);
++      ++i;
++    }
++    // NV-DXVK end
++
+ 
+     // Non-SF textures (sky, terrain, etc.): keep at full mips while active in the scene,
+     // evict once the scene clears (m_refCount > 0 reset in clear()).
+@@ -1626,9 +1693,14 @@ namespace dxvk {
+       std::sort(prioritylist.begin(), prioritylist.end(), l_sort);
+     }
+     {
+-      const size_t budgetBytes = calcTextureMemoryBudgetBytes(m_device);
++      // NV-DXVK start: R13 under pressure, streamed textures get the limit less what pinned ones hold
++      size_t budgetBytes = calcTextureMemoryBudgetBytes(m_device);
++      g_lastTextureBudget.pinnedMib = underPressure ? int64_t(pinnedBytes >> 20) : -1;
++      const int64_t streamedMib = streamedTextureLimitMib(g_lastTextureBudget.limitMib, int64_t(pinnedBytes >> 20), 32);
++      if (underPressure && streamedMib >= 0) {
++        budgetBytes = std::min(budgetBytes, size_t(streamedMib) * Megabytes);
++      }
+       size_t       usedBytes   = 0;
+-      // NV-DXVK start: R13 budget log
+       size_t       demoted     = 0;
+       // NV-DXVK end
+       for (ManagedTexture* tex : prioritylist) {
+@@ -1764,7 +1836,8 @@ namespace dxvk {
+ 
+   Rc<ManagedTexture> RtxTextureManager::preloadTextureAsset(const Rc<AssetData>& assetData,
+                                                             ColorSpace colorSpace,
+-                                                            bool forceLoad) {
++                                                            bool forceLoad,
++                                                            bool preloadYields) {
+ 
+     const XXH64_hash_t hash = assetData->hash();
+ 
+@@ -1799,13 +1872,19 @@ namespace dxvk {
+     }
+ 
+     warnIfTextureSuboptimal(*assetData);
+-    if (m_asyncThread && !WAR_doesAssetFitIntoFixedAllocator(*assetData)) {
++    // NV-DXVK start: R13 a texture too large for the streaming staging buffer must stay whole
++    const bool mustLoadWhole = m_asyncThread && !WAR_doesAssetFitIntoFixedAllocator(*assetData);
++    if (mustLoadWhole) {
+       forceLoad = true;
+     }
++    // NV-DXVK end
+ 
+     Rc<ManagedTexture> texture = TextureUtils::createTexture(assetData, colorSpace);
+     if (forceLoad) {
+       texture->m_canDemote = false;
++      // NV-DXVK start: R13 a material's preload may give way under real memory pressure
++      texture->m_preloadYields = preloadYields && !mustLoadWhole;
++      // NV-DXVK end
+       texture->requestMips(MAX_MIPS);
+       scheduleTextureLoad(texture, false);
+     } else {
+@@ -1841,6 +1920,21 @@ namespace dxvk {
+   // Headroom of the largest device-local heap, where textures live, in MiB: the driver's live
+   // budget minus what the process uses there (less DXVK's free chunk space, which new
+   // allocations reuse). Negative when the driver holds the process over its budget.
++  // For tests, DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB caps the budget this rule sees (the driver's
++  // own budget is unchanged). Real pressure is hard to make on a large card: WDDM pages another
++  // process's memory before it lowers a foreground game's budget. Unset or 0: the driver's budget.
++  static int64_t pressureTestBudgetMib() {
++    static const int64_t value = [] {
++      const std::string text = env::getEnvVar("DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB");
++      const int64_t mib = text.empty() ? 0 : int64_t(std::strtoll(text.c_str(), nullptr, 10));
++      if (mib > 0) {
++        Logger::warn(str::format("[RTX Texture Budget] test budget: ", mib, " MiB (DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB)"));
++      }
++      return std::max<int64_t>(mib, 0);
++    }();
++    return value;
++  }
++
+   static TextureBudgetPressure calcTexturePressure(DxvkDevice* device) {
+     TextureBudgetPressure pressure;
+     const VkPhysicalDeviceMemoryProperties memory = device->adapter()->memoryProperties();
+@@ -1857,6 +1951,9 @@ namespace dxvk {
+       pressure.usedMib = int64_t(memHeapInfo.heaps[i].memoryAllocated >> 20) - std::max<int64_t>(retainedMib, 0);
+       pressure.known = pressure.budgetMib > 0;
+     }
++    if (pressure.known && pressureTestBudgetMib() > 0) {
++      pressure.budgetMib = std::min(pressure.budgetMib, pressureTestBudgetMib());
++    }
+     for (uint32_t i = 0; i < memory.memoryHeapCount; i++) {
+       if (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+         pressure.textureMib += int64_t(device->getMemoryStats(i).usedByCategory(DxvkMemoryStats::Category::RTXMaterialTexture) >> 20);
+@@ -1888,20 +1985,26 @@ namespace dxvk {
+                      : pressure.headroomMib() >= 0 ? 1 : 2;
+     const auto now = std::chrono::steady_clock::now();
+     const auto interval = regime >= 1 ? std::chrono::seconds(10) : std::chrono::seconds(300);
+-    if (regime == s_lastRegime && now - s_last < interval) {
++    // A preload released or restored since the last line also logs, at most once a second.
++    static size_t s_lastPreloadChanges = 0;
++    const size_t preloadChanges = g_preloadsReleased + g_preloadsRestored;
++    const bool preloadsChanged = preloadChanges != s_lastPreloadChanges && now - s_last >= std::chrono::seconds(1);
++    if (regime == s_lastRegime && now - s_last < interval && !preloadsChanged) {
+       return;
+     }
+     s_lastRegime = regime;
+     s_last = now;
++    s_lastPreloadChanges = preloadChanges;
+     static const char* const kRegimes[] = { "unknown", "free", "margin", "over" };
+     Logger::info(str::format("[RTX Texture Budget] {\"regime\":\"", kRegimes[regime + 1],
+       "\",\"budget_bytes\":", budgetBytes, ",\"configured_mib\":", g_lastTextureBudget.configuredMib,
+-      ",\"pressure_limit_mib\":", g_lastTextureBudget.limitMib,
++      ",\"pressure_limit_mib\":", g_lastTextureBudget.limitMib, ",\"pinned_mib\":", g_lastTextureBudget.pinnedMib,
+       ",\"fixed\":", RtxOptions::TextureManager::fixedBudgetEnable() ? "true" : "false",
+       ",\"percentage\":", RtxOptions::TextureManager::budgetPercentageOfAvailableVram(),
+       ",\"driver_budget_mib\":", pressure.budgetMib, ",\"driver_used_mib\":", pressure.usedMib,
+       ",\"texture_mib\":", pressure.textureMib, ",\"requested_bytes\":", requestedBytes,
+-      ",\"prioritized\":", prioritized, ",\"demoted\":", demoted, "}"));
++      ",\"prioritized\":", prioritized, ",\"demoted\":", demoted,
++      ",\"preloads_released\":", g_preloadsReleased, ",\"preloads_restored\":", g_preloadsRestored, "}"));
+   }
+ 
+   static size_t calcConfiguredTextureBudget_Megabytes(DxvkDevice* device) {
+diff --git a/src/dxvk/rtx_render/rtx_texture_manager.h b/src/dxvk/rtx_render/rtx_texture_manager.h
+index d8d0074d..2775f792 100644
+--- a/src/dxvk/rtx_render/rtx_texture_manager.h
++++ b/src/dxvk/rtx_render/rtx_texture_manager.h
+@@ -90,9 +90,12 @@ namespace dxvk {
+       * \param [in] assetData Asset data to preload.
+       * \param [in] colorSpace Color space of the texture.
+       * \param [in] forceLoad Force the asset to be loaded, even if it's already been loaded.
++      * \param [in] preloadYields R13: a USD material's preload, which an undrawn texture gives up
++      *   under real memory pressure (see rtx_texture_budget.h).
+       * \return Pointer to the loaded texture resource.
+     */
+-    Rc<ManagedTexture> preloadTextureAsset(const Rc<AssetData>& assetData, ColorSpace colorSpace, bool forceLoad);
++    Rc<ManagedTexture> preloadTextureAsset(const Rc<AssetData>& assetData, ColorSpace colorSpace, bool forceLoad,
++                                           bool preloadYields = false);
+ 
+     /**
+       * \brief Adds a texture to the resource manager.
+diff --git a/tests/rtx/unit/test_texture_budget_pressure.cpp b/tests/rtx/unit/test_texture_budget_pressure.cpp
+index aae5eddc..cecec872 100644
+--- a/tests/rtx/unit/test_texture_budget_pressure.cpp
++++ b/tests/rtx/unit/test_texture_budget_pressure.cpp
+@@ -59,6 +59,26 @@ int main() {
+   p = { true, 7000, 12000, 500 };
+   check(textureBudgetPressureLimitMib(p, 32) == 32, "The limit never goes below the minimum budget");
+ 
++  // Streamed textures get the limit less what pinned ones hold.
++  check(streamedTextureLimitMib(-1, 9000, 32) == -1, "No limit while memory is free");
++  check(streamedTextureLimitMib(8625, 6000, 32) == 2625, "Pinned textures take their share of the limit");
++  check(streamedTextureLimitMib(4000, 6000, 32) == 32, "Never below the minimum when pinned ones exceed it");
++
++  // A material's preload: kept while memory is free, given up under pressure only while no
++  // instance draws it, and preloaded again as soon as one does.
++  using C = PreloadPinChange;
++  constexpr int64_t never = INT64_MAX;
++  check(preloadPinChange(false, true, false, never) == C::Keep, "Free memory keeps an undrawn preload");
++  check(preloadPinChange(false, true, true, 0) == C::Keep, "Free memory keeps a drawn preload");
++  check(preloadPinChange(true, true, false, never) == C::Release, "Pressure releases a preload never drawn");
++  check(preloadPinChange(true, true, false, kPreloadIdleMs) == C::Release, "Pressure releases a preload undrawn for the idle time");
++  check(preloadPinChange(true, true, false, kPreloadIdleMs - 1) == C::Keep, "A preload drawn a moment ago stays whole");
++  check(preloadPinChange(true, true, true, 0) == C::Keep, "Pressure keeps a drawn preload whole");
++  check(preloadPinChange(true, false, false, never) == C::Keep, "A released preload stays released while undrawn");
++  check(preloadPinChange(false, false, false, never) == C::Keep, "Free memory does not reload an undrawn released preload");
++  check(preloadPinChange(true, false, true, 0) == C::Restore, "A drawn released preload is preloaded again under pressure");
++  check(preloadPinChange(false, false, true, 0) == C::Restore, "A drawn released preload is preloaded again");
++
+   std::cout << "texture budget pressure: all checks passed\n";
+   return 0;
+ }

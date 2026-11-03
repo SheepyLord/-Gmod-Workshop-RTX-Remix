@@ -1,5 +1,51 @@
 # runtime/
 
+R13-B adds five patches ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md),
+[report](../docs/handover/R13-B-report.md)):
+
+- `0023-Log-host-memory-by-memory-type-mapping-and-purpose-i.patch`: the opt-in census
+  (`rtx.profiler.memory.requestSnapshot`) also writes `[RTX Host Memory]` rows, with or without the
+  memory profiler: each memory type's chunks and dedicated allocations, the address range of each
+  host-visible memory object, the process counters and the committed address space by protection with
+  the part DXVK's mappings cover. Allocation groups gain the memory flags they received, whether the
+  application released the image while the renderer holds it, and the allocation's name.
+  [host_memory_census.py](../tools/qa/host_memory_census.py.md) reads them.
+- `0024-Keep-one-copy-of-managed-GMod-textures-and-release-i.patch`: for patch 0022's class (static
+  managed 2D textures), `d3d9.releaseManagedHostCopies` (`DXVK_RELEASE_MANAGED_HOST_COPIES`; Auto, the
+  gmod.exe default, is on below 28 GiB of RAM or 15 GiB of VRAM) frees a texture's CPU copy once its
+  image holds the data and it was not locked for 10 presented seconds; a later lock reads it back
+  first. `d3d9.managedTextureBudgetMiB` (`DXVK_MANAGED_TEXTURE_BUDGET_MIB`; -1, the gmod.exe default,
+  is VRAM / 4; 0 off) releases images not drawn for 60 presented seconds, least recently used first,
+  while the class holds more than the budget; the data stays (read back first when needed), the next
+  use uploads it again with the same hash, and Remix frees a released image once no instance samples it.
+  Other games keep both off. The resolved values are logged at startup; `[RTX Managed Textures]` lines
+  report the passes and the CPU copy bytes. Policy and unit test: `src/d3d9/d3d9_managed_memory.h`,
+  `test_managed_texture_memory`. The texture copy buffers are named `d3d9 texture copy`.
+- `0025-Let-replacement-textures-give-way-under-real-VRAM-pr.patch`: under real pressure (within 2 %,
+  at least 256 MiB, of the driver's live budget, or over it) the replacement texture budget stops growing
+  or gives back the overflow plus that margin, whatever the configured percentage or fixed budget; with
+  the margin free nothing changes. `[RTX Texture Budget]` lines report it. Rule and unit test:
+  `src/dxvk/rtx_render/rtx_texture_budget.h`, `test_texture_budget_pressure`.
+- `0026-Let-undrawn-preloaded-material-textures-give-way-und.patch`: a USD material's
+  `preload_textures` pins its textures at every mip from the moment the mod loads, and the budget (with
+  patch 0025's cap) never touches pinned textures. Under the same real pressure, a preloaded texture no
+  instance has drawn for 10 seconds now gives way and drops to its smallest mip; when an instance draws
+  it again it is pinned and loaded whole again. Under pressure the streamed textures also get 0025's
+  limit less what pinned ones hold. While memory is free nothing changes; dome lights, textures too
+  large to stream and `rtx.texturemanager.neverDowngradeTextures` stay pinned. `[RTX Texture Budget]`
+  lines report the pinned bytes and count the releases and restores. Rules and unit test:
+  `preloadPinChange` and `streamedTextureLimitMib` in `rtx_texture_budget.h`,
+  `test_texture_budget_pressure`. For tests, `DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB` caps the budget
+  these rules see (a warning in the log when set); on a large card WDDM pages a background process's
+  memory before it lowers the game's budget, so real pressure is hard to make there.
+- `0027-Count-what-creates-deferred-managed-GMod-texture-ima.patch`: the `[RTX Managed Textures]` line
+  counts the deferred images (and bytes) that sampling, a view, a flushed upload, `PreLoad` and a
+  draw's upload created, so a burst shows which call made it. Diagnostics only.
+
+The [GPU probe](../tools/qa/build_managed_texture_probe.ps1.md)'s `r13` sequence proves exact pixels and
+hashes through upload, released copies, read-back locks, a rewrite, image release, re-upload and a
+device reset, against the original runtime.
+
 R12-C patch `0022-Allocate-unused-managed-GMod-textures-only-on-GPU-us.patch` defers GPU backing
 for unused static 2D managed GMod textures ([ADR 0096](../docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)).
 The model catalog and CPU buffers remain ready; sampling, upload or `PreLoad` creates the original
@@ -70,6 +116,13 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0017-Apply-scoped-MMD-alpha-...` | Join saved and transient Model Hotloader texture tags, use an exact default-0.5 cutout reference, and promote blended coverage at the cutoff in shared ray/OMM evaluation; include cutoff/category in OMM identity and material-history invalidation ([ADR 0081](../docs/decisions/0081-mmd-alpha-texture-category.md)) |
 | `0018-Keep-denoiser-history-...` | Mark an instance's material as changed for the MMD alpha rule only between the first draws of consecutive frames, never for a new instance; patch 0017 compared the merged in-frame state and discarded tagged characters' denoiser history every frame (R8) |
 | `0020-Rank-generated-fallback-mods-...` | Mods named in `rtx.gmod.fallbackMods` (default `~gmod_topbr`, the fixes' ToPBR output) get priority 1: every authored mod wins over them for materials, meshes and lights whatever its folder name, also when it loads or reloads later, and their search paths come first ([ADR 0092](../docs/decisions/0092-generated-fallback-mods-rank-last.md)) |
+| `0021-Log-opt-in-allocation-census-...` | The opt-in allocation census with D3D9 size, format and pool ([ADR 0096](../docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)) |
+| `0022-Allocate-unused-managed-GMod-...` | Static managed GMod textures get GPU memory only on first use ([ADR 0096](../docs/decisions/0096-demand-loaded-character-classification-and-memory-census.md)) |
+| `0023-Log-host-memory-by-memory-type-...` | The census also accounts host memory: memory types, host mappings, the process and its address space ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
+| `0024-Keep-one-copy-of-managed-GMod-...` | One copy of each static managed texture, and idle images released over a budget; automatic for gmod.exe ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
+| `0025-Let-replacement-textures-give-way-...` | Replacement textures stop growing near the driver's live budget and give back the overflow over it ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
+| `0026-Let-undrawn-preloaded-material-textures-...` | Under the same pressure, preloaded material textures no instance draws drop to their smallest mip, and are preloaded again when drawn ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
+| `0027-Count-what-creates-deferred-...` | The managed texture log counts what created each deferred image: sampling, a view, a flushed upload, `PreLoad`, a draw ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).

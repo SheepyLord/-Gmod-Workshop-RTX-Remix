@@ -100,6 +100,44 @@ shared clothing entry, and override/cached automatic data restore without source
 indexed editor shows its 35 material records at 720p and exits normally with zero Lua/device errors.
 All snapshots, prior payload/library files, user.conf and depot checks validate after restoration.
 
+## R13-B: one copy, idle release and the host memory account
+
+Runtime unit tests (meson, `_CompRelease_x64`): `test_managed_texture_memory` (option parsing, the
+automatic budget and host-copy rule per computer, least-recently-used selection with idle times and
+per-pass caps) and `test_texture_budget_pressure` (the replacement budget limit: free, within the margin,
+over the budget, small cards, the minimum; and when a material's preload is released or restored:
+never with free memory, only after 10 s undrawn under pressure, restored once drawn; the limit for
+streamed textures less what pinned ones hold), with the existing memory diagnostics, texture
+upload/hash, MMD alpha, fallback mods, eye whites, model layers, option and documentation tests.
+
+The [GPU probe](../tools/qa/build_managed_texture_probe.ps1.md)'s `r13` sequence runs against the
+original runtime (patches 0001-0022) and the new one with the options off, CPU copies released, a 1 MiB
+budget, both, and both with the host memory census. Hashes, pixels and the sampled texel must be
+identical in every run, through upload, released copies, read-back locks, a rewrite, image release,
+re-upload and a device reset; the memory deltas show what each option released. The R12 sequence (`game`)
+must stay identical too.
+
+PoC sessions (`out/r13-b/lab.py`, the shared PoC lock, the copied field library swapped in through
+hard links for its large files): gm_construct at 1920x1080 and 3840x2160, idle, two library characters
+spawned and removed, the lag report's trigger (R13-A: a plain Combine soldier, whose
+`item_ammo_ar2_altfire` precache makes every loaded game texture GPU-resident; AI off, removed 15 s
+later), a 180 s wait for idle release, and the same characters spawned again. Each phase prints the
+Remix VRAM categories and requests the census; a sampler records the game's private bytes, working set
+and the system commit every five seconds. After the wait, game textures must be back at the managed
+budget (the original runtime keeps the whole burst); character texture hashes from the fixes' draw
+tracker must be equal before release and after re-upload, and between the original and the new
+runtime. The hold restores every snapshot file, the PoC's own hotloader cache, `user.conf` and GMod's
+shared video settings, and ends a running field game first.
+
+Replacement textures under pressure: a VRAM hog in another process
+([vram_pressure.exe](../tools/qa/build_vram_pressure.ps1.md)) does not lower a foreground game's
+driver budget below its usage on this computer (WDDM pages the hog), so the session sets
+`DXVK_TEXTURE_PRESSURE_TEST_BUDGET_MIB=22000` (patch 0026's test budget) at 3840x2160 with three
+characters with preloading PBR mods in view, triggers the burst, and later spawns a fourth character
+whose preloads nobody drew. The `[RTX Texture Budget]` lines must show the `over` regime, the undrawn
+preloads released (and the process back under the test budget), and the fourth character's restored.
+Results and evidence paths are in the [R13-B report](handover/R13-B-report.md).
+
 ## R12-C: memory attribution and managed texture backing
 
 `tools/test.ps1 -Config Release` passes **26 CTests + 562 Python tests** (509/28/25, two

@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "e8deaccbbe33f40876528b12bc5150c6e5868af745878e6650e901ed48ad841a",
-  "built_from": "HEAD fc62f44f (with what the rest of this record names)",
+  "d3d9.dll": "0c20772f36f860ea8cb0633efbc5cb971c65b2af551100d2afd4b84d2b6004ac",
+  "built_from": "HEAD -> claude/r13-runtime d0a60c1e (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -76,6 +76,11 @@
    "patches/0020-Rank-generated-fallback-mods-after-every-authored-mod.patch": "9c414a55c90f405df61151a1d37a73504f06f0ebf006ac592f7dd48353bbee92",
    "patches/0021-Log-opt-in-allocation-census-with-D3D9-size-format-a.patch": "f4991227976d459506c0a2223f18ec06f00e2b2bc02035b5ee0ee7a687af5c87",
    "patches/0022-Allocate-unused-managed-GMod-textures-only-on-GPU-us.patch": "b6c7ef8b57f10e94bfcd55a261df52f2739c81dea25cf544f63c19b9825ea019",
+   "patches/0023-Log-host-memory-by-memory-type-mapping-and-purpose-i.patch": "d499b097b5d2bdd750af32e51e565824e20a165bd3626e57cec800a48286f282",
+   "patches/0024-Keep-one-copy-of-managed-GMod-textures-and-release-i.patch": "ffbddf6526e7d326beb3d92a7bf0508b723a0cd839c2e9d4d74025fed01a2617",
+   "patches/0025-Let-replacement-textures-give-way-under-real-VRAM-pr.patch": "6ca4fe142e83904cda3bb67e4c666087f29040a3f3a32cdc5adaf3b07614bb73",
+   "patches/0026-Let-undrawn-preloaded-material-textures-give-way-und.patch": "07c9f296bc547d999ae2937bfb1b58413d9ff2b9e463f75af8d59e7153f5814e",
+   "patches/0027-Count-what-creates-deferred-managed-GMod-texture-ima.patch": "dbc95396a7fa3fa0cb389a1176adbf9222e4810656274aec8d8a568618a16adb",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

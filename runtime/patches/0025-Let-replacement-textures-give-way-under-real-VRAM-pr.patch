@@ -1,0 +1,316 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 04:07:03 -0700
+Subject: [PATCH] Let replacement textures give way under real VRAM pressure
+
+The texture manager's budget (a percentage of the free VRAM, or a fixed size)
+already follows the driver's live budget, but a fixed or high budget can hold
+more than the driver lets the process keep. Under real pressure the budget is
+now capped from the largest device-local heap's live numbers: within a margin
+below the driver's budget (2 %, at least 256 MiB) replacement textures stop
+growing, and over the budget they give back the overflow plus the margin.
+While the margin is free nothing changes. A rate-limited [RTX Texture Budget]
+line reports the regime, the budgets, the driver numbers and the demotions.
+Pure rule in rtx_texture_budget.h with test_texture_budget_pressure.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/dxvk/rtx_render/rtx_texture_budget.h      | 63 +++++++++++++
+ src/dxvk/rtx_render/rtx_texture_manager.cpp   | 91 +++++++++++++++++++
+ tests/rtx/unit/meson.build                    |  5 +
+ .../rtx/unit/test_texture_budget_pressure.cpp | 64 +++++++++++++
+ 4 files changed, 223 insertions(+)
+ create mode 100644 src/dxvk/rtx_render/rtx_texture_budget.h
+ create mode 100644 tests/rtx/unit/test_texture_budget_pressure.cpp
+
+diff --git a/src/dxvk/rtx_render/rtx_texture_budget.h b/src/dxvk/rtx_render/rtx_texture_budget.h
+new file mode 100644
+index 00000000..82d7ee25
+--- /dev/null
++++ b/src/dxvk/rtx_render/rtx_texture_budget.h
+@@ -0,0 +1,63 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#pragma once
++
++// R13: the replacement texture budget under real memory pressure. Pure, for the unit tests.
++
++#include <algorithm>
++#include <cstdint>
++
++namespace dxvk {
++
++  struct TextureBudgetPressure {
++    bool    known = false;   // the driver reported a budget for the heap textures live on
++    int64_t budgetMib = 0;   // the driver's live budget of the largest device-local heap
++    int64_t usedMib = 0;     // the process's use of that heap, less DXVK's free chunk space
++    int64_t textureMib = 0;  // replacement textures (RTXMaterialTexture) resident now
++
++    int64_t headroomMib() const {
++      return budgetMib - usedMib;
++    }
++
++    // Kept free below the driver's budget: 2 % of it, at least 256 MiB.
++    int64_t marginMib() const {
++      return std::max<int64_t>(256, budgetMib / 50);
++    }
++  };
++
++  // -1 while the margin is free: the configured budget applies unchanged. Otherwise the most
++  // the replacement textures may hold: their current size within the margin (no growth), and
++  // their size less the overflow and the margin when the driver holds the process over budget.
++  inline int64_t textureBudgetPressureLimitMib(const TextureBudgetPressure& pressure, int64_t minimumMib) {
++    if (!pressure.known) {
++      return -1;
++    }
++    const int64_t headroom = pressure.headroomMib();
++    const int64_t margin = pressure.marginMib();
++    if (headroom >= margin) {
++      return -1;
++    }
++    const int64_t limit = headroom >= 0 ? pressure.textureMib : pressure.textureMib + headroom - margin;
++    return std::max(limit, minimumMib);
++  }
++
++}
+diff --git a/src/dxvk/rtx_render/rtx_texture_manager.cpp b/src/dxvk/rtx_render/rtx_texture_manager.cpp
+index 0e998101..04ca226e 100644
+--- a/src/dxvk/rtx_render/rtx_texture_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_texture_manager.cpp
+@@ -34,6 +34,9 @@
+ #include "rtx_texture.h"
+ #include "rtx_io.h"
+ #include "rtx_staging_ring.h"
++// NV-DXVK start: R13 replacement textures give way under real memory pressure
++#include "rtx_texture_budget.h"
++// NV-DXVK end
+ 
+ 
+ namespace dxvk {
+@@ -45,6 +48,15 @@ namespace dxvk {
+   constexpr size_t Megabytes = 1024 * 1024;
+ 
+   static size_t calcTextureMemoryBudget_Megabytes(DxvkDevice* device);
++  // NV-DXVK start: R13 the last budget computation, for the budget log line
++  struct LastTextureBudget {
++    TextureBudgetPressure pressure;
++    size_t configuredMib = 0;
++    int64_t limitMib = -1;
++  };
++  static LastTextureBudget g_lastTextureBudget;
++  static void logTextureBudget(size_t budgetBytes, size_t requestedBytes, size_t prioritized, size_t demoted);
++  // NV-DXVK end
+   
+   // Returns current VRAM usage by material textures in bytes
+   static size_t calcCurrentTextureUsageBytes(DxvkDevice* device) {
+@@ -1616,6 +1628,9 @@ namespace dxvk {
+     {
+       const size_t budgetBytes = calcTextureMemoryBudgetBytes(m_device);
+       size_t       usedBytes   = 0;
++      // NV-DXVK start: R13 budget log
++      size_t       demoted     = 0;
++      // NV-DXVK end
+       for (ManagedTexture* tex : prioritylist) {
+         assert(tex && tex->m_canDemote && tex->m_samplerFeedbackStamp != SAMPLER_FEEDBACK_INVALID);
+         // for low memory GPUs we should do our best to not blow through all memory, lower the highest quality mip level
+@@ -1635,6 +1650,9 @@ namespace dxvk {
+           // doesn't fit => demote
+           tex->requestMips(0);
+           m_wasTextureBudgetPressure = true;
++          // NV-DXVK start: R13 budget log
++          ++demoted;
++          // NV-DXVK end
+         }
+ 
+         scheduleTextureLoad(tex, true);
+@@ -1644,6 +1662,9 @@ namespace dxvk {
+       // for debug report
+       g_streamedTextures_budgetBytes = budgetBytes;
+       g_streamedTextures_usedBytes   = usedBytes;
++      // NV-DXVK start: R13 budget log
++      logTextureBudget(budgetBytes, usedBytes, prioritylist.size(), demoted);
++      // NV-DXVK end
+     }
+   }
+ 
+@@ -1814,7 +1835,77 @@ namespace dxvk {
+     }
+   }
+ 
++  // NV-DXVK start: R13 replacement textures give way under real memory pressure
++  static size_t calcConfiguredTextureBudget_Megabytes(DxvkDevice* device);
++
++  // Headroom of the largest device-local heap, where textures live, in MiB: the driver's live
++  // budget minus what the process uses there (less DXVK's free chunk space, which new
++  // allocations reuse). Negative when the driver holds the process over its budget.
++  static TextureBudgetPressure calcTexturePressure(DxvkDevice* device) {
++    TextureBudgetPressure pressure;
++    const VkPhysicalDeviceMemoryProperties memory = device->adapter()->memoryProperties();
++    const DxvkAdapterMemoryInfo memHeapInfo = device->adapter()->getMemoryHeapInfo();
++    VkDeviceSize largest = 0;
++    for (uint32_t i = 0; i < memory.memoryHeapCount; i++) {
++      if (!(memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) || memory.memoryHeaps[i].size <= largest) {
++        continue;
++      }
++      largest = memory.memoryHeaps[i].size;
++      const DxvkMemoryStats stats = device->getMemoryStats(i);
++      const int64_t retainedMib = int64_t(stats.totalAllocated() >> 20) - int64_t(stats.totalUsed() >> 20);
++      pressure.budgetMib = int64_t(memHeapInfo.heaps[i].memoryBudget >> 20);
++      pressure.usedMib = int64_t(memHeapInfo.heaps[i].memoryAllocated >> 20) - std::max<int64_t>(retainedMib, 0);
++      pressure.known = pressure.budgetMib > 0;
++    }
++    for (uint32_t i = 0; i < memory.memoryHeapCount; i++) {
++      if (memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
++        pressure.textureMib += int64_t(device->getMemoryStats(i).usedByCategory(DxvkMemoryStats::Category::RTXMaterialTexture) >> 20);
++      }
++    }
++    return pressure;
++  }
++
++  // The configured budget (percentage or fixed) where memory is free. Under real pressure it is
++  // capped: within the margin below the driver's budget textures stop growing, and over it they
++  // give back the overflow plus the margin. Nothing changes while the margin is free.
+   static size_t calcTextureMemoryBudget_Megabytes(DxvkDevice* device) {
++    constexpr int64_t MinBudgetMib = 32;
++    const size_t configured = calcConfiguredTextureBudget_Megabytes(device);
++    const TextureBudgetPressure pressure = calcTexturePressure(device);
++    const int64_t limit = textureBudgetPressureLimitMib(pressure, MinBudgetMib);
++    g_lastTextureBudget = { pressure, configured, limit };
++    return limit < 0 ? configured : std::min(configured, size_t(limit));
++  }
++
++  // At a change of regime (free, within the margin, over the budget), every 10 s under pressure
++  // and every 5 minutes otherwise.
++  static void logTextureBudget(size_t budgetBytes, size_t requestedBytes, size_t prioritized, size_t demoted) {
++    static std::chrono::steady_clock::time_point s_last = {};
++    static int s_lastRegime = -2;
++    const TextureBudgetPressure& pressure = g_lastTextureBudget.pressure;
++    const int regime = !pressure.known ? -1
++                     : pressure.headroomMib() >= pressure.marginMib() ? 0
++                     : pressure.headroomMib() >= 0 ? 1 : 2;
++    const auto now = std::chrono::steady_clock::now();
++    const auto interval = regime >= 1 ? std::chrono::seconds(10) : std::chrono::seconds(300);
++    if (regime == s_lastRegime && now - s_last < interval) {
++      return;
++    }
++    s_lastRegime = regime;
++    s_last = now;
++    static const char* const kRegimes[] = { "unknown", "free", "margin", "over" };
++    Logger::info(str::format("[RTX Texture Budget] {\"regime\":\"", kRegimes[regime + 1],
++      "\",\"budget_bytes\":", budgetBytes, ",\"configured_mib\":", g_lastTextureBudget.configuredMib,
++      ",\"pressure_limit_mib\":", g_lastTextureBudget.limitMib,
++      ",\"fixed\":", RtxOptions::TextureManager::fixedBudgetEnable() ? "true" : "false",
++      ",\"percentage\":", RtxOptions::TextureManager::budgetPercentageOfAvailableVram(),
++      ",\"driver_budget_mib\":", pressure.budgetMib, ",\"driver_used_mib\":", pressure.usedMib,
++      ",\"texture_mib\":", pressure.textureMib, ",\"requested_bytes\":", requestedBytes,
++      ",\"prioritized\":", prioritized, ",\"demoted\":", demoted, "}"));
++  }
++
++  static size_t calcConfiguredTextureBudget_Megabytes(DxvkDevice* device) {
++  // NV-DXVK end
+     constexpr int MinBudgetMib = 32;
+ 
+     if (RtxOptions::TextureManager::fixedBudgetEnable()) {
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index 91affbc4..af30cffb 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -189,4 +189,9 @@ exe = executable('test_managed_texture_memory', files('test_managed_texture_memo
+ test('test_managed_texture_memory', exe)
+ tests += exe
+ 
++exe = executable('test_texture_budget_pressure', files('test_texture_budget_pressure.cpp'),
++  win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_texture_budget_pressure', exe)
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_texture_budget_pressure.cpp b/tests/rtx/unit/test_texture_budget_pressure.cpp
+new file mode 100644
+index 00000000..aae5eddc
+--- /dev/null
++++ b/tests/rtx/unit/test_texture_budget_pressure.cpp
+@@ -0,0 +1,64 @@
++/*
++* Copyright (c) 2026 native-loader contributors. All rights reserved.
++*
++* Permission is hereby granted, free of charge, to any person obtaining a
++* copy of this software and associated documentation files (the "Software"),
++* to deal in the Software without restriction, including without limitation
++* the rights to use, copy, modify, merge, publish, distribute, sublicense,
++* and/or sell copies of the Software, and to permit persons to whom the
++* Software is furnished to do so, subject to the following conditions:
++*
++* The above copyright notice and this permission notice shall be included in
++* all copies or substantial portions of the Software.
++*
++* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++* DEALINGS IN THE SOFTWARE.
++*/
++#include "../../../src/dxvk/rtx_render/rtx_texture_budget.h"
++
++#include <cstdlib>
++#include <iostream>
++
++int main() {
++  using namespace dxvk;
++  const auto check = [](bool passed, const char* message) {
++    if (!passed) {
++      std::cerr << message << '\n';
++      std::exit(1);
++    }
++  };
++
++  TextureBudgetPressure p;
++  check(textureBudgetPressureLimitMib(p, 32) == -1, "Without a driver budget the configured budget applies");
++
++  // The lag report's field numbers (MiB): budget 29,770, process use 32,170 less ~1,300 free chunk
++  // space, replacement textures 10,320.
++  p = { true, 29770, 32170 - 1300, 10320 };
++  check(p.marginMib() == 595, "The margin is 2 % of the budget on a large card");
++  check(textureBudgetPressureLimitMib(p, 32) == 10320 - 1100 - 595,
++        "Over the budget, textures give back the overflow and the margin");
++
++  // Free memory (a 16 GB card using 8 GB): no limit, the configured budget is unchanged.
++  p = { true, 16000, 8000, 3000 };
++  check(textureBudgetPressureLimitMib(p, 32) == -1, "Free memory never limits the configured budget");
++  // Exactly the margin free: still unchanged.
++  p = { true, 16000, 16000 - 320, 3000 };
++  check(textureBudgetPressureLimitMib(p, 32) == -1, "A free margin keeps the configured budget");
++  // Inside the margin: textures may keep what they hold but not grow.
++  p = { true, 16000, 15900, 3000 };
++  check(textureBudgetPressureLimitMib(p, 32) == 3000, "Within the margin textures stop growing");
++  // A small card: the margin is at least 256 MiB.
++  p = { true, 7000, 6900, 1000 };
++  check(p.marginMib() == 256 && textureBudgetPressureLimitMib(p, 32) == 1000, "Small cards keep 256 MiB free");
++  // Far over the budget with few textures: never below the minimum.
++  p = { true, 7000, 12000, 500 };
++  check(textureBudgetPressureLimitMib(p, 32) == 32, "The limit never goes below the minimum budget");
++
++  std::cout << "texture budget pressure: all checks passed\n";
++  return 0;
++}

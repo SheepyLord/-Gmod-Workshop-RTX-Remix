@@ -133,4 +133,5 @@ Each with the reason it lost.
 - [0097: Persistent manual eye-white choices for spawned characters](0097-manual-eye-white-materials.md).
 - [0098: Compact imported game maps, no session budget for them, and recipe-keyed reuse](0098-compact-imported-game-maps-and-recipe-keys.md).
 - [0099: Saved characters load on first use; the most recently used stay ready](0099-saved-characters-load-on-first-use.md) (R13-A; supersedes the publication rule of 0090).
+- [0100: One copy of each game texture, idle image release and replacement textures under pressure](0100-one-copy-and-idle-release-of-game-textures.md).
 - [0101: Memory profiles that scale with the computer](0101-memory-profiles.md).

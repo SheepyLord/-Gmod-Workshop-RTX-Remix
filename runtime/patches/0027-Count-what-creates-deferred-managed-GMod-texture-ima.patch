@@ -1,0 +1,200 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Tue, 3 Nov 2026 06:55:26 -0700
+Subject: [PATCH] Count what creates deferred managed GMod texture images
+
+Patch 0022 creates a static managed texture's image on its first sampling,
+view, flushed upload, PreLoad, draw-time upload or mip generation. The [RTX
+Managed Textures] line now counts the images (and their bytes) each of these
+created, so a burst such as the first item_ammo_ar2_altfire precache of a
+session (every loaded texture made GPU-resident in one frame) shows which
+call made them. A new image also counts as a change for the line's rate
+limit. Diagnostics only: nothing else changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/d3d9/d3d9_common_texture.cpp | 11 ++++++++---
+ src/d3d9/d3d9_common_texture.h   |  6 ++++--
+ src/d3d9/d3d9_device.cpp         | 24 ++++++++++++++++++------
+ src/d3d9/d3d9_device.h           | 20 +++++++++++++++++++-
+ 4 files changed, 49 insertions(+), 12 deletions(-)
+
+diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
+index 81c2dc43..cf9700b1 100644
+--- a/src/d3d9/d3d9_common_texture.cpp
++++ b/src/d3d9/d3d9_common_texture.cpp
+@@ -101,7 +101,7 @@ namespace dxvk {
+   }
+ 
+   // NV-DXVK start: initialize on the same ordered command stream as the first use/upload
+-  void D3D9CommonTexture::EnsureImage() {
++  void D3D9CommonTexture::EnsureImage(ImageCause cause) {
+     if (m_image != nullptr || m_mapMode != D3D9_COMMON_TEXTURE_MAP_MODE_BACKED) {
+       return;
+     }
+@@ -115,6 +115,9 @@ namespace dxvk {
+       m_image = nullptr;
+       throw;
+     }
++    // NV-DXVK start: R13 count what created it
++    m_device->CountManagedImage(uint32_t(cause), m_image->memSize());
++    // NV-DXVK end
+     // NV-DXVK start: R13 a released image comes back with the identity it had; its data
+     // follows through the pending uploads of every subresource
+     const bool reupload = m_imageReleased;
+@@ -645,7 +648,7 @@ namespace dxvk {
+           VkImageUsageFlags      UsageFlags,
+           bool                   Srgb) {
+     // NV-DXVK start: subresource views also require GPU backing
+-    EnsureImage();
++    EnsureImage(ImageCause::View);
+     // NV-DXVK end
+     DxvkImageViewCreateInfo viewInfo;
+     viewInfo.format    = m_mapping.ConversionFormatInfo.FormatColor != VK_FORMAT_UNDEFINED
+@@ -684,7 +687,9 @@ namespace dxvk {
+       return;
+ 
+     auto lock = m_device->LockDevice();
+-    m_device->UploadManagedTexture(this);
++    // NV-DXVK start: R13 a PreLoad, counted apart from draws
++    m_device->UploadManagedTexture(this, ImageCause::PreLoad);
++    // NV-DXVK end
+     m_device->MarkTextureUploaded(this);
+   }
+ 
+diff --git a/src/d3d9/d3d9_common_texture.h b/src/d3d9/d3d9_common_texture.h
+index 325d99e0..4fbbb0b2 100644
+--- a/src/d3d9/d3d9_common_texture.h
++++ b/src/d3d9/d3d9_common_texture.h
+@@ -147,7 +147,9 @@ namespace dxvk {
+     // NV-DXVK end
+ 
+     // NV-DXVK start: metadata/CPU access must not make an unused managed image resident
+-    void EnsureImage();
++    // R13: what created a deferred image, counted for the managed texture log.
++    enum class ImageCause : uint32_t { Sample, View, Flush, PreLoad, Draw, MipGen, Count };
++    void EnsureImage(ImageCause cause);
+     // NV-DXVK end
+ 
+     // NV-DXVK start: R13 managed texture memory
+@@ -399,7 +401,7 @@ namespace dxvk {
+     const Rc<DxvkImageView>& GetSampleView(bool srgb) const {
+       // NV-DXVK start: a sampling view is a real GPU use
+       if (unlikely(m_image == nullptr)) {
+-        const_cast<D3D9CommonTexture*>(this)->EnsureImage();
++        const_cast<D3D9CommonTexture*>(this)->EnsureImage(ImageCause::Sample);
+       }
+       // NV-DXVK end
+       return m_sampleView.Pick(srgb && IsSrgbCompatible());
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index ceb1e839..9faaf440 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -4960,7 +4960,7 @@ namespace dxvk {
+     ScopedCpuProfileZone();
+     // NV-DXVK start: a real GPU upload creates the managed backing
+     if (pResource->GetImage() == nullptr) {
+-      pResource->EnsureImage();
++      pResource->EnsureImage(D3D9CommonTexture::ImageCause::Flush);
+     }
+     // NV-DXVK end
+     const Rc<DxvkImage> image = pResource->GetImage();
+@@ -5086,7 +5086,7 @@ namespace dxvk {
+     D3D9CommonTexture* pResource) {
+     ScopedCpuProfileZone();
+     if (pResource->IsManaged())
+-      UploadManagedTexture(pResource);
++      UploadManagedTexture(pResource, D3D9CommonTexture::ImageCause::MipGen);
+ 
+     EmitCs([
+       cImageView = pResource->GetSampleView(false),
+@@ -5907,11 +5907,11 @@ namespace dxvk {
+   }
+ 
+ 
+-  void D3D9DeviceEx::UploadManagedTexture(D3D9CommonTexture* pResource) {
++  void D3D9DeviceEx::UploadManagedTexture(D3D9CommonTexture* pResource, D3D9CommonTexture::ImageCause cause) {
+     ScopedCpuProfileZone();
+     // NV-DXVK start: PreLoad and draws initialize even an unwritten texture exactly once
+     if (pResource->GetImage() == nullptr) {
+-      pResource->EnsureImage();
++      pResource->EnsureImage(cause);
+     }
+     // NV-DXVK end
+     // NV-DXVK start: R13 an upload is a use; an image created eagerly joins the resident set here
+@@ -6221,8 +6221,16 @@ namespace dxvk {
+   void D3D9DeviceEx::LogManagedTextureMemory(const char* reason) {
+     const auto& c = m_managedCounters;
+     // Any change: releases, read-backs, re-uploads, resident images or CPU copies (in MiB).
++    uint64_t created[kManagedImageCauses] = { };
++    uint64_t createdBytes[kManagedImageCauses] = { };
++    uint64_t createdTotal = 0;
++    for (uint32_t i = 0; i < kManagedImageCauses; i++) {
++      created[i] = m_managedImagesCreated[i].load(std::memory_order_relaxed);
++      createdBytes[i] = m_managedImageBytesCreated[i].load(std::memory_order_relaxed);
++      createdTotal += created[i];
++    }
+     const uint64_t changes = c.hostCopiesReleased + c.readbacks + c.imagesReleased + c.reuploads + c.cancelledReleases
+-      + (m_managedResidentBytes >> 20) + (uint64_t(std::max<int64_t>(m_managedCopyBytes.load(), 0)) >> 20);
++      + (m_managedResidentBytes >> 20) + (uint64_t(std::max<int64_t>(m_managedCopyBytes.load(), 0)) >> 20) + createdTotal;
+     // After a change at most every fifteen presented seconds; otherwise once a minute.
+     const uint32_t since = m_managedTick - m_managedLogTick;
+     if (since < 15 || (changes == m_managedLoggedChanges && since < 60)) {
+@@ -6240,7 +6248,11 @@ namespace dxvk {
+       ",\"images_released\":", c.imagesReleased, ",\"image_bytes_released\":", c.imageBytesReleased,
+       ",\"reuploads\":", c.reuploads, ",\"cancelled_releases\":", c.cancelledReleases,
+       ",\"kept_host_copy_textures\":", c.keptHostCopyTextures,
+-      ",\"managed_copy_bytes\":", m_managedCopyBytes.load(), ",\"other_copy_bytes\":", m_otherCopyBytes.load(), "}"));
++      ",\"managed_copy_bytes\":", m_managedCopyBytes.load(), ",\"other_copy_bytes\":", m_otherCopyBytes.load(),
++      ",\"images_created\":{\"sample\":", created[0], ",\"view\":", created[1], ",\"flush\":", created[2],
++      ",\"preload\":", created[3], ",\"draw\":", created[4], ",\"mipgen\":", created[5], "}",
++      ",\"image_bytes_created\":{\"sample\":", createdBytes[0], ",\"view\":", createdBytes[1], ",\"flush\":", createdBytes[2],
++      ",\"preload\":", createdBytes[3], ",\"draw\":", createdBytes[4], ",\"mipgen\":", createdBytes[5], "}}"));
+   }
+   // NV-DXVK end
+ 
+diff --git a/src/d3d9/d3d9_device.h b/src/d3d9/d3d9_device.h
+index 6eb9f1bc..919a29d6 100644
+--- a/src/d3d9/d3d9_device.h
++++ b/src/d3d9/d3d9_device.h
+@@ -771,7 +771,10 @@ namespace dxvk {
+ 
+     void MarkRenderHazards();
+ 
+-    void UploadManagedTexture(D3D9CommonTexture* pResource);
++    // NV-DXVK start: R13 the cause counted if this creates the deferred image
++    void UploadManagedTexture(D3D9CommonTexture* pResource,
++                              D3D9CommonTexture::ImageCause cause = D3D9CommonTexture::ImageCause::Draw);
++    // NV-DXVK end
+ 
+     // NV-DXVK start: ordered zero initialization for demand-created managed images
+     void InitDeferredTexture(D3D9CommonTexture* pResource);
+@@ -804,6 +807,16 @@ namespace dxvk {
+     void CountTextureCopy(int64_t bytes, bool managed) {
+       (managed ? m_managedCopyBytes : m_otherCopyBytes).fetch_add(bytes, std::memory_order_relaxed);
+     }
++
++    /**
++     * \brief Counts a deferred managed image by what created it (D3D9CommonTexture::ImageCause)
++     */
++    void CountManagedImage(uint32_t cause, uint64_t bytes) {
++      if (cause < kManagedImageCauses) {
++        m_managedImagesCreated[cause].fetch_add(1, std::memory_order_relaxed);
++        m_managedImageBytesCreated[cause].fetch_add(bytes, std::memory_order_relaxed);
++      }
++    }
+     // NV-DXVK end
+ 
+     void UploadManagedTextures(uint32_t mask);
+@@ -1329,6 +1342,11 @@ namespace dxvk {
+     }                               m_managedCounters;
+     std::atomic<int64_t>            m_managedCopyBytes = { 0 };  // CPU copies of managed-pool textures
+     std::atomic<int64_t>            m_otherCopyBytes = { 0 };    // CPU copies of other textures (system memory, staging)
++    // Deferred images created, by cause: sampling, a view, a flushed upload, PreLoad, a draw's upload,
++    // a mip generation.
++    static constexpr uint32_t       kManagedImageCauses = 6;
++    std::atomic<uint64_t>           m_managedImagesCreated[kManagedImageCauses] = { };
++    std::atomic<uint64_t>           m_managedImageBytesCreated[kManagedImageCauses] = { };
+     uint64_t                        m_managedLoggedChanges = 0;
+     uint32_t                        m_managedLogTick = 0;
+     // NV-DXVK end
