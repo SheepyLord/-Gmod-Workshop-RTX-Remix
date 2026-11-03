@@ -31,6 +31,11 @@ R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the
 - R13-D (Claude): the intermittent option crash of R13's PoC sessions. The Remix API changed options
   without the runtime's option lock while the render thread resolved them; runtime patch 0029
   ([report](handover/R13-D-report.md)).
+- R13-F (Claude, after R13-P): runtime patch 0030 loads a material's preload at its first draw. The
+  look is unchanged, start-up holds 2.4 GB less in the PoC (most of 11 GB in the field), and a
+  character's first appearance in a session costs one frame of 0.11-0.58 s, depending on the machine's
+  state ([report](handover/R13-F-report.md),
+  [ADR 0103](decisions/0103-material-preloads-load-at-their-first-draw.md)).
 
 R12 (the user's report after R11-B, 2026-11-02; [plan](handover/R12-plan.md)) is **done**, merged
 into `main` from `r12-int`; see [the R12 report](handover/R12-report.md):

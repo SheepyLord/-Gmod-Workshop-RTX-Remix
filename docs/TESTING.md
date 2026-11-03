@@ -10,6 +10,21 @@ The [R12-A report](handover/R12-A-report.md) records the exact baseline error on
 two successful corrected delete/reimport cycles, changed carriers, positive client instances and
 stock-file verification; evidence is in the R12-A worktree's `out/r12-a/`.
 
+## R13-F: material preloads at their first draw
+
+- **Unit:** `test_texture_budget_pressure` (runtime, meson, `_CompRelease_x64`) checks
+  `preloadWaitsForFirstDraw`: only a USD material's preload waits, and not with the option off, for a
+  texture too large to stream or with `neverDowngradeTextures`. `test_documentation` holds
+  RtxOptions.md to the new option.
+- **PoC A/B:** R13-P's lab with the runtime as the variant (`out/r13-f/lab.py <hold> --runtime A|F` in
+  the R13-F worktree, three sessions each, the same preloading character packs). A session passes when
+  it quits normally without Lua errors and restores the PoC exactly. The A/B passes when F's frames of
+  each first appearance, at full resolution and aligned on the hotloader's crossfade, show the whole
+  maps as A's do (`zoom.py`, `detail_curve.py`; R13-P's streamed `b3` is the positive control), and the
+  settled views differ across the runtimes no more than within one (`pairs_stats.py --align`).
+  `hitch.py` reports the frame times at each first draw, the idle memory and the seconds to the map.
+- Results and evidence paths are in the [R13-F report](handover/R13-F-report.md).
+
 ## R13-D: option locking
 
 `test_rtx_option_threads` (runtime unit test, meson, `_CompRelease_x64`) runs the game's side against

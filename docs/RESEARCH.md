@@ -1,5 +1,42 @@
 # Research notes
 
+## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
+
+Runtime source at `403b2336` (patch 0028); the patch, the A/B and its evidence are in the
+[R13-F report](handover/R13-F-report.md).
+
+- **Frame order.** The game's draws reach `SceneManager::processDrawCallState`, whose
+  `createSurfaceMaterial` calls `trackTexture` and so `RtxTextureManager::addTexture` for every texture
+  of the material, every frame it is drawn (`rtx_scene_manager.cpp:1824-1841`, `:2215-2229`). Then
+  `RtxContext::injectRTX` calls `submitTexturesToDeviceLocal` (`rtx_context.cpp:658`), which creates each
+  ready texture's image and records its copy, before `prepareSceneData` builds the scene and before the
+  trace. The texture manager's `garbageCollection` runs after the trace, from
+  `copySamplerFeedbackToHost` (`rtx_texture_manager.cpp:1472`). So a texture staged synchronously while
+  a frame's draws are processed is sampled whole by that same frame.
+- **The synchronous path** (`scheduleTextureLoad(tex, false)` -> `AsyncRunner::queueAdd`, async false)
+  stages on the calling thread into `m_synchronousAlloc`, a `DxvkStagingBuffer` of 4 MiB whose larger
+  requests each get their own host-visible buffer (`dxvk_staging.cpp`); it is freed once the copy
+  retires. It does nothing for a texture already `kQueuedForUpload`.
+- **A purge is explicit only.** `purgeResidentTextures` (which makes `addTexture` reload a pinned
+  preload whole at its next draw) runs for the menu's free-texture buttons, the Remix API's
+  `RequestTextureVramFree` and a resolution change with `rtx.reloadTextureWhenResolutionChanged`
+  (`rtx_scene_manager.cpp:3660`, `rtx_context.cpp:329`), not at a map change. No add-on in the package
+  calls the API (the fixes' `ForceCleanup` wraps it, unused from Lua).
+- **Measured, patch 0030 (as 0029 on 0028) on the PoC** (3840x2160, Samsung 980 PRO NVMe, files in the
+  file cache):
+  staging a character's whole maps on the render thread took 101-201 ms for 313-529 MB (2.3-3.1 GB/s).
+  The frame that drew the character first lasted 112-324 ms. Replacement-texture bytes changed once,
+  one game frame after the hotloader's presentation, by the character's whole maps.
+- **The hotloader's own first-spawn freezes**, with either runtime: two consecutive frames of
+  0.8-1.3 s about 110-145 frames (two seconds) before Robin or Evernight appears, two of 0.2-0.3 s
+  for Guinaifen, while it loads the model; then two or three frames of 60-100 ms at the presentation.
+- **Cold reads.** Through a file mapping, with every byte copied out as `packImageData` does, copies
+  made with `xcopy /J` (unbuffered, so not in the cache) read at 0.69-0.89 GB/s against 1.34-1.39 GB/s
+  from the cache (Python's copy): 0.4-0.7 s per GB more on that drive (`r13-f/cold_read.py`).
+- **The three character packs** hold 170 preloaded textures, 2.38 GB; drawing all four characters
+  loads 111 of them (1.66 GB). The other 59 (0.72 GB) belong to parts the probe's scenes never draw
+  and stay at their tails.
+
 ## R13-D: the option crash, proven (2026-11-03, Claude)
 
 The R13 integration notes below record the crash. Its cause is now proven, and runtime patch 0029

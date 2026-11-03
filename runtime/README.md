@@ -1,5 +1,25 @@
 # runtime/
 
+R13-F adds `0030-Load-material-preloads-at-their-first-draw-instead-o.patch`
+([ADR 0103](../docs/decisions/0103-material-preloads-load-at-their-first-draw.md),
+[report](../docs/handover/R13-F-report.md)): a USD material's `preload_textures` no longer loads every
+mip of every texture when its mod loads. Such a texture starts at its smallest mips, as a streamed
+texture does. The first `addTexture` of it (the frame an instance first draws the material) pins it and
+stages every mip synchronously; the upload goes with that frame's others in
+`submitTexturesToDeviceLocal`, before the scene is built and traced, so the frame that first draws the
+material already samples the whole chain. From then on it is a preload as before, and patch 0026's
+pressure rule still releases it while undrawn. A material drawn in the frame its mod loaded may find the
+upload of its smallest mips still waiting: that upload is replaced by one of every mip, in the same
+frame; a texture whose load is on the worker thread is finished synchronously by the next frames.
+Textures too large to stream, the Remix API's and dome lights' preloads, and everything while
+`rtx.texturemanager.neverDowngradeTextures` is on load whole with the mod.
+`rtx.texturemanager.preloadOnFirstDraw` (default True) turns it off for materials loaded afterwards.
+`[RTX Preload]` log lines report each frame with first draws: textures, bytes, staging time, and what
+still waits. Rule and unit check: `preloadWaitsForFirstDraw` in `rtx_texture_budget.h`,
+`test_texture_budget_pressure`. Measured as 0029 on 0028 (`claude/r13-first-draw`), then cherry-picked
+onto R13-D's 0029 (`claude/r13-option-lock` a816a673) as branch `claude/r13-first-draw-0030` in
+`out/worktrees/r10-eyes/out/runtime-src`, which built the packaged DLL.
+
 R13-D adds `0029-Lock-RtxOption-edits-made-beside-the-render-thread-s.patch`
 ([report](../docs/handover/R13-D-report.md)): whatever reads or writes an option's layer values or
 the dirty option map holds the update mutex (the rule is at `getUpdateMutex()` in `rtx_option.h`).
@@ -143,6 +163,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0027-Count-what-creates-deferred-...` | The managed texture log counts what created each deferred image: sampling, a view, a flushed upload, `PreLoad`, a draw ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0028-Fix-a-hash-race-baker-sources-...` | The review's fixes of 0024 and 0026: an atomic stable hash for the API, the terrain baker's sources count as in use, `D3DLOCK_NO_DIRTY_UPDATE` keeps the CPU copy, no pass in other games ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0029-Lock-RtxOption-edits-made-beside-...` | Option layer values and the dirty option map change only under the update mutex: the Remix API, graph layers, the menu, migrations; an edit from another thread is never dropped at the end of a frame ([R13-D report](../docs/handover/R13-D-report.md)) |
+| `0030-Load-material-preloads-at-their-first-draw-...` | A material's `preload_textures` loads at its first draw, whole, before that frame renders, instead of when the mod loads; `rtx.texturemanager.preloadOnFirstDraw` ([ADR 0103](../docs/decisions/0103-material-preloads-load-at-their-first-draw.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).
