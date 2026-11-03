@@ -107,8 +107,8 @@ Every `npc_combine_s` precaches `item_ammo_ar2_altfire` (with `item_healthvial` 
 Spawning that item alone does it within two seconds, and run 19's soldier, which never dropped one,
 shows that its precache is enough. The item's precache loads its model
 (`models/items/combine_rifle_ammo01.mdl`) and, as recalled from the Source SDK 2013 code (not checked
-here), the `combineball` particle system; `--sequence ammo` splits the two (run 22, queued behind
-R13-B's PoC hold when this was written). No packaged Lua names these entities or reacts to
+here), the `combineball` particle system. `--sequence ammo` splits the two; it was not run, because
+R13-B held the PoC for its own runs after run 21. No packaged Lua names these entities or reacts to
 them (searched: the fixes' `remixbinary` Lua, the companion, BBS, the glass, water and material
 editor add-ons), and the trace shows no Lua call at the jump. The step is in the engine or the
 runtime, outside R13-A's paths, and is described here for R13-B and the main session:
@@ -237,6 +237,11 @@ All with the character attached, its own model valid and no `models/error.mdl`
   within about 0.1 s of single player's (run 18).
 - A player on another server still downloads and mounts at registration (unchanged path; the LuaJIT
   `client_remote` case). A second computer was not available.
+- Deleting a character (R12-A) forgets its use record and leaves its entries out (LuaJIT
+  `server_forget`); a delete and re-import was not replayed on the PoC. R12-D's eye-white choices
+  are untouched: the companion's module is unchanged, and it made eye-white proxies for the presented
+  characters in every run (`data-after\nativeloader\eye_whites`).
+- Importing a new character was not replayed: the trigger was found without it.
 
 ### After removal
 
