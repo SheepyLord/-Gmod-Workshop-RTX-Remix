@@ -23,6 +23,10 @@ R13 (less RAM and VRAM for lower-end computers, with budgets that scale with the
 - R13-M: imported game maps as BC5/BC4 (about a sixth of the VRAM and disk), reused across versions
   ([report](handover/R13-M-report.md),
   [ADR 0098](decisions/0098-compact-imported-game-maps-and-recipe-keys.md)).
+- R13-P (Claude, after R13): character PBR maps stay preloaded. Streaming saves their VRAM but shows
+  blurry maps for 0.15-0.9 s whenever a character appears. A runtime load on first draw and the field's
+  duplicate mods are left for the user to decide ([report](handover/R13-P-report.md),
+  [ADR 0102](decisions/0102-character-pbr-maps-stay-preloaded.md)).
 
 R12 (the user's report after R11-B, 2026-11-02; [plan](handover/R12-plan.md)) is **done**, merged
 into `main` from `r12-int`; see [the R12 report](handover/R12-report.md):

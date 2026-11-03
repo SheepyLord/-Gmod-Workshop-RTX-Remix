@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R13-P
+
+- **Character PBR maps stay preloaded** ([ADR 0102](docs/decisions/0102-character-pbr-maps-stay-preloaded.md),
+  [report](docs/handover/R13-P-report.md)). In the PoC's A/B, streaming the four test characters' maps
+  saved 2.2 GB of replacement textures and 1.7 GB of VRAM and commit at idle, with the same settled
+  image. But each character first appeared with blurry maps for 0.15-0.9 s, and again after removal and
+  respawn. rpai, ToPBR and existing mods keep `preload_textures`.
+
 ### R14
 
 - Glass: a player in noclip no longer fractures glass it passes through (touch, contact and the
