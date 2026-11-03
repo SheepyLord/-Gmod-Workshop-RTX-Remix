@@ -246,9 +246,25 @@ if not mmdhl.PersistentSetModel then
   if not rig then report(ent,err) return original(ent,path,...) end
   local converted,options=rigForClass(rig,ent:GetClass())
   if not converted then report(ent,options) return original(ent,path,...) end
+  -- A saved NPC or player-model entry published from metadata (the NPC tab, the player's model,
+  -- a save, a dupe, a tool) loads here, right before its first use (ADR 0099).
+  if mmdhl.PrepareRegisteredActor and mmdhl.PrepareRegisteredActor(converted.model)==false then report(ent,L'persistence.error.mount_carrier') end
+  if mmdhl.NoteActorUse then mmdhl.NoteActorUse(converted.asset) end
   local result=original(ent,converted.model,...)
   afterSpawn(ent)
   return result
+ end
+end
+-- A gamemode precaches the player's model before SetModel (Sandbox's player class), and addons
+-- check models with util.IsValidModel: a character published from metadata is mounted first.
+if not mmdhl.PersistentModelChecks then
+ mmdhl.PersistentModelChecks=true
+ for _,name in ipairs({'PrecacheModel','IsValidModel'}) do
+  local check=util[name]
+  util[name]=function(path,...)
+   if carrierPath(path) and mmdhl.EnsureModel then mmdhl.EnsureModel(path) end
+   return check(path,...)
+  end
  end
 end
 hook.Add('OnEntityCreated','MMDHL.BindCachedModel',function(ent)

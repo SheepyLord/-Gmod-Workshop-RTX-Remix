@@ -1,6 +1,9 @@
 # ADR 0090: make carriers ready before publishing actor entries
 
 Date: 2026-11-02. Status: accepted for R10-H, the user's item 33.
+**Superseded in part by [0099](0099-saved-characters-load-on-first-use.md)** (2026-11-03, R13-A):
+entries are published from validated metadata, and a character is mounted and precached right
+before its first use instead of at every map start; the most recently used stay ready.
 
 ## Context
 

@@ -56,6 +56,9 @@ if mode=='actor' then
  timer={Create=noop,Simple=noop}
  hook={Add=noop}
  net={Receive=noop}
+ -- actors.lua's ready-set budget (R13-A) creates its two server ConVars at load.
+ FCVAR_NONE=0 cvars={AddChangeCallback=noop}
+ CreateConVar=function() return {GetInt=function() return -1 end} end
  player_manager={AddValidModel=noop,AddValidHands=noop,RemoveValidModel=noop}
  mmdhl={native={GetCapabilities=function() return {rigGenerator=31,rigGeneratorMin=30,rigVersion=1} end},
   Decode=function(v) return v end,L=function(v) return v end,Localize=function(v) return v end,

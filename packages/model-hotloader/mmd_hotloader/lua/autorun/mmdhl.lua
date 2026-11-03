@@ -75,11 +75,19 @@ function mmdhl.MountPackage(path,expected)
     -- carrier in this process and the model is loaded. Mounting it again makes the
     -- game reload it: its server ragdolls briefly take models/error.mdl, and
     -- C_ServerRagdoll prints "models/error.mdl missing vcollide data".
-    local key=CLIENT and path:match('^data/mmd_hotloader/rigs/(%x+)/carrier%.gma$')
+    -- Saved characters now load at their first use (actors.lua), so the client
+    -- (a model preview) may mount a carrier first: the server then finds the exact
+    -- model it asked for, or the one of the rig it remembers, and mounts nothing.
+    local key=path:match('^data/mmd_hotloader/rigs/(%x+)/carrier%.gma$')
     if key then
         local folder='models/mmd/'..key:sub(1,16)..'/'
-        local models=file.Find(folder..'*.mdl','GAME')
-        if #models>0 and (not expected or file.Exists(expected,'GAME')) then mountedPackages[path]=expected or (folder..models[1]) return true end
+        local known=mmdhl.rigs and mmdhl.rigs[key]
+        local exact=expected or (istable(known) and isstring(known.model) and known.model) or nil
+        if exact and file.Exists(exact,'GAME') then mountedPackages[path]=exact return true end
+        if CLIENT and not expected then
+            local models=file.Find(folder..'*.mdl','GAME')
+            if #models>0 then mountedPackages[path]=folder..models[1] return true end
+        end
     end
     local mount,err=mmdhl.native.GetMountablePackage(path:sub(#prefix+1))
     if not mount then return false,err end

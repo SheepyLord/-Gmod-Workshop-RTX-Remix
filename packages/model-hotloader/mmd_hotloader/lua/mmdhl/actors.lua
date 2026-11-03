@@ -101,8 +101,25 @@ function mmdhl.ReadyActor(rig,arms)
  if not ready(rig) or (arms and not ready(arms)) then return false end
  return true
 end
-function mmdhl.RegisterActor(rig,arms)
- if not mmdhl.ReadyActor(rig,arms) then return false end
+-- A saved entry published from metadata (R13-A, ADR 0099): loadable, its identity matching its
+-- model, and its carrier (arms too) and material archive on disk. Nothing is mounted or loaded:
+-- PrepareRegisteredActor does that right before the character's first real use.
+function mmdhl.ActorMetadataReady(rig,arms)
+ local function valid(r)
+  if not mmdhl.IsLoadableRig(r) or not r.model or not mmdhl.RememberRig(r) then return false end
+  if not file.Exists('mmd_hotloader/rigs/'..r.key..'/carrier.gma','DATA') then return false end
+  if r.materialGma then
+   local path=isstring(r.materialGma) and r.materialGma:match('^data/(mmd_hotloader/.+%.gma)$')
+   if not path or not file.Exists(path,'DATA') then return false end
+  end
+  return true
+ end
+ if not valid(rig) then return false end
+ if arms and not valid(arms) then return false end
+ return true
+end
+-- lazy: published from metadata, not yet mounted or precached on this map.
+local function publish(rig,arms,lazy)
  if CLIENT then
   if mmdhl.NewerActor(rig) then return true end
   for model,entry in pairs(mmdhl.actorRegistrations) do
@@ -111,7 +128,7 @@ function mmdhl.RegisterActor(rig,arms)
  end
  local role=rig.role local key='mmd_'..rig.key:sub(1,16)
  local name=CLIENT and mmdhl.names and (mmdhl.names.Display(rig.name,rig.asset)) or rig.name
- mmdhl.actorRegistrations[rig.model]={rig=rig,arms=arms}
+ mmdhl.actorRegistrations[rig.model]={rig=rig,arms=arms,lazy=lazy or nil}
  if role=='player' then
   player_manager.AddValidModel(key,rig.model,rig.name,mmdhl.Localize(L'common.external_models'))
   if arms then player_manager.AddValidHands(key,arms.model,0,'0000000') end
@@ -119,6 +136,32 @@ function mmdhl.RegisterActor(rig,arms)
  elseif role=='citizen' or role=='combine' then
   list.Set('NPC',key,{Name=mmdhl.Localize(role=='citizen' and L('actors.npc_citizen',{name=name}) or L('actors.npc_combine',{name=name})),Class=role=='citizen' and 'npc_citizen' or 'npc_combine_s',Category=mmdhl.Localize(L'common.external_models'),Model=rig.model,Weapons=role=='citizen' and {'weapon_pistol','weapon_smg1'} or {'weapon_smg1','weapon_ar2'},KeyValues=role=='citizen' and {citizentype=4} or {},MMDHLAsset=rig.asset,MMDHLRig=rig.key})
  end
+ return true
+end
+-- Ready now (mounted; on the server precached and valid), then published.
+function mmdhl.RegisterActor(rig,arms)
+ if not mmdhl.ReadyActor(rig,arms) then return false end
+ return publish(rig,arms,false)
+end
+-- Published from metadata: the NPC tab and the player-model selector list the character, which
+-- loads at its first use. An entry this map already made ready stays ready.
+function mmdhl.PublishActorEntry(rig,arms)
+ if not istable(rig) or not mmdhl.ActorMetadataReady(rig,arms) then return false end
+ local current=mmdhl.actorRegistrations[rig.model]
+ return publish(rig,arms,not (current and not current.lazy and current.rig.key==rig.key))
+end
+-- The names in published entries follow the language without readying anything.
+function mmdhl.RepublishActors()
+ for _,entry in pairs(mmdhl.actorRegistrations) do publish(entry.rig,entry.arms,entry.lazy) end
+end
+-- Right before a published entry's first real use: mount and (server) precache it, as a map used
+-- to for every saved character. nil: not a published entry; false: its carrier is unavailable.
+function mmdhl.PrepareRegisteredActor(model)
+ local entry=mmdhl.actorRegistrations[model]
+ if not entry then return nil end
+ if not entry.lazy then return true end
+ if not mmdhl.ReadyActor(entry.rig,entry.arms) then return false end
+ entry.lazy=nil
  return true
 end
 if SERVER then
@@ -197,6 +240,7 @@ if SERVER then
   if not attached then return false,err end
   p.MMDHLPlayerSelection={asset=r.asset,options=options,rig=r,arms=a}
   p:SetNW2String('MMDHLRole','player') p:SetNW2String('MMDHLArms',a.key) p:SetupHands()
+  if mmdhl.NoteActorUse then mmdhl.NoteActorUse(r.asset) end
   return true
  end
  timer.Create('MMDHL.PlayerModelOwnership',.25,0,function()
@@ -386,6 +430,7 @@ if SERVER then
   end
   mmdhl.PublishActor(rig,arms)
   if role=='player' then net.Start('mmdhl_player_selection') net.WriteString(rig.key) net.Send(p) end
+  if mmdhl.NoteActorUse then mmdhl.NoteActorUse(id) end
   hook.Run('MMDHLActorCreated',ent,rig,options)
   if done then done(ent) end return ent
  end
@@ -398,6 +443,7 @@ if SERVER then
   -- Sandbox's NPC duplicator restores a pasted NPC's own health after this hook.
   setHealth(ent,mmdhl.NPCHealth(p))
   if r.role=='citizen' then friendlyCitizen(ent) end
+  if mmdhl.NoteActorUse then mmdhl.NoteActorUse(r.asset) end
  end)
  hook.Add('PlayerSetHandsModel','MMDHL.PlayerHands',function(p,hands)
   local choice=p.MMDHLPlayerSelection
@@ -456,8 +502,18 @@ else
    if util.NetworkStringToID('lf_playermodel_update')~=0 then timer.Simple(.2,function() net.Start('lf_playermodel_update') net.SendToServer() end) end
   end
  end)
+ -- The game's own server (single player, or the listen server this player hosts) runs in this
+ -- process and shares its mounts: it mounts and loads a character right before its first use, so
+ -- the entry is published from metadata here. A player on another server mounts the carrier now,
+ -- before that server's first use of it can reach this client.
+ function mmdhl.HostsServer() return game.SinglePlayer() or (IsValid(LocalPlayer()) and LocalPlayer():IsListenServerHost()) end
  net.Receive('mmdhl_actor_registration',function()
   local key,armsKey=net.ReadString(),net.ReadString()
+  if mmdhl.HostsServer() then
+   local rig=util.JSONToTable(file.Read('mmd_hotloader/rigs/'..key..'/rig.json','DATA') or '')
+   local arms=armsKey~='' and util.JSONToTable(file.Read('mmd_hotloader/rigs/'..armsKey..'/rig.json','DATA') or '') or nil
+   if rig and (armsKey=='' or arms) and mmdhl.PublishActorEntry(rig,arms) then return end
+  end
   local function ready()
    local rig=util.JSONToTable(file.Read('mmd_hotloader/rigs/'..key..'/rig.json','DATA') or '')
    local arms=armsKey~='' and util.JSONToTable(file.Read('mmd_hotloader/rigs/'..armsKey..'/rig.json','DATA') or '') or nil
@@ -467,9 +523,10 @@ else
   end
   if not ready() and mmdhl.RequestSharedRig then mmdhl.RequestSharedRig(key,ready) if armsKey~='' then mmdhl.RequestSharedRig(armsKey,ready) end end
  end)
- -- NPC and player-model list entries hold translated names; renew them before the spawn menu is rebuilt.
- hook.Add('MMDHL.LanguageChanged','MMDHL.Actors',function() for _,entry in pairs(mmdhl.actorRegistrations) do mmdhl.RegisterActor(entry.rig,entry.arms) end end)
-if CLIENT then hook.Add('MMDHL.NamesTranslated','MMDHL.Actors',function() for _,entry in pairs(mmdhl.actorRegistrations) do mmdhl.RegisterActor(entry.rig,entry.arms) end end) end
+ -- NPC and player-model list entries hold translated names; renew them before the spawn menu is
+ -- rebuilt, without readying (loading) characters nobody uses.
+ hook.Add('MMDHL.LanguageChanged','MMDHL.Actors',function() mmdhl.RepublishActors() end)
+if CLIENT then hook.Add('MMDHL.NamesTranslated','MMDHL.Actors',function() mmdhl.RepublishActors() end) end
  hook.Add('CreateClientsideRagdoll','MMDHL.ClientCorpse',function(source,corpse)
   if not mmdhl.IsMMD(source) or not IsValid(corpse) then return end
   corpse.MMDHLLocalAsset=mmdhl.GetAsset(source) corpse.MMDHLLocalRigKey=source:GetNW2String('MMDHLRig') corpse.MMDHLLocalRig=mmdhl.GetRig(source) corpse.MMDHLCorpse=true
@@ -482,4 +539,231 @@ if CLIENT then hook.Add('MMDHL.NamesTranslated','MMDHL.Actors',function() for _,
   corpse:SetFlexScale(source:GetFlexScale()) corpse:SetColor(source:GetColor()) corpse:SetMaterial(source:GetMaterial())
   if mmdhl.TransferPresentation then mmdhl.TransferPresentation(source,corpse) end
  end)
+end
+-- R13-A (ADR 0099): saved NPC and player-model characters load when they are first used.
+-- A map publishes their NPC-tab and player-model entries from validated metadata; a character's
+-- carrier is mounted and its model precached (which loads its textures) right before its first
+-- real use. The most recently used characters stay ready at map start, as many as the computer's
+-- memory profile keeps: native-loader/status.json, activation.memory.warm_characters and warm_mib
+-- (the loader writes them; with neither, none is kept). Two server ConVars override them for tests.
+local R=mmdhl.readiness or {}
+mmdhl.readiness=R
+local function validId(id) return isstring(id) and #id==64 and not id:find('[^0-9a-f]') end
+local function validKey(key) return isstring(key) and (#key==32 or #key==64) and not key:find('[^0-9a-f]') end
+-- DATA path of a rig's material archive (rig.materialGma is a game path under data/).
+function R.ArchivePath(rig)
+ local path=istable(rig) and isstring(rig.materialGma) and rig.materialGma:match('^data/(mmd_hotloader/.+%.gma)$')
+ if path then return path end
+ if istable(rig) and validId(rig.asset) then return 'mmd_hotloader/assets/'..rig.asset..'/materials-v5.gma' end
+end
+if CLIENT then
+ local function iconPath(model) return 'spawnicons/'..model:gsub('%.mdl$','')..'.png' end
+ -- A carrier has no visible mesh: the engine's icon of one is an empty 64x64 image (215 bytes in
+ -- the field's cache), and drawing it loads the model and its textures.
+ local BlankIcon=512
+ -- How a menu shows a model's icon: 'model' (the engine draws it, as for any other model), 'image'
+ -- (a real icon the engine cached earlier) or 'name' (the character's name from its metadata).
+ function R.IconMode(model)
+  if not isstring(model) or not mmdhl.IsCarrierModel or not mmdhl.IsCarrierModel(model) then return 'model' end
+  local size=file.Size('materials/'..iconPath(model),'GAME')
+  if isnumber(size) and size>BlankIcon then return 'image' end
+  return 'name'
+ end
+ local function placeholder(icon,model,mode)
+  if IsValid(icon.MMDHLPlaceholder) then icon.MMDHLPlaceholder:Remove() end
+  local panel=vgui.Create(mode=='image' and 'DImage' or 'DLabel',icon)
+  panel:Dock(FILL) panel:SetMouseInputEnabled(false) panel:SetKeyboardInputEnabled(false)
+  if mode=='image' then panel:SetImage(iconPath(model))
+  else
+   local rig=mmdhl.GetRigForModel and mmdhl.GetRigForModel(model)
+   local name=rig and rig.name or model:match('([^/]+)%.mdl$') or model
+   if rig and mmdhl.names and mmdhl.names.Display then name=mmdhl.names.Display(name,rig.asset) end
+   panel:SetText(name) panel:SetWrap(true) panel:SetContentAlignment(5) panel:SetFont('DermaDefault')
+   panel:SetTextColor(Color(235,240,248))
+   panel.Paint=function(_,w,h) draw.RoundedBox(4,2,2,w-4,h-4,Color(52,64,82,230)) end
+  end
+  icon.MMDHLPlaceholder=panel
+ end
+ R.Placeholder=placeholder
+ -- SpawnIcon (Sandbox's Player Model window, spawnlists, model pickers) draws an uncached icon by
+ -- loading the model. A character's icon is its cached image or its name instead: the menu never
+ -- loads the model of a character nobody uses.
+ function R.InstallIcons()
+  local icon=vgui and vgui.GetControlTable and vgui.GetControlTable('SpawnIcon')
+  if not icon or icon.MMDHLLazyIcon then return end
+  icon.MMDHLLazyIcon=true
+  local setModel=icon.SetModel
+  icon.SetModel=function(self,mdl,skin,bodygroups)
+   local mode=R.IconMode(mdl)
+   if mode=='model' then
+    if IsValid(self.MMDHLPlaceholder) then self.MMDHLPlaceholder:Remove() end
+    return setModel(self,mdl,skin,bodygroups)
+   end
+   -- What SpawnIcon.SetModel keeps, without ModelImage:SetModel, which loads the model.
+   self:SetModelName(mdl) self:SetSkinID(skin or 0)
+   if tostring(bodygroups):len()~=9 then bodygroups='000000000' end
+   self.m_strBodyGroups=bodygroups
+   self:SetTooltip(mdl)
+   placeholder(self,mdl,mode)
+  end
+ end
+ R.InstallIcons()
+ timer.Simple(0,R.InstallIcons)
+ hook.Add('InitPostEntity','MMDHL.LazyIcons',R.InstallIcons)
+ -- A client-side model of a character (a model panel's preview, another addon's prop) is a real
+ -- use: its carrier is mounted first, as the server mounts it before SetModel.
+ if not mmdhl.LazyClientModels then
+  mmdhl.LazyClientModels=true
+  local function mounted(create)
+   return function(model,...)
+    if isstring(model) and mmdhl.IsCarrierModel and mmdhl.IsCarrierModel(model) and mmdhl.EnsureModel then mmdhl.EnsureModel(model) end
+    return create(model,...)
+   end
+  end
+  for _,name in ipairs({'ClientsideModel','ClientsideRagdoll'}) do
+   if isfunction(_G[name]) then _G[name]=mounted(_G[name]) end
+  end
+  if istable(ents) and isfunction(ents.CreateClientProp) then ents.CreateClientProp=mounted(ents.CreateClientProp) end
+ end
+ function R.Describe()
+  local lazy,ready=0,0
+  for _,entry in pairs(mmdhl.actorRegistrations or {}) do if entry.lazy then lazy=lazy+1 else ready=ready+1 end end
+  return {realm='client',lazyEntries=lazy,readyEntries=ready,presented=table.Count(mmdhl.assets or {})}
+ end
+ return
+end
+-- Server: the budget, the record of use and the ready set.
+local warmCharacters=CreateConVar('mmdhl_warm_characters','-1',FCVAR_NONE,
+ 'Saved characters kept ready at map start; -1 follows the memory profile in native-loader/status.json (for tests)',-1,256)
+local warmMiB=CreateConVar('mmdhl_warm_mib','-1',FCVAR_NONE,
+ 'Most MiB of material archives kept ready at map start; -1 follows the memory profile (for tests)',-1,1048576)
+local function whole(v) return isnumber(v) and v==v and v>=0 and v<math.huge and math.floor(v) or nil end
+-- The loader's memory profile for this session, or nil: no file, no activation.memory.
+function R.Profile()
+ local raw=file.Read('native-loader/status.json','DATA')
+ local status=raw and util.JSONToTable(raw)
+ local memory=istable(status) and istable(status.activation) and status.activation.memory
+ return istable(memory) and memory or nil
+end
+-- How many characters stay ready, and how many MiB of their material archives at most.
+function R.Budget()
+ local memory=R.Profile()
+ local characters,mib,source=0,math.huge,'none'
+ if memory then
+  local count=whole(memory.warm_characters)
+  if count then characters=count mib=whole(memory.warm_mib) or math.huge source='status' end
+ end
+ if warmCharacters:GetInt()>=0 then characters=warmCharacters:GetInt() source=source=='status' and 'status+convar' or 'convar' end
+ if warmMiB:GetInt()>=0 then mib=warmMiB:GetInt() if source=='none' then source='convar' elseif source=='status' then source='status+convar' end end
+ return {characters=math.min(characters,256),mib=mib,source=source,profile=memory and memory.profile or nil}
+end
+-- Use times, newest first: mmd_hotloader/recent.json, [asset, unix time] pairs (GMod's JSON reader
+-- turns number-like object keys into numbers, so ids are values).
+local RecentFile,MaxRecent='mmd_hotloader/recent.json',512
+local recent
+local function loadRecent()
+ if recent then return recent end
+ recent={}
+ local data=util.JSONToTable(file.Read(RecentFile,'DATA') or '')
+ if istable(data) and data.version==1 and istable(data.uses) then
+  for _,pair in ipairs(data.uses) do
+   local time=istable(pair) and whole(pair[2])
+   if istable(pair) and validId(pair[1]) and time and time>0 then recent[pair[1]]=math.max(recent[pair[1]] or 0,time) end
+  end
+ end
+ return recent
+end
+local function saveRecent()
+ local list={} for id,time in pairs(loadRecent()) do list[#list+1]={id,time} end
+ table.sort(list,function(a,b) if a[2]~=b[2] then return a[2]>b[2] end return a[1]<b[1] end)
+ for i=#list,MaxRecent+1,-1 do list[i]=nil end
+ file.CreateDir('mmd_hotloader')
+ file.Write(RecentFile,util.TableToJSON({version=1,uses=list}))
+end
+R.SaveRecent=saveRecent
+-- A character was used: spawned (any role), given to an entity or a player, restored or pasted.
+function R.Use(id)
+ if not validId(id) then return end
+ local r=loadRecent() local now=os.time()
+ if r[id]==now then return end
+ r[id]=now
+ timer.Create('MMDHL.RecentUse',2,1,saveRecent)
+end
+function mmdhl.NoteActorUse(id) R.Use(id) end
+hook.Add('ShutDown','MMDHL.RecentUse',function() if timer.Exists('MMDHL.RecentUse') then timer.Remove('MMDHL.RecentUse') saveRecent() end end)
+hook.Add('MMDHL.AssetForgotten','MMDHL.RecentUse',function(id)
+ local r=loadRecent() if r[id] then r[id]=nil timer.Create('MMDHL.RecentUse',2,1,saveRecent) end
+end)
+-- The last use of a character: its record, else (characters used before this record existed) the
+-- time the native module last prepared one of its carriers (it rewrites names/rigs/<key>.json).
+function R.LastUse(id,rigs)
+ local time=loadRecent()[id] or 0
+ for _,rig in ipairs(rigs or {}) do
+  if istable(rig) and validKey(rig.key) then time=math.max(time,whole(file.Time('mmd_hotloader/names/rigs/'..rig.key:sub(1,16)..'.json','DATA')) or 0) end
+ end
+ return time
+end
+-- The characters to keep ready: newest use first, at most budget.characters of them and
+-- budget.mib MiB of material archives in all (a character too large for what is left is passed
+-- over for an older one that fits). A character never used is not kept.
+function R.Choose(entries,budget)
+ local byAsset,order={},{}
+ for _,entry in ipairs(entries) do
+  local id=entry.rig.asset local item=byAsset[id]
+  if not item then
+   local path=R.ArchivePath(entry.rig)
+   item={id=id,rigs={},bytes=math.max(0,path and file.Size(path,'DATA') or 0)}
+   byAsset[id]=item order[#order+1]=item
+  end
+  item.rigs[#item.rigs+1]=entry.rig
+  if entry.arms then item.rigs[#item.rigs+1]=entry.arms end
+ end
+ for _,item in ipairs(order) do item.used=R.LastUse(item.id,item.rigs) item.rigs=nil end
+ table.sort(order,function(a,b) if a.used~=b.used then return a.used>b.used end return a.id<b.id end)
+ local chosen,count,total,limit={},0,0,budget.mib*1048576
+ for _,item in ipairs(order) do
+  if count>=budget.characters then break end
+  if item.used>0 and total+item.bytes<=limit then chosen[item.id]=true count=count+1 total=total+item.bytes end
+ end
+ return chosen,total,order
+end
+-- Map start: every saved NPC and player-model entry is published; the chosen ones are made ready
+-- (mounted, precached) now, the others when first used. entries: {rig=,arms=} with loadable rigs.
+function mmdhl.RestoreActors(entries)
+ local budget=R.Budget()
+ local chosen,bytes=R.Choose(entries,budget)
+ local ready,lazy,failed=0,0,0
+ for _,entry in ipairs(entries) do
+  if chosen[entry.rig.asset] then
+   if mmdhl.RegisterActor(entry.rig,entry.arms) then ready=ready+1 else failed=failed+1 end
+  elseif mmdhl.PublishActorEntry(entry.rig,entry.arms) then lazy=lazy+1
+  else failed=failed+1 end
+ end
+ R.state={budget=budget,chosen=table.GetKeys(chosen),readyEntries=ready,lazyEntries=lazy,failed=failed,archiveBytes=bytes}
+ if #entries>0 then
+  MsgN(string.format('[Model Hotloader] Saved characters: %d entries ready (%d characters, %.1f GiB of material archives; memory profile %s), %d load when first used%s.',
+   ready,table.Count(chosen),bytes/1073741824,budget.profile and tostring(budget.profile) or (budget.source=='none' and 'absent' or budget.source),lazy,failed>0 and (', '..failed..' unavailable') or ''))
+ end
+ return R.state
+end
+-- A test (or the server's owner) changed the override: make newly chosen characters ready now.
+-- Characters already loaded stay loaded until the map changes.
+function R.Apply()
+ local entries,seen={},{}
+ for _,entry in pairs(mmdhl.actorRegistrations or {}) do
+  if not seen[entry.rig.key] then seen[entry.rig.key]=true entries[#entries+1]={rig=entry.rig,arms=entry.arms} end
+ end
+ local chosen=R.Choose(entries,R.Budget())
+ for model,entry in pairs(mmdhl.actorRegistrations or {}) do
+  if entry.lazy and chosen[entry.rig.asset] then mmdhl.PrepareRegisteredActor(model) end
+ end
+end
+cvars.AddChangeCallback('mmdhl_warm_characters',function() R.Apply() end,'MMDHL.Readiness')
+cvars.AddChangeCallback('mmdhl_warm_mib',function() R.Apply() end,'MMDHL.Readiness')
+function R.Describe()
+ local lazy,ready=0,0
+ for _,entry in pairs(mmdhl.actorRegistrations or {}) do if entry.lazy then lazy=lazy+1 else ready=ready+1 end end
+ local state=R.state or {}
+ return {realm='server',budget=R.Budget(),chosen=state.chosen,lazyEntries=lazy,readyEntries=ready,
+  restoredReady=state.readyEntries,restoredLazy=state.lazyEntries,failed=state.failed,archiveBytes=state.archiveBytes}
 end
