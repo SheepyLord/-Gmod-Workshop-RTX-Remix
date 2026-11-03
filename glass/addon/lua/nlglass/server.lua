@@ -162,9 +162,13 @@ function S.Contact(entity,data)
     -- Source prohibits destroying/rebuilding a physics object during its collision callback.
     timer.Simple(0,function() if IsValid(entity) then S.Impact(r,impact) end end)
 end
+-- A player in noclip passes through the world: it never touches, so it never fractures glass.
+function S.Ghost(body)
+    return IsValid(body) and body:IsPlayer() and body:GetMoveType()==MOVETYPE_NOCLIP
+end
 function S.Body(entity,body,velocity,point)
     local r=S.byEntity[entity]
-    if not r then return end
+    if not r or S.Ghost(body) then return end
     S.Refresh(r)
     local stamp=engine.TickCount()
     if r.contacts[body] and stamp-r.contacts[body]<6 then return end
@@ -174,7 +178,7 @@ end
 -- Touch can arrive after the player mover has clipped the velocity against frozen VPhysics.
 -- Sweep the moving player's real hull before that clipping; no scan/tick work for idle panes.
 hook.Add("SetupMove","NLGlass.PlayerContact",function(ply,mv)
-    if not next(S.records) then return end
+    if not next(S.records) or S.Ghost(ply) then return end
     local velocity=mv:GetVelocity()+ply:GetBaseVelocity()
     if velocity:LengthSqr()<math.max(1,C.Number("rtx_glass_player_break_speed",250)^2) then return end
     local mins,maxs=ply:GetCollisionBounds()

@@ -48,3 +48,9 @@ provenance is retained in [`companion/i18n/README.md`](../../../../i18n/README.m
 regenerates PO comments.
 
 The guide names the runtime’s new static migration button; the count is now on the line above it. The warning against migrating map-specific settings is unchanged.
+
+## R14
+
+Pages gained a "Where to find things" orientation, annotated screenshots (`tab_overview`, `remix_menu_marked`,
+`remix_settings`, `glass_settings`, drawn by `tools\guide_annotate.py` from `tools\qa\guide_shots.lua` captures)
+and a Glass section. An `image` item's optional third value is its height in pixels.

@@ -35,12 +35,19 @@ local PAGES = {
         { "h", N("RTX Remix is running") },
         { "p", N("Garry's Mod is path traced by NVIDIA RTX Remix. The native loader (bin\\win64\\winmm.dll) put the RTX package from the Workshop in place and started Remix before the game made its renderer.") },
         { "p", N("Everything RTX is in the spawn menu's RTX Remix tab: the settings of the RTX add-ons, the common Remix settings, and this guide.") },
+        { "h", N("Where to find things") },
+        { "p", N("1. The RTX Remix tab in the spawn menu (hold Q): every setting of this package, in groups on the left.") },
+        { "p", N("2. Remix's own menu (Alt+X): the renderer's settings, such as DLSS, frame generation and the graphics preset.") },
+        { "p", N("3. This guide: open it again from the RTX Remix tab > Start here, or with the console command nativeloader_guide.") },
+        { "image", "nativeloader/guide/tab_overview.jpg", 440 },
+        { "p", N("In the picture: (1) the RTX Remix tab, (2) the groups of settings, (3) the panel of the group you chose. If the tab is missing, RTX is off in this session; see Troubleshooting.") },
         { "h", N("Turning RTX off or on") },
         { "p", N("RTX off for a while, without uninstalling: in native-loader\\config.json add  \"remix\": { \"enabled\": false }  and start the game again. The game is then plain Garry's Mod; the RTX add-ons are left out too.") },
         { "p", N("The game runs in a borderless window as large as your screen. Exclusive fullscreen crashes Remix. For another size, put -w <width> -h <height> in the game's launch options in Steam.") },
     } },
     { N("Remix menu"), "icon16/application_view_list.png", {
-        { "image", "nativeloader/guide/remix_menu.jpg" },
+        { "image", "nativeloader/guide/remix_menu_marked.jpg", 540 },
+        { "p", N("In the picture: (1) switch between the simple Graphics Settings menu and this developer menu, (2) the tabs of the developer menu, (3) how much video memory Remix uses, (4) frame generation, (5) the upscaler. Click a setting's round dot to see it differ from the default.") },
         { "h", N("Alt+X opens Remix's own menu") },
         { "p", N("The simple menu has the graphics presets, DLSS and frame generation. The developer menu (Developer Settings) has every option.") },
         { "h", N("Making changes stick") },
@@ -54,8 +61,13 @@ local PAGES = {
         { "p", N("Remix starts with the settings of the original RTX install (its rtx.conf, dxvk.conf and user.conf). The RTX add-ons' own settings got the same install's values once, where you had not changed them yet.") },
         { "p", N("RTX Remix tab > Start here > 'Use the classic RTX settings' (console: nativeloader_rtx_defaults) applies all of those again, also over values you changed.") },
         { "h", N("Common Remix settings") },
+        { "image", "nativeloader/guide/remix_settings.jpg", 520 },
+        { "p", N("In the picture: (1) apply this panel's choices at every launch (leave it off to keep Remix's saved settings), (2) the presets and quality choices; '(leave to Remix)' changes nothing, (3) a number you enable first with its checkbox, (4) fog presets, (5) clears everything this panel changed.") },
         { "p", N("RTX Remix tab > Remix settings changes common settings for this session. Save them in Alt+X to keep them. Reapplying this panel's choices at launch is off by default; enable it only to override Remix's saved settings. Select a numeric override before editing it.") },
         { "p", N("Fog: Remix's own volumetric presets, from light mist to heavy fog, dust and smoke. A preset replaces the weather's fog until you set it back to '(leave to Remix)'.") },
+        { "h", N("Glass") },
+        { "image", "nativeloader/guide/glass_settings.jpg", 560 },
+        { "p", N("RTX Remix tab > Glass settings. In the picture: (1) glass strength, (2) whether cracks show, (3) how fast you must move to break a window (walking does not), (4) how long broken pieces stay. Walking through glass in noclip never breaks it.") },
         { "h", N("Sky and weather") },
         { "p", N("RTX Remix tab > Sky and weather. The physical sky has a real sun, clouds, stars and a moon that light the map. By default the sun stands where the map's own sun is; move the time of day or the sun's direction to choose your own, or let the time pass.") },
         { "p", N("The moon has the real Moon's face and goes through its phases, lit from the sun's side. The night sky is a detailed image of stars, a galaxy and nebulae that turns with the hour and the season; 'Night sky' switches to simulated stars.") },
@@ -118,7 +130,7 @@ local function add_text(parent, text, font, color)
     label:SetAutoStretchVertical(true)
 end
 
-local function add_image(parent, path)
+local function add_image(parent, path, height)
     if not file.Exists("materials/" .. path, "GAME") then return end
     local material = Material(path, "smooth")
     if material:IsError() then return end
@@ -127,7 +139,7 @@ local function add_image(parent, path)
     image:DockMargin(8, 8, 8, 4)
     image:SetMaterial(material)
     image:SetKeepAspect(true)
-    image:SetTall(300)
+    image:SetTall(height or 300)
 end
 
 local function open_guide(selected)
@@ -142,8 +154,8 @@ local function open_guide(selected)
     for _, page in ipairs(PAGES) do
         local scroll = vgui.Create("DScrollPanel", sheet)
         for _, item in ipairs(page[3]) do
-            if not item[3] or (item[3] == "r6" and r6) or (item[3] == "legacy" and not r6) then
-                if item[1] == "image" then add_image(scroll, item[2])
+            if not item[3] or type(item[3]) == "number" or (item[3] == "r6" and r6) or (item[3] == "legacy" and not r6) then
+                if item[1] == "image" then add_image(scroll, item[2], item[3])
                 elseif item[1] == "h" then add_text(scroll, L(item[2]), "DermaLarge", Color(118, 185, 0))
                 elseif item[1] == "code" then add_text(scroll, item[2], "DermaDefault")
                 else add_text(scroll, L(item[2]), "DermaDefault") end

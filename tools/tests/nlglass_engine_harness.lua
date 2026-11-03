@@ -42,7 +42,7 @@ local function realm(server)
     e.WorldToLocal=WorldToLocal
     e.IsValid=valid e.math=setmetatable({Clamp=clamp},{__index=math})
     e.FCVAR_ARCHIVE,e.FCVAR_REPLICATED,e.FCVAR_NOTIFY=1,2,4
-    e.MOVETYPE_NONE,e.SOLID_VPHYSICS,e.TRANSMIT_ALWAYS,e.RENDERGROUP_TRANSLUCENT=0,6,2,1
+    e.MOVETYPE_NOCLIP=8 e.MOVETYPE_NONE,e.SOLID_VPHYSICS,e.TRANSMIT_ALWAYS,e.RENDERGROUP_TRANSLUCENT=0,6,2,1
     e.DMG_BULLET,e.DMG_BUCKSHOT,e.DMG_BLAST,e.DMG_CRUSH,e.DMG_CLUB=2,4,8,16,32
     e.TOP,e.FILL=1,5
     e.tick,e.time=100,10 e.queue={} e.out={} e.receivers={} e.cvars={}
@@ -225,7 +225,7 @@ function E:EnableCustomCollisions(v) self.custom=v end function E:CollisionRules
 function E:PhysicsDestroy() self.phys=nil end
 function E:Fire(name,value,delay,activator,caller) self.inputs[#self.inputs+1]={name,value,delay,activator,caller} end
 function E:SetKeyValue(key,value) self.keys=self.keys or {} self.keys[#self.keys+1]={key,value} sv.run("EntityKeyValue",self,key,value) end
-function E:IsPlayer() return self.flags.player end function E:IsNPC() return self.flags.npc end function E:IsVehicle() return self.flags.vehicle end
+function E:GetMoveType() return self.movetype or 2 end function E:IsPlayer() return self.flags.player end function E:IsNPC() return self.flags.npc end function E:IsVehicle() return self.flags.vehicle end
 function E:IsAdmin() return self.admin end function E:CheckLimit() return self.limit~=false end
 function E:SetCreator(p) self.creator=p end function E:AddCount() end
 function E:Activate() end
@@ -328,6 +328,11 @@ elseif scenario=="bodies" then
         check(D.FromBody(r,slow)==nil,"slow body does not damage")
         body.pos=Vector(0,0,0) check(D.FromBody(r,body)==nil,"a body in the hole meets no ghost glass")
     end
+    local ent,r=pane()
+    local ghost=newEntity("player",{pos=Vector(0,0,-16),velocity=Vector(0,0,400),flags={player=true}})
+    ghost.movetype=sv.MOVETYPE_NOCLIP or 8
+    ent:Touch(ghost) sv.flush()
+    check(r.state.revision==0,"a player in noclip never fractures glass")
 elseif scenario=="scripted" then
     local ent,r=pane()
     local start=#sv.out+1 -- deliberately miss the initial snapshot
