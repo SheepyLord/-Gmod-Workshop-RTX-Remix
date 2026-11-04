@@ -5029,3 +5029,49 @@ guide page's width in a 1280x720 game.
 **The PoC's characters.** Of the PoC library's nine characters, Karin (`c329babf`) is an Endfield
 character with game maps (`t_actor_karin_hair_01`) whose `目白` the eye-white rules detect; 鳴潮_白蓮's
 `eye` and `eye+` are not detected.
+
+## R15: painted shadows and alpha on hair (2026-11-04, Claude)
+
+**Where an imported part's alpha goes.**
+- The Model Hotloader's AssetInfo (`native.AssetInfo`, `module.cpp:242`) gives per part `base` as the
+  cached texture's SHA-256 (`''` when untextured), `alphaTexture` from the texture cache
+  (`assets.cpp:393`), `translucentTexture` (partial texels over a tenth of the visible ones,
+  `assets.cpp:439`) and `softTriangles`. The texture's path in the model is only in the asset's
+  `data/mmd_hotloader/assets/<id>/manifest.json` (`materials[i].base`, keys sorted, 3-350 KB in the
+  field library).
+- The rig's materials (`rig.cpp:422`) have the same order as the asset's: slot `i`, bodygroup `i+1`,
+  `defaultHidden` for authored alpha 0.
+- `mmdhl.SyncMaterialState` (`materials.lua`) re-sends the per-part `visible` array every 8 frames per
+  character and right after a local edit; the native renderer draws only visible parts in every pass,
+  so leaving a slot out there changes the draw and nothing else.
+- In GMod, `IMaterial:GetInt("$alphatest")` returns nil for the hotloader's VMTs; the state is in
+  `$flags`: `MATERIAL_VAR_ALPHATEST` 256, `MATERIAL_VAR_TRANSLUCENT` 2097152. `Material("!mmdhl_soft_v1_...")`
+  returns the procedural soft copy. Laevatain's hair (PoC, `out/r15/alpha2`): public flags 536881424 ->
+  536881168 and soft copy 2107408 -> 10256 made its bangs clean, as the user's removal of `$alphatest` did.
+- ADR 0081's runtime category replaces the alpha-test reference of categorized MMD draws with
+  `rtx.mmdAlphaCutoff` (0.5), so a lower reference on the material does not reach the ray tracer. Only
+  a draw without alpha state is opaque there.
+
+**Hair textures in the field library** (159 models, read only; `out/r15/scratch/partial_runs.py` in
+the `r15` worktree):
+- Laevatain's `T_actor_laevat_hair_01_D.png` (2048²): clear 3.6 %, alpha 9-127 1.6 %, 128-246 3.4 %,
+  opaque 91.4 %. Its partial texels lie at the strands' ends and in spots inside them.
+- In every hair texture with partial alpha, 85-100 % of the partial texels are in horizontal runs of 16
+  texels or more, and 0-3.8 % of them touch a clear texel: masks and fades, not anti-aliased strand edges.
+- Reading the whole 2048² VTF (22 MB) in Lua took 8 ms and sampling a 256² grid 1 ms (PoC); the
+  controller reads only the sampled rows (8 KB each) through `file.Open`/`Seek`/`Read`.
+
+**Painted shadows in the field library** (6,684 parts): the rules hide 92, all of them shadows: 目影
+untextured black at alpha 0.2-0.5 (Endfield, Wuthering Waves) or painted from 黑.jpg/灰.jpg (Star Rail),
+发影/髮影/髪影, まぶた影 and 表情_影 painted from the face atlas (LycoReco), Tda's `hairshadow` from the face
+texture, SilverWolf999's 陰影 parts, Laevatain's `Moyin` (name) and `Hair+` (untextured, black, alpha 0.5,
+0.039 % of the indices). Kept: Evanescia's lavender `Mat_EyeShadow_01` (alpha 0.76), two 眼影 painted
+from a coloured texture, and parts hidden as authored. Fifteen models (Star Rail's `眼睛1` at alpha 0.3
+from 脸.png) have a part that only the texture's path could decide; none of them is a dark image.
+
+**The render guard's table** held 351 paths at `main` 786d9a9, not the 345 its docs said; with R15's
+three companion files it holds 354.
+
+**Client modules.** `nativeloader_eye_whites.lua` `include`s `nativeloader/eye_white_names.lua` and
+`eye_white_vtf.lua`, which no `AddCSLuaFile` sent; a client joining a server did not have them. R15's
+`nativeloader_i18n.lua` sends them with its own two rule modules.

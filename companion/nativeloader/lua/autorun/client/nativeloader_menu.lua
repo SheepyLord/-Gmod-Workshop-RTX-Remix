@@ -327,6 +327,10 @@ local function model_layers_settings(panel)
     panel:NumSlider(L("Eye-white brightness"), "nativeloader_eye_white_brightness", 0, 200, 0)
     panel:ControlHelp(L("In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."))
     panel:Button(L("Choose eye-white materials"), "nativeloader_eye_white_materials")
+    panel:CheckBox(L("Hide painted shadows"), "nativeloader_hide_painted_shadows")
+    panel:ControlHelp(L("Leaves out the shadows that imported characters have painted over their eyes, under their fringe and on their faces: path tracing casts real shadows there. Their bodygroups and saves do not change."))
+    panel:CheckBox(L("Solid hair"), "nativeloader_solid_hair")
+    panel:ControlHelp(L("Draws an imported character's hair solid when its texture is mostly opaque but the alpha test would cut holes into it, as in hair from Endfield. Hair cut out of its texture strand by strand keeps its cutouts."))
 end
 
 concommand.Add("nativeloader_remix_reset", function()

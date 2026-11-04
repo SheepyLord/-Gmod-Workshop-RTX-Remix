@@ -119,9 +119,16 @@ function mmdhl.SyncMaterialState(ent,instance)
  if CLIENT and ent.MMDVisibilitySent and ent.MMDVisibilityRevision==revision and frame<(ent.MMDVisibilityNext or 0) then return true end
  -- The first sync spreads models over the interval so they do not all re-sync on one frame.
  ent.MMDVisibilityNext=frame+SyncInterval+(ent.MMDVisibilityNext and 0 or ent:EntIndex()%SyncInterval) ent.MMDVisibilityRevision=revision
+ -- Parts another add-on leaves out of this client's draw ({[slot+1]=true}; the native loader's
+ -- painted shadows in RTX sessions), read on the same interval. Bodygroups, saves and dupes stay.
+ local hidden
+ if CLIENT and isfunction(mmdhl.RenderHiddenParts) then
+  local ok,result=pcall(mmdhl.RenderHiddenParts,ent)
+  if ok and istable(result) then hidden=result end
+ end
  local visible,opaque={},{}
  for i,m in ipairs(mmdhl.GetMaterials(ent)) do
-  visible[i]=mmdhl.IsMaterialVisible(look,i-1)
+  visible[i]=mmdhl.IsMaterialVisible(look,i-1) and not (hidden and hidden[i])
   opaque[i]=not not (m.defaultHidden and visible[i])
  end
  local encoded=util.TableToJSON({visible=visible,forceOpaque=opaque})

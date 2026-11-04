@@ -342,29 +342,29 @@ msgstr "Texture indisponible"
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
 msgstr "Impossible d'enregistrer votre choix : le personnage a peut-être été supprimé, ou le fichier des choix enregistrés a été modifié ou est illisible. Aucun fichier n'a été écrasé."
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:275
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:305
 #, c-format
 msgid "Previous: %s"
 msgstr "Précédent : %s"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:282
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:313
 #, c-format
 msgid "Next: %s"
 msgstr "Suivant : %s"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:345
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:376
 msgid "Contents"
 msgstr "Sommaire"
 
-#: nativeloader/lua/autorun/client/nativeloader_guide.lua:375
+#: nativeloader/lua/autorun/client/nativeloader_guide.lua:414
 msgid "RTX Remix guide"
 msgstr "Guide RTX Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:348
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
 #: nativeloader/lua/nativeloader/guide_pages.lua:124
 msgid "Rendering"
 msgstr "Rendu"
@@ -383,14 +383,14 @@ msgid "Water and glass"
 msgstr "Eau et verre"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:342
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:342
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
 #: nativeloader/lua/nativeloader/guide_pages.lua:87
 msgid "Start here"
 msgstr "Pour commencer"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
 #: nativeloader/lua/nativeloader/guide_pages.lua:98
 msgid "Remix settings"
 msgstr "Paramètres Remix"
@@ -610,7 +610,7 @@ msgid "Performance and memory guide"
 msgstr "Guide des performances et de la mémoire"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
-#: nativeloader/lua/nativeloader/guide_pages.lua:323
+#: nativeloader/lua/nativeloader/guide_pages.lua:326
 msgid "Print the loader's status to the console"
 msgstr "Afficher l'état du chargeur dans la console"
 
@@ -731,19 +731,35 @@ msgstr "Luminosité du blanc des yeux"
 msgid "In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."
 msgstr "En pourcentage ; 100 est la valeur réglée par défaut. Une modification s'applique immédiatement à la stabilisation du blanc des yeux et à l'émission des yeux des packs PBR qui suit l'éclairage de la scène ; 0 supprime cette émission."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:343
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
+msgid "Hide painted shadows"
+msgstr "Masquer les ombres peintes"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
+msgid "Leaves out the shadows that imported characters have painted over their eyes, under their fringe and on their faces: path tracing casts real shadows there. Their bodygroups and saves do not change."
+msgstr "Masque les ombres peintes au niveau des yeux, sous la frange et sur le visage des personnages importés : le path tracing y projette de vraies ombres. Les groupes du modèle et les sauvegardes restent inchangés."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
+msgid "Solid hair"
+msgstr "Cheveux opaques"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
+msgid "Draws an imported character's hair solid when its texture is mostly opaque but the alpha test would cut holes into it, as in hair from Endfield. Hair cut out of its texture strand by strand keeps its cutouts."
+msgstr "Affiche les cheveux d'un personnage importé sans transparence lorsque leur texture est en grande partie opaque mais que le test alpha y créerait des trous, comme pour les cheveux d'Endfield. Les cheveux découpés mèche par mèche dans leur texture conservent leurs découpes."
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
 msgid "Common Remix settings"
 msgstr "Réglages Remix usuels"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:344
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:348
 msgid "Player models"
 msgstr "Modèles de joueurs"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:345
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
 msgid "Toolgun screen"
 msgstr "Écran du toolgun"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
 msgid "Model outlines"
 msgstr "Contours des modèles"
 
@@ -1526,327 +1542,347 @@ msgid "Open the eye-white chooser"
 msgstr "Ouvrir la sélection du blanc des yeux"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:263
+msgid "Painted shadows and hair"
+msgstr "Ombres peintes et cheveux"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:264
+msgid "Many anime characters have shadows painted over their eyes, under their fringe and on their faces. Path tracing casts real shadows there, so Hide painted shadows, in Rendering > Model outlines, leaves the painted ones out. Bodygroups and saves do not change; untick it to see them again."
+msgstr "De nombreux personnages de style anime ont des ombres peintes au niveau des yeux, sous la frange et sur le visage. Le path tracing y projette de vraies ombres ; l'option « Masquer les ombres peintes », dans « Rendu > Contours des modèles », masque donc les ombres peintes. Les groupes du modèle et les sauvegardes restent inchangés ; décochez cette option pour revoir ces ombres."
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:265
+msgid "Some characters from games keep a mask in the alpha of their hair texture, and the alpha test cuts see-through holes into their hair. Solid hair, in the same panel, draws such hair solid. Hair that is cut out of its texture strand by strand keeps its cutouts."
+msgstr "Certains personnages de jeux ont un masque dans le canal alpha de leur texture de cheveux, et le test alpha crée des trous transparents dans leurs cheveux. L'option « Cheveux opaques », dans le même panneau, affiche ces cheveux sans transparence. Les cheveux découpés mèche par mèche dans leur texture conservent leurs découpes."
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:266
 msgid "Motions"
 msgstr "Mouvements"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:264
+#: nativeloader/lua/nativeloader/guide_pages.lua:267
 msgid "The Motion importer tab, next to External Models, imports MMD motions (VMD files) with their music, and plays them on characters."
 msgstr "L'onglet « Importateur de mouvements », à côté de « Modèles externes », importe des mouvements MMD (fichiers VMD) avec leur musique et anime les personnages avec ces mouvements."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:266
+#: nativeloader/lua/nativeloader/guide_pages.lua:269
 msgid "Performance and memory"
 msgstr "Performances et mémoire"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:267
+#: nativeloader/lua/nativeloader/guide_pages.lua:270
 msgid "What your computer needs"
 msgstr "Ce dont votre ordinateur a besoin"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:268
+#: nativeloader/lua/nativeloader/guide_pages.lua:271
 msgid "RTX Remix needs a graphics card with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or newer, or Intel Arc."
 msgstr "RTX Remix nécessite une carte graphique avec ray tracing matériel : NVIDIA RTX 20 ou plus récente, AMD Radeon RX 6000 ou plus récente, ou Intel Arc."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:269
+#: nativeloader/lua/nativeloader/guide_pages.lua:272
 msgid "The minimum is 8 GB of VRAM and 16 GB of system memory (RAM). With the recommended 16 GB of VRAM and 32 GB of RAM, the game should run smoothly. Computers below the minimum are not supported: the game may stutter or run out of memory on them."
 msgstr "Le minimum est de 8 GB de VRAM et de 16 GB de mémoire système (RAM). Avec les 16 GB de VRAM et 32 GB de RAM recommandés, le jeu devrait être fluide. Les ordinateurs en dessous du minimum ne sont pas pris en charge : le jeu peut saccader ou manquer de mémoire."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:270
+#: nativeloader/lua/nativeloader/guide_pages.lua:273
 msgid "The performance tier"
 msgstr "Le niveau de performance"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:271
+#: nativeloader/lua/nativeloader/guide_pages.lua:274
 msgid "At every start the loader picks a performance tier for your NVIDIA graphics card: high, medium or low. High keeps the package's full settings. Medium and low use fewer light bounces and smaller memory budgets, so the frame rate holds up. A laptop graphics card counts one step lower."
 msgstr "À chaque démarrage, le chargeur choisit un niveau de performance pour votre carte graphique NVIDIA : high, medium ou low. Le niveau high conserve tous les paramètres du paquet. Les niveaux medium et low utilisent moins de rebonds lumineux et des budgets mémoire plus petits pour maintenir la fréquence d'images. Une carte graphique de portable compte pour un niveau de moins."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:272
+#: nativeloader/lua/nativeloader/guide_pages.lua:275
 msgid "Start here shows the tier, your graphics card, and whether the tier was chosen automatically or set in config.json. Settings you save in Alt+X still win over it."
 msgstr "« Pour commencer » affiche le niveau, votre carte graphique et si le niveau a été choisi automatiquement ou défini dans config.json. Les paramètres enregistrés dans Alt+X ont toujours priorité."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:273
+#: nativeloader/lua/nativeloader/guide_pages.lua:276
 msgid "Your loader is older than 0.11.0 and has no performance tiers. Update bin\\win64\\winmm.dll to loader 0.11.0 or later before you change tiers or GPU crash diagnostics: older loaders reject those settings and start without RTX."
 msgstr "Votre chargeur est antérieur à 0.11.0 et n'a pas de niveaux de performance. Mettez bin\\win64\\winmm.dll à jour vers le chargeur 0.11.0 ou ultérieur avant de modifier les niveaux ou les diagnostics de plantage GPU : les anciens chargeurs rejettent ces paramètres et démarrent sans RTX."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:274
+#: nativeloader/lua/nativeloader/guide_pages.lua:277
 msgid "The memory profile"
 msgstr "Le profil mémoire"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:275
+#: nativeloader/lua/nativeloader/guide_pages.lua:278
 msgid "Loader 0.13.0 or later also picks a memory profile from your VRAM and your RAM: the smaller of the two decides. The profile sets how much the game keeps ready:"
 msgstr "Le chargeur 0.13.0 ou ultérieur choisit aussi un profil mémoire d'après votre VRAM et votre RAM : la plus limitante des deux décide. Le profil détermine ce que le jeu garde prêt :"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:277
+#: nativeloader/lua/nativeloader/guide_pages.lua:280
 msgid "Minimum (8 GB VRAM, 16 GB RAM): no character is loaded in advance, and the game frees the system-memory copies of its textures."
 msgstr "Minimal (8 GB de VRAM, 16 GB de RAM) : aucun personnage n'est chargé à l'avance et le jeu libère les copies de ses textures en mémoire système."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:278
+#: nativeloader/lua/nativeloader/guide_pages.lua:281
 msgid "Recommended (16 GB VRAM, 32 GB RAM): up to five recently used characters are loaded in advance when a map starts."
 msgstr "Recommandé (16 GB de VRAM, 32 GB de RAM) : jusqu'à cinq personnages récemment utilisés sont chargés à l'avance au démarrage d'une carte."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:279
+#: nativeloader/lua/nativeloader/guide_pages.lua:282
 msgid "High (24 GB VRAM and 64 GB RAM, or more): up to ten characters are loaded in advance."
 msgstr "Élevé (24 GB de VRAM et 64 GB de RAM, ou plus) : jusqu'à dix personnages sont chargés à l'avance."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:280
+#: nativeloader/lua/nativeloader/guide_pages.lua:283
 msgid "On every profile, game textures that nothing has drawn for a minute leave the graphics card once they fill a quarter of its memory, and come back when they are used again."
 msgstr "Sur tous les profils, dès que les textures du jeu occupent un quart de la mémoire de la carte graphique, celles qui n'ont pas été affichées depuis une minute en sont retirées et reviennent lorsqu'elles sont réutilisées."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:281
+#: nativeloader/lua/nativeloader/guide_pages.lua:284
 msgid "Start here shows your profile and how many characters it keeps ready."
 msgstr "« Pour commencer » affiche votre profil et le nombre de personnages qu'il garde prêts."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:282
+#: nativeloader/lua/nativeloader/guide_pages.lua:285
 msgid "Your loader reports no memory profile, so every character loads when it is first used. Update bin\\win64\\winmm.dll to loader 0.13.0 or later to get one."
 msgstr "Votre chargeur n'indique aucun profil mémoire, donc chaque personnage est chargé à sa première utilisation. Mettez bin\\win64\\winmm.dll à jour vers le chargeur 0.13.0 ou ultérieur pour en avoir un."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:283
+#: nativeloader/lua/nativeloader/guide_pages.lua:286
 msgid "Choosing the tier or profile yourself"
 msgstr "Choisir vous-même le niveau ou le profil"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:285
-#: nativeloader/lua/nativeloader/guide_pages.lua:351
+#: nativeloader/lua/nativeloader/guide_pages.lua:288
+#: nativeloader/lua/nativeloader/guide_pages.lua:356
 msgid "Close Garry's Mod."
 msgstr "Fermez Garry's Mod."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:286
-#: nativeloader/lua/nativeloader/guide_pages.lua:352
+#: nativeloader/lua/nativeloader/guide_pages.lua:289
+#: nativeloader/lua/nativeloader/guide_pages.lua:357
 msgid "Open native-loader\\config.json in the Garry's Mod folder with a text editor."
 msgstr "Ouvrez native-loader\\config.json dans le dossier de Garry's Mod avec un éditeur de texte."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:287
+#: nativeloader/lua/nativeloader/guide_pages.lua:290
 msgid "Add the settings you want, as in this complete example. If you changed the file before, keep your own allow entries and other settings."
 msgstr "Ajoutez les paramètres souhaités, comme dans cet exemple complet. Si vous avez déjà modifié ce fichier, conservez vos propres entrées allow et les autres paramètres."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:288
+#: nativeloader/lua/nativeloader/guide_pages.lua:291
 msgid "Save the file and start the game. Start here shows the result."
 msgstr "Enregistrez le fichier et lancez le jeu. « Pour commencer » affiche le résultat."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:290
+#: nativeloader/lua/nativeloader/guide_pages.lua:293
 msgid "remix.performance_tier is auto, high, medium or low; auto lets the loader choose."
 msgstr "remix.performance_tier vaut auto, high, medium ou low ; auto laisse le chargeur choisir."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:291
+#: nativeloader/lua/nativeloader/guide_pages.lua:294
 msgid "For the memory profile, put a comma after \"low\" and add \"memory_profile\": \"recommended\" on the next line. The value is auto, minimum, recommended or high; auto lets the loader choose."
 msgstr "Pour le profil mémoire, ajoutez une virgule après \"low\" et ajoutez \"memory_profile\": \"recommended\" à la ligne suivante. La valeur est auto, minimum, recommended ou high ; auto laisse le chargeur choisir."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:292
+#: nativeloader/lua/nativeloader/guide_pages.lua:295
 msgid "Invalid JSON turns RTX off: keep every brace, comma and quote. Restart Garry's Mod after each change."
 msgstr "Un JSON invalide désactive RTX : conservez toutes les accolades, virgules et guillemets. Redémarrez Garry's Mod après chaque modification."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:293
+#: nativeloader/lua/nativeloader/guide_pages.lua:296
 msgid "Tips for 8 GB graphics cards and 16 GB of RAM"
 msgstr "Conseils avec une carte graphique de 8 GB et 16 GB de RAM"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:295
+#: nativeloader/lua/nativeloader/guide_pages.lua:298
 msgid "Play at 1920x1080: 4K needs far more memory."
 msgstr "Jouez en 1920x1080 : la 4K demande beaucoup plus de mémoire."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:296
+#: nativeloader/lua/nativeloader/guide_pages.lua:299
 msgid "Use a system-managed Windows page file on a drive with at least 30 GB free."
 msgstr "Utilisez un fichier d'échange Windows géré par le système sur un disque ayant au moins 30 GB libres."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:297
+#: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Close browsers and stop OBS recording before you play."
 msgstr "Fermez les navigateurs et arrêtez l'enregistrement OBS avant de jouer."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:298
+#: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Spawn fewer heavy characters at once, and unsubscribe from Workshop add-ons you no longer use."
 msgstr "Faites apparaître moins de personnages lourds à la fois et désabonnez-vous des addons du Workshop que vous n'utilisez plus."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:299
+#: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Remove Remix mods you no longer use from rtx-remix\\mods: most load all their textures at every start."
 msgstr "Retirez de rtx-remix\\mods les mods Remix que vous n'utilisez plus : la plupart chargent toutes leurs textures à chaque démarrage."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:300
+#: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
 msgstr "Désactivez la génération d'images dans Alt+X et enregistrez ce choix avec « Enregistrer » ou, dans le menu développeur, « Paramètres utilisateur (user.conf) : Enregistrer » (User Settings (user.conf): Save), pour qu'elle reste désactivée."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:301
+#: nativeloader/lua/nativeloader/guide_pages.lua:304
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
 msgstr "Gardez le niveau de détail des textures de Garry's Mod au maximum. Un niveau inférieur modifie les textures reconnues par Remix et les remplacements ne correspondent plus."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:302
+#: nativeloader/lua/nativeloader/guide_pages.lua:305
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
 msgstr "Surveillez « Validée » (Committed) dans « Gestionnaire des tâches > Performances > Mémoire » : la mémoire utilisée et sa limite. Lorsque les deux sont proches, fermez d'autres programmes."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:303
+#: nativeloader/lua/nativeloader/guide_pages.lua:306
 msgid "Reading memory in the game"
 msgstr "Consulter la mémoire dans le jeu"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:304
+#: nativeloader/lua/nativeloader/guide_pages.lua:307
 msgid "Console: rtx_vram_stats prints how much VRAM the game uses, by category."
 msgstr "Console : rtx_vram_stats affiche la quantité de VRAM utilisée par le jeu, par catégorie."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:305
+#: nativeloader/lua/nativeloader/guide_pages.lua:308
 msgid "The RTX package records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. nativeloader_vram_telemetry 0 stops it, and 1 starts it again. After three failed readings it stops for the map; switch it off and on to retry. These files stay on your computer."
 msgstr "Le paquet RTX enregistre garrysmod\\data\\native-loader\\vram.csv et vram.previous.csv toutes les 30 secondes. nativeloader_vram_telemetry 0 arrête cet enregistrement et 1 le relance. Après trois relevés échoués, il s'arrête pour la carte ; désactivez-le puis réactivez-le pour réessayer. Ces fichiers restent sur votre ordinateur."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:306
+#: nativeloader/lua/nativeloader/guide_pages.lua:309
 msgid "The loader also records native-loader\\logs\\memory.csv: the game's RAM and the system's commit, every 10 seconds."
 msgstr "Le chargeur enregistre aussi native-loader\\logs\\memory.csv : la RAM du jeu et la mémoire validée du système, toutes les 10 secondes."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:307
+#: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "After a crash"
 msgstr "Après un plantage"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:309
+#: nativeloader/lua/nativeloader/guide_pages.lua:312
 msgid "Before you start the game again, copy status.json, session.json and both vram CSV files from garrysmod\\data\\native-loader\\, and copy the rtx-remix\\logs\\ folder. The next start replaces the two JSON files and Remix's logs."
 msgstr "Avant de relancer le jeu, copiez status.json, session.json et les deux fichiers CSV vram depuis garrysmod\\data\\native-loader\\, ainsi que le dossier rtx-remix\\logs\\. Le prochain démarrage remplace les deux fichiers JSON et les journaux de Remix."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:310
+#: nativeloader/lua/nativeloader/guide_pages.lua:313
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
 msgstr "Au démarrage suivant, le chargeur conserve une copie des journaux, des fichiers de vidage de plantage et de l'historique mémoire de la dernière session dans native-loader\\logs\\sessions\\, pour les cinq dernières sessions et au plus 200 MB. Copiez ce dossier avant que des sessions plus récentes ne le remplacent ; si aucune copie n'a été conservée, copiez vous-même crashes\\ et native-loader\\logs\\gpu\\."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:311
+#: nativeloader/lua/nativeloader/guide_pages.lua:314
 msgid "This loader keeps no copies of earlier sessions: also copy the matching dumps from crashes\\ before you restart, and update bin\\win64\\winmm.dll to loader 0.11.0 or later."
 msgstr "Ce chargeur ne conserve pas de copies des sessions précédentes : copiez aussi les fichiers de vidage correspondants dans crashes\\ avant de redémarrer, et mettez bin\\win64\\winmm.dll à jour vers le chargeur 0.11.0 ou ultérieur."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:312
+#: nativeloader/lua/nativeloader/guide_pages.lua:315
 msgid "To report the crash, send those files, copies of rtx.conf, dxvk.conf and user.conf from the Garry's Mod folder, and garrysmod\\console.log if you have it."
 msgstr "Pour signaler le plantage, envoyez ces fichiers, des copies de rtx.conf, dxvk.conf et user.conf depuis le dossier de Garry's Mod, et garrysmod\\console.log si vous l'avez."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:313
+#: nativeloader/lua/nativeloader/guide_pages.lua:316
 msgid "Say which map, characters and mods you used, what you did just before, the time and time zone, the frame rate and the Committed reading."
 msgstr "Indiquez la carte, les personnages et les mods utilisés, ce que vous faisiez juste avant, l'heure et le fuseau horaire, la fréquence d'images et la valeur de « Validée »."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:314
+#: nativeloader/lua/nativeloader/guide_pages.lua:317
 msgid "For a GPU hang, also send the Display or nvlddmkm events from Event Viewer > Windows Logs > System, and any matching dump in C:\\Windows\\LiveKernelReports\\WATCHDOG. Dumps can hold some of the game's memory: check what you share."
 msgstr "Pour un blocage du GPU, envoyez aussi les événements Display ou nvlddmkm depuis « Observateur d'événements > Journaux Windows > Système », ainsi que tout fichier de vidage correspondant dans C:\\Windows\\LiveKernelReports\\WATCHDOG. Les fichiers de vidage peuvent contenir une partie de la mémoire du jeu : vérifiez ce que vous partagez."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:315
+#: nativeloader/lua/nativeloader/guide_pages.lua:318
 msgid "If you are asked for a GPU crash dump: change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete example above, and restart. The value stays \"next_start\"; to ask for another diagnostic start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics slow the game a little."
 msgstr "Si l'on vous demande un fichier de vidage de plantage GPU : remplacez \"off\" par \"next_start\" pour diagnostics.gpu_crash_dumps dans l'exemple complet ci-dessus, puis redémarrez. La valeur reste \"next_start\" ; pour demander un autre démarrage de diagnostic, supprimez native-loader\\remix\\gpu-crash-dumps.used. Les diagnostics ralentissent un peu le jeu."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:317
+#: nativeloader/lua/nativeloader/guide_pages.lua:320
 msgid "Troubleshooting"
 msgstr "Dépannage"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:318
+#: nativeloader/lua/nativeloader/guide_pages.lua:321
 msgid "First look"
 msgstr "Où regarder d'abord"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:320
+#: nativeloader/lua/nativeloader/guide_pages.lua:323
 msgid "Open the console with the ~ key. If it does not open, turn on Options > Keyboard > Advanced > Enable developer console."
 msgstr "Ouvrez la console avec la touche ~. Si elle ne s'ouvre pas, activez « Options > Clavier > Avancé > Activer la console du développeur »."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:321
+#: nativeloader/lua/nativeloader/guide_pages.lua:324
 msgid "Type nativeloader_status and press Enter, or click the button below and then open the console."
 msgstr "Saisissez nativeloader_status et appuyez sur Enter, ou cliquez sur le bouton ci-dessous puis ouvrez la console."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:322
+#: nativeloader/lua/nativeloader/guide_pages.lua:325
 msgid "nativeloader_status prints what the loader installed and started, and whether the Remix API is ready. activation: active means that RTX is on."
 msgstr "nativeloader_status affiche ce que le chargeur a installé et démarré, et si l'API Remix est prête. activation: active signifie que RTX est activé."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:324
+#: nativeloader/lua/nativeloader/guide_pages.lua:327
 msgid "Common problems"
 msgstr "Problèmes fréquents"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:325
+#: nativeloader/lua/nativeloader/guide_pages.lua:328
 msgid "The RTX Remix tab is missing."
 msgstr "L'onglet RTX Remix n'apparaît pas."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:326
+#: nativeloader/lua/nativeloader/guide_pages.lua:329
 msgid "RTX is off in this session. Run nativeloader_status: it says why, for example \"enabled\": false under \"remix\" in config.json, or a graphics card without ray tracing."
 msgstr "RTX est désactivé pour cette session. Exécutez nativeloader_status : il en indique la raison, par exemple \"enabled\": false sous \"remix\" dans config.json, ou une carte graphique sans ray tracing."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:327
+#: nativeloader/lua/nativeloader/guide_pages.lua:330
 msgid "The game closes while it starts."
 msgstr "Le jeu se ferme au démarrage."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:328
+#: nativeloader/lua/nativeloader/guide_pages.lua:331
 msgid "Look in rtx-remix\\logs for a file named last_crash, and at the end of remix-dxvk.log. Keep the game in its window, as it is by default: exclusive fullscreen crashes Remix."
 msgstr "Cherchez dans rtx-remix\\logs un fichier nommé last_crash et consultez la fin de remix-dxvk.log. Gardez le jeu en mode fenêtré, comme il l'est par défaut : le plein écran exclusif fait planter Remix."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:329
+#: nativeloader/lua/nativeloader/guide_pages.lua:332
 msgid "Changes made in Alt+X are lost when the game restarts."
 msgstr "Les modifications faites dans Alt+X sont perdues au redémarrage du jeu."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:330
+#: nativeloader/lua/nativeloader/guide_pages.lua:333
 msgid "Save them in Alt+X. For single settings, first set Graphics Preset, or DLSS Preset for the DLSS settings, to Custom. The Remix menu (Alt+X) shows the steps."
 msgstr "Enregistrez-les dans Alt+X. Pour modifier des paramètres un par un, réglez d'abord « Préréglage graphique », ou « Préréglage DLSS » pour les paramètres DLSS, sur « Personnalisé ». « Le menu Remix (Alt+X) » indique les étapes."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:331
+#: nativeloader/lua/nativeloader/guide_pages.lua:334
 msgid "The frame rate is low."
 msgstr "La fréquence d'images est faible."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:332
+#: nativeloader/lua/nativeloader/guide_pages.lua:335
 msgid "Choose a lower graphics preset, or a faster DLSS mode such as Performance. Frame generation is off by default; on RTX 40 and 50 cards it can make motion smoother."
 msgstr "Choisissez un préréglage graphique plus bas, ou un mode DLSS plus rapide comme « Performances ». La génération d'images est désactivée par défaut ; sur les cartes RTX 40 et 50, elle peut rendre les mouvements plus fluides."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:333
+#: nativeloader/lua/nativeloader/guide_pages.lua:336
 msgid "An add-on draws over the picture or undoes RTX settings."
 msgstr "Un addon s'affiche par-dessus l'image ou annule les paramètres RTX."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:334
+#: nativeloader/lua/nativeloader/guide_pages.lua:337
 msgid "The console names it, in a line that starts with [nativeloader] RTX guard. To compare, untick RTX session guard in Start here, and tick it again afterwards."
 msgstr "La console indique son nom dans une ligne commençant par [nativeloader] RTX guard. Pour comparer, décochez « Protection de la session RTX » dans « Pour commencer », puis recochez cette option après."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:335
+#: nativeloader/lua/nativeloader/guide_pages.lua:338
 msgid "Couldn't mount file appears for the RTX Workshop item."
 msgstr "Couldn't mount file apparaît pour l'élément RTX du Workshop."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:336
+#: nativeloader/lua/nativeloader/guide_pages.lua:339
 msgid "That is expected: the loader installs this item itself, instead of the game."
 msgstr "C'est normal : le chargeur installe lui-même cet élément, à la place du jeu."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:337
+#: nativeloader/lua/nativeloader/guide_pages.lua:340
 msgid "An imported character looks grey, or its eyes look dirty."
 msgstr "Un personnage importé paraît gris, ou ses yeux semblent sales."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:338
+#: nativeloader/lua/nativeloader/guide_pages.lua:341
 msgid "Check Rendering > Model outlines: Imported game PBR and Steady eye whites for imported characters should be ticked. Characters explains both."
 msgstr "Vérifiez « Rendu > Contours des modèles » : « PBR des personnages importés » et « Stabiliser le blanc des yeux des personnages importés » doivent être cochés. « Personnages » explique les deux."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:339
+#: nativeloader/lua/nativeloader/guide_pages.lua:342
+msgid "An imported character has a dark band over its eyes, or holes in its hair."
+msgstr "Un personnage importé a une bande sombre au niveau des yeux, ou des trous dans les cheveux."
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:343
+msgid "Check Rendering > Model outlines: Hide painted shadows and Solid hair should be ticked. Characters explains both."
+msgstr "Vérifiez « Rendu > Contours des modèles » : « Masquer les ombres peintes » et « Cheveux opaques » doivent être cochés. « Personnages » explique les deux."
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:344
 msgid "The first spawn of a character takes a few seconds."
 msgstr "La première apparition d'un personnage prend quelques secondes."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:340
+#: nativeloader/lua/nativeloader/guide_pages.lua:345
 msgid "That is expected: a character is loaded the first time you use it in a game."
 msgstr "C'est normal : un personnage est chargé la première fois que vous l'utilisez dans une partie."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:341
+#: nativeloader/lua/nativeloader/guide_pages.lua:346
 msgid "Files to look at"
 msgstr "Fichiers à consulter"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:342
+#: nativeloader/lua/nativeloader/guide_pages.lua:347
 msgid "These paths start in the Garry's Mod folder, the one that holds gmod.exe."
 msgstr "Ces chemins partent du dossier de Garry's Mod, celui qui contient gmod.exe."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:344
+#: nativeloader/lua/nativeloader/guide_pages.lua:349
 msgid "native-loader\\logs\\loader.log: what the loader did at this start."
 msgstr "native-loader\\logs\\loader.log : ce que le chargeur a fait à ce démarrage."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:345
+#: nativeloader/lua/nativeloader/guide_pages.lua:350
 msgid "garrysmod\\data\\native-loader\\status.json and session.json: the same, as data."
 msgstr "garrysmod\\data\\native-loader\\status.json et session.json : la même chose, sous forme de données."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:346
+#: nativeloader/lua/nativeloader/guide_pages.lua:351
 msgid "rtx-remix\\logs\\remix-dxvk.log: Remix's own log, with every setting in effect near the top."
 msgstr "rtx-remix\\logs\\remix-dxvk.log : le journal de Remix, avec tous les paramètres actifs près du début."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:347
+#: nativeloader/lua/nativeloader/guide_pages.lua:352
 msgid "native-loader\\logs\\sessions\\: copies kept from earlier sessions."
 msgstr "native-loader\\logs\\sessions\\ : les copies conservées des sessions précédentes."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:348
+#: nativeloader/lua/nativeloader/guide_pages.lua:353
 msgid "After a crash: what to copy and send"
 msgstr "Après un plantage : quoi copier et envoyer"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:349
+#: nativeloader/lua/nativeloader/guide_pages.lua:354
 msgid "Turning RTX off for a while"
 msgstr "Désactiver RTX temporairement"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:353
+#: nativeloader/lua/nativeloader/guide_pages.lua:358
 msgid "Add \"enabled\": false inside \"remix\", as in the example below. If the file has no \"remix\" part yet, add the one shown. Keep your other settings."
 msgstr "Ajoutez \"enabled\": false dans \"remix\", comme dans l'exemple ci-dessous. Si le fichier ne contient pas encore de section \"remix\", ajoutez celle de l'exemple. Conservez vos autres paramètres."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:354
+#: nativeloader/lua/nativeloader/guide_pages.lua:359
 msgid "Save the file and start the game: it is plain Garry's Mod, without the RTX add-ons. To turn RTX back on, change false to true."
 msgstr "Enregistrez le fichier et lancez le jeu : c'est Garry's Mod ordinaire, sans les addons RTX. Pour réactiver RTX, remplacez false par true."
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:356
+#: nativeloader/lua/nativeloader/guide_pages.lua:361
 msgid "The game window"
 msgstr "La fenêtre du jeu"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:357
+#: nativeloader/lua/nativeloader/guide_pages.lua:362
 msgid "With RTX the game runs in a borderless window as large as your screen, because exclusive fullscreen crashes Remix. For another size, add -w and -h to the game's launch options in Steam, for example -w 1920 -h 1080."
 msgstr "Avec RTX, le jeu s'exécute dans une fenêtre sans bordure de la taille de votre écran, car le plein écran exclusif fait planter Remix. Pour une autre taille, ajoutez -w et -h aux options de lancement du jeu dans Steam, par exemple -w 1920 -h 1080."

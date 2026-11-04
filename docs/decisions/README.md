@@ -137,3 +137,4 @@ Each with the reason it lost.
 - [0101: Memory profiles that scale with the computer](0101-memory-profiles.md).
 - [0102: Character PBR maps stay preloaded](0102-character-pbr-maps-stay-preloaded.md) (R13-P: streaming them is visible at every first appearance; superseded in part by 0103).
 - [0103: Material preloads load at their first draw](0103-material-preloads-load-at-their-first-draw.md) (R13-F, the user accepted the hitch; runtime patch 0030; supersedes part of 0102).
+- [0104: Painted shadows left out of the draw, and solid hair, for imported characters in RTX sessions](0104-painted-shadows-and-solid-hair.md) (R15, the user's items 43 and 44).

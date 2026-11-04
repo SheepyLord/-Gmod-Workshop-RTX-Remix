@@ -79,6 +79,9 @@ Catalog hashes verify shipped bytes, not the runtime source label. This is a com
 not authentication or a native permission; details and collision consequences are in ADR 0086.
 R14-H adds the companion's new `lua/nativeloader/guide_pages.lua` (the guide's pages; data only) to
 the table, which now has 345 paths; nothing else in the guard changes.
+R15 adds the companion's `lua/autorun/client/nativeloader_imported_parts.lua` and the two rule modules
+it includes, `lua/nativeloader/painted_shadows.lua` and `lua/nativeloader/solid_hair.lua`. With the
+files other rounds added since R14-H, the table has 354 paths; nothing else in the guard changes.
 
 Depth/inert textures cannot be bound or copied. Non-nil MRT slots 1-3 are refused, so mismatched MRT
 attachments never reach native. Valid slot zero, nil MRT clears, normal color copies and fresh

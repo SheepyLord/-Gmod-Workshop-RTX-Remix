@@ -34,6 +34,16 @@ automatic albedo emission. The [catalogue audit](../tools/qa/eye_white_catalogue
 offline/game evidence; the [Lua harness](../tools/tests/eye_whites_harness.lua.md) covers lifecycle,
 isolation and option writes.
 
+R15 adds the companion's
+[`nativeloader_imported_parts.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_imported_parts.lua.md)
+with its pure [painted-shadow rules](../companion/nativeloader/lua/nativeloader/painted_shadows.lua.md) and
+[solid-hair rules](../companion/nativeloader/lua/nativeloader/solid_hair.lua.md)
+([ADR 0104](decisions/0104-painted-shadows-and-solid-hair.md)): imported characters' painted shadows
+are left out of the draw and mostly opaque hair is drawn solid, in RTX sessions. The Model Hotloader's
+`materials.lua` gains the `mmdhl.RenderHiddenParts` hook in `mmdhl.SyncMaterialState`. Model outlines
+holds both checkboxes; the [Lua harness](../tools/tests/imported_parts_harness.lua.md) covers the rules,
+the controller and the hook.
+
 R10-H adds [the PMX morph corpus auditor](../tools/mmd_morph_corpus.py.md), aggregate
 statistics and [Lua regression harness](../tools/tests/mmd_morph_harness.lua.md)
 under `tools/tests`, plus [NPC/expression PoC probes](../tools/qa/mmd_hotloader_session.py.md)
