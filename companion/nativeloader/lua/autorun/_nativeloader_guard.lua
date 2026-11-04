@@ -401,6 +401,7 @@ lua/autorun/client/nativeloader.lua
 lua/autorun/client/nativeloader_eye_whites.lua
 lua/autorun/client/nativeloader_guide.lua
 lua/autorun/client/nativeloader_imported_normals.lua
+lua/autorun/client/nativeloader_imported_parts.lua
 lua/autorun/client/nativeloader_menu.lua
 lua/autorun/client/nativeloader_mmd_alpha.lua
 lua/autorun/client/nativeloader_model_layers.lua
@@ -536,7 +537,9 @@ lua/nativeloader/eye_white_names.lua
 lua/nativeloader/eye_white_vtf.lua
 lua/nativeloader/guide_pages.lua
 lua/nativeloader/i18n.lua
+lua/nativeloader/painted_shadows.lua
 lua/nativeloader/sky_model.lua
+lua/nativeloader/solid_hair.lua
 lua/nativeloader/weather_presets.lua
 lua/niknaks/framework/sh_localbsp.lua
 lua/niknaks/modules/sh_bignumber.lua

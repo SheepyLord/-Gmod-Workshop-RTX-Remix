@@ -1,5 +1,10 @@
 # Roadmap
 
+R15 (the user's items 43 and 44, 2026-11-04; [plan](handover/R15-plan.md)) is **in progress** on `r15`:
+imported characters' painted shadows (目影, 发影, 陰影) left out of the draw in RTX sessions, and hair whose
+texture hides a mask in its alpha drawn solid ([ADR 0104](decisions/0104-painted-shadows-and-solid-hair.md)).
+Then the loader's release candidate.
+
 R14 (noclip and spectating never fracture glass; the guide redesigned with sharp labeled pictures of
 every place a player goes, its English checked against the code and translated into the six languages,
 2026-11-03; [plan](handover/R14-plan.md), [report](handover/R14-report.md)) is **done**, merged into

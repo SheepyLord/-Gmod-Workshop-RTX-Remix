@@ -6,6 +6,29 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R15
+
+- **Painted shadows of imported characters are left out in RTX sessions** (the user's item 43;
+  [ADR 0104](docs/decisions/0104-painted-shadows-and-solid-hair.md)). The shadows MMD models paint over
+  their eyes (目影), under their fringe (发影) and on their faces (陰影) darkened twice under path tracing: a
+  dark band over the eyes. New rules find them by name, including Laevatain's `Moyin` (the pinyin of 目影),
+  and by their properties (an untextured dark see-through overlay, such as Laevatain's `Hair+`, or one
+  painted from a plain black image); make-up named 眼影 counts only when it is dark or grey, and glasses
+  never. They are left out of the draw through a new hook in the Model Hotloader's visibility sync;
+  bodygroups, saves and dupes do not change. Rendering > Model outlines: **Hide painted shadows**
+  (`nativeloader_hide_painted_shadows`, on by default). In the field library's 6,684 parts it hides 92,
+  all of them shadows.
+- **Solid hair for imported characters whose hair texture hides a mask in its alpha** (the user's item
+  44, Laevatain's hair). A hair part whose texture is mostly opaque, with partial alpha inside the
+  strands that the 0.5 alpha test cuts into holes, is drawn without the alpha test and its soft copy
+  without blending: the user's own fix, applied in memory and put back when it is turned off. The
+  texture is sampled a few rows per frame; card-style hair, binary alpha and see-through hair keep the
+  alpha test. Texture hashes, and so PBR, do not change. Rendering > Model outlines: **Solid hair**
+  (`nativeloader_solid_hair`, on by default). `nativeloader_imported_parts_status` lists both per character.
+- The guide's Characters page explains both, and Troubleshooting points to them.
+- A client joining a server now receives the companion's eye-white rule modules too (they were only
+  `include`d, never sent with `AddCSLuaFile`).
+
 ### R13-F
 
 - **Material preloads load at their first draw** (runtime patch 0030, accepted by the user;

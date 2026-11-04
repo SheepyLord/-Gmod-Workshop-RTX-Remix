@@ -1,5 +1,12 @@
 # nativeloader_menu.lua
 
+R15 adds two checkboxes at the end of Model outlines, after **Choose eye-white materials** (so the
+guide's picture of the panel's top stays right): **Hide painted shadows**
+(`nativeloader_hide_painted_shadows`, default on) and **Solid hair** (`nativeloader_solid_hair`, default
+on), each with a help line. [`nativeloader_imported_parts.lua`](nativeloader_imported_parts.lua.md) owns
+both settings and acts only in RTX sessions
+([ADR 0104](../../../../../docs/decisions/0104-painted-shadows-and-solid-hair.md)).
+
 R14-H rewords the help lines in the guide's terms, keeping their meaning: Start here (the opening
 line, the classic settings, the guard's help after its checkbox, the Alt+X note), Common Remix
 settings (saving in Alt+X, the startup replay and the numeric override), Player models, Toolgun screen

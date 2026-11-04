@@ -19,7 +19,7 @@ assertion raises in the harness process; its nonzero exit fails unittest. GPU/re
 timing and the original crash require Claude's separate QA.
 
 Review regressions cover real ExoPBR/GPBR fields at both fixes-reader virtual paths, MMDHL's
-screenspace_general/mmdhl_vs20/mmdhl_ps20b creation and owned drawing, all 345 exact bundled
+screenspace_general/mmdhl_vs20/mmdhl_ps20b creation and owned drawing, all 354 exact bundled
 paths, untrusted reuse, source-name lookalikes and an identical-path collision. Material-cache
 reuse and mutations cannot lose custom-program checks. Cost assertions use 1,200 mixed paths,
 1,200 PNG/JPG icons, trusted calls and repeated loads/bindings: no guard disk reads, repeated

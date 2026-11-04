@@ -2151,3 +2151,17 @@ the copy in as the PoC's cache, samples RAM, and restores everything after a nor
 
 Results, evidence paths and the PIDs of field games a run ended are in the
 [R13-A report](handover/R13-A-report.md).
+
+## R15: painted shadows and solid hair
+
+[test_imported_parts.py](../tools/tests/test_imported_parts.py.md) runs the companion's painted-shadow
+and solid-hair rules, their client controller and the Model Hotloader's shipped visibility hook under
+LuaJIT (part of `tools\test.ps1`): 24 real field-library parts that must be hidden with the expected
+kind and rule and 18 that must not, hair names and eligibility, VTF sampling (synthetic textures for
+the user's case, card hair, binary alpha, see-through hair), the controller's flags, restores, bounds
+and status, and `mmdhl.SyncMaterialState` leaving hidden slots out.
+
+The rules were also run over the field library's 6,684 parts (read only, `out/r15/scratch` in the
+`r15` worktree): they hide 92 parts, all of them shadows. PoC sessions use the branch's own package
+(`tools\build_package.py`, then `allow.local`), with characters copied from the read-only field cache
+and removed afterwards; see [the R15 report](handover/R15-report.md).

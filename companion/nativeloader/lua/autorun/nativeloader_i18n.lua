@@ -5,6 +5,10 @@ if SERVER then
     AddCSLuaFile("nativeloader/i18n.lua")
     if file.Exists("nativeloader/i18n_data.lua", "LUA") then AddCSLuaFile("nativeloader/i18n_data.lua") end
     if file.Exists("nativeloader/guide_pages.lua", "LUA") then AddCSLuaFile("nativeloader/guide_pages.lua") end
+    -- The rules the client controllers include (eye whites, painted shadows, solid hair).
+    for _, name in ipairs({"eye_white_names", "eye_white_vtf", "painted_shadows", "solid_hair"}) do
+        if file.Exists("nativeloader/" .. name .. ".lua", "LUA") then AddCSLuaFile("nativeloader/" .. name .. ".lua") end
+    end
     util.AddNetworkString("nativeloader_localized_chat")
     function NATIVELOADER_LOCALIZED_CHAT(player, text, arguments)
         net.Start("nativeloader_localized_chat")

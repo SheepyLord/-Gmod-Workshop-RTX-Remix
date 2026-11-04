@@ -16,7 +16,7 @@ long strings and stay untranslated.
 | `welcome` | Welcome | What runs; the three places (the RTX Remix tab, Alt+X, the guide), with the spawn menu pictured; first steps; the words used (path tracing, DLSS, frame generation, graphics preset, PBR, Remix mod, Remix API, VRAM) |
 | `tab` | The RTX Remix tab | The tab's groups, pictured, then one section per group: Start here, Remix settings, Sky and weather, Rendering (Base Options and Performance pictured), Lights (Flashlight pictured), Water and glass (Glass settings pictured) |
 | `remix_menu` | The Remix menu (Alt+X) | The simple menu and the developer menu, pictured; keeping changes (Custom first, View Changes, the two Save buttons, pictured); the Migrate button; the preset and the loader's tier |
-| `characters` | Characters | Importing with the Model Hotloader and spawning, pictured; loading on first use; automatic PBR for game characters and manual choices (Imported game PBR, pictured); eye whites (Model outlines and the chooser, pictured); motions |
+| `characters` | Characters | Importing with the Model Hotloader and spawning, pictured; loading on first use; automatic PBR for game characters and manual choices (Imported game PBR, pictured); eye whites (Model outlines and the chooser, pictured); painted shadows and solid hair (R15); motions |
 | `memory` | Performance and memory | What a computer needs; the performance tier and the memory profile; choosing them in `config.json` (the complete example); tips for 8 GB / 16 GB; reading memory; after a crash |
 | `troubleshooting` | Troubleshooting | `nativeloader_status`; symptoms and what to do; the files to look at; turning RTX off; the game window |
 

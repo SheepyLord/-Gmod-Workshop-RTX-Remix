@@ -213,14 +213,14 @@
    "imported": "2026-11-03T01:28:39+00:00"
   },
   "mmd_hotloader/lua/mmdhl/materials.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\materials.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r15\\out\\r15\\stage\\materials.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r15",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
+    "commit": "786d9a9c0177ca46f036e30b5e6db4ed57029273",
     "dirty": false
    },
-   "imported": "2026-11-03T01:28:39+00:00"
+   "imported": "2026-11-04T09:20:21+00:00"
   },
   "mmd_hotloader/lua/mmdhl/persistence.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r13-hotloader\\out\\r13-a\\stage\\persistence.lua",
@@ -657,9 +657,9 @@
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/materials.lua": {
-   "size": 16889,
-   "sha256": "3e68ecae5afbe845c0969abb204ce15e7ffa31a10cc70a1fe41453dec5222dbb",
-   "mtime_ns": 1793669069089823000,
+   "size": 17301,
+   "sha256": "57c6df01a55d30a6fdc56b82fc579db1a0d38cd91c5b7fc05e14154f154b1c40",
+   "mtime_ns": 1793784005272476600,
    "stored": "plain"
   },
   "mmd_hotloader/lua/mmdhl/menu.lua": {
