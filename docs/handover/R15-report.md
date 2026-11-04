@@ -107,6 +107,14 @@ The user asked for the most recent loader release after R15, as the release cand
 README, the symbols) and creates the GitHub release "Native loader v0.13.0-rc.1", which becomes the
 latest. The RTX package itself reaches players through the Workshop item, already published above.
 
+The tag's CI run built and tested the bundle (`gmod-native-loader-0.13.0+6a68fc68.zip` and its
+`-symbols` zip) and uploaded both, but GitHub's API answered HTTP 500 to the job's last call, which
+publishes the release, so it stayed a draft (GitHub had answered the first push of `main` with the same
+error). The draft was published with `gh release edit --draft=false --latest` (one more 502, then it
+went through), and the notes gained a release-candidate summary: the loader's memory profiles, and what
+the Workshop item brings since v0.12.1.
+<https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/tag/v0.13.0-rc.1>
+
 ## Open items
 
 - **Hair that turns solid besides Endfield's.** A few models whose hair has a fade below half also become
