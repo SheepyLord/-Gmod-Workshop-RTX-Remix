@@ -76,4 +76,47 @@ JEPT's solid hair shows no dark spots where its texture has clear texels.
 **Tests.** `tools\test.ps1 -Config Release` passed on `r15`: conventions, 556 Python tests (11 new LuaJIT
 scenarios among them), 26/26 CTest.
 
-<!-- field check and release to follow -->
+## Publication and the field check
+
+`r15` was merged into `main` as `1d1ee9d` and pushed (the first push got GitHub's Internal Server Error;
+the second went through). The merge's hook published Workshop item 3829070317 as
+0.0.0-dev.20261104095452+f59fb84b; the two push hooks found the inputs unchanged.
+
+Before the field starts no other session's lab or game was running, and
+`tools\steam\verify_install.py` found the field install intact (only the user's `autoexec.cfg` differs).
+Evidence: `out\r15\field\` in the main checkout.
+
+| Start | Package | Result |
+|---|---|---|
+| 01-download | f59fb84b downloaded | Map loaded; the harness's 5 s screenshot limit ran out on the 3840x2160 window, so it ended the game instead of quitting it (no settings written) |
+| 02-r15 | f59fb84b deployed, active | Passed, through a scratch wrapper that gives `poc_session.py` 30 s per screenshot: normal quit, no Lua error, the field's own Laevatain as a frozen ragdoll, three views shot with both settings off, then on |
+
+In the field, `Moyin` and `Hair+` were hidden and the hair solid (clear 3.6 %, cut 1.5 %, partial 5.0 %,
+123 ms over the frames). The scene is dark under the user's sky settings; brightened, the pair shows the
+same as the PoC: dark shapes over the eyes with both off, a solid fringe and clean eyes with both on.
+
+The spawn wrote to the user's library: its use history (`recent.json`), the approved rigs and a new rig
+for Laevatain as a ragdoll. All of it was put back as it was (`out\r15\field\backup`), and the new rig's
+files removed. The session quit with the field's own settings.
+
+## The release candidate
+
+The user asked for the most recent loader release after R15, as the release candidate. Loader 0.13.0
+(R13-C's memory profiles, after 0.12.1, the last release) was never released. It is tagged
+`v0.13.0-rc.1` on `main`; CI's release job builds the bundle (`winmm.dll`, the default config, the
+README, the symbols) and creates the GitHub release "Native loader v0.13.0-rc.1", which becomes the
+latest. The RTX package itself reaches players through the Workshop item, already published above.
+
+## Open items
+
+- **Hair that turns solid besides Endfield's.** A few models whose hair has a fade below half also become
+  solid (Tda式初音ミクV4X's twintail ends, 芙提雅, 薇薇安 in the field library); they were not seen in a game.
+  If one looks worse, the Solid hair checkbox turns the rule off for every character; a per-part choice,
+  like the eye-white chooser's, would be the next step.
+- **Parts the rules leave.** Star Rail's `眼睛1` (alpha 0.3, painted from the face texture) and two 眼影
+  painted from a coloured texture are kept; whether they are shadows is not known from their data. Their
+  bodygroups can hide them.
+- **The guide's Model outlines picture** ends at Choose eye-white materials; the two new checkboxes are
+  below it, named in the text, not pictured.
+- **`poc_session.py`'s 5 s screenshot limit** is short for a 3840x2160 field window; the field check used
+  a scratch wrapper with 30 s.

@@ -26,6 +26,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
   alpha test. Texture hashes, and so PBR, do not change. Rendering > Model outlines: **Solid hair**
   (`nativeloader_solid_hair`, on by default). `nativeloader_imported_parts_status` lists both per character.
 - The guide's Characters page explains both, and Troubleshooting points to them.
+- **The loader's release candidate, `v0.13.0-rc.1`** (the user, after R15): loader 0.13.0, the first
+  release since 0.12.1, with memory profiles; the RTX package comes through the Workshop item.
 - A client joining a server now receives the companion's eye-white rule modules too (they were only
   `include`d, never sent with `AddCSLuaFile`).
 
