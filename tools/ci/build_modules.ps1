@@ -112,11 +112,13 @@ if (($Only -contains 'fixes') -or ($Only -contains 'rtxwater')) {
         # Borrows the local clone's objects (git alternates): that repository is only read.
         Invoke-Native 'clone the fixes (local)' { git clone --quiet --shared --no-checkout $FixesClone $fixes }
     } else {
-        Invoke-Native 'clone the fixes' { git clone --quiet --filter=blob:none --no-checkout $pins.fixes.repository $fixes }
+        # A full clone (about 300 MB): in a blob-filtered one, git restore --source does not fetch the
+        # blobs RTX Water's pinned commit needs ("unable to read sha1 file", R16's first run).
+        Invoke-Native 'clone the fixes' { git clone --quiet --no-checkout $pins.fixes.repository $fixes }
     }
     foreach ($commit in $pins.fixes.base, $pins.fixes.rtxwater_commit) {
         if (-not (Get-Native { git -C $fixes cat-file -t $commit })) {
-            Invoke-Native "fetch $commit" { git -C $fixes fetch --quiet --filter=blob:none origin $commit }
+            Invoke-Native "fetch $commit" { git -C $fixes fetch --quiet origin $commit }
         }
     }
     # Only the native sources are checked out (the fork also holds the game files, about 300 MB).
