@@ -13,6 +13,11 @@
 namespace nl::status {
 inline constexpr std::string_view kDirectory = "garrysmod/data/native-loader";
 inline constexpr std::string_view kPath = "garrysmod/data/native-loader/status.json";
+// The RTX session marker (R19, proxy F-02). An RTX start holds it open for the life of the game process,
+// with delete-on-close, so Windows deletes it when the process ends, however it ends. status.json
+// stays after the game exits, and a start through an off switch never runs the loader, so an old
+// "active" there outlives its start; the companion's render guard therefore also requires this file.
+inline constexpr std::string_view kSessionMarker = "garrysmod/data/native-loader/rtx-session.txt";
 // ReShade in this RTX session (ADR 0028).
 struct Reshade {
   reshade::Plan plan;
@@ -84,8 +89,18 @@ struct Report {
 std::string serialize(const Report& report);
 std::string log_fields(const Report& report);
 void write(const std::filesystem::path& root, const Report& report);
-// Remove only the generated status/temp files and the now-empty native-loader data folder.
+// Remove only the generated status/temp files, a session marker no game holds, and the now-empty
+// native-loader data folder.
 void remove(fs::FileSystem& disk, const std::filesystem::path& root);
 // Remove status temp files left by launches whose process has gone (write() calls it). Never throws.
 void remove_stale_temporaries(const std::filesystem::path& root, std::uint32_t own_process) noexcept;
+// Creates the RTX session marker (kSessionMarker) and returns its Windows handle, which the caller
+// keeps open until the process ends; closing it deletes the file. The file holds the session token,
+// for diagnosis. Other processes see it (a reader must share read, write and delete access), but can
+// neither delete nor replace it while it is held. Throws fs::Error (a link on its path, or another
+// live game holding the marker).
+void* hold_session_marker(const std::filesystem::path& root, std::string_view session_token);
+// Deletes a session marker that no live game holds: one a power loss or a system crash left, since
+// then Windows never closed its handle. A held one stays. Never throws.
+void clear_session_marker(const std::filesystem::path& root) noexcept;
 }  // namespace nl::status

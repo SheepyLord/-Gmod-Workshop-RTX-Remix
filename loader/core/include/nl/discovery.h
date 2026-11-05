@@ -1,7 +1,8 @@
 #pragma once
 // Finding the package archives and folders the config allowlists, without the Steam API (it is not
 // initialised yet when the bootstrap runs): one candidate per config entry. Then the subscribed
-// Workshop items that hold a package, as content-only candidates (ADR 0027).
+// Workshop items that hold a package, as content-only candidates (ADR 0027): subscribed according to
+// Steam's record, not merely installed (ADR 0111).
 
 #include "nl/config.h"
 
@@ -10,6 +11,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace nl::discovery {
@@ -31,6 +33,8 @@ struct Candidate {
   // installed nor as subscribed, and its folder is gone: what Steam leaves after the user unsubscribed
   // (it cleans up when the game is next launched from Steam). An intentional removal like
   // disabled_by_user, unlike a download in progress, which keeps the item in the record (ADR 0025).
+  // A content-only candidate is also unsubscribed when the record names no account of this computer
+  // as its subscriber, folder or not: the game or a server downloaded it (ADR 0111).
   bool unsubscribed = false;
   // Workshop only: found among the subscribed items, not through the allowlist, so it may hold
   // content only (ADR 0027): the planner skips it if it holds native code.
@@ -64,9 +68,17 @@ std::set<std::string> read_addonnomount(const std::filesystem::path& game_root);
 
 // One candidate per allowlisted entry: dev folders, then local archives, then Workshop items, each
 // in config order. Then, unless config.subscribed_content is false, the content-only candidates in
-// item order: every other installed item whose .gma lists native/manifest.json, and every other item
-// in env.deployed_workshop (legacy _legacy.bin items are never scanned; ADR 0027).
+// item order: every other installed item whose .gma lists native/manifest.json and that an account on
+// this computer subscribed to, and every other item in env.deployed_workshop (legacy _legacy.bin items
+// are never scanned; ADR 0027). Without a readable Steam record that has WorkshopItemDetails, no
+// installed item is new content; the deployed ones keep their candidates (ADR 0111).
 std::vector<Candidate> discover(const config::Config& config, const Environment& env);
+
+// Steam's `subscribedby` value (WorkshopItemDetails in appworkshop_4000.acf): the accounts on this
+// computer that subscribed, as decimal account ids separated by commas. True if it names at least
+// one non-zero account, false for an empty value or only zeros ("0"), nullopt for anything else: a
+// value this code does not understand neither adds nor removes a package (ADR 0111).
+std::optional<bool> subscribed_by_an_account(std::string_view subscribedby);
 
 // True if the archive's index lists native/manifest.json: a native-loader package. Reads the header
 // and index only; false for anything that is not a readable GMAD archive.

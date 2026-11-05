@@ -21,6 +21,21 @@ For [ADR 0056](../../../docs/decisions/0056-guard-and-startup-fallbacks.md), a c
 with an initializer no stock hash matches must still activate, note why the early guard view is
 unavailable, report no error and write no view.
 
+R19 adds two scenarios:
+
+- **The RTX session marker** (proxy F-02). After the off-switch checks, an RTX host started in its
+  hold mode (`--m4-hold`) must report the marker in `session.notes` and hold
+  `garrysmod/data/native-loader/rtx-session.txt`, listed and not deletable by this process. Once the host
+  is killed (as a crash ends it) the file must be gone within 5 s. A following `-nonativeloader` start
+  must leave the old "active" report and no marker. A leftover marker (what a power loss leaves) must be
+  gone after a start with RTX off.
+- **Content only from subscriptions** ([ADR 0111](../../../docs/decisions/0111-content-packages-only-from-subscribed-items.md)).
+  A content package built with the vendored gmapack sits in Workshop item 456 of the library beside the
+  allowlisted runtime item. With Steam's record naming no subscriber (what `steamworks.DownloadUGC`
+  leaves) nothing deploys and nothing is listed; subscribed, it deploys; with the subscriber gone it is
+  removed with the reason; subscribed again it comes back; with the record deleted it stays
+  (`unchanged`). The item's file is never touched.
+
 Writes JSON probes, loader logs, status snapshots and a ten-sample unchanged-startup timing summary
 under `out/m4-synthetic/<configuration>-<PID>/`. Successful scratch is removed, retrying momentary
 Windows image-file locks. Failed scratch is retained and printed. Exit 0 when all checks pass;

@@ -143,10 +143,9 @@ std::string log_fields(const Report& r) {
   return out.str();
 }
 
-void write(const std::filesystem::path& root, const Report& report) {
-  const auto temporary = std::string(kPath) + ".tmp-" + std::to_string(report.process_id);
-  fs::refuse_links(root, kPath);
-  fs::refuse_links(root, temporary);
+namespace {
+// garrysmod/data/native-loader and the folders above it, made where missing; never a link.
+void make_directory(const std::filesystem::path& root) {
   auto& disk = fs::win32();
   for (const char* relative : {"garrysmod", "garrysmod/data", "garrysmod/data/native-loader"}) {
     const auto path = fs::join(root, relative);
@@ -160,6 +159,15 @@ void write(const std::filesystem::path& root, const Report& report) {
     }
     else if (!info.directory || info.link) throw fs::Error("status parent is not an ordinary directory: " + fs::utf8(path), 0);
   }
+}
+}  // namespace
+
+void write(const std::filesystem::path& root, const Report& report) {
+  const auto temporary = std::string(kPath) + ".tmp-" + std::to_string(report.process_id);
+  fs::refuse_links(root, kPath);
+  fs::refuse_links(root, temporary);
+  auto& disk = fs::win32();
+  make_directory(root);
   // Separate temp files let two game instances report concurrently; each final rename is atomic.
   const auto temp_path = fs::join(root, temporary);
   if (fs::stat(temp_path).exists) disk.remove_file(temp_path);
@@ -202,8 +210,44 @@ void remove_stale_temporaries(const std::filesystem::path& root, std::uint32_t o
   }
 }
 
+void* hold_session_marker(const std::filesystem::path& root, std::string_view session_token) {
+  fs::refuse_links(root, kSessionMarker);
+  make_directory(root);
+  const auto path = fs::join(root, kSessionMarker);
+  // Delete-on-close: Windows deletes the file once its last handle closes, and closes every handle
+  // when the process ends, crash or Task Manager included. Read sharing only: no other process can
+  // delete or replace it while it is held, and existence checks (GetFileAttributes, FindFirstFile,
+  // the CRT's stat, which opens with full sharing for its attributes only) still see it.
+  const HANDLE handle = CreateFileW(fs::long_path(path).c_str(), GENERIC_WRITE | DELETE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS,
+                                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+  if (handle == INVALID_HANDLE_VALUE) {
+    const DWORD code = GetLastError();
+    throw fs::Error("cannot create " + fs::utf8(path) + " (Windows error " + std::to_string(code) + ")", code);
+  }
+  // For diagnosis only: the file's presence is the proof, so a failed write keeps the marker.
+  const std::string text = "session_token=" + std::string(session_token) + "\n";
+  DWORD written = 0;
+  WriteFile(handle, text.data(), static_cast<DWORD>(text.size()), &written, nullptr);
+  return handle;
+}
+
+void clear_session_marker(const std::filesystem::path& root) noexcept {
+  try {
+    fs::refuse_links(root, kSessionMarker);
+    const auto path = fs::join(root, kSessionMarker);
+    const auto info = fs::stat(path);
+    if (!info.exists || info.directory || info.link) return;
+    // A marker a live game holds refuses (sharing violation) and stays; that game is in an RTX session.
+    DeleteFileW(fs::long_path(path).c_str());
+  } catch (const std::exception&) {
+    // A link on the path, or attributes that cannot be read: left alone.
+  }
+}
+
 void remove(fs::FileSystem& disk, const std::filesystem::path& root) {
   fs::refuse_links(root, kPath);
+  // A session marker a power loss left (uninstall refuses while the game runs, so none is held).
+  clear_session_marker(root);
   // The RTX-session report and the generated cfgs (M5); a cfg only if the loader wrote it.
   for (const char* relative : {"garrysmod/cfg/nativeloader_session.cfg", "garrysmod/cfg/nativeloader_restore.cfg"}) {
     fs::refuse_links(root, relative);

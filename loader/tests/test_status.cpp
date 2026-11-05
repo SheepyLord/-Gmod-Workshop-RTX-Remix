@@ -2,8 +2,10 @@
 #include "nl/json.h"
 #include "nl/fs.h"
 #include "nl_test.h"
+#include <windows.h>
 #include <filesystem>
 #include <fstream>
+#include <string>
 
 TEST_CASE("status: schema includes generation activation user layers fallback and errors") {
   nl::status::Report report;
@@ -77,6 +79,49 @@ TEST_CASE("status: atomic replacement and uninstall remove only generated data")
   std::filesystem::remove(folder / "keep.txt");
   nl::status::remove(nl::fs::win32(), root);
   CHECK(!std::filesystem::exists(folder));
+  std::filesystem::remove_all(root);
+}
+
+TEST_CASE("status: the RTX session marker lives exactly as long as its handle (R19, proxy F-02)") {
+  const auto root = nl::test::scratch_dir("status_session_marker");
+  const auto marker = nl::fs::join(root, nl::status::kSessionMarker);
+  void* held = nl::status::hold_session_marker(root, "4242-133000000000000000");
+  REQUIRE(held != nullptr);
+  // Existence checks see it: attributes, a directory listing, the C++ library's status.
+  CHECK(GetFileAttributesW(nl::fs::long_path(marker).c_str()) != INVALID_FILE_ATTRIBUTES);
+  WIN32_FIND_DATAW found{};
+  const HANDLE search = FindFirstFileW(nl::fs::long_path(marker).c_str(), &found);
+  CHECK(search != INVALID_HANDLE_VALUE);
+  if (search != INVALID_HANDLE_VALUE) FindClose(search);
+  CHECK(std::filesystem::exists(marker));
+  // A reader that shares everything reads the token.
+  const HANDLE reader = CreateFileW(nl::fs::long_path(marker).c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  REQUIRE(reader != INVALID_HANDLE_VALUE);
+  char text[64]{};
+  DWORD got = 0;
+  CHECK(ReadFile(reader, text, sizeof(text) - 1, &got, nullptr));
+  CloseHandle(reader);
+  CHECK(std::string(text, got) == "session_token=4242-133000000000000000\n");
+  // Nobody else deletes or replaces it while it is held, and a held one is never cleared.
+  const BOOL deleted = DeleteFileW(nl::fs::long_path(marker).c_str());
+  const DWORD why = GetLastError();
+  CHECK(!deleted);
+  CHECK(why == ERROR_SHARING_VIOLATION);
+  CHECK_THROWS_AS(nl::status::hold_session_marker(root, "4243-1"), nl::fs::Error);
+  nl::status::clear_session_marker(root);
+  CHECK(std::filesystem::exists(marker));
+  // Closing the handle, which the end of the game process does, deletes it.
+  CloseHandle(static_cast<HANDLE>(held));
+  CHECK(!std::filesystem::exists(marker));
+  // A leftover (what a power loss leaves): removed by a start without RTX, and by uninstall.
+  std::ofstream(marker) << "session_token=1-1\n";
+  nl::status::clear_session_marker(root);
+  CHECK(!std::filesystem::exists(marker));
+  std::ofstream(marker) << "session_token=1-1\n";
+  nl::status::remove(nl::fs::win32(), root);
+  CHECK(!std::filesystem::exists(marker));
+  CHECK(!std::filesystem::exists(marker.parent_path()));
   std::filesystem::remove_all(root);
 }
 

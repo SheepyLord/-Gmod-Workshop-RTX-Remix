@@ -29,5 +29,12 @@ target.
 The append tests inspect the emitted Lua contract; this C++ executable does not execute Lua or
 establish in-game behavior. GPU/game acceptance is separate.
 
+R19 (proxy F-02) adds [`guard_session_marker.lua`](guard_session_marker.lua.md), CTest
+`nl_guard_session_marker`: LuaJIT runs the production companion guard once per case with only what its
+installation decision reads (the status report and the RTX session marker through a fake `file`
+library), and checks whether it installs: this start's RTX with the marker, never an earlier start's
+report without it, older loaders' reports as before. `CMakeLists.txt` registers it only when it finds
+`luajit` (on `PATH` or in `%LOCALAPPDATA%\Programs\LuaJIT\bin`).
+
 After configuring the aggregate build, build `nl_render_guard_tests`, then run
 `ctest --test-dir <build-directory> -R ^nl_render_guard_tests$ --output-on-failure`.

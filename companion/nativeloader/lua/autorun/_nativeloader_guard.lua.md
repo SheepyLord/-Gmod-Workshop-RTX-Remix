@@ -16,6 +16,19 @@ R8 policy: [ADR 0086](../../../../docs/decisions/0086-inert-shader-effects-and-s
 - The generated initializer's __NATIVELOADER_RTX_GUARD_EARLY flag and local cache existence proof
   give installation="early". The local loader's DATA native-loader/status.json must report active
   RTX, preventing a listen host's served initializer/autorun from enabling the guard on vanilla clients.
+- R19 (proxy F-02): that report must be this start's. status.json stays after the game exits, and a
+  start through an off switch (-nonativeloader, NATIVE_LOADER_DISABLE=1, native-loader/disable) never
+  runs the loader, so its old "active" used to install the guard in a vanilla session. A report from
+  loader 0.14.0 or later (its `loader_version`) therefore also needs the RTX session marker DATA
+  native-loader/rtx-session.txt, which the bootstrap holds with delete-on-close for the life of an RTX
+  start: Windows deletes it when the game exits, however it exits. It is looked for with file.Exists,
+  then with a file.Find listing (which never opens the file). A report from an older loader decides
+  alone, as before; with no readable report, the marker alone shows this start's RTX. The decision is
+  tested by [loader/guard/tests/guard_session_marker.lua](../../../../loader/guard/tests/guard_session_marker.lua.md).
+  Why not a timestamp: GMod's lua_shared.dll links the C runtime statically, so os.clock() counts from
+  when that DLL loaded, after the loader's whole start (a deployment can take minutes), and
+  os.time() - os.clock() is not the process's start (Windows SDK UCRT `time/clock.cpp`, and
+  lua_shared.dll's import table, which names no C runtime DLL).
 - An active local start without the early view installs at ordinary autorun, installation="autorun".
 - The verified native multiplayer bootstrap's raw marker in a private environment gives
   installation="verified multiplayer bootstrap". It can run after remote server autoruns. Global
@@ -56,7 +69,8 @@ Material and CreateMaterial remain native for all callers, including known effec
 is no evidence that loading/reading alone caused the tester's crash. PBR conversion needs the real
 ExoPBR/GPBR shader and texture parameters; MMDHL's immediate path creates its own custom programs.
 The guard never reads VMT text: plain/trusted/image/repeat loads add zero file.Read calls, and do
-not inspect shader metadata or caller paths. Only the existing status/session startup reads remain.
+not inspect shader metadata or caller paths. Only the existing status/session startup reads remain,
+plus (R19) the session marker's existence check at installation.
 
 Untrusted render/surface bindings inspect native GetShader and, if necessary, GetString for custom
 pixel/vertex programs or reserved base textures. Decisions and creation hints use weak material
