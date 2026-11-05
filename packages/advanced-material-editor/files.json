@@ -7,20 +7,20 @@
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "commit": "f5bbedd27395d5f267b376e3cdde3236d4605194",
     "dirty": false
    },
-   "imported": "2026-11-05T22:26:06+00:00"
+   "imported": "2026-11-05T23:02:33+00:00"
   },
   "bin": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\ci\\built\\advanced-material-editor\\bin",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "commit": "f5bbedd27395d5f267b376e3cdde3236d4605194",
     "dirty": false
    },
-   "imported": "2026-11-05T22:26:06+00:00"
+   "imported": "2026-11-05T23:02:33+00:00"
   },
   "!advanced_material_editor/lua/advmat/cl_05_i18n.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_05_i18n.lua",
@@ -127,10 +127,10 @@
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "commit": "f5bbedd27395d5f267b376e3cdde3236d4605194",
     "dirty": false
    },
-   "imported": "2026-11-05T22:25:18+00:00"
+   "imported": "2026-11-05T23:02:32+00:00"
   }
  },
  "files": {
@@ -503,17 +503,17 @@
    "stored_sha256": "867690980294c9e121e91af761ba0c46137631be377a22b48ea4b09c4e7e33e8"
   },
   "bin/gmcl_advmat_rtx_bridge_win64.dll": {
-   "size": 324096,
-   "sha256": "4e6361d1db911e420982823c9f30a6506837f3cbf948582f3c6aa80261c32f7f",
-   "mtime_ns": 1793917490161286300,
+   "size": 325120,
+   "sha256": "a22bdf4aee6f0a173d5edde263973f8d8585ab872dc1ca29af341364ece7ba67",
+   "mtime_ns": 1793919738652517300,
    "stored": "xz",
-   "stored_size": 117784,
-   "stored_sha256": "c55f7502e547cfccad6122d4378b235c25c14193367e63915c0bb119439e313b"
+   "stored_size": 118128,
+   "stored_sha256": "aacae26bcd7ad192253c5861c56b507f76f17ad2e30d757d0c72eb6adbad501b"
   },
   "source/provenance.json": {
-   "size": 4501,
-   "sha256": "01cb3ee29ec3c053ea16ee137a12e58ce779385bf2d4fb68340ed7f4ffefe05c",
-   "mtime_ns": 1793917518457765700,
+   "size": 5275,
+   "sha256": "3bced30c937bbc750e25087996ae1f541bce83632690853897c64a57ae37238d",
+   "mtime_ns": 1793919752874639700,
    "stored": "plain"
   },
   "source/rtx_bridge/CMakeLists.txt": {
@@ -535,9 +535,9 @@
    "stored": "plain"
   },
   "source/rtx_bridge/README.md": {
-   "size": 6205,
-   "sha256": "4ddcf8a1cddf85814b3fd083b58e8b5b094be3477fdf78be8f6ab8753bef57e7",
-   "mtime_ns": 1793917361622789400,
+   "size": 6667,
+   "sha256": "e4e7540e9224065aae44f6efcc08d29d6fb309607bb9f8d0a8e98d3d6b8d09dc",
+   "mtime_ns": 1793919721668001300,
    "stored": "plain"
   },
   "source/rtx_bridge/src/bridge.cpp": {
@@ -571,9 +571,9 @@
    "stored": "plain"
   },
   "source/rtx_bridge/src/texture_ingest.cpp": {
-   "size": 41195,
-   "sha256": "cf8d75b189eb8ee912671008e2049af99f34969aa9f4e3fd7b99d9253fa664c2",
-   "mtime_ns": 1793916515580477000,
+   "size": 44745,
+   "sha256": "99572defa0e68a87871fc0dc14fe860bcdac3264c5401ffd8e33694ee386cd70",
+   "mtime_ns": 1793919653004258500,
    "stored": "plain"
   },
   "source/rtx_bridge/src/usda_writer.cpp": {
@@ -589,15 +589,15 @@
    "stored": "plain"
   },
   "source/rtx_bridge/tests/writer_tests.cpp": {
-   "size": 94735,
-   "sha256": "cd8139e0d2316ab90777974772e70aff7351d118e3e169126450055f7b97a8cd",
-   "mtime_ns": 1793916634486365600,
+   "size": 101283,
+   "sha256": "65d9c0a548a9cd2086137717af9834fbc31b9d071a175cf1b55467d9e71e8432",
+   "mtime_ns": 1793919672481621800,
    "stored": "plain"
   },
   "source/Source.md": {
-   "size": 2738,
-   "sha256": "8b44641d2fffc8fe7429e72607fe060e54fb54cc3abefa5a7886e5103db377a7",
-   "mtime_ns": 1793917455792413500,
+   "size": 3908,
+   "sha256": "8c699da5b44da9d3caeadaaa3ecba9f71a5f23e5c6c837233d77f09443e5e4a8",
+   "mtime_ns": 1793919713266723000,
    "stored": "plain"
   }
  }

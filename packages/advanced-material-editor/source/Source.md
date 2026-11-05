@@ -20,7 +20,20 @@ RTX package's workflow (R16, ADR 0106), so the package does not carry a binary m
   - `src/texture_ingest.cpp`: a DDS is checked against its file size (a known format, a mip count of at
     most 16 and no more than the dimensions allow, sane faces and array layers, every byte the header
     describes present), and a cached copy gets the same check before it is reused.
-  - `tests/writer_tests.cpp`, the new `tests/lua_binding_tests.cpp` and `CMakeLists.txt`: tests of both.
+  - `src/texture_ingest.cpp`, the class of the review's H3 (found by R19-X): a texture source is refused
+    from its spelling, before any filesystem call, when it starts with two separators (`\\host\share`,
+    `//host`, `\\?\`, `\\.\`), has a root name other than a drive letter and a colon (`\??\`), or has a
+    drive letter without a root directory (`C:file`). Probing a UNC path made Windows open an SMB
+    session to a host the caller named and offer the player's credentials.
+  - `src/texture_ingest.cpp`, the same information leak closed further: a source lexically outside every
+    allowed root and outside `rtx-remix/mods` is refused with the one code
+    `texture_path_outside_allowed_roots`, before `canonical`, whether it exists, cannot be resolved, or
+    resolves outside the roots. Before, a missing path answered `invalid_texture_path` and a present one
+    `texture_path_outside_allowed_roots`, so a client script could tell whether a file was on the
+    player's PC. A path inside an allowed root or `rtx-remix/mods` (linked mod folders included) is
+    unchanged, and a file in the game folder may still say "not a readable regular file".
+  - `tests/writer_tests.cpp`, the new `tests/lua_binding_tests.cpp` and `CMakeLists.txt`: tests of all
+    four.
 - The binary that shipped before R16 (316,416 bytes, SHA-256 `aeb5de42...`) is byte-identical to a local
   build of that commit. `provenance.json` `shipped_binary` records the R19 build that replaced it.
 - The origin has no licence file; this copy asserts or grants none. It is the same author's code as the

@@ -349,6 +349,28 @@ bool IsWicExtension(const std::string& extension) {
     return std::find(supported.begin(), supported.end(), extension) != supported.end();
 }
 
+// A texture source names a file on this computer, judged from its spelling
+// alone, before any filesystem call. Refused: two leading separators, in any
+// mix of \ and / (UNC "\\host\share" and "//host", the device forms "\\?\" and
+// "\\.\"); any root name other than a drive letter and a colon (such as
+// "\??\"); and a drive letter without a root directory ("C:file", which Windows
+// resolves against that drive's current directory). Merely probing a UNC path
+// makes Windows open an SMB session to the host the caller named and offer the
+// player's credentials, and any client Lua can call this writer.
+bool IsLocalSourceSpelling(const std::filesystem::path& source) {
+    const auto& text = source.native();
+    const auto isSeparator = [](std::filesystem::path::value_type character) {
+        return character == '\\' || character == '/';
+    };
+    if (text.size() >= 2 && isSeparator(text[0]) && isSeparator(text[1])) return false;
+    if (!source.has_root_name()) return true;
+    const auto name = source.root_name().native();
+    if (name.size() != 2 || name[1] != ':') return false;
+    const auto letter = name[0];
+    const bool driveLetter = (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z');
+    return driveLetter && source.has_root_directory();
+}
+
 // RTX Remix loads every folder in rtx-remix/mods, and a mod kept elsewhere is
 // often linked in (a gm_poolrooms_rtx junction to a folder outside the game).
 // A source reached through such a link may resolve anywhere inside that
@@ -759,25 +781,62 @@ Result ImportTexture(const TextureImportConfig& config,
                      const std::string& profileId,
                      const TextureInput& input,
                      ImportedTexture& output) {
+    // First, before the relative candidates and canonical() below touch the
+    // filesystem: a network, device or drive-relative spelling never gets that far.
+    if (!IsLocalSourceSpelling(input.source)) {
+        return Result::Failure("texture_path_outside_allowed_roots",
+            "texture source must be a path on this computer: network, device and "
+            "drive-relative paths are refused");
+    }
     std::error_code ec;
     std::filesystem::path source = input.source;
+    // Decide containment lexically, before canonical() or any probe outside the
+    // game folder, so a source outside the allowed area is refused the same way
+    // whether or not it exists. Otherwise a server's client Lua could tell a
+    // present file from a missing one anywhere on the player's PC from the error
+    // code alone: "not a readable regular file" when canonical() fails on a
+    // missing path, "outside the configured import roots" when it resolves
+    // (R19 follow-up). A path lexically inside an allowed root or rtx-remix/mods
+    // keeps today's behaviour; the allowed-roots check and InsideLinkedModFolder
+    // below still judge where it really resolves.
+    const auto modsFolder = (config.gameRoot / "rtx-remix" / "mods").lexically_normal();
+    const auto lexicallyInsideAllowedArea = [&](const std::filesystem::path& candidate) {
+        for (const auto& root : config.allowedRoots) {
+            if (IsDescendantOrSame(candidate, root)) return true;  // normalizes both sides
+        }
+        return IsDescendantOrSame(candidate, modsFolder);
+    };
+
     if (source.is_relative()) {
         // The Lua file API commonly reports paths relative to garrysmod/ or
-        // garrysmod/data/. Resolve only these well-known in-install locations.
+        // garrysmod/data/. Resolve only these well-known in-install locations,
+        // and probe only candidates that stay lexically inside the game folder,
+        // so a crafted "../.." or drive-relative "\dir" source (which Windows
+        // would resolve against the game root's current drive, not inside it)
+        // cannot probe elsewhere. An unresolved relative source stays on the
+        // game root, where the gate below allows the usual "not readable" reply.
         const auto& gameRoot = config.gameRoot;
         const std::filesystem::path candidates[]{
             gameRoot / source,
             gameRoot / "garrysmod" / source,
             gameRoot / "garrysmod" / "data" / source,
         };
+        source = candidates[0];
         for (const auto& candidate : candidates) {
-            if (std::filesystem::is_regular_file(candidate, ec)) {
+            if (IsDescendantOrSame(candidate, gameRoot) &&
+                std::filesystem::is_regular_file(candidate, ec)) {
                 source = candidate;
                 break;
             }
             ec.clear();
         }
     }
+
+    if (!lexicallyInsideAllowedArea(source)) {
+        return Result::Failure("texture_path_outside_allowed_roots",
+            "texture source resolves outside the configured import roots");
+    }
+
     const auto canonicalSource = std::filesystem::canonical(source, ec);
     if (ec || !std::filesystem::is_regular_file(canonicalSource, ec)) {
         return Result::Failure("invalid_texture_path", "texture source is not a readable regular file");
