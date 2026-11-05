@@ -126,9 +126,13 @@ local COPY_SENTINEL_R = 255
 local COPY_SENTINEL_G = 0
 local COPY_SENTINEL_B = 255
 
+-- The fallback is only for a setting that does not exist: "convar and
+-- convar:GetBool() or fallback" turned a setting of 0 into the fallback, so
+-- the settings checkboxes whose fallback is true could not be turned off.
 local function GetBool( name, fallback )
 	local convar = GetConVar( name )
-	return convar and convar:GetBool() or fallback
+	if not convar then return fallback end
+	return convar:GetBool()
 end
 
 local function GetInt( name, fallback )

@@ -71,6 +71,21 @@ Store.CONFLICT = "somebody else changed this material after you loaded it"
 -- global and a collision silently hijacks another addon's modifier.
 local DUPE_MODIFIER = "Advanced Material Editor - submaterials"
 
+-- The encoded snapshot, built once for a state of the store and reused for
+-- every request until the next change: a request no longer re-encodes the
+-- whole database. A broadcast changes the store and the revision together;
+-- every change that leaves the revision alone (an entity's rules removed with
+-- it or pasted from a dupe, a reload) calls InvalidateSnapshot. The serial
+-- lives on Store like the revision, so a snapshot key is never reused across
+-- a Lua autorefresh.
+local snapshotCache
+Store.SnapshotSerial = tonumber( Store.SnapshotSerial ) or 0
+
+local function InvalidateSnapshot()
+	Store.SnapshotSerial = Store.SnapshotSerial + 1
+	snapshotCache = nil
+end
+
 ---------------------------------------------------------------------------
 -- Messages
 ---------------------------------------------------------------------------
@@ -541,6 +556,7 @@ end
 
 function Store.Load()
 	Store.Rules = {}
+	InvalidateSnapshot()
 	timer.Remove( SAVE_TIMER )
 	dirty, saveQueued = false, false
 	failureReason, failureCount = nil, 0
@@ -651,17 +667,38 @@ local function BuildSnapshot()
 	return { rules = Store.Rules, ents = ents, revision = Store.Revision }
 end
 
+--- The snapshot of the store as it is now, encoded: reused while the
+--- revision and the store are unchanged.
+local function EncodedSnapshot()
+	local cache = snapshotCache
+	if cache and cache.revision == Store.Revision and cache.serial == Store.SnapshotSerial then
+		return cache
+	end
+
+	local snapshot = BuildSnapshot()
+	cache = {
+		revision = snapshot.revision,
+		serial   = Store.SnapshotSerial,
+		key      = tostring( snapshot.revision ) .. ":" .. tostring( Store.SnapshotSerial ),
+		data     = util.Compress( util.TableToJSON( snapshot ) ) or "",
+	}
+	snapshotCache = cache
+	return cache
+end
+
 --- Queue a snapshot for `target` (a player, or nil for everybody). The marker
 --- goes out at once, ahead of any broadcast made while the snapshot is paced
---- out, so the client knows to keep those changes and replay them on top.
+--- out, so the client knows to keep those changes and replay them on top. A
+--- player already waiting for a snapshot gets this newer one instead, without
+--- a second marker; one receiving this same snapshot gets nothing more.
 local function SendSnapshot( target )
-	local snapshot = BuildSnapshot()
+	local snapshot = EncodedSnapshot()
 
-	net.Start( "AdvMat.SyncBegin" )
-		net.WriteUInt( snapshot.revision % 4294967296, 32 )
-	if target == nil then net.Broadcast() else net.Send( target ) end
-
-	AdvMat.Net.SendChunked( snapshot, target )
+	AdvMat.Net.SendSnapshotData( snapshot.data, snapshot.key, target, function( players )
+		net.Start( "AdvMat.SyncBegin" )
+			net.WriteUInt( snapshot.revision % 4294967296, 32 )
+		net.Send( players )
+	end )
 end
 
 function Store.SyncTo( ply )
@@ -931,6 +968,7 @@ duplicator.RegisterEntityModifier( DUPE_MODIFIER, function( ply, ent, data )
 	end
 
 	Store.EntityRules[ ent:EntIndex() ] = ( next( set ) ~= nil ) and set or nil
+	InvalidateSnapshot()
 	SyncDupeModifier( ent )
 
 	if skipped > 0 then
@@ -957,7 +995,10 @@ end )
 
 hook.Add( "EntityRemoved", "AdvMat.EntityRemoved", function( ent )
 	if not IsValid( ent ) then return end
-	Store.EntityRules[ ent:EntIndex() ] = nil
+	local index = ent:EntIndex()
+	if Store.EntityRules[ index ] == nil then return end
+	Store.EntityRules[ index ] = nil
+	InvalidateSnapshot()
 end )
 
 hook.Add( "PlayerInitialSpawn", "AdvMat.InitialSync", function( ply )
@@ -1003,6 +1044,7 @@ end )
 concommand.Add( "advmat_wipe", function( ply )
 	if not IsConsoleOrSuperAdmin( ply ) then return end
 	Store.Rules = {}
+	InvalidateSnapshot()
 	Store.Revision = Store.Revision + 1
 	local ok, reason = Store.Save()
 	SendSnapshot( nil )

@@ -59,6 +59,14 @@ end
 
 ABT.IsEditableEntity = IsEditableEntity
 
+-- Another player's model is theirs: only that player or an admin may edit it,
+-- the rule the motion tool uses for player targets. Props, NPCs and ragdolls
+-- stay with the CanTool hook and the server's prop protection.
+function ABT.CanEditPlayer( player, entity )
+	if not IsValid( entity ) or not entity:IsPlayer() then return true end
+	return IsValid( player ) and ( entity == player or player:IsAdmin() )
+end
+
 local function SortedIndexes( values )
 	local indexes = {}
 	for rawIndex, enabled in pairs( values or {} ) do
@@ -210,21 +218,18 @@ util.AddNetworkString( "advanced_bodygroup_tool_vertex_cuts_result" )
 
 ABT.ManagedEntities = ABT.ManagedEntities or setmetatable( {}, { __mode = "k" } )
 
+-- Builds a state from stored modifier data; defined with the duplicator
+-- support below.
+local SanitizeStoredState
+
 local function GetState( entity, create )
 	local state = entity.AdvancedBodygroupUVHideState
 	if not state and create then
+		-- A stored modifier came from a dupe or a save, so its fields can hold
+		-- anything: the state is built only from what passes the same checks
+		-- as a paste.
 		local stored = entity.EntityMods and entity.EntityMods[ ABT.ModifierName ]
-		state = {
-			model = stored and stored.model or entity:GetModel(),
-			hiddenBodygroups = table.Copy(
-				stored and stored.hiddenBodygroups or {} ),
-			hiddenRegions = table.Copy(
-				stored and stored.hiddenRegions or {} ),
-			regionOptions = table.Copy(
-				stored and stored.regionOptions or {} ),
-			vertexKeepBounds = table.Copy(
-				stored and stored.vertexKeepBounds or {} ),
-		}
+		state = SanitizeStoredState( entity, stored )
 		entity.AdvancedBodygroupUVHideState = state
 		ABT.ManagedEntities[ entity ] = true
 	end
@@ -692,64 +697,130 @@ function ABT.ShowAllBodygroupsAndReset( entity )
 	return true
 end
 
-duplicator.RegisterEntityModifier( ABT.ModifierName, function( _, entity, data )
-	if not IsEditableEntity( entity ) or not istable( data ) then return end
+-- A dupe is client-controlled data: any field may hold any value. A field that
+-- is not a table is read as empty, every key and value is checked before use,
+-- and one budget bounds the entries read across all fields, so a crafted
+-- paste can neither raise a Lua error part-way through the duplicator nor
+-- cost more work than a genuine dupe.
+local MAX_STORED_ENTRIES = 4096
+
+local function IsIndex( value, minimum, maximum )
+	return value ~= nil and value == math.floor( value )
+		and value >= minimum and value <= maximum
+end
+
+SanitizeStoredState = function( entity, data )
+	local state = {
+		model = entity:GetModel(),
+		hiddenBodygroups = {},
+		hiddenRegions = {},
+		regionOptions = {},
+		vertexKeepBounds = {},
+	}
+	if not istable( data ) then return state end
+	-- A modifier stored for another model describes other bodygroups.
 	if isstring( data.model ) and data.model ~= ""
-	and data.model ~= entity:GetModel() then return end
-	local state = GetState( entity, true )
-	state.model = entity:GetModel()
-	state.hiddenBodygroups = {}
-	state.hiddenRegions = {}
-	state.regionOptions = {}
-	state.vertexKeepBounds = {}
-	for rawIndex, enabled in pairs( data.hiddenBodygroups or {} ) do
+	and data.model ~= entity:GetModel() then return state end
+
+	local budget = MAX_STORED_ENTRIES
+	local function Field( name )
+		local value = data[ name ]
+		return istable( value ) and value or {}
+	end
+
+	for rawIndex, enabled in pairs( Field( "hiddenBodygroups" ) ) do
+		budget = budget - 1
+		if budget < 0 then break end
 		local index = tonumber( rawIndex )
-		if enabled and index and index >= 0 and index <= 255
+		if enabled and IsIndex( index, 0, 255 )
 		and BodygroupExists( entity, index ) then
 			state.hiddenBodygroups[ index ] = true
 		end
 	end
-	for rawGroup, rawRegions in pairs( data.hiddenRegions or {} ) do
+
+	local storedOptions = Field( "regionOptions" )
+	local regionCount = 0
+	for rawGroup, rawRegions in pairs( Field( "hiddenRegions" ) ) do
+		budget = budget - 1
+		if budget < 0 or regionCount >= 256 then break end
 		local group = tonumber( rawGroup )
-		local storedOption = data.regionOptions and group
-			and ( data.regionOptions[ rawGroup ] or data.regionOptions[ group ] )
-		local expectedOption = tonumber( storedOption )
-		if expectedOption == nil and group then
-			expectedOption = entity:GetBodygroup( group )
-		end
-		if group and group >= 0 and group <= 255
-		and BodygroupExists( entity, group ) and istable( rawRegions )
-		and expectedOption == entity:GetBodygroup( group ) then
-			for rawRegion, enabled in pairs( rawRegions ) do
-				local region = tonumber( rawRegion )
-				if enabled and region and region >= 1 and region <= 4095
-				and CountHiddenRegions( state.hiddenRegions ) < 256 then
-					state.hiddenRegions[ group ] = state.hiddenRegions[ group ] or {}
-					state.hiddenRegions[ group ][ region ] = true
-					state.regionOptions[ group ] = expectedOption
+		if IsIndex( group, 0, 255 ) and istable( rawRegions )
+		and BodygroupExists( entity, group ) then
+			local storedOption = storedOptions[ rawGroup ]
+			if storedOption == nil then storedOption = storedOptions[ group ] end
+			local expectedOption = tonumber( storedOption )
+			if expectedOption == nil then expectedOption = entity:GetBodygroup( group ) end
+			if expectedOption == entity:GetBodygroup( group ) then
+				for rawRegion, enabled in pairs( rawRegions ) do
+					budget = budget - 1
+					if budget < 0 or regionCount >= 256 then break end
+					local region = tonumber( rawRegion )
+					local regions = state.hiddenRegions[ group ]
+					if enabled and IsIndex( region, 1, 4095 )
+					and not ( regions and regions[ region ] ) then
+						regions = regions or {}
+						regions[ region ] = true
+						state.hiddenRegions[ group ] = regions
+						state.regionOptions[ group ] = expectedOption
+						regionCount = regionCount + 1
+					end
 				end
 			end
 		end
 	end
-	for rawGroup, rawBounds in pairs( data.vertexKeepBounds or {} ) do
+
+	local keptGroups = 0
+	for rawGroup, rawBounds in pairs( Field( "vertexKeepBounds" ) ) do
+		budget = budget - 1
+		if budget < 0 or keptGroups >= 64 then break end
 		local group = tonumber( rawGroup )
-		if group and group >= 0 and group <= 255
-		and BodygroupExists( entity, group ) and istable( rawBounds )
-		and table.Count( state.vertexKeepBounds ) < 64 then
+		if IsIndex( group, 0, 255 ) and istable( rawBounds )
+		and BodygroupExists( entity, group ) then
 			local sanitized = SanitizeVertexKeepBounds( entity, group, rawBounds )
 			if sanitized and sanitized.option == entity:GetBodygroup( group )
-			and CountVertexKeepEntries( state.vertexKeepBounds )
+			and CountVertexKeepEntries( state.vertexKeepBounds, group )
 			+ VertexKeepEntryCost( sanitized ) <= ABT.MaxVertexCuts then
+				if state.vertexKeepBounds[ group ] == nil then keptGroups = keptGroups + 1 end
 				state.vertexKeepBounds[ group ] = sanitized
 			end
 		end
 	end
+	return state
+end
+
+duplicator.RegisterEntityModifier( ABT.ModifierName, function( _, entity, data )
+	if not IsEditableEntity( entity ) or not istable( data ) then return end
+	if isstring( data.model ) and data.model ~= ""
+	and data.model ~= entity:GetModel() then return end
+	local state = SanitizeStoredState( entity, data )
+	entity.AdvancedBodygroupUVHideState = state
+	ABT.ManagedEntities[ entity ] = true
 	SaveModifier( entity, state )
 	PublishState( entity, state )
 end )
 
+-- Every action rewrites networked state that clients rebuild their masks
+-- from. The burst covers quick clicks through the region cards; the refill
+-- caps what a client sending these messages in a loop can make the server
+-- and the other clients do.
+local ACTION_BURST, ACTION_REFILL = 24, 8
+
+local function TakeActionToken( player )
+	local now = CurTime()
+	local tokens = math.min( ACTION_BURST, ( player.ABTActionTokens or ACTION_BURST )
+		+ ( now - ( player.ABTActionTokenAt or now ) ) * ACTION_REFILL )
+	player.ABTActionTokenAt = now
+	if tokens < 1 then
+		player.ABTActionTokens = tokens
+		return false
+	end
+	player.ABTActionTokens = tokens - 1
+	return true
+end
+
 local function PlayerCanEditSelection( player, entity )
 	if not IsValid( player ) or not IsEditableEntity( entity ) then return false end
+	if not ABT.CanEditPlayer( player, entity ) then return false end
 	local weapon = player:GetActiveWeapon()
 	if not IsValid( weapon ) or weapon:GetClass() ~= "gmod_tool" then return false end
 	if weapon:GetMode() ~= "advanced_bodygroup" then return false end
@@ -763,6 +834,7 @@ local function PlayerCanEditSelection( player, entity )
 end
 
 net.Receive( "advanced_bodygroup_tool_apply", function( _, player )
+	if not IsValid( player ) or not TakeActionToken( player ) then return end
 	local entity = net.ReadEntity()
 	local action = net.ReadUInt( 3 )
 	if not PlayerCanEditSelection( player, entity ) then return end
@@ -857,7 +929,9 @@ net.Receive( "advanced_bodygroup_tool_set_vertex_cuts", function( _, player )
 			net.WriteBool( success == true )
 		net.Send( player )
 	end
-	if count > ABT.MaxVertexCutsPerGroup
+	-- Refused requests are answered too, so the editor stops waiting.
+	if not IsValid( player ) or not TakeActionToken( player )
+	or count > ABT.MaxVertexCutsPerGroup
 	or not PlayerCanEditSelection( player, entity )
 	or not BodygroupExists( entity, group )
 	or CurrentGeometryIdentity( entity ) ~= expectedGeometryIdentity

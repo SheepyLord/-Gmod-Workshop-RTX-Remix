@@ -62,9 +62,13 @@ local INDEX_ROWS_PER_STEP = 128
 local ELIGIBILITY_FORMAT = 10
 local BUNDLE_NAME = "geometry.dat"
 
+-- The fallback is only for a setting that does not exist: "convar and
+-- convar:GetBool() or fallback" would turn a setting of 0 into the fallback,
+-- so bbs_mesh_disk_cache 0 still wrote the disk cache.
 local function GetBool( name, fallback )
 	local convar = GetConVar( name )
-	return convar and convar:GetBool() or fallback
+	if not convar then return fallback end
+	return convar:GetBool()
 end
 
 local function GetFloat( name, fallback )

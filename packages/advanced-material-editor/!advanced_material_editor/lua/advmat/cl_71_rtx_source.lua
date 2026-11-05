@@ -93,9 +93,12 @@ local function AppliedSignature( rule )
 	} )
 end
 
+-- The fallback is only for a setting that does not exist: "value and
+-- value:GetBool() or fallback" showed a setting of 0 as the fallback (on).
 local function ConVarBool( name, fallback )
 	local value = GetConVar( name )
-	return value and value:GetBool() or fallback
+	if not value then return fallback end
+	return value:GetBool()
 end
 
 local function ShortMaterial( path )

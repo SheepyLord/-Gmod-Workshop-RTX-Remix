@@ -57,3 +57,15 @@ if(ADVMAT_RTX_BUILD_TESTS)
     advmat_rtx_strict_compile(advmat_rtx_writer_tests)
     add_test(NAME advmat_rtx_writer_tests COMMAND advmat_rtx_writer_tests)
 endif()
+
+if(ADVMAT_RTX_BUILD_TESTS AND ADVMAT_RTX_BUILD_GMOD_MODULE)
+    # The Lua boundary (src/lua_bindings.cpp) against an in-memory ILuaBase:
+    # string lengths checked before copying, no C++ exception left uncaught.
+    add_executable(advmat_rtx_lua_tests tests/lua_binding_tests.cpp)
+    target_include_directories(advmat_rtx_lua_tests PRIVATE
+        include "${GARRYSMOD_COMMON_INCLUDE_DIR}")
+    target_link_libraries(advmat_rtx_lua_tests PRIVATE advmat_rtx_writer)
+    target_compile_features(advmat_rtx_lua_tests PRIVATE cxx_std_17)
+    advmat_rtx_strict_compile(advmat_rtx_lua_tests)
+    add_test(NAME advmat_rtx_lua_tests COMMAND advmat_rtx_lua_tests)
+endif()

@@ -178,31 +178,15 @@ local function StartSyncPump()
 	timer.Create( SYNC_PUMP_TIMER, AdvMat.Net.SYNC_INTERVAL, 0, PumpSyncChunk )
 end
 
---- Server: split a table across as many "AdvMat.Sync" messages as needed.
---- `target` is a Player, a table of Players, or nil to broadcast.
-function AdvMat.Net.SendChunked( tbl, target )
-	if CLIENT then return end
-
-	local recipients = CopySyncRecipients( target )
-	if #recipients == 0 then return end
-
-	local data = util.Compress( util.TableToJSON( tbl or {} ) ) or ""
-	local total = math.max( 1, math.ceil( #data / AdvMat.Net.CHUNK_SIZE ) )
-	local wasIdle = #syncQueue == 0 and not syncPumpRunning
-
-	syncQueue[ #syncQueue + 1 ] = {
-		data = data,
-		total = total,
-		nextChunk = 1,
-		recipients = recipients,
-	}
+local function QueueSyncJob( job, wasIdle )
+	syncQueue[ #syncQueue + 1 ] = job
 
 	-- Preserve the old synchronous behaviour for an isolated one-message
 	-- snapshot.  The timestamp still prevents several small snapshots from
 	-- becoming a same-frame burst.  Multi-message databases always use the
 	-- paced pump.
 	local now = SyncNow()
-	if wasIdle and total == 1
+	if wasIdle and job.total == 1
 		and ( syncLastSentAt == nil
 			or now - syncLastSentAt >= AdvMat.Net.SYNC_INTERVAL ) then
 		PumpSyncChunk()
@@ -210,6 +194,88 @@ function AdvMat.Net.SendChunked( tbl, target )
 	end
 
 	StartSyncPump()
+end
+
+local function SyncJobStarted( job )
+	return job.nextChunk > 1
+end
+
+--- Server: queue an already encoded snapshot. `key` names its content: two
+--- snapshots with the same key are the same bytes. `target` is a Player, a
+--- table of Players, or nil for everybody.
+---
+--- Requests coalesce, so the queue stays bounded however often clients ask:
+---   * a recipient already waiting for a queued snapshot, or receiving this
+---     very one, is not queued again;
+---   * every queued snapshot that has not started is replaced by this newer
+---     one, recipients included, so at most two jobs exist: the one going out
+---     and one waiting.
+--- `announce( players )` runs before any chunk can leave, with the recipients
+--- that were not waiting already and so need to be told a snapshot is coming.
+--- Returns the number of recipients that were added.
+function AdvMat.Net.SendSnapshotData( data, key, target, announce )
+	if CLIENT then return 0 end
+
+	local recipients = CopySyncRecipients( target )
+	if #recipients == 0 then return 0 end
+
+	local wasIdle = #syncQueue == 0 and not syncPumpRunning
+	local merged, waiting, receiving = {}, {}, {}
+	for i = #syncQueue, 1, -1 do
+		local job = syncQueue[ i ]
+		if SyncJobStarted( job ) then
+			if job.key ~= nil and job.key == key then
+				for _, ply in ipairs( job.recipients ) do receiving[ ply ] = true end
+			end
+		else
+			table.remove( syncQueue, i )
+			for _, ply in ipairs( job.recipients ) do
+				if IsValid( ply ) and not waiting[ ply ] then
+					waiting[ ply ] = true
+					merged[ #merged + 1 ] = ply
+				end
+			end
+		end
+	end
+
+	local fresh = {}
+	for _, ply in ipairs( recipients ) do
+		if not waiting[ ply ] and not receiving[ ply ] then fresh[ #fresh + 1 ] = ply end
+	end
+	if #fresh > 0 and announce then announce( fresh ) end
+
+	for _, ply in ipairs( fresh ) do merged[ #merged + 1 ] = ply end
+	if #merged == 0 then return 0 end
+
+	data = data or ""
+	QueueSyncJob( {
+		data = data,
+		key = key,
+		total = math.max( 1, math.ceil( #data / AdvMat.Net.CHUNK_SIZE ) ),
+		nextChunk = 1,
+		recipients = merged,
+	}, wasIdle )
+	return #fresh
+end
+
+--- Server: split a table across as many "AdvMat.Sync" messages as needed.
+--- `target` is a Player, a table of Players, or nil to broadcast. Encodes on
+--- every call and never coalesces; the store's snapshots use
+--- SendSnapshotData instead.
+function AdvMat.Net.SendChunked( tbl, target )
+	if CLIENT then return end
+
+	local recipients = CopySyncRecipients( target )
+	if #recipients == 0 then return end
+
+	local data = util.Compress( util.TableToJSON( tbl or {} ) ) or ""
+	local wasIdle = #syncQueue == 0 and not syncPumpRunning
+	QueueSyncJob( {
+		data = data,
+		total = math.max( 1, math.ceil( #data / AdvMat.Net.CHUNK_SIZE ) ),
+		nextChunk = 1,
+		recipients = recipients,
+	}, wasIdle )
 end
 
 if SERVER then
