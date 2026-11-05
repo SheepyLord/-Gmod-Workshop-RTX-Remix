@@ -452,6 +452,25 @@ def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path
     return result
 
 
+def extract(part: str, prefix: str, dest: Path, packages: Path = PACKAGES) -> int:
+    """The part's indexed files under `prefix` (a source tree a workflow builds from, such as
+    model-hotloader's source/mmdhl/), written to dest without the prefix and checked like unpack's. Only
+    those files' stored content is read. Returns how many were written."""
+    if not prefix.endswith('/'):
+        raise InputsError(f'{prefix!r}: a prefix is a folder, ending in /')
+    index = read_index(part, packages)
+    base, written = part_dir(part, packages), 0
+    if is_link(dest):
+        raise InputsError(f'{dest} is a link or junction')
+    for rel, entry in index['files'].items():
+        if rel.startswith(prefix):
+            unpack_file(base / stored_name(rel, entry), dest / check_rel(rel[len(prefix):]), entry)
+            written += 1
+    if not written:
+        raise InputsError(f'{part}: {INDEX} lists no file under {prefix}')
+    return written
+
+
 def verify(names: list[str] | None = None, packages: Path = PACKAGES, deep: bool = False) -> list[str]:
     """Problems with the stored files: missing, unindexed, or not matching the index. A Git LFS pointer
     is checked by its oid and size (so a checkout without the LFS content still verifies); --deep
@@ -530,6 +549,10 @@ def main(argv=None) -> int:
                                                 'every native binary must then come from it')
     p.add_argument('--keep-packaged', action='append', default=[], metavar='PART/PATH',
                    help='with --overlay: a native binary (or a folder, ending in /) still taken from packages/')
+    p = sub.add_parser('extract', help="write a part's files under a prefix (a source tree) to a folder")
+    p.add_argument('part')
+    p.add_argument('--prefix', required=True, help='the folder in the part, ending in / (such as source/mmdhl/)')
+    p.add_argument('--dest', type=Path, required=True)
     p = sub.add_parser('verify', help='check packages/ against the indexes')
     p.add_argument('--part', action='append')
     p.add_argument('--deep', action='store_true', help='also decompress xz content and check it')
@@ -546,6 +569,8 @@ def main(argv=None) -> int:
     try:
         if args.command == 'unpack':
             unpack(args.part, dest=args.dest, overlay=args.overlay, keep_packaged=tuple(args.keep_packaged))
+        elif args.command == 'extract':
+            print(f'{args.part}: {extract(args.part, args.prefix, args.dest)} files under {args.prefix} written to {args.dest}')
         elif args.command == 'verify':
             problems = verify(args.part, deep=args.deep)
             for problem in problems:

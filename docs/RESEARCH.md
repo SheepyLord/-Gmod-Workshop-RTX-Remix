@@ -5169,3 +5169,16 @@ material editor.
   them in batches. The fixes are cloned whole in CI (about 300 MB).
 - The RTX fixes module built on the runner is 5,492,224 bytes (512 more than this machine's build: the
   runner's `cl` is 19.44.35229, this machine's 19.44.35228, and the paths differ).
+- **The Model Hotloader's native source** (ADR 0107): `ipg\!GMHLVK\wt-full-textures-props` is at the
+  public `ecd7c426` with 41 changes staged (34 modified, 7 added) and none unstaged; no file the native
+  build reads is newer than the shipped `gmcl_mmdhl_win64.dll` (2026-10-26 16:21:10 -0700). Its CMake
+  build reads `CMakeLists.txt`, `native/`, `shaders/vulkan/solver.comp` (compiled to SPIR-V by the pinned
+  glslang) and every C++ test source (the test targets are declared unconditionally); ICU is for Linux
+  only. The build identity is `git rev-parse --short=12 HEAD` of the source folder plus the UTC configure
+  time (`CMakeLists.txt:13-20`). `scripts/native_manifest.py` asks `mmdhl_worker.exe --version` for the
+  release and build, hashes the five native files of the bin folder and rewrites that release's entry of
+  `native_policy.lua`; the part's installation override (`overrides/installation.lua`) accepts installed
+  natives only by that entry's size and SHA-256. It imports `compatibility_profiles.py` beside it, so it
+  must run without `python -I` (isolated mode leaves the script's folder off `sys.path`).
+- A build from the copied source with the worktree's fetched dependencies took 5 minutes on 8 jobs:
+  client, server and worker are the shipped sizes, the runtime 512 bytes larger.

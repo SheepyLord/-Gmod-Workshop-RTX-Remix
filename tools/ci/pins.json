@@ -40,6 +40,17 @@
     "repository": "https://github.com/SheepyLord/-advanced_material_editor.git",
     "commit": "8ece14155d771f0465dfac32ff6dd6a0e1f8aa96"
   },
+  "hotloader": {
+    "repository": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan",
+    "base_commit": "ecd7c426c0b50fa3b92cb882059ac46842912f3a",
+    "source": "packages/model-hotloader/source",
+    "source_prefix": "source/mmdhl/",
+    "release": "2.3.1",
+    "files": ["gmcl_mmdhl_win64.dll", "gmsv_mmdhl_win64.dll", "mmdhl_runtime_win64.dll", "mmdhl_worker.exe"],
+    "policy": "packages/model-hotloader/mmd_hotloader/lua/mmdhl/native_policy.lua",
+    "policy_in_part": "mmd_hotloader/lua/mmdhl/native_policy.lua",
+    "why": "the shipped 2.3.1 natives were built from that commit with staged, uncommitted changes (buoyancy, secondary water); this repository keeps that source (ADR 0107)"
+  },
   "repository_builds": [
     {"part": "fixes", "path": "modules/gmsv_nlrtxclient_win64.dll", "from": "out/build/win64-release/loader/client/gmsv_nlrtxclient_win64.dll", "target": "nl_rtx_client"},
     {"part": "glass", "path": "bin/gmcl_nlglass_win64.dll", "from": "out/build/win64-release/glass/native/gmcl_nlglass_win64.dll", "target": "nl_glass_client"}

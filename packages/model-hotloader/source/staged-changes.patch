@@ -1,0 +1,510 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3ecdfcd..cc90e8b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -307,6 +307,10 @@ add_executable(mmdhl_motion_tests tests/secondary_motion_tests.cpp)
+ target_link_libraries(mmdhl_motion_tests PRIVATE mmd_runtime)
+ target_compile_options(mmdhl_motion_tests PRIVATE ${MMDHL_UTF8})
+ add_test(NAME secondary_motion COMMAND mmdhl_motion_tests ${CMAKE_SOURCE_DIR}/tests/fixtures/native-chain.pmx)
++add_executable(mmdhl_buoyancy_tests tests/buoyancy_tests.cpp)
++target_link_libraries(mmdhl_buoyancy_tests PRIVATE mmd_runtime)
++target_compile_options(mmdhl_buoyancy_tests PRIVATE ${MMDHL_UTF8})
++add_test(NAME secondary_gravity_buoyancy COMMAND mmdhl_buoyancy_tests ${CMAKE_SOURCE_DIR}/tests/fixtures/native-chain.pmx)
+ add_executable(mmdhl_projection_tests tests/secondary_projection_tests.cpp)
+ add_executable(mmdhl_light_overlap_tests tests/light_overlap_tests.cpp)
+ target_link_libraries(mmdhl_light_overlap_tests PRIVATE mmd_runtime)
+@@ -341,7 +345,7 @@ target_compile_options(mmdhl_replay PRIVATE ${MMDHL_UTF8})
+ foreach(target mmdhl_compute_tests mmdhl_replay mmdhl_profile)
+   add_dependencies(${target} mmdhl_worker)
+ endforeach()
+-foreach(target mmd_runtime mmdhl_worker mmdhl_client mmdhl_server mmdhl_tests mmdhl_replay mmdhl_timing mmdhl_profile mmdhl_broadphase_tests mmdhl_compute_tests mmdhl_async_tests mmdhl_midphase_tests mmdhl_motion_tests mmdhl_stretch_tests mmdhl_stretch_ground_tests mmdhl_projection_tests mmdhl_light_overlap_tests mmdhl_quality_tests)
++foreach(target mmd_runtime mmdhl_worker mmdhl_client mmdhl_server mmdhl_tests mmdhl_replay mmdhl_timing mmdhl_profile mmdhl_broadphase_tests mmdhl_compute_tests mmdhl_async_tests mmdhl_midphase_tests mmdhl_motion_tests mmdhl_buoyancy_tests mmdhl_stretch_tests mmdhl_stretch_ground_tests mmdhl_projection_tests mmdhl_light_overlap_tests mmdhl_quality_tests)
+   target_compile_options(${target} PRIVATE ${MMDHL_DEBUG_COMPILE})
+   target_link_options(${target} PRIVATE ${MMDHL_DEBUG_LINK})
+   set_target_properties(${target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin" LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+diff --git a/native/module.cpp b/native/module.cpp
+index 920146f..5b705b0 100644
+--- a/native/module.cpp
++++ b/native/module.cpp
+@@ -183,7 +183,7 @@ FUNCTION(PollInstallationProbe) {
+  if(installationProbe.wait_for(std::chrono::seconds(0))!=std::future_status::ready){push(LUA,{{"pending",true}});return 1;}
+  push(LUA,installationProbe.get());return 1;
+ } END_FUNCTION
+-FUNCTION(GetCapabilities) {push(LUA,{{"api",ApiVersion},{"version",MMDHL_RELEASE},{"build",MMDHL_BUILD_ID},{"installApi",MMDHL_INSTALL_API},{"rigVersion",RigVersion},{"rigGenerator",RigGenerator},{"rigGeneratorMin",RigGeneratorMinLoadable},{"physicsEditor",PhysicsSchema},{"sharingVersion",2},{"workers",workerCount()},{"presentationClock","fixed60-interpolated"},{"bulletApiSIMD",false},{"secondaryBroadphaseDefault",secondaryBroadphaseDefault()},{"platform",MMDHL_PLATFORM},{"parser","nanoem"},{"physics","Bullet 3.25"},{"sharedProcessSnapshots",false},{"skinning",{"BDEF1","BDEF2","BDEF4","SDEF","QDEF"}},{"characterImport",{{"version",1},{"probeVersion",1},{"requestVersion",1},{"formats",{"fbx","glb","gltf","dae"}}}},{"boneMap",{{"version",1},{"fit",true}}},{"fullTextures",FullTextureEdge},{"propFullTextures",props::fullTextureLimits().textureDimension}});return 1;} END_FUNCTION
++FUNCTION(GetCapabilities) {push(LUA,{{"api",ApiVersion},{"version",MMDHL_RELEASE},{"build",MMDHL_BUILD_ID},{"installApi",MMDHL_INSTALL_API},{"rigVersion",RigVersion},{"rigGenerator",RigGenerator},{"rigGeneratorMin",RigGeneratorMinLoadable},{"physicsEditor",PhysicsSchema},{"sharingVersion",2},{"workers",workerCount()},{"presentationClock","fixed60-interpolated"},{"bulletApiSIMD",false},{"secondaryBroadphaseDefault",secondaryBroadphaseDefault()},{"platform",MMDHL_PLATFORM},{"parser","nanoem"},{"physics","Bullet 3.25"},{"sharedProcessSnapshots",false},{"skinning",{"BDEF1","BDEF2","BDEF4","SDEF","QDEF"}},{"characterImport",{{"version",1},{"probeVersion",1},{"requestVersion",1},{"formats",{"fbx","glb","gltf","dae"}}}},{"boneMap",{{"version",1},{"fit",true}}},{"fullTextures",FullTextureEdge},{"propFullTextures",props::fullTextureLimits().textureDimension},{"secondaryGravity",Secondary::MaxGravityScale},{"secondaryBuoyancy",1}});return 1;} END_FUNCTION
+ FUNCTION(Browse) {auto kind=LUA->IsType(1,GarrysMod::Lua::Type::String)?stringArg(LUA,1):std::string();if(!kind.empty()&&kind!="static")throw std::runtime_error("Unknown import kind");LUA->PushNumber(double(launch(true,"",kind.empty()?Json::object():Json{{"kind",kind}})));return 1;} END_FUNCTION
+ // Save a part preset of a cached static prop (materials and/or region cut).
+ FUNCTION(PropDerive) {auto id=stringArg(LUA,1);if(!validId(id))throw std::runtime_error("Invalid prop ID");if(!fs::exists(context->cache/L"static"/L"assets"/wide(id+".gmdl")))throw std::runtime_error("The original prop is not in the local cache");auto options=json(LUA,2);options["kind"]="derive";options["parent"]=id;LUA->PushNumber(double(launch(false,"",options)));return 1;} END_FUNCTION
+@@ -437,7 +437,7 @@ FUNCTION(SetState) {requireServer();auto& p=world().get(number(LUA,1));auto j=js
+  std::vector<std::vector<btVector3>> softPos;if(j.contains("soft")){if(j["soft"].size()!=p.softBodies.size())throw std::runtime_error("Soft state does not match rig");for(size_t i=0;i<p.softBodies.size();i++){auto& nodes=j["soft"][i];if(nodes.size()!=p.softBodies[i].body->m_nodes.size())throw std::runtime_error("Soft node count mismatch");std::vector<btVector3> out;for(auto& entry:nodes){auto v=entry.get<std::vector<float>>();if(v.size()!=3)throw std::runtime_error("Invalid soft node");for(float x:v)if(!std::isfinite(x))throw std::runtime_error("Invalid soft coordinate");out.push_back((btVector3(v[0],v[1],v[2])+offset)*Inch);}softPos.push_back(std::move(out));}}
+  std::vector<btTransform> poses;for(auto& b:j["bodies"]){auto v=b.at("position").get<std::vector<float>>(),q=b.at("rotation").get<std::vector<float>>();if(v.size()!=3||q.size()!=4)throw std::runtime_error("Invalid body state");for(float x:v)if(!std::isfinite(x))throw std::runtime_error("Invalid body position");for(float x:q)if(!std::isfinite(x))throw std::runtime_error("Invalid body rotation");auto rot=btQuaternion(q[0],q[1],q[2],q[3]);if(rot.length2()<1e-8f)throw std::runtime_error("Invalid quaternion");poses.emplace_back(rot.normalized(),(btVector3(v[0],v[1],v[2])+offset)*Inch);}
+  p.manual=std::move(manual);p.manualVersion++;for(size_t i=0;i<poses.size();i++){p.bodies[i]->rigid->setWorldTransform(poses[i]);p.bodies[i]->rigid->setInterpolationWorldTransform(poses[i]);p.bodies[i]->rigid->setLinearVelocity({0,0,0});p.bodies[i]->rigid->setAngularVelocity({0,0,0});p.bodies[i]->rigid->clearForces();world().dynamics().updateSingleAabb(p.bodies[i]->rigid.get());}if(j.contains("morphs")){auto m=j["morphs"].get<std::vector<float>>();if(m.size()==p.morphWeights.size())for(size_t i=0;i<m.size();i++)if(std::isfinite(m[i]))p.morphWeights[i]=std::clamp(m[i],-2.f,2.f);}p.freeze(j.value("frozen",false));p.lastImpulseWeights=p.expandedMorphs();p.evaluate(true);p.beforeStep();for(size_t i=0;i<softPos.size();i++){auto& b=*p.softBodies[i].body;for(size_t n=0;n<softPos[i].size();n++){b.m_nodes[int(n)].m_x=b.m_nodes[int(n)].m_q=softPos[i][n];b.m_nodes[int(n)].m_v.setZero();}b.updateNormals();}p.publish(world().time);return 0;} END_FUNCTION
+-FUNCTION(GetSecondaryCapabilities) {push(LUA,{{"reference",true},{"cpu_mt",true},{"cpu_mt_v2",true},{"gpu_opencl",openclCapabilities()},{"gpu_vulkan",vulkanCapabilities()},{"sleep",Secondary::sleepPolicy()},{"tuning",Secondary::tuning()},{"workers",workerCount()},{"waitBudgetMs",Secondary::asyncWaitBudget()}});return 1;} END_FUNCTION
++FUNCTION(GetSecondaryCapabilities) {push(LUA,{{"reference",true},{"cpu_mt",true},{"cpu_mt_v2",true},{"gpu_opencl",openclCapabilities()},{"gpu_vulkan",vulkanCapabilities()},{"sleep",Secondary::sleepPolicy()},{"tuning",Secondary::tuning()},{"buoyancy",Secondary::buoyancy()},{"workers",workerCount()},{"waitBudgetMs",Secondary::asyncWaitBudget()}});return 1;} END_FUNCTION
+ FUNCTION(GetSecondaryBackend) {auto& p=world().get(number(LUA,1));if(!p.secondary)throw std::runtime_error("This entity has no secondary physics");auto d=p.secondary->diagnostics(false);push(LUA,{{"requested",d["secondaryBackendRequested"]},{"effective",d["secondaryBackend"]},{"reason",d["secondaryBackendFallback"]},{"compute",d.value("compute",Json::object())}});return 1;} END_FUNCTION
+ FUNCTION(SetVulkanSolverOrdering) {auto order=stringArg(LUA,1);if(order!="colored"&&order!="ordered")throw std::runtime_error("Ordering must be colored or ordered");setVulkanColoring(order=="colored");LUA->PushBool(true);return 1;} END_FUNCTION
+ FUNCTION(SetSecondaryBackend) {world().get(number(LUA,1)).setSecondaryBackend(stringArg(LUA,2));LUA->PushBool(true);return 1;} END_FUNCTION
+@@ -661,6 +661,10 @@ FUNCTION(RemoveSourceShadow) {removeSourceShadow(int(number(LUA,1)));return 0;}
+ FUNCTION(SetSecondaryBroadphase) {setSecondaryBroadphaseDefault(stringArg(LUA,1));LUA->PushString(secondaryBroadphaseDefault().c_str());return 1;} END_FUNCTION
+ FUNCTION(SetWorkers) {for(auto& [id,p]:world().instances)if(p->secondary)p->secondary->waitAsyncIdle();drainRenderQueue();/* queued draws stream vertices on the pool */setWorkerCount(unsigned(number(LUA,1)));LUA->PushBool(true);return 1;} END_FUNCTION
+ FUNCTION(SetSecondaryTuning) {double accuracy=LUA->GetNumber(1);if(!std::isfinite(accuracy)||accuracy<-1||accuracy>100||std::floor(accuracy)!=accuracy)throw std::runtime_error("Physics accuracy must be -1, 0, or 1–100");Secondary::setTuning(int(accuracy),float(LUA->GetNumber(2)),float(LUA->GetNumber(3)),LUA->GetBool(4),float(LUA->GetNumber(5)));LUA->PushBool(true);return 1;} END_FUNCTION
++// The water surface around one character as a Source height, or none (no number): with
++// SetSecondaryBuoyancy on, its hair and clothing float below that height.
++FUNCTION(SetSecondaryWater) {auto& p=world().get(number(LUA,1));if(LUA->IsType(2,GarrysMod::Lua::Type::Number)){double height=LUA->GetNumber(2);if(!std::isfinite(height)||std::abs(height)>1e6)throw std::runtime_error("Invalid water height");p.waterHeight=float(height);}else p.waterHeight=std::numeric_limits<float>::quiet_NaN();LUA->PushBool(true);return 1;} END_FUNCTION
++FUNCTION(SetSecondaryBuoyancy) {Secondary::setBuoyancy(LUA->GetBool(1),float(LUA->GetNumber(2)),float(LUA->GetNumber(3)));LUA->PushBool(true);return 1;} END_FUNCTION
+ FUNCTION(SetSecondaryWaitBudget) {Secondary::setAsyncWaitBudget(LUA->GetNumber(1));return 0;} END_FUNCTION
+ FUNCTION(SetSpringRelativeDamping) {setSpringRelativeDamping(LUA->GetBool(1));LUA->PushBool(springRelativeDamping());return 1;} END_FUNCTION
+ // Diagnostic A/B switch for the narrowphase mid-phase gate (harness only; the gate is exact).
+@@ -747,7 +751,7 @@ GMOD_MODULE_OPEN(){
+         REGISTER(ReadAnimationModel);REGISTER(ProbePhysics);REGISTER(ProbeCarrierCollisions);REGISTER(CapturePhysics);REGISTER(CaptureSecondaryScene);REGISTER(SceneInterest);REGISTER(PrepareCarrier);REGISTER(RequestCarrierFit);
+ #endif
+ #ifndef MMDHL_SERVER
+-        REGISTER(SetSecondaryTuning);REGISTER(SetSpringRelativeDamping);
++        REGISTER(SetSecondaryTuning);REGISTER(SetSpringRelativeDamping);REGISTER(SetSecondaryWater);REGISTER(SetSecondaryBuoyancy);
+         REGISTER(GetModelAnimationDiagnostics);REGISTER(DeleteAssets);REGISTER(PropReload);REGISTER(PropDerive);REGISTER(SubmitPresentationPose);REGISTER(SubmitPresentationBatch);REGISTER(SubmitPresentationMatrixBatch);REGISTER(MarkTeleport);REGISTER(GetAlignmentProbe);REGISTER(Draw);REGISTER(RenderStatus);REGISTER(CheckRenderer);REGISTER(RenderStats);REGISTER(GetLightingState);REGISTER(SetFlashlightOverlapGuard);REGISTER(SetSoftAlpha);REGISTER(RenderFrameStats);REGISTER(SetNativeVertexCache);REGISTER(SetCompactVertices);REGISTER(SetGpuSkinning);REGISTER(SetPoseSmoothing);REGISTER(GetDrawAge);REGISTER(SetupSourceLighting);REGISTER(RegisterSourceShadow);REGISTER(RemoveSourceShadow);REGISTER(SetWorkers);REGISTER(GetWorkerCapabilities);REGISTER(SetSecondaryQuality);REGISTER(SetSecondaryWaitBudget);REGISTER(SetSecondaryMidphase);REGISTER(SetSecondarySleep);REGISTER(SetRenderSuspended);REGISTER(SetInstanceMaterials);REGISTER(DrawInstance);REGISTER(SetSecondaryBroadphase);REGISTER(PrepareFrame);REGISTER(PruneRenderCache);REGISTER(StartMainThreadSampling);REGISTER(ReadMainThreadSamples);REGISTER(CreateEditorPreview);REGISTER(DestroyEditorPreview);REGISTER(GetEditorPreviewBounds);REGISTER(DrawEditorPreview);REGISTER(GetMaterialMesh);REGISTER(GetMaterialPositions);REGISTER(CreatePreview);REGISTER(ClearPreview);REGISTER(DrawPreview);
+         REGISTER(FileAccessInfo);REGISTER(FileAccessPick);REGISTER(FileAccessRequest);REGISTER(FileAccessPoll);REGISTER(FileAccessRead);REGISTER(FileAccessPollRead);REGISTER(FileAccessList);REGISTER(FileAccessPollList);REGISTER(FileAccessRelease);REGISTER(FileAccessCancel);REGISTER(FileAccessGrants);REGISTER(FileAccessRevoke);REGISTER(FileAccessSetEnabled);
+ #endif
+diff --git a/native/physics.cpp b/native/physics.cpp
+index b08ccea..c027340 100644
+--- a/native/physics.cpp
++++ b/native/physics.cpp
+@@ -468,6 +468,14 @@ void Instance::markTeleport(double seconds){
+  if(!std::isfinite(seconds))throw std::runtime_error("Invalid teleport window");
+  teleportMarkSeconds=std::max(teleportMarkSeconds,std::clamp(seconds,0.,1.));
+ }
++bool Instance::waterPlane(btVector3& normal,float& offset)const{
++ if(!std::isfinite(waterHeight))return false;
++ // The horizontal Source surface through the same transform the poses take
++ // (submitPresentationPose): metres, the placement's frame, PMX axes and units.
++ normal=fromSource(placement.getBasis().transpose()*btVector3(0,0,1)).normalized();
++ offset=normal.dot(fromSource(placement.inverse()*btVector3(0,0,waterHeight*Inch))/scale);
++ return true;
++}
+ void Instance::submitPresentationPose(std::span<const btTransform> raw,double timestamp,uint64_t frame){
+  if(!sourceRig||!presentationDriven||raw.size()!=sourceRig->bones.size()||!std::isfinite(timestamp))throw std::runtime_error("Invalid presentation pose");
+  if(frame==presentationFrame)return;
+@@ -495,6 +503,7 @@ void Instance::submitPresentationPose(std::span<const btTransform> raw,double ti
+   // The tick runs on a worker while this frame renders; everything it needs travels with the input.
+   Secondary::Input input;input.time=timestamp;input.elapsed=elapsed;input.pose=sourcePose;input.morphs=expandedMorphs();input.manual=shareManual();input.reset=teleport||sourceTeleport;input.carry=carry&&!input.reset;input.resetReason=sourceTeleport&&reason.empty()?"teleport":reason;
+   btVector3 lower(1e9f,1e9f,1e9f),upper=-lower;for(auto& bone:presentationBones){lower.setMin(bone.getOrigin());upper.setMax(bone.getOrigin());}if(snapshot){lower.setMin(snapshot->minimum);upper.setMax(snapshot->maximum);}input.boundsMinimum=lower;input.boundsMaximum=upper;
++  input.water=waterPlane(input.waterNormal,input.waterOffset);
+   secondary->submitAsync(std::move(input));sourceTeleport=sourceCarry=false;pendingSourceDelta=0;return;
+  }
+  sourceTeleport=sourceTeleport||teleport;sourceCarry=sourceCarry||carry;pendingSourceDelta+=elapsed;
+diff --git a/native/runtime.hpp b/native/runtime.hpp
+index f8a04c5..3c74483 100644
+--- a/native/runtime.hpp
++++ b/native/runtime.hpp
+@@ -13,6 +13,7 @@
+ #include <exception>
+ #include <functional>
+ #include <filesystem>
++#include <limits>
+ #include <map>
+ #include <memory>
+ #include <mutex>
+@@ -350,6 +351,12 @@ struct Instance {
+     // pose inside it is carried across, never simulated or smoothed over.
+     double teleportMarkSeconds=-1,teleportMarkUntil=-1;
+     void markTeleport(double seconds);
++    // The height (Source units) of the water surface around the character, set by the
++    // addon (SetSecondaryWater); NaN when it is not in water. waterPlane gives that
++    // surface in simulation space: `normal` points out of the water, `offset` is
++    // normal·point for any point on it. False without water.
++    float waterHeight=std::numeric_limits<float>::quiet_NaN();
++    bool waterPlane(btVector3& normal,float& offset) const;
+     std::string sourceError;
+     void stepSource();
+     void submitSourcePose(std::span<const btTransform> physical,std::span<const btTransform> manipulation,double timestamp,bool defer=false);
+diff --git a/native/secondary.cpp b/native/secondary.cpp
+index 23e011a..57e6d5d 100644
+--- a/native/secondary.cpp
++++ b/native/secondary.cpp
+@@ -38,6 +38,8 @@ std::atomic<double> testStepDelayMs{0};
+ std::mutex tuningMutex;
+ struct Tuning {int iterations=10;float gravity=1,damping=1;bool stretch=false;float tolerance=1;};
+ Tuning physicsTuning;std::atomic<unsigned> tuningVersion{1};
++// Buoyancy (Secondary::setBuoyancy): read at every tick, so a change applies at the next one.
++std::atomic<bool> buoyancyEnabled{false};std::atomic<float> buoyancyStrength{1.2f},buoyancyDrag{2.f};
+ constexpr double TickSeconds=1./60;
+ constexpr unsigned MaxStepsPerInput=4;
+ constexpr double MaxAsyncJobMs=30;
+@@ -289,9 +291,14 @@ void Secondary::setSleepPolicy(bool enabled,float linear,float angular,float sec
+ }
+ Json Secondary::sleepPolicy(){return {{"enabled",sleepEnabled.load()},{"linear",sleepLinear.load()},{"angular",sleepAngular.load()},{"seconds",sleepSeconds.load()}};}
+ void Secondary::setTuning(int iterations,float gravity,float damping,bool stretch,float tolerance){
+- if(iterations<-1||iterations>100||!std::isfinite(gravity)||gravity<0||gravity>4||!std::isfinite(damping)||damping<0||damping>4||!std::isfinite(tolerance)||tolerance<.25f||tolerance>4)throw std::runtime_error("Invalid physics tuning values");
++ if(iterations<-1||iterations>100||!std::isfinite(gravity)||std::abs(gravity)>MaxGravityScale||!std::isfinite(damping)||damping<0||damping>4||!std::isfinite(tolerance)||tolerance<.25f||tolerance>4)throw std::runtime_error("Invalid physics tuning values");
+  std::lock_guard lock(tuningMutex);physicsTuning={iterations,gravity,damping,stretch,tolerance};++tuningVersion;
+ }
++void Secondary::setBuoyancy(bool enabled,float strength,float drag){
++ if(!std::isfinite(strength)||strength<0||strength>4||!std::isfinite(drag)||drag<0||drag>20)throw std::runtime_error("Invalid buoyancy values");
++ buoyancyStrength=strength;buoyancyDrag=drag;buoyancyEnabled=enabled;
++}
++Json Secondary::buoyancy(){return {{"enabled",buoyancyEnabled.load()},{"strength",buoyancyStrength.load()},{"drag",buoyancyDrag.load()}};}
+ int Secondary::accuracy(){std::lock_guard lock(tuningMutex);return physicsTuning.iterations;}
+ Json Secondary::tuning(){std::lock_guard lock(tuningMutex);auto& t=physicsTuning;return {{"iterations",t.iterations},{"gravity",t.gravity},{"damping",t.damping},{"stretch",t.stretch},{"tolerance",t.tolerance},{"tickRate",60}};}
+ void Secondary::applyTuning(){
+@@ -299,13 +306,41 @@ void Secondary::applyTuning(){
+  tuningVersionApplied=version;stretchEnabled=t.stretch;stretchToleranceScale=t.tolerance;tuningGravity=t.gravity;tuningDamping=t.damping;
+  baseIterations=std::max(1,t.iterations);nanoemWorld(world)->getSolverInfo().m_numIterations=std::min(baseIterations,std::max(2,(baseIterations+activeDivisor-1)/activeDivisor));
+  auto gravity=authoredGravity*t.gravity;float g[4]={gravity.x(),gravity.y(),gravity.z(),0};nanoemPhysicsWorldSetGravity(world,g);
++ const auto worldGravity=nanoemWorld(world)->getGravity(); // nanoem's factor (5) applied
+  for(size_t i=0;i<bodies.size();i++){auto source=instance.model->bodies[i];auto rigid=nanoemRigidBody(bodies[i].value);
+   float linear=btClamped(nanoemModelRigidBodyGetLinearDamping(source)*t.damping,0.f,1.f);
+   rigid->setDamping(linear,btClamped(nanoemModelRigidBodyGetAngularDamping(source)*t.damping,0.f,1.f));
+-  if(!bodies[i].follower)rigid->activate(true);
++  // Bullet's world gravity skips sleeping bodies: resting hair would keep the old
++  // value when sv_gravity changes. Active bodies get the same value it gives them.
++  if(!bodies[i].follower){if(!(rigid->getFlags()&BT_DISABLE_WORLD_GRAVITY))rigid->setGravity(worldGravity);rigid->activate(true);}
+  }
+-
++ // The world's gravity replaced every body's; applyWater sets the submerged ones again.
++ std::fill(waterFraction.begin(),waterFraction.end(),0.f);
++}
++// Buoyancy, before each tick integrates: a dynamic body's submerged fraction (its
++// convex extent along the surface normal around its centre) scales its gravity by
++// 1 - strength * fraction, so it floats above 1 and weighs nothing at 1, and water
++// drag takes speed off it. Without water or with buoyancy off nothing is touched; a
++// body that leaves the water gets the world's gravity back.
++void Secondary::applyWater(float seconds){
++ bool active=waterActive&&buoyancyEnabled.load();submergedBodies=0;
++ if(!active&&!waterApplied)return;
++ auto gravity=nanoemWorld(world)->getGravity();waterFraction.resize(bodies.size(),0.f);
++ float strength=buoyancyStrength.load(),drag=buoyancyDrag.load();
++ for(size_t i=0;i<bodies.size();i++){auto& b=bodies[i];if(b.follower)continue;auto rigid=nanoemRigidBody(b.value);if(rigid->getInvMass()<=0)continue;
++  float wet=0;
++  if(active){const auto& t=rigid->getWorldTransform();auto local=t.getBasis().transpose()*waterNormal;
++   float extent=btMax(1e-4f,local.dot(static_cast<const btConvexShape*>(rigid->getCollisionShape())->localGetSupportingVertex(local)));
++   wet=btClamped((waterOffset-waterNormal.dot(t.getOrigin())+extent)/(2*extent),0.f,1.f);}
++  float last=waterFraction[i];waterFraction[i]=wet;
++  if(wet<=0&&last<=0)continue;
++  rigid->setGravity(gravity*(1-strength*wet));
++  if(wet>0){float keep=1/(1+drag*wet*seconds);rigid->setLinearVelocity(rigid->getLinearVelocity()*keep);rigid->setAngularVelocity(rigid->getAngularVelocity()*keep);++submergedBodies;}
++  if(std::abs(wet-last)>1e-3f)rigid->activate(true);
++ }
++ waterApplied=active;
+ }
++SpringSystem::Water Secondary::springWater()const{return {waterNormal,waterOffset,buoyancyStrength.load(),buoyancyDrag.load()};}
+ Secondary::Secondary(Instance& owner):instance(owner){
+  static const std::set<std::string> known={"reference","cpu_mt","gpu_opencl","cpu_mt_v2","gpu_vulkan"};
+  if(!known.contains(owner.secondaryBackend))throw std::runtime_error("Unknown secondary backend: "+owner.secondaryBackend);
+@@ -555,6 +590,7 @@ unsigned Secondary::advance(std::vector<btTransform>& sourcePose,const std::func
+   float blend=b.time>a.time?float(std::clamp((time-a.time)/(b.time-a.time),0.,1.)):1.f;
+   for(size_t i=0;i<sourcePose.size();i++)if(instance.sourceControl[i]>=0)sourcePose[i]=blendPose(a.pose[i],b.pose[i],blend);
+   const auto& skin=evaluateSkin();follow(false,skin);followSoft(false,skin);
++  applyWater(float(h));
+   auto tickStart=std::chrono::steady_clock::now();nanoemStepFixed(world,float(h));physicsMs+=elapsedMs(tickStart);
+   // Recover tunneled/buried strands before projection can erase the violated
+   // joint used to identify them. Projection then sweeps/slides against contacts.
+@@ -581,6 +617,7 @@ void Secondary::step(double seconds){
+  if(external){btVector3 lower(1e9f,1e9f,1e9f),upper=-lower;for(auto& bone:instance.presentationBones){lower.setMin(bone.getOrigin());upper.setMax(bone.getOrigin());}if(instance.snapshot){lower.setMin(instance.snapshot->minimum);upper.setMax(instance.snapshot->maximum);}external->sync(instance,effectiveCollisionFlags,lower,upper);sceneMs=external->syncMs;}
+  applyImpulses(instance.expandedMorphs(),instance.lastImpulseWeights);
+  applySleepPolicy();
++ waterActive=instance.waterPlane(waterNormal,waterOffset);
+  lastSteps=advance(instance.sourcePose,[&]()->const std::vector<btTransform>&{instance.evaluate(false);return instance.skin;});
+  instance.sourcePose=std::move(latest);
+  instance.evaluate(false);present();instance.evaluate(true);
+@@ -642,6 +679,7 @@ void Secondary::tickAsync(const Input& input){
+  if(external){external->sync(instance,effectiveCollisionFlags,input.boundsMinimum,input.boundsMaximum);sceneMs=external->syncMs;}
+  applyImpulses(input.morphs,tickImpulseWeights);
+  applySleepPolicy();
++ waterActive=input.water;waterNormal=input.waterNormal;waterOffset=input.waterOffset;
+  unsigned steps=advance(tickSourcePose,[&]()->const std::vector<btTransform>&{auto started=std::chrono::steady_clock::now();evaluatePose(*instance.model,*input.manual,input.morphs,&instance.sourceControl,&tickSourcePose,nullptr,tickPose.local,tickPose.global,tickPose.skin,tickPose.effective,instance.sourceRig->bones[0].mmd);evaluateMs+=elapsedMs(started);return tickPose.skin;});
+  if(steps&&testStepDelayMs.load()>0){auto until=std::chrono::steady_clock::now()+std::chrono::duration<double,std::milli>(testStepDelayMs.load());while(std::chrono::steady_clock::now()<until)std::this_thread::yield();} // busy, like a longer solve; a sleep would add timer granularity
+  if(external)external->measure();
+@@ -656,10 +694,10 @@ void Secondary::publishSolved(unsigned steps,double totalMs,double evaluateMs,do
+  solved->currentAnchors=currentAnchors;solved->previousAnchors=previousAnchors;solved->surfaceCorrections=surfaceCorrections;solved->surfaceRecoveries=surfaceRecoveries;solved->surfaceGuardMs=surfaceGuardMs;
+  solved->stretchContactClamps=stretchContactClamps;solved->stretchCorrections=stretchCorrections;solved->stretchGuardMs=stretchGuardMs;solved->iterations=nanoemWorld(world)->getSolverInfo().m_numIterations;
+  solved->physicsTotalMs=physicsTotalMs;solved->tickTotalMs=tickTotalMs;solved->guardTotalMs=guardTotalMs;solved->tickCpuTotalMs=tickCpuTotalMs;
+- solved->physicsMs=physicsMs;solved->sceneMs=sceneMs;solved->poseMs=evaluateMs;solved->lastMs=totalMs;solved->submittedTime=submittedTime;solved->ticks=ticks;solved->resets=resets;solved->carries=carries;solved->steps=steps;solved->sleeping=sleeping;solved->resetReason=resetReason;
++ solved->physicsMs=physicsMs;solved->sceneMs=sceneMs;solved->poseMs=evaluateMs;solved->lastMs=totalMs;solved->submittedTime=submittedTime;solved->ticks=ticks;solved->resets=resets;solved->carries=carries;solved->steps=steps;solved->sleeping=sleeping;solved->submerged=submergedBodies;solved->resetReason=resetReason;
+  if(external){solved->contacts=external->contacts;solved->worldContacts=external->worldContacts;solved->objectContacts=external->objectContacts;solved->mirrors=external->objects.size();solved->captureMs=external->captureMs;solved->syncMs=external->syncMs;solved->sceneSequence=external->sequence;}
+  solved->broadphase=nanoemBroadphaseInfo(world);
+- if(springs){solved->springPrevious=springs->previous();solved->springCurrent=springs->current();solved->springColliderHits=springs->colliderHits;solved->springWorldHits=springs->worldHits;solved->springSteps=springs->steps;solved->springMs=springs->stepMs;}
++ if(springs){solved->springPrevious=springs->previous();solved->springCurrent=springs->current();solved->springColliderHits=springs->colliderHits;solved->springWorldHits=springs->worldHits;solved->springSteps=springs->steps;solved->springMs=springs->stepMs;solved->springSubmerged=springs->submergedJoints;}
+  std::lock_guard lock(mutex);published=std::move(solved);
+ }
+ void Secondary::presentAsync(){
+@@ -725,14 +763,15 @@ void Secondary::stepSprings(const std::vector<btTransform>& skin){
+  // with at least 2 cm of radius: VRM hit radii are sized for hair against a head.
+  SpringSystem::WorldContact contact=[this](const btVector3& outside,const btVector3& head,btVector3& tail,float radius,float length){return external->constrainTail(outside,head,tail,std::max(radius,.02f*springs->setup().unitsPerMeter),length);};
+  springs->bodyContacts=effectiveCollisionFlags&Collide::Character;
+- springs->step(float(TickSeconds),skin,tuningGravity,tuningDamping,external&&!external->objects.empty()?&contact:nullptr);
++ auto water=springWater();bool wet=waterActive&&buoyancyEnabled.load();
++ springs->step(float(TickSeconds),skin,tuningGravity,tuningDamping,external&&!external->objects.empty()?&contact:nullptr,wet?&water:nullptr);
+ }
+ void Secondary::presentSprings(const std::vector<btQuaternion>& previous,const std::vector<btQuaternion>& current,bool blend){
+  float t=float(std::clamp(interpolation,0.,1.));
+  for(size_t k=0;k<springDisplay.size()&&k<current.size();k++)springDisplay[k]=blend&&k<previous.size()?previous[k].slerp(current[k],t).normalized():current[k];
+ }
+-Json Secondary::springInfo(uint64_t colliderHits,uint64_t worldHits,double stepMs,uint64_t steps)const{
+- auto& s=springs->setup();return {{"joints",s.joints.size()},{"springs",s.springs.size()},{"colliders",s.colliders.size()},{"steps",steps},{"colliderHits",colliderHits},{"worldHits",worldHits},{"stepMs",stepMs},{"relativeDamping",springRelativeDamping()}};
++Json Secondary::springInfo(uint64_t colliderHits,uint64_t worldHits,double stepMs,uint64_t steps,unsigned submerged)const{
++ auto& s=springs->setup();return {{"joints",s.joints.size()},{"springs",s.springs.size()},{"colliders",s.colliders.size()},{"steps",steps},{"colliderHits",colliderHits},{"worldHits",worldHits},{"stepMs",stepMs},{"relativeDamping",springRelativeDamping()},{"submergedJoints",submerged}};
+ }
+ bool Secondary::drives(size_t bone)const{return drivers[bone]>=0||(springs&&springs->setup().jointOfBone[bone]>=0);}
+ btTransform Secondary::feedback(size_t bone,const btTransform& animated,const btTransform* parentGlobal) const {
+@@ -757,7 +796,7 @@ Json Secondary::diagnostics(bool detailed)const{
+   auto travel=jiggleTravel.length2()>1e-12f?instance.placement.getBasis()*toSource(jiggleTravel.normalized()):btVector3(0,0,0);
+   out["jiggleDirectionalBones"]=linked;out["jiggleTravelDirection"]={travel.x(),travel.y(),travel.z()};
+   if(detailed)for(size_t i=0;i<bodies.size();i++){int bone=bodies[i].bone;if(bone>=0&&size_t(bone)<jiggle.size()){out["bodyList"][i]["jiggleValveParent"]=jiggle[bone].valveParent;out["bodyList"][i]["jiggleDirectionScale"]=jiggle[bone].directionScale;}}
+-  out.update({{"simulationMode",presentationMode<0?"disabled":"jiggle"},{"jiggleMs",qualitySuspended?0:simplifiedMs},{"sourceMirrors",0},{"externalContacts",0},{"worldContacts",0},{"objectContacts",0},{"sceneCaptureMs",0},{"sceneSyncMs",0},{"asynchronous",false}});return out;
++  out.update({{"simulationMode",presentationMode<0?"disabled":"jiggle"},{"jiggleMs",qualitySuspended?0:simplifiedMs},{"sourceMirrors",0},{"externalContacts",0},{"worldContacts",0},{"objectContacts",0},{"sceneCaptureMs",0},{"sceneSyncMs",0},{"asynchronous",false},{"submergedBodies",0}});return out;
+  }
+  if(async){
+   // The tick job publishes and writes `asyncError` under this mutex; hold it
+@@ -767,15 +806,16 @@ Json Secondary::diagnostics(bool detailed)const{
+   auto out=diagnosticsFrom(detailed,solved->current,solved->broadphase,qualitySuspended?frameStats():statsFrom(*solved),&solved->motion);
+   out["surfaceCorrections"]=solved->surfaceCorrections;out["surfaceRecoveries"]=solved->surfaceRecoveries;out["surfaceGuardMs"]=solved->surfaceGuardMs;
+   out["stretchContactClamps"]=solved->stretchContactClamps;out["stretchCorrections"]=solved->stretchCorrections;out["stretchGuardMs"]=solved->stretchGuardMs;
+-  if(springs)out["springBones"]=springInfo(solved->springColliderHits,solved->springWorldHits,solved->springMs,solved->springSteps);
+-  out.update({{"sourceMirrors",solved->mirrors},{"externalContacts",solved->contacts},{"worldContacts",solved->worldContacts},{"objectContacts",solved->objectContacts},{"sceneCaptureMs",solved->captureMs},{"sceneSyncMs",solved->syncMs},{"sceneSequence",solved->sceneSequence},{"sleepingBodies",solved->sleeping}});
++  if(springs)out["springBones"]=springInfo(solved->springColliderHits,solved->springWorldHits,solved->springMs,solved->springSteps,solved->springSubmerged);
++  out.update({{"sourceMirrors",solved->mirrors},{"externalContacts",solved->contacts},{"worldContacts",solved->worldContacts},{"objectContacts",solved->objectContacts},{"sceneCaptureMs",solved->captureMs},{"sceneSyncMs",solved->syncMs},{"sceneSequence",solved->sceneSequence},{"sleepingBodies",solved->sleeping},{"submergedBodies",solved->submerged}});
+   if(qualitySuspended)for(auto key:{"surfaceGuardMs","stretchGuardMs","sceneCaptureMs","sceneSyncMs"})out[key]=0;
+   return out;}
+  std::vector<btTransform> current;current.reserve(bodies.size());for(auto& b:bodies)current.push_back(b.current);
+  auto out=diagnosticsFrom(detailed,current,nanoemBroadphaseInfo(world),frameStats());
+  out["surfaceCorrections"]=surfaceCorrections;out["surfaceRecoveries"]=surfaceRecoveries;out["surfaceGuardMs"]=surfaceGuardMs;
+  out["stretchContactClamps"]=stretchContactClamps;out["stretchCorrections"]=stretchCorrections;out["stretchGuardMs"]=stretchGuardMs;
+- if(springs)out["springBones"]=springInfo(springs->colliderHits,springs->worldHits,springs->stepMs,springs->steps);
++ if(springs)out["springBones"]=springInfo(springs->colliderHits,springs->worldHits,springs->stepMs,springs->steps,springs->submergedJoints);
++ out["submergedBodies"]=submergedBodies;
+  out.update({{"sourceMirrors",external?external->objects.size():0},{"externalContacts",external?external->contacts:0},{"worldContacts",external?external->worldContacts:0},{"objectContacts",external?external->objectContacts:0},{"sceneCaptureMs",external?external->captureMs:0},{"sceneSyncMs",external?external->syncMs:0},{"sceneSequence",external?external->sequence:0}});
+  if(qualitySuspended)for(auto key:{"surfaceGuardMs","stretchGuardMs","sceneCaptureMs","sceneSyncMs"})out[key]=0;
+  return out;
+@@ -823,6 +863,8 @@ Json Secondary::diagnosticsFrom(bool detailed,const std::vector<btTransform>& cu
+  Json out=broadphase.is_object()?broadphase:Json::object();
+  out.update({{"physicsMs",stats.physicsMs},{"poseMs",stats.poseMs},{"ticks",stats.ticks},{"lastSteps",stats.steps},{"simulationTime",stats.simulationTime},{"inputTime",stats.inputTime},{"debtSeconds",stats.accumulator},{"interpolation",interpolation},{"resets",stats.resets},{"carries",stats.carries},{"resetReason",stats.resetReason},{"backend","nanoem-30acffaa"},{"bodies",bodies.size()},{"joints",joints.size()},{"authoredJoints",instance.model->joints.size()},{"skippedJoints",instance.model->joints.size()-joints.size()},{"warnings",instance.model->warnings},{"activeJoints",active},{"followers",followers},{"softBodies",soft.size()},{"stepMs",stats.lastMs},{"physicsTotalMs",stats.physicsTotalMs},{"tickTotalMs",stats.tickTotalMs},{"guardTotalMs",stats.guardTotalMs},{"tickCpuTotalMs",stats.tickCpuTotalMs},{"droppedTime",stats.dropped},{"maxJointDistance",maxError},{"maxLinearLimitError",maxLimitError},{"ground",false},{"collisionFlags",collisionFlags},{"effectiveCollisionFlags",effectiveCollisionFlags.load()},{"feedbackApplied",0},{"asynchronous",async},{"lagMs",lagMs},{"presentationDelayMs",presentationDelayMs()},{"sleepingBodies",sleepingBodies},{"asyncError",asyncError},{"bodyList",list}});
+  out["secondaryBackendRequested"]=instance.secondaryBackend;out["secondaryBackend"]=effectiveBackend;out["secondaryBackendFallback"]=backendFallback;out["broadphaseRequested"]=instance.secondaryBroadphase;out["solverIterations"]=stats.iterations;
++ // The water surface the addon last reported (Source height), null when there is none.
++ out["waterLevel"]=std::isfinite(instance.waterHeight)?Json(instance.waterHeight):Json(nullptr);
+  if(detailed){out["maxLinearLimitJoint"]=worstJoint;out["maxLinearLimitBodies"]=worstBodies;out["attachmentJoints"]=std::move(attachments);}
+  if(out.contains("compute")&&!out["compute"].value("failure",std::string()).empty()){out["secondaryBackend"]="cpu_mt";out["secondaryBackendFallback"]=out["compute"]["failure"];}
+  return out;
+diff --git a/native/secondary.hpp b/native/secondary.hpp
+index 85ba1c9..c6eb23b 100644
+--- a/native/secondary.hpp
++++ b/native/secondary.hpp
+@@ -56,6 +56,8 @@ public:
+   std::vector<float> morphs;
+   std::shared_ptr<const std::vector<btTransform>> manual;
+   btVector3 boundsMinimum{0,0,0},boundsMaximum{0,0,0};
++  // The water surface around the character in simulation space (Instance::waterPlane).
++  bool water=false;btVector3 waterNormal{0,1,0};float waterOffset=0;
+   bool reset=false,carry=false;
+   bool resumeQuality=false;int qualityDivisor=1;
+   std::string resetReason;
+@@ -76,8 +78,16 @@ public:
+  // Resting bodies of v2 worlds may deactivate; followers wake their chains.
+  static void setSleepPolicy(bool enabled,float linear,float angular,float seconds,float wakeDrift=.02f);
+  static Json sleepPolicy();
++ // `gravity` scales the authored gravity: the addon passes sv_gravity over its baseline
++ // (or an override) times the multiplier; negative values fall upwards.
++ static constexpr float MaxGravityScale=16;
+  static void setTuning(int iterations,float gravity,float damping,bool stretch,float tolerance);
+  static Json tuning();
++ // Bodies under the water surface (Instance::waterPlane) feel `strength` times the
++ // gravity upwards per submerged fraction (1 floats weightless) and lose `drag`
++ // of their speed per second. Off by default; client-wide like the tuning.
++ static void setBuoyancy(bool enabled,float strength,float drag);
++ static Json buoyancy();
+  static int accuracy();
+  std::vector<int> drivers;
+  double lastMs=0,dropped=0,accumulator=0;
+@@ -98,7 +108,7 @@ private:
+  float tuningGravity=1,tuningDamping=1;
+  void stepSprings(const std::vector<btTransform>& skin);
+  void presentSprings(const std::vector<btQuaternion>& previous,const std::vector<btQuaternion>& current,bool blend);
+- Json springInfo(uint64_t colliderHits,uint64_t worldHits,double stepMs,uint64_t steps) const;
++ Json springInfo(uint64_t colliderHits,uint64_t worldHits,double stepMs,uint64_t steps,unsigned submerged) const;
+  struct JiggleBone {btVector3 axis{0,-1,0},tip{0,0,0},velocity{0,0,0};btQuaternion rotation=btQuaternion::getIdentity();float length=1,directionScale=1;int valveParent=-1;bool active=false,ready=false;uint64_t frame=0;};
+  mutable std::vector<JiggleBone> jiggle;
+  std::vector<btTransform> jiggleTargets;
+@@ -147,6 +157,12 @@ private:
+  std::unordered_map<const btCollisionObject*,int> bodyLookup;
+  unsigned tuningVersionApplied=0;bool stretchEnabled=false;float stretchToleranceScale=1;
+  btVector3 authoredGravity{0,-9.8f,0};
++ // The water plane of the tick being solved (tick-owned, like the pose), each body's
++ // submerged fraction at the last tick, and how many bodies were in the water.
++ bool waterActive=false,waterApplied=false;btVector3 waterNormal{0,1,0};float waterOffset=0;
++ std::vector<float> waterFraction;unsigned submergedBodies=0;
++ void applyWater(float seconds);
++ SpringSystem::Water springWater() const;
+  bool v2=false,async=false;unsigned sleepVersionApplied=0;
+  // Asynchronous scheduling state. `mutex` guards the queue, `running`,
+  // `stopping`, the pending collision mode and the published state.
+@@ -163,9 +179,9 @@ private:
+   int iterations=10;double physicsTotalMs=0,tickTotalMs=0,guardTotalMs=0,tickCpuTotalMs=0;
+   std::vector<std::array<float,3>> motion; // speed, spin, Bullet activation state per body
+   double simulationTime=0,inputTime=0,accumulator=0,dropped=0,physicsMs=0,sceneMs=0,poseMs=0,lastMs=0,submittedTime=0;
+-  uint64_t ticks=0,resets=0,carries=0,sceneSequence=0;unsigned steps=0,sleeping=0,contacts=0,worldContacts=0,objectContacts=0;size_t mirrors=0;double captureMs=0,syncMs=0;
++  uint64_t ticks=0,resets=0,carries=0,sceneSequence=0;unsigned steps=0,sleeping=0,submerged=0,contacts=0,worldContacts=0,objectContacts=0;size_t mirrors=0;double captureMs=0,syncMs=0;
+   std::string resetReason;Json broadphase;
+-  std::vector<btQuaternion> springPrevious,springCurrent;uint64_t springColliderHits=0,springWorldHits=0,springSteps=0;double springMs=0;
++  std::vector<btQuaternion> springPrevious,springCurrent;uint64_t springColliderHits=0,springWorldHits=0,springSteps=0;double springMs=0;unsigned springSubmerged=0;
+  };
+  std::shared_ptr<const Solved> published,presented;
+  // Render-thread presentation state: the last few distinct simulation states
+diff --git a/native/spring_bones.cpp b/native/spring_bones.cpp
+index 8fb8434..4598554 100644
+--- a/native/spring_bones.cpp
++++ b/native/spring_bones.cpp
+@@ -85,9 +85,9 @@ void SpringSystem::place(const std::vector<btTransform>& skin,bool keepBend){
+ void SpringSystem::reset(const std::vector<btTransform>& skin){relativeDamping=springRelativeDamping();place(skin,false);}
+ void SpringSystem::settle(const std::vector<btTransform>& skin){place(skin,true);}
+ 
+-void SpringSystem::step(float dt,const std::vector<btTransform>& skin,float gravityScale,float dragScale,const WorldContact* world){
++void SpringSystem::step(float dt,const std::vector<btTransform>& skin,float gravityScale,float dragScale,const WorldContact* world,const Water* water){
+  auto started=std::chrono::steady_clock::now();auto& d=*data;
+- relativeDamping=springRelativeDamping();
++ relativeDamping=springRelativeDamping();submergedJoints=0;
+  // VRM damping acts on world velocity, which drags every chain behind a
+  // character that simply walks (about 45 degrees at 2 m/s with common hair
+  // settings). Measured against the hips instead, steady locomotion and
+@@ -104,9 +104,14 @@ void SpringSystem::step(float dt,const std::vector<btTransform>& skin,float grav
+   auto head=parentCurrent*local.getOrigin();auto parentRotation=parentCurrent.getRotation();auto rest=quatRotate(parentRotation,j.axis);
+   bool inCentre=centred(spring);auto c=centre(spring,skin);
+   auto tail=inCentre?c*s.tail:s.tail,previous=inCentre?c*s.previousTail:s.previousTail;
++  // The tail's submerged fraction, as a sphere of its hit radius (at least 1 cm).
++  float wet=0;
++  if(water){float r=std::max(j.hitRadius,.01f*d.unitsPerMeter);wet=std::clamp((water->offset-water->normal.dot(tail)+r)/(2*r),0.f,1.f);if(wet>0)++submergedJoints;}
+   float drag=std::clamp(j.dragForce*dragScale,0.f,1.f);
+   auto inertia=(tail-previous)*(1-drag);if(!inCentre)inertia+=referenceStep*drag;
+-  auto next=tail+inertia+rest*(j.stiffness*dt*d.unitsPerMeter)+j.gravityDir*(j.gravityPower*gravityScale*dt*d.unitsPerMeter);
++  float weight=j.gravityPower*gravityScale;
++  if(wet>0){inertia/=1+water->drag*wet*dt;weight*=1-water->strength*wet;}
++  auto next=tail+inertia+rest*(j.stiffness*dt*d.unitsPerMeter)+j.gravityDir*(weight*dt*d.unitsPerMeter);
+   auto constrain=[&]{auto v=next-head;float l=v.length();next=head+(l>1e-7f?v/l:rest)*j.length;};
+   constrain();
+   if(bodyContacts)for(int ci:spring.colliders){auto& col=d.colliders[ci];if(col.bone<0)continue;
+diff --git a/native/spring_bones.hpp b/native/spring_bones.hpp
+index 4d70796..6595c9b 100644
+--- a/native/spring_bones.hpp
++++ b/native/spring_bones.hpp
+@@ -35,7 +35,12 @@ public:
+  // Keeps a joint tail (sphere of `radius`, `length` from `head`) out of world
+  // geometry, on the side of `outside`; true when it moved.
+  using WorldContact=std::function<bool(const btVector3& outside,const btVector3& head,btVector3& tail,float radius,float length)>;
+- void step(float seconds,const std::vector<btTransform>& skin,float gravityScale,float dragScale,const WorldContact* world);
++ // A water surface (simulation space, `normal` pointing out of the water): a joint's
++ // gravity is scaled by 1 - strength * its submerged fraction and its inertia loses
++ // `drag` per second there, as Secondary::applyWater does for rigid bodies.
++ struct Water {btVector3 normal{0,1,0};float offset=0,strength=0,drag=0;};
++ void step(float seconds,const std::vector<btTransform>& skin,float gravityScale,float dragScale,const WorldContact* world,const Water* water=nullptr);
++ unsigned submergedJoints=0;
+  void hold(){previousLocal=currentLocal;}
+  // Per joint: rotation relative to the parent bone's global rotation (`reference`'s for a root).
+  const std::vector<btQuaternion>& previous()const{return previousLocal;}
+diff --git a/tests/buoyancy_tests.cpp b/tests/buoyancy_tests.cpp
+new file mode 100644
+index 0000000..7f57103
+--- /dev/null
++++ b/tests/buoyancy_tests.cpp
+@@ -0,0 +1,85 @@
++// Gravity and buoyancy of hair and clothing physics. The gravity scale the addon derives
++// from sv_gravity (Secondary::setTuning: up to 16, negative too) reaches every dynamic
++// body, sleeping ones as well. With buoyancy on, a chain under the water surface
++// (Instance::waterPlane) floats up; with buoyancy off, or the surface below the chain,
++// the chain hangs exactly as a dry one.
++#include "runtime.hpp"
++#include "secondary.hpp"
++#include "jobs.hpp"
++#include <cmath>
++#include <functional>
++#include <iostream>
++#include <limits>
++using namespace mmd;
++namespace {
++int checks=0;
++void check(bool ok,const std::string& name){if(!ok)throw std::runtime_error("FAIL "+name);++checks;std::cout<<"PASS "<<name<<"\n";}
++Json options(const std::string& backend){return {{"backend","source"},{"presentationDriven",true},{"secondaryCollision",0},{"secondaryBackend",backend}};}
++std::vector<btTransform> restPose(const Instance& p){std::vector<btTransform> pose;for(auto& b:p.sourceRig->bones)pose.push_back(b.rest);return pose;}
++void play(Instance& p,const std::vector<btTransform>& pose,int from,int to){
++ for(int f=from;f<to;f++){p.submitPresentationPose(pose,(f+1)/60.,uint64_t(f+1));p.secondary->waitAsyncIdle();p.stepSource();}
++}
++// The dynamic bodies' positions (PMX units, y up) and their mean height.
++struct Hang {double height=0;std::vector<btVector3> bodies;unsigned submerged=0,sleeping=0;};
++Hang measure(Instance& p){
++ auto d=p.secondary->diagnostics();Hang h;
++ for(auto& b:d["bodyList"])if(!b["follower"].get<bool>()){btVector3 v(b["position"][0].get<float>(),b["position"][1].get<float>(),b["position"][2].get<float>());h.bodies.push_back(v);h.height+=v.y();}
++ if(h.bodies.empty())throw std::runtime_error("The fixture has no dynamic bodies");
++ h.height/=double(h.bodies.size());h.submerged=d.value("submergedBodies",0u);h.sleeping=d.value("sleepingBodies",0u);return h;
++}
++// The fixture's chain hanging from its resting skeleton for four seconds.
++Hang hang(const std::shared_ptr<Model>& model,const std::string& backend,float water){
++ World host;auto& p=host.get(host.create(model,options(backend)));p.waterHeight=water;
++ play(p,restPose(p),0,240);return measure(p);
++}
++bool same(const Hang& a,const Hang& b){
++ if(a.bodies.size()!=b.bodies.size())return false;
++ for(size_t i=0;i<a.bodies.size();i++)if(a.bodies[i]!=b.bodies[i])return false;
++ return true;
++}
++bool refused(const std::function<void()>& call){try{call();}catch(const std::exception&){return true;}return false;}
++}
++int main(int argc,char** argv){try{
++ if(argc<2)throw std::runtime_error("Pass native-chain.pmx");
++ auto model=parse(readFile(argv[1]));const float none=std::numeric_limits<float>::quiet_NaN();
++ check(!refused([]{Secondary::setTuning(10,16,1,false,1);})&&!refused([]{Secondary::setTuning(10,-16,1,false,1);}),"gravity scales from -16 to 16 are accepted");
++ check(refused([]{Secondary::setTuning(10,16.5f,1,false,1);})&&refused([]{Secondary::setTuning(10,NAN,1,false,1);}),"a gravity scale beyond 16 or not a number is refused");
++ check(refused([]{Secondary::setBuoyancy(true,4.5f,1);})&&refused([]{Secondary::setBuoyancy(true,1,-1);})&&refused([]{Secondary::setBuoyancy(true,1,21);}),"buoyancy outside 0-4 or drag outside 0-20 is refused");
++ Secondary::setTuning(10,1,1,false,1);Secondary::setBuoyancy(false,1.2f,2);Secondary::setSleepPolicy(false,.5f,.35f,1.5f);
++
++ // The water surface in simulation space: the poses' transform (submitPresentationPose),
++ // for a placed and turned character.
++ {World host;auto o=options("cpu_mt_v2");o["position"]={100,200,300};o["angles"]={30,90,10};auto& p=host.get(host.create(model,o));
++  auto simulation=[&](btVector3 source){return fromSource(p.placement.inverse()*(source*Inch))/p.scale;};
++  btVector3 normal;float offset=0;
++  check(!p.waterPlane(normal,offset),"no water surface without a water height");
++  p.waterHeight=350;check(p.waterPlane(normal,offset),"a water height gives a surface");
++  float on=normal.dot(simulation({140,180,350}))-offset,under=normal.dot(simulation({60,230,340}))-offset,over=normal.dot(simulation({60,230,360}))-offset;
++  check(std::abs(normal.length()-1)<1e-5f&&std::abs(on)<1e-3f&&under<0&&over>0,"the surface matches the poses' transform: points under it lie below the plane");}
++
++ for(std::string backend:{"reference","cpu_mt","cpu_mt_v2"}){
++  auto dry=hang(model,backend,none);
++  check(same(dry,hang(model,backend,100000)),backend+": with buoyancy off a submerged chain hangs as a dry one");
++  Secondary::setBuoyancy(true,1.5f,2);
++  auto below=hang(model,backend,-100000),under=hang(model,backend,100000);
++  Secondary::setBuoyancy(false,1.2f,2);
++  check(same(dry,below)&&below.submerged==0,backend+": a water surface below the chain changes nothing");
++  check(under.submerged==under.bodies.size()&&under.height>dry.height+.5,backend+": a submerged chain floats up with buoyancy above 1");
++  Secondary::setTuning(10,-1,1,false,1);auto inverted=hang(model,backend,none);
++  Secondary::setTuning(10,0,1,false,1);auto weightless=hang(model,backend,none);
++  Secondary::setTuning(10,1,1,false,1);
++  check(inverted.height>dry.height+.5&&weightless.height>=dry.height-1e-3,backend+": the gravity scale reaches the chain, a negative one lifts it");
++  std::cout<<backend<<": dry "<<dry.height<<", submerged "<<under.height<<", inverted "<<inverted.height<<", weightless "<<weightless.height<<" PMX\n";
++ }
++
++ // Bullet's world gravity skips sleeping bodies: a chain asleep when the gravity
++ // turns over must rise all the same.
++ {Secondary::setSleepPolicy(true,.5f,.35f,1.5f);
++  World host;auto& p=host.get(host.create(model,options("cpu_mt_v2")));auto pose=restPose(p);
++  play(p,pose,0,600);auto asleep=measure(p);
++  Secondary::setTuning(10,-1,1,false,1);play(p,pose,600,900);auto turned=measure(p);
++  Secondary::setTuning(10,1,1,false,1);Secondary::setSleepPolicy(false,.5f,.35f,1.5f);
++  check(asleep.sleeping>0,"the resting chain fell asleep");
++  check(turned.height>asleep.height+.5,"a chain asleep when the gravity turns over rises too");}
++ std::cout<<checks<<" checks passed\n";shutdownJobs();return 0;
++}catch(const std::exception& e){std::cerr<<e.what()<<std::endl;shutdownJobs();return 1;}}
+diff --git a/tests/vrm_tests.cpp b/tests/vrm_tests.cpp
+index 6dec906..2d9805a 100644
+--- a/tests/vrm_tests.cpp
++++ b/tests/vrm_tests.cpp
+@@ -224,6 +224,15 @@ int main(int argc,char** argv){try{
+   for(size_t k=0;k<after.size();k++)drift=std::max(drift,(after[k]-before[k]).length());
+   check(drift<1e-4f,"a resting chain without gravity stays at its rest shape");
+   for(int k=0;k<600;k++)s.step(dt,rest,1,1,nullptr);auto sag=s.tails(rest);check(sag.back().y()<before.back().y()-1e-3f,"gravity power pulls the chain down");}
++ {// water (buoyancy): under the surface a chain floats up with buoyancy above 1; a surface
++  // below the chain leaves every step exactly the dry one
++  SpringSystem dry(model,setup,std::vector<uint8_t>(n,0),-1),below(model,setup,std::vector<uint8_t>(n,0),-1),under(model,setup,std::vector<uint8_t>(n,0),-1);
++  dry.reset(rest);below.reset(rest);under.reset(rest);auto before=dry.tails(rest);
++  SpringSystem::Water low{btVector3(0,1,0),-1000.f,1.5f,2.f},high{btVector3(0,1,0),1000.f,1.5f,2.f};
++  for(int k=0;k<600;k++){dry.step(dt,rest,1,1,nullptr);below.step(dt,rest,1,1,nullptr,&low);under.step(dt,rest,1,1,nullptr,&high);}
++  auto a=dry.tails(rest),b=below.tails(rest),c=under.tails(rest);bool same=a.size()==b.size();for(size_t k=0;same&&k<a.size();k++)same=a[k]==b[k];
++  check(same&&below.submergedJoints==0,"a water surface below the chain changes no spring step");
++  check(under.submergedJoints==c.size()&&c.back().y()>before.back().y()+1e-3f,"a submerged chain floats up with buoyancy above 1");}
+  {// the solver against the independent step: a head that sways and turns, relative damping off
+   // (collisions are covered separately; the reference handles spheres only)
+   auto plain=std::make_shared<SpringSetup>(*setup);for(auto& sp:plain->springs)sp.colliders.clear();

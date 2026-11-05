@@ -11,6 +11,7 @@ python tools\tests\test_inputs.py
 |---|---|
 | `test_plain_and_xz_and_the_index` | CRLF Lua stays plain and byte-identical; a binary, a text over 1 MiB and a non-UTF-8 text go to `.xz`; the index's sizes, SHA-256s, times, stored size and oid, and origins; `verify --deep` passes; unchanged sources are not stored again |
 | `test_unpack_restores_bytes_and_times_and_removes_stale_files` | `unpack` writes every file with its bytes and recorded time, deletes a stale file and its empty folder, and writes nothing the second time |
+| `test_extract_writes_one_folder_of_a_part_without_its_prefix` | R16: `extract` writes a folder's files (plain and xz) without the prefix, with their times, reads no other stored file (an LFS pointer elsewhere does not matter), and refuses a prefix without `/` or one that names no file |
 | `test_a_build_overlay_replaces_the_stored_binaries_without_reading_them` | R16: with `overlay`, a binary comes from the build folder although its stored file is only an LFS pointer; the rest is unpacked as usual; without the overlay that pointer stops `unpack` |
 | `test_with_an_overlay_every_native_binary_must_come_from_the_build` | R16: a `.dll` the overlay lacks stops `unpack`, unless `keep_packaged` names it (the file, or its folder ending in `/`) |
 | `test_an_overlay_file_the_index_does_not_list_is_refused` | R16: a build never adds files to a part |

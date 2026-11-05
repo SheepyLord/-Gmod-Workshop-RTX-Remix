@@ -26,10 +26,16 @@ Versions follow the loader's CMake project version once it ships; until then eve
   ([`tools/package_report.py`](tools/package_report.py.md)); `rtx-package-report` keeps it. Only the
   newest `.gma` artifact is kept. The Workshop gets exactly that `.gma`: the pre-push hook waits for the
   run and checks the file against its report (`publish_workshop.py --from-ci`); commits and merges no
-  longer publish, and a package built locally is no longer uploaded unless the user asks. The Model
-  Hotloader's four natives still come from `packages/` (their source is uncommitted in its author's
-  working tree). The material editor's bridge source is vendored in
-  `packages/advanced-material-editor/source` (not shipped).
+  longer publish, and a package built locally is no longer uploaded unless the user asks. The material
+  editor's bridge source is vendored in `packages/advanced-material-editor/source` (not shipped).
+- **The Model Hotloader's natives are built on GitHub too** (the user's choice;
+  [ADR 0107](docs/decisions/0107-the-model-hotloaders-natives-built-from-a-source-copy.md)). Their source,
+  version 2.3.1 with the buoyancy and secondary-water changes that were staged but never committed in its
+  author's worktree, is kept in `packages/model-hotloader/source` (not shipped); the workflow's
+  `hotloader` job builds the four natives with the add-on's own recipe and regenerates its
+  `native_policy.lua` and `mmdhl-native-release.json` from them ([`build_hotloader.ps1`](tools/ci/build_hotloader.ps1.md)).
+  No native binary of the package comes from `packages/` any more. `tools/inputs.py extract` writes one
+  folder of a part (a source tree) for a build.
 
 ### R15
 

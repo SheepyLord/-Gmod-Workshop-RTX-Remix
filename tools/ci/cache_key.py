@@ -5,6 +5,7 @@ sources that build reads, so a cached build is reused only for the same sources.
                                            # and which files the runtime part ships
   python tools/ci/cache_key.py modules     # tools/ci/build_modules.ps1, its pins, the fixes' patches and the
                                            # debug module's and the bridge's sources in packages/
+  python tools/ci/cache_key.py hotloader   # the Model Hotloader's source copy, its build script and policy
 
 Prints the key (64 hex digits). Exit codes: 0 printed; 2 an unknown build name."""
 import hashlib
@@ -54,11 +55,20 @@ def modules() -> str:
     return digest(files_under(*sources), used)
 
 
+def hotloader() -> str:
+    """The Model Hotloader's natives (ADR 0107): its source copy in packages/, the build script, the policy
+    the build rewrites, and pins.json's hotloader entry."""
+    pins = json.loads(PINS.read_text(encoding='utf-8'))
+    sources = ['tools/ci/build_hotloader.ps1', 'tools/lib/VsDevEnv.psm1', 'tools/inputs.py', pins['hotloader']['source'],
+               pins['hotloader']['policy']]
+    return digest(files_under(*sources), pins['hotloader'])
+
+
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    builds = {'runtime': runtime, 'modules': modules}
+    builds = {'runtime': runtime, 'modules': modules, 'hotloader': hotloader}
     if len(argv) != 1 or argv[0] not in builds:
-        print('usage: cache_key.py runtime|modules', file=sys.stderr)
+        print('usage: cache_key.py runtime|modules|hotloader', file=sys.stderr)
         return 2
     print(builds[argv[0]]())
     return 0
