@@ -88,6 +88,37 @@ local function overlaps(x,y,z,dx,dy,dz,length2,r)
     px,py,pz = px-dx*t,py-dy*t,pz-dz*t
     return px*px+py*py+pz*pz <= r[4]
 end
+-- R19 (glass F-01): interest regions are the client's own claim, so they only choose which shots
+-- could touch its pieces. Whether the player may learn of a shot is decided here, from what the
+-- server knows: the path passes within NEAR units of the player's eyes, or its start, its hit or
+-- the point where it passes a claimed region is in the PVS of the player or of its view entity (a
+-- camera), the places whose gunfire the engine already sends that player.
+B.NEAR = 1024
+local function inPVS(point, player, view)
+    return player:TestPVS(point) or (view ~= nil and view:TestPVS(point))
+end
+local function reaches(ply, c, from, to, x,y,z, dx,dy,dz, length2)
+    local view
+    for _,r in ipairs(c.regions) do
+        if overlaps(x,y,z,dx,dy,dz,length2,r) then
+            if view == nil then
+                view = ply:GetViewEntity()
+                if not IsValid(view) or view == ply then view = false end
+                local ex,ey,ez = numbers(ply:EyePos())
+                if ex then
+                    local px,py,pz = ex-x,ey-y,ez-z
+                    local t = math.max(0,math.min(1,(px*dx+py*dy+pz*dz)/length2))
+                    px,py,pz = px-dx*t,py-dy*t,pz-dz*t
+                    if px*px+py*py+pz*pz <= B.NEAR*B.NEAR then return true end
+                end
+                if inPVS(to,ply,view or nil) or inPVS(from,ply,view or nil) then return true end
+            end
+            local t = math.max(0,math.min(1,((r[1]-x)*dx+(r[2]-y)*dy+(r[3]-z)*dz)/length2))
+            if inPVS(Vector(x+dx*t,y+dy*t,z+dz*t),ply,view or nil) then return true end
+        end
+    end
+    return false
+end
 function B.Forward(entity, from, to, damage, radius, attacker)
     if not IsValid(entity) or not B.HasInterest() then return end
     local x,y,z = numbers(from);local tx,ty,tz = numbers(to)
@@ -106,10 +137,8 @@ function B.Forward(entity, from, to, damage, radius, attacker)
     if tokens < 1 or shot.tokens < 1 then B.limited=B.limited+1;return end
     local recipients, found = RecipientFilter(), false
     for ply,c in pairs(B.clients) do
-        if IsValid(ply) and c.untilTime > now then
-            for _,r in ipairs(c.regions) do
-                if overlaps(x,y,z,dx,dy,dz,length2,r) then recipients:AddPlayer(ply);found=true;break end
-            end
+        if IsValid(ply) and c.untilTime > now and reaches(ply,c,from,to,x,y,z,dx,dy,dz,length2) then
+            recipients:AddPlayer(ply);found=true
         end
     end
     for _,r in ipairs(B.regions) do

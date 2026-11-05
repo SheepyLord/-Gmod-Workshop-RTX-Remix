@@ -89,9 +89,12 @@ private:
   std::future<std::vector<StaticProp>> loading_;
   std::future<void> finishing_,stepping_;
   Stats snapshot_;
+  // Requested only by the destructor: an import still running stops at its next bounded unit, so
+  // Shutdown, Init and module close never wait for the rest of a map (R19).
+  std::stop_source stop_;
   bool busy() const;
   Impl& idle() const;
-  std::vector<StaticProp> load_impl(std::span<const std::uint8_t> bytes);
+  std::vector<StaticProp> load_impl(std::span<const std::uint8_t> bytes,std::stop_token stop);
   void finish_impl();
   void step_impl(double dt);
 };

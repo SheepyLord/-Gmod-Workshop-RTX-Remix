@@ -48,3 +48,10 @@ The all-mask regression also includes an equipped weapon, a dropped pickup and a
 The melee scenario additionally proves that conservative Source re-clipping shortens the forwarded endpoint while preserving the SWEP result, rejects solid starts, and bounds extra clipping queries even when no recipient region overlaps.
 
 The SWEP regression mutates the returned vectors before the deferred send and verifies that the owned observation and the weapon's mutated result remain independent.
+
+R19 (glass F-01): entity doubles gain `EyePos` (64 units above the position), `TestPVS(point)` (true
+unless the case sets `sees(point)`) and `GetViewEntity` (`view` or the entity). `bullets_visibility`
+claims a region around a remote fight for a player 20,000 units away and checks that nothing is sent
+until the hit, the start or the point where the path passes the region is in that player's PVS, the
+path comes within 1,024 units of its eyes, or a camera view entity sees it; the recent-break PVS bridge
+is unchanged. It fails on the add-on before R19 (a far client with a claimed region received the shot).

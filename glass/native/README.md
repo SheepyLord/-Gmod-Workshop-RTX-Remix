@@ -14,6 +14,7 @@ Jolt 5.3.0 is statically linked from [the pinned source](../../third_party/jolt/
 | `tests/test_glass.cpp` | Parser, hull, boundary, lifecycle, interpolation and 4,000-piece benchmark tests |
 | `tests/test_interaction.cpp` | One-way kinematics, contact/bullet/blast/fall damage, convex area/minimum-size/capacity tests and bounded-cost benchmarks |
 | `tests/test_r9.cpp` | Irregular one-unit fracture, multi-child budgets, bounded sounds, BSP buoyancy, reverse-velocity reproductions and environment CPU costs |
+| `tests/test_r19.cpp` | R19 review: expansion charged before inflating (collision and static-prop lumps), the static-prop total across aliased entries, the leaf walk's work budget, and import cancellation when a world is destroyed |
 | `tests/import_probe.cpp` | Read-only offline map counts/timings; run `nl_glass_import_probe <map.bsp>` explicitly, never via CTest |
 | `tests/scene_replay.cpp` | Replays actual Lua capture rows from stdin into a generated sleeping nine-piece pile; checks movement/damage, prescribed mirror trajectories and the disabled control |
 | `tests/fake_lua.h`, `tests/test_binding.cpp` | Strict stack-based `ILuaBase` double executing the actual exported callbacks, including realm refusal and reused pose tables |
@@ -28,7 +29,14 @@ engine or Lua interface. `Stats` returns a pre-dispatch snapshot while busy.
 
 Body budget is 1-8192. Map bytes/expanded collision data cap at 256 MiB, each inflated lump at
 128 MiB, LZMA dictionary at 64 MiB, static bodies at 32768, prop collision models at 2048,
-convexes/model at 128, points/hull at 256. Init/map import reserve no simulation scratch. On the
+convexes/model at 128, points/hull at 256. R19: an LZMA lump's declared size is checked against what
+is left of the 256 MiB before its buffer exists, and an inflated `sprp` game lump is charged to the
+same budget; the 32,768 static-prop records count across every `sprp` entry together (128 directory
+entries may name one payload); the world-leaf walk visits at most 8,388,608 leaf-brush references
+(four times the largest leaf-brush lump accepted; a compiled map visits each at most once). Destroying
+a world (`Shutdown`, `Init`, module close) requests a stop that an import checks between nodes,
+brushes, displacements, static-prop entries and cooked shapes, so it no longer waits for the rest
+of a map; one LZMA lump still decodes in a single call. Init/map import reserve no simulation scratch. On the
 first active step the reserve follows live demand (2 MiB + 8 KiB per live piece, rounded to 256
 pieces), then grows to observed peak demand. Jolt's non-aborting heap fallback handles a new peak;
 body/pair/contact limits bound work. Pair/contact capacities are `max(1024,budget*8)` and
@@ -89,7 +97,7 @@ ignores piece-piece damage, rejects minimum-size pieces early and records only h
 | `ReadPoses` | `(posesById, changedIds)` -> count; writes existing rows `{x,y,z,pitch,yaw,roll,sleeping}` and changed ids `[1..count]` |
 | `IsSleeping` | `(id)` -> boolean; stale ids return nil/reason |
 | `Stats` | `(existingTable)` -> true; fills live/awake/statics/models/workers/substeps/step_ms/dropped_seconds/ready |
-| `Clear`, `Shutdown` | `()` -> true; remove pieces / release the whole world and worker pool |
+| `Clear`, `Shutdown` | `()` -> true; remove pieces / release the whole world and worker pool (a running import is cancelled first) |
 
 Vectors/angles accept typed GMod values or raw three-number arrays. Hulls require 4-256 finite
 noncoplanar points; glass points must lie within 1024 units of their local origin. Coordinates

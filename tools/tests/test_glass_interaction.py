@@ -64,6 +64,9 @@ class GlassInteractionTests(unittest.TestCase):
     def test_client_owned_interest_refreshes_after_60_seconds_and_expires(self):
         self.run_case('bullets_interest')
 
+    def test_claimed_regions_reach_only_players_whose_pvs_or_surroundings_hold_the_shot(self):
+        self.run_case('bullets_visibility')
+
     def test_real_client_interest_cadence_cleanup_and_empty_fast_path(self):
         self.run_case('bullets_client_interest')
 

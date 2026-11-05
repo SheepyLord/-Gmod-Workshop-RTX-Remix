@@ -48,3 +48,6 @@ files outside this repo are used. Exit is unittest's (0 all pass, nonzero otherw
 
 R9-G updates tempered expectations to irregular granules and queue expectations to immediate
 breaking holes; weak crack queue bounds and deterministic area/snapshot checks remain.
+
+R19 adds `test_late_join_snapshots_are_paced_per_player_once_per_connection` (the engine harness's
+`sync_pacing`: glass F-02); `initial_sync` also checks one full initial sync per connection.

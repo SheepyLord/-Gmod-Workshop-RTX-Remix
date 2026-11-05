@@ -66,4 +66,47 @@ inline Buffer room(unsigned version=20,bool swapped=false,bool water=false) {
   }
   return file;
 }
+// R19 builders. A VBSP 20 file of the given lumps in order (version-1 leaves, 32 bytes each).
+inline Buffer assemble(const std::array<Buffer,64>& l) {
+  Buffer file(1036);u32(file,0,0x50534256);u32(file,4,20);
+  for(unsigned i=0;i<64;++i) {
+    const auto at=8+i*16,offset=static_cast<unsigned>(file.size());
+    u32(file,at,offset);u32(file,at+4,static_cast<unsigned>(l[i].size()));u32(file,at+8,i==10?1:0);
+    file.insert(file.end(),l[i].begin(),l[i].end());
+  }
+  return file;
+}
+inline unsigned negative(unsigned leaf) { return 0xffffffffu-leaf; } // child/headnode for a leaf: -(leaf+1)
+// One solid brush of the given planes (all its sides), referenced `refs` times by each of `leaves`
+// world leaves that share one range of the leaf-brush lump, reached through a chain of nodes.
+inline std::array<Buffer,64> shared_leaves(unsigned leaves,unsigned refs,const std::vector<Plane>& planes) {
+  std::array<Buffer,64> l;
+  for(unsigned i=0;i<planes.size();++i) {
+    vec(l[1],i*20,planes[i].normal);f32(l[1],i*20+12,planes[i].distance);u32(l[1],i*20+16,0);
+    l[19].resize((i+1)*8);u16(l[19],i*8,i);
+  }
+  u32(l[18],0,0);u32(l[18],4,static_cast<unsigned>(planes.size()));u32(l[18],8,1);
+  l[17].resize(std::size_t(refs)*2); // every reference names brush 0
+  l[10].resize(std::size_t(leaves)*32);for(unsigned i=0;i<leaves;++i)u16(l[10],i*32+26,refs);
+  l[5].resize(std::size_t(leaves-1)*32);
+  for(unsigned j=0;j+1<leaves;++j) { u32(l[5],j*32+4,j+2<leaves?j+1:negative(leaves-1));u32(l[5],j*32+8,negative(j)); }
+  l[14].resize(48);u32(l[14],36,leaves>1?0:negative(0));
+  return l;
+}
+inline std::vector<Plane> box_planes() {
+  return {{{1,0,0},64},{{-1,0,0},64},{{0,1,0},64},{{0,-1,0},64},{{0,0,1},0},{{0,0,-1},64}};
+}
+// A 62-sided prism with caps: 64 sides, 124 vertices. `count` brushes share its sides, so a small
+// file costs seconds of clipping and cooking; one world leaf references them all.
+inline Buffer heavy_brushes(unsigned count) {
+  std::vector<Plane> p{{{0,0,1},64},{{0,0,-1},64}};
+  for(unsigned i=0;i<62;++i) {
+    const double a=i*6.283185307179586/62;
+    p.push_back({{static_cast<float>(std::cos(a)),static_cast<float>(std::sin(a)),0},128});
+  }
+  auto l=shared_leaves(1,count,p);
+  l[18].clear();for(unsigned b=0;b<count;++b) { u32(l[18],b*12,0);u32(l[18],b*12+4,64);u32(l[18],b*12+8,1); }
+  for(unsigned b=0;b<count;++b)u16(l[17],b*2,b);
+  return assemble(l);
+}
 }
