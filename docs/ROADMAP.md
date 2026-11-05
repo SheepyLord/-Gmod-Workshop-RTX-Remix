@@ -5,8 +5,8 @@ R16 (the user's items 44 and 45, 2026-11-04; [plan](handover/R16-plan.md)) is **
 map whose add-on sets its own sky ([ADR 0105](decisions/0105-the-players-sky-applies-from-a-maps-start.md));
 and the RTX package is built on GitHub with every native binary built or fetched there, a SHA-256 report of
 the `.gma` and every file in it, one package artifact, and the Workshop given exactly that `.gma`
-([ADR 0106](decisions/0106-the-rtx-package-built-on-github.md)). The Model Hotloader's four natives still
-come from `packages/` until their source is in a repository.
+([ADR 0106](decisions/0106-the-rtx-package-built-on-github.md)); the Model Hotloader's natives too, from
+its source kept here ([ADR 0107](decisions/0107-the-model-hotloaders-natives-built-from-a-source-copy.md)).
 
 R15 (the user's items 43 and 44, 2026-11-04; [plan](handover/R15-plan.md)) is **done**, merged into `main` from `r15` ([report](handover/R15-report.md)):
 imported characters' painted shadows (目影, 发影, 陰影) left out of the draw in RTX sessions, and hair whose

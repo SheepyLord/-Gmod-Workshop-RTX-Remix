@@ -241,6 +241,16 @@
     "dirty": false
    },
    "imported": "2026-11-03T11:52:57+00:00"
+  },
+  "source": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r16\\out\\r16\\hotloader-stage",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r16",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "f2e32f99f0a56b096aa0c26db8bde147d70486e1",
+    "dirty": false
+   },
+   "imported": "2026-11-05T05:41:25+00:00"
   }
  },
  "files": {
@@ -984,6 +994,2076 @@
    "size": 45221,
    "sha256": "1c415bd79d23aa7505cb17dd3b4d18fa5e3d13fe310cbeeb01fcc620ba5f2711",
    "mtime_ns": 1793255049449096100,
+   "stored": "plain"
+  },
+  "source/mmdhl/CMakeLists.txt": {
+   "size": 32534,
+   "sha256": "3569a7f25e01a41ab53e311f6155cddaf585e3fd5077293803d214737abc177d",
+   "mtime_ns": 1793856342399287600,
+   "stored": "plain"
+  },
+  "source/mmdhl/dependencies.lock.json": {
+   "size": 2098,
+   "sha256": "84fe8b49486766daa703b11a1bc75e87b8734c6b13749d2991bc4fcea7f15f23",
+   "mtime_ns": 1793856342572036400,
+   "stored": "plain"
+  },
+  "source/mmdhl/LICENSE": {
+   "size": 1067,
+   "sha256": "7372ea8455e6a8ccce674718050706109088b70ed39c6458d9243c9a1f08d76c",
+   "mtime_ns": 1793856342438612800,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/assimp.txt": {
+   "size": 3791,
+   "sha256": "21195d410708b82757d3e34c3a40c427f6e59339da862e9480d4fcdc79b7a1bd",
+   "mtime_ns": 1793856342730237100,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/boost.txt": {
+   "size": 1338,
+   "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566",
+   "mtime_ns": 1793856342769480900,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/Bullet-zlib.txt": {
+   "size": 1022,
+   "sha256": "885cd516a8420acb7c3e0b1a7119913b686495001ae564e3229740460e8cff59",
+   "mtime_ns": 1793856342611636100,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/cdt.txt": {
+   "size": 16726,
+   "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+   "mtime_ns": 1793856342807276800,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/clew-Boost-1.0.txt": {
+   "size": 1338,
+   "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566",
+   "mtime_ns": 1793856342844852000,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/clew-MIT-Khronos.txt": {
+   "size": 2416,
+   "sha256": "7af4b41e3cee92fb074ce62e806c4c94bed65ac9f89e28b0f6da829d3c1bebaa",
+   "mtime_ns": 1793856342884244500,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/coacd.txt": {
+   "size": 1080,
+   "sha256": "fd83ade9f5c639a5562d1bd07d65e3fca125cf89427599b3281a694bdcb9d04a",
+   "mtime_ns": 1793856342923332400,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/earcut.txt": {
+   "size": 738,
+   "sha256": "828f2aed51b6526881a236758ec9b08cd69928fbfc70346d9d44a0b3a3444fe1",
+   "mtime_ns": 1793856342961641700,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/fmt.txt": {
+   "size": 1408,
+   "sha256": "825c9324e70f8c839c8ba910543dd4a7daee243b86ef960594c11381a19980b8",
+   "mtime_ns": 1793856343000935600,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/garrysmod_common.txt": {
+   "size": 1654,
+   "sha256": "18c5e860c4fef15e446b412ec0609342dc69404afbdce1fa475b1d0187786bdd",
+   "mtime_ns": 1793856343038497400,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/glm.txt": {
+   "size": 2865,
+   "sha256": "62d2d642c7d054d4fb4c9b42faad617d6c88fcd91e317f8035aa9f277cc159c3",
+   "mtime_ns": 1793856343077514200,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/json-MIT.txt": {
+   "size": 1076,
+   "sha256": "d64d1b4d948aa7751cfb613c02dc246aab7b358d760053e6580f01affe946906",
+   "mtime_ns": 1793856343116478900,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/linux/icu.txt": {
+   "size": 25185,
+   "sha256": "17510cf7a58b4879b887ec05a45d72cf1b73544dd9ec7e72f20110ed104229ee",
+   "mtime_ns": 1793856343154378100,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/linux/libgomp-GPL-3.0-with-GCC-exception.txt": {
+   "size": 39282,
+   "sha256": "c0fb3e4ff39aac013f885658bc415141db09f0c2fb0f1c60b09a6cba1e2f350d",
+   "mtime_ns": 1793856343193332400,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/linux/togl.txt": {
+   "size": 1349,
+   "sha256": "d3eb4bc66f1dd1106f746aa23cac7b8399fee33026464ddd0c896ebe6da36fdf",
+   "mtime_ns": 1793856343231808400,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/meshoptimizer.txt": {
+   "size": 1079,
+   "sha256": "f03037ca7bad1e3eb7f4a63fa6084a8baabd5ba30d3c239a9a7f35705d873e26",
+   "mtime_ns": 1793856343281484500,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/nanoem-MIT.txt": {
+   "size": 1053,
+   "sha256": "3dc45b6240fe47a018d4969a68e1a0cd44ed958955ce9985b8ac2d4022d58d2c",
+   "mtime_ns": 1793856343321581200,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/nanoem-MPL-2.0.txt": {
+   "size": 16725,
+   "sha256": "c76f740d1521b9bed9ca7a04ad526c310493c62621b1341d623b431736533b30",
+   "mtime_ns": 1793856343362664000,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/onetbb.txt": {
+   "size": 11357,
+   "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+   "mtime_ns": 1793856343401531000,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/openddlparser.txt": {
+   "size": 1079,
+   "sha256": "656597ef86119e4a526fb8621e0112b95051cf9d63a311b09b3a73346da00ead",
+   "mtime_ns": 1793856343440428900,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/openvdb.txt": {
+   "size": 16725,
+   "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+   "mtime_ns": 1793856343479399500,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/poly2tri.txt": {
+   "size": 1489,
+   "sha256": "578790e1377a270831ede8c64d7c92d411b6e5a55ce32fbb84a35b376af25ee0",
+   "mtime_ns": 1793856343520578600,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/pugixml.txt": {
+   "size": 1079,
+   "sha256": "90974fbb120e966b452654eaae3ba6ee55f3647db3b28918a7649733ee99da97",
+   "mtime_ns": 1793856343557595700,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/rapidjson.txt": {
+   "size": 5152,
+   "sha256": "a140e5d46fe734a1c78f1a3c3ef207871dd75648be71fdda8e309b23ab8b1f32",
+   "mtime_ns": 1793856343596391600,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/Source-SDK-third-party.txt": {
+   "size": 46335,
+   "sha256": "371bc45a5ec2c23cefc4512baf73fab5aa390fc973d62898e94288c16cf75de3",
+   "mtime_ns": 1793856342650375300,
+   "stored": "xz",
+   "stored_size": 13096,
+   "stored_sha256": "15889f7bfe2152847580041bdcf47310dd584da8cd38445927dfc6c082c1630f"
+  },
+  "source/mmdhl/licenses/Source-SDK.txt": {
+   "size": 2117,
+   "sha256": "224f468d7358f94a09d42f6d783e146b498468322c2ac2ff3b9180eb3ba3ce6f",
+   "mtime_ns": 1793856342690621300,
+   "stored": "xz",
+   "stored_size": 1160,
+   "stored_sha256": "9d2f87f7c0639ff1f214aa09bb49aceceba2625e416c1e818bf7ffc27e2044a9"
+  },
+  "source/mmdhl/licenses/spdlog.txt": {
+   "size": 1322,
+   "sha256": "71cc245f2f8cf17920d815277cb52628b49866f3ba1ae1dcb865771c408caa51",
+   "mtime_ns": 1793856343635428800,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/stb.txt": {
+   "size": 2510,
+   "sha256": "bebfe904b14301657e4e5d655c811d51fd31b97c455b9cc2d8600d6bac6cff63",
+   "mtime_ns": 1793856343674514800,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/utf8cpp.txt": {
+   "size": 1521,
+   "sha256": "90643c1044a58020af389dc8eb73099fc8327a12d0731a1101acb277e03e6a3b",
+   "mtime_ns": 1793856343713078500,
+   "stored": "plain"
+  },
+  "source/mmdhl/licenses/zlib.txt": {
+   "size": 1002,
+   "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243",
+   "mtime_ns": 1793856343751633000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/assets.cpp": {
+   "size": 48976,
+   "sha256": "c2b28a40055f835f325cdbad54f2f638c2b34b721d61157ab4b753c4cd1a9b75",
+   "mtime_ns": 1793856343793009900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/assets.hpp": {
+   "size": 1365,
+   "sha256": "1d5cc0c6a084b21d9f989b71c6a326a1fbd8535dd6f248fac0f627a0198bf235",
+   "mtime_ns": 1793856343832086900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/bridge.cpp": {
+   "size": 27205,
+   "sha256": "daa8f15f67b3934ba9f9bffd55e24cd28212ae668e6c1a91be01938055628a48",
+   "mtime_ns": 1793856343870994200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/bridge.hpp": {
+   "size": 628,
+   "sha256": "64b4c28fb499f77e2bf4288b51cb17895b62cf99a1be893c3c44af182614a1b5",
+   "mtime_ns": 1793856343909260500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/broadphase.cpp": {
+   "size": 6296,
+   "sha256": "75e0a15e7831641113343ca0895e4bfcf97186c10f7c5f8fcc087382c69797a9",
+   "mtime_ns": 1793856343951374600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/broadphase.hpp": {
+   "size": 2714,
+   "sha256": "472665b12508e26780c9d3c66b2dad98e19a61e44e495f6432d3f7781d6a1c91",
+   "mtime_ns": 1793856343990483300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/character_import.cpp": {
+   "size": 59179,
+   "sha256": "970927072d350f3d4e2ad25340fc586c3154ca2b0435adcff2ddf8aa7bd7da15",
+   "mtime_ns": 1793856344029217000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/character_import.hpp": {
+   "size": 1240,
+   "sha256": "f358430fa164c6568a2d76b3497cbb653ef9699ae136d04338d75c146cda8814",
+   "mtime_ns": 1793856344067620100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/codepage_tables.hpp": {
+   "size": 441672,
+   "sha256": "ae6084557e21dec7eb7ab3b06a4d9fc8a5366e84a3190ca2a4d89af469233a8b",
+   "mtime_ns": 1793856344108243900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/codepages.cpp": {
+   "size": 2052,
+   "sha256": "de20261224a519858822824b8177925f24d5d4a3fda8649dca0a47f188cd0f51",
+   "mtime_ns": 1793856344146480300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/codepages.hpp": {
+   "size": 649,
+   "sha256": "094891e723651d1b257802c62feb366547840c745efee86ebc4c20017c5f429c",
+   "mtime_ns": 1793856344185096500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/compatibility.cpp": {
+   "size": 23740,
+   "sha256": "276e6b35d482f20679d89fa19ac39c17cee75bca6a42892adf6a7a674b735b0a",
+   "mtime_ns": 1793856344223455200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/compatibility.hpp": {
+   "size": 5496,
+   "sha256": "fded772fa770fc8da09bde1be74f816aef5ccc0c2c9e7a7d56222216cc9f15be",
+   "mtime_ns": 1793856344261362300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/compute_probe.cpp": {
+   "size": 6364,
+   "sha256": "1b7164d696343f5370853da0e9d90bbfbffcc1e1ade41bcbc1eebca678bc93f5",
+   "mtime_ns": 1793856344299697300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/compute_rows.hpp": {
+   "size": 1545,
+   "sha256": "75b0b20a493b294802b9bd39d0ab701af98736146e71df7a03674bf866fda5bb",
+   "mtime_ns": 1793856344338354200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/compute_solver.cpp": {
+   "size": 24987,
+   "sha256": "5bd49aa41811c64233d64af0fd23f9bcca5c21f94ded44a9d8e189c7eb50aeca",
+   "mtime_ns": 1793856344376480800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/compute_solver.hpp": {
+   "size": 1387,
+   "sha256": "d36b2fdce06ded249af0a9aa011ce109f33d801bf7aa79ef6434dceac80dd3af",
+   "mtime_ns": 1793856344424840700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/contact_projection.hpp": {
+   "size": 2585,
+   "sha256": "c44aef8d872eff0c6ed14b2c42fccba2827e17c61d006e2f740de6e0aecaeeb8",
+   "mtime_ns": 1793856344462660200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/cp932_table.h": {
+   "size": 191407,
+   "sha256": "0527961443d35ed5b60c0e4f7b1f13d6fd47e0956615d690967e2b9b672a6135",
+   "mtime_ns": 1793856344501326300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/cutout.hpp": {
+   "size": 13221,
+   "sha256": "3db4dd568dc250bc7e23c9ef4fd189606480566ecd24debb225f114fdb4d4d52",
+   "mtime_ns": 1793856344540526000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dbvt_leaf.hpp": {
+   "size": 3924,
+   "sha256": "41f3880c7bab82210d2fc838066f383bc115958a2f1076f16951af60fc238aba",
+   "mtime_ns": 1793856344580425700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dds.cpp": {
+   "size": 4564,
+   "sha256": "82771868dba2451ab5707fa796c4960e1e801d6a3d49fa090f1dd20688234120",
+   "mtime_ns": 1793856344619383500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dds.hpp": {
+   "size": 458,
+   "sha256": "a747cd6553710fd0e086eec18fb864d6a9b6bf63b32777021549944613f0d46c",
+   "mtime_ns": 1793856344658380700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dependency_scope.cpp": {
+   "size": 13194,
+   "sha256": "592065b74866a2ad4e7c7bac4de41b0fd21b495fc1b0712de92a8334ff73d013",
+   "mtime_ns": 1793856344697440600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dependency_scope.hpp": {
+   "size": 2950,
+   "sha256": "0414f09324fc5eb35e943dde24501af3c74f5dfe8b7732efceeadb5bd55a968f",
+   "mtime_ns": 1793856344737152800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dialogs_posix.cpp": {
+   "size": 6900,
+   "sha256": "4367eb0fd324f2f6333fad87bba4e3e33fa0e68f24e9b799ad7359c0f3e0d984",
+   "mtime_ns": 1793856344774737900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dialogs_posix.hpp": {
+   "size": 1303,
+   "sha256": "3980bef2b6463c50181a50b5e5cfca0a84c14252e58f96f7529eba38d4c57128",
+   "mtime_ns": 1793856344813008200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/dxvk_shared_compute.h": {
+   "size": 1848,
+   "sha256": "fe3f6e5d09f81e7e5efc6c3073e254a3516e43e5254267eb3bda93311daf6fb0",
+   "mtime_ns": 1793856344850289700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/engine_abi.hpp": {
+   "size": 3775,
+   "sha256": "7a3c7185d93e7eb78e6e193d0fe44ea78ce72ef948130fc3242f2003ab4bec18",
+   "mtime_ns": 1793856344890384500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/file_access.cpp": {
+   "size": 67608,
+   "sha256": "d8f7d20968486b717a0950e6d795e6ebc181eb52b55243e2398ceaf2b4f22406",
+   "mtime_ns": 1793856344929431800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/file_access.hpp": {
+   "size": 7792,
+   "sha256": "1bcaff376f4333b7076af253ea626f52471d9245c4c4192be9a6ee03c9b69df0",
+   "mtime_ns": 1793856344976445400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/file_access_dialog.cpp": {
+   "size": 35899,
+   "sha256": "e2a2235fc1e2495f13a9b1e1ad415f1288dcdd37c0a54396e2ffaca466b6b206",
+   "mtime_ns": 1793856345014431200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/file_access_picker.hpp": {
+   "size": 3181,
+   "sha256": "aade2a8544c20a0fa017bf9738b7ebcff0ad340c9c05d9e657656b98383f8cb4",
+   "mtime_ns": 1793856345053032600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/fitter.cpp": {
+   "size": 10159,
+   "sha256": "46e9a19b97cf8214516f4848132597442d0f32f5e4e7a8b4ac59c934512f5474",
+   "mtime_ns": 1793856345092617900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/fitter.hpp": {
+   "size": 492,
+   "sha256": "a6e46eb294427ee60ec911268d6415b9ef6e84b10a001b67442f49cd59b57712",
+   "mtime_ns": 1793856345130679900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/fitter_calibration.hpp": {
+   "size": 2332,
+   "sha256": "f43f230d926057c29a62c4d8d982400a1c4ea08dcd8612fcf5c0a6e8fd38d1f5",
+   "mtime_ns": 1793856345170415800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/gpu_topology.hpp": {
+   "size": 4097,
+   "sha256": "5926e6edaecdd35900f2fe07fa353e878114a8036aa5bb074dd30c2076bde899",
+   "mtime_ns": 1793856345212224800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/humanoid_map.cpp": {
+   "size": 50079,
+   "sha256": "3e3387ba6f1f7cc923ff58b47cadb9c2a3364d94930fdc8e0a37fb3e88da36d7",
+   "mtime_ns": 1793856345255664400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/humanoid_map.hpp": {
+   "size": 3505,
+   "sha256": "3a1ed24b3488ac94121baa1839009787d64b0ebda962b75c75cb0bf818aa4dab",
+   "mtime_ns": 1793856345299619300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/humanoid_slots.hpp": {
+   "size": 10588,
+   "sha256": "af16b8f78426274e316ea6e2a3cf9be3b4731664ad0462ccfd72e23353756633",
+   "mtime_ns": 1793856345340255900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/import_error.cpp": {
+   "size": 23121,
+   "sha256": "859709df2865a76b0a007adbdb2aca92ce4ef4752ed1446d511d072645fa77d6",
+   "mtime_ns": 1793856345380488400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/import_error.hpp": {
+   "size": 5814,
+   "sha256": "8e52631a6c3ac39915a1cb276011257289709592ea0387ef439d6a393a90887a",
+   "mtime_ns": 1793856345422821700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/installation.cpp": {
+   "size": 7665,
+   "sha256": "0560b5c6764c8ab3efeb1d4871251c572c07b79576fd87baf5b2b7a5636d12a4",
+   "mtime_ns": 1793856345462597700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/installation.hpp": {
+   "size": 253,
+   "sha256": "575f5538c58874e1548e9ddee8cc4641eb052dea5cccc3698d9bcb02afba386d",
+   "mtime_ns": 1793856345501582300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/jiggle_direction.hpp": {
+   "size": 819,
+   "sha256": "a53c8cc1e454b751290a4326a7892a7a0ba410a6a8be531e4bb498f8d4e0d4f2",
+   "mtime_ns": 1793856345541722000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/jobs.cpp": {
+   "size": 9825,
+   "sha256": "0b359eea20ef58129287ed63b71a927c15f0a428b4f03eb683bd86fe9eec71f8",
+   "mtime_ns": 1793856345580405000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/jobs.hpp": {
+   "size": 1772,
+   "sha256": "42aa7fe8290b1c4c35fc088508279085a8572f70892fd190cd1d66062de9665b",
+   "mtime_ns": 1793856345620139900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/light_overlaps.hpp": {
+   "size": 4641,
+   "sha256": "3c16f93b88c6b8d75c651d53c7afac5dd46d9bcd50cbdfd0c33aee72b254aad1",
+   "mtime_ns": 1793856345658404900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/mesh_topology.hpp": {
+   "size": 2892,
+   "sha256": "689d276953d507c6a6137a052acdf230b232d14294b5af43195b438c82eeb34b",
+   "mtime_ns": 1793856345697298600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/mmd_names.hpp": {
+   "size": 2665,
+   "sha256": "0bc9a4a52f830bbccf687c8a9ce030aeba6b802cb37b60f4365876bc1318ce81",
+   "mtime_ns": 1793856345735956500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/model.cpp": {
+   "size": 94738,
+   "sha256": "6d72432e22124c922647958295c42695c7aeec07155ce14bfd7f9f6468cffb17",
+   "mtime_ns": 1793856345783292900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/model_notes.cpp": {
+   "size": 12605,
+   "sha256": "3d63601887f555a47d84e976a96f6c390eaa0d38e05456b619fa8339e2f13203",
+   "mtime_ns": 1793856345821368600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/model_notes.hpp": {
+   "size": 584,
+   "sha256": "46bb7b3fe1f4ba7968a9b205b9c6b615a79754a7d832dd4b031f2835b587d5f1",
+   "mtime_ns": 1793856345860440100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/module.cpp": {
+   "size": 87569,
+   "sha256": "bc3aa89a245de5692845841213035b1d771e9fad232804886cdc1cca1459d2ae",
+   "mtime_ns": 1793856345904867300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/naming.cpp": {
+   "size": 5389,
+   "sha256": "8b11d2ff042a0fa1f549d15c47e2e0c0cd8361b1de2f6790f62d9c4826496a01",
+   "mtime_ns": 1793856345943645300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/nanoem_backend.cpp": {
+   "size": 3480,
+   "sha256": "0c85c3a41e12c7a111b74775d7d1b93f47eae5df1ff79e2527efe2dbe9f5b7a8",
+   "mtime_ns": 1793856345982476800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/nanoem_unicode.c": {
+   "size": 20046,
+   "sha256": "d3a19b5421de07cd1805a8644911e3e010254931fcdb3ac57e75c71162e07d08",
+   "mtime_ns": 1793856346021652900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/opencl_solver_kernel.hpp": {
+   "size": 6878,
+   "sha256": "ee004c3767f58318afe26d2ac393778787b01bc59166ab23d6669c30a11450b3",
+   "mtime_ns": 1793856346060712800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/ordered_dispatcher.hpp": {
+   "size": 8661,
+   "sha256": "21731c108a7bd150e46c141635601af301c4173aeb7a01b8d07ce60d492a06d2",
+   "mtime_ns": 1793856346098747200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/ordered_joint_setup.hpp": {
+   "size": 3285,
+   "sha256": "b9ae55a273f16ce0ce8e5e49c416985e4e4363d81b054f2454c2a7c2156f1692",
+   "mtime_ns": 1793856346137308200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/packages.cpp": {
+   "size": 17707,
+   "sha256": "12d1d9fdd2d3f4abed6b4c8b8784fcea98cfcd53409ae4bff8e439b0c77e306e",
+   "mtime_ns": 1793856346174600500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/packages.hpp": {
+   "size": 1728,
+   "sha256": "2978081ea08c84e0ece46f93ed368fcc986142c872c838fe2eaba2650758d713",
+   "mtime_ns": 1793856346212896100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/physics.cpp": {
+   "size": 55690,
+   "sha256": "787d7b4f8ae22092114c6d2b6f571b9bbb74d19d86467300f30bc27b8bee2c78",
+   "mtime_ns": 1793856346251664900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/physics_profile.cpp": {
+   "size": 24371,
+   "sha256": "f83bdbb8251605949acaa3896d309d845d5c688f9c3c9a0c41804d742b5f8e35",
+   "mtime_ns": 1793856346290743700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/physics_profile.hpp": {
+   "size": 4844,
+   "sha256": "e184bf5c37c5f81654966b08457e6fb1f40861d427364e8e72302f9ce6b229dd",
+   "mtime_ns": 1793856346330314200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/picked_models.cpp": {
+   "size": 10290,
+   "sha256": "47e7a440b63448612998435dc4d4dffbe59773bec2ae909e3fc1b83554835e0d",
+   "mtime_ns": 1793856346367435900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/picked_models.hpp": {
+   "size": 3787,
+   "sha256": "029a75de48808b5d632e3afc5e7a20865e1f9274de78389afd82ba24c57bc140",
+   "mtime_ns": 1793856346405509500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/pmx_writer.cpp": {
+   "size": 3099,
+   "sha256": "3e6816a98882414f6f3b7946a11e369bbeb772c08aa8915827fdce89fa25a362",
+   "mtime_ns": 1793856346443397700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/pmx_writer.hpp": {
+   "size": 2166,
+   "sha256": "d2acc19622bb8673c42cc835cf2b2647ed2bdf59355858a166b21b898918a5a7",
+   "mtime_ns": 1793856346481542500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/posix.cpp": {
+   "size": 14620,
+   "sha256": "957849c3fbaf40d445b326c126035aa27aa73578a4cd334628817ec006766dd6",
+   "mtime_ns": 1793856346530260500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/posix.hpp": {
+   "size": 4282,
+   "sha256": "b9d2392ede407312ac301aec26bdda612f1ba985cc0d72bc6ddc1c64316baf52",
+   "mtime_ns": 1793856346568719500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/prop_bindings.cpp": {
+   "size": 13955,
+   "sha256": "9f3a6f9ab032fe0cdee57aad512cc87403e1790ef6210b08b824dd1cf3a1025a",
+   "mtime_ns": 1793856346605784500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/prop_bindings.hpp": {
+   "size": 819,
+   "sha256": "e4210986f2a696d481b2363fcaf76d6216385f840d00d4a7e0d503ecc2a0a372",
+   "mtime_ns": 1793856346644896000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/blend.cpp": {
+   "size": 56615,
+   "sha256": "7aa74a3b5f4db1be616bcfa1c20c826a9839a7ca6dad9fb1367a71b24c6f0902",
+   "mtime_ns": 1793856346683510500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/collision.cpp": {
+   "size": 6590,
+   "sha256": "3b734d89985ed4db34fc841843476ec448b5ab8222dc12d71a470b92185cb09b",
+   "mtime_ns": 1793856346721607600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/core.cpp": {
+   "size": 23427,
+   "sha256": "5aec871ef1ddbfd515e34139957dc28f6e3f50031cf50ca3249f41e9cdd5747a",
+   "mtime_ns": 1793856346761398100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/core.hpp": {
+   "size": 7280,
+   "sha256": "0092d32a3fa9773033bd8ae31d36d5cacec91e7a5144007c9a2ebc39c6cfd278",
+   "mtime_ns": 1793856346800373500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/fast_hull.cpp": {
+   "size": 10307,
+   "sha256": "b3e148d340cf94d99193db5de919efc43bd3856a724e3bb3da0a8a3f33a8fcc2",
+   "mtime_ns": 1793856346839470500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/image_validation.cpp": {
+   "size": 612,
+   "sha256": "7409eb4e3e41c6d2cd093348f597ac18e1b4656e447684c904661c849f687784",
+   "mtime_ns": 1793856346878539900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/import.cpp": {
+   "size": 25341,
+   "sha256": "8a244fe1951d59db3e1e3bc06a34d9dc9d501ec31429639fce4fe64593db8164",
+   "mtime_ns": 1793856346917403500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/material_overrides.cpp": {
+   "size": 7579,
+   "sha256": "a8703e898724d6e984b1f1773e8b49832c692a033fe957b9c91fd7f360ccf778",
+   "mtime_ns": 1793856346955708200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/material_processing.cpp": {
+   "size": 8761,
+   "sha256": "96ef6dff293414994ae4d127331afffaa6de49db0c37b4ae352c8efc8201160f",
+   "mtime_ns": 1793856346995274500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/material_processing.hpp": {
+   "size": 295,
+   "sha256": "fb3ec215caa210174fc9ac2056ffe157134ad0d1116b34e5250dc496098e2e69",
+   "mtime_ns": 1793856347033433300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/network_path.hpp": {
+   "size": 1159,
+   "sha256": "762d13541ff8c1424621e6f9be80f80143816153d7acb97b6ebe9ae51e865fca",
+   "mtime_ns": 1793856347072452200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/pmx.cpp": {
+   "size": 8568,
+   "sha256": "79e24aa090357f2c57304b512319e46dc574e9816f2587a2d51d7cae31f34248",
+   "mtime_ns": 1793856347112102600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/render_plan.cpp": {
+   "size": 5833,
+   "sha256": "0e3ae389ce0a7ac2c34cab64d97733d78cf1332ad4ba6f9fcc976bbda40a4982",
+   "mtime_ns": 1793856347150370700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/texture_resolver.cpp": {
+   "size": 4317,
+   "sha256": "228fc92718b32dcebae1ac6c1d00bc970859ab122866f8de759d0dae4cf0825f",
+   "mtime_ns": 1793856347198659000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/texture_resolver.hpp": {
+   "size": 1234,
+   "sha256": "981bcbede482e7a129cf5abc01e278c1c5284c6006f637a9104c7455270a5021",
+   "mtime_ns": 1793856347236299500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/trace.cpp": {
+   "size": 1462,
+   "sha256": "ec53ba8450726d638517e45c657fc17a1542c20c8649fb335073681bab05b453",
+   "mtime_ns": 1793856347275712700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/zstd_decode.cpp": {
+   "size": 17897,
+   "sha256": "f9cc3ab3a8e658e3dcd585237d375a5c829e29c734cc069de374b60f4de6ae17",
+   "mtime_ns": 1793856347314535400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/props/zstd_decode.hpp": {
+   "size": 261,
+   "sha256": "0f3f48d150b6cc974032d2a822095d0cf4a721bb7a8422cdb2b7db4eccb82506",
+   "mtime_ns": 1793856347354322900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/release.hpp.in": {
+   "size": 568,
+   "sha256": "6016ba65db29e8fd8444deb05847cbab533363c098047a8a37ca12cee6beee67",
+   "mtime_ns": 1793856347392207300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/render_binaries.hpp": {
+   "size": 1219,
+   "sha256": "75018e3333878b0c2eb07f0cf6113e4788bc5c86616334383a11142bc366af11",
+   "mtime_ns": 1793856347431522300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/renderer.cpp": {
+   "size": 95986,
+   "sha256": "2f38ab3f5d04097c53aa8ebb023157b259e3ac612d79cee630aed101e0428bb1",
+   "mtime_ns": 1793856347471434100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/renderer.hpp": {
+   "size": 3171,
+   "sha256": "1abf8291995fdaf2288d5ced38013b01fc02c3d42d93025b9fc50e65fb121141",
+   "mtime_ns": 1793856347510511300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig.cpp": {
+   "size": 55820,
+   "sha256": "11c1a749ab68352810592589e9ffe9d535d1f5d98aee2a6b144a7d224909b9f6",
+   "mtime_ns": 1793856347549635900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig.hpp": {
+   "size": 4119,
+   "sha256": "69aad5a3cee0b6bfdea22a776e8e7ddc2a66a5200deeca150ace89b75b9ae9c5",
+   "mtime_ns": 1793856347589198400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig_animation.cpp": {
+   "size": 19879,
+   "sha256": "644b722206cdf928e37e9af9395b8dd537baa77f7a7b3dfe595a992568f5fd77",
+   "mtime_ns": 1793856347628575000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig_animation.hpp": {
+   "size": 292,
+   "sha256": "4be23c0936dbd63c57716f04899fc0beb1a5b975f1ba770afb317d72bd1368c5",
+   "mtime_ns": 1793856347667476300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig_geometry.cpp": {
+   "size": 8908,
+   "sha256": "763e027403a8bcb7ab06405eecd6be7b0644052c674e0c64898628f25b1f8d2e",
+   "mtime_ns": 1793856347716259200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig_geometry.hpp": {
+   "size": 257,
+   "sha256": "05d61822b318e104290986d98f9e4103400ffe596b0ea634fc7b5d97705e1108",
+   "mtime_ns": 1793856347755432500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig_torso.hpp": {
+   "size": 11633,
+   "sha256": "d78437d2e463bfe18ca46917425c18738a2d6c41e6121eaf23ef6f879cfde0d0",
+   "mtime_ns": 1793856347793177500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/rig_writer.hpp": {
+   "size": 1066,
+   "sha256": "4ff7065802bee010ae5a10f1762430ad8893934353c4a6d7d8d8ff5bb654e1ca",
+   "mtime_ns": 1793856347831880400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/runtime.hpp": {
+   "size": 25598,
+   "sha256": "495aa3482726d0756c6c6e68ac089e0ced902f2f49b6a7daec7bb0e9b74997cc",
+   "mtime_ns": 1793856347871414200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/scene.cpp": {
+   "size": 1448,
+   "sha256": "b9da8987e32d8403a6bbb27f1a3448513f187478dc06a0ada71a337fc4c404e6",
+   "mtime_ns": 1793856347909759800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/scene.hpp": {
+   "size": 3065,
+   "sha256": "a89f9a550358b3c9f1bba214dd96cba2d9e025db807eace2b2088a854447f938",
+   "mtime_ns": 1793856347948527800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/scene_share.cpp": {
+   "size": 5597,
+   "sha256": "db03114b2b0fc37523e76b2752c7876ce24174288845a97cb7b072eb6fde397c",
+   "mtime_ns": 1793856347986074400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/scene_share.hpp": {
+   "size": 742,
+   "sha256": "8054360c078fb2aeab0dd17e7056a31fe3aafac1c16365d4e225a3e43eb3ff52",
+   "mtime_ns": 1793856348025963000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/scmi_data.hpp": {
+   "size": 27049,
+   "sha256": "17953983c280350d74058f35ca3a4fd4b520be1efd292052ebd8d517e30bb16a",
+   "mtime_ns": 1793856348064082200,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/sdk_end.hpp": {
+   "size": 518,
+   "sha256": "ea9d7010a24c2d07d24352f9816b305b8d7e389ec1b465a4ca28da8eea70a371",
+   "mtime_ns": 1793856348102578100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/secondary.cpp": {
+   "size": 81611,
+   "sha256": "649090d70895a69ae1c1477b762d1d54e8da649a9be826bae3546f0f7ee8ab55",
+   "mtime_ns": 1793856348141651400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/secondary.hpp": {
+   "size": 12851,
+   "sha256": "6345ee75f4569911d562fe9ef0df51bf0eec9ab0448fd326c249c39203aa20dc",
+   "mtime_ns": 1793856348181430000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/secondary_mt.hpp": {
+   "size": 1958,
+   "sha256": "e692f4cb52d819497f3a615fd3ba4967673402e6d8c450bb6bc14320033f10e7",
+   "mtime_ns": 1793856348219506800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/secondary_quality.cpp": {
+   "size": 10015,
+   "sha256": "7ec2c653b217c1a19c2c5eb43d458fac9766fa230e51245a63906f6d95673ea1",
+   "mtime_ns": 1793856348257765900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/shape_atlas.hpp": {
+   "size": 4518523,
+   "sha256": "1ed822eaaed887e77d758bfdb8b0cd4edf2d2e8516bfb17b070926c572ecfca7",
+   "mtime_ns": 1793856348320751700,
+   "stored": "xz",
+   "stored_size": 1616228,
+   "stored_sha256": "dcc01c8681cf0bfd6d77f7b84449a299f56968df1bb8f0a1c8c921be5444125c"
+  },
+  "source/mmdhl/native/sharing.cpp": {
+   "size": 11833,
+   "sha256": "c2d4321d4997bdfc5bb9b98939292dd6f09de2bffc6a2c6b736dbc1849fa6f38",
+   "mtime_ns": 1793856348362320400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/sharing.hpp": {
+   "size": 975,
+   "sha256": "0b5173e7b427eae3fbcd9f22bc6476ae04d7e6e7b11d12f4718a2b9571157344",
+   "mtime_ns": 1793856348400392700,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/spring_bones.cpp": {
+   "size": 12829,
+   "sha256": "9378d9182380ebae9e0583455ee0bf00095c2dd7dbc112232b6510fe6d967272",
+   "mtime_ns": 1793856348439413500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/spring_bones.hpp": {
+   "size": 5419,
+   "sha256": "d479fccbf0bf86bbd2ae94a41386ab18783795e2a7c3fd7f7e0855080d8ce425",
+   "mtime_ns": 1793856348482521300,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/thread_sampler.hpp": {
+   "size": 9812,
+   "sha256": "8da2766dc17a33597a7fee8ae10b2f84d33f23f8aad5726d5c81e858bd567f1a",
+   "mtime_ns": 1793856348520359600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/validation_once.hpp": {
+   "size": 630,
+   "sha256": "341235614330f9c317ef2da82e494c3b3fbbdb43b2f1b3494fafe16b8e6413b6",
+   "mtime_ns": 1793856348559425400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/vertex_upload.hpp": {
+   "size": 3221,
+   "sha256": "812914b9ad99566d4ab1b4e260feaae648bc4ef75f45992b2641a9a3e49b4e3f",
+   "mtime_ns": 1793856348597380100,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/vrm.cpp": {
+   "size": 63199,
+   "sha256": "0a3f63087752599ffc43899fbceed52aa9753bb61667bbe17f97514ce02c4151",
+   "mtime_ns": 1793856348636135500,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/vrm.hpp": {
+   "size": 1192,
+   "sha256": "0dbd0142f2571f76924a97082b385d437266c45d80ea556f2798814f7c6de45b",
+   "mtime_ns": 1793856348674981000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/vulkan_solver.cpp": {
+   "size": 52116,
+   "sha256": "7335d96f2d30404ebbb82a665cdbbcc9b77ae72a990dbe8288085fbe2ed20a12",
+   "mtime_ns": 1793856348714578400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/vulkan_solver.hpp": {
+   "size": 1075,
+   "sha256": "156586c45c71a3116dd358d6946473e811cdec0a47697ba2c451ca1aa834ee84",
+   "mtime_ns": 1793856348753104600,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/win_errors.hpp": {
+   "size": 1932,
+   "sha256": "7164ccd792db3f44dfb1bfa6d35feeb3c02126ac78c60de801d090af60a20cc5",
+   "mtime_ns": 1793856348791653000,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/worker.cpp": {
+   "size": 34105,
+   "sha256": "4f51a1c160150dac26e922b675a5da8b09e9a666bab81f9541633d2a93e92d1b",
+   "mtime_ns": 1793856348830767900,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/worker.manifest": {
+   "size": 909,
+   "sha256": "92c2555c47de65a85763e4e8ef6a9f546fa0f1ea92f1fe52e91f312f3127294f",
+   "mtime_ns": 1793856348868703400,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/xpress_huffman.cpp": {
+   "size": 5713,
+   "sha256": "dc76cb24813de10d4fb2aabf90fdf94c93835ecd200f22fa0ab86c28cc8efb3b",
+   "mtime_ns": 1793856348905790800,
+   "stored": "plain"
+  },
+  "source/mmdhl/native/xpress_huffman.hpp": {
+   "size": 724,
+   "sha256": "ea8a02b67519b0b5beb6b13ab22e0f34af9343eda5403994d6cb486d92e5fe45",
+   "mtime_ns": 1793856348945355900,
+   "stored": "plain"
+  },
+  "source/mmdhl/README.md": {
+   "size": 10316,
+   "sha256": "e15aba09df385f4c9a22ddac8671d9849888ab24087b431a31c82d687ff4f8c2",
+   "mtime_ns": 1793856342477228900,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/bootstrap.py": {
+   "size": 12790,
+   "sha256": "48bc6fd06b84a3d56ff94615b83a418b0bfde99a927a0193d938ce1b2efe13ed",
+   "mtime_ns": 1793856348987704400,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/build.ps1": {
+   "size": 2938,
+   "sha256": "281ee4e33aa9d89eb498656e09d75c72b1c872dc98ff9c642282a818279b5118",
+   "mtime_ns": 1793856349035832800,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/compatibility_profiles.py": {
+   "size": 5499,
+   "sha256": "2131078de42a3c555b79d449285e87d605e09d309ae6b095cf3970bee643ccc2",
+   "mtime_ns": 1793856349074892400,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/fixtures.py": {
+   "size": 19662,
+   "sha256": "92de72002484b0cf8bb71fe3d5faa09f099f6dc095c396389d64ab4fefdffb7c",
+   "mtime_ns": 1793856349114690200,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/native_manifest.py": {
+   "size": 7462,
+   "sha256": "c3d0bb6472bad477918d2940b9fd6789fde32837171d4225c0ce96f08741f5ad",
+   "mtime_ns": 1793856349153076100,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/patch-bullet-threading.py": {
+   "size": 3053,
+   "sha256": "8d9bca5f62441af0e8b448a751f38eb5371ecce2827903349d5dbe4c1399d6ed",
+   "mtime_ns": 1793856349192783100,
+   "stored": "plain"
+  },
+  "source/mmdhl/scripts/shaders.py": {
+   "size": 1032,
+   "sha256": "318fd0687aa5a4d6a5152040261613b448819871f9bfd3f8d306c4b67e05d759",
+   "mtime_ns": 1793856349233100500,
+   "stored": "plain"
+  },
+  "source/mmdhl/shaders/mmdhl_ps20b.hlsl": {
+   "size": 2160,
+   "sha256": "95a5799b7c108640c1f4d30ad920b743c60dd588192b5a04ee91eed78f0a8458",
+   "mtime_ns": 1793856349271680400,
+   "stored": "plain"
+  },
+  "source/mmdhl/shaders/mmdhl_vs20.hlsl": {
+   "size": 592,
+   "sha256": "f6c55f2df83566551f8ca197560c7a92ff2c379c6cfc5b22f170981bbf764bb4",
+   "mtime_ns": 1793856349311663900,
+   "stored": "plain"
+  },
+  "source/mmdhl/shaders/vulkan/solver.comp": {
+   "size": 15914,
+   "sha256": "0e3c71702b31a3b0e15c347fc894102f2bda450dc0974cb20c23c397975c7a55",
+   "mtime_ns": 1793856349352235600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/actor_tests.cpp": {
+   "size": 23502,
+   "sha256": "34d855f54c1510744f6117fe5fdf1a039293a6f8ae339fa0eeb7fd8bd07144c0",
+   "mtime_ns": 1793856349392795800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/async_tests.cpp": {
+   "size": 13500,
+   "sha256": "702fef5308cf39e2805c16c2d2d8cd4d289d89693372947d57bb654c7c3d5682",
+   "mtime_ns": 1793856349431389500,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/broadphase_tests.cpp": {
+   "size": 5521,
+   "sha256": "450ff89c35f5582ef835b4743d9347237d6cf9c7dacbc714ca1217ad282cf620",
+   "mtime_ns": 1793856349471555200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/buoyancy_tests.cpp": {
+   "size": 6143,
+   "sha256": "482978ec55dbcd9f3bb0a402d3bdb8f35a30f67f3b7dcc77de06bafafe1967d3",
+   "mtime_ns": 1793856349512877900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/character_import_tests.cpp": {
+   "size": 79994,
+   "sha256": "04c81cd559fa99f21de622bd704adb553144f5a4985a9f4853c12b2d83bec478",
+   "mtime_ns": 1793856349550941800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/compute_tests.cpp": {
+   "size": 7159,
+   "sha256": "b2ddba89cfa6d5b263073809a9cb506b0a96fc70a121dd3bffcaf976c28c6b6c",
+   "mtime_ns": 1793856349591151700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/contact_fixture.hpp": {
+   "size": 4015,
+   "sha256": "e7259e5de862a402f3f90e2cdb2007b3673354ee06014cefb68df0d18fab48d6",
+   "mtime_ns": 1793856349629835000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/crash_report.hpp": {
+   "size": 2077,
+   "sha256": "4824c25328204416ff8e0639256227cb7bf1a2e8e1eeef253a17d687507d7447",
+   "mtime_ns": 1793856349668737400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/file_access_tests.cpp": {
+   "size": 59404,
+   "sha256": "08d05acb7170f55bc6377d1ea2a8697eee87038483dd2cdb25f54fdb15a65ca8",
+   "mtime_ns": 1793856349708463400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/file_access_worker.cpp": {
+   "size": 533,
+   "sha256": "501695329ee64f3ebfe76db42fdff7259cedcd006bc8f4ccef21bbd5760cfa4e",
+   "mtime_ns": 1793856349747354300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/bonemap/proposal.json": {
+   "size": 33356,
+   "sha256": "c68f2ec748870f9cb75ffe5d78b44900f2704744e68ae8fd919e62dfd5515cb4",
+   "mtime_ns": 1793856349825733200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/bonemap/rules.json": {
+   "size": 43847,
+   "sha256": "df8175ee69a7b0f7007cadae6a6dd8c8436aece49e44e118ee90abe4ed83a4ed",
+   "mtime_ns": 1793856349865285600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/bonemap/slots.json": {
+   "size": 20293,
+   "sha256": "f894c9e21430c8b16996ecb5862e4dc09e020b886c814ecb12756d1a44e35f14",
+   "mtime_ns": 1793856349909416400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/checker.dds": {
+   "size": 136,
+   "sha256": "14a68ab3eeec343322784e50d95824cc171263d9c94f1dcfff7df42af2cd5795",
+   "mtime_ns": 1793856349947445400,
+   "stored": "xz",
+   "stored_size": 112,
+   "stored_sha256": "c359894d5287dae2e153c8f141ba41900cce5c31bb70246c70cf294cc195dc09"
+  },
+  "source/mmdhl/tests/fixtures/cloth21.pmx": {
+   "size": 3997,
+   "sha256": "9a0b9bafe020522f56211022b9ce72deac733cac3839607999c4823b23e62b0c",
+   "mtime_ns": 1793856349995768300,
+   "stored": "xz",
+   "stored_size": 816,
+   "stored_sha256": "5b78ba7daec7fc5aae5921e766c89ea43225a8cdc76c2ca0f7686a6ed78ddffe"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-body_damping.pmx": {
+   "size": 3997,
+   "sha256": "aa1ab4ed42d2c9de0cca7ad9535c19481000a89ef8d6c7a9ce81704c6131d5d0",
+   "mtime_ns": 1793856350035890600,
+   "stored": "xz",
+   "stored_size": 824,
+   "stored_sha256": "2c4bb8be8a877a12aa72c05b9fc96084af50cdf383d5a16b1a315895f1b8e6b8"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-body_heavy.pmx": {
+   "size": 3997,
+   "sha256": "55dc6c05015f5adc89cdeaaa6d7961c6c96f2f7951c80c3ac95fc99bdb3a9624",
+   "mtime_ns": 1793856350074437700,
+   "stored": "xz",
+   "stored_size": 824,
+   "stored_sha256": "a276ca935053dce61f80d0dce4e269e2f74416f8c8e3a4e53c28f10dcf02b02b"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-body_mass.pmx": {
+   "size": 3997,
+   "sha256": "2cd4e384a571d03b1f2a3843f560a31cedf29d34d8d1bfae21d0c950de143d0d",
+   "mtime_ns": 1793856350112328200,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "d5845b34dd707423b39f9fce272157e18c282720b5340067a5e11688a2a71a7c"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-body_orientation.pmx": {
+   "size": 3997,
+   "sha256": "b07fa3cb5d8bb346bd21966fd398072c9a6be42c8a3617b8a34dd9c2539330b9",
+   "mtime_ns": 1793856350150368500,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "2b2558ad8dc2fa7a1cef06ca19d4e8caa7abf80df832424c51d55149d624c65f"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-ik.pmx": {
+   "size": 3997,
+   "sha256": "063ea842d462a466fd8dedc8748cdba31f2738db929e4ac1cfaa6f139b369050",
+   "mtime_ns": 1793856350188689500,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "5351c0a71369368cc6c481649562a6158ef0dc58e7f1ef63e54280c60a070ce0"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-joint_limit.pmx": {
+   "size": 3997,
+   "sha256": "06bcbad5fc4f378002ddd9dbc6d4df667c9285f17267edd72a214c84d54ae511",
+   "mtime_ns": 1793856350228468600,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "147e38a78e03ec5302850aee35d87fe4a6cec9b7d52c023bf4927314d7c7483e"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-joint_spring.pmx": {
+   "size": 3997,
+   "sha256": "4946d185d6e14c2861e122996d395870c85a7dc99c7eb075451ce721a457192d",
+   "mtime_ns": 1793856350267724600,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "16cf06eaa10c080e9a72e154561a58cb97b59238408a965e4ed0e2d37f92e472"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-joint_stiff.pmx": {
+   "size": 3997,
+   "sha256": "c940aced49b1689659673193c84b2e5cf741b8e1958afb5a535e5b26b44f0522",
+   "mtime_ns": 1793856350307709700,
+   "stored": "xz",
+   "stored_size": 824,
+   "stored_sha256": "67b791da84db12fef4621a4259e4810a4f58e953926b839b2f54992b738ed3b3"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-material.pmx": {
+   "size": 3997,
+   "sha256": "34bb629a0aaaad99bb23de689f09af58059846ad4c822b01790d5e8fb714433f",
+   "mtime_ns": 1793856350349745000,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "28fcca9f2c83711e14a7892a2a11d17df2b19cdaabe2c22f58bfba9d66875119"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-morph_bone.pmx": {
+   "size": 3997,
+   "sha256": "61c37920d1dc3d50efc896859b524de1c3e3b02c69ede6c1182f9230edb2c4b4",
+   "mtime_ns": 1793856350389794100,
+   "stored": "xz",
+   "stored_size": 816,
+   "stored_sha256": "28087ac9c2994e6317446dee228c67076f6a99e4a3f76d58e11f6a1e5b82762d"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-morph_group.pmx": {
+   "size": 3997,
+   "sha256": "100dbbca30d18721da556b4f0b11db7f7fd9cbcc7d3053ec3106edd1ce2b6567",
+   "mtime_ns": 1793856350431573300,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "3194511c6df06d5361a6af3ad3f4cbce837e728fedabbf89c0ea9d40c4c1d547"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-morph_impulse.pmx": {
+   "size": 3997,
+   "sha256": "aa2c72a38d6c787f42f835968572e322a35c513998996d15d8cdb0230b1e5f69",
+   "mtime_ns": 1793856350470915700,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "53fb7abc8b4fd413708747fb6af360ab8d3c5616bb0f60eb5731413b350971b2"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-morph_material.pmx": {
+   "size": 3997,
+   "sha256": "7541a036e06d3a9cfab56aabb014ea09e52635be486b262bf71938b584520b34",
+   "mtime_ns": 1793856350517786000,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "a165e5a340d329db4d3bce9587aad7ef11b3e9867a32f0052f41fbd8df6ce6d1"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-morph_vertex.pmx": {
+   "size": 3997,
+   "sha256": "4179bd72b6aa46858cef12e3633f55960a4fa82346c50b908ea88f76a8079f07",
+   "mtime_ns": 1793856350557328500,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "6d598169ce64b10ceabd02f978635bd45ea3331dc3af6cc179273b3d903124f4"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-normal.pmx": {
+   "size": 3997,
+   "sha256": "11a2d7f6b71a6970f143cdd961743b7f64fe19c5e9a64daa4168b31bb1c04f78",
+   "mtime_ns": 1793856350596183700,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "a52b43d39ddb6054118ac01d2ad6baff38f6bae85845830a89af1e0c796fbc82"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-self_parent.pmx": {
+   "size": 3997,
+   "sha256": "3b24dd271d0c725bc55019193cfd17c3c3125613876b7bc990834378541b5487",
+   "mtime_ns": 1793856350636493700,
+   "stored": "xz",
+   "stored_size": 816,
+   "stored_sha256": "b9cfa42f4cd628d8f120d2d52c85441fad00780e7a2f929fabe57383820a049e"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-soft.pmx": {
+   "size": 3997,
+   "sha256": "5455020a547bd07dd518cebc20140a4d8b50661990309956be94b74925983859",
+   "mtime_ns": 1793856350675071700,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "a4ae7cbb58bd930c7a3eb476edf4ff08274087059830a164f697c4479fd87794"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-soft_iterations.pmx": {
+   "size": 3997,
+   "sha256": "6b69add8d3781f7f680a4da837c53da413ee9e0adcd75f995007739fb944c25a",
+   "mtime_ns": 1793856350714424300,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "1edd44e7bb1bce14d0553d8edf285d369656f99c64c9390a362aff715ca04aec"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-uv.pmx": {
+   "size": 3997,
+   "sha256": "3252e6eaafa15fae32cbfc63a8112a611c309d0a6af71d836054c359ad45bd2d",
+   "mtime_ns": 1793856350752500300,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "d61b63d910c15d6580032c0740ed01aa50fb0fe7a95630e9196c82f31401278d"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-vertex_position.pmx": {
+   "size": 3997,
+   "sha256": "325d6b151ca028604d89d87461398f8f0206c55727dec6ec7932c12a99db8f97",
+   "mtime_ns": 1793856350791762700,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "9fe9bc4e738794e1fe90c89a406166596df613c2e8674f995bfee21218247865"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-weights.pmx": {
+   "size": 3997,
+   "sha256": "282d2285724feb7e6887921755176b7d7eacd2cb4be06200124ea43878a8978b",
+   "mtime_ns": 1793856350831815300,
+   "stored": "xz",
+   "stored_size": 820,
+   "stored_sha256": "037347464359651342efd49def64f6d71723d93e52efc64f8e80bed055c9bedc"
+  },
+  "source/mmdhl/tests/fixtures/corrupt-zero_normal.pmx": {
+   "size": 3997,
+   "sha256": "96465e95d45f0ae4477319c07e340ea802bd47e25b1eb5b73af4b4499879e9b6",
+   "mtime_ns": 1793856350871367700,
+   "stored": "xz",
+   "stored_size": 816,
+   "stored_sha256": "0028cd8d38c7dada6adc679c30d0dd14c905616c28dc62811cc112d1bef279b7"
+  },
+  "source/mmdhl/tests/fixtures/cutout-atlas.png": {
+   "size": 82,
+   "sha256": "44a12bc5d4b92c8d250bbf2a8d6c52a23c9f22d55029bb438bc165d2a1371f66",
+   "mtime_ns": 1793856350910688000,
+   "stored": "xz",
+   "stored_size": 140,
+   "stored_sha256": "9cd7195ff1c11df2acb3077a3282bb4e6eff97d7cadc5270c916462a8cd1a22b"
+  },
+  "source/mmdhl/tests/fixtures/cutout-edge.png": {
+   "size": 80,
+   "sha256": "f5af1d239b91eb6a91dc2d39640a0b76916e9b1849bf0aa7b6b9ede858813750",
+   "mtime_ns": 1793856350949827900,
+   "stored": "xz",
+   "stored_size": 136,
+   "stored_sha256": "f603b1011f97161da760eb043d8aca0238546b6ce83aa1b30579ac89c0e62c46"
+  },
+  "source/mmdhl/tests/fixtures/cutout-none.png": {
+   "size": 75,
+   "sha256": "1c022cf7fb7c9a3f43b08a951d27c3e75b01b611c86398e8889f612a3c4ae5bd",
+   "mtime_ns": 1793856350990401300,
+   "stored": "xz",
+   "stored_size": 132,
+   "stored_sha256": "25cdf2b13f349cbeef2f846e83836d7a9c05f59548dd1e90dc847916d63e5870"
+  },
+  "source/mmdhl/tests/fixtures/cutout-quarter.png": {
+   "size": 77,
+   "sha256": "a3d9cdb9a0e3fb153934649e959cc4ea14701ca258313b35fa1954362061291b",
+   "mtime_ns": 1793856351030690500,
+   "stored": "xz",
+   "stored_size": 136,
+   "stored_sha256": "7949eb61373c2f4407d9dfe3eb34b66997176fef2be7ed2a0be4ea6d63625e08"
+  },
+  "source/mmdhl/tests/fixtures/cutout-ribbon.png": {
+   "size": 78,
+   "sha256": "c293623eb4209eb7339ba1a767e085e337ac2619587ed20dda510842b2cf3453",
+   "mtime_ns": 1793856351070301200,
+   "stored": "xz",
+   "stored_size": 136,
+   "stored_sha256": "e0f6d505fab0d1d66d408a29426dba9fe06ce5d567c5198ece55fd1483cb7376"
+  },
+  "source/mmdhl/tests/fixtures/cutout-sheer.png": {
+   "size": 83,
+   "sha256": "59a7fccf61a9109c9865620f7cdd9e39500fa389f57b288e9efd3148fdb931e1",
+   "mtime_ns": 1793856351112635400,
+   "stored": "xz",
+   "stored_size": 140,
+   "stored_sha256": "5d546ea4e982e60da039b22f33668c78e097233283205b7f22e6bda1f267ef75"
+  },
+  "source/mmdhl/tests/fixtures/cutout-switch.png": {
+   "size": 80,
+   "sha256": "1f738d3a4bd2847b857f5937624ba08849d2534f52730fe9650d78daae78fb8b",
+   "mtime_ns": 1793856351151786600,
+   "stored": "xz",
+   "stored_size": 136,
+   "stored_sha256": "c7529229c4103b4ccf092002a0070f494bbf7b14d9c8a91b9712b509abcca91d"
+  },
+  "source/mmdhl/tests/fixtures/cycle.pmx": {
+   "size": 3997,
+   "sha256": "4a160074b8c1e9a6420afbf46bf597d10c408ad5dde5c16c67d36cc649e88b83",
+   "mtime_ns": 1793856351191380400,
+   "stored": "xz",
+   "stored_size": 816,
+   "stored_sha256": "ea8183d62ecd3df4ed1a885f7175e53242f80168a30c10ba9969702c914e7419"
+  },
+  "source/mmdhl/tests/fixtures/LICENSE.txt": {
+   "size": 305,
+   "sha256": "a6968eb9ecf78ea0f6f56f9bc2b2c98b683ca45845c1d1bafd2105618917a769",
+   "mtime_ns": 1793856349785650800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/native-chain.pmx": {
+   "size": 6860,
+   "sha256": "9b02c60f34300b40e9cbfee65781e1ca34214a9b037168b8f5d3292ab7be5584",
+   "mtime_ns": 1793856351231480000,
+   "stored": "xz",
+   "stored_size": 1220,
+   "stored_sha256": "a24f27d961832b929f6ac33deafabfb155003339bf037c8cbe044b879f641eae"
+  },
+  "source/mmdhl/tests/fixtures/native-cloth21.pmx": {
+   "size": 5277,
+   "sha256": "1d4dc5f4009b1354822d26ef27e619872ef2b3f85c0be04488113e5e773c64c7",
+   "mtime_ns": 1793856351274547000,
+   "stored": "xz",
+   "stored_size": 1072,
+   "stored_sha256": "0762cc2b1572fcf29cecfc0f0badc854c41c62f89f0fd008819ea30c537d7991"
+  },
+  "source/mmdhl/tests/fixtures/native-control-root.pmd": {
+   "size": 4015,
+   "sha256": "b99a64e3a1a66ac7cd9795f1f7cfe8516ed0818282cd5ff15cb94bc8a3baee1e",
+   "mtime_ns": 1793856351313678500,
+   "stored": "xz",
+   "stored_size": 760,
+   "stored_sha256": "9ffcfd276593fa9dabac1c366063ef97436f1b36cea0b2055c1a29d7b850061c"
+  },
+  "source/mmdhl/tests/fixtures/native-control-root.pmx": {
+   "size": 6526,
+   "sha256": "64d456ad8e883e3efe6508c7adf81893de940efdd79be48cc7892483cb249735",
+   "mtime_ns": 1793856351354359600,
+   "stored": "xz",
+   "stored_size": 1368,
+   "stored_sha256": "85d5fd04b3b5813ad7e409bd927dc51dad739e88f4207769cd5081064b7b1383"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-atlas.pmx": {
+   "size": 4017,
+   "sha256": "b1684e033a20d887cab03456abf145494f8caa42e1d4cd517ab55c6a390bafa6",
+   "mtime_ns": 1793856351393419200,
+   "stored": "xz",
+   "stored_size": 836,
+   "stored_sha256": "e66b59fea92da50b53fc710a305aeec5d3ab9af24469cc7c20cedc8241303466"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-edge.pmx": {
+   "size": 4016,
+   "sha256": "58b5e215cb1a796c69880f391fc093150ef06fdc4534ae163dfb98fb20d38521",
+   "mtime_ns": 1793856351434488100,
+   "stored": "xz",
+   "stored_size": 836,
+   "stored_sha256": "e3accce3dea75000fed16af8b76743d134f5cb8e777cbe6234201fa1eba145c7"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-none.pmx": {
+   "size": 4016,
+   "sha256": "50e78d63ed964461ccda389149c3e7562d9fe0207629a5082e09b1875d467546",
+   "mtime_ns": 1793856351484535200,
+   "stored": "xz",
+   "stored_size": 836,
+   "stored_sha256": "19181e3cebfd35ed9b7388cdb2471d88883171a65676827a3946d40616920b11"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-quarter.pmx": {
+   "size": 4019,
+   "sha256": "2e3ff48bc4e155722688c4c1de91097c10aefa9f2766005f569cf2f4e60e5d6c",
+   "mtime_ns": 1793856351527468300,
+   "stored": "xz",
+   "stored_size": 836,
+   "stored_sha256": "26cac24e24b476de4ddfaace7719c589c989462e3d20be2f5b587c2c8bcd3bdd"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-ribbon.pmx": {
+   "size": 4018,
+   "sha256": "83a454962ed35ec5c361f0a3d95b3b7f10d6aead8d1a9ec9429c21bedf69136d",
+   "mtime_ns": 1793856351567538100,
+   "stored": "xz",
+   "stored_size": 836,
+   "stored_sha256": "58d76ebd38fab4563fa12f0d13ed7d187240ae958c8813182beb7c25c57f5cfd"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-sheer.pmx": {
+   "size": 4017,
+   "sha256": "af381ae8d54be610a3c27fef5384ee4d593613938eef6aab9c616fe86ceee085",
+   "mtime_ns": 1793856351606854600,
+   "stored": "xz",
+   "stored_size": 836,
+   "stored_sha256": "8fdd8772a5ea7938dce0490c86bed4db7c6167bbdd90335e443f94e4d8936ca3"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-uvmorph.pmx": {
+   "size": 5821,
+   "sha256": "96aad71b8ce8cdf2b052dc4f2bb5d32e760f0eb5729e4e35ec23de3fcabca613",
+   "mtime_ns": 1793856351648014400,
+   "stored": "xz",
+   "stored_size": 1128,
+   "stored_sha256": "7d82d18bd39ed8b65f8fae6e4c4430d60a6243f9b47b973382f0ca7b50db9b3d"
+  },
+  "source/mmdhl/tests/fixtures/native-cutout-uvsoft.pmx": {
+   "size": 5819,
+   "sha256": "2f6d340222d1ae4da1c5cc1aefc7d3d131419cfb4860c6a99340c1a0cfc8110e",
+   "mtime_ns": 1793856351686074400,
+   "stored": "xz",
+   "stored_size": 1128,
+   "stored_sha256": "e4d79e97c437c3f614fff55cecf4d25c82a37cc04865cd724916fece6ba73364"
+  },
+  "source/mmdhl/tests/fixtures/native-far-morph.pmx": {
+   "size": 5460,
+   "sha256": "1578068f97a78f7e83dc907f168ee5634253c12aeccf220e080dd24e03d318a4",
+   "mtime_ns": 1793856351725910600,
+   "stored": "xz",
+   "stored_size": 1096,
+   "stored_sha256": "153b83fba8a81d35760c39bd46096f4a2daa63a6e127e6862a5a95bf63ee744a"
+  },
+  "source/mmdhl/tests/fixtures/native-group-chain.pmx": {
+   "size": 5644,
+   "sha256": "616437a3f99919ae46ac67f836fe587e4dd5822a44b6430f4ff0284c708faa96",
+   "mtime_ns": 1793856351766126200,
+   "stored": "xz",
+   "stored_size": 1136,
+   "stored_sha256": "063015bc8c26e175b97988b65364eedf3c234e13861a702f7dd1b85b123cd28a"
+  },
+  "source/mmdhl/tests/fixtures/native-group-lattice.pmx": {
+   "size": 6827,
+   "sha256": "d84bcb52ed9b70c308be7f8a9b148aff1deeaa0389a0911bec9afa84b3c4dde5",
+   "mtime_ns": 1793856351815351900,
+   "stored": "xz",
+   "stored_size": 1280,
+   "stored_sha256": "c6436bb81bbf97fe870579669ef8f85a907bc5ba59b7efa45575b1ffdde7d38e"
+  },
+  "source/mmdhl/tests/fixtures/native-heavy-chain.pmx": {
+   "size": 6860,
+   "sha256": "9a8835caab83517c1cc97fd89ef8c98eca85a4eb7a2e87578244a3dbcfe443d9",
+   "mtime_ns": 1793856351855725900,
+   "stored": "xz",
+   "stored_size": 1224,
+   "stored_sha256": "7ab7ff605d1982e35173e9f39862c90324b5af50f9a81e74518b84894ac5c7da"
+  },
+  "source/mmdhl/tests/fixtures/native-joint-invalid.pmx": {
+   "size": 5277,
+   "sha256": "88c02b6c60ae13270e5fd8709e8677f1367e4c81bc71393a5ce8949531912db0",
+   "mtime_ns": 1793856351893524300,
+   "stored": "xz",
+   "stored_size": 1076,
+   "stored_sha256": "a397d7874353456d4c83100b79eaf5b1a1ee2a6aa359da43f8ae799007359969"
+  },
+  "source/mmdhl/tests/fixtures/native-joint-self.pmx": {
+   "size": 5277,
+   "sha256": "1103aeaec8eb45f1f1e1a3cd23e1a15554463b3287328678413cb89f3fac9b6b",
+   "mtime_ns": 1793856351931818400,
+   "stored": "xz",
+   "stored_size": 1072,
+   "stored_sha256": "f07c5b4c6a6a590938c67ebb925ae1d0c836b5e3edae549924e97802b8b888b9"
+  },
+  "source/mmdhl/tests/fixtures/native-joint-world.pmx": {
+   "size": 5277,
+   "sha256": "30139a786300989f511a57a8e04ad8b4ec6106e5021423db5d8b81c17e51c961",
+   "mtime_ns": 1793856351972380000,
+   "stored": "xz",
+   "stored_size": 1076,
+   "stored_sha256": "76179b9a66a479a64c5cca28da6ec6f771c59953b2f37ce7831743119f70352f"
+  },
+  "source/mmdhl/tests/fixtures/native-large-materials.pmx": {
+   "size": 55355,
+   "sha256": "07a1407852dfff0c0a1763f224b09bf47249a2e718ed66aa2c5ba45a5c1cb2db",
+   "mtime_ns": 1793856352012017400,
+   "stored": "xz",
+   "stored_size": 1176,
+   "stored_sha256": "f9cee2c411457f13316190ffe1225046e2a16786e390c326a254ac8115bec572"
+  },
+  "source/mmdhl/tests/fixtures/native-mass-ratio.pmx": {
+   "size": 6860,
+   "sha256": "4cb8e753687548d080e07cf3338907e54d6f61ea6f593705c85e08965915faec",
+   "mtime_ns": 1793856352054823900,
+   "stored": "xz",
+   "stored_size": 1224,
+   "stored_sha256": "eee8fe50946e78b3a70c7cbb8209c825151f27a53b19dba8b2787a177a39a67c"
+  },
+  "source/mmdhl/tests/fixtures/native-material-overflow.pmx": {
+   "size": 17821,
+   "sha256": "12fc1da8971a883a9e9964ef4028c589b0497dcf050d4ab77a652d2f9dca4319",
+   "mtime_ns": 1793856352094605000,
+   "stored": "xz",
+   "stored_size": 1136,
+   "stored_sha256": "ad15d46aa60021721e197380f5cd6dd0c9084b428ea6bc855d765827d9748d8d"
+  },
+  "source/mmdhl/tests/fixtures/native-nan-tail.pmx": {
+   "size": 5277,
+   "sha256": "0bc9d2e8680263bd265fad901ac70b01f0efd1272b4778c16b4f62f4f7f88311",
+   "mtime_ns": 1793856352132884400,
+   "stored": "xz",
+   "stored_size": 1080,
+   "stored_sha256": "12e877e28cef6a2c3a18575df1f0f189762838c5afb7f121f602c452e9c09c75"
+  },
+  "source/mmdhl/tests/fixtures/native-rope21-extra.pmx": {
+   "size": 6248,
+   "sha256": "1169571861d60520c58b50cec4b709c5cd5bb577da3136752252698be6650342",
+   "mtime_ns": 1793856352172749100,
+   "stored": "xz",
+   "stored_size": 1120,
+   "stored_sha256": "6ab004bcfde2c05986af0e1a726ad54b431594db3a2dffb8af2f3993b8dd6ae2"
+  },
+  "source/mmdhl/tests/fixtures/native-rope21.pmx": {
+   "size": 5276,
+   "sha256": "344f28270f763b118f9765d766bea74b631c4f635fa57ce0d5cb76ed8209ac42",
+   "mtime_ns": 1793856352210309900,
+   "stored": "xz",
+   "stored_size": 1072,
+   "stored_sha256": "29bcee79da8ca7122fe3bf9aaf251ccfc25fe68682ec54e4d8e957e76dd60379"
+  },
+  "source/mmdhl/tests/fixtures/native-stretch-prone.pmx": {
+   "size": 6860,
+   "sha256": "24bd2d281c80c94185e422ade19bce6eab3acd2dfabbcc4a98f24d5ed1f220f4",
+   "mtime_ns": 1793856352250577300,
+   "stored": "xz",
+   "stored_size": 1220,
+   "stored_sha256": "4567ff70aa7559813119bcacada13ccd5d7dbcf05f79c58b16e22a5a3c58fa7f"
+  },
+  "source/mmdhl/tests/fixtures/physics/canonical_cases.json": {
+   "size": 12210,
+   "sha256": "f08e7a43cf66018948a46a174f58e2117739bff8e407e4f1db13901a68de6ffb",
+   "mtime_ns": 1793856352292137000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/physics/golden-linux64.json": {
+   "size": 108436,
+   "sha256": "ac1f5c51b2f17ca04d3c783014a785af5f588f270e693192d15b2043f3aaf405",
+   "mtime_ns": 1793856352331603100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/physics/golden.json": {
+   "size": 108436,
+   "sha256": "f237120d49be47a74966b8a209623b4d239937662d9976d307eb55382dfeefc2",
+   "mtime_ns": 1793856352372809000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/physics/hl2_citizen_phy.txt": {
+   "size": 5503,
+   "sha256": "db8d6feae4f470943e95bf642d1ed76805edf45249f8ac618ed7ce7d9a4dc327",
+   "mtime_ns": 1793856352411597000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/props/colors.png": {
+   "size": 77,
+   "sha256": "04d85cb8cd6842e5bb2f678fbae69e275f43e5919ba0df5bf7b6f08d425aab49",
+   "mtime_ns": 1793856352451572200,
+   "stored": "xz",
+   "stored_size": 136,
+   "stored_sha256": "51954e26a72de1d0b04e5b02444c7a74a675ffe627fcc542ef26477a1067bd46"
+  },
+  "source/mmdhl/tests/fixtures/props/cube.glb": {
+   "size": 1076,
+   "sha256": "f7df7a9d1f29668aaf9e98ebbd2761186f986a460eb6816c212c2ab937c084b9",
+   "mtime_ns": 1793856352492147600,
+   "stored": "xz",
+   "stored_size": 628,
+   "stored_sha256": "e6fba03d430ab5e0d9b858e040331079b53cd6651cba39ea7c695eec9b44002c"
+  },
+  "source/mmdhl/tests/fixtures/props/cube.mtl": {
+   "size": 38,
+   "sha256": "58b55bc05f3b1fc39b10eeeb396b0d69263eb445fed1f8721595ecd3342f65e7",
+   "mtime_ns": 1793856352536046900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/props/cube.obj": {
+   "size": 298,
+   "sha256": "e35073eca14284e8693134ab1ba3e886a1870e951a49dde6de0cc2707ae228cd",
+   "mtime_ns": 1793856352575117100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/fixtures/rope21.pmx": {
+   "size": 3996,
+   "sha256": "90d1b76373eeeed10b3aac49da5b81663798bf36d579422fc71863bd2b279e88",
+   "mtime_ns": 1793856352614059900,
+   "stored": "xz",
+   "stored_size": 816,
+   "stored_sha256": "fc359258f0e40bb8dce4dcfd1bcfc386547c1523a528832b5133751d640ad33f"
+  },
+  "source/mmdhl/tests/fixtures/textured21.pmx": {
+   "size": 4012,
+   "sha256": "45cf8b81b544e8fd2af63483b6aaeb80806824dc41ce77491942b8430f394552",
+   "mtime_ns": 1793856352653691400,
+   "stored": "xz",
+   "stored_size": 832,
+   "stored_sha256": "1c3481c12bf627db0e466b94df659fdbb4c34ed77e3d407a3eb3290ba5ddac7e"
+  },
+  "source/mmdhl/tests/fixtures/truncated.pmx": {
+   "size": 170,
+   "sha256": "f9ea28d9362c3ff873d33266904a322594cb60d58d1594312ec32bf078e0664e",
+   "mtime_ns": 1793856352693025900,
+   "stored": "xz",
+   "stored_size": 184,
+   "stored_sha256": "476fa60848a525dc4a4ca4bd443bcec170811bdf5805d741e4f6376921276155"
+  },
+  "source/mmdhl/tests/game/actor-death-probe.lua": {
+   "size": 2985,
+   "sha256": "da0a5f6249f1a452db55a5ac8bc15410f161bf930124cf8d44eb0e012e1a7f47",
+   "mtime_ns": 1793856352731386300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/actor-reference-probe.lua": {
+   "size": 1511,
+   "sha256": "7c4c1c8af1feced12df71731d251ade44976d29379c246cdba80d151f6295fbb",
+   "mtime_ns": 1793856352777942500,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/carrier-overlay.lua": {
+   "size": 1431,
+   "sha256": "b42bb1ea7d24099949be2ac28dcfea12a570e31173f236e3a82c899ed4f2c52b",
+   "mtime_ns": 1793856352817745600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/depth-probe.lua": {
+   "size": 976,
+   "sha256": "6221ba5cd7db0e309a3717288680fa05564dafc9315d293be5fe515eb157e50e",
+   "mtime_ns": 1793856352854642300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/impulse-units.lua": {
+   "size": 534,
+   "sha256": "31f4ddeac86cd3a5caddff6610755ac98531c286ccb8d4303af34910c58187f1",
+   "mtime_ns": 1793856352893916200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/library-actions-probe.lua": {
+   "size": 1292,
+   "sha256": "a648392c53c62c4db088adc62dddbcc403a9952ef882bdd30c64a3f014476a60",
+   "mtime_ns": 1793856352932564100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/library-folders-probe.lua": {
+   "size": 1364,
+   "sha256": "05895e275614839c42ea9df526f95a10607e02985b493a7aad6552785eccac3a",
+   "mtime_ns": 1793856352971605700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/lighting-overlap-probe.lua": {
+   "size": 1617,
+   "sha256": "aaa20ed585cb8b8981f541818c0f34e2e89c2f2137eb746336e93f57ba7b06c2",
+   "mtime_ns": 1793856353012536300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/map-lighting-probe.lua": {
+   "size": 3468,
+   "sha256": "90651fdc77373137bbba3de1cfd6913db9b9e6523ea4ceb789956222474e28b1",
+   "mtime_ns": 1793856353051944400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/native-limits.lua": {
+   "size": 1924,
+   "sha256": "09fc463b668f8bf58f81156949802cc4538a155f062fdf911e0913029e802696",
+   "mtime_ns": 1793856353090622700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/native-material-profile.lua": {
+   "size": 829,
+   "sha256": "37733ef63961b8a81e51ac1d8590716f10f9ca75663517e7f811d7f266a20998",
+   "mtime_ns": 1793856353129811300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/native-physgun.lua": {
+   "size": 2428,
+   "sha256": "92b3319e1171aeee29930787153200fa5ad00a34506810a01886193b177eff6c",
+   "mtime_ns": 1793856353168402600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/native-self-contact.lua": {
+   "size": 1620,
+   "sha256": "1eae00ac5ad50827412bcebade2418f7a05615aee91cbfe2f73e93788ac58546",
+   "mtime_ns": 1793856353207775400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/native-stress.lua": {
+   "size": 15080,
+   "sha256": "56c9dc2657005fb1d0d917e8984a2de473d02e3ce0af7d11ea919122bc41c3ad",
+   "mtime_ns": 1793856353246035400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/persistence-probe.lua": {
+   "size": 2525,
+   "sha256": "061665af97a94cb5c54446c68a2294ff8fbd618d81ddf4ab29c5f2be541fa6a7",
+   "mtime_ns": 1793856353286343400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/physics-modes-probe.lua": {
+   "size": 2800,
+   "sha256": "44b9862e4f9ccf85fe9880f38fe011a557b26f1afd1ceaabccefb2ac807a78e7",
+   "mtime_ns": 1793856353326219900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/profile-hooks.lua": {
+   "size": 1079,
+   "sha256": "e96b6225e6f15dfd775abf598d7ea70718dbb7ad6843d52cf2deaf5eb77139b3",
+   "mtime_ns": 1793856353375198800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/prop-impact.lua": {
+   "size": 918,
+   "sha256": "a5d9f4970bc5fdc3a5540efdde79464df1e53fec5d38299fee8c781a6d47270f",
+   "mtime_ns": 1793856353415002200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/render-proxy-probe.lua": {
+   "size": 934,
+   "sha256": "a62fc5903ac743ebadfe3b2489412e0e2de94edbb1b46e39f9400138140c6ec5",
+   "mtime_ns": 1793856353454867900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/render-regression-measure.lua": {
+   "size": 1778,
+   "sha256": "fa2f7aba1e28bb4e6a31ae826186dcf90e78f39fceaf6d27071e9b41d828a7fc",
+   "mtime_ns": 1793856353495436900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/renderer-compare.lua": {
+   "size": 431,
+   "sha256": "502fc05950064c6922e27488b364d8ebd732b15a6ba73a1667301499988536c8",
+   "mtime_ns": 1793856353536090400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/scene-measure.lua": {
+   "size": 7431,
+   "sha256": "b0ce6d693cbefe020183a4ded9c1b41f52c0374eb29669cca16dee933fd86e21",
+   "mtime_ns": 1793856353576807900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/secondary-motion.lua": {
+   "size": 5605,
+   "sha256": "13112e9bc27ca57972093cfffc1282fea5eccd745aa9130e748d50edef3b0c52",
+   "mtime_ns": 1793856353618115200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/vanilla-physgun.lua": {
+   "size": 1678,
+   "sha256": "d7f90b310a7211faff334ab41f1e8e90b62fdb72048125d6f09d82a18043b88a",
+   "mtime_ns": 1793856353656170500,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/vanilla-rotate.lua": {
+   "size": 1838,
+   "sha256": "7e94552f1b4575721557b6ed2078cc366ee46ab2d464105d5aea200ddd10cdb2",
+   "mtime_ns": 1793856353695216000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/vanilla-scene.lua": {
+   "size": 5342,
+   "sha256": "e47bc4484fb8f2ccba34f75e81e74f3908e6a103ced33b949406046592a55b88",
+   "mtime_ns": 1793856353736080600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/game/vanilla-unfreeze.lua": {
+   "size": 710,
+   "sha256": "6c5a7f15d94f1512bf24684e6a84f3554bc077f79d5b5b1bb3ea67adb7fbffd6",
+   "mtime_ns": 1793856353777731100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/gpu_skinning_tests.cpp": {
+   "size": 12183,
+   "sha256": "73063611bc21c2f595fa9a1a0207c586d6d462ee7515fa944090033a8eb5960c",
+   "mtime_ns": 1793856353819104100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/heavy_chain_tests.cpp": {
+   "size": 2079,
+   "sha256": "de0e42ff2bc435b9e2bb9c131cd7a2cfde60f211b172bbd39e72c6b8ea209875",
+   "mtime_ns": 1793856353858628600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/import_error_tests.cpp": {
+   "size": 45744,
+   "sha256": "eda182198402f08bf7f306148eb20ca8bb236bdbe9488df3beb25e2bcd1c7d4b",
+   "mtime_ns": 1793856353897674300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/installation_tests.cpp": {
+   "size": 6842,
+   "sha256": "f8d8e0b89ad1d50622ac3443220625cd756ca76228b8e1e6dd1cf94baf9ddda6",
+   "mtime_ns": 1793856353937827800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/light_overlap_tests.cpp": {
+   "size": 3848,
+   "sha256": "b878256756ff5d98dd737eb4d4cb0275d7960ecd40a51527fa6c4c745314f296",
+   "mtime_ns": 1793856353976366100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/midphase_tests.cpp": {
+   "size": 6627,
+   "sha256": "5e3e4408f67d5dd2c157e255bbb31b6b2e991529a11c9e2ac2351ba9548eb04a",
+   "mtime_ns": 1793856354026772800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/model_notes_tests.cpp": {
+   "size": 10247,
+   "sha256": "79478c60f1ea0afecec41619dbac91beaf78871c1702140f5eaaab99221bcab6",
+   "mtime_ns": 1793856354066554200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/nanoem_replay.cpp": {
+   "size": 13838,
+   "sha256": "9b5a6711d77e4ff923ddba65f1fb103e588bc5267195f0c8d6120dac3c3f3406",
+   "mtime_ns": 1793856354107425000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/native_tests.cpp": {
+   "size": 84141,
+   "sha256": "c130d8d4912d8d9c970bbf29647445f055087152b2c0b881c4c39680f052daaf",
+   "mtime_ns": 1793856354147845700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/package_tests.cpp": {
+   "size": 12056,
+   "sha256": "5f992f80f15b117782111303ae0d1a83d8dbcef5c890f06805652d2b7b5e7027",
+   "mtime_ns": 1793856354187882300,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/physics_parameters.cpp": {
+   "size": 1832,
+   "sha256": "e6ca26c7917a0d63a965e36a3387fb246a44a5543cb747ce316cba07ede4ad9c",
+   "mtime_ns": 1793856354226172200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/physics_profile.cpp": {
+   "size": 17360,
+   "sha256": "7b4aeaf9cf2a5356956b8f967a0c2ba34170ad33e331cb7c39a7350a85fb4ecb",
+   "mtime_ns": 1793856354266230900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/physics_profile_tests.cpp": {
+   "size": 43850,
+   "sha256": "e78c0ced85ce0dbd8c5138bd95daf688cf63563450b7fb3c20264a8eddf734d0",
+   "mtime_ns": 1793856354305784400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/props/blend_tests.hpp": {
+   "size": 25548,
+   "sha256": "9775c27fc90ca6c5bc691081e24ce2afe686df79cae0fbf7e54afd9d1a6d93be",
+   "mtime_ns": 1793856354354930700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/props/fast_hull_tests.hpp": {
+   "size": 2421,
+   "sha256": "fdf78dc38c67e99fed9ecb30cc49648fba035d20bfe23cff033c19f1b2f978b2",
+   "mtime_ns": 1793856354396227400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/props/material_processing_tests.hpp": {
+   "size": 7722,
+   "sha256": "b5c59e2e222a06e5c8ab114758ba65dc607caeb323886cda07b9b32d9dcdb78d",
+   "mtime_ns": 1793856354436355400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/props/native_tests.cpp": {
+   "size": 12436,
+   "sha256": "4446fa1ad47f1d45f3de104f70b47f49a81a53f61d795553a8a5e2efbea44b68",
+   "mtime_ns": 1793856354477484400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/props/texture_resolver_tests.hpp": {
+   "size": 14253,
+   "sha256": "e03e4e6dd4a09f5304f1808502d5f86669af5a86b48ab2f288f427098130b281",
+   "mtime_ns": 1793856354517579700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/quality_tests.cpp": {
+   "size": 7455,
+   "sha256": "984c8a18c7834d8a43f402f41043389981fa42cea8b7c609a2017f11515fc853",
+   "mtime_ns": 1793856354558254500,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/render_guard_tests.cpp": {
+   "size": 1729,
+   "sha256": "afa492d67cf1bd1239cc8b004dcf4bd238ff7beb7a6e58d69de51f706c3b7df1",
+   "mtime_ns": 1793856354597808100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/retarget_probe.cpp": {
+   "size": 2590,
+   "sha256": "98caef8a8a53e4fab462abb73311185428087324aa32d504c29be0403d75c550",
+   "mtime_ns": 1793856354636177000,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/secondary_motion_tests.cpp": {
+   "size": 7053,
+   "sha256": "a83b6b088eceb25ceace0cd9133d0934742ea96723af1342a9bc43d6220ddef1",
+   "mtime_ns": 1793856354674772400,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/secondary_projection_tests.cpp": {
+   "size": 8058,
+   "sha256": "f70ac3eba0c0aa2a9df9c9c58868b44631dba46bc3f96f2ba8dae4e4c80d8dc6",
+   "mtime_ns": 1793856354713107500,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/secondary_stretch_ground_tests.cpp": {
+   "size": 5048,
+   "sha256": "35091baf3e1f66a737dc0b3a6cb2ab4c062328c30ae7a7e07641d39157b62f97",
+   "mtime_ns": 1793856354750897900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/secondary_stretch_tests.cpp": {
+   "size": 4238,
+   "sha256": "c614e40bcfe82b6436d7534ecf7daa0aca13b113bff3f3edb8347e9d6b87ab0c",
+   "mtime_ns": 1793856354790482700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/skinning_analysis.cpp": {
+   "size": 8145,
+   "sha256": "1ad71514d1f890dfe73edb5bfb5f66f42e2fb04d46cd1a6698cb67cb221c5c75",
+   "mtime_ns": 1793856354837840800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/test_platform.hpp": {
+   "size": 1599,
+   "sha256": "6b7ac21c5b357af59011114f609da0f9f884349107d6be2e617acef0b775fbc0",
+   "mtime_ns": 1793856354878537800,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/timing_tests.cpp": {
+   "size": 11988,
+   "sha256": "314e47fde7d05064e57268b1144c2de858d444305afeb40026685d9eda1fc0e8",
+   "mtime_ns": 1793856354916647600,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/torso_tests.cpp": {
+   "size": 35871,
+   "sha256": "213841034b8630df0fa4c24e22c3238cdcec4a63afdb7a95fabbb35f1bc592c4",
+   "mtime_ns": 1793856354956262100,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/v2-assets.json": {
+   "size": 2376,
+   "sha256": "3e2a2f0ccf84e46e9e4290f41dd70b0d2efa7cd31fd9e538ce4d7acd2d29cd50",
+   "mtime_ns": 1793856354995045200,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/vrm_tests.cpp": {
+   "size": 31953,
+   "sha256": "eb3e6bf48677683137791e50d9e212c1c578ecf18c16f02507f50855a7db1389",
+   "mtime_ns": 1793856355033631700,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/vulkan_compare.cpp": {
+   "size": 8643,
+   "sha256": "504b6eda2a8c525741d16827f7385b020ec7810694b377fc4cd53029cd5ac5e8",
+   "mtime_ns": 1793856355073112900,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/wide_main.hpp": {
+   "size": 558,
+   "sha256": "5919061d435594a1b2c1bcded07ea2c5f15cb97d1830a5e63b292679595c00cd",
+   "mtime_ns": 1793856355111746500,
+   "stored": "plain"
+  },
+  "source/mmdhl/tests/xpress_tests.cpp": {
+   "size": 2380,
+   "sha256": "cb05477ba581e324c2147ed70dd4b9a74b2a4c57b97a18076c7573a8f24e73d2",
+   "mtime_ns": 1793856355151754300,
+   "stored": "plain"
+  },
+  "source/mmdhl/THIRD_PARTY.md": {
+   "size": 13197,
+   "sha256": "0944d1a23dcedc3994e4ba7fff6ad6374ff6d44c638db867ab335fc89c15a344",
+   "mtime_ns": 1793856342515431900,
+   "stored": "plain"
+  },
+  "source/provenance.json": {
+   "size": 63277,
+   "sha256": "18479e5be95523bbae42ea6258e5c35ad957cc90f96b0cd1f2207ef9de4e80e4",
+   "mtime_ns": 1793856355242583600,
+   "stored": "plain"
+  },
+  "source/Source.md": {
+   "size": 2959,
+   "sha256": "2a1b1e3eb8c1c27a94d1c1017acc9c33e62852be5084cc7f1f4fc0b94e33b967",
+   "mtime_ns": 1793856545117982200,
+   "stored": "plain"
+  },
+  "source/staged-changes.patch": {
+   "size": 52024,
+   "sha256": "23952f72a0ec5e1e6bce34eb1e45e90f75daa01ea62167fbdc03c0f4e6097d75",
+   "mtime_ns": 1793856355240581000,
    "stored": "plain"
   }
  }

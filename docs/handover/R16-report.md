@@ -131,12 +131,40 @@ the package job's 12 minutes plus the two jobs' lookups. Windows minutes count d
 repository's plan. Artifacts: one `rtx-package` of 0.84 GB at a time, plus the 121 KB reports (90 days)
 and `build.yml`'s bundles (about 270 MB in all before this round).
 
-## Open items
+## The Model Hotloader's natives, built here too
 
-- **The Model Hotloader's four natives** stay a reported exception until their source is in a
-  repository: the user's staged changes committed and pushed to the hotloader's repository (the workflow
-  can then build them; their `native_policy.lua` and `mmdhl-native-release.json` pin the binaries'
-  hashes and must be regenerated in the same step), or their source vendored here.
+Asked how the Hotloader's four natives should get a source GitHub can build, the user chose to copy it
+here ([ADR 0107](../decisions/0107-the-model-hotloaders-natives-built-from-a-source-copy.md)).
+
+**The source.** The worktree `ipg\!GMHLVK\wt-full-textures-props` (branch
+`feat/gravity-buoyancy-settings` at the public `ecd7c426`, "Version 2.3.1") had all 41 of its changes
+staged and none unstaged, and no source file newer than the shipped DLLs (2026-10-26 16:21): its index
+is their source. What the native build reads, 320 files (8.6 MB), was copied from that index with
+`git cat-file` into `packages/model-hotloader/source/mmdhl` (`tools/inputs.py import`; 66 binary or
+large files, the 4.5 MB generated `native/shape_atlas.hpp` among them, went to Git LFS), with
+`provenance.json`, `Source.md` and `staged-changes.patch` (the ten copied files that differ from the
+commit: `CMakeLists.txt`, `native/module.cpp`, `physics.cpp`, `runtime.hpp`, `secondary.cpp/.hpp`,
+`spring_bones.cpp/.hpp`, two C++ tests). The Lua add-on stays in `mmd_hotloader/`; the part ships no
+source.
+
+**The build.** `tools/ci/build_hotloader.ps1` runs the add-on's own recipe: `scripts/bootstrap.py` (its
+pinned dependencies: nanoem, glm, Bullet, garrysmod_common, sourcesdk-minimal, json, stb, assimp,
+meshoptimizer, Vulkan-Headers, glslang from codeload.github.com, and CoACD's wheel), its Bullet patches,
+CMake with Visual Studio 2022 x64 Release of `mmdhl_client`, `mmdhl_server` and `mmdhl_worker`. The
+worker must report release 2.3.1. Then the add-on's `scripts/native_manifest.py` rewrites the 2.3.1
+entry of a copy of the shipped `native_policy.lua` and writes `native-release.json` from the files just
+built: the add-on's installation check accepts exactly the natives it ships with. The workflow's new
+`hotloader` job runs it in a short folder on the runner (assimp's folders are deep), cached by its
+sources; `KEEP_PACKAGED` is gone, and `tools/inputs.py extract` writes the source tree for the build.
+
+**Local proof** (this worktree, the worktree's already fetched dependencies copied in, no network; 5
+minutes on 8 jobs): client 2,843,648 bytes, server 1,862,144 and worker 4,148,224, the shipped sizes;
+runtime 10,736,640 (512 more). The client has `SetSecondaryWater`, `SetSecondaryBuoyancy`,
+`secondaryGravity` and "Invalid water height", as the shipped one. The regenerated policy differs from
+the shipped one only in the 2.3.1 entry's build (`f2e32f99f0a5-...`, this repository's commit and the
+configure time) and the four hashes.
+
+## Open items
 - **Debug-only glass tests.** `tools\test.ps1` (Debug) fails two glass tests that only a Release build
   can pass: one deliberately overfills Jolt's contact tables, which Jolt's Debug build asserts on
   (`0x80000003`), and the 4,000-piece benchmark's time limits. CI and the rounds' gate run Release; the

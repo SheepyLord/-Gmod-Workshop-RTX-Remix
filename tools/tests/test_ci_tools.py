@@ -123,11 +123,11 @@ class CiToolTests(unittest.TestCase):
         self.assertEqual((self.root / 'out' / 'glass' / 'bin' / 'a.dll').read_bytes(), b'MZ a')
 
     def test_the_cache_keys(self):
-        for name in ('runtime', 'modules'):
+        for name in ('runtime', 'modules', 'hotloader'):
             key = getattr(cache_key, name)()
             self.assertRegex(key, '^[0-9a-f]{64}$')
             self.assertEqual(key, getattr(cache_key, name)())
-        self.assertNotEqual(cache_key.runtime(), cache_key.modules())
+        self.assertEqual(len({cache_key.runtime(), cache_key.modules(), cache_key.hotloader()}), 3)
         one, two = self.root / 'one.txt', self.root / 'two.txt'
         one.write_bytes(b'a\r\nb')
         two.write_bytes(b'a\nb')

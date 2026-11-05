@@ -140,3 +140,4 @@ Each with the reason it lost.
 - [0104: Painted shadows left out of the draw, and solid hair, for imported characters in RTX sessions](0104-painted-shadows-and-solid-hair.md) (R15, the user's items 43 and 44).
 - [0105: The player's own time and weather apply from a map's start, also where the map's add-on sets a sky](0105-the-players-sky-applies-from-a-maps-start.md) (R16, the user's item 44; supersedes rule 5 of 0031 for a sky that does not follow the map).
 - [0106: The RTX package is built on GitHub, its native binaries included, and reports its hashes](0106-the-rtx-package-built-on-github.md) (R16, the user's item 45; changes how 0016 keeps the item current and what 0033 takes from packages/).
+- [0107: The Model Hotloader's natives are built on GitHub from a source copy kept here](0107-the-model-hotloaders-natives-built-from-a-source-copy.md) (R16, the user's choice; completes 0106: no native binary from packages/).

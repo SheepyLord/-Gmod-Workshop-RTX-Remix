@@ -123,6 +123,23 @@ class InputsTests(unittest.TestCase):
         with self.assertRaisesRegex(inputs.InputsError, 'does not list: bin/extra.dll'):
             inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1, overlay=overlay)
 
+    def test_extract_writes_one_folder_of_a_part_without_its_prefix(self):
+        # R16 (ADR 0107): a source tree kept in a part (model-hotloader's source/mmdhl/) is written out for
+        # a build; only those files are read, so the part's other LFS content need not be there.
+        self.store_all()
+        stored = self.packages / 'p' / 'bin/gmcl_x_win64.dll.xz'
+        stored.write_bytes(b'version https://git-lfs.github.com/spec/v1\noid sha256:00\nsize 1\n')
+        dest = self.root / 'src'
+        self.assertEqual(inputs.extract('p', 'addon/', dest, self.packages), 4)
+        self.assertEqual((dest / 'lua/a.lua').read_bytes(), self.files['addon/lua/a.lua'])
+        self.assertEqual((dest / 'big.txt').read_bytes(), self.files['addon/big.txt'])  # xz in the store
+        self.assertEqual((dest / 'models/m.mdl').stat().st_mtime_ns, OLD_TIME)
+        self.assertFalse((dest / 'bin').exists())
+        with self.assertRaisesRegex(inputs.InputsError, 'ending in /'):
+            inputs.extract('p', 'addon', dest, self.packages)
+        with self.assertRaisesRegex(inputs.InputsError, 'no file under nothing/'):
+            inputs.extract('p', 'nothing/', dest, self.packages)
+
     def test_unpack_refuses_content_that_does_not_match(self):
         self.store_all()
         (self.packages / 'p' / 'addon/lua/a.lua').write_bytes(b'print("changed")\r\n')

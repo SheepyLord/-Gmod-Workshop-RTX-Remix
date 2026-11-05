@@ -7,6 +7,7 @@ them into `out\inputs\<part>\` for the packagers, and checks the stored files ag
 
 ```powershell
 python tools\inputs.py unpack [--part NAME ...] [--dest out\inputs] [--overlay out\ci\built [--keep-packaged PART/PATH ...]]
+python tools\inputs.py extract PART --prefix FOLDER/ --dest DIR
 python tools\inputs.py verify [--part NAME ...] [--deep]
 python tools\inputs.py import PART [--inventory FILE] [--root SRC=DST ...] [--file SRC=DST ...] [--prune]
 python tools\inputs.py list
@@ -65,5 +66,10 @@ repository, origin URL, commit and whether the source had local changes, and `im
   index lists, and every `.dll`/`.exe` the index lists must come from the overlay unless
   `--keep-packaged` names it (`part/path`, or a folder ending in `/`); otherwise it stops and names them.
 
-**Writes:** `packages\<part>\` (import), `out\inputs\` (unpack). Reads only the given sources.
+- **`extract PART --prefix FOLDER/ --dest DIR`** (R16, [ADR 0107](../docs/decisions/0107-the-model-hotloaders-natives-built-from-a-source-copy.md)):
+  writes the part's indexed files under that folder (a source tree a workflow builds from, such as
+  `model-hotloader`'s `source/mmdhl/`) to `DIR` without the prefix, checked against the index like
+  `unpack`'s; only those files' stored content is read. It stops when the index lists none there.
+
+**Writes:** `packages\<part>\` (import), `out\inputs\` (unpack), the given folder (extract). Reads only the given sources.
 Tests: [`tests/test_inputs.py`](tests/test_inputs.py.md).

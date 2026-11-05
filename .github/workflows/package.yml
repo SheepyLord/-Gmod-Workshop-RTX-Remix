@@ -1,9 +1,9 @@
 # Builds the combined RTX package (what Workshop item 3829070317 carries) on GitHub, with every native
 # binary in it built or fetched here (R16, ADR 0106): the Remix runtime from the fork with runtime/patches,
 # the RTX fixes' modules, the debug module and the material editor's bridge from their pinned sources
-# (tools/ci/pins.json), this repository's own modules, and the files no workflow can compile downloaded
-# from their publishers and checked against pinned SHA-256 hashes. Only the binaries KEEP_PACKAGED names
-# still come from packages/.
+# (tools/ci/pins.json), the Model Hotloader's natives from its source copy in packages/ (ADR 0107), this
+# repository's own modules, and the files no workflow can compile downloaded from their publishers and
+# checked against pinned SHA-256 hashes. No native binary comes from packages/.
 #
 # The run's summary reports the SHA-256 of the .gma and of every file in it, and where each native binary
 # came from (tools/package_report.py); the artifact rtx-package-report keeps that report. The .gma is the
@@ -11,8 +11,8 @@
 # (Actions storage is 2 GB). tools/publish_workshop.py --from-ci, on the developer's machine (it needs
 # Steam), uploads exactly that .gma to the Workshop after checking its SHA-256 against the report.
 #
-# The runtime and the modules are cached by their sources (tools/ci/cache_key.py): a run rebuilds them only
-# when those change, or when BUILD_SALT does. Git LFS objects are cached as well; the binaries this
+# The runtime, the modules and the Hotloader's natives are cached by their sources (tools/ci/cache_key.py):
+# a run rebuilds them only when those change, or when BUILD_SALT does. Git LFS objects are cached as well; the binaries this
 # workflow makes are never downloaded from Git LFS.
 name: Build the RTX package
 
@@ -54,15 +54,8 @@ concurrency:
 
 env:
   RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-  # Change it to rebuild the cached runtime and modules (a new runner image or toolchain).
+  # Change it to rebuild the cached runtime, modules and Hotloader natives (a new runner image or toolchain).
   BUILD_SALT: r16-1
-  # Native binaries still taken from packages/: the Model Hotloader's own four. The code they were built
-  # from is uncommitted in its author's working tree, so no workflow can build them yet (R16 report).
-  KEEP_PACKAGED: >-
-    model-hotloader/bin/gmcl_mmdhl_win64.dll
-    model-hotloader/bin/gmsv_mmdhl_win64.dll
-    model-hotloader/bin/mmdhl_runtime_win64.dll
-    model-hotloader/bin/mmdhl_worker.exe
 
 jobs:
   runtime:
@@ -199,9 +192,59 @@ jobs:
             out/ci/built/provenance-modules.json
           key: ${{ steps.key.outputs.key }}
 
+  hotloader:
+    name: Model Hotloader natives (its source copy in packages/)
+    runs-on: windows-2022
+    timeout-minutes: 150
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Cache key (the Hotloader's source, its build script and policy)
+        id: key
+        shell: pwsh
+        run: |
+          $hash = python -I tools/ci/cache_key.py hotloader
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          "key=hotloader-$env:BUILD_SALT-$hash" | Out-File -Append -Encoding utf8 $env:GITHUB_OUTPUT
+
+      - name: Natives built from this source already
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            out/ci/built/model-hotloader
+            out/ci/built/provenance-hotloader.json
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
+
+      - name: The source's Git LFS content
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: git lfs pull --include="packages/model-hotloader/source/**"
+
+      - name: Build them (tools/ci/build_hotloader.ps1; a short path, for assimp's deep folders)
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: ./tools/ci/build_hotloader.ps1 -Work "$env:RUNNER_TEMP\hl" -RunUrl "$env:RUN_URL"
+
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            out/ci/built/model-hotloader
+            out/ci/built/provenance-hotloader.json
+          key: ${{ steps.key.outputs.key }}
+
   package:
     name: The RTX package and its hash report
-    needs: [runtime, modules]
+    needs: [runtime, modules, hotloader]
     runs-on: windows-2022
     timeout-minutes: 120
     steps:
@@ -212,10 +255,7 @@ jobs:
       - name: Git LFS objects the package reads (none of the binaries this workflow makes)
         shell: pwsh
         run: |
-          $keep = @($env:KEEP_PACKAGED -split '\s+' | Where-Object { $_ } | ForEach-Object { "packages/$_.xz" })
-          git lfs ls-files --long | Where-Object { $_ -notmatch '\.(dll|exe)\.xz$' -or ($keep -contains ($_ -replace '^\S+ [*-] ', '')) } |
-            Sort-Object | Set-Content -Encoding utf8 .lfs-objects.txt
-          "LFS_INCLUDE=$($keep -join ',')" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          git lfs ls-files --long | Where-Object { $_ -notmatch '\.(dll|exe)\.xz$' } | Sort-Object | Set-Content -Encoding utf8 .lfs-objects.txt
           "$((Get-Content .lfs-objects.txt).Count) Git LFS objects"
 
       - name: Cached Git LFS objects
@@ -226,11 +266,7 @@ jobs:
           restore-keys: lfs2-
 
       - name: Git LFS content (only objects the cache lacks are downloaded)
-        shell: pwsh
-        run: |
-          git lfs pull --exclude="*.dll.xz,*.exe.xz"
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          git lfs pull --include="$env:LFS_INCLUDE"
+        run: git lfs pull --exclude="*.dll.xz,*.exe.xz"
 
       - uses: actions/setup-python@v6
         with:
@@ -258,6 +294,15 @@ jobs:
           key: ${{ needs.modules.outputs.key }}
           fail-on-cache-miss: true
 
+      - name: The Hotloader natives and records this run's hotloader job built or found
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            out/ci/built/model-hotloader
+            out/ci/built/provenance-hotloader.json
+          key: ${{ needs.hotloader.outputs.key }}
+          fail-on-cache-miss: true
+
       - name: Release build of this repository (nlctl.exe, the RTX client module, the glass module)
         shell: pwsh
         run: ./tools/build.ps1 -Config Release -NoTests
@@ -272,8 +317,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force out/report | Out-Null
-          $keep = @($env:KEEP_PACKAGED -split '\s+' | Where-Object { $_ } | ForEach-Object { '--keep-packaged'; $_ })
-          python -I tools/build_package.py --require-nlctl --built out/ci/built @keep --out out/dist --json |
+          python -I tools/build_package.py --require-nlctl --built out/ci/built --out out/dist --json |
             Set-Content -Encoding utf8 out/report/package-summary.json
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
