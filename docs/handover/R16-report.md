@@ -164,7 +164,37 @@ runtime 10,736,640 (512 more). The client has `SetSecondaryWater`, `SetSecondary
 the shipped one only in the 2.3.1 entry's build (`f2e32f99f0a5-...`, this repository's commit and the
 configure time) and the four hashes.
 
+**On GitHub** ([run 41977506299](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/runs/41977506299),
+commit `f83d7ad`): the runtime and modules came from their caches in seconds; the `hotloader` job
+fetched every pinned dependency and built the four natives in 17 minutes, all four exactly the shipped
+sizes (the runtime too, 10,736,128 bytes); the package job took 12. On the runner the source is built
+outside any git checkout, so the add-on's CMake names the build `source-20261105T060107Z`; the run's
+report and provenance tie it to the commit. The package `gmod-rtx-remix-0.0.0-dev.20261105062645_fbce366a.gma`
+(1,795,374,769 bytes, SHA-256 `d850040f0ea61051b9e78fefae23969995cc9266756b2815c144fa2f6159daba`, 1,124
+files) has 54 native binaries: **13 compiled in the run, 41 downloaded by it against pins, none from
+`packages/`**. The run deleted the previous `rtx-package` artifact, so one is kept.
+
+**In the PoC** (`out/r16/ci2` in the main checkout): the add-on's own check accepted the GitHub-built
+natives against the regenerated policy: installed 2.3.1, recommended 2.3.1, core and imports available;
+its only issue is the warning `game_unverified` (the module's compiled-in profiles do not describe this
+Garry's Mod build's libraries; it disables nothing). All 54 deployed binaries equal the report's hashes;
+every module loaded; no Lua error, normal quit, the loader config put back byte for byte.
+
+**Published and checked in the field.** The push hook's background publisher was stopped before the run
+finished (the PoC check came first); then `publish_workshop.py --from-ci --commit f83d7ad` uploaded the
+run's `.gma` to item 3829070317 as 0.0.0-dev.20261105062645+fbce366a. The field install was intact
+(only `autoexec.cfg` differs). Evidence: `out\r16\field-hl\` in the main checkout.
+
+| Start | Result |
+|---|---|
+| 01-download | Steam downloaded the run's file (SHA-256 `d850040f...`); the game still ran 133af7c6, the previous upload with the old Hotloader natives: the add-on reported installed 2.3.1, core on, and the same `game_unverified` warning, so that warning is the game build's, not the new natives' |
+| 02-all-built | Deployed and active: 0.0.0-dev.20261105062645+fbce366a. All 54 native binaries and the two regenerated Hotloader records equal the run's report; every module loaded; the add-on accepted its natives (installed 2.3.1, core and imports on, only `game_unverified`); no Lua error, normal quit |
+
 ## Open items
+
+- **`packages/model-hotloader/source/Source.md`** says the build identity names this repository's commit;
+  on the runner it is `source-<time>` (ADR 0107 says both). Correct it with the next change of the source
+  copy: any change there rebuilds the natives and republishes the package.
 - **Debug-only glass tests.** `tools\test.ps1` (Debug) fails two glass tests that only a Release build
   can pass: one deliberately overfills Jolt's contact tables, which Jolt's Debug build asserts on
   (`0x80000003`), and the 4,000-piece benchmark's time limits. CI and the rounds' gate run Release; the
