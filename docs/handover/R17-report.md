@@ -148,6 +148,24 @@ Cost (RESEARCH.md has the table):
 `tools\test.ps1 -Config Release` passed: 26 C++ tests, 631 Python tests (28 + 25 + 578) and the
 repository checks.
 
+## Publication and the field check
+
+**Published.** `r17` was merged into `main` as `9a26513`, the hooks were reinstalled
+(`--install-hooks`), and `main` was pushed (`0e2faef..9a26513`; one LFS object of 61 MB, the runtime).
+The new pre-push hook built the package here and uploaded it to item 3829070317 as
+0.0.0-dev.20261105113014+235d458f. Its `d3d9.dll` is the one tested in the PoC (CRC `051ce50c`); its
+weather table differs from the tested package's only in line endings (a CRLF checkout).
+
+**Checked in the field.** Before the starts, no other lab, game or PoC lock was active.
+`tools\steam\verify_install.py` found the field install intact; only the user's `autoexec.cfg` differs.
+The field's `cfg/client.vdf` (the companion's sky settings) was saved first and is byte-identical
+afterwards; `config.cfg` was put back by the session. Evidence: `out\r17\field\` in the main checkout.
+
+| Start | Result |
+|---|---|
+| 01-download | Steam downloaded the new item: `gmod-rtx-remix-0.0.0-dev.20261105113014_235d458f.gma`, 1,811,842,490 bytes. The game still ran fbce366a (the first start only downloads). The map loaded and the game quit normally |
+| 02-sky | Deployed and active: 0.0.0-dev.20261105113014+235d458f. The sky probe on `gm_construct` under the user's own settings showed partly cloudy with shaded cumulus, cirrus and the disc; overcast as a closed deck; hazy with the veil and its halo. Frames took 7.6-8.0 ms, with no Lua error and a normal quit |
+
 ## Notes for the next round
 
 - **The middle deck shares the low layer's body field.** It has no cover field of its own (a uniform
