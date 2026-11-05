@@ -39,8 +39,10 @@ which its `scripts/native_manifest.py` writes from a build.
 
 ## Consequences
 
-- The natives' build identity is `<this repository's commit>-<UTC configure time>` (the add-on's CMake
-  takes `git rev-parse HEAD`), and the policy's 2.3.1 entry changes with every rebuild. Players' copies
+- The natives' build identity is `<git HEAD of the source folder>-<UTC configure time>` (the add-on's
+  CMake): built inside this repository that is its commit; the workflow builds outside any checkout, so
+  there it is `source-<UTC configure time>`, and the run's report ties the files to the commit. The
+  policy's 2.3.1 entry changes with every rebuild. Players' copies
   of the earlier 2.3.1 build no longer match it, but the package deploys the natives and the policy
   together, so an installed package always matches itself.
 - A change to the add-on's native code reaches the package only through a new copy here (and a
