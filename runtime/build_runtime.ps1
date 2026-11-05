@@ -64,7 +64,13 @@ function Use-ScratchGit([string] $Where, [scriptblock] $Body) {
         $env:GIT_ALTERNATE_OBJECT_DIRECTORIES = $objects
         & $Body
     } finally {
-        foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
+        # A variable that was not set is removed: PowerShell passes $null to .NET as "", and .NET 9
+        # (PowerShell 7.5, GitHub's runners) keeps an empty variable, which git takes for an objects
+        # folder that does not exist ("gitfile does not point to a valid repository", R16).
+        foreach ($name in $names) {
+            if ($null -eq $saved[$name]) { Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue }
+            else { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
+        }
         Remove-Item -LiteralPath $scratch -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
