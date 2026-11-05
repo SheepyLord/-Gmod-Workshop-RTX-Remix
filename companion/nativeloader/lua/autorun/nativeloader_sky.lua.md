@@ -179,9 +179,16 @@ go out again once the preset is cleared.
 Some maps' RTX add-ons set the sky themselves. Modern House RTX does it on `modern_house`, and puts
 it back 3, 23, 43 and 63 s after the map starts.
 
-- **Such an add-on keeps its sky** until the player changes a sky or weather setting in that session.
-  After that the companion's sky is put back every 10 s, and at once whenever the add-on sets its
-  own again (below).
+- **The player's own time and weather apply from the map's start** (R16, the user's item 44;
+  [ADR 0105](../../../../docs/decisions/0105-the-players-sky-applies-from-a-maps-start.md)): with
+  "Follow the map's sun" unticked, the companion is in charge of the sky from the start, also on such a
+  map. Before R16 the add-on's sky stayed until the player changed a setting, so a chosen time and
+  weather seemed not to apply until the Sky and weather panel was touched.
+- **Following the map keeps such an add-on's sky** ("Follow the map's sun" ticked, the default) until
+  the player changes a sky or weather setting in that session.
+- Once the companion is in charge, its sky is put back every 10 s, and at once whenever the add-on sets
+  its own again (below). The add-on's `ApplySettings` is wrapped from the sky's first tick after the
+  add-on loaded (Modern House RTX loads after InitPostEntity), not only by the 10 s timer.
 - **How the companion knows.** An add-on says so by answering the hook `NativeLoaderSkyOwner` with
   its name. Modern House RTX is recognised by its `MHRTX_Config` on `modern_house`.
 - **When the add-on sets its sky again**, it runs the hook `NativeLoaderSkySet`, and a sky the player

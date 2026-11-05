@@ -103,7 +103,8 @@ isfunction = function(v) return type(v) == "function" end
 isstring = function(v) return type(v) == "string" end
 local convars, callbacks, commands, hooks, timers = {}, {}, {}, {}, {}
 function CreateClientConVar(name, default)
-  local c = { value = default }
+  -- PRESET: saved settings the session starts with, as GMod's client.vdf gives them.
+  local c = { value = PRESET and PRESET[name] or default }
   function c:GetString() return self.value end
   function c:GetBool() return (tonumber(self.value) or 0) ~= 0 end
   function c:GetFloat() return tonumber(self.value) or 0 end
@@ -220,6 +221,23 @@ if SCRIPT == "ownership" then
   cmd("nativeloader_weather", "overcast")
   tick(31)
   report("taken", "rtx.skyMode", "rtx.atmosphere.cloudDensity")
+  return
+end
+if SCRIPT == "entry" then
+  -- R16: the player chose a time (Follow the map's sun unticked). Modern House RTX loads after the map
+  -- started, sets its sky once its own timer runs, and again later; the player's sky stays.
+  report("entered", "rtx.skyMode", "rtx.atmosphere.sunElevation", "rtx.atmosphere.cloudDensity")
+  MHRTX_Config = {}
+  MHRTX = { ApplySettings = function()
+    RemixConfig.SetConfigVariable("rtx.atmosphere.sunElevation", "21")
+    RemixConfig.SetConfigVariable("rtx.atmosphere.cloudDensity", "4")
+  end }
+  tick(0.02)
+  print("followed " .. tostring(MHRTX.ApplySettings == MHRTX.nativeLoaderApply))
+  MHRTX.ApplySettings()
+  report("after", "rtx.atmosphere.sunElevation", "rtx.atmosphere.cloudDensity")
+  tick(1)
+  report("later", "rtx.atmosphere.sunElevation")
   return
 end
 if SCRIPT == "follow" then
@@ -527,6 +545,30 @@ class SkyTests(unittest.TestCase):
         self.assertEqual(float(again['rtx.atmosphere.sunElevation']), mine)
         self.assertNotEqual(again['rtx.atmosphere.cloudDensity'], '4')
         self.assertEqual(float(self.settings(out['reloaded'])['rtx.atmosphere.sunElevation']), mine)
+
+    def test_the_players_own_time_and_weather_apply_from_the_start_on_a_map_whose_add_on_sets_the_sky(self):
+        # R16 (the user's item 44): with Follow the map's sun unticked, the player's sky is in charge from
+        # the map's start; Modern House RTX, which loads later and sets its afternoon from its own timer,
+        # is followed from its first sky on, and the player's sky comes back in the same call.
+        preset = ('PRESET = { nativeloader_sky_follow_map = "0", nativeloader_sky_hour = "9.80", '
+                  'nativeloader_weather = "clear" }\n')
+        out = self.run_lua(preset + SESSION, MAP='modern_house', BSP=bsp(CONSTRUCT), SCRIPT='entry')
+        entered = self.settings(out['entered'])
+        self.assertEqual(entered['rtx.skyMode'], '1')
+        mine = float(entered['rtx.atmosphere.sunElevation'])
+        self.assertGreater(mine, 50)
+        self.assertEqual(out['followed'], 'true')
+        after = self.settings(out['after'])
+        self.assertAlmostEqual(float(after['rtx.atmosphere.sunElevation']), mine, delta=0.5)
+        self.assertEqual(after['rtx.atmosphere.cloudDensity'], entered['rtx.atmosphere.cloudDensity'])
+        self.assertAlmostEqual(float(self.settings(out['later'])['rtx.atmosphere.sunElevation']), mine, delta=0.5)
+
+    def test_following_the_map_keeps_a_map_add_ons_sky_from_the_start(self):
+        # The same map with Follow the map's sun ticked (the default): the add-on keeps its sky.
+        preset = 'PRESET = { nativeloader_sky_follow_map = "1" }\nMHRTX_Config = {}\n'
+        out = self.run_lua(preset + SESSION, MAP='modern_house', BSP=bsp(CONSTRUCT), SCRIPT='ownership')
+        self.assertEqual(out['start'].split()[0], '0')
+        self.assertEqual(out['owned'].split()[0], '0')
 
     def test_a_slider_writing_back_its_rounded_value_keeps_the_maps_sun(self):
         out = self.run_lua(SESSION, MAP='gm_construct', BSP=bsp(CONSTRUCT), SCRIPT='slider')

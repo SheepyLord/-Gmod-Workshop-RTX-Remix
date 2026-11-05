@@ -6,6 +6,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R16
+
+- **Fixed: a chosen time of day and weather did not apply on entering a map whose add-on sets its own
+  sky** (the user's item 44, Modern House RTX on `modern_house`;
+  [ADR 0105](docs/decisions/0105-the-players-sky-applies-from-a-maps-start.md)). The add-on's
+  afternoon stayed until a setting was changed in Sky and weather. Now, with "Follow the map's sun"
+  unticked, the player's sky and weather are in charge from the map's start, and the add-on's own sky
+  is put back at once whenever it sets it again; following the map still keeps the add-on's sky. Other
+  maps were not affected: a new game, a map change and a listen server applied the sky at the start in
+  the traces of this round.
+
 ### R15
 
 - **Painted shadows of imported characters are left out in RTX sessions** (the user's item 43;
