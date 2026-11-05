@@ -528,7 +528,7 @@ class SkyTests(unittest.TestCase):
         self.assertEqual(out['interval'], '0.02')
         self.assertEqual((out['adjusted'].split()[0], out['interval_now']), ('0', '0.1'))
         taken = self.settings(out['taken'])
-        self.assertEqual((taken['rtx.skyMode'], taken['rtx.atmosphere.cloudDensity']), ('1', '5'))
+        self.assertEqual((taken['rtx.skyMode'], taken['rtx.atmosphere.cloudDensity']), ('1', '7'))  # overcast's (R18)
 
     def test_a_sky_taken_over_comes_back_at_once_when_the_maps_add_on_sets_its_own_again(self):
         # R5: Modern House RTX puts its afternoon sun back three times in the first minute; the

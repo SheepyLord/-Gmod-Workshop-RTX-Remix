@@ -3,8 +3,9 @@
 Writes the companion's table of weather presets,
 [`companion/nativeloader/lua/nativeloader/weather_presets.lua`](../companion/nativeloader/lua/nativeloader/weather_presets.lua.md),
 from the user's Remix fork. The runtime has twelve weather presets (clear, partly cloudy, overcast,
-hazy, foggy, drizzle, rainstorm, thunderstorm, snow, blizzard, sandstorm, smoggy), each 77 values for
-clouds (since R17 each weather's low, middle and high cloud genera too), the atmosphere, the night sky,
+hazy, foggy, drizzle, rainstorm, thunderstorm, snow, blizzard, sandstorm, smoggy), each 81 values for
+clouds (since R17 each weather's low, middle and high cloud genera too; since R18 the depth of a
+cloud body's soft edge), the atmosphere (since R18 the aerosol's absorption and phase), the night sky,
 volumetric fog and precipitation, and a blender that crossfades
 between them. A game picks one with `remixapi_SetGameValue("__weather.target", ...)`, which the RTX
 fixes give Lua no way to, so the companion's sky ([`nativeloader_sky.lua`](../companion/nativeloader/lua/autorun/nativeloader_sky.lua.md))
@@ -76,12 +77,12 @@ value, as in the runtime.
 A Lua table: `order` (the twelve names), `fields` (`name`, `option`, `kind`, `integer` for a
 whole-number option) and `presets` (name to field to value; colours as `{ r, g, b }`).
 
-- Fields that every preset leaves alike and that the runtime leaves to the configuration (27 of the 77
-  as of 2026-11-05) are left out, and the header names them.
+- Fields that every preset leaves alike and that the runtime leaves to the configuration (27 of the 81
+  as of R18) are left out, and the header names them.
 - The header also names the source (the base commit and the number of patches, or a tree's commit) and
   the first 16 digits of the SHA-256 of `rtx_weather.h`.
 - The file is rewritten only when the presets change; the commit line is not compared.
-- Prints the path and the counts: 12 presets, 50 of 77 fields.
+- Prints the path and the counts: 12 presets, 54 of 81 fields.
 
 ## Exit codes
 

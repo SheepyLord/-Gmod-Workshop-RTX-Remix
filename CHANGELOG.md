@@ -6,6 +6,31 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R18
+
+- **R17's sky limits addressed** (the user's request; [ADR 0110](docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md),
+  runtime patch 0032):
+  - **Thin cloud decks close.** Overcast, drizzle and fog are now drawn at real stratus depths (0.9,
+    0.6 and 0.45 km instead of 1.2-1.8) and stay closed: the depth of a cloud body's soft edge is now a
+    weather setting, shallow for these decks. Thinner decks also cost less to draw.
+  - **The middle cloud deck has a pattern of its own.** Altocumulus now comes in patches and bands with
+    clear sky between them, with cloudlets a few hundred metres across, instead of copying the low
+    clouds at a greater height. Where a sight line meets no patch, the deck costs nothing.
+  - **Sun dogs and the other ice halos.** Where the high clouds hold level ice plates, a low sun gets
+    sun dogs at its height just outside the 22 degree halo: red on the inside, a white tail outward. A
+    sun lower than 32 degrees also gets the circumzenithal arc high above it, an upside-down rainbow,
+    and veils show the faint 46 degree halo. The moon gets them too.
+  - **Hazy is a pale, milky haze.** Its sky was a flat grey in dim, warm light: the preset flattened
+    the air's colour and warmed the sun, and its aerosol absorbed more light than it scattered. Hazy now
+    has the clear sky's air and sun, and an aerosol that scatters most of what it meets and spreads it
+    more broadly, under the cirrostratus veil: a pale bluish-white sky. Smog keeps its brown.
+  - **The twilight lasts.** The sky's own twilight is kept to 8 degrees after sunset and fades out by
+    16, instead of going black at 5: the blue hour and the glow over the sunset stay through nautical
+    twilight.
+  - The Remix menu gains Dust Absorption, Layer 2 Cell Size and Patch Size, Sun Dogs and Arcs, and
+    Twilight Depth, translated into the six languages. While a weather is set, Profile Depth, Dust
+    Absorption and Mie Anisotropy show the weather's values.
+
 ### R17
 
 - **The sky fits the weather, and its clouds shade** (the user's request;
