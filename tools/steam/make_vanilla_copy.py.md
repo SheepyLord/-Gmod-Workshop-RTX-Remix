@@ -30,6 +30,12 @@ python tools\steam\make_vanilla_copy.py `
 - Creates the empty folders the manifests list; skips depot symlinks (GMod has none).
 - User-config files that differ (GMod: `garrysmod\cfg\autoexec.cfg`) are skipped, not failed;
   Steam itself only installs them when missing.
+- A non-empty depot file that the manifest gives no SHA-1 (Steam writes 20 zero bytes) is not copied
+  and is listed under `unverified` (exit 1): a file of the right size proves nothing about its bytes.
+  [`verify_install.py`](verify_install.py.md) reports it the same way. Until review R19 (F-05) such a
+  file was copied whenever its size matched, and the run could report a copy that was not vanilla.
+  An empty file and a user-config file without a hash are still copied. The R19 review found a SHA-1
+  for all 2,878 files of GMod's manifests, so this changes nothing for GMod today.
 - Exit `0` = every depot file copied; `1` = some files could not be verified (listed);
   `2` = setup error (destination not empty, manifests missing).
 

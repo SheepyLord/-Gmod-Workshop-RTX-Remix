@@ -19,6 +19,7 @@ import hashlib
 import json
 import lzma
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -41,6 +42,13 @@ LFS_POINTER = b'version https://git-lfs.github.com/spec/v1'
 NATIVE = ('.dll', '.exe', '.so', '.sys')
 # Never imported: version-control metadata and Explorer/Finder files (the packagers skip them too).
 JUNK = {'.git', '.gitattributes', '.gitignore', '.gitkeep', '.gitmodules', '.ds_store', 'desktop.ini', 'thumbs.db'}
+# Names Windows reads as another file than they say (review R19, F-09): a device in every folder, with any
+# extension (NUL, com1.txt); a character it refuses in a name, or reads as a stream (:); and the 8.3 form of
+# a short name (LONGNA~1.DLL), which can be another file's second name.
+WINDOWS_DEVICES = frozenset({'con', 'prn', 'aux', 'nul', 'conin$', 'conout$', 'clock$',
+                             *(kind + n for kind in ('com', 'lpt') for n in '0123456789¹²³')})
+WINDOWS_REFUSED = frozenset('<>:"|?*' + ''.join(map(chr, range(32))))
+SHORT_NAME = re.compile(r'(?=[^.]{1,8}(?:\.[^.]{1,3})?$)[^.]*~[0-9][^.]*(?:\.[^.]{1,3})?')
 
 
 class InputsError(Exception):
@@ -56,6 +64,8 @@ def part_dir(part: str, packages: Path = PACKAGES) -> Path:
 
 
 def read_index(part: str, packages: Path = PACKAGES) -> dict:
+    """The part's index, checked whole before anything reads or writes by it: every path is a plain
+    relative one (check_rel), and no two name the same file on Windows (alias_problems)."""
     path = part_dir(part, packages) / INDEX
     try:
         index = json.loads(path.read_text(encoding='utf-8'))
@@ -65,6 +75,14 @@ def read_index(part: str, packages: Path = PACKAGES) -> dict:
         raise InputsError(f'{path}: {error}') from None
     if index.get('schema') != 1 or index.get('part') != part or not isinstance(index.get('files'), dict):
         raise InputsError(f'{path}: not a schema 1 index of part {part}')
+    for rel in index['files']:
+        try:
+            check_rel(rel)
+        except InputsError as error:
+            raise InputsError(f'{path}: {error}') from None
+    problems = alias_problems(index['files'])
+    if problems:
+        raise InputsError(f'{path}: ' + '; '.join(problems))
     return index
 
 
@@ -89,12 +107,36 @@ def stored_name(rel: str, entry: dict) -> str:
 
 
 def check_rel(rel: str) -> str:
-    """A file's path inside its part: forward slashes, relative, no . or .. segments."""
+    """A file's path inside its part: forward slashes, relative, no . or .. segments, and no part that
+    Windows reads as another name (review R19, F-09): one that ends in a dot or a space (Windows drops
+    them, so `a.dll.` is `a.dll`), a device name, a character Windows refuses, or an 8.3 short name."""
     if not rel or rel.startswith('/') or '\\' in rel or ':' in rel:
         raise InputsError(f'{rel!r}: not a relative path with forward slashes')
-    if any(seg in ('', '.', '..') for seg in rel.split('/')):
-        raise InputsError(f'{rel!r}: empty, . or .. segment')
+    for seg in rel.split('/'):
+        if seg in ('', '.', '..'):
+            raise InputsError(f'{rel!r}: empty, . or .. segment')
+        if seg[-1] in ' .':
+            raise InputsError(f'{rel!r}: {seg!r} ends in a dot or a space, which Windows drops from a name')
+        if any(c in WINDOWS_REFUSED for c in seg):
+            raise InputsError(f'{rel!r}: {seg!r} has a character Windows does not allow in a name')
+        if seg.split('.')[0].rstrip(' ').lower() in WINDOWS_DEVICES:
+            raise InputsError(f'{rel!r}: {seg!r} is a Windows device name')
+        if SHORT_NAME.fullmatch(seg):
+            raise InputsError(f'{rel!r}: {seg!r} has the form of an 8.3 short name, which can be another file\'s')
     return rel
+
+
+def alias_problems(rels) -> list[str]:
+    """Paths of one part that name the same file on Windows, unpacked or stored: two that differ only in
+    case (Windows compares names without it), or a path and the same path with .xz added (the name the
+    first one's compressed copy is stored under). Review R19, F-09."""
+    names: dict[str, list[str]] = {}
+    for rel in rels:
+        names.setdefault(rel.casefold(), []).append(rel)
+    problems = [f'{" and ".join(sorted(same))} differ only in case' for same in names.values() if len(same) > 1]
+    problems += [f'{names[key][0]} and {names[key + ".xz"][0]} would be stored under one name'
+                 for key in names if key + '.xz' in names]
+    return problems
 
 
 # ---------------------------------------------------------------- storing
@@ -219,9 +261,9 @@ def import_files(part: str, roots: list[tuple[Path, str]], files: list[tuple[Pat
     files: single (source file, target path) pairs. prune: remove indexed files under the target
     prefixes that this import did not bring."""
     base = part_dir(part, packages)
-    try:
-        index = read_index(part, packages)
-    except InputsError:
+    if (base / INDEX).exists():
+        index = read_index(part, packages)  # one it cannot read stops the import, rather than being replaced
+    else:
         index = {'schema': 1, 'part': part, 'origins': {}, 'files': {}}
     wanted: dict[str, Path] = {}
     listed: dict[str, str] = {}  # inventory source (normcase) -> the SHA-256 the packager read
@@ -275,6 +317,10 @@ def import_files(part: str, roots: list[tuple[Path, str]], files: list[tuple[Pat
         top = rel.split('/')[0]
         if (top in PART_DOCS and '/' not in rel) or (top in PART_DOC_DIRS and '/' in rel):
             raise InputsError(f'{rel}: that name is kept for the part folder itself')
+    # Before anything is stored: a new path that names an indexed one's file on Windows would overwrite it.
+    problems = alias_problems(set(index['files']) | set(wanted))
+    if problems:
+        raise InputsError('; '.join(problems))
 
     prefixes = {dst for _, dst in roots} | {dst for _, dst in files}
     old = index['files']

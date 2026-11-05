@@ -1,7 +1,9 @@
 """Tests for publish_workshop.py: skip when nothing changed, upload when the content changed, the lock
 and the git hooks. gmpublish is never run: the upload step is replaced by a recorder."""
 import argparse
+import contextlib
 import hashlib
+import io
 import json
 import os
 import re
@@ -333,9 +335,8 @@ class PublishTests(unittest.TestCase):
         self.assertTrue(lock.exists())
 
 
-class FromCiTests(unittest.TestCase):
-    """--from-ci (ADR 0106): the run of the pushed commit, its artifacts checked against its report. gh and
-    gmpublish are replaced by recorders."""
+class GitHubFakes:
+    """gh and gmpublish replaced by recorders: one successful package run (77), its report and its .gma."""
     def setUp(self):
         SCRATCH.mkdir(parents=True, exist_ok=True)
         self.root = Path(tempfile.mkdtemp(prefix='test-publish-ci-', dir=SCRATCH))
@@ -372,6 +373,9 @@ class FromCiTests(unittest.TestCase):
             (dest / 'p-1.gma').write_bytes(self.gma_bytes)
         return ''
 
+
+class FromCiTests(GitHubFakes, unittest.TestCase):
+    """--from-ci (ADR 0106, 0108): the run of the commit, its artifacts checked against its report."""
     def publish(self, **flags):
         args = argparse.Namespace(**{'dry_run': False, 'force': False, 'reason': 'push abc', 'commit': 'HEAD', **flags})
         return pub.publish_from_ci(self.config, args, lambda text: None)
@@ -387,6 +391,7 @@ class FromCiTests(unittest.TestCase):
         record = json.loads((pub.STATE / 'published.json').read_text(encoding='utf-8'))
         self.assertEqual((record['source'], record['run_id'], record['gma_sha256']),
                          ('github', 77, self.report['gma']['sha256']))
+        self.assertEqual(record['commit_sha'], pub.git('rev-parse', 'HEAD'))  # in full (review R19, M1)
         self.assertEqual(self.publish()['result'], 'unchanged')  # the same run again
         self.assertEqual(len(self.uploads), 1)
 
@@ -397,15 +402,19 @@ class FromCiTests(unittest.TestCase):
         self.assertEqual(self.uploads, [])
         self.assertFalse((pub.STATE / 'published.json').exists())
 
-    def test_a_failed_or_cancelled_run_uploads_nothing(self):
-        self.runs[0]['conclusion'] = 'failure'
-        with self.assertRaisesRegex(pub.PublishError, 'ended failure'):
-            self.publish()
-        self.runs[0]['conclusion'] = 'cancelled'
-        self.assertEqual(self.publish()['result'], 'cancelled')
+    def test_a_failed_or_cancelled_run_uploads_nothing_and_fails(self):
+        # Review R19: a cancelled run was a success (exit 0) while a newer push's run could replace it; only
+        # a person starts the workflow now (ADR 0108), and a cancelled run leaves no release to upload.
+        for conclusion in ('failure', 'cancelled'):
+            self.runs[0]['conclusion'] = conclusion
+            with self.subTest(conclusion=conclusion), self.assertRaisesRegex(pub.PublishError, 'ended ' + conclusion):
+                self.publish()
         self.assertEqual(self.uploads, [])
+        self.assertFalse((pub.STATE / 'published.json').exists())
 
-    def test_a_commit_without_a_package_run_uploads_nothing(self):
+    def test_a_commit_without_a_package_run_is_an_error(self):
+        # Review R19 (a miss): "no run within five minutes" was success ("no-run", exit 0), from when every
+        # push started the workflow (ADR 0106). Since ADR 0108 only a person starts it: no run is a failure.
         self.runs = []
         now = [0.0]
         run = pub.wait_for_run('abc', lambda text: None, sleep=lambda s: now.__setitem__(0, now[0] + s),
@@ -413,8 +422,14 @@ class FromCiTests(unittest.TestCase):
         self.assertIsNone(run)
         self.assertGreater(now[0], pub.RUN_APPEARS)
         with mock.patch.object(pub, 'wait_for_run', return_value=None):
-            self.assertEqual(self.publish()['result'], 'no-run')
+            with self.assertRaisesRegex(pub.PublishError, 'no run of the package workflow'):
+                self.publish()
+            errors = io.StringIO()
+            with contextlib.redirect_stderr(errors), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(pub.main(['--from-ci', '--commit', 'HEAD']), 1)  # the exit code a caller sees
+            self.assertIn('no run of the package workflow', errors.getvalue())
         self.assertEqual(self.uploads, [])
+        self.assertFalse((pub.STATE / 'published.json').exists())
 
     def test_a_running_build_is_waited_for(self):
         states = [{**self.runs[0], 'status': 'queued', 'conclusion': None},
@@ -428,6 +443,112 @@ class FromCiTests(unittest.TestCase):
         self.assertEqual(result['result'], 'dry-run')
         self.assertEqual(self.uploads, [])
         self.assertTrue(any(call[:2] == ('run', 'download') for call in self.calls))
+
+
+class ReleaseThenHookTests(GitHubFakes, unittest.TestCase):
+    """Review R19, M1: a release uploaded with --from-ci, then the hooks' runs on main. While the commit has
+    the release commit's packaging inputs, a run uploads nothing and records its fingerprint; once an input
+    changes, the development build uploads as before. A throwaway git repository stands in for this one;
+    gh and gmpublish are recorders (GitHubFakes), the build is the real one, of PublishTests' packages."""
+    def setUp(self):
+        super().setUp()
+        self.logs = []
+        self.repo = self.root / 'repo'
+        mods = write_package(self.root / 'mods', {'schema': 1, 'id': 'm', 'version': '1.0.0', 'kinds': ['root-files'],
+                                                  'root_files': [{'path': 'rtx-remix/mods/m'}]},
+                             {'native/root/rtx-remix/mods/m/mod.usda': b'#usda 1.0\n'})
+        module = write_package(self.root / 'module', {'schema': 1, 'id': 'b', 'version': '1.0.0', 'kinds': ['lua-binary-module'],
+                                                      'root_files': [{'path': 'garrysmod/lua/bin/gmcl_b_win64.dll'}]},
+                               {'native/root/garrysmod/lua/bin/gmcl_b_win64.dll': b'MZ module'})
+        self.config = {'item': '123', 'gmpublish': str(self.root / 'gmpublish.exe'),
+                       'package': {'id': 'test-item', 'title': 'Test', 'type': 'tool', 'tags': ['build']},
+                       'parts': [{'name': 'mods', 'package': str(mods)}, {'name': 'module', 'package': str(module)}]}
+        subprocess.run(['git', 'init', '-q', str(self.repo)], check=True)
+        self.git('config', 'user.email', 't@example.invalid')
+        self.git('config', 'user.name', 't')
+        self.commit('the release', {'tools/workshop.json': json.dumps(self.config, indent=1),
+                                    'packages/part/a.lua': 'print("release")\n', 'docs/notes.md': 'notes\n'})
+        self.release = self.git('rev-parse', 'HEAD')
+        result = self.publish(commit=self.release)  # what the release's --from-ci run does
+        self.assertEqual(result['result'], 'uploaded')
+        self.assertEqual(len(self.uploads), 1)
+
+    def git(self, *args):
+        return subprocess.run(['git', *args], cwd=self.repo, capture_output=True, text=True, check=True).stdout.strip()
+
+    def commit(self, message, files):
+        for rel, text in files.items():
+            path = self.repo / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding='utf-8', newline='\n')
+        self.git('add', '-A')
+        self.git('commit', '-q', '-m', message)
+        return self.git('rev-parse', 'HEAD')
+
+    def publish(self, **flags):
+        args = argparse.Namespace(**{'dry_run': False, 'force': False, 'reason': 'push abc', 'commit': 'HEAD', **flags})
+        return pub.publish_from_ci(self.config, args, lambda text: None, repo=self.repo)
+
+    def hook(self, **flags):
+        """What a commit, merge or push of main runs: a build here (ADR 0108), never --from-ci."""
+        args = argparse.Namespace(**{'dry_run': False, 'force': False, 'allow_dirty': False, 'reason': 'commit x',
+                                     'commit': self.git('rev-parse', 'HEAD'), **flags})
+        return pub.publish(self.config, args, self.logs.append, repo=self.repo)
+
+    def record(self):
+        return json.loads((pub.STATE / 'published.json').read_text(encoding='utf-8'))
+
+    def assert_the_release_stays(self, result):
+        self.assertEqual(result['result'], 'unchanged-inputs')
+        self.assertTrue(any('holds the release built on GitHub' in line for line in self.logs), self.logs)
+        self.assertEqual(len(self.uploads), 1)  # only the release
+        record = self.record()
+        self.assertEqual((record['source'], record['run_id'], record['commit_sha']), ('github', 77, self.release))
+        self.assertEqual(record['fingerprint'], result['fingerprint'])  # recorded: the next run stops at once
+        self.logs.clear()
+        self.assertEqual(self.hook()['result'], 'unchanged-inputs')
+        self.assertTrue(any('inputs unchanged since the last upload' in line for line in self.logs), self.logs)
+        self.assertEqual(len(self.uploads), 1)
+
+    def test_the_release_stays_at_its_own_commit(self):
+        # The merge's hook run queued behind the release's upload, or the next push of that commit.
+        self.assertEqual(self.record()['commit_sha'], self.release)
+        self.assert_the_release_stays(self.hook())
+        # --force still uploads a build made here.
+        self.assertEqual(self.hook(force=True)['result'], 'uploaded')
+        self.assertEqual(len(self.uploads), 2)
+
+    def test_the_release_stays_after_a_commit_that_leaves_the_packaging_inputs(self):
+        self.commit('docs only', {'docs/notes.md': 'more notes\n'})  # HEAD is no longer the release's commit
+        self.assert_the_release_stays(self.hook())
+
+    def test_changed_packaging_inputs_upload_the_development_build_as_before(self):
+        self.commit('a change to a part', {'packages/part/a.lua': 'print("changed")\n'})
+        result = self.hook()
+        self.assertEqual(result['result'], 'uploaded')
+        self.assertEqual(len(self.uploads), 2)
+        self.assertIn(result['version'], self.uploads[1][1])  # the change notes name the development version
+        record = self.record()
+        self.assertNotIn('source', record)  # a development build's record
+        self.assertEqual(record['commit_sha'], self.git('rev-parse', 'HEAD'))
+        self.assertEqual(self.hook()['result'], 'unchanged-inputs')
+        self.assertEqual(len(self.uploads), 2)
+
+    def test_only_a_release_record_naming_its_full_commit_and_this_configuration_counts(self):
+        # A record from before R19 names the commit only as "<short sha> <subject>".
+        record = self.record()
+        del record['commit_sha']
+        (pub.STATE / 'published.json').write_text(json.dumps(record), encoding='utf-8')
+        self.assertEqual(self.hook(dry_run=True)['result'], 'dry-run')  # it would build and upload
+        # Another configuration than the release commit's (--config) is not the release's either.
+        record['commit_sha'] = self.release
+        (pub.STATE / 'published.json').write_text(json.dumps(record), encoding='utf-8')
+        self.config['package'] = {**self.config['package'], 'title': 'Another title'}
+        self.assertEqual(self.hook(dry_run=True)['result'], 'dry-run')
+        # A release commit this clone does not have: built here as usual.
+        self.assertIsNone(pub.same_inputs('0' * 40, self.repo))
+        self.assertTrue(pub.same_inputs(self.release, self.repo))
+        self.assertEqual(len(self.uploads), 1)
 
 
 class HookTests(unittest.TestCase):

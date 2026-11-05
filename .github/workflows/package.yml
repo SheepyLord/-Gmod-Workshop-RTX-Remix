@@ -7,8 +7,9 @@
 #
 # The run's summary reports the SHA-256 of the .gma and of every file in it, and where each native binary
 # came from (tools/package_report.py); the artifact rtx-package-report keeps that report. The .gma is the
-# artifact rtx-package, and only the newest one is kept: the older ones are deleted before it is uploaded
-# (Actions storage is 2 GB). tools/publish_workshop.py --from-ci, on the developer's machine (it needs
+# artifact rtx-package, and only the newest one is kept (Actions storage is 2 GB): the older ones are
+# deleted once it is uploaded, so a failed upload leaves the last good package (review R19, F-07; until
+# then they were deleted first). tools/publish_workshop.py --from-ci, on the developer's machine (it needs
 # Steam), uploads exactly that .gma to the Workshop after checking its SHA-256 against the report.
 #
 # Only a person starts it (Actions > Build the RTX package > Run workflow), when releasing (ADR 0108):
@@ -23,9 +24,10 @@ name: Build the RTX package
 on:
   workflow_dispatch:
 
+# Read only: the build jobs run other people's build scripts and downloads. Only the package job, which
+# deletes the older rtx-package artifacts, may write to Actions (review R19, F-04).
 permissions:
   contents: read
-  actions: write  # deletes the older rtx-package artifacts
 
 concurrency:
   group: package-${{ github.ref }}
@@ -226,6 +228,9 @@ jobs:
     needs: [runtime, modules, hotloader]
     runs-on: windows-2022
     timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: write  # deletes the older rtx-package artifacts, the job's last step but one
     steps:
       - uses: actions/checkout@v5
         with:
@@ -287,10 +292,12 @@ jobs:
         run: ./tools/build.ps1 -Config Release -NoTests
 
       - name: This repository's modules (tools/ci/collect_repo_build.py)
-        run: python -I tools/ci/collect_repo_build.py --out out/ci/built --run-url "${{ env.RUN_URL }}"
+        shell: pwsh
+        run: python -I tools/ci/collect_repo_build.py --out out/ci/built --run-url "$env:RUN_URL"
 
       - name: The binaries no workflow compiles, from their publishers (tools/ci/fetch_prebuilt.py)
-        run: python -I tools/ci/fetch_prebuilt.py --out out/ci/built --run-url "${{ env.RUN_URL }}"
+        shell: pwsh
+        run: python -I tools/ci/fetch_prebuilt.py --out out/ci/built --run-url "$env:RUN_URL"
 
       - name: The RTX package (tools/build_package.py, every native binary from this run)
         shell: pwsh
@@ -318,6 +325,16 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
+      - uses: actions/upload-artifact@v6
+        with:
+          name: rtx-package
+          path: out/dist/*.gma
+          retention-days: 90
+          compression-level: 6
+          if-no-files-found: error
+
+      # Only after this run's package is uploaded: a failed upload must not take the last good package
+      # with it (review R19, F-07). The step runs only when every step before it succeeded.
       - name: Only the newest package is kept (older rtx-package artifacts deleted)
         shell: pwsh
         env:
@@ -330,14 +347,6 @@ jobs:
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
             "deleted the older rtx-package artifact $id"
           }
-
-      - uses: actions/upload-artifact@v6
-        with:
-          name: rtx-package
-          path: out/dist/*.gma
-          retention-days: 90
-          compression-level: 6
-          if-no-files-found: error
 
       - name: Disk at the end
         if: always()

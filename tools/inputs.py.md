@@ -26,6 +26,17 @@ repository, origin URL, commit and whether the source had local changes, and `im
 - Paths are relative, without `.`/`..`/empty segments, backslashes or drive letters; two paths that
   differ only in case are refused. `files.json`, `README.md`, `LICENSE`, `LICENSE.txt`, `COPYING` and a
   `licenses\` folder at the top of a part are its own documents, not inputs.
+- **Names Windows reads as another file** are refused too (review R19, F-09): a path part that ends in a
+  dot or a space (Windows drops them: `foo.dll.` is `foo.dll`), a device name in any folder and with any
+  extension (`NUL`, `CON`, `AUX`, `PRN`, `COM0`-`COM9`, `LPT0`-`LPT9`, `CONIN$`, `CONOUT$`, `CLOCK$`:
+  `com1.txt` too), a character Windows does not allow in a name (`<>:"|?*`, control characters), and
+  the 8.3 form of a short name (`LONGNA~1.DLL`, which can be another file's second name; `~gmod_topbr`,
+  with no digit after the tilde, is fine). Across the whole index, two paths that differ only in case,
+  and a path beside the same path with `.xz` added (stored under one name), are refused. The index is
+  checked whole each time it is read, so `verify` reports such an index and `unpack`, `extract` and
+  `import` stop before they read or write by it; `import` also refuses a new path that would name the
+  file of one already indexed, before it stores anything. Before R19, an index holding both
+  `files/foo.dll` and `files/foo.dll.` verified, and `unpack` wrote both to one file at the same time.
 
 ## Commands
 
@@ -57,6 +68,9 @@ repository, origin URL, commit and whether the source had local changes, and `im
     the part again. `--prune` removes indexed files under the import's target prefixes that it did not
     bring. The index is written whole or not at all (a `.tmp` file renamed over it).
   - Prints a JSON summary: `part`, `files`, `stored`, `removed`.
+  - An existing index that cannot be read (not JSON, not a schema 1 index of the part, or a name
+    refused above) stops the import. Before R19 the import replaced it with a new index that held only
+    the files it imported. Only a part without an index starts a new one.
 - **`list`**: each part's file count, size and stored size.
 
 **Exit:** 0 on success; 1 on an error (`inputs: ...` on stderr) or, for `verify`, on any problem.

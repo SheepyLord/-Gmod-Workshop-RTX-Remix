@@ -143,6 +143,32 @@ class InstallToolTests(unittest.TestCase):
         self.assertFalse((dst / 'bin/win64/d3d9.dll').exists())
         self.assertFalse(list(dst.rglob('*.partial')))
 
+    def test_clone_leaves_out_a_depot_file_without_a_hash(self):
+        # Review R19, F-05: a non-empty depot file without a SHA-1 was copied whenever its size matched,
+        # so the copy could hold changed bytes while the run reported success.
+        zero = bytes(20)  # Steam's "no hash"
+        manifest = self.root / 'nohash.manifest'
+        manifest.write_bytes(build_manifest([
+            entry('bin\\win64\\nohash.dll', b'0123456789', sha=zero),
+            entry('garrysmod\\empty.txt', b'', sha=zero),
+            entry('garrysmod\\cfg\\autoexec.cfg', b'bind x', FLAG_USERCONFIG, sha=zero),
+            entry('bin\\win64\\engine.dll', b'engine'),
+        ]))
+        src, fallback = self.root / 'nohash-src', self.root / 'nohash-fallback'
+        write_tree(src, {'bin/win64/nohash.dll': b'abcdefghij', 'garrysmod/empty.txt': b'',
+                         'garrysmod/cfg/autoexec.cfg': b'bind y', 'bin/win64/engine.dll': b'engine'})
+        write_tree(fallback, {'bin/win64/nohash.dll': b'0123456789'})  # no fallback can prove it either
+        dst = self.root / 'nohash-dst'
+        report = make_vanilla_copy.clone(src, dst, [manifest], [fallback])
+        self.assertEqual(report['unverified'], ['bin/win64/nohash.dll'])
+        self.assertFalse((dst / 'bin/win64/nohash.dll').exists())
+        self.assertEqual(report['copied'], 3)  # the verified file, the empty file and the user's config
+        self.assertEqual((dst / 'garrysmod/empty.txt').read_bytes(), b'')
+        self.assertEqual(report['from_fallback'], [])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(make_vanilla_copy.main([str(src), str(self.root / 'nohash-cli'), '--manifest', str(manifest),
+                                                     '--quiet']), 1)
+
     def test_clone_uses_fallback_for_unverified_files(self):
         fallback = self.root / 'fallback'
         write_tree(fallback, {k: v for k, v in VANILLA.items() if k != 'bin/win64/engine.dll'})

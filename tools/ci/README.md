@@ -27,10 +27,18 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
 3. Job `package`: Git LFS content except the binaries the run makes, the three jobs' caches,
    `tools\build.ps1 -Config Release`, `collect_repo_build.py`, `fetch_prebuilt.py`, then
    [`tools/build_package.py`](../build_package.py.md) `--built out/ci/built` and
-   [`tools/package_report.py`](../package_report.py.md) into the run's summary. The older `rtx-package`
-   artifacts are deleted before the new `.gma` is uploaded; `rtx-package-report` keeps the report.
+   [`tools/package_report.py`](../package_report.py.md) into the run's summary. `rtx-package-report`
+   keeps the report. The new `.gma` is uploaded as `rtx-package`, and only then are the older
+   `rtx-package` artifacts deleted, so one is kept and a failed upload leaves the last good one (review
+   R19, F-07; until then they were deleted first). For a few minutes Actions storage holds two.
 4. On the developer's machine, [`tools/publish_workshop.py`](../publish_workshop.py.md) `--from-ci
-   --commit <sha>` uploads that `.gma` after checking it against the report.
+   --commit <sha>` uploads that `.gma` after checking it against the report. Without a successful run of
+   that commit it uploads nothing and exits 1.
+
+**Permissions** (review R19, F-04): the workflow's token can only read the repository. Only the
+`package` job, which deletes the older artifacts, may also write to Actions; the `runtime`, `modules`
+and `hotloader` jobs, which run other people's build scripts and downloads, cannot. Values a run gets
+from GitHub (the run's URL) reach the scripts as environment variables, never pasted into them.
 
 Only a person starts the workflow, for a release
 ([ADR 0108](../../docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)); during
