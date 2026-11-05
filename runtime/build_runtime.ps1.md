@@ -17,16 +17,18 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
 | `-NoImport` | Build only; `packages\runtime` and `base.json` stay as they are |
 | `-Jobs` | Maximum concurrent Ninja jobs (default 4), to bound C++ compiler memory use; the fork's shader helper retains its separate internal parallelism |
 | `-Verify` | Only the checks of step 3, then the built `d3d9.dll`'s size and SHA-256; builds and writes nothing |
+| `-Install` | R16: after compiling, `meson install --tags output` into `<Worktree>\_output` (`d3d9.dll`, the vendor DLLs, the USD plugins and their files), which the RTX package's workflow collects ([`tools/ci/collect_runtime.py`](../tools/ci/collect_runtime.py.md)) |
 
 ## What it does
 
 1. Reads `base.json` and the patches in `runtime\patches` (name order), and checks that the clone has
    the base commit.
 2. **No worktree yet:** `git worktree add --detach` at the base commit, `git am --3way --keep-cr` of
-   every patch, `git submodule update --init --recursive` (network: the fork's submodules), then what
+   every patch, `git submodule update --init --recursive --filter=blob:none` (network: the fork's submodules; since R16
+   blobs only for the recorded commits, for the workflow's small disk), then what
    `base.json` adds: each `submodules` entry checked out at its `commit` and/or given its `patch`
-   (`runtime\submodules\*.patch`, `git apply`), each of `clones` cloned from its `url` and checked out
-   at its `commit` (network). After the source checks and `Enter-VsDevEnv`, first-time setup calls
+   (`runtime\submodules\*.patch`, `git apply`), each of `clones` cloned from its `url`
+   (`--filter=blob:none --no-checkout`) and checked out at its `commit` (network). After the source checks and `Enter-VsDevEnv`, first-time setup calls
    Meson directly through Python, without the fork helper's vswhere/PATH lookup:
    `python -m mesonbuild.mesonmain setup --buildtype release --backend ninja
    -Denable_tracy=false -Dremix_with_shim=false -Ddownload_apics=false <build> <tree>`.

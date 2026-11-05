@@ -225,7 +225,7 @@ class PublishTests(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def run_publish(self, **flags):
-        args = argparse.Namespace(dry_run=False, force=False, allow_dirty=True, reason='test')
+        args = argparse.Namespace(dry_run=False, force=False, allow_dirty=True, reason='test', local_upload=True)
         for key, value in flags.items():
             setattr(args, key, value)
         return pub.publish(self.config, args, lambda text: None)
@@ -259,6 +259,13 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(again['digest'], first['digest'])
         self.assertEqual(len(self.uploads), 1)
         self.assertEqual(self.run_publish()['result'], 'unchanged-inputs')  # the new fingerprint was kept
+
+    def test_a_local_build_is_uploaded_only_when_asked(self):
+        # ADR 0106: the item gets the package GitHub built; a build here only compares.
+        result = self.run_publish(local_upload=False)
+        self.assertEqual(result['result'], 'built-not-uploaded')
+        self.assertEqual(self.uploads, [])
+        self.assertFalse((pub.STATE / 'published.json').exists())
 
     def test_dry_run_and_force(self):
         dry = self.run_publish(dry_run=True)
@@ -333,6 +340,103 @@ class PublishTests(unittest.TestCase):
         self.assertTrue(lock.exists())
 
 
+class FromCiTests(unittest.TestCase):
+    """--from-ci (ADR 0106): the run of the pushed commit, its artifacts checked against its report. gh and
+    gmpublish are replaced by recorders."""
+    def setUp(self):
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        self.root = Path(tempfile.mkdtemp(prefix='test-publish-ci-', dir=SCRATCH))
+        self.config = {'item': '123', 'gmpublish': str(self.root / 'gmpublish.exe'), 'package': {'id': 'p'}, 'parts': []}
+        self.gma_bytes = b'GMAD fake package'
+        self.report = {'gma': {'name': 'p-1.gma', 'bytes': len(self.gma_bytes),
+                               'sha256': hashlib.sha256(self.gma_bytes).hexdigest()},
+                       'binaries': 54, 'compiled': 9, 'fetched': 41, 'from_packages': 4}
+        self.runs = [{'id': 77, 'run_number': 5, 'status': 'completed', 'conclusion': 'success',
+                      'html_url': 'https://github.com/o/r/actions/runs/77'}]
+        self.calls, self.uploads = [], []
+        self.patches = [mock.patch.object(pub, 'STATE', self.root / 'state'),
+                        mock.patch.object(pub, 'gh', side_effect=self.fake_gh),
+                        mock.patch.object(pub, 'upload', side_effect=lambda c, gma, changes, log:
+                                          self.uploads.append((Path(gma).read_bytes(), changes)) or 'Success!')]
+        for patch in self.patches:
+            patch.start()
+
+    def tearDown(self):
+        for patch in reversed(self.patches):
+            patch.stop()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def fake_gh(self, *args):
+        self.calls.append(args)
+        if args[0] == 'api':
+            return json.dumps({'workflow_runs': self.runs})
+        dest = Path(args[args.index('-D') + 1])
+        dest.mkdir(parents=True, exist_ok=True)
+        if args[args.index('-n') + 1] == 'rtx-package-report':
+            (dest / 'package-report.json').write_text(json.dumps(self.report), encoding='utf-8')
+            (dest / 'package-summary.json').write_text(json.dumps({'version': '1', 'digest': 'd1'}), encoding='utf-8')
+        else:
+            (dest / 'p-1.gma').write_bytes(self.gma_bytes)
+        return ''
+
+    def publish(self, **flags):
+        args = argparse.Namespace(**{'dry_run': False, 'force': False, 'reason': 'push abc', 'commit': 'HEAD', **flags})
+        return pub.publish_from_ci(self.config, args, lambda text: None)
+
+    def test_the_runs_package_is_checked_and_uploaded_once(self):
+        result = self.publish()
+        self.assertEqual(result['result'], 'uploaded')
+        self.assertEqual(len(self.uploads), 1)
+        data, changes = self.uploads[0]
+        self.assertEqual(data, self.gma_bytes)
+        self.assertIn('https://github.com/o/r/actions/runs/77', changes)
+        self.assertIn(self.report['gma']['sha256'], changes)
+        record = json.loads((pub.STATE / 'published.json').read_text(encoding='utf-8'))
+        self.assertEqual((record['source'], record['run_id'], record['gma_sha256']),
+                         ('github', 77, self.report['gma']['sha256']))
+        self.assertEqual(self.publish()['result'], 'unchanged')  # the same run again
+        self.assertEqual(len(self.uploads), 1)
+
+    def test_a_package_that_does_not_match_its_report_is_not_uploaded(self):
+        self.report['gma']['sha256'] = '0' * 64
+        with self.assertRaisesRegex(pub.PublishError, 'not the package its report describes'):
+            self.publish()
+        self.assertEqual(self.uploads, [])
+        self.assertFalse((pub.STATE / 'published.json').exists())
+
+    def test_a_failed_or_cancelled_run_uploads_nothing(self):
+        self.runs[0]['conclusion'] = 'failure'
+        with self.assertRaisesRegex(pub.PublishError, 'ended failure'):
+            self.publish()
+        self.runs[0]['conclusion'] = 'cancelled'
+        self.assertEqual(self.publish()['result'], 'cancelled')
+        self.assertEqual(self.uploads, [])
+
+    def test_a_commit_without_a_package_run_uploads_nothing(self):
+        self.runs = []
+        now = [0.0]
+        run = pub.wait_for_run('abc', lambda text: None, sleep=lambda s: now.__setitem__(0, now[0] + s),
+                               clock=lambda: now[0])
+        self.assertIsNone(run)
+        self.assertGreater(now[0], pub.RUN_APPEARS)
+        with mock.patch.object(pub, 'wait_for_run', return_value=None):
+            self.assertEqual(self.publish()['result'], 'no-run')
+        self.assertEqual(self.uploads, [])
+
+    def test_a_running_build_is_waited_for(self):
+        states = [{**self.runs[0], 'status': 'queued', 'conclusion': None},
+                  {**self.runs[0], 'status': 'in_progress', 'conclusion': None}, self.runs[0]]
+        with mock.patch.object(pub, 'package_runs', side_effect=lambda sha: [states.pop(0)]):
+            run = pub.wait_for_run('abc', lambda text: None, sleep=lambda s: None)
+        self.assertEqual((run['status'], run['conclusion']), ('completed', 'success'))
+
+    def test_dry_run_downloads_and_checks_but_uploads_nothing(self):
+        result = self.publish(dry_run=True)
+        self.assertEqual(result['result'], 'dry-run')
+        self.assertEqual(self.uploads, [])
+        self.assertTrue(any(call[:2] == ('run', 'download') for call in self.calls))
+
+
 class HookTests(unittest.TestCase):
     def setUp(self):
         SCRATCH.mkdir(parents=True, exist_ok=True)
@@ -352,10 +456,11 @@ class HookTests(unittest.TestCase):
             self.assertNotIn(b'\r\n', text)
             # Each runs Git LFS's own step, as the hooks `git lfs install` writes would (ADR 0033).
             self.assertIn(b'git lfs ' + name.encode(), text)
-        self.assertIn(b'"main"', (hooks / 'post-commit').read_bytes())
         self.assertIn(b'refs/heads/main', (hooks / 'pre-push').read_bytes())
-        for name in ('post-commit', 'post-merge', 'pre-push'):
-            self.assertIn(b'--commit', (hooks / name).read_bytes(), name)  # R3-004
+        # ADR 0106: only a push publishes, with the package GitHub builds for the pushed commit.
+        self.assertIn(b'--from-ci --commit "$local_sha"', (hooks / 'pre-push').read_bytes())
+        for name in ('post-commit', 'post-merge'):
+            self.assertNotIn(b'publish_workshop.py', (hooks / name).read_bytes(), name)
         pub.install_hooks(False, self.repo)  # ours: replaced quietly
         (hooks / 'pre-push').write_text('#!/bin/sh\necho mine\n', encoding='utf-8')
         with self.assertRaisesRegex(pub.PublishError, 'not ours'):

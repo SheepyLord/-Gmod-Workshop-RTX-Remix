@@ -1,0 +1,78 @@
+{
+  "repository": "https://github.com/SheepyLord/-advanced_material_editor.git",
+  "visibility": "private",
+  "path": "native/rtx_bridge",
+  "commit": "8ece14155d771f0465dfac32ff6dd6a0e1f8aa96",
+  "unchanged_up_to": "05435bd (origin/main, 2026-11-04)",
+  "shipped_binary": {
+    "file": "bin/gmcl_advmat_rtx_bridge_win64.dll",
+    "size": 316416,
+    "sha256": "aeb5de42edcf537e517d713100f455eeaa3916f8f148e41ce5266732d3cf87ff",
+    "note": "byte-identical to a local build of this commit (VS 2022 Build Tools, cl 19.44.35228)"
+  },
+  "build": {
+    "generator": "Visual Studio 17 2022",
+    "arch": "x64",
+    "config": "Release",
+    "options": {
+      "ADVMAT_RTX_BUILD_GMOD_MODULE": "ON",
+      "ADVMAT_RTX_BUILD_TESTS": "ON"
+    },
+    "garrysmod_common": {
+      "repository": "https://github.com/danielga/garrysmod_common",
+      "commit": "a854f237b79087826aa9a98a05de5e0d2b4502b6",
+      "used": "include/ only"
+    },
+    "output": "Release/gmcl_advmat_rtx_bridge_win64.dll"
+  },
+  "files": {
+    "CMakeLists.txt": {
+      "size": 2517,
+      "sha256": "401b2ff59a19f1607a72e80ec4ad67ef5a27e9e43f1707409a1f9cb304ec3cd5"
+    },
+    "include/advmat_rtx_bridge/bridge.h": {
+      "size": 8941,
+      "sha256": "d73fe5f64c58758077ed3c46146bf180b10fa4022e37bfff63bb9874357e7b59"
+    },
+    "include/advmat_rtx_bridge/lua_bindings.h": {
+      "size": 456,
+      "sha256": "5a1f6cd3f04b99d96721458a6ac902787ea87c7775a907e0b2474b3e04ee8858"
+    },
+    "README.md": {
+      "size": 5421,
+      "sha256": "6d0a1d7e62332df8813210fdf258b815442b057b7cba874991262e60919579ff"
+    },
+    "src/bridge.cpp": {
+      "size": 53691,
+      "sha256": "c1b9c6cd949766d8b87157cf25df7ab14ef8865c2c636af4a0d33b9560526e1d"
+    },
+    "src/filesystem_utils.cpp": {
+      "size": 20544,
+      "sha256": "c9099ddd4cb85818e80b391e440265d0e719a7741c41239394dc1aa4e0f0e741"
+    },
+    "src/internal.h": {
+      "size": 3634,
+      "sha256": "f87bc9c74d9c8d2523966a2b08b76bf238754832b0d46e6450a4591659ea6232"
+    },
+    "src/lua_bindings.cpp": {
+      "size": 39054,
+      "sha256": "fc6a7dd947155f849ec2ecfb28adbb6df5534eb488bfd0ea5f7e01b83badbf95"
+    },
+    "src/standalone_module.cpp": {
+      "size": 1335,
+      "sha256": "9354393abbb36a4a8da8c0afa57a9be8177bd83be4825cc36a272d81dfcbbb64"
+    },
+    "src/texture_ingest.cpp": {
+      "size": 29817,
+      "sha256": "33bc95f09677db24bcf7da488462d1917a8962b82ea55eb3c4cfd6b04a43e071"
+    },
+    "src/usda_writer.cpp": {
+      "size": 16259,
+      "sha256": "aad83a96b7f462f12fe40e99eb0b1620a56d5147e4790b9018e21f4448e4c2f7"
+    },
+    "tests/writer_tests.cpp": {
+      "size": 85516,
+      "sha256": "934e65e776f0e462cac7aaf18c150ecdf92d75644df2618ce196bf1bed0e16ca"
+    }
+  }
+}

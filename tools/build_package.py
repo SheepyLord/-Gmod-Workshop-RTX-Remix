@@ -4,6 +4,7 @@ with the built nlctl.exe, into out/dist/. It uploads nothing; publish_workshop.p
 
   python tools/build_package.py [--config tools/workshop.json] [--out out/dist] [--version V]
                                 [--require-nlctl] [--compare <published .gma or its build.json>] [--json]
+                                [--built out/ci/built [--keep-packaged PART/PATH ...]]
 """
 from __future__ import annotations
 
@@ -31,6 +32,11 @@ def main(argv=None) -> int:
                         help='a publish record (out/workshop/published.json or build.json): report whether this build '
                              'delivers the same content (digest)')
     parser.add_argument('--keep-work', action='store_true', help='keep the built part folders in out/tmp/package-work')
+    parser.add_argument('--built', type=Path, metavar='DIR',
+                        help='the native binaries a workflow built or fetched (<part>/<path>, tools/ci): they replace the '
+                             'stored ones, and every native binary must come from there (ADR 0106)')
+    parser.add_argument('--keep-packaged', action='append', default=[], metavar='PART/PATH',
+                        help='with --built: a native binary, or a folder ending in /, still taken from packages/')
     parser.add_argument('--json', action='store_true', help='print the summary as JSON')
     args = parser.parse_args(argv)
     try:
@@ -47,11 +53,15 @@ def main(argv=None) -> int:
             print(text, file=sys.stderr if args.json else sys.stdout, flush=True)
 
         try:
-            summary = pw.build(config, version, work, log, dest=args.out.resolve())
+            summary = pw.build(config, version, work, log, dest=args.out.resolve(),
+                               overlay=args.built.resolve() if args.built else None,
+                               keep_packaged=tuple(args.keep_packaged))
         finally:
             if not args.keep_work:
                 shutil.rmtree(work, ignore_errors=True)
         summary['nlctl'] = str(nlctl) if nlctl else None
+        if args.built:
+            summary['built'] = {'folder': str(args.built), 'kept_packaged': args.keep_packaged}
         if args.compare:
             record = json.loads(args.compare.read_text(encoding='utf-8'))
             summary['compared_with'] = {'record': str(args.compare), 'version': record.get('version'),
