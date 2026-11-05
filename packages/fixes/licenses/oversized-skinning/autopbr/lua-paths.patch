@@ -1,0 +1,888 @@
+From 57d96314750c9e4cbcb7b80e08c8a01dafc123cf Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 15:17:48 -0700
+Subject: [PATCH] Keep paths from Lua inside the game, and ToPBR behind the
+ player's settings (R19)
+
+Any server's client Lua reaches this module's Lua functions. A path it names reached the disk
+outside the game, or another host: a UNC path makes Windows open an SMB session and offer the
+player's Windows login (the pre-release review's H3).
+
+- source/lua_path_policy.h (SDK-free): a relative game path has no drive, root, UNC or "\\?\"
+  prefix, no ':', no ".." segment, no shortened or device segment and no control character; a
+  model file is on a local drive; a folder stays inside its root after lexical normalisation.
+- MaterialPipeline.ToPBR.SetOutputDirectory takes a folder relative to the converter's own,
+  <game>\rtx-remix\mods\~gmod_topbr\textures, rechecks the resolved folder and refuses links
+  below it; it warns, keeps the folder and returns false otherwise (true when taken).
+- ToPBR's switches follow the player's convars, read from the engine's list: SetEnabled(true)
+  takes effect only while rtx_topbr_enabled is 1 and SetGameEnabled(true) only while
+  rtx_topbr_game_maps is 1; PumpSnapshots turns either off within 250 ms of the player doing so;
+  ProcessSingleMaterial, ConvertTexture and the queueing bindings check rtx_topbr_enabled.
+- QueueGameMaterial and GameMaterialAction treat a source that is not a PMX on a local drive, and
+  model paths that leave its folder, as absent; recorded maps still restore by texture identity.
+- The game's file system opens absolute and network paths as they are: VTFParser::ReadVTFFile,
+  ToPBR's VMT reader and auto-categorisation's VMT shader reader read only relative game paths.
+- RemixMaterial's texture paths and RemixLight's dome colorTexture must be relative to the game
+  folder (a Lua error otherwise); RemixConfig.SetConfigVariable refuses the options whose value
+  Remix opens or loads code from (textures, the camera sequence file, NRC's CUDA DLL folder,
+  Nsight's folders, capture names, the mod redirect) and any value naming a drive, root or
+  network path.
+- Tests: tests/lua_path_policy_test.cpp (SDK-free), tests/vtf_parser/test.cpp.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ source/lua_path_policy.h                      | 143 +++++++++++++
+ .../auto_categorisation.cpp                   |   7 +-
+ source/material_pipeline/to_pbr/to_pbr.cpp    | 188 ++++++++++++++----
+ source/material_pipeline/to_pbr/to_pbr.h      |  10 +-
+ source/remixapi/config_lua_bindings.cpp       |  14 +-
+ source/remixapi/light_lua_bindings.cpp        |  14 +-
+ source/remixapi/material_lua_bindings.cpp     |  16 ++
+ source/vtf_parser.cpp                         |  10 +-
+ tests/lua_path_policy_test.cpp                |  85 ++++++++
+ tests/vtf_parser/test.cpp                     |  27 +++
+ 10 files changed, 468 insertions(+), 46 deletions(-)
+ create mode 100644 source/lua_path_policy.h
+ create mode 100644 tests/lua_path_policy_test.cpp
+
+diff --git a/source/lua_path_policy.h b/source/lua_path_policy.h
+new file mode 100644
+index 0000000..f3c64dc
+--- /dev/null
++++ b/source/lua_path_policy.h
+@@ -0,0 +1,143 @@
++// GPL-2.0, like the rest of the RTX fixes. R19 (the native loader's ADR 0112): paths that come
++// from Lua. Any server's client Lua reaches this module's Lua functions. A path it names must not
++// reach another computer (a UNC or "\\?\" path makes Windows open an SMB session and offer the
++// player's Windows login to that host), nor leave the folder the function works in. No SDK and no
++// Windows header: the regression test in tests/ compiles this file alone.
++#pragma once
++
++#include <cctype>
++#include <cwctype>
++#include <filesystem>
++#include <optional>
++#include <string>
++#include <string_view>
++
++namespace LuaPathPolicy {
++
++inline bool Refuse(std::string* reason, const char* why) {
++    if (reason) *reason = why;
++    return false;
++}
++
++// A path segment that Win32 reads as a device whatever its folder or extension: CON, PRN, AUX,
++// NUL, CONIN$, CONOUT$, COM0-9 and LPT0-9 (also with the superscripts 1-3).
++inline bool DeviceName(std::string_view segment) {
++    std::string base;
++    for (char c : segment) {
++        if (c == '.') break;
++        base += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++    }
++    while (!base.empty() && base.back() == ' ') base.pop_back();
++    if (base == "con" || base == "prn" || base == "aux" || base == "nul" || base == "conin$" || base == "conout$")
++        return true;
++    if (base.size() < 4 || (base.compare(0, 3, "com") != 0 && base.compare(0, 3, "lpt") != 0)) return false;
++    const std::string_view digit(base.data() + 3, base.size() - 3);
++    return (digit.size() == 1 && std::isdigit(static_cast<unsigned char>(digit[0]))) ||
++           digit == "\xC2\xB9" || digit == "\xC2\xB2" || digit == "\xC2\xB3";
++}
++
++// A path that the game's file system, Remix or this module resolves against a folder of the
++// game's own: not empty, at most 1024 bytes, no control character, no ':' (a drive, a stream or a
++// device), no leading '/' or '\' (a root, a UNC or a "\\?\" path), no ".." segment, no segment
++// that Windows would shorten (a trailing '.' or space) or read as a device.
++inline bool RelativePath(std::string_view path, std::string* reason = nullptr) {
++    if (path.empty()) return Refuse(reason, "the path is empty");
++    if (path.size() > 1024) return Refuse(reason, "the path is longer than 1024 bytes");
++    if (path.front() == '/' || path.front() == '\\')
++        return Refuse(reason, "the path starts at a root (an absolute, UNC or \\\\?\\ path)");
++    for (char c : path) {
++        const auto byte = static_cast<unsigned char>(c);
++        if (byte < 0x20 || byte == 0x7F) return Refuse(reason, "the path holds a control character");
++        if (c == ':') return Refuse(reason, "the path holds ':' (a drive, a stream or a device)");
++    }
++    size_t start = 0;
++    while (start <= path.size()) {
++        const size_t end = path.find_first_of("/\\", start);
++        const std::string_view segment = path.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start);
++        if (segment == "..") return Refuse(reason, "the path holds a \"..\" segment");
++        if (!segment.empty() && segment != ".") {
++            if (segment.back() == '.' || segment.back() == ' ')
++                return Refuse(reason, "a path segment ends with '.' or a space");
++            if (DeviceName(segment)) return Refuse(reason, "a path segment names a device");
++        }
++        if (end == std::string_view::npos) break;
++        start = end + 1;
++    }
++    return true;
++}
++
++// A file on a local drive: "X:\" or "X:/", then a relative path by the rule above.
++inline bool LocalDrivePath(std::string_view path, std::string* reason = nullptr) {
++    if (path.size() < 4 || !std::isalpha(static_cast<unsigned char>(path[0])) || path[1] != ':' ||
++        (path[2] != '\\' && path[2] != '/'))
++        return Refuse(reason, "not a path on a local drive (X:\\...)");
++    return RelativePath(path.substr(3), reason);
++}
++
++// A value that names a root, a drive or a network path ("\\host", "//host", "/x", "C:", "C:\x"),
++// whatever its key.
++inline bool AbsolutePathValue(std::string_view value) {
++    if (!value.empty() && (value.front() == '/' || value.front() == '\\')) return true;
++    return value.size() >= 2 && std::isalpha(static_cast<unsigned char>(value[0])) && value[1] == ':' &&
++           (value.size() == 2 || value[2] == '\\' || value[2] == '/');
++}
++
++// The Remix options whose value is a file or a folder that the runtime opens, loads code from or
++// writes to (rtx_atmosphere.h, rtx_camera.h, rtx_nrc_context.h, rtx_nsight_capture.h,
++// rtx_options.h of the runtime fork). Lua leaves them to rtx.conf and the Remix menu.
++inline bool RemixPathOption(std::string_view key) {
++    static constexpr const char* kPaths[] = {
++        "rtx.atmosphere.moonalbedotexture", "rtx.atmosphere.moonnormaltexture",
++        "rtx.atmosphere.starmaptexture", "rtx.atmosphere.starmapgalaxytexture",
++        "rtx.atmosphere.starmapnebulatexture", "rtx.basegamemodpathregex", "rtx.basegamemodregex",
++        "rtx.camerasequence.filepath", "rtx.captureinstancestagename", "rtx.capturetimestampreplacement",
++        "rtx.neuralradiancecache.cudadlldepsdirectorypath", "rtx.nsight.graphicscaptureinstallpath",
++        "rtx.nsight.graphicscaptureoutputdir", "rtx.nsight.graphicscaptureoutputfile",
++    };
++    std::string lower;
++    for (char c : key) {
++        if (c == ' ' || c == '\t') continue;
++        lower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++    }
++    for (const char* path : kPaths)
++        if (lower == path) return true;
++    return false;
++}
++
++// `requested`, relative to `root` ("" or "." for the root itself), as a folder that is still the
++// root or below it once lexically normal; components compare without case, as on Windows.
++inline std::optional<std::filesystem::path> Inside(const std::filesystem::path& root, std::string_view requested,
++                                                    std::string* reason = nullptr) {
++    namespace fs = std::filesystem;
++    fs::path folder = root;
++    if (!requested.empty() && requested != ".") {
++        if (!RelativePath(requested, reason)) return std::nullopt;
++        size_t start = 0;
++        while (start <= requested.size()) {
++            const size_t end = requested.find_first_of("/\\", start);
++            const std::string segment(requested.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start));
++            if (!segment.empty() && segment != ".") folder /= fs::u8path(segment);
++            if (end == std::string_view::npos) break;
++            start = end + 1;
++        }
++    }
++    const fs::path normalRoot = root.lexically_normal(), normal = folder.lexically_normal();
++    auto lower = [](const fs::path& part) {
++        std::wstring text = part.wstring();
++        for (auto& c : text) c = static_cast<wchar_t>(std::towlower(c));
++        return text;
++    };
++    auto it = normal.begin();
++    for (const auto& part : normalRoot) {
++        if (part.empty()) continue;
++        while (it != normal.end() && it->empty()) ++it;
++        if (it == normal.end() || lower(*it) != lower(part)) {
++            Refuse(reason, "the resolved folder is outside the allowed one");
++            return std::nullopt;
++        }
++        ++it;
++    }
++    return normal;
++}
++
++}  // namespace LuaPathPolicy
+diff --git a/source/material_pipeline/auto_categorisation/auto_categorisation.cpp b/source/material_pipeline/auto_categorisation/auto_categorisation.cpp
+index 269e26b..f431b5a 100644
+--- a/source/material_pipeline/auto_categorisation/auto_categorisation.cpp
++++ b/source/material_pipeline/auto_categorisation/auto_categorisation.cpp
+@@ -9,6 +9,7 @@
+ #include "auto_categorisation.h"
+ #include "../../d3d9_texture_tracker.h"
+ #include "../../remixapi/material_lua_bindings.h"
++#include "../../lua_path_policy.h"
+ #include <tier0/dbg.h>
+ #include <materialsystem/imaterialsystem.h>
+ #include <materialsystem/imaterial.h>
+@@ -298,7 +299,11 @@ std::string GetShaderName(IMaterial* material) {
+ // are resolved to the included VMT's shader.
+ std::string ReadVMTShaderName(const std::string& materialName, int depth = 0) {
+     if (depth > 4) return "";
+-    
++    // R19 (the native loader's ADR 0112): a patch VMT's "include" is map content and is opened as it
++    // is below; the game's file system would open an absolute or network path. Only a path inside the
++    // game's own folders is read.
++    if (!LuaPathPolicy::RelativePath(materialName)) return "";
++
+     IFileSystem* fs = GetFileSystem();
+     if (!fs) return "";
+ 
+diff --git a/source/material_pipeline/to_pbr/to_pbr.cpp b/source/material_pipeline/to_pbr/to_pbr.cpp
+index 24b35e7..2448d37 100644
+--- a/source/material_pipeline/to_pbr/to_pbr.cpp
++++ b/source/material_pipeline/to_pbr/to_pbr.cpp
+@@ -12,7 +12,9 @@
+ #include <filesystem>
+ #include <iomanip>
+ #include "../material_filter.h"
++#include "../../lua_path_policy.h"
+ #include <tier0/dbg.h>
++#include <tier1/convar.h>
+ #include <materialsystem/imaterialsystem.h>
+ #include <materialsystem/imaterial.h>
+ #include <materialsystem/imaterialvar.h>
+@@ -20,6 +22,7 @@
+ #include <filesystem.h>
+ #include <d3d9.h>
+ #include <Windows.h>
++#include <GarrysMod/FactoryLoader.hpp>
+ #include "../../d3d9_texture_tracker.h"
+ 
+ #include <algorithm>
+@@ -115,6 +118,51 @@ static IFileSystem* GetFileSystemInterface() {
+     return s_pFileSystem;
+ }
+ 
++// The converter's own folder: <game root>\rtx-remix\mods\~gmod_topbr\textures, the game root being
++// three levels above bin\win64\gmod.exe. Empty when the executable's path is unusual.
++static std::string ShippedOutputDirectory() {
++    char gamePath[MAX_PATH];
++    const DWORD length = GetModuleFileNameA(NULL, gamePath, MAX_PATH);
++    if (!length || length >= MAX_PATH) return {};
++    std::string gameDir(gamePath, length);
++    for (int level = 0; level < 3; ++level) {  // gmod.exe, win64, bin
++        const size_t lastSlash = gameDir.find_last_of("\\/");
++        if (lastSlash == std::string::npos) return {};
++        gameDir.resize(lastSlash);
++    }
++    return gameDir + "\\rtx-remix\\mods\\~gmod_topbr\\textures";
++}
++
++// R19 (the native loader's ADR 0112): the player's own switches, the convars the shipped driver
++// creates (rtx_topbr_enabled, rtx_topbr_game_maps). Any server's client Lua reaches this module's
++// bindings, so only these turn work on. They are read from the engine's convar list, on the game
++// thread: a Lua global could be replaced by that same Lua. A missing convar counts as off.
++static bool PlayerSetting(const char* name) {
++    static ICvar* engineCvars = nullptr;
++    if (!engineCvars) {
++        engineCvars = cvar;
++        if (!engineCvars) {
++            static SourceSDK::FactoryLoader vstdlib("vstdlib");
++            engineCvars = vstdlib.GetInterface<ICvar>(CVAR_INTERFACE_VERSION);
++        }
++    }
++    const ConVar* setting = engineCvars ? engineCvars->FindVar(name) : nullptr;
++    return setting && setting->GetBool();
++}
++
++// Whether a folder between root and folder (root excluded) is a link or a junction: the output
++// folder is checked where it really is, not where its name points.
++static bool LinkBelow(const std::filesystem::path& root, const std::filesystem::path& folder) {
++    auto cursor = root.lexically_normal();
++    for (const auto& part : folder.lexically_normal().lexically_relative(cursor)) {
++        if (part.empty() || part == ".") continue;
++        cursor /= part;
++        const DWORD attributes = GetFileAttributesW(cursor.c_str());
++        if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT)) return true;
++    }
++    return false;
++}
++
+ //=============================================================================
+ // TextureProcessor Implementation
+ //=============================================================================
+@@ -169,27 +217,11 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
+     // Set default output directory for generated textures
+     // The executable is at bin/win64/gmod.exe, we need to go up to the game root
+     // Output should be: GarrysModWithRTXAgain/rtx-remix/mods/~gmod_topbr/textures/
+-    char gamePath[MAX_PATH];
+-    if (GetModuleFileNameA(NULL, gamePath, MAX_PATH)) {
+-        std::string gameDir(gamePath);
+-        // Remove executable name (gmod.exe)
+-        size_t lastSlash = gameDir.find_last_of("\\/");
+-        if (lastSlash != std::string::npos) {
+-            gameDir = gameDir.substr(0, lastSlash);
+-            // Remove "win64" directory
+-            lastSlash = gameDir.find_last_of("\\/");
+-            if (lastSlash != std::string::npos) {
+-                gameDir = gameDir.substr(0, lastSlash);
+-                // Remove "bin" directory to get to game root
+-                lastSlash = gameDir.find_last_of("\\/");
+-                if (lastSlash != std::string::npos) {
+-                    gameDir = gameDir.substr(0, lastSlash);
+-                }
+-            }
+-            m_outputDirectory = gameDir + "\\rtx-remix\\mods\\~gmod_topbr\\textures";
+-        }
++    const std::string shipped = ShippedOutputDirectory();
++    if (!shipped.empty()) {
++        m_outputDirectory = shipped;
+     }
+-    
++
+     // Registrations are rebuilt from live identities each session. The worker may
+     // restore validated game records only after seeing a matching hotloader texture.
+     EnsureOutputDirectory();
+@@ -336,12 +368,41 @@ void TextureProcessor::SaveIneligibleCache(bool force) {
+     }
+ }
+ 
+-void TextureProcessor::SetOutputDirectory(const std::string& path) {
+-    CancelPendingWork();
+-    m_outputDirectory = path;
++// R19 (the native loader's ADR 0112): any server's client Lua reaches this. The folder is the
++// converter's own or one below it, never another place on the disk or a network path: Windows would
++// connect to that host and offer the player's Windows login. The shipped Lua never calls it.
++bool TextureProcessor::SetOutputDirectory(const std::string& path) {
++    const std::string shipped = ShippedOutputDirectory();
++    std::string reason = "the game folder is unknown";
++    std::optional<std::filesystem::path> folder;
++    try {
++        if (!shipped.empty()) {
++            const auto root = std::filesystem::u8path(shipped);
++            folder = LuaPathPolicy::Inside(root, path, &reason);
++            if (folder && LinkBelow(root, *folder)) {
++                folder.reset();
++                reason = "a folder on the way is a link or junction";
++            }
++        }
++    } catch (const std::exception&) {
++        folder.reset();
++        reason = "the path is not valid UTF-8";
++    }
++    if (!folder) {
++        Warning("[MaterialPipeline::ToPBR] Output directory refused (%s); it stays %s. "
++                "SetOutputDirectory takes a folder relative to the converter's own.\n",
++                reason.c_str(), m_outputDirectory.c_str());
++        return false;
++    }
++    const std::string resolved = folder->u8string();
++    if (resolved != m_outputDirectory) {
++        CancelPendingWork();
++        m_outputDirectory = resolved;
++    }
+     if (m_debugOutput) {
+-        Msg("[MaterialPipeline::ToPBR] Output directory set to: %s\n", path.c_str());
++        Msg("[MaterialPipeline::ToPBR] Output directory set to: %s\n", resolved.c_str());
+     }
++    return true;
+ }
+ 
+ IFileSystem* TextureProcessor::GetFileSystem() {
+@@ -1736,7 +1797,11 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
+         return s_preparedSnapshot->valid;
+     }
+     if (!fileSystem) return false;
+-    
++    // R19 (ADR 0112): names come from Lua (InspectMaterial, ProcessSingleMaterial) and from map
++    // content (a patch VMT's "include"), and the game's file system opens an absolute or network path
++    // as it is. Only a path inside the game's own folders is read.
++    if (!LuaPathPolicy::RelativePath(materialName)) return false;
++
+     // Guard against include cycles in patch VMT chains
+     if (depth > 4) {
+         return false;
+@@ -4506,17 +4571,29 @@ void TextureProcessor::ClearCache() {
+ 
+ bool TextureProcessor::ProcessSingleMaterial(const std::string& materialName) {
+     if (!m_initialized || !IsEnabled() || MaterialFilter::IsNonSceneMaterialName(materialName)) return false;
++    // R19 (ADR 0112): work starts only while the player's setting is on; a material name is a path
++    // inside the game's folders.
++    if (!PlayerSetting("rtx_topbr_enabled")) { SetEnabled(false); return false; }
++    if (!LuaPathPolicy::RelativePath(materialName)) return false;
+     std::lock_guard<std::mutex> lock(m_queueMutex);
+     if (m_queuedMaterials.size() >= 8192) return false;
+     if (m_queuedMaterials.insert(materialName).second) m_materialQueue.push(materialName);
+     return true;
+ }
+ 
++// R19 (ADR 0112): only the player's rtx_topbr_enabled turns conversion on. Turning it off is always
++// allowed. The setting is read on a change only, so a caller that repeats its value costs nothing.
+ void TextureProcessor::SetEnabled(bool enabled) {
++    if (enabled && !m_enabled.load() && !PlayerSetting("rtx_topbr_enabled")) {
++        if (m_debugOutput) Msg("[MaterialPipeline::ToPBR] Conversion stays off: rtx_topbr_enabled is 0\n");
++        return;
++    }
+     if (m_enabled.exchange(enabled) != enabled) m_publishRequested.store(true);
+ }
+ 
++// R19 (ADR 0112): imported game maps likewise follow the player's rtx_topbr_game_maps.
+ void TextureProcessor::SetGameEnabled(bool enabled) {
++    if (enabled && !m_gameEnabled.load() && !PlayerSetting("rtx_topbr_game_maps")) return;
+     if (m_gameEnabled.exchange(enabled) != enabled) m_publishRequested.store(true);
+ }
+ 
+@@ -4546,12 +4623,18 @@ bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::str
+         return texture?texture->GetName():std::string{};
+     });
+     if (identity.empty()) return false; // A model/material name is not a texture identity.
++    // R19 (ADR 0112): any server's client Lua reaches this. The source is a PMX file on a local drive
++    // and the other paths lie below its folder; anything else (a network share, "\\?\", a device,
++    // "..") counts as absent, so nothing is opened elsewhere. Recorded maps still restore by the live
++    // texture identity, which needs no source.
++    auto below = [](const std::string& path) { return LuaPathPolicy::RelativePath(path) ? path : std::string(); };
++    const std::string localSource = LuaPathPolicy::LocalDrivePath(source) ? source : std::string();
+     std::lock_guard<std::mutex> lock(m_queueMutex);
+     if (action.empty() && m_gameSubmitted.count(name)) return true;
+     if(m_gameViews.size()>=4096 && !m_gameViews.count(name))return false;
+     if (m_gameSubmitted.size() >= 4096 || m_gameQueue.size() >= 128) return false;
+     if(action.empty())m_gameSubmitted.insert(name);
+-    m_gameQueue.push({name,source,base,identity,std::move(hashes),action,normal,packed,emission,layout});
++    m_gameQueue.push({name,localSource,below(base),identity,std::move(hashes),action,below(normal),below(packed),below(emission),layout});
+     if(m_gameViews.size()<4096)m_gameViews[name].identity=identity;
+     m_queueCondition.notify_one();
+     return true;
+@@ -4559,6 +4642,16 @@ bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::str
+ 
+ void TextureProcessor::PumpSnapshots() {
+     if (!m_initialized) return;
++    // R19 (ADR 0112): the player's settings win over any Lua that kept the native switches on (a
++    // removed change callback, for one). The driver calls this every frame on the game thread; the
++    // settings are read four times a second. World conversion cannot get past this snapshot step
++    // without it.
++    const auto now = std::chrono::steady_clock::now();
++    if (now - m_lastSettingCheck >= std::chrono::milliseconds(250)) {
++        m_lastSettingCheck = now;
++        if (IsEnabled() && !PlayerSetting("rtx_topbr_enabled")) SetEnabled(false);
++        if (m_gameEnabled.load() && !PlayerSetting("rtx_topbr_game_maps")) SetGameEnabled(false);
++    }
+     StartWorkerThread();
+     if (!IsEnabled()) return;
+     std::shared_ptr<PreparedSnapshot> prepared;
+@@ -5157,8 +5250,19 @@ LUA_FUNCTION(ToPBR_IsInitialized) {
+     return 1;
+ }
+ 
++// R19 (ADR 0112): the bindings that queue world conversion check the player's rtx_topbr_enabled here,
++// on the game thread (the pipeline's worker also queues, and relies on the native switch, which only
++// that setting turns on).
++static bool PlayerAllowsConversion() {
++    auto& processor = MaterialPipeline::ToPBR::TextureProcessor::Instance();
++    if (!processor.IsEnabled()) return false;
++    if (MaterialPipeline::ToPBR::PlayerSetting("rtx_topbr_enabled")) return true;
++    processor.SetEnabled(false);
++    return false;
++}
++
+ LUA_FUNCTION(ToPBR_ProcessAllMaterials) {
+-    int count = MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessAllTrackedMaterials();
++    int count = PlayerAllowsConversion() ? MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessAllTrackedMaterials() : 0;
+     LUA->PushNumber(count);
+     return 1;
+ }
+@@ -5168,8 +5272,8 @@ LUA_FUNCTION(ToPBR_ProcessMaterialsBatch) {
+     if (LUA->IsType(1, GarrysMod::Lua::Type::Number)) {
+         maxBatch = (int)LUA->GetNumber(1);
+     }
+-    
+-    int count = MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessTrackedMaterialsBatch(maxBatch);
++
++    int count = PlayerAllowsConversion() ? MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessTrackedMaterialsBatch(maxBatch) : 0;
+     LUA->PushNumber(count);
+     return 1;
+ }
+@@ -5182,11 +5286,11 @@ LUA_FUNCTION(ToPBR_SetEnabled) {
+     
+     bool enabled = LUA->GetBool(1);
+     auto& processor = MaterialPipeline::ToPBR::TextureProcessor::Instance();
+-    const bool changed = processor.IsEnabled() != enabled;
++    const bool was = processor.IsEnabled();
++    // R19 (ADR 0112): true takes effect only while the player's rtx_topbr_enabled is on.
+     processor.SetEnabled(enabled);
+-    // Addons may temporarily enable conversion for one explicit operation.
+-    if (changed && processor.IsDebugOutputEnabled()) {
+-        Msg("[MaterialPipeline::ToPBR] ToPBR conversion %s\n", enabled ? "ENABLED" : "DISABLED");
++    if (was != processor.IsEnabled() && processor.IsDebugOutputEnabled()) {
++        Msg("[MaterialPipeline::ToPBR] ToPBR conversion %s\n", processor.IsEnabled() ? "ENABLED" : "DISABLED");
+     }
+     return 0;
+ }
+@@ -5337,8 +5441,15 @@ LUA_FUNCTION(ToPBR_ConvertTexture) {
+     
+     const char* path = LUA->GetString(1);
+     bool isNormalMap = LUA->IsType(2, GarrysMod::Lua::Type::Bool) ? LUA->GetBool(2) : false;
+-    
+-    uint64_t hash = MaterialPipeline::ToPBR::TextureProcessor::Instance().ConvertAndUploadTexture(path, isNormalMap);
++
++    // R19 (ADR 0112): a conversion, so only while the player's rtx_topbr_enabled is on; the texture
++    // path is checked where the file is read (VTFParser::ReadVTFFile).
++    auto& processor = MaterialPipeline::ToPBR::TextureProcessor::Instance();
++    if (!processor.IsEnabled() || !MaterialPipeline::ToPBR::PlayerSetting("rtx_topbr_enabled")) {
++        LUA->PushString("0x0");
++        return 1;
++    }
++    uint64_t hash = processor.ConvertAndUploadTexture(path, isNormalMap);
+     
+     // Return hash as string to preserve precision
+     char hashStr[32];
+@@ -5645,9 +5756,10 @@ LUA_FUNCTION(ToPBR_SetOutputDirectory) {
+         return 0;
+     }
+     
++    // R19 (ADR 0112): a folder relative to the converter's own; true when it was taken.
+     const char* path = LUA->GetString(1);
+-    MaterialPipeline::ToPBR::TextureProcessor::Instance().SetOutputDirectory(path);
+-    return 0;
++    LUA->PushBool(MaterialPipeline::ToPBR::TextureProcessor::Instance().SetOutputDirectory(path));
++    return 1;
+ }
+ 
+ LUA_FUNCTION(ToPBR_GetOutputDirectory) {
+@@ -5682,7 +5794,7 @@ LUA_FUNCTION(ToPBR_NeedsUSDAUpdate) {
+ // =========================================================================
+ 
+ LUA_FUNCTION(ToPBR_QueueMaterialsForProcessing) {
+-    int count = MaterialPipeline::ToPBR::TextureProcessor::Instance().QueueMaterialsForProcessing();
++    int count = PlayerAllowsConversion() ? MaterialPipeline::ToPBR::TextureProcessor::Instance().QueueMaterialsForProcessing() : 0;
+     LUA->PushNumber(count);
+     return 1;
+ }
+diff --git a/source/material_pipeline/to_pbr/to_pbr.h b/source/material_pipeline/to_pbr/to_pbr.h
+index dd6c21b..cee3df3 100644
+--- a/source/material_pipeline/to_pbr/to_pbr.h
++++ b/source/material_pipeline/to_pbr/to_pbr.h
+@@ -355,7 +355,8 @@ public:
+     // reset. Metadata preparation never resolves engine material objects.
+     void CancelPendingWork();
+     
+-    // Global enable/disable for ToPBR processing (controlled by rtx_topbr_enabled ConVar)
++    // Global enable/disable for ToPBR processing (controlled by rtx_topbr_enabled ConVar).
++    // R19: only the player's rtx_topbr_enabled turns it on, and rtx_topbr_game_maps imported game maps.
+     void SetEnabled(bool enabled);
+     void PumpSnapshots();
+     void SetGameEnabled(bool enabled);
+@@ -393,8 +394,10 @@ public:
+     void SetParseCommentedProperties(bool enabled) { m_parseCommentedPropertiesEnabled = enabled; }
+     bool IsParseCommentedPropertiesEnabled() const { return m_parseCommentedPropertiesEnabled; }
+     
+-    // Set output directory for generated textures
+-    void SetOutputDirectory(const std::string& path);
++    // Set output directory for generated textures. R19: a path relative to the converter's own folder,
++    // <game>\rtx-remix\mods\~gmod_topbr\textures ("" for that folder), never outside it; false and a
++    // warning otherwise, and the folder stays as it was.
++    bool SetOutputDirectory(const std::string& path);
+     std::string GetOutputDirectory() const { return m_outputDirectory; }
+     
+     // Check if the converter is initialized
+@@ -648,6 +651,7 @@ private:
+     std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
+     bool m_gameRegistrySaveWarned = false; // Worker-only, once per module session across worker restarts.
+     std::atomic<bool> m_gameEnabled{false};
++    std::chrono::steady_clock::time_point m_lastSettingCheck{}; // Game thread: PumpSnapshots' player-setting check.
+     std::queue<std::shared_ptr<PreparedSnapshot>> m_metadataReady;
+     std::queue<WorkItem> m_readyQueue;
+     std::atomic<bool> m_publishRequested{true};
+diff --git a/source/remixapi/config_lua_bindings.cpp b/source/remixapi/config_lua_bindings.cpp
+index 1e1fc38..e39a985 100644
+--- a/source/remixapi/config_lua_bindings.cpp
++++ b/source/remixapi/config_lua_bindings.cpp
+@@ -1,5 +1,6 @@
+ #ifdef _WIN64
+ #include "remixapi.h"
++#include "../lua_path_policy.h"
+ #include <tier0/dbg.h>
+ 
+ using namespace GarrysMod::Lua;
+@@ -22,7 +23,18 @@ LUA_FUNCTION(RemixConfig_SetConfigVariable) {
+     
+     std::string key = LUA->GetString(1);
+     std::string value = LUA->GetString(2);
+-    
++
++    // R19 (the native loader's ADR 0112): any server's client Lua reaches this. Remix opens, loads
++    // code from or writes to the paths in some options (textures, a camera sequence file, NRC's CUDA
++    // DLL folder, Nsight's folders, capture names, the mod redirect): those stay with rtx.conf and
++    // the Remix menu. A value naming a drive, root or network path is refused for every option.
++    if (LuaPathPolicy::RemixPathOption(key) || LuaPathPolicy::AbsolutePathValue(value)) {
++        Warning("[RemixConfig] SetConfigVariable: '%s' names a file or folder; set it in rtx.conf or the Remix menu\n",
++                key.c_str());
++        LUA->PushBool(false);
++        return 1;
++    }
++
+     auto& configManager = RemixAPI::Instance().GetConfigManager();
+     bool result = configManager.SetConfigVariable(key, value);
+     
+diff --git a/source/remixapi/light_lua_bindings.cpp b/source/remixapi/light_lua_bindings.cpp
+index 78b0117..81df65a 100644
+--- a/source/remixapi/light_lua_bindings.cpp
++++ b/source/remixapi/light_lua_bindings.cpp
+@@ -1,5 +1,6 @@
+ #ifdef _WIN64
+ #include "remixapi.h"
++#include "../lua_path_policy.h"
+ #include <tier0/dbg.h>
+ 
+ using namespace GarrysMod::Lua;
+@@ -470,8 +471,17 @@ static remix::LightInfoDomeEXT LuaToDomeInfo(ILuaBase* LUA, int index) {
+     if (!LUA->IsType(index, Type::Table)) { LUA->ThrowError("Expected table for DomeInfo"); return info; }
+     // transform (3x4 matrix) as { matrix = { {a,b,c,d}, {..}, {..} } } optional; default identity
+     // Keep default unless provided
+-    // colorTexture: string path
+-    LUA->GetField(index, "colorTexture"); if (LUA->IsType(-1, Type::String)) { std::filesystem::path p = LUA->GetString(-1); info.set_colorTexture(p); } LUA->Pop();
++    // colorTexture: string path. R19 (the native loader's ADR 0112): Remix opens it where it points,
++    // and any server's client Lua reaches this, so only a path relative to the game folder (no drive,
++    // network or "\\?\" path, no "..", no ':'). ThrowError does not return.
++    LUA->GetField(index, "colorTexture");
++    if (LUA->IsType(-1, Type::String)) {
++        const std::string texture = LUA->GetString(-1);
++        if (!LuaPathPolicy::RelativePath(texture))
++            LUA->ThrowError("Remix texture paths are relative to the game folder (no drive, network path or ..)");
++        info.set_colorTexture(std::filesystem::path(texture));
++    }
++    LUA->Pop();
+     return info;
+ }
+ 
+diff --git a/source/remixapi/material_lua_bindings.cpp b/source/remixapi/material_lua_bindings.cpp
+index 55b9538..d3743fe 100644
+--- a/source/remixapi/material_lua_bindings.cpp
++++ b/source/remixapi/material_lua_bindings.cpp
+@@ -14,6 +14,7 @@
+ #include "../globalconvars.h"
+ #include "../material_pipeline/auto_categorisation/auto_categorisation.h"
+ #include "../material_pipeline/material_pipeline.h"
++#include "../lua_path_policy.h"
+ 
+ using namespace GarrysMod::Lua;
+ 
+@@ -27,6 +28,14 @@ static bool MaterialDebugEnabled() {
+     return GlobalConvars::r_remix_material_debug && GlobalConvars::r_remix_material_debug->GetBool();
+ }
+ 
++// R19 (the native loader's ADR 0112): Remix opens a material's texture where its path points, and any
++// server's client Lua reaches these functions. Only a path relative to the game folder: no drive,
++// network or "\\?\" path, no "..", no ':'. ThrowError does not return.
++static void RequireGamePath(ILuaBase* LUA, const std::string& texture) {
++    if (!LuaPathPolicy::RelativePath(texture))
++        LUA->ThrowError("Remix texture paths are relative to the game folder (no drive, network path or ..)");
++}
++
+ static void PushMaterialHashRevision(ILuaBase* lua, uint64_t revision) {
+     char text[24];
+     sprintf_s(text, "%016llX", revision);
+@@ -91,6 +100,7 @@ static remix::MaterialInfo LuaToMaterialInfo(ILuaBase* LUA, int index) {
+         // a captured texture, we might need to set albedoTexture to the captured texture's path?
+         // No, Remix uses the hash to identify the texture.
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_albedoTexture(texture);
+         }
+     }
+@@ -101,6 +111,7 @@ static remix::MaterialInfo LuaToMaterialInfo(ILuaBase* LUA, int index) {
+     if (LUA->IsType(-1, Type::String)) {
+         std::string texture = LUA->GetString(-1);
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_normalTexture(texture);
+         }
+     }
+@@ -111,6 +122,7 @@ static remix::MaterialInfo LuaToMaterialInfo(ILuaBase* LUA, int index) {
+     if (LUA->IsType(-1, Type::String)) {
+         std::string texture = LUA->GetString(-1);
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_tangentTexture(texture);
+         }
+     }
+@@ -121,6 +133,7 @@ static remix::MaterialInfo LuaToMaterialInfo(ILuaBase* LUA, int index) {
+     if (LUA->IsType(-1, Type::String)) {
+         std::string texture = LUA->GetString(-1);
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_emissiveTexture(texture);
+         }
+     }
+@@ -211,6 +224,7 @@ static remix::MaterialInfoOpaqueEXT LuaToMaterialInfoOpaqueEXT(ILuaBase* LUA, in
+     if (LUA->IsType(-1, Type::String)) {
+         std::string texture = LUA->GetString(-1);
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_roughnessTexture(texture);
+         }
+     }
+@@ -221,6 +235,7 @@ static remix::MaterialInfoOpaqueEXT LuaToMaterialInfoOpaqueEXT(ILuaBase* LUA, in
+     if (LUA->IsType(-1, Type::String)) {
+         std::string texture = LUA->GetString(-1);
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_metallicTexture(texture);
+         }
+     }
+@@ -231,6 +246,7 @@ static remix::MaterialInfoOpaqueEXT LuaToMaterialInfoOpaqueEXT(ILuaBase* LUA, in
+     if (LUA->IsType(-1, Type::String)) {
+         std::string texture = LUA->GetString(-1);
+         if (!texture.empty()) {
++            RequireGamePath(LUA, texture);
+             info.set_heightTexture(texture);
+         }
+     }
+diff --git a/source/vtf_parser.cpp b/source/vtf_parser.cpp
+index 703aa9d..dabc766 100644
+--- a/source/vtf_parser.cpp
++++ b/source/vtf_parser.cpp
+@@ -7,6 +7,7 @@
+ #ifdef _WIN64
+ 
+ #include "vtf_parser.h"
++#include "lua_path_policy.h"
+ #include <tier0/dbg.h>
+ #include <filesystem.h>
+ #include <algorithm>
+@@ -211,7 +212,14 @@ bool ReadVTFFile(IFileSystem* fileSystem,
+         if (debugOutput) Warning("[VTFParser] Filesystem not available\n");
+         return false;
+     }
+-    
++    // R19 (the native loader's ADR 0112): texture paths come from Lua (ToPBR.ConvertTexture,
++    // HashCollisionFixer) and from game content, and the game's file system opens an absolute or
++    // network path as it is (the fallback below). Only a path inside the game's own folders is read.
++    if (!LuaPathPolicy::RelativePath(path)) {
++        if (debugOutput) Warning("[VTFParser] Refused a texture path outside the game's folders\n");
++        return false;
++    }
++
+     // Build full path
+     std::string fullPath = path;
+     
+diff --git a/tests/lua_path_policy_test.cpp b/tests/lua_path_policy_test.cpp
+new file mode 100644
+index 0000000..36c5148
+--- /dev/null
++++ b/tests/lua_path_policy_test.cpp
+@@ -0,0 +1,85 @@
++// GPL-2.0. R19 regression for source/lua_path_policy.h: the paths the module's Lua functions accept.
++// Compiles alone (no SDK): cl /EHsc /std:c++17 /W4 /WX /UNDEBUG tests/lua_path_policy_test.cpp
++#include <cassert>
++#include <iostream>
++#include <string>
++#include "../source/lua_path_policy.h"
++
++using namespace LuaPathPolicy;
++namespace fs = std::filesystem;
++
++static void RelativePaths() {
++    std::string why;
++    for (const char* good : {"models/props_c17/furniture_metal001a", "materials\\maps\\gm_construct\\water.vmt",
++                             "rtx-remix/mods/rtx_water/textures/ripple_normal.n.rtex.dds", "a/./b", "a//b", ".",
++                             "x.dds", "tex/\xE8\xBA\xAB\xE4\xBD\x93.png", "console/net", "com10", "lpt", "..x", "x..y"})
++        assert(RelativePath(good, &why) && "a plain relative path is accepted");
++    struct Bad { const char* path; const char* reason; };
++    for (const Bad& bad : {Bad{"", "empty"}, Bad{"\\\\host\\share\\x.dds", "root"}, Bad{"//host/share/x.dds", "root"},
++                           Bad{"\\\\?\\C:\\Windows\\x", "root"}, Bad{"\\\\.\\pipe\\x", "root"}, Bad{"/etc/x", "root"},
++                           Bad{"\\Windows\\x", "root"}, Bad{"C:\\Windows\\x", "':'"}, Bad{"C:x", "':'"},
++                           Bad{"x.dds:stream", "':'"}, Bad{"a/../../x", "\"..\""}, Bad{"..", "\"..\""},
++                           Bad{"a\\..\\b", "\"..\""}, Bad{"a/b./c", "ends with"}, Bad{"a/b /c", "ends with"},
++                           Bad{"...", "ends with"}, Bad{"a/con", "device"}, Bad{"NUL.txt", "device"},
++                           Bad{"x/COM1.dds", "device"}, Bad{"lpt\xC2\xB9", "device"}, Bad{"aux .png", "device"},
++                           Bad{"CONOUT$", "device"}, Bad{"a\tb", "control"}, Bad{"a\x7F", "control"}}) {
++        why.clear();
++        assert(!RelativePath(bad.path, &why) && "a path that leaves the folder is refused");
++        assert(why.find(bad.reason) != std::string::npos && "the refusal says why");
++    }
++    assert(!RelativePath(std::string(1025, 'a')) && RelativePath(std::string(1024, 'a')));
++}
++
++static void LocalDrivePaths() {
++    assert(LocalDrivePath("D:\\MMD\\Models\\miku\\miku.pmx"));
++    assert(LocalDrivePath("c:/models/\xE6\xB4\x9B/x.pmx"));
++    for (const char* bad : {"\\\\nas\\models\\x.pmx", "//nas/models/x.pmx", "\\\\?\\D:\\x.pmx", "D:", "D:x.pmx",
++                            "D:\\", "D:\\a\\..\\..\\x.pmx", "D:\\a:b\\x.pmx", "1:\\x.pmx", "relative\\x.pmx",
++                            "D:\\CON\\x.pmx", "Server approved"})
++        assert(!LocalDrivePath(bad) && "only a file on a local drive");
++}
++
++static void ValuesAndOptions() {
++    for (const char* value : {"\\\\host\\share", "//host/share", "C:\\x", "c:/x", "D:", "/x", "\\x"})
++        assert(AbsolutePathValue(value));
++    for (const char* value : {"", "1", "True", "0.5, 0.25", "0xABCDEF, 0x123", "zh-CN", "~gmod_topbr", "a:b", "ab:\\x"})
++        assert(!AbsolutePathValue(value));
++    for (const char* key : {"rtx.neuralRadianceCache.cudaDllDepsDirectoryPath", "RTX.NSIGHT.GRAPHICSCAPTUREINSTALLPATH",
++                            "rtx.nsight.graphicsCaptureOutputDir", "rtx.nsight.graphicsCaptureOutputFile",
++                            "rtx.cameraSequence.filePath", "rtx.atmosphere.moonAlbedoTexture",
++                            "rtx.atmosphere.starMapTexture", "rtx.captureInstanceStageName", "rtx.baseGameModPathRegex",
++                            " rtx.baseGameModRegex "})
++        assert(RemixPathOption(key) && "an option naming a file or folder is left to rtx.conf");
++    for (const char* key : {"rtx.atmosphere.starMapEnable", "rtx.atmosphere.nubis3InteriorTexture", "rtx.showUI",
++                            "rtx.enablePreservePath", "rtx.gmod.fallbackMods", "rtx.debugView.debugViewIdx"})
++        assert(!RemixPathOption(key) && "other options stay settable");
++}
++
++static void Folders() {
++    const fs::path root = L"C:\\Games\\GarrysMod\\rtx-remix\\mods\\~gmod_topbr\\textures";
++    std::string why;
++    assert(Inside(root, "", &why) == root.lexically_normal());
++    assert(Inside(root, ".", &why) == root.lexically_normal());
++    const auto sub = Inside(root, "test/run 2", &why);
++    assert(sub && *sub == (root / L"test" / L"run 2").lexically_normal());
++    assert(Inside(root, "a\\.\\b//c", &why) == (root / L"a" / L"b" / L"c").lexically_normal());
++    for (const char* bad : {"..", "../x", "a/../../..", "\\\\host\\share", "//host/share", "\\\\?\\C:\\x", "C:\\x",
++                            "D:x", "/x", "x:y", "nul", "a/b."}) {
++        why.clear();
++        assert(!Inside(root, bad, &why) && !why.empty() && "nothing outside the converter's folder");
++    }
++    // The recheck compares the normal result with the root, component by component and without case.
++    assert(Inside(L"C:\\Games\\GarrysMod\\", "x", &why) == fs::path(L"C:\\Games\\GarrysMod\\x"));
++    assert(Inside(L"c:\\games\\garrysmod", "X", &why) == fs::path(L"c:\\games\\garrysmod\\X"));
++}
++
++int main() {
++    RelativePaths();
++    LocalDrivePaths();
++    ValuesAndOptions();
++    Folders();
++    std::cout << "PASS lua path policy: relative game paths (roots, UNC, \\\\?\\, drives, streams, \"..\", "
++                 "shortened names, devices, control characters, length), local model files, absolute option values, "
++                 "Remix path options and folders inside the converter's own\n";
++    return 0;
++}
+diff --git a/tests/vtf_parser/test.cpp b/tests/vtf_parser/test.cpp
+index 5209cd8..07581c7 100644
+--- a/tests/vtf_parser/test.cpp
++++ b/tests/vtf_parser/test.cpp
+@@ -118,6 +118,32 @@ void PayloadMustCoverTheImage() {
+     Check(!DecompressDXT5(dxt5Block.data(), dxt5Block.size(), 4, 4, rgba), "DXT5 needs 16 bytes per block");
+ }
+ 
++// R19 (the native loader's ADR 0112): ReadVTFFile's fallback opens the path as it is, and Lua reaches
++// it, so a path outside the game's folders is refused before the file system sees it.
++class RecordingFileSystem : public IFileSystem {
++public:
++    std::vector<std::string> opened;
++    FileHandle_t Open(const char* fileName, const char*, const char*) override {
++        opened.emplace_back(fileName);
++        return nullptr;
++    }
++    void Close(FileHandle_t) override {}
++    unsigned int Size(FileHandle_t) override { return 0; }
++    int Read(void*, int, FileHandle_t) override { return 0; }
++};
++
++void PathsStayInTheGame() {
++    RecordingFileSystem fs;
++    std::vector<uint8_t> data;
++    for (const char* path : {"\\\\host\\share\\x.vtf", "//host/share/x", "C:\\x.vtf", "\\\\?\\C:\\x", "../../x",
++                             "materials/../../x.vtf", "x.vtf:stream"})
++        Check(!ReadVTFFile(&fs, path, data, false), "a path outside the game's folders is not read");
++    Check(fs.opened.empty(), "the file system never sees such a path");
++    Check(!ReadVTFFile(&fs, "models/props/x", data, false) && fs.opened.size() == 2 &&
++              fs.opened[0] == "materials/models/props/x.vtf" && fs.opened[1] == "models/props/x",
++          "a game path is looked up as before");
++}
++
+ }  // namespace
+ 
+ int main() {
+@@ -125,6 +151,7 @@ int main() {
+     SizesDoNotWrap();
+     HeaderBoundsAreEnforced();
+     PayloadMustCoverTheImage();
++    PathsStayInTheGame();
+     std::cout << "vtf_parser tests passed\n";
+     return 0;
+ }
+-- 
+2.56.0.windows.1
+

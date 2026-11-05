@@ -5,6 +5,8 @@
     "docs/TOPBR_R11.md": "2bdccd4bb6177200507b63ef3b9325a0596aebe914a9403cb2c407705ce7285d",
     "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua": "211ea5cd52f8044158bc99c9e2288497ccc77fc629577adad4c5fa484a06c916",
     "garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/cl_rtx_topbr_conversion.lua.md": "59a6a1c12e4ce1768600b65a6912a359e8d759953404c2c18b88492c8d3935a1",
+    "source/lua_path_policy.h": "fcede9c6453a9c0961ab58c50795c9618c9e7af9f71ed9a54719b30821056151",
+    "source/material_pipeline/auto_categorisation/auto_categorisation.cpp": "a4576f1b9d49a05d937f5c1512829dd9d3f9d7dcc45d92ed1c08ac6d6163574a",
     "source/material_pipeline/to_pbr/dds_codec.h": "d25daae7f690d753a312bf124abb39fff4f13c66c9956b6a0ea8dc9e02142d59",
     "source/material_pipeline/to_pbr/dds_publish.h": "1d06823ba851fbcc598a32977b753cd942fc82a8c25a62b1a0de105241e3f70a",
     "source/material_pipeline/to_pbr/fallback_guard.h": "e0f000b3f6059edf126a39189ab5d37fb3f11a12951b7e85b6d01a66f8b5676b",
@@ -20,11 +22,15 @@
     "source/material_pipeline/to_pbr/game_pbr.h": "b34d8b7bad54b5e5bdb2eef212d1246edc4ddf3258fca136d27359347e9e9537",
     "source/material_pipeline/to_pbr/game_registry.h": "bb02f2e9096458484b71e0112e83cc4c35f48804124f589567298009a3e64d30",
     "source/material_pipeline/to_pbr/pbr_policy.h": "3218e659128081c1efc60fec8f1b5b95a7b57d33401a3198fabec5e9360d2e54",
-    "source/material_pipeline/to_pbr/to_pbr.cpp": "efac4198ca7c107e166c96fadcb2969d43591f3bec830423201d6af8f46dc343",
-    "source/material_pipeline/to_pbr/to_pbr.h": "3001c2dea224f2dfddbd41ecc59184c398da32a195760d42c835094b2707ff29",
+    "source/material_pipeline/to_pbr/to_pbr.cpp": "87f0f8645fa81f836fca74b2e8b19ebaf2c76f917224af29df68d9ef3ddf2f3e",
+    "source/material_pipeline/to_pbr/to_pbr.h": "03dc3ff365f275263dae75fa4b86cca61b597fadd81e41c78e4151bf35e99fc4",
     "source/material_pipeline/to_pbr/usda.cpp": "ffa619634e638b29ad897531f2c62c17aaffd4c660c24ae99c8350906dbf3983",
     "source/material_pipeline/to_pbr/usda.h": "4c08600fbb66ae641b4afc102b98a13b133c229688943bd7e48c02303b11b1cf",
     "source/material_pipeline/to_pbr/vtf.cpp": "33c46b449b3b27a4ed4649b380ac165a86d995b7d757f1dd94c132d312e6eb48",
+    "source/remixapi/config_lua_bindings.cpp": "7a012ff6db1eaffae2dd169aed488a80f4b4323a8859152a5f723bde7fedeb66",
+    "source/remixapi/light_lua_bindings.cpp": "c905aeea12093fc0bbbd7143c97a92f2f0cfbd146c13dc14ade0b30d64a276e4",
+    "source/remixapi/material_lua_bindings.cpp": "094850bdc8fb6c505c00e29188654abd983806cb978125229b1408f6ac1c0289",
+    "source/vtf_parser.cpp": "087c097527580dab90856addac7ad48021b85424b484effeb80f4d40a45b3818",
     "tests/game_dds_probe.cpp": "3a839993add8c45b78dbd2ea274c7f4e9370fb1396521e667ec4e59a5d820986",
     "tests/game_dds_probe.md": "1dba382c8a80681e8d71b94d78c2aa040be04db013f2590562f7551a70a157d4",
     "tests/game_dds_test.cpp": "c528a9062df7978289170cff29f4db2f548a0336d08b30147062bcc028066459",
@@ -34,11 +40,15 @@
     "tests/game_pbr_test.cpp": "a26bfdb8171b6067746acf587644dc5c52809cab75041351ac4b613809d8f7c7",
     "tests/game_pbr_types.h": "5f6012f845149169c28f31cab4f3af8fcd216c6a37e574a8eac96e96b3021fe0",
     "tests/game_registry_test.cpp": "4fd2822fb54de415dcd0e3e72029aa5316a06975f242227d17e3ee56e49b218a",
+    "tests/lua_path_policy_test.cpp": "f7ad0355d9c98e5b8a02841c16e499f8d6333f9e6a00358f7f439c629149c353",
     "tests/make_game_pbr_fixtures.py": "8679fea9c1ea59338e0619f84c7067f4f54513ba1ae92a39e3135f463b00f541",
     "tests/make_game_pbr_fixtures.py.md": "ac7442e6a6a1d87c7300b43572d3ae9e26029b9babdf767f2dc4fed6a102eb43",
-    "tests/to_pbr_test.cpp": "5c4763df3e06705ba6f57f48591271e5f17992b6cf95d6f61b9f2c4d62f2b4a0"
+    "tests/to_pbr_test.cpp": "5c4763df3e06705ba6f57f48591271e5f17992b6cf95d6f61b9f2c4d62f2b4a0",
+    "tests/vtf_parser/test.cpp": "a4f8f0f978b05ddb60d280c9310e975b9d966ea38a9c2530e0bb919c6f91365c"
   },
   "build": {
+    "source/lua_path_policy.h": "fcede9c6453a9c0961ab58c50795c9618c9e7af9f71ed9a54719b30821056151",
+    "source/material_pipeline/auto_categorisation/auto_categorisation.cpp": "a4576f1b9d49a05d937f5c1512829dd9d3f9d7dcc45d92ed1c08ac6d6163574a",
     "source/material_pipeline/to_pbr/dds_codec.h": "d25daae7f690d753a312bf124abb39fff4f13c66c9956b6a0ea8dc9e02142d59",
     "source/material_pipeline/to_pbr/dds_publish.h": "1d06823ba851fbcc598a32977b753cd942fc82a8c25a62b1a0de105241e3f70a",
     "source/material_pipeline/to_pbr/fallback_guard.h": "e0f000b3f6059edf126a39189ab5d37fb3f11a12951b7e85b6d01a66f8b5676b",
@@ -54,16 +64,30 @@
     "source/material_pipeline/to_pbr/game_pbr.h": "b34d8b7bad54b5e5bdb2eef212d1246edc4ddf3258fca136d27359347e9e9537",
     "source/material_pipeline/to_pbr/game_registry.h": "bb02f2e9096458484b71e0112e83cc4c35f48804124f589567298009a3e64d30",
     "source/material_pipeline/to_pbr/pbr_policy.h": "3218e659128081c1efc60fec8f1b5b95a7b57d33401a3198fabec5e9360d2e54",
-    "source/material_pipeline/to_pbr/to_pbr.cpp": "efac4198ca7c107e166c96fadcb2969d43591f3bec830423201d6af8f46dc343",
-    "source/material_pipeline/to_pbr/to_pbr.h": "3001c2dea224f2dfddbd41ecc59184c398da32a195760d42c835094b2707ff29",
+    "source/material_pipeline/to_pbr/to_pbr.cpp": "87f0f8645fa81f836fca74b2e8b19ebaf2c76f917224af29df68d9ef3ddf2f3e",
+    "source/material_pipeline/to_pbr/to_pbr.h": "03dc3ff365f275263dae75fa4b86cca61b597fadd81e41c78e4151bf35e99fc4",
     "source/material_pipeline/to_pbr/usda.cpp": "ffa619634e638b29ad897531f2c62c17aaffd4c660c24ae99c8350906dbf3983",
     "source/material_pipeline/to_pbr/usda.h": "4c08600fbb66ae641b4afc102b98a13b133c229688943bd7e48c02303b11b1cf",
     "source/material_pipeline/to_pbr/vtf.cpp": "33c46b449b3b27a4ed4649b380ac165a86d995b7d757f1dd94c132d312e6eb48",
     "source/material_pipeline/to_pbr/vtf.h": "47eaef14c15747d25fefafc3aa21468f2fb63be628fa6c1c65d73d629d014827",
+    "source/remixapi/config_lua_bindings.cpp": "7a012ff6db1eaffae2dd169aed488a80f4b4323a8859152a5f723bde7fedeb66",
+    "source/remixapi/light_lua_bindings.cpp": "c905aeea12093fc0bbbd7143c97a92f2f0cfbd146c13dc14ade0b30d64a276e4",
+    "source/remixapi/material_lua_bindings.cpp": "094850bdc8fb6c505c00e29188654abd983806cb978125229b1408f6ac1c0289",
+    "source/vtf_parser.cpp": "087c097527580dab90856addac7ad48021b85424b484effeb80f4d40a45b3818",
     "dll": {
-      "bytes": 5491712,
-      "sha256": "447b9dde0a201e50320e1225330354e0316eedf93fd2b7bce2f610288da9c4d2"
+      "bytes": 5512192,
+      "sha256": "ba3fb50573854682be78897d48291a6081e86c788f98ced1501411fc92f4a0da"
     }
   },
-  "source_copy_line_endings": "working-tree bytes; reconstruction compares after CRLF normalization"
+  "source_copy_line_endings": "working-tree bytes; reconstruction compares after CRLF normalization",
+  "r19": {
+    "patch": "lua-paths.patch",
+    "applies_to": "913bb6b83fc0830f901cbe54904e843cef8ea61d",
+    "patched_tree": {
+      "source": "d2a0c6f980e1384092deacbd85abf2327d0472a9",
+      "public": "7165af4dc4ab4d841a19b7405211b27190bddea6",
+      "premake5.lua": "b308ed2f6b0b31aa7b69f0ee576c0bcf5f666cd1"
+    },
+    "note": "R19: the copies of the files lua-paths.patch changes are 913bb6b with that patch; build lists every build input the R12/R13 layer and R19 changed, and the module built from the base, the five patches and garrysmod_common"
+  }
 }

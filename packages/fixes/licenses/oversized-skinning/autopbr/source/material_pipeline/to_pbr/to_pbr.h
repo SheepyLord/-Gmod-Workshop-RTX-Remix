@@ -355,7 +355,8 @@ public:
     // reset. Metadata preparation never resolves engine material objects.
     void CancelPendingWork();
     
-    // Global enable/disable for ToPBR processing (controlled by rtx_topbr_enabled ConVar)
+    // Global enable/disable for ToPBR processing (controlled by rtx_topbr_enabled ConVar).
+    // R19: only the player's rtx_topbr_enabled turns it on, and rtx_topbr_game_maps imported game maps.
     void SetEnabled(bool enabled);
     void PumpSnapshots();
     void SetGameEnabled(bool enabled);
@@ -393,8 +394,10 @@ public:
     void SetParseCommentedProperties(bool enabled) { m_parseCommentedPropertiesEnabled = enabled; }
     bool IsParseCommentedPropertiesEnabled() const { return m_parseCommentedPropertiesEnabled; }
     
-    // Set output directory for generated textures
-    void SetOutputDirectory(const std::string& path);
+    // Set output directory for generated textures. R19: a path relative to the converter's own folder,
+    // <game>\rtx-remix\mods\~gmod_topbr\textures ("" for that folder), never outside it; false and a
+    // warning otherwise, and the folder stays as it was.
+    bool SetOutputDirectory(const std::string& path);
     std::string GetOutputDirectory() const { return m_outputDirectory; }
     
     // Check if the converter is initialized
@@ -648,6 +651,7 @@ private:
     std::unique_ptr<GameRegistry::Registry> m_gameRegistry; // Worker-only; ClearCache retains it.
     bool m_gameRegistrySaveWarned = false; // Worker-only, once per module session across worker restarts.
     std::atomic<bool> m_gameEnabled{false};
+    std::chrono::steady_clock::time_point m_lastSettingCheck{}; // Game thread: PumpSnapshots' player-setting check.
     std::queue<std::shared_ptr<PreparedSnapshot>> m_metadataReady;
     std::queue<WorkItem> m_readyQueue;
     std::atomic<bool> m_publishRequested{true};

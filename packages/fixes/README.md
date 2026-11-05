@@ -6,6 +6,27 @@ source under `licenses/` are reserved documentation, excluded from the payload i
 builder includes the existing `licenses/oversized-skinning/` tree in the remixbinary add-on as its
 native source bundle, including the R6 change below.
 
+## R19 Lua inputs, ToPBR switches and the flashlight
+
+Imported 2026-11-05 with `inputs.py --file`; every other indexed input is unchanged
+([ADR 0112](../../docs/decisions/0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md)).
+
+- `modules/gmcl_RTXFixesBinary_win64.dll` (5,512,192 bytes, SHA-256 `ba3fb505...4a0da`): the public
+  base with the five patches, the fifth being [lua-paths.patch](licenses/oversized-skinning/autopbr/lua-paths.patch).
+  Paths the module's Lua functions take stay inside the game (no network share, drive or `..`):
+  ToPBR's output folder, game-map sources, VMT and VTF reads, Remix material and dome-light textures,
+  and Remix options that name files. ToPBR turns on only while the player's `rtx_topbr_enabled` (world
+  conversion) or `rtx_topbr_game_maps` (imported game maps) is on.
+  [Source and rebuild](licenses/oversized-skinning/autopbr/Source.md).
+- `modules/gmcl_rtxwater_win64.dll` (281,088 bytes, SHA-256 `970f9dbd...fe5a9`): Version 4 with
+  [rtxwater-lua-input.patch](licenses/oversized-skinning/rtxwater/rtxwater-lua-input.patch): surface
+  polygons of an even length of at least six, texture paths below the game folder.
+  [Source and rebuild](licenses/oversized-skinning/rtxwater/Source.md).
+- `remixlua/sv/sv_remix_flashlight.lua`: a 0.3 s cooldown per player on switches, colours coalesced to
+  one broadcast per 0.1 s, and no flashlight where the gamemode or `CanUseFlashlight()` refuses one
+  (the dead, spectators). `remixlua/cl/remixapi/cl_remix_flashlight.lua`: a repeated "on" replaces the
+  player's light instead of leaking it.
+
 ## R8-B Backrooms native candidate (pending import)
 
 The local source commit `7094baf6edf6797fd5c3f0b58ca668f9307b4906` ports the Backrooms

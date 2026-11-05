@@ -183,3 +183,45 @@ records without a source are re-encoded and saved atomically. Imported game maps
 budget; each refusal names its limit and numbers in the log and the panel, and a family stopped
 halfway completes. `tests/game_dds_test.cpp` covers these without an SDK; the loader's Release
 suite runs it from this copy. See the loader's ADR 0098 and `docs/TOPBR_R11.md`.
+
+## R19: paths from Lua stay in the game; ToPBR follows the player's settings
+
+[lua-paths.patch](lua-paths.patch) applies after [autopbr.patch](autopbr.patch) (to the native tree of
+`913bb6b`); the loader's `tools/ci/pins.json` lists it fifth in `fixes.patches` and records the tree it
+gives (`fixes.patched_tree`: `source` `d2a0c6f9...`, `public` and `premake5.lua` unchanged). Any server's
+client Lua reaches the module's Lua functions; the pre-release review's H3 found that
+`MaterialPipeline.ToPBR.SetOutputDirectory` took any folder, so a network path made Windows offer the
+player's login to a host the server chose. See the loader's
+[ADR 0112](../../../../../docs/decisions/0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md).
+
+- `source/lua_path_policy.h` (standard C++ only): a relative game path, a model file on a local drive,
+  a folder kept inside its root, the Remix options whose value is a file or folder.
+- ToPBR: `SetOutputDirectory` takes a folder relative to `<game>\rtx-remix\mods\~gmod_topbr\textures`
+  and returns whether it took it; `SetEnabled(true)` and `SetGameEnabled(true)` take effect only while
+  the player's `rtx_topbr_enabled` / `rtx_topbr_game_maps` is 1 (read from the engine's convar list);
+  `PumpSnapshots` turns either off within 250 ms of the player doing so; `ProcessSingleMaterial`,
+  `ConvertTexture` and the queueing bindings check `rtx_topbr_enabled`; game-map sources off a local
+  drive, and model paths that leave its folder, count as absent.
+- The game's file system opens absolute and network paths: `VTFParser::ReadVTFFile`, ToPBR's VMT reader
+  and auto-categorisation's VMT shader reader read only relative game paths.
+- `RemixMaterial` texture paths and `RemixLight`'s dome `colorTexture` must be relative to the game
+  folder (a Lua error otherwise); `RemixConfig.SetConfigVariable` refuses the options whose value the
+  runtime opens or loads code from, and any value naming a drive, root or network path.
+
+The copies here are the files that patch changes, at their native paths, as 913bb6b's working tree
+with it applied (CRLF): `source/lua_path_policy.h`, `source/vtf_parser.cpp`,
+`source/material_pipeline/auto_categorisation/auto_categorisation.cpp`,
+`source/material_pipeline/to_pbr/to_pbr.cpp` and `to_pbr.h`, `source/remixapi/config_lua_bindings.cpp`,
+`light_lua_bindings.cpp` and `material_lua_bindings.cpp`, `tests/lua_path_policy_test.cpp` and
+`tests/vtf_parser/test.cpp`. [source-files.json](source-files.json) records their SHA-256 and the module's
+identity (`r19` and `build.dll`).
+
+**Rebuild:** the loader's `tools\ci\build_modules.ps1 -Only fixes` (or GitHub's package workflow) builds
+the module from the public base, the five patches and the pinned garrysmod_common and premake, and checks
+the recorded tree first. Built 2026-11-05 on this machine: 5,512,192 bytes, SHA-256
+`ba3fb50573854682be78897d48291a6081e86c788f98ced1501411fc92f4a0da`.
+
+**Tests:** `tests/lua_path_policy_test.cpp` (standard C++; the loader's
+`tools/tests/test_fixes_native_inputs.py` compiles and runs it from this copy) and
+`tests/vtf_parser/test.cpp` (a path outside the game never reaches the file system; it needs the
+fixes' `tests/vtf_parser/stubs`).
