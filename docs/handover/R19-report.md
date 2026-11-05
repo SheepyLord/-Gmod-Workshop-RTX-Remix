@@ -46,11 +46,45 @@ Changes beyond the parts' own commits:
 
 ## Tests
 
-(Filled in with the integration's results.)
+- **Each part's own tests**, listed in its report. Each new test fails against the code before its fix.
+- **`tools\test.ps1 -Config Release` on the final `r19-int` tree:**
+  - CTest 27/27;
+  - tools 622, gmapack 29 and Steam 26 Python tests;
+  - repository conventions OK.
+- **`python -I tools\inputs.py verify`** with R19-T's stricter rules: 11 parts, 0 problems.
+- **The package, built from `r19-int`:** `gmod-rtx-remix-0.0.0-dev.20261105231040+ad5cf8e8`, 1,814,982,358
+  bytes, checked by its own `nlctl`.
 
 ## In-game checks (PoC)
 
-(Filled in with the session results.)
+These are the sessions `out/r19/r19_session.py` runs under the shared PoC lock. It installs loader 0.14.0
+with the package allowed, runs an RTX session on gm_construct with the checks and R18's sky probe, then a
+`-nonativeloader` start. Afterwards it puts the PoC's `client.vdf` and `config.json` back byte for byte.
+
+| Check | Result |
+|---|---|
+| Deployment and activation | `status.json` reports loader 0.14.0 and "active". The session notes include "RTX session marker held until the game exits". The Hotloader's new natives load. 0 Lua errors in the RTX session. |
+| Render guard (proxy F-02) | Installed in the RTX start (`early`). The marker is gone after the quit. In the `-nonativeloader` start right after it, `status.json` is unchanged and still says "active", yet the guard is `nil` and there is no marker. GMod's `file.Exists` does not see the marker while the loader holds it, but `file.Find` does: the guard checks both. |
+| ToPBR (H3) | `SetOutputDirectory` refuses `\\127.0.0.1\...`, `..\...` and `C:\...` and keeps `~gmod_topbr\textures`. With `rtx_topbr_enabled 0`, `SetEnabled(true)` leaves it off. |
+| Remix options (H3) | `RemixConfig.SetConfigVariable("rtx.nsight.graphicsCaptureOutputDir", ...)` is refused. |
+| Material editor bridge | `Capabilities().ddsImport` is true. |
+| Eye-white cache (companion F-03) | A foreign `notes.vtf` in the cache folder is still there after the session. |
+| DDS readers (H1) | No `Corrupted DDS`, `DDS file is shorter` or GLI-fallback lines in the Remix log. The package's mods and ToPBR's textures load. |
+| Sky | Partly cloudy by day, toward the sun, away, overhead and west: cumulus with cirrus. Overcast: a closed grey deck. Partly cloudy at night: the night sky. All as in R18. |
+
+**Cost at 3840x2160.** R18's probe and method (`out/r18/sky_session.py`) were run on a quiet machine.
+The R19 package was measured first, then the published R18 package in a second session, with the same
+spawn, states and views. Each figure is the average over about a second of frames before the shot:
+
+| View | R19 (ms) | R18 (ms) |
+|---|---|---|
+| Partly cloudy 15 h: sun, away, high, west | 11.20, 11.21, 11.43, 11.76 | 11.15, 11.44, 11.16, 11.88 |
+| Overcast 14.5 h: sun, away, high, west | 10.83, 12.41, 11.70, 12.56 | 10.77, 13.05, 12.00, 13.11 |
+| Partly cloudy 22.5 h: high, away | 11.19, 11.67 | 10.93, 12.22 |
+| Average | 11.60 | 11.77 |
+
+The middle deck's new probes (F-04) and moon-shadow taps (F-05) cost nothing measurable. Overcast looking
+away from the sun and toward the horizon is where grazing rays take the most probes, and it is no slower.
 
 ## Release
 
