@@ -1,7 +1,7 @@
 # Roadmap
 
-R17 (the user's request of 2026-11-05) is **done**, merged into `main` from `r17`
-([report](handover/R17-report.md)):
+R17 (the user's request of 2026-11-05) is **done**, merged into `main` from `r17`, published as
+0.0.0-dev.20261105113014+235d458f and checked in the field ([report](handover/R17-report.md)):
 
 - **Numos's sky fits the weather.** Each weather has its own cloud genera: low, middle and high
   clouds, dense enough to shade, with closed decks for overcast, rain and fog. The sun has a disc. A 2D
