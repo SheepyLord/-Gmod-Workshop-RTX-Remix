@@ -207,8 +207,13 @@ function P.Detach(ent)
  local phys=ent:GetPhysicsObject() phys:SetMass(P.DefaultMass(phys)) phys:EnableMotion(false)
  return true
 end
+-- The attach window opens on what the tool aimed at; a client names the target again when it
+-- attaches, so the server checks it is still within reach (R19, review L-07): the tool's aim
+-- range (4096 units, as for placing) to the target's nearest point.
+P.AttachReach=4096
 local function mayUseTarget(p,target)
  if not IsValid(target) or target:IsWorld() then return false,L'props.attach.aim_target' end
+ local eye=p:EyePos() if target:NearestPoint(eye):DistToSqr(eye)>P.AttachReach^2 then return false,L'props.attach.aim_target' end
  if target:IsPlayer() and target~=p and not p:IsAdmin() then return false,L'props.attach.admin_players' end
  local tr={Entity=target,Hit=true,HitPos=target:WorldSpaceCenter(),HitNormal=Vector(0,0,1),HitNonWorld=true}
  local weapon=p:GetActiveWeapon() local tool=IsValid(weapon) and weapon:GetClass()=='gmod_tool' and weapon:GetToolObject() or nil

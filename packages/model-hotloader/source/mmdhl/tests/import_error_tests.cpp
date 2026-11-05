@@ -298,9 +298,11 @@ int main(int argc,char** argv){try{
   check(!fs::exists(derivative)&&!fs::exists(cache/L"textures"/wide(fullTexture+".png"))&&fs::exists(cache/L"textures"/wide(plainTexture+".vtf")),"deletion removes the full-size derivative of an unused texture");}
 
  // ---- a PMX character's textures (dependency_scope.hpp, Reach::Local) ----
- // As in 2.2 a texture may climb out of the model's folder or lie behind a junction (artists'
- // working folders keep textures beside the model); a root-relative one or one in a denied
- // place is never read, with a warning.
+ // A texture is read only inside the model's import root (R19, review MH-01): its folder, the
+ // tex and textures folders near it, or the Workshop item it came in. ".." inside the root still
+ // works and a junction the player made inside it is followed, as in 2.2; one that climbs out
+ // (a downloaded model naming ..\..\Pictures\...) is never read, with a warning, nor is a
+ // root-relative one or one in a denied place.
  {auto pack=temp/L"pack";auto folder=pack/L"model";for(auto f:{folder/L"tex",pack/L"tex",pack/L"outside"})fs::create_directories(f);
   for(auto f:{folder/L"beside.dds",folder/L"tex"/L"below.dds",pack/L"tex"/L"up.dds",folder/L"denied.dds",pack/L"outside"/L"secret.dds",pack/L"secret.dds"})fs::copy_file("tests/fixtures/checker.dds",f);
 #ifdef _WIN32
@@ -308,19 +310,47 @@ int main(int argc,char** argv){try{
 #else
   {std::error_code e;fs::create_directory_symlink(pack/L"outside",folder/L"linked",e);check(!e,"the test link");}
 #endif
-  PmxSpec spec;spec.vertices=72;spec.materials.clear();
-  spec.textures={"beside.dds","tex\\below.dds","..\\tex\\up.dds","denied.dds","..\\outside\\secret.dds","../secret.dds","linked\\secret.dds","\\secret.dds"};
+  PmxSpec spec;spec.vertices=81;spec.materials.clear();
+  spec.textures={"beside.dds","tex\\below.dds","..\\tex\\up.dds","denied.dds","..\\outside\\secret.dds","../secret.dds","linked\\secret.dds","\\secret.dds","tex\\..\\beside.dds"};
   for(size_t i=0;i<spec.textures.size();i++){spec.materials.push_back({"m"+std::to_string(i),9});spec.materialTexture.push_back(int(i));}
   writeAtomic(folder/L"model.pmx",pmx(spec));
   setDependencyDenylist([](const fs::path& p){return p.filename()==L"denied.dds";});
   auto result=importAsset(folder/L"model.pmx",temp/L"cache3",Json::object(),{});setDependencyDenylist({});
   auto& textures=result["info"]["textures"];auto warnings=result["info"]["warnings"].dump();std::cout<<"  "<<warnings<<"\n";
-  check(textures.size()==8,"every material keeps its texture slot");
-  for(size_t i:{0,1,2,4,5,6})check(!textures[i].value("base","").empty(),"a texture is read as in 2.2: "+spec.textures[i]);
+  check(textures.size()==9,"every material keeps its texture slot");
+  for(size_t i:{0,1,2,6,8})check(!textures[i].value("base","").empty(),"a texture inside the model's root is read as in 2.2: "+spec.textures[i]);
   for(size_t i:{3,7}){auto shown=spec.textures[i];std::replace(shown.begin(),shown.end(),'\\','/');
    check(textures[i].value("base","").empty()&&has(warnings,"Texture in a protected location: "+shown),"a denied or root-relative texture is not read, with a warning: "+shown);}
+  for(size_t i:{4,5}){auto shown=spec.textures[i];std::replace(shown.begin(),shown.end(),'\\','/');
+   check(textures[i].value("base","").empty()&&has(warnings,"Texture outside the model's folder was not read: "+shown),"a texture outside the model's root is not read, with a warning: "+shown);}
   check(!has(warnings,"Cannot read"),"a refused texture is never opened");
-  fs::remove(folder/L"linked");}
+  fs::remove(folder/L"linked");
+  // A model in a Workshop item's folder reads anywhere in that item, and still nothing beside it.
+  auto item=temp/L"steamapps"/L"workshop"/L"content"/L"4000"/L"123456";auto deep=item/L"models"/L"a"/L"b";
+  for(auto f:{deep,item/L"shared"})fs::create_directories(f);
+  fs::copy_file("tests/fixtures/checker.dds",item/L"shared"/L"skin.dds");fs::copy_file("tests/fixtures/checker.dds",item.parent_path()/L"other.dds");
+  check(DependencyScope::workshopItem(deep)==item&&DependencyScope::workshopItem(pack).empty(),"the Workshop item a model lies in");
+  PmxSpec workshop;workshop.vertices=18;workshop.materials.clear();workshop.textures={"..\\..\\..\\shared\\skin.dds","..\\..\\..\\..\\other.dds"};
+  for(size_t i=0;i<workshop.textures.size();i++){workshop.materials.push_back({"w"+std::to_string(i),9});workshop.materialTexture.push_back(int(i));}
+  writeAtomic(deep/L"model.pmx",pmx(workshop));
+  auto inItem=importAsset(deep/L"model.pmx",temp/L"cache3",Json::object(),{});
+  check(!inItem["info"]["textures"][0].value("base","").empty(),"a texture elsewhere in the model's Workshop item is read");
+  check(inItem["info"]["textures"][1].value("base","").empty()&&has(inItem["info"]["warnings"].dump(),"Texture outside the model's folder was not read"),"a texture beside the Workshop item is not read");
+
+  // ---- loading in the game's process (R19, reviews MH-04 and MH-06) ----
+  // The model's size is checked against what loading may take before anything is read, and a
+  // load the closing module stopped ends at its next step.
+  auto id=result["asset"].get<std::string>();
+  LoadBudget::simulateLimit(1024);bool refused=false;
+  try{loadAsset(temp/L"cache3",id);}catch(const std::exception& e){refused=has(e.what(),"needs about")&&has(e.what(),"MB of memory to load");}
+  LoadBudget::simulateLimit(0);check(refused,"a model larger than the memory left for loading was read");
+  {LoadBudget::simulateLimit(1ull<<30);LoadBudget held((1ull<<30)-1000,"Another load");bool full=false;
+   try{loadAsset(temp/L"cache3",id);}catch(const std::exception& e){full=has(e.what(),"needs about");}
+   check(full,"loads running together are not counted together");}
+  check(loadAsset(temp/L"cache3",id)!=nullptr,"the budget outlived its loads");LoadBudget::simulateLimit(0);
+  std::atomic_bool closing=true;bool stopped=false;
+  try{loadAsset(temp/L"cache3",id,&closing);}catch(const std::exception& e){stopped=has(e.what(),"stopped");}
+  check(stopped,"a load went on after the module started closing");}
 
  // ---- worker exits ----
 #ifdef _WIN32

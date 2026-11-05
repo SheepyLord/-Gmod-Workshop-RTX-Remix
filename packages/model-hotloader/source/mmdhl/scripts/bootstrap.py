@@ -1,7 +1,9 @@
 """Fetch pinned sources. Installed users need neither Python nor a compiler."""
-import concurrent.futures, hashlib, io, json, pathlib, struct, sys, tarfile, urllib.request, zipfile
+import concurrent.futures, hashlib, io, json, os, pathlib, re, shutil, struct, subprocess, sys, tarfile, urllib.request, zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+# Where the locked repositories are fetched from with git (MMDHL_GIT_BASE: a mirror, or tests).
+GIT_BASE = os.environ.get('MMDHL_GIT_BASE', 'https://github.com')
 
 def set_rpath(elf, rpath):
     """Overwrites a 64-bit ELF library's DT_RPATH/DT_RUNPATH in place with a shorter path."""
@@ -30,7 +32,29 @@ def set_rpath(elf, rpath):
         data[start:start + length] = rpath + bytes(length - len(rpath))
     return bytes(data)
 
+def remove_tree(path):
+    """Removes a folder git made (its object files are read-only on Windows)."""
+    def writable(function, name, _):
+        os.chmod(name, 0o700)
+        function(name)
+    if os.path.lexists(path):
+        if sys.version_info >= (3, 12):
+            shutil.rmtree(path, onexc=writable)
+        else:
+            shutil.rmtree(path, onerror=writable)
+
+def git(*args, **kwargs):
+    """Runs git; its output, or RuntimeError with what it said."""
+    done = subprocess.run(['git', *map(str, args)], capture_output=True, **kwargs)
+    if done.returncode:
+        raise RuntimeError('git ' + ' '.join(map(str, args[:3])) + ' failed: ' + done.stderr.decode('utf-8', 'replace').strip())
+    return done.stdout
+
 def fetch(item):
+    """One locked repository at its commit, fetched with git: every object git receives is
+    checked against its hash, and the commit's own hash names the whole tree, so what is
+    built is exactly the locked revision. (GitHub's archive downloads had no such check, and
+    their bytes are not promised to stay the same.)"""
     name, (repo, revision) = item
     target = ROOT / 'vendor' / name
     marker = target / '.mmdhl-revision'
@@ -38,23 +62,49 @@ def fetch(item):
         return name + ': ready'
     if target.exists():
         raise RuntimeError(f'{target} exists without matching revision; inspect before replacing')
-    req = urllib.request.Request(f'https://codeload.github.com/{repo}/tar.gz/{revision}', headers={'User-Agent': 'ModelHotloader-build'})
-    with urllib.request.urlopen(req, timeout=120) as response:
-        blob = response.read()
-    target.mkdir(parents=True)
-    with tarfile.open(fileobj=io.BytesIO(blob), mode='r:gz') as archive:
-        for member in archive:
-            parts = pathlib.PurePosixPath(member.name).parts[1:]
-            if not parts or '..' in parts or member.issym() or member.islnk():
-                continue
-            dest = target.joinpath(*parts)
-            if member.isdir():
-                dest.mkdir(parents=True, exist_ok=True)
-            elif member.isfile():
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_bytes(archive.extractfile(member).read())
+    if not re.fullmatch(r'[0-9a-f]{40}', revision):
+        raise RuntimeError(f'{name}: the lock names {revision!r}, not a full commit hash')
+    if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
+        raise RuntimeError(f'{name}: {repo!r} is not a GitHub owner/name')
+    work = ROOT / 'vendor' / f'.{name}.git'
+    remove_tree(work)
+    try:
+        git('init', '--quiet', '--bare', work)
+        git('--git-dir', work, 'fetch', '--quiet', '--no-tags', '--depth', '1', f'{GIT_BASE}/{repo}.git', revision)
+        fetched = git('--git-dir', work, 'rev-parse', '--verify', 'FETCH_HEAD^{commit}').decode().strip()
+        if fetched != revision:
+            raise RuntimeError(f'{name}: git fetched {fetched}, not the locked {revision}')
+        # The commit's tree as the archives held it (git archive honours export-ignore, as they
+        # did, and with GitHub's line endings: Git for Windows would otherwise write CRLF): links
+        # are left out, nothing lands outside the folder.
+        target.mkdir(parents=True)
+        archive = subprocess.Popen(['git', '-c', 'core.autocrlf=false', '-c', 'core.eol=lf', '--git-dir', str(work), 'archive',
+                                    '--format=tar', '--prefix=tree/', revision], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            with tarfile.open(fileobj=archive.stdout, mode='r|') as stream:
+                for member in stream:
+                    parts = pathlib.PurePosixPath(member.name).parts[1:]
+                    if not parts or '..' in parts or member.issym() or member.islnk():
+                        continue
+                    dest = target.joinpath(*parts)
+                    if member.isdir():
+                        dest.mkdir(parents=True, exist_ok=True)
+                    elif member.isfile():
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest.write_bytes(stream.extractfile(member).read())
+        finally:
+            archive.stdout.close()
+            errors = archive.stderr.read()
+            archive.stderr.close()
+            code = archive.wait()
+        if code:
+            raise RuntimeError(f'{name}: git archive failed: ' + errors.decode('utf-8', 'replace').strip())
+    except BaseException:
+        remove_tree(target)
+        raise
+    finally:
+        remove_tree(work)
     marker.write_text(revision)
-    (target / '.archive-sha256').write_text(hashlib.sha256(blob).hexdigest())
     return name + ': fetched ' + revision
 
 if __name__ == '__main__':

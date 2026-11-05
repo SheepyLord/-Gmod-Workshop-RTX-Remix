@@ -147,12 +147,14 @@ static bool fitTexture(const unsigned char* pixels,int& width,int& height,Bytes&
     if(!stbir_resize_uint8_srgb(pixels,width,height,0,scaled.data(),w,h,0,STBIR_RGBA))throw std::runtime_error("Cannot scale down a large texture");
     width=w;height=h;return true;
 }
-// A PMX or PMD texture: a path relative to the model. It may climb out of the model's
-// folder as in 2.2 (artists' working folders keep textures beside it), but is `refused`
-// when it is drive- or root-relative, an alternate data stream or, through any link, a
-// denied place (dependency_scope.hpp, Reach::Local). The sentences are part of the
-// asset's identity: an absolute path keeps 2.2's.
-static fs::path resolveTexture(const DependencyScope& scope,std::string path,bool& refused){
+// A PMX or PMD texture: a path relative to the model. It is `refused` when it is drive- or
+// root-relative, an alternate data stream or, through any link, a denied place, and (since
+// R19, review MH-01) when it leaves the model's import root: its folder, the tex and
+// textures folders near it, or the Workshop item it came in (dependency_scope.hpp,
+// Reach::Local); `elsewhere` says it was only that. ".." inside the root still works, as
+// in 2.2. The sentences are part of the asset's identity: an absolute path keeps 2.2's.
+static fs::path resolveTexture(const DependencyScope& scope,std::string path,bool& refused,bool& elsewhere){
+    elsewhere=false;
     std::replace(path.begin(),path.end(),'\\','/');auto p=fs::path(wide(path));
 #ifdef _WIN32
     if(p.is_absolute())throw std::runtime_error("Texture uses an absolute path: "+path);
@@ -168,10 +170,14 @@ static fs::path resolveTexture(const DependencyScope& scope,std::string path,boo
 #ifndef _WIN32
     file=posix::matchCase(file);  // the model's letter case, as Windows ignores it
 #endif
-    refused=scope.locate(path).empty()||(fs::is_regular_file(ioPath(file),error)&&!scope.allows(file));
+    elsewhere=scope.outside(path);
+    refused=elsewhere||scope.locate(path).empty()||(fs::is_regular_file(ioPath(file),error)&&!scope.allows(file));
     return file;
 }
 static std::string outsideTexture(std::string path){std::replace(path.begin(),path.end(),'\\','/');return "Texture in a protected location: "+path;}
+// A downloaded model must not pull an unrelated picture from the computer into the cache,
+// where sharing the model would send it along (review MH-01).
+static std::string elsewhereTexture(std::string path){std::replace(path.begin(),path.end(),'\\','/');return "Texture outside the model's folder was not read: "+path;}
 // full: keep textures past 4096 (the fullTextures option); `large` is set when one is kept.
 static std::string normalizeTexture(const Bytes& bytes,const std::string& name,const fs::path& cache,bool& alpha,std::vector<std::string>& warnings,bool full,bool& large){
     int width=0,height=0,channels=0;
@@ -331,7 +337,7 @@ Json importAsset(const fs::path& source,const fs::path& cache,const Json& option
                 if(embeddedSource){auto found=embedded.find(entry.second);if(found==embedded.end())throw std::runtime_error("Missing embedded VRM texture "+entry.second);
                     auto key=L"vrm:"+wide(entry.second);auto existing=prepared.find(key);if(existing!=prepared.end()){id=existing->second.first;localAlpha=existing->second.second;}else{id=normalizeTexture(found->second,entry.second,cache,localAlpha,model->warnings,full,largeKept);prepared[key]={id,localAlpha};}
                     textures[entry.first]=id;if(std::string(entry.first)=="base")alpha=localAlpha;continue;}
-                bool refused=false;auto file=resolveTexture(scope,entry.second,refused);
+                bool refused=false,elsewhere=false;auto file=resolveTexture(scope,entry.second,refused,elsewhere);
                 if((refused||!fs::exists(file))&&std::string(entry.first)=="toon"){
                     // MMD's shared ramps normally live beside the executable in Data: only a
                     // file of that name there, never a link out of it or a denied place.
@@ -339,7 +345,7 @@ Json importAsset(const fs::path& source,const fs::path& cache,const Json& option
                     if(DependencyScope(data,false).allows(candidate)){file=candidate;refused=false;}
                     else if(entry.second.starts_with("toon")){textures[entry.first]="";continue;}
                 }
-                if(refused)throw std::runtime_error(outsideTexture(entry.second));
+                if(refused)throw std::runtime_error(elsewhere?elsewhereTexture(entry.second):outsideTexture(entry.second));
                 auto key=file.wstring();auto existing=prepared.find(key);if(existing!=prepared.end()){id=existing->second.first;localAlpha=existing->second.second;}else{id=normalizeTexture(readFile(file),utf8(file.filename().wstring()),cache,localAlpha,model->warnings,full,largeKept);prepared[key]={id,localAlpha};}
             }catch(const std::exception& e){model->warnings.push_back(e.what());}
             textures[entry.first]=id;if(std::string(entry.first)=="base")alpha=localAlpha;
@@ -375,11 +381,40 @@ Json importAsset(const fs::path& source,const fs::path& cache,const Json& option
     return result;
 }
 Json importConverted(const fs::path& source,const fs::path& cache,const Json& options,const fs::path& progress,CharacterConversion&& converted){return importAsset(source,cache,options,progress,&converted);}
-std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id){
+// ---- the memory a load in this process may take (runtime.hpp LoadBudget; R19, review MH-04) ----
+namespace {
+std::mutex loadBudgetLock;uint64_t loadBudgetHeld=0;std::atomic<uint64_t> loadBudgetLimit{0};
+uint64_t freeMemory(){
+#ifdef _WIN32
+ MEMORYSTATUSEX status{};status.dwLength=sizeof(status);if(!GlobalMemoryStatusEx(&status))return 0;return std::min<uint64_t>(status.ullAvailPhys,status.ullAvailVirtual);
+#else
+ long pages=sysconf(_SC_AVPHYS_PAGES),size=sysconf(_SC_PAGE_SIZE);return pages>0&&size>0?uint64_t(pages)*uint64_t(size):0;
+#endif
+}
+uint64_t fileBytes(const fs::path& path){std::error_code error;auto size=fs::file_size(ioPath(path),error);return error?0:uint64_t(size);}
+uint64_t times(uint64_t bytes,uint64_t factor){return bytes>UINT64_MAX/factor?UINT64_MAX:bytes*factor;}
+}
+LoadBudget::LoadBudget(uint64_t bytes,const std::string& what){
+ std::lock_guard lock(loadBudgetLock);
+ auto simulated=loadBudgetLimit.load();auto limit=simulated?simulated:freeMemory()/2;
+ // Where the free memory cannot be read nothing is refused, as before.
+ if(limit&&(bytes>limit||loadBudgetHeld>limit-bytes))
+  throw std::runtime_error(what+" needs about "+thousands((bytes>>20)+1)+" MB of memory to load, more than this computer has free for loading now ("+thousands(limit>>20)+" MB); close other programs or remove other models first");
+ loadBudgetHeld+=bytes;held=bytes;
+}
+LoadBudget::~LoadBudget(){std::lock_guard lock(loadBudgetLock);loadBudgetHeld-=held;}
+void LoadBudget::simulateLimit(uint64_t bytes){loadBudgetLimit=bytes;}
+std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id,const std::atomic_bool* stop){
+    // The module is closing (a map change, the game quitting): the load ends at its next
+    // step, so the close waits only for the step already running (R19, review MH-06).
+    auto stopped=[stop]{if(stop&&stop->load())throw std::runtime_error("Model loading stopped: the map is changing");};
     if(!validId(id))throw std::runtime_error("Invalid asset ID");auto directory=cache/L"assets"/wide(id);auto manifest=readJson(directory/L"manifest.json");if((manifest.value("version",0)!=1&&manifest.value("version",0)!=2)||manifest.value("id",std::string())!=id)throw std::runtime_error("Cache version or ID mismatch");
     auto identity=manifest;identity["id"]=manifest.at("sourceHash");auto encoded=identity.dump();if(hash(std::span(reinterpret_cast<const unsigned char*>(encoded.data()),encoded.size()))!=id)throw std::runtime_error("Cached manifest checksum mismatch");
     if(manifest.contains("fullTextures")&&manifest["fullTextures"]!=true)throw std::runtime_error("Cached texture size option is invalid");
-    auto raw=readFile(directory/L"model.bin");if(hash(raw)!=manifest.at("sourceHash"))throw std::runtime_error("Cached model checksum mismatch");auto model=parse(raw);model->id=id;for(auto& warning:manifest.value("warnings",std::vector<std::string>{}))if(std::find(model->warnings.begin(),model->warnings.end(),warning)==model->warnings.end())model->warnings.push_back(warning);
+    stopped();
+    // The file, nanoem's objects and the model's own copies are all held at once: checked before any of it is read.
+    LoadBudget budget(times(fileBytes(directory/L"model.bin"),LoadBudget::LoadExpansion),"This model");
+    auto raw=readFile(directory/L"model.bin");stopped();if(hash(raw)!=manifest.at("sourceHash"))throw std::runtime_error("Cached model checksum mismatch");auto model=parse(raw);stopped();model->id=id;for(auto& warning:manifest.value("warnings",std::vector<std::string>{}))if(std::find(model->warnings.begin(),model->warnings.end(),warning)==model->warnings.end())model->warnings.push_back(warning);
     if(manifest.contains("vrm"))model->springs=SpringSetup::fromManifest(manifest["vrm"],*model);
     else if(manifest.contains("conversion")){
         auto& conversion=manifest["conversion"];model->springs=SpringSetup::fromManifest(conversion,*model);
@@ -390,7 +425,7 @@ std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id){
     if(manifest.at("textures").size()!=model->materials.size())throw std::runtime_error("Cached material count mismatch");
     std::set<std::string> verified;
     std::map<std::string,std::vector<size_t>> alphaParts;
-    for(size_t i=0;i<model->materials.size();i++){auto& t=manifest["textures"][i];auto& m=model->materials[i];auto resolve=[&](const char* key){std::string h=t.value(key,std::string());if(h.empty())return h;if(!validId(h))throw std::runtime_error("Invalid cached texture reference");if(verified.insert(h).second){auto p=cache/L"textures"/wide(h+".png");if(hash(readFile(p))!=h)throw std::runtime_error("Cached texture checksum mismatch");}return h;};m.base=resolve("base");m.sphere=resolve("sphere");m.toon=resolve("toon");m.alphaTexture=t.value("alpha",false);}
+    for(size_t i=0;i<model->materials.size();i++){auto& t=manifest["textures"][i];auto& m=model->materials[i];auto resolve=[&](const char* key){std::string h=t.value(key,std::string());if(h.empty())return h;if(!validId(h))throw std::runtime_error("Invalid cached texture reference");if(verified.insert(h).second){auto p=cache/L"textures"/wide(h+".png");stopped();LoadBudget file(fileBytes(p),"A texture of this model");if(hash(readFile(p))!=h)throw std::runtime_error("Cached texture checksum mismatch");}return h;};m.base=resolve("base");m.sphere=resolve("sphere");m.toon=resolve("toon");m.alphaTexture=t.value("alpha",false);}
     // Cached manifests remain immutable. Classify their decoded base alpha at
     // load time so cutout hair writes depth, while authored sheer fabric/glass
     // still blends. Count meaningful coverage rather than empty atlas space.
@@ -429,7 +464,11 @@ std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id){
         if(!offsets.empty())uvMorphs.push_back(std::move(offsets));}
     std::vector<std::array<float,2>> offset;
     for(auto& [base,parts]:alphaParts){
-        auto png=readFile(cache/L"textures"/wide(base+".png"));int w=0,h=0,c=0;
+        stopped();auto pngPath=cache/L"textures"/wide(base+".png");LoadBudget file(fileBytes(pngPath),"A texture of this model");
+        auto png=readFile(pngPath);int w=0,h=0,c=0;
+        if(png.size()>INT_MAX||!stbi_info_from_memory(png.data(),int(png.size()),&w,&h,&c)||w<1||h<1)throw std::runtime_error("Cannot inspect cached texture alpha");
+        // The decoded pixels and the masks made from them.
+        LoadBudget decoded(times(uint64_t(w)*uint64_t(h),8),"A texture of this model");
         std::unique_ptr<unsigned char,decltype(&stbi_image_free)> pixels(stbi_load_from_memory(png.data(),int(png.size()),&w,&h,&c,4),stbi_image_free);
         if(!pixels||w<1||h<1)throw std::runtime_error("Cannot inspect cached texture alpha");
         size_t visible=0,soft=0;for(size_t k=3;k<size_t(w)*h*4;k+=4){auto a=pixels.get()[k];visible+=a>8;soft+=a>8&&a<247;}
@@ -469,7 +508,7 @@ std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id){
     std::sort(model->uvCutoutTriangles.begin(),model->uvCutoutTriangles.end());
     groupSoftTriangles(*model);
     for(auto soft:model->softTriangles)model->firmTriangles.push_back(soft?0:1);
-    prepareSourceMaterials(cache,id);prepareModelFit(*model,cache);return model;
+    stopped();prepareSourceMaterials(cache,id);stopped();prepareModelFit(*model,cache);return model;
 }
 #ifdef _WIN32
 static bool plainDirectory(const fs::path& path){auto attributes=GetFileAttributesW(path.c_str());return attributes!=INVALID_FILE_ATTRIBUTES&&(attributes&FILE_ATTRIBUTE_DIRECTORY)&&!(attributes&FILE_ATTRIBUTE_REPARSE_POINT);}

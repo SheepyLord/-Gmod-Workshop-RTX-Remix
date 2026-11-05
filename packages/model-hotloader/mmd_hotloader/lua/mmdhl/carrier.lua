@@ -360,7 +360,15 @@ if SERVER then
  util.AddNetworkString('mmdhl_native_morphs')
  util.AddNetworkString('mmdhl_collision_mesh')
  net.Receive('mmdhl_collision_mesh',function(_,p)
-  local ent=net.ReadEntity() if not mmdhl.CanEdit(p,ent,'bodygroups') or ent:GetPhysicsObjectCount()~=18 then return end
+  local ent=net.ReadEntity()
+  -- The server keeps the client's pace (R19, review L-08): mmdhl.RequestCollisionMesh asks for an
+  -- entity at most every two seconds, so the same entity is answered at most every 1.5 s and a
+  -- player at most four times a second; a modified client cannot have it walk and compress 18
+  -- bodies' convexes on every message.
+  local now=RealTime()
+  if now<(p.MMDHLMeshNext or 0) or (ent==p.MMDHLMeshEntity and now<(p.MMDHLMeshEntityNext or 0)) then return end
+  p.MMDHLMeshNext=now+.25 p.MMDHLMeshEntity=ent p.MMDHLMeshEntityNext=now+1.5
+  if not mmdhl.CanEdit(p,ent,'bodygroups') or ent:GetPhysicsObjectCount()~=18 then return end
   local meshes={}
   for i=0,17 do local body=ent:GetPhysicsObjectNum(i) local mesh={vertices={},edges={}} local seen,edges={},{}
    for _,convex in ipairs(body:GetMeshConvexes() or {}) do for j=1,#convex,3 do local triangle={}
