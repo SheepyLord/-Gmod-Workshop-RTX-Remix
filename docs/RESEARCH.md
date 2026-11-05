@@ -5281,3 +5281,113 @@ material editor.
     (keys, empties, printf) passed anyway.
   - The check now also requires the script of each language. The files are written as ASCII JSON with
     `\u` escapes.
+
+## R18: thin decks, the middle deck, ice halos, haze and twilight (2026-11-05, Claude)
+
+### Why thin decks broke up (R17's runtime, `out/r18/e1`, options set live)
+
+- **The profile depth.** `cloud_nubis3_common.slangh` step 7: `profile = saturate(-sdfLive /
+  nvdfProfileDepthKm)`, then `valueErosion(profile, erosion)` with the wispy edge cut
+  `nubis3EdgeErosion * 1.5 * wispy^2 * (1 - profile)` (2.28 by default). A deck's middle is at most half
+  its depth from the surface, so at the default 0.6 km anything under about 1.2 km never reaches profile
+  1. Overcast at 0.9 km: km-wide gaps at 0.6, closed at 0.25 km (`e1`, `thin06` and `thin025`).
+- **The shape displacement.** Step 6e pushes and pulls the body surface by `wobbleMid *
+  nubis3ShapeVarietyKm` (1.11 km by default, wobbleMid in [-0.5, 0.5] for wispy types) at 2.4 km
+  wavelengths. On a 0.6 km drizzle deck it still cut smooth km-wide holes with the profile at 0.18 km and
+  every column whole (bake cover 2; `e3`, `drizzle-13.0-high`). R18 scales it by
+  `saturate((nvdfProfileDepthKm - 0.1) / 0.5)`: all of it for the cumulus weathers (0.6), 30 % for
+  overcast, 16 % for drizzle, 10 % for fog.
+- **Columns:** with the bake cover above 1 (`computeCloudColumn`), presence is
+  `saturate((F + cover - 1 + carve) / 0.35)` with the body carve `carve` up to +-0.375; at 1.5 a few
+  columns still fall to presence 0.36 (top at about a third of the slab). At 2 every column is whole.
+
+### The middle deck before R18
+
+- `marchEchoDeck` read layer 1's body field (`AtmosphereCloudNvdfSdf`) at the deck's height through
+  `samplePos + (31.7, 0, -17.3) * cloudLayer2NoiseSeed`, its cover spread forced to 0. So its cloudlets
+  were layer 1's bodies at layer 1's bake cover and cell size (1.3 km in partly cloudy, about 18 degrees
+  overhead at 4.2 km), and it was closed wherever layer 1 baked a closed deck. Its cover only moved the
+  surface by `(cover - nominal) * 0.2 km`.
+- WMO: altocumulus elements are 1-5 degrees wide seen more than 30 degrees above the horizon
+  (cirrocumulus under 1, stratocumulus over 5), in patches, sheets or layers, often in rows.
+
+### Ice halos (plate and column crystals; geometry `out/r18/halo_geometry.py`)
+
+- Ice's refractive index: 1.3072 (656 nm), 1.3104 (about 550 nm), 1.3160 (450 nm).
+- **22 degree halo** (60 degree prism, random columns): minimum deviation 21.63 / 21.87 / 22.30 degrees.
+  **46 degree halo** (90 degree prism): 45.14 / 45.82 / 47.04, much fainter and rarer.
+- **Parhelia** (plates falling level, 60 degree prism, light at elevation e): the light's projection on
+  the horizontal plane meets an effective index n' = sqrt(n^2 - sin^2 e) / cos e (Bravais), and the sun
+  dog sits at the light's height at an azimuth of 2 asin(n' / 2) - 60 degrees from it:
+
+  | Sun elevation | Azimuth from the sun (green) | Angle from the sun | Circumzenithal arc elevation (green) |
+  |---|---|---|---|
+  | 0 | 21.9 | 21.9 | 57.9 (none: too faint) |
+  | 10 | 22.5 | 22.2 | 59.8 |
+  | 20 | 24.6 | 23.1 | 66.0 (46.0 above the sun) |
+  | 30 | 28.8 | 24.8 | 79.6 |
+  | 50 | 51.6 | 32.5 | none |
+
+  They vanish above 60.7 degrees (n' = 2); red 60.9, blue 60.4.
+- **Circumzenithal arc** (plates, light in through the top face, out through a side face, a 90 degree
+  prism): elevation asin(sqrt(n^2 - cos^2 e)), none above 32.1 degrees (green; red 32.7, blue 31.2),
+  brightest at a sun of about 20 degrees; red toward the sun.
+- In R18's shots (`out/r18/e2`, `e3`, hazy at 17.5 h, sun at 20.3 degrees, and 18.3 h, 11.6 degrees):
+  the sun dogs sit just outside the 22 degree halo with a red inner edge and a white tail, and the arc
+  is an upside-down rainbow above, red at its lower edge.
+
+### Haze
+
+- The runtime's aerosol: `mieScattering` 3.996e-3 and `mieAbsorption` 4.4e-3 per km (Hillaire 2020,
+  Table 1), a single-scattering albedo of 0.48, both times `aerosolDensity`; `mieAnisotropy` 0.97 (the
+  option's default; Hillaire's is 0.8). R17's hazy had aerosol 1.9, air (7, 11, 20)e-3 and a sun of (17,
+  16, 14): a dark grey-brown sky (`out/r17/final`, `hazy-11.0`).
+- Haze is "an opalescent appearance" of dry particles (WMO). Water-soluble and sulfate aerosol scatter
+  about nine tenths of what they meet (albedo about 0.9-0.95); soot absorbs.
+- `out/r18/e1`, hazy at 11 h with aerosol 2.6, `mieAbsorption` 0.5e-3 (0.11 of the default) and the
+  clear sky's air and sun: g 0.97 gave a bluer sky, 0.8 a milkier one, 0.7 about the same as 0.8.
+- **The aerosol is optically thin in this model:** `mieScattering` 3.996e-3 per km over a scale height
+  of 1.2 km (`kMieScaleHeight`) is a vertical optical depth of 0.0048 per unit of `aerosolDensity`, about
+  0.014 at hazy's 3 (real haze: 0.3-1). `out/r18/e5`: 10 and 25 made the sky only a little whiter
+  overhead (sRGB away from the sun (131, 139, 148) at 3, (143, 146, 149) at 25), so hazy keeps 3.
+- **Auto-exposure evens out the brightness:** in the same view, R17's hazy sky measured (118, 119,
+  120) away from the sun and R18's (113, 121, 131): the change on screen is the colour, from a neutral
+  grey to a pale bluish white. R17's darker look came from the sun-facing views, where the bright halo
+  sets the exposure.
+
+### Twilight
+
+- `evalSkyRadiance` multiplied the sky LUT by `smoothstep(-0.09, 0, sun.y)`: half at 2.6 degrees down,
+  black at 5.2. With R18's fade at 18 degrees (`e2`, `fade18`), the LUT's own sky at 12.4 and 15.5
+  degrees down is black (no glow, no blobs): its twilight falls by orders of magnitude by then.
+- With the LUT kept whole to 8 degrees down and faded out by 16 (`e3`): at 4.1 degrees down a purple sky
+  over an orange band; at 6.3 a deep blue with an orange glow over the sunset; at 7.8 and 9.1 the glow
+  only; at 10.8 night, the galaxy fading in.
+
+### Cost at 3840x2160 (`out/r18/perf-new`, `perf-old`)
+
+Means over about a second (76-95 frames) before each shot, the same spawn and views in both sessions
+(`perf-framing.jpg`), about 0.2 ms of noise. The R17 column is the published R17 package in a second
+session with the same states; the "R18, feature off" column switches one R18 feature off in the R18
+session (the middle deck's cover to 0 in partly cloudy, `cirrusArcStrength` 0 in hazy at 17.5 h).
+
+| Weather, view | R18 | R18, feature off | R17 |
+|---|---|---|---|
+| partly cloudy 15 h, sun / away / high | 11.30 / 11.97 / 11.26 | 11.01 / 11.78 / 11.11 (no middle deck) | 11.40 / 12.01 / 11.57 |
+| overcast 14.5 h, sun / away / high | 11.45 / 13.31 / 12.03 | | 11.56 / 12.29 / 12.10 |
+| drizzle 13 h, sun / away / high | 11.65 / 11.90 / 11.63 | | 11.85 / 12.31 / 12.31 |
+| foggy 10 h, sun / away / high | 11.87 / 11.88 / 11.16 | | 11.62 / 12.00 / 11.31 |
+| hazy 11 h, sun / away / high | 11.13 / 11.44 / 11.18 | | 11.61 / 11.66 / 11.48 |
+| hazy 17.5 h, arcs / sun | 11.26 / 11.13 | 11.15 / 11.27 (no halos of plates) | 11.28 / 11.75 |
+
+- **On average R18 costs what R17 did:** 11.62 ms over these 17 views against 11.77.
+- **The middle deck:** 0.15-0.3 ms where drawn, as R17's (0-0.33 ms in the R17 session).
+- **The sun dogs and the arc:** within the noise (+0.11 and -0.14 ms).
+- **Overcast toward the horizon costs 1 ms more** (13.31 against 12.29 ms; the views toward the sun and
+  overhead are the same). The march takes as many steps across the 0.9 km deck as across R17's 1.8 km
+  one, so a grazing ray meets twice as many dense samples, each one lit, before it turns opaque.
+- **Memory:** no texture, buffer or grid is added; `AtmosphereArgs` (also inside the ray-tracing,
+  composite and debug-view constants) grows by one 16-byte row. The DLL grew from 414,372,864 to
+  417,072,128 bytes, the shaders that include the sky (many permutations).
+- The frame times are about 2.5 ms higher than R17's own 4K table (8.5-10.5 ms), for both runtimes
+  alike: another day's machine state; the comparison holds within the session pair.

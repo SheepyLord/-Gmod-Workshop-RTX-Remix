@@ -1,5 +1,25 @@
 # runtime/
 
+R18 adds `0032-Atmosphere-thin-decks-a-middle-deck-of-its-own-sun-d.patch`
+([ADR 0110](../docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md),
+[report](../docs/handover/R18-report.md)), R17's limits:
+- **Thin decks close.** `nvdfProfileDepthKm` is a weather field; overcast, drizzle and fog draw 0.9, 0.6
+  and 0.45 km decks at 0.25, 0.18 and 0.15 km, drizzle and fog baked at a cover of 2. The shape
+  displacement (`nubis3ShapeVarietyKm`) shrinks with the profile depth, all of it at 0.6, none at 0.1.
+- **The middle deck has a cover of its own.** A 2D patch mask (`cloudLayer2PatchSizeKm`, 14 km), read
+  at the ray's entry, middle and exit through the deck, is the sampler's cover against a nominal of 1. The
+  deck reads layer 1's body field `cloudLayer2FieldScale` times finer (cloudlets of
+  `cloudLayer2CellSizeKm`, 0.5 km), and a ray that meets no patch marches nothing.
+- **Plate-crystal halos** on the high layer (`cirrusArcStrength`): the sun dogs and the circumzenithal
+  arc, for the sun and moon 0, and the 46 degree halo with the 22 degree one.
+- **A milky haze.** The weather fields `aerosolAbsorption` (a scale on `mieAbsorption`) and
+  `mieAnisotropy`; hazy has 0.12 and 0.8.
+- **The twilight** keeps the sky LUT whole to half of `twilightFadeDepth` (16 degrees) and fades it out
+  over the other half.
+
+No texture or buffer is added; `AtmosphereArgs` grows by one 16-byte row. Built in
+`out/worktrees/r17/out/runtime-src` on 0031 (`80c4a8cb`), as `e095f29a`.
+
 R17 adds `0031-Atmosphere-cloud-genera-per-weather-a-sun-disc-and-a.patch`
 ([ADR 0109](../docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md),
 [report](../docs/handover/R17-report.md)). Each weather owns its cloud genera through fifteen new
@@ -179,6 +199,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0029-Lock-RtxOption-edits-made-beside-...` | Option layer values and the dirty option map change only under the update mutex: the Remix API, graph layers, the menu, migrations; an edit from another thread is never dropped at the end of a frame ([R13-D report](../docs/handover/R13-D-report.md)) |
 | `0030-Load-material-preloads-at-their-first-draw-...` | A material's `preload_textures` loads at its first draw, whole, before that frame renders, instead of when the mod loads; `rtx.texturemanager.preloadOnFirstDraw` ([ADR 0103](../docs/decisions/0103-material-preloads-load-at-their-first-draw.md)) |
 | `0031-Atmosphere-cloud-genera-per-weather-...` | Cloud genera as weather fields (low layer base, billows, cell size and bake cover, the middle deck, the high layer), presets mapped to genera; the sun disc; a 2D high cloud layer (cirrus, cirrostratus with its halo, cirrocumulus); the galaxy and nebula after astronomical twilight ([ADR 0109](../docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md)) |
+| `0032-Atmosphere-...` | R17's limits: a profile depth per weather so thin stratiform decks close; the middle deck's own patch mask and cloudlet size; sun dogs, the circumzenithal arc and the 46 degree halo; the aerosol's absorption and phase per weather (a milky haze); the twilight kept to 8 degrees down ([ADR 0110](../docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).
