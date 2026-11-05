@@ -67,9 +67,11 @@ A person has started the package workflow on GitHub for the commit (no push star
 
 1. **The run.** It looks up the package workflow's runs of the commit (`--commit`, default `HEAD`) with
    `gh api .../actions/workflows/package.yml/runs?head_sha=...` and waits, checking every minute, until
-   the newest has finished (up to six hours). No run within five minutes means the commit's changes do
-   not touch the package (the workflow's `paths`): nothing to upload (`no-run`). A cancelled run (a newer
-   push's run replaced it) uploads nothing; a failed one is an error.
+   the newest has finished (up to six hours). No run within five minutes is an error (exit 1): only a
+   person starts the workflow, so nobody started it for that commit and there is no release to upload.
+   A run that did not succeed, cancelled or failed, is an error too, and uploads nothing. Until review
+   R19 both "no run" and "cancelled" ended with exit 0 (`no-run`, `cancelled`), from when every push
+   started the workflow (ADR 0106).
 2. **Lock and record.** The same lock and `out\workshop` state as below. If `published.json` already
    names that run, it stops (`unchanged`).
 3. **Download and check.** `gh run download` of the artifacts `rtx-package-report` and `rtx-package`
@@ -77,9 +79,10 @@ A person has started the package workflow on GitHub for the commit (no push star
    name, size and SHA-256 must be the report's, or it stops before uploading.
 4. **Upload.** `gmpublish update` with that file; the change note names the version, the commit, the
    run's URL and the `.gma`'s SHA-256. `--dry-run` stops before this step.
-5. **Record.** `published.json`: item, version, digest, the `.gma`'s size and SHA-256, commit,
-   `source: github`, the run's id and URL, the counts of compiled, fetched and `packages/` binaries,
-   reason and time.
+5. **Record.** `published.json`: item, version, digest, the `.gma`'s size and SHA-256, commit (short SHA
+   and subject) and `commit_sha` (the full SHA), `source: github`, the run's id and URL, the counts of
+   compiled, fetched and `packages/` binaries, reason and time. It has no fingerprint: the hook runs
+   that follow compare their commit with `commit_sha` instead (step 3a below).
 
 Needs `gh` signed in with read access to this repository, and Steam (as below).
 
@@ -97,8 +100,7 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
    `third_party/gmod/LICENSE` (shipped as notices), `.gitattributes` (it sets the bytes a checkout
    gives `/LICENSE` and the guard) and `workshop.json`. Before review R4 the four after `gmapack.py`
    were missing, and a change to them alone (`.gitattributes`, 2026-10-31) was never published.
-   `.github/workflows/package.yml` runs for each of them too. `--dry-run` and `--allow-dirty` skip
-   this check.
+   `--dry-run` and `--allow-dirty` skip this check.
 2. **Lock.** Its state lives in the **main checkout's** `out\workshop`, whichever worktree runs it, so
    every worktree shares one record of what the item holds. Only one publish runs at a time: it holds
    an exclusive Windows lock on the first byte of `out\workshop\publish.lock` through an open handle for
@@ -118,6 +120,16 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
 
    If the fingerprint matches the last upload's, it stops: **unchanged inputs**. This is the usual
    result of a commit that touches only docs or loader code; the item does not contain `winmm.dll`.
+3a. **A release on the item** (review R19, M1). When `published.json` holds a release built on GitHub
+   (`source: github`, written by `--from-ci`) whose commit, `commit_sha`, has the packaging inputs `HEAD`
+   has (`git diff --quiet <commit_sha> HEAD -- <REPO_INPUTS>`), with the configuration this run uses
+   (`tools/workshop.json` of that commit), and no packaging input has an uncommitted change, it stops
+   too: **unchanged inputs**. It records the fingerprint, so the next runs stop at step 3, and the
+   release stays until an input changes; then the development build is uploaded as before (steps 4 to
+   7). Without this, the first commit, merge or push of `main` after a release built the package here
+   from the stored binaries, found a digest other than the release's (its binaries were built on
+   GitHub) and uploaded that development build over the release. A record without `commit_sha` (one
+   written before R19), a commit this clone does not have, and `--force` skip this step.
 4. **Build.** It unpacks the `packages/` parts the config reads into `out\inputs\`
    ([`inputs.py`](inputs.py.md): every file checked against its index, its recorded time restored),
    builds the parts and combines them with [`package_workshop.py`](package_workshop.py.md) into
@@ -135,7 +147,8 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
    If the reviewed publisher incorrectly rejects Steam's process-presence check, the guarded fallback
    below retries with an isolated copy. Real Steam initialization and authorization still run normally.
 7. **Record.** It writes `out\workshop\published.json`: item, fingerprint, digest, version, the
-   archive's SHA-256, commit, reason and time. `build.json` records the last build, uploaded or not.
+   archive's SHA-256, commit, `commit_sha` (the full SHA), reason and time. `build.json` records the last
+   build, uploaded or not.
 
 ### Stale Steam process detection
 
@@ -216,8 +229,9 @@ repositories. `--uninstall-source-hooks REPO` removes them from another clone; i
 - **Writes:** `out\workshop\` (the archive, state files, logs, a scratch build folder), `out\inputs\`,
   the packagers' own scratch in `out\tmp`, and the hooks.
 - **Exit codes:** 0 on success or when there is nothing to do (the JSON result says which:
-  `unchanged-inputs`, `unchanged-content`, `dry-run` or `uploaded`). 1 on a refusal or failure, with
-  the reason on stderr.
+  `unchanged-inputs`, `unchanged-content`, `dry-run` or `uploaded`; with `--from-ci`, `unchanged` for a
+  run already uploaded). 1 on a refusal or failure, with the reason on stderr; with `--from-ci` that
+  includes no run of the commit and a run that did not succeed.
 
 Tests: [`tests/test_publish_workshop.py`](tests/test_publish_workshop.py.md). They replace the upload
 step and never run `gmpublish`.

@@ -3,7 +3,9 @@
 Copies exactly the files the cached depot manifests list, hashing each byte stream
 while copying and keeping only files whose SHA-1 matches the manifest. A file that
 does not verify is looked up in --fallback folders; otherwise it is left out and
-reported. The result is byte-identical to a fresh download of the same build.
+reported. A non-empty depot file the manifest gives no SHA-1 cannot verify: it is
+left out and reported too. The result is byte-identical to a fresh download of the
+same build.
 
 Never writes to the source or fallback folders. Refuses a non-empty destination.
 Exit code 0 = every depot file copied (user-config files may be skipped),
@@ -65,6 +67,12 @@ def clone(src, dst, manifest_paths, fallbacks=(), progress=None):
                 continue
             if f.is_symlink:
                 report['skipped_symlinks'].append(f.path)
+                continue
+            if f.sha1 is None and f.size and not f.is_userconfig:
+                # No SHA-1 in the manifest (Steam writes 20 zero bytes): a file of the right size proves
+                # nothing about its bytes, so it would make a copy that is not vanilla while the run says it
+                # is. verify_install.py calls such a file unverified too (review R19, F-05).
+                report['unverified'].append(f.path)
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
             for root in (src, *fallbacks):

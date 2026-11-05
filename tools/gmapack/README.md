@@ -78,7 +78,8 @@ builds from unchanged input deterministic.
 The reader accepts ordinary GMAD streams and the LZMA-wrapped form commonly
 encountered in downloaded Workshop content. Decoding is streamed through a
 bounded in-memory spool that automatically spills larger archives to a temporary
-file; LZMA dictionaries above 256 MiB are rejected.
+file; LZMA dictionaries above 256 MiB are rejected, and so is decoded output
+above 8 GiB, whether the wrapper declares its size or not.
 
 Extraction rejects absolute paths, parent-directory traversal, duplicate paths,
 linked-path escapes, and paths that resolve outside the requested destination.

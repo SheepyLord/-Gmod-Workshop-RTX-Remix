@@ -23,6 +23,8 @@ python tools\tests\test_inputs.py
 | `test_lfs_pointers_verify_by_oid_and_cannot_be_unpacked` | A Git LFS pointer with the right oid and size verifies; `unpack` asks for `git lfs pull`; a pointer to other content is reported |
 | `test_import_from_an_inventory_maps_roots_and_prunes` | Inventory sources land under their roots; the packager's own rows and a source in this repository are skipped; a source in no root is an error; `--prune` removes what a re-import no longer brings; a source whose SHA-256 is not the inventory's is refused (R3-007) |
 | `test_single_files_and_refused_paths` | `--file` targets; `..`, `//`, drive letters, backslashes, a leading `/` and a part document's name are refused; paths that differ only in case are refused; a part name cannot leave `packages\` |
-| `test_the_repository_packages_verify` | Every committed part matches its index. CI checks out without LFS content, so there the `.xz` files are pointers, checked by oid |
+| `test_names_windows_reads_as_other_files_are_refused` | Review R19, F-09: import refuses a path part ending in a dot or a space, a device name (`NUL`, `com1.dll`, `aux.txt`), an 8.3 short name and characters Windows refuses, before it stores anything; `~gmod_topbr` stays allowed. A hand-edited index with `x.dll` and `x.dll.`, with two paths that differ only in case, or with a path and the same path plus `.xz` is reported by `verify` and stops `unpack`, `extract` and `import`. A new path that differs only in case from an indexed one is refused and the stored file is left as it was |
+| `test_an_index_that_cannot_be_read_stops_an_import` | An import into a part whose `files.json` is not JSON fails and leaves the file as it is, instead of replacing it with a new index |
+| `test_the_repository_packages_verify` | Every committed part matches its index, the new name checks included. CI checks out without LFS content, so there the `.xz` files are pointers, checked by oid |
 
 **Exit:** 0 when all pass.
