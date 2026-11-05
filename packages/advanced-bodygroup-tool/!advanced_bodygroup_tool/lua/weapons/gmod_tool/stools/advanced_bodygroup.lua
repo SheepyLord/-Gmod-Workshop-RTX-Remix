@@ -32,6 +32,9 @@ function TOOL:LeftClick( trace )
 	if CLIENT then return true end
 	local entity = ResolveEntity( trace.Entity )
 	if not AdvancedBodygroupTool.IsEditableEntity( entity ) then return false end
+	-- Another player is selectable only by an admin; the server refuses every
+	-- action on them otherwise.
+	if not AdvancedBodygroupTool.CanEditPlayer( self:GetOwner(), entity ) then return false end
 	self:SetSelectedEntity( entity )
 	return true
 end
@@ -46,7 +49,8 @@ end
 function TOOL:Think()
 	if CLIENT then return end
 	local entity = self:GetSelectedEntity()
-	if IsValid( entity ) and not AdvancedBodygroupTool.IsEditableEntity( entity ) then
+	if IsValid( entity ) and ( not AdvancedBodygroupTool.IsEditableEntity( entity )
+	or not AdvancedBodygroupTool.CanEditPlayer( self:GetOwner(), entity ) ) then
 		self:SetSelectedEntity( NULL )
 	end
 end

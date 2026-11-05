@@ -3,9 +3,14 @@
  "part": "advanced-bodygroup-tool",
  "origins": {
   "!advanced_bodygroup_tool": {
-   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_bodygroup_tool",
-   "git": null,
-   "imported": "2026-10-30T00:42:45+00:00"
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\advanced-bodygroup-tool\\!advanced_bodygroup_tool",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "dirty": false
+   },
+   "imported": "2026-11-05T22:31:19+00:00"
   },
   "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_i18n.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-bodygroup-tool\\!advanced_bodygroup_tool\\lua\\advanced_bodygroup_tool\\cl_i18n.lua",
@@ -18,14 +23,14 @@
    "imported": "2026-10-30T11:10:21+00:00"
   },
   "!advanced_bodygroup_tool/lua/weapons/gmod_tool/stools/advanced_bodygroup.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-bodygroup-tool\\!advanced_bodygroup_tool\\lua\\weapons\\gmod_tool\\stools\\advanced_bodygroup.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\advanced-bodygroup-tool\\!advanced_bodygroup_tool\\lua\\weapons\\gmod_tool\\stools\\advanced_bodygroup.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
-    "dirty": true
+    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "dirty": false
    },
-   "imported": "2026-10-30T11:10:21+00:00"
+   "imported": "2026-11-05T22:31:19+00:00"
   }
  },
  "files": {
@@ -42,9 +47,9 @@
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_uv_hide.lua": {
-   "size": 56361,
-   "sha256": "9cf8c4ede2c58eaebc93d0c02342701d5c1097b4f6a9093e7c95498689b325bc",
-   "mtime_ns": 1788378312409885200,
+   "size": 57864,
+   "sha256": "81f91415d81679a679647f81434b5bddd1ee64e087c24c396cf08656aa2d587f",
+   "mtime_ns": 1793916125725449800,
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/advanced_bodygroup_tool/cl_vertex_keep_editor.lua": {
@@ -54,15 +59,15 @@
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/autorun/advanced_bodygroup_tool.lua": {
-   "size": 33400,
-   "sha256": "7e2ff2ec53751d5eec8896479cfd751c82af82c68dfbbc14e11d44ca8801c7a0",
-   "mtime_ns": 1788378083378147900,
+   "size": 36178,
+   "sha256": "6041ac5cb5ecd228ee560c78e0fd1201c0df857e5d9120abf5e7c7b5f555b2c5",
+   "mtime_ns": 1793917864095246600,
    "stored": "plain"
   },
   "!advanced_bodygroup_tool/lua/weapons/gmod_tool/stools/advanced_bodygroup.lua": {
-   "size": 20367,
-   "sha256": "508dd91eac7cc4d000624f9b60771c3060dbb5e3c060d183aa3843d1b1ba1936",
-   "mtime_ns": 1793354212699871600,
+   "size": 20641,
+   "sha256": "485c47824058107eeba16b1cb11a5d31ed161693bee0cc4f7881f074f2d80bf1",
+   "mtime_ns": 1793916111060565100,
    "stored": "plain"
   }
  }

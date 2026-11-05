@@ -38,7 +38,8 @@
   "advmat_bridge": {
     "source": "packages/advanced-material-editor/source/rtx_bridge",
     "repository": "https://github.com/SheepyLord/-advanced_material_editor.git",
-    "commit": "8ece14155d771f0465dfac32ff6dd6a0e1f8aa96"
+    "commit": "8ece14155d771f0465dfac32ff6dd6a0e1f8aa96",
+    "changes": "The copy is that commit with R19-E's changes made in this repository (the pre-release review's BR-02 and BR-03, with tests); packages/advanced-material-editor/source/provenance.json lists them under r19_changes"
   },
   "hotloader": {
     "repository": "https://github.com/SheepyLord/Gmod-Model-Hotloader-with-Vulkan",

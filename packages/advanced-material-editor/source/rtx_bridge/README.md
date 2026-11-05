@@ -25,7 +25,11 @@ Preview overlays and their saved rollback ledger share one atomic root update.
 Closing the editor restores current saved values; module unload also restores
 them, and initialization recovers an interrupted preview. Older binaries remain
 save-only. Calls are synchronous. A DDS is validated and copied as it is, never
-decoded, so it may be up to 512 MiB and 16384 pixels per axis, enough for RTX
+decoded. Validation checks the header against the file: a known format, a mip
+count the dimensions allow (16 at most, all the RTX Remix runtime records), sane
+faces and array layers, and every byte the header describes present; a copy made
+earlier gets the same check before it is reused. A DDS may be up to 512 MiB and
+16384 pixels per axis, enough for RTX
 Remix enhancement maps such as rpai's 4096 px BC7 maps and its 11059 x 8847
 Firefly sheet. An image the writer decodes and mips itself (PNG, JPEG, BMP,
 TIFF, GIF, and so every map with bake operations) keeps the conservative
@@ -68,8 +72,10 @@ cmake --build out/advmat-rtx-bridge --config Release
 ctest --test-dir out/advmat-rtx-bridge -C Release --output-on-failure
 ```
 
-The tests do not load Garry's Mod or RTX Remix. They exercise validation,
-deduplicated hash authoring, dedicated-mod containment, DDS ingestion, atomic
+The tests do not load Garry's Mod or RTX Remix. `tests/writer_tests.cpp`
+exercises validation, deduplicated hash authoring, dedicated-mod containment,
+DDS ingestion (crafted headers: too many mips, missing data, bad array sizes,
+dimensions and formats, a cached copy cut down to its header), atomic
 transaction publication with deterministic failure injection, reversible
 preview, crash recovery, concurrent commits, unchanged-commit cache reuse,
 skipping the read of an unchanged source (shown with a file held open without
@@ -77,7 +83,12 @@ sharing), the separate DDS and decode limits, maps read through a junctioned (an
 the host allows symbolic links, symlinked) mod folder and every way out of it
 that stays refused, aggregate-layer migration, exact-hash/idempotent clear behavior, and
 empty-root-first authoritative reset with bounded profile/texture quarantine
-rotation at 64-layer scale. All native targets use `/WX` or `-Werror`.
+rotation at 64-layer scale. With `ADVMAT_RTX_BUILD_GMOD_MODULE=ON`,
+`tests/lua_binding_tests.cpp` also checks the Lua boundary against an in-memory
+`ILuaBase`: request strings (hashes, paths, names) are refused by length before
+they are copied, and a C++ exception inside an exported function becomes a
+`false, "native_exception: ..."` result with the bridge lock released. All
+native targets use `/WX` or `-Werror`.
 
 The Lua client may attempt `require("advmat_rtx_bridge")` only after it has
 positively detected the RTX runtime. Do not ship the resulting DLL merely

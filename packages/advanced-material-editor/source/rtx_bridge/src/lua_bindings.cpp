@@ -13,10 +13,13 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -32,6 +35,27 @@ namespace {
 
 std::mutex g_bridgeMutex;
 std::unique_ptr<Bridge> g_bridge;
+
+// Any Lua caller can hand over strings of any size, so a string's length is
+// checked before a byte of it is copied. A hash is "0x" and 16 hexadecimal
+// digits at most; a texture source is held to ParseUtf8Path's own limit.
+constexpr unsigned int kMaxHashBytes = 18;
+constexpr unsigned int kMaxPathBytes = 2048;
+constexpr unsigned int kMaxNameBytes = 64;
+constexpr unsigned int kMaxRequestStringBytes = 4096;
+
+// Copies the string at `index` when it is at most `maxBytes` long and has no
+// NUL byte inside; otherwise copies nothing and returns false.
+bool CopyBoundedString(ILuaBase* lua, int index, unsigned int maxBytes, std::string& output) {
+    unsigned int length = 0;
+    const char* data = lua->GetString(index, &length);
+    if (data == nullptr || length > maxBytes ||
+        (length > 0 && std::memchr(data, '\0', length) != nullptr)) {
+        return false;
+    }
+    output.assign(data, length);
+    return true;
+}
 
 bool PushTableField(ILuaBase* lua, int table, const char* name, int& absoluteIndex) {
     lua->GetField(table, name);
@@ -70,7 +94,8 @@ bool ParseUtf8Path(const std::string& value, std::filesystem::path& output,
 }
 
 bool ReadString(ILuaBase* lua, int table, const char* name,
-                std::string& output, bool& present, std::string& error) {
+                std::string& output, bool& present, std::string& error,
+                unsigned int maxBytes = kMaxRequestStringBytes) {
     lua->GetField(table, name);
     present = !lua->IsType(-1, Type::Nil);
     if (!present) {
@@ -82,7 +107,12 @@ bool ReadString(ILuaBase* lua, int table, const char* name,
         lua->Pop();
         return false;
     }
-    output = lua->GetString(-1);
+    if (!CopyBoundedString(lua, -1, maxBytes, output)) {
+        error = std::string(name) + " must be a string of at most " +
+            std::to_string(maxBytes) + " bytes without NUL";
+        lua->Pop();
+        return false;
+    }
     lua->Pop();
     return true;
 }
@@ -143,12 +173,12 @@ bool ReadEnum(ILuaBase* lua, int table, const char* name,
         output = static_cast<int>(value);
         return true;
     }
-    if (!lua->IsType(-1, Type::String)) {
+    std::string value;
+    if (!lua->IsType(-1, Type::String) || !CopyBoundedString(lua, -1, kMaxNameBytes, value)) {
         error = std::string(name) + " must be a supported name or integer";
         lua->Pop();
         return false;
     }
-    std::string value = lua->GetString(-1);
     lua->Pop();
     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character) {
         return static_cast<char>(std::tolower(character));
@@ -309,16 +339,22 @@ bool ParseHashes(ILuaBase* lua, int request, std::vector<std::string>& hashes,
         lua->Pop();
         return false;
     }
-    hashes.reserve(count);
+    hashes.reserve(static_cast<std::size_t>(count));
     for (int index = 1; index <= count; ++index) {
         lua->PushNumber(static_cast<double>(index));
         lua->GetTable(table);
-        if (!lua->IsType(-1, Type::String)) {
-            error = "every request.hashes entry must be a hexadecimal string";
+        std::string hash;
+        // The length is checked before the copy: one 16 MiB string in all 128
+        // entries would otherwise become 2 GiB of copies before CanonicalizeHash
+        // refuses the first.
+        if (!lua->IsType(-1, Type::String) ||
+            !CopyBoundedString(lua, -1, kMaxHashBytes, hash)) {
+            error = "every request.hashes entry must be a hexadecimal string of at most " +
+                std::to_string(kMaxHashBytes) + " characters";
             lua->Pop(2);
             return false;
         }
-        hashes.emplace_back(lua->GetString(-1));
+        hashes.push_back(std::move(hash));
         lua->Pop();
     }
     lua->Pop();
@@ -344,7 +380,7 @@ bool ParseOperation(ILuaBase* lua, int table, TextureOperation& operation,
                     std::string& error) {
     std::string kind;
     bool present = false;
-    if (!ReadString(lua, table, "op", kind, present, error) || !present) {
+    if (!ReadString(lua, table, "op", kind, present, error, kMaxNameBytes) || !present) {
         if (error.empty()) error = "texture operation requires an op string";
         return false;
     }
@@ -367,7 +403,7 @@ bool ParseOperation(ILuaBase* lua, int table, TextureOperation& operation,
     if (strength) operation.strength = *strength;
 
     std::string channel;
-    if (!ReadString(lua, table, "channel", channel, present, error)) return false;
+    if (!ReadString(lua, table, "channel", channel, present, error, kMaxNameBytes)) return false;
     if (present) {
         std::transform(channel.begin(), channel.end(), channel.begin(), [](unsigned char character) {
             return static_cast<char>(std::tolower(character));
@@ -400,7 +436,12 @@ bool ParseMapValue(ILuaBase* lua, int valueIndex, TextureRole role,
                    TextureInput& texture, std::string& error) {
     texture.role = role;
     if (lua->IsType(valueIndex, Type::String)) {
-        return ParseUtf8Path(lua->GetString(valueIndex), texture.source, error);
+        std::string path;
+        if (!CopyBoundedString(lua, valueIndex, kMaxPathBytes, path)) {
+            error = "texture source path must contain 1 to 2048 UTF-8 bytes";
+            return false;
+        }
+        return ParseUtf8Path(path, texture.source, error);
     }
     if (!lua->IsType(valueIndex, Type::Table)) {
         error = std::string(TextureRoleName(role)) + " map must be a path or descriptor table";
@@ -408,9 +449,11 @@ bool ParseMapValue(ILuaBase* lua, int valueIndex, TextureRole role,
     }
     std::string source;
     bool present = false;
-    if (!ReadString(lua, valueIndex, "generatedFile", source, present, error)) return false;
+    if (!ReadString(lua, valueIndex, "generatedFile", source, present, error,
+                    kMaxPathBytes)) return false;
     if (!present) {
-        if (!ReadString(lua, valueIndex, "source", source, present, error) || !present) {
+        if (!ReadString(lua, valueIndex, "source", source, present, error,
+                        kMaxPathBytes) || !present) {
             if (error.empty()) error = std::string(TextureRoleName(role)) + " map descriptor requires source";
             return false;
         }
@@ -743,7 +786,7 @@ int Apply(ILuaBase* lua) {
     }
     std::string operationName;
     bool operationPresent = false;
-    if (!ReadString(lua, 1, "operation", operationName, operationPresent, error)) {
+    if (!ReadString(lua, 1, "operation", operationName, operationPresent, error, kMaxNameBytes)) {
         PushFailure(lua, error);
         return 2;
     }
@@ -935,11 +978,31 @@ int GetCapabilities(ILuaBase* lua) {
     return 1;
 }
 
-LUA_FUNCTION(AdvMatRTXBridge_Capabilities) { return GetCapabilities(LUA); }
-LUA_FUNCTION(AdvMatRTXBridge_ApplyLegacyMaterial) { return Apply(LUA); }
-LUA_FUNCTION(AdvMatRTXBridge_ClearLegacyMaterial) { return Clear(LUA); }
-LUA_FUNCTION(AdvMatRTXBridge_ClearAllOwned) { return ClearAll(LUA); }
-LUA_FUNCTION(AdvMatRTXBridge_RestorePreview) { return RestorePreview(LUA); }
+// The Lua boundary. No C++ exception may leave an exported function: an
+// allocation failure or a filesystem error anywhere in a call becomes the
+// usual (false, reason) result, with the lock released on the way out. Only
+// C++ exceptions are caught; a Lua error raised during a call is not one, so
+// it still reaches the caller's pcall as before.
+int Guarded(ILuaBase* lua, int (*body)(ILuaBase*)) {
+    try {
+        return body(lua);
+    } catch (const std::exception& exception) {
+        lua->PushBool(false);
+        try {
+            const std::string reason = std::string("native_exception: ") + exception.what();
+            lua->PushString(reason.c_str());
+        } catch (const std::bad_alloc&) {
+            lua->PushString("native_exception: out of memory");
+        }
+        return 2;
+    }
+}
+
+LUA_FUNCTION(AdvMatRTXBridge_Capabilities) { return Guarded(LUA, GetCapabilities); }
+LUA_FUNCTION(AdvMatRTXBridge_ApplyLegacyMaterial) { return Guarded(LUA, Apply); }
+LUA_FUNCTION(AdvMatRTXBridge_ClearLegacyMaterial) { return Guarded(LUA, Clear); }
+LUA_FUNCTION(AdvMatRTXBridge_ClearAllOwned) { return Guarded(LUA, ClearAll); }
+LUA_FUNCTION(AdvMatRTXBridge_RestorePreview) { return Guarded(LUA, RestorePreview); }
 
 } // namespace
 
@@ -947,9 +1010,15 @@ bool RegisterLua(ILuaBase* lua, const std::filesystem::path& gameRoot) {
     if (!lua) return false;
     {
         std::lock_guard<std::mutex> lock(g_bridgeMutex);
-        Config config;
-        config.gameRoot = gameRoot;
-        g_bridge = std::make_unique<Bridge>(std::move(config));
+        try {
+            Config config;
+            config.gameRoot = gameRoot;
+            g_bridge = std::make_unique<Bridge>(std::move(config));
+        } catch (const std::exception&) {
+            // An unavailable provider, as when the game root is not found:
+            // Capabilities reports it and every call fails cleanly.
+            g_bridge.reset();
+        }
     }
     lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
     lua->CreateTable();

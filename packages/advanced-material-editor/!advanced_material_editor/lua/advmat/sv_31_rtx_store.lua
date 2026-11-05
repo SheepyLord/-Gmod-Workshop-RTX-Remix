@@ -226,6 +226,29 @@ local function EncodeProfileMessage( id, profile, removed, revision )
 	return data
 end
 
+-- A profile's message at the current revision, encoded once and reused by
+-- every snapshot and broadcast until the revision moves on, so a snapshot for
+-- the next player (or the next HELLO) costs no encoding. Profiles are never
+-- changed in place: every change installs new tables, so the table, the id,
+-- the removed flag and the revision identify a message. Weak keys: a profile
+-- nothing holds any more drops out.
+local encodedMessages = setmetatable( {}, { __mode = "k" } )
+
+local function EncodedProfileMessage( id, profile, removed )
+	if not istable( profile ) then return EncodeProfileMessage( id, profile, removed ) end
+	removed = removed == true
+	local entry = encodedMessages[ profile ]
+	if entry and entry.revision == Store.Revision and entry.id == id
+		and entry.removed == removed then
+		return entry.data, entry.reason
+	end
+	local data, reason = EncodeProfileMessage( id, profile, removed, Store.Revision )
+	encodedMessages[ profile ] = {
+		revision = Store.Revision, id = id, removed = removed, data = data, reason = reason,
+	}
+	return data, reason
+end
+
 -- Each capable client owns an ordered output stream.  A stream emits at most
 -- one message per interval, so PROFILE fragments cannot flood that client's
 -- reliable net buffer.  Snapshot begin/profile/end controls use the same
@@ -363,7 +386,7 @@ local function SendProfile( target, id, profile, removed )
 
 	-- Cleanup messages retain the old target hashes.  Clients need those exact
 	-- identities after the Source material renders with another base texture.
-	local data, payloadError = EncodeProfileMessage( id, profile, removed )
+	local data, payloadError = EncodedProfileMessage( id, profile, removed )
 	if not data then
 		AdvMat.Log( "RTX profile %s exceeds the %s.", tostring( id ), tostring( payloadError ) )
 		return false
@@ -671,8 +694,12 @@ function Store.SendSnapshot( ply )
 	if not IsCapablePlayer( ply ) then return end
 	-- A repeated HELLO/resync supersedes every older queued message for this
 	-- client. Capture cleanup first because FlushTombstones may durably prune it
-	-- after enqueueing its live broadcast to the other capable clients.
-	local snapshotTombstones = table.Copy( Store.Tombstones )
+	-- after enqueueing its live broadcast to the other capable clients. A
+	-- shallow copy is enough: installed tombstones are replaced, never changed
+	-- in place, and their profile tables then keep the identity the encoded
+	-- message cache is keyed on.
+	local snapshotTombstones = {}
+	for id, tombstone in pairs( Store.Tombstones ) do snapshotTombstones[ id ] = tombstone end
 	ResetOutbound( ply )
 	-- The joining player is capable now, so include it in a best-effort drain of
 	-- any crash-recovery journal before building the authoritative snapshot.
@@ -683,14 +710,16 @@ function Store.SendSnapshot( ply )
 	-- keep the broadcast queued normally.
 	ResetOutbound( ply )
 
+	-- Each message is encoded once per revision (EncodedProfileMessage), here and
+	-- in SendProfile below alike.
 	local entries = {}
 	for id, tombstone in SortedPairs( snapshotTombstones ) do
-		if EncodeProfileMessage( id, tombstone.profile, true ) then
+		if EncodedProfileMessage( id, tombstone.profile, true ) then
 			entries[ #entries + 1 ] = { id = id, profile = tombstone.profile, removed = true }
 		end
 	end
 	for id, profile in SortedPairs( Store.Profiles ) do
-		if EncodeProfileMessage( id, profile, false ) then
+		if EncodedProfileMessage( id, profile, false ) then
 			entries[ #entries + 1 ] = { id = id, profile = profile, removed = false }
 		end
 	end
@@ -1112,6 +1141,40 @@ local function ReadSaveProfile( ply )
 	return profile, nonce, nil, buffer.expectedID, buffer.expectedETag
 end
 
+-- At most one snapshot per player every HELLO_INTERVAL seconds, whatever the
+-- HELLOs in between say. No HELLO resets this limit: a protocol-0 or
+-- mismatched HELLO used to clear it, so alternating them made the server
+-- encode every profile again without any limit. A capable HELLO inside the
+-- window is answered once, when the window ends, so a client that turns RTX
+-- off and on again quickly still gets its snapshot.
+local HELLO_INTERVAL = 2
+
+local function HelloTimer( ply )
+	return "AdvMat.RTX.Hello." .. tostring( ply:EntIndex() )
+end
+
+local function SendHelloSnapshot( ply )
+	timer.Remove( HelloTimer( ply ) )
+	ply.AdvMatRTXNextSync = CurTime() + HELLO_INTERVAL
+	Store.SendSnapshot( ply )
+end
+
+local function DeferHelloSnapshot( ply )
+	local name = HelloTimer( ply )
+	if timer.Exists( name ) then return end
+	timer.Create( name, math.max( 0, ( ply.AdvMatRTXNextSync or 0 ) - CurTime() ), 1, function()
+		if IsCapablePlayer( ply ) then SendHelloSnapshot( ply ) end
+	end )
+end
+
+local function WithdrawHello( ply )
+	ResetOutbound( ply )
+	timer.Remove( HelloTimer( ply ) )
+	ply.AdvMatRTXProtocol = nil
+	ply.AdvMatRTXModeActive = false
+	saveBuffers[ ply ] = nil
+end
+
 net.Receive( NET.HELLO, function( _, ply )
 	if not IsValid( ply ) then return end
 	local protocol = net.ReadUInt( 8 )
@@ -1120,28 +1183,22 @@ net.Receive( NET.HELLO, function( _, ply )
 	-- reconnecting; retaining its old handshake would make server-side tool
 	-- actions route into RTX solely because RTX had been active in the past.
 	if protocol == 0 then
-		ResetOutbound( ply )
-		ply.AdvMatRTXProtocol = nil
-		ply.AdvMatRTXModeActive = false
-		ply.AdvMatRTXNextSync = nil
-		saveBuffers[ ply ] = nil
+		WithdrawHello( ply )
 		return
 	end
 	if protocol ~= Store.PROTOCOL then
-		ResetOutbound( ply )
-		ply.AdvMatRTXProtocol = nil
-		ply.AdvMatRTXModeActive = false
-		ply.AdvMatRTXNextSync = nil
-		saveBuffers[ ply ] = nil
+		WithdrawHello( ply )
 		Notify( ply, "RTX material protocol version mismatch.", NOTIFY_ERROR )
 		return
 	end
 
 	ply.AdvMatRTXProtocol = protocol
 	ply.AdvMatRTXModeActive = true
-	if ( ply.AdvMatRTXNextSync or 0 ) > CurTime() then return end
-	ply.AdvMatRTXNextSync = CurTime() + 2
-	Store.SendSnapshot( ply )
+	if ( ply.AdvMatRTXNextSync or 0 ) > CurTime() then
+		DeferHelloSnapshot( ply )
+		return
+	end
+	SendHelloSnapshot( ply )
 end )
 
 net.Receive( NET.SAVE, function( _, ply )
@@ -1224,6 +1281,7 @@ hook.Add( "ShutDown", "AdvMat.RTX.SaveOnShutdown", function()
 end )
 hook.Add( "PlayerDisconnected", "AdvMat.RTX.ForgetClient", function( ply )
 	ResetOutbound( ply )
+	timer.Remove( HelloTimer( ply ) )
 	ply.AdvMatRTXProtocol = nil
 	ply.AdvMatRTXModeActive = nil
 	ply.AdvMatRTXNextSync = nil

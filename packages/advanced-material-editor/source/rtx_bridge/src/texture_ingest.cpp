@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <system_error>
 
@@ -56,46 +57,290 @@ bool ReadFile(const std::filesystem::path& path, std::uintmax_t maximum,
     return true;
 }
 
-std::uint32_t ReadU32(const std::vector<std::uint8_t>& bytes, std::size_t offset) {
+std::uint32_t ReadU32(const std::uint8_t* bytes, std::size_t offset) {
     return static_cast<std::uint32_t>(bytes[offset]) |
         (static_cast<std::uint32_t>(bytes[offset + 1]) << 8u) |
         (static_cast<std::uint32_t>(bytes[offset + 2]) << 16u) |
         (static_cast<std::uint32_t>(bytes[offset + 3]) << 24u);
 }
 
-bool ValidateDds(const std::vector<std::uint8_t>& bytes, std::uint32_t maximumDimension,
-                 std::string& error) {
-    if (bytes.size() < 128 || !std::equal(kDdsMagic.begin(), kDdsMagic.end(), bytes.begin())) {
+// A DDS is copied as it is and the RTX Remix runtime reads it at mod load, so
+// its header is checked against the file itself: a format whose storage is
+// known, a mip count the dimensions allow, sane faces and array layers, and
+// every byte the header describes present in the file. A header-only check
+// let a 128-byte file, or a cached copy cut down to its header, through.
+constexpr std::size_t kDdsHeaderBytes = 128;      // "DDS " and the 124-byte DDS_HEADER
+constexpr std::size_t kDdsDx10HeaderBytes = 20;   // DDS_HEADER_DXT10, for FourCC "DX10"
+// The runtime records the sizes of at most 16 levels per texture.
+constexpr std::uint32_t kMaximumDdsMipLevels = 16;
+constexpr std::uint32_t kMaximumDdsArraySize = 2048;
+
+constexpr std::uint32_t kDdsFlagDepth = 0x800000u;      // DDSD_DEPTH
+constexpr std::uint32_t kDdsPixelFourCc = 0x4u;         // DDPF_FOURCC
+constexpr std::uint32_t kDdsPixelData = 0x2u | 0x40u | 0x200u | 0x20000u | 0x80000u;
+                                                        // ALPHA, RGB, YUV, LUMINANCE, BUMPDUDV
+constexpr std::uint32_t kDdsCaps2Cubemap = 0x200u;
+constexpr std::uint32_t kDdsCaps2CubeFaces = 0xFC00u;
+constexpr std::uint32_t kDdsCaps2Volume = 0x200000u;
+constexpr std::uint32_t kDxgiMiscTextureCube = 0x4u;
+
+constexpr std::uint32_t FourCc(char a, char b, char c, char d) {
+    return static_cast<std::uint32_t>(static_cast<std::uint8_t>(a)) |
+        (static_cast<std::uint32_t>(static_cast<std::uint8_t>(b)) << 8u) |
+        (static_cast<std::uint32_t>(static_cast<std::uint8_t>(c)) << 16u) |
+        (static_cast<std::uint32_t>(static_cast<std::uint8_t>(d)) << 24u);
+}
+
+// How a format stores a level: whole pixels of bitsPerPixel, 4x4 blocks of
+// bytesPerUnit, or pairs of pixels in bytesPerUnit (packed 4:2:2).
+struct DdsStorage {
+    enum class Kind { Pixels, Blocks, Pairs };
+    Kind kind = Kind::Pixels;
+    std::uint32_t bitsPerPixel = 0;
+    std::uint32_t bytesPerUnit = 0;
+};
+
+DdsStorage PixelStorage(std::uint32_t bitsPerPixel) {
+    DdsStorage storage;
+    storage.bitsPerPixel = bitsPerPixel;
+    return storage;
+}
+
+DdsStorage BlockStorage(DdsStorage::Kind kind, std::uint32_t bytesPerUnit) {
+    DdsStorage storage;
+    storage.kind = kind;
+    storage.bytesPerUnit = bytesPerUnit;
+    return storage;
+}
+
+// DXGI_FORMAT values with a fixed storage. Video and planar formats and
+// unknown values have none and are refused.
+std::optional<DdsStorage> DxgiStorage(std::uint32_t format) {
+    using Kind = DdsStorage::Kind;
+    if (format >= 1 && format <= 4) return PixelStorage(128);
+    if (format >= 5 && format <= 8) return PixelStorage(96);
+    if (format >= 9 && format <= 22) return PixelStorage(64);
+    if (format >= 23 && format <= 47) return PixelStorage(32);
+    if (format >= 48 && format <= 59) return PixelStorage(16);
+    if (format >= 60 && format <= 65) return PixelStorage(8);
+    if (format == 66) return PixelStorage(1);                        // R1_UNORM
+    if (format == 67) return PixelStorage(32);                       // R9G9B9E5_SHAREDEXP
+    if (format == 68 || format == 69) return BlockStorage(Kind::Pairs, 4);
+    if ((format >= 70 && format <= 72) || (format >= 79 && format <= 81)) {
+        return BlockStorage(Kind::Blocks, 8);                        // BC1, BC4
+    }
+    if ((format >= 73 && format <= 78) || (format >= 82 && format <= 84) ||
+        (format >= 94 && format <= 99)) {
+        return BlockStorage(Kind::Blocks, 16);                       // BC2, BC3, BC5, BC6H, BC7
+    }
+    if (format == 85 || format == 86 || format == 115) return PixelStorage(16);
+    if (format >= 87 && format <= 93) return PixelStorage(32);
+    return std::nullopt;
+}
+
+// A header without the DX10 extension: a FourCC code, or uncompressed pixels.
+std::optional<DdsStorage> LegacyStorage(std::uint32_t pixelFlags, std::uint32_t fourCc,
+                                        std::uint32_t rgbBitCount) {
+    using Kind = DdsStorage::Kind;
+    if (pixelFlags & kDdsPixelFourCc) {
+        switch (fourCc) {
+        case FourCc('D', 'X', 'T', '1'): case FourCc('A', 'T', 'I', '1'):
+        case FourCc('B', 'C', '4', 'U'): case FourCc('B', 'C', '4', 'S'):
+            return BlockStorage(Kind::Blocks, 8);
+        case FourCc('D', 'X', 'T', '2'): case FourCc('D', 'X', 'T', '3'):
+        case FourCc('D', 'X', 'T', '4'): case FourCc('D', 'X', 'T', '5'):
+        case FourCc('A', 'T', 'I', '2'): case FourCc('B', 'C', '5', 'U'):
+        case FourCc('B', 'C', '5', 'S'):
+            return BlockStorage(Kind::Blocks, 16);
+        case FourCc('R', 'G', 'B', 'G'): case FourCc('G', 'R', 'G', 'B'):
+        case FourCc('Y', 'U', 'Y', '2'): case FourCc('U', 'Y', 'V', 'Y'):
+            return BlockStorage(Kind::Pairs, 4);
+        // D3DFORMAT values written as a FourCC.
+        case 36: case 110: case 113: case 115: return PixelStorage(64);
+        case 111: case 117: return PixelStorage(16);
+        case 112: case 114: return PixelStorage(32);
+        case 116: return PixelStorage(128);
+        default: return std::nullopt;
+        }
+    }
+    if ((pixelFlags & kDdsPixelData) && rgbBitCount >= 8 && rgbBitCount <= 128 &&
+        rgbBitCount % 8 == 0) {
+        return PixelStorage(rgbBitCount);
+    }
+    return std::nullopt;
+}
+
+bool CheckedMultiply(std::uint64_t left, std::uint64_t right, std::uint64_t& result) {
+    if (left != 0 && right > std::numeric_limits<std::uint64_t>::max() / left) return false;
+    result = left * right;
+    return true;
+}
+
+bool CheckedAdd(std::uint64_t left, std::uint64_t right, std::uint64_t& result) {
+    if (right > std::numeric_limits<std::uint64_t>::max() - left) return false;
+    result = left + right;
+    return true;
+}
+
+std::uint32_t CountBits(std::uint32_t value) {
+    std::uint32_t count = 0;
+    for (; value != 0; value &= value - 1) ++count;
+    return count;
+}
+
+// `bytes` holds the first `available` bytes of a DDS file of `fileSize` bytes:
+// the 128-byte header at least, and the DX10 header when there is one.
+bool ValidateDdsLayout(const std::uint8_t* bytes, std::size_t available,
+                       std::uintmax_t fileSize, std::uint32_t maximumDimension,
+                       std::string& error) {
+    if (available < kDdsHeaderBytes || fileSize < kDdsHeaderBytes ||
+        !std::equal(kDdsMagic.begin(), kDdsMagic.end(), bytes)) {
         error = "DDS source has no valid DDS magic/header";
         return false;
     }
     const auto headerSize = ReadU32(bytes, 4);
+    const auto flags = ReadU32(bytes, 8);
     const auto height = ReadU32(bytes, 12);
     const auto width = ReadU32(bytes, 16);
+    const auto rawDepth = ReadU32(bytes, 24);
+    const auto rawMipCount = ReadU32(bytes, 28);
     const auto pixelFormatSize = ReadU32(bytes, 76);
+    const auto pixelFlags = ReadU32(bytes, 80);
+    const auto fourCc = ReadU32(bytes, 84);
+    const auto rgbBitCount = ReadU32(bytes, 88);
+    const auto caps2 = ReadU32(bytes, 112);
     if (headerSize != 124 || pixelFormatSize != 32 || width == 0 || height == 0 ||
         width > maximumDimension || height > maximumDimension) {
         error = "DDS header or dimensions are invalid";
         return false;
     }
+
+    std::uint64_t headerBytes = kDdsHeaderBytes;
+    std::optional<DdsStorage> storage;
+    std::uint32_t depth = 1;
+    std::uint64_t layers = 1;  // array elements times cube faces
+    if ((pixelFlags & kDdsPixelFourCc) && fourCc == FourCc('D', 'X', '1', '0')) {
+        headerBytes += kDdsDx10HeaderBytes;
+        if (available < headerBytes || fileSize < headerBytes) {
+            error = "DDS file is shorter than its DX10 header";
+            return false;
+        }
+        const auto format = ReadU32(bytes, 128);
+        const auto dimension = ReadU32(bytes, 132);
+        const auto miscFlag = ReadU32(bytes, 136);
+        const auto arraySize = ReadU32(bytes, 140);
+        storage = DxgiStorage(format);
+        if (arraySize == 0 || arraySize > kMaximumDdsArraySize) {
+            error = "DDS array size is invalid";
+            return false;
+        }
+        layers = arraySize;
+        if (dimension == 4) {  // TEXTURE3D
+            if (arraySize != 1 || (miscFlag & kDxgiMiscTextureCube)) {
+                error = "DDS volume texture layout is invalid";
+                return false;
+            }
+            depth = std::max<std::uint32_t>(1u, rawDepth);
+        } else if (dimension == 2 || dimension == 3) {  // TEXTURE1D, TEXTURE2D
+            if (miscFlag & kDxgiMiscTextureCube) layers *= 6;
+        } else {
+            error = "DDS resource dimension is invalid";
+            return false;
+        }
+    } else {
+        storage = LegacyStorage(pixelFlags, fourCc, rgbBitCount);
+        const bool volume = (flags & kDdsFlagDepth) || (caps2 & kDdsCaps2Volume);
+        if (caps2 & kDdsCaps2Cubemap) {
+            layers = CountBits(caps2 & kDdsCaps2CubeFaces);
+            if (layers == 0 || volume) {
+                error = "DDS cube map layout is invalid";
+                return false;
+            }
+        }
+        if (volume) depth = std::max<std::uint32_t>(1u, rawDepth);
+    }
+    if (!storage) {
+        error = "DDS pixel format is not supported";
+        return false;
+    }
+    if (depth > maximumDimension) {
+        error = "DDS header or dimensions are invalid";
+        return false;
+    }
+
+    // A level per halving down to 1x1x1 at most, and never more than the
+    // runtime can record.
+    const std::uint32_t levels = std::max<std::uint32_t>(1u, rawMipCount);
+    std::uint32_t largest = std::max({width, height, depth});
+    std::uint32_t possibleLevels = 1;
+    while (largest > 1) {
+        largest >>= 1u;
+        ++possibleLevels;
+    }
+    if (levels > kMaximumDdsMipLevels || levels > possibleLevels) {
+        error = "DDS mip count " + std::to_string(rawMipCount) +
+            " is invalid for a " + std::to_string(width) + " x " + std::to_string(height) +
+            " texture";
+        return false;
+    }
+
+    std::uint64_t required = 0;
+    bool fits = true;
+    for (std::uint32_t level = 0; level < levels && fits; ++level) {
+        const std::uint64_t levelWidth = std::max<std::uint32_t>(1u, width >> level);
+        const std::uint64_t levelHeight = std::max<std::uint32_t>(1u, height >> level);
+        const std::uint64_t levelDepth = std::max<std::uint32_t>(1u, depth >> level);
+        std::uint64_t rowBytes = 0;
+        std::uint64_t rows = levelHeight;
+        switch (storage->kind) {
+        case DdsStorage::Kind::Blocks:
+            rowBytes = (levelWidth + 3) / 4 * storage->bytesPerUnit;
+            rows = (levelHeight + 3) / 4;
+            break;
+        case DdsStorage::Kind::Pairs:
+            rowBytes = (levelWidth + 1) / 2 * storage->bytesPerUnit;
+            break;
+        case DdsStorage::Kind::Pixels:
+            rowBytes = (levelWidth * storage->bitsPerPixel + 7) / 8;
+            break;
+        }
+        std::uint64_t levelBytes = 0;
+        fits = CheckedMultiply(rowBytes, rows, levelBytes) &&
+            CheckedMultiply(levelBytes, levelDepth, levelBytes) &&
+            CheckedAdd(required, levelBytes, required);
+    }
+    if (!fits || !CheckedMultiply(required, layers, required) ||
+        required > fileSize - headerBytes) {
+        error = "DDS file is shorter than the data its header describes";
+        return false;
+    }
     return true;
 }
 
+bool ValidateDds(const std::vector<std::uint8_t>& bytes, std::uint32_t maximumDimension,
+                 std::string& error) {
+    return ValidateDdsLayout(bytes.data(), bytes.size(), bytes.size(), maximumDimension, error);
+}
+
+// A copy this writer made earlier gets the same full check before it is used
+// again; only the headers are read, and the file's size stands for its data.
 bool ValidateDdsFile(const std::filesystem::path& path, std::uintmax_t maximumBytes,
                      std::uint32_t maximumDimension) {
     std::error_code ec;
     const auto size = std::filesystem::file_size(path, ec);
-    if (ec || size < 128 || size > maximumBytes) {
+    if (ec || size < kDdsHeaderBytes || size > maximumBytes) {
         return false;
     }
-    std::vector<std::uint8_t> header(128);
+    std::array<std::uint8_t, kDdsHeaderBytes + kDdsDx10HeaderBytes> header{};
+    const auto wanted = static_cast<std::size_t>(
+        std::min<std::uintmax_t>(size, static_cast<std::uintmax_t>(header.size())));
     std::ifstream stream(path, std::ios::binary);
     if (!stream || !stream.read(reinterpret_cast<char*>(header.data()),
-                                static_cast<std::streamsize>(header.size()))) {
+                                static_cast<std::streamsize>(wanted))) {
         return false;
     }
     std::string ignored;
-    return ValidateDds(header, maximumDimension, ignored);
+    return ValidateDdsLayout(header.data(), wanted, size, maximumDimension, ignored);
 }
 
 bool IsWicExtension(const std::string& extension) {

@@ -3,14 +3,14 @@
  "part": "procedural-bodygroup-destruction",
  "origins": {
   "!gmod_bullet_break_simulator": {
-   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!gmod_bullet_break_simulator",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\procedural-bodygroup-destruction\\!gmod_bullet_break_simulator",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/ipg/!gmod_bullet_break_simulator",
-    "remote": "https://github.com/SheepyLord/-gmod_bullet_break_simulator.git",
-    "commit": "7478b94ad705a4fc10161abc738214eec7497255",
-    "dirty": true
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "dirty": false
    },
-   "imported": "2026-10-30T00:42:46+00:00"
+   "imported": "2026-11-05T22:26:16+00:00"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_10_i18n.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\procedural-bodygroup-destruction\\!gmod_bullet_break_simulator\\lua\\bullet_break_simulator\\cl_10_i18n.lua",
@@ -43,14 +43,14 @@
    "imported": "2026-10-30T11:10:28+00:00"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\procedural-bodygroup-destruction\\!gmod_bullet_break_simulator\\lua\\bullet_break_simulator\\cl_40_damage.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\procedural-bodygroup-destruction\\!gmod_bullet_break_simulator\\lua\\bullet_break_simulator\\cl_40_damage.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
-    "dirty": true
+    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "dirty": false
    },
-   "imported": "2026-10-30T11:10:28+00:00"
+   "imported": "2026-11-05T22:26:32+00:00"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_90_settings.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\procedural-bodygroup-destruction\\!gmod_bullet_break_simulator\\lua\\bullet_break_simulator\\cl_90_settings.lua",
@@ -95,15 +95,15 @@
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_22_shape.lua": {
-   "size": 11063,
-   "sha256": "4a67cd20b7db0c6306aff9d51d04039bad60351640c217de238cfae4745178ad",
-   "mtime_ns": 1787465498943125100,
+   "size": 11229,
+   "sha256": "4dacb5a768c988f4901976c3cca53039d0e1661eb5977ca4634aac98236c7af0",
+   "mtime_ns": 1793915839591914500,
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua": {
-   "size": 12366,
-   "sha256": "deaa79ccabc4b1bc6fb3ffbb208add145d9f97b012d271a933208517df1ac702",
-   "mtime_ns": 1793348068731231000,
+   "size": 12532,
+   "sha256": "dc1ef41d0d4597413b1c4a8f34265cd2d086adcea1e25a3390d1dfbf658c57bc",
+   "mtime_ns": 1793915841993022900,
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_29_mesh_preparation.lua": {
@@ -119,9 +119,9 @@
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_32_mesh_persistence.lua": {
-   "size": 50127,
-   "sha256": "0ee13b98d82805902543fe73c2e14882fa21a64f0a61b38e0b34514e04d5ab7a",
-   "mtime_ns": 1789788306308106900,
+   "size": 50349,
+   "sha256": "1729fb87fc2075c8df4633e98a3f7e36c32511b92ebf0b5d61f5f571d40d217f",
+   "mtime_ns": 1793915844415629900,
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_39_material_safety.lua": {
@@ -131,9 +131,9 @@
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua": {
-   "size": 323213,
-   "sha256": "cb53011c499ffb580022e7ad3ee67b3017d30ca75b21468adac6eb5a5eff5a2a",
-   "mtime_ns": 1793358619473167700,
+   "size": 323457,
+   "sha256": "5c74dc03ce9ee152380e3ba6e89e6a75071c6e90e95dc79da28e216842a26614",
+   "mtime_ns": 1793915857355735400,
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_90_settings.lua": {
@@ -155,9 +155,9 @@
    "stored": "plain"
   },
   "!gmod_bullet_break_simulator/lua/bullet_break_simulator/sv_20_hits.lua": {
-   "size": 5412,
-   "sha256": "e86c48143017359ca5286adb9c25fb71c56c652486c058a7ad09f7903a9cf0c3",
-   "mtime_ns": 1790993089911169400,
+   "size": 6111,
+   "sha256": "d2ee279ef04d0aeb1fb7856a8bd174307873123710efd105088d8529ee62f2ad",
+   "mtime_ns": 1793915868043474200,
    "stored": "plain"
   }
  }
