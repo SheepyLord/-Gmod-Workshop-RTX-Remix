@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "a5dbe933cdb45881e682b52311879f4d83650ba106f5fc5f14fcdc14f4463e80",
-  "built_from": "HEAD -> claude/r13-first-draw-0030 dc537fd2 (with what the rest of this record names)",
+  "d3d9.dll": "05b395c8887d3aab316ff050b93c58f749e3f62cc50fdf65de9a7912e8b855bd",
+  "built_from": "HEAD 80c4a8cb (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -84,6 +84,7 @@
    "patches/0028-Fix-a-hash-race-baker-sources-and-unmarked-writes-of.patch": "2515b39a93f3d82be4dd85c490136f662a64b6cb70947a7dc25f85c832d0b147",
    "patches/0029-Lock-RtxOption-edits-made-beside-the-render-thread-s.patch": "0b81af4ebc1af8ab42dc469cec32ce624517a252cb11de9b089a0bd833cf7973",
    "patches/0030-Load-material-preloads-at-their-first-draw-instead-o.patch": "b10a05b2c5b8044c537af9664928e318bda28cd887282fd6f00e78055dd2cc6b",
+   "patches/0031-Atmosphere-cloud-genera-per-weather-a-sun-disc-and-a.patch": "0e6446b23200865cc36d85b153c0b397f07a4f266733ab63ccfec02cd91fe424",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }

@@ -1,5 +1,17 @@
 # Roadmap
 
+R17 (the user's request of 2026-11-05) is **done**, merged into `main` from `r17`
+([report](handover/R17-report.md)):
+
+- **Numos's sky fits the weather.** Each weather has its own cloud genera: low, middle and high
+  clouds, dense enough to shade, with closed decks for overcast, rain and fog. The sun has a disc. A 2D
+  high cloud layer adds cirrus, cirrostratus with its halo, and cirrocumulus. The Milky Way waits for
+  astronomical twilight ([ADR 0109](decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md),
+  runtime patch 0031).
+- **Package builds.** The RTX package's GitHub workflow is started only by a person, for a release.
+  During development the git hooks build it locally again
+  ([ADR 0108](decisions/0108-releases-built-on-github-by-hand-development-built-here.md)).
+
 R16 (the user's items 44 and 45, 2026-11-04; [plan](handover/R16-plan.md)) is **done**, merged into `main` from `r16`
 ([report](handover/R16-report.md)): a chosen time of day and weather apply from a map's start, also on a
 map whose add-on sets its own sky ([ADR 0105](decisions/0105-the-players-sky-applies-from-a-maps-start.md));

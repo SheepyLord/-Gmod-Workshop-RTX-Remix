@@ -1,13 +1,14 @@
-"""Keeps the project's Workshop item up to date (ADR 0016) with the combined RTX package that GitHub's
-package workflow builds (ADR 0106): --from-ci waits for that workflow's run of a commit, downloads the
-.gma and its hash report, checks the .gma's SHA-256 against the report, and uploads exactly that file
-with GMod's gmpublish. The git hooks this script installs (--install-hooks) run it in the background
-before every push of main; they also run Git LFS's own hook steps.
+"""Keeps the project's Workshop item up to date (ADR 0016). During development it builds the combined RTX
+package here from the inputs in tools/workshop.json (packages/ holds them, ADR 0033, unpacked into
+out/inputs/ by tools/inputs.py) and uploads it with GMod's gmpublish when its content changed; the git
+hooks this script installs (--install-hooks) run that in the background after every commit or merge on
+main and before every push of main, and also run Git LFS's own hook steps (ADR 0108). A run that finds
+its inputs unchanged since the last upload stops at once; one whose build matches the uploaded content
+(same digest) uploads nothing.
 
-Without --from-ci it builds the package here from the inputs in tools/workshop.json (packages/ holds
-them, ADR 0033, unpacked into out/inputs/ by tools/inputs.py) and compares it with the uploaded content;
-such a local build is uploaded only with --local-upload, which ADR 0106 leaves to the user's explicit
-request. See publish_workshop.py.md.
+For a release a person starts GitHub's package workflow, which builds the package with every native
+binary (ADR 0106, 0107); --from-ci then waits for that run of a commit, checks its .gma against the run's
+hash report and uploads exactly that file. See publish_workshop.py.md.
 """
 from __future__ import annotations
 
@@ -59,10 +60,7 @@ BACKGROUND_FLAGS = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | CREATE_NEW_PROC
 REPO_INPUTS = ('companion', 'packages', 'tools/inputs.py', 'tools/package_fixes.py', 'tools/package_runtime.py',
                'tools/package_workshop.py', 'tools/package_content.py', 'tools/package_reshade.py', 'third_party/reshade',
                'tools/gmapack/gmapack.py', 'tools/workshop.json', 'tools/companion_i18n.py', 'LICENSE',
-               'third_party/gmod/LICENSE', '.gitattributes', 'glass/addon', 'third_party/jolt/LICENSE',
-               # R16 (ADR 0106): the package workflow builds the native binaries from these.
-               'runtime', 'loader', 'glass/native', 'third_party', 'CMakeLists.txt', 'CMakePresets.json', 'tools/ci',
-               'tools/build.ps1', 'tools/lib', 'tools/build_package.py')
+               'third_party/gmod/LICENSE', '.gitattributes', 'glass/addon', 'third_party/jolt/LICENSE')
 BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
             'package_content': 'tools/package_content.py', 'package_reshade': 'tools/package_reshade.py'}
 LOCK_WAIT = 2 * 60 * 60
@@ -399,10 +397,6 @@ def publish(config: dict, args, log) -> dict:
     if args.dry_run:
         log(f'dry run: {gma} ({summary["gma_bytes"]} bytes) would be uploaded')
         return {**print_state, 'result': 'dry-run', 'version': version, 'digest': summary['digest'], 'gma': str(gma)}
-    if not getattr(args, 'local_upload', False):
-        # ADR 0106: the item gets the package GitHub built, with its binaries (--from-ci).
-        log(f'built here, not uploaded: {gma} (the item gets the package GitHub builds; --from-ci)')
-        return {**print_state, 'result': 'built-not-uploaded', 'version': version, 'digest': summary['digest'], 'gma': str(gma)}
     changes = f'{version} from {head}' + (f' ({args.reason})' if args.reason else '')
     upload(config, gma, changes, log)
     published_file.write_text(json.dumps(record, indent=1), encoding='utf-8')
@@ -527,15 +521,19 @@ LFS_MISSING = ('printf >&2 "\\nThis repository keeps packages/ in Git LFS, and g
                'Install Git LFS (https://git-lfs.com) and run: python tools/publish_workshop.py --install-hooks\\n"')
 
 POST_COMMIT = f"""#!/bin/sh
-{HOOK_MARKER}: Git LFS's post-commit step. The Workshop item follows pushes of main, with the package
-# GitHub builds for them (ADR 0106; see pre-push).
+{HOOK_MARKER}: a commit on main updates the Workshop item in the background with a package built here
+# (tools/publish_workshop.py; ADR 0108).
 command -v git-lfs >/dev/null 2>&1 && git lfs post-commit "$@"
+[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
+python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$(git rev-parse HEAD)" --reason "commit $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
 POST_MERGE = f"""#!/bin/sh
-{HOOK_MARKER}: Git LFS's post-merge step. The Workshop item follows pushes of main (see pre-push).
+{HOOK_MARKER}: a merge into main (how milestone branches land) updates the Workshop item too.
 command -v git-lfs >/dev/null 2>&1 && git lfs post-merge "$@"
+[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
+python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$(git rev-parse HEAD)" --reason "merge $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
@@ -546,8 +544,8 @@ git lfs post-checkout "$@"
 """
 
 PRE_PUSH = f"""#!/bin/sh
-{HOOK_MARKER}: a push of main also brings the Workshop item up to date, in the background: with the
-# package GitHub's package workflow builds for the pushed commit (ADR 0106), once that run has finished.
+{HOOK_MARKER}: a push of main also brings the Workshop item up to date, in the background, with a
+# package built here (ADR 0108). A release's package is built on GitHub only when a person starts it.
 # Git LFS uploads the large files of packages/ first; without git-lfs the push stops.
 command -v git-lfs >/dev/null 2>&1 || {{ {LFS_MISSING}; exit 2; }}
 refs=$(cat)
@@ -557,7 +555,8 @@ fi
 printf '%s\\n' "$refs" | while read local_ref local_sha remote_ref remote_sha; do
   [ "$remote_ref" = "refs/heads/main" ] || continue
   case "$local_sha" in *[!0]*) ;; *) continue ;; esac  # all zeros: main is being deleted
-  python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --from-ci --commit "$local_sha" --reason "push $(git rev-parse --short "$local_sha")" || true
+  # The script builds in the checkout that has the pushed commit checked out, not necessarily this one.
+  python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$local_sha" --reason "push $(git rev-parse --short "$local_sha")" || true
 done
 exit 0
 """
@@ -609,14 +608,12 @@ def main(argv=None) -> int:
     parser.add_argument('--dry-run', action='store_true', help='build and compare, upload nothing')
     parser.add_argument('--force', action='store_true', help='build and upload even if nothing changed')
     parser.add_argument('--allow-dirty', action='store_true', help='publish although packaging inputs have uncommitted changes')
-    parser.add_argument('--commit', metavar='SHA', help='publish this commit (what the hook passes): with --from-ci the '
-                                                         'package GitHub built for it; otherwise a build in whichever checkout '
-                                                         'has it checked out, nothing if none has')
+    parser.add_argument('--commit', metavar='SHA', help='publish this commit (what the hooks pass): a build in whichever '
+                                                         'checkout has it checked out, nothing if none has; with --from-ci the '
+                                                         'package GitHub built for it')
     parser.add_argument('--from-ci', action='store_true',
-                        help="upload the package the package workflow built for the commit, after checking it against the "
-                             "run's report (ADR 0106; what the pre-push hook runs)")
-    parser.add_argument('--local-upload', action='store_true',
-                        help='upload a package built on this machine (ADR 0106 leaves this to an explicit request of the user)')
+                        help="a release: upload the package a person's run of the package workflow built for the commit, "
+                             "after checking it against the run's report (ADR 0106, 0108)")
     parser.add_argument('--background', action='store_true', help='run detached, logging to out/workshop/logs (what the hooks use)')
     parser.add_argument('--install-hooks', action='store_true', help='install the post-commit and pre-push hooks, then stop')
     parser.add_argument('--uninstall-hooks', action='store_true', help='remove this script\'s hooks, then stop')

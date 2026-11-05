@@ -5182,3 +5182,102 @@ material editor.
   must run without `python -I` (isolated mode leaves the script's folder off `sys.path`).
 - A build from the copied source with the worktree's fetched dependencies took 5 minutes on 8 jobs:
   client, server and worker are the shipped sizes, the runtime 512 bytes larger.
+
+## R17: clouds and the sun (2026-11-05, Claude)
+
+### What Numos had before R17 (PoC, `gm_construct`, `out/r17/base1`)
+
+- **One cloud layer, too thin to shade.** Every weather preset (`rtx_weather.h`,
+  `WEATHER_PRESET_VALUES_*`) set the one low layer only: `cloudDensity` 0.4 to 3 against the option's
+  default 4. The layer's base, cell size and edge detail were not preset fields (`cloudAltitude` 1.3 km,
+  `cloudCellSizeKm` 2, `cloudDetailStrength` 0 for every weather), and the second deck was off. A
+  sweep on partly cloudy (`out/r17/ab-density`): density 6 with detail 0.8, base 0.9 km, depth 1.6 km,
+  type 0.85 and cells of 1.2 km reads as fair-weather cumulus with shaded undersides.
+- **Overcast never closed.** The cloud body (NVDF) bakes at `nvdfNominalCoverage`, 0.65 by default (0
+  would track the weather in 0.25 steps), and the live cover only moves its surface by
+  `(cover - nominal) * nvdfCoverageOffsetKm` = 0.2 km per unit (`cloud_nubis3_common.slangh` step 4):
+  cover 1 grows the bodies by 70 m. A column exists where the placement field F clears 1 - cover:
+  `presence = saturate((F - (1 - cover)) / cloudColumnFeather)` (`computeCloudColumn`,
+  `atmosphere_common.slangh`), so baked at 0.65 only F > 0.35 has cloud; the fork's overcast preset
+  had cover 0.64 and rain 0.95, with km-wide gaps either way.
+- **The presets dim the sun under cloud** rather than relying on the clouds' shadow: `sunIlluminance`
+  20 when clear, (9, 9, 9.5) overcast, (2.5, 2.8, 3.4) in rain, (17, 16, 14) hazy; the hazy preset also
+  lowers the Rayleigh coefficients and raises the aerosol (1.9) for its grey-brown sky.
+- **No sun disc** outside an eclipse (`evalSolarEclipse`, patch 0004, is the only disc): the sun was the
+  Mie aureole of the sky-view LUT, g = 0.8, which keeps half its peak 10 degrees out.
+- **Twilight:** the sky LUT is faded out by `smoothstep(-0.09, 0, sun.y)` (gone 5.2 degrees down; the
+  fork's note: its multiscattering leaves a residual glow at night), and the night-sky image (stars,
+  galaxy band, nebula) fades in by `smoothstep(0.02, 0.15, -sun.y)` (full 8.6 degrees down).
+- **The echo deck** shares the low layer's body field: its cover spread is forced to 0 (a uniform
+  sheet) and its extinction pinned to 1.8 times `cloudLayer2DensityScale` (`cloud_march_common.slangh`).
+- **The fork's translations:** release builds refuse a `.po` without every msgid of `remix.pot`, and
+  `update_strings.py` also brought in three option descriptions of earlier patches (the memory census
+  request, adaptive emission's enable and scale) that `remix.pot` had missed.
+
+### What the research found (sources)
+
+- **Heights** (WMO International Cloud Atlas, levels): low 0-2 km, middle 2-7 km, high 5-13 km in
+  temperate latitudes; Met Office bases: Ac 2.1-5.5 km, As 2-6, Ns 0.6-3, Sc 0.37-2, St 0-0.37, Cu
+  0.37-2, Cb 0.34-2 with its top through the troposphere.
+- **Cirrus** (Sassen and Campbell 2001, ten years of lidar in Utah): base 8.8 km, top 11.2 km on
+  average; optical depth mean 0.75, median 0.61. Cirrocumulus elements are under 1 degree wide (WMO),
+  under 120 m overhead at 7 km, and without shading; cirrostratus is a transparent veil "often
+  producing halo phenomena"; altostratus shows the sun "as through ground glass" and no halo;
+  nimbostratus is "thick enough throughout to blot out the Sun".
+- **Optics** (Kokhanovsky 2004): water cloud extinction 0.005-0.1 per m, single-scattering albedo about
+  1, asymmetry g about 0.85 for droplets and 0.75 for ice; stratocumulus optical depth 7-23.
+- **Real-time practice:** Horizon Zero Dawn (Schneider and Vos 2015) marches the low layer (64-128
+  samples, about 2 ms on PS4) and draws "alto and cirro clouds above 4,000 m as 2D scrolling
+  textures"; Frostbite (Hillaire 2016) uses a two-lobe Henyey-Greenstein phase (g 0.8 and -0.5) and an
+  energy-conserving step integral; Hillaire 2020 notes clouds without multiple scattering "look like
+  dark smoke".
+- **The sun:** radius 0.2665 degrees at 1 AU (NASA); limb darkening at 550 nm I/I0 = 0.30 + 0.93 mu -
+  0.23 mu^2 (Allen, the edge 30 % of the centre), or mu^a with a = 0.41/0.51/0.64 at 680/550/440 nm
+  (Hestroffer and Magnan 1998); its colour is the transmittance along its ray (Bruneton, Hillaire); the
+  real narrow aureole is about 1 % of the disc's radiance at the limb (Buie 2003), so engines draw the
+  disc at its true size and leave glare to bloom.
+
+### Measured in R17 (PoC, `gm_construct`, evidence in `out/r17`)
+
+- **Frame time at 1600x900 does not move.** Every view of every weather and hour took 7.3-7.8 ms
+  (`r17c`, 54 views; 1 s averages of `RealFrameTime` before each shot). The game is CPU-bound there
+  (`fps_max` 300, no frame limiter, Reflex low latency only), so the sky's GPU cost hides in headroom.
+- **At 3840x2160 the GPU binds.** Means over one second, about 100-120 frames each, roughly 0.2 ms
+  noise; each A/B in one session (`perf-new`), the published runtime in another (`perf-old`):
+
+  | Weather, view | R17 | R17 without the high layer | R17 without the middle deck | before R17 |
+  |---|---|---|---|---|
+  | partly cloudy 15 h, sun / away / high | 8.89 / 10.00 / 8.80 | 8.66 / 10.16 / 8.80 | 8.53 / 9.40 / 8.73 | 8.51 / 9.34 / 8.58 |
+  | hazy 11 h, sun / away / high | 8.03 / 8.84 / 8.32 | 7.96 / 8.85 / 7.80 | (none) | 8.42 / 9.45 / 10.73 |
+  | overcast 14.5 h, sun / away / high | 8.47 / 10.47 / 8.83 | (none) | 8.25 / 9.28 / 8.58 | 8.61 / 9.49 / 8.68 |
+
+  The 2D high layer costs nothing measurable, and up to 0.5 ms where the veil fills the view. The
+  middle deck's march costs 0.3-1.2 ms where it is drawn, most toward the horizon; it is skipped
+  where the low layer is opaque (transmittance under 0.01) and, since R17, where its cover is 0. The
+  overcast row is from before its deck was thickened to 1.8 km.
+- **The sun disc's size on screen:** 0.545 degrees is about 11 pixels across at 1600 pixels and 80
+  degrees of horizontal field; no ringing next to it in the upscaled shots (`r17b-sun.png`).
+- **Cloud cover against the bake cover** (`r17b`, `r17c`, `r17d`):
+  - Baked at 0.65 (the old pin), cover 0.92-1 left km-wide gaps.
+  - Baked at 1, rain and snow (decks of 2.5-3.5 km) closed. Overcast, drizzle and fog (1, 0.8, 0.5 km)
+    kept blue holes, because the noise erosion carves through a slab thinner than about twice
+    `nvdfProfileDepthKm` (0.6 km).
+  - Baked at 1.35-1.6, every column is present; the decks are thickened to 1.2-1.8 km in this model,
+    which is optically thinner than real cloud.
+- **The hazy veil and colour:** with the cirrostratus veil, the hazy sky away from the sun measured
+  (132, 130, 126) in sRGB against (111, 131, 150) without it: the same brightness, desaturated and warm.
+  Composited over only the third of the skylight made above 9 km, with its own light dimmed by the
+  air in front of it only, it measured (135, 136, 137): neutral and milky.
+- **Twilight on the presets' date** (sun elevation by hour): 18.9 h 5.3 degrees, 19.35 h 0.7, 19.5 h
+  -0.8, 19.8 h -3.6, 20.4 h -9.1, 21.0 h -14.0. Before R17 the nebula of the night-sky image was
+  already plain at -3.6 degrees. It now starts at 8 degrees down and is full at 17.5 (`deepNight` in
+  `evalStarMap`); the single stars keep their fade.
+- **The runtime grew** from 397,908,992 to about 414,400,000 bytes. The geometry resolver and the
+  indirect integrator, which include `atmosphere_sky.slangh`, compile in many permutations, and each
+  carries the high layer.
+- **Translations:** 42 entries in each of the six catalogs: the R17 menu text and option descriptions,
+  and the three earlier option descriptions `remix.pot` had missed.
+  - The first answer from the translator wrote every non-ASCII character as `?`, and its own check
+    (keys, empties, printf) passed anyway.
+  - The check now also requires the script of each language. The files are written as ASCII JSON with
+    `\u` escapes.

@@ -474,7 +474,7 @@ class SkyTests(unittest.TestCase):
         self.assertAlmostEqual(float(start['rtx.atmosphere.sunRotation']), 324.0, delta=0.01)
         self.assertEqual(start['rtx.atmosphere.starAxisElevation'], '40.000')
         # The default weather, partly cloudy, at once: its cloud density, its fog, no rain.
-        self.assertEqual(start['rtx.atmosphere.cloudDensity'], '0.9')
+        self.assertEqual(start['rtx.atmosphere.cloudDensity'], '6')
         # Its fog from a visibility of 8.8 km at GMod's scale (a Remix metre is 1.905 real ones): the
         # distance over which the preset's transmittance colour (0.998, sRGB, which the runtime
         # uses linear) is measured.
@@ -488,10 +488,10 @@ class SkyTests(unittest.TestCase):
         self.assertEqual(follow, '1')
         # A change of weather blends over nativeloader_weather_seconds (30): halfway there at 15 s.
         mid, end = self.settings(out['mid']), self.settings(out['end'])
-        self.assertTrue(0.9 < float(mid['rtx.atmosphere.cloudDensity']) < 2.5)
+        self.assertTrue(6 < float(mid['rtx.atmosphere.cloudDensity']) < 7)
         self.assertTrue(0 < float(mid['rtx.weather.precipitation.intensity']) < 0.8)
         self.assertEqual((end['rtx.atmosphere.cloudDensity'], end['rtx.weather.precipitation.intensity'],
-                          end['rtx.atmosphere.lightningStrikesPerMinute']), ('2.5', '0.8', '4'))
+                          end['rtx.atmosphere.lightningStrikesPerMinute']), ('7', '0.8', '4'))
         # Choosing a time takes the sun off the map's: the direction stays the map's.
         hour = self.settings(out['hour'])
         follow, hours, direction_after, direction_before = out['after'].split()
@@ -512,7 +512,7 @@ class SkyTests(unittest.TestCase):
                            BSP=bsp(CONSTRUCT), SCRIPT='release')
         rain, released = self.settings(out['rain']), self.settings(out['released'])
         self.assertEqual((rain['rtx.atmosphere.cloudDensity'], rain['rtx.weather.precipitation.intensity'],
-                          rain['rtx.weather.precipitation.spawnRadiusMeters']), ('2.5', '0.8', '8'))
+                          rain['rtx.weather.precipitation.spawnRadiusMeters']), ('7', '0.8', '8'))
         radius, lightning, intensity = out['defaults'].split()
         self.assertEqual(released['rtx.atmosphere.cloudDensity'], '1.7')  # rtx.conf's
         self.assertEqual((released['rtx.weather.precipitation.intensity'], released['rtx.weather.precipitation.spawnRadiusMeters'],
@@ -528,7 +528,7 @@ class SkyTests(unittest.TestCase):
         self.assertEqual(out['interval'], '0.02')
         self.assertEqual((out['adjusted'].split()[0], out['interval_now']), ('0', '0.1'))
         taken = self.settings(out['taken'])
-        self.assertEqual((taken['rtx.skyMode'], taken['rtx.atmosphere.cloudDensity']), ('1', '1.8'))
+        self.assertEqual((taken['rtx.skyMode'], taken['rtx.atmosphere.cloudDensity']), ('1', '5'))
 
     def test_a_sky_taken_over_comes_back_at_once_when_the_maps_add_on_sets_its_own_again(self):
         # R5: Modern House RTX puts its afternoon sun back three times in the first minute; the
@@ -584,7 +584,7 @@ class SkyTests(unittest.TestCase):
                           outside['rtx.weather.precipitation.occludeUnderCover']), ('0.8', 'False'))
         self.assertEqual(self.settings(out['fading'])['rtx.weather.precipitation.intensity'], '0.4')
         inside = self.settings(out['inside'])
-        self.assertEqual((inside['rtx.weather.precipitation.intensity'], inside['rtx.atmosphere.cloudDensity']), ('0', '2.5'))
+        self.assertEqual((inside['rtx.weather.precipitation.intensity'], inside['rtx.atmosphere.cloudDensity']), ('0', '7'))
         self.assertEqual(self.settings(out['again'])['rtx.weather.precipitation.intensity'], '0.8')
 
     def test_the_maps_skybox_gives_back_the_maps_sun(self):
