@@ -23,12 +23,24 @@
       "packages/fixes/licenses/oversized-skinning/oversized-hw-skinning.patch",
       "packages/fixes/licenses/oversized-skinning/memory-limits/no-memory-limits.patch",
       "packages/fixes/licenses/oversized-skinning/backrooms/backrooms-native.patch",
-      "packages/fixes/licenses/oversized-skinning/autopbr/autopbr.patch"
+      "packages/fixes/licenses/oversized-skinning/autopbr/autopbr.patch",
+      "packages/fixes/licenses/oversized-skinning/autopbr/lua-paths.patch"
     ],
     "patch_paths": ["source/*", "premake5.lua", "public/*"],
-    "patched_commit": "913bb6b83fc0830f901cbe54904e843cef8ea61d",
+    "patched_tree": {
+      "source": "d2a0c6f980e1384092deacbd85abf2327d0472a9",
+      "public": "7165af4dc4ab4d841a19b7405211b27190bddea6",
+      "premake5.lua": "b308ed2f6b0b31aa7b69f0ee576c0bcf5f666cd1"
+    },
+    "patched_tree_why": "the object ids of the patched index (git write-tree, then rev-parse <tree>:<path>), so build_modules.ps1 checks the native tree with no pushed commit; the first four patches alone give the ids of 913bb6b",
     "rtxwater_commit": "b5c194ec8db59b714f01de197cbe7601949d2d0d",
-    "rtxwater_why": "native RTX Water Version 4 as shipped; the base's source/rtx_water is Version 5 (SetCameraInWater), a behaviour change"
+    "rtxwater_why": "native RTX Water Version 4 as shipped; the base's source/rtx_water is Version 5 (SetCameraInWater), a behaviour change",
+    "rtxwater_patches": [
+      "packages/fixes/licenses/oversized-skinning/rtxwater/rtxwater-lua-input.patch"
+    ],
+    "rtxwater_tree": {
+      "source/rtx_water": "7e707d242c863224814a29a0d3e838cbe295d579"
+    }
   },
   "rtxdebug": {
     "source": "packages/fixes/licenses/rtxdebug/checkout",

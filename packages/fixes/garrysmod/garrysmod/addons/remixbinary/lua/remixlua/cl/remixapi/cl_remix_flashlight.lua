@@ -50,6 +50,9 @@ local function vec3(x, y, z)
     return { x = x, y = y, z = z }
 end
 
+-- Defined below; CreateFlashlight and UpdateFlashlight call it.
+local DestroyFlashlight
+
 -- Create the RTX flashlight light for any player
 local function CreateFlashlight(ply, colorOverride)
     if not cv_enabled:GetBool() then return false end
@@ -60,6 +63,12 @@ local function CreateFlashlight(ply, colorOverride)
     
     ply = ply or LocalPlayer()
     if not IsValid(ply) then return false end
+    
+    -- R19 (the pre-release review's F-03): a second "on" for the same player (the join-time
+    -- sync after a broadcast, or a repeated message) replaces the light instead of leaking it
+    if playerFlashlights[ply] and playerFlashlights[ply].lightId then
+        DestroyFlashlight(ply)
+    end
     
     -- Get position and direction
     local eyePos = ply:EyePos()
@@ -251,7 +260,7 @@ local function UpdateFlashlight(ply, posOverride, angOverride)
 end
 
 -- Destroy the RTX flashlight for a specific player
-local function DestroyFlashlight(ply)
+DestroyFlashlight = function(ply)
     ply = ply or LocalPlayer()
     
     local flashData = playerFlashlights[ply]

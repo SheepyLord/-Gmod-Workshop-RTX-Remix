@@ -1,11 +1,14 @@
 """Tests for the RTX package workflow's helpers in tools/ci (R16, ADR 0106): fetched files checked against
 their pins (also out of an archive, and the files a packager takes out of them), the runtime's install
-folder laid out as the runtime part, this repository's modules collected with their source, and the cache
-keys. No network: fetch_prebuilt reads a local folder, as its --from option does."""
+folder laid out as the runtime part, this repository's modules collected with their source, the cache
+keys, and the RTX fixes' recorded native trees (R19). No network: fetch_prebuilt reads a local folder, as
+its --from option does; the trees are replayed from a local fixes clone when this machine has one."""
 import hashlib
 import io
 import json
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -22,6 +25,26 @@ import collect_runtime  # noqa: E402
 import fetch_prebuilt  # noqa: E402
 
 SCRATCH = REPO / 'out' / 'tmp'
+PINS = json.loads((REPO / 'tools' / 'ci' / 'pins.json').read_text(encoding='utf-8'))
+
+
+def fixes_clone() -> Path | None:
+    """A local clone of the RTX fixes holding the pinned commits: NL_FIXES_CLONE, or
+    garrys-mod-rtx-remixed beside this checkout or beside the main checkout of a worktree."""
+    candidates = [os.environ.get('NL_FIXES_CLONE', '')]
+    candidates.append(str(REPO.parent / 'garrys-mod-rtx-remixed'))
+    common = subprocess.run(['git', '-C', str(REPO), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+                            capture_output=True, text=True)
+    if common.returncode == 0 and common.stdout.strip():
+        candidates.append(str(Path(common.stdout.strip()).parent.parent / 'garrys-mod-rtx-remixed'))
+    for candidate in filter(None, candidates):
+        path = Path(candidate)
+        if (path / '.git').exists() and all(
+                subprocess.run(['git', '-C', str(path), 'cat-file', '-e', f'{commit}^{{commit}}'],
+                               capture_output=True).returncode == 0
+                for commit in (PINS['fixes']['base'], PINS['fixes']['rtxwater_commit'])):
+            return path
+    return None
 
 
 class CiToolTests(unittest.TestCase):
@@ -135,6 +158,55 @@ class CiToolTests(unittest.TestCase):
         self.assertEqual(cache_key.digest([one]), cache_key.digest([one]))
         self.assertNotEqual(cache_key.digest([one]), cache_key.digest([one], extra=['x']))
         self.assertEqual(cache_key.main(['nothing']), 2)
+
+    def test_the_fixes_pins_record_their_native_trees(self):
+        """R19: build_modules.ps1 checks the patched fixes, and RTX Water after its own patches, against
+        object ids pins.json records, so the check holds with no pushed commit."""
+        fixes = PINS['fixes']
+        self.assertNotIn('patched_commit', fixes)
+        self.assertEqual(sorted(fixes['patched_tree']), ['premake5.lua', 'public', 'source'])
+        self.assertEqual(list(fixes['rtxwater_tree']), ['source/rtx_water'])
+        for oid in list(fixes['patched_tree'].values()) + list(fixes['rtxwater_tree'].values()):
+            self.assertRegex(oid, '^[0-9a-f]{40}$')
+        for patch in fixes['patches'] + fixes['rtxwater_patches']:
+            self.assertTrue(patch.startswith('packages/fixes/licenses/') and (REPO / patch).is_file(), patch)
+        # The water patches touch only source/rtx_water, the one folder the script applies them to.
+        for patch in fixes['rtxwater_patches']:
+            for line in (REPO / patch).read_text(encoding='utf-8').splitlines():
+                if line.startswith('diff --git '):
+                    self.assertTrue(line.startswith('diff --git a/source/rtx_water/'), line)
+        script = (REPO / 'tools' / 'ci' / 'build_modules.ps1').read_text(encoding='utf-8')
+        for word in ('write-tree', 'patched_tree', 'rtxwater_patches', 'rtxwater_tree'):
+            self.assertIn(word, script)
+        self.assertNotIn('patched_commit', script)
+
+    @unittest.skipUnless(shutil.which('git') and fixes_clone(), 'no local clone of the RTX fixes with the pinned commits')
+    def test_the_patches_give_the_recorded_trees(self):
+        """Replays build_modules.ps1's index steps in a shared scratch clone (the fixes clone is only
+        read): the base and the patches give patched_tree; RTX Water's commit and its patches give
+        rtxwater_tree."""
+        fixes = PINS['fixes']
+        clone = self.root / 'fixes'
+
+        def git(*args: str) -> str:
+            done = subprocess.run(['git', '-C', str(clone), *args], capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, ' '.join(args) + '\n' + done.stderr)
+            return done.stdout.strip()
+
+        done = subprocess.run(['git', 'clone', '--quiet', '--shared', '--no-checkout', str(fixes_clone()), str(clone)],
+                              capture_output=True, text=True)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        git('read-tree', fixes['base'])
+        include = [f'--include={path}' for path in fixes['patch_paths']]
+        for patch in fixes['patches']:
+            git('apply', '--cached', *include, str(REPO / patch))
+        tree = git('write-tree')
+        self.assertEqual({path: git('rev-parse', f'{tree}:{path}') for path in fixes['patched_tree']}, fixes['patched_tree'])
+        git('restore', f'--source={fixes["rtxwater_commit"]}', '--staged', '--', 'source/rtx_water')
+        for patch in fixes['rtxwater_patches']:
+            git('apply', '--cached', '--include=source/rtx_water/*', str(REPO / patch))
+        tree = git('write-tree')
+        self.assertEqual({path: git('rev-parse', f'{tree}:{path}') for path in fixes['rtxwater_tree']}, fixes['rtxwater_tree'])
 
 
 if __name__ == '__main__':

@@ -69,6 +69,18 @@ function Find-One([string] $Root, [string] $Name) {
     if (-not $found) { throw "no $Name under $Root" }
     $found[0].FullName
 }
+function Assert-Tree([string] $Checkout, $Recorded, [string] $What) {
+    # The index as a tree (git write-tree stores its objects in this checkout only), then each recorded
+    # path's object id in it: the check needs no pushed commit (R19).
+    $tree = @(Get-Native -Required { git -C $Checkout write-tree })[-1]
+    $wrong = @(foreach ($entry in $Recorded.PSObject.Properties) {
+        $id = @(Get-Native { git -C $Checkout rev-parse "${tree}:$($entry.Name)" })[-1]
+        if ("$id" -ne $entry.Value) { "$($entry.Name) is $id, recorded $($entry.Value)" }
+    })
+    if ($wrong) { throw "$What differ from the recorded tree:`n$($wrong -join "`n")" }
+    "${What}: the recorded tree ($(@($Recorded.PSObject.Properties | ForEach-Object { "$($_.Name) $($_.Value.Substring(0, 12))" }) -join ', '))"
+}
+function Format-Tree($Recorded) { @($Recorded.PSObject.Properties | ForEach-Object { "$($_.Name) $($_.Value)" }) -join ', ' }
 
 # --- premake 5.0.0-beta2 ---------------------------------------------------------------------------
 if (-not $Premake) {
@@ -131,15 +143,11 @@ if (($Only -contains 'fixes') -or ($Only -contains 'rtxwater')) {
         Invoke-Native "apply $patch" { git -C $fixes apply --cached @include (Join-Path $repo $patch) }
     }
     Invoke-Native 'write the patched files' { git -C $fixes checkout -- . }
-    if ("$(Get-Native { git -C $fixes cat-file -t $pins.fixes.patched_commit })" -eq 'commit') {
-        # The patched native tree must be the recorded one (verifiable where that commit exists).
-        $diff = Get-Native -Required { git -C $fixes diff --cached --stat $pins.fixes.patched_commit -- source premake5.lua public }
-        if ($diff) { throw "the patched fixes differ from $($pins.fixes.patched_commit):`n$diff" }
-        "fixes: the patched native tree equals $($pins.fixes.patched_commit)"
-    }
+    # The patched native tree must be the recorded one, wherever this runs.
+    Assert-Tree $fixes $pins.fixes.patched_tree 'the patched fixes'
 }
 $fixesSource = @{ repository = $pins.fixes.repository; commit = $pins.fixes.base
-                  patches = ($pins.fixes.patches -join ', '); patched_native_tree = $pins.fixes.patched_commit }
+                  patches = ($pins.fixes.patches -join ', '); patched_native_tree = (Format-Tree $pins.fixes.patched_tree) }
 if ($Only -contains 'fixes') {
     Push-Location $fixes
     try {
@@ -153,14 +161,21 @@ if ($Only -contains 'fixes') {
 if ($Only -contains 'rtxwater') {
     Push-Location $fixes
     try {
-        # Version 4 of the native RTX Water, as shipped: that commit's source/rtx_water on the patched base.
+        # Version 4 of the native RTX Water, as shipped: that commit's source/rtx_water on the patched base,
+        # then its own GPL patches (index first, as above), and the recorded tree of source/rtx_water.
         Invoke-Native 'rtx_water at its pin' { git -C $fixes restore "--source=$($pins.fixes.rtxwater_commit)" --staged --worktree -- source/rtx_water }
+        foreach ($patch in @($pins.fixes.rtxwater_patches)) {
+            Invoke-Native "apply $patch" { git -C $fixes apply --cached '--include=source/rtx_water/*' (Join-Path $repo $patch) }
+        }
+        Invoke-Native 'write the patched rtx_water' { git -C $fixes checkout -- source/rtx_water }
+        Assert-Tree $fixes $pins.fixes.rtxwater_tree 'RTX Water'
         Invoke-Native 'premake (rtx_water)' { & $Premake --os=windows "--gmcommon=$GmodCommon" vs2022 }
         $project = Find-One $fixes 'gmcl_rtxwater.vcxproj'
         Invoke-Native 'msbuild gmcl_rtxwater' { msbuild $project /nologo /m:2 /v:minimal /p:Configuration=Release @msbuildProps }
         $dll = Find-One $fixes 'gmcl_rtxwater_win64.dll'
         Add-Built $dll 'fixes' 'modules\gmcl_rtxwater_win64.dll' @{ repository = $pins.fixes.repository; commit = $pins.fixes.rtxwater_commit
-            how = "compiled: source/rtx_water of that commit (Version 4) on the patched fixes base, premake + MSBuild Release x64" }
+            patches = (@($pins.fixes.rtxwater_patches) -join ', '); patched_native_tree = (Format-Tree $pins.fixes.rtxwater_tree)
+            how = "compiled: source/rtx_water of that commit (Version 4) with its patches, on the patched fixes base, premake + MSBuild Release x64" }
     } finally { Pop-Location }
 }
 
