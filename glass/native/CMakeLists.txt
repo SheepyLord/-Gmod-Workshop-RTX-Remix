@@ -25,7 +25,7 @@ target_include_directories(nl_glass_client SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/t
 target_link_libraries(nl_glass_client PRIVATE nl_glass nl_build_options)
 set_target_properties(nl_glass_client PROPERTIES OUTPUT_NAME gmcl_nlglass_win64 PREFIX "")
 
-add_executable(nl_glass_tests ../../loader/tests/test_main.cpp tests/test_glass.cpp tests/test_interaction.cpp tests/test_r9.cpp tests/test_binding.cpp module.cpp)
+add_executable(nl_glass_tests ../../loader/tests/test_main.cpp tests/test_glass.cpp tests/test_interaction.cpp tests/test_r9.cpp tests/test_r19.cpp tests/test_binding.cpp module.cpp)
 target_include_directories(nl_glass_tests PRIVATE ../../loader/tests)
 target_include_directories(nl_glass_tests SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/third_party/gmod/include")
 target_link_libraries(nl_glass_tests PRIVATE nl_glass nl_build_options)

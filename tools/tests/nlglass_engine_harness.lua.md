@@ -76,6 +76,16 @@ The bridge test proves input routing, not the engine's actual Hammer output sema
 R8-G settings panels have 16 controls, including four category bits and a synchronized mask. Reset stays local for non-admins.
 
 
+R19 (glass F-02): the realm's `net` gains `BytesWritten` (this double's bit count, in bytes), and
+`network`, `initial_sync` and `target_sync` flush the server's timers before reading a sync reply:
+nothing is written inside the request handler any more. `initial_sync` also checks that a repeated
+full request, a minute later, sends nothing. `sync_pacing` builds twelve near-cap panes (about 5.7 KB
+each here) and steps single ticks: the joiner's snapshots arrive over several ticks, a tick sends
+another pane only while under `S.SYNC_BYTES`, every pane arrives once, a targeted resync during the
+full sync goes first, a second full request is ignored, two joiners progress in the same tick, a
+pane removed while queued goes out as a removal, a player who left is dropped and cleanup clears
+every queue. It and the new `initial_sync` checks fail on the server before R19.
+
 R9-G tests receipt-frame hole/prediction builds while retaining weak-hit queue limits, exact empty
 Lua blast observation, real grenade explosion positions, rate/epoch boundaries and local/admin
 clear permissions. r9_blasts and r9_clear are executable scenarios. Timing samples create a fresh

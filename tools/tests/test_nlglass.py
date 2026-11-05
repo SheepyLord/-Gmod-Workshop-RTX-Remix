@@ -191,6 +191,9 @@ class EngineTests(unittest.TestCase):
     def test_revision_mismatch_resyncs_only_one_pane(self):
         self.run_case('target_sync')
 
+    def test_late_join_snapshots_are_paced_per_player_once_per_connection(self):
+        self.run_case('sync_pacing')
+
     def test_record_server_and_client_hit_and_break_timings(self):
         self.run_case('client_timings')
 

@@ -1,6 +1,6 @@
 -- MIT. Runs the actual Source snapshot and pellet forwarding modules with read-only Source doubles.
 local root, scenario = assert(arg[1]), assert(arg[2])
-local checks, now, queries, cooks, sends, filters = 0, 0, 0, 0, {}, 0
+local checks, now, queries, cooks, sends, filters, pvsTests = 0, 0, 0, 0, {}, 0, 0
 local function check(v, message) checks = checks + 1;assert(v, message) end
 local V, A, P = {}, {}, {}
 V.__index, A.__index, P.__index = V, A, P
@@ -62,6 +62,10 @@ local function entity(kind,position,bodies)
         GetVelocity=function(self)return self.velocity or Vector(100,0,0)end,GetSolid=function()return 6 end,
         GetPhysicsObjectCount=function(self)return #self.bodies end,
         GetPhysicsObjectNum=function(self,i)return self.bodies[i+1]end,
+        -- Server PVS doubles (R19): `sees(point)` decides; without it everything is potentially visible.
+        EyePos=function(self)return self.position+Vector(0,0,64)end,
+        TestPVS=function(self,p)pvsTests=pvsTests+1;check(isvector(p),"PVS tests take positions");return self.sees==nil or self.sees(p)==true end,
+        GetViewEntity=function(self)return self.view or self end,
         SetPos=forbid,SetVelocity=forbid,TakeDamage=forbid,SetAngles=forbid}
     return e
 end
@@ -324,6 +328,41 @@ else
         interest(a,Vector());local saved=B.clients[a];interest(a,Vector(10000,0,0))
         check(B.clients[a]==saved,"rapid interest updates cannot replace an accepted lease")
         now=142;interest(a,Vector(),0);check(#B.clients[a].regions==0,"explicit empty interest clears local demand")
+    elseif scenario=="bullets_visibility" then
+        -- R19 (glass F-01): a claimed region alone never reveals a shot the player could not see.
+        net.ReadUInt=function()return 1 end
+        net.ReadVector=function()return Vector() end
+        net.ReadFloat=function()return 600 end
+        -- A modified client far from the fight claims interest around it.
+        local far=entity("player",Vector(20000,0,0));far.sees=function(p)return p.x>10000 end
+        receivers.nlglass_debris_interest(6+54+32,far)
+        check(B.clients[far] and B.HasInterest(),"the claim itself is accepted as before")
+        local function recipient()
+            local before=#sends;now=now+.5;fire()
+            if #sends==before then return false end
+            for _,p in ipairs(sends[#sends].recipients.players)do if p==far then return true end end
+            return false
+        end
+        check(not recipient() and B.sent==0,"outside the player's PVS and far away: nothing is sent at all")
+        far.sees=function(p)return p.x>=100 end
+        check(recipient(),"a hit in the player's PVS is forwarded")
+        far.sees=function(p)return p.x<=-100 end
+        check(recipient(),"a shot starting in the player's PVS is forwarded")
+        far.sees=function(p)return math.abs(p.x)<1 end
+        check(recipient(),"a path passing the claimed region in the player's PVS is forwarded, with both ends hidden")
+        far.sees=function()return false end
+        far.position=Vector(500,500,0)
+        check(recipient(),"a path within 1,024 units of the player's eyes is forwarded")
+        far.position=Vector(900,900,0)
+        check(not recipient(),"beyond 1,024 units and outside the PVS it is not")
+        far.position=Vector(20000,0,0);far.view=entity("gmod_cameraprop",Vector(0,300,0))
+        far.view.sees=function()return true end
+        check(recipient(),"the PVS of the player's view entity (a camera) counts")
+        far.view=nil
+        check(not recipient() and pvsTests>0,"without the camera the shot stays hidden")
+        -- The recent-break bridge is server-placed and keeps using the engine's PVS filter.
+        B.Mark(Vector());local before=#sends;now=now+.5;fire()
+        check(#sends==before+1 and #sends[#sends].recipients.pvs==1,"the recent-break PVS bridge is unchanged")
     elseif scenario:match("^melee_") then
         local timers={};timer={Simple=function(_,fn)timers[#timers+1]=fn end}
         local function flush() local list=timers;timers={};for _,fn in ipairs(list)do fn()end end

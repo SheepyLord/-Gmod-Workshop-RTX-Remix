@@ -1,6 +1,7 @@
 #pragma once
 #include "geometry.h"
 #include <span>
+#include <stop_token>
 #include <string>
 
 namespace nl::glass {
@@ -26,5 +27,8 @@ struct Map {
 // Parses only little-endian Source VBSP 19-21; never reads a path or any engine memory.
 // A bad/unsupported file throws Error and callers discard the whole map. Single brushes that cannot
 // become a hull are skipped and counted; World::finish refuses maps with no usable collision.
-Map read_bsp(std::span<const std::uint8_t> bytes);
+// A requested stop throws Error between bounded units of work (a node, a brush, a displacement, a
+// static-prop entry; one LZMA lump decodes in a single call), so a world being destroyed never
+// waits for the rest of an import.
+Map read_bsp(std::span<const std::uint8_t> bytes,std::stop_token stop={});
 }
